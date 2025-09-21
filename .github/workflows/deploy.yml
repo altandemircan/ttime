@@ -1,0 +1,28 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+    - name: Deploy scripts over SSH
+      run: |
+        ssh -o StrictHostKeyChecking=no root@147.93.56.206 "
+          cd /root/triptime-ai-node-dev && \
+          git fetch origin && \
+          git checkout dev && \
+          git pull origin dev && \
+          pm2 restart ecosystem.config.js
+        "
