@@ -850,7 +850,7 @@ li .highlight {
 .hamburger-menu,
 .mytrips-menu,
 .privacyterms-menu,
-.language-menu,
+.updates-menu,
 .theme-menu {
     position: relative;
 }
@@ -861,7 +861,7 @@ li .highlight {
 .hamburger-btn,
 .mytrips-btn,
 .privacyterms-btn,
-.language-btn,
+.updates-btn,
 .theme-btn {
     background: none;
     border: none;
@@ -883,7 +883,7 @@ li .highlight {
 .settings-btn img,
 .mytrips-btn img,
 .privacyterms-btn img,
-.language-btn img,
+.updates-btn img,
 .theme-btn img,
 .info-btn img {
     width: 24px;
@@ -912,7 +912,7 @@ li .highlight {
 .chat-dropdown,
 .profile-dropdown,
 .hamburger-dropdown,
-.language-dropdown {
+.updates-dropdown {
     position: absolute;
     top: 100%;
     right: 0;
@@ -931,7 +931,7 @@ li .highlight {
 .chat-menu:hover .chat-dropdown,
 .profile-menu:hover .profile-dropdown,
 .hamburger-menu:hover .hamburger-dropdown,
-.language-menu:hover .language-dropdown {
+.updates-menu:hover .updates-dropdown {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
@@ -940,7 +940,7 @@ li .highlight {
 .chat-dropdown li,
 .profile-dropdown li,
 .hamburger-dropdown li,
-.language-dropdown li {
+.updates-dropdown li {
     padding: 12px 15px;
     transition: background 0.2s ease;
     display: flex;
@@ -950,7 +950,7 @@ li .highlight {
 .chat-dropdown a,
 .profile-dropdown a,
 .hamburger-dropdown a,
-.language-dropdown a {
+.updates-dropdown a {
     text-decoration: none;
     color: #333;
     font-size: 1rem;
@@ -961,7 +961,7 @@ li .highlight {
 .chat-dropdown li:hover,
 .profile-dropdown li:hover,
 .hamburger-dropdown li:hover,
-.language-dropdown li:hover {
+.updates-dropdown li:hover {
     background: #f7f7f7;
     border-radius: 8px;
 }
@@ -1005,7 +1005,7 @@ li .highlight {
 .chat-dropdown li:hover,
 .profile-dropdown li:hover,
 .hamburger-dropdown li:hover,
-.language-dropdown li:hover {
+.updates-dropdown li:hover {
     background: #f7f7f7;
     border-radius: 8px;
 }
@@ -1414,7 +1414,7 @@ li .highlight {
 }
 
 /* Sidebar Language */
-.sidebar-language {
+.sidebar-updates {
     width: 375px;
     scrollbar-width: thin;
     scrollbar-color: #8a4af3 #f1f1f1;
@@ -1436,7 +1436,7 @@ li .highlight {
     right: -415px;
     transition: 0.3s ease;
 }
-.sidebar-language.open {
+.sidebar-updates.open {
     right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
 }
 
@@ -1572,7 +1572,7 @@ li .highlight {
 }
 @media (max-width: 768px) {
     .sidebar-gallery,
-    .sidebar-language,
+    .sidebar-updates,
     .sidebar-trip,
     .sidebar-mytrips,
     .sidebar-privacyterms,
@@ -1582,7 +1582,7 @@ li .highlight {
     }
 
     .sidebar-gallery.open,
-    .sidebar-language.open,
+    .sidebar-updates.open,
     .sidebar-mytrips.open,
     .sidebar-privacyterms.open,
     .sidebar-trip.open,
