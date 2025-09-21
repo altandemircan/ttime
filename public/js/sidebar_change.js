@@ -20,8 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    window.toggleSidebarLanguage = function() {
-        toggleSidebar('sidebar-overlay-language');
+    window.toggleSidebarUpdates = function() {
+        toggleSidebar('sidebar-overlay-updates');
     };
     
     window.toggleSidebarGallery = function() {
@@ -61,12 +61,12 @@ function toggleSidebarGallery() {
 }
 
 // Dil seçeneklerini açma fonksiyonu (Sadece açma)
-function toggleSidebarLanguage() {
-    const sidebarLanguage = document.getElementById('sidebar-language');
-    if (!sidebarLanguage.classList.contains('open')) {
-        sidebarLanguage.classList.add('open');
-        const sidebarOverlayLanguage = document.getElementById('sidebar-overlay-language');
-        sidebarOverlayLanguage.classList.add('show');
+function toggleSidebarUpdates() {
+    const sidebarUpdates = document.getElementById('sidebar-updates');
+    if (!sidebarUpdates.classList.contains('open')) {
+        sidebarUpdates.classList.add('open');
+        const sidebarOverlayUpdates = document.getElementById('sidebar-overlay-updates');
+        sidebarOverlayUpdates.classList.add('show');
     }
 }
 
