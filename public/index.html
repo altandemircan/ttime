@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triptime AI</title>
+    
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/leaflet-image.js"></script>
+
+
+    <!-- Leaflet Routing Machine -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+    <!-- OpenRouteService Routing Plugin -->
+    <script src="https://unpkg.com/lrm-openrouteservice/dist/lrm-openrouteservice.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+
+    <!-- Local CSS -->
+    <link href="/css/styles.css?v=2614" rel="stylesheet" type="text/css" />
+    <link href="/css/open_loading.css" rel="stylesheet" type="text/css" />
+
+    <!-- Local JS -->  
+    <script src="/js/mainscript.js?v=3676"></script>
+    <script src="/js/drag.js?v=56" defer></script>
+    <script src="/js/city_priority.js" defer></script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.cdnfonts.com/css/satoshi" rel="stylesheet">
+
+    <!-- Meta tags -->
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+    <meta name="description" content="Triptime AI - Now it's time to trip!">
+
+    <!-- Open Graph & Twitter & Facebook Meta Tags -->
+    <meta property="og:url" content="https://altandemircan.com/tt">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Triptime AI - Now it's time to trip!">
+    <meta property="og:description" content="Create personalized travel plans with triptime.ai! Save time with AI-powered suggestions and easily plan your dream trip.">
+    <meta property="og:image" content="https://altandemircan.com/img/og_image.png">
+    <meta property="og:image:width" content="800">
+    <meta property="og:image:height" content="419">
+    <meta property="og:logo" content="https://altandemircan.com/img/og_image.png" />
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta property="twitter:domain" content="triptime.ai">
+    <meta property="twitter:url" content="http://triptime.ai">
+    <meta name="twitter:title" content="Triptime AI - Now it's time to trip!">
+
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/favicon/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/favicon/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/favicon/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/favicon/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/favicon/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/favicon/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/favicon/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/favicon/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192"  href="/favicon/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/favicon/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6W42FMZ5T7"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-6W42FMZ5T7');
+    </script>
+</head>
+
+<body>
+    <div id="main-header">
+        <header class="fixed-header">
+            <div class="header-container">
+                <!-- logo -->
+                <div class="logo">
+                    <a href="/">
+                        <img src="/img/triptime_logo.svg" alt="Triptime AI">
+                    </a>
+                </div>
+                <!-- right sidebar -->
+                <div class="right-menu">
+                   <!-- <div class="theme-menu">
+                        <button class="theme-btn">
+                            <img src="/img/home-icon.svg" alt="Select theme" onclick="changeContent(1)">
+                        </button>
+                    </div> -->
+                    <div class="theme-menu">
+                        <button class="theme-btn" onclick="toggleSidebarGallery()">
+                            <img src="/img/themes-icon.svg" alt="Select theme">
+                        </button>
+                    </div>
+                    <div class="hamburger-menu">
+                        <div >
+                            <button class="hamburger-btn" onclick="toggleSidebarTrip()">
+                                <img src="/img/trips-icon.svg" alt="Menu">
+                            </button>
+                            <span id="menu-count">0</span>
+                        </div>
+                    </div>
+                    <div class="menuBox">
+                        <div class="profile-menu">
+                            <button class="profile-btn">
+                                <img src="/img/profile-icon.svg" alt="Profile">
+                            </button>
+                        </div>
+                        <div class="toggleMenu" onclick="toggleMenu()">☰</div>
+                        <div class="dropDown" id="menuDropdown">
+                         <!--   <a href="#" onclick="toggleSidebarLogin(); toggleMenu();" class="profile-btn">
+                                <img src="/img/profile-icon.svg" alt="Profile">Profile
+                            </a> -->
+                         <!--   <a href="#" onclick="toggleSidebarSettings(); toggleMenu();" class="settings-btn">
+                                <img src="/img/settings-icon.svg" alt="Settings">Settings
+                            </a> -->
+                            <a href="#" onclick="toggleSidebarMyTrips(); toggleMenu();" class="mytrips-btn">
+                                <img src="/img/mytrips-icon.svg" alt="My Trips">My Trips
+                            </a>
+                         <!--  <a href="#" onclick="toggleSidebarLanguage(); toggleMenu();" class="language-btn">
+                                <img src="/img/language-icon.svg" alt="Menu">Language
+                            </a> -->
+                            <a href="#" onclick="toggleSidebarPrivacyTerms(); toggleMenu();" class="language-btn">
+                                <img src="/img/privacyterms-icon.svg" alt="Menu">Privacy & Terms
+                            </a>    
+                            <a href="#" onclick="changeContent(2)" class="language-btn">
+                                <img src="/img/tt-icon.svg" alt="Menu">About Triptime
+                            </a>   
+                        </div>
+                    </div>            
+                </div>
+            </div>
+        </header>
+    </div>
+    <div id="main-sidebar">
+        <section id="tt-sidebar">
+
+    <!-- default sidebar -->
+    <div class="sidebar-overlay sidebar-default" id="sidebar-overlay-default">
+        <div id="sidebar-default">
+            <div class="logo">
+                <img src="/img/triptime_logo.svg" alt="Aiio Logo">
+                <p>Triptime AI is here to make travel planning effortless! We help you discover must-see places and exciting activities. We make your travel plan fast and easy. ✨</p>
+                <p>Whether it’s a weekend getaway or a long adventure, we offer personalized recommendations to make your trip unforgettable. We’ve thought of everything a traveler needs. 🏖️</p>
+                <p>Say goodbye to ordinary travel and hello to unforgettable experiences with Triptime.ai. If you’re ready to explore, let’s get started! 🌍</p>        
+            </div>
+        </div>
+    </div>
+
+    <!-- login sidebar -->
+    <div class="sidebar-overlay sidebar-login" id="sidebar-overlay-login">
+        <div id="sidebar-login">
+            <button class="sidebar-toggle" onclick="toggleSidebarLogin()">
+                <img src="/img/close-icon.svg" alt="Close">
+            </button>
+            <div class="sidebar_title">Account</div>
+            <div class="form-container">
+                <div id="login-form" class="form-content">
+                    <form>
+                        <div class="input-group">
+                            <label for="email">E-mail Address</label>
+                            <input type="email" id="email" placeholder="Enter your email address" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" placeholder="Enter your password" required>
+                        </div>
+                        <button type="submit" class="form-btn">Login</button>
+                    </form>
+                    <p class="or-divider">or</p>
+                    <div class="social-login">
+                        <button class="social-btn google">
+                            <img src="/img/google-icon.svg">Sign in with Google </button>
+                        <button class="social-btn apple">
+                            <img src="/img/apple-icon.svg">Sign in with Apple </button>
+                        <button class="social-btn facebook">
+                            <img src="/img/facebook-icon.svg">Sign in with Facebook </button>
+                    </div>
+                    <p class="switch-form">Don't have an account? <a href="#" onclick="switchToSignup()">Sign Up</a>
+                    </p>
+                </div>
+                <div id="signup-form" class="form-content hidden">
+                    <form>
+                        <div class="input-group">
+                            <label for="signup-email">E-mail Address</label>
+                            <input type="email" id="signup-email" placeholder="Enter your email address" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="signup-password">Password</label>
+                            <input type="password" id="signup-password" placeholder="Set your password" required>
+                        </div>
+                        <button type="submit" class="form-btn">Sign Up</button>
+                    </form>
+                    <p class="or-divider">or</p>
+                    <div class="social-login">
+                        <button class="social-btn google">
+                            <img src="/img/google-icon.svg"> Sign up with Google </button>
+                        <button class="social-btn apple">
+                            <img src="/img/apple-icon.svg"> Sign up with Apple </button>
+                        <button class="social-btn facebook">
+                            <img src="/img/facebook-icon.svg"> Sign up with Facebook </button>
+                    </div>
+                    <p class="switch-form">Already have an account? <a href="#" onclick="switchToLogin()">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- settings sidebar -->
+  <div class="sidebar-overlay sidebar-settings" id="sidebar-overlay-settings">
+    <div id="sidebar-settings">
+        <div class="sidebar_title">Settings <button class="sidebar-toggle" onclick="toggleSidebarSettings()">
+                <img src="/img/close-icon.svg" alt="Close">
+            </button>
+            <div class="mytripsall">
+                <div class="tripbox">
+                    <img class="user-image" src="/img/user/altan.jpg">
+                    <p class="name">Altan Demircan</p>
+                    <p class="date">Standard Member</p>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>Username</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p> altan </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>Contact Information</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>0 532 2054622</p>
+                            <p>altandemircan@gmail.com</p>
+                            <p>Antalya, Turkey</p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>Subscription</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>Member</p>
+                            <p>Premium</p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>Language</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>Turkish</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>Currency</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>TRY</p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>Feedback</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>We evaluate your complaints, requests, and suggestions and get back to you. For your opinions, please contact us at info@triptime.ai</p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header">
+                            <span>Logout</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- language sidebar -->
+  <!--  <div class="sidebar-overlay sidebar-language" id="sidebar-overlay-language">
+        <div id="sidebar-language">
+            <button class="sidebar-toggle" onclick="toggleSidebarLanguage()">
+                <img src="/img/close-icon.svg" alt="Close">
+            </button>                 
+            <div class="langs" id="langs">
+                <div class="sidebar_title">Select a language and continue</div>
+                <div class="language-selector">
+                    <a href="#" data-lang="en">English</a>
+                   <a href="#" data-lang="sq">Shqip</a>
+                    <a href="#" data-lang="ar">العربية</a>
+                    <a href="#" data-lang="hy">Հայերեն</a>
+                    <a href="#" data-lang="az">Azərbaycan</a>
+                    <a href="#" data-lang="eu">Euskara</a>
+                    <a href="#" data-lang="be">Беларуская</a>
+                    <a href="#" data-lang="bn">বাংলা</a>
+                    <a href="#" data-lang="bs">Bosanski</a>
+                    <a href="#" data-lang="bg">Български</a>
+                    <a href="#" data-lang="my">ဗမာစာ</a>
+                    <a href="#" data-lang="ca">Català</a>
+                    <a href="#" data-lang="zh">中文 (简体)</a>
+                    <a href="#" data-lang="zh-TW">中文 (繁體)</a>
+                    <a href="#" data-lang="hr">Hrvatski</a>
+                    <a href="#" data-lang="cs">Čeština</a>
+                    <a href="#" data-lang="da">Dansk</a>
+                    <a href="#" data-lang="nl">Nederlands</a>
+                    <a href="#" data-lang="et">Eesti</a>
+                    <a href="#" data-lang="fil">Filipino</a>
+                    <a href="#" data-lang="fi">Suomi</a>
+                    <a href="#" data-lang="fr">Français</a>
+                    <a href="#" data-lang="gl">Galego</a>
+                    <a href="#" data-lang="ka">ქართული</a>
+                    <a href="#" data-lang="de">Deutsch</a>
+                    <a href="#" data-lang="el">Ελληνικά</a>
+                    <a href="#" data-lang="gu">ગુજરાતી</a>
+                    <a href="#" data-lang="he">עברית</a>
+                    <a href="#" data-lang="hi">हिन्दी</a>
+                    <a href="#" data-lang="hu">Magyar</a>
+                    <a href="#" data-lang="is">Íslenska</a>
+                    <a href="#" data-lang="id">Bahasa Indonesia</a>
+                    <a href="#" data-lang="ga">Gaeilge</a>
+                    <a href="#" data-lang="it">Italiano</a>
+                    <a href="#" data-lang="ja">日本語</a>
+                    <a href="#" data-lang="kn">ಕನ್ನಡ</a>
+                    <a href="#" data-lang="kk">Қазақ</a>
+                    <a href="#" data-lang="km">ខ្មែរ</a>
+                    <a href="#" data-lang="ko">한국어</a>
+                    <a href="#" data-lang="lo">ລາວ</a>
+                    <a href="#" data-lang="lv">Latviešu</a>
+                    <a href="#" data-lang="lt">Lietuvių</a>
+                    <a href="#" data-lang="mk">Македонски</a>
+                    <a href="#" data-lang="ms">Bahasa Melayu</a>
+                    <a href="#" data-lang="ml">മലയാളം</a>
+                    <a href="#" data-lang="mr">मराठी</a>
+                    <a href="#" data-lang="mn">Монгол</a>
+                    <a href="#" data-lang="ne">नेपाली</a>
+                    <a href="#" data-lang="no">Norsk</a>
+                    <a href="#" data-lang="fa">فارسی</a>
+                    <a href="#" data-lang="pl">Polski</a>
+                    <a href="#" data-lang="pt">Português</a>
+                    <a href="#" data-lang="pa">ਪੰਜਾਬੀ</a>
+                    <a href="#" data-lang="ro">Română</a>
+                    <a href="#" data-lang="ru">Русский</a>
+                    <a href="#" data-lang="si">සිංහල</a>
+                    <a href="#" data-lang="sk">Slovenčina</a>
+                    <a href="#" data-lang="sl">Slovenščina</a>
+                    <a href="#" data-lang="es">Español</a>
+                    <a href="#" data-lang="sw">Kiswahili</a>
+                    <a href="#" data-lang="sv">Svenska</a>
+                    <a href="#" data-lang="ta">தமிழ்</a>
+                    <a href="#" data-lang="te">తెలుగు</a>
+                    <a href="#" data-lang="th">ไทย</a>
+                    <a href="#" data-lang="tr">Türkçe</a>
+                    <a href="#" data-lang="uk">Українська</a>
+                    <a href="#" data-lang="ur">اردو</a>
+                    <a href="#" data-lang="uz">Oʻzbek</a>
+                    <a href="#" data-lang="vi">Tiếng Việt</a>
+                    <a href="#" data-lang="xh">isiXhosa</a>
+                    <a href="#" data-lang="zu">isiZulu</a> 
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- gallery sidebar -->
+    <style>
+        video {
+                width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    transition: transform .3sease-in-out;
+        }
+    </style>
+    <div class="sidebar-overlay sidebar-gallery" id="sidebar-overlay-gallery">
+        <div id="sidebar-gallery">
+            <button class="sidebar-toggle" onclick="toggleSidebarGallery()">
+                <img src="/img/close-icon.svg" alt="Close">
+            </button>
+            <div class="sidebar_title">See travel themes</div>
+            <div class="gallery" id="gallery">
+                <div class="gallery-item">
+                  <video class="video" autoplay muted loop playsinline preload="metadata">
+                    <source src="/img/explore/explore_barcelona.mp4" type="video/mp4">
+Your browser does not support the video tag.                  </video>
+                  <div class="caption">
+                    <p>A 2-day museum and art tour in Barcelona</p>
+                  </div>
+                  <div class="add_theme">
+                    <img src="/img/addtochat_icon.svg">
+                  </div>
+                </div>
+                <div class="gallery-item">
+                    <img class="video" src="/img/explore/explore_cappadocia.jpg">
+                    <div class="caption">
+                        <p>A 3-day nature and balloon tour in Cappadocia</p>
+                    </div>
+                    <div class="add_theme">
+                        <img src="/img/addtochat_icon.svg">
+                    </div>
+                </div>
+                <div class="gallery-item">
+                    <img class="video" src="/img/explore/explore_bali.jpg">
+                    <div class="caption">
+                        <p>Discover: 3 days in Bali</p>
+                    </div>
+                    <div class="add_theme">
+                        <img src="/img/addtochat_icon.svg">
+                    </div>
+                </div>
+
+
+                <div class="gallery-item">
+                  <video class="video" autoplay muted loop playsinline preload="metadata">
+                    <source src="/img/explore/explore_petra.mp4" type="video/mp4">
+Your browser does not support the video tag.                  </video>
+                  <div class="caption">
+                    <p>Search hidden treasures in Petra, Wadi Musa</p>
+                  </div>
+                  <div class="add_theme">
+                    <img src="/img/addtochat_icon.svg">
+                  </div>
+                </div>  
+                
+
+
+
+                <div class="gallery-item">
+                  <video class="video" autoplay muted loop playsinline preload="metadata">
+                    <source src="/img/explore/explore_antalya.mp4" type="video/mp4">
+Your browser does not support the video tag.                  </video>
+                  <div class="caption">
+                    <p>Sea and summer! One word: Antalya</p>
+                  </div>
+                  <div class="add_theme">
+                    <img src="/img/addtochat_icon.svg">
+                  </div>
+                </div>  
+                
+                <div class="gallery-item">
+                    <img class="video" src="/img/explore/explore_rio.jpg">
+                    <div class="caption">
+                        <p>Enjoy the beaches in Rio for 3 days</p>
+                    </div>
+                    <div class="add_theme">
+                        <img src="/img/addtochat_icon.svg">
+                    </div>
+                </div>   
+                            
+                <div class="gallery-item">
+                    <img class="video" src="/img/explore/explore_istanbul.jpg">
+                    <div class="caption">
+                        <p>Explore the historic peninsula in Istanbul for 2 days</p>
+                    </div>
+                    <div class="add_theme">
+                        <img src="/img/addtochat_icon.svg">
+                    </div>
+                </div> 
+
+                <div class="gallery-item">
+                  <video class="video" autoplay muted loop playsinline preload="metadata">
+                    <source src="/img/explore/explore_amsterdam.mp4" type="video/mp4">
+Your browser does not support the video tag.                  </video>
+                  <div class="caption">
+                    <p>A 3-day city tour in Amsterdam</p>
+                  </div>
+                  <div class="add_theme">
+                    <img src="/img/addtochat_icon.svg">
+                  </div>
+                </div>
+
+                <div class="gallery-item">
+                  <video class="video" autoplay muted loop playsinline preload="metadata">
+                    <source src="/img/explore/explore_pattaya.mp4" type="video/mp4">
+Your browser does not support the video tag.                  </video>
+                  <div class="caption">
+                    <p>Explore Pattaya beaches</p>
+                  </div>
+                  <div class="add_theme">
+                    <img src="/img/addtochat_icon.svg">
+                  </div>
+                </div>               
+               
+              
+
+                <div class="gallery-item">
+                    <img class="video" src="/img/explore/explore_kaleici.jpg">
+                    <div class="caption">
+                        <p>A weekend getaway in Kaleiçi, Antalya</p>
+                    </div>
+                    <div class="add_theme">
+                        <img src="/img/addtochat_icon.svg">
+                    </div>
+                </div>
+
+                 
+
+                <div class="gallery-item">
+                    <img class="video" src="/img/explore/explore_lima.jpg">
+                    <div class="caption">
+                        <p>A short stopover in Lima, the capital of Peru</p>
+                    </div>
+                    <div class="add_theme">
+                        <img src="/img/addtochat_icon.svg">
+                    </div>
+                </div> 
+
+                   
+
+                <div class="gallery-item">
+                  <video class="video" autoplay muted loop playsinline preload="metadata">
+                    <source src="/img/explore/explore_mardin.mp4" type="video/mp4">
+Your browser does not support the video tag.                  </video>
+                  <div class="caption">
+                    <p>A 2-day historical journey in Mardin</p>
+                  </div>
+                  <div class="add_theme">
+                    <img src="/img/addtochat_icon.svg">
+                  </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- trip sidebar -->
+    <div class="sidebar-overlay sidebar-trip" id="sidebar-overlay-trip">
+        <div id="sidebar-trip">
+            <div class="sidebar_title">
+                <div id="trip_title">Trip Plan</div>                 
+                <button class="sidebar-toggle" onclick="toggleSidebarTrip()">
+                    <img src="/img/close-icon.svg" alt="Close">
+                </button>
+                <style type="text/css">
+                    #toggleIcon {
+                        cursor: pointer;
+                        position: absolute;
+                        right: 50px;
+                        top: 22px;
+                    }
+                </style>
+                <div id="cart">  
+                    <div id="cart-items" class="cart-container">
+                        <div id="cart">
+                            <!-- Cart items will be added here dynamically -->
+                        </div> 
+                    </div>
+                </div>
+                <div id="newchat" onclick="startNewChat()">New Chat</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- my trips sidebar -->
+    <div class="sidebar-overlay sidebar-mytrips" id="sidebar-overlay-mytrips">
+        <div id="sidebar-mytrips">
+            <div class="sidebar_title">My Trips
+                <button class="sidebar-toggle" onclick="toggleSidebarMyTrips()">
+                    <img src="/img/close-icon.svg" alt="Close">
+                </button>
+
+
+                <div id="my-trips-panel"></div>
+<span id="main-query"></span>
+
+
+
+
+
+                     
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .custom-accordion {
+            margin-bottom: 0 !important;
+            transition: background 0.3s ease-in-out;
+        }
+        .custom-accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 12px;
+            font-size: 16px;            
+            border-radius: 5px;
+            transition: background 0.3s ease-in-out;
+        }
+        .custom-icon {
+            font-size: 18px;
+            transition: transform 0.3s ease-in-out;
+        }
+        .custom-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            background: #fff;           
+            transition: max-height 0.5s ease-in-out, padding 0.3s ease-in-out;            
+            margin-bottom: 4px !important;
+            padding: 0px 0px !important;
+            font-size: 0.9rem !important;
+            font-weight: 400 !important;
+        }
+        .custom-accordion-content p {
+            margin-block-start: 0em;
+        }
+        .active .custom-accordion-content {
+            max-height: 400px;
+            padding: 4px 0;
+            font-weight: 400;
+            transition: background 0.3s ease-in-out;
+        }
+        .active .custom-icon {
+            transform: rotate(180deg);
+        }
+    </style>
+
+    <!-- privacy and terms -->
+    <div class="sidebar-overlay sidebar-privacyterms" id="sidebar-overlay-privacyterms">
+        <div id="sidebar-privacyterms">
+            <div class="sidebar_title">
+                Privacy and Terms
+                <button class="sidebar-toggle" onclick="toggleSidebarPrivacyTerms()">
+                    <img src="/img/close-icon.svg" alt="Close">
+                </button>
+                <div class="mytripsall">
+                    <div class="tripbox">
+                        <p class="date">1. PRIVACY AND DATA POLICY</p>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>1.1. Purpose and Scope</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    This Privacy and Data Policy outlines how Triptime AI ("platform," "we," or "project") collects, processes, stores, and protects the personal data of our users ("user" or "member") through our website, which provides AI-powered travel recommendations and trip list management services. Although we are not currently an official company, we have created this policy to ensure the transparent and reliable operation of our platform.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>1.2. Collected Data and Sources</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    Registration and Membership Process: Information such as name, surname, email, phone number, payment details, username, and password.
+                                </p>
+                                <p>
+                                    Travel Preferences and Interaction Data: Data such as the user's desired travel destination, travel duration, preferred activities, trip list data, IP address, browser, and device information.
+                                </p>
+                                <p>
+                                    Data Sources: Recommendations are generated using OpenAI's ChatGPT-4-mini model and data pulled from Google. Additionally, automatic data is collected using cookies and tracking technologies.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>1.3. Purposes of Data Usage</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    The collected data is used to provide personalized travel recommendations, improve service quality, manage membership and payment processes, conduct analysis, and ensure security.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>1.4. Cookies and Tracking Technologies</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    Our platform uses cookies to enhance site performance and personalize the user experience. You can manage your cookie settings through your browser; however, rejecting cookies may limit the functionality of some services.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>1.5. Data Security and Sharing</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    User data is stored with security measures to protect against unauthorized access, disclosure, modification, and destruction. Data may be shared with third-party service providers for payment processing, technical support, legal obligations, or in response to official requests. If necessary, data may be processed on international servers in compliance with legal regulations.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>1.6. User Rights</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    Users have the right to access, correct, delete, object to certain data processing activities, and request data portability regarding their personal data.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>1.7. Policy Changes</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    This policy may be updated due to legal requirements or service updates. All changes will be announced on our website and will take effect from the update date.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tripbox">
+                        <p class="date">2. TERMS OF USE AND AGREEMENTS</p>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.1. Introduction and Definitions</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    These Terms of Use govern the use of AI-powered travel planning services provided by Triptime AI ("platform," "we," or "project"). Although we are not currently an official company, our services are available to users. Definitions of user, member, and guest user apply within this scope.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.2. Service Description</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    Triptime AI provides personalized travel recommendations based on user inputs such as desired travel destination, travel duration, and preferred activities. Users can add, edit, delete, and share selected items from the recommendations in their trip lists.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.3. Membership, Pricing, and Subscription</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    Membership Types: Paid Membership (full access and all benefits) and Guest User (free, limited access).
+                                </p>
+                                <p>
+                                    Payment and Subscription Management: Paid membership is activated upon payment of the subscription fee. Payments are processed through secure third-party payment systems. Subscriptions renew monthly or annually; cancellation and refund terms are detailed on the relevant pages.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.4. User Responsibilities</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    Users are responsible for ensuring that the information they provide is accurate, complete, and up-to-date, maintaining account security, and using the service in compliance with the law.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.5. Use of Trip Lists and Personalized Services</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    The travel recommendations provided by the platform are for informational purposes only. Users can add, edit, delete, or share selected items from the recommendations in their trip lists. However, any responsibility arising from these actions lies solely with the user.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.6. Special Provisions for Paid Services</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    Paid membership is governed by a separate membership agreement between the user and the platform. This agreement details the scope of services, subscription terms, cancellation, renewal, and refund conditions. Paid members have full access to the platform's services and benefits; however, no guarantees are provided regarding the accuracy of the information.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.7. Disclaimer and Limitation of Liability</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    The content and travel recommendations provided by Triptime AI are for informational purposes only. Since the recommendations do not provide definitive results, users are responsible for supplementing this information with their own research and assuming any risks. The platform is not liable for any inaccuracies, errors, or delays.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.8. Intellectual Property and Copyright</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    All content, graphics, software, and other materials on the platform are owned by Triptime AI. Unauthorized copying, distribution, or modification will result in legal action.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="custom-accordion">
+                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                <span>2.9. Changes to Terms and Dispute Resolution</span>
+                                <span class="custom-icon">+</span>
+                            </div>
+                            <div class="custom-accordion-content">
+                                <p>
+                                    Triptime AI reserves the right to update these Terms of Use. Changes will be announced on the website and are considered accepted upon continued use of the service. In case of disputes, negotiation will be prioritized; otherwise, the relevant legal authorities will have jurisdiction.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="tripbox">
+                        <p class="date">Last updated: 26.02.2025</p>
+                        <p class="date">CONTACT AND SUPPORT</p>
+                        <p class="date">For questions about our privacy policy or requests regarding your data processing, please contact us:</p>
+                        <div>Email: info@triptime.ai</div>
+                        <div>Web: www.triptime.ai</div>
+                        <p class="date">
+                            <strong>Important Note:</strong>
+                            These texts have been prepared to provide transparent and reliable service to our users during our current phase (without official company status). Updates to the relevant legal texts will be made upon investment and formal company establishment.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+    </div>
+    <div id="main-welcome">
+        <section id="tt-welcome" class="content-section active" style="display: block;">
+    <div class="fixed-container">
+        <div class="cw">
+            <div class="circle-container">
+                <img id="circle-image" class="circle-video" srcset="/img/aioo.webp" type="image/webp">
+            </div>
+            <h1>Hello, <span>I'm Mira!</span> <img src="/img/mira-chat.gif"></h1>
+            <div id="welcome-content">
+                <p id="welcome-text">With Triptime.AI, I help you build travel routes and suggest places to discover. Get ready for an extraordinary holiday plan!</p>
+                <div style="gap: 10px; display: flex; flex-direction: row; align-items: center; justify-content: center;">
+                    <img src="https://cdn-icons-gif.flaticon.com/15747/15747340.gif" style="width: 40px; height: 40px;">
+                    ..............
+                    <img src="https://cdn-icons-gif.flaticon.com/18998/18998044.gif" style="width: 40px; height: 40px;">
+                    ..............
+                    <img src="https://cdn-icons-gif.flaticon.com/17270/17270663.gif" style="width: 40px; height: 40px;">
+                </div>
+            </div>
+        </div>
+
+
+
+
+    </div>
+</section>
+
+
+<section id="tt-about-us" class="content-section active" style="display: block;">
+    <div class="section-title">Triptime AI: AI-Powered Travel Planning Platform</div>
+    <p>Planning a trip, deciding on places to visit, and organizing activities can be a time-consuming and complex process. At Triptime AI, we make this process easy and enjoyable for you. With our AI-powered system, all you need to do is <span class="highlight">tell us your destination, the time you have for your trip, and the type of vacation you want</span>!</p>
+
+    <div class="section-title">What is Triptime AI?</div>
+    <p>Triptime AI is an AI-based platform that simplifies travel planning. It analyzes the options provided by Google and presents them to travelers. Going far beyond a standard trip plan, it responds to all a traveler's needs within seconds. This part of our system has already been completed, and we are actively working to provide the best travel combinations for our users. In the near future, you will see new features covering every stage of your travel planning.<br><br> Thanks to our AI-powered recommendations, you can make the most of your time and enjoy your trip without worrying about the details.<br><br>One of our top priorities is to enhance user experience. Our user-friendly interface allows you to effortlessly create your travel plan through our platform.</p>
+
+    <div class="section-title">Upcoming Features</div>
+    <p>Triptime AI will not just be a travel planning platform; it will evolve into a comprehensive system where you can find everything related to travel in one place.</p>
+    <ul class="list">
+        <li>
+            <span class="highlight">Hotel Booking System:</span> We will offer users the opportunity to book hotels at the best prices.
+        </li>
+        <li>
+            <span class="highlight">Flight Ticket Listings:</span> Users will be able to view the most suitable flight options for their travel routes.
+        </li>
+        <li>
+            <span class="highlight">Activities and Tours:</span> They will be able to easily book popular tourist activities and local experiences.
+        </li>
+        <li>
+            <span class="highlight">Car Rental Options:</span> We will provide car rental services to meet your travel needs.
+        </li>
+    </ul>
+
+    <div class="section-title">Vision</div>
+    <p>Triptime AI aims to go beyond being just a travel planning tool and become a <span class="highlight">travel ecosystem</span> that meets the needs of travelers.<br><br>We will continuously integrate new technologies and update our system to ensure the best user experience. Every day, we strive to offer a more advanced platform.<br> In the short term, we will further develop our AI algorithms to provide users with the most suitable travel plans. In the long term, we aim to make Triptime AI a globally used platform by millions of travelers.</p>
+
+    <div class="section-title">Open to Investment and Strategic Partnerships!</div>
+    <p>To achieve great goals, we are open to investment opportunities and collaborations that will bring our innovative ideas to life. We believe in the great potential of our project in the travel technology sector.<br><br>Triptime AI is promising and ready to start a new era in travel planning!<br><br>The travel industry is a rapidly digitalizing and continuously growing field. Triptime AI aims to take a leading role in this transformation. If you would like to be part of this journey, do not hesitate to contact us!</p>  <br>
+    <div class="footer">
+        <strong>Triptime AI</strong> | All Rights Reserved.
+    </div>
+</section>
+    </div>
+
+
+    <div id="main-chat">
+        <section id="tt-chat">
+
+        <div id="loading-panel" class="loading-panel" style="display:none;">
+          <div class="loading-spinner">
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+          </div>
+          <div class="loading-steps">
+<div class="loading-step anim" style="animation-delay: 0s;">Creating your plan...</div>
+<div class="loading-step anim" style="animation-delay: 1s;">Finding images...</div>
+<div class="loading-step anim" style="animation-delay: 2s;">Generating route...</div>
+<div class="loading-step static">Your trip plan will be ready shortly!</div>
+          </div>
+         </div>
+
+    <div id="chat-container">
+        <div id="chat-box">
+            <div id="typing-indicator" class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        <div class="input-wrapper">
+            <div class="chat-input-group">
+                <input type="text" id="user-input" placeholder="You can ask me anything about travel...">
+                <button id="send-button">
+                    <img src="/img/sendchat-icon.svg" alt="Send">
+                </button>
+            </div>
+            <div id="suggestions" class="tag-container"></div>
+        </div>
+    </div>
+</section>
+    </div> 
+
+    <!-- PDF & Canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="/js/pdf_download.js" defer></script>
+    <script src="/js/sidebar_change.js?v=10"></script>
+    <script src="/js/my_location.js"></script>
+    <script src="/js/local_storage.js"></script>
+    <script src="/js/calendar.js" defer></script>
+    <script src="/js/type_writer_animation.js?v=2" defer></script>
+    <script src="/js/share.js" defer></script>
+
+
+</html>

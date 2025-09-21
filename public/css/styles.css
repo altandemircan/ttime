@@ -1,0 +1,5768 @@
+body {
+    font-family: "Satoshi", Arial, sans-serif;
+    /* display: block; */
+    /* justify-content: center; */
+    align-items: center;
+    height: 100vh;
+    background-color: #ffffff;
+    color: #333;
+    flex-direction: column;
+    margin: 0 auto;
+}
+/* Target the scrollbar itself */
+::-webkit-scrollbar {
+    width: 6px; /* Adjust the width to make it thinner */
+    height: 6px; /* Adjust the height for horizontal scrollbar */
+}
+
+/* Target the track (background) of the scrollbar */
+::-webkit-scrollbar-track {
+    background-color: #f1f1f1;
+}
+
+/* Target the thumb (the draggable part) of the scrollbar */
+::-webkit-scrollbar-thumb {
+    background-color: #dfdfdf;
+    border-radius: 10px; /* Optional: makes the thumb rounded */
+}
+
+/* On hover, change the thumb color */
+::-webkit-scrollbar-thumb:hover {
+   background-color: #c9c9c9;
+}
+.content {
+    padding: 20px !important;
+}
+
+/* Başlıklar */
+.section-title {
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #2c3e50;
+    border-left: 4px solid #8a4af3;
+    padding-left: 12px;
+    font-size: 1.4rem;
+    margin: 30px 0;
+}
+
+/* Paragraflar */
+p {
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+/* Öne Çıkan Metin */
+.highlight {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-right: 4px;
+}
+
+/* Liste Stili */
+.list {
+    list-style: none;
+    padding: 0;
+}
+
+.list li {
+    background: #faf8ff;
+    margin: 10px 0;
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    align-content: flex-start;
+    flex-wrap: nowrap;
+    flex-direction: column;
+}
+li .highlight {
+    font-size: 1.2rem;
+}
+.navbar {
+    background: #0073e6;
+    padding: 15px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+#menu-count {
+    display: inline-block;
+    background: #ffffff;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    color: #8a4af3;
+    font-size: 0.6rem;
+    line-height: 19px;
+    position: absolute;
+    right: -10px;
+    top: 10px;
+    font-weight: 600;
+}
+
+.container {
+    max-width: 800px;
+    margin: 80px auto 20px;
+    padding: 20px;
+}
+
+.travel-item {
+    background: white;
+    margin-bottom: 0px;
+    border-radius: 8px;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+     touch-action: pan-y;
+
+}
+
+.travel-item a {
+    color: #0073e6;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.travel-item:last-child::after {
+    content: none;
+}
+.empty-placeholder::after {
+    content: "-";
+    display: inline-flex;
+    align-items: center;
+    border-left: 1px solid #ccc;
+    height: 16px;
+    margin-left: 16px;
+    font-size: 0.7rem;
+    font-weight: 400;
+    padding: 5px;
+    gap: 5px;
+    background-size: 10px 10px;
+    background-repeat: no-repeat;
+    background-position: right center;
+    padding-right: 16px;
+}
+#cart li {
+    display: block;
+}
+#cart-items {
+    margin-top: 20px;
+}
+
+.cart-item {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    position: relative;
+    font-size: 1rem;
+    font-weight: 500;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    flex-direction: row;
+    align-content: center;
+    align-items: center;
+
+}
+.cart-item p {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1e293b;
+    margin-block-start: 0em;
+    margin-block-end: 0em;
+}
+.cart-item img {
+    margin-right: 0px;
+    width: 60px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    float: left;
+}
+
+.remove-btn {
+    border: none;
+    background: rgb(255 255 255);
+    cursor: pointer;
+    position: absolute;
+    right: 0px;
+    top: 8px;
+    padding-inline: 0;
+}
+.remove-btn img {
+    width: 24px;
+    height: 24px;
+}
+
+.cw {
+    width: 100%;
+    display: grid;
+    max-width: 860px;
+    gap: 30px;
+    padding: 60px 10px;
+    margin: 0 auto;
+}
+/* Welcome kısmı */
+#tt-welcome {
+    text-align: center;
+    float: right;
+    width: calc(100% + 415px);
+}
+
+/* Circle Container */
+.circle-container {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    position: relative;
+    margin: 0 auto;
+}
+
+.circle-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    object-position: top;
+}
+
+/* Welcome Başlık ve Metin Ayarları */
+#tt-welcome img {
+    width: 110px;
+    height: auto;
+}
+
+#tt-welcome h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #333;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+    padding: 0;
+    margin: 0 auto;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+#tt-welcome h1 img {
+        width: 54px;
+    height: 54px;
+}
+#tt-welcome h1 span {
+    color: #8a4af3;
+}
+
+#tt-welcome p {
+    font-size: 1rem;
+    color: #777;
+    line-height: 1.6;
+    margin-top: 0;
+    padding: 0;
+    max-width: 540px;
+    margin: 0 auto;
+}
+
+@media (max-width:768px) {
+    #tt-welcome h1 {
+        font-size: 1.6rem;
+    }
+    .cw {
+        margin-top: -50px !important;
+        gap: 20px;
+    }
+    #tt-welcome p {
+        font-size: 0.95rem;
+    }
+    #tt-welcome img {
+        width: 100px;
+    }
+    .circle-container {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+
+/* Sadece content-section class'ına sahip section'lar için stil */
+.content-section {
+    opacity: 0;
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease, height 0.5s ease;
+    position: absolute; /* Use absolute positioning */
+    top: 100px; /* Position from the top */
+    width: 100%; /* Ensure full width */
+}
+
+.content-section.active {
+    opacity: 1;
+    visibility: visible;
+    height: auto;
+    overflow: visible;
+}
+
+/* Button Styling */
+.info-btn.active {
+    color: #8a4af3; /* Purple color for active */
+}
+
+.info-btn {
+    padding: 10px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #000000; /* Black color for inactive buttons */
+    background: #fff;
+}
+
+/*  Remove specific styles for these sections */
+#tt-about-us
+{   
+        padding: 20px;
+    overflow-y: scroll;
+    top: 50px;
+    bottom: 180px;
+    width: calc(100% - 455px);
+    background: #ffffff;
+}
+
+/* iframe için ekstra stil */
+#tt-about-us iframe {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: none;
+    width: 335px;
+    height: 225px;
+}
+
+/* Style for Welcome section to position it at the top */
+#tt-welcome {
+    position: relative; /* Allow normal flow for Welcome */
+    top: auto; /* Reset top positioning */  
+}
+
+
+/* Chat Ekranı */
+.chat {
+    width: 90%;
+    max-width: 800px;
+    border-radius: 12px;
+    padding: 20px;
+    position: fixed;
+    left: 50%;
+    bottom: 5%;
+    transform: translateX(-50%);
+    font-size: 1rem;
+    background: #fff;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+}
+
+/* Chat Box Container */
+#chat-container {
+    background-color: #ffffff;
+    /* width: 100% !important; */
+    width: calc(100% - 455px) !important;
+    display: flex !important
+;
+    left: 0;
+    position: fixed;
+    padding: 20px !important;
+    border-radius: 0 !important;
+    bottom: 0;
+    max-height: calc(100vh - 60px);
+    align-items: flex-end;
+    align-content: flex-end;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+/* Chat Box */
+/* Initial style for chat box */
+#chat-box {
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: calc(100vh - 100px);
+    padding-right: 20px;
+    margin-bottom: 10px;
+    border-radius: 15px;
+    transition: max-height 0.3s ease-in-out;
+    scrollbar-width: thin;
+    scrollbar-color: #02aee430 #f1f1f1;
+}
+/* Webkit için (Chrome, Edge, Safari) */
+#chat-box::-webkit-scrollbar {
+    width: 8px;
+    margin-right: 10px; /* Scrollbar'ı sağa kaydır */
+}
+
+#chat-box::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#chat-box::-webkit-scrollbar-thumb {
+    background-color: #02aee4;
+    border-radius: 10px;
+    border: 2px solid #f1f1f1;
+    margin-right: 10px;
+}
+/* Expanded style for chat box */
+#chat-box.expanded {
+    max-height: 0vh; /* Adjust the value as needed */
+}
+
+/* Mesajlar */
+.message {
+    display: flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin: 10px 0;
+    line-height: 1.4;
+    background: #ffffff;
+
+    position: relative;
+    width: max-content;
+    font-size: 0.9rem;
+}
+
+.message img, .address img, .description img, .opening_hours img {
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+}
+.web-link {
+    display: contents;
+}
+
+.info .title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    justify-content: space-between;
+}
+
+.info .description, .info .address, .info .opening_hours {
+    display: -webkit-box;
+    max-width: 335px;
+    
+    -webkit-box-orient: vertical;
+    overflow: hidden;   
+    align-items: baseline;
+        overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+
+}
+
+.info .address {
+    padding: 8px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+.cats {
+    padding: 4px 10px;
+    width: fit-content;
+    height: 20px;
+    text-align: center;
+    border-radius: 6px;
+    color: #8a4af3;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 20px;
+    right: 60px;
+    top: 199px;
+    z-index: 12321;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    background: #fff;
+}
+
+
+.cats1 img,
+.cats2 img,
+.cats3 img,
+.cats4 img,
+.cats-note img,
+.cats-other img,
+.cats-place img {
+    width: 14px !important;
+    margin-right: 6px;
+}
+
+/* Bot Mesajı */
+.bot-message {
+    color: #333;
+}
+
+.bot-message p {
+    font-size: 1.1rem;
+    color: #555;
+}
+
+.bot-message ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: inline-block;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+/* User Mesajı */
+.user-message {
+    background: rgb(233 243 248 / 90%);
+
+    align-self: flex-end;
+    border-radius: 20px;
+    margin-left: 60px;
+    position: relative;
+}
+
+.profile-img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+.survey-options {
+    display: flex;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+.survey-results {
+    display: block;
+    padding: 0;
+    text-align: left;
+    width: auto;
+}
+
+.trip-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+}
+.other_trips {
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.survey-results p {
+    font-size: 0.95rem !important;
+    color: #555 !important;
+    margin: 10px 0 !important;
+}
+
+.survey-results ul {
+    list-style: none;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.survey-results li {
+    border-radius: 10px;
+    display: grid;
+    width: fit-content;
+
+    align-items: center;
+    transition: transform 0.3s ease;
+    width: 100%;
+}
+
+.survey-results li a:hover {
+    color: #0056b3;
+}
+
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    flex: 1;
+}
+.tag-container::-webkit-scrollbar {
+    width: 0; /* Hide the scrollbar */
+    height: 0;
+}
+
+/* Optional: Style the scrollbar track */
+.tag-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+/* Optional: Style the scrollbar thumb */
+.tag-container::-webkit-scrollbar-thumb {
+    background: #888;
+}
+
+.tag-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+.tag {
+    background-color: #8a4af3;
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 15px;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.fixed-container {
+    bottom: 0;
+    background-color: #ffffff;
+    height: calc(100vh - 40px) !important;
+    align-items: baseline;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0 auto;
+    align-content: center;
+    max-width: 1200px;
+}
+
+.input-wrapper {
+    width: -webkit-fill-available;
+    position: relative;
+    gap: 10px;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    position: relative;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 10px;
+    padding-inline: 0;
+    gap: 10px;
+    border: 1px solid #ddd;
+    transition: all 0.2s ease-in-out;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+.input-wrapper:focus-within {
+    border: 1px solid #8a4af3;
+}
+.input-wrapper .chat-input-group input {
+    padding: 10px 0px;
+    border-radius: 30px;
+    color: #000000;
+    outline: none;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    background: #ffffff;
+    font-size: 0.9rem;
+    width: inherit;
+
+}
+
+.chat-input-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: calc(100% - 20px);
+    justify-content: space-between;
+}
+#suggestions {
+    width: calc(100% - 20px);
+    padding: 0px 0px;
+    margin-top: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scroll-behavior: smooth;
+    padding-top: 1px;
+    gap: 5px;
+}
+
+#send-button {
+    border: none;
+    height: 24px;
+    width: 24px;
+    border-radius: 4px;
+    padding: 4px;
+    cursor: pointer;
+    background: #faf8ff;
+}
+
+#send-button:hover {
+    background-color: aliceblue;
+}
+#send-button img {
+    width: 16px;
+    height: 16px;
+}
+.category-area-option {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: rgb(250 247 255 / 90%);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.category-area-option:hover {
+    background-color: rgb(255 255 255 / 20%);
+    border: 1px solid #8a4af3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* Hover shadow effect */
+}
+
+.category-area-option img {
+    width: 20px !important;
+    height: 20px !important;
+    margin-right: 6px !important;
+}
+
+.category-area-option:active {
+    background-color: rgba(
+        150,
+        150,
+        150,
+        0.2
+    ); /* Slightly darker when clicked */
+}
+
+/* İlk dalga (daha küçük ve hızlı) */
+.circle-container::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid rgba(173, 216, 230, 0.6); /* Açık mavi renk */
+    animation: pulse1 4.5s infinite ease-out;
+    pointer-events: none; /* Etkileşimi engeller */
+    transform: translate(-50%, -50%); /* Merkeze yerleştir */
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+
+/* İkinci dalga (daha büyük ve yavaş) */
+.circle-container::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid rgba(135, 206, 250, 0.4); /* Daha açık mavi */
+    animation: pulse2 4.5s infinite ease-out;
+    pointer-events: none; /* Etkileşimi engeller */
+    transform: translate(-50%, -50%); /* Merkeze yerleştir */
+
+}
+
+@keyframes pulse1 {
+    0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.6;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0.4;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.6);
+        opacity: 0;
+    }
+}
+
+@keyframes pulse2 {
+    0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0.2;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
+    }
+}
+
+/* header */
+.fixed-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: calc(100% - 60px);
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    padding: 10px 30px;
+    height: 40px;
+    z-index: 1100;
+    transition: all 0.3s ease;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    max-width: 100%;
+}
+
+.logo img {
+    height: 24px;
+    cursor: pointer;
+   
+}
+
+.right-menu {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-menu,
+.profile-menu,
+.settings-menu,
+.hamburger-menu,
+.mytrips-menu,
+.privacyterms-menu,
+.language-menu,
+.theme-menu {
+    position: relative;
+}
+
+.chat-btn,
+.profile-btn,
+.settings-btn,
+.hamburger-btn,
+.mytrips-btn,
+.privacyterms-btn,
+.language-btn,
+.theme-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.3s ease;
+}
+
+
+
+.chat-btn:hover,
+.hamburger-btn:hover,
+.theme-btn:hover {
+    transform: scale(1.1);
+}
+
+.chat-btn img,
+.profile-btn img,
+.settings-btn img,
+.mytrips-btn img,
+.privacyterms-btn img,
+.language-btn img,
+.theme-btn img,
+.info-btn img {
+    width: 24px;
+    height: 24px;
+}
+.hamburger-btn img {
+    width: 20px;
+    height: 20px;
+}
+.hamburger-menu {
+    z-index: 1400;
+    background: #8a4af3;
+    padding: 10px;
+    border: 1px solid #ffff;
+    border-radius: 50px;
+    width: 20px;
+    height: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    margin: 0px;
+}
+.hamburger-btn img {
+    filter: invert(100%) sepia(97%) saturate(0%) hue-rotate(67deg)
+        brightness(104%) contrast(106%);
+}
+
+.chat-dropdown,
+.profile-dropdown,
+.hamburger-dropdown,
+.language-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    list-style: none;
+    padding: 10px;
+    margin: 0;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.chat-menu:hover .chat-dropdown,
+.profile-menu:hover .profile-dropdown,
+.hamburger-menu:hover .hamburger-dropdown,
+.language-menu:hover .language-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.chat-dropdown li,
+.profile-dropdown li,
+.hamburger-dropdown li,
+.language-dropdown li {
+    padding: 12px 15px;
+    transition: background 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.chat-dropdown a,
+.profile-dropdown a,
+.hamburger-dropdown a,
+.language-dropdown a {
+    text-decoration: none;
+    color: #333;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.chat-dropdown li:hover,
+.profile-dropdown li:hover,
+.hamburger-dropdown li:hover,
+.language-dropdown li:hover {
+    background: #f7f7f7;
+    border-radius: 8px;
+}
+/* Hamburger menüsünde boşluğu engellemek için */
+.hamburger-dropdown li {
+    padding: 12px 15px; /* Profil menüsündeki ile aynı padding */
+    display: flex;
+    align-items: center;
+}
+
+/* Hamburger Dropdown menüsündeki li elemanlarının padding ve margin değerlerini sıfırlayalım */
+.hamburger-dropdown ul {
+    margin: 0;
+    padding: 0;
+}
+
+.hamburger-dropdown li {
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    white-space: nowrap; /* Yazının ikinci satıra düşmesini engeller */
+}
+
+.hamburger-dropdown a {
+    text-decoration: none;
+    color: #333;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    white-space: nowrap; /* Yazının ikinci satıra düşmesini engeller */
+}
+
+.hamburger-dropdown {
+    padding: 0; /* Menüde ekstra boşluk olmaması için */
+    margin: 0;
+}
+
+/* Profil menüsü ile uyumlu hover efekti */
+.chat-dropdown li:hover,
+.profile-dropdown li:hover,
+.hamburger-dropdown li:hover,
+.language-dropdown li:hover {
+    background: #f7f7f7;
+    border-radius: 8px;
+}
+
+
+.chat-menu {
+    position: fixed;
+    bottom: 130px;
+    right: 450px;
+    z-index: 504;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    background: #eaf5f9;
+    padding: 8px;
+}
+
+.chat-btn img {
+    width: 24px;
+    height: 24px;
+}
+
+@media (max-width:768px) {
+    .chat-menu {
+    right: 30px;
+    }
+}
+
+
+
+@media (max-width: 768px) {
+    .right-menu {
+        gap: 8px;
+    }
+}
+
+
+
+
+.visual {
+    position: relative;
+    width: fit-content;
+    float: left;
+}
+
+.visual a {
+    position: absolute;
+    right: 12px;
+    bottom: 8px;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.slider-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    position: absolute;
+    top: 26%;
+    left: 10px;
+    right: 10px;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.slider-nav button {
+    background: rgb(2 174 228 / 40%);
+    color: white;
+    border: none;
+    padding: 8px 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    pointer-events: all;
+    font-size: 16px;
+    line-height: 1;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slider-nav button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.visual {
+    position: relative;
+    width: fit-content;
+    float: left;
+    display: flex;
+}
+
+.visual a {
+    position: absolute;
+    right: 6px;
+    bottom: 8px;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.info {
+    float: left;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    grid-area: text;
+    font-size: 0.95rem;
+    position: relative;
+}
+
+.ac_map {
+    display: inline-block;
+    width: 100%;
+}
+
+.ac_map label {
+    background: #ffffff;
+}
+.map-container {
+       background: #ffffff;
+    border-radius: 10px;
+}
+.gmap-plan {
+    width: 100%;
+    height: 285px;
+   
+    border-radius: 18px;
+    border: none;
+}
+.gmap-chat {
+    width: 335px;
+    height: 285px;
+    
+    border-radius: 18px 18px 0 0;
+    border: none;
+}
+.g
+
+.change {
+    display: flex; 
+    flex-direction: row; 
+    align-items: center;
+    gap: 6px;
+}
+
+.change span {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    padding: 6px;
+    color: #4b4b4b;
+    border-radius: 4px;   
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    background: #ffffff70;
+    border-radius: 16px;
+}
+
+.change span img {
+    height: 16px ;
+    width: 16px;
+    border-radius: 0 !important;
+    margin-right: 0px !important;
+}
+.web-link img {
+    width: 22px !important;
+    height: 22px !important;
+}
+
+.visual img {
+    width: 335px !important;
+    height: 285px !important;    
+    border-radius: 15px 15px 0 0;
+    object-fit: cover;
+    margin-right: 0px !important;
+}
+
+.item_action {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 12px;
+    background: #c9e6ef;
+    grid-area: stats;
+    display: flex;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+@media (max-width: 768px) {
+
+  .info {
+    width: 303px;
+  }
+  .visual {
+    width: inherit !important;
+  }
+ 
+ .message {
+    width: fit-content;
+ } 
+}
+
+
+@media (max-width: 768px) {
+    body {
+        overflow: scroll;
+    }
+    #chat-container {
+        position: fixed;
+        border-radius: 0;
+        bottom: 0;
+        width: calc(100% - 40px) !important;
+    }
+
+    #tt-welcome {
+        width: calc(100% - 40px) !important;
+        padding: 20px;
+    }
+
+    .cw {
+        padding: 0;
+        margin-top: 0;
+     
+    }
+    .welcome h1 {
+        font-size: 1.8rem;
+        margin-top: 10px;
+    }
+    .welcome p {
+        font-size: 0.95rem;
+        padding: 0 20px;
+    }
+    #chat-box {
+        padding-right: 0;
+    }
+
+    .info div img {
+        height: 24px;
+        max-width: 24px;
+    }
+    .logo img {
+        height: 18px;
+       
+    }
+    /* header */
+    .fixed-header {
+        width: calc(100% - 40px);
+
+        padding: 10px 20px;
+    }
+
+    #user-input {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .gallery {
+        display: grid;
+
+        max-width: 1200px;
+        height: 100%;
+        gap: 20px;
+    }
+
+    .gallery-item {
+        width: 29% !important;
+    }
+    .gallery-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+        transition: transform 0.3s ease-in-out;
+    }
+}
+@media (min-width: 375px) and (max-width: 576px) {
+    .gallery-item {
+        width: 45% !important;
+    }
+}
+
+@media (max-width: 375px) {
+    .gallery-item {
+        width: 100% !important;
+    }
+}
+
+.sidebar_title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin: 1px 0px;
+    padding-bottom: 20px;
+}
+
+.other_trips .sidebar_title {
+    padding-bottom: 0px;
+}
+
+.other_trips ul li {
+    display: block;
+}
+.langmenu {
+    height: fit-content;
+    width: calc(100% - 80px);
+    padding: 40px;
+}
+.language-selector {
+    display: flex;
+    width: 100%;
+    gap: 30px;
+    border-radius: 10px;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    flex-direction: row;
+    align-items: center;
+    align-content: center;
+    padding-bottom: 60px;
+}
+.language-selector a {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    text-decoration: none;
+    color: #333;
+    border: 1px solid #ffffff;
+    background: #f9f9f9;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    width: 125px;
+    object-fit: cover;
+    max-width: 140px;
+    flex-wrap: wrap;
+    flex-direction: row;
+    font-size: 0.9rem;
+}
+.language-selector a:hover {
+    background: #edf3f4;
+}
+
+/* Sidebar Default */
+.sidebar-default {
+    width: 375px;
+    scrollbar-width: thin;
+    scrollbar-color: #8a4af3 #f1f1f1;
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    right: 0;
+    height: 100%;
+    padding: 20px;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+    background: #fff;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    right: -415px;
+    transition: 0.3s ease;
+    right: 0;
+}
+.sidebar-default.open {
+    right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+
+/* Sidebar Gallery */
+.sidebar-gallery {
+    width: 375px;
+    scrollbar-width: thin;
+    scrollbar-color: #8a4af3 #f1f1f1;
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    right: 0;
+    height: 100%;
+    padding: 20px;
+    z-index: 1000;
+    background: #fff;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    right: -415px;
+    transition: 0.3s ease;
+}
+
+.sidebar-gallery.open {
+    right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+
+/* Sidebar Language */
+.sidebar-language {
+    width: 375px;
+    scrollbar-width: thin;
+    scrollbar-color: #8a4af3 #f1f1f1;
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    right: 0;
+    height: 100%;
+    padding: 20px;
+    z-index: 1000;
+    background: #fff;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    right: -415px;
+    transition: 0.3s ease;
+}
+.sidebar-language.open {
+    right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+
+/* Sidebar Login */
+.sidebar-login {
+    width: 375px;
+    scrollbar-width: thin;
+    scrollbar-color: #8a4af3 #f1f1f1;
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    right: 0;
+    height: 100%;
+    padding: 20px;
+    z-index: 1000;
+    background: #fff;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    right: -415px;
+    transition: 0.3s ease;
+}
+.sidebar-login.open {
+    right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+/* Sidebar My Trips */
+.sidebar-settings {
+  width: 375px;
+  scrollbar-width: thin;
+  scrollbar-color: #8a4af3 #f1f1f1;
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  padding: 20px;
+  z-index: 1000;
+  background: #fff;
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  right: -415px;
+  transition: 0.3s ease;
+}
+.sidebar-settings.open {
+  right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+/* Sidebar Trip */
+.sidebar-trip {
+    width: 375px;
+    scrollbar-width: thin;
+    scrollbar-color: #8a4af3 #f1f1f1;
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    right: 0;
+    height: 100%;
+    padding: 20px;
+    z-index: 1000;
+    background: #fff;
+    overflow-y: auto;
+    max-height: calc(100vh - 100px);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    right: -415px;
+    transition: 0.3s ease;
+}
+.sidebar-trip.open {
+    right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+/* Sidebar My Trips */
+.sidebar-mytrips {
+  width: 375px;
+  scrollbar-width: thin;
+  scrollbar-color: #8a4af3 #f1f1f1;
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  padding: 20px;
+  z-index: 1000;
+  background: #fff;
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  right: -415px;
+  transition: 0.3s ease;
+}
+.sidebar-mytrips.open {
+  right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+/* Sidebar Privacy and Terms */
+.sidebar-privacyterms {
+  width: 375px;
+  scrollbar-width: thin;
+  scrollbar-color: #8a4af3 #f1f1f1;
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  padding: 20px;
+  z-index: 1000;
+  background: #fff;
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  right: -415px;
+  transition: 0.3s ease;
+}
+.sidebar-privacyterms.open {
+  right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+@media (max-width: 768px) {
+    .sidebar-gallery,
+    .sidebar-language,
+    .sidebar-trip,
+    .sidebar-mytrips,
+    .sidebar-privacyterms,
+    .sidebar-login,
+    .sidebar-settings {
+        width: calc(0px);
+    }
+
+    .sidebar-gallery.open,
+    .sidebar-language.open,
+    .sidebar-mytrips.open,
+    .sidebar-privacyterms.open,
+    .sidebar-trip.open,
+    .sidebar-login.open,
+    .sidebar-settings.open {
+        width: calc(100% - 40px);
+        right: 0;
+    }
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle {
+    border: none;
+    background: rgb(255 255 255);
+    cursor: pointer;
+    top: 20px;
+    position: absolute;
+    right: 16px;
+}
+.sidebar-toggle img {
+    width: 20px;
+    height: 20px;
+    padding: 2px 0;
+}
+
+/* Webkit (Chrome, Edge, Safari) için scrollbar */
+.sidebar::-webkit-scrollbar {
+    width: 6px; /* Scrollbar genişliği */
+}
+
+/* Scrollbar track (arka plan) */
+.sidebar::-webkit-scrollbar-track {
+    background: transparent; /* Arka planı görünmez yap */
+}
+
+/* Scrollbar thumb (kaydırma çubuğu) */
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3); /* Hafif şeffaf koyu scrollbar */
+    border-radius: 6px; /* Yuvarlak hatlar */
+    transition: background 0.3s ease;
+}
+
+/* Hover efekti */
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5); /* Üzerine gelince daha belirgin */
+}
+
+.gallery {
+    display: flex;
+    gap: 30px;
+    justify-content: space-around;
+    align-content: space-around;
+    align-items: baseline;
+    flex-wrap: wrap;
+    flex-direction: row;
+    overflow: visible;
+    margin-bottom: 30px;
+}
+
+.gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;    
+    object-fit: cover;
+    width: 167px;   
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    transition: transform .3sease-in-out;
+}
+
+.caption {
+   background-color: rgb(255 255 255 / 97%);
+    color: #212020;
+    padding: 10px;
+    border-radius: 0;
+    text-align: left;
+    /* border-radius: 0 0 6px 6px; */
+    padding: 0;
+}
+
+.caption p {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+
+.add_theme {
+   top: 10px;
+    right: 10px;
+    position: absolute;
+    cursor: pointer;
+}
+
+.add_theme img {
+      width: 16px;
+    height: 16px;
+    cursor: pointer;
+    /* filter: invert(99%) sepia(99%) saturate(2%) hue-rotate(281deg) brightness(111%) contrast(100%); */
+    background: #ffffff;
+    padding: 4px 6px;
+}
+
+/* Form Konteyner */
+.form-container {
+    text-align: center;
+    padding: 20px;
+    background: #f9f9f9;
+
+    border-radius: 20px;
+}
+
+/* Form İçeriği */
+.form-content {
+    display: block;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.hidden {
+    display: none;
+}
+
+#login-form h2,
+#signup-form h2 {
+    text-align: left;
+}
+
+/* Input Grupları */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.input-group label {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.input-group input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    width: -webkit-fill-available;
+}
+
+/* Buton */
+.form-btn {
+    width: 100%;
+    padding: 10px;
+    background: #8a4af3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.form-btn:hover {
+    background: #0056b3;
+}
+
+/* Sosyal Medya Giriş */
+.social-login {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.social-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.social-btn img {
+    width: 18px;
+    height: 18px;
+}
+
+/* Geçiş Linkleri */
+.switch-form {
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.switch-form a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.switch-form a:hover {
+    text-decoration: underline;
+}
+
+
+.addtotrip {
+    width: 16px !important;
+    height: 16px !important;
+    background: #ffffff;
+    border-radius: 4px;
+    border-radius: 20px;
+    padding: 4px;
+}
+.addtotrip img {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 auto;
+    border-radius: 20px;
+     transition: transform 0.3s ease;
+}
+.addtotrip:active img {
+    transform: scale(1.2);
+}
+
+/* Başlangıçta gizli olacak */
+.sidebar-overlay.sidebar-default {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 375px;
+    height: 100%;
+    /* background-color: #f4f7fa; */
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 500;
+    /* transform: translateX(100%); */
+    visibility: visible;
+    opacity: 1;
+    transition: transform 0.5s ease, opacity 0.5s ease, visibility 0.5s;
+}
+
+/* Açıldığında animasyonla gelecek ve sabit kalacak */
+.sidebar-overlay.sidebar-default.open {
+    animation: slideIn 0.5s ease forwards;
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Açılma animasyonu (sadece 1 kez çalışır ve kalır) */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Sidebar içeriğini dikey ve yatay ortala */
+#sidebar-default {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    text-align: center;
+    padding: 20px;
+    text-align: left;
+    padding-top: 0px;
+}
+
+/* Başlık */
+#sidebar-default h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 15px;
+    text-align: left;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-block-start: 0;
+}
+#sidebar-default h3 span {
+    color: #8a4af3;
+}
+/* Paragraf içeriği */
+#sidebar-default p {
+    font-size: 1em;
+    color: #1e293b;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+.empty-placeholder .placeholder-content {
+    opacity: 0.7;
+    background: #f7f7f7;
+    color: #333;
+    border: 1px dashed #000000;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+    position: relative;
+    font-size: 1rem;
+    font-weight: 400;
+
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.placeholder-icon {
+    width: 20px;
+    height: 20px;
+    filter: grayscale(100%); /* İkonu gri tonlamalı yap */
+}
+
+.save-plan-btn {
+    padding: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+    margin: 0px;
+    width: 100%;
+    font-weight: 600;
+    margin-top: 20px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ddd;
+    border-radius: 50px;
+    background: #ffffffe6;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #8a4af3;
+}
+
+.empty-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 150px;
+    text-align: center;
+    gap: 10px;
+    /* color: #777; */
+    /* font-style: italic; */
+    border: 1px dashed #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    flex-direction: column;
+    font-weight: 400;
+}
+
+.empty-message a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar-default {
+        display: none;
+    }
+}
+
+.menu-container {
+    position: fixed;
+    top: 70px;
+    left: 20px;
+    display: flex;
+    gap: 0px;
+    z-index: 5005;
+    box-shadow: 1px 0 10px rgba(0, 0, 0, 0.05);
+    border-radius: 20px;
+    background: #fff;
+    padding: 0 10px;
+}
+
+
+.typing-indicator {
+    display: none; /* Başlangıçta gizli */
+    background-color: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 30px;
+    width: 40px;
+    margin: 0px 0;
+}
+
+.typing-indicator span {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    background-color: #8a4af3;
+    border-radius: 50%;
+    margin: 0 3px;
+    animation: typing 1s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.message {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-box {
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+.message {
+    transition: all 0.5s ease;
+}
+
+.menuBox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #faf8ff;
+    border-radius: 30px;
+    /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); */
+    border: 1px solid #e1e1e1;
+    padding: 8px 8px 6px 6px;
+    height: 16px;
+}
+
+.userIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.toggleMenu {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    cursor: pointer;
+    font-size: 15px;
+    transition: 0.3s;
+    flex-wrap: nowrap;
+}
+
+.toggleMenu:hover {
+    opacity: 0.7;
+}
+
+.dropDown {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    display: none;
+    flex-direction: column;
+    min-width: 200px;
+    overflow: hidden;
+}
+
+.dropDown a {
+    padding: 12px 15px;
+    text-decoration: none;
+    color: #333;
+    display: block;
+    transition: background 0.3s;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.dropDown a:hover {
+    background: #f1f1f1;
+}
+
+.show {
+    display: flex;
+}
+.tt-chat-hidden {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.tt-chat-visible {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mytripsall {
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+}
+.mytripsall hr {
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #ddd;
+    margin: 1em 0;
+    padding: 0;
+}
+.tripbox a {
+  cursor: pointer;
+ 
+}
+.tripbox .date {  
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #959595;
+}
+
+.tripbox div {
+    margin-bottom: 10px;
+    padding: 2px 0px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+#sidebar-overlay-settings .name {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-block-start: 1em;
+    line-height: 20px;
+    }
+
+#sidebar-overlay-settings .tripbox img {
+    border-radius: 50%;
+    margin: 0 auto;
+    margin-top: 20px;
+    text-align: center;
+    display: flex;
+    background: #eaf5f9;
+    padding: 10px;
+  }
+
+.user-icon {
+  width: 24px;
+  height: 24px;
+}
+
+
+
+
+.cat-icon {
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 0px !important;
+    margin-right: 0px !important;
+}
+
+.category-item {
+    margin-bottom: 15px;
+}
+
+.category-item h4 {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #333;
+}
+
+.category-item ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.category-item ul li {
+    padding: 8px;
+    margin: 5px 0;
+    background-color: #ffffff;
+    border-radius: 5px;
+    cursor: pointer;
+    color: #000;
+    font-size: 1rem;
+    font-weight: 500;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+
+.category-item ul li:hover {
+    box-shadow: rgb(149 157 165 / 60%) 0px 8px 24px;
+}
+
+.premium-category-bg {
+    background-color: #fffff !important; /* Change to your desired background color */
+}
+.premium-category-bg:hover {   
+    box-shadow: rgb(149 157 165 / 60%) 0px 8px 24px;
+}
+
+
+
+.close-btn {
+    position: absolute;
+    top: 12px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 1000; /* Diğer içeriklerin üzerinde olması için */
+}
+
+.close-btn:hover {
+    background-color: #cc0000;
+}
+.suggestion {
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.suggestion:hover {
+    background-color: #e0e0e0;
+}
+
+.empty-placeholder {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 14px;
+    color: #333;
+}
+
+.placeholder-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.placeholder-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+.day-header {
+       
+    background: #eeefef;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #eeefef;
+    color: #333333;
+    padding: 10px 10px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-block-end: 0rem;
+}
+/* Drag and Drop Styles */
+
+.day-list li {
+    padding: 6px;
+    margin: 0px;
+    margin-bottom: 0px;
+    background-color: #fff;
+    cursor: grab;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 0;
+    width: 98%;
+    margin: 1% 0;
+   
+}
+
+.day-list li:hover {
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05), 0 3px 6px rgba(0, 0, 0, 0.05); /* Enhance shadow on hover */
+    transform: translateY(-2px); /* Slightly lift the item on hover */
+}
+
+.day-list li.dragging {
+    opacity: 0.7;
+    background-color: #f0f8ff; /* Highlight the dragging item */
+    transform: scale(1.05); /* Slightly scale up the dragging item */
+    cursor: grabbing; /* Change cursor to "grabbing" */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1), 0 6px 6px rgba(0, 0, 0, 0.1); /* Increase shadow when dragging */
+}
+
+.drop-zone {
+    background-color: #f0f0f0;
+    border: 2px dashed #bbb;
+    padding: 10px;
+}
+
+.day-list li.drop-target {
+    background-color: #e0f7fa; /* Highlight the drop target */
+    border-color: #26c6da; /* Change border color */
+}
+/* Insertion Placeholder */
+.day-list .insertion-placeholder {
+    height: 5px;
+    background-color: #8a4af3; /* Green color for the placeholder */
+    margin-bottom: 5px;
+    transition: all 0.2s ease;
+}
+
+
+
+
+
+
+
+
+
+
+
+.download-pdf-btn {
+    background-color: #2196F3; /* Mavi renk */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.download-pdf-btn:hover {
+    background-color: #1976D2; /* Daha koyu mavi */
+}
+
+.add-more-btn {
+    padding: 10px;  
+    margin-top: 20px;
+    width: 100%;
+    font-weight: 600; 
+    align-items: center;
+    justify-content: center;
+        border: 1px solid #8a4af333;
+    border-radius: 8px;
+    background: #ffffffe6;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #8a4af3;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+
+.drag-icon {
+        margin-right: 0px !important;
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 0 !important;
+    object-fit: contain !important;
+    float: left !important;
+}
+
+
+.dragging {
+    opacity: 0.5; /* Make the dragged item semi-transparent */
+}
+
+.insertion-placeholder {
+    height: 2px;
+    background-color: #000;
+    margin: 5px 0;
+}
+
+.travel-item {
+    transition: all 0.3s ease; /* Smooth transition for reordering */
+}
+
+
+.category-icon {
+    width: 16px !important;
+    height: 16px !important;
+    margin-right: 0px !important;
+    vertical-align: middle;
+    border-radius: 0 !important;
+  }
+.insertion-placeholder {
+    transition: height 0.2s ease, margin-bottom 0.2s ease; /* Add transition for smooth effect */
+    /* Other styles */
+}
+
+
+.travel-item.dragging {
+    transform: translate(0, 0);
+    transition: transform 0.1s ease;
+}
+.travel-item.dragging {
+    z-index: 1000;
+}
+.insertion-placeholder {
+    height: 2px;
+    background-color: #007bff;
+    margin: 5px 0;
+    transition: all 0.3s ease;
+}
+
+.day-list {
+    list-style-type: none;
+    padding: 0px;
+    transition: all 0.5s ease;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    width: 98%;
+    padding: 1%;
+    margin-block-end: 20px;
+    padding-inline-start: 0;
+}
+
+.day-list.drag-over {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.travel-item:hover {
+    background-color: #fafafa;
+    transition: background-color 0.3s ease;
+}
+
+
+.travel-item .content {
+      max-height: 0;
+    opacity: 0;   
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+    width: inherit;
+    display: none;
+
+}
+
+.travel-item .content.active {
+    max-height: 1000px;
+    opacity: 1;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+    display: block;
+    padding: 0px !important;
+    background: #efefef;
+}
+
+
+
+hr {
+    border: 0;
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 10px 0;
+}
+.arrow {
+        border: none;
+    cursor: pointer;
+    position: absolute;
+    right: 30px;
+    top: 10px;
+}
+.arrow img {
+    width: 24px;
+    height: 24px;
+}
+
+
+
+
+
+
+.add-buttons-container {
+       display: flex;
+    gap: 20px;
+}
+.add-buttons-container button {
+    padding: 10px;
+    margin: 0px;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #ffffffe6;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #8a4af3;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+
+.add-new-day-btn {
+    padding: 10px;
+    margin: 16px 0;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #8a4af3;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+
+}
+
+
+#newchat {
+    padding: 10px;
+    margin: 0px 0;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #87c7d3;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    text-align: center;
+
+}
+
+@media (max-width:768px) {
+
+#customPopup div {
+    width: calc(90% - 40px) !important;;
+    height: min-content; 
+    max-height: calc(90% - 40px);
+    position: relative;
+    overflow-y: scroll;
+    scrollbar-width: thin;
+    scrollbar-color: #02aee430 #f1f1f1;     
+    }
+}
+
+
+.category-title-icon {
+    width: 24px !important;
+    height: 24px !important;
+    vertical-align: middle;    
+    margin-right: 0px !important;
+}
+
+
+.separator-line {
+    flex-grow: 1;
+    height: 1px;
+    background-color: #ccc;
+}
+
+.distance-label {
+    font-size: 0.75rem;
+    color: #1e293b;
+    background: #ffffff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    /* box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); */
+    font-weight: 500;
+}
+.distance-label .uber {
+    width: 24px !important;
+    height: 24px !important;
+    vertical-align: middle;
+    margin-right: 6px !important;
+}
+
+/* Item distance style */
+.item-distance {
+    color: #666;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Item info container */
+.item-info {
+    flex: 1;
+
+    max-width: 168px;
+    margin-top: 1px;
+}
+
+/* Category List Styles */
+.category-item {
+  margin-bottom: 15px;
+}
+
+.category-item h4 {
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.subcategory-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.subcategory-item:hover {
+  background-color: #f5f5f5;
+}
+
+.subcategory-icon {
+  margin-right: 10px;
+  width: 20px;
+  text-align: center;
+}
+
+.subcategory-name {
+  flex-grow: 1;
+}
+    
+.toggle-subcategory-btn {
+  background: #8a4af3;
+  color: white;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 10px;
+  z-index: 2;
+  float: right;
+}
+
+.toggle-subcategory-btn:hover {
+  background: #357ab8;
+}
+
+.subcategory-item.hidden {
+  opacity: 0.3;
+  pointer-events: none;
+  background: #b4b4b4;
+    display: flex; /* Varsayılan değer */
+}
+
+.subcategory-item.hidden .toggle-subcategory-btn {
+  pointer-events: auto;
+    opacity: 1;
+    background: #00479f;
+    color: #ffffff;
+}
+
+/* Premium category styling */
+.premium-category-bg {
+  background-color: #f0f8ff;
+}
+
+.close-btn {
+  display: block;
+  margin: 8px auto 0;
+  padding: 8px 15px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: #357ab8;
+}
+
+.toggle-all-btn {
+         width: -webkit-fill-available;
+    padding: 10px;
+    margin: 10px 0;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #8a4af3;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    text-align: center;
+    display: none;
+}
+
+.toggle-all-btn:hover {
+  background-color: #8a4af3;
+  color: #ffffff;
+}
+
+.subcategory-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.all-hidden-message {
+  padding: 10px;
+  color: #737373;
+  font-style: italic;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  margin: 5px 0;
+  display: none;
+  font-weight: 400;
+}
+
+
+
+
+
+.day-item {
+    margin-bottom: 15px;
+    display: block;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.view-toggle button {
+    padding: 5px 10px;
+    background-color: #ffffff;
+    color: #1e293b;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.view-toggle button:hover {
+    background-color: #7db5d7;
+    color: #ffffff;
+}
+/* Harita infowindow için özel stil */
+.gm-style .gm-style-iw {
+  max-width: 350px !important;
+  max-height: none !important;
+  overflow: visible !important;
+
+}
+
+.gm-style .gm-style-iw-c {
+  padding: 0;
+  max-height: none !important;
+}
+
+.gm-style .gm-style-iw-d {
+  overflow: auto !important;
+  max-height: none !important;
+}
+
+/* Özel içerik için stil */
+.map-infowindow-content {
+  width: 300px;
+  padding: 10px;
+ 
+  box-shadow: 0 2px 7px rgba(0,0,0,0.3);
+}
+
+.day-map {
+    height: 600px;
+    width: 100%;
+  
+    border-radius: 8px;
+  
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.map-infowindow-content {
+    width: 300px;
+    max-width: 100%;
+}
+
+.gm-style-iw {
+    max-width: 300px !important;
+}
+
+/* Mesafe göstergeleri için stiller */
+.total-distance {
+    font-size: 0.8em;
+    color: #4285F4;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.distance-between {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    color: #666;
+}
+
+.distance-line {
+    flex-grow: 1;
+    height: 1px;
+    background-color: #ddd;
+}
+
+.distance-text {
+    padding: 0 10px;
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+
+/* Harita mesafe göstergeleri */
+.gm-style .distance-marker {
+   
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+
+.km-label {
+    background-color: white;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #333;
+    font-weight: bold;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+.marker-label {
+    background: white;
+    border: 2px solid #000;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    font-weight: bold;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+
+
+/* Autocomplete Input Place */
+/* MANUEL YER EKLEME BÖLÜMÜ */
+.manual-add-section {
+    margin: 25px 0;
+    /* padding: 20px; */
+    background: #ffffff;
+    border-radius: 12px;
+}
+
+.manual-add-section h3, #customNoteContainer h3 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.manual-add-section h3::before {
+    content: "📍";
+    font-size: 1.4rem;
+}
+
+#customNoteContainer h3::before  {
+    content: "📝";
+    font-size: 1.4rem;
+}
+#customNoteContainer {
+    display: flex;
+    flex-direction: column;
+        gap: 4px;
+}
+#customNoteContainer .modal-actions, .confirmation-container .modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 6px;
+}
+#customNoteContainer .modal-actions button, .confirmation-container .modal-actions button {
+    width: 100%;
+    padding: 10px;
+    margin: 0px 0;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;    
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    text-align: center;
+}
+.confirmation-container .modal-actions .confirm-remove-btn {
+    background: #e37f7f; 
+}
+.confirmation-container .modal-actions .confirm-reset-btn {
+    background: #ffb33e; 
+}
+.confirmation-container .modal-actions .cancel-action-btn {
+    background: #a5a5a5; 
+}
+
+#customNoteContainer .modal-actions .save-note {
+   background: #83c179; 
+}
+#customNoteContainer .modal-actions .cancel-note {
+   background: #a5a5a5; 
+}
+
+#noteDetails {
+    height: 80px;
+}
+
+.add-custom-note-btn {
+    padding: 10px;
+    margin: 0px 0;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffd358;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    text-align: center;
+    width: -webkit-fill-available;
+    font-family: 'Satoshi';
+}
+.search-container {
+    margin-top: 15px;
+    position: relative;
+}
+
+.place-input, #noteTitle, #noteDetails  {
+    width: -webkit-fill-available;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    font-family: 'Satoshi';
+}
+
+.place-input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.place-details {
+    margin-top: 15px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.place-info {
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #eee;
+}
+
+.place-info h4 {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.place-hours h5 {
+        font-size: 1rem;
+        color: #2c3e50;
+    margin: 10px 0px;
+
+}
+
+.place-info p {
+    margin: 5px 0;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.place-photo {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 12px 0;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #eee;
+}
+
+.confirm-add-btn {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(41, 128, 185, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.confirm-add-btn:hover {
+    background: linear-gradient(135deg, #2980b9, #3498db);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(41, 128, 185, 0.4);
+}
+
+.confirm-add-btn:active {
+    transform: translateY(0);
+}
+
+.confirm-add-btn::before {
+    content: "+";
+    font-size: 1.2rem;
+}
+
+/* ANIMASYONLAR */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* DARK MODE DESTEĞİ */
+@media (prefers-color-scheme: dark) {
+    .manual-add-section {
+        background: #2d3436;
+        border-color: #3c4a4d;
+    }
+    
+    .place-input {
+        background: #34495e;
+        border-color: #4a6278;
+        color: #ecf0f1;
+    }
+    
+    .place-info {
+        background: #34495e;
+        border-color: #4a6278;
+    }
+    
+    .place-info h4 {
+        color: #ecf0f1;
+    }
+    
+    .place-info p {
+        color: #bdc3c7;
+    }
+}
+
+
+.content.active {
+    padding: 16px;
+    background: #ffffff;
+    border-radius: 12px;
+   
+    margin-top: 12px;
+   
+}
+
+.info-section {
+
+   
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    line-height: 1.4;
+
+}
+
+.place-rating {
+background: #fff;
+}
+
+
+.working-hours-title {
+    background: #f8f9fa;
+    border-radius: 0px;
+    font-size: 0.95rem !important;
+    color: #1e293b !important;
+    margin: 6px 0 !important;
+    font-weight: 600 !important;
+    padding: 10px !important;
+
+}
+.working-hours-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.working-hours-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #ffffff;
+    border-radius: 0px;
+    font-size: 0.85rem;
+    color: #4a5568;
+}
+
+.working-hours-list li:before {
+    content: "•";
+    color: #4299e1;
+    margin-right: 8px;
+}
+
+hr {
+    border: none;
+    height: 1px;
+    background: #e2e8f0;
+    margin: 16px 0;
+}
+
+
+.info-section .contact {
+   color: #000000;
+    font-weight: 500;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    background: #ffffff ;
+    border-radius: 0px;
+    padding: 10px;
+}
+.info-section .contact p {
+    padding: 4px;
+}
+/* Responsive touch */
+@media (max-width: 480px) {
+    .working-hours-list li {
+        flex-direction: column;
+       
+    }
+    
+    .info-section p {
+        flex-direction: column;
+        gap: 4px;
+    }    
+
+}
+
+.distance-separator {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    color: #666;
+}
+/* 1) Ayraçlar fare/parmaktan olay almasın */
+.distance-separator,
+.distance-separator * {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 2) Drag sırasında biraz saydamlaştır (isteğe bağlı) */
+.dragging-items .distance-separator {
+  opacity: 0.5;
+}
+
+.separator-line {
+    flex-grow: 1;
+    height: 1px;
+    background-color: #ddd;
+    margin: 0 10px;
+}
+
+
+
+.arrow img {
+  transition: transform 0.3s ease;
+}
+.arrow img.rotated {
+  transform: rotate(90deg);
+}
+.cart-item .content {
+  display: none;
+}
+.cart-item .content.active {
+  display: block;
+}
+
+
+
+#welcome-content {
+    display: flex;
+    gap: 30px;
+    flex-direction: column;
+}
+
+
+
+
+.gm-style {
+    font: inherit !important;
+
+}
+.gm-style .gm-style-iw {
+    font-size: inherit !important;
+    font-weight: inherit !important;
+}
+.gm-style .gm-style-iw-c {
+    border-radius: 15px !important;
+}
+.gm-style-iw-ch {
+    padding: 0 !important;
+
+
+}
+.gm-style-iw-chr {
+     margin-top: -48px;
+    z-index: 124 !important;
+   
+        
+}
+.transit-container {
+    padding: 20px;
+}
+.gm-style-iw-chr button {
+    position: absolute !important;
+    top: -42px !important;
+    right: 6px !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    width: 32px !important;
+    height: 32px !important;
+}
+
+.gm-style-iw-chr button span {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 8px !important;
+    }
+.map-infowindow-content {
+    width: 335px !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+}
+.poi-info-window .view-link, .poi-info-window a:visited {
+        color: #ffffff;
+    padding: 10px;
+    background: #8a4af3;
+    margin-top: 10px;
+    text-align: center;
+}
+.poi-info-window a:link {
+    text-decoration: none;
+    color: #ffffff;    
+    background: #8a4af3;
+    font-size: 0.9rem;
+}
+
+
+.date-range {
+    display: flex;
+    flex-direction: column;
+}
+.date-info {
+    text-align: center;
+    font-size: 0.9rem;
+}
+.see-details-btn {
+    padding: 10px;   
+    margin-top: 0px;  
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #4caf50;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #000000;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    cursor: default;
+}
+.add-to-calendar-btn {
+        padding: 10px;
+    margin: 16px 0;
+    margin-top:0px;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #4CAF50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    cursor: default;
+}
+
+#calendar-container {
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day {
+        padding: 10px;
+    text-align: center;
+    border: 1px solid #eee;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #000;
+}
+
+.calendar-day.empty {
+    background-color: #f9f9f9;
+    border: none;
+    cursor: default;
+}
+
+.month-control {
+    background-color: #f2f2f2;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+.calendar-day.selected {
+    background-color: #a5d8a7; /* Green */
+    color: white;
+}
+.save-dates-button {
+    padding: 10px;
+    margin: 16px 0;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #4CAF50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    }
+
+    body.calendar-open .add-to-calendar-btn {
+  cursor: default;
+}
+
+
+.date-range {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-direction: row;
+    margin-bottom: 20px;
+}
+
+.date-info {
+   text-align: center;
+   font-size: 0.9rem;
+}
+#tt-trip-details {
+    z-index: 1010;
+    background-color: white;
+    position: relative;
+    width: auto;
+    padding: 20px;
+    overflow-y: scroll;
+    top: 50px;
+    bottom: 180px;
+    width: calc(100% - 455px);
+    position: absolute;
+}
+
+.insertion-placeholder {
+    height: 40px;
+    background-color: #d0ebff;
+    border: 2px dashed #74c0fc;
+    margin: 5px 0;
+    border-radius: 8px;
+}
+
+.action-buttons-container {
+    display: flex;
+    gap: 6px;
+  
+}
+.reset-action-button, .remove-action-button   {
+    border-radius: 50%;
+    cursor: pointer;
+    width: 31px;
+    height: 31px;  
+    font-size: 1rem;
+    border: 1px solid #ffffff;
+    text-align: center;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+}
+.poi-info-window .address {
+    color: #555;
+    padding: 20px 20px 0px 20px;
+    background: #ffffff;
+}
+
+.item-actions {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    gap: 6px;
+    background: #ffffff;
+}
+.item-actions button {
+ padding: 8px 8px;
+    margin: 0px;
+    width: 100%;
+    font-weight: 500;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    color: #000000;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    font-family: 'Satoshi';
+}
+
+.success-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+}
+
+.warning-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ff9800;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.add-more-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+
+
+
+
+
+
+/* Add this to your CSS */
+/* Loading Indicators */
+.loading-container {
+    position: relative;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.loading-dots {
+    display: flex;
+    gap: 2px;
+}
+
+.loading-dots span {
+    opacity: 0;
+    animation: loadingFade 1.4s infinite;
+    font-weight: bold;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: 0s; }
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loadingFade {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+.visual {
+    position: relative;
+    min-height: 150px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    cursor: move;
+  
+}
+
+/* Sadece skeleton class'ı varsa animasyonu göster */
+.visual.skeleton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+    z-index: 1;
+}
+@keyframes skeletonPulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.visual img.loaded {
+    opacity: 1;
+}
+
+
+
+
+
+
+
+/* --- Paylaşım Butonları İçin Düzeltilmiş Stiller --- */
+
+.share-buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+    padding: 20px 10px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.share-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.share-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.share-button img {
+    width: 20px;
+    height: 20px;
+}
+
+.whatsapp-button {
+    background-color: #25D366;
+}
+
+.instagram-button {
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%);
+}
+
+@media (max-width: 480px) {
+    .share-buttons-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+
+
+/* Gün adı düzenleme butonu (kalem ikonu) */
+.edit-day-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    flex-shrink: 0; /* Butonun küçülmesini engeller */
+}
+
+.edit-day-btn:hover {
+    opacity: 1;
+}
+
+/* Gün adı düzenleme metin kutusu */
+.day-name-input {
+    font-family: inherit; /* Sayfanın yazı tipini kullanır */
+    font-size: 18px;
+    font-weight: bold;
+    border: 2px solid #3498db; /* Odaklandığında belirgin olması için mavi kenarlık */
+    border-radius: 5px;
+    padding: 4px 6px;
+    flex-grow: 1; /* Mevcut alanı doldurur */
+}
+
+/* Gün başlığındaki orijinal eylem butonları (sil, sıfırla) */
+.action-buttons-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+/* --- GÜN ADI DÜZENLEME İÇİN GÜNCELLENMİŞ STİLLER --- */
+
+/* Ana başlık kapsayıcısı */
+.day-header {
+    display: flex;
+    justify-content: space-between; /* Elemanları iki uca yaslar */
+    align-items: center;
+    gap: 10px; 
+}
+
+/* Başlık ve düzenle butonunu gruplayan yeni kapsayıcı */
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Başlık ve kalem ikonu arasına boşluk koyar */
+    flex-grow: 1; /* Bu grubun mevcut alanı doldurmasını sağlar */
+}
+
+
+/* Gün adı düzenleme butonu (kalem ikonu) */
+.edit-day-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    line-height: 1; /* Dikey hizalamayı iyileştirir */
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.edit-day-btn:hover {
+    opacity: 1;
+}
+
+/* Diğer aksiyon butonlarının (sil, sıfırla) kapsayıcısı */
+.action-buttons-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0; /* Butonların küçülmesini engeller */
+}
+
+/* Gün adı düzenleme metin kutusu */
+.day-name-input {
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: bold;
+    border: 2px solid #3498db;
+    border-radius: 5px;
+    padding: 4px 6px;
+    flex-grow: 1;
+}
+
+
+/* Booking */
+
+.reservation-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #003580;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    border: none;
+    cursor: pointer;
+}
+
+.reservation-btn:hover {
+    background: #002752;
+    color: white;
+}
+
+.reservation-btn img {
+    width: 16px;
+    height: 16px;
+}
+
+.data-source {
+    font-size: 0.8em;
+    color: #666;
+    font-weight: normal;
+}
+
+.star-rating {
+    font-size: 0.9em;
+    margin-left: 4px;
+}
+
+.review-info {
+    font-size: 0.8em;
+    color: #0066cc;
+    margin-left: 4px;
+}
+
+.booking-reservation {
+    margin-left: 8px;
+}
+.suggestion-container {
+ padding: 8px;
+    margin: 10px 0;
+    background-color: #ffffff;
+    border-radius: 5px;
+    cursor: pointer;
+    color: #000;
+    font-size: 1rem;
+    font-weight: 500;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    display: flex
+;
+    gap: 10px;
+    align-content: center;
+    align-items: center;
+    padding: 10px;
+}
+.suggestion-container:hover {
+        background-color: #f5f5f5;
+}
+.geoapify-suggestion {
+    margin: 5px 0;
+}
+.suggestion-thumb {
+     margin-right: 0px;
+    width: 60px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    float: left;
+}
+
+.suggestion-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.suggestion-top-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.pin-icon {
+  font-size: 0.9em;
+    flex-shrink: 0;
+    /* border: 1px solid #ddd; */
+    border-radius: 34px;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    background: #e0f1ff;
+}
+
+.suggestion-details {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 3px;
+}
+
+.suggestion-address {
+  color: #888;
+  font-weight: 400;
+}
+
+.suggestion-city {
+  color: #aaa;
+}
+
+
+
+.change {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+}
+.change .info-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.98em;
+    color: #444;
+}
+.change .info-item img {
+    width: 18px;
+    height: 18px;
+    opacity: 0.85;
+}
+
+
+.ai-info-section, .trip-info-section {
+  background: #f9f7fd;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  margin-top: 12px;
+}
+.ai-info-section h3, .trip-info-section h3 {
+  margin: 0 0 6px 0;
+  color: #8a4af3;
+  font-size: 18px;
+}
+.trip-step {
+  margin-bottom: 8px;
+  padding-left: 6px;
+  border-left: 3px solid #8a4af3;
+  background: #fafaff;
+  border-radius: 5px;
+}
+.trip-route-summary {
+  margin-top: 12px;
+  font-weight: bold;
+  color: #7c33d2;
+}
+
+
+
+
+
+
+.loading {
+      color: #333;
+    /* font-style: italic; */
+    padding: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.ai-response {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 5px;
+  margin-top: 10px;
+  white-space: pre-line;
+}
+
+.ai-error {
+  color: #d32f2f;
+  padding: 10px;
+  border: 1px solid #ffcdd2;
+}
+.loading-spinner {
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 3px solid #4285f4;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-alert {
+    background-color: #ffebee;
+    border-left: 4px solid #f44336;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 4px;
+}
+
+.retry-btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.ai-info-block p {
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+
+/* AI Info Block Stilleri */
+.ai-info-block {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 10px;
+  border-left: 4px solid #4285f4;
+}
+
+
+
+/* Typewriter imleç efekti */
+.ai-info-block p:after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+    color: #4285f4;
+}
+
+@keyframes blink {
+    from, to { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0,0,0,0.1);
+    border-radius: 50%;
+    border-top-color: #4285f4;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+
+.ai-info-btn {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 5px 15px;
+    cursor: pointer;
+    display: flex;
+    gap: 10px;
+}
+.ai-info-btn span {
+    padding: 3px 8px;
+    border-radius: 15px;
+    transition: all 0.3s;
+}
+.ai-info-btn span.active-tab {
+    background: #1976d2;
+    color: white;
+}
+.ai-info-block {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+.toggle-ai-btn {
+    background: #f0f0f0;
+    border: none;
+    border-radius: 15px;
+    padding: 5px 10px;
+    cursor: pointer;
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+}
+.toggle-ai-btn span {
+    padding: 3px 8px;
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+.toggle-ai-btn span.active-view {
+    background: #1976d2;
+    color: white;
+}
+.ai-guide-container {
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.ai-stream-container {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    line-height: 1.6;
+}
+
+.ai-stream-container div {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* AI Stream içeriği için */
+.ai-stream-content {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.ai-stream-content br {
+    content: "";
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Yükleniyor göstergesi */
+.loading-spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+ .menuBox {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: #faf8ff;
+        border-radius: 30px;
+        border: 1px solid #e1e1e1;
+        padding: 8px 8px 6px 6px;
+        height: 16px;
+    }
+
+    .userIcon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #ddd;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+        font-size: 18px;
+    }
+
+    .toggleMenu {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        cursor: pointer;
+        font-size: 15px;
+        transition: 0.3s;
+        flex-wrap: nowrap;
+    }
+
+    .toggleMenu:hover {
+        opacity: 0.7;
+    }
+
+    .dropDown {
+        position: absolute;
+        top: 40px;
+        right: 0;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        display: none;
+        flex-direction: column;
+        min-width: 184px;
+        overflow: hidden;
+    }
+
+    .dropDown a {
+        padding: 12px 15px;
+        text-decoration: none;
+        color: #333;
+        display: block;
+        transition: background 0.3s;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .dropDown a:hover {
+        background: #f1f1f1;
+    }
+
+    .show {
+        display: flex;
+    }
+    .theme-menu img.active {
+        border-bottom: 2px solid #1e293b;
+        opacity: 1;
+    }
+
+
+
+
+
+    .loading-panel {
+       width: 100%;
+    display: grid;
+    max-width: 860px;
+    gap: 30px;
+    padding: 60px 10px;
+    margin: 0 auto;
+    }
+    .loading-spinner {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        align-items: center;
+        justify-content: center;
+        height: 60px;
+    }
+    .spinner-dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0074D9 60%, #2ECC40 100%);
+        opacity: 0.8;
+        animation: spinner-bounce 1.2s infinite;
+    }
+    .spinner-dot:nth-child(2) { animation-delay: 0.2s; }
+    .spinner-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes spinner-bounce {
+        0%, 100% { transform: translateY(0); opacity:0.8;}
+        50% { transform: translateY(-21px); opacity:1;}
+    }
+    .loading-steps {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.18rem;
+        font-weight: 500;
+    }
+    .loading-step { color: #222; opacity: 0.2; transform: translateY(12px);}
+    .loading-step.anim { animation: stepFadeInUp 0.8s cubic-bezier(.62,-0.09,.43,1.11) forwards;}
+    .loading-step.anim:nth-child(1) { animation-delay: 0s; }
+    .loading-step.anim:nth-child(2) { animation-delay: 1s; }
+    .loading-step.anim:nth-child(3) { animation-delay: 2s; }
+    @keyframes stepFadeInUp {
+        0% { opacity: 0.2; transform: translateY(12px);}
+        60% { opacity: 0.7; }
+        100% { opacity: 1; transform: translateY(0);}
+    }
+    .loading-step.static {
+        color: #2ECC40;
+        font-weight: 700;
+        opacity: 1;
+        margin-top: 24px;
+        letter-spacing: 0.02em;
+    }
+
+
+
+
+
+
+.accordion-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.day-item,
+.survey-results {
+ 
+    border-radius: 10px;
+  
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+.accordion-container {
+    width: 100%;
+  
+}
+input[type="checkbox"].accordion-toggle {
+    display: none;
+}
+.accordion-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    user-select: none;
+    background: #eeefef;
+    color: #333;
+    padding: 10px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.accordion-label:hover {
+    background: #e0e0e0;
+}
+.accordion-arrow {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.3s ease;
+    margin-left: 10px;
+}
+.accordion-content {
+    transition: all 0.5s ease;
+    max-height: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #fff;
+    border-top: 1px solid #dedede;
+}
+input[type="checkbox"].accordion-toggle:checked ~ .accordion-content {
+    max-height: 5000px;
+    padding: 20px 0;
+    overflow: visible;
+}
+input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-arrow {
+    transform: rotate(180deg);
+}
+.day-steps {
+    width: calc(100vw - 485px);
+    position: relative;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    border-radius: 10px;
+    display: flex;
+    gap: 20px;
+    grid-template-areas:
+        "image"
+        "text"
+        "stats";
+    border-radius: 18px;
+    background: white;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    transition: 0.5s ease;
+}
+.steps {
+    flex-shrink: 0;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: row;
+    max-width: 335px;
+    position: relative;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    border-radius: 10px;
+    flex-direction: column;
+    display: grid;
+    grid-template-areas:
+        "image"
+        "text"
+        "stats";
+    border-radius: 18px;
+    background: white;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    transition: 0.5s ease;
+    align-content: space-between;
+        border: 3px solid #fff;
+}
+
+
+@media (max-width:768px) {
+    .day-steps {
+   width: -webkit-fill-available;
+    }
+}
+.steps:hover {
+    box-shadow: rgb(149 157 165 / 60%) 0px 8px 24px;
+     border: 3px solid #8a4af3;
+}
+
+.city-option-btn {
+  margin: 0 7px 7px 0;
+  padding: 8px 18px;
+  background: #edeefc;
+  border: 1px solid #b2b3e6;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.2s;
+}
+.city-option-btn:hover {
+  background: #d3d5fa;
+}
+.city-options {
+  margin-top: 10px;
+}
+
+.route-map {
+    min-height: 285px;
+    height: 285px;
+    width: 100%;
+    /* Responsive için ekstra:
+    max-width: 100%;
+    box-sizing: border-box;
+    */
+}
+#route-map-day1, #route-map-day2, #route-map-day3, #route-map-day4, #route-map-day5  .leaflet-container {
+    min-height: 285px;
+    height: 285px;
+}
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 285px;
+}
+#elevation-canvas-day1 {
+    position: relative !important;
+    z-index: 2;
+}
+
+
+
+
+
+
+/**/
+
+
+.trip-item-minimal {
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  background: #f5f5f5;
+  transition: all 0.2s;
+}
+
+.trip-item-minimal:hover {
+  background: #e0e0e0;
+}
+
+.trip-query {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.trip-date {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.trip-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.edit-trip-btn, .delete-trip-btn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+}
+
+.edit-trip-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+.delete-trip-btn {
+  background: #f44336;
+  color: white;
+}
+
+.empty-message {
+  color: #666;
+  font-style: italic;
+  padding: 12px;
+}
+
+
+.ai-description {
+    padding: 10px 0;
+    font-size: 14px;
+    color: #555;
+    line-height: 1.5;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    margin: 10px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.ai-description img {
+    width: 16px;
+    height: 16px;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+
+.poimt-marker {
+   background: #d73db5;
+    display: block;
+    padding: 4px;
+    border-radius: 50%;
+    height: 18px;
+    width: 18px;
+    text-align: center;
+    color: #fff;
+    margin: 0 auto;
+    font-size: 0.8rem;
+    margin-top: 20px;
+}
+.name-marker {
+    background: #ffffffba;
+    color: #8a4af3 !important;
+    display: table;
+    padding: 4px;
+    border-radius: 10px;  
+    text-align: center;   
+    font-size: 0.8rem;
+}
+
+
+
+/* harita boyutlandırma *//* harita boyutlandırma *//* harita boyutlandırma *//* harita boyutlandırma *//* harita boyutlandırma */
+.expanded-map-top-row {
+    display: flex;
+    font-size: 1rem !important;
+    font-weight: 500;
+    text-align: center;
+    margin: 0 !important;
+    position: absolute;
+    bottom: 60px;
+    z-index: 234234242;
+    background: #ffffff;
+    width: 100%;
+    padding: 20px;
+    width: calc(100% - 40px) !important;
+}
+
+.route-stats {
+    width: 100%;
+    font-size: 0.9rem;
+    text-align: left;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+.route-stats .stat img {
+    width: 16px;
+    height: 16px;
+}
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.route-scale-bar {
+       z-index: 234234242;
+    display: flex;
+    position: absolute;
+    bottom: 0px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 0px 18px;
+    width: calc(100% - 36px);
+    font-size: 0.9rem;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+}
+
+.scale-bar-track { user-select: none; }
+.scale-bar-marker:hover { z-index: 2; }
+.scale-bar-marker div { font-size: 0.6rem !important;}
+.scale-bar-line { background: #aaa; }
+.scale-bar-tick { background: #666; }
+.scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
+
+
+
+.expanded-map {
+    width: 100%;
+    height: calc(100% - 50px);
+   
+}
+
+
+.close-expanded-map {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 8px 15px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+.close-expanded-map:hover {
+    background: #f5f5f5;
+}
+
+
+
+/**/
+/* Route marker stilleri */
+.route-marker {
+    background: #d32f2f;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Elevation container stilleri */
+.elevation-container {
+    width: 100%;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Harita konteynırı stilleri */
+#route-map-day1, #route-map-day2, #route-map-day3, #route-map-day4, #route-map-day5  {
+    height: 300px;
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+/* Mobile drag & drop styles */
+/* Improved drag & drop visuals */
+.dragging {
+    opacity: 0.8 !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+    transform: scale(1.02);
+}
+
+.insertion-placeholder {
+    height: 4px;
+    background-color: #4CAF50;
+    margin: 8px 0;
+    border-radius: 2px;
+    position: relative;
+}
+
+.insertion-placeholder .placeholder-arrow {
+    position: absolute;
+    top: -6px;
+    width: 0; 
+    height: 0; 
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid #4CAF50;
+}
+
+.insertion-placeholder .placeholder-arrow.left {
+    left: 0;
+}
+
+.insertion-placeholder .placeholder-arrow.right {
+    right: 0;
+}
+
+.day-list.drop-hover {
+    background-color: rgba(76, 175, 80, 0.1);
+    transition: background-color 0.2s;
+}
+
+.day-list.drop-possible {
+    outline: 2px dashed #4CAF50;
+    outline-offset: -2px;
+}
+
+#drag-clone {
+    pointer-events: none;
+    opacity: 0.8;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transition: none;
+}
+
+/* Mobile specific styles */
+@media (max-width: 768px) {
+    .travel-item.dragging {
+        transform: scale(1.05);
+        z-index: 1000;
+    }
+    
+    .day-list.drop-hover {
+        border: 2px dashed #4CAF50;
+    }
+}
+/* Drag & Drop Visual Styles */
+.dragging-active {
+    cursor: grabbing !important;
+}
+
+.drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    opacity: 0.8;
+    transform: translate(0, 0);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    background: white;
+    border-radius: 8px;
+    transition: transform 0.1s ease;
+}
+
+.insertion-placeholder {
+    position: relative;
+    height: 4px;
+    margin: 10px 0;
+    background: transparent;
+}
+
+.placeholder-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #4CAF50;
+    border-radius: 2px;
+}
+
+.placeholder-arrows {
+    position: absolute;
+    top: -6px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+.placeholder-arrows .arrow {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid #4CAF50;
+}
+
+.day-list.drop-highlight {
+    background: rgba(76, 175, 80, 0.05);
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+
+.travel-item {
+    position: relative !important;
+    z-index: 1 !important;
+    transform: none !important;
+    user-select: none;
+}
+
+
+
+
+
+.day-list,
+.route-map,
+.route-info,
+.add-more-btn,
+[id^="map-bottom-controls-wrapper-day"] {
+
+  transition: max-height 0.3s cubic-bezier(.4,0,.2,1), padding 0.3s cubic-bezier(.4,0,.2,1), opacity 0.3s;
+  max-height: 2000px;
+}
+
+.day-list.collapsed,
+.route-map.collapsed,
+.route-info.collapsed,
+.add-more-btn.collapsed,
+[id^="map-bottom-controls-wrapper-day"].collapsed {
+  max-height: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none;
+  height: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  min-height: 0 !important;
+  display: block !important;
+}
+
+
+.ai-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.ai-tags span {
+    background: #f0f7ff;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.ai-notes {
+    font-style: italic;
+    color: #666;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+
+.autocomplete-suggestions {
+    overflow-y: auto;
+   
+    background: #fff;
+
+    z-index: 10;
+    display: flex !important;
+}
+.category-area-option {
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+.category-area-option.selected-suggestion {
+    background: #e6f4ff;
+    font-weight: bold;
+}
+.close-suggestion {
+    margin-left: auto;
+    color: #888;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 6px;
+}
+.category-area-option:hover {
+    background: #f1f1f1;
+}
+
+
+.custom-marker-icon {
+    background: #d32f2f;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.numbered-marker {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes spin-marker-bg {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+.custom-marker-outer {
+  width:24px;height:24px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #fff;
+  box-shadow:0 2px 8px rgba(0,0,0,0.2);
+  position:relative;
+  transition:background 0.2s, box-shadow 0.18s;
+  background: #d32f2f;
+}
+.custom-marker-outer.spin {
+  animation: spin-marker-bg 0.7s linear infinite;
+}
+.custom-marker-label {
+  color:#fff;
+  font-weight:bold;
+  font-size:15px;
+  pointer-events:none;
+  z-index:2;
+}
+.custom-marker-outer.green {
+  background: #38b835 !important;
+  box-shadow: 0 2px 16px #38b835a5;
+}
+.custom-marker-outer.red {
+  background: #d32f2f !important;
+}
+.custom-marker-place-name {
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #222;
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px #0001;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s;
+    width: fit-content;
+    display: flex
+;
+}
+/* DRAG İPUCU: Marker etrafında oklar + nabız halkası (tıklanınca görünür) */
+.custom-marker-outer .drag-hint {
+  position: absolute;
+  inset: -14px;             /* marker dışına taşan alan */
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 3;
+}
+
+/* Halka (dashed/pulse) */
+.custom-marker-outer .drag-hint::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(56,184,53,.55);
+  animation: dragRingPulse 1.6s ease-in-out infinite;
+}
+
+/* 4 yön oku (CSS üçgeni) - temel şekil yukarıyı gösterir */
+.custom-marker-outer .drag-hint .arrow {
+  position: absolute;
+  width: 0; height: 0;
+  border: 8px solid transparent;
+  border-bottom-color: #38b835; /* ok rengi */
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.25));
+  opacity: 0;
+  animation: dragArrowPulse 1.2s ease-out infinite;
+}
+
+/* Konumlar */
+.custom-marker-outer .drag-hint .arrow.up {
+  top: -6px; left: 50%;
+  transform: translate(-50%,0) rotate(0deg);
+  animation-delay: 0s;
+}
+.custom-marker-outer .drag-hint .arrow.right {
+  right: -6px; top: 50%;
+  transform: translate(0,-50%) rotate(90deg);
+  animation-delay: .1s;
+}
+.custom-marker-outer .drag-hint .arrow.down {
+  bottom: -6px; left: 50%;
+  transform: translate(-50%,0) rotate(180deg);
+  animation-delay: .2s;
+}
+.custom-marker-outer .drag-hint .arrow.left {
+  left: -6px; top: 50%;
+  transform: translate(0,-50%) rotate(270deg);
+  animation-delay: .3s;
+}
+
+/* Tıklanınca ipucunu göster */
+.custom-marker-outer.show-drag-hint .drag-hint {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Hareket azaltma tercihi */
+@media (prefers-reduced-motion: reduce) {
+  .custom-marker-outer .drag-hint::before,
+  .custom-marker-outer .drag-hint .arrow {
+    animation: none !important;
+  }
+}
+
+/* Animasyonlar */
+@keyframes dragRingPulse {
+  0% { transform: scale(0.92); opacity: .7; border-color: rgba(56,184,53,.55); }
+  50% { transform: scale(1.02); opacity: .95; border-color: rgba(56,184,53,.8); }
+  100% { transform: scale(0.92); opacity: .7; border-color: rgba(56,184,53,.55); }
+}
+@keyframes dragArrowPulse {
+  0% { opacity: 0; transform: translate(0, 0) rotate(var(--r,0deg)); }
+  35% { opacity: 1; transform: translate(0, -3px) rotate(var(--r,0deg)); }
+  100% { opacity: 0; transform: translate(0, -8px) rotate(var(--r,0deg)); }
+}
+
+/* Okların kendi yönüne göre offset’i sabit kalsın diye değişken kullanımı (opsiyonel) */
+.custom-marker-outer .drag-hint .arrow.up    { --r: 0deg; }
+.custom-marker-outer .drag-hint .arrow.right { --r: 90deg; }
+.custom-marker-outer .drag-hint .arrow.down  { --r: 180deg; }
+.custom-marker-outer .drag-hint .arrow.left  { --r: 270deg; }
+
+
+
+
+.day-list {
+    border: none;
+    outline: none;
+    border-radius: 12px;
+    transition: outline 0.18s;
+    box-sizing: border-box;
+}
+
+.day-list.day-list-active {
+    outline: 3px dashed #a259ff;
+}
+
+
+.expanded-map-header {
+    display: flex;
+    position: absolute;
+    bottom: 185px;
+    /* right: 10px; */
+    z-index: 123123123;
+    background: rgba(255, 255, 255, 0.95);
+    gap: 12px;
+    padding: 6px;
+    width: calc(100% - 12px);
+    z-index: 1231231231231;
+    /* border-radius: 6px; */
+    align-items: center;
+    box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
+
+}
+
+.expanded-map-container select {
+    font-size: 0.9rem !important;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid rgb(204, 204, 204);
+    background: white;
+}
+
+.expanded-map-container .expanded-map {
+    flex: 1;
+    width: 100%;
+}
+
+.expanded-map-container .close-expanded-map {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10001;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+
+.empty-day-message, .one-item-message {
+    text-align: center;
+    margin-bottom: 0;
+    color: #333333;
+    font-weight: 500;
+}
+
+.travel-modes {
+    display: flex;
+    gap: 10px;
+}
+
+.map-control {
+    position: relative;
+}
+.map-bottom-controls {
+       padding: 6px 0 0 0;
+}
+
+.map-bottom-controls select {
+    font-size: 1rem;
+}
+
+.expanded-map-container {
+        left: 0;
+    width: 50%;
+    height: 100%;
+    background: white;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    width: calc(100% - 415px);
+    position: fixed;
+    border-radius: 0 !important;
+    bottom: 0;
+    max-height: calc(100vh - 60px);
+    top: 60px;
+    align-items: flex-end;
+    align-content: flex-end;
+    flex-direction: row;
+    position: fixed;
+    z-index: 123;
+}
+@media (max-width: 768px) {
+  .expanded-map-container {
+    z-index: 1005 !important;
+    width: 100% !important;
+  }
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+
+
+
+/* Nearby Places Popup Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Custom Nearby Popup Styling */
+#custom-nearby-popup {
+    position: fixed;
+    top: 75px;
+    right: 430px;
+    width: 380px;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 80px);
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    z-index: 10000000;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Scrollbar styling */
+#custom-nearby-popup ::-webkit-scrollbar {
+    width: 6px;
+}
+
+#custom-nearby-popup ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#custom-nearby-popup ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+#custom-nearby-popup ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Close button styling */
+.nearby-popup-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #f44336;
+    color: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    box-shadow: 0 2px 8px rgba(244,67,54,0.3);
+    transition: all 0.2s;
+}
+
+.nearby-popup-close-btn:hover {
+    background: #d32f2f;
+    transform: scale(1.1);
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+    #custom-nearby-popup {
+        top: 10px !important;
+        right: 10px !important;
+        left: 10px !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+}
+
+/* Loading spinner */
+.nearby-loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #1976d2;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Place list styling */
+.nearby-places-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.nearby-place-item {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    min-height: 50px;
+}
+
+.nearby-place-image {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.nearby-place-img {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 1px 4px #ccc;
+}
+
+.nearby-place-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nearby-place-name {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 2px;
+    word-wrap: break-word;
+}
+
+.nearby-place-address {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+}
+
+.nearby-place-actions {
+    margin-left: 8px;
+    text-align: center;
+    min-width: 70px;
+}
+
+.nearby-place-distance {
+    font-size: 12px;
+    color: #1976d2;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.nearby-place-add-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.nearby-place-add-btn:hover {
+    background: #1565c0;
+}
+
+.nearby-popup-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #1976d2;
+    border-bottom: 2px solid #e3f2fd;
+    padding-bottom: 10px;
+}
+
+.nearby-popup-content {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
+}
+
+.nearby-no-results {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+
+.nearby-error-message {
+    text-align: center;
+    color: #d32f2f;
+    padding: 20px;
+}
+
+.nearby-loading-message {
+    text-align: center;
+    padding: 20px;
+}
+
+.nearby-loading-text {
+    margin-top: 10px;
+    display: block;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+#use-my-location-btn-day1, #use-my-location-btn-day2 {
+        padding: 6px;
+    background: #ffffff;
+    border: none;
+    /* position: absolute; */
+    bottom: 33px;
+    right: 0;
+    cursor: pointer;
+    width: inherit;
+    text-align: right;
+
+}
+.active-location-btn {
+  background: #1976d2;
+  color: #fff;
+  font-weight: bold;
+}
+
+
+.lds-ripple {
+  /* change color here */
+  color: #8a4af3
+}
+.lds-ripple,
+.lds-ripple div {
+  box-sizing: border-box;
+}
+.lds-ripple {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.lds-ripple div {
+  position: absolute;
+  border: 4px solid currentColor;
+  opacity: 1;
+  border-radius: 50%;
+  animation: lds-ripple 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+.lds-ripple div:nth-child(2) {
+  animation-delay: -0.5s;
+}
+@keyframes lds-ripple {
+  0% {
+    top: 36px;
+    left: 36px;
+    width: 8px;
+    height: 8px;
+    opacity: 0;
+  }
+  4.9% {
+    top: 36px;
+    left: 36px;
+    width: 8px;
+    height: 8px;
+    opacity: 0;
+  }
+  5% {
+    top: 36px;
+    left: 36px;
+    width: 8px;
+    height: 8px;
+    opacity: 1;
+  }
+  100% {
+    top: 0;
+    left: 0;
+    width: 80px;
+    height: 80px;
+    opacity: 0;
+  }
+}
+
+
+
+
+
+.mytrips-day-card {
+    margin-bottom: 24px;
+    border-radius: 18px;
+    background: #f7fafd;
+    box-shadow: 0 2px 14px 0 rgba(30,40,90,0.06);
+    padding: 24px 20px 12px 20px;
+}
+.mytrips-date-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.2em;
+    color: #1a3a5d;
+    margin-bottom: 10px;
+    letter-spacing: .03em;
+}
+.date-dot {
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(110deg,#4f8cff 50%,#68e0cf 100%);
+    border-radius: 50%;
+    display: inline-block;
+}
+.trip-main-box {
+        display: flex
+;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+.mytrips-trip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+.trip-title-link {
+    font-weight: 600;
+    color: #1976d2;
+    text-decoration: none;
+    font-size: 1.05em;
+    flex: 1;
+    transition: color 0.2s;
+}
+.trip-title-link:hover {
+    color: #68e0cf;
+    text-decoration: underline;
+}
+
+.trip-icon {
+    margin-right: 4px;
+    font-size: 1.3em;
+    opacity: .82;
+}
+
+
+
+.mytrip-thumbnails-wrapper {
+    display: flex;
+    gap: 5px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+}
+.mytrip-thumbnail {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-shadow: 0 1px 4px #8884;
+}
+
+
+
+
+
+#my-trips-panel{
+    margin-top: 20px;
+}
+
+.mytrips-group-title {
+        margin-bottom: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #959595;
+    text-transform: uppercase;
+}
+
+    .mytrips-tripbox {
+        display: block;
+        align-items: center;
+        gap: 6px;
+        background: #fff;  
+        margin-bottom: 20px;
+        padding: 6px;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #1e293b;
+        justify-content: space-between;
+    }
+
+    .trip-info-box .trip-title {
+            margin-bottom: 0;
+        padding: 2px 0px;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #1e293b;
+    }
+
+
+    .trip-info-box .trip-last-update {
+            margin-bottom: 0px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #959595;
+    }
+.mytrips-delete-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #e74c3c;
+    transition: color 0.2s;   
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #959595;
+}
+.mytrips-delete-btn:hover {
+    color: #b71c1c;
+}
+
+
+.trip-rename-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #e74c3c;
+    transition: color 0.2s;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #959595;
+}
+.trip-rename-btn:hover {
+    color: #8a4af3;
+}
+
+
+
+
+
+.expand-map-btn img {
+       border-radius: 50%;
+ 
+    background: #fff;
+  
+}
+.leaflet-popup-pane {
+    z-index: 700;
+    margin-left: 18px;
+    margin-top: 20px;
+}
+.leaflet-popup {
+    margin-bottom: 40px;
+}
+/* Üstteki 1 sn'lik "hint" popup stili (X butonu yok) */
+.leaflet-popup.drag-hint-popup {
+  pointer-events: none;                /* tıklamaları engellemesin */
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-content-wrapper {
+  background: #111;                    /* koyu balon */
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  padding: 6px 8px;
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-tip {
+  display: none;                       /* ok ucu görünmesin, tooltip gibi dursun */
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-content {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-close-button {
+  display: none !important;            /* X tamamen yok */
+}
+
+
+/* Hint tooltip (top) — NO close icon, just a small dark bubble, auto hides */
+.leaflet-popup.drag-hint-popup {
+  pointer-events: none;
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-content-wrapper {
+  background: #111;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  padding: 6px 8px;
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-tip { display:none; }
+.leaflet-popup.drag-hint-popup .leaflet-popup-close-button { display:none !important; }
+.leaflet-popup.drag-hint-popup .leaflet-popup-content {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+/* Name bubble: appear-disappear animation (bottom one over marker) */
+.custom-marker-place-name.name-bubble-animate {
+  animation: nameBubbleInOut 1s ease both;
+}
+@keyframes nameBubbleInOut {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(2px) scale(.98); }
+  15%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  85%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-2px) scale(1); }
+}
+
+/* Drag arrows + ring animation (kept as is; only shown when .show-drag-hint is added) */
+.custom-marker-outer .drag-hint {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 3;
+}
+.custom-marker-outer .drag-hint::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(56,184,53,.55);
+  animation: dragRingPulse 1.6s ease-in-out infinite;
+}
+.custom-marker-outer .drag-hint .arrow {
+  position: absolute;
+  width: 0; height: 0;
+  border: 8px solid transparent;
+  border-bottom-color: #38b835;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.25));
+  opacity: 0;
+  animation: dragArrowPulse 1.2s ease-out infinite;
+}
+.custom-marker-outer .drag-hint .arrow.up    { top: -6px; left: 50%; transform: translate(-50%,0) rotate(0deg);    animation-delay: 0s; }
+.custom-marker-outer .drag-hint .arrow.right { right: -6px; top: 50%; transform: translate(0,-50%) rotate(90deg);  animation-delay: .1s; }
+.custom-marker-outer .drag-hint .arrow.down  { bottom: -6px; left: 50%; transform: translate(-50%,0) rotate(180deg);animation-delay: .2s; }
+.custom-marker-outer .drag-hint .arrow.left  { left: -6px; top: 50%; transform: translate(0,-50%) rotate(270deg);  animation-delay: .3s; }
+
+.custom-marker-outer.show-drag-hint .drag-hint { opacity: 1; transform: scale(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .custom-marker-outer .drag-hint::before,
+  .custom-marker-outer .drag-hint .arrow,
+  .custom-marker-place-name.name-bubble-animate {
+    animation: none !important;
+  }
+}
+@keyframes dragRingPulse {
+  0% { transform: scale(0.92); opacity: .7; border-color: rgba(56,184,53,.55); }
+  50% { transform: scale(1.02); opacity: .95; border-color: rgba(56,184,53,.8); }
+  100% { transform: scale(0.92); opacity: .7; border-color: rgba(56,184,53,.55); }
+}
+@keyframes dragArrowPulse {
+  0% { opacity: 0; transform: translate(0, 0) rotate(var(--r,0deg)); }
+  35% { opacity: 1; transform: translate(0, -3px) rotate(var(--r,0deg)); }
+  100% { opacity: 0; transform: translate(0, -8px) rotate(var(--r,0deg)); }
+}
+.custom-marker-outer .drag-hint .arrow.up    { --r: 0deg; }
+.custom-marker-outer .drag-hint .arrow.right { --r: 90deg; }
+.custom-marker-outer .drag-hint .arrow.down  { --r: 180deg; }
+.custom-marker-outer .drag-hint .arrow.left  { --r: 270deg; }
+
+
+
+
+.mytrips-pdf-btn img {
+  filter: grayscale(0.18);
+  opacity: 0.90;
+  transition: opacity 0.2s;
+}
+.mytrips-pdf-btn:hover img {
+  opacity: 1;
+  filter: none;
+}
+
+.scale-bar-vertical-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #111;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 100;
+ 
+}
+@media (max-width: 600px) {
+    .tt-elev-svg {
+    height: 220px !important;
+  }
+}
