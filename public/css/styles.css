@@ -1943,6 +1943,7 @@ li .highlight {
     display: flex;
     gap: 12px;
     align-items: center;
+    
 }
 .empty-message a {
     color: #007bff;
