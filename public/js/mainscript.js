@@ -2269,10 +2269,9 @@ function updateCart() {
         messageElement.innerHTML = `
             
             <div id="welcome-content">
-                <p id="welcome-text">Create your trip using the chat screen. <span class="enjoy">Enjoy!</span></p>
-                <div style="gap: 10px; display: flex; flex-direction: row; align-items: center; justify-content: center;">
-                    <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width: 40px; height: 40px;">
-                </div>
+                <p id="empty-text">Create your trip using the chat screen. <span class="enjoy">Enjoy!</span> <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width: 40px; height: 40px;">
+</p>
+      
             </div>
         
    `
