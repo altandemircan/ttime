@@ -1924,7 +1924,11 @@ li .highlight {
     font-size: 0.9rem;
     color: #8a4af3;
 } 
-
+#emtpy-content {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+}
 .empty-message {
        justify-content: center;
     align-items: center;
@@ -1935,7 +1939,7 @@ li .highlight {
 .enjoy {
     font-size: 1.4rem;
     font-weight: 700;
-    color: #333;
+    color:#8a4af3;
     letter-spacing: -0.5px;
     margin-bottom: 10px;
     padding: 0;
