@@ -567,31 +567,32 @@ Your browser does not support the video tag.                  </video>
 
     <!-- trip sidebar -->
     <div class="sidebar-overlay sidebar-trip" id="sidebar-overlay-trip">
-        <div id="sidebar-trip">
-            <div class="sidebar_title">
-                <div id="trip_title">Trip Plan</div>                 
-                <button class="sidebar-toggle" onclick="toggleSidebarTrip()">
-                    <img src="/img/close-icon.svg" alt="Close">
-                </button>
-                <style type="text/css">
-                    #toggleIcon {
-                        cursor: pointer;
-                        position: absolute;
-                        right: 50px;
-                        top: 22px;
-                    }
-                </style>
-                <div id="cart">  
-                    <div id="cart-items" class="cart-container">
-                        <div id="cart">
-                            <!-- Cart items will be added here dynamically -->
-                        </div> 
+                <div id="sidebar-trip">
+                    <div class="sidebar_title">
+                        <div id="trip_title">Trip Plan</div>                 
+                        <button class="sidebar-toggle" onclick="toggleSidebarTrip()">
+                            <img src="/img/close-icon.svg" alt="Close">
+                        </button>
+                        <style type="text/css">
+                            #toggleIcon {
+                                cursor: pointer;
+                                position: absolute;
+                                right: 50px;
+                                top: 22px;
+                            }
+                        </style>
+                        <div id="cart">  
+                            <div id="cart-items" class="cart-container">
+                                <div id="cart">
+                                    <!-- Cart items will be added here dynamically -->
+                                </div> 
+                            </div>
+                        </div>
+                        <!-- Başlangıçta gizli: JS, cart dolu ise gösterecek -->
+                        <div id="newchat" onclick="startNewChat()" style="display:none;">New Chat</div>
                     </div>
                 </div>
-                <div id="newchat" onclick="startNewChat()">New Chat</div>
             </div>
-        </div>
-    </div>
 
     <!-- my trips sidebar -->
     <div class="sidebar-overlay sidebar-mytrips" id="sidebar-overlay-mytrips">
@@ -943,10 +944,6 @@ Your browser does not support the video tag.                  </video>
                 </div>
             </div>
         </div>
-
-
-
-
     </div>
 </section>
 
