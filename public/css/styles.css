@@ -3311,10 +3311,6 @@ hr {
 }
 
 
-.date-range {
-    display: flex;
-    flex-direction: column;
-}
 
 .see-details-btn {
     padding: 10px;
@@ -3427,7 +3423,7 @@ ease;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    flex-direction: row;
+        flex-direction: column;
     margin-bottom: 20px;
 }
 
