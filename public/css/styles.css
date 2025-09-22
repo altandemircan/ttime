@@ -1936,6 +1936,10 @@ li .highlight {
     border-radius: 5px;
     font-weight: 400;
 }
+.empty-text {
+    display: flex;
+    gap: 10px;
+}
 .enjoy {
     font-size: 1.4rem;
     font-weight: 700;
