@@ -1926,7 +1926,7 @@ li .highlight {
 } 
 #emtpy-content {
     display: flex;
-    gap: 10px;
+    gap: 6px;
     flex-direction: column;
 }
 .empty-message {

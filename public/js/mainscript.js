@@ -2266,16 +2266,10 @@ function updateCart() {
     if (!window.cart || window.cart.length === 0) {
         const messageElement = document.createElement("p");
         messageElement.classList.add("empty-message");
-        messageElement.innerHTML = `
-            
+        messageElement.innerHTML = `            
             <div id="empty-content">Create your trip using the chat screen. 
-                <p class="empty-text"><span class="enjoy">Enjoy!</span> <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width: 40px; height: 40px;">
-</p>
-      
-            </div>
-        
-   `
-
+                <p class="empty-text"><img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width: 40px; height: 40px;"><span class="enjoy">Enjoy!</span> 
+</p> </div>`
     ;
         cartDiv.appendChild(messageElement);
         menuCount.textContent = 0;
