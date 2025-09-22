@@ -2266,7 +2266,24 @@ function updateCart() {
     if (!window.cart || window.cart.length === 0) {
         const messageElement = document.createElement("p");
         messageElement.classList.add("empty-message");
-        messageElement.innerHTML = `Create your trip using the chat screen.<br><br> Enjoy!`;
+        messageElement.innerHTML = `<div class="fixed-container">
+        <div class="cw">
+            <div class="circle-container">
+                <img id="circle-image" class="circle-video" srcset="/img/aioo.webp" type="image/webp">
+            </div>
+            <h1>Hello, <span>I'm Mira!</span> <img src="/img/mira-chat.gif"></h1>
+            <div id="welcome-content">
+                <p id="welcome-text">With Triptime.AI, I help you build travel routes and suggest places to discover. Get ready for an extraordinary holiday plan!</p>
+                <div style="gap: 10px; display: flex; flex-direction: row; align-items: center; justify-content: center;">
+                    <img src="https://cdn-icons-gif.flaticon.com/15747/15747340.gif" style="width: 40px; height: 40px;">
+                    ..............
+                    <img src="https://cdn-icons-gif.flaticon.com/18998/18998044.gif" style="width: 40px; height: 40px;">
+                    ..............
+                    <img src="https://cdn-icons-gif.flaticon.com/17270/17270663.gif" style="width: 40px; height: 40px;">
+                </div>
+            </div>
+        </div>
+    </div>Create your trip using the chat screen.<br><br> Enjoy!`;
         cartDiv.appendChild(messageElement);
         menuCount.textContent = 0;
         menuCount.style.display = "none";
