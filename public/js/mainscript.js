@@ -2266,8 +2266,9 @@ function updateCart() {
     if (!window.cart || window.cart.length === 0) {
         const messageElement = document.createElement("p");
         messageElement.classList.add("empty-message");
-        messageElement.innerHTML = `<div class="fixed-container">
-        <div class="cw">
+        messageElement.innerHTML = `
+
+        Create your trip using the chat screen.
             <div class="circle-container">
                 <img id="circle-image" class="circle-video" srcset="/img/aioo.webp" type="image/webp">
             </div>
@@ -2283,7 +2284,11 @@ function updateCart() {
                 </div>
             </div>
         </div>
-    </div>Create your trip using the chat screen.<br><br> Enjoy!`;
+    
+
+    <br><br> Enjoy!`
+
+    ;
         cartDiv.appendChild(messageElement);
         menuCount.textContent = 0;
         menuCount.style.display = "none";
