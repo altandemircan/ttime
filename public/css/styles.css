@@ -1926,15 +1926,10 @@ li .highlight {
 }
 
 .empty-message {
-    display: flex;
     justify-content: center;
     align-items: center;
     height: 150px;
-    text-align: center;
-    gap: 10px;
-    /* color: #777; */
-    /* font-style: italic; */
-    border: 1px dashed #ccc;
+    gap: 10px;   
     border-radius: 5px;
     padding: 10px;
     flex-direction: column;
@@ -4486,12 +4481,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .delete-trip-btn {
   background: #f44336;
   color: white;
-}
-
-.empty-message {
-  color: #666;
-  font-style: italic;
-  padding: 12px;
 }
 
 
