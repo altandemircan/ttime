@@ -2268,23 +2268,19 @@ function updateCart() {
         messageElement.classList.add("empty-message");
         messageElement.innerHTML = `
 
-        Create your trip using the chat screen.
+        
            
             
             <div id="welcome-content">
-                <p id="welcome-text">With Triptime.AI, I help you build travel routes and suggest places to discover. Get ready for an extraordinary holiday plan!</p>
+                <p id="welcome-text">Create your trip using the chat screen! <br>Enjoy!</p>
                 <div style="gap: 10px; display: flex; flex-direction: row; align-items: center; justify-content: center;">
-                    <img src="https://cdn-icons-gif.flaticon.com/15747/15747340.gif" style="width: 40px; height: 40px;">
-                    ..............
-                    <img src="https://cdn-icons-gif.flaticon.com/18998/18998044.gif" style="width: 40px; height: 40px;">
-                    ..............
-                    <img src="https://cdn-icons-gif.flaticon.com/17270/17270663.gif" style="width: 40px; height: 40px;">
+                    <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width: 40px; height: 40px;">
                 </div>
             </div>
         </div>
     
 
-    <br><br> Enjoy!`
+   `
 
     ;
         cartDiv.appendChild(messageElement);
