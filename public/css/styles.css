@@ -3315,25 +3315,24 @@ hr {
     display: flex;
     flex-direction: column;
 }
-.date-info {
-    text-align: center;
-    font-size: 0.9rem;
-}
+
 .see-details-btn {
-    padding: 10px;   
-    margin-top: 0px;  
+    padding: 10px;
+    margin-top: 0px;
     font-weight: 600;
     align-items: center;
     justify-content: center;
-    border: 1px solid #4caf50;
+    border: 1px solid #ffffff;
     border-radius: 8px;
-    background: #ffffff;
+    background: #4bb8c0;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s 
+ease;
     font-size: 0.9rem;
-    color: #000000;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    color: #ffffff;
+   
     cursor: default;
+    width: -webkit-fill-available;
 }
 .add-to-calendar-btn {
         padding: 10px;
@@ -3433,8 +3432,24 @@ hr {
 }
 
 .date-info {
-   text-align: center;
-   font-size: 0.9rem;
+   text-align: center; 
+
+    display: flex;
+    align-content: center;
+    
+    padding: 10px;
+   
+    justify-content: center;
+   
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s 
+ease;
+    font-size: 1rem;
+    color: #000000;
+    /* box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px; */
+    cursor: default;
+    width: -webkit-fill-available;
 }
 #tt-trip-details {
     z-index: 1010;
