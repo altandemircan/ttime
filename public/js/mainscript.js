@@ -2255,6 +2255,10 @@ function syncCartOrderWithDOM(day) {
 }
 
 /* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
+
+// (dosyadaki diğer kodlar)
+
+// updateCart içinde ilgili yerlere eklemeler yapıldı
 function updateCart() {
     console.table(window.cart);
     let cartDiv = document.getElementById("cart-items");
@@ -2274,6 +2278,11 @@ function updateCart() {
         cartDiv.appendChild(messageElement);
         menuCount.textContent = 0;
         menuCount.style.display = "none";
+
+        // NEW: Sepet boşken New Chat butonunu gizle
+        const newChatBtn = document.getElementById("newchat");
+        if (newChatBtn) newChatBtn.style.display = "none";
+
         return;
     }
     let maxDay = 0;
@@ -2424,9 +2433,6 @@ function updateCart() {
             routeDiv.className = "route-map";
             dayContainer.appendChild(routeDiv);
 
-            // KÜÇÜK HARİTA: Artık burada controls/tt set kurmuyoruz. renderRouteForDay() bunu ekleyecek.
-            // KÜÇÜK HARİTA SCALE BAR: Artık oluşturulmuyor (expanded'da gösteriliyor).
-
             const routeInfoDiv = document.createElement("div");
             routeInfoDiv.id = `route-info-day${day}`;
             routeInfoDiv.className = "route-info";
@@ -2475,6 +2481,11 @@ function updateCart() {
     const itemCount = window.cart.filter(item => item.name).length;
     menuCount.textContent = itemCount;
     menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
+
+    // NEW: Sepette öğe varsa New Chat görünsün, yoksa gizlensin
+    const newChatBtn = document.getElementById("newchat");
+    if (newChatBtn) newChatBtn.style.display = itemCount > 0 ? "block" : "none";
+
     attachDragListeners();
     
     let maxDay2 = 0;
@@ -2504,6 +2515,8 @@ function updateCart() {
     setupStepsDragHighlight();
     renderTravelModeControlsForAllDays();
 }
+document.addEventListener('DOMContentLoaded', updateCart);
+// (dosyadaki diğer kodlar)
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
