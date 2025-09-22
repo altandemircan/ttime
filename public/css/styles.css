@@ -3634,30 +3634,30 @@ hr {
 /* --- Paylaşım Butonları İçin Düzeltilmiş Stiller --- */
 
 .share-buttons-container {
-    display: flex;
+       display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 15px;
-    margin-top: 25px;
-    padding: 20px 10px;
-    border-top: 1px solid #e0e0e0;
+    margin-bottom: 20px;
 }
 
 .share-button {
-    display: inline-flex;
+    display: inline-flex;   
+    gap: 10px;
+    padding: 10px 20px;   
+    margin-top: 0px;
+    width: 100%;
+    font-weight: 600;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 25px;
-    color: white;
-    font-size: 15px;
-    font-weight: bold;
-    text-decoration: none;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #4CAF50;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    cursor: default;
 }
 
 .share-button:hover {
