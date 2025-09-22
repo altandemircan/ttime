@@ -2267,9 +2267,6 @@ function updateCart() {
         const messageElement = document.createElement("p");
         messageElement.classList.add("empty-message");
         messageElement.innerHTML = `
-
-        
-           
             
             <div id="welcome-content">
                 <p id="welcome-text">Create your trip using the chat screen. <span class"enjoy">Enjoy!</span></p>
@@ -2277,9 +2274,7 @@ function updateCart() {
                     <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width: 40px; height: 40px;">
                 </div>
             </div>
-        </div>
-    
-
+        
    `
 
     ;
