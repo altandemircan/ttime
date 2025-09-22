@@ -4814,7 +4814,10 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   min-height: 0 !important;
   display: block !important;
 }
-
+[id^="map-bottom-controls-wrapper-day"].collapsed {
+    opacity: 1 !important;   
+    min-height: fit-content !important;
+}
 
 .ai-tags {
     display: flex;
