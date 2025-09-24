@@ -399,13 +399,20 @@ async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
 
 
 function toggleCustomAccordion(header) {
-    // Tümünü kapat
-    document.querySelectorAll('.custom-accordion').forEach(acc => acc.classList.remove('active'));
-    // Sadece tıklananı aç/kapat
     const accordion = header.parentElement;
-    accordion.classList.toggle('active');
-}
+    const content = accordion.querySelector('.custom-accordion-content');
+    const icon = header.querySelector('.custom-icon');
+    const isOpen = accordion.classList.toggle('active');
 
+    // İçeriği aç/kapat
+    if (isOpen) {
+        content.style.maxHeight = content.scrollHeight + "px";
+        icon.textContent = "–";
+    } else {
+        content.style.maxHeight = null;
+        icon.textContent = "+";
+    }
+}
 
 function parsePlanRequest(text) {
     let days = null;
