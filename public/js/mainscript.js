@@ -398,48 +398,6 @@ async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
 }
 
 
-function toggleCustomAccordion(element) {
-    // Tıklanan accordion'u bul
-    let parent = element.closest('.custom-accordion');
-    if (!parent) {
-        console.error("Parent element bulunamadı!");
-        return;
-    }
-
-    // İçeriği ve ikonu bul
-    let content = parent.querySelector('.custom-accordion-content');
-    let icon = element.querySelector('.custom-icon');
-
-    // Eğer içerik veya ikon bulunamazsa fonksiyondan çık
-    if (!content || !icon) {
-        console.error("İçerik veya ikon bulunamadı!");
-        return;
-    }
-
-    // Eğer accordion zaten açıksa kapat
-    if (parent.classList.contains('active')) {
-        parent.classList.remove('active');
-        content.style.maxHeight = '0';
-        icon.textContent = '+';
-    } else {
-        // Diğer tüm accordion'ları kapat
-        document.querySelectorAll('.custom-accordion').forEach(acc => {
-            let accContent = acc.querySelector('.custom-accordion-content');
-            let accIcon = acc.querySelector('.custom-icon');
-
-            if (accContent && accIcon) {
-                acc.classList.remove('active');
-                accContent.style.maxHeight = '0';
-                accIcon.textContent = '+';
-            }
-        });
-
-        // Tıklanan accordion'u aç
-        parent.classList.add('active');
-        content.style.maxHeight = content.scrollHeight + 'px'; // İçeriğin yüksekliğine göre ayarla
-        icon.textContent = '−';
-    }
-}
 function parsePlanRequest(text) {
     let days = null;
     let location = null;
