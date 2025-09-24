@@ -397,6 +397,16 @@ async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
   return limitedPlaces;
 }
 
+
+function toggleCustomAccordion(header) {
+    // Tümünü kapat
+    document.querySelectorAll('.custom-accordion').forEach(acc => acc.classList.remove('active'));
+    // Sadece tıklananı aç/kapat
+    const accordion = header.parentElement;
+    accordion.classList.toggle('active');
+}
+
+
 function parsePlanRequest(text) {
     let days = null;
     let location = null;
