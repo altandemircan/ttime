@@ -3736,34 +3736,47 @@ async function expandMap(containerId, day) {
     locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Place" class="category-icon">';
     headerDiv.appendChild(locBtn);
 
-    // --- Toggle mantığı ---
-    window.isLocationActiveByDay[day] = false; // İlk başta pasif
+    window.isLocationActiveByDay[day] = false;
 
     locBtn.addEventListener('click', function() {
-        if (!window.isLocationActiveByDay[day]) {
-            // Aktif hale getir (marker ekle)
-            window.isLocationActiveByDay[day] = true;
-            locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="Place" class="category-icon">';
-            getMyLocation(day, expandedMap);
-        } else {
-            // Pasif hale getir (marker sil)
-            if (window.userLocationMarkersByDay[day]) {
-                window.userLocationMarkersByDay[day].forEach(marker => {
-                    if (expandedMap.hasLayer(marker)) expandedMap.removeLayer(marker);
-                });
+      if (!window.isLocationActiveByDay[day]) {
+        window.isLocationActiveByDay[day] = true;
+        locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="Place" class="category-icon">';
+        getMyLocation(day, expandedMap);
+
+        // KONUMU MERKEZE AL
+        setTimeout(() => {
+          const arr = window.userLocationMarkersByDay?.[day];
+          if (arr && arr.length) {
+            const last = arr[arr.length - 1];
+            if (last && last.getLatLng) {
+              const ll = last.getLatLng();
+                // Zoom düşükse biraz yaklaştır
+              const targetZoom = expandedMap.getZoom() < 14 ? 15 : expandedMap.getZoom();
+              expandedMap.setView(ll, targetZoom);
             }
-            window.userLocationMarkersByDay[day] = [];
-            window.isLocationActiveByDay[day] = false;
-            locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Place" class="category-icon">';
+          }
+        }, 300);
+
+      } else {
+        if (window.userLocationMarkersByDay[day]) {
+          window.userLocationMarkersByDay[day].forEach(marker => {
+            if (expandedMap.hasLayer(marker)) expandedMap.removeLayer(marker);
+          });
         }
+        window.userLocationMarkersByDay[day] = [];
+        window.isLocationActiveByDay[day] = false;
+        locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Place" class="category-icon">';
+      }
     });
 
     expandedContainer.appendChild(headerDiv);
-        {
+
+    {
       const header = expandedContainer.querySelector('.expanded-map-header');
       if (header) {
         const locBtn = header.querySelector(`#use-my-location-btn-day${day}`);
-        if (locBtn) header.after(locBtn );
+        if (locBtn) header.after(locBtn);
       }
     }
 
