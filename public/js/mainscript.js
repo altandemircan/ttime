@@ -3759,6 +3759,13 @@ async function expandMap(containerId, day) {
     });
 
     expandedContainer.appendChild(headerDiv);
+        {
+      const header = expandedContainer.querySelector('.expanded-map-header');
+      if (header) {
+        const locBtn = header.querySelector(`#use-my-location-btn-day${day}`);
+        if (locBtn) header.after(locBtn);
+      }
+    }
 
     // Close button
     const closeButton = document.createElement('button');
