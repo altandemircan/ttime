@@ -5410,17 +5410,19 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 #use-my-location-btn-day1, #use-my-location-btn-day2 {
-        padding: 6px;
-    background: #ffffff;
+        position: absolute;
+    top: 80px;
+    left: 10px;
+    z-index: 10001;
+    background: rgb(255 255 255);
+    /* color: white; */
     border: none;
-    /* position: absolute; */
-    bottom: 33px;
-    right: 0;
+    padding: 8px 12px;
+    border-radius: 4px;
     cursor: pointer;
-    width: inherit;
-    text-align: right;
-
+    font-weight: 500;
 }
+
 .active-location-btn {
   background: #1976d2;
   color: #fff;
