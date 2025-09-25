@@ -2258,7 +2258,63 @@ function syncCartOrderWithDOM(day) {
 /* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
 
 // (dosyadaki diğer kodlar)
+// Basit planlama haritası init (tekrar çağrılırsa yeniden kurmaz)
+window.initPlannerMap = function() {
+    if (window.plannerMap) {
+        setTimeout(() => window.plannerMap.invalidateSize(), 100);
+        return;
+    }
+    const el = document.getElementById('planner-map');
+    if (!el) {
+        console.warn('planner-map element not found.');
+        return;
+    }
+    // Avrupa genel
+    window.plannerMap = L.map(el).setView([50, 10], 4);
 
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(window.plannerMap);
+
+    window.plannerMarkers = [];
+    window.plannerMap.on('click', onPlannerMapClick);
+};
+
+function onPlannerMapClick(e) {
+    // placeholder varsa ve henüz gerçek item yoksa onu temizlemek için filtrele
+    if (!window.cart) window.cart = [{ day:1, placeholder:true }];
+
+    const realItems = window.cart.filter(it => it.day === 1 && it.name);
+    const idx = realItems.length + 1;
+
+    const name = `Point ${idx}`;
+    const newItem = {
+        day: 1,
+        name,
+        location: { lat: e.latlng.lat, lng: e.latlng.lng },
+        category: 'custom',
+        image: '/img/placeholder_location.svg'
+    };
+    window.cart = window.cart.filter(it => !it.placeholder); // placeholder sil
+    window.cart.push(newItem);
+
+    // Marker ekle (basit)
+    const m = L.marker(e.latlng).addTo(window.plannerMap).bindTooltip(name, {permanent:false});
+    window.plannerMarkers.push(m);
+    
+const realItemsAfter = window.cart.filter(it => it.day === 1 && it.name);
+if (realItemsAfter.length === 2 && typeof openExpandedMapForDay === 'function') {
+    openExpandedMapForDay(1); // varsa
+}
+
+navigator.geolocation?.getCurrentPosition(pos => {
+  if (window.plannerMap) window.plannerMap.setView([pos.coords.latitude, pos.coords.longitude], 10);
+});
+    // Güncelle
+    updateCart();
+    // updateCart sonunda renderRouteForDay(1) çağırıyorsan ikinci nokta sonrası rota otomatik gelir.
+}
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 function updateCart() {
     console.table(window.cart);
@@ -2268,24 +2324,59 @@ function updateCart() {
     if (typeof window.customDayNames === 'undefined') {
         window.customDayNames = {};
     }
-    if (!window.cart || window.cart.length === 0) {
-        const messageElement = document.createElement("p");
-        messageElement.classList.add("empty-message");
-        messageElement.innerHTML = `            
-            <div id="empty-content">Create your trip using the chat screen. 
-                <p class="empty-text"><img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width: 40px; height: 40px;"><span class="enjoy">Enjoy!</span> 
-</p> </div>`
-    ;
-        cartDiv.appendChild(messageElement);
-        menuCount.textContent = 0;
-        menuCount.style.display = "none";
+// ... updateCart başlangıcında cart boş kontrolünde:
+if (!window.cart || window.cart.length === 0) {
+    cartDiv.innerHTML = "";
 
-        // NEW: Sepet boşken New Chat butonunu gizle
-        const newChatBtn = document.getElementById("newchat");
-        if (newChatBtn) newChatBtn.style.display = "none";
+    const messageElement = document.createElement("div");
+    messageElement.classList.add("empty-message");
+    messageElement.innerHTML = `
+      <div id="empty-content">
+        <p>Create your trip using the chat screen.</p>
+        <button id="start-map-btn" type="button" style="
+          cursor:pointer;
+          margin:10px 0 6px;
+          background:#1d72ff;
+          color:#fff;
+          border:none;
+          padding:8px 14px;
+          border-radius:6px;
+          font-size:14px;
+          font-weight:500;
+        ">Start with map</button>
+        <p class="empty-text" style="display:flex;gap:6px;align-items:center;justify-content:center;margin:8px 0 0;">
+          <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width:40px;height:40px;">
+          <span class="enjoy">Enjoy!</span>
+        </p>
+      </div>
+    `;
+    cartDiv.appendChild(messageElement);
 
-        return;
+    menuCount.textContent = 0;
+    menuCount.style.display = "none";
+    const newChatBtn = document.getElementById("newchat");
+    if (newChatBtn) newChatBtn.style.display = "none";
+
+    // START WITH MAP click
+    const btn = messageElement.querySelector('#start-map-btn');
+    if (btn) {
+        btn.addEventListener('click', () => {
+            // Day 1 placeholder: sadece day container oluşsun
+            window.cart = [{ day: 1, placeholder: true }];
+
+            // Harita wrapper görünür yap
+            const wrap = document.getElementById('planner-map-wrapper');
+            if (wrap) {
+                wrap.style.display = 'block';
+                setTimeout(() => {
+                    if (window.initPlannerMap) window.initPlannerMap();
+                }, 50);
+            }
+            updateCart(); // Day 1 kutusu çizilsin
+        });
     }
+    return;
+}
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
 
