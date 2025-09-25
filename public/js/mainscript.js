@@ -2385,18 +2385,16 @@ function updateCart() {
               <div class="place-rating">
                 ${mapHtml}
               </div>
-  
-const addressText = (item.address || 'Address not available').replace(/^📌\s*/,'');
-const latStr = item.location ? Number(item.location.lat).toFixed(7).replace('.', ',') : '';
-const lngStr = item.location ? Number(item.location.lng).toFixed(7).replace('.', ',') : '';
-
-// Sonra li.innerHTML içinde bu blokla değiştir:
-<p class="contact">📌 Address: ${addressText}</p>
-<p class="working-hours-title">🕔 Working hours: ${openingHoursDisplay}</p>
-${item.location ? `
-<p class="coords-info" style="margin-top:8px;">
-  📍 Coords: ${latStr}, ${lngStr}
-</p>` : ''}
+              <div class="contact">
+                <p>📌 ${item.address || 'Address not available'}</p>
+              </div>
+              <p class="working-hours-title">
+                🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+              </p>
+              ${item.location ? `
+              <div class="coords-info" style="margin-top:8px;">
+                📍 Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')}, Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+              </div>` : ''}
             </div>
           </div>
         </div>
