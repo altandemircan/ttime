@@ -2386,14 +2386,14 @@ function updateCart() {
                 ${mapHtml}
               </div>
               <div class="contact">
-                <p>📌 ${item.address || 'Address not available'}</p>
+                <p>📌 Address: ${item.address || 'Address not available'}</p>
               </div>
               <p class="working-hours-title">
                 🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
               </p>
               ${item.location ? `
               <div class="coords-info" style="margin-top:8px;">
-                📍 Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')}, Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+                📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')}, Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
               </div>` : ''}
             </div>
           </div>
