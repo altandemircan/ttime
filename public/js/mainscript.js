@@ -2358,7 +2358,7 @@ function updateCart() {
                         openingHoursDisplay = item.opening_hours.trim();
                     }
                 }
-                
+
                 let mapHtml = '';
                 if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
                     mapHtml = createMapIframe(item.location.lat, item.location.lng, 16);
@@ -2393,7 +2393,7 @@ function updateCart() {
               </p>
               ${item.location ? `
               <div class="coords-info" style="margin-top:8px;">
-                Lat: ${item.location.lat}, Lng: ${item.location.lng}
+                📍 Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')}, Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
               </div>` : ''}
             </div>
           </div>
@@ -3271,14 +3271,7 @@ function addCoordinatesToContent() {
         const contentDiv = item.querySelector('.content');
         const index = item.getAttribute('data-index');
         const cartItem = window.cart[index];
-        
-        if (cartItem && cartItem.location && !contentDiv.querySelector('.coordinates-info')) {
-            const coordsDiv = document.createElement('div');
-            coordsDiv.className = 'coordinates-info';
-            coordsDiv.style.display = 'none'; // Gizli olarak ekliyoruz
-            coordsDiv.textContent = `Lat: ${cartItem.location.lat}, Lng: ${cartItem.location.lng}`;
-            contentDiv.appendChild(coordsDiv);
-        }
+       
     });
 }
 
