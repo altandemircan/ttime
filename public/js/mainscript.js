@@ -2344,12 +2344,21 @@ function updateCart() {
                 li.setAttribute("data-index", window.cart.indexOf(item));
                 li.addEventListener("dragstart", dragStart);
 
-                let openingHoursContent = "<li>No working hours info</li>";
+                let openingHoursDisplay = "No working hours info";
                 if (item.opening_hours) {
-                    openingHoursContent = Array.isArray(item.opening_hours)
-                        ? item.opening_hours.map(h => `<li>${h}</li>`).join('')
-                        : `<li>${item.opening_hours}</li>`;
+                    if (Array.isArray(item.opening_hours)) {
+                        // Boş elemanları temizle
+                        const cleaned = item.opening_hours
+                          .map(h => (h || '').trim())
+                          .filter(h => h.length > 0);
+                        if (cleaned.length) {
+                            openingHoursDisplay = cleaned.join(" | ");
+                        }
+                    } else if (typeof item.opening_hours === "string" && item.opening_hours.trim().length > 0) {
+                        openingHoursDisplay = item.opening_hours.trim();
+                    }
                 }
+                
                 let mapHtml = '';
                 if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
                     mapHtml = createMapIframe(item.location.lat, item.location.lng, 16);
@@ -2379,12 +2388,13 @@ function updateCart() {
               <div class="contact">
                 <p>📌 ${item.address || 'Address not available'}</p>
               </div>
-              <p class="working-hours-title">🕔 Working hours: ${openingHoursContent}</p>
+              <p class="working-hours-title">
+                🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+              </p>
               ${item.location ? `
               <div class="coords-info" style="margin-top:8px;">
                 Lat: ${item.location.lat}, Lng: ${item.location.lng}
-              </div>
-              ` : ''}
+              </div>` : ''}
             </div>
           </div>
         </div>
