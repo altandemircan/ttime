@@ -3165,6 +3165,9 @@ background: #fff;
     color: #4299e1;
     margin-right: 8px;
 }
+.working-hours-value {
+    font-weight: 500;
+}
 
 hr {
     border: none;
