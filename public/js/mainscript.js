@@ -2256,18 +2256,19 @@ function syncCartOrderWithDOM(day) {
         ...newOrder
     ];
 }
-
-/* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
-// (dosyada uygun bir yere - örn. renderRouteForDay üstüne) EKLE
-function setExpandedHeaderMode(day, isEmpty) {
-    const cont = document.getElementById(`expanded-map-${day}`);
-    if (!cont) return;
-    const header = cont.querySelector('.expanded-map-header');
+// === HEADER POZİSYON YÖNETİCİSİ ===
+function updateExpandedHeaderPosition(day) {
+    const container = document.getElementById(`expanded-map-${day}`);
+    if (!container) return;
+    const header = container.querySelector('.expanded-map-header');
     if (!header) return;
 
+    const pts = getDayPoints(day);
+    const isEmpty = !pts || pts.length < 2;
+
     if (isEmpty) {
-        if (!header.dataset._origApplied) {
-            header.dataset._origApplied   = '1';
+        if (!header.dataset._origStored) {
+            header.dataset._origStored    = '1';
             header.dataset._origPosition  = header.style.position || '';
             header.dataset._origTop       = header.style.top || '';
             header.dataset._origBottom    = header.style.bottom || '';
@@ -2294,25 +2295,20 @@ function setExpandedHeaderMode(day, isEmpty) {
     }
 }
 
-// expandMap içinde (expandedContainer DOM'a eklendikten sonra):
-try {
-  const pts = getDayPoints(day);
-  setExpandedHeaderMode(day, !pts || pts.length < 2);
-} catch(e){}
+// expandMap içinde expandedContainer oluşturulduktan sonra:
+try { updateExpandedHeaderPosition(day); } catch(e){}
 
-// renderRouteForDay <2 branch RETURN ETMEDEN ÖNCE:
-const expEl = document.getElementById(`expanded-map-${day}`);
-if (expEl) setExpandedHeaderMode(day, true);
+// renderRouteForDay <2 branch (return’den hemen önce):
+const expA = document.getElementById(`expanded-map-${day}`);
+if (expA) updateExpandedHeaderPosition(day);
 
 // renderRouteForDay rota çizimi sonunda:
-const exp2 = document.getElementById(`expanded-map-${day}`);
-if (exp2) setExpandedHeaderMode(day, false);
+const expB = document.getElementById(`expanded-map-${day}`);
+if (expB) updateExpandedHeaderPosition(day);
 
-// updateExpandedMap sonunda (opsiyonel):
-try {
-  const pts = getDayPoints(day);
-  setExpandedHeaderMode(day, !pts || pts.length < 2);
-} catch(e){}
+// updateExpandedMap sonunda:
+try { updateExpandedHeaderPosition(day); } catch(e){}
+/* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
 
 const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
 const INITIAL_EMPTY_MAP_ZOOM   = 7;             // Önceki 4'ten 2 kademe yakın
