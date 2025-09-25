@@ -2257,64 +2257,36 @@ function syncCartOrderWithDOM(day) {
 
 /* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
 
-// (dosyadaki diğer kodlar)
-// Basit planlama haritası init (tekrar çağrılırsa yeniden kurmaz)
-window.initPlannerMap = function() {
-    if (window.plannerMap) {
-        setTimeout(() => window.plannerMap.invalidateSize(), 100);
-        return;
+
+function startMapPlanning() {
+    // 1) Eğer cart tamamen boşsa Day 1 oluştur
+    if (!window.cart || window.cart.length === 0) {
+        // Sadece Day container oluşması için day meta kaydı (senin yapın day bilgisini item'ların içinde mi yoksa ayrı bir day objesi mi tutuyor?)
+        // Şayet sadece item bazlı ilerliyorsan boş bırakacağız; ilk tıklamada zaten item eklenecek.
+        window.cart = [{ day: 1, _placeholder: true }]; // _placeholder sadece ilk item eklenirken temizleriz
     }
-    const el = document.getElementById('planner-map');
-    if (!el) {
-        console.warn('planner-map element not found.');
-        return;
-    }
-    // Avrupa genel
-    window.plannerMap = L.map(el).setView([50, 10], 4);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
-    }).addTo(window.plannerMap);
-
-    window.plannerMarkers = [];
-    window.plannerMap.on('click', onPlannerMapClick);
-};
-
-function onPlannerMapClick(e) {
-    // placeholder varsa ve henüz gerçek item yoksa onu temizlemek için filtrele
-    if (!window.cart) window.cart = [{ day:1, placeholder:true }];
-
-    const realItems = window.cart.filter(it => it.day === 1 && it.name);
-    const idx = realItems.length + 1;
-
-    const name = `Point ${idx}`;
-    const newItem = {
-        day: 1,
-        name,
-        location: { lat: e.latlng.lat, lng: e.latlng.lng },
-        category: 'custom',
-        image: '/img/placeholder_location.svg'
-    };
-    window.cart = window.cart.filter(it => !it.placeholder); // placeholder sil
-    window.cart.push(newItem);
-
-    // Marker ekle (basit)
-    const m = L.marker(e.latlng).addTo(window.plannerMap).bindTooltip(name, {permanent:false});
-    window.plannerMarkers.push(m);
-    
-const realItemsAfter = window.cart.filter(it => it.day === 1 && it.name);
-if (realItemsAfter.length === 2 && typeof openExpandedMapForDay === 'function') {
-    openExpandedMapForDay(1); // varsa
-}
-
-navigator.geolocation?.getCurrentPosition(pos => {
-  if (window.plannerMap) window.plannerMap.setView([pos.coords.latitude, pos.coords.longitude], 10);
-});
-    // Güncelle
+    // 2) UI güncelle
     updateCart();
-    // updateCart sonunda renderRouteForDay(1) çağırıyorsan ikinci nokta sonrası rota otomatik gelir.
+
+    // 3) Expanded / normal plan haritasını aç
+    // BURADA KENDİ FONKSİYON ADINI KOY
+    if (typeof openExpandedMapForDay === 'function') {
+        openExpandedMapForDay(1);
+    } else if (typeof showRouteMap === 'function') {
+        showRouteMap(1);
+    } else {
+        console.warn('Harita açma fonksiyonu bulunamadı. openExpandedMapForDay(1) veya benzeri fonksiyon adını bana gönder.');
+    }
+
+    // 4) Harita tıklama event’i zaten openExpandedMapForDay içinde set ediliyorsa ekstra bir şey yapma.
+    // Eğer map click handler ilk açıldığında day içindeki item sayısı 0 olduğu için erken çıkıyorsa,
+    // o handler içinde ">= 2 item yoksa rota çizme ama item eklemeyi yine de kabul et" şeklinde koşulu düzelt.
+
+    // 5) Placeholder temizleyiciyi ayarlayabiliriz (ilk nokta gelince silmek için).
+    window._removeMapPlaceholderOnce = true;
 }
+
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 function updateCart() {
     console.table(window.cart);
@@ -2326,11 +2298,7 @@ function updateCart() {
     }
 // ... updateCart başlangıcında cart boş kontrolünde:
 if (!window.cart || window.cart.length === 0) {
-    cartDiv.innerHTML = "";
-
-    const messageElement = document.createElement("div");
-    messageElement.classList.add("empty-message");
-    messageElement.innerHTML = `
+    cartDiv.innerHTML = `
       <div id="empty-content">
         <p>Create your trip using the chat screen.</p>
         <button id="start-map-btn" type="button" style="
@@ -2350,29 +2318,57 @@ if (!window.cart || window.cart.length === 0) {
         </p>
       </div>
     `;
-    cartDiv.appendChild(messageElement);
 
     menuCount.textContent = 0;
     menuCount.style.display = "none";
     const newChatBtn = document.getElementById("newchat");
     if (newChatBtn) newChatBtn.style.display = "none";
 
-    // START WITH MAP click
-    const btn = messageElement.querySelector('#start-map-btn');
+    const btn = document.getElementById('start-map-btn');
     if (btn) {
         btn.addEventListener('click', () => {
-            // Day 1 placeholder: sadece day container oluşsun
-            window.cart = [{ day: 1, placeholder: true }];
+            // Day 1 placeholder (gerçek item eklenince sileceğiz)
+            window.cart = [{ day: 1, _placeholder: true }];
+            updateCart();
 
-            // Harita wrapper görünür yap
-            const wrap = document.getElementById('planner-map-wrapper');
-            if (wrap) {
-                wrap.style.display = 'block';
-                setTimeout(() => {
-                    if (window.initPlannerMap) window.initPlannerMap();
-                }, 50);
+            // Mevcut harita container'ını göster:
+            // Aşağıdaki ID/KLASS'LARDAN hangisi sende varsa onu kullan.
+            const candidateSelectors = [
+              '#route-map-day1-expanded',
+              '#route-map-day1', 
+              '#expanded-map-1',
+              '#planner-map-wrapper',
+              '#map', 
+              '#main-map'
+            ];
+            let shown = false;
+            for (const sel of candidateSelectors) {
+               const el = document.querySelector(sel);
+               if (el) {
+                   el.style.display = 'block';
+                   shown = true;
+                   break;
+               }
             }
-            updateCart(); // Day 1 kutusu çizilsin
+            if (!shown) {
+               console.warn('Harita container bulunamadı. Doğru ID/selector bilgisini bana gönder ki patch net olsun.');
+            }
+
+            // Expanded mod açan fonksiyonun varsa çağır
+            // Örnek isimler – sende hangisi varsa onu koy:
+            if (typeof openExpandedMapForDay === 'function') {
+                openExpandedMapForDay(1);
+            } else if (typeof showExpandedMap === 'function') {
+                showExpandedMap(1);
+            } else if (typeof showRouteMapForDay === 'function') {
+                showRouteMapForDay(1);
+            } else {
+                // Yoksa problem değil. Sadece map zaten sayfada başlangıçta init edilmişse click çalışır.
+                console.log('Expanded map açma fonksiyon adı tespit edilemedi.');
+            }
+
+            // İlk gerçek nokta geldiğinde placeholder'ı silmek için işaret bırak
+            window._removeMapPlaceholderOnce = true;
         });
     }
     return;
