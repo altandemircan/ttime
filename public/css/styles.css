@@ -2474,7 +2474,7 @@ li .highlight {
     transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
     display: block;
     padding: 0px !important;
-    background: #efefef;
+    background: #ffffff;
 }
 
 
@@ -3136,7 +3136,7 @@ background: #fff;
     font-weight: 500;
     font-size: 0.95rem;
     line-height: 1.4;
-    background: #ffffff;
+    background: #f8f9fa;
     border-radius: 0px;
     padding: 10px;
 }
@@ -3162,7 +3162,7 @@ background: #fff;
     display: flex;
     justify-content: space-between;
     padding: 10px 12px;
-    background: #ffffff;
+    background: #f8f9fa;
     border-radius: 0px;
     font-size: 0.85rem;
     color: #4a5568;
@@ -3190,7 +3190,7 @@ hr {
     font-weight: 500;
     font-size: 0.95rem;
     line-height: 1.4;
-    background: #ffffff ;
+    background: #f8f9fa ;
     border-radius: 0px;
     padding: 10px;
 }
