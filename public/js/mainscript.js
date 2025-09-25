@@ -2367,34 +2367,40 @@ function updateCart() {
                 }
 
                 li.innerHTML = `
-  <div class="cart-item">
-    <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-    <img src="${item.image}" alt="${item.name}" class="cart-image">
-    <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
-    <div class="item-info">
-      <p class="toggle-title">${item.name}</p>
-    </div>
-    <button class="remove-btn" onclick="removeFromCart(${window.cart.indexOf(item)})">
-      <img src="img/remove-icon.svg" alt="Close">
-    </button>
-    <span class="arrow">
-      <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-    </span>
-    <div class="content">
-      <div class="info-section">
-        <div class="place-rating">
-          ${mapHtml}
+        <div class="cart-item">
+          <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+          <img src="${item.image}" alt="${item.name}" class="cart-image">
+          <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+          <div class="item-info">
+            <p class="toggle-title">${item.name}</p>
+          </div>
+          <button class="remove-btn" onclick="removeFromCart(${window.cart.indexOf(item)})">
+            <img src="img/remove-icon.svg" alt="Close">
+          </button>
+          <span class="arrow">
+            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+          </span>
+          <div class="content">
+            <div class="info-section">
+              <div class="place-rating">
+                ${mapHtml}
+              </div>
+  
+                const addressText = (item.address || 'Address not available').replace(/^📌\s*/,'');
+                const latStr = item.location ? Number(item.location.lat).toFixed(7).replace('.', ',') : '';
+                const lngStr = item.location ? Number(item.location.lng).toFixed(7).replace('.', ',') : '';
+
+                // Sonra li.innerHTML içinde bu blokla değiştir:
+                <p class="contact">📌 Address: ${addressText}</p>
+                <p class="working-hours-title">🕔 Working hours: ${openingHoursDisplay}</p>
+                ${item.location ? `
+                <p class="coords-info" style="margin-top:8px;">
+                  📍 Coords: ${latStr}, ${lngStr}
+                </p>` : ''}
+            </div>
+          </div>
         </div>
-        <p class="contact">📌 Address: ${addressText}</p>
-        <p class="working-hours-title">🕔 Working hours: ${openingHoursDisplay}</p>
-        ${item.location ? `
-        <p class="coords-info" style="margin-top:8px;">
-          📍 Coords: ${latStr}, ${lngStr}
-        </p>` : ''}
-      </div>
-    </div>
-  </div>
-`;
+      `;
                 dayList.appendChild(li);
 
                 if (dayItemsArr.length === 1 && index === 0) {
