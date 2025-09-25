@@ -5414,13 +5414,12 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     top: 80px;
     left: 10px;
     z-index: 10001;
-    background: rgb(255 255 255);
-    /* color: white; */
-    border: none;
-    padding: 8px 12px;
+    background: rgb(255 255 255);   
+    padding: 8px 8px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
+    border: 2px solid rgba(0, 0, 0, 0.2);
 }
 
 .active-location-btn {
