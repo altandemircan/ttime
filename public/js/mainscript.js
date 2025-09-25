@@ -2256,58 +2256,7 @@ function syncCartOrderWithDOM(day) {
         ...newOrder
     ];
 }
-// === HEADER POZİSYON YÖNETİCİSİ ===
-function updateExpandedHeaderPosition(day) {
-    const container = document.getElementById(`expanded-map-${day}`);
-    if (!container) return;
-    const header = container.querySelector('.expanded-map-header');
-    if (!header) return;
 
-    const pts = getDayPoints(day);
-    const isEmpty = !pts || pts.length < 2;
-
-    if (isEmpty) {
-        if (!header.dataset._origStored) {
-            header.dataset._origStored    = '1';
-            header.dataset._origPosition  = header.style.position || '';
-            header.dataset._origTop       = header.style.top || '';
-            header.dataset._origBottom    = header.style.bottom || '';
-            header.dataset._origLeft      = header.style.left || '';
-            header.dataset._origRight     = header.style.right || '';
-            header.dataset._origShadow    = header.style.boxShadow || '';
-            header.dataset._origBorderTop = header.style.borderTop || '';
-        }
-        header.style.position  = 'absolute';
-        header.style.top       = 'auto';
-        header.style.bottom    = '0';
-        header.style.left      = '0';
-        header.style.right     = '0';
-        header.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.08)';
-        header.style.borderTop = '1px solid #e0e0e0';
-    } else {
-        header.style.position  = header.dataset._origPosition  || '';
-        header.style.top       = header.dataset._origTop       || '';
-        header.style.bottom    = header.dataset._origBottom    || '';
-        header.style.left      = header.dataset._origLeft      || '';
-        header.style.right     = header.dataset._origRight     || '';
-        header.style.boxShadow = header.dataset._origShadow    || '';
-        header.style.borderTop = header.dataset._origBorderTop || '';
-    }
-}
-
-// expandMap içinde expandedContainer oluşturulduktan sonra:
-try { updateExpandedHeaderPosition(day); } catch(e){}
-
-// renderRouteForDay <2 branch (return’den hemen önce):
-const expA = document.getElementById(`expanded-map-${day}`);
-if (expA) updateExpandedHeaderPosition(day);
-
-// renderRouteForDay rota çizimi sonunda:
-const expB = document.getElementById(`expanded-map-${day}`);
-if (expB) updateExpandedHeaderPosition(day);
-
-// updateExpandedMap sonunda:
-try { updateExpandedHeaderPosition(day); } catch(e){}
 /* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
 
 const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
@@ -5316,7 +5265,44 @@ function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     return minDist > maxDistanceMeters;
 }
 
+function updateExpandedHeaderPosition(day) {
+    const container = document.getElementById(`expanded-map-${day}`);
+    if (!container) return;
 
+    const header = container.querySelector('.expanded-map-header');
+    if (!header) return;
+
+    const pts = getDayPoints(day); // Zaten sende var
+    const isEmpty = !pts || pts.length < 2;
+
+    if (isEmpty) {
+        if (!header.dataset._origStored) {
+            header.dataset._origStored    = '1';
+            header.dataset._origPosition  = header.style.position || '';
+            header.dataset._origTop       = header.style.top || '';
+            header.dataset._origBottom    = header.style.bottom || '';
+            header.dataset._origLeft      = header.style.left || '';
+            header.dataset._origRight     = header.style.right || '';
+            header.dataset._origShadow    = header.style.boxShadow || '';
+            header.dataset._origBorderTop = header.style.borderTop || '';
+        }
+        header.style.position  = 'absolute';
+        header.style.top       = 'auto';
+        header.style.bottom    = '0';
+        header.style.left      = '0';
+        header.style.right     = '0';
+        header.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.08)';
+        header.style.borderTop = '1px solid #e0e0e0';
+    } else {
+        header.style.position  = header.dataset._origPosition  || '';
+        header.style.top       = header.dataset._origTop       || '';
+        header.style.bottom    = header.dataset._origBottom    || '';
+        header.style.left      = header.dataset._origLeft      || '';
+        header.style.right     = header.dataset._origRight     || '';
+        header.style.boxShadow = header.dataset._origShadow    || '';
+        header.style.borderTop = header.dataset._origBorderTop || '';
+    }
+}
 async function renderRouteForDay(day) {
   const points = getDayPoints(day);
   const containerId = `route-map-day${day}`;
