@@ -3733,7 +3733,7 @@ async function expandMap(containerId, day) {
     const locBtn = document.createElement('button');
     locBtn.type = 'button';
     locBtn.id = `use-my-location-btn-day${day}`;
-    locBtn.innerHTML = '📍 Loc A';
+    locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Place" class="category-icon">';
     headerDiv.appendChild(locBtn);
 
     // --- Toggle mantığı ---
@@ -3754,7 +3754,7 @@ async function expandMap(containerId, day) {
             }
             window.userLocationMarkersByDay[day] = [];
             window.isLocationActiveByDay[day] = false;
-            locBtn.innerHTML = '📍 Loc S';
+            locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Place" class="category-icon">';
         }
     });
 
@@ -3763,7 +3763,7 @@ async function expandMap(containerId, day) {
       const header = expandedContainer.querySelector('.expanded-map-header');
       if (header) {
         const locBtn = header.querySelector(`#use-my-location-btn-day${day}`);
-        if (locBtn) header.after(locBtn);
+        if (locBtn) header.after(locBtn );
       }
     }
 
