@@ -2259,26 +2259,55 @@ function syncCartOrderWithDOM(day) {
 
 /* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
 
-// --- EK: Boş / 1 noktalı gün için temel harita oluşturma + ipucu overlay ---
+const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
+const INITIAL_EMPTY_MAP_ZOOM   = 6;             // Önceki 4'ten 2 kademe yakın
+
 function initEmptyDayMap(day) {
     const containerId = `route-map-day${day}`;
     const el = document.getElementById(containerId);
     if (!el) return;
 
-    // Harita zaten varsa dokunma
-    if (window.leafletMaps && window.leafletMaps[containerId]) return;
+    // Harita zaten varsa (rota yokken base tile kalmış olabilir) sadece view güncelle
+    if (window.leafletMaps && window.leafletMaps[containerId]) {
+        try {
+            window.leafletMaps[containerId].setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+        } catch(_) {}
+        // İpucu yoksa ekle (eski rota katmanları silinmiş olabilir)
+        if (!el.querySelector('.empty-map-hint')) {
+            const hint = document.createElement('div');
+            hint.className = 'empty-map-hint';
+            hint.style.cssText = `
+              position:absolute;
+              top:10px;
+              left:10px;
+              background:rgba(255,255,255,.9);
+              padding:6px 10px;
+              font-size:12px;
+              border-radius:6px;
+              border:1px solid #e0e0e0;
+              z-index:500;
+              font-weight:500;
+              color:#333;
+              max-width:180px;
+              line-height:1.3;
+            `;
+            hint.innerHTML = 'Click / long‑press the map to add points.<br>Add 2 points to see the route.';
+            el.style.position = 'relative';
+            el.appendChild(hint);
+        }
+        return;
+    }
 
-    // Boyut ayarla
+    // Yeni (ilk) boş harita oluştur
     el.style.height = '285px';
     el.classList.add('empty-route-map');
 
-    // Leaflet haritasını oluştur
     const map = L.map(containerId, {
         scrollWheelZoom: true,
         fadeAnimation: false,
         zoomAnimation: false,
         preferCanvas: true
-    }).setView([50, 10], 4); // Avrupa merkezi
+    }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
 
     L.tileLayer(
         `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`,
@@ -2293,29 +2322,27 @@ function initEmptyDayMap(day) {
     window.leafletMaps = window.leafletMaps || {};
     window.leafletMaps[containerId] = map;
 
-    // İpucu (tek sefer)
-    if (!el.querySelector('.empty-map-hint')) {
-        const hint = document.createElement('div');
-        hint.className = 'empty-map-hint';
-        hint.style.cssText = `
-          position:absolute;
-          top:10px;
-          left:10px;
-          background:rgba(255,255,255,.9);
-          padding:6px 10px;
-          font-size:12px;
-          border-radius:6px;
-          border:1px solid #e0e0e0;
-          z-index:500;
-          font-weight:500;
-          color:#333;
-          max-width:180px;
-          line-height:1.3;
-        `;
-        hint.innerHTML = `Click / long‑press the map to add points.<br>Add 2 points to see the route.`;
-        el.style.position = 'relative';
-        el.appendChild(hint);
-    }
+    // İpucu
+    const hint = document.createElement('div');
+    hint.className = 'empty-map-hint';
+    hint.style.cssText = `
+      position:absolute;
+      top:10px;
+      left:10px;
+      background:rgba(255,255,255,.9);
+      padding:6px 10px;
+      font-size:12px;
+      border-radius:6px;
+      border:1px solid #e0e0e0;
+      z-index:500;
+      font-weight:500;
+      color:#333;
+      max-width:180px;
+      line-height:1.3;
+    `;
+    hint.innerHTML = 'Click / long‑press the map to add points.<br>Add 2 points to see the route.';
+    el.style.position = 'relative';
+    el.appendChild(hint);
 }
 
 // --- PATCH: startMapPlanning (haritayı hemen aç + expand isteğe bağlı) ---
