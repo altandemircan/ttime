@@ -3743,7 +3743,7 @@ async function expandMap(containerId, day) {
         if (!window.isLocationActiveByDay[day]) {
             // Aktif hale getir (marker ekle)
             window.isLocationActiveByDay[day] = true;
-            locBtn.innerHTML = 'https://www.svgrepo.com/show/522167/location.svg';
+            locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="Place" class="category-icon">';
             getMyLocation(day, expandedMap);
         } else {
             // Pasif hale getir (marker sil)
