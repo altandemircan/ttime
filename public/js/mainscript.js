@@ -2880,6 +2880,7 @@ function updateExpandedMap(expandedMap, day) {
         scaleBarDiv.innerHTML = '';
       }
     }
+    adjustExpandedHeader(day);
 }
 
 function createMapIframe(lat, lng, zoom = 16) {
@@ -3894,6 +3895,7 @@ mapStyleSelect.onchange = function() {
     addDraggableMarkersToExpandedMap(expandedMap, day);
     setupScaleBarInteraction(day, expandedMap);
     enableLongPressPopupOnMap(expandedMap, day);
+    adjustExpandedHeader(day)
 }
 function enableLongPressPopupOnMap(map, day) {
     const mapContainer = map.getContainer();
@@ -5264,45 +5266,21 @@ function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     }
     return minDist > maxDistanceMeters;
 }
-
-function updateExpandedHeaderPosition(day) {
-    const container = document.getElementById(`expanded-map-${day}`);
-    if (!container) return;
-
-    const header = container.querySelector('.expanded-map-header');
-    if (!header) return;
-
-    const pts = getDayPoints(day); // Zaten sende var
-    const isEmpty = !pts || pts.length < 2;
-
-    if (isEmpty) {
-        if (!header.dataset._origStored) {
-            header.dataset._origStored    = '1';
-            header.dataset._origPosition  = header.style.position || '';
-            header.dataset._origTop       = header.style.top || '';
-            header.dataset._origBottom    = header.style.bottom || '';
-            header.dataset._origLeft      = header.style.left || '';
-            header.dataset._origRight     = header.style.right || '';
-            header.dataset._origShadow    = header.style.boxShadow || '';
-            header.dataset._origBorderTop = header.style.borderTop || '';
-        }
-        header.style.position  = 'absolute';
-        header.style.top       = 'auto';
-        header.style.bottom    = '0';
-        header.style.left      = '0';
-        header.style.right     = '0';
-        header.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.08)';
-        header.style.borderTop = '1px solid #e0e0e0';
-    } else {
-        header.style.position  = header.dataset._origPosition  || '';
-        header.style.top       = header.dataset._origTop       || '';
-        header.style.bottom    = header.dataset._origBottom    || '';
-        header.style.left      = header.dataset._origLeft      || '';
-        header.style.right     = header.dataset._origRight     || '';
-        header.style.boxShadow = header.dataset._origShadow    || '';
-        header.style.borderTop = header.dataset._origBorderTop || '';
-    }
+function adjustExpandedHeader(day){
+  const header = document.querySelector(`#expanded-map-${day} .expanded-map-header`);
+  if(!header) return;
+  const pts = (typeof getDayPoints==="function") ? getDayPoints(day) : [];
+  if (pts.length < 2) {
+    header.style.position = 'absolute';
+    header.style.top = 'auto';
+    header.style.bottom = '0';
+  } else {
+    header.style.position = '';
+    header.style.top = '';
+    header.style.bottom = '';
+  }
 }
+
 async function renderRouteForDay(day) {
   const points = getDayPoints(day);
   const containerId = `route-map-day${day}`;
@@ -5484,6 +5462,7 @@ async function renderRouteForDay(day) {
   setTimeout(() => {
     updateRouteStatsUI(day);
   }, 250);
+   adjustExpandedHeader(day);
 }
 
 
