@@ -2258,6 +2258,61 @@ function syncCartOrderWithDOM(day) {
 }
 
 /* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
+// (dosyada uygun bir yere - örn. renderRouteForDay üstüne) EKLE
+function setExpandedHeaderMode(day, isEmpty) {
+    const cont = document.getElementById(`expanded-map-${day}`);
+    if (!cont) return;
+    const header = cont.querySelector('.expanded-map-header');
+    if (!header) return;
+
+    if (isEmpty) {
+        if (!header.dataset._origApplied) {
+            header.dataset._origApplied   = '1';
+            header.dataset._origPosition  = header.style.position || '';
+            header.dataset._origTop       = header.style.top || '';
+            header.dataset._origBottom    = header.style.bottom || '';
+            header.dataset._origLeft      = header.style.left || '';
+            header.dataset._origRight     = header.style.right || '';
+            header.dataset._origShadow    = header.style.boxShadow || '';
+            header.dataset._origBorderTop = header.style.borderTop || '';
+        }
+        header.style.position  = 'absolute';
+        header.style.top       = 'auto';
+        header.style.bottom    = '0';
+        header.style.left      = '0';
+        header.style.right     = '0';
+        header.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.08)';
+        header.style.borderTop = '1px solid #e0e0e0';
+    } else {
+        header.style.position  = header.dataset._origPosition  || '';
+        header.style.top       = header.dataset._origTop       || '';
+        header.style.bottom    = header.dataset._origBottom    || '';
+        header.style.left      = header.dataset._origLeft      || '';
+        header.style.right     = header.dataset._origRight     || '';
+        header.style.boxShadow = header.dataset._origShadow    || '';
+        header.style.borderTop = header.dataset._origBorderTop || '';
+    }
+}
+
+// expandMap içinde (expandedContainer DOM'a eklendikten sonra):
+try {
+  const pts = getDayPoints(day);
+  setExpandedHeaderMode(day, !pts || pts.length < 2);
+} catch(e){}
+
+// renderRouteForDay <2 branch RETURN ETMEDEN ÖNCE:
+const expEl = document.getElementById(`expanded-map-${day}`);
+if (expEl) setExpandedHeaderMode(day, true);
+
+// renderRouteForDay rota çizimi sonunda:
+const exp2 = document.getElementById(`expanded-map-${day}`);
+if (exp2) setExpandedHeaderMode(day, false);
+
+// updateExpandedMap sonunda (opsiyonel):
+try {
+  const pts = getDayPoints(day);
+  setExpandedHeaderMode(day, !pts || pts.length < 2);
+} catch(e){}
 
 const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
 const INITIAL_EMPTY_MAP_ZOOM   = 7;             // Önceki 4'ten 2 kademe yakın
