@@ -3194,9 +3194,7 @@ hr {
     border-radius: 0px;
     padding: 10px;
 }
-.info-section .contact p {
-    padding: 4px;
-}
+
 /* Responsive touch */
 @media (max-width: 480px) {
     .working-hours-list li {
