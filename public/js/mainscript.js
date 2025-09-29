@@ -2389,7 +2389,7 @@ if (!window.cart || window.cart.length === 0) {
   <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
   <input type="file" id="route-import-input" accept=".gpx,.tcx" style="display:none;" />
 </div>
-        
+
       </div>
     `;
     menuCount.textContent = 0;
@@ -2449,11 +2449,29 @@ if (!window.cart || window.cart.length === 0) {
 
         const dayItemsArr = dayItems;
         if (dayItemsArr.length === 0) {
-            const emptyDayMessage = document.createElement("p");
-            emptyDayMessage.classList.add("empty-day-message");
-            emptyDayMessage.textContent = "No item has been added for this day yet.";
-            dayList.appendChild(emptyDayMessage);
-        } else {
+          const emptyWrap = document.createElement("div");
+          emptyWrap.className = "empty-day-block";
+
+          const msg = document.createElement("p");
+          msg.classList.add("empty-day-message");
+          msg.textContent = "No item has been added for this day yet.";
+          emptyWrap.appendChild(msg);
+
+          // Import buton grubu (gün bağlamı için data-day)
+          const importGroup = document.createElement("div");
+          importGroup.className = "import-route-group";
+          importGroup.dataset.day = day; // << kritik
+
+          importGroup.innerHTML = `
+            <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
+            <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
+          `;
+
+          emptyWrap.appendChild(importGroup);
+          dayList.appendChild(emptyWrap);
+        }
+
+ else {
             dayItemsArr.forEach((item, index) => {
                 const li = document.createElement("li");
                 li.classList.add("travel-item");

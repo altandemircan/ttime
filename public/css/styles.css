@@ -2611,7 +2611,7 @@ hr {
 
 
 .import-route-group {
-  margin-top: 10px;
+  margin-top: 8px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -2620,8 +2620,8 @@ hr {
   background: #faf8ff;
   border: 1px solid #e1e1e9;
   border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 0.75rem;
+  padding: 6px 12px;
+  font-size: 0.68rem;
   font-weight: 600;
   cursor: pointer;
   color: #1e293b;
@@ -2630,9 +2630,14 @@ hr {
 }
 .import-route-group .import-btn:hover {
   background:#f1e9ff;
-  box-shadow:0 4px 10px rgba(0,0,0,0.05);
+  box-shadow:0 4px 10px rgba(0,0,0,0.08);
 }
-
+.empty-day-block {
+  border: 1px dashed #d5d5dd;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fafafa;
+}
 
 @media (max-width:768px) {
 

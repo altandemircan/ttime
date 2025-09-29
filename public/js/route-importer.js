@@ -1,11 +1,10 @@
-// route-importer.js (Enhanced)
+// route-importer.js (Enhanced with per-day import)
 // - GPX + TCX import
 // - Format 9-A: Route Title => "<StartShort> → <FinishShort>"
 //                Start item  => "<StartShort> (Start)"
-//                Finish item => "<FinishShort> (Finish)"
-// - Language-agnostic trailing locality word stripping
-// - Robust base name splitting ("from A to B", "A to B", "A → B", "A - B", "A — B")
-// - Safe fallbacks if names unavailable
+//                Finish item => "<ShortFinish> (Finish)"
+// - Language-agnostic trailing locality stripping
+// - Per-day import support: each empty day can display its own import buttons
 
 (function() {
   const DEBUG = false;
@@ -21,14 +20,34 @@
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
   }
+
   let currentType = null;
+  let currentImportDay = 1;  // Hangi güne import edilecek
 
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.import-btn[data-import-type]');
     if (!btn) return;
     e.preventDefault();
+
     currentType = btn.getAttribute('data-import-type'); // 'gpx' | 'tcx'
     if (!currentType) return;
+
+    // Gün bağlamını al: en yakın kapsayıcı ( .import-route-group veya [data-import-day] )
+    const group = btn.closest('.import-route-group');
+    if (group && group.dataset.day) {
+      const d = parseInt(group.dataset.day, 10);
+      if (!isNaN(d) && d > 0) currentImportDay = d;
+    } else {
+      // Fallback: day-container aramayı dene
+      const dayContainer = btn.closest('.day-container');
+      if (dayContainer && dayContainer.dataset.day) {
+        const d2 = parseInt(dayContainer.dataset.day, 10);
+        if (!isNaN(d2) && d2 > 0) currentImportDay = d2;
+      } else {
+        currentImportDay = 1;
+      }
+    }
+
     fileInput.accept = currentType === 'gpx' ? '.gpx' : '.tcx';
     fileInput.value = '';
     fileInput.click();
@@ -37,6 +56,8 @@
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files && fileInput.files[0];
     if (!file || !currentType) return;
+    const day = currentImportDay || 1;
+
     try {
       const raw = await file.text();
       const parsed = currentType === 'gpx' ? parseGPX(raw) : parseTCX(raw);
@@ -48,17 +69,12 @@
       const startPt = parsed.points[0];
       const finishPt = parsed.points[parsed.points.length - 1];
 
-      // 1) Orijinal route raw adı
       const rawRouteName = parsed.name || null;
-
-      // 2) Böl -> (startNameRaw, finishNameRaw)
       const { startNameRaw, finishNameRaw } = deriveEndpointNames(rawRouteName);
 
-      // 3) Normalize et
       const shortStart = normalizePlaceName(startNameRaw) || 'Start';
       const shortFinish = normalizePlaceName(finishNameRaw) || 'Finish';
 
-      // 4) Nihai başlık ve item isimleri (Format 9-A)
       const routeTitle = `${shortStart} → ${shortFinish}`;
       const startItemTitle = `${shortStart} (Start)`;
       const finishItemTitle = `${shortFinish} (Finish)`;
@@ -66,6 +82,7 @@
       ensureCartExists();
 
       addStartFinishToCart({
+        day,
         startTitle: startItemTitle,
         finishTitle: finishItemTitle,
         start: startPt,
@@ -74,17 +91,18 @@
 
       if (typeof updateCart === 'function') updateCart();
       setTimeout(() => {
-        if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
+        if (typeof renderRouteForDay === 'function') renderRouteForDay(day);
       }, 120);
 
       persistRouteMeta({
         name: routeTitle,
         type: currentType.toUpperCase(),
         pointCount: parsed.points.length,
-        distanceMeters: approximateDistance(parsed.points)
+        distanceMeters: approximateDistance(parsed.points),
+        day
       });
 
-      notify(`Imported ${currentType.toUpperCase()} route: ${routeTitle}`, 'success');
+      notify(`Imported ${currentType.toUpperCase()} route (Day ${day}): ${routeTitle}`, 'success');
     } catch (err) {
       console.error('[route-import] ERROR', err);
       notify('Import failed: ' + err.message, 'error');
@@ -95,17 +113,11 @@
 
   /* ---------------- Normalization & Name Derivation ---------------- */
 
-  // Çok dilli (daha doğrusu “dil bağımsız”) yaygın trailing locality / yol tanımlayıcıları.
-  // Stript edilirken yalnızca sonda tek kelime olarak eşleşirse kaldırılır.
   const TRAILING_TOKENS = [
-    // Neighborhood / district / quarter
     'mah','mahallesi','neighborhood','neighbourhood','district','quarter','quartier','barrio','bairro','arrondissement','colonia','ward','locality','suburb','area','zone','zona',
-    // Town / village / city generic
     'village','köyü','koyu','town','city','municipality','kommune','gemeinde','parish',
-    // Street types
     'street','st','st.','road','rd','rd.','avenue','ave','ave.','boulevard','blvd','blvd.','lane','ln','ln.','drive','dr','dr.','way','place','pl','pl.','square','sq','sq.',
     'court','ct','ct.','circle','cir','cir.','trail','trl','trl.','highway','hwy','hwy.','expressway','expwy','parkway','pkwy','pkwy.',
-    // Others
     'mevkii','yolu','yol','path','pathway','route','rte','rte.'
   ];
 
@@ -117,16 +129,13 @@
     if (!raw || typeof raw !== 'string') return '';
     let s = raw.trim();
 
-    // Koordinat formatıysa kısalt (ör: 36.12345, 30.98765)
     if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(s)) {
       const [la, lo] = s.split(',');
       return `${parseFloat(la).toFixed(3)},${parseFloat(lo).toFixed(3)}`;
     }
 
-    // Fazla noktalama temizle
     s = s.replace(/[|]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
 
-    // 1 kelimeden fazlaysa gereksiz trailing token'ı kaldır
     let parts = s.split(/\s+/);
     if (parts.length > 1) {
       const last = parts[parts.length - 1];
@@ -137,33 +146,26 @@
       }
     }
 
-    // Çok uzun -> ilk 3 kelime
     if (parts.length > 3) {
       s = parts.slice(0, 3).join(' ');
     }
 
-    // Maks uzunluk kes
     const MAX_LEN = 20;
     if (s.length > MAX_LEN) {
       s = s.slice(0, MAX_LEN - 1).trim() + '…';
     }
 
-    // Boşaldıysa fallback
     if (!s) s = 'Point';
     return s;
   }
 
-  // "from A to B", "A to B", "A → B", "A - B" vs. parçalama
   function deriveEndpointNames(rawRouteName) {
     if (!rawRouteName || typeof rawRouteName !== 'string') {
       return { startNameRaw: 'Start', finishNameRaw: 'Finish' };
     }
     let name = rawRouteName.trim();
-
-    // Lower copy for pattern search
     const lower = name.toLowerCase();
 
-    // 1) "from X to Y"
     let m = lower.match(/\bfrom\s+(.+?)\s+to\s+(.+)$/i);
     if (m && m.length >= 3) {
       return {
@@ -172,7 +174,6 @@
       };
     }
 
-    // 2) "A to B"
     m = lower.match(/(.+)\s+to\s+(.+)/i);
     if (m && m.length >= 3) {
       const idx = lower.indexOf(' to ');
@@ -182,7 +183,6 @@
       };
     }
 
-    // 3) "A → B" or "A -> B"
     const arrowIdx = name.indexOf('→');
     if (arrowIdx !== -1) {
       return {
@@ -198,7 +198,6 @@
       };
     }
 
-    // 4) "A - B" or "A — B" (em dash)
     let dashMatch = name.match(/(.+)\s[-—]\s(.+)/);
     if (dashMatch && dashMatch[1] && dashMatch[2]) {
       return {
@@ -207,7 +206,6 @@
       };
     }
 
-    // Fallback: tek parça
     return {
       startNameRaw: name,
       finishNameRaw: 'Finish'
@@ -227,12 +225,11 @@
     }
   }
 
-  function addStartFinishToCart({ startTitle, finishTitle, start, finish }) {
+  function addStartFinishToCart({ day, startTitle, finishTitle, start, finish }) {
     if (typeof addToCart !== 'function') {
       console.warn('[route-import] addToCart not found.');
       return;
     }
-    const day = 1;
     const img = 'img/placeholder.png';
     addToCart(startTitle, img, day, 'Place', '', null, null, '', null, { lat: start.lat, lng: start.lon }, '');
     addToCart(finishTitle, img, day, 'Place', '', null, null, '', null, { lat: finish.lat, lng: finish.lon }, '');
