@@ -3931,174 +3931,39 @@ mapStyleSelect.onchange = function() {
 
     addDraggableMarkersToExpandedMap(expandedMap, day);
     setupScaleBarInteraction(day, expandedMap);
-    enableLongPressPopupOnMap(expandedMap, day);
+attachClickNearbySearch(expandedMap, day); // tek tık ile arama
     adjustExpandedHeader(day)
 }
-function enableLongPressPopupOnMap(map, day) {
-    const mapContainer = map.getContainer();
-    let longPressTimer = null;
-    let startPosition = null;
-    let startTime = null;
-    let isLongPressing = false;
-    let circle = null;
 
-    const LONG_PRESS_DURATION = 1000;
-    const MOVE_THRESHOLD = 15;
-    const CIRCLE_RADIUS = 500;
+/* ==== NEW: Click-based nearby search (replaces long-press) ==== */
+function attachClickNearbySearch(map, day, options = {}) {
+  const radius = options.radius || 500; // metres
+  const debounceMs = options.debounce || 500;
+  let lastClickTs = 0;
 
-    // YARDIMCI: olay marker üzerinden mi geliyor?
-    const isFromMarkerTarget = (target) => {
-        return !!(target && (
-            target.closest('.leaflet-marker-icon') ||
-            target.closest('.custom-marker-outer') ||
-            target.closest('.custom-marker-place-name') ||
-            target.closest('.marker-remove-x-btn')
-        ));
-    };
+  // Eski long-press cleanup (varsa)
+  if (map.__ttLongPressCleanup) {
+    try { map.__ttLongPressCleanup(); } catch(_){}
+    map.__ttLongPressCleanup = null;
+  }
 
-    function clearLongPress() {
-        if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-        }
-        if (circle) {
-            map.removeLayer(circle);
-            circle = null;
-        }
-        isLongPressing = false;
-        startPosition = null;
-        startTime = null;
-    }
+  if (map.__ttNearbyClickBound) return; // bir kere bağla
+  map.__ttNearbyClickBound = true;
 
-    function getEventPosition(e) {
-        if (e.touches && e.touches[0]) {
-            return {
-                x: e.touches[0].clientX,
-                y: e.touches[0].clientY,
-                pageX: e.touches[0].pageX,
-                pageY: e.touches[0].pageY,
-                target: e.target
-            };
-        }
-        return {
-            x: e.clientX,
-            y: e.clientY,
-            pageX: e.pageX,
-            pageY: e.pageY,
-            target: e.target
-        };
-    }
+  map.on('click', async function(e) {
+    const now = Date.now();
+    if (now - lastClickTs < debounceMs) return; // çok hızlı iki kez tıklandıysa engelle
+    lastClickTs = now;
 
-    function getLatLngFromPosition(pos) {
-        const containerRect = mapContainer.getBoundingClientRect();
-        const containerPoint = L.point(
-            pos.x - containerRect.left,
-            pos.y - containerRect.top
-        );
-        return map.containerPointToLatLng(containerPoint);
-    }
+    // Eğer kullanıcı bir marker tıkladıysa ve Leaflet click'i marker'a yönlendirdiyse,
+    // e.originalEvent.target üzerinde marker class'ı olabilir. İstersen burada filtre ekleyebilirsin.
+    // Örn: if (e.originalEvent.target.closest('.leaflet-marker-icon')) return;
 
-    function startLongPress(e) {
-        // 1) Marker'dan geliyorsa uzun basmayı BAŞLATMA
-        if (isFromMarkerTarget(e.target)) {
-            clearLongPress();
-            return;
-        }
-        // 2) Marker sürükleme aktifse (global bayrak) hiç başlatma
-        if (window.__tt_markerDragActive) {
-            clearLongPress();
-            return;
-        }
-
-        clearLongPress();
-
-        const position = getEventPosition(e);
-        const latLng = getLatLngFromPosition(position);
-        if (!latLng) return;
-
-        startPosition = position;
-        startTime = Date.now();
-        isLongPressing = true;
-
-        circle = L.circle(latLng, {
-            radius: 10,
-            color: '#1976d2',
-            fillColor: '#1976d2',
-            fillOpacity: 0.3,
-            weight: 3
-        }).addTo(map);
-
-        let currentRadius = 10;
-        const maxRadius = CIRCLE_RADIUS;
-        const growthInterval = setInterval(() => {
-            if (!isLongPressing || !circle) {
-                clearInterval(growthInterval);
-                return;
-            }
-            currentRadius += (maxRadius - 10) / (LONG_PRESS_DURATION / 50);
-            if (currentRadius > maxRadius) currentRadius = maxRadius;
-            circle.setRadius(currentRadius);
-            circle.setStyle({
-                fillOpacity: 0.1 + (0.4 * (currentRadius / maxRadius))
-            });
-        }, 50);
-
-        longPressTimer = setTimeout(() => {
-            // Marker drag esnasında ise yine iptal
-            if (window.__tt_markerDragActive) {
-                clearInterval(growthInterval);
-                clearLongPress();
-                return;
-            }
-            if (isLongPressing && startPosition) {
-                if ('vibrate' in navigator) navigator.vibrate(100);
-                const finalLatLng = getLatLngFromPosition(startPosition);
-                showNearbyPlacesPopup(finalLatLng.lat, finalLatLng.lng, map, day, CIRCLE_RADIUS);
-                clearInterval(growthInterval);
-                clearLongPress();
-                setTimeout(() => { isLongPressing = false; }, 200);
-            }
-        }, LONG_PRESS_DURATION);
-    }
-
-    function handleMove(e) {
-        if (!isLongPressing) return;
-        const currentPos = getEventPosition(e);
-        const dx = Math.sqrt(Math.pow(currentPos.x - startPosition.x, 2) + Math.pow(currentPos.y - startPosition.y, 2));
-        if (dx > MOVE_THRESHOLD) {
-            clearLongPress();
-        }
-        // Marker drag aktifse de iptal
-        if (window.__tt_markerDragActive) {
-            clearLongPress();
-        }
-    }
-
-    function handleEnd() {
-        clearLongPress();
-    }
-
-    mapContainer.addEventListener('touchstart', startLongPress, { passive: false });
-    mapContainer.addEventListener('touchmove', handleMove, { passive: false });
-    mapContainer.addEventListener('touchend', handleEnd, { passive: false });
-    mapContainer.addEventListener('touchcancel', handleEnd, { passive: false });
-
-    mapContainer.addEventListener('mousedown', startLongPress);
-    mapContainer.addEventListener('mousemove', handleMove);
-    mapContainer.addEventListener('mouseup', handleEnd);
-    mapContainer.addEventListener('mouseleave', handleEnd);
-
-    return function cleanup() {
-        clearLongPress();
-        mapContainer.removeEventListener('touchstart', startLongPress);
-        mapContainer.removeEventListener('touchmove', handleMove);
-        mapContainer.removeEventListener('touchend', handleEnd);
-        mapContainer.removeEventListener('touchcancel', handleEnd);
-        mapContainer.removeEventListener('mousedown', startLongPress);
-        mapContainer.removeEventListener('mousemove', handleMove);
-        mapContainer.removeEventListener('mouseup', handleEnd);
-        mapContainer.removeEventListener('mouseleave', handleEnd);
-    };
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    closeNearbyPopup(); // önceki popup varsa kapat
+    showNearbyPlacesPopup(lat, lng, map, day, radius);
+  });
 }
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
