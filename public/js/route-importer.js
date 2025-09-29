@@ -1,36 +1,53 @@
-// route-importer.js
-// Simplified: GPX + TCX only.
-// - Parses route
-// - Ensures Day 1
-// - Adds two items: Start / Finish
-// - Draws polyline on Leaflet map (global window.map assumed)
+// Robust GPX + TCX importer integrated with cart-based system
+// - Event delegation (buttons dinamik olduğundan)
+// - Tek seferlik gizli <input type=file> body'e eklenir
+// - START / FINISH öğeleri window.cart içine "Place" kategorisiyle eklenir
+// - Rota çizimini mevcut mekanizma (renderRouteForDay) üstlenir
+// - Her import sonrası Day 1 varsa üzerine ekler; yoksa updateCart() çağırılır
 
 (function() {
-  const fileInput = document.getElementById('route-import-input');
-  const importButtons = document.querySelectorAll('.import-btn');
-  if (!fileInput || !importButtons.length) return;
+  const DEBUG = true;
+
+  function log(...a){ if(DEBUG) console.log('[route-import]', ...a); }
+
+  // 1) Gizli input oluştur (tek sefer)
+  let fileInput = document.getElementById('__route_import_hidden_input');
+  if (!fileInput) {
+    fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = '__route_import_hidden_input';
+    fileInput.accept = '.gpx,.tcx';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+  }
 
   let currentType = null;
 
-  importButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentType = btn.getAttribute('data-import-type'); // gpx | tcx
-      fileInput.accept = currentType === 'gpx' ? '.gpx' : '.tcx';
-      fileInput.value = '';
-      fileInput.click();
-    });
+  // 2) Event delegation: .import-btn yakala
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.import-btn[data-import-type]');
+    if (!btn) return;
+    e.preventDefault();
+
+    currentType = btn.getAttribute('data-import-type'); // gpx / tcx
+    if (!currentType) return;
+    fileInput.accept = currentType === 'gpx' ? '.gpx' : '.tcx';
+    fileInput.value = '';
+
+    log('Opening file chooser for', currentType.toUpperCase());
+    fileInput.click();
   });
 
+  // 3) Dosya seçilince işle
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files && fileInput.files[0];
     if (!file || !currentType) return;
-
     try {
       const raw = await file.text();
       const parsed = currentType === 'gpx' ? parseGPX(raw) : parseTCX(raw);
 
       if (!parsed || !parsed.points || parsed.points.length < 2) {
-        notify('Failed to parse route points.', 'error');
+        notify('Failed to parse route points (need at least 2 track points).', 'error');
         return;
       }
 
@@ -38,28 +55,27 @@
       const start = parsed.points[0];
       const finish = parsed.points[parsed.points.length - 1];
 
-      ensureDay1();
+      ensureCartExists(); // cart yapısı yoksa oluştur ve updateCart()
 
-      const startItem = buildTripItem({
-        title: name ? `${name} (Start)` : 'Start',
-        lat: start.lat,
-        lon: start.lon,
-        elevation: start.ele,
-        tag: 'start'
+      // Aynı isimle ikinci kez eklersen çakışmayı önlemek için rastgele suffix
+      const rand = Math.random().toString(36).slice(2,7);
+
+      addStartFinishToCart({
+        baseName: name,
+        start,
+        finish,
+        suffix: rand
       });
 
-      const finishItem = buildTripItem({
-        title: name ? `${name} (Finish)` : 'Finish',
-        lat: finish.lat,
-        lon: finish.lon,
-        elevation: finish.ele,
-        tag: 'finish'
-      });
+      // UI güncelle ve rota çiz (updateCart içinde zaten renderRouteForDay tetikleniyor)
+      if (typeof updateCart === 'function') {
+        updateCart();
+      }
 
-      appendItemToDay(0, startItem);
-      appendItemToDay(0, finishItem);
-
-      drawImportedRoute(parsed.points, name);
+      // Güvence: route çizimi kaçarsa küçük bir gecikmeyle çağır
+      setTimeout(() => {
+        if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
+      }, 150);
 
       persistRouteMeta({
         name,
@@ -69,11 +85,67 @@
       });
 
       notify(`Imported ${currentType.toUpperCase()} route: ${name}`, 'success');
-    } catch (e) {
-      console.error('[import-route] ERROR', e);
-      notify('Import failed: ' + e.message, 'error');
+      log('Import done:', { name, points: parsed.points.length });
+
+    } catch (err) {
+      console.error(err);
+      notify('Import failed: ' + err.message, 'error');
+    } finally {
+      currentType = null;
     }
   });
+
+  /* ---------- Cart / Integration Helpers ---------- */
+
+  function ensureCartExists() {
+    if (!window.cart) window.cart = [];
+    // Boşsa updateCart boş state'i oluşturacak (butonları tekrar DOM'a koyar)
+    if (window.cart.length === 0 && typeof updateCart === 'function') {
+      updateCart();
+    }
+  }
+
+  function addStartFinishToCart({ baseName, start, finish, suffix }) {
+    if (typeof addToCart !== 'function') {
+      console.warn('addToCart fonksiyonu bulunamadı, cart entegrasyonu yapılamadı.');
+      return;
+    }
+    const day = 1;
+
+    const startName = `${baseName} (Start)`;
+    const finishName = `${baseName} (Finish)`;
+
+    // Görsel yoksa placeholder
+    const placeholderImg = 'img/placeholder.png';
+
+    addToCart(
+      startName,
+      placeholderImg,
+      day,
+      'Place',
+      '', // address
+      null,
+      null,
+      '', // opening_hours
+      null,
+      { lat: start.lat, lng: start.lon },
+      ''
+    );
+
+    addToCart(
+      finishName,
+      placeholderImg,
+      day,
+      'Place',
+      '',
+      null,
+      null,
+      '',
+      null,
+      { lat: finish.lat, lng: finish.lon },
+      ''
+    );
+  }
 
   /* ---------- Parsers ---------- */
 
@@ -122,109 +194,4 @@
     return idNode ? idNode.textContent.trim() : null;
   }
 
-  /* ---------- Helpers ---------- */
-
-  function inferName(points) {
-    if (!points.length) return 'Imported Route';
-    const s = points[0];
-    const f = points[points.length - 1];
-    return `Route (${s.lat.toFixed(3)},${s.lon.toFixed(3)}) → (${f.lat.toFixed(3)},${f.lon.toFixed(3)})`;
-  }
-
-  function ensureDay1() {
-    if (!window.tripPlan) window.tripPlan = { days: [] };
-    if (!Array.isArray(window.tripPlan.days)) window.tripPlan.days = [];
-    if (window.tripPlan.days.length === 0) {
-      window.tripPlan.days.push({ title: 'Day 1', items: [] });
-      if (typeof window.renderTripDays === 'function') {
-        window.renderTripDays();
-      }
-    }
-  }
-
-  function buildTripItem({ title, lat, lon, elevation, tag }) {
-    return {
-      id: 'imp_' + Math.random().toString(36).slice(2, 9),
-      title,
-      lat,
-      lon,
-      elevation,
-      kind: 'import-point',
-      tag,
-      createdAt: new Date().toISOString()
-    };
-  }
-
-  function appendItemToDay(dayIndex, item) {
-    if (!window.tripPlan || !window.tripPlan.days[dayIndex]) return;
-    window.tripPlan.days[dayIndex].items.push(item);
-    if (typeof window.renderDayItems === 'function') {
-      window.renderDayItems(dayIndex);
-    } else if (typeof window.renderTripDays === 'function') {
-      window.renderTripDays();
-    }
-  }
-
-  function drawImportedRoute(points, name) {
-    if (typeof L === 'undefined' || !window.map) {
-      console.warn('[import-route] Leaflet map not found.');
-      return;
-    }
-    const latlngs = points.map(p => [p.lat, p.lon]);
-    const poly = L.polyline(latlngs, {
-      color: '#8a4af3',
-      weight: 4,
-      opacity: 0.9
-    }).addTo(window.map);
-
-    if (!window.__importLayers) window.__importLayers = [];
-    window.__importLayers.push(poly);
-
-    try {
-      window.map.fitBounds(poly.getBounds(), { padding: [30, 30] });
-    } catch {}
-
-    // Markers
-    const start = latlngs[0];
-    const finish = latlngs[latlngs.length - 1];
-    if (start) {
-      L.circleMarker(start, { radius: 6, color:'#0f766e', fillColor:'#14b8a6', fillOpacity:0.9 })
-        .addTo(window.map).bindTooltip('Start');
-    }
-    if (finish) {
-      L.circleMarker(finish, { radius: 6, color:'#7f1d1d', fillColor:'#dc2626', fillOpacity:0.9 })
-        .addTo(window.map).bindTooltip('Finish');
-    }
-  }
-
-  function approximateDistance(points) {
-    if (points.length < 2) return 0;
-    let d = 0;
-    for (let i = 1; i < points.length; i++) {
-      d += haversine(points[i-1], points[i]);
-    }
-    return d;
-  }
-
-  function haversine(a, b) {
-    const R = 6371000;
-    const toRad = x => x * Math.PI / 180;
-    const dLat = toRad(b.lat - a.lat);
-    const dLon = toRad(b.lon - a.lon);
-    const sLat1 = toRad(a.lat);
-    const sLat2 = toRad(b.lat);
-    const h = Math.sin(dLat/2)**2 + Math.cos(sLat1)*Math.cos(sLat2)*Math.sin(dLon/2)**2;
-    return 2 * R * Math.asin(Math.sqrt(h));
-  }
-
-  function persistRouteMeta(meta) {
-    window.lastImportedRoute = meta;
-    try { localStorage.setItem('lastImportedRoute', JSON.stringify(meta)); } catch {}
-  }
-
-  function notify(msg, type='info') {
-    console.log('[import-route]', type, msg);
-    if (window.showToast) window.showToast(msg, type);
-  }
-
-})();
+  /* ---------- Helpers ----------
