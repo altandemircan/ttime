@@ -1,3 +1,4 @@
+// Placeholder rendering (only if you don't already have UI logic)
 (function() {
   if (!document.getElementById('trip-days')) {
     const c = document.createElement('div');
@@ -30,6 +31,6 @@
   };
 
   window.renderDayItems = function(dayIndex) {
-    window.renderTripDays();
+    window.renderTripDays(); // simple re-render
   };
 })();
