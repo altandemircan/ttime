@@ -2387,9 +2387,7 @@ if (!window.cart || window.cart.length === 0) {
 <div class="import-route-group">
   <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
   <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
-  <button type="button" class="import-btn" data-import-type="fit">Import .FIT</button>
-  <!-- Gizli tekil input; tip seçilince accept dinamik değiştirilecek -->
-  <input type="file" id="route-import-input" accept=".gpx,.tcx,.fit" style="display:none;" />
+  <input type="file" id="route-import-input" accept=".gpx,.tcx" style="display:none;" />
 </div>
         
       </div>
