@@ -35,6 +35,10 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleSidebarSettings = function() {
         toggleSidebar('sidebar-overlay-settings');
     };
+
+    window.toggleSidebarFeedback = function() {
+        toggleSidebar('sidebar-overlay-feedback');
+    };
     
     window.toggleSidebarTrip = function() {
         toggleSidebar('sidebar-overlay-trip');
@@ -85,6 +89,15 @@ function toggleSidebarSettings() {
         sidebarSettings.classList.add('open');
         const sidebarOverlaySettings = document.getElementById('sidebar-overlay-settings');
         sidebarOverlaySettings.classList.add('show');
+    }
+}
+
+function toggleSidebarFeedback() {
+    const sidebarFeedback = document.getElementById('sidebar-feedback');
+    if (!sidebarFeedback.classList.contains('open')) {
+        sidebarFeedback.classList.add('open');
+        const sidebarOverlayFeedback = document.getElementById('sidebar-overlay-feedback');
+        sidebarOverlayFeedback.classList.add('show');
     }
 }
 
