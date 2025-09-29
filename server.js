@@ -35,3 +35,19 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+const nodemailer = require('nodemailer');
+(async () => {
+  const t = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: process.env.FEEDBACK_FROM_EMAIL, pass: process.env.FEEDBACK_FROM_PASS },
+    logger: true,
+    debug: true
+  });
+  try {
+    await t.verify();
+    console.log('SMTP VERIFY OK');
+  } catch(e) {
+    console.error('SMTP VERIFY FAIL', e.message);
+  }
+})();
