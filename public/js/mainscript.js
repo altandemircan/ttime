@@ -1600,10 +1600,25 @@ function addToCart(
 }
 
 // 9. removeFromCart fonksiyonu
-function removeFromCart(index) {
-  if (!window.cart) return;
-  window.cart.splice(index, 1);
+function removeFromCart(index){
+  if(!window.cart) return;
+  const removed = window.cart[index];
+  const removedDay = removed && removed.day;
+  window.cart.splice(index,1);
   updateCart();
+
+  if (!window.cart.length){
+    clearAllRouteCaches();
+    return;
+  }
+
+  if (removedDay){
+    const dayPoints = getDayPoints(removedDay);
+    if (dayPoints.length < 2){
+      clearRouteCachesForDay(removedDay);
+      clearRouteVisualsForDay(removedDay);
+    }
+  }
   if (typeof renderRouteForDay === 'function') {
     const days = [...new Set((window.cart || []).map(i => i.day))];
     days.forEach(d => setTimeout(()=>renderRouteForDay(d), 0));
@@ -2466,7 +2481,9 @@ function restoreLostDayMaps() {
 
 // --- PATCH: startMapPlanning (haritayı hemen aç + expand isteğe bağlı) ---
 function startMapPlanning() {
+
     if (!window.cart || window.cart.length === 0) {
+              clearAllRouteCaches();
         window.cart = [{ day: 1, _placeholder: true }];
     }
     updateCart();              // Day 1 + boş harita gelir
@@ -3057,7 +3074,71 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
     }
     adjustExpandedHeader(day);
 }
+/* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
+function clearRouteCachesForDay(day){
+  if(!day) return;
+  const key = `route-map-day${day}`;
+  if (window.lastRouteGeojsons) delete window.lastRouteGeojsons[key];
+  if (window.lastRouteSummaries) delete window.lastRouteSummaries[key];
+  if (window.pairwiseRouteSummaries) delete window.pairwiseRouteSummaries[key];
+  if (window.routeElevStatsByDay) delete window.routeElevStatsByDay[day];
+  if (window.__ttElevDayCache && window.__ttElevDayCache[day]) delete window.__ttElevDayCache[day];
+}
 
+function clearRouteVisualsForDay(day){
+  const key = `route-map-day${day}`;
+  const map = window.leafletMaps && window.leafletMaps[key];
+  if (map){
+    map.eachLayer(l=>{
+      if(!(l instanceof L.TileLayer)){
+        try{ map.removeLayer(l);}catch(_){}
+      }
+    });
+  }
+  // Küçük özet / scale bar
+  const rs = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+  if (rs) rs.innerHTML = '';
+  const scaleSmall = document.getElementById(`route-scale-bar-day${day}`);
+  if (scaleSmall){ scaleSmall.innerHTML=''; delete scaleSmall.dataset?.elevLoadedKey; }
+  // Expanded açık ise
+  const expObj = window.expandedMaps && window.expandedMaps[key];
+  if (expObj && expObj.expandedMap){
+    const eMap = expObj.expandedMap;
+    eMap.eachLayer(l=>{
+      if(!(l instanceof L.TileLayer)){
+        try{ eMap.removeLayer(l);}catch(_){}
+      }
+    });
+    const expScale = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (expScale){ expScale.innerHTML=''; delete expScale.dataset?.elevLoadedKey; }
+    const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+    if (statsDiv) statsDiv.innerHTML = '';
+  }
+}
+
+function clearAllRouteCaches(){
+  window.lastRouteGeojsons = {};
+  window.lastRouteSummaries = {};
+  window.pairwiseRouteSummaries = {};
+  window.routeElevStatsByDay = {};
+  if (window.__ttElevDayCache) window.__ttElevDayCache = {};
+  // Tüm scale bar içlerini temizle
+  document.querySelectorAll('.route-scale-bar').forEach(sb=>{
+    sb.innerHTML='';
+    delete sb.dataset?.elevLoadedKey;
+  });
+  // Haritalardan polyline / marker sil
+  if (window.leafletMaps){
+    Object.values(window.leafletMaps).forEach(m=>{
+      try{
+        m.eachLayer(l=>{
+          if(!(l instanceof L.TileLayer)) m.removeLayer(l);
+        });
+      }catch(_){}
+    });
+  }
+}
+/* === ROUTE CLEANUP HELPERS SONU === */
 function createMapIframe(lat, lng, zoom = 16) {
     if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
 return '<div class="map-error">Invalid location information</div>';
@@ -5331,6 +5412,8 @@ async function renderRouteForDay(day) {
 
   // 0 NOKTA
   if (points.length === 0) {
+    clearRouteCachesForDay(day);
+  clearRouteVisualsForDay(day);
     initEmptyDayMap(day);
     updateRouteStatsUI(day);
     clearDistanceLabels(day);
@@ -5340,6 +5423,8 @@ async function renderRouteForDay(day) {
 
   // 1 NOKTA
   if (points.length === 1) {
+      clearRouteCachesForDay(day);
+  clearRouteVisualsForDay(day);
     initEmptyDayMap(day);
     const map = window.leafletMaps?.[containerId];
     updateRouteStatsUI(day);
