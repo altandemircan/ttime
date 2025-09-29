@@ -5,6 +5,10 @@ const app = express();
 // 1. JSON body parser HER ŞEYİN EN BAŞINDA OLMALI
 app.use(express.json());
 
+// === FEEDBACK ROUTE EKLE ===
+const feedbackRoute = require('./server/feedback-route');
+app.use('/api', feedbackRoute);
+
 // 2. API routerlarını ekle
 
 const llmProxy = require('./llm-proxy');
