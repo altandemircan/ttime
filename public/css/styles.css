@@ -848,6 +848,7 @@ li .highlight {
 .chat-menu,
 .profile-menu,
 .settings-menu,
+.feedback-menu,
 .hamburger-menu,
 .mytrips-menu,
 .privacyterms-menu,
@@ -859,6 +860,7 @@ li .highlight {
 .chat-btn,
 .profile-btn,
 .settings-btn,
+.feedback-btn,
 .hamburger-btn,
 .mytrips-btn,
 .privacyterms-btn,
@@ -882,6 +884,7 @@ li .highlight {
 .chat-btn img,
 .profile-btn img,
 .settings-btn img,
+.feedback-btn img,
 .mytrips-btn img,
 .privacyterms-btn img,
 .updates-btn img,
@@ -1467,7 +1470,7 @@ li .highlight {
 .sidebar-login.open {
     right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
 }
-/* Sidebar My Trips */
+/* Sidebar Settings */
 .sidebar-settings {
   width: 375px;
   scrollbar-width: thin;
@@ -1491,6 +1494,32 @@ li .highlight {
   transition: 0.3s ease;
 }
 .sidebar-settings.open {
+  right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
+}
+/* Sidebar Feedback */
+.sidebar-feedback {
+  width: 375px;
+  scrollbar-width: thin;
+  scrollbar-color: #8a4af3 #f1f1f1;
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  padding: 20px;
+  z-index: 1000;
+  background: #fff;
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  right: -415px;
+  transition: 0.3s ease;
+}
+.sidebar-feedback.open {
   right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
 }
 /* Sidebar Trip */
@@ -1578,7 +1607,8 @@ li .highlight {
     .sidebar-mytrips,
     .sidebar-privacyterms,
     .sidebar-login,
-    .sidebar-settings {
+    .sidebar-settings,
+    .sidebar-feedback {
         width: calc(0px);
     }
 
@@ -1588,7 +1618,8 @@ li .highlight {
     .sidebar-privacyterms.open,
     .sidebar-trip.open,
     .sidebar-login.open,
-    .sidebar-settings.open {
+    .sidebar-settings.open,
+    .sidebar-feedback.open {
         width: calc(100% - 40px);
         right: 0;
     }
