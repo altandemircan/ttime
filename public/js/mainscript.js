@@ -1517,6 +1517,13 @@ function removeFromCart(index) {
         window.cart.splice(index, 1);
         updateCart();
     }
+    if (typeof renderRouteForDay === 'function') {
+  const day = window.cart[index]?.day || guessLastDay();
+  // Tüm günleri yeniden çizmek istersen:
+  // for (let d=1; d<=maxDay; d++) renderRouteForDay(d);
+  // Sadece ilgili gün:
+  if (day) setTimeout(()=>renderRouteForDay(day), 30);
+}
 }
 
 function addItem(element, day, category, name, image, extra) {
@@ -2498,11 +2505,11 @@ if (!window.cart || window.cart.length === 0) {
                 dayList.appendChild(li);
 
                 if (dayItemsArr.length === 1 && index === 0) {
-                    const oneItemMessage = document.createElement("p");
-                    oneItemMessage.classList.add("one-item-message");
-                    oneItemMessage.textContent = "Add one more item to see the route!";
-                    dayList.appendChild(oneItemMessage);
-                }
+  const oneItemMessage = document.createElement("p");
+  oneItemMessage.classList.add("one-item-message");
+  oneItemMessage.textContent = "Add one more item to see the route!";
+  dayList.appendChild(oneItemMessage);
+}
 
                 if (dayItemsArr.length >= 2 && index < dayItemsArr.length - 1) {
                     const key = `route-map-day${day}`;
@@ -2798,7 +2805,7 @@ function updateExpandedMap(expandedMap, day) {
     const geojson = window.lastRouteGeojsons?.[containerId];
     const points = getDayPoints(day);
 
-    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
         const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         const polyline = L.polyline(coords, {
   color: '#1976d2',
@@ -2835,8 +2842,31 @@ function updateExpandedMap(expandedMap, day) {
             }
         });
     } else {
-        // fallback...
+  // Fallback: 0 veya 1 nokta
+  const pts = getDayPoints(day);
+  // Eski marker / polyline temizle
+  expandedMap.eachLayer(layer => {
+    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+      if (!(layer instanceof L.TileLayer)) expandedMap.removeLayer(layer);
     }
+  });
+
+  if (pts.length === 1) {
+    const p = pts[0];
+    const m = L.circleMarker([p.lat, p.lng], {
+      radius: 10,
+      color: '#8a4af3',
+      fillColor: '#8a4af3',
+      fillOpacity: 0.92,
+      weight: 3
+    }).addTo(expandedMap);
+    m.bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
+    expandedMap.setView([p.lat, p.lng], 15);
+  } else {
+    // 0 nokta ise sadece center’a yakınlaştır
+    expandedMap.setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+  }
+}
 
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
@@ -5148,43 +5178,106 @@ async function renderRouteForDay(day) {
   const points = getDayPoints(day);
   const containerId = `route-map-day${day}`;
 
-  // 1) 2'den az nokta: boş temel harita göster / koru
-  if (points.length < 2) {
-    // Boş harita yoksa oluştur (Avrupa merkezli)
-    initEmptyDayMap(day);
+// 1) 0 / 1 / 2+ nokta senaryoları
 
-    // Rota / istatistik / scale bar temizliği
-    updateRouteStatsUI(day);
-    clearDistanceLabels(day);
+// 0 NOKTA: Boş harita (hiç marker yok)
+if (points.length === 0) {
+  initEmptyDayMap(day);                 // Harita yoksa oluşturur
+  updateRouteStatsUI(day);              // Mesafe / süre alanlarını sıfırlar
+  clearDistanceLabels(day);             // İki nokta arası ayraç metinleri temizle
 
-    // Expanded açık ise sadece polyline & markerları temizle ama haritayı bırak
-    const expandedMapObj = window.expandedMaps?.[containerId];
-    if (expandedMapObj && expandedMapObj.expandedMap) {
-      expandedMapObj.expandedMap.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-          expandedMapObj.expandedMap.removeLayer(layer);
-        }
-      });
-    }
-
-    // Küçük haritada (sidebar) eski route çizimini silmek için:
-    if (window.leafletMaps && window.leafletMaps[containerId]) {
-      // Sadece polyline/marker temizle; base tile kalsın
-      const map = window.leafletMaps[containerId];
-      map.eachLayer(layer => {
-        // TileLayer hariç (L.TileLayer) her şeyi temizle
-        if (!(layer instanceof L.TileLayer)) {
-          map.removeLayer(layer);
-        }
-      });
-    }
-
-    // Ölçek (elevation) barını sıfırla
-    const scaleBarDiv = document.getElementById(`route-scale-bar-day${day}`);
-    if (scaleBarDiv) scaleBarDiv.innerHTML = "";
-
-    return; // Rota hesaplamasına girmeden çık
+  // Expanded açık ise marker / polyline temizle
+  const expandedMapObj = window.expandedMaps?.[containerId];
+  if (expandedMapObj?.expandedMap) {
+    expandedMapObj.expandedMap.eachLayer(layer => {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+        expandedMapObj.expandedMap.removeLayer(layer);
+      }
+    });
   }
+
+  // Küçük haritada polyline / marker temizliği (tile layer kalsın)
+  if (window.leafletMaps && window.leafletMaps[containerId]) {
+    const map = window.leafletMaps[containerId];
+    map.eachLayer(layer => {
+      if (!(layer instanceof L.TileLayer)) {
+        map.removeLayer(layer);
+      }
+    });
+  }
+
+  // Ölçek (elevation) barını sıfırla
+  const scaleBarDiv0 = document.getElementById(`route-scale-bar-day${day}`);
+  if (scaleBarDiv0) scaleBarDiv0.innerHTML = "";
+  return;
+}
+
+// 1 NOKTA: Tek marker göster, rota çizme
+if (points.length === 1) {
+  initEmptyDayMap(day);
+  const containerIdSm = `route-map-day${day}`;
+  const map = window.leafletMaps?.[containerIdSm];
+
+  updateRouteStatsUI(day);
+  clearDistanceLabels(day);
+  const scaleBarDiv1 = document.getElementById(`route-scale-bar-day${day}`);
+  if (scaleBarDiv1) scaleBarDiv1.innerHTML = "";
+
+  if (map) {
+    map.eachLayer(layer => {
+      if (!(layer instanceof L.TileLayer)) {
+        map.removeLayer(layer);
+      }
+    });
+
+    const p = points[0];
+
+    const icon = L.circleMarker([p.lat, p.lng], {
+      radius: 8,
+      color: '#8a4af3',
+      fillColor: '#8a4af3',
+      fillOpacity: 0.9,
+      weight: 2
+    })
+      .addTo(map)
+      .bindPopup(`<b>${p.name || 'Point'}</b>`);
+
+    if (icon._path) {
+      icon._path.classList.add('single-point-pulse');
+    }
+
+    try { map.setView([p.lat, p.lng], 14, { animate: true }); } catch {}
+  }
+
+  // Expanded map varsa aynı mantık
+  const expandedMapObj = window.expandedMaps?.[containerId];
+  if (expandedMapObj?.expandedMap) {
+    const eMap = expandedMapObj.expandedMap;
+    eMap.eachLayer(layer => {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+        if (!(layer instanceof L.TileLayer)) eMap.removeLayer(layer);
+      }
+    });
+    const p = points[0];
+    const m = L.circleMarker([p.lat, p.lng], {
+      radius: 11,
+      color: '#8a4af3',
+      fillColor: '#8a4af3',
+      fillOpacity: 0.92,
+      weight: 3
+    }).addTo(eMap)
+      .bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
+
+    if (m._path) m._path.classList.add('single-point-pulse');
+
+    try { eMap.setView([p.lat, p.lng], 15, { animate: true }); } catch {}
+  }
+
+  return;
+}
+
+// 2+ NOKTA: (Mevcut rota hesaplama / Mapbox directions kodun buradan devam edecek)
+// --- Aşağıdaki eski "let snappedPoints..." ile başlayan kısmı aynen koru ---
 
   // 2) 2+ nokta: rota oluştur
   const snappedPoints = [];
