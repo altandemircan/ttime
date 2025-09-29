@@ -5214,16 +5214,18 @@ if (points.length === 0) {
 
 // 1 NOKTA: Tek marker göster, rota çizme
 if (points.length === 1) {
-  initEmptyDayMap(day);
+  initEmptyDayMap(day);  // Haritayı hazırla (mevcutsa sadece view günceller)
   const containerIdSm = `route-map-day${day}`;
   const map = window.leafletMaps?.[containerIdSm];
 
+  // Ölçek / özet temizle
   updateRouteStatsUI(day);
   clearDistanceLabels(day);
   const scaleBarDiv1 = document.getElementById(`route-scale-bar-day${day}`);
   if (scaleBarDiv1) scaleBarDiv1.innerHTML = "";
 
   if (map) {
+    // Eski marker / polyline temizle (tile hariç)
     map.eachLayer(layer => {
       if (!(layer instanceof L.TileLayer)) {
         map.removeLayer(layer);
@@ -5231,25 +5233,19 @@ if (points.length === 1) {
     });
 
     const p = points[0];
-
-    const icon = L.circleMarker([p.lat, p.lng], {
-      radius: 8,
+    const marker = L.circleMarker([p.lat, p.lng], {
+      radius: 9,
       color: '#8a4af3',
       fillColor: '#8a4af3',
       fillOpacity: 0.9,
       weight: 2
-    })
-      .addTo(map)
-      .bindPopup(`<b>${p.name || 'Point'}</b>`);
+    }).addTo(map);
 
-    if (icon._path) {
-      icon._path.classList.add('single-point-pulse');
-    }
-
+    marker.bindPopup(`<b>${p.name || 'Point'}</b>`);
     try { map.setView([p.lat, p.lng], 14, { animate: true }); } catch {}
   }
 
-  // Expanded map varsa aynı mantık
+  // Expanded map açıksa aynı tek marker mantığını uygula
   const expandedMapObj = window.expandedMaps?.[containerId];
   if (expandedMapObj?.expandedMap) {
     const eMap = expandedMapObj.expandedMap;
@@ -5265,11 +5261,8 @@ if (points.length === 1) {
       fillColor: '#8a4af3',
       fillOpacity: 0.92,
       weight: 3
-    }).addTo(eMap)
-      .bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
-
-    if (m._path) m._path.classList.add('single-point-pulse');
-
+    }).addTo(eMap);
+    m.bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
     try { eMap.setView([p.lat, p.lng], 15, { animate: true }); } catch {}
   }
 
