@@ -2260,7 +2260,7 @@ function syncCartOrderWithDOM(day) {
 /* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
 
 const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
-const INITIAL_EMPTY_MAP_ZOOM   = 7;             // Önceki 4'ten 2 kademe yakın
+const INITIAL_EMPTY_MAP_ZOOM   = 6;             // Önceki 4'ten 2 kademe yakın
 
 function initEmptyDayMap(day) {
     const containerId = `route-map-day${day}`;
