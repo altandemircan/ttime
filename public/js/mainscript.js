@@ -2767,25 +2767,23 @@ function updateCart() {
   })();
 
   // Share + AI (tarihler varsa)
-  (function ensurePostDateSections() {
-    if (!window.cart.startDate) return;
-    let share = document.getElementById('trip-share-section');
-    if (!share) {
-      share = document.createElement('div');
-      share.id = 'trip-share-section';
-      share.className = 'trip-share-section';
-      cartDiv.appendChild(share);
-    }
-    let ai = document.getElementById('ai-info-section');
-    if (!ai) {
-      ai = document.createElement('div');
-      ai.id = 'ai-info-section';
-      ai.className = 'ai-info-section';
-      cartDiv.appendChild(ai);
-    }
-    if (typeof buildShareSection === 'function') buildShareSection();
-    if (typeof renderAIInfoPanel === 'function') renderAIInfoPanel();
-  })();
+(function ensurePostDateSections() {
+  if (!window.cart.startDate) return;
+
+  // Sadece Share
+  let share = document.getElementById('trip-share-section');
+  if (!share) {
+    share = document.createElement('div');
+    share.id = 'trip-share-section';
+    share.className = 'trip-share-section';
+    cartDiv.appendChild(share);
+  }
+  if (typeof buildShareSection === 'function') buildShareSection();
+
+  // Eski AI anchor kalmışsa temizle
+  const oldAI = document.getElementById('ai-info-section');
+  if (oldAI) oldAI.remove();
+})();
 
   // Trip Details (RESTORE)
   (function ensureTripDetailsBlock() {
