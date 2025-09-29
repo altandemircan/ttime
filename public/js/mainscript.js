@@ -2461,6 +2461,9 @@ function restoreLostDayMaps() {
   });
 }
 
+
+
+
 // --- PATCH: startMapPlanning (haritayı hemen aç + expand isteğe bağlı) ---
 function startMapPlanning() {
     if (!window.cart || window.cart.length === 0) {
@@ -2745,30 +2748,27 @@ function updateCart() {
   renderTravelModeControlsForAllDays();
 
   // Self-heal
-  restoreLostDayMaps();
-
-  /* ==================  ADDED: Select Dates Button Restore  ================== */
+   // Select Dates / Change Dates (daha önce eklediysen tekrar ekleme)
   (function ensureSelectDatesButton() {
     let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
     if (!btn) {
       btn = document.createElement('button');
-      btn.className = 'add-to-calendar-btn';           // mevcut stil sınıfın
+      btn.className = 'add-to-calendar-btn';
       btn.setAttribute('data-role', 'trip-dates');
       cartDiv.appendChild(btn);
     }
     btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
     btn.onclick = () => {
       if (typeof openCalendar === 'function') {
+        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b).pop() || 1;
         openCalendar(maxDay);
-      } else {
-        console.warn('openCalendar not found');
       }
     };
   })();
 
-  /* ==================  ADDED: Share + AI Sections (only if dates exist) ================== */
+  // Share + AI (tarihler varsa)
   (function ensurePostDateSections() {
-    if (!window.cart.startDate) return; // tarih seçilmeden göstermek istemiyoruz
+    if (!window.cart.startDate) return;
     let share = document.getElementById('trip-share-section');
     if (!share) {
       share = document.createElement('div');
@@ -2783,13 +2783,41 @@ function updateCart() {
       ai.className = 'ai-info-section';
       cartDiv.appendChild(ai);
     }
-    // Eski fonksiyonların varsa çağır:
     if (typeof buildShareSection === 'function') buildShareSection();
     if (typeof renderAIInfoPanel === 'function') renderAIInfoPanel();
   })();
+
+  // Trip Details (RESTORE)
+  (function ensureTripDetailsBlock() {
+    if (!window.cart.startDate || !window.cart.endDates || !window.cart.endDates.length) {
+      const existing = cartDiv.querySelector('.date-range');
+      if (existing) existing.remove();
+      return;
+    }
+    let dateRangeDiv = cartDiv.querySelector('.date-range');
+    if (!dateRangeDiv) {
+      dateRangeDiv = document.createElement('div');
+      dateRangeDiv.className = 'date-range';
+      cartDiv.appendChild(dateRangeDiv);
+    }
+    const endDate = window.cart.endDates[window.cart.endDates.length - 1];
+    dateRangeDiv.innerHTML = `
+      <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
+      <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
+    `;
+    const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
+    if (detailsBtn) {
+      detailsBtn.onclick = () => {
+        if (typeof showTripDetails === 'function') {
+          showTripDetails(window.cart.startDate);
+        } else {
+          console.warn('showTripDetails not found');
+        }
+      };
+    }
+  })();
 }
-document.addEventListener('DOMContentLoaded', updateCart);
-// (dosyadaki diğer kodlar)
+
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
