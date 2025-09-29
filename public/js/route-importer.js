@@ -1,29 +1,21 @@
 // route-importer.js
-// Handles importing GPX / TCX / FIT, extracting first & last points, creating Day 1 if empty,
-// adding two itinerary items (Start / Finish) and drawing a route polyline.
+// Simplified: GPX + TCX only.
+// - Parses route
+// - Ensures Day 1
+// - Adds two items: Start / Finish
+// - Draws polyline on Leaflet map (global window.map assumed)
 
 (function() {
   const fileInput = document.getElementById('route-import-input');
   const importButtons = document.querySelectorAll('.import-btn');
-
-  if (!fileInput || importButtons.length === 0) return;
+  if (!fileInput || !importButtons.length) return;
 
   let currentType = null;
 
   importButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      currentType = btn.getAttribute('data-import-type'); // gpx / tcx / fit
-      switch (currentType) {
-        case 'gpx':
-          fileInput.accept = '.gpx';
-          break;
-        case 'tcx':
-          fileInput.accept = '.tcx';
-          break;
-        case 'fit':
-          fileInput.accept = '.fit';
-          break;
-      }
+      currentType = btn.getAttribute('data-import-type'); // gpx | tcx
+      fileInput.accept = currentType === 'gpx' ? '.gpx' : '.tcx';
       fileInput.value = '';
       fileInput.click();
     });
@@ -34,16 +26,8 @@
     if (!file || !currentType) return;
 
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      let parsed;
-
-      if (currentType === 'gpx') {
-        parsed = parseGPX(new TextDecoder().decode(arrayBuffer));
-      } else if (currentType === 'tcx') {
-        parsed = parseTCX(new TextDecoder().decode(arrayBuffer));
-      } else if (currentType === 'fit') {
-        parsed = await parseFIT(arrayBuffer); // placeholder
-      }
+      const raw = await file.text();
+      const parsed = currentType === 'gpx' ? parseGPX(raw) : parseTCX(raw);
 
       if (!parsed || !parsed.points || parsed.points.length < 2) {
         notify('Failed to parse route points.', 'error');
@@ -54,11 +38,8 @@
       const start = parsed.points[0];
       const finish = parsed.points[parsed.points.length - 1];
 
-      // 1) Ensure trip context / Day 1 exists
       ensureDay1();
 
-      // 2) Add Start & Finish as itinerary items
-      const dayIndex = 0; // Day 1
       const startItem = buildTripItem({
         title: name ? `${name} (Start)` : 'Start',
         lat: start.lat,
@@ -75,13 +56,11 @@
         tag: 'finish'
       });
 
-      appendItemToDay(dayIndex, startItem);
-      appendItemToDay(dayIndex, finishItem);
+      appendItemToDay(0, startItem);
+      appendItemToDay(0, finishItem);
 
-      // 3) Draw route polyline
       drawImportedRoute(parsed.points, name);
 
-      // 4) Optional: store geometry in trip state
       persistRouteMeta({
         name,
         type: currentType.toUpperCase(),
@@ -90,14 +69,13 @@
       });
 
       notify(`Imported ${currentType.toUpperCase()} route: ${name}`, 'success');
-
     } catch (e) {
       console.error('[import-route] ERROR', e);
       notify('Import failed: ' + e.message, 'error');
     }
   });
 
-  /* --------- Parsers --------- */
+  /* ---------- Parsers ---------- */
 
   function parseGPX(xmlString) {
     const doc = new DOMParser().parseFromString(xmlString, 'application/xml');
@@ -117,20 +95,19 @@
   }
 
   function parseTCX(xmlString) {
-    // Basic TCX (Training Center XML) parsing: Trackpoint > Position > LatitudeDegrees / LongitudeDegrees
     const doc = new DOMParser().parseFromString(xmlString, 'application/xml');
-    const tp = Array.from(doc.getElementsByTagName('Trackpoint'));
+    const trackpoints = Array.from(doc.getElementsByTagName('Trackpoint'));
     const name = extractTCXName(doc);
-
     const points = [];
-    tp.forEach(t => {
-      const latNode = t.getElementsByTagName('LatitudeDegrees')[0];
-      const lonNode = t.getElementsByTagName('LongitudeDegrees')[0];
+
+    trackpoints.forEach(tp => {
+      const latNode = tp.getElementsByTagName('LatitudeDegrees')[0];
+      const lonNode = tp.getElementsByTagName('LongitudeDegrees')[0];
       if (!latNode || !lonNode) return;
       const lat = parseFloat(latNode.textContent);
       const lon = parseFloat(lonNode.textContent);
       let ele = null;
-      const eleNode = t.getElementsByTagName('AltitudeMeters')[0];
+      const eleNode = tp.getElementsByTagName('AltitudeMeters')[0];
       if (eleNode) ele = parseFloat(eleNode.textContent);
       if (isFinite(lat) && isFinite(lon)) {
         points.push({ lat, lon, ele });
@@ -141,21 +118,11 @@
   }
 
   function extractTCXName(doc) {
-    // Optional heuristics for Activity > Lap > Notes or Name – often not present
-    const activity = doc.querySelector('Activity');
-    if (!activity) return null;
-    const id = activity.querySelector('Id');
-    return id ? id.textContent.trim() : null;
+    const idNode = doc.querySelector('Activity > Id');
+    return idNode ? idNode.textContent.trim() : null;
   }
 
-  async function parseFIT(arrayBuffer) {
-    // Placeholder: Real FIT decode needs a lib (e.g. https://github.com/iskoel/fitsdk or fit-file-parser)
-    // You can include a small parser and map messages of type 'record' with position_lat / position_long.
-    // For now, we reject to signal not implemented.
-    throw new Error('FIT parser not implemented. Add a FIT decoding library.');
-  }
-
-  /* --------- Helpers --------- */
+  /* ---------- Helpers ---------- */
 
   function inferName(points) {
     if (!points.length) return 'Imported Route';
@@ -165,21 +132,12 @@
   }
 
   function ensureDay1() {
-    // Implement based on existing app state. Placeholder:
-    if (!window.tripPlan) {
-      window.tripPlan = { days: [] };
-    }
+    if (!window.tripPlan) window.tripPlan = { days: [] };
     if (!Array.isArray(window.tripPlan.days)) window.tripPlan.days = [];
     if (window.tripPlan.days.length === 0) {
-      window.tripPlan.days.push({
-        title: 'Day 1',
-        items: []
-      });
-      // If you have a UI render function:
+      window.tripPlan.days.push({ title: 'Day 1', items: [] });
       if (typeof window.renderTripDays === 'function') {
         window.renderTripDays();
-      } else {
-        // Or trigger a lightweight refresh if needed.
       }
     }
   }
@@ -202,44 +160,40 @@
     window.tripPlan.days[dayIndex].items.push(item);
     if (typeof window.renderDayItems === 'function') {
       window.renderDayItems(dayIndex);
-    } else {
-      // fallback: if you have a generic rerender
-      if (typeof window.renderTripDays === 'function') window.renderTripDays();
+    } else if (typeof window.renderTripDays === 'function') {
+      window.renderTripDays();
     }
   }
 
   function drawImportedRoute(points, name) {
-    if (typeof L === 'undefined') {
-      console.warn('[import-route] Leaflet not found, skipping map polyline.');
+    if (typeof L === 'undefined' || !window.map) {
+      console.warn('[import-route] Leaflet map not found.');
       return;
     }
-    if (!window.__importLayers) window.__importLayers = [];
-
     const latlngs = points.map(p => [p.lat, p.lon]);
     const poly = L.polyline(latlngs, {
       color: '#8a4af3',
       weight: 4,
-      opacity: 0.85
-    });
+      opacity: 0.9
+    }).addTo(window.map);
 
-    poly.addTo(window.map); // assume global Leaflet map is "map"
+    if (!window.__importLayers) window.__importLayers = [];
     window.__importLayers.push(poly);
+
     try {
       window.map.fitBounds(poly.getBounds(), { padding: [30, 30] });
-    } catch (e) { /* ignore */ }
+    } catch {}
 
-    // Optional start/finish markers
+    // Markers
     const start = latlngs[0];
     const finish = latlngs[latlngs.length - 1];
     if (start) {
-      L.circleMarker(start, {
-        radius: 6, color: '#0f766e', fillColor:'#14b8a6', fillOpacity: 0.9
-      }).addTo(window.map).bindTooltip('Start', {permanent:false});
+      L.circleMarker(start, { radius: 6, color:'#0f766e', fillColor:'#14b8a6', fillOpacity:0.9 })
+        .addTo(window.map).bindTooltip('Start');
     }
     if (finish) {
-      L.circleMarker(finish, {
-        radius: 6, color: '#7f1d1d', fillColor:'#dc2626', fillOpacity: 0.9
-      }).addTo(window.map).bindTooltip('Finish', {permanent:false});
+      L.circleMarker(finish, { radius: 6, color:'#7f1d1d', fillColor:'#dc2626', fillOpacity:0.9 })
+        .addTo(window.map).bindTooltip('Finish');
     }
   }
 
@@ -264,17 +218,12 @@
   }
 
   function persistRouteMeta(meta) {
-    // Optional: store last import metadata
     window.lastImportedRoute = meta;
-    // If you have localStorage logic:
-    try {
-      localStorage.setItem('lastImportedRoute', JSON.stringify(meta));
-    } catch {}
+    try { localStorage.setItem('lastImportedRoute', JSON.stringify(meta)); } catch {}
   }
 
   function notify(msg, type='info') {
     console.log('[import-route]', type, msg);
-    // If you have a toast system, call it here
     if (window.showToast) window.showToast(msg, type);
   }
 
