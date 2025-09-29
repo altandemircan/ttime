@@ -8214,3 +8214,93 @@ window.addEventListener('resize', adjustScaleBarPosition);
 window.addEventListener('scroll', adjustScaleBarPosition);
 window.addEventListener('orientationchange', adjustScaleBarPosition);
 setTimeout(adjustScaleBarPosition, 100);
+
+
+// === Feedback Form ===
+(function initFeedbackSidebar(){
+  const sidebar = document.getElementById('sidebar-feedback');
+  if (!sidebar) return;
+
+  const form = sidebar.querySelector('#feedback-form');
+  const statusEl = sidebar.querySelector('#feedback-status');
+  const btnCancel = sidebar.querySelector('#feedback-cancel');
+  const btnClose = sidebar.querySelector('.close-feedback');
+
+  function showStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className = 'feedback-status ' + (cls || '');
+  }
+
+  // Basit aç/kapat tetikleyici (kendi butonun varsa oradan çağır)
+  window.openFeedback = function() {
+    sidebar.style.display = 'block';
+  };
+  window.closeFeedback = function() {
+    sidebar.style.display = 'none';
+    form.reset();
+    showStatus('');
+  };
+
+  btnCancel?.addEventListener('click', () => closeFeedback());
+  btnClose?.addEventListener('click', () => closeFeedback());
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showStatus('Gönderiliyor...', '');
+    const fd = new FormData(form);
+    const type = fd.get('type');
+    const message = (fd.get('message') || '').toString().trim();
+    const userEmail = (fd.get('userEmail') || '').toString().trim();
+    const file = fd.get('screenshot');
+
+    if (!message) {
+      showStatus('Mesaj boş olamaz.', 'error');
+      return;
+    }
+
+    // 1) Eğer backend hazır DEĞİLSE: mailto fallback
+    // (Çok uzun mesaj + ekran görüntüsü yoksa)
+    if (!window.FEEDBACK_API_ENABLED) {
+      const body = encodeURIComponent(
+        `Tür: ${type}\nEmail: ${userEmail || '-'}\n\nMesaj:\n${message}`
+      );
+      // Kullanıcıyı mail client'a yönlendir
+      window.location.href = `mailto:altandemircan@gmail.com?subject=${encodeURIComponent('Yeni Feedback')}&&body=${body}`;
+      showStatus('Mail istemcisi açılıyor (dosya ekleri desteklenmez).', 'success');
+      form.reset();
+      return;
+    }
+
+    // 2) Backend varsa (örnek API POST)
+    try {
+      let base64Image = null;
+      if (file instanceof File && file.size > 0) {
+        base64Image = await new Promise(res => {
+          const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.readAsDataURL(file);
+        });
+      }
+
+      const payload = {
+        type,
+        message,
+        userEmail: userEmail || null,
+        screenshot: base64Image
+      };
+
+      const resp = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) throw new Error('Sunucu hatası');
+      showStatus('Teşekkürler! Feedback alındı.', 'success');
+      form.reset();
+    } catch(err) {
+      console.error(err);
+      showStatus('Gönderilemedi. Daha sonra tekrar dene.', 'error');
+    }
+  });
+})();

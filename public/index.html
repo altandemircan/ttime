@@ -323,76 +323,38 @@
         <div class="sidebar_title">Feedback Form<button class="sidebar-toggle" onclick="toggleSidebarFeedback()">
                 <img src="/img/close-icon.svg" alt="Close">
             </button>
-            <div class="mytripsall">
-                <div class="tripbox">
-                    <img class="user-image" src="/img/user/altan.jpg">
-                    <p class="name">Altan Demircan</p>
-                    <p class="date">Standard Member</p>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>Username</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p> altan </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>Contact Information</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>0 532 2054622</p>
-                            <p>altandemircan@gmail.com</p>
-                            <p>Antalya, Turkey</p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>Subscription</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>Member</p>
-                            <p>Premium</p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>Language</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>Turkish</p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>Currency</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>TRY</p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>Feedback</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>We evaluate your complaints, requests, and suggestions and get back to you. For your opinions, please contact us at info@triptime.ai</p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header">
-                            <span>Logout</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <form id="feedback-form">
+    <label>
+      Tür
+      <select name="type" required>
+        <option value="bug">Hata / Bug</option>
+        <option value="feature">Özellik Talebi</option>
+        <option value="idea">Fikir / İyileştirme</option>
+        <option value="other">Diğer</option>
+      </select>
+    </label>
+
+    <label>
+      Mesaj
+      <textarea name="message" rows="5" placeholder="Detayları yaz..." required></textarea>
+    </label>
+
+    <label>
+      Email (opsiyonel)
+      <input type="email" name="userEmail" placeholder="Sana dönebilmem için (opsiyonel)">
+    </label>
+
+    <label style="display:block;">
+      Ekran görüntüsü (opsiyonel)
+      <input type="file" name="screenshot" accept="image/*">
+    </label>
+
+    <div class="feedback-actions">
+      <button type="submit">Gönder</button>
+      <button type="button" id="feedback-cancel">Vazgeç</button>
+    </div>
+    <div id="feedback-status" class="feedback-status"></div>
+  </form>
         </div>
     </div>
 </div>
