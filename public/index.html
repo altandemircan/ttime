@@ -433,7 +433,15 @@
         return;
       }
 
-      setStatus('Thank you! Sent.', 'success');
+      setStatus(
+  `Thank you! Your feedback has been submitted successfully.
+  Every idea, suggestion, and issue report is carefully reviewed by our team.
+  If you included an email, we may reach out for clarification or follow-up.
+  Your input directly helps us prioritize improvements and create a better experience.
+  We sincerely appreciate your support.`,
+  'success'
+);
+form.classList.add('feedback-form-sent');
       form.reset();
     } catch (err) {
       console.error(err);
