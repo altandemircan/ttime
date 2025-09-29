@@ -194,4 +194,51 @@
     return idNode ? idNode.textContent.trim() : null;
   }
 
-  /* ---------- Helpers ----------
+  /* ---------- Helpers ---------- */
+
+  function inferName(points) {
+    if (!points.length) return 'Imported Route';
+    const s = points[0];
+    const f = points[points.length - 1];
+    return `Route (${s.lat.toFixed(3)},${s.lon.toFixed(3)}) → (${f.lat.toFixed(3)},${f.lon.toFixed(3)})`;
+  }
+
+  function approximateDistance(points) {
+    if (points.length < 2) return 0;
+    let d = 0;
+    for (let i = 1; i < points.length; i++) {
+      d += haversine(points[i-1], points[i]);
+    }
+    return d;
+  }
+
+  function haversine(a, b) {
+    const R = 6371000;
+    const toRad = x => x * Math.PI / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLon = toRad(b.lon - a.lon);
+    const sLat1 = toRad(a.lat);
+    const sLat2 = toRad(b.lat);
+    const h = Math.sin(dLat/2)**2 + Math.cos(sLat1)*Math.cos(sLat2)*Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  function persistRouteMeta(meta) {
+    window.lastImportedRoute = meta;
+    try { localStorage.setItem('lastImportedRoute', JSON.stringify(meta)); } catch {}
+  }
+
+  function notify(msg, type='info') {
+    console.log('[import-route]', type, msg);
+    if (window.showToast) window.showToast(msg, type);
+  }
+
+  // Debug yardım komutu
+  window.__debugRouteImport = () => ({
+    buttonsNow: document.querySelectorAll('.import-btn').length,
+    hiddenInput: !!document.getElementById('__route_import_hidden_input'),
+    cartSize: window.cart ? window.cart.length : 0,
+    lastImportedRoute: window.lastImportedRoute
+  });
+
+})();
