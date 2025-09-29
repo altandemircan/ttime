@@ -3148,8 +3148,9 @@ function toggleContent(arrowIcon) {
 }
 
 
+/* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
 function showTripDetails(startDate) {
-    // Mobilde sadece paylaşım butonlarını göster
+    // Mobil: sadece paylaşım butonları (AYNI KALDI)
     if (window.innerWidth <= 768) {
         const dateRangeDiv = document.querySelector('.date-range');
         if (!dateRangeDiv) return;
@@ -3171,7 +3172,7 @@ function showTripDetails(startDate) {
         return;
     }
 
-    // Ensure a screen to render into
+    // Konteyner hazırla
     let chatScreen = document.getElementById("chat-screen");
     if (!chatScreen) {
         chatScreen = document.createElement("div");
@@ -3179,7 +3180,6 @@ function showTripDetails(startDate) {
         document.body.appendChild(chatScreen);
     }
 
-    // Root section
     let tripDetailsSection = document.getElementById("tt-trip-details");
     if (!tripDetailsSection) {
         tripDetailsSection = document.createElement("section");
@@ -3188,21 +3188,17 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // No data guard
     if (!Array.isArray(window.cart) || window.cart.length === 0) {
         tripDetailsSection.textContent = "No trip details available.";
         return;
     }
 
-    // Outer structure like normal
     const sect = document.createElement("div");
     sect.className = "sect";
-
     const ul = document.createElement("ul");
     ul.className = "accordion-list";
     sect.appendChild(ul);
 
-    // Find total days
     let maxDay = 0;
     window.cart.forEach(it => { if (it.day > maxDay) maxDay = it.day; });
 
@@ -3212,7 +3208,7 @@ function showTripDetails(startDate) {
     for (let day = 1; day <= maxDay; day++) {
         const dayItems = window.cart.filter(it => it.day == day && it.name !== undefined);
 
-        // Build friendly day title + date
+        // Tarih etiketi
         let dateStr = "";
         if (startDateObj) {
             const d = new Date(startDateObj);
@@ -3222,21 +3218,18 @@ function showTripDetails(startDate) {
         const dayTitle = window.customDayNames[day] || `Day ${day}`;
         const labelText = `${dayTitle}${dateStr ? ` (${dateStr})` : ""}`;
 
-        // Day item li
         const li = document.createElement("li");
         li.className = "day-item";
 
         const container = document.createElement("div");
         container.className = "accordion-container";
 
-        // Use unique IDs to avoid collisions with chat results
         const inputId = `tt-day-${day}`;
-
         const input = document.createElement("input");
         input.type = "checkbox";
         input.id = inputId;
         input.className = "accordion-toggle";
-        input.checked = true; // default open
+        input.checked = true;
         container.appendChild(input);
 
         const label = document.createElement("label");
@@ -3255,7 +3248,6 @@ function showTripDetails(startDate) {
         daySteps.className = "day-steps active-view";
         daySteps.setAttribute("data-day", String(day));
 
-        // Steps
         if (dayItems.length > 0) {
             const stepsHtml = dayItems.map((item, idx) => {
                 const step = {
@@ -3289,7 +3281,7 @@ function showTripDetails(startDate) {
   <div class="info day_cats item-info-view">
     <div class="title">${item.name}</div>
     <div class="address"><img src="img/address_icon.svg"> ${address}</div>
-<div class="description" data-original-description="${(item.description || 'No detailed description.').replace(/"/g, '&quot;')}">
+    <div class="description" data-original-description="${(item.description || 'No detailed description.').replace(/"/g, '&quot;')}">
       <img src="img/information_icon.svg">
       <span class="ai-guide-loading">
         AI Guide loading...
@@ -3313,7 +3305,6 @@ function showTripDetails(startDate) {
   </div>
 </div>`;
             }).join("");
-
             daySteps.innerHTML = stepsHtml;
             daySteps.querySelectorAll(".steps").forEach(el => el.setAttribute("draggable", "true"));
         } else {
@@ -3323,10 +3314,8 @@ function showTripDetails(startDate) {
             daySteps.appendChild(emptyP);
         }
 
-        const routeDiv = document.createElement("div");
-        routeDiv.id = `route-map-day${day}`;
-        routeDiv.className = "route-map";
-        daySteps.appendChild(routeDiv);
+        // ÖNEMLİ: Trip Details içinde HARİTA / ROUTE / TRAVEL MODE / ROUTE SUMMARY YOK!
+        // (Eski: route-map-dayX + travel mode + expand butonu + summary ekliyordu. Hepsi kaldırıldı.)
 
         content.appendChild(daySteps);
         container.appendChild(content);
@@ -3336,7 +3325,7 @@ function showTripDetails(startDate) {
 
     tripDetailsSection.appendChild(sect);
 
-    // --- TRIP INFORMATION bölümü (AI ile) ---
+    // Trip Information (AI adım yorumları)
     const tripInfoDiv = document.createElement("div");
     tripInfoDiv.className = "trip-info-section";
     tripInfoDiv.innerHTML = `
@@ -3347,7 +3336,7 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(tripInfoDiv);
 
-    // --- AI Information bölümü (paylaşım üstü) ---
+    // AI Summary
     const aiInfoDiv = document.createElement("div");
     aiInfoDiv.className = "ai-info-section";
     aiInfoDiv.innerHTML = `
@@ -3358,20 +3347,20 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(aiInfoDiv);
 
-    // Share buttons at the end
+    // Share buttons
     const shareButtonsContainer = document.createElement("div");
     shareButtonsContainer.classList.add("share-buttons-container");
     shareButtonsContainer.innerHTML = `
        <button class="share-button whatsapp-button" onclick="shareOnWhatsApp()">
-    <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> Share on WhatsApp
-</button>
-<button class="share-button instagram-button" onclick="shareOnInstagram()">
-    <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Copy for Instagram
-</button>
+          <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> Share on WhatsApp
+       </button>
+       <button class="share-button instagram-button" onclick="shareOnInstagram()">
+          <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Copy for Instagram
+       </button>
     `;
     tripDetailsSection.appendChild(shareButtonsContainer);
 
-    // --- Typewriter fonksiyonu ---
+    // Typewriter
     function typeWriterEffect(element, html, speed = 16) {
         let i = 0;
         element.innerHTML = "";
@@ -3393,13 +3382,12 @@ function showTripDetails(startDate) {
         }
         type();
     }
-
     function safeHtml(str) {
         if (!str) return "";
         return String(str).replace(/^\s+|\s+$/g, '').replace(/\n{2,}/g, '\n').replace(/<[^>]*>/g, '');
     }
 
-    // --- AI Information (plan-summary) ---
+    // AI Summary
     (async function(){
         try {
             const plan = (window.latestTripPlan && window.latestTripPlan.length) ? window.latestTripPlan : window.cart;
@@ -3424,66 +3412,47 @@ function showTripDetails(startDate) {
         }
     })();
 
-    // --- Trip Information (adım-adım AI ile) ---
-   (async function(){
-  try {
-    // örnek fetch kodu, gerçek endpoint ve body ile değiştir
-    const resp = await fetch('/llm-proxy/trip-info', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tripPlan: window.cart || []
-      })
-    });
-    const data = await resp.json();
-    console.log("AI Trip Info Response:", data);
+    // Trip Info
+    (async function(){
+      try {
+        const resp = await fetch('/llm-proxy/trip-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tripPlan: window.cart || [] })
+        });
+        const data = await resp.json();
+        let html = "";
+        if (data.steps && data.steps.length) {
+          data.steps.forEach(s => {
+            html += `<div class="trip-step"><b>${safeHtml(s.name)}:</b> ${safeHtml(s.ai_comment)}</div>`;
+          });
+        }
+        if (data.route_summary) {
+          html += `<div class="trip-route-summary"><b>Route summary:</b> ${safeHtml(data.route_summary)}</div>`;
+        }
+        if (data.summary) {
+          html += `<div class="trip-summary"><b>AI Program:</b><br>${safeHtml(data.summary)}</div>`;
+        }
+        if (!html.trim()) html = `<span style="color:#d32f2f">AI trip info could not be generated.</span>`;
+        typeWriterEffect(tripInfoDiv.querySelector('.trip-info-content'), html, 15);
+      } catch (e) {
+        tripInfoDiv.querySelector('.trip-info-content').innerHTML = `<span style="color:#d32f2f">AI trip info could not be generated.</span>`;
+      }
+    })();
 
-    // örnek: summary varsa ekrana bas
-    let html = "";
-if (data.steps && data.steps.length) {
-  data.steps.forEach(s => {
-    html += `<div class="trip-step"><b>${s.name}:</b> ${s.ai_comment}</div>`;
-  });
-}
-if (data.route_summary) {
-  html += `<div class="trip-route-summary"><b>Route summary:</b> ${data.route_summary}</div>`;
-}
-if (data.summary) {
-  html += `
-    <div class="trip-summary">
-      <b>AI 2-Day Program:</b><br>
-      ${data.summary}
-    </div>
-  `;
-}
-if (!html.trim()) html = `<span style="color:#d32f2f">AI trip info could not be generated.</span>`;
-typeWriterEffect(tripInfoDiv.querySelector('.trip-info-content'), html, 15);
-
-  } catch (e) {
-    document.querySelector('.trip-info-content').innerHTML = `<span style="color:#d32f2f">AI trip info could not be generated.</span>`;
-  }
-})();
-
-    // Enhance: AI descriptions for visible steps
+    // Step içi AI açıklamalar
     setTimeout(() => {
         if (typeof fillAIDescriptionsAutomatically === "function") {
             fillAIDescriptionsAutomatically();
         }
     }, 0);
 
-    setTimeout(() => {
-        for (let day = 1; day <= maxDay; day++) {
-            if (typeof renderRouteForDay === "function") {
-                renderRouteForDay(day);
-            }
-        }
-    }, 100);
+    // Trip Details içinde harita / rota çizme YOK: renderRouteForDay çağırmıyoruz.
 
     if (typeof makeChatStepsDraggable === "function") {
         setTimeout(() => makeChatStepsDraggable(), 0);
     }
 }
-
 
 function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
     const dayItems = window.cart.filter(item => item.day == day && item.name !== undefined);
