@@ -316,49 +316,49 @@
 </div>
 
 
-
-
- <div class="sidebar-overlay sidebar-feedback" id="sidebar-overlay-feedback">
-    <div id="sidebar-feedback">
-        <div class="sidebar_title">Feedback Form<button class="sidebar-toggle" onclick="toggleSidebarFeedback()">
-                <img src="/img/close-icon.svg" alt="Close">
-            </button>
-            <form id="feedback-form">
-    <label>
-      Tür
-      <select name="type" required>
-        <option value="bug">Hata / Bug</option>
-        <option value="feature">Özellik Talebi</option>
-        <option value="idea">Fikir / İyileştirme</option>
-        <option value="other">Diğer</option>
-      </select>
-    </label>
-
-    <label>
-      Mesaj
-      <textarea name="message" rows="5" placeholder="Detayları yaz..." required></textarea>
-    </label>
-
-    <label>
-      Email (opsiyonel)
-      <input type="email" name="userEmail" placeholder="Sana dönebilmem için (opsiyonel)">
-    </label>
-
-    <label style="display:block;">
-      Ekran görüntüsü (opsiyonel)
-      <input type="file" name="screenshot" accept="image/*">
-    </label>
-
-    <div class="feedback-actions">
-      <button type="submit">Gönder</button>
-      <button type="button" id="feedback-cancel">Vazgeç</button>
+<div class="sidebar-overlay sidebar-feedback" id="sidebar-overlay-feedback">
+  <div id="sidebar-feedback">
+    <div class="sidebar_title">
+      Feedback Form
+      <button class="sidebar-toggle" onclick="toggleSidebarFeedback()">
+        <img src="/img/close-icon.svg" alt="Close">
+      </button>
     </div>
-    <div id="feedback-status" class="feedback-status"></div>
-  </form>
-        </div>
-    </div>
+
+    <form id="feedback-form">
+      <label>
+        Type
+        <select name="type" required>
+          <option value="bug">Bug</option>
+          <option value="feature">Feature Request</option>
+          <option value="idea">Idea / Improvement</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+
+      <label>
+        Message
+        <textarea name="message" rows="5" placeholder="Write the details..." required></textarea>
+      </label>
+
+      <label>
+        Email (optional)
+        <input type="email" name="userEmail" placeholder="So we can reach you back (optional)">
+      </label>
+
+      <label style="display:block;">
+        Screenshot (optional)
+        <input type="file" name="screenshot" accept="image/*">
+      </label>
+
+      <div class="feedback-actions">
+        <button type="submit">Submit</button>
+        <button type="button" id="feedback-cancel">Cancel</button>
+      </div>
+      <div id="feedback-status" class="feedback-status"></div>
+    </form>
+  </div>
 </div>
-
 
 <script>
 (function() {
@@ -366,17 +366,17 @@
   if (!form) return;
   const statusEl = document.getElementById('feedback-status');
 
-  function setStatus(msg, type='info') {
+  function setStatus(msg, type = 'info') {
     if (!statusEl) return;
     statusEl.textContent = msg;
     statusEl.className = 'feedback-status ' + type;
   }
 
   async function fileToDataURL(file) {
-    return new Promise((res, rej) => {
+    return new Promise((resolve, reject) => {
       const fr = new FileReader();
-      fr.onload = () => res(fr.result);
-      fr.onerror = () => rej(fr.error);
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(fr.error);
       fr.readAsDataURL(file);
     });
   }
@@ -390,20 +390,20 @@
     const file = form.screenshot.files[0];
 
     if (!message) {
-      setStatus('Mesaj boş olamaz', 'error');
+      setStatus('Message cannot be empty', 'error');
       return;
     }
 
     let screenshot = null;
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB sınırı örnek
-        setStatus('Görsel 2MB sınırını aşıyor', 'error');
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit example
+        setStatus('Image exceeds 2MB limit', 'error');
         return;
       }
       try {
         screenshot = await fileToDataURL(file); // data:image/...;base64,...
-      } catch(err) {
-        setStatus('Görsel okunamadı', 'error');
+      } catch (err) {
+        setStatus('Could not read image', 'error');
         return;
       }
     }
@@ -415,7 +415,7 @@
       screenshot
     };
 
-    setStatus('Gönderiliyor...', 'info');
+    setStatus('Sending...', 'info');
 
     try {
       const resp = await fetch('/api/feedback', {
@@ -428,35 +428,32 @@
       try { data = await resp.json(); } catch(_) {}
 
       if (!resp.ok) {
-        setStatus('Hata: ' + (data.error || resp.status), 'error');
+        setStatus('Error: ' + (data.error || resp.status), 'error');
         console.error('Feedback error', resp.status, data);
         return;
       }
 
-      setStatus('Teşekkürler! Gönderildi.', 'success');
-
-      // Formu sıfırla
+      setStatus('Thank you! Sent.', 'success');
       form.reset();
     } catch (err) {
       console.error(err);
-      setStatus('Bağlantı hatası', 'error');
+      setStatus('Network error', 'error');
     }
   });
 
-  // Vazgeç butonu (sidebar kapatma vs.)
+  // Cancel button (close sidebar if present)
   const cancelBtn = document.getElementById('feedback-cancel');
   if (cancelBtn) {
     cancelBtn.addEventListener('click', () => {
       form.reset();
       setStatus('');
-      // toggleSidebarFeedback() varsa çağır
-      if (typeof toggleSidebarFeedback === 'function') toggleSidebarFeedback();
+      if (typeof toggleSidebarFeedback === 'function') {
+        toggleSidebarFeedback();
+      }
     });
   }
 })();
 </script>
-
-
 
   <!--  <div class="sidebar-overlay sidebar-language" id="sidebar-overlay-language">
         <div id="sidebar-language">
