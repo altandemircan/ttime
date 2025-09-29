@@ -20,10 +20,10 @@ app.use(express.json({ limit: '6mb' }));
 const feedbackRoute = require('./feedbackRoute');
 // Eğer server/feedback-route.js diye klasöre taşırsan:
 // const feedbackRoute = require('./server/feedback-route');
-app.use('/api', feedbackRoute);
+app.use('/api', feedbackRoute); 
 
 // 3. Diğer API Routerları
-const llmProxy = require('./llm-proxy'); 
+const llmProxy = require('./llm-proxy');    
 const photogetProxy = require('./photoget-proxy');
 
 app.use('/llm-proxy', llmProxy);
