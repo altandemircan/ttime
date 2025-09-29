@@ -2376,21 +2376,12 @@ if (!window.cart || window.cart.length === 0) {
     cartDiv.innerHTML = `
       <div id="empty-content">
         <p>Create your trip using the chat screen.</p>
-        <button id="start-map-btn" type="button" style="
-          cursor:pointer;
-          margin:10px 0 6px;
-          background:#1d72ff;
-          color:#fff;
-          border:none;
-          padding:8px 14px;
-          border-radius:6px;
-          font-size:14px;
-          font-weight:500;
-        ">Start with map</button>
-        <p class="empty-text" style="display:flex;gap:6px;align-items:center;justify-content:center;margin:8px 0 0;">
+        
+        <p class="empty-text" style="display:flex;gap:6px;margin:8px 0 0;">
           <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width:40px;height:40px;">
           <span class="enjoy">Enjoy!</span>
         </p>
+        <button id="start-map-btn" type="button">Start with map</button>
       </div>
     `;
     menuCount.textContent = 0;

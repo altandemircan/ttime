@@ -2572,6 +2572,24 @@ hr {
 
 }
 
+#start-map-btn {
+    padding: 10px;
+    margin: 16px 0;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #8a4af3;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+
+}
+
 
 #newchat {
     padding: 10px;
@@ -6023,13 +6041,12 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 /* Status line */
 #feedback-status {
   min-height: 20px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  margin-top: 4px;
-  transition: color .25s, opacity .25s;
-  opacity: 1;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: .04em;
+    margin-top: 4px;
+    transition: color .25s, opacity .25s;
+    opacity: 1;
 }
 
 #feedback-status.info { color: #6d32d0; }
