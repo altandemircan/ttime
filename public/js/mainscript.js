@@ -2515,7 +2515,6 @@ function updateCart() {
 
   // Tüm günleri hesapla
   const days = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b);
-  // Container’ı tamamen sıfırlamak yerine (Leaflet detach olmaması için) gün bazında yeniden kuracağız.
   cartDiv.innerHTML = "";
 
   let globalIndexMap = new Map();
@@ -2524,7 +2523,6 @@ function updateCart() {
   days.forEach(day => {
     const dayItemsArr = window.cart.filter(i => i.day === day && i.name !== undefined);
 
-    // Gün container
     let dayContainer = document.getElementById(`day-container-${day}`);
     if (!dayContainer) {
       dayContainer = document.createElement("div");
@@ -2532,7 +2530,6 @@ function updateCart() {
       dayContainer.id = `day-container-${day}`;
       dayContainer.dataset.day = day;
     } else {
-      // Baştan render edeceğimiz için içini temizliyoruz; harita div'i ezilmemesi için, önce map ve info referanslarını saklayalım
       const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
       const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
       dayContainer.innerHTML = "";
@@ -2657,7 +2654,7 @@ function updateCart() {
           const key = `route-map-day${day}`;
           const summary = window.pairwiseRouteSummaries?.[key]?.[idx];
           let distanceStr = '';
-            let durationStr = '';
+          let durationStr = '';
           if (summary) {
             distanceStr = summary.distance >= 1000
               ? (summary.distance / 1000).toFixed(1) + " km"
@@ -2667,15 +2664,15 @@ function updateCart() {
               : Math.round(summary.duration) + " sn";
           }
           const distanceSeparator = document.createElement('div');
-          distanceSeparator.className = 'distance-separator';
-          distanceSeparator.innerHTML = `
-            <div class="separator-line"></div>
-            <div class="distance-label">
-              <span class="distance-value">${distanceStr}</span> • 
-              <span class="duration-value">${durationStr}</span>
-            </div>
-            <div class="separator-line"></div>
-          `;
+            distanceSeparator.className = 'distance-separator';
+            distanceSeparator.innerHTML = `
+              <div class="separator-line"></div>
+              <div class="distance-label">
+                <span class="distance-value">${distanceStr}</span> • 
+                <span class="duration-value">${durationStr}</span>
+              </div>
+              <div class="separator-line"></div>
+            `;
           dayList.appendChild(distanceSeparator);
         }
       });
@@ -2686,7 +2683,6 @@ function updateCart() {
     // Harita & info div’lerini garanti et
     ensureDayMapContainer(day);
 
-    // < 2 gerçek nokta ise (0 veya 1) boş temel haritayı hazırlayalım
     const realPointCount = dayItemsArr.filter(it =>
       it.name && it.location && typeof it.location.lat === 'number' && typeof it.location.lng === 'number'
     ).length;
@@ -2750,6 +2746,47 @@ function updateCart() {
 
   // Self-heal
   restoreLostDayMaps();
+
+  /* ==================  ADDED: Select Dates Button Restore  ================== */
+  (function ensureSelectDatesButton() {
+    let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.className = 'add-to-calendar-btn';           // mevcut stil sınıfın
+      btn.setAttribute('data-role', 'trip-dates');
+      cartDiv.appendChild(btn);
+    }
+    btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
+    btn.onclick = () => {
+      if (typeof openCalendar === 'function') {
+        openCalendar(maxDay);
+      } else {
+        console.warn('openCalendar not found');
+      }
+    };
+  })();
+
+  /* ==================  ADDED: Share + AI Sections (only if dates exist) ================== */
+  (function ensurePostDateSections() {
+    if (!window.cart.startDate) return; // tarih seçilmeden göstermek istemiyoruz
+    let share = document.getElementById('trip-share-section');
+    if (!share) {
+      share = document.createElement('div');
+      share.id = 'trip-share-section';
+      share.className = 'trip-share-section';
+      cartDiv.appendChild(share);
+    }
+    let ai = document.getElementById('ai-info-section');
+    if (!ai) {
+      ai = document.createElement('div');
+      ai.id = 'ai-info-section';
+      ai.className = 'ai-info-section';
+      cartDiv.appendChild(ai);
+    }
+    // Eski fonksiyonların varsa çağır:
+    if (typeof buildShareSection === 'function') buildShareSection();
+    if (typeof renderAIInfoPanel === 'function') renderAIInfoPanel();
+  })();
 }
 document.addEventListener('DOMContentLoaded', updateCart);
 // (dosyadaki diğer kodlar)
