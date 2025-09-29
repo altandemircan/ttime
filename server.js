@@ -23,7 +23,7 @@ const feedbackRoute = require('./feedbackRoute');
 app.use('/api', feedbackRoute);
 
 // 3. Diğer API Routerları
-const llmProxy = require('./llm-proxy');
+const llmProxy = require('./llm-proxy'); 
 const photogetProxy = require('./photoget-proxy');
 
 app.use('/llm-proxy', llmProxy);
