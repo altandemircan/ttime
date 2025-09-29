@@ -2274,26 +2274,7 @@ function initEmptyDayMap(day) {
         } catch(_) {}
         // İpucu yoksa ekle (eski rota katmanları silinmiş olabilir)
         if (!el.querySelector('.empty-map-hint')) {
-            const hint = document.createElement('div');
-            hint.className = 'empty-map-hint';
-            hint.style.cssText = `
-              position:absolute;
-              top:10px;
-              left:10px;
-              background:rgba(255,255,255,.9);
-              padding:6px 10px;
-              font-size:12px;
-              border-radius:6px;
-              border:1px solid #e0e0e0;
-              z-index:500;
-              font-weight:500;
-              color:#333;
-              max-width:180px;
-              line-height:1.3;
-            `;
-            hint.innerHTML = 'Click / long‑press the map to add points.<br>Add 2 points to see the route.';
-            el.style.position = 'relative';
-            el.appendChild(hint);
+           
         }
         return;
     }
