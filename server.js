@@ -7,6 +7,9 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
+
+
+
 // (Opsiyonel) Eğer farklı origin'den istek geleceğini düşünüyorsan CORS aç:
 // const cors = require('cors');
 // app.use(cors({ origin: true, credentials: true }));
@@ -14,7 +17,7 @@ const app = express();
 // 1. BODY PARSER (limit artırıldı: screenshot base64 için)
 app.use(express.json({ limit: '6mb' }));
 // (İstersen ayrıca form-data için multer ekleyebilirsin; şimdilik gerek yok)
-
+app.use(express.urlencoded({ extended: true }));
 // 2. Feedback Route (DOSYA KONUMUNA DİKKAT)
 // Eğer feedbackRoute.js kökteyse:
 const feedbackRoute = require('./feedbackRoute');
