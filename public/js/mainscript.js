@@ -2576,10 +2576,9 @@ function updateCart() {
           Import GPS File
         </button>
         <div style="text-align: center;
-    padding: 10px;
+    padding: 10px 0 4px 0;
     font-weight: 500;">or</div>
                 <button id="start-map-btn" type="button">Start with map</button>
-
       </div>
     `;
     if (menuCount) {
