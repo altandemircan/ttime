@@ -2572,11 +2572,14 @@ function updateCart() {
           <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width:40px;height:40px;">
           <span class="enjoy">Enjoy!</span>
         </p>
-        <button id="start-map-btn" type="button">Start with map</button>
-        <div>or</div>
         <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
           Import GPS File
         </button>
+        <div style="text-align: center;
+    padding: 10px;
+    font-weight: 500;">or</div>
+                <button id="start-map-btn" type="button">Start with map</button>
+
       </div>
     `;
     if (menuCount) {
