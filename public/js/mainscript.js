@@ -2520,7 +2520,7 @@ function updateCart() {
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  /* ---------------- EMPTY TRIP (GLOBAL) ---------------- */
+  /* ----------- GLOBAL EMPTY TRIP ----------- */
   if (!window.cart || window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
 
@@ -2543,14 +2543,14 @@ function updateCart() {
       menuCount.textContent = 0;
       menuCount.style.display = "none";
     }
-    const newChatBtn = document.getElementById("newchat");
+    const newChatBtn = document.getElementB  yId("newchat");
     if (newChatBtn) newChatBtn.style.display = "none";
     const btn = document.getElementById('start-map-btn');
     if (btn) btn.addEventListener('click', startMapPlanning);
     return;
   }
 
-  /* ---------------- DAYS RENDER ---------------- */
+  /* ----------- DAYS ----------- */
   const days = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b);
   cartDiv.innerHTML = "";
 
@@ -2559,7 +2559,7 @@ function updateCart() {
 
   days.forEach(day => {
     const dayItemsArr = window.cart.filter(i => i.day === day && i.name !== undefined);
-    const isEmptyDay = dayItemsArr.length === 0;
+    const isEmptyDay  = dayItemsArr.length === 0;
 
     let dayContainer = document.getElementById(`day-container-${day}`);
     if (!dayContainer) {
@@ -2568,6 +2568,7 @@ function updateCart() {
       dayContainer.id = `day-container-${day}`;
       dayContainer.dataset.day = day;
     } else {
+      // Harita / info sakla
       const savedRouteMap  = dayContainer.querySelector(`#route-map-day${day}`);
       const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
       dayContainer.innerHTML = "";
@@ -2596,7 +2597,7 @@ function updateCart() {
     confirmationContainer.style.display = "none";
     dayContainer.appendChild(confirmationContainer);
 
-    /* Day list */
+    /* List */
     const dayList = document.createElement("ul");
     dayList.className = "day-list";
     dayList.dataset.day = day;
@@ -2604,10 +2605,23 @@ function updateCart() {
     if (isEmptyDay) {
       const emptyWrap = document.createElement("div");
       emptyWrap.className = "empty-day-block";
+
       const msg = document.createElement("p");
       msg.className = "empty-day-message";
       msg.textContent = "No item has been added for this day yet.";
       emptyWrap.appendChild(msg);
+
+      // Import butonu sadece boş gün içinde (ORİJİNAL konum)
+      const importGroup = document.createElement("div");
+      importGroup.className = "import-route-group";
+      importGroup.dataset.day = day;
+      importGroup.innerHTML = `
+        <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
+          Import GPS File
+        </button>
+      `;
+      emptyWrap.appendChild(importGroup);
+
       dayList.appendChild(emptyWrap);
     } else {
       dayItemsArr.forEach((item, idx) => {
@@ -2708,9 +2722,8 @@ function updateCart() {
 
     dayContainer.appendChild(dayList);
 
-    // Map shells
+    // Map shells & init
     ensureDayMapContainer(day);
-
     const realPointCount = dayItemsArr.filter(it =>
       it.name && it.location &&
       typeof it.location.lat === 'number' &&
@@ -2722,20 +2735,7 @@ function updateCart() {
 
     cartDiv.appendChild(dayContainer);
 
-    // Import butonu sadece boş günde
-    if (isEmptyDay) {
-      const importGroup = document.createElement('div');
-      importGroup.className = 'import-route-group';
-      importGroup.dataset.day = day;
-      importGroup.innerHTML = `
-        <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
-          Import GPS File
-        </button>
-      `;
-      cartDiv.appendChild(importGroup);
-    }
-
-    // Add Category her zaman
+    // Add Category (her zaman dayContainer SONRASINA – wrapRouteControlsForAllDays ile çakışmaz)
     const addMoreButton = document.createElement("button");
     addMoreButton.className = "add-more-btn";
     addMoreButton.textContent = "+ Add Category";
@@ -2744,7 +2744,7 @@ function updateCart() {
     cartDiv.appendChild(addMoreButton);
   });
 
-  /* ---------------- GLOBAL CONTROLS ---------------- */
+  /* ----------- GLOBAL ACTIONS ----------- */
   const addNewDayButton = document.createElement("button");
   addNewDayButton.className = "add-new-day-btn";
   addNewDayButton.id = "add-new-day-button";
@@ -2760,11 +2760,12 @@ function updateCart() {
   const newChatBtn2 = document.getElementById("newchat");
   if (newChatBtn2) newChatBtn2.style.display = itemCount > 0 ? "block" : "none";
 
-  // Hooks
+  /* Hooks */
   attachDragListeners();
   days.forEach(d => initPlaceSearch(d));
   addCoordinatesToContent();
   days.forEach(d => renderRouteForDay(d));
+
   setTimeout(wrapRouteControlsForAllDays, 0);
   attachChatDropListeners();
 
@@ -2780,7 +2781,7 @@ function updateCart() {
   setupStepsDragHighlight();
   renderTravelModeControlsForAllDays();
 
-  // Select Dates
+  /* Select Dates */
   (function ensureSelectDatesButton() {
     let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
     if (!btn) {
@@ -2798,7 +2799,7 @@ function updateCart() {
     };
   })();
 
-  // Share + AI
+  /* Share + AI */
   (function ensurePostDateSections() {
     if (!window.cart.startDate) return;
     let share = document.getElementById('trip-share-section');
@@ -2813,7 +2814,7 @@ function updateCart() {
     if (oldAI) oldAI.remove();
   })();
 
-  // Trip Details
+  /* Trip Details */
   (function ensureTripDetailsBlock() {
     if (!window.cart.startDate || !window.cart.endDates || !window.cart.endDates.length) {
       const existing = cartDiv.querySelector('.date-range');
