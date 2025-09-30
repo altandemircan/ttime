@@ -28,7 +28,7 @@
     if (!btn) return;
     e.preventDefault();
 
-    currentType = btn.getAttribute('data-import-type'); // 'gpx' | 'tcx' | 'fit'
+currentType = btn.getAttribute('data-import-type'); // 'multi' olacak
     if (!currentType) return;
 
     // Gün bağlamı
@@ -46,12 +46,14 @@
       }
     }
 
-    // Doğru accept
- if (currentType === 'gpx') fileInput.accept = '.gpx';
-else if (currentType === 'tcx') fileInput.accept = '.tcx';
-else if (currentType === 'fit') fileInput.accept = '.fit';
-else if (currentType === 'kml') fileInput.accept = '.kml';
-else fileInput.accept = '.gpx,.tcx,.fit,.kml';
+if (currentType === 'multi') {
+  fileInput.accept = '.gpx,.tcx,.fit,.kml';
+} else {
+  // (ileride başka özel buton eklenirse fallback)
+  fileInput.accept = '.gpx,.tcx,.fit,.kml';
+}
+fileInput.value = '';
+fileInput.click();
 
     fileInput.value = '';
     log('Opening picker for', currentType, 'day=', currentImportDay);
@@ -66,17 +68,38 @@ else fileInput.accept = '.gpx,.tcx,.fit,.kml';
 
     try {
       let parsed;
-     if (currentType === 'fit') {
+     // currentType 'multi' ise dosya adına göre gerçek türü bul
+let detectedType;
+if (currentType === 'multi') {
+  const lower = file.name.toLowerCase();
+  if (lower.endsWith('.gpx')) detectedType = 'gpx';
+  else if (lower.endsWith('.tcx')) detectedType = 'tcx';
+  else if (lower.endsWith('.fit')) detectedType = 'fit';
+  else if (lower.endsWith('.kml')) detectedType = 'kml';
+  else {
+    notify('Unsupported file type. Use .gpx / .tcx / .fit / .kml', 'error');
+    return;
+  }
+} else {
+  // Eski tek-tip buton senaryosu kalırsa
+  detectedType = currentType;
+}
+
+let parsed;
+if (detectedType === 'fit') {
   parsed = await parseFITFile(file);
-} else if (currentType === 'kml') {
+} else if (detectedType === 'kml') {
   const raw = await file.text();
   parsed = parseKML(raw);
 } else {
   const raw = await file.text();
-  parsed = currentType === 'gpx'
+  parsed = detectedType === 'gpx'
     ? parseGPX(raw)
     : parseTCX(raw);
 }
+
+// Ham track & source bilgisi için detectedType kullanalım
+currentType = detectedType;
 
       if (!parsed || !parsed.points || parsed.points.length < 2) {
         notify('Failed to parse route points (need at least 2 track points).', 'error');
