@@ -16,7 +16,7 @@
     fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.id = '__route_import_hidden_input';
-    fileInput.accept = '.gpx,.tcx';
+fileInput.accept = '.gpx,.tcx,.fit';
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
   }
@@ -54,14 +54,71 @@
   });
 
   fileInput.addEventListener('change', async () => {
-    const file = fileInput.files && fileInput.files[0];
-    if (!file || !currentType) return;
-    const day = currentImportDay || 1;
+  const file = fileInput.files && fileInput.files[0];
+  if (!file || !currentType) return;
+  const day = currentImportDay || 1;
 
-    try {
+  try {
+    let parsed;
+
+    if (currentType === 'fit') {
+      parsed = await parseFITFile(file);
+    } else {
       const raw = await file.text();
-      const parsed = currentType === 'gpx' ? parseGPX(raw) : parseTCX(raw);
-      if (!parsed || !parsed.points || parsed.points.length < 2) {
+      parsed = currentType === 'gpx'
+        ? parseGPX(raw)
+        : parseTCX(raw);
+    }
+
+    if (!parsed || !parsed.points || parsed.points.length < 2) {
+      notify('Failed to parse route points (need at least 2 track points).', 'error');
+      return;
+    }
+
+    const startPt = parsed.points[0];
+    const finishPt = parsed.points[parsed.points.length - 1];
+
+    const rawRouteName = parsed.name || null;
+    const { startNameRaw, finishNameRaw } = deriveEndpointNames(rawRouteName);
+
+    const shortStart = normalizePlaceName(startNameRaw) || 'Start';
+    const shortFinish = normalizePlaceName(finishNameRaw) || 'Finish';
+
+    const routeTitle = `${shortStart} → ${shortFinish}`;
+    const startItemTitle = `${shortStart} (Start)`;
+    const finishItemTitle = `${shortFinish} (Finish)`;
+
+    ensureCartExists();
+
+    addStartFinishToCart({
+      day,
+      startTitle: startItemTitle,
+      finishTitle: finishItemTitle,
+      start: startPt,
+      finish: finishPt
+    });
+
+    if (typeof updateCart === 'function') updateCart();
+    setTimeout(() => {
+      if (typeof renderRouteForDay === 'function') renderRouteForDay(day);
+    }, 120);
+
+    persistRouteMeta({
+      name: routeTitle,
+      type: currentType.toUpperCase(),
+      pointCount: parsed.points.length,
+      distanceMeters: approximateDistance(parsed.points),
+      day
+    });
+
+    notify(`Imported ${currentType.toUpperCase()} route (Day ${day}): ${routeTitle}`, 'success');
+  } catch (err) {
+    console.error('[route-import] ERROR', err);
+    notify('Import failed: ' + err.message, 'error');
+  } finally {
+    currentType = null;
+  }
+});
         notify('Failed to parse route points (need at least 2 track points).', 'error');
         return;
       }
@@ -234,7 +291,82 @@
     addToCart(startTitle, img, day, 'Place', '', null, null, '', null, { lat: start.lat, lng: start.lon }, '');
     addToCart(finishTitle, img, day, 'Place', '', null, null, '', null, { lat: finish.lat, lng: finish.lon }, '');
   }
+  /* ---------------- FIT LOADER + PARSER (EKLENDİ) ---------------- */
 
+  async function ensureFitParser() {
+    if (window.FitParser) return true;
+    if (document.getElementById('fit-parser-script')) {
+      return new Promise(res => {
+        const iv = setInterval(() => {
+          if (window.FitParser) { clearInterval(iv); res(true); }
+        }, 80);
+      });
+    }
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.id = 'fit-parser-script';
+      s.src = 'https://unpkg.com/fit-file-parser@1.10.0/dist/fit-file-parser.js';
+      s.onload = () => resolve(true);
+      s.onerror = () => reject(new Error('FIT parser script load failed'));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function parseFITFile(file) {
+    await ensureFitParser();
+    const buffer = await file.arrayBuffer();
+    return new Promise((resolve, reject) => {
+      const parser = new FitParser({
+        force: true,
+        speedUnit: 'm/s',
+        lengthUnit: 'm',
+        temperatureUnit: 'celsius'
+      });
+      parser.parse(buffer, (err, data) => {
+        if (err) return reject(err);
+        const recs = (data.records || [])
+          .filter(r => r.position_lat != null && r.position_long != null);
+
+        if (!recs.length) {
+          return reject(new Error('FIT file has no positional records.'));
+        }
+
+        // Nokta azaltma (çok büyük aktivitelerde)
+        let step = 1;
+        if (recs.length > 12000) step = 15;
+        else if (recs.length > 8000) step = 10;
+        else if (recs.length > 4000) step = 5;
+        else if (recs.length > 2000) step = 3;
+
+        const points = [];
+        for (let i = 0; i < recs.length; i += step) {
+          const r = recs[i];
+            points.push({
+            lat: r.position_lat,
+            lon: r.position_long,
+            ele: (typeof r.altitude === 'number') ? r.altitude : null
+          });
+        }
+        // Son noktayı garanti ekle
+        const last = recs[recs.length - 1];
+        if (points.length &&
+            (points[points.length - 1].lat !== last.position_lat ||
+             points[points.length - 1].lon !== last.position_long)) {
+          points.push({
+            lat: last.position_lat,
+            lon: last.position_long,
+            ele: (typeof last.altitude === 'number') ? last.altitude : null
+          });
+        }
+
+        const nameGuess =
+          (data.sessions && data.sessions[0] && data.sessions[0].sport) ||
+          file.name.replace(/\.fit$/i, '');
+
+        resolve({ name: nameGuess, points });
+      });
+    });
+  }
   /* ---------------- Parsers ---------------- */
 
   function parseGPX(xmlString) {
