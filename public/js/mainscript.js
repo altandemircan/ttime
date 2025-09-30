@@ -2568,10 +2568,7 @@ function updateCart() {
     cartDiv.innerHTML = `
       <div id="empty-content">
         <p>Create your trip using the chat screen.</p>
-        <p class="empty-text" style="display:flex;gap:6px;margin:8px 0 0;">
-          <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width:40px;height:40px;">
-          <span class="enjoy">Enjoy!</span>
-        </p>
+        
         <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
           Import GPS File
         </button>
