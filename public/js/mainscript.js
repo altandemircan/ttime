@@ -2559,6 +2559,7 @@ function updateCart() {
 
   days.forEach(day => {
     const dayItemsArr = window.cart.filter(i => i.day === day && i.name !== undefined);
+    const isEmptyDay = dayItemsArr.length === 0;
 
     let dayContainer = document.getElementById(`day-container-${day}`);
     if (!dayContainer) {
@@ -2600,19 +2601,15 @@ function updateCart() {
     dayList.className = "day-list";
     dayList.dataset.day = day;
 
-    if (dayItemsArr.length === 0) {
-      // Only message – NO import button here anymore
+    if (isEmptyDay) {
       const emptyWrap = document.createElement("div");
       emptyWrap.className = "empty-day-block";
-
       const msg = document.createElement("p");
       msg.className = "empty-day-message";
       msg.textContent = "No item has been added for this day yet.";
       emptyWrap.appendChild(msg);
-
       dayList.appendChild(emptyWrap);
     } else {
-      // Render items
       dayItemsArr.forEach((item, idx) => {
         const li = document.createElement("li");
         li.className = "travel-item";
@@ -2676,7 +2673,6 @@ function updateCart() {
         `;
         dayList.appendChild(li);
 
-        // One item hint
         if (dayItemsArr.length === 1 && idx === 0) {
           const oneItemMessage = document.createElement("p");
           oneItemMessage.className = "one-item-message";
@@ -2684,12 +2680,11 @@ function updateCart() {
           dayList.appendChild(oneItemMessage);
         }
 
-        // Pairwise separators
         if (dayItemsArr.length >= 2 && idx < dayItemsArr.length - 1) {
           const key = `route-map-day${day}`;
           const summary = window.pairwiseRouteSummaries?.[key]?.[idx];
           let distanceStr = '';
-            let durationStr = '';
+          let durationStr = '';
           if (summary) {
             distanceStr = summary.distance >= 1000
               ? (summary.distance / 1000).toFixed(1) + " km"
@@ -2698,16 +2693,16 @@ function updateCart() {
               ? Math.round(summary.duration / 60) + " dk"
               : Math.round(summary.duration) + " sn";
           }
-          const distanceSeparator = document.createElement('div');
-          distanceSeparator.className = 'distance-separator';
-          distanceSeparator.innerHTML = `
-            <div class="separator-line"></div>
-            <div class="distance-label">
-              <span class="distance-value">${distanceStr}</span> • 
-              <span class="duration-value">${durationStr}</span>
-            </div>
-            <div class="separator-line"></div>
-          `;
+            const distanceSeparator = document.createElement('div');
+            distanceSeparator.className = 'distance-separator';
+            distanceSeparator.innerHTML = `
+              <div class="separator-line"></div>
+              <div class="distance-label">
+                <span class="distance-value">${distanceStr}</span> • 
+                <span class="duration-value">${durationStr}</span>
+              </div>
+              <div class="separator-line"></div>
+            `;
           dayList.appendChild(distanceSeparator);
         }
       });
@@ -2715,10 +2710,9 @@ function updateCart() {
 
     dayContainer.appendChild(dayList);
 
-    // Ensure map & info shells
+    // Harita shell
     ensureDayMapContainer(day);
 
-    // If <2 real points, re-init blank map
     const realPointCount = dayItemsArr.filter(it =>
       it.name && it.location &&
       typeof it.location.lat === 'number' &&
@@ -2728,21 +2722,22 @@ function updateCart() {
       initEmptyDayMap(day);
     }
 
-    // Append the day container first
     cartDiv.appendChild(dayContainer);
 
-    /* --- Import GPS Button (ALWAYS, placed right after the day-container, before + Add Category) --- */
-    const importGroup = document.createElement('div');
-    importGroup.className = 'import-route-group';
-    importGroup.dataset.day = day;
-    importGroup.innerHTML = `
-      <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
-        Import GPS File
-      </button>
-    `;
-    cartDiv.appendChild(importGroup);
+    // Import GPS butonu sadece boş gün ise
+    if (isEmptyDay) {
+      const importGroup = document.createElement('div');
+      importGroup.className = 'import-route-group';
+      importGroup.dataset.day = day;
+      importGroup.innerHTML = `
+        <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
+          Import GPS File
+        </button>
+      `;
+      cartDiv.appendChild(importGroup);
+    }
 
-    /* --- Add Category Button (below import button) --- */
+    // Add Category (her zaman)
     const addMoreButton = document.createElement("button");
     addMoreButton.className = "add-more-btn";
     addMoreButton.textContent = "+ Add Category";
@@ -2751,7 +2746,7 @@ function updateCart() {
     cartDiv.appendChild(addMoreButton);
   });
 
-  /* ---------------- GLOBAL CONTROLS (Add New Day etc.) ---------------- */
+  /* Global controls */
   const addNewDayButton = document.createElement("button");
   addNewDayButton.className = "add-new-day-btn";
   addNewDayButton.id = "add-new-day-button";
@@ -2767,7 +2762,6 @@ function updateCart() {
   const newChatBtn2 = document.getElementById("newchat");
   if (newChatBtn2) newChatBtn2.style.display = itemCount > 0 ? "block" : "none";
 
-  /* Post-render hooks */
   attachDragListeners();
   days.forEach(d => initPlaceSearch(d));
   addCoordinatesToContent();
@@ -2788,7 +2782,7 @@ function updateCart() {
   setupStepsDragHighlight();
   renderTravelModeControlsForAllDays();
 
-  /* Select Dates Button */
+  // Select Dates
   (function ensureSelectDatesButton() {
     let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
     if (!btn) {
@@ -2806,7 +2800,7 @@ function updateCart() {
     };
   })();
 
-  /* Share + AI (only if dates set) */
+  // Share + AI (dates)
   (function ensurePostDateSections() {
     if (!window.cart.startDate) return;
     let share = document.getElementById('trip-share-section');
@@ -2821,7 +2815,7 @@ function updateCart() {
     if (oldAI) oldAI.remove();
   })();
 
-  /* Trip Details (dates) */
+  // Trip Details
   (function ensureTripDetailsBlock() {
     if (!window.cart.startDate || !window.cart.endDates || !window.cart.endDates.length) {
       const existing = cartDiv.querySelector('.date-range');
