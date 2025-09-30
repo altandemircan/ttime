@@ -5521,7 +5521,68 @@ async function renderRouteForDay(day) {
 
     return;
   }
+  // --- HAM TRACK MODU (Sadece Start + Finish eklenmişse) ---
+  if (points.length === 2 &&
+      window.importedTrackByDay &&
+      window.importedTrackByDay[day] &&
+      window.importedTrackByDay[day].drawRaw) {
 
+    const trackObj = window.importedTrackByDay[day];
+    const raw = trackObj.rawPoints || [];
+    if (raw.length > 1) {
+      initEmptyDayMap(day);
+      const map = window.leafletMaps?.[containerId];
+      if (map) {
+        // Temizle (TileLayer dışı)
+        map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
+
+        const latlngs = raw.map(pt => [pt.lat, pt.lng]);
+
+        // Çizgi
+        const poly = L.polyline(latlngs, {
+          color: '#1565c0',
+          weight: 5,
+          opacity: 0.9
+        }).addTo(map);
+
+        // Start
+        L.circleMarker(latlngs[0], {
+          radius: 8, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2
+        }).addTo(map).bindPopup('Start');
+        // Finish
+        L.circleMarker(latlngs[latlngs.length -1], {
+          radius: 8, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2
+        }).addTo(map).bindPopup('Finish');
+
+        try { map.fitBounds(poly.getBounds(), { padding:[20,20] }); } catch(_){}
+
+        // Mesafe (ham)
+        let distM = 0;
+        for (let i=1;i<latlngs.length;i++){
+          const a = latlngs[i-1], b = latlngs[i];
+          distM += haversine(a[0], a[1], b[0], b[1]);
+        }
+
+        // Summary kaydet (duration 0 bırak)
+        window.lastRouteSummaries = window.lastRouteSummaries || {};
+        window.lastRouteSummaries[containerId] = {
+          distance: distM,
+          duration: 0
+        };
+        updateRouteStatsUI(day);
+
+        // Expanded açıksa aynı çiz
+        const expandedMapObj = window.expandedMaps?.[containerId];
+        if (expandedMapObj?.expandedMap) {
+          const eMap = expandedMapObj.expandedMap;
+          eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
+          L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
+          try { eMap.fitBounds(poly.getBounds()); } catch(_){}
+        }
+      }
+      return; // Mapbox directions'a girme
+    }
+  }
   /* ---------- 2+ NOKTA: Mevcut rota hesaplama kodun ---------- */
 
   const snappedPoints = [];
