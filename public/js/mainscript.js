@@ -2533,10 +2533,11 @@ function updateCart() {
         </p>
         <button id="start-map-btn" type="button">Start with map</button>
         <div class="import-route-group">
-          <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
-          <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
-          <input type="file" id="route-import-input" accept=".gpx,.tcx" style="display:none;" />
-        </div>
+  <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
+  <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
+  <button type="button" class="import-btn" data-import-type="fit">Import .FIT</button>
+  <input type="file" id="route-import-input" accept=".gpx,.tcx,.fit" style="display:none;" />
+</div>
       </div>
     `;
     if (menuCount) {
@@ -2613,9 +2614,10 @@ function updateCart() {
       importGroup.className = "import-route-group";
       importGroup.dataset.day = day;
       importGroup.innerHTML = `
-        <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
-        <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
-      `;
+  <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
+  <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
+  <button type="button" class="import-btn" data-import-type="fit">Import .FIT</button>
+`;
       emptyWrap.appendChild(importGroup);
       dayList.appendChild(emptyWrap);
     } else {
