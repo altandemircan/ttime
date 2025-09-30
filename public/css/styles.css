@@ -5742,7 +5742,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     margin-top: 20px;
 }
 .leaflet-popup {
-    margin-bottom: 40px;
+       margin-bottom: 60px;
+    margin-left: -20px;
 }
 /* Üstteki 1 sn'lik "hint" popup stili (X butonu yok) */
 .leaflet-popup.drag-hint-popup {
