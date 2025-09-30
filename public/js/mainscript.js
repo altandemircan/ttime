@@ -2533,10 +2533,10 @@ function updateCart() {
         </p>
         <button id="start-map-btn" type="button">Start with map</button>
        <div class="import-route-group">
-  <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
-    Import GPS File
-  </button>
-</div>
+          <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
+            Import GPS File
+          </button>
+        </div>
       </div>
     `;
     if (menuCount) {
@@ -2601,25 +2601,16 @@ function updateCart() {
     dayList.dataset.day = day;
 
     if (dayItemsArr.length === 0) {
-      const emptyWrap = document.createElement("div");
-      emptyWrap.className = "empty-day-block";
+  const emptyWrap = document.createElement("div");
+  emptyWrap.className = "empty-day-block";
 
-      const msg = document.createElement("p");
-      msg.className = "empty-day-message";
-      msg.textContent = "No item has been added for this day yet.";
-      emptyWrap.appendChild(msg);
+  const msg = document.createElement("p");
+  msg.className = "empty-day-message";
+  msg.textContent = "No item has been added for this day yet.";
+  emptyWrap.appendChild(msg);
 
-      const importGroup = document.createElement("div");
-      importGroup.className = "import-route-group";
-      importGroup.dataset.day = day;
-     importGroup.innerHTML = `
-  <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
-    Import GPS File
-  </button>
-`;
-      emptyWrap.appendChild(importGroup);
-      dayList.appendChild(emptyWrap);
-    } else {
+  dayList.appendChild(emptyWrap);
+} else {
       dayItemsArr.forEach((item, idx) => {
         const li = document.createElement("li");
         li.className = "travel-item";
@@ -2718,25 +2709,33 @@ function updateCart() {
 
     dayContainer.appendChild(dayList);
 
-    // Harita & info div’lerini garanti et
-    ensureDayMapContainer(day);
+// Harita & info div’lerini garanti et
+ensureDayMapContainer(day);
 
-    const realPointCount = dayItemsArr.filter(it =>
-      it.name && it.location && typeof it.location.lat === 'number' && typeof it.location.lng === 'number'
-    ).length;
-    if (realPointCount < 2) {
-      initEmptyDayMap(day);
-    }
+cartDiv.appendChild(dayContainer);
 
-    cartDiv.appendChild(dayContainer);
+// --- IMPORT GPS BUTTON (her zaman + Add Category üstüne) ---
+let importGroup = dayContainer.querySelector('.import-route-group');
+if (!importGroup) {
+  importGroup = document.createElement('div');
+  importGroup.className = 'import-route-group';
+  importGroup.dataset.day = day;
+  importGroup.innerHTML = `
+    <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
+      Import GPS File
+    </button>
+  `;
+}
+// Henüz dayContainer’da add-more yok; o yüzden önce dayContainer SONUNA koyacağız,
+// sonra addMoreButton’ı cartDiv’e eklerken importGroup DAY container içinde kalmış olacak.
+dayContainer.appendChild(importGroup);
 
-    const addMoreButton = document.createElement("button");
-    addMoreButton.className = "add-more-btn";
-    addMoreButton.textContent = "+ Add Category";
-    addMoreButton.dataset.day = day;
-    addMoreButton.onclick = function() { showCategoryList(this.dataset.day); };
-    cartDiv.appendChild(addMoreButton);
-  });
+const addMoreButton = document.createElement("button");
+addMoreButton.className = "add-more-btn";
+addMoreButton.textContent = "+ Add Category";
+addMoreButton.dataset.day = day;
+addMoreButton.onclick = function() { showCategoryList(this.dataset.day); };
+dayContainer.appendChild(addMoreButton);
 
   // Add New Day
   const addNewDayButton = document.createElement("button");
