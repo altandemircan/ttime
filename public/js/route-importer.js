@@ -1,9 +1,8 @@
 // route-importer.js (Enhanced with per-day import)
-// - GPX + TCX + FIT import
-// - Route Title => "<StartShort> → <FinishShort>"
-// - Start item  => "<StartShort> (Start)"
-// - Finish item => "<FinishShort> (Finish)"
-// - Per-day import support
+// - GPX + TCX + FIT + KML import (tek "Import GPS File" butonu - multi)
+// - Start/Finish otomatik ekler, ham track polyline saklar (rawPoints)
+// - Süre: FIT zaman damgaları varsa gerçek, yoksa hız tahmini (renderRouteForDay içinde)
+// - Per-day import destekli
 
 (function() {
   const DEBUG = false;
@@ -20,80 +19,91 @@
     document.body.appendChild(fileInput);
   }
 
-  let currentType = null;
-  let currentImportDay = 1;  // Hangi güne import edilecek
+  let currentType = null;        // 'multi' veya geçmiş uyumluluk
+  let currentImportDay = 1;      // Import edilecek gün
 
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.import-btn[data-import-type]');
-  if (!btn) return;
-  e.preventDefault();
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.import-btn[data-import-type]');
+    if (!btn) return;
+    e.preventDefault();
 
-  currentType = btn.getAttribute('data-import-type'); // 'multi' bekleniyor
-  if (currentType === 'multi') {
+    // GÜN tespiti (hangi day container içindeyse)
+    const group = btn.closest('.import-route-group');
+    if (group && group.dataset.day) {
+      const d = parseInt(group.dataset.day, 10);
+      if (!isNaN(d) && d > 0) currentImportDay = d;
+    } else {
+      const dayContainer = btn.closest('.day-container');
+      if (dayContainer && dayContainer.dataset.day) {
+        const d2 = parseInt(dayContainer.dataset.day, 10);
+        if (!isNaN(d2) && d2 > 0) currentImportDay = d2;
+      } else {
+        currentImportDay = 1;
+      }
+    }
+
+    currentType = btn.getAttribute('data-import-type'); // 'multi'
     fileInput.accept = '.gpx,.tcx,.fit,.kml';
-  } else {
-    fileInput.accept = '.gpx,.tcx,.fit,.kml';
-  }
-  fileInput.value = '';
-  fileInput.click();
-});
+    fileInput.value = '';
+    log('Opening picker (multi) day=', currentImportDay);
+    fileInput.click();
+  });
 
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files && fileInput.files[0];
     if (!file || !currentType) return;
     const day = currentImportDay || 1;
-    log('Selected file:', file.name, 'type=', currentType, 'day=', day);
+    log('Selected file:', file.name, 'multi-type=', currentType, 'day=', day);
 
     try {
+      // currentType 'multi' ise dosya adına göre gerçek türü bul
+      let detectedType;
+      if (currentType === 'multi') {
+        const lower = file.name.toLowerCase();
+        if (lower.endsWith('.gpx')) detectedType = 'gpx';
+        else if (lower.endsWith('.tcx')) detectedType = 'tcx';
+        else if (lower.endsWith('.fit')) detectedType = 'fit';
+        else if (lower.endsWith('.kml')) detectedType = 'kml';
+        else {
+          notify('Unsupported file type. Use .gpx / .tcx / .fit / .kml', 'error');
+          return;
+        }
+      } else {
+        detectedType = currentType; // eski kullanım kalırsa
+      }
+
       let parsed;
-     // currentType 'multi' ise dosya adına göre gerçek türü bul
-// Tür tespiti
-let detectedType;
-if (currentType === 'multi') {
-  const lower = file.name.toLowerCase();
-  if (lower.endsWith('.gpx')) detectedType = 'gpx';
-  else if (lower.endsWith('.tcx')) detectedType = 'tcx';
-  else if (lower.endsWith('.fit')) detectedType = 'fit';
-  else if (lower.endsWith('.kml')) detectedType = 'kml';
-  else {
-    notify('Unsupported file type. Use .gpx / .tcx / .fit / .kml', 'error');
-    return;
-  }
-} else {
-  detectedType = currentType;
-}
+      if (detectedType === 'fit') {
+        parsed = await parseFITFile(file);
+      } else if (detectedType === 'kml') {
+        const raw = await file.text();
+        parsed = parseKML(raw);
+      } else {
+        const raw = await file.text();
+        parsed = detectedType === 'gpx'
+          ? parseGPX(raw)
+          : parseTCX(raw);
+      }
 
-let parsed;
-if (detectedType === 'fit') {
-  parsed = await parseFITFile(file);
-} else if (detectedType === 'kml') {
-  const raw = await file.text();
-  parsed = parseKML(raw);
-} else {
-  const raw = await file.text();
-  parsed = detectedType === 'gpx'
-    ? parseGPX(raw)
-    : parseTCX(raw);
-}
-
-currentType = detectedType;
+      currentType = detectedType; // devamda meta / log için
 
       if (!parsed || !parsed.points || parsed.points.length < 2) {
         notify('Failed to parse route points (need at least 2 track points).', 'error');
         return;
       }
 
-      // === RAW TRACK KAYDET (Start/Finish dışında gerçek çizgi için) ===
-window.importedTrackByDay = window.importedTrackByDay || {};
-window.importedTrackByDay[day] = {
-  rawPoints: parsed.points.map(p => ({
-  lat: p.lat,
-  lng: p.lon,
-  ele: p.ele,
-  time: p.time || null
-})),  source: currentType,
-  drawRaw: true            // Mapbox yerine ham track çizsin
-};
+      // === RAW TRACK KAYDET (Start/Finish dışında ham çizgi) ===
+      window.importedTrackByDay = window.importedTrackByDay || {};
+      window.importedTrackByDay[day] = {
+        rawPoints: parsed.points.map(p => ({
+          lat: p.lat,
+          lng: p.lon,
+          ele: p.ele,
+          time: p.time || null
+        })),
+        source: currentType,
+        drawRaw: true
+      };
 
       const startPt = parsed.points[0];
       const finishPt = parsed.points[parsed.points.length - 1];
@@ -265,115 +275,107 @@ window.importedTrackByDay[day] = {
   }
 
   /* ---------------- FIT LOADER + PARSER ---------------- */
-// --- NEW ENSURE FIT PARSER (multi-source + ESM dynamic import fallback) ---
-async function ensureFitParser() {
-  if (window.FitParser) return true;
-  if (ensureFitParser.__inflight) return ensureFitParser.__inflight;
+  async function ensureFitParser() {
+    if (window.FitParser) return true;
+    if (ensureFitParser.__inflight) return ensureFitParser.__inflight;
 
-  // 1) DENECEK SIRALAR
-  // İlk sıraya yerel (lokal dosyayı sen eklemezsen 404 alır -> diğerlerine geçilir)
-  const UMD_SOURCES = [
-   
-    'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.js',
-    'https://unpkg.com/fit-file-parser@1.10.0/dist/fit-file-parser.js'
-  ];
-
-  // 2) UMD loader
-  function loadUMD(src) {
-    return new Promise((resolve, reject) => {
-      if (window.FitParser) return resolve(true);
-      // Aynı src zaten eklenmişse tekrar ekleme
-      if (document.querySelector(`script[data-fit-src="${src}"]`)) {
-        setTimeout(() => {
-          if (window.FitParser) resolve(true);
-          else reject(new Error('Already injected but FitParser still missing: ' + src));
-        }, 50);
-        return;
-      }
-      const s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      s.dataset.fitSrc = src;
-      const timeout = setTimeout(() => {
-        s.remove();
-        reject(new Error('Timeout: ' + src));
-      }, 8000);
-      s.onload = () => {
-        clearTimeout(timeout);
-        setTimeout(() => {
-          if (window.FitParser) resolve(true);
-          else reject(new Error('Loaded but global FitParser not found: ' + src));
-        }, 30);
-      };
-      s.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error('Network load failed: ' + src));
-      };
-      document.head.appendChild(s);
-    });
-  }
-
-  // 3) ESM dynamic import fallback (esm.sh veya skypack gibi)
-  async function loadESM() {
-    const ESM_URLS = [
-      'https://esm.sh/fit-file-parser@1.10.0',
-      'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.esm.js' // (Varsa, yoksa atlanır)
+    const UMD_SOURCES = [
+      'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.js',
+      'https://unpkg.com/fit-file-parser@1.10.0/dist/fit-file-parser.js'
     ];
-    const errors = [];
-    for (const url of ESM_URLS) {
-      try {
-        const mod = await import(/* @vite-ignore */ url);
-        const FP = mod.default || mod.FitParser || mod.fitFileParser || null;
-        if (!FP) {
-          errors.push('ESM okundu ama sınıf yok: ' + url);
-          continue;
-        }
-        window.FitParser = FP;
-        return true;
-      } catch (e) {
-        errors.push(`${url} -> ${e.message}`);
-      }
-    }
-    throw new Error('ESM dynamic import başarısız: ' + errors.join(' | '));
-  }
 
-  const attempt = (async () => {
-    const umdErrors = [];
-    for (const src of UMD_SOURCES) {
+    function loadUMD(src) {
+      return new Promise((resolve, reject) => {
+        if (window.FitParser) return resolve(true);
+        if (document.querySelector(`script[data-fit-src="${src}"]`)) {
+          setTimeout(() => {
+            if (window.FitParser) resolve(true);
+            else reject(new Error('Already injected but FitParser still missing: ' + src));
+          }, 50);
+          return;
+        }
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.dataset.fitSrc = src;
+        const timeout = setTimeout(() => {
+          s.remove();
+          reject(new Error('Timeout: ' + src));
+        }, 8000);
+        s.onload = () => {
+          clearTimeout(timeout);
+          setTimeout(() => {
+            if (window.FitParser) resolve(true);
+            else reject(new Error('Loaded but global FitParser not found: ' + src));
+          }, 30);
+        };
+        s.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error('Network load failed: ' + src));
+        };
+        document.head.appendChild(s);
+      });
+    }
+
+    async function loadESM() {
+      const ESM_URLS = [
+        'https://esm.sh/fit-file-parser@1.10.0',
+        'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.esm.js'
+      ];
+      const errors = [];
+      for (const url of ESM_URLS) {
+        try {
+          const mod = await import(/* @vite-ignore */ url);
+          const FP = mod.default || mod.FitParser || mod.fitFileParser || null;
+          if (!FP) {
+            errors.push('ESM okundu ama sınıf yok: ' + url);
+            continue;
+          }
+            window.FitParser = FP;
+          return true;
+        } catch (e) {
+          errors.push(`${url} -> ${e.message}`);
+        }
+      }
+      throw new Error('ESM dynamic import başarısız: ' + errors.join(' | '));
+    }
+
+    const attempt = (async () => {
+      const umdErrors = [];
+      for (const src of UMD_SOURCES) {
+        try {
+          await loadUMD(src);
+          if (window.FitParser) {
+            console.log('[fit-import] UMD loaded from', src);
+            return true;
+          }
+        } catch (e) {
+          console.warn('[fit-import] UMD source failed:', src, e.message);
+          umdErrors.push(e.message);
+        }
+      }
+
       try {
-        await loadUMD(src);
+        await loadESM();
         if (window.FitParser) {
-          console.log('[fit-import] UMD loaded from', src);
+          console.log('[fit-import] ESM loaded via dynamic import');
           return true;
         }
-      } catch (e) {
-        console.warn('[fit-import] UMD source failed:', src, e.message);
-        umdErrors.push(e.message);
+      } catch (esmErr) {
+        umdErrors.push(esmErr.message);
       }
-    }
 
-    // ESM fallback
+      throw new Error('FIT parser yüklenemedi: ' + umdErrors.join(' || '));
+    })();
+
+    ensureFitParser.__inflight = attempt;
     try {
-      await loadESM();
-      if (window.FitParser) {
-        console.log('[fit-import] ESM loaded via dynamic import');
-        return true;
-      }
-    } catch (esmErr) {
-      umdErrors.push(esmErr.message);
+      await attempt;
+      return true;
+    } finally {
+      ensureFitParser.__inflight = null;
     }
-
-    throw new Error('FIT parser yüklenemedi: ' + umdErrors.join(' || '));
-  })();
-
-  ensureFitParser.__inflight = attempt;
-  try {
-    await attempt;
-    return true;
-  } finally {
-    ensureFitParser.__inflight = null;
   }
-}
 
   async function parseFITFile(file) {
     await ensureFitParser();
@@ -403,28 +405,27 @@ async function ensureFitParser() {
         const points = [];
         for (let i = 0; i < recs.length; i += step) {
           const r = recs[i];
-         points.push({
-  lat: r.position_lat,
-  lon: r.position_long,
-  ele: (typeof r.altitude === 'number') ? r.altitude : null,
-  time: r.timestamp instanceof Date ? r.timestamp.getTime() : (
-    // Bazı kütüphane sürümlerinde timestamp değeri Date yerine sayı olabilir
-    (typeof r.timestamp === 'number' ? r.timestamp * 1000 : null)
-  )
-});
+          points.push({
+            lat: r.position_lat,
+            lon: r.position_long,
+            ele: (typeof r.altitude === 'number') ? r.altitude : null,
+            time: r.timestamp instanceof Date ? r.timestamp.getTime() : (
+              (typeof r.timestamp === 'number' ? r.timestamp * 1000 : null)
+            )
+          });
         }
         const last = recs[recs.length - 1];
         if (points.length &&
             (points[points.length - 1].lat !== last.position_lat ||
              points[points.length - 1].lon !== last.position_long)) {
           points.push({
-  lat: last.position_lat,
-  lon: last.position_long,
-  ele: (typeof last.altitude === 'number') ? last.altitude : null,
-  time: last.timestamp instanceof Date ? last.timestamp.getTime() : (
-    (typeof last.timestamp === 'number' ? last.timestamp * 1000 : null)
-  )
-});
+            lat: last.position_lat,
+            lon: last.position_long,
+            ele: (typeof last.altitude === 'number') ? last.altitude : null,
+            time: last.timestamp instanceof Date ? last.timestamp.getTime() : (
+              (typeof last.timestamp === 'number' ? last.timestamp * 1000 : null)
+            )
+          });
         }
 
         const nameGuess =
@@ -435,99 +436,86 @@ async function ensureFitParser() {
       });
     });
   }
-/* ---------------- KML PARSER (EKLENDİ) ---------------- */
-function parseKML(xmlString) {
-  // KML genelde XML; bazı exportlar BOM/HTML karışık olabilir → trim
-  const clean = xmlString.trim();
-  const doc = new DOMParser().parseFromString(clean, 'application/xml');
 
-  // Hata kontrolü
-  if (doc.getElementsByTagName('parsererror').length) {
-    return { name: 'KML Route', points: [] };
-  }
+  /* ---------------- KML PARSER ---------------- */
+  function parseKML(xmlString) {
+    const clean = xmlString.trim();
+    const doc = new DOMParser().parseFromString(clean, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) {
+      return { name: 'KML Route', points: [] };
+    }
 
-  // İsim
-  let nameNode = doc.querySelector('Document > name, Folder > name, Placemark > name');
-  const name = nameNode ? nameNode.textContent.trim() : 'KML Route';
+    let nameNode = doc.querySelector('Document > name, Folder > name, Placemark > name');
+    const name = nameNode ? nameNode.textContent.trim() : 'KML Route';
 
-  // Strateji:
-  // 1) <gx:Track> varsa (Garmin / Google Earth izleri)
-  // 2) <LineString><coordinates> listeleri
-  // 3) Çoklu geometry varsa en çok nokta içereni seç
-  let allCandidatePointSets = [];
+    let allCandidatePointSets = [];
 
-  // 1) gx:Track
-  const trackElems = doc.getElementsByTagNameNS('*', 'Track');
-  if (trackElems && trackElems.length) {
-    for (const trk of trackElems) {
-      const coordsTags = trk.getElementsByTagNameNS('*', 'coord');
-      const whenTags = trk.getElementsByTagName('when'); // zamanlar sıralı
-
-      const pts = [];
-      for (let i = 0; i < coordsTags.length; i++) {
-        const raw = coordsTags[i].textContent.trim().split(/\s+/); // lon lat (alt) formatlı
-        if (raw.length >= 2) {
-          const lon = parseFloat(raw[0]);
+    const trackElems = doc.getElementsByTagNameNS('*', 'Track');
+    if (trackElems && trackElems.length) {
+      for (const trk of trackElems) {
+        const coordsTags = trk.getElementsByTagNameNS('*', 'coord');
+        const whenTags = trk.getElementsByTagName('when');
+        const pts = [];
+        for (let i = 0; i < coordsTags.length; i++) {
+          const raw = coordsTags[i].textContent.trim().split(/\s+/);
+          if (raw.length >= 2) {
+            const lon = parseFloat(raw[0]);
             const lat = parseFloat(raw[1]);
-          const ele = raw[2] ? parseFloat(raw[2]) : null;
-          let time = null;
-          if (whenTags[i]) {
-            const t = Date.parse(whenTags[i].textContent.trim());
-            if (!isNaN(t)) time = t;
-          }
-          if (isFinite(lat) && isFinite(lon)) {
-            pts.push({ lat, lon, ele, time });
+            const ele = raw[2] ? parseFloat(raw[2]) : null;
+            let time = null;
+            if (whenTags[i]) {
+              const t = Date.parse(whenTags[i].textContent.trim());
+              if (!isNaN(t)) time = t;
+            }
+            if (isFinite(lat) && isFinite(lon)) {
+              pts.push({ lat, lon, ele, time });
+            }
           }
         }
+        if (pts.length > 1) allCandidatePointSets.push(pts);
       }
+    }
+
+    const lineStrings = doc.getElementsByTagName('LineString');
+    for (const ls of lineStrings) {
+      const coordNode = ls.getElementsByTagName('coordinates')[0];
+      if (!coordNode) continue;
+      const tuples = coordNode.textContent.trim().split(/\s+/);
+      const pts = [];
+      tuples.forEach(t => {
+        const parts = t.split(',');
+        if (parts.length >= 2) {
+          const lon = parseFloat(parts[0]);
+          const lat = parseFloat(parts[1]);
+          const ele = parts[2] ? parseFloat(parts[2]) : null;
+          if (isFinite(lat) && isFinite(lon)) {
+            pts.push({ lat, lon, ele, time: null });
+          }
+        }
+      });
       if (pts.length > 1) allCandidatePointSets.push(pts);
     }
+
+    if (!allCandidatePointSets.length) {
+      return { name, points: [] };
+    }
+
+    allCandidatePointSets.sort((a,b) => b.length - a.length);
+    let chosen = allCandidatePointSets[0];
+
+    if (chosen.length > 12000) {
+      chosen = chosen.filter((_,i)=> i % 15 === 0);
+    } else if (chosen.length > 8000) {
+      chosen = chosen.filter((_,i)=> i % 10 === 0);
+    } else if (chosen.length > 4000) {
+      chosen = chosen.filter((_,i)=> i % 5 === 0);
+    } else if (chosen.length > 2000) {
+      chosen = chosen.filter((_,i)=> i % 3 === 0);
+    }
+
+    return { name, points: chosen };
   }
 
-  // 2) LineString
-  const lineStrings = doc.getElementsByTagName('LineString');
-  for (const ls of lineStrings) {
-    const coordNode = ls.getElementsByTagName('coordinates')[0];
-    if (!coordNode) continue;
-    // KML coordinates: lon,lat[,alt] (satır / boşluk ayrılmış)
-    const tuples = coordNode.textContent.trim().split(/\s+/);
-    const pts = [];
-    tuples.forEach(t => {
-      const parts = t.split(',');
-      if (parts.length >= 2) {
-        const lon = parseFloat(parts[0]);
-        const lat = parseFloat(parts[1]);
-        const ele = parts[2] ? parseFloat(parts[2]) : null;
-        if (isFinite(lat) && isFinite(lon)) {
-          pts.push({ lat, lon, ele, time: null });
-        }
-      }
-    });
-    if (pts.length > 1) allCandidatePointSets.push(pts);
-  }
-
-  // 3) Seçim
-  if (!allCandidatePointSets.length) {
-    return { name, points: [] };
-  }
-
-  // En çok noktaya sahip olan seti seç
-  allCandidatePointSets.sort((a,b) => b.length - a.length);
-  let chosen = allCandidatePointSets[0];
-
-  // Çok aşırı büyükse azaltma (FIT ile aynı mantık)
-  if (chosen.length > 12000) {
-    chosen = chosen.filter((_,i)=> i % 15 === 0);
-  } else if (chosen.length > 8000) {
-    chosen = chosen.filter((_,i)=> i % 10 === 0);
-  } else if (chosen.length > 4000) {
-    chosen = chosen.filter((_,i)=> i % 5 === 0);
-  } else if (chosen.length > 2000) {
-    chosen = chosen.filter((_,i)=> i % 3 === 0);
-  }
-
-  return { name, points: chosen };
-}
   /* ---------------- Parsers (GPX / TCX) ---------------- */
 
   function parseGPX(xmlString) {
