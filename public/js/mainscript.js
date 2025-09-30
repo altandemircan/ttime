@@ -2532,12 +2532,12 @@ function updateCart() {
           <span class="enjoy">Enjoy!</span>
         </p>
         <button id="start-map-btn" type="button">Start with map</button>
-        <div class="import-route-group">
-  <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
-  <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
-  <button type="button" class="import-btn" data-import-type="fit">Import .FIT</button>
-  <input type="file" id="route-import-input" accept=".gpx,.tcx,.fit" style="display:none;" />
-</div>
+       <div class="import-route-group">
+          <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
+          <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
+          <button type="button" class="import-btn" data-import-type="fit">Import .FIT</button>
+          <button type="button" class="import-btn" data-import-type="kml">Import .KML</button>
+        </div>
       </div>
     `;
     if (menuCount) {
@@ -2614,10 +2614,11 @@ function updateCart() {
       importGroup.className = "import-route-group";
       importGroup.dataset.day = day;
       importGroup.innerHTML = `
-  <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
-  <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
-  <button type="button" class="import-btn" data-import-type="fit">Import .FIT</button>
-`;
+          <button type="button" class="import-btn" data-import-type="gpx">Import .GPX</button>
+          <button type="button" class="import-btn" data-import-type="tcx">Import .TCX</button>
+          <button type="button" class="import-btn" data-import-type="fit">Import .FIT</button>
+          <button type="button" class="import-btn" data-import-type="kml">Import .KML</button>
+        `;
       emptyWrap.appendChild(importGroup);
       dayList.appendChild(emptyWrap);
     } else {
@@ -5470,6 +5471,7 @@ function addCircleMarkerSafe(map, latlng, options) {
     return L.circleMarker(latlng, options).addTo(map);
   }
 }
+
 async function renderRouteForDay(day) {
   const containerId = `route-map-day${day}`;
 
