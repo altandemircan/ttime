@@ -23,42 +23,20 @@
   let currentType = null;
   let currentImportDay = 1;  // Hangi güne import edilecek
 
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.import-btn[data-import-type]');
-    if (!btn) return;
-    e.preventDefault();
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.import-btn[data-import-type]');
+  if (!btn) return;
+  e.preventDefault();
 
-currentType = btn.getAttribute('data-import-type'); // 'multi' olacak
-    if (!currentType) return;
-
-    // Gün bağlamı
-    const group = btn.closest('.import-route-group');
-    if (group && group.dataset.day) {
-      const d = parseInt(group.dataset.day, 10);
-      if (!isNaN(d) && d > 0) currentImportDay = d;
-    } else {
-      const dayContainer = btn.closest('.day-container');
-      if (dayContainer && dayContainer.dataset.day) {
-        const d2 = parseInt(dayContainer.dataset.day, 10);
-        if (!isNaN(d2) && d2 > 0) currentImportDay = d2;
-      } else {
-        currentImportDay = 1;
-      }
-    }
-
-if (currentType === 'multi') {
-  fileInput.accept = '.gpx,.tcx,.fit,.kml';
-} else {
-  // (ileride başka özel buton eklenirse fallback)
-  fileInput.accept = '.gpx,.tcx,.fit,.kml';
-}
-fileInput.value = '';
-fileInput.click();
-
-    fileInput.value = '';
-    log('Opening picker for', currentType, 'day=', currentImportDay);
-    fileInput.click();
-  });
+  currentType = btn.getAttribute('data-import-type'); // 'multi' bekleniyor
+  if (currentType === 'multi') {
+    fileInput.accept = '.gpx,.tcx,.fit,.kml';
+  } else {
+    fileInput.accept = '.gpx,.tcx,.fit,.kml';
+  }
+  fileInput.value = '';
+  fileInput.click();
+});
 
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files && fileInput.files[0];
