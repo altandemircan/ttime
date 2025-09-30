@@ -5513,6 +5513,282 @@ function addCircleMarkerSafe(map, latlng, options) {
 async function renderRouteForDay(day) {
   const containerId = `route-map-day${day}`;
 
+  // Günün cart item'ları (isimli olanlar)
+  const dayNamedItems = window.cart.filter(it => it.day == day && it.name !== undefined);
+
+  // Noktaları en başta al (location’u olanlar)
+  const points = getDayPoints(day);
+
+  // 0 NOKTA (location yok)
+  if (!points || points.length === 0) {
+    // Eğer gün içinde en az 1 named item varsa (ama location henüz yoksa veya ekleme anında boşsa)
+    if (dayNamedItems.length > 0) {
+      // Haritayı göster (boş template)
+      ensureDayMapContainer(day);
+      initEmptyDayMap(day);
+      if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+      if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+      return; // Harita boş ama görünür.
+    }
+
+    // Hiç named item yoksa gerçekten boş gün -> haritayı sök
+    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+
+    if (typeof removeDayMapCompletely === 'function') {
+      removeDayMapCompletely(day);
+    } else if (typeof removeDayMap === 'function') {
+      removeDayMap(day);
+    } else {
+      document.getElementById(containerId)?.remove();
+      document.getElementById(`route-info-day${day}`)?.remove();
+      document.getElementById(`map-bottom-controls-wrapper-day${day}`)?.remove();
+      document.getElementById(`route-controls-bar-day${day}`)?.remove();
+    }
+    return;
+  }
+
+  // 1 NOKTA
+  if (points.length === 1) {
+    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+
+    const map = window.leafletMaps?.[containerId];
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+
+    if (map) {
+      map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
+      const p = points[0];
+      const marker = L.circleMarker([p.lat, p.lng], {
+        radius: 8,
+        color: '#8a4af3',
+        fillColor: '#8a4af3',
+        fillOpacity: 0.9,
+        weight: 2
+      }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
+      if (marker._path) marker._path.classList.add('single-point-pulse');
+      else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
+      try { map.setView([p.lat, p.lng], 14); } catch {}
+    }
+
+    const expandedMapObj = window.expandedMaps?.[containerId];
+    if (expandedMapObj?.expandedMap) {
+      const eMap = expandedMapObj.expandedMap;
+      eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
+      const p = points[0];
+      const m = L.circleMarker([p.lat, p.lng], {
+        radius: 11,
+        color: '#8a4af3',
+        fillColor: '#8a4af3',
+        fillOpacity: 0.92,
+        weight: 3
+      }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
+      if (m._path) m._path.classList.add('single-point-pulse');
+      try { eMap.setView([p.lat, p.lng], 15); } catch {}
+    }
+    return;
+  }
+
+  // (Aşağıdaki kısım senin son kodundaki ile AYNI – ham track modu + normal rota)
+  if (points.length === 2 &&
+      window.importedTrackByDay &&
+      window.importedTrackByDay[day] &&
+      window.importedTrackByDay[day].drawRaw) {
+
+    const trackObj = window.importedTrackByDay[day];
+    const raw = trackObj.rawPoints || [];
+    if (raw.length > 1) {
+      ensureDayMapContainer(day);
+      initEmptyDayMap(day);
+      const map = window.leafletMaps?.[containerId];
+      if (map) {
+        map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
+        const latlngs = raw.map(pt => [pt.lat, pt.lng]);
+        const poly = addPolylineSafe(map, latlngs, { color: '#1565c0', weight: 5, opacity: 0.9 });
+        addCircleMarkerSafe(map, latlngs[0], { radius:8, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).bindPopup('Start');
+        addCircleMarkerSafe(map, latlngs[latlngs.length - 1], { radius:8, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).bindPopup('Finish');
+        try { map.fitBounds(poly.getBounds(), { padding:[20,20] }); } catch(_){}
+      }
+
+      let distM = 0;
+      for (let i=1;i<raw.length;i++){
+        const a = raw[i-1], b = raw[i];
+        distM += haversine(a.lat, a.lng, b.lat, b.lng);
+      }
+
+      let durationSec;
+      const firstTimed = raw.find(p => p.time);
+      const lastTimed  = [...raw].reverse().find(p => p.time);
+      if (firstTimed && lastTimed && lastTimed.time > firstTimed.time) {
+        durationSec = (lastTimed.time - firstTimed.time) / 1000;
+      } else {
+        const travelMode = (typeof getTravelModeForDay === 'function') ? getTravelModeForDay(day) : 'walking';
+        const speedMps =
+          travelMode === 'cycling' ? 5.5 :
+          travelMode === 'driving' ? 13 :
+          1.3;
+        durationSec = distM / speedMps;
+      }
+
+      window.lastRouteSummaries = window.lastRouteSummaries || {};
+      window.lastRouteSummaries[containerId] = { distance: distM, duration: durationSec };
+      window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+      window.pairwiseRouteSummaries[containerId] = [{ distance: distM, duration: durationSec }];
+      window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+      delete window.lastRouteGeojsons[containerId];
+
+      if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+      if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
+      if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
+
+      const expandedMapObj = window.expandedMaps?.[containerId];
+      if (expandedMapObj?.expandedMap) {
+        const eMap = expandedMapObj.expandedMap;
+        eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
+        const latlngs = raw.map(pt => [pt.lat, pt.lng]);
+        const polyEx = L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
+        try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
+        L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
+        L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
+      }
+      return;
+    }
+  }
+
+  // 2+ NOKTA normal rota
+  ensureDayMapContainer(day);
+  initEmptyDayMap(day);
+
+  const snappedPoints = [];
+  for (const pt of points) {
+    const snapped = await snapPointToRoad(pt.lat, pt.lng);
+    snappedPoints.push({ ...snapped, name: pt.name });
+  }
+  const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
+
+  async function fetchRoute() {
+    const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
+    const url = buildMapboxDirectionsUrl(coordParam, day);
+    const response = await fetch(url);
+    if (!response.ok) {
+      alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
+      return null;
+    }
+    const data = await response.json();
+    if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
+    return {
+      geojson: {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: data.routes[0].geometry,
+          properties: {
+            summary: {
+              distance: data.routes[0].distance,
+              duration: data.routes[0].duration,
+              source: 'Mapbox'
+            }
+          }
+        }]
+      },
+      coords: data.routes[0].geometry.coordinates,
+      summary: {
+        distance: data.routes[0].distance,
+        duration: data.routes[0].duration
+      }
+    };
+  }
+
+  let routeData;
+  let missingPoints = [];
+  try {
+    routeData = await fetchRoute();
+    if (!routeData) return;
+    missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
+  } catch (e) {
+    const infoPanel = document.getElementById(`route-info-day${day}`);
+    if (infoPanel) infoPanel.textContent = "Rota çizilemedi!";
+    return;
+  }
+
+  const infoPanel = document.getElementById(`route-info-day${day}`);
+  if (missingPoints.length > 0) {
+    if (infoPanel) {
+      infoPanel.innerHTML = `<span style="color:#d32f2f;font-size:0.85rem;font-weight:500;">
+        <strong>Note:</strong> Some points could not be included in the route!<br>
+        <strong>Missing:</strong> ${missingPoints.map(p => p.name).join(', ')}
+      </span>`;
+    }
+  } else if (infoPanel) {
+    infoPanel.textContent = "";
+  }
+
+  window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+  window.lastRouteGeojsons[containerId] = routeData.geojson;
+  window.lastRouteSummaries = window.lastRouteSummaries || {};
+  window.lastRouteSummaries[containerId] = routeData.summary;
+
+  renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
+
+  const expandedMapObj = window.expandedMaps?.[containerId];
+  if (expandedMapObj?.expandedMap) {
+    updateExpandedMap(expandedMapObj.expandedMap, day);
+  }
+
+  const pairwiseSummaries = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    try {
+      const pairCoords = [
+        [points[i].lng, points[i].lat],
+        [points[i + 1].lng, points[i + 1].lat]
+      ];
+      const coordParam = pairCoords.map(c => `${c[0]},${c[1]}`).join(';');
+      const url = buildMapboxDirectionsUrl(coordParam, day);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Mapbox error');
+      const data = await response.json();
+      if (!data.routes || !data.routes[0]) throw new Error('No route found');
+      pairwiseSummaries.push({
+        distance: data.routes[0].distance,
+        duration: data.routes[0].duration
+      });
+    } catch {
+      pairwiseSummaries.push({ distance: null, duration: null });
+    }
+  }
+  window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+  window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+  if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
+
+  const scaleBarDiv = document.getElementById(`route-scale-bar-day${day}`);
+  const totalKm = routeData.summary ? routeData.summary.distance / 1000 : 0;
+  const markerPositions = getRouteMarkerPositionsOrdered(day);
+
+  if (scaleBarDiv && totalKm > 0 && markerPositions.length > 0) {
+    try { delete scaleBarDiv._elevProfile; } catch(_){}
+    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+  } else if (scaleBarDiv) {
+    scaleBarDiv.innerHTML = "";
+  }
+
+  if (routeData.summary && typeof updateDistanceDurationUI === 'function') {
+    updateDistanceDurationUI(routeData.summary.distance, routeData.summary.duration);
+  }
+
+  const hint = document.querySelector(`#route-map-day${day} .empty-map-hint`);
+  if (hint) hint.remove();
+
+  setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 200);
+  if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
+}sync function renderRouteForDay(day) {
+  const containerId = `route-map-day${day}`;
+
   // Noktaları en başta al (önce harita yaratma)
   const points = getDayPoints(day);
 
