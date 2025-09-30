@@ -2650,12 +2650,14 @@ hr {
   background:#f1e9ff;
   box-shadow:0 4px 10px rgba(0,0,0,0.08);
 }
+/*
 .empty-day-block {
   border: 1px dashed #d5d5dd;
   border-radius: 10px;
   padding: 10px 12px;
   background: #fafafa;
-}   
+}
+*/   
 
 @media (max-width:768px) {
 
