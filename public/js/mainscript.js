@@ -4686,19 +4686,83 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     window._currentNearbyPopupElement = popupContainer;
     
     // Marker ekle
-    if (window._nearbyMarker) {
-        map.removeLayer(window._nearbyMarker);
-    }
-    window._nearbyMarker = L.circleMarker([lat, lng], {
-        radius: 8,
-        fillColor: '#1976d2',
-        color: '#fff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8
-    }).addTo(map);
+   // --- Pulsing marker ekle --- //
+if (window._nearbyMarker) {
+  try { map.removeLayer(window._nearbyMarker); } catch(_){}
+  window._nearbyMarker = null;
+}
+if (window._nearbyPulseMarker) {
+  try { map.removeLayer(window._nearbyPulseMarker); } catch(_){}
+  window._nearbyPulseMarker = null;
 }
 
+// DivIcon HTML
+const pulseHtml = `
+  <div class="nearby-pulse-marker">
+    <div class="nearby-pulse-core"></div>
+    <div class="nearby-pulse-ring"></div>
+    <div class="nearby-pulse-ring2"></div>
+  </div>
+`;
+
+const pulseIcon = L.divIcon({
+  html: pulseHtml,
+  className: 'nearby-pulse-icon-wrapper', // boş class (Leaflet default stil katmasın)
+  iconSize: [18,18],
+  iconAnchor: [9,9]
+});
+
+// Hem pulslu ikon (görsel) hem de altta mantıksal nokta istersen ikinci küçük circle ekleyebilirsin.
+// Burada sadece tek DivIcon yeterli.
+window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
+
+// Eğer ayrı bir veri katmanı gerekirse (ör: popup açma) ekstra marker ekleyebilirsin:
+// window._nearbyMarker = L.circleMarker([lat, lng], { radius: 0 }).addTo(map);
+}
+(function ensureNearbyPulseStyles(){
+  if (document.getElementById('tt-nearby-pulse-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'tt-nearby-pulse-styles';
+  s.textContent = `
+    .nearby-pulse-marker {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      transform: translate(-9px, -9px); /* merkez oturt */
+      pointer-events: none;
+    }
+    .nearby-pulse-core {
+      position: absolute;
+      left: 50%; top: 50%;
+      width: 14px; height: 14px;
+      transform: translate(-50%, -50%);
+      background: #1976d2;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      z-index: 2;
+    }
+    .nearby-pulse-ring, .nearby-pulse-ring2 {
+      position: absolute;
+      left: 50%; top: 50%;
+      width: 14px; height: 14px;
+      transform: translate(-50%, -50%);
+      border: 2px solid #1976d2;
+      border-radius: 50%;
+      opacity: 0;
+      animation: ttPulse 2.4s linear infinite;
+    }
+    .nearby-pulse-ring2 {
+      animation-delay: 1.2s;
+    }
+    @keyframes ttPulse {
+      0% { transform: translate(-50%, -50%) scale(0.25); opacity: 0.55; }
+      70% { opacity: 0.0; }
+      100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(s);
+})();
 // Popup kapatma fonksiyonu
 window.closeNearbyPopup = function() {
     // Custom popup elementini kaldır
@@ -4717,6 +4781,10 @@ window.closeNearbyPopup = function() {
         window._nearbyMarker._map.removeLayer(window._nearbyMarker);
         window._nearbyMarker = null;
     }
+    if (window._nearbyPulseMarker && window._nearbyPulseMarker._map) {
+    try { window._nearbyPulseMarker._map.removeLayer(window._nearbyPulseMarker); } catch(_){}
+    window._nearbyPulseMarker = null;
+}
     
     // Global referansları temizle
     window._currentNearbyPopupElement = null;
