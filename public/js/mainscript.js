@@ -1603,6 +1603,7 @@ function addToCart(
 // - Sepet tamamen boşalınca: expanded haritalar + tüm rota/elevation cache temizlenir.
 // - Silinen gün 0 veya 1 noktaya düştüyse: o güne ait rota/elevation + expanded map kalıntıları temizlenir.
 // - Diğer günlerin rotaları yeniden render edilir.
+// 9. removeFromCart fonksiyonu (GÜNCELLENDİ: 2 -> 1 düşüşte expanded map KAPANMAZ)
 function removeFromCart(index){
   if (!Array.isArray(window.cart)) return;
 
@@ -1611,30 +1612,25 @@ function removeFromCart(index){
 
   window.cart.splice(index, 1);
 
-  // Sepet tamamen boşaldıysa full cleanup
+  // Sepet tamamen boşaldıysa full cleanup + expandedları kapat
   if (window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
     if (typeof clearAllRouteCaches === 'function') clearAllRouteCaches();
-    updateCart(); // boş state UI
+    updateCart();
     return;
   }
 
   // Normal güncelleme
   updateCart();
 
-  // Silinen öğenin günü artık <2 nokta ise o günün rota kalıntılarını temizle
+  // Silinen öğenin günü artık <2 nokta ise sadece rota/elevation temizle (expanded'ı kapatma!)
   if (removedDay) {
     const dayPoints = getDayPoints(removedDay);
     if (dayPoints.length < 2) {
       if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(removedDay);
       if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(removedDay);
-
-      // Expanded harita o gün için açıksa kapat
-      const containerId = `route-map-day${removedDay}`;
-      if (window.expandedMaps && window.expandedMaps[containerId]) {
-        if (typeof restoreMap === 'function') restoreMap(containerId, removedDay);
-        delete window.expandedMaps[containerId];
-      }
+      // NOT: Önceki sürümde burada expanded haritayı kapatıyorduk. Artık kapatmıyoruz.
+      // renderRouteForDay 1 nokta için expanded haritada tek marker gösterimini zaten yapıyor.
     }
   }
 
@@ -1644,7 +1640,6 @@ function removeFromCart(index){
     days.forEach(d => setTimeout(() => renderRouteForDay(d), 0));
   }
 }
-
 function addItem(element, day, category, name, image, extra) {
     const stepsDiv = element.closest('.steps');
     const address = stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
