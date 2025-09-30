@@ -1599,29 +1599,49 @@ function addToCart(
   return true;
 }
 
-// 9. removeFromCart fonksiyonu
+// 9. removeFromCart fonksiyonu (GÜNCELLENDİ)
+// - Sepet tamamen boşalınca: expanded haritalar + tüm rota/elevation cache temizlenir.
+// - Silinen gün 0 veya 1 noktaya düştüyse: o güne ait rota/elevation + expanded map kalıntıları temizlenir.
+// - Diğer günlerin rotaları yeniden render edilir.
 function removeFromCart(index){
-  if(!window.cart) return;
+  if (!Array.isArray(window.cart)) return;
+
   const removed = window.cart[index];
   const removedDay = removed && removed.day;
-  window.cart.splice(index,1);
-  updateCart();
 
-  if (!window.cart.length){
-    clearAllRouteCaches();
+  window.cart.splice(index, 1);
+
+  // Sepet tamamen boşaldıysa full cleanup
+  if (window.cart.length === 0) {
+    if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
+    if (typeof clearAllRouteCaches === 'function') clearAllRouteCaches();
+    updateCart(); // boş state UI
     return;
   }
 
-  if (removedDay){
+  // Normal güncelleme
+  updateCart();
+
+  // Silinen öğenin günü artık <2 nokta ise o günün rota kalıntılarını temizle
+  if (removedDay) {
     const dayPoints = getDayPoints(removedDay);
-    if (dayPoints.length < 2){
-      clearRouteCachesForDay(removedDay);
-      clearRouteVisualsForDay(removedDay);
+    if (dayPoints.length < 2) {
+      if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(removedDay);
+      if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(removedDay);
+
+      // Expanded harita o gün için açıksa kapat
+      const containerId = `route-map-day${removedDay}`;
+      if (window.expandedMaps && window.expandedMaps[containerId]) {
+        if (typeof restoreMap === 'function') restoreMap(containerId, removedDay);
+        delete window.expandedMaps[containerId];
+      }
     }
   }
+
+  // Kalan günlerin rotalarını yeniden çiz
   if (typeof renderRouteForDay === 'function') {
-    const days = [...new Set((window.cart || []).map(i => i.day))];
-    days.forEach(d => setTimeout(()=>renderRouteForDay(d), 0));
+    const days = [...new Set(window.cart.map(i => i.day))];
+    days.forEach(d => setTimeout(() => renderRouteForDay(d), 0));
   }
 }
 
@@ -2507,6 +2527,8 @@ function updateCart() {
 
   // Boş state
   if (!window.cart || window.cart.length === 0) {
+        if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
+
     cartDiv.innerHTML = `
       <div id="empty-content">
         <p>Create your trip using the chat screen.</p>
@@ -3137,6 +3159,40 @@ function clearAllRouteCaches(){
       }catch(_){}
     });
   }
+}
+
+/* === EXPANDED MAP FULL CLEANUP (Eklenen) === */
+function closeAllExpandedMapsAndReset() {
+  if (window.expandedMaps) {
+    Object.keys(window.expandedMaps).forEach(id => {
+      const obj = window.expandedMaps[id];
+      if (!obj) return;
+      // Expanded Leaflet map temizle & kapat
+      if (obj.expandedMap) {
+        try {
+          obj.expandedMap.eachLayer(l => {
+            if (!(l instanceof L.TileLayer)) {
+              try { obj.expandedMap.removeLayer(l); } catch(_){}
+            }
+          });
+          try { obj.expandedMap.remove(); } catch(_){}
+        } catch(_) {}
+      }
+      // Expanded container DOM’unu kaldır
+      const cont = document.getElementById(`expanded-map-${obj.day}`);
+      if (cont) cont.remove();
+      // Orijinal küçük haritayı geri göster
+      if (obj.originalContainer) {
+        obj.originalContainer.style.display = '';
+      }
+      // Scale bar vs.
+      const expScale = document.getElementById(`expanded-route-scale-bar-day${obj.day}`);
+      if (expScale) expScale.remove();
+    });
+  }
+  window.expandedMaps = {};
+  // Her ihtimale karşı artakalan expanded container kalmadığından emin ol
+  document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
 }
 /* === ROUTE CLEANUP HELPERS SONU === */
 function createMapIframe(lat, lng, zoom = 16) {
