@@ -15,7 +15,7 @@
     fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.id = '__route_import_hidden_input';
-    fileInput.accept = '.gpx,.tcx,.fit';
+    fileInput.accept = '.gpx,.tcx,.fit,.kml';
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
   }
@@ -47,10 +47,11 @@
     }
 
     // Doğru accept
-    if (currentType === 'gpx') fileInput.accept = '.gpx';
-    else if (currentType === 'tcx') fileInput.accept = '.tcx';
-    else if (currentType === 'fit') fileInput.accept = '.fit';
-    else fileInput.accept = '.gpx,.tcx,.fit';
+ if (currentType === 'gpx') fileInput.accept = '.gpx';
+else if (currentType === 'tcx') fileInput.accept = '.tcx';
+else if (currentType === 'fit') fileInput.accept = '.fit';
+else if (currentType === 'kml') fileInput.accept = '.kml';
+else fileInput.accept = '.gpx,.tcx,.fit,.kml';
 
     fileInput.value = '';
     log('Opening picker for', currentType, 'day=', currentImportDay);
@@ -65,14 +66,17 @@
 
     try {
       let parsed;
-      if (currentType === 'fit') {
-        parsed = await parseFITFile(file);
-      } else {
-        const raw = await file.text();
-        parsed = currentType === 'gpx'
-          ? parseGPX(raw)
-          : parseTCX(raw);
-      }
+     if (currentType === 'fit') {
+  parsed = await parseFITFile(file);
+} else if (currentType === 'kml') {
+  const raw = await file.text();
+  parsed = parseKML(raw);
+} else {
+  const raw = await file.text();
+  parsed = currentType === 'gpx'
+    ? parseGPX(raw)
+    : parseTCX(raw);
+}
 
       if (!parsed || !parsed.points || parsed.points.length < 2) {
         notify('Failed to parse route points (need at least 2 track points).', 'error');
@@ -82,8 +86,12 @@
       // === RAW TRACK KAYDET (Start/Finish dışında gerçek çizgi için) ===
 window.importedTrackByDay = window.importedTrackByDay || {};
 window.importedTrackByDay[day] = {
-  rawPoints: parsed.points.map(p => ({ lat: p.lat, lng: p.lon, ele: p.ele })),
-  source: currentType,
+  rawPoints: parsed.points.map(p => ({
+  lat: p.lat,
+  lng: p.lon,
+  ele: p.ele,
+  time: p.time || null
+})),  source: currentType,
   drawRaw: true            // Mapbox yerine ham track çizsin
 };
 
@@ -265,7 +273,7 @@ async function ensureFitParser() {
   // 1) DENECEK SIRALAR
   // İlk sıraya yerel (lokal dosyayı sen eklemezsen 404 alır -> diğerlerine geçilir)
   const UMD_SOURCES = [
-    '/js/libs/fit-file-parser.js', // <-- yerel kopyayı buraya koy (isteğe bağlı)
+   
     'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.js',
     'https://unpkg.com/fit-file-parser@1.10.0/dist/fit-file-parser.js'
   ];
@@ -395,21 +403,28 @@ async function ensureFitParser() {
         const points = [];
         for (let i = 0; i < recs.length; i += step) {
           const r = recs[i];
-          points.push({
-            lat: r.position_lat,
-            lon: r.position_long,
-            ele: (typeof r.altitude === 'number') ? r.altitude : null
-          });
+         points.push({
+  lat: r.position_lat,
+  lon: r.position_long,
+  ele: (typeof r.altitude === 'number') ? r.altitude : null,
+  time: r.timestamp instanceof Date ? r.timestamp.getTime() : (
+    // Bazı kütüphane sürümlerinde timestamp değeri Date yerine sayı olabilir
+    (typeof r.timestamp === 'number' ? r.timestamp * 1000 : null)
+  )
+});
         }
         const last = recs[recs.length - 1];
         if (points.length &&
             (points[points.length - 1].lat !== last.position_lat ||
              points[points.length - 1].lon !== last.position_long)) {
           points.push({
-            lat: last.position_lat,
-            lon: last.position_long,
-            ele: (typeof last.altitude === 'number') ? last.altitude : null
-          });
+  lat: last.position_lat,
+  lon: last.position_long,
+  ele: (typeof last.altitude === 'number') ? last.altitude : null,
+  time: last.timestamp instanceof Date ? last.timestamp.getTime() : (
+    (typeof last.timestamp === 'number' ? last.timestamp * 1000 : null)
+  )
+});
         }
 
         const nameGuess =
@@ -420,7 +435,99 @@ async function ensureFitParser() {
       });
     });
   }
+/* ---------------- KML PARSER (EKLENDİ) ---------------- */
+function parseKML(xmlString) {
+  // KML genelde XML; bazı exportlar BOM/HTML karışık olabilir → trim
+  const clean = xmlString.trim();
+  const doc = new DOMParser().parseFromString(clean, 'application/xml');
 
+  // Hata kontrolü
+  if (doc.getElementsByTagName('parsererror').length) {
+    return { name: 'KML Route', points: [] };
+  }
+
+  // İsim
+  let nameNode = doc.querySelector('Document > name, Folder > name, Placemark > name');
+  const name = nameNode ? nameNode.textContent.trim() : 'KML Route';
+
+  // Strateji:
+  // 1) <gx:Track> varsa (Garmin / Google Earth izleri)
+  // 2) <LineString><coordinates> listeleri
+  // 3) Çoklu geometry varsa en çok nokta içereni seç
+  let allCandidatePointSets = [];
+
+  // 1) gx:Track
+  const trackElems = doc.getElementsByTagNameNS('*', 'Track');
+  if (trackElems && trackElems.length) {
+    for (const trk of trackElems) {
+      const coordsTags = trk.getElementsByTagNameNS('*', 'coord');
+      const whenTags = trk.getElementsByTagName('when'); // zamanlar sıralı
+
+      const pts = [];
+      for (let i = 0; i < coordsTags.length; i++) {
+        const raw = coordsTags[i].textContent.trim().split(/\s+/); // lon lat (alt) formatlı
+        if (raw.length >= 2) {
+          const lon = parseFloat(raw[0]);
+            const lat = parseFloat(raw[1]);
+          const ele = raw[2] ? parseFloat(raw[2]) : null;
+          let time = null;
+          if (whenTags[i]) {
+            const t = Date.parse(whenTags[i].textContent.trim());
+            if (!isNaN(t)) time = t;
+          }
+          if (isFinite(lat) && isFinite(lon)) {
+            pts.push({ lat, lon, ele, time });
+          }
+        }
+      }
+      if (pts.length > 1) allCandidatePointSets.push(pts);
+    }
+  }
+
+  // 2) LineString
+  const lineStrings = doc.getElementsByTagName('LineString');
+  for (const ls of lineStrings) {
+    const coordNode = ls.getElementsByTagName('coordinates')[0];
+    if (!coordNode) continue;
+    // KML coordinates: lon,lat[,alt] (satır / boşluk ayrılmış)
+    const tuples = coordNode.textContent.trim().split(/\s+/);
+    const pts = [];
+    tuples.forEach(t => {
+      const parts = t.split(',');
+      if (parts.length >= 2) {
+        const lon = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
+        const ele = parts[2] ? parseFloat(parts[2]) : null;
+        if (isFinite(lat) && isFinite(lon)) {
+          pts.push({ lat, lon, ele, time: null });
+        }
+      }
+    });
+    if (pts.length > 1) allCandidatePointSets.push(pts);
+  }
+
+  // 3) Seçim
+  if (!allCandidatePointSets.length) {
+    return { name, points: [] };
+  }
+
+  // En çok noktaya sahip olan seti seç
+  allCandidatePointSets.sort((a,b) => b.length - a.length);
+  let chosen = allCandidatePointSets[0];
+
+  // Çok aşırı büyükse azaltma (FIT ile aynı mantık)
+  if (chosen.length > 12000) {
+    chosen = chosen.filter((_,i)=> i % 15 === 0);
+  } else if (chosen.length > 8000) {
+    chosen = chosen.filter((_,i)=> i % 10 === 0);
+  } else if (chosen.length > 4000) {
+    chosen = chosen.filter((_,i)=> i % 5 === 0);
+  } else if (chosen.length > 2000) {
+    chosen = chosen.filter((_,i)=> i % 3 === 0);
+  }
+
+  return { name, points: chosen };
+}
   /* ---------------- Parsers (GPX / TCX) ---------------- */
 
   function parseGPX(xmlString) {
