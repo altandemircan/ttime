@@ -4279,198 +4279,230 @@ function attachClickNearbySearch(map, day, options = {}) {
 }
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-    const categories = [
-        "accommodation.hotel",
-        "catering.restaurant", 
-        "catering.cafe",
-        "leisure.park",
-        "entertainment.cinema"
-    ].join(",");
-    
-    const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&limit=20&apiKey=${apiKey}`;
-    
-    // Önceki popup'ları temizle
-    closeNearbyPopup();
-    
-    // Loading indicator göster
-    const loadingContent = `
-        <div class="nearby-loading-message">
-            <div class="nearby-loading-spinner"></div>
-        <small class="nearby-loading-text">Searching for nearby places...</small>
-        </div>
-    `;
-    showCustomPopup(lat, lng, map, loadingContent, false);
+  const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+  const categories = [
+    "accommodation.hotel",
+    "catering.restaurant",
+    "catering.cafe",
+    "leisure.park",
+    "entertainment.cinema"
+  ].join(",");
 
-    try {
-        // Önce konum bilgisini al
-let pointInfo = { name: "Selected Point", address: "", opening_hours: "" };
-        try {
-            pointInfo = await getPlaceInfoFromLatLng(lat, lng);
-        } catch (e) {
-console.warn('Location info could not be retrieved:', e);
-        }
+  const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&limit=20&apiKey=${apiKey}`;
 
-        const resp = await fetch(url);
-        const data = await resp.json();
-        
-        let results = [];
-        let photos = [];
-        let placesHtml = "";
-        
-        if (data.features && data.features.length > 0) {
-            results = data.features
-                .filter(f => !!f.properties.name && f.properties.name.trim().length > 2)
-                .map(f => {
-                    const d = haversine(lat, lng, f.properties.lat, f.properties.lon);
-                    return { ...f, distance: d };
-                })
-                .filter(f => f.distance <= radius)
-                .sort((a, b) => a.distance - b.distance)
-                .slice(0, 10);
-            
-            if (results.length > 0) {
-                try {
-                    photos = await Promise.all(results.map(async (f, idx) => {
-                        const name = f.properties.name || "";
-                        const cityQuery = name + " " + (window.selectedCity || "");
-                        
-                        try {
-                            let imageUrl = null;
-                            if (typeof getPexelsImage === "function") {
-                                imageUrl = await getPexelsImage(cityQuery);
-                            }
-                            
-                            if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
-                                return imageUrl;
-                            }
-                            
-                            if (typeof getPixabayImage === "function") {
-                                imageUrl = await getPixabayImage(name);
-                                if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
-                                    return imageUrl;
-                                }
-                            }
-                            
-                            return PLACEHOLDER_IMG;
-                        } catch (error) {
-console.warn(`Photo loading error: ${name}`, error);
-                            return PLACEHOLDER_IMG;
-                        }
-                    }));
-                } catch (photoError) {
-console.warn('Photo loading failed, using placeholders:', photoError);
-                    photos = results.map(() => PLACEHOLDER_IMG);
-                }
+  // Önceki popup + marker/pulse temizle
+  closeNearbyPopup();
 
-                // Places HTML'i oluştur
-                placesHtml = results.map((f, idx) => {
-                    const name = f.properties.name || "(İsim yok)";
-                    const adr = f.properties.formatted || "";
-                    const photo = photos[idx] || PLACEHOLDER_IMG;
-                    const distStr = f.distance < 1000
-                        ? `${Math.round(f.distance)} m`
-                        : `${(f.distance/1000).toFixed(2)} km`;
-                    
-                    const placeLat = f.properties.lat || f.geometry.coordinates[1];
-                    const placeLng = f.properties.lon || f.geometry.coordinates[0];
-                    
-                    const imgId = `nearby-img-${day}-${idx}`;
-                    
-                    return `
-                        <li class="nearby-place-item">
-                            <div class="nearby-place-image">
-                                <img id="${imgId}" 
-                                     src="${photo}" 
-                                     alt="${name}"
-                                     class="nearby-place-img"
-                                     onload="this.style.opacity='1'"
-                                     onerror="handleImageError(this, '${name}', ${idx})"
-                                     data-original-src="${photo}"
-                                     data-place-name="${name}"
-                                     data-index="${idx}">
-                                <div style="position:absolute;top:0;left:0;width:42px;height:42px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;" class="img-loading">
-                                    <div class="nearby-loading-spinner" style="width:16px;height:16px;"></div>
-                                </div>
-                            </div>
-                            <div class="nearby-place-info">
-                                <div class="nearby-place-name">${name}</div>
-                                <div class="nearby-place-address">${adr}</div>
-                            </div>
-                            <div class="nearby-place-actions">
-                                <div class="nearby-place-distance">${distStr}</div>
-                                <button class="nearby-place-add-btn"
-                                        onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, '${placeLat}', '${placeLng}')">+</button>
-                            </div>
-                        </li>`;
-                }).join('');
-            } else {
-placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
-            }
-        } else {
-placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
-        }
+  // Loading popup
+  const loadingContent = `
+    <div class="nearby-loading-message">
+      <div class="nearby-loading-spinner"></div>
+      <small class="nearby-loading-text">Searching for nearby places...</small>
+    </div>
+  `;
+  showCustomPopup(lat, lng, map, loadingContent, false);
 
-        // Düzenlenebilir nokta adı ve sepete ekleme butonu - yeni tasarım
-        const addPointSection = `
-            <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
-                <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-                    <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-                        <img id="clicked-point-img" 
-                             src="img/placeholder.png" 
-                             alt="Seçilen Nokta"
-                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
-                    </div>
-                    <div class="point-info" style="flex: 1; min-width: 0;">
-                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-                            <span id="point-name-display" 
-                                  style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
-                                  onclick="window.editPointName()">${pointInfo.name}</span>
-                            <button onclick="window.editPointName()" 
-                                    style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
-                            <input type="text" id="point-name-input" value="${pointInfo.name}" 
-                                   style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-                        </div>
-                        <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-${pointInfo.address || 'Selected location'}
-                        </div>
-                    </div>
-                    <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-<div style="font-size: 11px; color: #999; text-align: center;">Clicked</div>
-                        <button class="add-point-to-cart-btn" 
-                                onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})"
-                                style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Final HTML content
-        const html = `
-            <div class="nearby-popup-title">
-                📍 Yakındaki Mekanlar
-            </div>
-            ${addPointSection}
-            <ul class="nearby-places-list">${placesHtml}</ul>
-        `;
-        
-        showCustomPopup(lat, lng, map, html, true);
-
-        // Sonuçları global olarak sakla
-        window._lastNearbyPlaces = results;
-        window._lastNearbyPhotos = photos;
-        window._lastNearbyDay = day;
-        window._currentPointInfo = pointInfo;
-        
-        // Seçilen nokta için fotoğraf yükle
-        loadClickedPointImage(pointInfo.name);
-        
-    } catch (error) {
-        console.error('Nearby places fetch error:', error);
-const errorContent = '<div class="nearby-error-message">An error occurred while loading nearby places.</div>';
-        showCustomPopup(lat, lng, map, errorContent, true);
+  // --- Pulsing marker ekleme (ilk anda göster) ---
+  try {
+    if (window._nearbyMarker && window._nearbyMarker._map) {
+      window._nearbyMarker._map.removeLayer(window._nearbyMarker);
     }
+    window._nearbyMarker = null;
+
+    if (window._nearbyPulseMarker && window._nearbyPulseMarker._map) {
+      window._nearbyPulseMarker._map.removeLayer(window._nearbyPulseMarker);
+    }
+    window._nearbyPulseMarker = null;
+  } catch (_) {}
+
+  const pulseHtml = `
+    <div class="nearby-pulse-root">
+      <div class="nearby-pulse-core"></div>
+      <div class="nearby-pulse-ring"></div>
+      <div class="nearby-pulse-ring2"></div>
+    </div>
+  `;
+  const pulseIcon = L.divIcon({
+    className: 'nearby-pulse-icon-wrapper',
+    html: pulseHtml,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+
+  window._nearbyPulseMarker = L.marker([lat, lng], {
+    icon: pulseIcon,
+    interactive: false,
+    keyboard: false
+  }).addTo(map);
+
+  // Hafif odak
+  try {
+    const currentZoom = map.getZoom();
+    if (currentZoom < 14) {
+      map.setView([lat, lng], 15, { animate: true });
+    } else {
+      map.panTo([lat, lng], { animate: true });
+    }
+  } catch (_) {}
+  // --- Pulsing marker ekleme bitiş ---
+
+  try {
+    // Nokta bilgisi
+    let pointInfo = { name: "Selected Point", address: "", opening_hours: "" };
+    try {
+      pointInfo = await getPlaceInfoFromLatLng(lat, lng);
+    } catch (e) {
+      console.warn('Location info could not be retrieved:', e);
+    }
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    let results = [];
+    let photos = [];
+    let placesHtml = "";
+
+    if (data.features && data.features.length > 0) {
+      results = data.features
+        .filter(f => !!f.properties.name && f.properties.name.trim().length > 2)
+        .map(f => {
+          const d = haversine(lat, lng, f.properties.lat, f.properties.lon);
+          return { ...f, distance: d };
+        })
+        .filter(f => f.distance <= radius)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 10);
+
+      if (results.length > 0) {
+        try {
+          photos = await Promise.all(results.map(async (f) => {
+            const name = f.properties.name || "";
+            const cityQuery = name + " " + (window.selectedCity || "");
+            try {
+              let imageUrl = null;
+              if (typeof getPexelsImage === "function") {
+                imageUrl = await getPexelsImage(cityQuery);
+              }
+              if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
+                return imageUrl;
+              }
+              if (typeof getPixabayImage === "function") {
+                imageUrl = await getPixabayImage(name);
+                if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
+                  return imageUrl;
+                }
+              }
+              return PLACEHOLDER_IMG;
+            } catch (error) {
+              console.warn(`Photo loading error: ${name}`, error);
+              return PLACEHOLDER_IMG;
+            }
+          }));
+        } catch (photoError) {
+          console.warn('Photo loading failed, using placeholders:', photoError);
+          photos = results.map(() => PLACEHOLDER_IMG);
+        }
+
+        placesHtml = results.map((f, idx) => {
+          const name = f.properties.name || "(İsim yok)";
+          const adr = f.properties.formatted || "";
+          const photo = photos[idx] || PLACEHOLDER_IMG;
+          const distStr = f.distance < 1000
+            ? `${Math.round(f.distance)} m`
+            : `${(f.distance / 1000).toFixed(2)} km`;
+
+          const placeLat = f.properties.lat || f.geometry.coordinates[1];
+          const placeLng = f.properties.lon || f.geometry.coordinates[0];
+          const imgId = `nearby-img-${day}-${idx}`;
+
+            return `
+              <li class="nearby-place-item">
+                <div class="nearby-place-image">
+                  <img id="${imgId}"
+                       src="${photo}"
+                       alt="${name}"
+                       class="nearby-place-img"
+                       onload="this.style.opacity='1'"
+                       onerror="handleImageError(this, '${name}', ${idx})"
+                       data-original-src="${photo}"
+                       data-place-name="${name}"
+                       data-index="${idx}">
+                  <div style="position:absolute;top:0;left:0;width:42px;height:42px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;" class="img-loading">
+                    <div class="nearby-loading-spinner" style="width:16px;height:16px;"></div>
+                  </div>
+                </div>
+                <div class="nearby-place-info">
+                  <div class="nearby-place-name">${name}</div>
+                  <div class="nearby-place-address">${adr}</div>
+                </div>
+                <div class="nearby-place-actions">
+                  <div class="nearby-place-distance">${distStr}</div>
+                  <button class="nearby-place-add-btn"
+                          onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, '${placeLat}', '${placeLng}')">+</button>
+                </div>
+              </li>`;
+        }).join('');
+      } else {
+        placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
+      }
+    } else {
+      placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
+    }
+
+    const addPointSection = `
+      <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
+        <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+          <div class="point-image" style="width: 42px; height: 42px; position: relative;">
+            <img id="clicked-point-img"
+                 src="img/placeholder.png"
+                 alt="Seçilen Nokta"
+                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
+          </div>
+          <div class="point-info" style="flex: 1; min-width: 0;">
+            <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+              <span id="point-name-display"
+                    style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                    onclick="window.editPointName()">${pointInfo.name}</span>
+              <button onclick="window.editPointName()"
+                      style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
+              <input type="text" id="point-name-input" value="${pointInfo.name}"
+                     style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+            </div>
+            <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${pointInfo.address || 'Selected location'}
+            </div>
+          </div>
+          <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="font-size: 11px; color: #999; text-align: center;">Clicked</div>
+            <button class="add-point-to-cart-btn"
+                    onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})"
+                    style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const html = `
+      <div class="nearby-popup-title">
+        📍 Yakındaki Mekanlar
+      </div>
+      ${addPointSection}
+      <ul class="nearby-places-list">${placesHtml}</ul>
+    `;
+
+    showCustomPopup(lat, lng, map, html, true);
+
+    window._lastNearbyPlaces = results;
+    window._lastNearbyPhotos = photos;
+    window._lastNearbyDay = day;
+    window._currentPointInfo = pointInfo;
+    loadClickedPointImage(pointInfo.name);
+  } catch (error) {
+    console.error('Nearby places fetch error:', error);
+    const errorContent = '<div class="nearby-error-message">An error occurred while loading nearby places.</div>';
+    showCustomPopup(lat, lng, map, errorContent, true);
+  }
 }
 
 // Seçilen nokta için fotoğraf yükleme fonksiyonu
@@ -4724,12 +4756,14 @@ window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:
   const s = document.createElement('style');
   s.id = 'tt-nearby-pulse-styles';
   s.textContent = `
-    .nearby-pulse-marker {
+    .nearby-pulse-icon-wrapper { background: transparent; border: none; }
+    .nearby-pulse-root {
       position: relative;
-      width: 18px;
-      height: 18px;
-      transform: translate(-9px, -9px); /* merkez oturt */
+      width: 28px;
+      height: 28px;
+      transform: translate(-14px, -14px);
       pointer-events: none;
+      z-index: 650;
     }
     .nearby-pulse-core {
       position: absolute;
@@ -4739,10 +4773,11 @@ window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:
       background: #1976d2;
       border: 2px solid #fff;
       border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
       z-index: 2;
     }
-    .nearby-pulse-ring, .nearby-pulse-ring2 {
+    .nearby-pulse-ring,
+    .nearby-pulse-ring2 {
       position: absolute;
       left: 50%; top: 50%;
       width: 14px; height: 14px;
@@ -4750,46 +4785,37 @@ window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:
       border: 2px solid #1976d2;
       border-radius: 50%;
       opacity: 0;
-      animation: ttPulse 2.4s linear infinite;
+      animation: ttPulse 2.8s linear infinite;
     }
-    .nearby-pulse-ring2 {
-      animation-delay: 1.2s;
-    }
+    .nearby-pulse-ring2 { animation-delay: 1.4s; }
     @keyframes ttPulse {
-      0% { transform: translate(-50%, -50%) scale(0.25); opacity: 0.55; }
-      70% { opacity: 0.0; }
-      100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+      0%   { transform: translate(-50%, -50%) scale(0.25); opacity: 0.55; }
+      60%  { opacity: 0.05; }
+      100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
     }
   `;
   document.head.appendChild(s);
 })();
 // Popup kapatma fonksiyonu
 window.closeNearbyPopup = function() {
-    // Custom popup elementini kaldır
-    const popupElement = document.getElementById('custom-nearby-popup');
-    if (popupElement) {
-        popupElement.style.animation = 'slideOut 0.2s ease-in';
-        setTimeout(() => {
-            if (popupElement.parentNode) {
-                popupElement.parentNode.removeChild(popupElement);
-            }
-        }, 200);
+  const popupElement = document.getElementById('custom-nearby-popup');
+  if (popupElement) {
+    popupElement.style.animation = 'slideOut 0.2s ease-in';
+    setTimeout(() => {
+      if (popupElement.parentNode) {
+        try { popupElement.parentNode.removeChild(popupElement); } catch(_){}
+      }
+    }, 200);
+  }
+  ['_nearbyMarker', '_nearbyPulseMarker'].forEach(ref => {
+    const layer = window[ref];
+    if (layer && layer._map) {
+      try { layer._map.removeLayer(layer); } catch(_){}
     }
-    
-    // Marker'ı kaldır
-    if (window._nearbyMarker && window._nearbyMarker._map) {
-        window._nearbyMarker._map.removeLayer(window._nearbyMarker);
-        window._nearbyMarker = null;
-    }
-    if (window._nearbyPulseMarker && window._nearbyPulseMarker._map) {
-    try { window._nearbyPulseMarker._map.removeLayer(window._nearbyPulseMarker); } catch(_){}
-    window._nearbyPulseMarker = null;
-}
-    
-    // Global referansları temizle
-    window._currentNearbyPopupElement = null;
+    window[ref] = null;
+  });
+  window._currentNearbyPopupElement = null;
 };
-
 
 
 // Görsel doğrulama fonksiyonu
