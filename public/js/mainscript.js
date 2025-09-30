@@ -2527,20 +2527,18 @@ function updateCart() {
   if (!window.cart || window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
     cartDiv.innerHTML = `
-      <div id="empty-content">
-        <p>Create your trip using the chat screen.</p>
-        <p class="empty-text" style="display:flex;gap:6px;margin:8px 0 0;">
-          <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width:40px;height:40px;">
-          <span class="enjoy">Enjoy!</span>
-        </p>
-        <button id="start-map-btn" type="button">Start with map</button>
-        <div class="import-route-group">
-          <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
-            Import GPS File
-          </button>
-        </div>
-      </div>
-    `;
+  <div id="empty-content">
+    <p>Create your trip using the chat screen.</p>
+    <p class="empty-text" style="display:flex;gap:6px;margin:8px 0 0;">
+      <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width:40px;height:40px;">
+      <span class="enjoy">Enjoy!</span>
+    </p>
+    <button id="start-map-btn" type="button">Start with map</button>
+    <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
+      Import GPS File
+    </button>
+  </div>
+`;
     if (menuCount) {
       menuCount.textContent = 0;
       menuCount.style.display = "none";
@@ -2719,15 +2717,15 @@ function updateCart() {
 
     // Import GPS File tek buton (sadece boş gün)
     if (isEmptyDay) {
-      const importBtn = document.createElement('button');
-      importBtn.type = 'button';
-      importBtn.className = 'add-more-btn import-btn gps-import';
-      importBtn.dataset.day = day;
-      importBtn.setAttribute('data-import-type', 'multi');
-      importBtn.title = 'Supports GPX, TCX, FIT, KML';
-      importBtn.textContent = 'Import GPS File';
-      cartDiv.appendChild(importBtn);
-    }
+  const importBtn = document.createElement('button');
+  importBtn.type = 'button';
+  importBtn.className = 'import-btn gps-import';
+  importBtn.dataset.day = day;
+  importBtn.setAttribute('data-import-type', 'multi');
+  importBtn.title = 'Supports GPX, TCX, FIT, KML';
+  importBtn.textContent = 'Import GPS File';
+  cartDiv.appendChild(importBtn);
+}
 
     const addMoreButton = document.createElement("button");
     addMoreButton.className = "add-more-btn";
