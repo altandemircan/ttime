@@ -2573,6 +2573,7 @@ function updateCart() {
           <span class="enjoy">Enjoy!</span>
         </p>
         <button id="start-map-btn" type="button">Start with map</button>
+        <div>or</div>
         <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
           Import GPS File
         </button>
