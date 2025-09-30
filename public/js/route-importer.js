@@ -1,10 +1,9 @@
 // route-importer.js (Enhanced with per-day import)
-// - GPX + TCX import
-// - Format 9-A: Route Title => "<StartShort> → <FinishShort>"
-//                Start item  => "<StartShort> (Start)"
-//                Finish item => "<ShortFinish> (Finish)"
-// - Language-agnostic trailing locality stripping
-// - Per-day import support: each empty day can display its own import buttons
+// - GPX + TCX + FIT import
+// - Route Title => "<StartShort> → <FinishShort>"
+// - Start item  => "<StartShort> (Start)"
+// - Finish item => "<FinishShort> (Finish)"
+// - Per-day import support
 
 (function() {
   const DEBUG = false;
@@ -16,7 +15,7 @@
     fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.id = '__route_import_hidden_input';
-fileInput.accept = '.gpx,.tcx,.fit';
+    fileInput.accept = '.gpx,.tcx,.fit';
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
   }
@@ -29,16 +28,15 @@ fileInput.accept = '.gpx,.tcx,.fit';
     if (!btn) return;
     e.preventDefault();
 
-    currentType = btn.getAttribute('data-import-type'); // 'gpx' | 'tcx'
+    currentType = btn.getAttribute('data-import-type'); // 'gpx' | 'tcx' | 'fit'
     if (!currentType) return;
 
-    // Gün bağlamını al: en yakın kapsayıcı ( .import-route-group veya [data-import-day] )
+    // Gün bağlamı
     const group = btn.closest('.import-route-group');
     if (group && group.dataset.day) {
       const d = parseInt(group.dataset.day, 10);
       if (!isNaN(d) && d > 0) currentImportDay = d;
     } else {
-      // Fallback: day-container aramayı dene
       const dayContainer = btn.closest('.day-container');
       if (dayContainer && dayContainer.dataset.day) {
         const d2 = parseInt(dayContainer.dataset.day, 10);
@@ -48,77 +46,35 @@ fileInput.accept = '.gpx,.tcx,.fit';
       }
     }
 
-    fileInput.accept = currentType === 'gpx' ? '.gpx' : '.tcx';
+    // Doğru accept
+    if (currentType === 'gpx') fileInput.accept = '.gpx';
+    else if (currentType === 'tcx') fileInput.accept = '.tcx';
+    else if (currentType === 'fit') fileInput.accept = '.fit';
+    else fileInput.accept = '.gpx,.tcx,.fit';
+
     fileInput.value = '';
+    log('Opening picker for', currentType, 'day=', currentImportDay);
     fileInput.click();
   });
 
   fileInput.addEventListener('change', async () => {
-  const file = fileInput.files && fileInput.files[0];
-  if (!file || !currentType) return;
-  const day = currentImportDay || 1;
+    const file = fileInput.files && fileInput.files[0];
+    if (!file || !currentType) return;
+    const day = currentImportDay || 1;
+    log('Selected file:', file.name, 'type=', currentType, 'day=', day);
 
-  try {
-    let parsed;
+    try {
+      let parsed;
+      if (currentType === 'fit') {
+        parsed = await parseFITFile(file);
+      } else {
+        const raw = await file.text();
+        parsed = currentType === 'gpx'
+          ? parseGPX(raw)
+          : parseTCX(raw);
+      }
 
-    if (currentType === 'fit') {
-      parsed = await parseFITFile(file);
-    } else {
-      const raw = await file.text();
-      parsed = currentType === 'gpx'
-        ? parseGPX(raw)
-        : parseTCX(raw);
-    }
-
-    if (!parsed || !parsed.points || parsed.points.length < 2) {
-      notify('Failed to parse route points (need at least 2 track points).', 'error');
-      return;
-    }
-
-    const startPt = parsed.points[0];
-    const finishPt = parsed.points[parsed.points.length - 1];
-
-    const rawRouteName = parsed.name || null;
-    const { startNameRaw, finishNameRaw } = deriveEndpointNames(rawRouteName);
-
-    const shortStart = normalizePlaceName(startNameRaw) || 'Start';
-    const shortFinish = normalizePlaceName(finishNameRaw) || 'Finish';
-
-    const routeTitle = `${shortStart} → ${shortFinish}`;
-    const startItemTitle = `${shortStart} (Start)`;
-    const finishItemTitle = `${shortFinish} (Finish)`;
-
-    ensureCartExists();
-
-    addStartFinishToCart({
-      day,
-      startTitle: startItemTitle,
-      finishTitle: finishItemTitle,
-      start: startPt,
-      finish: finishPt
-    });
-
-    if (typeof updateCart === 'function') updateCart();
-    setTimeout(() => {
-      if (typeof renderRouteForDay === 'function') renderRouteForDay(day);
-    }, 120);
-
-    persistRouteMeta({
-      name: routeTitle,
-      type: currentType.toUpperCase(),
-      pointCount: parsed.points.length,
-      distanceMeters: approximateDistance(parsed.points),
-      day
-    });
-
-    notify(`Imported ${currentType.toUpperCase()} route (Day ${day}): ${routeTitle}`, 'success');
-  } catch (err) {
-    console.error('[route-import] ERROR', err);
-    notify('Import failed: ' + err.message, 'error');
-  } finally {
-    currentType = null;
-  }
-});
+      if (!parsed || !parsed.points || parsed.points.length < 2) {
         notify('Failed to parse route points (need at least 2 track points).', 'error');
         return;
       }
@@ -291,8 +247,8 @@ fileInput.accept = '.gpx,.tcx,.fit';
     addToCart(startTitle, img, day, 'Place', '', null, null, '', null, { lat: start.lat, lng: start.lon }, '');
     addToCart(finishTitle, img, day, 'Place', '', null, null, '', null, { lat: finish.lat, lng: finish.lon }, '');
   }
-  /* ---------------- FIT LOADER + PARSER (EKLENDİ) ---------------- */
 
+  /* ---------------- FIT LOADER + PARSER ---------------- */
   async function ensureFitParser() {
     if (window.FitParser) return true;
     if (document.getElementById('fit-parser-script')) {
@@ -331,7 +287,6 @@ fileInput.accept = '.gpx,.tcx,.fit';
           return reject(new Error('FIT file has no positional records.'));
         }
 
-        // Nokta azaltma (çok büyük aktivitelerde)
         let step = 1;
         if (recs.length > 12000) step = 15;
         else if (recs.length > 8000) step = 10;
@@ -341,13 +296,12 @@ fileInput.accept = '.gpx,.tcx,.fit';
         const points = [];
         for (let i = 0; i < recs.length; i += step) {
           const r = recs[i];
-            points.push({
+          points.push({
             lat: r.position_lat,
             lon: r.position_long,
             ele: (typeof r.altitude === 'number') ? r.altitude : null
           });
         }
-        // Son noktayı garanti ekle
         const last = recs[recs.length - 1];
         if (points.length &&
             (points[points.length - 1].lat !== last.position_lat ||
@@ -367,7 +321,8 @@ fileInput.accept = '.gpx,.tcx,.fit';
       });
     });
   }
-  /* ---------------- Parsers ---------------- */
+
+  /* ---------------- Parsers (GPX / TCX) ---------------- */
 
   function parseGPX(xmlString) {
     const doc = new DOMParser().parseFromString(xmlString, 'application/xml');
