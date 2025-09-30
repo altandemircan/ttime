@@ -1496,6 +1496,7 @@ function addToCart(
     window.cart = (window.cart || []).filter(it => !it._placeholder);
     window._removeMapPlaceholderOnce = false;
   }
+window.cart = (window.cart || []).filter(it => !it._starter);
 
   // ---- 2) Cart yapısını garanti et
   if (!Array.isArray(window.cart)) {
@@ -2494,24 +2495,43 @@ function restoreLostDayMaps() {
 
 
 
-// --- PATCH: startMapPlanning (haritayı hemen aç + expand isteğe bağlı) ---
 function startMapPlanning() {
-  if (!window.cart || window.cart.length === 0) {
-    clearAllRouteCaches();
-    window.cart = [{ day: 1, _placeholder: true }];
+  // Eğer tamamen boşsa starter ekle (adı olsun ki gün "empty" sayılmasın ve map container çizilsin)
+  if (!Array.isArray(window.cart) || window.cart.length === 0) {
+    window.cart = [{
+      day: 1,
+      name: 'Start',
+      category: 'Note',
+      image: 'img/placeholder.png',
+      _starter: true   // geçici işaret
+    }];
+  } else if (!window.cart.some(it => it.day === 1)) {
+    // Hiç day=1 yoksa yine starter ekle
+    window.cart.push({
+      day: 1,
+      name: 'Start',
+      category: 'Note',
+      image: 'img/placeholder.png',
+      _starter: true
+    });
   }
-  updateCart();              // Day 1 çizilir (boş -> haritasız)
-  // initEmptyDayMap(1);     // <-- KALDIRILDI: 0 item kuralı
-  window._removeMapPlaceholderOnce = true;
 
-  if (typeof expandMap === 'function') {
-    // Boş günde expand açmak istemiyorsan bu bloğu da koşula bağlayabilirsin:
-    // if (window.cart.some(it => it.day === 1 && it.name)) { ... }
-    setTimeout(() => expandMap('route-map-day1', 1), 50);
-  } else if (typeof openExpandedMapForDay === 'function') {
-    // Aynı şekilde burada da koşullandırabilirsin
-    // if (window.cart.some(it => it.day === 1 && it.name)) openExpandedMapForDay(1);
-  }
+  updateCart();              // Day 1 container + harita iskeleti oluşsun
+  ensureDayMapContainer(1);  // Küçük harita DIV’i garanti et
+  initEmptyDayMap(1);        // Leaflet boş haritayı başlat
+
+  // Expanded aç (küçük harita render edilmesini beklemek için kısa timeout)
+  setTimeout(() => {
+    // Harita instance yoksa tekrar garanti et
+    if (!window.leafletMaps || !window.leafletMaps['route-map-day1']) {
+      initEmptyDayMap(1);
+    }
+    if (typeof expandMap === 'function') {
+      expandMap('route-map-day1', 1);
+    } else if (typeof openExpandedMapForDay === 'function') {
+      openExpandedMapForDay(1);
+    }
+  }, 60);
 }
 
 function removeDayMap(day) {
