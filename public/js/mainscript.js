@@ -2515,7 +2515,25 @@ function startMapPlanning() {
 }
 
 
-
+function removeDayMap(day) {
+  const containerId = `route-map-day${day}`;
+  // Leaflet instance varsa kaldır
+  if (window.leafletMaps && window.leafletMaps[containerId]) {
+    try { window.leafletMaps[containerId].remove(); } catch (_) {}
+    delete window.leafletMaps[containerId];
+  }
+  // DOM elemanları
+  const mapEl = document.getElementById(containerId);
+  if (mapEl) mapEl.remove();
+  const infoEl = document.getElementById(`route-info-day${day}`);
+  if (infoEl) infoEl.remove();
+  const tm = document.getElementById(`tt-travel-mode-set-day${day}`);
+  if (tm) tm.remove();
+  const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
+  if (controlsWrapper) controlsWrapper.remove();
+  const routeControlsBar = document.getElementById(`route-controls-bar-day${day}`);
+  if (routeControlsBar) routeControlsBar.remove();
+}
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 function updateCart() {
   console.table(window.cart);
@@ -2523,23 +2541,22 @@ function updateCart() {
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  // Boş state
+  // GLOBAL boş durum
   if (!window.cart || window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
-
-   cartDiv.innerHTML = `
-  <div id="empty-content">
-    <p>Create your trip using the chat screen.</p>
-    <p class="empty-text" style="display:flex;gap:6px;margin:8px 0 0;">
-      <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width:40px;height:40px;">
-      <span class="enjoy">Enjoy!</span>
-    </p>
-    <button id="start-map-btn" type="button">Start with map</button>
-    <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
-      Import GPS File
-    </button>
-  </div>
-`;
+    cartDiv.innerHTML = `
+      <div id="empty-content">
+        <p>Create your trip using the chat screen.</p>
+        <p class="empty-text" style="display:flex;gap:6px;margin:8px 0 0;">
+          <img src="https://cdn-icons-gif.flaticon.com/16780/16780154.gif" style="width:40px;height:40px;">
+          <span class="enjoy">Enjoy!</span>
+        </p>
+        <button id="start-map-btn" type="button">Start with map</button>
+        <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
+          Import GPS File
+        </button>
+      </div>
+    `;
     if (menuCount) {
       menuCount.textContent = 0;
       menuCount.style.display = "none";
@@ -2551,7 +2568,6 @@ function updateCart() {
     return;
   }
 
-  // Günler
   const days = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b);
   cartDiv.innerHTML = "";
 
@@ -2569,11 +2585,15 @@ function updateCart() {
       dayContainer.id = `day-container-${day}`;
       dayContainer.dataset.day = day;
     } else {
+      // Mevcut haritayı koruma / temizleme kararını isEmptyDay'e göre sonra vereceğiz
       const savedRouteMap  = dayContainer.querySelector(`#route-map-day${day}`);
       const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
       dayContainer.innerHTML = "";
-      if (savedRouteMap)  dayContainer.appendChild(savedRouteMap);
-      if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
+      // DOLU günse eski harita/info (varsa) reattach edilebilir; boş günse ETME.
+      if (!isEmptyDay) {
+        if (savedRouteMap)  dayContainer.appendChild(savedRouteMap);
+        if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
+      }
     }
 
     // Header
@@ -2609,7 +2629,6 @@ function updateCart() {
       msg.className = "empty-day-message";
       msg.textContent = "No item has been added for this day yet.";
       emptyWrap.appendChild(msg);
-      // (IMPORT BUTONU ARTIK BURADA DEĞİL)
       dayList.appendChild(emptyWrap);
     } else {
       dayItemsArr.forEach((item, idx) => {
@@ -2683,56 +2702,62 @@ function updateCart() {
           const summary = window.pairwiseRouteSummaries?.[key]?.[idx];
           let distanceStr = '';
           let durationStr = '';
-          if (summary) {
-            distanceStr = summary.distance >= 1000
-              ? (summary.distance / 1000).toFixed(1) + " km"
-              : Math.round(summary.distance) + " m";
-            durationStr = summary.duration >= 60
-              ? Math.round(summary.duration / 60) + " dk"
-              : Math.round(summary.duration) + " sn";
-          }
-          const distanceSeparator = document.createElement('div');
-          distanceSeparator.className = 'distance-separator';
-          distanceSeparator.innerHTML = `
-            <div class="separator-line"></div>
-            <div class="distance-label">
-              <span class="distance-value">${distanceStr}</span> • 
-              <span class="duration-value">${durationStr}</span>
-            </div>
-            <div class="separator-line"></div>
-          `;
-          dayList.appendChild(distanceSeparator);
+            if (summary) {
+              distanceStr = summary.distance >= 1000
+                ? (summary.distance / 1000).toFixed(1) + " km"
+                : Math.round(summary.distance) + " m";
+              durationStr = summary.duration >= 60
+                ? Math.round(summary.duration / 60) + " dk"
+                : Math.round(summary.duration) + " sn";
+            }
+            const distanceSeparator = document.createElement('div');
+              distanceSeparator.className = 'distance-separator';
+              distanceSeparator.innerHTML = `
+                <div class="separator-line"></div>
+                <div class="distance-label">
+                  <span class="distance-value">${distanceStr}</span> • 
+                  <span class="duration-value">${durationStr}</span>
+                </div>
+                <div class="separator-line"></div>
+              `;
+            dayList.appendChild(distanceSeparator);
         }
       });
     }
 
     dayContainer.appendChild(dayList);
 
-    // Harita & info
-    ensureDayMapContainer(day);
-
-    const realPointCount = dayItemsArr.filter(it =>
-      it.name && it.location &&
-      typeof it.location.lat === 'number' &&
-      typeof it.location.lng === 'number'
-    ).length;
-    if (realPointCount < 2) {
-      initEmptyDayMap(day);
+    // === YENİ: Harita davranışı ===
+    if (isEmptyDay) {
+      // Boşsa küçük haritayı tamamen kaldır
+      removeDayMap(day);
+    } else {
+      // Doluysa normal akış (harita / info / rota)
+      ensureDayMapContainer(day);
+      const realPointCount = dayItemsArr.filter(it =>
+        it.name && it.location &&
+        typeof it.location.lat === 'number' &&
+        typeof it.location.lng === 'number'
+      ).length;
+      if (realPointCount < 2) {
+        // (0 olmaz çünkü isEmptyDay false; 1 olduğunda tek nokta haritası)
+        initEmptyDayMap(day);
+      }
     }
 
     cartDiv.appendChild(dayContainer);
 
-   // Import GPS File: boş günlerde tek buton olarak (grup DIV'i yok)
-if (isEmptyDay) {
-  const importBtn = document.createElement('button');
-  importBtn.type = 'button';
-  importBtn.className = 'import-btn gps-import';
-  importBtn.dataset.day = day;
-  importBtn.setAttribute('data-import-type', 'multi');
-  importBtn.title = 'Supports GPX, TCX, FIT, KML';
-  importBtn.textContent = 'Import GPS File';
-  cartDiv.appendChild(importBtn);
-}
+    // Import GPS butonu (boş gün)
+    if (isEmptyDay) {
+      const importBtn = document.createElement('button');
+      importBtn.type = 'button';
+      importBtn.className = 'import-btn gps-import';
+      importBtn.dataset.day = day;
+      importBtn.setAttribute('data-import-type', 'multi');
+      importBtn.title = 'Supports GPX, TCX, FIT, KML';
+      importBtn.textContent = 'Import GPS File';
+      cartDiv.appendChild(importBtn);
+    }
 
     // Add Category
     const addMoreButton = document.createElement("button");
