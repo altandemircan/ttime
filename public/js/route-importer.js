@@ -79,6 +79,14 @@
         return;
       }
 
+      // === RAW TRACK KAYDET (Start/Finish dışında gerçek çizgi için) ===
+window.importedTrackByDay = window.importedTrackByDay || {};
+window.importedTrackByDay[day] = {
+  rawPoints: parsed.points.map(p => ({ lat: p.lat, lng: p.lon, ele: p.ele })),
+  source: currentType,
+  drawRaw: true            // Mapbox yerine ham track çizsin
+};
+
       const startPt = parsed.points[0];
       const finishPt = parsed.points[parsed.points.length - 1];
 
