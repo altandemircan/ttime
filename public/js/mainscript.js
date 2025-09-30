@@ -2442,12 +2442,12 @@ function initEmptyDayMap(day) {
 
   if (!el.style.height) el.style.height = '285px';
 
-  const map = L.map(containerId, {
-    scrollWheelZoom: true,
-    fadeAnimation: false,
-    zoomAnimation: false,
-    preferCanvas: true
-  }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+const map = L.map(containerId, {
+  scrollWheelZoom: true,
+  fadeAnimation: false,
+  zoomAnimation: false
+  // preferCanvas: true  // KALDIRILDI (SVG fallback)
+}).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
 
   L.tileLayer(
     `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`,
@@ -4088,15 +4088,14 @@ expandedContainer.appendChild(scaleBarDiv);
 
     originalContainer.style.display = 'none';
 
-    // Harita oluştur
     const expandedMap = L.map(mapDiv.id, {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
-        scrollWheelZoom: true,
-        fadeAnimation: false,
-        zoomAnimation: false,
-        preferCanvas: true
-    });
+  center: map.getCenter(),
+  zoom: map.getZoom(),
+  scrollWheelZoom: true,
+  fadeAnimation: false,
+  zoomAnimation: false
+  // preferCanvas: true
+});
 
     let expandedTileLayer;
     // expandMap içindeki local setExpandedMapTile — crossOrigin ekleyin
@@ -5443,7 +5442,34 @@ function adjustExpandedHeader(day){
     header.style.bottom = '';
   }
 }
+function addPolylineSafe(map, latlngs, options) {
+  if (!map) return null;
+  if (!map._loaded) {
+    map.whenReady(() => addPolylineSafe(map, latlngs, options));
+    return null;
+  }
+  try {
+    return L.polyline(latlngs, options).addTo(map);
+  } catch (e) {
+    console.warn('[polyline-safe] canvas failed, fallback to SVG', e);
+    // Son çare: map.removeLayer(renderer) vs. gerek yok, Leaflet fallback edecektir.
+    return L.polyline(latlngs, options).addTo(map);
+  }
+}
 
+function addCircleMarkerSafe(map, latlng, options) {
+  if (!map) return null;
+  if (!map._loaded) {
+    map.whenReady(() => addCircleMarkerSafe(map, latlng, options));
+    return null;
+  }
+  try {
+    return L.circleMarker(latlng, options).addTo(map);
+  } catch (e) {
+    console.warn('[circlemarker-safe] fallback', e);
+    return L.circleMarker(latlng, options).addTo(map);
+  }
+}
 async function renderRouteForDay(day) {
   const containerId = `route-map-day${day}`;
 
@@ -5541,19 +5567,15 @@ async function renderRouteForDay(day) {
         const latlngs = raw.map(pt => [pt.lat, pt.lng]);
 
         // 2) Polyline çiz
-        const poly = L.polyline(latlngs, {
-          color: '#1565c0',
-          weight: 5,
-          opacity: 0.9
-        }).addTo(map);
+       const poly = addPolylineSafe(map, latlngs, {
+  color: '#1565c0',
+  weight: 5,
+  opacity: 0.9
+});
 
         // 3) Start & Finish marker
-        L.circleMarker(latlngs[0], {
-          radius: 8, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2
-        }).addTo(map).bindPopup('Start');
-        L.circleMarker(latlngs[latlngs.length -1], {
-          radius: 8, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2
-        }).addTo(map).bindPopup('Finish');
+       addCircleMarkerSafe(map, latlngs[0], { radius:8, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).bindPopup('Start');
+addCircleMarkerSafe(map, latlngs[latlngs.length -1], { radius:8, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).bindPopup('Finish');
 
         try { map.fitBounds(poly.getBounds(), { padding:[20,20] }); } catch(_){}
       }
