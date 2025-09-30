@@ -2653,15 +2653,6 @@ hr {
 }
 
 
-.leaflet-interactive.single-point-pulse {
-  animation: pulse 1.8s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0% { stroke-width: 2; r: 8; }
-  50% { stroke-width: 4; r: 11; }
-  100% { stroke-width: 2; r: 8; }
-}
 
 .category-title-icon {
     width: 24px !important;
