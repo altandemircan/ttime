@@ -5522,6 +5522,7 @@ async function renderRouteForDay(day) {
     return;
   }
   // --- HAM TRACK MODU (Sadece Start + Finish eklenmişse) ---
+   // --- HAM TRACK MODU (Sadece Start + Finish eklenmişse) ---
   if (points.length === 2 &&
       window.importedTrackByDay &&
       window.importedTrackByDay[day] &&
@@ -5530,57 +5531,97 @@ async function renderRouteForDay(day) {
     const trackObj = window.importedTrackByDay[day];
     const raw = trackObj.rawPoints || [];
     if (raw.length > 1) {
+
+      // 1) Küçük haritayı hazırlayıp temizle
       initEmptyDayMap(day);
       const map = window.leafletMaps?.[containerId];
       if (map) {
-        // Temizle (TileLayer dışı)
         map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
 
         const latlngs = raw.map(pt => [pt.lat, pt.lng]);
 
-        // Çizgi
+        // 2) Polyline çiz
         const poly = L.polyline(latlngs, {
           color: '#1565c0',
           weight: 5,
           opacity: 0.9
         }).addTo(map);
 
-        // Start
+        // 3) Start & Finish marker
         L.circleMarker(latlngs[0], {
           radius: 8, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2
         }).addTo(map).bindPopup('Start');
-        // Finish
         L.circleMarker(latlngs[latlngs.length -1], {
           radius: 8, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2
         }).addTo(map).bindPopup('Finish');
 
         try { map.fitBounds(poly.getBounds(), { padding:[20,20] }); } catch(_){}
-
-        // Mesafe (ham)
-        let distM = 0;
-        for (let i=1;i<latlngs.length;i++){
-          const a = latlngs[i-1], b = latlngs[i];
-          distM += haversine(a[0], a[1], b[0], b[1]);
-        }
-
-        // Summary kaydet (duration 0 bırak)
-        window.lastRouteSummaries = window.lastRouteSummaries || {};
-        window.lastRouteSummaries[containerId] = {
-          distance: distM,
-          duration: 0
-        };
-        updateRouteStatsUI(day);
-
-        // Expanded açıksa aynı çiz
-        const expandedMapObj = window.expandedMaps?.[containerId];
-        if (expandedMapObj?.expandedMap) {
-          const eMap = expandedMapObj.expandedMap;
-          eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
-          L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
-          try { eMap.fitBounds(poly.getBounds()); } catch(_){}
-        }
       }
-      return; // Mapbox directions'a girme
+
+    // 4) Ham mesafe
+let distM = 0;
+for (let i=1;i<raw.length;i++){
+  const a = raw[i-1], b = raw[i];
+  distM += haversine(a.lat, a.lng, b.lat, b.lng);
+}
+
+// 5) Süre (time damgaları varsa gerçek, yoksa tahmini)
+let durationSec;
+const firstTimed = raw.find(p => p.time);
+const lastTimed  = [...raw].reverse().find(p => p.time);
+if (firstTimed && lastTimed && lastTimed.time > firstTimed.time) {
+  durationSec = (lastTimed.time - firstTimed.time) / 1000;
+} else {
+  const travelMode = (typeof getTravelModeForDay === 'function') ? getTravelModeForDay(day) : 'walking';
+  const speedMps =
+    travelMode === 'cycling' ? 5.5 :
+    travelMode === 'driving' ? 13 :
+    1.3;
+  durationSec = distM / speedMps;
+}
+
+// 6) lastRouteSummaries ...
+window.lastRouteSummaries = window.lastRouteSummaries || {};
+window.lastRouteSummaries[containerId] = {
+  distance: distM,
+  duration: durationSec
+};
+
+      // 7) Pairwise (Start→Finish) tek segment
+      window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+      window.pairwiseRouteSummaries[containerId] = [{
+        distance: distM,
+        duration: durationSec
+      }];
+
+      // 8) GeoJSON VE ELEVATION kullanmadığımız için temizle / guard
+      window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+      delete window.lastRouteGeojsons[containerId]; // updateExpandedMap yanlış beklemesin
+
+      // 9) UI güncelle
+      updateRouteStatsUI(day);            // küçük harita altı
+      updatePairwiseDistanceLabels(day);  // “distance-separator” içine değer yaz
+      adjustExpandedHeader(day);
+
+      // 10) Expanded açıksa manuel çiz
+      const expandedMapObj = window.expandedMaps?.[containerId];
+      if (expandedMapObj?.expandedMap) {
+        const eMap = expandedMapObj.expandedMap;
+        eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
+        const latlngs = raw.map(pt => [pt.lat, pt.lng]);
+        const polyEx = L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
+        try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
+        // Start / Finish yeniden
+        L.circleMarker(latlngs[0], {
+          radius: 9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2
+        }).addTo(eMap);
+        L.circleMarker(latlngs[latlngs.length -1], {
+          radius: 9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2
+        }).addTo(eMap);
+      }
+
+      // 11) Elevation / scale-bar tetiklenmesin diye direkt RETURN
+      return;
     }
   }
   /* ---------- 2+ NOKTA: Mevcut rota hesaplama kodun ---------- */
