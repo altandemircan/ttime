@@ -69,6 +69,7 @@ fileInput.click();
     try {
       let parsed;
      // currentType 'multi' ise dosya adına göre gerçek türü bul
+// Tür tespiti
 let detectedType;
 if (currentType === 'multi') {
   const lower = file.name.toLowerCase();
@@ -81,7 +82,6 @@ if (currentType === 'multi') {
     return;
   }
 } else {
-  // Eski tek-tip buton senaryosu kalırsa
   detectedType = currentType;
 }
 
@@ -98,7 +98,6 @@ if (detectedType === 'fit') {
     : parseTCX(raw);
 }
 
-// Ham track & source bilgisi için detectedType kullanalım
 currentType = detectedType;
 
       if (!parsed || !parsed.points || parsed.points.length < 2) {
