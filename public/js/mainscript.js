@@ -2523,10 +2523,9 @@ function updateCart() {
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  // Boş state
+  // Boş state (global)
   if (!window.cart || window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
-
     cartDiv.innerHTML = `
       <div id="empty-content">
         <p>Create your trip using the chat screen.</p>
@@ -2553,10 +2552,8 @@ function updateCart() {
     return;
   }
 
-  // Günler
   const days = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b);
   cartDiv.innerHTML = "";
-
   const globalIndexMap = new Map();
   window.cart.forEach((it, idx) => globalIndexMap.set(it, idx));
 
@@ -2611,7 +2608,6 @@ function updateCart() {
       msg.className = "empty-day-message";
       msg.textContent = "No item has been added for this day yet.";
       emptyWrap.appendChild(msg);
-      // (IMPORT BUTONU ARTIK BURADA DEĞİL)
       dayList.appendChild(emptyWrap);
     } else {
       dayItemsArr.forEach((item, idx) => {
@@ -2640,12 +2636,12 @@ function updateCart() {
         li.innerHTML = `
           <div class="cart-item">
             <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-            <img src="${item.image}" alt="${item.name}" class="cart-image">
-            <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+            <img src="\${item.image}" alt="\${item.name}" class="cart-image">
+            <img src="\${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="\${item.category}" class="category-icon">
             <div class="item-info">
-              <p class="toggle-title">${item.name}</p>
+              <p class="toggle-title">\${item.name}</p>
             </div>
-            <button class="remove-btn" onclick="removeFromCart(${globalIndexMap.get(item)})">
+            <button class="remove-btn" onclick="removeFromCart(\${globalIndexMap.get(item)})">
               <img src="img/remove-icon.svg" alt="Close">
             </button>
             <span class="arrow">
@@ -2655,18 +2651,16 @@ function updateCart() {
               <div class="info-section">
                 <div class="place-rating">${mapHtml}</div>
                 <div class="contact">
-                  <p>📌 Address: ${item.address || 'Address not available'}</p>
+                  <p>📌 Address: \${item.address || 'Address not available'}</p>
                 </div>
                 <p class="working-hours-title">
-                  🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+                  🕔 Working hours: <span class="working-hours-value">\${openingHoursDisplay}</span>
                 </p>
-                ${
-                  item.location ? `
+                \${ item.location ? `
                   <div class="coords-info" style="margin-top:8px;">
-                    📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')}, 
-                    Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
-                  </div>` : ''
-                }
+                    📍 Coords: Lat: \${Number(item.location.lat).toFixed(7).replace('.', ',')},
+                    Lng: \${Number(item.location.lng).toFixed(7).replace('.', ',')}
+                  </div>` : '' }
               </div>
             </div>
           </div>
@@ -2698,8 +2692,8 @@ function updateCart() {
           distanceSeparator.innerHTML = `
             <div class="separator-line"></div>
             <div class="distance-label">
-              <span class="distance-value">${distanceStr}</span> • 
-              <span class="duration-value">${durationStr}</span>
+              <span class="distance-value">\${distanceStr}</span> • 
+              <span class="duration-value">\${durationStr}</span>
             </div>
             <div class="separator-line"></div>
           `;
@@ -2710,7 +2704,6 @@ function updateCart() {
 
     dayContainer.appendChild(dayList);
 
-    // Harita & info
     ensureDayMapContainer(day);
 
     const realPointCount = dayItemsArr.filter(it =>
@@ -2724,20 +2717,18 @@ function updateCart() {
 
     cartDiv.appendChild(dayContainer);
 
-    // (YENİ) Import GPS File butonu boş günlerde burada, Add Category’den hemen önce
+    // Import GPS File tek buton (sadece boş gün)
     if (isEmptyDay) {
-      const importGroup = document.createElement('div');
-      importGroup.className = 'import-route-group';
-      importGroup.dataset.day = day;
-      importGroup.innerHTML = `
-        <button type="button" class="import-btn gps-import" data-import-type="multi" title="Supports GPX, TCX, FIT, KML">
-          Import GPS File
-        </button>
-      `;
-      cartDiv.appendChild(importGroup);
+      const importBtn = document.createElement('button');
+      importBtn.type = 'button';
+      importBtn.className = 'add-more-btn import-btn gps-import';
+      importBtn.dataset.day = day;
+      importBtn.setAttribute('data-import-type', 'multi');
+      importBtn.title = 'Supports GPX, TCX, FIT, KML';
+      importBtn.textContent = 'Import GPS File';
+      cartDiv.appendChild(importBtn);
     }
 
-    // Add Category
     const addMoreButton = document.createElement("button");
     addMoreButton.className = "add-more-btn";
     addMoreButton.textContent = "+ Add Category";
@@ -2746,7 +2737,6 @@ function updateCart() {
     cartDiv.appendChild(addMoreButton);
   });
 
-  // Add New Day
   const addNewDayButton = document.createElement("button");
   addNewDayButton.className = "add-new-day-btn";
   addNewDayButton.id = "add-new-day-button";
