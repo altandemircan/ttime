@@ -249,24 +249,86 @@
   }
 
   /* ---------------- FIT LOADER + PARSER ---------------- */
-  async function ensureFitParser() {
-    if (window.FitParser) return true;
-    if (document.getElementById('fit-parser-script')) {
-      return new Promise(res => {
-        const iv = setInterval(() => {
-          if (window.FitParser) { clearInterval(iv); res(true); }
-        }, 80);
-      });
-    }
+// --- REPLACE ensureFitParser WITH THIS ROBUST VERSION ---
+async function ensureFitParser() {
+  if (window.FitParser) return true;
+
+  // Daha önce başarılı/başarısız girişimler arasında yeniden deneme kilidi
+  if (ensureFitParser.__inflight) {
+    return ensureFitParser.__inflight;
+  }
+
+  const SOURCES = [
+    // Önce jsDelivr (çoğu zaman daha hızlı)
+    "https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.js",
+    // Sonra unpkg
+    "https://unpkg.com/fit-file-parser@1.10.0/dist/fit-file-parser.js",
+    // Son olarak esm.sh (ESM bundle, fallback – global FitParser üretmeyebilir ama deneyelim)
+    "https://esm.sh/fit-file-parser@1.10.0?bundle&target=es2020"
+  ];
+
+  function loadOne(src, label) {
     return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[data-fit-src="${src}"]`);
+      if (existing) {
+        // Zaten eklenmişse yüklenmesini bekle
+        if (window.FitParser) return resolve(true);
+      }
       const s = document.createElement('script');
-      s.id = 'fit-parser-script';
-      s.src = 'https://unpkg.com/fit-file-parser@1.10.0/dist/fit-file-parser.js';
-      s.onload = () => resolve(true);
-      s.onerror = () => reject(new Error('FIT parser script load failed'));
+      s.src = src;
+      s.async = true;
+      s.dataset.fitSrc = src;
+      s.onload = () => {
+        // Biraz gecikmeli kontrol (bazı UMD wrapper’larında microtask)
+        setTimeout(() => {
+          if (window.FitParser) resolve(true);
+          else reject(new Error(`Script loaded but FitParser global not found (${label})`));
+        }, 30);
+      };
+      s.onerror = () => reject(new Error(`Failed to load ${label}`));
+
+      // 8sn timeout (ağ takılması vs)
+      const timeout = setTimeout(() => {
+        s.remove();
+        reject(new Error(`Timeout loading ${label}`));
+      }, 8000);
+
+      // Başarılı olduğunda timeout temizle
+      const doneWrap = (fn) => (...a) => { clearTimeout(timeout); fn(...a); };
+      s.onload = doneWrap(s.onload);
+      s.onerror = doneWrap(s.onerror);
+
       document.head.appendChild(s);
     });
   }
+
+  const attempt = (async () => {
+    const errors = [];
+    for (let i = 0; i < SOURCES.length; i++) {
+      const src = SOURCES[i];
+      const label = `FIT Parser CDN #${i+1}`;
+      try {
+        await loadOne(src, label);
+        console.log('[fit-import] Loaded from', src);
+        return true;
+      } catch (e) {
+        console.warn('[fit-import] Source failed:', src, e.message);
+        errors.push(e.message);
+      }
+    }
+    throw new Error('All FIT parser CDN sources failed: ' + errors.join(' | '));
+  })();
+
+  ensureFitParser.__inflight = attempt;
+
+  try {
+    await attempt;
+    return true;
+  } finally {
+    // Başarılı ya da başarısız; sonraki çağrıda yeniden denenebilir
+    ensureFitParser.__inflight = null;
+  }
+}
 
   async function parseFITFile(file) {
     await ensureFitParser();
