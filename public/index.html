@@ -1154,7 +1154,7 @@ Your browser does not support the video tag.                  </video>
           </div>
          </div>
 
-    <div id="chat-container">
+   <!-- <div id="chat-container">
         <div id="chat-box">
             <div id="typing-indicator" class="typing-indicator">
                 <span></span>
@@ -1171,7 +1171,63 @@ Your browser does not support the video tag.                  </video>
             </div>
             <div id="suggestions" class="tag-container"></div>
         </div>
+    </div> -->
+    <div id="chat-container" class="tt-chat" data-state="idle">
+  <!-- Mesaj Alanı -->
+  <div id="chat-box"
+       class="chat-box"
+       role="log"
+       aria-live="polite"
+       aria-relevant="additions"
+       aria-label="Chat messages">
+    <!-- İlk karşılama (tek sefer) -->
+    <div class="message bot-message" data-initial="1">
+      <img src="img/avatar_aiio.png" alt="AI" class="profile-img">
+      <div class="bubble">
+        Let's get started. Please specify a location, duration, and the type of trip you want.
+      </div>
     </div>
+  </div>
+
+  <!-- Giriş / Öneriler -->
+  <div class="input-wrapper">
+    <form id="chat-form" class="chat-input-group" autocomplete="off" novalidate>
+      <label for="user-input" class="visually-hidden">Travel assistant input</label>
+      <input
+        id="user-input"
+        type="text"
+        placeholder="You can ask me anything about travel..."
+        enterkeyhint="send"
+        aria-label="Type your message about travel planning">
+      <button id="send-button" type="submit" aria-label="Send message">
+        <img src="/img/sendchat-icon.svg" alt="" aria-hidden="true">
+      </button>
+    </form>
+
+    <!-- Quick Suggestions -->
+    <div id="suggestions" class="tag-container" aria-label="Suggested prompts" role="listbox">
+      <button class="tag" type="button" role="option" data-prompt="Plan a 2-day tour for Rome">Plan a 2-day tour for Rome</button>
+      <button class="tag" type="button" role="option" data-prompt="Do a 3-day city tour in Helsinki">Do a 3-day city tour in Helsinki</button>
+      <button class="tag" type="button" role="option" data-prompt="Do a 1-day city tour in Osaka">Do a 1-day city tour in Osaka</button>
+    </div>
+
+    <!-- Konum önerileri (mainscript beklediği ID) -->
+    <div id="chat-location-suggestions"
+         class="autocomplete-suggestions"
+         role="listbox"
+         aria-label="Location suggestions"
+         hidden>
+    </div>
+  </div>
+
+  <!-- Typing indicator (başlangıçta gizli) -->
+  <div id="typing-indicator"
+       class="typing-indicator"
+       aria-hidden="true"
+       hidden>
+    <span></span><span></span><span></span>
+  </div>
+</div>
 </section>
     </div> 
 
@@ -1232,6 +1288,124 @@ function toggleCustomAccordion(element) {
 </script>
 <script src="/js/route-importer.js" defer></script>
 <script src="/js/start-map-buttons-init.js" defer></script>
+<script>
+(function enhanceChatUI(){
+  const root = document.getElementById('chat-container');
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-button');
+  const suggestions = document.getElementById('suggestions');
+  const typing = document.getElementById('typing-indicator');
+  if (!root || !input) return;
 
+  // 1. Enter / Submit
+  form?.addEventListener('submit', e => {
+    e.preventDefault();
+    if (!input.value.trim()) return;
+    if (window.isProcessing) return;
+    if (typeof handleAnswer === 'function') {
+      handleAnswer(input.value.trim());
+    } else {
+      // fallback
+      appendUserMessage(input.value.trim());
+    }
+    input.value = '';
+  });
+
+  function appendUserMessage(text){
+    const box = document.getElementById('chat-box');
+    if (!box) return;
+    const div = document.createElement('div');
+    div.className = 'message user-message';
+    div.innerHTML = `
+      <img src="img/avatar_user.png" alt="User" class="profile-img">
+      <div class="bubble">${escapeHtml(text)}</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // 2. Quick suggestion chips
+  suggestions?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-prompt]');
+    if (!btn) return;
+    const prompt = btn.getAttribute('data-prompt');
+    if (!prompt) return;
+    input.value = prompt;
+    input.focus();
+    // Otomatik göndermek istersen:
+    // if (typeof handleAnswer === 'function') handleAnswer(prompt);
+  });
+
+  // Klavye ile seçme (Enter / Space)
+  suggestions?.querySelectorAll('[data-prompt]').forEach((chip, i, arr) => {
+    chip.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        chip.click();
+      }
+      // İsteğe bağlı ok yön tuşları
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        arr[(i+1)%arr.length].focus();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        arr[(i-1+arr.length)%arr.length].focus();
+      }
+    });
+  });
+
+  // 3. Typing indicator patch
+  const originalShow = window.showTypingIndicator;
+  const originalHide = window.hideTypingIndicator;
+
+  window.showTypingIndicator = function(){
+    root.classList.add('is-typing');
+    if (typing) {
+      typing.hidden = false;
+      typing.setAttribute('aria-hidden','false');
+    }
+    if (typeof originalShow === 'function') originalShow();
+  };
+
+  window.hideTypingIndicator = function(){
+    root.classList.remove('is-typing');
+    if (typing) {
+      typing.hidden = true;
+      typing.setAttribute('aria-hidden','true');
+    }
+    if (typeof originalHide === 'function') originalHide();
+  };
+
+  // 4. Scroll anchor (yeni mesaj eklenince alta kay)
+  const chatBox = document.getElementById('chat-box');
+  if (chatBox) {
+    const observer = new MutationObserver(() => {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+    observer.observe(chatBox, { childList: true });
+  }
+
+  // 5. Input odaklanınca suggestionları göster (eğer boşsa)
+  input.addEventListener('focus', () => {
+    if (!input.value.trim() && suggestions && suggestions.children.length) {
+      suggestions.style.display = 'flex';
+    }
+  });
+
+  // 6. Kullanıcı yazarken suggestions gizle (isteğe bağlı)
+  input.addEventListener('input', () => {
+    if (!suggestions) return;
+    if (input.value.trim().length > 0) {
+      suggestions.classList.add('faded');
+    } else {
+      suggestions.classList.remove('faded');
+    }
+  });
+})();
+</script>
 </body>
 </html>
