@@ -453,65 +453,233 @@ function selectSuggestion(option) {
 }
 
 function handleKeyPress(event) {
-    if (event.key === "Enter") {
-        sendMessage();
+    if (event.key !== "Enter") return;
+
+    if (window.isProcessing) {
         event.preventDefault();
+        return;
     }
+
+    sendMessage();
+    event.preventDefault();
 }
-async function handleAnswer(answer) {
-    document.getElementById("user-input").value = "";
-    addMessage(answer, "user-message");
-    showTypingIndicator();
-    window.lastUserQuery = answer; // <--- Bunu ekle!
+// Basit şehir adı normalizasyonu (ör: "rome", "ROMe  " -> "Rome")
+function normalizeCityName(raw) {
+  if (!raw) return "";
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+// Kullanıcı girdisinden (örn: "Plan a 2-day tour for Rome") şehir + gün çekmeye çalış
+function extractCityAndDays(query) {
+  let days = null;
+  let city = null;
+
+  // ör: "Plan a 2-day tour for Rome"
+  const dayMatch = query.match(/(\d+)\s*-?\s*day/i);
+  if (dayMatch) days = parseInt(dayMatch[1], 10);
+
+  // "for X", "in X", "to X" kalıbı
+  const cityMatch = query.match(/\b(?:for|in|to)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})$/i);
+  if (cityMatch) {
+    city = cityMatch[1].trim();
+  } else {
+    // Sonda tek kelime ihtimali
+    const tail = query.trim().split(/\s+/).pop();
+    if (tail && /^[A-Za-zÇĞİÖŞÜçğıöşü'’-]{2,}$/.test(tail)) {
+      city = tail;
+    }
+  }
+
+  if (!days || isNaN(days) || days < 1) days = 2;
+  city = normalizeCityName(city);
+  return { city, days };
+}
+
+// Geocode doğrulama (cache ile)
+const __cityCoordCache = new Map();
+async function validateCity(city) {
+  if (!city) return null;
+  if (__cityCoordCache.has(city)) return __cityCoordCache.get(city);
+  try {
+    const coords = await getCityCoordinates(city); // senin mevcut fonksiyonun
+    if (coords && typeof coords.lat === 'number' && typeof coords.lon === 'number') {
+      __cityCoordCache.set(city, coords);
+      return coords;
+    }
+  } catch (e) {}
+  __cityCoordCache.set(city, null);
+  return null;
+}
+
+
+(function unifyChatInputListener(){
+  const chatInput = document.getElementById("user-input");
+  if (!chatInput) return;
+  const suggestionsDiv = document.getElementById("suggestions");
+  const locationSuggestDiv = document.getElementById("chat-location-suggestions");
+
+  const MIN_LEN = 2;
+
+  const run = debounce(async function() {
+    const raw = chatInput.value.trim();
+    if (raw.length < MIN_LEN) {
+      suggestionsDiv && (suggestionsDiv.style.display = "none");
+      locationSuggestDiv && (locationSuggestDiv.style.display = "none");
+      return;
+    }
+
+    // Kullanıcı ülke adı girdiyse (countryPopularCities yapın)
+    const firstToken = raw.split(/\s+/)[0];
+    if (countryPopularCities[firstToken]) {
+      // Şehir listesi göster
+      if (suggestionsDiv) {
+        suggestionsDiv.innerHTML = "";
+        countryPopularCities[firstToken].forEach(c => {
+          const opt = document.createElement("div");
+            opt.className = "category-area-option";
+            opt.textContent = c;
+            opt.onclick = () => {
+              // seçince input'a normal format konur
+              chatInput.value = `Plan a 2-day tour for ${c}`;
+              suggestionsDiv.style.display = "none";
+              chatInput.focus();
+            };
+            suggestionsDiv.appendChild(opt);
+        });
+        suggestionsDiv.style.display = "block";
+      }
+      locationSuggestDiv && (locationSuggestDiv.style.display = "none");
+      return;
+    }
+
+    // Normal autocomplete (şehir / yer)
+    const { city } = extractCityAndDays(raw);
+    if (!city) {
+      suggestionsDiv && (suggestionsDiv.style.display = "none");
+      locationSuggestDiv && (locationSuggestDiv.style.display = "none");
+      return;
+    }
+    let results = [];
     try {
-        const { location, days } = parsePlanRequest(answer);
-        window.selectedCity = location;
-        if (countryPopularCities[location]) {
-            askCityForCountry(location, days);
-            hideTypingIndicator();
-            return;
-        }
-        latestTripPlan = await buildPlan(location, days);
-        latestTripPlan = await enrichPlanWithWiki(latestTripPlan);
-        if (latestTripPlan && latestTripPlan.length > 0) {
-            window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
-            window.cart = JSON.parse(JSON.stringify(latestTripPlan));
-            saveCurrentTripToStorage();
+      results = await geoapifyAutocomplete(city);
+    } catch(e){ results = []; }
 
-            showResults();
-            updateTripTitle();
-            const inputWrapper = document.querySelector('.input-wrapper');
-            if (inputWrapper) {
-                inputWrapper.style.display = 'none';
-            }
-            isFirstQuery = false;
-            
-            // ------ TRIP SIDEBAR OTOMATİK AÇILSIN ------
-            if (typeof openTripSidebar === "function") {
-                openTripSidebar();
-            }
-            // -------------------------------------------
-        } else {
-addMessage("Could not create a plan for the specified location.", "bot-message");
-        }
-    } catch (error) {
-console.error("Plan creation error:", error);
-addMessage("Please specify a valid city and number of days (e.g., 'Rome 2 days' or 'Paris 3 days')", "bot-message");
-    } finally {
-        hideTypingIndicator();
-        isProcessing = false;
+    // Öneri alanını aynı kullanıyoruz (sadelik)
+    if (suggestionsDiv) {
+      suggestionsDiv.innerHTML = "";
+      results.slice(0,7).forEach(r => {
+        const p = r.properties;
+        const cityName = p.city || p.name || "";
+        if (!cityName) return;
+        const opt = document.createElement("div");
+        opt.className = "category-area-option";
+        opt.textContent = `Plan a ${extractCityAndDays(raw).days}-day tour for ${cityName}`;
+        opt.onclick = () => {
+          chatInput.value = opt.textContent;
+          suggestionsDiv.style.display = "none";
+          chatInput.focus();
+        };
+        suggestionsDiv.appendChild(opt);
+      });
+      suggestionsDiv.style.display = results.length ? "block" : "none";
     }
+  }, 400);
+
+  chatInput.addEventListener("input", run);
+})();
+
+
+
+async function handleAnswer(answer) {
+  // Concurrency guard
+  if (window.isProcessing) return;
+  window.isProcessing = true;
+
+  const inputEl = document.getElementById("user-input");
+  const raw = (answer || "").toString().trim();
+
+  // UI: input’ı temizle
+  if (inputEl) inputEl.value = "";
+
+  // Çok kısa veya tamamen boş ise
+  if (!raw || raw.length < 2) {
+    addMessage("Please enter a location request (e.g. 'Rome 2 days').", "bot-message");
+    window.isProcessing = false;
+    return;
+  }
+
+  addMessage(raw, "user-message");
+  showTypingIndicator();
+  window.lastUserQuery = raw;
+
+  try {
+    // Mevcut parse fonksiyonunu kullanıyoruz (değiştirmiyorum)
+    const { location, days } = parsePlanRequest(raw);
+
+    // parsePlanRequest beklenen alanları çıkaramadıysa
+    if (!location || !days || isNaN(days)) {
+      addMessage("I could not understand that. Try for example: 'Paris 3 days' or 'Plan a 2-day tour for Rome'.", "bot-message");
+      return;
+    }
+
+    // Lokasyon kısa ve çok genel / tek karakter seti ise (basit bir gürültü filtresi)
+    if (location.length < 2) {
+      addMessage("Location name looks too short. Please clarify (e.g. 'Osaka 1 day').", "bot-message");
+      return;
+    }
+
+    window.selectedCity = location; // (Şimdilik değişken adını bozmadım, diğer kod buna güveniyor)
+
+    // Ülke seçimi listesi (mevcut davranışı koruyor)
+    if (countryPopularCities[location]) {
+      askCityForCountry(location, days);
+      return; // country seçimi popup’ı açtık, plan üretimine girmiyoruz
+    }
+
+    // OTOMATİK PLAN ÜRETMEYİ KORUYORUZ
+    latestTripPlan = await buildPlan(location, days);
+    latestTripPlan = await enrichPlanWithWiki(latestTripPlan);
+
+    if (latestTripPlan && latestTripPlan.length > 0) {
+      window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
+      window.cart = JSON.parse(JSON.stringify(latestTripPlan));
+      saveCurrentTripToStorage();
+
+      showResults();
+      updateTripTitle();
+
+      const inputWrapper = document.querySelector('.input-wrapper');
+      if (inputWrapper) inputWrapper.style.display = 'none';
+
+      isFirstQuery = false;
+
+      if (typeof openTripSidebar === "function") {
+        openTripSidebar();
+      }
+    } else {
+      addMessage("Could not create a plan for the specified location.", "bot-message");
+    }
+  } catch (error) {
+    console.error("Plan creation error:", error);
+    addMessage("Please specify a valid location and number of days (e.g. 'Rome 2 days', 'Paris 3 days').", "bot-message");
+  } finally {
+    hideTypingIndicator();
+    window.isProcessing = false;
+  }
 }
 
- function sendMessage() {
-          const input = document.getElementById("user-input");
-          const val = input.value.trim();
-          if (val) {
-              handleAnswer(val);
-              input.value = "";
-          }
-        }
-        document.getElementById('send-button').addEventListener('click', sendMessage);
+function sendMessage() {
+  if (window.isProcessing) return;
+  const input = document.getElementById("user-input");
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  handleAnswer(val);
+}
+
+document.getElementById('send-button').addEventListener('click', sendMessage);
 
 
 
@@ -560,11 +728,10 @@ function addMessage(text, className) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-    function hideTypingIndicator() {
-        const typingIndicator = document.getElementById("typing-indicator");
-        typingIndicator.style.display = "none";
-    }
-
+   function hideTypingIndicator() {
+  const typingIndicator = document.getElementById("typing-indicator");
+  if (typingIndicator) typingIndicator.style.display = "none";
+}
 
 
 
@@ -927,8 +1094,13 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
         if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
     }, 200);
     setTimeout(() => {
-        renderRouteForDay(1);
-    }, 500);
+  if (typeof getDayPoints === 'function') {
+    const pts = getDayPoints(1);
+    if (Array.isArray(pts) && pts.length >= 2) {
+      renderRouteForDay(1);
+    }
+  }
+}, 500);
         updateCart();
 
 
@@ -5713,20 +5885,23 @@ async function sendMapbox(coordinates, day) {
   }
 }
 
+// (İstersen) buildPlan içerisine eklediğin item'lara _generated:true koyup burada hariç tutabilirsin:
 function getDayPoints(day) {
-    // Sadece cart dizisini oku, DOM'dan asla okuma!
-    return window.cart
-        .filter(item =>
-            item.day == day &&
-            item.location &&
-            !isNaN(Number(item.location.lat)) &&
-            !isNaN(Number(item.location.lng))
-        )
-        .map(item => ({
-            lat: Number(item.location.lat),
-            lng: Number(item.location.lng),
-            name: item.name
-        }));
+  return window.cart
+    .filter(item =>
+      item.day == day &&
+      item.location &&
+      !item._starter &&
+      !item._placeholder &&
+      !item._generated && // opsiyonel
+      !isNaN(Number(item.location.lat)) &&
+      !isNaN(Number(item.location.lng))
+    )
+    .map(item => ({
+      lat: Number(item.location.lat),
+      lng: Number(item.location.lng),
+      name: item.name
+    }));
 }
 function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     // Polyline'ın başı ve sonu
