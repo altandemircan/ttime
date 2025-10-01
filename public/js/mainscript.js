@@ -452,6 +452,7 @@ function selectSuggestion(option) {
     }
 }
 function handleKeyPress(event) {
+<<<<<<< HEAD
   if (event.key !== "Enter") return;
   if (window.isProcessing) { event.preventDefault(); return; }
   sendMessage();
@@ -666,6 +667,67 @@ function sendMessage() {
   handleAnswer(val);
 }
 document.getElementById('send-button').addEventListener('click', sendMessage);
+=======
+    if (event.key === "Enter") {
+        sendMessage();
+        event.preventDefault();
+    }
+}
+async function handleAnswer(answer) {
+    document.getElementById("user-input").value = "";
+    addMessage(answer, "user-message");
+    showTypingIndicator();
+    window.lastUserQuery = answer; // <--- Bunu ekle!
+    try {
+        const { location, days } = parsePlanRequest(answer);
+        window.selectedCity = location;
+        if (countryPopularCities[location]) {
+            askCityForCountry(location, days);
+            hideTypingIndicator();
+            return;
+        }
+        latestTripPlan = await buildPlan(location, days);
+        latestTripPlan = await enrichPlanWithWiki(latestTripPlan);
+        if (latestTripPlan && latestTripPlan.length > 0) {
+            window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
+            window.cart = JSON.parse(JSON.stringify(latestTripPlan));
+            saveCurrentTripToStorage();
+
+            showResults();
+            updateTripTitle();
+            const inputWrapper = document.querySelector('.input-wrapper');
+            if (inputWrapper) {
+                inputWrapper.style.display = 'none';
+            }
+            isFirstQuery = false;
+            
+            // ------ TRIP SIDEBAR OTOMATİK AÇILSIN ------
+            if (typeof openTripSidebar === "function") {
+                openTripSidebar();
+            }
+            // -------------------------------------------
+        } else {
+addMessage("Could not create a plan for the specified location.", "bot-message");
+        }
+    } catch (error) {
+console.error("Plan creation error:", error);
+addMessage("Please specify a valid city and number of days (e.g., 'Rome 2 days' or 'Paris 3 days')", "bot-message");
+    } finally {
+        hideTypingIndicator();
+        isProcessing = false;
+    }
+}
+
+ function sendMessage() {
+          const input = document.getElementById("user-input");
+          const val = input.value.trim();
+          if (val) {
+              handleAnswer(val);
+              input.value = "";
+          }
+        }
+        document.getElementById('send-button').addEventListener('click', sendMessage);
+>>>>>>> parent of 1175c54 (Update mainscript.js)
 
 
 
@@ -737,10 +799,11 @@ async function validateLocation(rawName, minConfidence = 0.6) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-   function hideTypingIndicator() {
-  const typingIndicator = document.getElementById("typing-indicator");
-  if (typingIndicator) typingIndicator.style.display = "none";
-}
+    function hideTypingIndicator() {
+        const typingIndicator = document.getElementById("typing-indicator");
+        typingIndicator.style.display = "none";
+    }
+
 
 
 
@@ -1080,13 +1143,8 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
         if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
     }, 200);
     setTimeout(() => {
-  if (typeof getDayPoints === 'function') {
-    const pts = getDayPoints(1);
-    if (Array.isArray(pts) && pts.length >= 2) {
-      renderRouteForDay(1);
-    }
-  }
-}, 500);
+        renderRouteForDay(1);
+    }, 500);
         updateCart();
 
 
@@ -5830,23 +5888,20 @@ async function sendMapbox(coordinates, day) {
   }
 }
 
-// (İstersen) buildPlan içerisine eklediğin item'lara _generated:true koyup burada hariç tutabilirsin:
 function getDayPoints(day) {
-  return window.cart
-    .filter(item =>
-      item.day == day &&
-      item.location &&
-      !item._starter &&
-      !item._placeholder &&
-      !item._generated && // opsiyonel
-      !isNaN(Number(item.location.lat)) &&
-      !isNaN(Number(item.location.lng))
-    )
-    .map(item => ({
-      lat: Number(item.location.lat),
-      lng: Number(item.location.lng),
-      name: item.name
-    }));
+    // Sadece cart dizisini oku, DOM'dan asla okuma!
+    return window.cart
+        .filter(item =>
+            item.day == day &&
+            item.location &&
+            !isNaN(Number(item.location.lat)) &&
+            !isNaN(Number(item.location.lng))
+        )
+        .map(item => ({
+            lat: Number(item.location.lat),
+            lng: Number(item.location.lng),
+            name: item.name
+        }));
 }
 function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     // Polyline'ın başı ve sonu
