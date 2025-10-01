@@ -917,18 +917,6 @@ function sendMessage() {
   // Canonical normalization (always try)
   const formatted = formatCanonicalPlan(val);
 
-  // If we successfully parsed a city, auto-lock location if not already
-  if (formatted.city && (!window.selectedLocationLocked || !window.selectedLocation)) {
-      window.selectedLocation = {
-          name: formatted.city,
-          city: formatted.city,
-          country: "",
-          lat: null,
-          lon: null,
-          country_code: ""
-      };
-      window.selectedLocationLocked = true;
-  }
 
   // Show canonical diff only if there is an actual change
   if (formatted.canonical && formatted.changed) {
@@ -955,6 +943,10 @@ function sendMessage() {
   }
 
   // Standard canonical pattern path (still supported)
+  if (!window.selectedLocationLocked || !window.selectedLocation) {
+    addMessage("Please select a city from the suggestions first.", "bot-message");
+    return;
+}
   const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
   if (m) {
       let days = parseInt(m[1], 10);
@@ -968,10 +960,20 @@ function sendMessage() {
         </div>
       `;
       addMessage(diffHtml, "user-message");
-      window.__suppressNextUserEcho = true;
-      handleAnswer(`${city} ${days} days`);
-      input.value = "";
-      return;
+window.__suppressNextUserEcho = true;
+
+if (!window.selectedLocationLocked || !window.selectedLocation) {
+    addMessage("Please select a city from the suggestions first.", "bot-message");
+    // Plan başlatma yok. input temizlemek istersen:
+    // input.value = "";
+    return;
+}
+
+// Artık gerçekten seçilmiş kilitli şehir var → plan üret
+handleAnswer(`${formatted.city} ${formatted.days} days`);
+input.value = "";
+window.__lastManualRaw = "";
+return;
   }
 
   // Fallback: let handleAnswer parse raw (no diff)
