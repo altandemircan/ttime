@@ -203,34 +203,102 @@ function disableSendButton() {
         return str.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     }
 
-    function tt_extractSeedFromRaw(raw){
+      function tt_extractSeedFromRaw(raw){
         if (!raw || typeof raw !== 'string') return '';
-        let cleaned = raw
-            .replace(/\b(plan|planning|create|make|do|build|generate)\b/ig,' ')
-            .replace(/\b(a|an|the|tour|trip|city|program|itinerary|route|for|in|to|of|please|give|show)\b/ig,' ')
-            .replace(/\d+\s*(day|days|gün)/ig,' ')
+
+        // Orijinali korumak için ham metin
+        const original = raw.trim();
+
+        // 1) Küçült + normalize (Türkçe karakterlere dokunmadan)
+        let cleaned = original
+            .replace(/\s+/g,' ')
+            .trim();
+
+        // 2) “plan / planı / planın ...” varyantlarını (AMA ‘plano’, ‘plana’ DEĞİL) çıkar
+        //   - \bplan(?:…)?\b deseninde sadece ek listesi
+        cleaned = cleaned.replace(
+            /\bplan(?:ın|in|im|ım|um|ün|un|ı|i)?\b/gi,
+            ' '
+        );
+
+        // 3) Genel doldurma / komut kelimeleri (şehir tahmini yaparken gereksiz)
+        cleaned = cleaned.replace(
+            /\b(plan|planning|create|make|do|build|generate|tour|trip|program|itinerary|route|please|give|show|for|in|to|of|the|a|an)\b/gi,
+            ' '
+        );
+
+        // 4) “3 days”, “2-day”, “4 gün” gibi gün kalıpları
+        cleaned = cleaned.replace(/\d+\s*(day|days|gün)\b/gi,' ');
+
+        // 5) Noktalama
+        cleaned = cleaned
             .replace(/[,.;:!?]+/g,' ')
             .replace(/\s+/g,' ')
             .trim();
 
         if (!cleaned) return '';
 
+        // Tokenize (orijinal formu da korumak için split öncesi)
+        const origTokens = original.split(/\s+/);
         const tokens = cleaned.split(' ').filter(Boolean);
 
-        // Önden hızlı çıkışlar
-        if (tokens.length === 1) return tt_capitalizeWords(tokens[0]);
+        if (!tokens.length) return '';
 
-        // Sondan 2 kelimelik olası şehir (New York, San Francisco, Rio de Janeiro(3) vb.)
-        // Basit yaklaşım: sondan 3, 2, 1 parçayı sırayla dene
-        for (let span = Math.min(3, tokens.length); span >= 2; span--) {
-            const candidate = tokens.slice(-span).join(' ');
-            if (/^[A-Za-zÇĞİÖŞÜ][\w'’\-çğıöşü]+(?:\s+[A-Za-zÇĞİÖŞÜ][\w'’\-çğıöşü]+){0,2}$/.test(candidate)) {
-                return tt_capitalizeWords(candidate);
+        // Reserved: tekrar eleme (güvenlik)
+        const reserved = new Set([
+            'plan','planı','planin','planın','planim','planım','planum','planüm','planun','planün'
+        ]);
+
+        // Çok kelimeli şehir bağlaç/prepozisyonları (şehir içinde kalabilir)
+        const joiners = new Set(['de','la','del','da','di','el','le','los','las','san','santa','saint','dei','della','du']);
+
+        // 6) En sondan başlayarak 4 -> 3 -> 2 kelimelik aday dene (Castelló de la Plana vb.)
+        const rawLower = original.toLowerCase();
+
+        function isGoodToken(tok){
+            if (!tok) return false;
+            const low = tok.toLowerCase();
+            if (reserved.has(low)) return false;
+            if (low.length < 2) return false;
+            return true;
+        }
+
+        const origLen = origTokens.length;
+        for (let span = Math.min(4, origLen); span >= 2; span--) {
+            const slice = origTokens.slice(origLen - span);
+            // “plan” varyantı tek başına içeriyorsa atla
+            if (slice.every(t => !isGoodToken(t) || joiners.has(t.toLowerCase()) )) continue;
+
+            // En az bir “iyi” token + diğerleri ya iyi ya joiner olmalı
+            const meaningful = slice.filter(t => isGoodToken(t));
+            if (!meaningful.length) continue;
+
+            const candidate = slice.join(' ');
+            // Baş harf veya aksanlı/özel harf pattern’i (çok gevşek)
+            if (/^[\p{L}0-9][\p{L}\p{M}0-9'’\-\s.]+$/u.test(candidate)) {
+                // Son kelime reserved değilse al
+                const last = slice[slice.length - 1].toLowerCase();
+                if (!reserved.has(last)) {
+                    return candidate.trim();
+                }
             }
         }
 
-        // Yoksa son kelime
-        return tt_capitalizeWords(tokens[tokens.length - 1]);
+        // 7) 2+ kelime bulunamadıysa son KELİMEYİ kullan (ama reserved değilse)
+        const lastOriginal = origTokens[origTokens.length - 1];
+        if (isGoodToken(lastOriginal)) {
+            return lastOriginal.charAt(0).toUpperCase() + lastOriginal.slice(1);
+        }
+
+        // 8) Fallback: ilk “iyi” token
+        for (let i = origTokens.length - 1; i >= 0; i--) {
+            if (isGoodToken(origTokens[i])) {
+                const x = origTokens[i];
+                return x.charAt(0).toUpperCase() + x.slice(1);
+            }
+        }
+
+        return '';
     }
     // --- /PATCH ---
     async function doAutocomplete(){
