@@ -189,6 +189,88 @@ function disableSendButton() {
     btn.setAttribute("disabled","disabled");
     btn.classList.add("disabled");
 }
+// === LIGHT AUTOCOMPLETE (lokasyon kilidi yokken) ===
+// Lightweight autocomplete patch
+(function attachLightAutocomplete(){
+    const chatInput = document.getElementById("user-input");
+    const suggestionsDiv = document.getElementById("suggestions");
+    if (!chatInput || !suggestionsDiv) return;
+    let timer;
+
+    function debounce(fn, w=350){ clearTimeout(timer); timer=setTimeout(fn,w); }
+
+    async function doAutocomplete(){
+        if (window.selectedLocationLocked) return;
+        const raw = chatInput.value.trim();
+        if (raw.length < 2){
+            suggestionsDiv.innerHTML="";
+            suggestionsDiv.style.display="none";
+            return;
+        }
+        const dayMatch = raw.match(/(\d+)\s*-?\s*(day|gün)/i);
+        let days = dayMatch ? parseInt(dayMatch[1],10) : 2;
+        if (!days || days<1) days=2;
+
+        let seed = raw.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü'’\-]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü'’\-]+)*)$/);
+        seed = seed ? seed[1] : raw.split(/\s+/).pop();
+        if (!seed || seed.length < 2){
+            suggestionsDiv.innerHTML="";
+            suggestionsDiv.style.display="none";
+            return;
+        }
+
+        let results=[];
+        try { results = await geoapifyAutocomplete(seed); } catch(e){ results=[]; }
+
+        const filtered = results.filter(r=>{
+            const p = r.properties||{};
+            return (p.city||p.name) && (p.country || p.country_code);
+        }).slice(0,7);
+
+        if (!filtered.length){
+            suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.6;">No results</div>`;
+            suggestionsDiv.style.display="block";
+            return;
+        }
+
+        suggestionsDiv.innerHTML="";
+        filtered.forEach(f=>{
+            const p=f.properties;
+            const city=p.city||p.name;
+            const country=p.country||p.country_code?.toUpperCase()||"";
+            const flag=p.country_code
+                ? String.fromCodePoint(...[...p.country_code.toUpperCase()].map(c=>127397+c.charCodeAt()))
+                : "";
+            const div=document.createElement("div");
+            div.className="category-area-option";
+            div.textContent=`${city}, ${country} ${flag}`.trim();
+            div.onclick=()=>{
+                window.selectedLocation={
+                    name:p.name||city,
+                    city:city,
+                    country:country,
+                    lat:p.lat,
+                    lon:p.lon,
+                    country_code:p.country_code||""
+                };
+                window.selectedSuggestion={ displayText: div.textContent, props:p };
+                window.selectedLocationLocked=true;
+                chatInput.value=`Plan a ${days}-day tour for ${city}`;
+                suggestionsDiv.style.display="none";
+                enableSendButton();
+            };
+            suggestionsDiv.appendChild(div);
+        });
+        suggestionsDiv.style.display="block";
+    }
+
+    chatInput.addEventListener("input", ()=>debounce(doAutocomplete,350));
+    chatInput.addEventListener("focus", ()=>{
+        if (!window.selectedLocationLocked && suggestionsDiv.innerHTML.trim()) {
+            suggestionsDiv.style.display="block";
+        }
+    });
+})();
 function lockSelectedCity(city, days) {
     const chatInput = document.getElementById("user-input");
     if (!chatInput) return;
@@ -273,7 +355,13 @@ function renderSuggestions(results) {
 };
         }
         suggestionsDiv.appendChild(div);
-    });
+    }
+    );
+    if (!results.length) {
+    suggestionsDiv.style.display = "none";
+} else {
+    suggestionsDiv.style.display = "block";
+}
 }
 
 // 2. Input event'i: autocomplete çıktığında chat-location-suggestions'ı gizle, sadece #suggestions'ı göster
