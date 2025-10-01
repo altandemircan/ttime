@@ -7,6 +7,29 @@ function movingAverage(arr, win = 5) {
   });
 }
 
+if (typeof setChatInputValue !== 'function') {
+  window.__programmaticInput = false;
+  function setChatInputValue(str){
+    const inp = document.getElementById('user-input');
+    if (!inp) return;
+    window.__programmaticInput = true;
+    inp.value = str;
+    setTimeout(()=>{ window.__programmaticInput = false; }, 0);
+  }
+}
+
+if (window.selectedLocation?.city &&
+    window.selectedLocation.city.toLowerCase() !== location.toLowerCase()) {
+  addMessage("Input changed. Please reselect the city.", "bot-message");
+  window.isProcessing = false;
+  return;
+}
+
+if (!window.__locationPickedFromSuggestions) {
+  addMessage("Please select a city from the suggestions first.", "bot-message");
+  window.isProcessing = false;
+  return;
+}
 window.cart = window.cart || [];
 
   // Haversine mesafe (metre)
@@ -471,7 +494,8 @@ chatInput.addEventListener("input", debounce(async function () {
     const queryText = this.value.trim();
     if (queryText.length < 2) {
         document.getElementById("chat-location-suggestions").style.display = "none";
-        document.getElementById("suggestions").style.display = "none";
+        document.getElementById("suggestions").classList.add('hidden');
+;
         return;
     }
     const locationQuery = extractLocationQuery(queryText);
@@ -867,6 +891,13 @@ async function handleAnswer(answer) {
   const inputEl = document.getElementById("user-input");
   const raw = (answer || "").toString().trim();
 
+   // ZORUNLU: Öneriden şehir seçilmediyse planlama yapma
+  if (!window.__locationPickedFromSuggestions) {
+    addMessage("Please select a city from the suggestions first.", "bot-message");
+    window.isProcessing = false;
+    return;
+  }
+
   // Input'u temizle (kullanıcı hemen yeni şey yazabilsin)
   if (inputEl) inputEl.value = "";
 
@@ -957,11 +988,6 @@ function sendMessage() {
   const val = input.value.trim();
   if (!val) return;
 
-
-  if (!window.__locationPickedFromSuggestions) {
-      addMessage("Please select a city from the suggestions first.", "bot-message");
-      return;
-  }
 
   // Canonical normalization (always try)
   const formatted = formatCanonicalPlan(val);
@@ -1235,12 +1261,6 @@ async function getLLMResponse(aiData) {
     });
     return response.json();
 }
-
-
-document.getElementById("send-button").addEventListener("click", function() {
-    const val = userInput.value.trim();
-    if (val) handleAnswer(val);
-});
 
 
 
@@ -4626,7 +4646,18 @@ window.expandedMaps = {};
 // Üstte tanımlı helper: setExpandedMapTile — crossOrigin ekleyin
 function setExpandedMapTile(expandedMap, styleKey) {
   const url = `https://api.mapbox.com/styles/v1/mapbox/${styleKey}/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`;
-
+// Programatik input set helper (manuel yazımı ayırt etmek için)
+if (typeof setChatInputValue !== 'function') {
+  window.__programmaticInput = false;
+  function setChatInputValue(str) {
+    const inp = document.getElementById('user-input');
+    if (!inp) return;
+    window.__programmaticInput = true;
+    inp.value = str;
+    // microtask sonunda flag’i geri al
+    setTimeout(() => { window.__programmaticInput = false; }, 0);
+  }
+}
   let foundTile = null;
   expandedMap.eachLayer(layer => {
     if (layer instanceof L.TileLayer) {
@@ -4880,7 +4911,19 @@ expandedContainer.appendChild(scaleBarDiv);
     // expandMap içindeki local setExpandedMapTile — crossOrigin ekleyin
 function setExpandedMapTile(styleKey) {
   const url = `https://api.mapbox.com/styles/v1/mapbox/${styleKey}/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`;
-  if (expandedTileLayer) {
+  // Programatik input set helper (manuel yazımı ayırt etmek için)
+if (typeof setChatInputValue !== 'function') {
+  window.__programmaticInput = false;
+  function setChatInputValue(str) {
+    const inp = document.getElementById('user-input');
+    if (!inp) return;
+    window.__programmaticInput = true;
+    inp.value = str;
+    // microtask sonunda flag’i geri al
+    setTimeout(() => { window.__programmaticInput = false; }, 0);
+  }
+}
+if (expandedTileLayer) {
     expandedMap.removeLayer(expandedTileLayer);
     expandedTileLayer = null;
   }
@@ -4910,7 +4953,19 @@ mapStyleSelect.onchange = function() {
     if (originalTileLayer) originalMap.removeLayer(originalTileLayer);
 
     const url = `https://api.mapbox.com/styles/v1/mapbox/${this.value}/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`;
-    L.tileLayer(url, {
+  // Programatik input set helper (manuel yazımı ayırt etmek için)
+if (typeof setChatInputValue !== 'function') {
+  window.__programmaticInput = false;
+  function setChatInputValue(str) {
+    const inp = document.getElementById('user-input');
+    if (!inp) return;
+    window.__programmaticInput = true;
+    inp.value = str;
+    // microtask sonunda flag’i geri al
+    setTimeout(() => { window.__programmaticInput = false; }, 0);
+  }
+}
+  L.tileLayer(url, {
       tileSize: 256,
       zoomOffset: 0,
       attribution: '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a>',
@@ -7222,6 +7277,18 @@ window.setTravelMode = function(mode, day) {
 window.buildMapboxDirectionsUrl = function(coordsStr, day) {
   const profile = getMapboxProfileForDay(day || window.currentDay || 1);
   const token = window.MAPBOX_TOKEN || window.MAPBOX_ACCESS_TOKEN || window.mapboxToken;
+  // Programatik input set helper (manuel yazımı ayırt etmek için)
+if (typeof setChatInputValue !== 'function') {
+  window.__programmaticInput = false;
+  function setChatInputValue(str) {
+    const inp = document.getElementById('user-input');
+    if (!inp) return;
+    window.__programmaticInput = true;
+    inp.value = str;
+    // microtask sonunda flag’i geri al
+    setTimeout(() => { window.__programmaticInput = false; }, 0);
+  }
+}
   return `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordsStr}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${token}`;
 };
 
