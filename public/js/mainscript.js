@@ -265,11 +265,7 @@ function disableSendButton() {
     }
 
     chatInput.addEventListener("input", ()=>debounce(doAutocomplete,350));
-    chatInput.addEventListener("focus", ()=>{
-        if (!window.selectedLocationLocked && suggestionsDiv.innerHTML.trim()) {
-            suggestionsDiv.style.display="block";
-        }
-    });
+  
 })();
 function lockSelectedCity(city, days) {
     const chatInput = document.getElementById("user-input");
