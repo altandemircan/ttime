@@ -452,9 +452,11 @@ function selectSuggestion(option) {
     }
 }
 function handleKeyPress(event) {
-<<<<<<< HEAD
   if (event.key !== "Enter") return;
-  if (window.isProcessing) { event.preventDefault(); return; }
+  if (window.isProcessing) {
+    event.preventDefault();
+    return;
+  }
   sendMessage();
   event.preventDefault();
 }
@@ -586,13 +588,19 @@ async function validateCity(city) {
 })();
 
 
+
 async function handleAnswer(answer) {
+  // Concurrency guard: aynı anda ikinci isteği engelle
   if (window.isProcessing) return;
   window.isProcessing = true;
 
   const inputEl = document.getElementById("user-input");
   const raw = (answer || "").toString().trim();
+
+  // Input'u temizle (kullanıcı hemen yeni şey yazabilsin)
   if (inputEl) inputEl.value = "";
+
+  // Çok kısa veya tamamen boş ise
   if (!raw || raw.length < 2) {
     addMessage("Please enter a location request (e.g. 'Rome 2 days').", "bot-message");
     window.isProcessing = false;
@@ -604,60 +612,61 @@ async function handleAnswer(answer) {
   window.lastUserQuery = raw;
 
   try {
+    // Mevcut parse fonksiyonunu kullanıyoruz
     const { location, days } = parsePlanRequest(raw);
+
+    // parsePlanRequest beklenen alanları çıkaramadıysa
     if (!location || !days || isNaN(days)) {
-      addMessage("I could not understand that. Try: 'Paris 3 days' or 'Plan a 2-day tour for Rome'.", "bot-message");
+      addMessage("I could not understand that. Try for example: 'Paris 3 days' or 'Plan a 2-day tour for Rome'.", "bot-message");
       return;
     }
+
+    // Ekstra gürültü filtresi
     if (location.length < 2) {
-      addMessage("Location name looks too short. Try again.", "bot-message");
+      addMessage("Location name looks too short. Please clarify (e.g. 'Osaka 1 day').", "bot-message");
       return;
     }
 
-    // Lokasyon doğrulama (validateLocation varsa onu kullan)
-    let validated = null;
-    if (typeof validateLocation === 'function') {
-      validated = await validateLocation(location, 0.6);
-    } else if (typeof validateCity === 'function') {
-      const c = await validateCity(location);
-      if (c) validated = { displayName: location, lat: c.lat, lon: c.lon };
-    }
-    if (!validated) {
-      addMessage(`'${location}' not found. Please refine.`, "bot-message");
-      return;
+    window.selectedCity = location; // Diğer kodların beklentisini bozmuyoruz
+
+    // Ülke → şehir seçtirme adımı
+    if (countryPopularCities[location]) {
+      askCityForCountry(location, days);
+      return; // Ülke seçimi ekranına geçtiğimiz için burada duruyoruz
     }
 
-    window.selectedCity = validated.displayName || location;
-
-    if (countryPopularCities[window.selectedCity]) {
-      askCityForCountry(window.selectedCity, days);
-      return;
-    }
-
-    latestTripPlan = await buildPlan(window.selectedCity, days);
+    // OTOMATİK PLAN ÜRETİMİ (mevcut davranışı koru)
+    latestTripPlan = await buildPlan(location, days);
     latestTripPlan = await enrichPlanWithWiki(latestTripPlan);
 
     if (latestTripPlan && latestTripPlan.length > 0) {
       window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
       window.cart = JSON.parse(JSON.stringify(latestTripPlan));
       saveCurrentTripToStorage();
+
       showResults();
       updateTripTitle();
+
       const inputWrapper = document.querySelector('.input-wrapper');
       if (inputWrapper) inputWrapper.style.display = 'none';
+
       isFirstQuery = false;
-      if (typeof openTripSidebar === "function") openTripSidebar();
+
+      if (typeof openTripSidebar === "function") {
+        openTripSidebar();
+      }
     } else {
       addMessage("Could not create a plan for the specified location.", "bot-message");
     }
-  } catch (err) {
-    console.error("Plan creation error:", err);
-    addMessage("Please specify a valid location and number of days (e.g. 'Rome 2 days').", "bot-message");
+  } catch (error) {
+    console.error("Plan creation error:", error);
+    addMessage("Please specify a valid location and number of days (e.g. 'Rome 2 days', 'Paris 3 days').", "bot-message");
   } finally {
     hideTypingIndicator();
     window.isProcessing = false;
   }
 }
+
 function sendMessage() {
   if (window.isProcessing) return;
   const input = document.getElementById("user-input");
@@ -666,68 +675,8 @@ function sendMessage() {
   if (!val) return;
   handleAnswer(val);
 }
+
 document.getElementById('send-button').addEventListener('click', sendMessage);
-=======
-    if (event.key === "Enter") {
-        sendMessage();
-        event.preventDefault();
-    }
-}
-async function handleAnswer(answer) {
-    document.getElementById("user-input").value = "";
-    addMessage(answer, "user-message");
-    showTypingIndicator();
-    window.lastUserQuery = answer; // <--- Bunu ekle!
-    try {
-        const { location, days } = parsePlanRequest(answer);
-        window.selectedCity = location;
-        if (countryPopularCities[location]) {
-            askCityForCountry(location, days);
-            hideTypingIndicator();
-            return;
-        }
-        latestTripPlan = await buildPlan(location, days);
-        latestTripPlan = await enrichPlanWithWiki(latestTripPlan);
-        if (latestTripPlan && latestTripPlan.length > 0) {
-            window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
-            window.cart = JSON.parse(JSON.stringify(latestTripPlan));
-            saveCurrentTripToStorage();
-
-            showResults();
-            updateTripTitle();
-            const inputWrapper = document.querySelector('.input-wrapper');
-            if (inputWrapper) {
-                inputWrapper.style.display = 'none';
-            }
-            isFirstQuery = false;
-            
-            // ------ TRIP SIDEBAR OTOMATİK AÇILSIN ------
-            if (typeof openTripSidebar === "function") {
-                openTripSidebar();
-            }
-            // -------------------------------------------
-        } else {
-addMessage("Could not create a plan for the specified location.", "bot-message");
-        }
-    } catch (error) {
-console.error("Plan creation error:", error);
-addMessage("Please specify a valid city and number of days (e.g., 'Rome 2 days' or 'Paris 3 days')", "bot-message");
-    } finally {
-        hideTypingIndicator();
-        isProcessing = false;
-    }
-}
-
- function sendMessage() {
-          const input = document.getElementById("user-input");
-          const val = input.value.trim();
-          if (val) {
-              handleAnswer(val);
-              input.value = "";
-          }
-        }
-        document.getElementById('send-button').addEventListener('click', sendMessage);
->>>>>>> parent of 1175c54 (Update mainscript.js)
 
 
 
@@ -758,29 +707,44 @@ function addMessage(text, className) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+
 async function validateLocation(rawName, minConfidence = 0.6) {
   if (!rawName || typeof rawName !== 'string') return null;
+
   const q = rawName.trim();
   if (q.length < 2) return null;
+
   const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(q)}&limit=1&apiKey=${GEOAPIFY_API_KEY}`;
   try {
     const resp = await fetch(url);
     if (!resp.ok) return null;
     const data = await resp.json();
     if (!data.features || !data.features.length) return null;
+
     const feat = data.features[0];
     const p = feat.properties || {};
-    const confidence =
-      (p.rank && typeof p.rank.confidence === 'number') ? p.rank.confidence :
-      (p.rank && p.rank.confidence_city_level) || 0;
+    const confidence = (p.rank && typeof p.rank.confidence === 'number')
+      ? p.rank.confidence
+      : (p.rank && p.rank.confidence_city_level) || 0;
+
     if (confidence < minConfidence) return null;
     if (typeof p.lat !== 'number' || typeof p.lon !== 'number') return null;
+
+    // Kullanıcıya gösterebileceğin normalize ad
     const displayName =
       p.name || p.city || p.town || p.village || p.hamlet ||
       p.suburb || p.neighbourhood || p.quarter || p.district ||
       p.county || p.state || p.region || p.country || rawName;
-    return { lat: p.lat, lon: p.lon, displayName, confidence };
-  } catch { return null; }
+
+    return {
+      lat: p.lat,
+      lon: p.lon,
+      displayName,
+      confidence
+    };
+  } catch {
+    return null;
+  }
 }
 
  function showTypingIndicator() {
@@ -799,11 +763,10 @@ async function validateLocation(rawName, minConfidence = 0.6) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-    function hideTypingIndicator() {
-        const typingIndicator = document.getElementById("typing-indicator");
-        typingIndicator.style.display = "none";
-    }
-
+   function hideTypingIndicator() {
+  const typingIndicator = document.getElementById("typing-indicator");
+  if (typingIndicator) typingIndicator.style.display = "none";
+}
 
 
 
@@ -918,6 +881,20 @@ async function getLLMResponse(aiData) {
 
 
 
+userInput.addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        const val = userInput.value.trim();
+        if (val) handleAnswer(val);
+        event.preventDefault();
+    }
+});
+
+document.getElementById("send-button").addEventListener("click", function() {
+    const val = userInput.value.trim();
+    if (val) handleAnswer(val);
+});
+
+
 
 function updateTripTitle() {
     const tripTitleDiv = document.getElementById("trip_title");
@@ -1008,47 +985,48 @@ function showAITags(place) {
 }
 
 async function fillAIDescriptionsAutomatically() {
-  const steps = Array.from(document.querySelectorAll('.steps'));
-  for (const stepsDiv of steps) {
-    const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
-    if (!infoView) continue;
-    const descriptionDiv = infoView.querySelector('.description');
-    if (!descriptionDiv) continue;
-    if (descriptionDiv.dataset.aiFilled) continue;
+    document.querySelectorAll('.steps').forEach(async stepsDiv => {
+        const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
+        if (!infoView) return;
+        const descriptionDiv = infoView.querySelector('.description');
+        if (!descriptionDiv) return;
+        if (descriptionDiv.dataset.aiFilled) return;
 
-    descriptionDiv.innerHTML = `
-      <img src="img/information_icon.svg">
-      <span class="ai-guide-loading">
-        AI Guide loading...
-        <span class="dot-anim">.</span>
-        <span class="dot-anim">.</span>
-        <span class="dot-anim">.</span>
-      </span>
-    `;
+        // Loading animasyonu göster
+        descriptionDiv.innerHTML = `
+            <img src="img/information_icon.svg">
+            <span class="ai-guide-loading">
+                AI Guide loading...
+                <span class="dot-anim">.</span>
+                <span class="dot-anim">.</span>
+                <span class="dot-anim">.</span>
+            </span>
+        `;
 
-    const name = infoView.querySelector('.title')?.textContent?.trim() || '';
-    const address = infoView.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-    const city = window.selectedCity || '';
-    const category = stepsDiv.getAttribute('data-category') || '';
-    if (!name || !city) continue;
+        const name = infoView.querySelector('.title')?.textContent?.trim() || '';
+        const address = infoView.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '';
+        const city = window.selectedCity || '';
+        const category = stepsDiv.getAttribute('data-category') || '';
 
-    try {
-      const resp = await fetch('/llm-proxy/item-guide', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, address, city, category }),
-      });
-      const data = await resp.json();
-      if (data.text) {
-        descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
-        descriptionDiv.dataset.aiFilled = "1";
-      } else {
-        descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI description could not be retrieved."}</span>`;
-      }
+        if (!name || !city) return;
+
+            try {
+        const resp = await fetch('/llm-proxy/item-guide', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, address, city, category }),
+        });
+        const data = await resp.json();
+        if (data.text) {
+            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
+            descriptionDiv.dataset.aiFilled = "1";
+        } else {
+            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI description could not be retrieved."}</span>`;
+        }
     } catch {
-      descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
+        descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
     }
-  }
+});
 }
 
 let hasAutoAddedToCart = false;
@@ -1103,7 +1081,14 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
                 <div id="route-map-day${day}" class="route-map">
                     <div id="map-bottom-controls-wrapper-day${day}">
                         <div id="map-bottom-controls-day${day}" class="map-bottom-controls">
-                           
+                            <select id="map-style-select-day${day}">
+                                <option value="streets-v12">Streets modes</option>
+                                <option value="dark-v11">Navigation</option>
+                                <option value="satellite-streets-v12">Satellite</option>
+                            </select>
+                            <button class="expand-map-btn" onclick="expandMap('route-map-day${day}', ${day})"><img src="img/see_route.gif"></button>
+
+                            <span class="route-summary-control"></span>
                         </div>
                     </div>
                 </div>`;
@@ -1133,6 +1118,7 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
+    setTimeout(fillAIDescriptionsSeq, 300);
     setTimeout(fillAIDescriptionsAutomatically, 300);
 
     setTimeout(() => {
@@ -1143,8 +1129,13 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
         if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
     }, 200);
     setTimeout(() => {
-        renderRouteForDay(1);
-    }, 500);
+  if (typeof getDayPoints === 'function') {
+    const pts = getDayPoints(1);
+    if (Array.isArray(pts) && pts.length >= 2) {
+      renderRouteForDay(1);
+    }
+  }
+}, 500);
         updateCart();
 
 
@@ -1156,7 +1147,50 @@ setTimeout(() => {
 }
 
 
+async function fillAIDescriptionsSeq() {
+    const steps = Array.from(document.querySelectorAll('.steps'));
+    for (const stepsDiv of steps) {
+        const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
+        if (!infoView) continue;
+        const descriptionDiv = infoView.querySelector('.description');
+        if (!descriptionDiv) continue;
+        if (descriptionDiv.dataset.aiFilled) continue;
 
+        descriptionDiv.innerHTML = `
+            <img src="img/information_icon.svg">
+            <span class="ai-guide-loading">
+                AI Guide loading...
+                <span class="dot-anim">.</span>
+                <span class="dot-anim">.</span>
+                <span class="dot-anim">.</span>
+            </span>
+        `;
+
+        const name = infoView.querySelector('.title')?.textContent?.trim() || '';
+        const address = infoView.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '';
+        const city = window.selectedCity || '';
+        const category = stepsDiv.getAttribute('data-category') || '';
+
+        if (!name || !city) continue;
+
+        try {
+            const resp = await fetch('/llm-proxy/item-guide', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, address, city, category })
+            });
+            const data = await resp.json();
+            if (data.text) {
+                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
+                descriptionDiv.dataset.aiFilled = "1";
+            } else {
+                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI açıklama alınamadı."}</span>`;
+            }
+        } catch {
+            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
+        }
+    }
+}
 
 // 3. Frontend'de metni biçimlendirme
 /*function formatAIResponse(text) {
@@ -1358,7 +1392,7 @@ async function buildPlan(city, days) {
   let categoryResults = {};
 
   for (const cat of categories) {
-    categoryResults[cat] = await getPlacesForCategory(city, cat, 16);
+    categoryResults[cat] = await getPlacesForCategory(city, cat, 30);
   }
 
   for (let day = 1; day <= days; day++) {
@@ -1367,14 +1401,10 @@ async function buildPlan(city, days) {
     for (const cat of categories) {
       const places = categoryResults[cat];
       if (places.length > 0) {
-        if (!places._shuffled) {
-  places._shuffled = true;
-  for (let i = places.length - 1; i > 0; i--) {
-    const r = Math.floor(Math.random() * (i + 1));
-    [places[i], places[r]] = [places[r], places[i]];
-  }
-}
-const idx = usedIndexes[cat]?.length || 0;
+        let idx;
+        do {
+          idx = Math.floor(Math.random() * places.length);
+        } while (usedIndexes[cat] && usedIndexes[cat].includes(idx) && usedIndexes[cat].length < places.length);
 
         usedIndexes[cat] = usedIndexes[cat] || [];
         usedIndexes[cat].push(idx);
@@ -1953,7 +1983,9 @@ async function importGpsFileForDay(file, day){
     );
   }
 
-
+  // UI yenile (addToCart zaten çağırdı ama garanti olsun)
+  if (typeof updateCart === 'function') updateCart();
+  if (typeof renderRouteForDay === 'function') renderRouteForDay(day);
 
   console.log('[GPS] imported → points:', points.length);
 }
@@ -5888,20 +5920,23 @@ async function sendMapbox(coordinates, day) {
   }
 }
 
+// (İstersen) buildPlan içerisine eklediğin item'lara _generated:true koyup burada hariç tutabilirsin:
 function getDayPoints(day) {
-    // Sadece cart dizisini oku, DOM'dan asla okuma!
-    return window.cart
-        .filter(item =>
-            item.day == day &&
-            item.location &&
-            !isNaN(Number(item.location.lat)) &&
-            !isNaN(Number(item.location.lng))
-        )
-        .map(item => ({
-            lat: Number(item.location.lat),
-            lng: Number(item.location.lng),
-            name: item.name
-        }));
+  return window.cart
+    .filter(item =>
+      item.day == day &&
+      item.location &&
+      !item._starter &&
+      !item._placeholder &&
+      !item._generated && // opsiyonel
+      !isNaN(Number(item.location.lat)) &&
+      !isNaN(Number(item.location.lng))
+    )
+    .map(item => ({
+      lat: Number(item.location.lat),
+      lng: Number(item.location.lng),
+      name: item.name
+    }));
 }
 function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     // Polyline'ın başı ve sonu
@@ -6879,61 +6914,97 @@ function cleanupLegacyTravelMode() {
 }
 // Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
 // ensureDayTravelModeSet fonksiyonunu güncelle
-function ensureDayTravelModeSet(day) {
-  const dayContainer = document.getElementById(`day-container-${day}`);
-  if (!dayContainer) return;
+function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
+  // Remove any legacy/header sets for this day
+  document.querySelectorAll(`#day-container-${day} .day-header .tt-travel-mode-set`).forEach(el => el.remove());
 
-  // Zaten ekliyse tekrar ekleme
-  if (document.getElementById(`tt-travel-mode-set-day${day}`)) return;
-
-  const mapDiv = dayContainer.querySelector(`#route-map-day${day}`);
-  const anchor = mapDiv || dayContainer.querySelector('.day-list') || dayContainer;
-
-  const set = document.createElement('div');
-  set.id = `tt-travel-mode-set-day${day}`;
-  set.className = 'tt-travel-mode-set';
-  set.dataset.day = day;
-  set.innerHTML = `
-    <div class="travel-modes">
-      <button type="button" data-mode="driving" aria-label="Driving">
-        <img class="tm-icon" src="/img/way_car.svg" alt="CAR">
-        <span class="tm-label">CAR</span>
+  // Create or reuse the set
+  let set = document.getElementById(`tt-travel-mode-set-day${day}`);
+  if (!set) {
+    set = document.createElement('div');
+    set.id = `tt-travel-mode-set-day${day}`;
+    set.className = 'tt-travel-mode-set';
+    set.dataset.day = String(day);
+    set.innerHTML = `
+      <div class="travel-modes">
+        <button type="button" data-mode="driving" aria-label="Driving">
+          <img class="tm-icon" src="/img/way_car.svg" alt="CAR" loading="lazy" decoding="async">
+          <span class="tm-label">CAR</span>
+        </button>
+        <button type="button" data-mode="cycling" aria-label="Cycling">
+          <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE" loading="lazy" decoding="async">
+          <span class="tm-label">BIKE</span>
+        </button>
+        <button type="button" data-mode="walking" aria-label="Walking">
+          <img class="tm-icon" src="/img/way_walk.svg" alt="WALK" loading="lazy" decoding="async">
+          <span class="tm-label">WALK</span>
+        </button>
+      </div>
+      <button type="button" class="expand-map-btn" aria-label="Expand Map">
+        <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
+        <span class="tm-label">MAP</span>
       </button>
-      <button type="button" data-mode="cycling" aria-label="Cycling">
-        <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE">
-        <span class="tm-label">BIKE</span>
-      </button>
-      <button type="button" data-mode="walking" aria-label="Walking">
-        <img class="tm-icon" src="/img/way_walk.svg" alt="WALK">
-        <span class="tm-label">WALK</span>
-      </button>
-    </div>
-    <button type="button" class="expand-map-btn" aria-label="Expand Map">
-      <img class="tm-icon" src="img/see_route.gif" alt="MAP">
-      <span class="tm-label">MAP</span>
-    </button>
-  `;
+    `;
 
-  anchor.parentNode.insertBefore(set, anchor); // map’in ÜSTÜNE
+    // Interaction for travel mode buttons
+    set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
+    set.addEventListener('click', (e) => {
+      e.stopPropagation();
+      
+      // Handle expand map button
+      if (e.target.closest('.expand-map-btn')) {
+        const containerId = `route-map-day${day}`;
+        expandMap(containerId, day);
+        return;
+      }
+      
+      // Handle travel mode buttons
+      const btn = e.target.closest('button[data-mode]');
+      if (!btn) return;
+      window.setTravelMode(btn.getAttribute('data-mode'), day);
+    });
+  }
 
-  // Event
-  set.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-mode]');
-    if (btn) {
-      const mode = btn.getAttribute('data-mode');
-      window.setTravelMode && window.setTravelMode(mode, day);
-      markActiveTravelModeButtons();
-      return;
+  // Insert set exactly before the controls wrapper
+  if (controlsWrapperEl && controlsWrapperEl.parentNode) {
+    if (set.previousElementSibling !== routeMapEl || set.nextElementSibling !== controlsWrapperEl) {
+      controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
     }
-    if (e.target.closest('.expand-map-btn')) {
-      expandMap(`route-map-day${day}`, day);
-    }
-  });
+  } else if (routeMapEl && routeMapEl.parentNode) {
+    routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
+  }
 
-  markActiveTravelModeButtons();
+  // Mark active
+  if (typeof markActiveTravelModeButtons === 'function') {
+    markActiveTravelModeButtons();
+  }
 }
 
+// Styles (once)
+/*
+(function ensureTmInlineStyles() {
 
+  if (document.getElementById('tt-travel-mode-style-inline')) return;
+  const style = document.createElement('style');
+  style.id = 'tt-travel-mode-style-inline';
+  style.textContent = `
+    .tt-travel-mode-set {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      margin: 6px 0 8px 0;
+    }
+    .tt-travel-mode-set button {
+      border: 1px solid #ccc; background: #fff; color: #333; border-radius: 8px;
+      padding: 6px 10px; cursor: pointer; font-size: 13px; line-height: 1; min-width: 32px;
+    }
+    .tt-travel-mode-set button.active {
+      background: #ffffff; border-color: #0d6efd; color: #fff;
+    }
+    .tt-travel-mode-set button:hover { filter: brightness(0.97); }
+  `;
+  document.head.appendChild(style);
+})();*/
 // Replace this function in son9.js
 
 // Update: only clean header sets, we place the visible set near the map
@@ -7299,8 +7370,42 @@ function ensureCanvasRenderer(map) {
   document.head.appendChild(s);
 })();
 
-function wrapRouteControls(day) { return; }
-function wrapRouteControlsForAllDays() { return; }
+function wrapRouteControls(day) {
+  const tm = document.getElementById(`tt-travel-mode-set-day${day}`);
+  const controls = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
+  if (!controls) return;
+
+  const dayContainer = document.getElementById(`day-container-${day}`);
+  const parent = (tm && tm.parentNode === controls.parentNode) ? controls.parentNode : (dayContainer || controls.parentNode);
+
+  const existing = document.getElementById(`route-controls-bar-day${day}`);
+  if (existing) existing.remove();
+
+  const bar = document.createElement('div');
+  bar.className = 'route-controls-bar';
+  bar.id = `route-controls-bar-day${day}`;
+
+  // PATCH:
+  if (controls && controls.parentNode === parent) {
+    parent.insertBefore(bar, controls);
+  } else {
+    parent.appendChild(bar);
+  }
+
+  if (tm) bar.appendChild(tm);
+  bar.appendChild(controls);
+
+  const smallScaleBar = parent.querySelector(`#route-scale-bar-day${day}`);
+  if (smallScaleBar) smallScaleBar.remove();
+}
+
+function wrapRouteControlsForAllDays() {
+  document.querySelectorAll('.day-container').forEach(dc => {
+    const day = parseInt(dc.dataset.day || '0', 10);
+    if (day) wrapRouteControls(day);
+  });
+}
+
 /* Patch: renderLeafletRoute içinde controls eklendikten sonra bar'a sar */
 (function patchRenderLeafletRouteToWrapBar(){
   if (!window.__tt_wrapBarPatched && typeof renderLeafletRoute === 'function') {
