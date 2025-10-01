@@ -1653,6 +1653,135 @@ window.cart = (window.cart || []).filter(it => !it._starter);
 
   window.__gpsImportHandlerAttached = true;
 })();
+
+/* === GPS IMPORT CORE (minimal) === */
+/* Day boşluk kontrolü (updateCart içindeki mantıkla uyumlu tutuyoruz) */
+function __dayIsEmpty(day){
+  day = Number(day);
+  if (!day) return false;
+  return !window.cart.some(it =>
+    it.day === day &&
+    it.name &&
+    !it._starter &&
+    !it._placeholder
+  );
+}
+
+/* Basit GPX parser (trkpt > rtept > wpt fallback) */
+function parseGpxToLatLng(gpxText) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(gpxText, 'application/xml');
+  if (xml.querySelector('parsererror')) return [];
+  const collect = (nodes) => Array.from(nodes).map(el => {
+    const lat = parseFloat(el.getAttribute('lat'));
+    const lon = parseFloat(el.getAttribute('lon'));
+    if (isNaN(lat) || isNaN(lon)) return null;
+    const timeEl = el.querySelector('time');
+    return { lat, lng: lon, time: timeEl ? Date.parse(timeEl.textContent) : null };
+  }).filter(Boolean);
+
+  let pts = collect(xml.getElementsByTagName('trkpt'));
+  if (!pts.length) pts = collect(xml.getElementsByTagName('rtept'));
+  if (!pts.length) pts = collect(xml.getElementsByTagName('wpt'));
+  if (!pts.length) {
+    pts = Array.from(xml.querySelectorAll('[lat][lon]')).map(el => {
+      const lat = parseFloat(el.getAttribute('lat'));
+      const lon = parseFloat(el.getAttribute('lon'));
+      return (!isNaN(lat) && !isNaN(lon)) ? { lat, lng: lon } : null;
+    }).filter(Boolean);
+  }
+  return pts;
+}
+
+/* Basit KML parser (LineString veya coordinates blokları) */
+function parseKmlToLatLng(kmlText){
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(kmlText, 'application/xml');
+  if (xml.querySelector('parsererror')) return [];
+  const coordsNodes = Array.from(xml.getElementsByTagName('coordinates'));
+  const pts = [];
+  coordsNodes.forEach(node => {
+    (node.textContent || '')
+      .trim()
+      .split(/\s+/)
+      .forEach(line => {
+        if (!line) return;
+        const parts = line.split(',');
+        if (parts.length >= 2) {
+          const lon = parseFloat(parts[0]);
+          const lat = parseFloat(parts[1]);
+            if (!isNaN(lat) && !isNaN(lon)) pts.push({ lat, lng: lon });
+        }
+      });
+  });
+  return pts;
+}
+
+/* Ana import fonksiyonu */
+async function importGpsFileForDay(file, day){
+  console.log('[GPS] import start', file.name, '→ day', day);
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const text = await file.text();
+
+  let points = [];
+  if (ext === 'gpx') points = parseGpxToLatLng(text);
+  else if (ext === 'kml') points = parseKmlToLatLng(text);
+  else throw new Error('Unsupported file type: ' + ext);
+
+  if (!points.length) throw new Error('No coordinates found in file.');
+
+  if (!__dayIsEmpty(day)) {
+    console.warn('[GPS] Day not empty, aborting.');
+    return;
+  }
+
+  // Starter & placeholder temizle
+  window.cart = window.cart.filter(it => !it._starter && !it._placeholder);
+
+  // Track meta kaydet (ham çizim modu)
+  window.importedTrackByDay = window.importedTrackByDay || {};
+  window.importedTrackByDay[day] = {
+    rawPoints: points.map(p => ({ lat: p.lat, lng: p.lng, time: p.time || null })),
+    drawRaw: true,
+    fileName: file.name
+  };
+
+  const start = points[0];
+  const finish = points[points.length - 1];
+
+  // Aynı koordinatsa tek item ekle
+  const baseName = file.name.replace(/\.[^.]+$/, '');
+  addToCart(
+    baseName + ' Start',
+    'img/placeholder.png',
+    day,
+    'Track',
+    null,null,null,null,null,
+    { lat: start.lat, lng: start.lng },
+    null,
+    { forceDay: day }
+  );
+
+  if (points.length > 1 &&
+      (Math.abs(finish.lat - start.lat) > 1e-6 || Math.abs(finish.lng - start.lng) > 1e-6)) {
+    addToCart(
+      baseName + ' Finish',
+      'img/placeholder.png',
+      day,
+      'Track',
+      null,null,null,null,null,
+      { lat: finish.lat, lng: finish.lng },
+      null,
+      { forceDay: day }
+    );
+  }
+
+  // UI yenile (addToCart zaten çağırdı ama garanti olsun)
+  if (typeof updateCart === 'function') updateCart();
+  if (typeof renderRouteForDay === 'function') renderRouteForDay(day);
+
+  console.log('[GPS] imported → points:', points.length);
+}
 // 9. removeFromCart fonksiyonu (GÜNCELLENDİ)
 // - Sepet tamamen boşalınca: expanded haritalar + tüm rota/elevation cache temizlenir.
 // - Silinen gün 0 veya 1 noktaya düştüyse: o güne ait rota/elevation + expanded map kalıntıları temizlenir.
