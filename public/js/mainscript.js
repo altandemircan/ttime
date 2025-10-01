@@ -243,7 +243,7 @@ function tt_extractSeedFromRaw(raw){
         const seed = tt_extractSeedFromRaw(raw);
         if (!seed || seed.length < 2){
             suggestionsDiv.innerHTML = "";
-            suggestionsDiv.classList.add('hidden');
+            suggestionsDiv.classList.add('hidden'); 
             return;
         }
         let results=[];
@@ -291,7 +291,7 @@ chatInput.value = canon.canonical;
             };
             suggestionsDiv.appendChild(div);
         });
-        suggestionsDiv.style.display="block";
+       
     }
 
     chatInput.addEventListener("input", ()=>debounce(doAutocomplete,350));
@@ -501,7 +501,7 @@ chatInput.addEventListener("input", debounce(async function () {
             };
             chatSuggestions.appendChild(div);
         });
-        chatSuggestions.style.display = "block";
+        
         return;
     }
     // <---- BURAYA EKLE ---->
@@ -8226,21 +8226,6 @@ if (typeof wrapRouteControlsForAllDays === 'function') {
   document.head.appendChild(s);
 })();
 
-/* 2) Vertical guide line on the map */
-function showMarkerVerticalLineOnMap(map, latlng) {
-  if (!map || !latlng) return;
-  const cont = map.getContainer();
-  if (!cont) return;
-  const pt = map.latLngToContainerPoint(latlng);
-  let line = cont.querySelector('.tt-map-vert-line');
-  if (!line) {
-    line = document.createElement('div');
-    line.className = 'tt-map-vert-line';
-    cont.appendChild(line);
-  }
-  line.style.left = `${Math.round(pt.x)}px`;
-  line.style.display = 'block';
-}
 
 function hideMarkerVerticalLineOnMap(map) {
   const cont = map?.getContainer?.();
