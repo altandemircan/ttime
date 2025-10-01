@@ -7,29 +7,6 @@ function movingAverage(arr, win = 5) {
   });
 }
 
-if (typeof setChatInputValue !== 'function') {
-  window.__programmaticInput = false;
-  function setChatInputValue(str){
-    const inp = document.getElementById('user-input');
-    if (!inp) return;
-    window.__programmaticInput = true;
-    inp.value = str;
-    setTimeout(()=>{ window.__programmaticInput = false; }, 0);
-  }
-}
-
-if (window.selectedLocation?.city &&
-    window.selectedLocation.city.toLowerCase() !== location.toLowerCase()) {
-  addMessage("Input changed. Please reselect the city.", "bot-message");
-  window.isProcessing = false;
-  return;
-}
-
-if (!window.__locationPickedFromSuggestions) {
-  addMessage("Please select a city from the suggestions first.", "bot-message");
-  window.isProcessing = false;
-  return;
-}
 window.cart = window.cart || [];
 
   // Haversine mesafe (metre)
