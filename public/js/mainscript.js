@@ -189,7 +189,30 @@ function disableSendButton() {
     btn.setAttribute("disabled","disabled");
     btn.classList.add("disabled");
 }
+function lockSelectedCity(city, days) {
+    const chatInput = document.getElementById("user-input");
+    if (!chatInput) return;
+    if (!days || days < 1) days = 2;
 
+    // window.selectedLocation: şehir adı dışında koordinat bilmiyoruz (Geoapify sonucu yoksa)
+    window.selectedLocation = {
+        name: city,
+        city: city,
+        country: "",
+        lat: null,
+        lon: null,
+        country_code: ""
+    };
+    window.selectedSuggestion = { displayText: city };
+
+    chatInput.value = `Plan a ${days}-day tour for ${city}`;
+    window.selectedLocationLocked = true;
+
+    enableSendButton();
+
+    const suggestionsDiv = document.getElementById("suggestions");
+    if (suggestionsDiv) suggestionsDiv.style.display = "none";
+}
 // 1. renderSuggestions artık sadece #suggestions alanına öneri yazar
 function renderSuggestions(results) {
     const suggestionsDiv = document.getElementById("suggestions");
@@ -526,79 +549,8 @@ async function validateCity(city) {
 
 
 (function unifyChatInputListener(){
-  const chatInput = document.getElementById("user-input");
-  if (!chatInput) return;
-  const suggestionsDiv = document.getElementById("suggestions");
-  const locationSuggestDiv = document.getElementById("chat-location-suggestions");
-
-  const MIN_LEN = 2;
-
-  const run = debounce(async function() {
-    const raw = chatInput.value.trim();
-    if (raw.length < MIN_LEN) {
-      suggestionsDiv && (suggestionsDiv.style.display = "none");
-      locationSuggestDiv && (locationSuggestDiv.style.display = "none");
-      return;
-    }
-
-    // Kullanıcı ülke adı girdiyse (countryPopularCities yapın)
-    const firstToken = raw.split(/\s+/)[0];
-    if (countryPopularCities[firstToken]) {
-      // Şehir listesi göster
-      if (suggestionsDiv) {
-        suggestionsDiv.innerHTML = "";
-        countryPopularCities[firstToken].forEach(c => {
-          const opt = document.createElement("div");
-            opt.className = "category-area-option";
-            opt.textContent = c;
-            opt.onclick = () => {
-              // seçince input'a normal format konur
-              chatInput.value = `Plan a 2-day tour for ${c}`;
-              suggestionsDiv.style.display = "none";
-              chatInput.focus();
-            };
-            suggestionsDiv.appendChild(opt);
-        });
-        suggestionsDiv.style.display = "block";
-      }
-      locationSuggestDiv && (locationSuggestDiv.style.display = "none");
-      return;
-    }
-
-    // Normal autocomplete (şehir / yer)
-    const { city } = extractCityAndDays(raw);
-    if (!city) {
-      suggestionsDiv && (suggestionsDiv.style.display = "none");
-      locationSuggestDiv && (locationSuggestDiv.style.display = "none");
-      return;
-    }
-    let results = [];
-    try {
-      results = await geoapifyAutocomplete(city);
-    } catch(e){ results = []; }
-
-    // Öneri alanını aynı kullanıyoruz (sadelik)
-    if (suggestionsDiv) {
-      suggestionsDiv.innerHTML = "";
-      results.slice(0,7).forEach(r => {
-        const p = r.properties;
-        const cityName = p.city || p.name || "";
-        if (!cityName) return;
-        const opt = document.createElement("div");
-        opt.className = "category-area-option";
-        opt.textContent = `Plan a ${extractCityAndDays(raw).days}-day tour for ${cityName}`;
-        opt.onclick = () => {
-          chatInput.value = opt.textContent;
-          suggestionsDiv.style.display = "none";
-          chatInput.focus();
-        };
-        suggestionsDiv.appendChild(opt);
-      });
-      suggestionsDiv.style.display = results.length ? "block" : "none";
-    }
-  }, 400);
-
-  chatInput.addEventListener("input", run);
+  // DEVRE DISI: Lokasyon kilit mantığını bozduğundan kapatıldı
+  return;
 })();
 
 chatInput.addEventListener("input", function() {
@@ -922,15 +874,6 @@ async function getLLMResponse(aiData) {
     return response.json();
 }
 
-
-
-userInput.addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-        const val = userInput.value.trim();
-        if (val) handleAnswer(val);
-        event.preventDefault();
-    }
-});
 
 document.getElementById("send-button").addEventListener("click", function() {
     const val = userInput.value.trim();
