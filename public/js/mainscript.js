@@ -57,14 +57,6 @@ function showCitySuggestions(country, days) {
 }
 
 
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('city-option-btn')) {
-        const city = e.target.getAttribute('data-city');
-        const days = parseInt(e.target.getAttribute('data-days'), 10) || 2;
-        handleAnswer(`${city} ${days} days`);
-    }
-});
-
 // Update your existing event listener to this:
 document.addEventListener('click', function(event) {
   // Check if clicked element is the arrow image or its parent
@@ -809,11 +801,7 @@ async function handleAnswer(answer) {
 
     window.selectedCity = location; // Diğer kodların beklentisini bozmuyoruz
 
-    // Ülke → şehir seçtirme adımı
-    if (countryPopularCities[location]) {
-      askCityForCountry(location, days);
-      return; // Ülke seçimi ekranına geçtiğimiz için burada duruyoruz
-    }
+  
 
     // OTOMATİK PLAN ÜRETİMİ (mevcut davranışı koru)
     latestTripPlan = await buildPlan(location, days);
@@ -1547,21 +1535,6 @@ addMessage(`No places found for this category in "${city}".`, "bot-message");
 
 
 
-function askCityForCountry(country, days) {
-    const options = countryPopularCities[country] || [];
-    if (options.length === 0) {
-addMessage("Please specify the city you want to visit.", "bot-message");
-        return;
-    }
-let message = `Which city do you want to visit?`;
-    message += '<br><div class="city-options">';
-    options.forEach(city => {
-        // Burada!
-        message += `<button class="city-option-btn" data-city="${city}" data-days="${days}">${city}</button>`;
-    });
-    message += '</div>';
-    addMessage(message, "bot-message");
-}
 
 // 2. Butonla şehir seçildiğinde de güncelle
 window.handleCitySelection = async function(city, days) {
