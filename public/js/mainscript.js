@@ -451,17 +451,14 @@ function selectSuggestion(option) {
         userInput.focus();
     }
 }
-
 function handleKeyPress(event) {
-    if (event.key !== "Enter") return;
-
-    if (window.isProcessing) {
-        event.preventDefault();
-        return;
-    }
-
-    sendMessage();
+  if (event.key !== "Enter") return;
+  if (window.isProcessing) {
     event.preventDefault();
+    return;
+  }
+  sendMessage();
+  event.preventDefault();
 }
 // Basit şehir adı normalizasyonu (ör: "rome", "ROMe  " -> "Rome")
 function normalizeCityName(raw) {
@@ -593,14 +590,14 @@ async function validateCity(city) {
 
 
 async function handleAnswer(answer) {
-  // Concurrency guard
+  // Concurrency guard: aynı anda ikinci isteği engelle
   if (window.isProcessing) return;
   window.isProcessing = true;
 
   const inputEl = document.getElementById("user-input");
   const raw = (answer || "").toString().trim();
 
-  // UI: input’ı temizle
+  // Input'u temizle (kullanıcı hemen yeni şey yazabilsin)
   if (inputEl) inputEl.value = "";
 
   // Çok kısa veya tamamen boş ise
@@ -615,7 +612,7 @@ async function handleAnswer(answer) {
   window.lastUserQuery = raw;
 
   try {
-    // Mevcut parse fonksiyonunu kullanıyoruz (değiştirmiyorum)
+    // Mevcut parse fonksiyonunu kullanıyoruz
     const { location, days } = parsePlanRequest(raw);
 
     // parsePlanRequest beklenen alanları çıkaramadıysa
@@ -624,21 +621,21 @@ async function handleAnswer(answer) {
       return;
     }
 
-    // Lokasyon kısa ve çok genel / tek karakter seti ise (basit bir gürültü filtresi)
+    // Ekstra gürültü filtresi
     if (location.length < 2) {
       addMessage("Location name looks too short. Please clarify (e.g. 'Osaka 1 day').", "bot-message");
       return;
     }
 
-    window.selectedCity = location; // (Şimdilik değişken adını bozmadım, diğer kod buna güveniyor)
+    window.selectedCity = location; // Diğer kodların beklentisini bozmuyoruz
 
-    // Ülke seçimi listesi (mevcut davranışı koruyor)
+    // Ülke → şehir seçtirme adımı
     if (countryPopularCities[location]) {
       askCityForCountry(location, days);
-      return; // country seçimi popup’ı açtık, plan üretimine girmiyoruz
+      return; // Ülke seçimi ekranına geçtiğimiz için burada duruyoruz
     }
 
-    // OTOMATİK PLAN ÜRETMEYİ KORUYORUZ
+    // OTOMATİK PLAN ÜRETİMİ (mevcut davranışı koru)
     latestTripPlan = await buildPlan(location, days);
     latestTripPlan = await enrichPlanWithWiki(latestTripPlan);
 
@@ -711,6 +708,44 @@ function addMessage(text, className) {
 }
 
 
+async function validateLocation(rawName, minConfidence = 0.6) {
+  if (!rawName || typeof rawName !== 'string') return null;
+
+  const q = rawName.trim();
+  if (q.length < 2) return null;
+
+  const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(q)}&limit=1&apiKey=${GEOAPIFY_API_KEY}`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (!data.features || !data.features.length) return null;
+
+    const feat = data.features[0];
+    const p = feat.properties || {};
+    const confidence = (p.rank && typeof p.rank.confidence === 'number')
+      ? p.rank.confidence
+      : (p.rank && p.rank.confidence_city_level) || 0;
+
+    if (confidence < minConfidence) return null;
+    if (typeof p.lat !== 'number' || typeof p.lon !== 'number') return null;
+
+    // Kullanıcıya gösterebileceğin normalize ad
+    const displayName =
+      p.name || p.city || p.town || p.village || p.hamlet ||
+      p.suburb || p.neighbourhood || p.quarter || p.district ||
+      p.county || p.state || p.region || p.country || rawName;
+
+    return {
+      lat: p.lat,
+      lon: p.lon,
+      displayName,
+      confidence
+    };
+  } catch {
+    return null;
+  }
+}
 
  function showTypingIndicator() {
     const chatBox = document.getElementById("chat-box"); // <-- EKLE!
