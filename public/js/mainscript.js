@@ -233,7 +233,7 @@ function tt_extractSeedFromRaw(raw){
         const raw = chatInput.value.trim();
         if (raw.length < 2){
             suggestionsDiv.innerHTML="";
-            suggestionsDiv.style.display="none";
+      
             return;
         }
         const dayMatch = raw.match(/(\d+)\s*-?\s*(day|gün)/i);
@@ -243,7 +243,7 @@ function tt_extractSeedFromRaw(raw){
         const seed = tt_extractSeedFromRaw(raw);
         if (!seed || seed.length < 2){
             suggestionsDiv.innerHTML = "";
-            suggestionsDiv.style.display = "none";
+            
             return;
         }
         let results=[];
@@ -324,7 +324,7 @@ chatInput.value = canon.canonical;
 updateCanonicalPreview();
 
     const suggestionsDiv = document.getElementById("suggestions");
-    if (suggestionsDiv) suggestionsDiv.style.display = "none";
+
 }
 // 1. renderSuggestions artık sadece #suggestions alanına öneri yazar
 // (Yardımcılar yoksa ekle; zaten varsa bu bloğu atla)
@@ -456,7 +456,7 @@ chatInput.addEventListener("input", debounce(async function () {
             div.textContent = city;
             div.onclick = () => {
                 chatInput.value = city + " " + queryText.replace(locationQuery, "").trim();
-                suggestionsDiv.style.display = "none";
+
                 chatInput.focus();
             };
             suggestionsDiv.appendChild(div);
