@@ -453,10 +453,7 @@ function selectSuggestion(option) {
 }
 function handleKeyPress(event) {
   if (event.key !== "Enter") return;
-  if (window.isProcessing) {
-    event.preventDefault();
-    return;
-  }
+  if (window.isProcessing) { event.preventDefault(); return; }
   sendMessage();
   event.preventDefault();
 }
@@ -588,19 +585,13 @@ async function validateCity(city) {
 })();
 
 
-
 async function handleAnswer(answer) {
-  // Concurrency guard: aynı anda ikinci isteği engelle
   if (window.isProcessing) return;
   window.isProcessing = true;
 
   const inputEl = document.getElementById("user-input");
   const raw = (answer || "").toString().trim();
-
-  // Input'u temizle (kullanıcı hemen yeni şey yazabilsin)
   if (inputEl) inputEl.value = "";
-
-  // Çok kısa veya tamamen boş ise
   if (!raw || raw.length < 2) {
     addMessage("Please enter a location request (e.g. 'Rome 2 days').", "bot-message");
     window.isProcessing = false;
@@ -612,61 +603,60 @@ async function handleAnswer(answer) {
   window.lastUserQuery = raw;
 
   try {
-    // Mevcut parse fonksiyonunu kullanıyoruz
     const { location, days } = parsePlanRequest(raw);
-
-    // parsePlanRequest beklenen alanları çıkaramadıysa
     if (!location || !days || isNaN(days)) {
-      addMessage("I could not understand that. Try for example: 'Paris 3 days' or 'Plan a 2-day tour for Rome'.", "bot-message");
+      addMessage("I could not understand that. Try: 'Paris 3 days' or 'Plan a 2-day tour for Rome'.", "bot-message");
       return;
     }
-
-    // Ekstra gürültü filtresi
     if (location.length < 2) {
-      addMessage("Location name looks too short. Please clarify (e.g. 'Osaka 1 day').", "bot-message");
+      addMessage("Location name looks too short. Try again.", "bot-message");
       return;
     }
 
-    window.selectedCity = location; // Diğer kodların beklentisini bozmuyoruz
-
-    // Ülke → şehir seçtirme adımı
-    if (countryPopularCities[location]) {
-      askCityForCountry(location, days);
-      return; // Ülke seçimi ekranına geçtiğimiz için burada duruyoruz
+    // Lokasyon doğrulama (validateLocation varsa onu kullan)
+    let validated = null;
+    if (typeof validateLocation === 'function') {
+      validated = await validateLocation(location, 0.6);
+    } else if (typeof validateCity === 'function') {
+      const c = await validateCity(location);
+      if (c) validated = { displayName: location, lat: c.lat, lon: c.lon };
+    }
+    if (!validated) {
+      addMessage(`'${location}' not found. Please refine.`, "bot-message");
+      return;
     }
 
-    // OTOMATİK PLAN ÜRETİMİ (mevcut davranışı koru)
-    latestTripPlan = await buildPlan(location, days);
+    window.selectedCity = validated.displayName || location;
+
+    if (countryPopularCities[window.selectedCity]) {
+      askCityForCountry(window.selectedCity, days);
+      return;
+    }
+
+    latestTripPlan = await buildPlan(window.selectedCity, days);
     latestTripPlan = await enrichPlanWithWiki(latestTripPlan);
 
     if (latestTripPlan && latestTripPlan.length > 0) {
       window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
       window.cart = JSON.parse(JSON.stringify(latestTripPlan));
       saveCurrentTripToStorage();
-
       showResults();
       updateTripTitle();
-
       const inputWrapper = document.querySelector('.input-wrapper');
       if (inputWrapper) inputWrapper.style.display = 'none';
-
       isFirstQuery = false;
-
-      if (typeof openTripSidebar === "function") {
-        openTripSidebar();
-      }
+      if (typeof openTripSidebar === "function") openTripSidebar();
     } else {
       addMessage("Could not create a plan for the specified location.", "bot-message");
     }
-  } catch (error) {
-    console.error("Plan creation error:", error);
-    addMessage("Please specify a valid location and number of days (e.g. 'Rome 2 days', 'Paris 3 days').", "bot-message");
+  } catch (err) {
+    console.error("Plan creation error:", err);
+    addMessage("Please specify a valid location and number of days (e.g. 'Rome 2 days').", "bot-message");
   } finally {
     hideTypingIndicator();
     window.isProcessing = false;
   }
 }
-
 function sendMessage() {
   if (window.isProcessing) return;
   const input = document.getElementById("user-input");
@@ -675,7 +665,6 @@ function sendMessage() {
   if (!val) return;
   handleAnswer(val);
 }
-
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
 
@@ -707,44 +696,29 @@ function addMessage(text, className) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-
 async function validateLocation(rawName, minConfidence = 0.6) {
   if (!rawName || typeof rawName !== 'string') return null;
-
   const q = rawName.trim();
   if (q.length < 2) return null;
-
   const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(q)}&limit=1&apiKey=${GEOAPIFY_API_KEY}`;
   try {
     const resp = await fetch(url);
     if (!resp.ok) return null;
     const data = await resp.json();
     if (!data.features || !data.features.length) return null;
-
     const feat = data.features[0];
     const p = feat.properties || {};
-    const confidence = (p.rank && typeof p.rank.confidence === 'number')
-      ? p.rank.confidence
-      : (p.rank && p.rank.confidence_city_level) || 0;
-
+    const confidence =
+      (p.rank && typeof p.rank.confidence === 'number') ? p.rank.confidence :
+      (p.rank && p.rank.confidence_city_level) || 0;
     if (confidence < minConfidence) return null;
     if (typeof p.lat !== 'number' || typeof p.lon !== 'number') return null;
-
-    // Kullanıcıya gösterebileceğin normalize ad
     const displayName =
       p.name || p.city || p.town || p.village || p.hamlet ||
       p.suburb || p.neighbourhood || p.quarter || p.district ||
       p.county || p.state || p.region || p.country || rawName;
-
-    return {
-      lat: p.lat,
-      lon: p.lon,
-      displayName,
-      confidence
-    };
-  } catch {
-    return null;
-  }
+    return { lat: p.lat, lon: p.lon, displayName, confidence };
+  } catch { return null; }
 }
 
  function showTypingIndicator() {
@@ -881,20 +855,6 @@ async function getLLMResponse(aiData) {
 
 
 
-userInput.addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-        const val = userInput.value.trim();
-        if (val) handleAnswer(val);
-        event.preventDefault();
-    }
-});
-
-document.getElementById("send-button").addEventListener("click", function() {
-    const val = userInput.value.trim();
-    if (val) handleAnswer(val);
-});
-
-
 
 function updateTripTitle() {
     const tripTitleDiv = document.getElementById("trip_title");
@@ -985,48 +945,47 @@ function showAITags(place) {
 }
 
 async function fillAIDescriptionsAutomatically() {
-    document.querySelectorAll('.steps').forEach(async stepsDiv => {
-        const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
-        if (!infoView) return;
-        const descriptionDiv = infoView.querySelector('.description');
-        if (!descriptionDiv) return;
-        if (descriptionDiv.dataset.aiFilled) return;
+  const steps = Array.from(document.querySelectorAll('.steps'));
+  for (const stepsDiv of steps) {
+    const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
+    if (!infoView) continue;
+    const descriptionDiv = infoView.querySelector('.description');
+    if (!descriptionDiv) continue;
+    if (descriptionDiv.dataset.aiFilled) continue;
 
-        // Loading animasyonu göster
-        descriptionDiv.innerHTML = `
-            <img src="img/information_icon.svg">
-            <span class="ai-guide-loading">
-                AI Guide loading...
-                <span class="dot-anim">.</span>
-                <span class="dot-anim">.</span>
-                <span class="dot-anim">.</span>
-            </span>
-        `;
+    descriptionDiv.innerHTML = `
+      <img src="img/information_icon.svg">
+      <span class="ai-guide-loading">
+        AI Guide loading...
+        <span class="dot-anim">.</span>
+        <span class="dot-anim">.</span>
+        <span class="dot-anim">.</span>
+      </span>
+    `;
 
-        const name = infoView.querySelector('.title')?.textContent?.trim() || '';
-        const address = infoView.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '';
-        const city = window.selectedCity || '';
-        const category = stepsDiv.getAttribute('data-category') || '';
+    const name = infoView.querySelector('.title')?.textContent?.trim() || '';
+    const address = infoView.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+    const city = window.selectedCity || '';
+    const category = stepsDiv.getAttribute('data-category') || '';
+    if (!name || !city) continue;
 
-        if (!name || !city) return;
-
-            try {
-        const resp = await fetch('/llm-proxy/item-guide', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, address, city, category }),
-        });
-        const data = await resp.json();
-        if (data.text) {
-            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
-            descriptionDiv.dataset.aiFilled = "1";
-        } else {
-            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI description could not be retrieved."}</span>`;
-        }
+    try {
+      const resp = await fetch('/llm-proxy/item-guide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, address, city, category }),
+      });
+      const data = await resp.json();
+      if (data.text) {
+        descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
+        descriptionDiv.dataset.aiFilled = "1";
+      } else {
+        descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI description could not be retrieved."}</span>`;
+      }
     } catch {
-        descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
+      descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
     }
-});
+  }
 }
 
 let hasAutoAddedToCart = false;
@@ -1118,7 +1077,6 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
-    setTimeout(fillAIDescriptionsSeq, 300);
     setTimeout(fillAIDescriptionsAutomatically, 300);
 
     setTimeout(() => {
@@ -1147,50 +1105,7 @@ setTimeout(() => {
 }
 
 
-async function fillAIDescriptionsSeq() {
-    const steps = Array.from(document.querySelectorAll('.steps'));
-    for (const stepsDiv of steps) {
-        const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
-        if (!infoView) continue;
-        const descriptionDiv = infoView.querySelector('.description');
-        if (!descriptionDiv) continue;
-        if (descriptionDiv.dataset.aiFilled) continue;
 
-        descriptionDiv.innerHTML = `
-            <img src="img/information_icon.svg">
-            <span class="ai-guide-loading">
-                AI Guide loading...
-                <span class="dot-anim">.</span>
-                <span class="dot-anim">.</span>
-                <span class="dot-anim">.</span>
-            </span>
-        `;
-
-        const name = infoView.querySelector('.title')?.textContent?.trim() || '';
-        const address = infoView.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '';
-        const city = window.selectedCity || '';
-        const category = stepsDiv.getAttribute('data-category') || '';
-
-        if (!name || !city) continue;
-
-        try {
-            const resp = await fetch('/llm-proxy/item-guide', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, address, city, category })
-            });
-            const data = await resp.json();
-            if (data.text) {
-                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
-                descriptionDiv.dataset.aiFilled = "1";
-            } else {
-                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI açıklama alınamadı."}</span>`;
-            }
-        } catch {
-            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
-        }
-    }
-}
 
 // 3. Frontend'de metni biçimlendirme
 /*function formatAIResponse(text) {
@@ -1392,7 +1307,7 @@ async function buildPlan(city, days) {
   let categoryResults = {};
 
   for (const cat of categories) {
-    categoryResults[cat] = await getPlacesForCategory(city, cat, 30);
+    categoryResults[cat] = await getPlacesForCategory(city, cat, 16);
   }
 
   for (let day = 1; day <= days; day++) {
@@ -1401,10 +1316,14 @@ async function buildPlan(city, days) {
     for (const cat of categories) {
       const places = categoryResults[cat];
       if (places.length > 0) {
-        let idx;
-        do {
-          idx = Math.floor(Math.random() * places.length);
-        } while (usedIndexes[cat] && usedIndexes[cat].includes(idx) && usedIndexes[cat].length < places.length);
+        if (!places._shuffled) {
+  places._shuffled = true;
+  for (let i = places.length - 1; i > 0; i--) {
+    const r = Math.floor(Math.random() * (i + 1));
+    [places[i], places[r]] = [places[r], places[i]];
+  }
+}
+const idx = usedIndexes[cat]?.length || 0;
 
         usedIndexes[cat] = usedIndexes[cat] || [];
         usedIndexes[cat].push(idx);
@@ -1983,9 +1902,7 @@ async function importGpsFileForDay(file, day){
     );
   }
 
-  // UI yenile (addToCart zaten çağırdı ama garanti olsun)
-  if (typeof updateCart === 'function') updateCart();
-  if (typeof renderRouteForDay === 'function') renderRouteForDay(day);
+
 
   console.log('[GPS] imported → points:', points.length);
 }
