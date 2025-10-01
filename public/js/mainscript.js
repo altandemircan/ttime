@@ -198,7 +198,41 @@ function disableSendButton() {
     let timer;
 
     function debounce(fn, w=350){ clearTimeout(timer); timer=setTimeout(fn,w); }
+    // --- PATCH: Improved seed extraction (city inference) ---
+    function tt_capitalizeWords(str){
+        return str.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
 
+    function tt_extractSeedFromRaw(raw){
+        if (!raw || typeof raw !== 'string') return '';
+        let cleaned = raw
+            .replace(/\b(plan|planning|create|make|do|build|generate)\b/ig,' ')
+            .replace(/\b(a|an|the|tour|trip|city|program|itinerary|route|for|in|to|of|please|give|show)\b/ig,' ')
+            .replace(/\d+\s*(day|days|gün)/ig,' ')
+            .replace(/[,.;:!?]+/g,' ')
+            .replace(/\s+/g,' ')
+            .trim();
+
+        if (!cleaned) return '';
+
+        const tokens = cleaned.split(' ').filter(Boolean);
+
+        // Önden hızlı çıkışlar
+        if (tokens.length === 1) return tt_capitalizeWords(tokens[0]);
+
+        // Sondan 2 kelimelik olası şehir (New York, San Francisco, Rio de Janeiro(3) vb.)
+        // Basit yaklaşım: sondan 3, 2, 1 parçayı sırayla dene
+        for (let span = Math.min(3, tokens.length); span >= 2; span--) {
+            const candidate = tokens.slice(-span).join(' ');
+            if (/^[A-Za-zÇĞİÖŞÜ][\w'’\-çğıöşü]+(?:\s+[A-Za-zÇĞİÖŞÜ][\w'’\-çğıöşü]+){0,2}$/.test(candidate)) {
+                return tt_capitalizeWords(candidate);
+            }
+        }
+
+        // Yoksa son kelime
+        return tt_capitalizeWords(tokens[tokens.length - 1]);
+    }
+    // --- /PATCH ---
     async function doAutocomplete(){
         if (window.selectedLocationLocked) return;
         const raw = chatInput.value.trim();
@@ -211,14 +245,12 @@ function disableSendButton() {
         let days = dayMatch ? parseInt(dayMatch[1],10) : 2;
         if (!days || days<1) days=2;
 
-        let seed = raw.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü'’\-]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü'’\-]+)*)$/);
-        seed = seed ? seed[1] : raw.split(/\s+/).pop();
+        const seed = tt_extractSeedFromRaw(raw);
         if (!seed || seed.length < 2){
-            suggestionsDiv.innerHTML="";
-            suggestionsDiv.style.display="none";
+            suggestionsDiv.innerHTML = "";
+            suggestionsDiv.style.display = "none";
             return;
         }
-
         let results=[];
         try { results = await geoapifyAutocomplete(seed); } catch(e){ results=[]; }
 
