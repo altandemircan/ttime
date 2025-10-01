@@ -185,6 +185,51 @@ function disableSendButton() {
     btn.setAttribute("disabled","disabled");
     btn.classList.add("disabled");
 }
+
+
+// --- Instant suggestions (fastAutocomplete) ---
+let __autoAbort = null;
+function fastAutocomplete() {
+  const chatInput = document.getElementById('user-input');
+  const suggestionsDiv = document.getElementById('suggestions');
+  if (!chatInput || !suggestionsDiv) return;
+  if (window.selectedLocationLocked) return;
+
+  const raw = chatInput.value.trim();
+  if (raw.length < 2) {
+    suggestionsDiv.innerHTML = "";
+    suggestionsDiv.classList.add('hidden');
+    return;
+  }
+
+  if (__autoAbort) __autoAbort.abort();
+  __autoAbort = new AbortController();
+
+  const seed = (typeof tt_extractSeedFromRaw === 'function')
+    ? tt_extractSeedFromRaw(raw)
+    : raw.split(/\s+/).pop();
+  if (!seed || seed.length < 2) {
+    suggestionsDiv.innerHTML = "";
+    suggestionsDiv.classList.add('hidden');
+    return;
+  }
+
+  // Loading placeholder
+  suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.55;">Loading...</div>`;
+  suggestionsDiv.classList.remove('hidden');
+
+  geoapifyAutocomplete(seed, __autoAbort.signal)
+    .then(results => {
+      renderSuggestions(results || []);
+    })
+    .catch(err => {
+      if (err.name === 'AbortError') return;
+      suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.55;">No results</div>`;
+      suggestionsDiv.classList.remove('hidden');
+    });
+}
+
+
 // === LIGHT AUTOCOMPLETE (lokasyon kilidi yokken) ===
 // Lightweight autocomplete patch
 (function attachLightAutocomplete(){
@@ -302,8 +347,12 @@ function tt_extractSeedFromRaw(raw){
        
     }
 
-    chatInput.addEventListener("input", ()=>debounce(doAutocomplete,350));
-  
+    chatInput.addEventListener("input", () => {
+  if (window.__skipInputOnce) { window.__skipInputOnce = false; return; }
+  fastAutocomplete();
+});
+
+
 })();
 function lockSelectedCity(city, days) {
     const chatInput = document.getElementById("user-input");
@@ -965,71 +1014,48 @@ function sendMessage() {
   const val = input.value.trim();
   if (!val) return;
 
+  // Öneriler yükleniyorken/gelmeden Enter basmayı engellemek istersen (opsiyonel flag):
+  if (!window.__locationPickedFromSuggestions) {
+    addMessage("Please select a city from the suggestions first.", "bot-message");
+    return;
+  }
 
-  // Canonical normalization (always try)
   const formatted = formatCanonicalPlan(val);
 
-
-  // Show canonical diff only if there is an actual change
-  if (formatted.canonical && formatted.changed) {
-      const diffHtml = `
-        <div class="canonical-diff">
-          <span class="raw-strike">${strikeThrough(val)}</span>
-          <span class="canon-arrow">→</span>
-          <span class="canon-text">${formatted.canonical}</span>
-        </div>
-      `;
-      addMessage(diffHtml, "user-message");   // custom bubble
-      window.__suppressNextUserEcho = true;   // prevent handleAnswer from echoing
-      // Feed simplified form (City + days) into handleAnswer
-      handleAnswer(`${formatted.city} ${formatted.days} days`);
-      input.value = ""; // clear after send
-      return;
+  // Diff sadece seçim yapılmışsa
+  if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
+    const diffHtml = `
+      <div class="canonical-diff">
+        <span class="raw-strike">${strikeThrough(val)}</span>
+        <span class="canon-arrow">→</span>
+        <span class="canon-text">${formatted.canonical}</span>
+      </div>
+    `;
+    addMessage(diffHtml, "user-message");
+    window.__suppressNextUserEcho = true;
+    handleAnswer(`${formatted.city} ${formatted.days} days`);
+    input.value = "";
+    return;
   }
 
-  // If already canonical format (or no change), keep previous behavior:
-  // Do we have the locked location requirement?
-  if (!window.selectedLocationLocked || !window.selectedLocation) {
-      addMessage("Please select a location from the suggestions first.", "bot-message");
-      return;
-  }
-
-  // Standard canonical pattern path (still supported)
+  // Lokasyon kilidi yine güvenlik
   if (!window.selectedLocationLocked || !window.selectedLocation) {
     addMessage("Please select a city from the suggestions first.", "bot-message");
     return;
-}
+  }
+
+  // Canonical formatta ise doğrudan parse
   const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
   if (m) {
-      let days = parseInt(m[1], 10);
-      if (!days || days < 1) days = 2;
-      const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
-      const diffHtml = `
-        <div class="canonical-diff">
-          <span class="raw-strike">${strikeThrough(val)}</span>
-          <span class="canon-arrow">→</span>
-          <span class="canon-text">${`Plan a ${days}-day tour for ${city}`}</span>
-        </div>
-      `;
-      addMessage(diffHtml, "user-message");
-window.__suppressNextUserEcho = true;
-
-if (!window.selectedLocationLocked || !window.selectedLocation) {
-    addMessage("Please select a city from the suggestions first.", "bot-message");
-    // Plan başlatma yok. input temizlemek istersen:
-    // input.value = "";
+    let days = parseInt(m[1], 10);
+    if (!days || days < 1) days = 2;
+    const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
+    window.__suppressNextUserEcho = true;
+    handleAnswer(`${city} ${days} days`);
+    input.value = "";
     return;
-}
-
-// Artık gerçekten seçilmiş kilitli şehir var → plan üret
-handleAnswer(`${formatted.city} ${formatted.days} days`);
-input.value = "";
-window.__lastManualRaw = "";
-return;
   }
 
-  // Fallback: let handleAnswer parse raw (no diff)
-  // (Will still echo unless suppressed)
   handleAnswer(val);
 }
 document.getElementById('send-button').addEventListener('click', sendMessage);
