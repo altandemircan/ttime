@@ -501,7 +501,6 @@ chatInput.addEventListener("input", debounce(async function () {
             };
             chatSuggestions.appendChild(div);
         });
-        chatSuggestions.style.display = "block";
         return;
     }
     // <---- BURAYA EKLE ---->
