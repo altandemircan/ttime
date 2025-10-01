@@ -635,20 +635,19 @@ function parsePlanRequest(text) {
     return { location, days };
 }
 // === CANONICAL PLAN FORMATTER (English-only) ===
+// === Canonical Plan Normalizer & Strikethrough Helpers ===
 function formatCanonicalPlan(rawInput) {
-    if (!rawInput || typeof rawInput !== 'string') {
-        return { canonical: "", city: "", days: 1 };
-    }
+    if (!rawInput || typeof rawInput !== 'string')
+        return { canonical: "", city: "", days: 1, changed: false };
 
-    // Remove strike-through combining chars
-    let raw = rawInput.replace(/\u0336/g, '').trim();
+    let raw = rawInput.replace(/\u0336/g, '').trim(); // strip combining strikethrough if any
 
-    // Extract day count (English only)
+    // Extract days (English only)
     let dayMatch = raw.match(/(\d+)\s*(?:-?\s*(day|days))\b/i);
     let days = dayMatch ? parseInt(dayMatch[1], 10) : null;
     if (!days || isNaN(days) || days < 1) days = 1;
 
-    // Remove filler / command words
+    // Remove filler words to isolate city tail
     let cleaned = raw
         .replace(/\b(plan|planning|travel|trip|tour|itinerary|program|create|make|build|generate|please|show|give)\b/ig, ' ')
         .replace(/\b(for|in|to|a|an|the|of|city)\b/ig, ' ')
@@ -661,22 +660,30 @@ function formatCanonicalPlan(rawInput) {
 
     const tokens = cleaned.split(/\s+/).filter(Boolean);
     let city = "";
-
     for (let span = Math.min(4, tokens.length); span >= 1; span--) {
-        const candidate = tokens.slice(tokens.length - span).join(' ');
-        if (/^[\p{L}][\p{L}\p{M}'’\-\s.]+$/u.test(candidate)) {
-            city = candidate;
-            break;
-        }
+        const cand = tokens.slice(tokens.length - span).join(' ');
+        if (/^[\p{L}][\p{L}\p{M}'’\-\s.]+$/u.test(cand)) { city = cand; break; }
     }
     if (!city && tokens.length) city = tokens[tokens.length - 1];
 
-    city = city.split(/\s+/)
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
+    // Capitalize each word
+    city = city.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
     const canonical = `Plan a ${days}-day tour for ${city}`;
-    return { canonical, city, days };
+    // Compare normalized versions to know if different
+    const changed = canonical.trim().toLowerCase() !== raw.trim().toLowerCase();
+    return { canonical, city, days, changed };
+}
+
+// Convert plain text to struck-through version using combining char U+0336
+function strikeThrough(text) {
+    if (!text) return "";
+    return text
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split('')
+        .map(ch => ch + '\u0336')
+        .join('');
 }
 document.addEventListener('DOMContentLoaded', function() {
   const ui = document.getElementById('user-input');
@@ -685,13 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ui.addEventListener('focus', debouncedUpdateCanonicalPreview);
   }
 });
-// Strikethrough helper (her karakter üstüne U+0336)
-function strikeThrough(text) {
-  if (!text) return "";
-  // Gereksiz boşlukları tek boşluğa indir
-  const trimmed = text.replace(/\s+/g, ' ').trim();
-  return trimmed.split('').map(ch => ch + '\u0336').join('');
-}
+
 
 // ÖNİZLEME GÜNCELLE
 function updateCanonicalPreview() {
@@ -846,7 +847,11 @@ async function handleAnswer(answer) {
     return;
   }
 
-  addMessage(raw, "user-message");
+  if (window.__suppressNextUserEcho) {
+      window.__suppressNextUserEcho = false;
+  } else {
+      addMessage(raw, "user-message");
+  }
   showTypingIndicator();
   window.lastUserQuery = raw;
 
@@ -907,39 +912,72 @@ function sendMessage() {
   const input = document.getElementById("user-input");
   if (!input) return;
   const val = input.value.trim();
-  const formatted = formatCanonicalPlan(val);
-if (formatted.canonical) {
-    // Input alanını zorla normalize et
-    input.value = formatted.canonical;
-
-    // Gönderim mantığında handleAnswer şehir + gün formatı bekliyor
-    handleAnswer(`${formatted.city} ${formatted.days} days`);
-    return;
-}
   if (!val) return;
 
-  // YENİ KONTROL: Lokasyon kilit seçilmemişse engelle
+  // Canonical normalization (always try)
+  const formatted = formatCanonicalPlan(val);
+
+  // If we successfully parsed a city, auto-lock location if not already
+  if (formatted.city && (!window.selectedLocationLocked || !window.selectedLocation)) {
+      window.selectedLocation = {
+          name: formatted.city,
+          city: formatted.city,
+          country: "",
+          lat: null,
+          lon: null,
+          country_code: ""
+      };
+      window.selectedLocationLocked = true;
+  }
+
+  // Show canonical diff only if there is an actual change
+  if (formatted.canonical && formatted.changed) {
+      const diffHtml = `
+        <div class="canonical-diff">
+          <span class="raw-strike">${strikeThrough(val)}</span>
+          <span class="canon-arrow">→</span>
+          <span class="canon-text">${formatted.canonical}</span>
+        </div>
+      `;
+      addMessage(diffHtml, "user-message");   // custom bubble
+      window.__suppressNextUserEcho = true;   // prevent handleAnswer from echoing
+      // Feed simplified form (City + days) into handleAnswer
+      handleAnswer(`${formatted.city} ${formatted.days} days`);
+      input.value = ""; // clear after send
+      return;
+  }
+
+  // If already canonical format (or no change), keep previous behavior:
+  // Do we have the locked location requirement?
   if (!window.selectedLocationLocked || !window.selectedLocation) {
       addMessage("Please select a location from the suggestions first.", "bot-message");
       return;
   }
 
-  // Standart formattaysa gün sayısını parse edip handleAnswer’a sade format gönder
+  // Standard canonical pattern path (still supported)
   const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
   if (m) {
-      let days = parseInt(m[1],10);
+      let days = parseInt(m[1], 10);
       if (!days || days < 1) days = 2;
       const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
-      // Kullanıcı mesajını ekranda göstermek istiyorsan (zaten addMessage ekliyorsa çiftleme olmasın kontrol et)
-      addMessage(val, "user-message");
+      const diffHtml = `
+        <div class="canonical-diff">
+          <span class="raw-strike">${strikeThrough(val)}</span>
+          <span class="canon-arrow">→</span>
+          <span class="canon-text">${`Plan a ${days}-day tour for ${city}`}</span>
+        </div>
+      `;
+      addMessage(diffHtml, "user-message");
+      window.__suppressNextUserEcho = true;
       handleAnswer(`${city} ${days} days`);
+      input.value = "";
       return;
   }
 
-  // Eski davranış (lokasyon kilitliyse ama format dışı bir şey yazmışsa):
+  // Fallback: let handleAnswer parse raw (no diff)
+  // (Will still echo unless suppressed)
   handleAnswer(val);
 }
-
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
 
@@ -963,7 +1001,11 @@ function addMessage(text, className) {
     } else {
         messageElement.appendChild(profileImg);
         const textElement = document.createElement("div");
-        textElement.textContent = text;
+        if (/<div|<span|canonical-diff|→/.test(text)) {
+            textElement.innerHTML = text; // allow our diff HTML
+        } else {
+            textElement.textContent = text;
+        }
         messageElement.appendChild(textElement);
     }
 
