@@ -1040,14 +1040,7 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
                 <div id="route-map-day${day}" class="route-map">
                     <div id="map-bottom-controls-wrapper-day${day}">
                         <div id="map-bottom-controls-day${day}" class="map-bottom-controls">
-                            <select id="map-style-select-day${day}">
-                                <option value="streets-v12">Streets modes</option>
-                                <option value="dark-v11">Navigation</option>
-                                <option value="satellite-streets-v12">Satellite</option>
-                            </select>
-                            <button class="expand-map-btn" onclick="expandMap('route-map-day${day}', ${day})"><img src="img/see_route.gif"></button>
-
-                            <span class="route-summary-control"></span>
+                           
                         </div>
                     </div>
                 </div>`;
@@ -6831,97 +6824,61 @@ function cleanupLegacyTravelMode() {
 }
 // Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
 // ensureDayTravelModeSet fonksiyonunu güncelle
-function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
-  // Remove any legacy/header sets for this day
-  document.querySelectorAll(`#day-container-${day} .day-header .tt-travel-mode-set`).forEach(el => el.remove());
+function ensureDayTravelModeSet(day) {
+  const dayContainer = document.getElementById(`day-container-${day}`);
+  if (!dayContainer) return;
 
-  // Create or reuse the set
-  let set = document.getElementById(`tt-travel-mode-set-day${day}`);
-  if (!set) {
-    set = document.createElement('div');
-    set.id = `tt-travel-mode-set-day${day}`;
-    set.className = 'tt-travel-mode-set';
-    set.dataset.day = String(day);
-    set.innerHTML = `
-      <div class="travel-modes">
-        <button type="button" data-mode="driving" aria-label="Driving">
-          <img class="tm-icon" src="/img/way_car.svg" alt="CAR" loading="lazy" decoding="async">
-          <span class="tm-label">CAR</span>
-        </button>
-        <button type="button" data-mode="cycling" aria-label="Cycling">
-          <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE" loading="lazy" decoding="async">
-          <span class="tm-label">BIKE</span>
-        </button>
-        <button type="button" data-mode="walking" aria-label="Walking">
-          <img class="tm-icon" src="/img/way_walk.svg" alt="WALK" loading="lazy" decoding="async">
-          <span class="tm-label">WALK</span>
-        </button>
-      </div>
-      <button type="button" class="expand-map-btn" aria-label="Expand Map">
-        <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
-        <span class="tm-label">MAP</span>
+  // Zaten ekliyse tekrar ekleme
+  if (document.getElementById(`tt-travel-mode-set-day${day}`)) return;
+
+  const mapDiv = dayContainer.querySelector(`#route-map-day${day}`);
+  const anchor = mapDiv || dayContainer.querySelector('.day-list') || dayContainer;
+
+  const set = document.createElement('div');
+  set.id = `tt-travel-mode-set-day${day}`;
+  set.className = 'tt-travel-mode-set';
+  set.dataset.day = day;
+  set.innerHTML = `
+    <div class="travel-modes">
+      <button type="button" data-mode="driving" aria-label="Driving">
+        <img class="tm-icon" src="/img/way_car.svg" alt="CAR">
+        <span class="tm-label">CAR</span>
       </button>
-    `;
+      <button type="button" data-mode="cycling" aria-label="Cycling">
+        <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE">
+        <span class="tm-label">BIKE</span>
+      </button>
+      <button type="button" data-mode="walking" aria-label="Walking">
+        <img class="tm-icon" src="/img/way_walk.svg" alt="WALK">
+        <span class="tm-label">WALK</span>
+      </button>
+    </div>
+    <button type="button" class="expand-map-btn" aria-label="Expand Map">
+      <img class="tm-icon" src="img/see_route.gif" alt="MAP">
+      <span class="tm-label">MAP</span>
+    </button>
+  `;
 
-    // Interaction for travel mode buttons
-    set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
-    set.addEventListener('click', (e) => {
-      e.stopPropagation();
-      
-      // Handle expand map button
-      if (e.target.closest('.expand-map-btn')) {
-        const containerId = `route-map-day${day}`;
-        expandMap(containerId, day);
-        return;
-      }
-      
-      // Handle travel mode buttons
-      const btn = e.target.closest('button[data-mode]');
-      if (!btn) return;
-      window.setTravelMode(btn.getAttribute('data-mode'), day);
-    });
-  }
+  anchor.parentNode.insertBefore(set, anchor); // map’in ÜSTÜNE
 
-  // Insert set exactly before the controls wrapper
-  if (controlsWrapperEl && controlsWrapperEl.parentNode) {
-    if (set.previousElementSibling !== routeMapEl || set.nextElementSibling !== controlsWrapperEl) {
-      controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
+  // Event
+  set.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-mode]');
+    if (btn) {
+      const mode = btn.getAttribute('data-mode');
+      window.setTravelMode && window.setTravelMode(mode, day);
+      markActiveTravelModeButtons();
+      return;
     }
-  } else if (routeMapEl && routeMapEl.parentNode) {
-    routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
-  }
+    if (e.target.closest('.expand-map-btn')) {
+      expandMap(`route-map-day${day}`, day);
+    }
+  });
 
-  // Mark active
-  if (typeof markActiveTravelModeButtons === 'function') {
-    markActiveTravelModeButtons();
-  }
+  markActiveTravelModeButtons();
 }
 
-// Styles (once)
-/*
-(function ensureTmInlineStyles() {
 
-  if (document.getElementById('tt-travel-mode-style-inline')) return;
-  const style = document.createElement('style');
-  style.id = 'tt-travel-mode-style-inline';
-  style.textContent = `
-    .tt-travel-mode-set {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      margin: 6px 0 8px 0;
-    }
-    .tt-travel-mode-set button {
-      border: 1px solid #ccc; background: #fff; color: #333; border-radius: 8px;
-      padding: 6px 10px; cursor: pointer; font-size: 13px; line-height: 1; min-width: 32px;
-    }
-    .tt-travel-mode-set button.active {
-      background: #ffffff; border-color: #0d6efd; color: #fff;
-    }
-    .tt-travel-mode-set button:hover { filter: brightness(0.97); }
-  `;
-  document.head.appendChild(style);
-})();*/
 // Replace this function in son9.js
 
 // Update: only clean header sets, we place the visible set near the map
@@ -7287,42 +7244,8 @@ function ensureCanvasRenderer(map) {
   document.head.appendChild(s);
 })();
 
-function wrapRouteControls(day) {
-  const tm = document.getElementById(`tt-travel-mode-set-day${day}`);
-  const controls = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
-  if (!controls) return;
-
-  const dayContainer = document.getElementById(`day-container-${day}`);
-  const parent = (tm && tm.parentNode === controls.parentNode) ? controls.parentNode : (dayContainer || controls.parentNode);
-
-  const existing = document.getElementById(`route-controls-bar-day${day}`);
-  if (existing) existing.remove();
-
-  const bar = document.createElement('div');
-  bar.className = 'route-controls-bar';
-  bar.id = `route-controls-bar-day${day}`;
-
-  // PATCH:
-  if (controls && controls.parentNode === parent) {
-    parent.insertBefore(bar, controls);
-  } else {
-    parent.appendChild(bar);
-  }
-
-  if (tm) bar.appendChild(tm);
-  bar.appendChild(controls);
-
-  const smallScaleBar = parent.querySelector(`#route-scale-bar-day${day}`);
-  if (smallScaleBar) smallScaleBar.remove();
-}
-
-function wrapRouteControlsForAllDays() {
-  document.querySelectorAll('.day-container').forEach(dc => {
-    const day = parseInt(dc.dataset.day || '0', 10);
-    if (day) wrapRouteControls(day);
-  });
-}
-
+function wrapRouteControls(day) { return; }
+function wrapRouteControlsForAllDays() { return; }
 /* Patch: renderLeafletRoute içinde controls eklendikten sonra bar'a sar */
 (function patchRenderLeafletRouteToWrapBar(){
   if (!window.__tt_wrapBarPatched && typeof renderLeafletRoute === 'function') {
