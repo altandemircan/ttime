@@ -286,6 +286,8 @@ function tt_extractSeedFromRaw(raw){
 chatInput.value = canon.canonical;
                 suggestionsDiv.style.display="none";
                 enableSendButton();
+                updateCanonicalPreview();
+
             };
             suggestionsDiv.appendChild(div);
         });
@@ -319,6 +321,7 @@ chatInput.value = canon.canonical;
     window.selectedLocationLocked = true;
 
     enableSendButton();
+updateCanonicalPreview();
 
     const suggestionsDiv = document.getElementById("suggestions");
     if (suggestionsDiv) suggestionsDiv.style.display = "none";
@@ -417,6 +420,8 @@ chatInput.value = canon.canonical;
 
                 hideSuggestionsDiv(); // öneri panelini kapat
                 enableSendButton?.();
+                updateCanonicalPreview();
+
             };
         }
 
@@ -673,7 +678,69 @@ function formatCanonicalPlan(rawInput) {
     const canonical = `Plan a ${days}-day tour for ${city}`;
     return { canonical, city, days };
 }
+document.addEventListener('DOMContentLoaded', function() {
+  const ui = document.getElementById('user-input');
+  if (ui) {
+    ui.addEventListener('input', debouncedUpdateCanonicalPreview);
+    ui.addEventListener('focus', debouncedUpdateCanonicalPreview);
+  }
+});
+// Strikethrough helper (her karakter üstüne U+0336)
+function strikeThrough(text) {
+  if (!text) return "";
+  // Gereksiz boşlukları tek boşluğa indir
+  const trimmed = text.replace(/\s+/g, ' ').trim();
+  return trimmed.split('').map(ch => ch + '\u0336').join('');
+}
 
+// ÖNİZLEME GÜNCELLE
+function updateCanonicalPreview() {
+  const input = document.getElementById('user-input');
+  const box = document.getElementById('canonical-preview');
+  if (!input || !box) return;
+
+  const raw = input.value;
+  if (!raw || raw.trim().length < 2) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+
+  const formatted = formatCanonicalPlan(raw);
+  // Eğer canonical üretilemediyse veya canonical ile raw pratikte aynı ise sakla
+  const normalizedRaw = raw
+      .trim()
+      .replace(/\s+/g,' ')
+      .toLowerCase();
+  const normalizedCanon = formatted.canonical
+      .trim()
+      .replace(/\s+/g,' ')
+      .toLowerCase();
+
+  if (!formatted.canonical || normalizedRaw === normalizedCanon) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+
+  const struck = strikeThrough(raw);
+  box.innerHTML = `
+    <span class="raw">${struck}</span>
+    <span class="arrow">→</span>
+    <span class="canon">${formatted.canonical}</span>
+  `;
+  box.style.display = 'block';
+}
+
+// Bazı işlemlerde tekrar tekrar çağırmamak için hafif debounce
+function debouncePreview(fn, wait=120){
+  let t;
+  return function(){
+    clearTimeout(t);
+    t = setTimeout(fn, wait);
+  };
+}
+const debouncedUpdateCanonicalPreview = debouncePreview(updateCanonicalPreview, 140);
 let isFirstQuery = true; // Flag to track the first query
 function selectSuggestion(option) {
     const userInput = document.getElementById("user-input");

@@ -6390,3 +6390,32 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   color: #6940a7;
   text-transform: uppercase;
 }
+
+
+.canonical-preview {
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  margin-top: 6px;
+  line-height: 1.4;
+  color: #444;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  padding: 6px 8px;
+  border-radius: 6px;
+  display: none;
+  white-space: nowrap;
+  overflow: auto;
+}
+.canonical-preview .raw {
+  color: #888;
+  margin-right: 8px;
+}
+.canonical-preview .arrow {
+  margin: 0 6px;
+  color: #b26ae2;
+  font-weight: 600;
+}
+.canonical-preview .canon {
+  color: #222;
+  font-weight: 600;
+}
