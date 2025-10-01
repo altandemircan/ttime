@@ -100,9 +100,9 @@ function showSuggestions() {
     suggestionsDiv.innerHTML = "";
 
     const options = [
-        "Plan a 2-day tour for Romex",
-        "Do a 3-day city tour in Helsinki",
-        "Do a 1-day city tour in Osaka"
+        "Plan a 2-day tour for Rome",
+        "Do a 3 days city tour in Helsinki",
+        "1-day city tour in Osaka"
     ];
 
     if (selectedOption) {
@@ -296,72 +296,110 @@ function lockSelectedCity(city, days) {
     if (suggestionsDiv) suggestionsDiv.style.display = "none";
 }
 // 1. renderSuggestions artık sadece #suggestions alanına öneri yazar
-function renderSuggestions(results) {
+// (Yardımcılar yoksa ekle; zaten varsa bu bloğu atla)
+if (typeof showSuggestionsDiv !== "function") {
+  function showSuggestionsDiv() {
+    const el = document.getElementById('suggestions');
+    if (!el) return;
+    el.hidden = false;
+    el.style.removeProperty('display');
+    if (!el.getAttribute('style')) el.removeAttribute('style');
+  }
+}
+if (typeof hideSuggestionsDiv !== "function") {
+  function hideSuggestionsDiv(clear = false) {
+    const el = document.getElementById('suggestions');
+    if (!el) return;
+    el.hidden = true;
+    el.style.removeProperty('display');
+    if (!el.getAttribute('style')) el.removeAttribute('style');
+    if (clear) el.innerHTML = "";
+  }
+}
+
+// Güncellenmiş renderSuggestions
+function renderSuggestions(results = []) {
     const suggestionsDiv = document.getElementById("suggestions");
+    const chatInput = document.getElementById("user-input");
+    if (!suggestionsDiv || !chatInput) return;
+
     suggestionsDiv.innerHTML = "";
-   
-    results.forEach((result) => {
-        const props = result.properties;
-        const displayText = [props.city || props.name, props.country]
-            .filter(Boolean).join(', ')
-            + (props.country_code ? " " + countryFlag(props.country_code) : "");
+
+    // Hiç sonuç yoksa gizle ve çık
+    if (!results.length) {
+        hideSuggestionsDiv(true);
+        return;
+    }
+
+    results.forEach(result => {
+        const props = result.properties || {};
+        const city = props.city || props.name || "";
+        const country = props.country || "";
+        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+        const displayText = [city, country].filter(Boolean).join(", ") + flag;
+
+        // Duplicate koruması (aynı city,country tekrar eklenmesin)
+        if ([...suggestionsDiv.children].some(c => c.dataset.displayText === displayText)) {
+            return;
+        }
+
         const div = document.createElement("div");
         div.className = "category-area-option";
         div.textContent = displayText;
+        div.dataset.displayText = displayText;
+
+        // Seçili olanı highlight et
         if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
             div.classList.add("selected-suggestion");
+
             const close = document.createElement("span");
             close.className = "close-suggestion";
-            close.innerHTML = "✖";
-            close.onclick = function (e) {
+            close.textContent = "✖";
+            close.onclick = (e) => {
                 e.stopPropagation();
                 window.selectedSuggestion = null;
+                window.selectedLocation = null;
+                window.selectedLocationLocked = false;
                 chatInput.value = "";
+                disableSendButton?.();
                 renderSuggestions(results);
             };
             div.appendChild(close);
         } else {
             div.onclick = () => {
-    const locationText = displayText; // "Antalya, Turkey 🇹🇷"
-    // Gün sayısı yakala (kullanıcı yazdıysa)
-    const raw = chatInput.value.trim();
-    const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
-    let days = dayMatch ? parseInt(dayMatch[1],10) : 2;
-    if (!days || days < 1) days = 2;
+                // Gün sayısı yakala
+                const raw = chatInput.value.trim();
+                const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+                let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+                if (!days || days < 1) days = 2;
 
-    // Lokasyon objesini kaydet
-    window.selectedSuggestion = { displayText, props };
-    window.selectedLocation = {
-        name: props.name || (props.city || ""),
-        city: props.city || props.name || "",
-        country: props.country || "",
-        lat: props.lat,
-        lon: props.lon,
-        country_code: props.country_code
-    };
+                window.selectedSuggestion = { displayText, props };
+                window.selectedLocation = {
+                    name: props.name || city,
+                    city: city,
+                    country: country,
+                    lat: props.lat ?? props.latitude ?? null,
+                    lon: props.lon ?? props.longitude ?? null,
+                    country_code: props.country_code || ""
+                };
 
-    // Input'u standart formata kilitle
-    chatInput.value = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
+                chatInput.value = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
+                window.selectedLocationLocked = true;
 
-    // Kilit bayrağı
-    window.selectedLocationLocked = true;
-
-    // Önerileri kapat
-    const sDiv = document.getElementById("suggestions");
-    if (sDiv) sDiv.style.display = "none";
-
-    // Gönder butonunu aktifleştir
-    enableSendButton();
-};
+                hideSuggestionsDiv(); // öneri panelini kapat
+                enableSendButton?.();
+            };
         }
+
         suggestionsDiv.appendChild(div);
+    });
+
+    // Son durumda eleman varsa göster
+    if (suggestionsDiv.children.length > 0) {
+        showSuggestionsDiv();
+    } else {
+        hideSuggestionsDiv(true);
     }
-    );
-    if (!results.length) {
-    suggestionsDiv.style.display = "none";
-} else {
-    suggestionsDiv.style.display = "block";
-}
 }
 
 // 2. Input event'i: autocomplete çıktığında chat-location-suggestions'ı gizle, sadece #suggestions'ı göster
@@ -389,8 +427,7 @@ chatInput.addEventListener("input", debounce(async function () {
             };
             suggestionsDiv.appendChild(div);
         });
-        suggestionsDiv.style.display = "block";
-        return;
+                return;
     }
     // Normal autocomplete devamı:
     const suggestions = await geoapifyAutocomplete(locationQuery);
