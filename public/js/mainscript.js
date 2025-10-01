@@ -203,103 +203,38 @@ function disableSendButton() {
         return str.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     }
 
-      function tt_extractSeedFromRaw(raw){
-        if (!raw || typeof raw !== 'string') return '';
+function tt_extractSeedFromRaw(raw){
+    if (!raw || typeof raw !== 'string') return '';
 
-        // Orijinali korumak için ham metin
-        const original = raw.trim();
+    const original = raw.trim();
+    let cleaned = original.replace(/\u0336/g, '').trim();
 
-        // 1) Küçült + normalize (Türkçe karakterlere dokunmadan)
-        let cleaned = original
-            .replace(/\s+/g,' ')
-            .trim();
+    cleaned = cleaned
+        .replace(/\b(plan|planning|travel|trip|tour|itinerary|program|create|make|build|generate|please|show|give)\b/ig, ' ')
+        .replace(/\b(for|in|to|a|an|the|of|city)\b/ig, ' ')
+        .replace(/\d+\s*(?:-?\s*(day|days))\b/ig, ' ')
+        .replace(/[,.;:!?]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-        // 2) “plan / planı / planın ...” varyantlarını (AMA ‘plano’, ‘plana’ DEĞİL) çıkar
-        //   - \bplan(?:…)?\b deseninde sadece ek listesi
-        cleaned = cleaned.replace(
-            /\bplan(?:ın|in|im|ım|um|ün|un|ı|i)?\b/gi,
-            ' '
-        );
+    if (!cleaned) cleaned = original;
 
-        // 3) Genel doldurma / komut kelimeleri (şehir tahmini yaparken gereksiz)
-        cleaned = cleaned.replace(
-            /\b(plan|planning|create|make|do|build|generate|tour|trip|program|itinerary|route|please|give|show|for|in|to|of|the|a|an)\b/gi,
-            ' '
-        );
+    const tokens = cleaned.split(/\s+/).filter(Boolean);
+    if (!tokens.length) return '';
 
-        // 4) “3 days”, “2-day”, “4 gün” gibi gün kalıpları
-        cleaned = cleaned.replace(/\d+\s*(day|days|gün)\b/gi,' ');
-
-        // 5) Noktalama
-        cleaned = cleaned
-            .replace(/[,.;:!?]+/g,' ')
-            .replace(/\s+/g,' ')
-            .trim();
-
-        if (!cleaned) return '';
-
-        // Tokenize (orijinal formu da korumak için split öncesi)
-        const origTokens = original.split(/\s+/);
-        const tokens = cleaned.split(' ').filter(Boolean);
-
-        if (!tokens.length) return '';
-
-        // Reserved: tekrar eleme (güvenlik)
-        const reserved = new Set([
-            'plan','planı','planin','planın','planim','planım','planum','planüm','planun','planün'
-        ]);
-
-        // Çok kelimeli şehir bağlaç/prepozisyonları (şehir içinde kalabilir)
-        const joiners = new Set(['de','la','del','da','di','el','le','los','las','san','santa','saint','dei','della','du']);
-
-        // 6) En sondan başlayarak 4 -> 3 -> 2 kelimelik aday dene (Castelló de la Plana vb.)
-        const rawLower = original.toLowerCase();
-
-        function isGoodToken(tok){
-            if (!tok) return false;
-            const low = tok.toLowerCase();
-            if (reserved.has(low)) return false;
-            if (low.length < 2) return false;
-            return true;
+    for (let span = Math.min(4, tokens.length); span >= 2; span--) {
+        const slice = tokens.slice(tokens.length - span);
+        const candidate = slice.join(' ');
+        if (/^[\p{L}0-9][\p{L}\p{M}0-9'’\-\s.]+$/u.test(candidate)) {
+            return candidate.split(/\s+/)
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ');
         }
-
-        const origLen = origTokens.length;
-        for (let span = Math.min(4, origLen); span >= 2; span--) {
-            const slice = origTokens.slice(origLen - span);
-            // “plan” varyantı tek başına içeriyorsa atla
-            if (slice.every(t => !isGoodToken(t) || joiners.has(t.toLowerCase()) )) continue;
-
-            // En az bir “iyi” token + diğerleri ya iyi ya joiner olmalı
-            const meaningful = slice.filter(t => isGoodToken(t));
-            if (!meaningful.length) continue;
-
-            const candidate = slice.join(' ');
-            // Baş harf veya aksanlı/özel harf pattern’i (çok gevşek)
-            if (/^[\p{L}0-9][\p{L}\p{M}0-9'’\-\s.]+$/u.test(candidate)) {
-                // Son kelime reserved değilse al
-                const last = slice[slice.length - 1].toLowerCase();
-                if (!reserved.has(last)) {
-                    return candidate.trim();
-                }
-            }
-        }
-
-        // 7) 2+ kelime bulunamadıysa son KELİMEYİ kullan (ama reserved değilse)
-        const lastOriginal = origTokens[origTokens.length - 1];
-        if (isGoodToken(lastOriginal)) {
-            return lastOriginal.charAt(0).toUpperCase() + lastOriginal.slice(1);
-        }
-
-        // 8) Fallback: ilk “iyi” token
-        for (let i = origTokens.length - 1; i >= 0; i--) {
-            if (isGoodToken(origTokens[i])) {
-                const x = origTokens[i];
-                return x.charAt(0).toUpperCase() + x.slice(1);
-            }
-        }
-
-        return '';
     }
+
+    const last = tokens[tokens.length - 1];
+    return last.charAt(0).toUpperCase() + last.slice(1);
+}
     // --- /PATCH ---
     async function doAutocomplete(){
         if (window.selectedLocationLocked) return;
@@ -355,7 +290,8 @@ function disableSendButton() {
                 };
                 window.selectedSuggestion={ displayText: div.textContent, props:p };
                 window.selectedLocationLocked=true;
-                chatInput.value=`Plan a ${days}-day tour for ${city}`;
+                const canon = formatCanonicalPlan(`${city} ${days || 1} days`);
+chatInput.value = canon.canonical;
                 suggestionsDiv.style.display="none";
                 enableSendButton();
             };
@@ -383,7 +319,11 @@ function lockSelectedCity(city, days) {
     };
     window.selectedSuggestion = { displayText: city };
 
-    chatInput.value = `Plan a ${days}-day tour for ${city}`;
+const canon = formatCanonicalPlan(`${city} ${days} days`);
+const uiInput = document.getElementById('user-input');
+if (uiInput) uiInput.value = canon.canonical;
+
+chatInput.value = canon.canonical;
     window.selectedLocationLocked = true;
 
     enableSendButton();
@@ -479,7 +419,8 @@ function renderSuggestions(results = []) {
                     country_code: props.country_code || ""
                 };
 
-                chatInput.value = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
+const canon = formatCanonicalPlan(`${window.selectedLocation.city} ${days} days`);
+chatInput.value = canon.canonical;
                 window.selectedLocationLocked = true;
 
                 hideSuggestionsDiv(); // öneri panelini kapat
@@ -696,7 +637,50 @@ function parsePlanRequest(text) {
 
     return { location, days };
 }
+// === CANONICAL PLAN FORMATTER (English-only) ===
+function formatCanonicalPlan(rawInput) {
+    if (!rawInput || typeof rawInput !== 'string') {
+        return { canonical: "", city: "", days: 1 };
+    }
 
+    // Remove strike-through combining chars
+    let raw = rawInput.replace(/\u0336/g, '').trim();
+
+    // Extract day count (English only)
+    let dayMatch = raw.match(/(\d+)\s*(?:-?\s*(day|days))\b/i);
+    let days = dayMatch ? parseInt(dayMatch[1], 10) : null;
+    if (!days || isNaN(days) || days < 1) days = 1;
+
+    // Remove filler / command words
+    let cleaned = raw
+        .replace(/\b(plan|planning|travel|trip|tour|itinerary|program|create|make|build|generate|please|show|give)\b/ig, ' ')
+        .replace(/\b(for|in|to|a|an|the|of|city)\b/ig, ' ')
+        .replace(/\d+\s*(?:-?\s*(day|days))\b/ig, ' ')
+        .replace(/[,.;:!?]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!cleaned) cleaned = raw;
+
+    const tokens = cleaned.split(/\s+/).filter(Boolean);
+    let city = "";
+
+    for (let span = Math.min(4, tokens.length); span >= 1; span--) {
+        const candidate = tokens.slice(tokens.length - span).join(' ');
+        if (/^[\p{L}][\p{L}\p{M}'’\-\s.]+$/u.test(candidate)) {
+            city = candidate;
+            break;
+        }
+    }
+    if (!city && tokens.length) city = tokens[tokens.length - 1];
+
+    city = city.split(/\s+/)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+
+    const canonical = `Plan a ${days}-day tour for ${city}`;
+    return { canonical, city, days };
+}
 
 let isFirstQuery = true; // Flag to track the first query
 function selectSuggestion(option) {
@@ -868,6 +852,15 @@ function sendMessage() {
   const input = document.getElementById("user-input");
   if (!input) return;
   const val = input.value.trim();
+  const formatted = formatCanonicalPlan(val);
+if (formatted.canonical) {
+    // Input alanını zorla normalize et
+    input.value = formatted.canonical;
+
+    // Gönderim mantığında handleAnswer şehir + gün formatı bekliyor
+    handleAnswer(`${formatted.city} ${formatted.days} days`);
+    return;
+}
   if (!val) return;
 
   // YENİ KONTROL: Lokasyon kilit seçilmemişse engelle
