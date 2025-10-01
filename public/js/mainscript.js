@@ -20,7 +20,6 @@ window.cart = window.cart || [];
         return 2 * R * Math.asin(Math.sqrt(a));
     }
 
-
 function getSlopeColor(slope) {
   if (slope < 2) return "#72c100";      // 0-2% yeşil (düz)
   if (slope < 5) return "#ffd700";      // 2-5% sarı (hafif)
@@ -33,6 +32,11 @@ const MAPBOX_TOKEN = "pk.eyJ1IjoiYWx0YW5kZW1pcmNhbiIsImEiOiJjbWRpaHFkZGIwZXd3Mm1
 window.MAPBOX_TOKEN = MAPBOX_TOKEN;
 const GEOAPIFY_API_KEY = "d9a0dce87b1b4ef6b49054ce24aeb462";
 window.GEOAPIFY_API_KEY = GEOAPIFY_API_KEY;
+
+// --- PLAN SEÇİM ZORUNLULUĞU FLAGS ---
+window.__locationPickedFromSuggestions = false;
+window.selectedLocationLocked = false; // varsa yine de yaz sorun değil
+
 
 let selectedCity = "";
 
@@ -233,7 +237,8 @@ function tt_extractSeedFromRaw(raw){
         const raw = chatInput.value.trim();
         if (raw.length < 2){
             suggestionsDiv.innerHTML="";
-            suggestionsDiv.style.display="none";
+        suggestionsDiv.classList.add('hidden');
+
             return;
         }
         const dayMatch = raw.match(/(\d+)\s*-?\s*(day|gün)/i);
@@ -272,20 +277,23 @@ function tt_extractSeedFromRaw(raw){
             div.className="category-area-option";
             div.textContent=`${city}, ${country} ${flag}`.trim();
             div.onclick=()=>{
-                window.selectedLocation={
-                    name:p.name||city,
-                    city:city,
-                    country:country,
-                    lat:p.lat,
-                    lon:p.lon,
-                    country_code:p.country_code||""
-                };
-                window.selectedSuggestion={ displayText: div.textContent, props:p };
-                window.selectedLocationLocked=true;
-                const canon = formatCanonicalPlan(`${city} ${days || 1} days`);
-chatInput.value = canon.canonical;
-                suggestionsDiv.style.display="none";
-                enableSendButton();
+    window.selectedLocation={
+        name:p.name||city,
+        city:city,
+        country:country,
+        lat:p.lat,
+        lon:p.lon,
+        country_code:p.country_code||""
+    };
+    window.selectedSuggestion={ displayText: div.textContent, props:p };
+    window.selectedLocationLocked = true;
+    window.__locationPickedFromSuggestions = true; // EK
+    if (typeof setChatInputValue === 'function')
+        setChatInputValue(`Plan a ${days}-day tour for ${city}`);
+    else
+        chatInput.value = `Plan a ${days}-day tour for ${city}`;
+    suggestionsDiv.classList.add('hidden');
+    enableSendButton && enableSendButton();
                 updateCanonicalPreview();
 
             };
@@ -356,9 +364,9 @@ function renderSuggestions(results = []) {
 
     suggestionsDiv.innerHTML = "";
 
-    // Hiç sonuç yoksa gizle ve çık
+    // Sonuç yoksa tamamen gizle
     if (!results.length) {
-        hideSuggestionsDiv(true);
+        hideSuggestionsDiv?.(true);
         return;
     }
 
@@ -369,7 +377,7 @@ function renderSuggestions(results = []) {
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = [city, country].filter(Boolean).join(", ") + flag;
 
-        // Duplicate koruması (aynı city,country tekrar eklenmesin)
+        // Duplicate engelle
         if ([...suggestionsDiv.children].some(c => c.dataset.displayText === displayText)) {
             return;
         }
@@ -379,10 +387,9 @@ function renderSuggestions(results = []) {
         div.textContent = displayText;
         div.dataset.displayText = displayText;
 
-        // Seçili olanı highlight et
+        // Seçili suggestion ise highlight + kapatma
         if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
             div.classList.add("selected-suggestion");
-
             const close = document.createElement("span");
             close.className = "close-suggestion";
             close.textContent = "✖";
@@ -391,19 +398,22 @@ function renderSuggestions(results = []) {
                 window.selectedSuggestion = null;
                 window.selectedLocation = null;
                 window.selectedLocationLocked = false;
+                window.__locationPickedFromSuggestions = false; // EK: seçim iptali
                 chatInput.value = "";
                 disableSendButton?.();
                 renderSuggestions(results);
             };
             div.appendChild(close);
         } else {
+            // Normal öneri tıklama
             div.onclick = () => {
-                // Gün sayısı yakala
+                // Kullanıcının yazdığı ham metinden gün sayısını çıkar
                 const raw = chatInput.value.trim();
                 const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
                 let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
                 if (!days || days < 1) days = 2;
 
+                // Global seçim objeleri
                 window.selectedSuggestion = { displayText, props };
                 window.selectedLocation = {
                     name: props.name || city,
@@ -414,25 +424,45 @@ function renderSuggestions(results = []) {
                     country_code: props.country_code || ""
                 };
 
-const canon = formatCanonicalPlan(`${window.selectedLocation.city} ${days} days`);
-chatInput.value = canon.canonical;
+                // Canonical format (varsa formatCanonicalPlan kullan)
+                let canonicalStr = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
+                if (typeof formatCanonicalPlan === "function") {
+                    const c = formatCanonicalPlan(`${window.selectedLocation.city} ${days} days`);
+                    if (c && c.canonical) canonicalStr = c.canonical;
+                }
+
+                // Programatik set
+                if (typeof setChatInputValue === "function") {
+                    setChatInputValue(canonicalStr);
+                } else {
+                    chatInput.value = canonicalStr;
+                }
+
+                // Lokasyon kilitle + bayrak
                 window.selectedLocationLocked = true;
+                window.__locationPickedFromSuggestions = true; // EK: plan için gerekli
 
-                hideSuggestionsDiv(); // öneri panelini kapat
+                // Gönder butonu aç
                 enableSendButton?.();
-                updateCanonicalPreview();
 
+                // Önerileri kapat
+                hideSuggestionsDiv?.();
+
+                // Diff / canonical preview güncelle (varsa)
+                if (typeof updateCanonicalPreview === "function") {
+                    updateCanonicalPreview();
+                }
             };
         }
 
         suggestionsDiv.appendChild(div);
     });
 
-    // Son durumda eleman varsa göster
+    // Son durumda içeriğe göre göster/gizle
     if (suggestionsDiv.children.length > 0) {
-        showSuggestionsDiv();
+        showSuggestionsDiv?.();
     } else {
-        hideSuggestionsDiv(true);
+        hideSuggestionsDiv?.(true);
     }
 }
 
@@ -906,6 +936,19 @@ async function handleAnswer(answer) {
     window.isProcessing = false;
   }
 }
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('user-input');
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    // Programatik set fonksiyonun varsa ve flag kullanıyorsan:
+    if (window.__programmaticInput) return;
+    // Kullanıcı elle değiştirdi → seçim iptal
+    window.__locationPickedFromSuggestions = false;
+    window.selectedLocationLocked = false;
+    window.selectedLocation = null;
+    disableSendButton && disableSendButton();
+  });
+});
 
 function sendMessage() {
   if (window.isProcessing) return;
@@ -913,6 +956,12 @@ function sendMessage() {
   if (!input) return;
   const val = input.value.trim();
   if (!val) return;
+
+
+  if (!window.__locationPickedFromSuggestions) {
+      addMessage("Please select a city from the suggestions first.", "bot-message");
+      return;
+  }
 
   // Canonical normalization (always try)
   const formatted = formatCanonicalPlan(val);
@@ -9386,4 +9435,13 @@ setTimeout(adjustScaleBarPosition, 100);
       showStatus('Gönderilemedi. Daha sonra tekrar dene.', 'error');
     }
   });
+})();
+
+(function(){
+  if (!document.getElementById('suggestions-hidden-style')) {
+    const st = document.createElement('style');
+    st.id = 'suggestions-hidden-style';
+    st.textContent = '#suggestions.hidden{display:none;}';
+    document.head.appendChild(st);
+  }
 })();

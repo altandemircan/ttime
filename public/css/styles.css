@@ -6391,7 +6391,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   text-transform: uppercase;
 }
 
-
+#suggestions.hidden { display: none; }
 .canonical-preview {
   font-family: system-ui, sans-serif;
   font-size: 13px;
@@ -6419,3 +6419,4 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   color: #222;
   font-weight: 600;
 }
+
