@@ -1402,10 +1402,26 @@ async function fillAIDescriptionsAutomatically() {
 
 let hasAutoAddedToCart = false;
 function showResults() {
-if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.latestTripPlan.length > 0) {
-        // Otomatik olarak window.cart'ı güncelle!
+
+    // Eski chat balonlarında kalmış route-map-day* kalıntılarını temizle (opsiyonel güvenlik)
+    (function cleanupChatRouteArtifacts(){
+        const chatBox = document.getElementById("chat-box");
+        if (!chatBox) return;
+        chatBox.querySelectorAll('[id^="route-map-day"]').forEach(el => {
+            // Sadece chat balonlarının içindeyse sil (sidebar’daki day-container değilse)
+            if (!el.closest('.day-container')) el.remove();
+        });
+        chatBox.querySelectorAll('[id^="map-bottom-controls-wrapper-day"]').forEach(el => {
+            if (!el.closest('.day-container')) el.remove();
+        });
+        chatBox.querySelectorAll('.route-controls-bar').forEach(el => {
+            if (!el.closest('.day-container')) el.remove();
+        });
+    })();
+
+    if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.latestTripPlan.length > 0) {
+        // window.cart senkronize
         window.cart = window.latestTripPlan.map(item => {
-            // location garantisi!
             let loc = null;
             if (item.location && typeof item.location.lat !== "undefined" && typeof item.location.lng !== "undefined") {
                 loc = { lat: Number(item.location.lat), lng: Number(item.location.lng) };
@@ -1415,10 +1431,12 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
             return { ...item, location: loc };
         });
     }
+
     const chatBox = document.getElementById("chat-box");
     const tripTitle = (typeof lastUserQuery === "string" && lastUserQuery.trim().length > 0)
         ? lastUserQuery.trim()
         : "Trip Plan";
+
     let html = `
         <div class="survey-results bot-message message">
             <h3 class="trip-title" id="trip_title">${tripTitle}</h3>
@@ -1430,11 +1448,11 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
     for (let day = 1; day <= days; day++) {
         let stepsHtml = '';
         const daySteps = [];
-        
-        // Önce o günün step'lerini topla
+
+        // Aynı sırayı (Coffee → Attraction → Restaurant → Accommodation) koru
         for (const cat of dailyCategories) {
-            const step = latestTripPlan.find(item => 
-                item.day == day && 
+            const step = latestTripPlan.find(item =>
+                item.day == day &&
                 (item.category === cat.en || item.category === cat.tr)
             );
             if (step) {
@@ -1444,30 +1462,13 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
         }
 
         const dayId = `day-${day}`;
-        
-        // Harita kontrolleri: sadece 2 veya daha fazla item varsa ekle
-        let mapControlsHtml = '';
-        if (daySteps.length >= 2) {
-            mapControlsHtml = `
-                <div id="route-map-day${day}" class="route-map">
-                    <div id="map-bottom-controls-wrapper-day${day}">
-                        <div id="map-bottom-controls-day${day}" class="map-bottom-controls">
-                            <select id="map-style-select-day${day}">
-                                <option value="streets-v12">Streets modes</option>
-                                <option value="dark-v11">Navigation</option>
-                                <option value="satellite-streets-v12">Satellite</option>
-                            </select>
-                            <button class="expand-map-btn" onclick="expandMap('route-map-day${day}', ${day})"><img src="img/see_route.gif"></button>
 
-                            <span class="route-summary-control"></span>
-                        </div>
-                    </div>
-                </div>`;
-        } else if (daySteps.length === 1) {
-            // 1 item varsa uyarı ekle
-            stepsHtml += `<p class="one-item-message">Add one more item to see the route!</p>`;
+        // 1 item için uyarıyı chat’te de göstermek istersen:
+        if (daySteps.length === 1) {
+            stepsHtml += `<p class="one-item-message">Add one more item to optimize the route (shown in sidebar)!</p>`;
         }
 
+        // ÖNEMLİ: mapControlsHtml TAMAMEN KALDIRILDI (chat içinde harita yok)
         html += `
             <li class="day-item">
                 <div class="accordion-container">
@@ -1479,7 +1480,6 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
                     <div class="accordion-content">
                         <div class="day-steps active-view" data-day="${day}">
                             ${stepsHtml}
-                            ${mapControlsHtml}
                         </div>
                     </div>
                 </div>
@@ -1489,34 +1489,40 @@ if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.late
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
+
+    // AI açıklamaları
     setTimeout(fillAIDescriptionsSeq, 300);
     setTimeout(fillAIDescriptionsAutomatically, 300);
 
-    setTimeout(() => {
-        if (typeof addChatResultsToCart === "function" && !hasAutoAddedToCart) {
+    // Sepeti (sidebar) doldur
+    if (typeof addChatResultsToCart === "function" && !window.hasAutoAddedToCart) {
+        try {
             addChatResultsToCart();
-            hasAutoAddedToCart = true;
-        }
-        if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
-    }, 200);
-    setTimeout(() => {
-  if (typeof getDayPoints === 'function') {
-    const pts = getDayPoints(1);
-    if (Array.isArray(pts) && pts.length >= 2) {
-      renderRouteForDay(1);
+            window.hasAutoAddedToCart = true;
+        } catch (e) {}
     }
-  }
-}, 500);
-        updateCart();
 
+    if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 
-    // --- Thumbnail için gecikmeli kaydet ---
+    // Rotayı sadece sidebar tarafı için asenkron çiz (gün 1 örneği)
+    setTimeout(() => {
+        if (typeof getDayPoints === 'function') {
+            const pts = getDayPoints(1);
+            if (Array.isArray(pts) && pts.length >= 2) {
+                // Sadece sidebar day-container içinde route-map-day1 varsa çizilecek
+                renderRouteForDay(1);
+            }
+        }
+    }, 500);
+
+    updateCart();
+
+    // Thumbnail / trip kaydı
     saveCurrentTripToStorageWithThumbnailDelay();
-setTimeout(() => {
-    saveCurrentTripToStorageWithThumbnail().then(renderMyTripsPanel);
-}, 1200); // harita DOM'da kesin oluşsun diye
+    setTimeout(() => {
+        saveCurrentTripToStorageWithThumbnail().then(renderMyTripsPanel);
+    }, 1200);
 }
-
 
 async function fillAIDescriptionsSeq() {
     const steps = Array.from(document.querySelectorAll('.steps'));
