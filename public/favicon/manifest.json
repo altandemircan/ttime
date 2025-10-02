@@ -1,14 +1,33 @@
 {
-  "name": "Triptime New Generation Trip Planner",
+  "id": "/",
+  "name": "Triptime – New Generation Trip Planner",
   "short_name": "Triptime",
+  "description": "AI-powered trip planner that builds multi-day routes, suggests places, optimizes days and helps you share your travel plan.",
+  "lang": "en",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#8a4af3",
+  "categories": ["travel", "navigation", "productivity"],
   "icons": [
+    { "src": "/favicon/android-icon-36x36.png", "sizes": "36x36", "type": "image/png" },
+    { "src": "/favicon/android-icon-48x48.png", "sizes": "48x48", "type": "image/png" },
+    { "src": "/favicon/android-icon-72x72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "/favicon/android-icon-96x96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/favicon/android-icon-144x144.png", "sizes": "144x144", "type": "image/png" },
     { "src": "/favicon/android-icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/favicon/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon/android-icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/favicon/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Trip Plan",
+      "short_name": "New Plan",
+      "description": "Start a new travel plan",
+      "url": "/?action=new"
+    }
   ]
 }
