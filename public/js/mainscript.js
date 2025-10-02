@@ -3472,7 +3472,7 @@ if (isEmptyDay) {
     typeof it.location.lat === 'number' &&
     typeof it.location.lng === 'number'
   ).length;
-  if (realPointCount < 2) {
+  if (realPointCount < 2) { 
     initEmptyDayMap(day);
   }
 }
