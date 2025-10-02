@@ -3189,6 +3189,52 @@ function removeDayMapCompletely(day) {
   const scaleBar = document.getElementById(`route-scale-bar-day${day}`);
   if (scaleBar) scaleBar.remove();
 }
+
+
+
+function startMapPlanningForDay(day) {
+  day = Number(day) || 1;
+
+  if (!Array.isArray(window.cart)) window.cart = [];
+
+  // Gün zaten yoksa placeholder starter ekle
+  if (!window.cart.some(it => it.day === day)) {
+    window.cart.push({
+      day,
+      name: 'Start',
+      category: 'Note',
+      image: 'img/placeholder.png',
+      _starter: true
+    });
+  } else {
+    // Gün var ama hiç gerçek item yoksa starter olsun (yoksa)
+    const hasReal = window.cart.some(it => it.day === day && it.name && !it._starter && !it._placeholder);
+    if (!hasReal && !window.cart.some(it => it.day === day && it._starter)) {
+      window.cart.push({
+        day,
+        name: 'Start',
+        category: 'Note',
+        image: 'img/placeholder.png',
+        _starter: true
+      });
+    }
+  }
+
+  window.currentDay = day;
+  updateCart();                 // Gün yeniden çizilsin
+  ensureDayMapContainer(day);   // Harita kapsayıcısı oluşsun
+  initEmptyDayMap(day);         // Boş haritayı başlat
+
+  // Küçük harita kesin oluşsun, sonra genişlet (isteğe bağlı)
+  setTimeout(() => {
+    const cid = `route-map-day${day}`;
+    if (!window.leafletMaps[cid]) initEmptyDayMap(day);
+    if (typeof expandMap === 'function') {
+      expandMap(cid, day);
+    }
+  }, 60);
+}
+
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 function updateCart() {
   console.table(window.cart);
@@ -3282,15 +3328,44 @@ const isEmptyDay = dayItemsArr.length === 0;
     dayList.className = "day-list";
     dayList.dataset.day = day;
 
-    if (isEmptyDay) {
-      const emptyWrap = document.createElement("div");
-      emptyWrap.className = "empty-day-block";
-      const msg = document.createElement("p");
-      msg.className = "empty-day-message";
-      msg.textContent = "No item has been added for this day yet.";
-      emptyWrap.appendChild(msg);
-      dayList.appendChild(emptyWrap);
-    } else {
+   if (isEmptyDay) {
+  const emptyWrap = document.createElement("div");
+  emptyWrap.className = "empty-day-block";
+
+  const msg = document.createElement("p");
+  msg.className = "empty-day-message";
+  msg.textContent = "No item has been added for this day yet.";
+  emptyWrap.appendChild(msg);
+
+  const actions = document.createElement("div");
+  actions.className = "empty-day-actions";
+  actions.style.display = "flex";
+  actions.style.gap = "8px";
+  actions.style.flexWrap = "wrap";
+
+  // Import GPS
+  const importBtn = document.createElement("button");
+  importBtn.type = "button";
+  importBtn.className = "import-btn gps-import";
+  importBtn.dataset.day = day;
+  importBtn.setAttribute("data-import-type", "multi");
+  importBtn.title = "Supports GPX, TCX, FIT, KML";
+  importBtn.textContent = "Import GPS File";
+  actions.appendChild(importBtn);
+
+  // Start with map
+  const startMapBtn = document.createElement("button");
+  startMapBtn.type = "button";
+  startMapBtn.className = "start-map-btn";
+  startMapBtn.dataset.day = day;
+  startMapBtn.textContent = "Start with map";
+  startMapBtn.addEventListener("click", () => startMapPlanningForDay(day));
+  actions.appendChild(startMapBtn);
+
+  emptyWrap.appendChild(actions);
+  dayList.appendChild(emptyWrap);
+}
+ else {
       dayItemsArr.forEach((item, idx) => {
         const li = document.createElement("li");
         li.className = "travel-item";
@@ -3404,17 +3479,7 @@ if (isEmptyDay) {
 
     cartDiv.appendChild(dayContainer);
 
-    // Import GPS butonu (boş gün)
-    if (isEmptyDay) {
-      const importBtn = document.createElement('button');
-      importBtn.type = 'button';
-      importBtn.className = 'import-btn gps-import';
-      importBtn.dataset.day = day;
-      importBtn.setAttribute('data-import-type', 'multi');
-      importBtn.title = 'Supports GPX, TCX, FIT, KML';
-      importBtn.textContent = 'Import GPS File';
-      cartDiv.appendChild(importBtn);
-    }
+
 
     // Add Category
     const addMoreButton = document.createElement("button");
