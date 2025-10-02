@@ -9,23 +9,23 @@ function movingAverage(arr, win = 5) {
 
 window.cart = window.cart || [];
 
-  // Haversine mesafe (metre)
-    function haversine(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const toRad = x => x * Math.PI / 180;
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-        return 2 * R * Math.asin(Math.sqrt(a));
-    }
+// Haversine mesafe (metre)
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
 
 function getSlopeColor(slope) {
-  if (slope < 2) return "#72c100";      // 0-2% yeşil (düz)
-  if (slope < 5) return "#ffd700";      // 2-5% sarı (hafif)
-  if (slope < 8) return "#ff8c00";      // 5-8% turuncu (orta)
-  if (slope < 12) return "#d32f2f";     // 8-12% kırmızı (dik)
-  return "#8e24aa";                     // 12%+ mor (çok dik)
+  if (slope < 2) return "#72c100";
+  if (slope < 5) return "#ffd700";
+  if (slope < 8) return "#ff8c00";
+  if (slope < 12) return "#d32f2f";
+  return "#8e24aa";
 }
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoiYWx0YW5kZW1pcmNhbiIsImEiOiJjbWRpaHFkZGIwZXd3Mm1yYjE2bWh3eHp5In0.hB1IaB766Iug4J26lt5itw";
@@ -35,45 +35,20 @@ window.GEOAPIFY_API_KEY = GEOAPIFY_API_KEY;
 
 // --- PLAN SEÇİM ZORUNLULUĞU FLAGS ---
 window.__locationPickedFromSuggestions = false;
-window.selectedLocationLocked = false; // varsa yine de yaz sorun değil
-
+window.selectedLocationLocked = false;
 
 let selectedCity = "";
 
-// Zorunlu lokasyon seçimi için kilit bayrağı (global)
-window.selectedLocationLocked = window.selectedLocationLocked || false;
+// (REMOVED) showCitySuggestions + countryPopularCities usage
 
-function showCitySuggestions(country, days) {
-    const suggestionsContainer = document.getElementById("chat-location-suggestions");
-    const cities = countryPopularCities[country];
-    suggestionsContainer.innerHTML = "";
-    if (!cities) return;
-    cities.forEach(city => {
-        const div = document.createElement("div");
-        div.className = "category-area-option";
-        div.innerText = city;
-        div.onclick = () => {
-            handleAnswer(`${city} ${days} days`);
-        };
-        suggestionsContainer.appendChild(div);
-    });
-    suggestionsContainer.style.display = "block";
-}
-
-
-// Update your existing event listener to this:
 document.addEventListener('click', function(event) {
-  // Check if clicked element is the arrow image or its parent
   const arrowElement = event.target.closest('.arrow');
-  
   if (arrowElement) {
     const cartItem = arrowElement.closest('.cart-item');
     if (cartItem) {
       const content = cartItem.querySelector('.content');
       if (content) {
         content.classList.toggle('active');
-        
-        // Rotate the arrow icon
         const arrowImg = arrowElement.querySelector('img');
         if (arrowImg) {
           arrowImg.classList.toggle('rotated');
@@ -85,58 +60,52 @@ document.addEventListener('click', function(event) {
 
 document.addEventListener("DOMContentLoaded", function () {
     const chatInput = document.getElementById("user-input");
-
     const suggestionsDiv = document.getElementById("suggestions");
-
-    // BURAYA EKLE!
     let selectedOption = null;
 
-function showSuggestions() {
-    if (!suggestionsDiv) return;
-    suggestionsDiv.innerHTML = "";
+    function showSuggestions() {
+        if (!suggestionsDiv) return;
+        suggestionsDiv.innerHTML = "";
 
-    const options = [
-        "Plan a 2-day tour for Rome",
-        "Do a 3 days city tour in Helsinki",
-        "1-day city tour in Osaka"
-    ];
+        const options = [
+            "Plan a 2-day tour for Rome",
+            "Do a 3 days city tour in Helsinki",
+            "1-day city tour in Osaka"
+        ];
 
-    if (selectedOption) {
-        // Sadece seçili öneriyi göster ve X ekle
-        const suggestion = document.createElement("div");
-        suggestion.className = "category-area-option selected-suggestion";
-        suggestion.innerText = selectedOption;
-
-        const close = document.createElement("span");
-        close.className = "close-suggestion";
-        close.innerText = "✖";
-        close.style.marginLeft = "8px";
-        close.style.cursor = "pointer";
-        close.onclick = function(e) {
-            e.stopPropagation();
-            selectedOption = null;
-            chatInput.value = "";
-            showSuggestions();
-        };
-
-        suggestion.appendChild(close);
-        suggestionsDiv.appendChild(suggestion);
-    } else {
-        // Tüm önerileri göster
-        options.forEach(option => {
+        if (selectedOption) {
             const suggestion = document.createElement("div");
-            suggestion.className = "category-area-option";
-            suggestion.innerText = option;
-            suggestion.onclick = () => {
-                selectedOption = option;
-                chatInput.value = ""; // inputu temizle
+            suggestion.className = "category-area-option selected-suggestion";
+            suggestion.innerText = selectedOption;
+
+            const close = document.createElement("span");
+            close.className = "close-suggestion";
+            close.innerText = "✖";
+            close.style.marginLeft = "8px";
+            close.style.cursor = "pointer";
+            close.onclick = function(e) {
+                e.stopPropagation();
+                selectedOption = null;
+                chatInput.value = "";
                 showSuggestions();
             };
-            suggestionsDiv.appendChild(suggestion);
-        });
-    }
-}
 
+            suggestion.appendChild(close);
+            suggestionsDiv.appendChild(suggestion);
+        } else {
+            options.forEach(option => {
+                const suggestion = document.createElement("div");
+                suggestion.className = "category-area-option";
+                suggestion.innerText = option;
+                suggestion.onclick = () => {
+                    selectedOption = option;
+                    chatInput.value = "";
+                    showSuggestions();
+                };
+                suggestionsDiv.appendChild(suggestion);
+            });
+        }
+    }
 
     if (!chatInput) return;
 
@@ -167,388 +136,311 @@ function showSuggestions() {
     }
 
     function extractLocationQuery(input) {
-        // İlk harfi büyük olan kelime(leri) alır, yoksa ilk kelimeyi alır
         const match = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)?)/);
         if (match) return match[1];
         return input.split(" ")[0];
     }
 
     function enableSendButton() {
-    const btn = document.getElementById("send-button");
-    if (!btn) return;
-    btn.removeAttribute("disabled");
-    btn.classList.remove("disabled");
-}
-function disableSendButton() {
-    const btn = document.getElementById("send-button");
-    if (!btn) return;
-    btn.setAttribute("disabled","disabled");
-    btn.classList.add("disabled");
-}
-
-
-// --- Instant suggestions (fastAutocomplete) ---
-let __autoAbort = null;
-function fastAutocomplete() {
-  const chatInput = document.getElementById('user-input');
-  const suggestionsDiv = document.getElementById('suggestions');
-  if (!chatInput || !suggestionsDiv) return;
-  if (window.selectedLocationLocked) return;
-
-  const raw = chatInput.value.trim();
-  if (raw.length < 2) {
-    suggestionsDiv.innerHTML = "";
-    suggestionsDiv.classList.add('hidden');
-    return;
-  }
-
-  if (__autoAbort) __autoAbort.abort();
-  __autoAbort = new AbortController();
-
-  const seed = (typeof tt_extractSeedFromRaw === 'function')
-    ? tt_extractSeedFromRaw(raw)
-    : raw.split(/\s+/).pop();
-  if (!seed || seed.length < 2) {
-    suggestionsDiv.innerHTML = "";
-    suggestionsDiv.classList.add('hidden');
-    return;
-  }
-
-  // Loading placeholder
-  suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.55;">Loading...</div>`;
-  suggestionsDiv.classList.remove('hidden');
-
-  geoapifyAutocomplete(seed, __autoAbort.signal)
-    .then(results => {
-      renderSuggestions(results || []);
-    })
-    .catch(err => {
-      if (err.name === 'AbortError') return;
-      suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.55;">No results</div>`;
-      suggestionsDiv.classList.remove('hidden');
-    });
-}
-
-
-// === LIGHT AUTOCOMPLETE (lokasyon kilidi yokken) ===
-// Lightweight autocomplete patch
-(function attachLightAutocomplete(){
-    const chatInput = document.getElementById("user-input");
-    const suggestionsDiv = document.getElementById("suggestions");
-    if (!chatInput || !suggestionsDiv) return;
-    let timer;
-
-    function debounce(fn, w=350){ clearTimeout(timer); timer=setTimeout(fn,w); }
-    // --- PATCH: Improved seed extraction (city inference) ---
-    function tt_capitalizeWords(str){
-        return str.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const btn = document.getElementById("send-button");
+      if (!btn) return;
+      btn.removeAttribute("disabled");
+      btn.classList.remove("disabled");
+    }
+    function disableSendButton() {
+      const btn = document.getElementById("send-button");
+      if (!btn) return;
+      btn.setAttribute("disabled","disabled");
+      btn.classList.add("disabled");
     }
 
-function tt_extractSeedFromRaw(raw){
-    if (!raw || typeof raw !== 'string') return '';
+    // --- Instant suggestions (fastAutocomplete) ---
+    let __autoAbort = null;
+    function fastAutocomplete() {
+      const chatInput = document.getElementById('user-input');
+      const suggestionsDiv = document.getElementById('suggestions');
+      if (!chatInput || !suggestionsDiv) return;
+      if (window.selectedLocationLocked) return;
 
-    const original = raw.trim();
-    let cleaned = original.replace(/\u0336/g, '').trim();
-
-    cleaned = cleaned
-        .replace(/\b(plan|planning|travel|trip|tour|itinerary|program|create|make|build|generate|please|show|give)\b/ig, ' ')
-        .replace(/\b(for|in|to|a|an|the|of|city)\b/ig, ' ')
-        .replace(/\d+\s*(?:-?\s*(day|days))\b/ig, ' ')
-        .replace(/[,.;:!?]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-    if (!cleaned) cleaned = original;
-
-    const tokens = cleaned.split(/\s+/).filter(Boolean);
-    if (!tokens.length) return '';
-
-    for (let span = Math.min(4, tokens.length); span >= 2; span--) {
-        const slice = tokens.slice(tokens.length - span);
-        const candidate = slice.join(' ');
-        if (/^[\p{L}0-9][\p{L}\p{M}0-9'’\-\s.]+$/u.test(candidate)) {
-            return candidate.split(/\s+/)
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(' ');
-        }
-    }
-
-    const last = tokens[tokens.length - 1];
-    return last.charAt(0).toUpperCase() + last.slice(1);
-}
-    // --- /PATCH ---
-    async function doAutocomplete(){
-        if (window.selectedLocationLocked) return;
-        const raw = chatInput.value.trim();
-        if (raw.length < 2){
-            suggestionsDiv.innerHTML="";
-        suggestionsDiv.classList.add('hidden');
-
-            return;
-        }
-        const dayMatch = raw.match(/(\d+)\s*-?\s*(day|gün)/i);
-        let days = dayMatch ? parseInt(dayMatch[1],10) : 2;
-        if (!days || days<1) days=2;
-
-        const seed = tt_extractSeedFromRaw(raw);
-        if (!seed || seed.length < 2){
-            suggestionsDiv.innerHTML = "";
-            suggestionsDiv.classList.add('hidden'); 
-            return;
-        }
-        let results=[];
-        try { results = await geoapifyAutocomplete(seed); } catch(e){ results=[]; }
-
-        const filtered = results.filter(r=>{
-            const p = r.properties||{};
-            return (p.city||p.name) && (p.country || p.country_code);
-        }).slice(0,7);
-
-        if (!filtered.length){
-            suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.6;">No results</div>`;
-            suggestionsDiv.classList.remove('hidden');
-            return;
-        }
-
-        suggestionsDiv.innerHTML="";
-        filtered.forEach(f=>{
-            const p=f.properties;
-            const city=p.city||p.name;
-            const country=p.country||p.country_code?.toUpperCase()||"";
-            const flag=p.country_code
-                ? String.fromCodePoint(...[...p.country_code.toUpperCase()].map(c=>127397+c.charCodeAt()))
-                : "";
-            const div=document.createElement("div");
-            div.className="category-area-option";
-            div.textContent=`${city}, ${country} ${flag}`.trim();
-            div.onclick=()=>{
-    window.selectedLocation={
-        name:p.name||city,
-        city:city,
-        country:country,
-        lat:p.lat,
-        lon:p.lon,
-        country_code:p.country_code||""
-    };
-    window.selectedSuggestion={ displayText: div.textContent, props:p };
-    window.selectedLocationLocked = true;
-    window.__locationPickedFromSuggestions = true; // EK
-    if (typeof setChatInputValue === 'function')
-        setChatInputValue(`Plan a ${days}-day tour for ${city}`);
-    else
-        chatInput.value = `Plan a ${days}-day tour for ${city}`;
-    suggestionsDiv.classList.add('hidden');
-    enableSendButton && enableSendButton();
-                updateCanonicalPreview();
-
-            };
-            suggestionsDiv.appendChild(div);
-        });
-       
-    }
-
-    chatInput.addEventListener("input", () => {
-  if (window.__skipInputOnce) { window.__skipInputOnce = false; return; }
-  fastAutocomplete();
-});
-
-
-})();
-function lockSelectedCity(city, days) {
-    const chatInput = document.getElementById("user-input");
-    if (!chatInput) return;
-    if (!days || days < 1) days = 2;
-
-    // window.selectedLocation: şehir adı dışında koordinat bilmiyoruz (Geoapify sonucu yoksa)
-    window.selectedLocation = {
-        name: city,
-        city: city,
-        country: "",
-        lat: null,
-        lon: null,
-        country_code: ""
-    };
-    window.selectedSuggestion = { displayText: city };
-
-const canon = formatCanonicalPlan(`${city} ${days} days`);
-const uiInput = document.getElementById('user-input');
-if (uiInput) uiInput.value = canon.canonical;
-
-chatInput.value = canon.canonical;
-    window.selectedLocationLocked = true;
-
-    enableSendButton();
-updateCanonicalPreview();
-
-    const suggestionsDiv = document.getElementById("suggestions");
-    if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
-}
-// 1. renderSuggestions artık sadece #suggestions alanına öneri yazar
-// (Yardımcılar yoksa ekle; zaten varsa bu bloğu atla)
-if (typeof showSuggestionsDiv !== "function") {
-  function showSuggestionsDiv() {
-    const el = document.getElementById('suggestions');
-    if (!el) return;
-    el.hidden = false;
-    el.style.removeProperty('display');
-    if (!el.getAttribute('style')) el.removeAttribute('style');
-  }
-}
-if (typeof hideSuggestionsDiv !== "function") {
-  function hideSuggestionsDiv(clear = false) {
-    const el = document.getElementById('suggestions');
-    if (!el) return;
-    el.hidden = true;
-    el.style.removeProperty('display');
-    if (!el.getAttribute('style')) el.removeAttribute('style');
-    if (clear) el.innerHTML = "";
-  }
-}
-
-// Güncellenmiş renderSuggestions
-function renderSuggestions(results = []) {
-    const suggestionsDiv = document.getElementById("suggestions");
-    const chatInput = document.getElementById("user-input");
-    if (!suggestionsDiv || !chatInput) return;
-
-    suggestionsDiv.innerHTML = "";
-
-    // Sonuç yoksa tamamen gizle
-    if (!results.length) {
-        hideSuggestionsDiv?.(true);
-        return;
-    }
-
-    results.forEach(result => {
-        const props = result.properties || {};
-        const city = props.city || props.name || "";
-        const country = props.country || "";
-        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-        const displayText = [city, country].filter(Boolean).join(", ") + flag;
-
-        // Duplicate engelle
-        if ([...suggestionsDiv.children].some(c => c.dataset.displayText === displayText)) {
-            return;
-        }
-
-        const div = document.createElement("div");
-        div.className = "category-area-option";
-        div.textContent = displayText;
-        div.dataset.displayText = displayText;
-
-        // Seçili suggestion ise highlight + kapatma
-        if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
-            div.classList.add("selected-suggestion");
-            const close = document.createElement("span");
-            close.className = "close-suggestion";
-            close.textContent = "✖";
-            close.onclick = (e) => {
-                e.stopPropagation();
-                window.selectedSuggestion = null;
-                window.selectedLocation = null;
-                window.selectedLocationLocked = false;
-                window.__locationPickedFromSuggestions = false; // EK: seçim iptali
-                chatInput.value = "";
-                disableSendButton?.();
-                renderSuggestions(results);
-            };
-            div.appendChild(close);
-        } else {
-            // Normal öneri tıklama
-            div.onclick = () => {
-                // Kullanıcının yazdığı ham metinden gün sayısını çıkar
-                const raw = chatInput.value.trim();
-                const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
-                let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
-                if (!days || days < 1) days = 2;
-
-                // Global seçim objeleri
-                window.selectedSuggestion = { displayText, props };
-                window.selectedLocation = {
-                    name: props.name || city,
-                    city: city,
-                    country: country,
-                    lat: props.lat ?? props.latitude ?? null,
-                    lon: props.lon ?? props.longitude ?? null,
-                    country_code: props.country_code || ""
-                };
-
-                // Canonical format (varsa formatCanonicalPlan kullan)
-                let canonicalStr = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
-                if (typeof formatCanonicalPlan === "function") {
-                    const c = formatCanonicalPlan(`${window.selectedLocation.city} ${days} days`);
-                    if (c && c.canonical) canonicalStr = c.canonical;
-                }
-
-                // Programatik set
-                if (typeof setChatInputValue === "function") {
-                    setChatInputValue(canonicalStr);
-                } else {
-                    chatInput.value = canonicalStr;
-                }
-
-                // Lokasyon kilitle + bayrak
-                window.selectedLocationLocked = true;
-                window.__locationPickedFromSuggestions = true; // EK: plan için gerekli
-
-                // Gönder butonu aç
-                enableSendButton?.();
-
-                // Önerileri kapat
-                hideSuggestionsDiv?.();
-
-                // Diff / canonical preview güncelle (varsa)
-                if (typeof updateCanonicalPreview === "function") {
-                    updateCanonicalPreview();
-                }
-            };
-        }
-
-        suggestionsDiv.appendChild(div);
-    });
-
-    // Son durumda içeriğe göre göster/gizle
-    if (suggestionsDiv.children.length > 0) {
-        showSuggestionsDiv?.();
-    } else {
-        hideSuggestionsDiv?.(true);
-    }
-}
-
-// 2. Input event'i: autocomplete çıktığında chat-location-suggestions'ı gizle, sadece #suggestions'ı göster
-chatInput.addEventListener("input", debounce(async function () {
-    const queryText = this.value.trim();
-    if (queryText.length < 2) {
-        document.getElementById("chat-location-suggestions").style.display = "none";
-        document.getElementById("suggestions").classList.add('hidden');
-;
-        return;
-    }
-    const locationQuery = extractLocationQuery(queryText);
-    // Eğer ülke şehirleri varsa (Türkiye vb.) farklı davranabilirsin, örnek aşağıda
-    if (countryPopularCities[locationQuery]) {
-        document.getElementById("chat-location-suggestions").style.display = "none";
-        const suggestionsDiv = document.getElementById("suggestions");
+      const raw = chatInput.value.trim();
+      if (raw.length < 2) {
         suggestionsDiv.innerHTML = "";
-        countryPopularCities[locationQuery].forEach(city => {
+        suggestionsDiv.classList.add('hidden');
+        return;
+      }
+
+      if (__autoAbort) __autoAbort.abort();
+      __autoAbort = new AbortController();
+
+      const seed = (typeof tt_extractSeedFromRaw === 'function')
+        ? tt_extractSeedFromRaw(raw)
+        : raw.split(/\s+/).pop();
+      if (!seed || seed.length < 2) {
+        suggestionsDiv.innerHTML = "";
+        suggestionsDiv.classList.add('hidden');
+        return;
+      }
+
+      suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.55;">Loading...</div>`;
+      suggestionsDiv.classList.remove('hidden');
+
+      geoapifyAutocomplete(seed, __autoAbort.signal)
+        .then(results => {
+          renderSuggestions(results || []);
+        })
+        .catch(err => {
+          if (err.name === 'AbortError') return;
+            suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.55;">No results</div>`;
+          suggestionsDiv.classList.remove('hidden');
+        });
+    }
+
+    (function attachLightAutocomplete(){
+        const chatInput = document.getElementById("user-input");
+        const suggestionsDiv = document.getElementById("suggestions");
+        if (!chatInput || !suggestionsDiv) return;
+
+        function debounce(fn, w=350){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),w);} }
+
+        function tt_extractSeedFromRaw(raw){
+            if (!raw || typeof raw !== 'string') return '';
+            const original = raw.trim();
+            let cleaned = original.replace(/\u0336/g, '').trim();
+            cleaned = cleaned
+                .replace(/\b(plan|planning|travel|trip|tour|itinerary|program|create|make|build|generate|please|show|give)\b/ig, ' ')
+                .replace(/\b(for|in|to|a|an|the|of|city)\b/ig, ' ')
+                .replace(/\d+\s*(?:-?\s*(day|days))\b/ig, ' ')
+                .replace(/[,.;:!?]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (!cleaned) cleaned = original;
+            const tokens = cleaned.split(/\s+/).filter(Boolean);
+            if (!tokens.length) return '';
+            for (let span = Math.min(4, tokens.length); span >= 2; span--) {
+                const slice = tokens.slice(tokens.length - span);
+                const candidate = slice.join(' ');
+                if (/^[\p{L}0-9][\p{L}\p{M}0-9'’\-\s.]+$/u.test(candidate)) {
+                    return candidate.split(/\s+/)
+                        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(' ');
+                }
+            }
+            const last = tokens[tokens.length - 1];
+            return last.charAt(0).toUpperCase() + last.slice(1);
+        }
+
+        async function doAutocomplete(){
+            if (window.selectedLocationLocked) return;
+            const raw = chatInput.value.trim();
+            if (raw.length < 2){
+                suggestionsDiv.innerHTML="";
+                suggestionsDiv.classList.add('hidden');
+                return;
+            }
+            const dayMatch = raw.match(/(\d+)\s*-?\s*(day|gün)/i);
+            let days = dayMatch ? parseInt(dayMatch[1],10) : 2;
+            if (!days || days<1) days=2;
+
+            const seed = tt_extractSeedFromRaw(raw);
+            if (!seed || seed.length < 2){
+                suggestionsDiv.innerHTML = "";
+                suggestionsDiv.classList.add('hidden');
+                return;
+            }
+            let results=[];
+            try { results = await geoapifyAutocomplete(seed); } catch(e){ results=[]; }
+
+            const filtered = results.filter(r=>{
+                const p = r.properties||{};
+                return (p.city||p.name) && (p.country || p.country_code);
+            }).slice(0,7);
+
+            if (!filtered.length){
+                suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.6;">No results</div>`;
+                suggestionsDiv.classList.remove('hidden');
+                return;
+            }
+
+            suggestionsDiv.innerHTML="";
+            filtered.forEach(f=>{
+                const p=f.properties;
+                const city=p.city||p.name;
+                const country=p.country||p.country_code?.toUpperCase()||"";
+                const flag=p.country_code
+                    ? String.fromCodePoint(...[...p.country_code.toUpperCase()].map(c=>127397+c.charCodeAt()))
+                    : "";
+                const div=document.createElement("div");
+                div.className="category-area-option";
+                div.textContent=`${city}, ${country} ${flag}`.trim();
+                div.onclick=()=>{
+                    window.selectedLocation={
+                        name:p.name||city,
+                        city:city,
+                        country:country,
+                        lat:p.lat,
+                        lon:p.lon,
+                        country_code:p.country_code||""
+                    };
+                    window.selectedSuggestion={ displayText: div.textContent, props:p };
+                    window.selectedLocationLocked = true;
+                    window.__locationPickedFromSuggestions = true;
+                    if (typeof setChatInputValue === 'function')
+                        setChatInputValue(`Plan a ${days}-day tour for ${city}`);
+                    else
+                        chatInput.value = `Plan a ${days}-day tour for ${city}`;
+                    suggestionsDiv.classList.add('hidden');
+                    enableSendButton && enableSendButton();
+                    updateCanonicalPreview();
+                };
+                suggestionsDiv.appendChild(div);
+            });
+        }
+
+        chatInput.addEventListener("input", () => {
+          if (window.__skipInputOnce) { window.__skipInputOnce = false; return; }
+          fastAutocomplete();
+        });
+    })();
+
+    function lockSelectedCity(city, days) {
+        const chatInput = document.getElementById("user-input");
+        if (!chatInput) return;
+        if (!days || days < 1) days = 2;
+        window.selectedLocation = {
+            name: city,
+            city: city,
+            country: "",
+            lat: null,
+            lon: null,
+            country_code: ""
+        };
+        window.selectedSuggestion = { displayText: city };
+        const canon = formatCanonicalPlan(`${city} ${days} days`);
+        const uiInput = document.getElementById('user-input');
+        if (uiInput) uiInput.value = canon.canonical;
+        chatInput.value = canon.canonical;
+        window.selectedLocationLocked = true;
+        enableSendButton();
+        updateCanonicalPreview();
+        const suggestionsDiv = document.getElementById("suggestions");
+        if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
+    }
+
+    if (typeof showSuggestionsDiv !== "function") {
+      function showSuggestionsDiv() {
+        const el = document.getElementById('suggestions');
+        if (!el) return;
+        el.hidden = false;
+        el.style.removeProperty('display');
+        if (!el.getAttribute('style')) el.removeAttribute('style');
+      }
+    }
+    if (typeof hideSuggestionsDiv !== "function") {
+      function hideSuggestionsDiv(clear = false) {
+        const el = document.getElementById('suggestions');
+        if (!el) return;
+        el.hidden = true;
+        el.style.removeProperty('display');
+        if (!el.getAttribute('style')) el.removeAttribute('style');
+        if (clear) el.innerHTML = "";
+      }
+    }
+
+    function renderSuggestions(results = []) {
+        const suggestionsDiv = document.getElementById("suggestions");
+        const chatInput = document.getElementById("user-input");
+        if (!suggestionsDiv || !chatInput) return;
+        suggestionsDiv.innerHTML = "";
+        if (!results.length) {
+            hideSuggestionsDiv?.(true);
+            return;
+        }
+        results.forEach(result => {
+            const props = result.properties || {};
+            const city = props.city || props.name || "";
+            const country = props.country || "";
+            const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+            const displayText = [city, country].filter(Boolean).join(", ") + flag;
+            if ([...suggestionsDiv.children].some(c => c.dataset.displayText === displayText)) return;
+
             const div = document.createElement("div");
             div.className = "category-area-option";
-            div.textContent = city;
-            div.onclick = () => {
-                chatInput.value = city + " " + queryText.replace(locationQuery, "").trim();
-                suggestionsDiv.classList.add('hidden');
-                chatInput.focus();
-            };
+            div.textContent = displayText;
+            div.dataset.displayText = displayText;
+
+            if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
+                div.classList.add("selected-suggestion");
+                const close = document.createElement("span");
+                close.className = "close-suggestion";
+                close.textContent = "✖";
+                close.onclick = (e) => {
+                    e.stopPropagation();
+                    window.selectedSuggestion = null;
+                    window.selectedLocation = null;
+                    window.selectedLocationLocked = false;
+                    window.__locationPickedFromSuggestions = false;
+                    chatInput.value = "";
+                    disableSendButton?.();
+                    renderSuggestions(results);
+                };
+                div.appendChild(close);
+            } else {
+                div.onclick = () => {
+                    const raw = chatInput.value.trim();
+                    const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+                    let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+                    if (!days || days < 1) days = 2;
+                    window.selectedSuggestion = { displayText, props };
+                    window.selectedLocation = {
+                        name: props.name || city,
+                        city: city,
+                        country: country,
+                        lat: props.lat ?? props.latitude ?? null,
+                        lon: props.lon ?? props.longitude ?? null,
+                        country_code: props.country_code || ""
+                    };
+                    let canonicalStr = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
+                    if (typeof formatCanonicalPlan === "function") {
+                        const c = formatCanonicalPlan(`${window.selectedLocation.city} ${days} days`);
+                        if (c && c.canonical) canonicalStr = c.canonical;
+                    }
+                    if (typeof setChatInputValue === "function") {
+                        setChatInputValue(canonicalStr);
+                    } else {
+                        chatInput.value = canonicalStr;
+                    }
+                    window.selectedLocationLocked = true;
+                    window.__locationPickedFromSuggestions = true;
+                    enableSendButton?.();
+                    hideSuggestionsDiv?.();
+                    if (typeof updateCanonicalPreview === "function") {
+                        updateCanonicalPreview();
+                    }
+                };
+            }
             suggestionsDiv.appendChild(div);
         });
-                return;
+        if (suggestionsDiv.children.length > 0) {
+            showSuggestionsDiv?.();
+        } else {
+            hideSuggestionsDiv?.(true);
+        }
     }
-    // Normal autocomplete devamı:
-    const suggestions = await geoapifyAutocomplete(locationQuery);
-    window.lastResults = suggestions;
-    document.getElementById("chat-location-suggestions").style.display = "none";
-    renderSuggestions(suggestions);
-}, 400));
+
+    // (REMOVED BRANCH) countryPopularCities based suggestion override
+    chatInput.addEventListener("input", debounce(async function () {
+        const queryText = this.value.trim();
+        if (queryText.length < 2) {
+            document.getElementById("chat-location-suggestions").style.display = "none";
+            document.getElementById("suggestions").classList.add('hidden');
+            return;
+        }
+        const locationQuery = extractLocationQuery(queryText);
+        const suggestions = await geoapifyAutocomplete(locationQuery);
+        window.lastResults = suggestions;
+        document.getElementById("chat-location-suggestions").style.display = "none";
+        renderSuggestions(suggestions);
+    }, 400));
 
     function debounce(func, wait) {
         let timeout;
@@ -559,38 +451,17 @@ chatInput.addEventListener("input", debounce(async function () {
     }
 
     chatInput.addEventListener("input", debounce(async function () {
-    const queryText = this.value.trim();
-    if (queryText.length < 2) {
-        chatSuggestions.innerHTML = "";
-        chatSuggestions.style.display = "none";
-        return;
-    }
-    const locationQuery = extractLocationQuery(queryText);
-
-    // <---- BURAYA EKLE ---->
-    if (countryPopularCities[locationQuery]) {
-        chatSuggestions.innerHTML = "";
-        countryPopularCities[locationQuery].forEach(city => {
-            const div = document.createElement("div");
-            div.className = "category-area-option";
-            div.textContent = city;
-            div.onclick = () => {
-                chatInput.value = city + " " + queryText.replace(locationQuery, "").trim();
-                chatSuggestions.style.display = "none";
-                chatInput.focus();
-            };
-            chatSuggestions.appendChild(div);
-        });
-        
-        return;
-    }
-    // <---- BURAYA EKLE ---->
-
-    // Normal autocomplete devamı:
-    const suggestions = await geoapifyAutocomplete(locationQuery);
-    lastResults = suggestions;
-    renderSuggestions(suggestions);
-}, 400));
+        const queryText = this.value.trim();
+        if (queryText.length < 2) {
+            chatSuggestions.innerHTML = "";
+            chatSuggestions.style.display = "none";
+            return;
+        }
+        const locationQuery = extractLocationQuery(queryText);
+        const suggestions = await geoapifyAutocomplete(locationQuery);
+        lastResults = suggestions;
+        renderSuggestions(suggestions);
+    }, 400));
 
     chatInput.addEventListener("focus", function () {
         if (lastResults.length) renderSuggestions(lastResults);
@@ -602,15 +473,12 @@ chatInput.addEventListener("input", debounce(async function () {
         }
     });
 
-    // Plan başlatırken sadece seçilmiş konumdan bilgi al!
     window.buildPlanFromSelection = function (days) {
-                if (!window.selectedLocation) {
+        if (!window.selectedLocation) {
             alert("Please select a city!");
             return;
         }
         const loc = window.selectedLocation;
-        // Kendi plan fonksiyonunu burada çağırabilirsin, örnek:
-        // callPlanAPI(loc.city || loc.name, days, loc.lat, loc.lon, loc.country);
         console.log("Plan:", loc.city || loc.name, days, loc.lat, loc.lon, loc.country);
     };
 
@@ -627,17 +495,13 @@ chatInput.addEventListener("input", debounce(async function () {
 
     showSuggestions();
 
-
     let currentQuestionIndex = 0;
-
 
     const chatBox = document.getElementById("chat-box");
     const userInput = document.getElementById("user-input");
-    const suggestionsContainer = document.getElementById("suggestions");
 
     let latestTripPlan = [];
     let apiCallTimeout;
-
 
     function displayQuestion() {
         if (currentQuestionIndex < surveyData.length) {
@@ -647,7 +511,6 @@ chatInput.addEventListener("input", debounce(async function () {
             addMessage("I’ve created a fantastic trip plan for you...", "bot-message");
         }
     }
-
 async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
   if (places.length < 2) return places;
   let limitedPlaces = [...places];
