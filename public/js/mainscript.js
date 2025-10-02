@@ -6683,23 +6683,35 @@ function getActiveDay(containerId) {
 
 
 function changeContent(option) {
-  const welcome = document.getElementById('tt-welcome');
-  const about   = document.getElementById('tt-about-us');
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => section.classList.remove('active'));
 
-  // Aktif sınıfları temizle
-  [welcome, about].forEach(el => {
-    if (!el) return;
-    el.classList.remove('active');
-    el.style.display = 'none';
-  });
+    const images = document.querySelectorAll('.theme-menu img');
+    images.forEach(img => img.classList.remove('active'));
 
-  if (option === 1 && welcome) {
-    welcome.classList.add('active');
-    welcome.style.display = 'block';
-  } else if (option === 2 && about) {
-    about.classList.add('active');
-    about.style.display = 'block';
-  }
+    const chatBox = document.getElementById('chat-box');
+    const welcomeSection = document.getElementById('tt-welcome');
+    const aboutUsSection = document.getElementById('tt-about-us');
+
+    if (chatBox) chatBox.style.display = 'none';
+    if (welcomeSection) welcomeSection.style.display = 'none';
+    if (aboutUsSection) aboutUsSection.style.display = 'none';
+
+    if (option === 1) {
+        if (welcomeSection) {
+            welcomeSection.style.display = 'block';
+            welcomeSection.classList.add('active');
+        }
+        const homeIcon = document.getElementById("home-icon");
+        if (homeIcon) homeIcon.classList.add('active');
+    } else if (option === 2) {
+        if (aboutUsSection) {
+            aboutUsSection.style.display = 'block';
+            aboutUsSection.classList.add('active');
+        }
+        const ttIcon = document.getElementById("tt-icon");
+        if (ttIcon) ttIcon.classList.add('active');
+    }
 }
 
 document.addEventListener('click', function(event) {
