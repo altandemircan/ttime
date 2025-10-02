@@ -1921,7 +1921,6 @@ function addToCart(
   website = null,
   options = {}
 ) {
-  // ---- 0) Opsiyonları aç
   const {
     silent = false,
     skipRender = false,
@@ -1933,7 +1932,6 @@ function addToCart(
     window.cart = (window.cart || []).filter(it => !it._placeholder);
     window._removeMapPlaceholderOnce = false;
   }
-window.cart = (window.cart || []).filter(it => !it._starter);
 
   // ---- 2) Cart yapısını garanti et
   if (!Array.isArray(window.cart)) {
@@ -3407,7 +3405,7 @@ const isEmptyDay = dayItemsArr.length === 0;
     const dayList = document.createElement("ul");
     dayList.className = "day-list";
     dayList.dataset.day = day;
-    
+
 if (isEmptyDay) {
   const emptyWrap = document.createElement("div");
   emptyWrap.className = "empty-day-block";
@@ -3540,20 +3538,27 @@ if (isEmptyDay) {
 
     dayContainer.appendChild(dayList);
 
-   // === YENİ: Harita davranışı ===
-if (isEmptyDay) {
-  removeDayMapCompletely(day);   // <-- eski removeDayMap(day) yerine
-} else {
-  ensureDayMapContainer(day);
-  const realPointCount = dayItemsArr.filter(it =>
-    it.name && it.location &&
-    typeof it.location.lat === 'number' &&
-    typeof it.location.lng === 'number'
-  ).length;
-  if (realPointCount < 2) { 
-    initEmptyDayMap(day);
-  }
-}
+// --- MAP LOGIC (revize) ---
+    const hasStarter = window.cart.some(it => it.day === day && it._starter);
+    const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
+
+    // Gerçekten bomboş: hiç item yok + starter yok + planlama yok -> haritayı kaldır
+    if (isEmptyDay && !hasStarter && !planningThisDay) {
+      removeDayMapCompletely(day);
+    } else {
+      // Planlama başladı ya da (starter veya gerçek item) var -> haritayı göster / koru
+      ensureDayMapContainer(day);
+
+      const realPointCount = dayItemsArr.filter(it =>
+        it.name && it.location &&
+        typeof it.location.lat === 'number' &&
+        typeof it.location.lng === 'number'
+      ).length;
+
+      if (realPointCount < 2) {
+        initEmptyDayMap(day);
+      }
+    }
 
     cartDiv.appendChild(dayContainer);
 
