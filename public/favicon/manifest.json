@@ -1,6 +1,6 @@
 {
-  "name": "TripTime Travel Planner",
-  "short_name": "TripTime",
+  "name": "Triptime New Generation Trip Planner",
+  "short_name": "Triptime",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
