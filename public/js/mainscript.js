@@ -3320,20 +3320,17 @@ function updateCart() {
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  // GLOBAL boş durum
+  // 0) Tamamen boş global durum
   if (!window.cart || window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
     cartDiv.innerHTML = `
       <div id="empty-content">
         <p>Create your trip using the chat screen.</p>
-        
-       <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
-  Import GPS File
-</button>
-        <div style="text-align: center;
-    padding: 10px 0 4px 0;
-    font-weight: 500;">or</div>
-                <button id="start-map-btn" type="button">Start with map</button>
+        <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
+          Import GPS File
+        </button>
+        <div style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
+        <button id="start-map-btn" type="button">Start with map</button>
       </div>
     `;
     if (menuCount) {
@@ -3347,21 +3344,25 @@ function updateCart() {
     return;
   }
 
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b);
+  // 1) Gün listesi
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   cartDiv.innerHTML = "";
 
   const globalIndexMap = new Map();
   window.cart.forEach((it, idx) => globalIndexMap.set(it, idx));
 
+  // 2) Her gün
   days.forEach(day => {
+    // Sadece gerçek (starter/placeholder hariç) item’lar
     const dayItemsArr = window.cart.filter(i =>
-  i.day === day &&
-  i.name &&
-  !i._starter &&
-  !i._placeholder
-);
-const isEmptyDay = dayItemsArr.length === 0;
+      i.day === day &&
+      i.name &&
+      !i._starter &&
+      !i._placeholder
+    );
+    const isEmptyDay = dayItemsArr.length === 0;
 
+    // Gün container
     let dayContainer = document.getElementById(`day-container-${day}`);
     if (!dayContainer) {
       dayContainer = document.createElement("div");
@@ -3369,13 +3370,17 @@ const isEmptyDay = dayItemsArr.length === 0;
       dayContainer.id = `day-container-${day}`;
       dayContainer.dataset.day = day;
     } else {
-      // Mevcut haritayı koruma / temizleme kararını isEmptyDay'e göre sonra vereceğiz
-      const savedRouteMap  = dayContainer.querySelector(`#route-map-day${day}`);
+      // İçini temizlemeden önce mevcut küçük harita / info sakla
+      const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
       const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
       dayContainer.innerHTML = "";
-      // DOLU günse eski harita/info (varsa) reattach edilebilir; boş günse ETME.
-      if (!isEmptyDay) {
-        if (savedRouteMap)  dayContainer.appendChild(savedRouteMap);
+
+      // Starter varsa veya planlama aktifse haritayı tamamen kaybetme
+      const hasStarterTemp = window.cart.some(it => it.day === day && it._starter);
+      const planningThisDayTemp = window.mapPlanningActive && window.mapPlanningDay === day;
+
+      if (!isEmptyDay || hasStarterTemp || planningThisDayTemp) {
+        if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
         if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
       }
     }
@@ -3394,7 +3399,7 @@ const isEmptyDay = dayItemsArr.length === 0;
     dayHeader.appendChild(createDayActionMenu(day));
     dayContainer.appendChild(dayHeader);
 
-    // Confirmation
+    // Confirm alanı
     const confirmationContainer = document.createElement("div");
     confirmationContainer.className = "confirmation-container";
     confirmationContainer.id = `confirmation-container-${day}`;
@@ -3406,42 +3411,44 @@ const isEmptyDay = dayItemsArr.length === 0;
     dayList.className = "day-list";
     dayList.dataset.day = day;
 
-if (isEmptyDay) {
-  const emptyWrap = document.createElement("div");
-  emptyWrap.className = "empty-day-block";
+    // 2.a Boş gün görünümü
+    if (isEmptyDay) {
+      const emptyWrap = document.createElement("div");
+      emptyWrap.className = "empty-day-block";
 
-  const msg = document.createElement("p");
-  msg.className = "empty-day-message";
-  msg.textContent = "No item has been added for this day yet.";
-  emptyWrap.appendChild(msg);
+      const msg = document.createElement("p");
+      msg.className = "empty-day-message";
+      msg.textContent = "No item has been added for this day yet.";
+      emptyWrap.appendChild(msg);
 
-  const actions = document.createElement("div");
-  actions.className = "empty-day-actions";
-  actions.style.display = "flex";
-  actions.style.gap = "8px";
-  actions.style.flexWrap = "wrap";
+      const actions = document.createElement("div");
+      actions.className = "empty-day-actions";
+      actions.style.display = "flex";
+      actions.style.gap = "8px";
+      actions.style.flexWrap = "wrap";
 
-  const importBtn = document.createElement("button");
-  importBtn.type = "button";
-  importBtn.className = "import-btn gps-import";
-  importBtn.dataset.day = day;
-  importBtn.setAttribute("data-import-type", "multi");
-  importBtn.title = "Supports GPX, TCX, FIT, KML";
-  importBtn.textContent = "Import GPS File";
-  actions.appendChild(importBtn);
+      const importBtn = document.createElement("button");
+      importBtn.type = "button";
+      importBtn.className = "import-btn gps-import";
+      importBtn.dataset.day = day;
+      importBtn.setAttribute("data-import-type", "multi");
+      importBtn.title = "Supports GPX, TCX, FIT, KML";
+      importBtn.textContent = "Import GPS File";
+      actions.appendChild(importBtn);
 
-  const startMapBtn = document.createElement("button");
-  startMapBtn.type = "button";
-  startMapBtn.className = "start-map-btn";
-  startMapBtn.dataset.day = day;
-  startMapBtn.textContent = "Start with map";
-  startMapBtn.addEventListener("click", () => startMapPlanningForDay(day));
-  actions.appendChild(startMapBtn);
+      const startMapBtn = document.createElement("button");
+      startMapBtn.type = "button";
+      startMapBtn.className = "start-map-btn";
+      startMapBtn.dataset.day = day;
+      startMapBtn.textContent = "Start with map";
+      startMapBtn.addEventListener("click", () => startMapPlanningForDay(day));
+      actions.appendChild(startMapBtn);
 
-  emptyWrap.appendChild(actions);
-  dayList.appendChild(emptyWrap);
-}
- else {
+      emptyWrap.appendChild(actions);
+      dayList.appendChild(emptyWrap);
+    }
+    // 2.b Dolu gün item’ları
+    else {
       dayItemsArr.forEach((item, idx) => {
         const li = document.createElement("li");
         li.className = "travel-item";
@@ -3451,12 +3458,12 @@ if (isEmptyDay) {
 
         let openingHoursDisplay = "No working hours info";
         if (item.opening_hours) {
-          if (Array.isArray(item.opening_hours)) {
-            const cleaned = item.opening_hours.map(h => (h||'').trim()).filter(Boolean);
-            if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-          } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-            openingHoursDisplay = item.opening_hours.trim();
-          }
+            if (Array.isArray(item.opening_hours)) {
+              const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+              if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+            } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+              openingHoursDisplay = item.opening_hours.trim();
+            }
         }
 
         const mapHtml = (item.location &&
@@ -3491,7 +3498,7 @@ if (isEmptyDay) {
                 ${
                   item.location ? `
                   <div class="coords-info" style="margin-top:8px;">
-                    📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')}, 
+                    📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
                     Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
                   </div>` : ''
                 }
@@ -3513,24 +3520,24 @@ if (isEmptyDay) {
           const summary = window.pairwiseRouteSummaries?.[key]?.[idx];
           let distanceStr = '';
           let durationStr = '';
-            if (summary) {
-              distanceStr = summary.distance >= 1000
-                ? (summary.distance / 1000).toFixed(1) + " km"
-                : Math.round(summary.distance) + " m";
-              durationStr = summary.duration >= 60
-                ? Math.round(summary.duration / 60) + " dk"
-                : Math.round(summary.duration) + " sn";
-            }
-            const distanceSeparator = document.createElement('div');
-              distanceSeparator.className = 'distance-separator';
-              distanceSeparator.innerHTML = `
-                <div class="separator-line"></div>
-                <div class="distance-label">
-                  <span class="distance-value">${distanceStr}</span> • 
-                  <span class="duration-value">${durationStr}</span>
-                </div>
-                <div class="separator-line"></div>
-              `;
+          if (summary) {
+            distanceStr = summary.distance >= 1000
+              ? (summary.distance / 1000).toFixed(1) + " km"
+              : Math.round(summary.distance) + " m";
+            durationStr = summary.duration >= 60
+              ? Math.round(summary.duration / 60) + " dk"
+              : Math.round(summary.duration) + " sn";
+          }
+          const distanceSeparator = document.createElement('div');
+          distanceSeparator.className = 'distance-separator';
+          distanceSeparator.innerHTML = `
+            <div class="separator-line"></div>
+            <div class="distance-label">
+              <span class="distance-value">${distanceStr}</span> • 
+              <span class="duration-value">${durationStr}</span>
+            </div>
+            <div class="separator-line"></div>
+          `;
             dayList.appendChild(distanceSeparator);
         }
       });
@@ -3538,23 +3545,21 @@ if (isEmptyDay) {
 
     dayContainer.appendChild(dayList);
 
-// --- MAP LOGIC (revize) ---
+    // 2.c Harita davranışı (revize)
     const hasStarter = window.cart.some(it => it.day === day && it._starter);
     const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
 
-    // Gerçekten bomboş: hiç item yok + starter yok + planlama yok -> haritayı kaldır
     if (isEmptyDay && !hasStarter && !planningThisDay) {
+      // Tamamen boş gerçek gün → harita kaldır
       removeDayMapCompletely(day);
     } else {
-      // Planlama başladı ya da (starter veya gerçek item) var -> haritayı göster / koru
+      // Planlama başlatıldı (starter var) veya gerçek item var → haritayı kur/tut
       ensureDayMapContainer(day);
-
       const realPointCount = dayItemsArr.filter(it =>
         it.name && it.location &&
         typeof it.location.lat === 'number' &&
         typeof it.location.lng === 'number'
       ).length;
-
       if (realPointCount < 2) {
         initEmptyDayMap(day);
       }
@@ -3562,39 +3567,37 @@ if (isEmptyDay) {
 
     cartDiv.appendChild(dayContainer);
 
-
-
-    // Add Category
+    // + Add Category
     const addMoreButton = document.createElement("button");
     addMoreButton.className = "add-more-btn";
     addMoreButton.textContent = "+ Add Category";
     addMoreButton.dataset.day = day;
-    addMoreButton.onclick = function() { showCategoryList(this.dataset.day); };
+    addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
     cartDiv.appendChild(addMoreButton);
   });
 
-  // Add New Day
+  // 3) + Add New Day
   const addNewDayButton = document.createElement("button");
   addNewDayButton.className = "add-new-day-btn";
   addNewDayButton.id = "add-new-day-button";
   addNewDayButton.textContent = "+ Add New Day";
-  addNewDayButton.onclick = function() { addNewDay(this); };
+  addNewDayButton.onclick = function () { addNewDay(this); };
   cartDiv.appendChild(addNewDayButton);
 
+  // 4) Sayaç / butonlar
   const itemCount = window.cart.filter(i => i.name).length;
   if (menuCount) {
     menuCount.textContent = itemCount;
     menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
   }
-
   const newChatBtn2 = document.getElementById("newchat");
   if (newChatBtn2) newChatBtn2.style.display = itemCount > 0 ? "block" : "none";
 
+  // 5) Çeşitli init
   attachDragListeners();
   days.forEach(d => initPlaceSearch(d));
   addCoordinatesToContent();
   days.forEach(d => renderRouteForDay(d));
-
   setTimeout(wrapRouteControlsForAllDays, 0);
   attachChatDropListeners();
 
@@ -3610,6 +3613,7 @@ if (isEmptyDay) {
   setupStepsDragHighlight();
   renderTravelModeControlsForAllDays();
 
+  // 6) Trip dates butonu
   (function ensureSelectDatesButton() {
     let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
     if (!btn) {
@@ -3621,12 +3625,13 @@ if (isEmptyDay) {
     btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
     btn.onclick = () => {
       if (typeof openCalendar === 'function') {
-        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b).pop() || 1;
+        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
         openCalendar(maxDay);
       }
     };
   })();
 
+  // 7) Paylaşım bölümü (tarih seçildiyse)
   (function ensurePostDateSections() {
     if (!window.cart.startDate) return;
     let share = document.getElementById('trip-share-section');
@@ -3641,6 +3646,7 @@ if (isEmptyDay) {
     if (oldAI) oldAI.remove();
   })();
 
+  // 8) Tarih aralığı ve “Trip Details”
   (function ensureTripDetailsBlock() {
     if (!window.cart.startDate || !window.cart.endDates || !window.cart.endDates.length) {
       const existing = cartDiv.querySelector('.date-range');
