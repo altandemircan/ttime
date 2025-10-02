@@ -3194,7 +3194,6 @@ function removeDayMapCompletely(day) {
 }
 
 
-
 function startMapPlanningForDay(day) {
   day = Number(day) || 1;
 
@@ -3238,9 +3237,21 @@ function startMapPlanningForDay(day) {
     const cid = `route-map-day${day}`;
     if (!window.leafletMaps[cid]) initEmptyDayMap(day);
     attachMapClickAddMode(day);
-    // İstersen otomatik expand:
-    // if (typeof expandMap === 'function') expandMap(cid, day);
   }, 80);
+
+  // MAP butonunu otomatik tetikle (expand) – travel mode set render edilsin diye biraz daha geç
+  setTimeout(() => {
+    const cid = `route-map-day${day}`;
+    // Zaten expanded ise tekrar etme
+    if (window.expandedMaps && window.expandedMaps[cid]) return;
+
+    const expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
+    if (expandBtn) {
+      expandBtn.click(); // Gerçek buton tetikleme
+    } else if (typeof expandMap === 'function') {
+      expandMap(cid, day); // Fallback
+    }
+  }, 200);
 }
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
@@ -3675,7 +3686,7 @@ function updateCart() {
       };
     }
   })();
-}
+}   
 
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
