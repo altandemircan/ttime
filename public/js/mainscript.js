@@ -1,3 +1,8 @@
+// Aktif harita planlama modu için
+window.mapPlanningDay = null;
+window.mapPlanningActive = false;
+window.mapPlanningMarkersByDay = {};
+
 function movingAverage(arr, win = 5) {
   return arr.map((v, i, a) => {
     const start = Math.max(0, i - Math.floor(win/2));
@@ -3197,7 +3202,7 @@ function startMapPlanningForDay(day) {
 
   if (!Array.isArray(window.cart)) window.cart = [];
 
-  // Gün zaten yoksa placeholder starter ekle
+  // Gün yoksa placeholder starter
   if (!window.cart.some(it => it.day === day)) {
     window.cart.push({
       day,
@@ -3207,8 +3212,10 @@ function startMapPlanningForDay(day) {
       _starter: true
     });
   } else {
-    // Gün var ama hiç gerçek item yoksa starter olsun (yoksa)
-    const hasReal = window.cart.some(it => it.day === day && it.name && !it._starter && !it._placeholder);
+    // Gün var ama gerçek item yoksa starter ekle
+    const hasReal = window.cart.some(it =>
+      it.day === day && it.name && !it._starter && !it._placeholder
+    );
     if (!hasReal && !window.cart.some(it => it.day === day && it._starter)) {
       window.cart.push({
         day,
@@ -3221,20 +3228,93 @@ function startMapPlanningForDay(day) {
   }
 
   window.currentDay = day;
-  updateCart();                 // Gün yeniden çizilsin
-  ensureDayMapContainer(day);   // Harita kapsayıcısı oluşsun
-  initEmptyDayMap(day);         // Boş haritayı başlat
+  window.mapPlanningDay = day;
+  window.mapPlanningActive = true;
 
-  // Küçük harita kesin oluşsun, sonra genişlet (isteğe bağlı)
+  updateCart();
+  ensureDayMapContainer(day);
+  initEmptyDayMap(day);
+
+  // Harita instance hazır olunca click add modunu bağla
   setTimeout(() => {
     const cid = `route-map-day${day}`;
     if (!window.leafletMaps[cid]) initEmptyDayMap(day);
-    if (typeof expandMap === 'function') {
-      expandMap(cid, day);
-    }
-  }, 60);
+    attachMapClickAddMode(day);
+    // İstersen otomatik expand:
+    // if (typeof expandMap === 'function') expandMap(cid, day);
+  }, 80);
 }
+function attachMapClickAddMode(day) {
+  const containerId = `route-map-day${day}`;
+  const map = window.leafletMaps[containerId];
+  if (!map) return;
 
+  // Aynı gün için bir kere bağla
+  map.__tt_clickAddBound = map.__tt_clickAddBound || {};
+  if (map.__tt_clickAddBound[day]) return;
+  map.__tt_clickAddBound[day] = true;
+
+  map.on('click', async (e) => {
+    // Planlama modu açık değilse veya başka günse görmezden gel
+    if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
+
+    const { lat, lng } = e.latlng;
+
+    // Reverse geocode (hızlı) – hata olursa default isim
+    let placeInfo = { name: "New Point", address: "", opening_hours: "" };
+    try {
+      const rInfo = await getPlaceInfoFromLatLng(lat, lng);
+      if (rInfo && rInfo.name) placeInfo = rInfo;
+    } catch(_) {}
+
+    // Aynı koordinatta (± çok küçük delta) duplicate engelle
+    const dup = window.cart.some(it =>
+      it.day === day &&
+      it.location &&
+      Math.abs(it.location.lat - lat) < 1e-6 &&
+      Math.abs(it.location.lng - lng) < 1e-6
+    );
+    if (dup) return;
+
+    // Görsel için hızlı fallback; istersen getImageForPlace kullan
+    let imageUrl = 'img/placeholder.png';
+    try {
+      imageUrl = await getImageForPlace(placeInfo.name, 'Place', window.selectedCity || '');
+    } catch(_) {}
+
+    addToCart(
+      placeInfo.name || 'Point',
+      imageUrl,
+      day,
+      'Place',
+      placeInfo.address || '',
+      null,
+      null,
+      placeInfo.opening_hours || '',
+      null,
+      { lat, lng },
+      '',
+      { forceDay: day } // garanti
+    );
+
+    // Marker çiz
+    const marker = L.circleMarker([lat, lng], {
+      radius: 7,
+      color: '#8a4af3',
+      fillColor: '#8a4af3',
+      fillOpacity: 0.9,
+      weight: 2
+    }).addTo(map).bindPopup(`<b>${placeInfo.name || 'Point'}</b>`);
+
+    window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
+    window.mapPlanningMarkersByDay[day].push(marker);
+
+    // Route güncelle (>=2 nokta olunca otomatik)
+    if (typeof renderRouteForDay === 'function') {
+      setTimeout(() => renderRouteForDay(day), 100);
+    }
+  });
+}
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 function updateCart() {
   console.table(window.cart);
@@ -3327,8 +3407,8 @@ const isEmptyDay = dayItemsArr.length === 0;
     const dayList = document.createElement("ul");
     dayList.className = "day-list";
     dayList.dataset.day = day;
-
-   if (isEmptyDay) {
+    
+if (isEmptyDay) {
   const emptyWrap = document.createElement("div");
   emptyWrap.className = "empty-day-block";
 
@@ -3343,7 +3423,6 @@ const isEmptyDay = dayItemsArr.length === 0;
   actions.style.gap = "8px";
   actions.style.flexWrap = "wrap";
 
-  // Import GPS
   const importBtn = document.createElement("button");
   importBtn.type = "button";
   importBtn.className = "import-btn gps-import";
@@ -3353,7 +3432,6 @@ const isEmptyDay = dayItemsArr.length === 0;
   importBtn.textContent = "Import GPS File";
   actions.appendChild(importBtn);
 
-  // Start with map
   const startMapBtn = document.createElement("button");
   startMapBtn.type = "button";
   startMapBtn.className = "start-map-btn";
