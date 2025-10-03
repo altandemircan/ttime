@@ -8681,25 +8681,39 @@ function renderRouteScaleBar(container, totalKm, markers) {
     try { container._elevResizeObserver.disconnect(); } catch(_) {}
     container._elevResizeObserver = null;
   }
-
   // UI set
-  // HER ZAMAN TEK TRACK KALSIN
-let track = container.querySelector('.scale-bar-track');
-if (!track) {
-  container.innerHTML = '';
-  track = document.createElement('div');
-  track.className = 'scale-bar-track';
-  container.appendChild(track);
-} else {
-  // Varsa tüm DİĞER track’leri kaldır
-  container.querySelectorAll('.scale-bar-track').forEach(t => { if (t !== track) t.remove(); });
-  // Track içini temizle (overlay/tooltip harici her şey yeniden çizilecek)
-  Array.from(track.children).forEach(ch => {
-    if (!ch.classList.contains('scale-bar-selection') && !ch.classList.contains('tt-elev-tooltip') && !ch.classList.contains('scale-bar-vertical-line')) {
-      ch.remove();
-    }
+  // HER ZAMAN TEK TRACK KALSIN + TÜM ESKİ TRACK’LERİ (GLOBAL) TEMİZLE
+  // 1) Diğer konteynerlerde kalmış tüm scale-bar-track’leri kaldır (stacking’i önler)
+  document.querySelectorAll('.scale-bar-track').forEach(t => {
+    if (!container.contains(t)) t.remove();
   });
-}
+
+  // 2) Tek track oluştur/yeniden kullan
+  let track = container.querySelector('.scale-bar-track');
+  if (!track) {
+    container.innerHTML = '';
+    track = document.createElement('div');
+    track.className = 'scale-bar-track';
+    container.appendChild(track);
+  } else {
+    // Eski track içeriğini tamamen temizle (overlay/tooltip dahil)
+    // Ayrıca eski track’e bağlı eski handler referanslarını sıfırla
+    try {
+      if (track.__onMove) track.removeEventListener('mousemove', track.__onMove);
+      if (track.__onLeave) track.removeEventListener('mouseleave', track.__onLeave);
+      if (track.__onDown) track.removeEventListener('mousedown', track.__onDown);
+      track.__onMove = track.__onLeave = track.__onDown = null;
+    } catch(_){}
+    track.innerHTML = '';
+  }
+
+  // 3) Eski global window handler’larını kaldır (yenileri eklenmeden önce)
+  if (window.__sb_onMouseMove) { window.removeEventListener('mousemove', window.__sb_onMouseMove); window.__sb_onMouseMove = null; }
+  if (window.__sb_onMouseUp)   { window.removeEventListener('mouseup',   window.__sb_onMouseUp);   window.__sb_onMouseUp   = null; }
+
+  // Aktif track işaretle (diagnostic/guard)
+  window.__activeScaleBarContainer = container;
+  window.__activeScaleBarTrack = track;
 
   // ÖNEMLİ: totalKm'i dataset'e yaz
   container.dataset.totalKm = String(totalKm);
@@ -8965,8 +8979,11 @@ if (!track) {
     }
   }
 
-  // Hover (aktif domain ile)
-  track.addEventListener('mousemove', (e) => {
+  // Hover (aktif domain ile) — önce eski handler’ları kaldır
+  if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
+  if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
+
+  track.__onMove = (e) => {
     const ed = container._elevationData;
     if (!ed || !Array.isArray(ed.smooth)) return;
     const { smooth, min, max } = ed;
@@ -9010,22 +9027,33 @@ if (!track) {
     tooltip.style.left = `${ptX}px`;
     verticalLine.style.left = `${ptX}px`;
     verticalLine.style.display = 'block';
-  });
-  track.addEventListener('mouseleave', () => {
+  };
+
+  track.__onLeave = () => {
     tooltip.style.opacity = '0';
     verticalLine.style.display = 'none';
-  });
+  };
 
-  // Mouse ile aralık seçimi
+  track.addEventListener('mousemove', track.__onMove);
+  track.addEventListener('mouseleave', track.__onLeave);
+
+  // Mouse ile aralık seçimi — eski handler’ları kaldır + global window handler’ları tekille
+  if (track.__onDown) track.removeEventListener('mousedown', track.__onDown);
+  if (window.__sb_onMouseMove) { window.removeEventListener('mousemove', window.__sb_onMouseMove); window.__sb_onMouseMove = null; }
+  if (window.__sb_onMouseUp)   { window.removeEventListener('mouseup',   window.__sb_onMouseUp);   window.__sb_onMouseUp   = null; }
+
   let drag = null; // {startX, lastX}
-  track.addEventListener('mousedown', (e) => {
+
+  track.__onDown = (e) => {
     const rect = track.getBoundingClientRect();
     drag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
     selDiv.style.left = `${drag.startX}px`;
     selDiv.style.width = `0px`;
     selDiv.style.display = 'block';
-  });
-  window.addEventListener('mousemove', (e) => {
+  };
+  track.addEventListener('mousedown', track.__onDown);
+
+  window.__sb_onMouseMove = (e) => {
     if (!drag) return;
     const rect = track.getBoundingClientRect();
     drag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
@@ -9033,8 +9061,10 @@ if (!track) {
     const right = Math.max(drag.startX, drag.lastX);
     selDiv.style.left = `${left}px`;
     selDiv.style.width = `${right - left}px`;
-  });
-  window.addEventListener('mouseup', () => {
+  };
+  window.addEventListener('mousemove', window.__sb_onMouseMove);
+
+  window.__sb_onMouseUp = () => {
     if (!drag) return;
     const rect = track.getBoundingClientRect();
     const leftPx = Math.min(drag.startX, drag.lastX);
@@ -9053,7 +9083,8 @@ if (!track) {
       fetchAndRenderSegmentElevation(container, dayNum, startKm, endKm);
       highlightSegmentOnMap(dayNum, startKm, endKm);
     }
-  });
+  };
+  window.addEventListener('mouseup', window.__sb_onMouseUp);
 
   // Elevation verisini yükle
   (async () => {
