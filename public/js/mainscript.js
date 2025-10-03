@@ -3393,77 +3393,91 @@ function attachMapClickAddMode(day) {
   if (map.__tt_clickAddBound[day]) return;
   map.__tt_clickAddBound[day] = true;
 
-if (map.__ttNearbyClickBound) return;
-map.__ttNearbyClickBound = true;
+  // YALNIZCA TEK TIK eklesin: tek-tık zamanlayıcısı
+  let __singleClickTimer = null;
+  const SINGLE_CLICK_DELAY = 250; // ms
 
-// Tek tık gecikmesi ve timer
-let __nearbySingleTimer = null;
-const __nearbySingleDelay = options.singleDelay || 250;
+  // Tek tık: zamanlayıcı ile çalış; bu süre içinde dblclick/zoom başlarsa iptal edilir
+  map.on('click', function(e) {
+    if (__singleClickTimer) clearTimeout(__singleClickTimer);
+    __singleClickTimer = setTimeout(async () => {
+      // Planlama modu açık değilse veya başka günse görmezden gel
+      if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
 
-  map.on('click', async (e) => {
-    // Planlama modu açık değilse veya başka günse görmezden gel
-    if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
+      const { lat, lng } = e.latlng;
 
-    const { lat, lng } = e.latlng;
+      // Reverse geocode (hızlı) – hata olursa default isim
+      let placeInfo = { name: "New Point", address: "", opening_hours: "" };
+      try {
+        const rInfo = await getPlaceInfoFromLatLng(lat, lng);
+        if (rInfo && rInfo.name) placeInfo = rInfo;
+      } catch(_) {}
 
-    // Reverse geocode (hızlı) – hata olursa default isim
-    let placeInfo = { name: "New Point", address: "", opening_hours: "" };
-    try {
-      const rInfo = await getPlaceInfoFromLatLng(lat, lng);
-      if (rInfo && rInfo.name) placeInfo = rInfo;
-    } catch(_) {}
+      // Aynı koordinatta (± çok küçük delta) duplicate engelle
+      const dup = window.cart.some(it =>
+        it.day === day &&
+        it.location &&
+        Math.abs(it.location.lat - lat) < 1e-6 &&
+        Math.abs(it.location.lng - lng) < 1e-6
+      );
+      if (dup) return;
 
-    // Aynı koordinatta (± çok küçük delta) duplicate engelle
-    const dup = window.cart.some(it =>
-      it.day === day &&
-      it.location &&
-      Math.abs(it.location.lat - lat) < 1e-6 &&
-      Math.abs(it.location.lng - lng) < 1e-6
-    );
-    if (dup) return;
+      // Görsel fallback
+      let imageUrl = 'img/placeholder.png';
+      try {
+        imageUrl = await getImageForPlace(placeInfo.name, 'Place', window.selectedCity || '');
+      } catch(_) {}
 
-    // Görsel için hızlı fallback; istersen getImageForPlace kullan
-    let imageUrl = 'img/placeholder.png';
-    try {
-      imageUrl = await getImageForPlace(placeInfo.name, 'Place', window.selectedCity || '');
-    } catch(_) {}
+      addToCart(
+        placeInfo.name || 'Point',
+        imageUrl,
+        day,
+        'Place',
+        placeInfo.address || '',
+        null,
+        null,
+        placeInfo.opening_hours || '',
+        null,
+        { lat, lng },
+        '',
+        { forceDay: day } // garanti
+      );
 
-    addToCart(
-      placeInfo.name || 'Point',
-      imageUrl,
-      day,
-      'Place',
-      placeInfo.address || '',
-      null,
-      null,
-      placeInfo.opening_hours || '',
-      null,
-      { lat, lng },
-      '',
-      { forceDay: day } // garanti
-    );
+      // Marker çiz
+      const marker = L.circleMarker([lat, lng], {
+        radius: 7,
+        color: '#8a4af3',
+        fillColor: '#8a4af3',
+        fillOpacity: 0.9,
+        weight: 2
+      }).addTo(map).bindPopup(`<b>${placeInfo.name || 'Point'}</b>`);
 
-    // Marker çiz
-    const marker = L.circleMarker([lat, lng], {
-      radius: 7,
-      color: '#8a4af3',
-      fillColor: '#8a4af3',
-      fillOpacity: 0.9,
-      weight: 2
-    }).addTo(map).bindPopup(`<b>${placeInfo.name || 'Point'}</b>`);
+      window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
+      window.mapPlanningMarkersByDay[day].push(marker);
 
-    window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
-    window.mapPlanningMarkersByDay[day].push(marker);
+      // 2+ nokta olunca rota
+      if (typeof renderRouteForDay === 'function') {
+        setTimeout(() => renderRouteForDay(day), 100);
+      }
+    }, SINGLE_CLICK_DELAY);
+  });
 
-    // Route güncelle (>=2 nokta olunca otomatik)
-    if (typeof renderRouteForDay === 'function') {
-      setTimeout(() => renderRouteForDay(day), 100);
-    } 
+  // Çift tık (yakınlaşma) gelirse tek-tık zamanlayıcısını iptal et
+  map.on('dblclick', function() {
+    if (__singleClickTimer) {
+      clearTimeout(__singleClickTimer);
+      __singleClickTimer = null;
+    }
+  });
+
+  // Yakınlaşma/pan gibi zoomstart sırasında da iptal et (mobil çift-tap zoom vs.)
+  map.on('zoomstart', function() {
+    if (__singleClickTimer) {
+      clearTimeout(__singleClickTimer);
+      __singleClickTimer = null;
+    }
   });
 }
-
-
-
 
 
 // updateCart içinde ilgili yerlere eklemeler yapıldı
@@ -5275,8 +5289,7 @@ expandedContainer.appendChild(locBtn);                  // header dışına
 /* ==== NEW: Click-based nearby search (replaces long-press) ==== */
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; // metres
-  const debounceMs = options.debounce || 500;
-  let lastClickTs = 0;
+
 
   // Eski long-press cleanup (varsa)
   if (map.__ttLongPressCleanup) {
@@ -5291,15 +5304,8 @@ function attachClickNearbySearch(map, day, options = {}) {
   if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
   __nearbySingleTimer = setTimeout(async () => {
 
-    const now = Date.now();
-    if (now - lastClickTs < debounceMs) return; // çok hızlı iki kez tıklandıysa engelle
-    lastClickTs = now;
 
-    // Eğer kullanıcı bir marker tıkladıysa ve Leaflet click'i marker'a yönlendirdiyse,
-    // e.originalEvent.target üzerinde marker class'ı olabilir. İstersen burada filtre ekleyebilirsin.
-    // Örn: if (e.originalEvent.target.closest('.leaflet-marker-icon')) return;
-
-    const lat = e.latlng.lat;
+const lat = e.latlng.lat;
     const lng = e.latlng.lng;
     closeNearbyPopup(); // önceki popup varsa kapat
     showNearbyPlacesPopup(lat, lng, map, day, radius);
