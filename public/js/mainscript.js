@@ -9834,7 +9834,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
-  const track = container.querySelector('.scale-bar-track');
+  const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
 
   // Track tekil kalsın (aynı konteynerde 2. bir track varsa kaldır)
