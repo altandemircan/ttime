@@ -747,19 +747,6 @@ function extractCityAndDays(query) {
 
 // Geocode doğrulama (cache ile)
 const __cityCoordCache = new Map();
-async function validateCity(city) {
-  if (!city) return null;
-  if (__cityCoordCache.has(city)) return __cityCoordCache.get(city);
-  try {
-    const coords = await getCityCoordinates(city); // senin mevcut fonksiyonun
-    if (coords && typeof coords.lat === 'number' && typeof coords.lon === 'number') {
-      __cityCoordCache.set(city, coords);
-      return coords;
-    }
-  } catch (e) {}
-  __cityCoordCache.set(city, null);
-  return null;
-}
 
 
 (function unifyChatInputListener(){
@@ -960,46 +947,6 @@ function addMessage(text, className) {
 
     chatBox.appendChild(messageElement);
     chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-
-async function validateLocation(rawName, minConfidence = 0.6) {
-  if (!rawName || typeof rawName !== 'string') return null;
-
-  const q = rawName.trim();
-  if (q.length < 2) return null;
-
-  const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(q)}&limit=1&apiKey=${GEOAPIFY_API_KEY}`;
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    if (!data.features || !data.features.length) return null;
-
-    const feat = data.features[0];
-    const p = feat.properties || {};
-    const confidence = (p.rank && typeof p.rank.confidence === 'number')
-      ? p.rank.confidence
-      : (p.rank && p.rank.confidence_city_level) || 0;
-
-    if (confidence < minConfidence) return null;
-    if (typeof p.lat !== 'number' || typeof p.lon !== 'number') return null;
-
-    // Kullanıcıya gösterebileceğin normalize ad
-    const displayName =
-      p.name || p.city || p.town || p.village || p.hamlet ||
-      p.suburb || p.neighbourhood || p.quarter || p.district ||
-      p.county || p.state || p.region || p.country || rawName;
-
-    return {
-      lat: p.lat,
-      lon: p.lon,
-      displayName,
-      confidence
-    };
-  } catch {
-    return null;
-  }
 }
 
  function showTypingIndicator() {
@@ -1852,30 +1799,6 @@ if (btn) {
         showLatLngUnderOpeningHoursForStepsIn('.accordion-content');
     };
 }
-
-async function getLatLngFromAddressGeoapify(address) {
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&apiKey=${GEOAPIFY_KEY}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data.features && data.features.length > 0) {
-        return {
-            lat: data.features[0].geometry.coordinates[1],
-            lng: data.features[0].geometry.coordinates[0]
-        };
-    } else {
-        return null;
-    }
-}
-
-
-/*
-let currentSlides = {
-    1: 0,
-    2: 0,
-    3: 0
-};
-*/
-// Global
 
 
 const maxItems = Infinity;
@@ -4926,18 +4849,6 @@ if (typeof setChatInputValue !== 'function') {
   }).addTo(expandedMap);
 }
 
-function setupMapStyleChangeListeners() {
-    document.querySelectorAll('[id^="map-style-select-day"]').forEach(select => {
-        select.addEventListener('change', function() {
-            const match = this.id.match(/day(\d+)/);
-            if (match) {
-                const day = parseInt(match[1], 10);
-                updateRouteStatsUI(day);
-            }
-        });
-    });
-}
-
 
 function updateRouteStatsUI(day) {
     const key = `route-map-day${day}`;
@@ -4997,15 +4908,6 @@ function updateRouteStatsUI(day) {
     }
 }
 
-
-function showScaleBarInExpandedMap(day) {
-    const scaleBar = document.getElementById(`route-scale-bar-day${day}`);
-    const statsDiv = document.querySelector('.route-stats');
-    if (scaleBar && statsDiv) {
-        scaleBar.style.display = '';
-        statsDiv.insertAdjacentElement('afterend', scaleBar);
-    }
-}
  
 async function expandMap(containerId, day) {
   console.log('[expandMap] start →', containerId, 'day=', day);
@@ -6083,13 +5985,7 @@ console.error('Error while closing the map:', e);
         delete window.expandedMaps[containerId];
     }
 }
-function removeAllScaleBarsExcept(container) {
-    document.querySelectorAll('.route-scale-bar').forEach(bar => {
-        if (bar !== container && bar.parentNode) {
-            bar.parentNode.removeChild(bar);
-        }
-    });
-}
+
 
 window.addNearbyPlaceToTrip = function(idx) {
     if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
@@ -6553,36 +6449,8 @@ if (scaleBarDiv && totalKm > 0 && markerPositions.length > 0) {
     try { delete scaleBarDiv.dataset.elevLoadedKey; } catch(_) {}
     window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
   }
-
-
 }
-async function sendMapbox(coordinates, day) {
-  try {
-    const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
-    const url = buildMapboxDirectionsUrl(coordParam, day); // <-- day eklendi
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Mapbox error: ' + response.status);
-    const data = await response.json();
-    const geojson = {
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        geometry: data.routes[0].geometry,
-        properties: {
-          summary: {
-            distance: data.routes[0].distance,
-            duration: data.routes[0].duration,
-            source: 'Mapbox'
-          }
-        }
-      }]
-    };
-    return geojson;
-  } catch (error) {
-    console.error('Mapbox Error:', error);
-    throw error;
-  }
-}
+
 
 // (İstersen) buildPlan içerisine eklediğin item'lara _generated:true koyup burada hariç tutabilirsin:
 function getDayPoints(day) {
