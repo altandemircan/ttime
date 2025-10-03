@@ -3064,7 +3064,7 @@ function ensureDayMapContainer(day) {
 
   return mapDiv;
 }
-
+ 
 function initEmptyDayMap(day) {
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
