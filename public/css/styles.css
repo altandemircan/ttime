@@ -2492,7 +2492,7 @@ ease;
     overflow-x: auto;
     scroll-behavior: smooth;
     scrollbar-width: none;
-    width: 98%;
+    width:100%;
     padding: 1%;
     margin-block-end: 20px;
     padding-inline-start: 0;
