@@ -8825,6 +8825,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   // UI sıfırlanır ve tekrar çizilir
   container.innerHTML = `<div class="scale-bar-track"></div>`;
   const track = container.querySelector('.scale-bar-track');
+container.dataset.totalKm = String(totalKm);
 
   let selDiv = track.querySelector('.scale-bar-selection');
 if (!selDiv) {
@@ -8866,14 +8867,15 @@ window.addEventListener('mouseup', () => {
   // çok küçük seçimse iptal et
   if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
 
-  // Piksel → km
-  const totalKm = Number(container.dataset.totalKm || 0) || totalKm; // elindeki totalKm’yi dataset’e set edebilirsin
-  const startKm = (leftPx / rect.width) * totalKm;
-  const endKm = (rightPx / rect.width) * totalKm;
+ // Piksel → km
+const dsTotal = Number(container.dataset?.totalKm);
+const totalKmToUse = (Number.isFinite(dsTotal) && dsTotal > 0) ? dsTotal : totalKm;
 
-  // Segmenti detaylı çiz
-  const day = (container.id.match(/day(\d+)/) || [])[1] ? parseInt(RegExp.$1, 10) : null;
-  if (day) fetchAndRenderSegmentElevation(container, day, startKm, endKm);
+const startKm = (leftPx / rect.width) * totalKmToUse;
+const endKm   = (rightPx / rect.width) * totalKmToUse;
+
+const day = (container.id.match(/day(\d+)/) || [])[1] ? parseInt(RegExp.$1, 10) : null;
+if (day) fetchAndRenderSegmentElevation(container, day, startKm, endKm);
 });
 
   let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
