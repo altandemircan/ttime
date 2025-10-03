@@ -3603,23 +3603,11 @@ if (isEmptyDay) {
     </div>
   `;
 
-  // Eğer gerçekten her günün kendi gününe import edilsin istersen
-  // (üstteki data-global="1" satırını kaldırıp aşağıdaki satırı aktif et):
-  /*
-  const importBtn = emptyWrap.querySelector('.gps-import');
-  importBtn.removeAttribute('data-global');
-  importBtn.dataset.day = day;
-  */
 
-  // Start map tıklamasını garanti altına al (delegation zaten varsa bu şart değil ama direkt bağlayalım)
-  if (!planningThisDay) {
-    const startBtn = emptyWrap.querySelector('.start-map-btn');
-    startBtn.addEventListener('click', () => startMapPlanningForDay(day));
-  } else {
-    // Planlama zaten bu gündeyse start-map-btn’ı devre dışı bırak
-    const startBtn = emptyWrap.querySelector('.start-map-btn');
-    if (startBtn) startBtn.disabled = true;
-  }
+if (planningThisDay) {
+  const startBtn = emptyWrap.querySelector('.start-map-btn');
+  if (startBtn) startBtn.disabled = true;
+}
 
   dayList.appendChild(emptyWrap);
 }
@@ -3778,7 +3766,7 @@ addNewDayButton.onclick = function () { addNewDay(this); };
 cartDiv.appendChild(addNewDayButton);
 
   // 4) Sayaç / butonlar
-  const itemCount = window.cart.filter(i => i.name).length;
+const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
   if (menuCount) {
     menuCount.textContent = itemCount;
     menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
@@ -3858,7 +3846,7 @@ cartDiv.appendChild(addNewDayButton);
     }
 
     // Sepet doluysa göster
-    const itemCount = window.cart.filter(i => i.name).length;
+const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
     newChat.style.display = itemCount > 0 ? 'block' : 'none';
   })();
 
