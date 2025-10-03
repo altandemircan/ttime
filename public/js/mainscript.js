@@ -3758,8 +3758,7 @@ if (realPointCount === 0) {
     menuCount.textContent = itemCount;
     menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
   }
-  const newChatBtn2 = document.getElementById("newchat");
-  if (newChatBtn2) newChatBtn2.style.display = itemCount > 0 ? "block" : "none";
+
 
   // 5) Çeşitli init
   attachDragListeners();
@@ -3805,6 +3804,37 @@ if (realPointCount === 0) {
         openCalendar(maxDay);
       }
     };
+  })();
+
+  // >>> BURAYA EKLE <<<
+  (function ensureNewChatInsideCart(){
+    // Dışarıda eski #newchat varsa kaldır
+    const oldOutside = document.querySelector('#newchat');
+    if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
+
+    const cartRoot = document.getElementById('cart');
+    if (!cartRoot) return;
+
+    let newChat = cartRoot.querySelector('#newchat');
+    if (!newChat){
+      newChat = document.createElement('div');
+      newChat.id = 'newchat';
+      newChat.textContent = 'New Chat';
+      newChat.onclick = startNewChat;
+      newChat.style.cursor = 'pointer';
+    }
+
+    // Select Dates butonunun hemen altına yerleştir
+    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    if (datesBtn && datesBtn.nextSibling !== newChat){
+      datesBtn.insertAdjacentElement('afterend', newChat);
+    } else if (!datesBtn && newChat.parentNode !== cartRoot){
+      cartRoot.appendChild(newChat);
+    }
+
+    // Sepet doluysa göster
+    const itemCount = window.cart.filter(i => i.name).length;
+    newChat.style.display = itemCount > 0 ? 'block' : 'none';
   })();
 
   // 7) Paylaşım bölümü (tarih seçildiyse)
