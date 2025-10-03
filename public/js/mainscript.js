@@ -8683,8 +8683,23 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
 
   // UI set
-  container.innerHTML = `<div class="scale-bar-track"></div>`;
-  const track = container.querySelector('.scale-bar-track');
+  // HER ZAMAN TEK TRACK KALSIN
+let track = container.querySelector('.scale-bar-track');
+if (!track) {
+  container.innerHTML = '';
+  track = document.createElement('div');
+  track.className = 'scale-bar-track';
+  container.appendChild(track);
+} else {
+  // Varsa tüm DİĞER track’leri kaldır
+  container.querySelectorAll('.scale-bar-track').forEach(t => { if (t !== track) t.remove(); });
+  // Track içini temizle (overlay/tooltip harici her şey yeniden çizilecek)
+  Array.from(track.children).forEach(ch => {
+    if (!ch.classList.contains('scale-bar-selection') && !ch.classList.contains('tt-elev-tooltip') && !ch.classList.contains('scale-bar-vertical-line')) {
+      ch.remove();
+    }
+  });
+}
 
   // ÖNEMLİ: totalKm'i dataset'e yaz
   container.dataset.totalKm = String(totalKm);
@@ -9821,6 +9836,15 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
   const track = container.querySelector('.scale-bar-track');
   if (!track) return;
+
+  // Track tekil kalsın (aynı konteynerde 2. bir track varsa kaldır)
+container.querySelectorAll('.scale-bar-track').forEach(t => { if (t !== track) t.remove(); });
+
+// Aynı track içinde birden fazla SVG/toolbar oluşmasını engelle
+const svgs = track.querySelectorAll('svg.tt-elev-svg');
+for (let i = 1; i < svgs.length; i++) svgs[i].remove();
+const tbs = track.querySelectorAll('.elev-segment-toolbar');
+for (let i = 1; i < tbs.length; i++) tbs[i].remove();
 
   // Konteyneri görünür ve yeterli yükseklikte tut
   track.style.position = track.style.position || 'relative';
