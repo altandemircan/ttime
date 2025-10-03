@@ -2590,7 +2590,7 @@ hr {
 
 }
 
-#start-map-btn {
+#start-map-btn, .start-map-btn {
     padding: 10px;
     margin-top: 10px;
     width: 100%;
