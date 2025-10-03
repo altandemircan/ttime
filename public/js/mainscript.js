@@ -3325,6 +3325,7 @@ function attachMapClickAddMode(day) {
   });
 }
 // updateCart içinde ilgili yerlere eklemeler yapıldı
+// updateCart (güncellenmiş)
 function updateCart() {
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
@@ -3381,16 +3382,13 @@ function updateCart() {
       dayContainer.id = `day-container-${day}`;
       dayContainer.dataset.day = day;
     } else {
-      // İçini temizlemeden önce mevcut küçük harita / info sakla
+      // Mevcut küçük harita / info sakla
       const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
       const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
       dayContainer.innerHTML = "";
 
-      // Starter varsa veya planlama aktifse haritayı tamamen kaybetme
-      const hasStarterTemp = window.cart.some(it => it.day === day && it._starter);
-      const planningThisDayTemp = window.mapPlanningActive && window.mapPlanningDay === day;
-
-      if (!isEmptyDay || hasStarterTemp || planningThisDayTemp) {
+      // (Artık boşsa küçük harita hiç gösterilmeyecek; bu yüzden sadece gerçek item varsa geri koy)
+      if (!isEmptyDay) {
         if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
         if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
       }
@@ -3424,46 +3422,46 @@ function updateCart() {
 
     // 2.a Boş gün görünümü
     if (isEmptyDay) {
-  const hasStarter = window.cart.some(it => it.day === day && it._starter);
-  const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
+      const hasStarter = window.cart.some(it => it.day === day && it._starter);
+      const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
 
-  const emptyWrap = document.createElement("div");
-  emptyWrap.className = "empty-day-block";
+      const emptyWrap = document.createElement("div");
+      emptyWrap.className = "empty-day-block";
 
-  const msg = document.createElement("p");
-  msg.className = "empty-day-message";
-  msg.textContent = "No item has been added for this day yet.";
-  emptyWrap.appendChild(msg);
+      const msg = document.createElement("p");
+      msg.className = "empty-day-message";
+      msg.textContent = "No item has been added for this day yet.";
+      emptyWrap.appendChild(msg);
 
-  const actions = document.createElement("div");
-  actions.className = "empty-day-actions";
-  actions.style.display = "flex";
-  actions.style.gap = "8px";
-  actions.style.flexWrap = "wrap";
+      const actions = document.createElement("div");
+      actions.className = "empty-day-actions";
+      actions.style.display = "flex";
+      actions.style.gap = "8px";
+      actions.style.flexWrap = "wrap";
 
-  const importBtn = document.createElement("button");
-  importBtn.type = "button";
-  importBtn.className = "import-btn gps-import";
-  importBtn.dataset.day = day;
-  importBtn.setAttribute("data-import-type", "multi");
-  importBtn.title = "Supports GPX, TCX, FIT, KML";
-  importBtn.textContent = "Import GPS File";
-  actions.appendChild(importBtn);
+      const importBtn = document.createElement("button");
+      importBtn.type = "button";
+      importBtn.className = "import-btn gps-import";
+      importBtn.dataset.day = day;
+      importBtn.setAttribute("data-import-type", "multi");
+      importBtn.title = "Supports GPX, TCX, FIT, KML";
+      importBtn.textContent = "Import GPS File";
+      actions.appendChild(importBtn);
 
-  // Start with map butonunu SADECE daha planlama başlamamışsa göster
-  if (!hasStarter && !planningThisDay) {
-    const startMapBtn = document.createElement("button");
-    startMapBtn.type = "button";
-    startMapBtn.className = "start-map-btn";
-    startMapBtn.dataset.day = day;
-    startMapBtn.textContent = "Start with map";
-    startMapBtn.addEventListener("click", () => startMapPlanningForDay(day));
-    actions.appendChild(startMapBtn);
-  }
+      // Start with map butonunu sadece planlama başlamadıysa göster
+      if (!hasStarter && !planningThisDay) {
+        const startMapBtn = document.createElement("button");
+        startMapBtn.type = "button";
+        startMapBtn.className = "start-map-btn";
+        startMapBtn.dataset.day = day;
+        startMapBtn.textContent = "Start with map";
+        startMapBtn.addEventListener("click", () => startMapPlanningForDay(day));
+        actions.appendChild(startMapBtn);
+      }
 
-  emptyWrap.appendChild(actions);
-  dayList.appendChild(emptyWrap);
-}
+      emptyWrap.appendChild(actions);
+      dayList.appendChild(emptyWrap);
+    }
     // 2.b Dolu gün item’ları
     else {
       dayItemsArr.forEach((item, idx) => {
@@ -3475,12 +3473,12 @@ function updateCart() {
 
         let openingHoursDisplay = "No working hours info";
         if (item.opening_hours) {
-            if (Array.isArray(item.opening_hours)) {
-              const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
-              if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-            } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-              openingHoursDisplay = item.opening_hours.trim();
-            }
+          if (Array.isArray(item.opening_hours)) {
+            const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+            if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+          } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+            openingHoursDisplay = item.opening_hours.trim();
+          }
         }
 
         const mapHtml = (item.location &&
@@ -3555,26 +3553,15 @@ function updateCart() {
             </div>
             <div class="separator-line"></div>
           `;
-            dayList.appendChild(distanceSeparator);
+          dayList.appendChild(distanceSeparator);
         }
       });
     }
 
     dayContainer.appendChild(dayList);
 
-    // 2.c Harita davranışı (revize)
-    const hasStarter = window.cart.some(it => it.day === day && it._starter);
-    const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
-
-    if (isEmptyDay && !hasStarter && !planningThisDay) {
-      // Tamamen boş gerçek gün → harita kaldır
-      removeDayMapCompletely(day);
-    } else {
-      // Planlama başlatıldı (starter var) veya gerçek item var → haritayı kur/tut
-      ensureDayMapContainer(day);
-     
- // --- MAP LOGIC (final) ---
-    // Gün için gerçek (konumlu) nokta say
+    // --- MAP LOGIC (final) ---
+    // Bu günde konumlu gerçek nokta sayısı
     const realPointCount = dayItemsArr.filter(it =>
       it.location &&
       typeof it.location.lat === 'number' &&
@@ -3582,27 +3569,27 @@ function updateCart() {
     ).length;
 
     if (realPointCount === 0) {
-      // Hiç gerçek nokta yoksa küçük haritayı (ve ilişkili info / controls) tamamen kaldır
+      // Küçük haritayı tamamen kaldır
       removeDayMapCompletely(day);
     } else {
-      // En az 1 nokta varsa küçük harita görünsün
+      // 1+ nokta → küçük harita göster
       ensureDayMapContainer(day);
-      // Sadece 1 nokta: base map (rota yok)
       if (realPointCount === 1) {
         initEmptyDayMap(day);
       }
     }
 
+    // Gün container'ı sepete ekle
     cartDiv.appendChild(dayContainer);
 
-    // + Add Category
+    // + Add Category butonu
     const addMoreButton = document.createElement("button");
     addMoreButton.className = "add-more-btn";
     addMoreButton.textContent = "+ Add Category";
     addMoreButton.dataset.day = day;
     addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
     cartDiv.appendChild(addMoreButton);
-  });
+  }); // days.forEach sonu
 
   // 3) + Add New Day
   const addNewDayButton = document.createElement("button");
@@ -3674,7 +3661,7 @@ function updateCart() {
     if (oldAI) oldAI.remove();
   })();
 
-  // 8) Tarih aralığı ve “Trip Details”
+  // 8) Tarih aralığı ve Trip Details
   (function ensureTripDetailsBlock() {
     if (!window.cart.startDate || !window.cart.endDates || !window.cart.endDates.length) {
       const existing = cartDiv.querySelector('.date-range');
@@ -3703,7 +3690,7 @@ function updateCart() {
       };
     }
   })();
-}   
+}
 
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
