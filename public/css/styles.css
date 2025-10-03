@@ -5517,7 +5517,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     100% { transform: scale(1); opacity: 1; }
 }
 
-#use-my-location-btn-day1, #use-my-location-btn-day2 {
+.use-my-location-btn {
         position: absolute;
     top: 80px;
     left: 10px;

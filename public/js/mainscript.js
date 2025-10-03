@@ -5090,12 +5090,12 @@ headerDiv.appendChild(statsDiv);
 // Önce header'ı ekle
 expandedContainer.appendChild(headerDiv);
 
-// (ÖNCEKİ KODDA headerDiv.appendChild(locBtn) VARDI, SİL)
-const locBtn = document.createElement('button');        // DEĞİŞTİRİLEN KISIM
+const locBtn = document.createElement('button');
 locBtn.type = 'button';
 locBtn.id = `use-my-location-btn-day${day}`;
+locBtn.classList.add('use-my-location-btn'); // sabit CSS sınıfı eklendi
 locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
-expandedContainer.appendChild(locBtn);                  // header dışına
+expandedContainer.appendChild(locBtn);
 
   // Close button
   const closeBtn = document.createElement('button');
