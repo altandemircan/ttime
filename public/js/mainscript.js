@@ -9045,29 +9045,35 @@ function renderRouteScaleBar(container, totalKm, markers) {
       areaPath.setAttribute('fill', '#263445');
     }
     for (let i = 1; i < smooth.length; i++) {
-      const x1 = Math.max(0, Math.min(width, X(samples[i - 1].distM / 1000)));
-      const y1 = Y(smooth[i - 1]);
-      const x2 = Math.max(0, Math.min(width, X(samples[i].distM / 1000)));
-      const y2 = Y(smooth[i]);
-      if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) continue;
-      const dx = samples[i].distM - samples[i - 1].distM;
-      const dy = smooth[i] - smooth[i - 1];
-      let slope = 0;
-      let color = "#72c100";
-      if (i > 1 && dx > 50) {
-        slope = (dy / dx) * 100;
-        color = getSlopeColor(Math.abs(slope));
-      }
-      const seg = document.createElementNS(svgNS, 'line');
-      seg.setAttribute('x1', String(x1)); seg.setAttribute('y1', String(y1));
-      seg.setAttribute('x2', String(x2)); seg.setAttribute('y2', String(y2));
-      seg.setAttribute('stroke', color); seg.setAttribute('stroke-width', '3');
-      seg.setAttribute('stroke-linecap', 'round');
-      seg.setAttribute('fill', 'none');
-      seg.dataset.slope = slope.toFixed(1);
-      seg.dataset.idx = i;
-      segG.appendChild(seg);
-    }
+  const x1 = Math.max(0, Math.min(width, X(samples[i - 1].distM / 1000)));
+  const y1 = Y(smooth[i - 1]);
+  const x2 = Math.max(0, Math.min(width, X(samples[i].distM / 1000)));
+  const y2 = Y(smooth[i]);
+
+  const dx = samples[i].distM - samples[i - 1].distM; // metre
+  const dy = smooth[i] - smooth[i - 1];                // metre (irtifa)
+  let slope = 0;
+  let color = "#72c100"; // default
+
+  if (i > 1 && dx > 50) {
+    slope = (dy / dx) * 100; // % eğim
+    // İniş (negatif eğim) -> sabit yeşil; çıkış -> mevcut renk mantığı
+    color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
+  }
+
+  const seg = document.createElementNS(svgNS, 'line');
+  seg.setAttribute('x1', String(x1));
+  seg.setAttribute('y1', String(y1));
+  seg.setAttribute('x2', String(x2));
+  seg.setAttribute('y2', String(y2));
+  seg.setAttribute('stroke', color);
+  seg.setAttribute('stroke-width', '3');
+  seg.setAttribute('stroke-linecap', 'round');
+  seg.setAttribute('fill', 'none');
+  seg.dataset.slope = slope.toFixed(1);
+  seg.dataset.idx = i;
+  segG.appendChild(seg);
+}
   }
 
   let resizeTimeout;
