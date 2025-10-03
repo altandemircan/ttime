@@ -8022,12 +8022,12 @@ function ensureCanvasRenderer(map) {
   s.id = 'tt-route-controls-bar-styles';
   s.textContent = `
     .route-controls-bar {
-        display: flex;
-       gap: 8px;
-    margin: 10px 0;
+    display: flex;
+    gap: 8px;
+    margin: 10px 0 20px 0;
     flex-direction: column;
-    padding:10px;
-        border-radius: 6px;
+    padding: 10px;
+    border-radius: 6px;
     background: #fafafa;
     border: 1px solid #ddd;
     }
