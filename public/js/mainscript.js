@@ -3573,16 +3573,17 @@ function updateCart() {
       // Planlama başlatıldı (starter var) veya gerçek item var → haritayı kur/tut
       ensureDayMapContainer(day);
      
-
-      const realPointCount = dayItemsArr.filter(it =>
-        it.name && it.location &&
-        typeof it.location.lat === 'number' &&
-        typeof it.location.lng === 'number'
-      ).length;
-      if (realPointCount < 2) {
-        initEmptyDayMap(day);
-      }
-    }
+const realPointCount = dayItemsArr.filter(it =>
+ if (realPointCount === 0) {
+  removeDayMapCompletely(day);
+} else {
+  // 1 veya daha fazla -> haritayı oluştur/tut
+  ensureDayMapContainer(day);
+  // 1 nokta ise initEmptyDayMap ile sadece base map
+  if (realPointCount === 1) {
+    initEmptyDayMap(day);
+  }
+    
 
     cartDiv.appendChild(dayContainer);
 
@@ -6464,35 +6465,25 @@ async function renderRouteForDay(day) {
   const points = getDayPoints(day);
 
   // 0 NOKTA (location yok)
-  if (!points || points.length === 0) {
-    // Eğer gün içinde en az 1 named item varsa (ama location henüz yoksa veya ekleme anında boşsa)
-    if (dayNamedItems.length > 0) {
-      // Haritayı göster (boş template)
-      ensureDayMapContainer(day);
-      initEmptyDayMap(day);
-      if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-      if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-      return; // Harita boş ama görünür.
-    }
+  // 0 NOKTA (location yok) -> küçük harita YOK
+if (!points || points.length === 0) {
+  if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+  if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+  if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+  if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
-    // Hiç named item yoksa gerçekten boş gün -> haritayı sök
-    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-
-    if (typeof removeDayMapCompletely === 'function') {
-      removeDayMapCompletely(day);
-    } else if (typeof removeDayMap === 'function') {
-      removeDayMap(day);
-    } else {
-      document.getElementById(containerId)?.remove();
-      document.getElementById(`route-info-day${day}`)?.remove();
-      document.getElementById(`map-bottom-controls-wrapper-day${day}`)?.remove();
-      document.getElementById(`route-controls-bar-day${day}`)?.remove();
-    }
-    return;
+  if (typeof removeDayMapCompletely === 'function') {
+    removeDayMapCompletely(day);
+  } else if (typeof removeDayMap === 'function') {
+    removeDayMap(day);
+  } else {
+    document.getElementById(`route-map-day${day}`)?.remove();
+    document.getElementById(`route-info-day${day}`)?.remove();
+    document.getElementById(`map-bottom-controls-wrapper-day${day}`)?.remove();
+    document.getElementById(`route-controls-bar-day${day}`)?.remove();
   }
+  return;
+}
 
   // 1 NOKTA
   if (points.length === 1) {
