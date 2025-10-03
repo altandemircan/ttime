@@ -3573,17 +3573,25 @@ function updateCart() {
       // Planlama başlatıldı (starter var) veya gerçek item var → haritayı kur/tut
       ensureDayMapContainer(day);
      
-const realPointCount = dayItemsArr.filter(it =>
- if (realPointCount === 0) {
-  removeDayMapCompletely(day);
-} else {
-  // 1 veya daha fazla -> haritayı oluştur/tut
-  ensureDayMapContainer(day);
-  // 1 nokta ise initEmptyDayMap ile sadece base map
-  if (realPointCount === 1) {
-    initEmptyDayMap(day);
-  }
-    
+ // --- MAP LOGIC (final) ---
+    // Gün için gerçek (konumlu) nokta say
+    const realPointCount = dayItemsArr.filter(it =>
+      it.location &&
+      typeof it.location.lat === 'number' &&
+      typeof it.location.lng === 'number'
+    ).length;
+
+    if (realPointCount === 0) {
+      // Hiç gerçek nokta yoksa küçük haritayı (ve ilişkili info / controls) tamamen kaldır
+      removeDayMapCompletely(day);
+    } else {
+      // En az 1 nokta varsa küçük harita görünsün
+      ensureDayMapContainer(day);
+      // Sadece 1 nokta: base map (rota yok)
+      if (realPointCount === 1) {
+        initEmptyDayMap(day);
+      }
+    }
 
     cartDiv.appendChild(dayContainer);
 
