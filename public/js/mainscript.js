@@ -2015,7 +2015,7 @@ try {
       it.location &&
       !it._starter &&
       !it._placeholder
-    ).length;
+    ).length; 
 
     if (realPoints === 1) {
       // İlk gerçek nokta → mini haritayı (gizliyse) göster
