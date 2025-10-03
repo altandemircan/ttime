@@ -8524,7 +8524,7 @@ if (typeof wrapRouteControlsForAllDays === 'function') {
 }
     .tt-elev-grid line { stroke:#d7dde2; stroke-dasharray:4 4; opacity:.8; }
     .tt-elev-grid text { fill:#90a4ae; font-size:11px; }
-    .tt-elev-area { fill:#263445; }              /* dark navy fill */
+    .tt-elev-area { fill:#dbe2ec; }              /* dark navy fill */
     .tt-elev-stroke { stroke:#b6ea53; fill:none; stroke-width:3; } /* lime outline */
 
     /* Hover cursor on the chart */
