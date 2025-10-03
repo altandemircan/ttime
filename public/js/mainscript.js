@@ -6464,7 +6464,7 @@ async function renderRouteForDay(day) {
   // Noktaları en başta al (location’u olanlar)
   const points = getDayPoints(day);
 
-  // 0 NOKTA (location yok)
+ 
   // 0 NOKTA (location yok) -> küçük harita YOK
 if (!points || points.length === 0) {
   if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
