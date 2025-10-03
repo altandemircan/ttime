@@ -5013,24 +5013,32 @@ const headerDiv = document.createElement('div');
 headerDiv.className = 'expanded-map-header';
 
 const mapStyleSelect = document.createElement('select');
-...
+mapStyleSelect.id = `map-style-select-day${day}`;
+[
+  { value: 'streets-v12', text: 'Street modes' },
+  { value: 'dark-v11', text: 'Navigation' },
+  { value: 'satellite-streets-v12', text: 'Satellite' }
+].forEach(o => {
+  const opt = document.createElement('option');
+  opt.value = o.value;
+  opt.textContent = o.text;
+  mapStyleSelect.appendChild(opt);
+});
 headerDiv.appendChild(mapStyleSelect);
 
 const statsDiv = document.createElement('div');
 statsDiv.className = 'route-stats';
 headerDiv.appendChild(statsDiv);
 
-// ÖNCE header'ı ekle
+// Önce header'ı ekle
 expandedContainer.appendChild(headerDiv);
 
-// My location BUTONUNU artık header DIŞINA koyuyoruz
-const locBtn = document.createElement('button');
+// (ÖNCEKİ KODDA headerDiv.appendChild(locBtn) VARDI, SİL)
+const locBtn = document.createElement('button');        // DEĞİŞTİRİLEN KISIM
 locBtn.type = 'button';
 locBtn.id = `use-my-location-btn-day${day}`;
 locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
-
-// Header’ın hemen ardına ekle
-expandedContainer.appendChild(locBtn);
+expandedContainer.appendChild(locBtn);                  // header dışına
 
   // Close button
   const closeBtn = document.createElement('button');
