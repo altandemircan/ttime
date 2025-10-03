@@ -3091,11 +3091,18 @@ function initEmptyDayMap(day) {
 
   if (!el.style.height) el.style.height = '285px';
 
+// 1) KÜÇÜK HARİTA: initEmptyDayMap içindeki L.map(...) seçeneklerini değiştir
 const map = L.map(containerId, {
   scrollWheelZoom: true,
-  fadeAnimation: false,
-  zoomAnimation: false
-  // preferCanvas: true  // KALDIRILDI (SVG fallback)
+  fadeAnimation: true,
+  zoomAnimation: true,
+  zoomAnimationThreshold: 8,
+  zoomSnap: 0.25,
+  zoomDelta: 0.25,
+  wheelDebounceTime: 35,
+  wheelPxPerZoomLevel: 120,
+  inertia: true,
+  easeLinearity: 0.2
 }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
 
   L.tileLayer(
@@ -5121,13 +5128,21 @@ expandedContainer.appendChild(locBtn);
     }
   } catch (_) {}
 
-  const expandedMap = L.map(mapDivId, {
-    center,
-    zoom,
-    scrollWheelZoom: true,
-    fadeAnimation: false,
-    zoomAnimation: false
-  });
+  // 2) BÜYÜK HARİTA: expandMap içindeki expandedMap oluşturma bloğunu değiştir
+const expandedMap = L.map(mapDivId, {
+  center,
+  zoom,
+  scrollWheelZoom: true,
+  fadeAnimation: true,
+  zoomAnimation: true,
+  zoomAnimationThreshold: 8,
+  zoomSnap: 0.25,
+  zoomDelta: 0.25,
+  wheelDebounceTime: 35,
+  wheelPxPerZoomLevel: 120,
+  inertia: true,
+  easeLinearity: 0.2
+});
 
   let expandedTileLayer = null;
   function setExpandedMapTile(styleKey) {
@@ -5188,8 +5203,7 @@ expandedContainer.appendChild(locBtn);
   // 0 veya 1 nokta fallback (küçük harita gibi davran)
   const points = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
   if (!geojson && points.length === 1) {
-    expandedMap.setView([points[0].lat, points[0].lng], 15);
-    L.circleMarker([points[0].lat, points[0].lng], {
+expandedMap.flyTo([points[0].lat, points[0].lng], 15, { duration: 0.6, easeLinearity: 0.2 });    L.circleMarker([points[0].lat, points[0].lng], {
       radius: 11,
       color: '#8a4af3',
       fillColor: '#8a4af3',
@@ -5263,7 +5277,7 @@ expandedContainer.appendChild(locBtn);
         const arr = window.userLocationMarkersByDay?.[day];
         if (arr && arr.length) {
           const last = arr[arr.length - 1];
-            if (last?.getLatLng) expandedMap.setView(last.getLatLng(), Math.max(expandedMap.getZoom(), 15));
+            if (last?.getLatLng) expandedMap.flyTo(last.getLatLng(), Math.max(expandedMap.getZoom(), 15), { duration: 0.5, easeLinearity: 0.2 });
         }
       }, 300);
     } else {
@@ -5382,11 +5396,11 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   // Hafif odak
   try {
     const currentZoom = map.getZoom();
-    if (currentZoom < 14) {
-      map.setView([lat, lng], 15, { animate: true });
-    } else {
-      map.panTo([lat, lng], { animate: true });
-    }
+if (currentZoom < 14) {
+  map.flyTo([lat, lng], 15, { duration: 0.5, easeLinearity: 0.2 });
+} else {
+  map.panTo([lat, lng], { animate: true, duration: 0.4, easeLinearity: 0.2 });
+}
   } catch (_) {}
   // --- Pulsing marker ekleme bitiş ---
 
@@ -6734,7 +6748,7 @@ if (!points || points.length === 0) {
       }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
       if (marker._path) marker._path.classList.add('single-point-pulse');
       else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
-      try { map.setView([p.lat, p.lng], 14); } catch {}
+      try { map.flyTo([p.lat, p.lng], 14, { duration: 0.6, easeLinearity: 0.2 }); } catch {}
     }
 
     const expandedMapObj = window.expandedMaps?.[containerId];
@@ -6750,7 +6764,8 @@ if (!points || points.length === 0) {
         weight: 3
       }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
       if (m._path) m._path.classList.add('single-point-pulse');
-      try { eMap.setView([p.lat, p.lng], 15); } catch {}
+      try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 });
+ } catch {}
     }
     return;
   }
