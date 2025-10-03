@@ -8417,30 +8417,20 @@ if (typeof wrapRouteControlsForAllDays === 'function') {
   s.id = 'tt-elev-styles';
   s.textContent = `
     /* Scale bar container */
-    .scale-bar-track {
-  position: fixed !important; /* kesinlikle fixed */
-  left: 0;
-  right: 0;
-  bottom: env(safe-area-inset-bottom, 0);
-  z-index: 1000;
-  background: #fff;
-  box-shadow: 0 -2px 12px rgba(0,0,0,0.12);
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-  min-height: 150px;
-      
-        width: calc(100% - 435px);
-}
-@supports (height: 100dvh) {
-  .scale-bar-track {
-    bottom: 0 !important; /* yeni tarayıcılarda env ile çakışmasın */
-  }
-}
-@media (max-width:768px) {
-    .scale-bar-track {
-            width: calc(100% - 20px);
+      .scale-bar-track {
+      position: relative;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      z-index: 1;
+      background: #fff;
+      box-shadow: none;
+      border-radius: 0;
+      min-height: 150px;
+      width: 100%;
     }
-}
+    @supports (height: 100dvh) { .scale-bar-track { bottom: auto; } }
+    @media (max-width:768px) { .scale-bar-track { width: 100%; } }
     /* Distance baseline and ticks (top) */
    
     .scale-bar-tick { position:absolute; top:10px; width:1px; height:16px; background:#cfd8dc; }
@@ -8689,6 +8679,14 @@ function renderRouteScaleBar(container, totalKm, markers) {
   });
 
   // 2) Tek track oluştur/yeniden kullan
+    // UI set
+  // HER ZAMAN TEK TRACK KALSIN + GLOBAL ESKİLERİ SİL
+  // a) Diğer konteynerlerde kalmış tüm track’leri kaldır (stacking'i önle)
+  document.querySelectorAll('.scale-bar-track').forEach(t => {
+    if (!container.contains(t)) t.remove();
+  });
+
+  // b) Tek track oluştur/yeniden kullan
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
     container.innerHTML = '';
@@ -8696,16 +8694,23 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track.className = 'scale-bar-track';
     container.appendChild(track);
   } else {
-    // Eski track içeriğini tamamen temizle (overlay/tooltip dahil)
-    // Ayrıca eski track’e bağlı eski handler referanslarını sıfırla
+    // Eski handler referanslarını temizle ve içerikleri tamamen sil
     try {
-      if (track.__onMove) track.removeEventListener('mousemove', track.__onMove);
-      if (track.__onLeave) track.removeEventListener('mouseleave', track.__onLeave);
-      if (track.__onDown) track.removeEventListener('mousedown', track.__onDown);
+      if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
+      if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
+      if (track.__onDown)   track.removeEventListener('mousedown', track.__onDown);
       track.__onMove = track.__onLeave = track.__onDown = null;
     } catch(_){}
     track.innerHTML = '';
   }
+
+  // c) Eski global window handler’larını kaldır (tekille)
+  if (window.__sb_onMouseMove) { window.removeEventListener('mousemove', window.__sb_onMouseMove); window.__sb_onMouseMove = null; }
+  if (window.__sb_onMouseUp)   { window.removeEventListener('mouseup',   window.__sb_onMouseUp);   window.__sb_onMouseUp   = null; }
+
+  // d) Aktif işaretler (debug/guard)
+  window.__activeScaleBarContainer = container;
+  window.__activeScaleBarTrack = track;
 
   // 3) Eski global window handler’larını kaldır (yenileri eklenmeden önce)
   if (window.__sb_onMouseMove) { window.removeEventListener('mousemove', window.__sb_onMouseMove); window.__sb_onMouseMove = null; }
@@ -8983,6 +8988,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
   if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
   if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
 
+    // Hover (aktif domain ile) — önce eski handler’ları kaldır, sonra ekle
+  if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
+  if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
+
   track.__onMove = (e) => {
     const ed = container._elevationData;
     if (!ed || !Array.isArray(ed.smooth)) return;
@@ -9037,7 +9046,15 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.addEventListener('mousemove', track.__onMove);
   track.addEventListener('mouseleave', track.__onLeave);
 
+  track.addEventListener('mousemove', track.__onMove);
+  track.addEventListener('mouseleave', track.__onLeave);
+
   // Mouse ile aralık seçimi — eski handler’ları kaldır + global window handler’ları tekille
+  if (track.__onDown) track.removeEventListener('mousedown', track.__onDown);
+  if (window.__sb_onMouseMove) { window.removeEventListener('mousemove', window.__sb_onMouseMove); window.__sb_onMouseMove = null; }
+  if (window.__sb_onMouseUp)   { window.removeEventListener('mouseup',   window.__sb_onMouseUp);   window.__sb_onMouseUp   = null; }
+
+  // Mouse ile aralık seçimi — tekil handler’lar
   if (track.__onDown) track.removeEventListener('mousedown', track.__onDown);
   if (window.__sb_onMouseMove) { window.removeEventListener('mousemove', window.__sb_onMouseMove); window.__sb_onMouseMove = null; }
   if (window.__sb_onMouseUp)   { window.removeEventListener('mouseup',   window.__sb_onMouseUp);   window.__sb_onMouseUp   = null; }
@@ -9084,6 +9101,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       highlightSegmentOnMap(dayNum, startKm, endKm);
     }
   };
+  window.addEventListener('mouseup', window.__sb_onMouseUp);
   window.addEventListener('mouseup', window.__sb_onMouseUp);
 
   // Elevation verisini yükle
@@ -9683,31 +9701,8 @@ const DATASET = 'srtm30m';
 
   window.__tt_elevMuxReady = true;
 })();
-function adjustScaleBarPosition() {
-  const sb = document.querySelector('.scale-bar-track');
-  if (!sb) return;
-  // iOS ve yeni Android'lerde en sağlamı visualViewport.height!
-  if (window.visualViewport) {
-    const viewportHeight = window.visualViewport.height;
-    const windowHeight = window.innerHeight;
-    // Eğer viewport daha kısa ise (adres çubuğu açık/klavye vs.)
-    if (viewportHeight < windowHeight) {
-      sb.style.bottom = (windowHeight - viewportHeight) + 'px';
-    } else {
-      sb.style.bottom = '0px';
-    }
-  } else {
-    sb.style.bottom = '0px';
-  }
-  sb.style.position = 'fixed';
-  sb.style.left = '0';
-  sb.style.right = '0';
-  sb.style.zIndex = 1000;
-}
-window.addEventListener('resize', adjustScaleBarPosition);
-window.addEventListener('scroll', adjustScaleBarPosition);
-window.addEventListener('orientationchange', adjustScaleBarPosition);
-setTimeout(adjustScaleBarPosition, 100);
+// Fixed band davranışı devre dışı
+function adjustScaleBarPosition() { /* disabled */ }
 
 
 // === Feedback Form ===
