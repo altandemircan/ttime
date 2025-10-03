@@ -3140,21 +3140,21 @@ function restoreLostDayMaps() {
   });
 }
 
-
-
-
 function startMapPlanning() {
-  // Eğer tamamen boşsa starter ekle (adı olsun ki gün "empty" sayılmasın ve map container çizilsin)
+  // Force boş harita flag nesnesi
+  window.__forceEmptyMapForDay = window.__forceEmptyMapForDay || {};
+  window.__forceEmptyMapForDay[1] = true; // Day 1 için boş olsa da küçük haritayı TUT
+
+  // Day 1’de hiç öğe yoksa starter ekle
   if (!Array.isArray(window.cart) || window.cart.length === 0) {
     window.cart = [{
       day: 1,
       name: 'Start',
       category: 'Note',
       image: 'img/placeholder.png',
-      _starter: true   // geçici işaret
+      _starter: true
     }];
   } else if (!window.cart.some(it => it.day === 1)) {
-    // Hiç day=1 yoksa yine starter ekle
     window.cart.push({
       day: 1,
       name: 'Start',
@@ -3164,24 +3164,39 @@ function startMapPlanning() {
     });
   }
 
-  updateCart();              // Day 1 container + harita iskeleti oluşsun
-  ensureDayMapContainer(1);  // Küçük harita DIV’i garanti et
-  initEmptyDayMap(1);        // Leaflet boş haritayı başlat
+  window.currentDay = 1;
+  window.mapPlanningDay = 1;
+  window.mapPlanningActive = true;
 
-  // Expanded aç (küçük harita render edilmesini beklemek için kısa timeout)
+  // UI güncelle
+  updateCart();            // MAP LOGIC flag’i görünce küçük haritayı kaldırmaz
+  ensureDayMapContainer(1);
+  initEmptyDayMap(1);
+
+  // Harita tıklayıp nokta ekleme modu
   setTimeout(() => {
-    // Harita instance yoksa tekrar garanti et
-    if (!window.leafletMaps || !window.leafletMaps['route-map-day1']) {
-      initEmptyDayMap(1);
-    }
-    if (typeof expandMap === 'function') {
-      expandMap('route-map-day1', 1);
-    } else if (typeof openExpandedMapForDay === 'function') {
-      openExpandedMapForDay(1);
-    }
-  }, 60);
-}
+    if (!window.leafletMaps['route-map-day1']) initEmptyDayMap(1);
+    attachMapClickAddMode(1);
+  }, 80);
 
+  // 0 nokta olsa da expand et
+  setTimeout(() => {
+    const cid = 'route-map-day1';
+    if (window.expandedMaps && window.expandedMaps[cid]) return;
+
+    // Travel mode set yoksa üret
+    if (typeof renderTravelModeControlsForAllDays === 'function') {
+      renderTravelModeControlsForAllDays();
+    }
+
+    let expandBtn = document.querySelector('#tt-travel-mode-set-day1 .expand-map-btn');
+    if (expandBtn) {
+      expandBtn.click();
+    } else if (typeof expandMap === 'function') {
+      expandMap(cid, 1);
+    }
+  }, 220);
+}
 function removeDayMap(day) {
   // Eski yanlış çağrılar boşa gitmesin
   return removeDayMapCompletely(day);
@@ -4878,8 +4893,15 @@ if (!expandButton) {
 }
 
     window._lastNearbyDay = day;
-if (expandButton) expandButton.style.visibility = 'hidden';
-
+if (!originalContainer || !map) {
+  console.error('Missing elements:', { originalContainer, map, expandButton });
+  return;
+}
+if (expandButton) {
+  expandButton.style.visibility = 'hidden';
+} else {
+  console.warn('expandMap: expand button not found, continuing without hiding it.');
+}
     const expandedMapId = `expanded-map-${day}`;
     const expandedContainer = document.createElement('div');
     expandedContainer.id = expandedMapId;
