@@ -4893,7 +4893,7 @@ function showScaleBarInExpandedMap(day) {
         statsDiv.insertAdjacentElement('afterend', scaleBar);
     }
 }
-
+ 
 async function expandMap(containerId, day) {
   console.log('[expandMap] start →', containerId, 'day=', day);
 
