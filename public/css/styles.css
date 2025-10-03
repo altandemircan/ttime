@@ -2333,7 +2333,7 @@ li .highlight {
     cursor: grab;
     transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     border-radius: 0;
-    width: 98%;
+    width: 100%;
     margin: 1% 0;
    
 }
