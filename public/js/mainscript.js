@@ -9332,6 +9332,29 @@ drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
     window.hideScaleBarLoading?.(container);
   }
 }
+(function ensureElevSegmentToolbarStyles(){
+  if (document.getElementById('tt-elev-seg-toolbar-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'tt-elev-seg-toolbar-styles';
+  s.textContent = `
+    .elev-segment-toolbar {
+      position: absolute; top: 6px; left: 8px; z-index: 7;
+      display: inline-flex; gap: 10px; align-items: center;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #e0e0e0; border-radius: 10px;
+      padding: 6px 10px; font-size: 12px; color: #333;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    }
+    .elev-segment-toolbar button.elev-segment-reset {
+      appearance: none; border: 1px solid #d0d7de; background: #fff; color:#333;
+      border-radius: 8px; padding: 4px 8px; cursor: pointer; font-weight:600;
+    }
+    .elev-segment-toolbar button.elev-segment-reset:hover {
+      background:#f6f8fa;
+    }
+  `;
+  document.head.appendChild(s);
+})();
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
   const track = container.querySelector('.scale-bar-track');
   if (!track) return;
@@ -9454,29 +9477,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     highlightSegmentOnMap(dnum); // temizle
   });
 }
-(function ensureElevSegmentToolbarStyles(){
-  if (document.getElementById('tt-elev-seg-toolbar-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'tt-elev-seg-toolbar-styles';
-  s.textContent = `
-    .elev-segment-toolbar {
-      position: absolute; top: 6px; left: 8px; z-index: 7;
-      display: inline-flex; gap: 10px; align-items: center;
-      background: rgba(255,255,255,0.95);
-      border: 1px solid #e0e0e0; border-radius: 10px;
-      padding: 6px 10px; font-size: 12px; color: #333;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
-    }
-    .elev-segment-toolbar button.elev-segment-reset {
-      appearance: none; border: 1px solid #d0d7de; background: #fff; color:#333;
-      border-radius: 8px; padding: 4px 8px; cursor: pointer; font-weight:600;
-    }
-    .elev-segment-toolbar button.elev-segment-reset:hover {
-      background:#f6f8fa;
-    }
-  `;
-  document.head.appendChild(s);
-})();
+
 function highlightSegmentOnMap(day, startKm, endKm) {
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
