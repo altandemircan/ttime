@@ -5290,35 +5290,46 @@ expandedContainer.appendChild(locBtn);                  // header dışına
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; // metres
 
-
-  // Eski long-press cleanup (varsa)
+  // Uzun basma varsa temizle
   if (map.__ttLongPressCleanup) {
     try { map.__ttLongPressCleanup(); } catch(_){}
     map.__ttLongPressCleanup = null;
   }
 
-  if (map.__ttNearbyClickBound) return; // bir kere bağla
+  // Tek bağla
+  if (map.__ttNearbyClickBound) return;
   map.__ttNearbyClickBound = true;
 
- map.on('click', function(e) {
-  if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
-  __nearbySingleTimer = setTimeout(async () => {
+  // TEK TIK ayıracı: timer + gecikme
+  let __nearbySingleTimer = null;
+  const __nearbySingleDelay = (options && options.singleDelay) || 300; // ms
 
+  map.on('click', function(e) {
+    if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
+    __nearbySingleTimer = setTimeout(async () => {
+      // Tek tık: yakındaki mekanları aç
+      const { lat, lng } = e.latlng;
+      closeNearbyPopup(); // önceki varsa kapat
+      showNearbyPlacesPopup(lat, lng, map, day, radius);
+    }, __nearbySingleDelay);
+  });
 
-const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-    closeNearbyPopup(); // önceki popup varsa kapat
-    showNearbyPlacesPopup(lat, lng, map, day, radius);
-  }, __nearbySingleDelay);
-});
- map.on('dblclick', function() {
-  if (__nearbySingleTimer) {
-    clearTimeout(__nearbySingleTimer);
-    __nearbySingleTimer = null;
-  }
-});
+  // Çift tık (zoom) gelirse tek-tıkı iptal et
+  map.on('dblclick', function() {
+    if (__nearbySingleTimer) {
+      clearTimeout(__nearbySingleTimer);
+      __nearbySingleTimer = null;
+    }
+  });
+
+  // Zoom başlarsa (ör. çift tık, pinch), tek-tıkı iptal et
+  map.on('zoomstart', function() {
+    if (__nearbySingleTimer) {
+      clearTimeout(__nearbySingleTimer);
+      __nearbySingleTimer = null;
+    }
+  });
 }
-
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
   const categories = [
