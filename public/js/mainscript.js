@@ -2015,7 +2015,7 @@ try {
       !it._starter &&
       !it._placeholder
     ).length;
-
+ 
     if (realPoints === 1) {
       if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
         delete window.__suppressMiniUntilFirstPoint[day];
