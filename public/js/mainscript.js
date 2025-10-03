@@ -7210,48 +7210,42 @@ const MAPBOX_STYLES = [
 ];
 
 function setupSidebarAccordion() {
-    document.querySelectorAll('.day-header').forEach(header => {
-        header.onclick = function(e) {
-            if (
-                e.target.classList.contains('edit-day-btn') ||
-                e.target.classList.contains('remove-action-button') ||
-                e.target.classList.contains('reset-action-button') ||
-                e.target.closest('.action-buttons-container')
-            ) {
-                return;
-            }
-            const dayContainer = header.closest('.day-container');
-            if (!dayContainer) return;
+  document.querySelectorAll('.day-header').forEach(header => {
+    header.onclick = function(e) {
+      if (
+        e.target.classList.contains('edit-day-btn') ||
+        e.target.classList.contains('remove-action-button') ||
+        e.target.classList.contains('reset-action-button') ||
+        e.target.closest('.action-buttons-container')
+      ) {
+        return;
+      }
+      const dayContainer = header.closest('.day-container');
+      if (!dayContainer) return;
 
-            // Gün numarası (her zaman string olarak alınır)
-            const day = dayContainer.dataset.day || dayContainer.id.replace('day-container-', '');
+      const day = dayContainer.dataset.day || dayContainer.id.replace('day-container-', '');
 
-            // .day-container içindekiler (day-list, route-map, route-info, bilgi barı)
-            [
-                '.day-list',
-                '.route-map',
-                '.route-info',
-                `#map-bottom-controls-wrapper-day${day}`
-            ].forEach(sel => {
-                let el = null;
-                // Eğer sel id ile başlıyorsa doğrudan document.getElementById, değilse dayContainer.querySelector
-                if (sel.startsWith('#')) {
-                    el = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
-                } else {
-                    el = dayContainer.querySelector(sel);
-                }
-                if (el) el.classList.toggle('collapsed');
-            });
+      // route-controls-bar da dahil: daraltıldığında tamamen gizle
+      [
+        '.day-list',
+        '.route-map',
+        '.route-info',
+        `#route-controls-bar-day${day}`,              // YENİ: tüm bar (mod + özet)
+        `#map-bottom-controls-wrapper-day${day}`      // var olan alt özet wrapper
+      ].forEach(sel => {
+        // HATA DÜZELTME: ID için dinamik selector kullan
+        const el = sel.startsWith('#') ? document.querySelector(sel) : dayContainer.querySelector(sel);
+        if (el) el.classList.toggle('collapsed');
+      });
 
-            // .add-more-btn: .day-container'ın hemen sonundaki kardeşinde
-            let next = dayContainer.nextElementSibling;
-            if (next && next.classList.contains('add-more-btn')) {
-                next.classList.toggle('collapsed');
-            }
-        };
-    });
+      // .add-more-btn kardeşini de gizle/göster
+      let next = dayContainer.nextElementSibling;
+      if (next && next.classList.contains('add-more-btn')) {
+        next.classList.toggle('collapsed');
+      }
+    };
+  });
 }
-
 
 /* 4) Sync vertical guide line with scale-bar hover on expanded map
       — patch setupScaleBarInteraction to also show the map line */
