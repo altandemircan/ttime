@@ -3766,12 +3766,16 @@ if (realPointCount === 0) {
   }); // days.forEach sonu
 
   // 3) + Add New Day
-  const addNewDayButton = document.createElement("button");
-  addNewDayButton.className = "add-new-day-btn";
-  addNewDayButton.id = "add-new-day-button";
-  addNewDayButton.textContent = "+ Add New Day";
-  addNewDayButton.onclick = function () { addNewDay(this); };
-  cartDiv.appendChild(addNewDayButton);
+  const addNewDayHr = document.createElement('hr');
+addNewDayHr.className = 'add-new-day-separator';
+cartDiv.appendChild(addNewDayHr);
+
+const addNewDayButton = document.createElement("button");
+addNewDayButton.className = "add-new-day-btn";
+addNewDayButton.id = "add-new-day-button";
+addNewDayButton.textContent = "+ Add New Day";
+addNewDayButton.onclick = function () { addNewDay(this); };
+cartDiv.appendChild(addNewDayButton);
 
   // 4) Sayaç / butonlar
   const itemCount = window.cart.filter(i => i.name).length;
