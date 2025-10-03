@@ -2008,44 +2008,34 @@ function addToCart(
 try {
   if (!newItem._starter && newItem.location) {
     const day = newItem.day;
-
-    // Günün gerçek (konumlu) item sayısı
     const realPoints = window.cart.filter(it =>
       it.day === day &&
       it.location &&
       !it._starter &&
       !it._placeholder
-    ).length; 
+    ).length;
 
-    if (realPoints === 1) {
-      // İlk gerçek nokta → mini haritayı (gizliyse) göster
-      window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
-      if (window.__suppressMiniUntilFirstPoint[day]) {
-        delete window.__suppressMiniUntilFirstPoint[day];
-      }
+    if (realPoints === 1 && window.mapPlanningActive && window.mapPlanningDay === day) {
+      // İlk gerçek nokta → küçük harita yeni oluştu, biraz bekleyip expand et
+      setTimeout(() => {
+        const cid = `route-map-day${day}`;
+        if (window.expandedMaps && window.expandedMaps[cid]) return;
 
-      // Mini harita container’ı yoksa oluştur
-      ensureDayMapContainer(day);
-      initEmptyDayMap(day);
+        // Travel mode set oluşturulmamış olabilir:
+        if (typeof renderTravelModeControlsForAllDays === 'function') {
+          renderTravelModeControlsForAllDays();
+        }
 
-      const mini = document.getElementById(`route-map-day${day}`);
-      if (mini) mini.style.display = '';
-
-      // Rota / markerların küçük haritada görünmesi için
-      if (typeof renderRouteForDay === 'function') {
-        // Bir sonraki event loop’ta (DOM stabilize olsun)
-        setTimeout(() => renderRouteForDay(day), 0);
-      }
-    } else if (realPoints > 1) {
-      // Ek noktalarda sadece rota redraw (expanded açıksa ikisini de günceller)
-      if (typeof renderRouteForDay === 'function') {
-        setTimeout(() => renderRouteForDay(day), 0);
-      }
+        let expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
+        if (expandBtn) {
+          expandBtn.click();
+        } else if (typeof expandMap === 'function') {
+          expandMap(cid, day);
+        }
+      }, 350);
     }
   }
-} catch (e) {
-  console.warn('[addToCart:first-point-mini-map]', e);
-}
+} catch(_) {}
   // ---- 8) UI güncellemesi
   // silent = true ise hiçbir şey yapma (batch import için)
   if (!silent) {
