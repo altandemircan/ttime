@@ -6895,7 +6895,7 @@ if (!points || points.length === 0) {
   const infoPanel = document.getElementById(`route-info-day${day}`);
   if (missingPoints.length > 0) {
     if (infoPanel) {
-      infoPanel.innerHTML = `<span style="color:#d32f2f;font-size:0.85rem;font-weight:500;">
+      infoPanel.innerHTML = `<span style="color:#d32f2f;font-size:0.85rem;font-weight:500;margin-bottom:20px;">
         <strong>Note:</strong> Some points could not be included in the route!<br>
         <strong>Missing:</strong> ${missingPoints.map(p => p.name).join(', ')}
       </span>`;
