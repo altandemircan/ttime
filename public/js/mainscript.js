@@ -3477,8 +3477,14 @@ function updateCart() {
 
     // 2.a Boş gün görünümü
 if (isEmptyDay) {
-  const hasStarter = window.cart.some(it => it.day === day && it._starter);
-  const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day; // artık sadece bilgi, koşulda kullanmıyoruz
+  let hasStarter = window.cart.some(it => it.day === day && it._starter);
+  const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
+
+  // 1) Eğer sadece starter kalmış ve planlama artık aktif değilse starter'ı temizle
+  if (hasStarter && !planningThisDay) {
+    window.cart = window.cart.filter(it => !(it.day === day && it._starter));
+    hasStarter = false; // artık yok
+  }
 
   const emptyWrap = document.createElement("div");
   emptyWrap.className = "empty-day-block";
@@ -3503,8 +3509,8 @@ if (isEmptyDay) {
   importBtn.textContent = "Import GPS File";
   actions.appendChild(importBtn);
 
-  // YENİ KOŞUL
-  if (!hasStarter) {
+  // 2) Artık hasStarter'a bakmıyoruz. Gün boşsa ve şu an o gün planlama aktif değilse butonu göster
+  if (!planningThisDay) {
     const startMapBtn = document.createElement("button");
     startMapBtn.type = "button";
     startMapBtn.className = "start-map-btn";
