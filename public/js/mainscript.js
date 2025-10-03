@@ -3237,7 +3237,7 @@ function removeDayMapCompletely(day) {
 function attemptExpandDay(day, tries = 0) {
   const cid = `route-map-day${day}`;
   if (window.expandedMaps && window.expandedMaps[cid]) return;
-
+ensureDayMapContainer(day);
   let btn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
   if (!btn && typeof renderTravelModeControlsForAllDays === 'function') {
     renderTravelModeControlsForAllDays();
@@ -3387,9 +3387,71 @@ function attachMapClickAddMode(day) {
     // Route güncelle (>=2 nokta olunca otomatik)
     if (typeof renderRouteForDay === 'function') {
       setTimeout(() => renderRouteForDay(day), 100);
-    }
+    } 
   });
 }
+
+
+// Expanded map’e de aynı click-add davranışı
+(function bindExpandedClick(){
+  const cid = `route-map-day${day}`;
+  const expObj = window.expandedMaps && window.expandedMaps[cid];
+  if (!expObj || !expObj.expandedMap) return;
+  const eMap = expObj.expandedMap;
+  // Bir kere bağla
+  eMap.__tt_clickAddBound = eMap.__tt_clickAddBound || {};
+  if (eMap.__tt_clickAddBound[day]) return;
+  eMap.__tt_clickAddBound[day] = true;
+
+  eMap.on('click', async (e) => {
+    if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
+
+    const { lat, lng } = e.latlng;
+    let placeInfo = { name: "New Point", address: "", opening_hours: "" };
+    try {
+      const rInfo = await getPlaceInfoFromLatLng(lat, lng);
+      if (rInfo && rInfo.name) placeInfo = rInfo;
+    } catch(_) {}
+
+    const dup = window.cart.some(it =>
+      it.day === day &&
+      it.location &&
+      Math.abs(it.location.lat - lat) < 1e-6 &&
+      Math.abs(it.location.lng - lng) < 1e-6
+    );
+    if (dup) return;
+
+    let imageUrl = 'img/placeholder.png';
+    try {
+      imageUrl = await getImageForPlace(placeInfo.name, 'Place', window.selectedCity || '');
+    } catch(_) {}
+
+    addToCart(
+      placeInfo.name || 'Point',
+      imageUrl,
+      day,
+      'Place',
+      placeInfo.address || '',
+      null,
+      null,
+      placeInfo.opening_hours || '',
+      null,
+      { lat, lng },
+      '',
+      { forceDay: day }
+    );
+
+    L.circleMarker([lat, lng], {
+      radius: 8,
+      color: '#8a4af3',
+      fillColor: '#8a4af3',
+      fillOpacity: 0.9,
+      weight: 2
+    }).addTo(eMap).bindPopup(`<b>${placeInfo.name || 'Point'}</b>`);
+  });
+})();
+
+
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
@@ -3705,8 +3767,16 @@ if (realPointCount === 0) {
   attachDragListeners();
   days.forEach(d => initPlaceSearch(d));
   addCoordinatesToContent();
-  days.forEach(d => renderRouteForDay(d));
-  setTimeout(wrapRouteControlsForAllDays, 0);
+  days.forEach(d => {
+  const suppressing = window.__suppressMiniUntilFirstPoint &&
+                      window.__suppressMiniUntilFirstPoint[d];
+  // Suppression aktif ve henüz 0 gerçek nokta varsa rota çizme / map’i oynama
+  const realPoints = getDayPoints ? getDayPoints(d) : [];
+  if (suppressing && realPoints.length === 0) {
+    return; // renderRouteForDay atlanır
+  }
+  renderRouteForDay(d);
+});  setTimeout(wrapRouteControlsForAllDays, 0);
   attachChatDropListeners();
 
   if (window.expandedMaps) {
@@ -6548,6 +6618,15 @@ function addCircleMarkerSafe(map, latlng, options) {
 // - Diğer tüm rota / pairwise / elevation mantığı aynen bırakıldı.
 
 async function renderRouteForDay(day) {
+    // Suppression: start with map modunda ve henüz hiç gerçek nokta yoksa
+if (window.__suppressMiniUntilFirstPoint &&
+    window.__suppressMiniUntilFirstPoint[day]) {
+  const pts0 = getDayPoints(day);
+  if (!pts0 || pts0.length === 0) {
+    // Küçük haritayı SİLME, dokunma, sadece çık
+    return;
+  }
+}
   const containerId = `route-map-day${day}`;
 
   // Günün cart item'ları (isimli olanlar)
