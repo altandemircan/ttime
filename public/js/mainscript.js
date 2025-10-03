@@ -8728,30 +8728,32 @@ function renderRouteScaleBar(container, totalKm, markers) {
     selDiv.style.left = `${left}px`;
     selDiv.style.width = `${right - left}px`;
   });
-  window.addEventListener('mouseup', () => {
-    if (!drag) return;
-    const rect = track.getBoundingClientRect();
-    const leftPx = Math.min(drag.startX, drag.lastX);
-    const rightPx = Math.max(drag.startX, drag.lastX);
-    drag = null;
+ // Yeni: (TAMAMINI değiştir)
+window.addEventListener('mouseup', () => {
+  if (!drag) return;
+  const rect = track.getBoundingClientRect();
+  const leftPx = Math.min(drag.startX, drag.lastX);
+  const rightPx = Math.max(drag.startX, drag.lastX);
+  drag = null;
 
-    // çok küçük seçim iptali
-    if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
+  // çok küçük seçimse iptal
+  if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
 
-    // Piksel → km (dataset öncelikli)
-    const ds = Number(container.dataset?.totalKm);
-    const totalKmToUse = (Number.isFinite(ds) && ds > 0) ? ds : totalKm;
-    const startKm = (leftPx / rect.width) * totalKmToUse;
-    const endKm   = (rightPx / rect.width) * totalKmToUse;
+  // Piksel → km (dataset öncelikli)
+  const dsTotal = Number(container.dataset?.totalKm);
+  const totalKmToUse = (Number.isFinite(dsTotal) && dsTotal > 0) ? dsTotal : totalKm;
+  const startKm = (leftPx / rect.width) * totalKmToUse;
+  const endKm   = (rightPx / rect.width) * totalKmToUse;
 
-    // Segmenti detaylı çiz + haritada vurgula (Komoot benzeri)
-    const m = container.id.match(/day(\d+)/);
-    const dnum = m ? parseInt(m[1], 10) : null;
-    if (dnum) {
-      fetchAndRenderSegmentElevation(container, dnum, startKm, endKm);
-      highlightSegmentOnMap(dnum, startKm, endKm);
-    }
-  });
+  // GÜVENLİ gün çıkarımı (RegExp.$1 YOK!)
+  const m = container.id.match(/day(\d+)/);
+  const dayNum = m ? parseInt(m[1], 10) : null;
+
+  if (dayNum) {
+    fetchAndRenderSegmentElevation(container, dayNum, startKm, endKm);
+    highlightSegmentOnMap(dayNum, startKm, endKm);
+  }
+});
 
   // Boyut/kenarlıklar
   let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
@@ -9157,7 +9159,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   // KM -> metre ve clamp
   const segStartM = Math.max(0, Math.min(totalM, startKm*1000));
   const segEndM   = Math.max(0, Math.min(totalM, endKm*1000));
-  if (segEndM - segStartM < 250) return; // 250 m altını detaylandırma
+if (segEndM - segStartM < 50) return; // 250 m altını detaylandırma
 
   // Segment uzunluğuna göre sample yoğunluğu (örn. 14 sample/km, 200 üst sınır)
   const segKm = (segEndM - segStartM)/1000;
