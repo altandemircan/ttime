@@ -2378,7 +2378,12 @@ ease;
 
 
 
-
+.add-new-day-separator {
+    border: none;
+    height: 1px;
+    background: #e2e8f0;
+    margin: 30px 0 10px 0;
+}
 
 
 
