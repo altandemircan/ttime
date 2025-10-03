@@ -3555,54 +3555,56 @@ function updateCart() {
     dayList.className = "day-list";
     dayList.dataset.day = day;
 
-    // 2.a Boş gün görünümü
+  // 2.a Boş gün görünümü (YENİ TASARIM)
 if (isEmptyDay) {
-  let hasStarter = window.cart.some(it => it.day === day && it._starter);
   const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
-
-  // 1) Eğer sadece starter kalmış ve planlama artık aktif değilse starter'ı temizle
-  if (hasStarter && !planningThisDay) {
-    window.cart = window.cart.filter(it => !(it.day === day && it._starter));
-    hasStarter = false; // artık yok
-  }
 
   const emptyWrap = document.createElement("div");
   emptyWrap.className = "empty-day-block";
 
-  const msg = document.createElement("p");
-  msg.className = "empty-day-message";
-  msg.textContent = "No item has been added for this day yet.";
-  emptyWrap.appendChild(msg);
+  // Mesaj
+  emptyWrap.innerHTML = `
+    <p class="empty-day-message">No item has been added for this day yet.</p>
+    <div class="empty-day-actions" style="display:block;text-align:center;">
+      <button type="button"
+              class="import-btn gps-import"
+              data-import-type="multi"
+              data-global="1"
+              title="Supports GPX, TCX, FIT, KML">
+        Import GPS File
+      </button>
+      <div style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
+      <button type="button"
+              class="start-map-btn"
+              data-day="${day}">
+        Start with map
+      </button>
+    </div>
+  `;
 
-  const actions = document.createElement("div");
-  actions.className = "empty-day-actions";
-  actions.style.display = "flex";
-  actions.style.gap = "8px";
-  actions.style.flexWrap = "wrap";
-
-  const importBtn = document.createElement("button");
-  importBtn.type = "button";
-  importBtn.className = "import-btn gps-import";
+  // Eğer gerçekten her günün kendi gününe import edilsin istersen
+  // (üstteki data-global="1" satırını kaldırıp aşağıdaki satırı aktif et):
+  /*
+  const importBtn = emptyWrap.querySelector('.gps-import');
+  importBtn.removeAttribute('data-global');
   importBtn.dataset.day = day;
-  importBtn.setAttribute("data-import-type", "multi");
-  importBtn.title = "Supports GPX, TCX, FIT, KML";
-  importBtn.textContent = "Import GPS File";
-  actions.appendChild(importBtn);
+  */
 
-  // 2) Artık hasStarter'a bakmıyoruz. Gün boşsa ve şu an o gün planlama aktif değilse butonu göster
+  // Start map tıklamasını garanti altına al (delegation zaten varsa bu şart değil ama direkt bağlayalım)
   if (!planningThisDay) {
-    const startMapBtn = document.createElement("button");
-    startMapBtn.type = "button";
-    startMapBtn.className = "start-map-btn";
-    startMapBtn.dataset.day = day;
-    startMapBtn.textContent = "Start with map";
-    startMapBtn.addEventListener("click", () => startMapPlanningForDay(day));
-    actions.appendChild(startMapBtn);
+    const startBtn = emptyWrap.querySelector('.start-map-btn');
+    startBtn.addEventListener('click', () => startMapPlanningForDay(day));
+  } else {
+    // Planlama zaten bu gündeyse start-map-btn’ı devre dışı bırak
+    const startBtn = emptyWrap.querySelector('.start-map-btn');
+    if (startBtn) startBtn.disabled = true;
   }
 
-  emptyWrap.appendChild(actions);
   dayList.appendChild(emptyWrap);
 }
+
+
+
     // 2.b Dolu gün item’ları
     else {
       dayItemsArr.forEach((item, idx) => {
