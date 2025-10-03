@@ -2003,7 +2003,38 @@ function addToCart(
   };
 
   window.cart.push(newItem);
+// --- İlk gerçek nokta sonrası auto-expand (planlama aktifse) ---
+try {
+  if (!newItem._starter && newItem.location) {
+    const day = newItem.day;
+    const realPoints = window.cart.filter(it =>
+      it.day === day &&
+      it.location &&
+      !it._starter &&
+      !it._placeholder
+    ).length;
 
+    if (realPoints === 1 && window.mapPlanningActive && window.mapPlanningDay === day) {
+      // İlk gerçek nokta → küçük harita yeni oluştu, biraz bekleyip expand et
+      setTimeout(() => {
+        const cid = `route-map-day${day}`;
+        if (window.expandedMaps && window.expandedMaps[cid]) return;
+
+        // Travel mode set oluşturulmamış olabilir:
+        if (typeof renderTravelModeControlsForAllDays === 'function') {
+          renderTravelModeControlsForAllDays();
+        }
+
+        let expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
+        if (expandBtn) {
+          expandBtn.click();
+        } else if (typeof expandMap === 'function') {
+          expandMap(cid, day);
+        }
+      }, 350);
+    }
+  }
+} catch(_) {}
   // ---- 8) UI güncellemesi
   // silent = true ise hiçbir şey yapma (batch import için)
   if (!silent) {
@@ -3239,19 +3270,36 @@ function startMapPlanningForDay(day) {
     attachMapClickAddMode(day);
   }, 80);
 
-  // MAP butonunu otomatik tetikle (expand) – travel mode set render edilsin diye biraz daha geç
-  setTimeout(() => {
-    const cid = `route-map-day${day}`;
-    // Zaten expanded ise tekrar etme
-    if (window.expandedMaps && window.expandedMaps[cid]) return;
+  // --- AUTO EXPAND: Sadece gerçek (konumlu) ≥1 item varsa ---
+setTimeout(() => {
+  // Günün konumlu gerçek item sayısı:
+  const realPointCount = window.cart.filter(it =>
+    it.day === day &&
+    it.location &&
+    typeof it.location.lat === 'number' &&
+    typeof it.location.lng === 'number' &&
+    !it._starter &&
+    !it._placeholder
+  ).length;
 
-    const expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
-    if (expandBtn) {
-      expandBtn.click(); // Gerçek buton tetikleme
-    } else if (typeof expandMap === 'function') {
-      expandMap(cid, day); // Fallback
-    }
-  }, 200);
+  if (realPointCount === 0) return; // 0 nokta → şimdilik expand yok
+
+  const cid = `route-map-day${day}`;
+  if (window.expandedMaps && window.expandedMaps[cid]) return;
+
+  // Travel mode set henüz üretildi mi?
+  let expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
+  if (!expandBtn && typeof renderTravelModeControlsForAllDays === 'function') {
+    renderTravelModeControlsForAllDays();
+    expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
+  }
+
+  if (expandBtn) {
+    expandBtn.click();
+  } else if (typeof expandMap === 'function') {
+    expandMap(cid, day); // fallback
+  }
+}, 280);
 }
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
@@ -4821,13 +4869,17 @@ async function expandMap(containerId, day) {
     console.log('map:', map); // DEBUG
     console.log('expandButton:', expandButton); // DEBUG
     
-    if (!originalContainer || !map || !expandButton) {
-        console.error('Missing elements:', { originalContainer, map, expandButton }); // DEBUG
-        return;
-    }
+    if (!originalContainer || !map) {
+  console.error('Missing elements:', { originalContainer, map, expandButton });
+  return;
+}
+if (!expandButton) {
+  // LOG: buton henüz yok; yolumuza devam edelim
+  console.warn('Expand button not found, proceeding without hiding it.');
+}
 
     window._lastNearbyDay = day;
-    expandButton.style.visibility = 'hidden';
+if (expandButton) expandButton.style.visibility = 'hidden';
 
     const expandedMapId = `expanded-map-${day}`;
     const expandedContainer = document.createElement('div');
