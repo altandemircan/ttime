@@ -3260,46 +3260,38 @@ function startMapPlanningForDay(day) {
   window.mapPlanningActive = true;
 
   updateCart();
-  ensureDayMapContainer(day);
-  initEmptyDayMap(day);
 
-  // Harita instance hazır olunca click add modunu bağla
-  setTimeout(() => {
-    const cid = `route-map-day${day}`;
-    if (!window.leafletMaps[cid]) initEmptyDayMap(day);
-    attachMapClickAddMode(day);
-  }, 80);
+// Bu gün için boş da olsa haritayı zorla göster
+window.__forceEmptyMapForDay = window.__forceEmptyMapForDay || {};
+window.__forceEmptyMapForDay[day] = true;
 
-  // --- AUTO EXPAND: Sadece gerçek (konumlu) ≥1 item varsa ---
+ensureDayMapContainer(day);
+initEmptyDayMap(day);
+
+// Click‑add modu
 setTimeout(() => {
-  // Günün konumlu gerçek item sayısı:
-  const realPointCount = window.cart.filter(it =>
-    it.day === day &&
-    it.location &&
-    typeof it.location.lat === 'number' &&
-    typeof it.location.lng === 'number' &&
-    !it._starter &&
-    !it._placeholder
-  ).length;
+  const cid = `route-map-day${day}`;
+  if (!window.leafletMaps[cid]) initEmptyDayMap(day);
+  attachMapClickAddMode(day);
+}, 80);
 
-  if (realPointCount === 0) return; // 0 nokta → şimdilik expand yok
-
+// 0 nokta olsa da expand et
+setTimeout(() => {
   const cid = `route-map-day${day}`;
   if (window.expandedMaps && window.expandedMaps[cid]) return;
 
-  // Travel mode set henüz üretildi mi?
-  let expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
-  if (!expandBtn && typeof renderTravelModeControlsForAllDays === 'function') {
+  // Travel mode set yoksa üret
+  if (typeof renderTravelModeControlsForAllDays === 'function') {
     renderTravelModeControlsForAllDays();
-    expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
   }
 
+  let expandBtn = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
   if (expandBtn) {
     expandBtn.click();
   } else if (typeof expandMap === 'function') {
-    expandMap(cid, day); // fallback
+    expandMap(cid, day);
   }
-}, 280);
+}, 200);
 }
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
