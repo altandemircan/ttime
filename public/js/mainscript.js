@@ -9080,12 +9080,15 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   const coords = gj?.features?.[0]?.geometry?.coordinates;
   if (!coords || coords.length < 2) return;
 
+  // Haversine
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(a));
   }
+
+  // Kümülatif mesafe (metre)
   const cum = [0];
   for (let i = 1; i < coords.length; i++) {
     const [lon1, lat1] = coords[i - 1], [lon2, lat2] = coords[i];
@@ -9093,14 +9096,16 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   }
   const totalM = cum[cum.length - 1] || 1;
 
+  // Seçimi sınırla
   const segStartM = Math.max(0, Math.min(totalM, startKm * 1000));
   const segEndM   = Math.max(0, Math.min(totalM, endKm * 1000));
-  if (segEndM - segStartM < 100) return; // çok küçükleri atla (istersen 50 m yap)
+  if (segEndM - segStartM < 100) return; // çok kısa seçimleri atla
 
+  // Örnekleme sayısı (segment uzunluğuna göre)
   const segKm = (segEndM - segStartM) / 1000;
   const N = Math.min(200, Math.max(60, Math.round(segKm * 14)));
 
-  // Segment örnekleri
+  // Segment içinde eşit aralıklı örnekler
   const samples = [];
   for (let i = 0; i < N; i++) {
     const target = segStartM + (i / (N - 1)) * (segEndM - segStartM);
@@ -9118,17 +9123,18 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
     }
   }
 
-  // Loader
+  // Yükleniyor
   window.showScaleBarLoading?.(container, `Loading segment ${startKm.toFixed(1)}–${endKm.toFixed(1)} km…`);
 
-  // Elevation al
+  // Yükseklik verisi al
   const routeKey = `seg:${coords.length}|${samples[0].lat.toFixed(4)},${samples[0].lng.toFixed(4)}|${samples[samples.length - 1].lat.toFixed(4)},${samples[samples.length - 1].lng.toFixed(4)}|${N}`;
   try {
     const elev = await window.getElevationsForRoute(samples, container, routeKey);
-    if (!elev || elev.length !== N) { window.hideScaleBarLoading?.(container); return; }
+    if (!elev || elev.length !== N || elev.some(Number.isNaN)) return;
 
     const smooth = movingAverage(elev, 3);
-    // AKTİF DOMAIN'i segmente geçir
+
+    // Aktif domaini SEGMENT’e geçir (info bar’ın görünmesi için şart)
     container._elevSamples = samples;
     container._elevStartKm = startKm;
     container._elevKmSpan  = (endKm - startKm);
@@ -9138,18 +9144,15 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
       max: Math.max(...smooth)
     };
 
-    // Segment profilini çiz ve toolbar'ı göster (mevcut yardımcıyı kullanıyoruz)
-    if (typeof drawSegmentProfile === 'function') {
-      drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
-    }
+    // Segment profilini çiz + toolbar’ı göster
+    drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
 
-    // Ascent/Descent rozetlerini güncelle
+    // (İsteğe bağlı) küçük özet rozetlerini güncelle
     if (typeof updateRouteAscentDescentUI === 'function') {
       let up = 0, down = 0;
       for (let i = 1; i < smooth.length; i++) {
         const d = smooth[i] - smooth[i - 1];
-        if (d > 1.5) up += d;
-        else if (d < -1.5) down += -d;
+        if (d > 1.5) up += d; else if (d < -1.5) down += -d;
       }
       updateRouteAscentDescentUI(day, up, down);
     }
@@ -9819,77 +9822,102 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const track = container.querySelector('.scale-bar-track');
   if (!track) return;
 
-  const svg = track.querySelector('svg.tt-elev-svg');
-  if (!svg) return;
-  const vb = (svg.getAttribute('viewBox') || '0 0 400 220').split(/\s+/).map(Number);
-  const width = vb[2] || 400;
-  const height = vb[3] || 220;
+  // Konteyneri görünür ve yeterli yükseklikte tut
+  track.style.position = track.style.position || 'relative';
+  if (!track.style.minHeight) track.style.minHeight = '160px';
 
+  // SVG’yi bul veya oluştur
+  let svg = track.querySelector('svg.tt-elev-svg');
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const widthNow = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
+  const heightNow = 220;
+
+  if (!svg) {
+    svg = document.createElementNS(svgNS, 'svg');
+    svg.className = 'tt-elev-svg';
+    svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', String(heightNow));
+    track.appendChild(svg);
+  } else {
+    // ViewBox’ı güncelle
+    svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
+  }
+
+  // Katmanları bul/oluştur
   let gridG = svg.querySelector('g.tt-elev-grid');
-  let areaPath = svg.querySelector('path.tt-elev-area');
-  let segG = svg.querySelector('g.tt-elev-segments');
-  if (!gridG) { gridG = document.createElementNS('http://www.w3.org/2000/svg', 'g'); gridG.setAttribute('class','tt-elev-grid'); svg.appendChild(gridG); }
-  if (!areaPath) { areaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path'); areaPath.setAttribute('class','tt-elev-area'); svg.appendChild(areaPath); }
-  if (!segG) { segG = document.createElementNS('http://www.w3.org/2000/svg', 'g'); segG.setAttribute('class','tt-elev-segments'); svg.appendChild(segG); }
+  if (!gridG) { gridG = document.createElementNS(svgNS, 'g'); gridG.setAttribute('class','tt-elev-grid'); svg.appendChild(gridG); }
 
+  let areaPath = svg.querySelector('path.tt-elev-area');
+  if (!areaPath) { areaPath = document.createElementNS(svgNS, 'path'); areaPath.setAttribute('class','tt-elev-area'); svg.appendChild(areaPath); }
+
+  let segG = svg.querySelector('g.tt-elev-segments');
+  if (!segG) { segG = document.createElementNS(svgNS, 'g'); segG.setAttribute('class','tt-elev-segments'); svg.appendChild(segG); }
+
+  // Temizle
   while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
   while (segG.firstChild) segG.removeChild(segG.firstChild);
 
+  // Görsel aralık
   const min = Math.min(...elevSmooth);
   const max = Math.max(...elevSmooth, min + 1);
-  const vizSpan = max - min;
-  const vizMin = min - vizSpan * 0.5;
-  const vizMax = max + vizSpan * 1.0;
+  const span = max - min;
+  const vizMin = min - span * 0.5;
+  const vizMax = max + span * 1.0;
 
   const segKm = Math.max(0.001, endKm - startKm);
-  const X = (km) => (km / segKm) * width;
-  const Y = (e) => (isNaN(e) || vizMax === vizMin) ? (height/2) : ((height - 1) - ((e - vizMin) / (vizMax - vizMin)) * (height - 2));
+  const X = (km) => (km / segKm) * widthNow;
+  const Y = (e) => (isNaN(e) || vizMax === vizMin) ? (heightNow/2) : ((heightNow - 1) - ((e - vizMin) / (vizMax - vizMin)) * (heightNow - 2));
 
-  const levels = 4;
-  for (let i = 0; i <= levels; i++) {
-    const ev = vizMin + (i / levels) * (vizMax - vizMin);
+  // Grid (4 çizgi)
+  for (let i = 0; i <= 4; i++) {
+    const ev = vizMin + (i / 4) * (vizMax - vizMin);
     const y = Y(ev);
-    const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+    const ln = document.createElementNS(svgNS, 'line');
+    ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(widthNow));
     ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-    ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray','4 4'); ln.setAttribute('opacity','.8');
+    ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
-    const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+    const tx = document.createElementNS(svgNS, 'text');
     tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size','11');
+    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
     tx.textContent = `${Math.round(ev)} m`;
     gridG.appendChild(tx);
   }
 
+  // Alan
   let topD = '';
   for (let i = 0; i < elevSmooth.length; i++) {
     const kmRel = (samples[i].distM / 1000) - startKm;
-    const x = Math.max(0, Math.min(width, X(kmRel)));
+    const x = Math.max(0, Math.min(widthNow, X(kmRel)));
     const y = Y(elevSmooth[i]);
     topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
   }
   if (topD) {
-    const areaD = `${topD} L ${width} ${height} L 0 ${height} Z`;
+    const areaD = `${topD} L ${widthNow} ${heightNow} L 0 ${heightNow} Z`;
     areaPath.setAttribute('d', areaD);
     areaPath.setAttribute('fill', '#263445');
   }
 
+  // Eğim renkli segmentler
   for (let i = 1; i < elevSmooth.length; i++) {
     const kmRel1 = (samples[i-1].distM / 1000) - startKm;
     const kmRel2 = (samples[i].distM / 1000) - startKm;
-    const x1 = Math.max(0, Math.min(width, X(kmRel1)));
+    const x1 = Math.max(0, Math.min(widthNow, X(kmRel1)));
     const y1 = Y(elevSmooth[i-1]);
-    const x2 = Math.max(0, Math.min(width, X(kmRel2)));
+    const x2 = Math.max(0, Math.min(widthNow, X(kmRel2)));
     const y2 = Y(elevSmooth[i]);
 
     const dx = samples[i].distM - samples[i-1].distM;
     const dy = elevSmooth[i] - elevSmooth[i-1];
     let slope = 0, color = '#72c100';
     if (i > 1 && dx > 50) {
-      slope = (dy / dx) * 100;
+      slope = (dy / dx) * 100;          // % eğim
       color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
     }
-    const seg = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const seg = document.createElementNS(svgNS, 'line');
     seg.setAttribute('x1', String(x1));
     seg.setAttribute('y1', String(y1));
     seg.setAttribute('x2', String(x2));
@@ -9901,14 +9929,23 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     segG.appendChild(seg);
   }
 
-  // Toolbar
+  // Toolbar (her durumda oluştur)
   let tb = track.querySelector('.elev-segment-toolbar');
   if (!tb) {
     tb = document.createElement('div');
     tb.className = 'elev-segment-toolbar';
+    tb.style.cssText = `
+      position:absolute;top:6px;left:8px;z-index:1005;
+      display:inline-flex;gap:10px;align-items:center;
+      background:rgba(255,255,255,0.97);
+      border:1px solid #e0e0e0;border-radius:10px;
+      padding:6px 10px;font-size:12px;color:#333;
+      box-shadow:0 4px 10px rgba(0,0,0,0.06);
+    `;
     track.appendChild(tb);
   }
 
+  // Değerler
   let up = 0, down = 0;
   for (let i = 1; i < elevSmooth.length; i++) {
     const d = elevSmooth[i] - elevSmooth[i-1];
@@ -9919,13 +9956,14 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const avgGrade = distKm > 0 ? ((elevSmooth[elevSmooth.length - 1] - elevSmooth[0]) / (distKm * 1000)) * 100 : 0;
 
   tb.innerHTML = `
-    <span class="pill">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
-    <span class="pill">↑ ${Math.round(up)} m</span>
-    <span class="pill">↓ ${Math.round(down)} m</span>
-    <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset">Reset</button>
+    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
+    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">↑ ${Math.round(up)} m</span>
+    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">↓ ${Math.round(down)} m</span>
+    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">Avg %${avgGrade.toFixed(1)}</span>
+    <button type="button" class="elev-segment-reset" style="appearance:none;border:1px solid #d0d7de;background:#fff;color:#333;border-radius:8px;padding:4px 8px;cursor:pointer;font-weight:600;">Reset</button>
   `;
 
+  // Reset -> tam profile dön
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
     const fullKm = Number(container.dataset.totalKm) || 0;
     const m = container.id.match(/day(\d+)/);
@@ -9934,6 +9972,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       ? getRouteMarkerPositionsOrdered(dnum) : [];
     tb.remove();
     renderRouteScaleBar(container, fullKm, markers);
-    highlightSegmentOnMap(dnum); // temizle
+    highlightSegmentOnMap(dnum); // vurguyu temizle
   });
 }
