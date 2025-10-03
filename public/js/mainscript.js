@@ -27,11 +27,12 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function getSlopeColor(slope) {
-  if (slope < 2) return "#72c100";
-  if (slope < 5) return "#ffd700";
-  if (slope < 8) return "#ff8c00";
-  if (slope < 12) return "#d32f2f";
-  return "#8e24aa";
+  // Daha pastel tonlar
+  if (slope < 2)  return "#A7D98C"; // soft green
+  if (slope < 6)  return "#F4D06F"; // pastel mustard
+  if (slope < 10)  return "#F2A65A"; // warm pastel orange
+  if (slope < 15) return "#E57373"; // soft red
+  return "#B39DDB";                 // soft purple
 }
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoiYWx0YW5kZW1pcmNhbiIsImEiOiJjbWRpaHFkZGIwZXd3Mm1yYjE2bWh3eHp5In0.hB1IaB766Iug4J26lt5itw";
