@@ -3600,23 +3600,30 @@ function updateCart() {
 
     dayContainer.appendChild(dayList);
 
-    // --- MAP LOGIC (final) ---
-    // Bu günde konumlu gerçek nokta sayısı
-    const realPointCount = dayItemsArr.filter(it =>
-      it.location &&
-      typeof it.location.lat === 'number' &&
-      typeof it.location.lng === 'number'
-    ).length;
+    // --- MAP LOGIC (final + force empty map desteği) ---
+const realPointCount = dayItemsArr.filter(it =>
+  it.location &&
+  typeof it.location.lat === 'number' &&
+  typeof it.location.lng === 'number'
+).length;
 
-    if (realPointCount === 0) {
-      // Küçük haritayı tamamen kaldır
-      removeDayMapCompletely(day);
-    } else {
-      // 1+ nokta → küçük harita göster
-      ensureDayMapContainer(day);
-      if (realPointCount === 1) {
-        initEmptyDayMap(day);
-      }
+const forceEmpty = window.__forceEmptyMapForDay && window.__forceEmptyMapForDay[day];
+
+if (realPointCount === 0) {
+  if (forceEmpty) {
+    // Planlama modunda ya da kullanıcı “Start with map” dedi → boş haritayı göster
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+  } else {
+    removeDayMapCompletely(day);
+  }
+} else {
+  ensureDayMapContainer(day);
+  if (realPointCount === 1) initEmptyDayMap(day);
+  // Gerçek noktalar geldiyse artık “force empty” işaretini temizle
+  if (forceEmpty) {
+    delete window.__forceEmptyMapForDay[day];
+  }
     }
 
     // Gün container'ı sepete ekle
