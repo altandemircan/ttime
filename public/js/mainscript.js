@@ -7217,35 +7217,44 @@ function setupSidebarAccordion() {
         e.target.classList.contains('remove-action-button') ||
         e.target.classList.contains('reset-action-button') ||
         e.target.closest('.action-buttons-container')
-      ) {
-        return;
-      }
+      ) return;
+
       const dayContainer = header.closest('.day-container');
       if (!dayContainer) return;
 
       const day = dayContainer.dataset.day || dayContainer.id.replace('day-container-', '');
 
-      // route-controls-bar da dahil: daraltıldığında tamamen gizle
-      [
-        '.day-list',
-        '.route-map',
-        '.route-info',
-        `#route-controls-bar-day${day}`,              // YENİ: tüm bar (mod + özet)
-        `#map-bottom-controls-wrapper-day${day}`      // var olan alt özet wrapper
-      ].forEach(sel => {
-        // HATA DÜZELTME: ID için dinamik selector kullan
-        const el = sel.startsWith('#') ? document.querySelector(sel) : dayContainer.querySelector(sel);
-        if (el) el.classList.toggle('collapsed');
+      // Yardımcı: hem class toggle et, hem inline display yönet
+      const toggleHide = (el) => {
+        if (!el) return;
+        el.classList.toggle('collapsed');
+        el.style.display = el.classList.contains('collapsed') ? 'none' : '';
+      };
+
+      // Gün içindeki ana bloklar (mevcut davranış)
+      ['.day-list', '.route-map', '.route-info'].forEach(sel => {
+        const el = dayContainer.querySelector(sel);
+        if (el) el.classList.toggle('collapsed'); // bunlarda mevcut CSS zaten çalışıyorsa kalsın
       });
 
-      // .add-more-btn kardeşini de gizle/göster
-      let next = dayContainer.nextElementSibling;
+      // Route controls bar kesin gizlensin/gösterilsin (inline ile)
+      const bar = document.getElementById(`route-controls-bar-day${day}`);
+      if (bar) {
+        toggleHide(bar);
+      } else {
+        // Bar yoksa fallback: alt özet wrapper + travel mode set’i ayrı ayrı kontrol et
+        toggleHide(document.getElementById(`map-bottom-controls-wrapper-day${day}`));
+        toggleHide(document.getElementById(`tt-travel-mode-set-day${day}`));
+      }
+
+      // + Add Category butonu (gün container’ının hemen ardından)
+      const next = dayContainer.nextElementSibling;
       if (next && next.classList.contains('add-more-btn')) {
         next.classList.toggle('collapsed');
       }
     };
   });
-}
+}   
 
 /* 4) Sync vertical guide line with scale-bar hover on expanded map
       — patch setupScaleBarInteraction to also show the map line */
