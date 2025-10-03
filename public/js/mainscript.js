@@ -3255,16 +3255,15 @@ ensureDayMapContainer(day);
     expandMap(cid, day); // Fallback
   }
 }
-// --- PATCH: startMapPlanningForDay (yalnızca alt kısmı değişti) ---
 function startMapPlanningForDay(day) {
   day = Number(day) || 1;
   if (!Array.isArray(window.cart)) window.cart = [];
 
-  // Mini haritayı ilk gerçek nokta gelene kadar bastır
+  // İlk gerçek noktaya kadar mini haritayı bastır
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[day] = true;
 
-  // Starter ekle (gün listede yoksa)
+  // Starter ekle (gün boşsa)
   if (!window.cart.some(it => it.day === day)) {
     window.cart.push({
       day,
@@ -3295,10 +3294,10 @@ function startMapPlanningForDay(day) {
   window.mapPlanningDay = day;
   window.mapPlanningActive = true;
 
-  // Gün UI yeniden çiz
+  // UI çiz (mini container oluşacak ama görünmeyecek)
   updateCart();
 
-  // Küçük (mini) container’ı gizli oluştur
+  // Sadece container (initEmptyDayMap YOK!)
   ensureDayMapContainer(day);
   const mini = document.getElementById(`route-map-day${day}`);
   if (mini) {
@@ -3306,28 +3305,19 @@ function startMapPlanningForDay(day) {
     mini.dataset.suppressed = '1';
   }
 
-  // Travel mode set (gün için yoksa oluştur)
-  if (!document.getElementById(`tt-travel-mode-set-day${day}`) &&
-      typeof renderTravelModeControlsForAllDays === 'function') {
+  // Travel mode set
+  if (typeof renderTravelModeControlsForAllDays === 'function') {
     renderTravelModeControlsForAllDays();
   }
 
-  // attemptExpandDay(day);  <-- KALDIRILDI
+  // Expanded’ı doğrudan aç
+  attemptExpandDay(day);
 
-  // DOĞRUDAN DOĞRU GÜNÜ AÇ (küçük gecikme: DOM yerleşsin)
+  // Büyük haritada nokta ekleyebilmek için click-add modunu bağla (Leaflet expandedMap içinde)
   setTimeout(() => {
-    // Travel mode set yeniden oluşmadıysa tekrar dene
-    if (!document.getElementById(`tt-travel-mode-set-day${day}`) &&
-        typeof renderTravelModeControlsForAllDays === 'function') {
-      renderTravelModeControlsForAllDays();
-    }
-    expandMap(`route-map-day${day}`, day);
-    // Expanded map tıklama ile nokta ekleme için (küçük harita olmadan)
-    if (typeof attachMapClickAddMode === 'function') {
-      // Eğer mini yoksa expanded haritaya click-add bağlamak için bir sonraki animation frame
-      requestAnimationFrame(() => attachMapClickAddMode(day));
-    }
-  }, 90);
+    // expanded açıldıktan sonra küçük map lazımsa expandMap zaten initEmptyDayMap çağırır
+    attachMapClickAddMode(day);
+  }, 120);
 }
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
