@@ -3139,6 +3139,87 @@ function restoreLostDayMaps() {
     }
   });
 }
+/* ================== START WITH MAP: DIRECT EXPANDED EMPTY MAP PATCH ================== */
+/* İSTENEN: Butondaki gün (data-day="X") için 1. gün haritasını yeniden kullanmak yerine
+            o güne ait tamamen boş (noktasız) BÜYÜK harita açılsın ve planlama o güne başlasın. */
+
+(function initDirectDayExpandedMapPatch(){
+  if (window.__tt_directExpandedPatchApplied) return;
+  window.__tt_directExpandedPatchApplied = true;
+
+  // Güvenli event delegation: Her tıklamada doğru data-day alınır
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.start-map-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const day = Number(btn.dataset.day || '1');
+    if (!Number.isFinite(day) || day < 1) return;
+    startDayMapPlanningAndExpand(day);
+  });
+
+  function startDayMapPlanningAndExpand(day) {
+    console.log('[direct-expand] start map planning day=', day);
+
+    // 1) Daha önce açık expanded map varsa kapat
+    if (window.expandedMaps) {
+      Object.keys(window.expandedMaps).forEach(cid => {
+        const ex = window.expandedMaps[cid];
+        if (ex && typeof restoreMap === 'function') {
+          try { restoreMap(cid, ex.day); } catch(_){}
+        }
+      });
+    }
+
+    // 2) Planlama state
+    window.mapPlanningActive = true;
+    window.mapPlanningDay = day;
+    window.currentDay = day;
+
+    // 3) Mini harita ilk noktaya kadar gizlenmiş / bastırılmış kalsın diye suppression set et
+    window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+    window.__suppressMiniUntilFirstPoint[day] = true;
+
+    // 4) Day zaten cart'a “bare day” olarak eklenmişse ekstra starter ekleme.
+    //    Eğer ilgili day henüz yoksa day container oluşması için boş obje ekle.
+    if (!Array.isArray(window.cart)) window.cart = [];
+    const hasDay = window.cart.some(it => it.day === day);
+    if (!hasDay) {
+      window.cart.push({ day }); // name vs. yok, updateCart yine day container yaratır.
+    }
+
+    // 5) UI güncelle (boş gün butonları yeniden çizilsin — Start with map butonu yine kalabilir)
+    if (typeof updateCart === 'function') {
+      updateCart();
+    }
+
+    // 6) Harita container + boş Leaflet map kur
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+
+    // 7) Expand'ı doğrudan tetikle (küçük haritayı bekletme)
+    const containerId = `route-map-day${day}`;
+    // expandMap bazı durumlarda baseMap bulamazsa 1 tick sonra tekrar denemek için kısa bir bekleme:
+    setTimeout(() => {
+      if (typeof expandMap === 'function') {
+        expandMap(containerId, day);
+      } else {
+        console.warn('[direct-expand] expandMap bulunamadı.');
+      }
+    }, 40);
+
+    // 8) Click ile nokta eklemeyi aktive et
+    setTimeout(() => {
+      try {
+        attachMapClickAddMode(day);
+        console.log('[direct-expand] click-add mode attached for day', day);
+      } catch (err) {
+        console.warn('[direct-expand] attachMapClickAddMode error', err);
+      }
+    }, 140);
+  }
+
+})();
+/* ================== END PATCH ================== */
 function startMapPlanning() {
   window.__forceEmptyMapForDay = window.__forceEmptyMapForDay || {};
   window.__forceEmptyMapForDay[1] = true;
