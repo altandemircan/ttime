@@ -27,14 +27,13 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function getSlopeColor(slope) {
-  // Daha pastel tonlar
-  if (slope < 2)  return "#A7D98C"; // soft green
-  if (slope < 6)  return "#F4D06F"; // pastel mustard
-  if (slope < 10)  return "#F2A65A"; // warm pastel orange
-  if (slope < 15) return "#E57373"; // soft red
-  return "#B39DDB";                 // soft purple
+  // Dengeli (orta doygunluk) tonlar
+  if (slope < 2)  return "#9CCC65"; // medium-soft green
+  if (slope < 6)  return "#E6C15A"; // mellow mustard
+  if (slope < 10) return "#F2994A"; // balanced orange
+  if (slope < 15) return "#EF5350"; // medium soft red
+  return "#9575CD";                 // soft purple
 }
-
 const MAPBOX_TOKEN = "pk.eyJ1IjoiYWx0YW5kZW1pcmNhbiIsImEiOiJjbWRpaHFkZGIwZXd3Mm1yYjE2bWh3eHp5In0.hB1IaB766Iug4J26lt5itw";
 window.MAPBOX_TOKEN = MAPBOX_TOKEN;
 const GEOAPIFY_API_KEY = "d9a0dce87b1b4ef6b49054ce24aeb462";
