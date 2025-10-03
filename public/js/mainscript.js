@@ -3476,47 +3476,47 @@ function updateCart() {
     dayList.dataset.day = day;
 
     // 2.a Boş gün görünümü
-    if (isEmptyDay) {
-      const hasStarter = window.cart.some(it => it.day === day && it._starter);
-      const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
+if (isEmptyDay) {
+  const hasStarter = window.cart.some(it => it.day === day && it._starter);
+  const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day; // artık sadece bilgi, koşulda kullanmıyoruz
 
-      const emptyWrap = document.createElement("div");
-      emptyWrap.className = "empty-day-block";
+  const emptyWrap = document.createElement("div");
+  emptyWrap.className = "empty-day-block";
 
-      const msg = document.createElement("p");
-      msg.className = "empty-day-message";
-      msg.textContent = "No item has been added for this day yet.";
-      emptyWrap.appendChild(msg);
+  const msg = document.createElement("p");
+  msg.className = "empty-day-message";
+  msg.textContent = "No item has been added for this day yet.";
+  emptyWrap.appendChild(msg);
 
-      const actions = document.createElement("div");
-      actions.className = "empty-day-actions";
-      actions.style.display = "flex";
-      actions.style.gap = "8px";
-      actions.style.flexWrap = "wrap";
+  const actions = document.createElement("div");
+  actions.className = "empty-day-actions";
+  actions.style.display = "flex";
+  actions.style.gap = "8px";
+  actions.style.flexWrap = "wrap";
 
-      const importBtn = document.createElement("button");
-      importBtn.type = "button";
-      importBtn.className = "import-btn gps-import";
-      importBtn.dataset.day = day;
-      importBtn.setAttribute("data-import-type", "multi");
-      importBtn.title = "Supports GPX, TCX, FIT, KML";
-      importBtn.textContent = "Import GPS File";
-      actions.appendChild(importBtn);
+  const importBtn = document.createElement("button");
+  importBtn.type = "button";
+  importBtn.className = "import-btn gps-import";
+  importBtn.dataset.day = day;
+  importBtn.setAttribute("data-import-type", "multi");
+  importBtn.title = "Supports GPX, TCX, FIT, KML";
+  importBtn.textContent = "Import GPS File";
+  actions.appendChild(importBtn);
 
-      // Start with map butonunu sadece planlama başlamadıysa göster
-      if (!hasStarter && !planningThisDay) {
-        const startMapBtn = document.createElement("button");
-        startMapBtn.type = "button";
-        startMapBtn.className = "start-map-btn";
-        startMapBtn.dataset.day = day;
-        startMapBtn.textContent = "Start with map";
-        startMapBtn.addEventListener("click", () => startMapPlanningForDay(day));
-        actions.appendChild(startMapBtn);
-      }
+  // YENİ KOŞUL
+  if (!hasStarter) {
+    const startMapBtn = document.createElement("button");
+    startMapBtn.type = "button";
+    startMapBtn.className = "start-map-btn";
+    startMapBtn.dataset.day = day;
+    startMapBtn.textContent = "Start with map";
+    startMapBtn.addEventListener("click", () => startMapPlanningForDay(day));
+    actions.appendChild(startMapBtn);
+  }
 
-      emptyWrap.appendChild(actions);
-      dayList.appendChild(emptyWrap);
-    }
+  emptyWrap.appendChild(actions);
+  dayList.appendChild(emptyWrap);
+}
     // 2.b Dolu gün item’ları
     else {
       dayItemsArr.forEach((item, idx) => {
