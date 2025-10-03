@@ -3393,6 +3393,13 @@ function attachMapClickAddMode(day) {
   if (map.__tt_clickAddBound[day]) return;
   map.__tt_clickAddBound[day] = true;
 
+if (map.__ttNearbyClickBound) return;
+map.__ttNearbyClickBound = true;
+
+// Tek tık gecikmesi ve timer
+let __nearbySingleTimer = null;
+const __nearbySingleDelay = options.singleDelay || 250;
+
   map.on('click', async (e) => {
     // Planlama modu açık değilse veya başka günse görmezden gel
     if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
@@ -5280,7 +5287,10 @@ function attachClickNearbySearch(map, day, options = {}) {
   if (map.__ttNearbyClickBound) return; // bir kere bağla
   map.__ttNearbyClickBound = true;
 
-  map.on('click', async function(e) {
+ map.on('click', function(e) {
+  if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
+  __nearbySingleTimer = setTimeout(async () => {
+
     const now = Date.now();
     if (now - lastClickTs < debounceMs) return; // çok hızlı iki kez tıklandıysa engelle
     lastClickTs = now;
@@ -5293,7 +5303,14 @@ function attachClickNearbySearch(map, day, options = {}) {
     const lng = e.latlng.lng;
     closeNearbyPopup(); // önceki popup varsa kapat
     showNearbyPlacesPopup(lat, lng, map, day, radius);
-  });
+  }, __nearbySingleDelay);
+});
+ map.on('dblclick', function() {
+  if (__nearbySingleTimer) {
+    clearTimeout(__nearbySingleTimer);
+    __nearbySingleTimer = null;
+  }
+});
 }
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
