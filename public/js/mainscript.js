@@ -2015,14 +2015,20 @@ try {
       !it._starter &&
       !it._placeholder
     ).length;
- 
+
     if (realPoints === 1) {
       if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
         delete window.__suppressMiniUntilFirstPoint[day];
       }
       ensureDayMapContainer(day);
       const mini = document.getElementById(`route-map-day${day}`);
-      if (mini) mini.classList.remove('mini-suppressed');
+      if (mini) {
+        mini.style.display = '';
+        mini.classList.remove('mini-suppressed');
+        mini.removeAttribute('data-suppressed');
+      }
+      // Artık gerçekten başlat (ilk defa)
+      initEmptyDayMap(day);
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 0);
       }
@@ -3036,35 +3042,44 @@ function ensureDayMapContainer(day) {
   const dayContainer = document.getElementById(`day-container-${day}`);
   if (!dayContainer) return null;
 
-  // Harita div'i
+  const suppressionActive =
+    window.__suppressMiniUntilFirstPoint &&
+    window.__suppressMiniUntilFirstPoint[day] === true;
+
   let mapDiv = document.getElementById(`route-map-day${day}`);
   if (!mapDiv) {
     mapDiv = document.createElement('div');
     mapDiv.id = `route-map-day${day}`;
     mapDiv.className = 'route-map';
     mapDiv.style.minHeight = '285px';
-
-    // travel mode set varsa onun üstüne koy
+    if (suppressionActive) {
+      mapDiv.style.display = 'none';
+      mapDiv.dataset.suppressed = '1';
+    }
     const travelModeSet = document.getElementById(`tt-travel-mode-set-day${day}`);
     if (travelModeSet) {
       dayContainer.insertBefore(mapDiv, travelModeSet);
     } else {
       dayContainer.appendChild(mapDiv);
     }
+  } else if (suppressionActive) {
+    mapDiv.style.display = 'none';
+    mapDiv.dataset.suppressed = '1';
   }
 
-  // Rota info div
-  let infoDiv = document.getElementById(`route-info-day${day}`);
-  if (!infoDiv) {
-    infoDiv = document.createElement('div');
-    infoDiv.id = `route-info-day${day}`;
-    infoDiv.className = 'route-info';
-    dayContainer.appendChild(infoDiv);
+  // Info panel suppression yoksa
+  if (!suppressionActive) {
+    let infoDiv = document.getElementById(`route-info-day${day}`);
+    if (!infoDiv) {
+      infoDiv = document.createElement('div');
+      infoDiv.id = `route-info-day${day}`;
+      infoDiv.className = 'route-info';
+      dayContainer.appendChild(infoDiv);
+    }
   }
 
   return mapDiv;
 }
-
 function initEmptyDayMap(day) {
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
@@ -3161,9 +3176,11 @@ function startMapPlanning() {
 
   updateCart();
   ensureDayMapContainer(1);
-  initEmptyDayMap(1);
-  const mini = document.getElementById('route-map-day1');
-  if (mini) mini.style.display = 'none';
+const mini = document.getElementById('route-map-day1');
+if (mini) {
+  mini.style.display = 'none';
+  mini.dataset.suppressed = '1';
+}
 
   if (typeof renderTravelModeControlsForAllDays === 'function') {
     renderTravelModeControlsForAllDays();
@@ -3240,14 +3257,13 @@ function attemptExpandDay(day, tries = 0) {
 }
 function startMapPlanningForDay(day) {
   day = Number(day) || 1;
-
   if (!Array.isArray(window.cart)) window.cart = [];
 
-  // Mini harita ilk gerçek noktaya kadar gizli
+  // İlk gerçek noktaya kadar mini haritayı bastır
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[day] = true;
 
-  // Starter yoksa ekle
+  // Starter ekle (gün boşsa)
   if (!window.cart.some(it => it.day === day)) {
     window.cart.push({
       day,
@@ -3278,29 +3294,30 @@ function startMapPlanningForDay(day) {
   window.mapPlanningDay = day;
   window.mapPlanningActive = true;
 
-  // UI çiz
+  // UI çiz (mini container oluşacak ama görünmeyecek)
   updateCart();
 
-  // Mini haritayı oluştur ama görünmez yap
+  // Sadece container (initEmptyDayMap YOK!)
   ensureDayMapContainer(day);
-  initEmptyDayMap(day);
   const mini = document.getElementById(`route-map-day${day}`);
-  if (mini) mini.classList.add('mini-suppressed');
+  if (mini) {
+    mini.style.display = 'none';
+    mini.dataset.suppressed = '1';
+  }
 
   // Travel mode set
   if (typeof renderTravelModeControlsForAllDays === 'function') {
     renderTravelModeControlsForAllDays();
   }
 
-  // Click‑add modu (expanded içinden de çalışır)
-  setTimeout(() => {
-    const cid = `route-map-day${day}`;
-    if (!window.leafletMaps[cid]) initEmptyDayMap(day);
-    attachMapClickAddMode(day);
-  }, 60);
-
-  // Direkt expanded aç
+  // Expanded’ı doğrudan aç
   attemptExpandDay(day);
+
+  // Büyük haritada nokta ekleyebilmek için click-add modunu bağla (Leaflet expandedMap içinde)
+  setTimeout(() => {
+    // expanded açıldıktan sonra küçük map lazımsa expandMap zaten initEmptyDayMap çağırır
+    attachMapClickAddMode(day);
+  }, 120);
 }
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
@@ -3618,6 +3635,7 @@ if (isEmptyDay) {
     // --- MAP LOGIC (final + force empty map desteği) ---
 // --- MAP LOGIC (mini harita gecikmeli) ---
 // --- MAP LOGIC (mini harita bastırma) ---
+// --- MAP LOGIC (mini suppression) ---
 window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
 const realPointCount = dayItemsArr.filter(it =>
   it.location &&
@@ -3629,21 +3647,31 @@ const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
 
 if (realPointCount === 0) {
   if (suppress) {
-    // Mini konteyner var olsun ama gizli kalsın
+    // Container olsun ama görünmez kalsın
     ensureDayMapContainer(day);
     const mini = document.getElementById(`route-map-day${day}`);
-    if (mini) mini.classList.add('mini-suppressed');
+    if (mini) {
+      mini.style.display = 'none';
+      mini.dataset.suppressed = '1';
+    }
   } else {
     removeDayMapCompletely(day);
   }
 } else {
   ensureDayMapContainer(day);
   const mini = document.getElementById(`route-map-day${day}`);
-  if (mini) mini.classList.remove('mini-suppressed');
-  if (realPointCount === 1) initEmptyDayMap(day);
-  if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
+  if (mini) {
+    mini.style.display = '';
+    mini.removeAttribute('data-suppressed');
+  }
+  if (realPointCount === 1) {
+    // İlk gerçek nokta için küçük haritayı gerçekten başlat
+    initEmptyDayMap(day);
+  }
+  if (suppress) {
+    delete window.__suppressMiniUntilFirstPoint[day];
+  }
 }
-
     // Gün container'ı sepete ekle
     cartDiv.appendChild(dayContainer);
 

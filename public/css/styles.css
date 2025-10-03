@@ -6420,3 +6420,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   font-weight: 600;
 }
 
+
+.route-map.mini-suppressed,
+.route-map[data-suppressed="1"] {
+  display: none !important;
+}
