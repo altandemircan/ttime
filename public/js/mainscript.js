@@ -3248,7 +3248,7 @@ ensureDayMapContainer(day);
     btn.click();
     return;
   }
-
+ 
   if (tries < 6) {
     setTimeout(() => attemptExpandDay(day, tries + 1), 120);
   } else if (typeof expandMap === 'function') {
