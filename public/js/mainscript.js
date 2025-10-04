@@ -3508,6 +3508,7 @@ if (isEmptyDay) {
   const emptyWrap = document.createElement("div");
   emptyWrap.className = "empty-day-block";
 
+  // Mesaj
 emptyWrap.innerHTML = `
     <p class="empty-day-message">No item has been added for this day yet.</p>
     <div class="empty-day-actions" style="display:block;text-align:center;">
