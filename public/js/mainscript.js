@@ -4993,12 +4993,17 @@ expandedContainer.appendChild(locBtn);
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
   // Aynı gün için eski expanded bar varsa kaldır
-  const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (oldBar) oldBar.remove();
-  // Scale bar alanı
+  // ✅ 1) TÜM ESKİ SCALE BAR CONTAINER'LARINI TEMİZLE (body'deki yetimler dahil)
+  document.querySelectorAll(`#expanded-route-scale-bar-day${day}`).forEach(el => {
+    console.warn('[cleanup] Removing old scale bar:', el);
+    el.remove();
+  });
+  
+  // ✅ 2) YENİ SCALE BAR CONTAINER OLUŞTUR
   const scaleBarDiv = document.createElement('div');
   scaleBarDiv.className = 'route-scale-bar';
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
+  scaleBarDiv.dataset.day = String(day); // Gün bilgisini sakla
   expandedContainer.appendChild(scaleBarDiv);
 
   // Harita alanı
@@ -9126,10 +9131,30 @@ if (!track) {
   })();
 }
 async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
+  // ✅ 0) ÖNCELİKLE TÜM YETİM CONTAINER'LARI TEMİZLE
+  const containerId = container.id;
+  document.querySelectorAll(`#${containerId}`).forEach((el, idx) => {
+    if (idx > 0) { // İlki hariç tüm duplikaları sil
+      console.warn('[cleanup] Removing duplicate container:', el);
+      el.remove();
+    }
+  });
+  
+  // Container'ın body'e eklenmemesini garanti et
+  if (container.parentNode === document.body) {
+    console.error('[ERROR] Container is attached to body! This should not happen.');
+    // Doğru yere taşı (expanded map içine)
+    const expandedMap = document.getElementById(`expanded-map-${day}`);
+    if (expandedMap) {
+      expandedMap.appendChild(container);
+    }
+  }
+
   const key = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[key];
   const coords = gj?.features?.[0]?.geometry?.coordinates;
   if (!coords || coords.length < 2) return;
+
 
   // ✅ 1) ÖNCELİKLE ESKİ SEGMENT ARTEFAKTLARINI TEMİZLE
   const existingTrack = container.querySelector('.scale-bar-track');
@@ -9877,8 +9902,31 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
+  // ✅ Container'ın doğru yerde olduğundan emin ol
+  if (!container || !container.id) {
+    console.error('[drawSegmentProfile] Invalid container!');
+    return;
+  }
+  
+  // ✅ Container body'e eklenmişse hata ver
+  if (container.parentNode === document.body) {
+    console.error('[drawSegmentProfile] Container is orphaned (attached to body)!');
+    // Doğru yere taşımayı dene
+    const expandedMap = document.getElementById(`expanded-map-${day}`);
+    if (expandedMap && !expandedMap.contains(container)) {
+      expandedMap.appendChild(container);
+    } else {
+      return; // Taşınamazsa çizme
+    }
+  }
+
   const track = container.querySelector('.scale-bar-track'); 
-  if (!track) return;
+  if (!track) {
+    console.error('[drawSegmentProfile] Track not found in container!');
+    return;
+  }
+
+  // ... geri kalan kod aynı ...
 
   // Track tekil kalsın (aynı konteynerde 2. bir track varsa kaldır)
   container.querySelectorAll('.scale-bar-track').forEach(t => { if (t !== track) t.remove(); });
@@ -10189,3 +10237,50 @@ function resetDayAction(day, confirmationContainerId) {
     setTimeout(purgeOnce, 200);
   } catch(_) {}
 }
+
+// ✅ YETİM SCALE BAR CONTAINER TEMİZLEYİCİ (her 2 saniyede bir çalışır)
+(function initScaleBarCleanup(){
+  function cleanupOrphanScaleBars() {
+    // Body'e direkt bağlı tüm scale-bar-track'leri bul ve sil
+    document.querySelectorAll('body > .scale-bar-track').forEach(track => {
+      console.warn('[cleanup] Removing orphan scale-bar-track from body:', track);
+      track.remove();
+    });
+    
+    // Duplicate ID'li container'ları bul ve sil
+    const seenIds = new Set();
+    document.querySelectorAll('[id^="expanded-route-scale-bar-day"]').forEach(el => {
+      if (seenIds.has(el.id)) {
+        console.warn('[cleanup] Removing duplicate scale bar container:', el.id);
+        el.remove();
+      } else {
+        seenIds.add(el.id);
+      }
+    });
+    
+    // expanded-map-container olmayan yerlerdeki scale bar'ları temizle
+    document.querySelectorAll('.route-scale-bar').forEach(bar => {
+      const parent = bar.closest('.expanded-map-container, .day-container');
+      if (!parent) {
+        console.warn('[cleanup] Removing orphan route-scale-bar:', bar);
+        bar.remove();
+      }
+    });
+  }
+  
+  // İlk temizlik
+  cleanupOrphanScaleBars();
+  
+  // Periyodik temizlik (her 2 saniye)
+  setInterval(cleanupOrphanScaleBars, 2000);
+  
+  // MutationObserver ile anlık temizlik
+  const observer = new MutationObserver(() => {
+    cleanupOrphanScaleBars();
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: false // Sadece body'nin direkt çocukları
+  });
+})();
