@@ -5005,7 +5005,9 @@ expandedContainer.appendChild(locBtn);
   `;
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
-
+  // Aynı gün için eski expanded bar varsa kaldır
+  const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (oldBar) oldBar.remove();
   // Scale bar alanı
   const scaleBarDiv = document.createElement('div');
   scaleBarDiv.className = 'route-scale-bar';
@@ -6809,16 +6811,9 @@ if (!points || points.length === 0) {
   window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
   if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
 
+  // Küçük scale bar DEVRE DIŞI: expanded haritada göstereceğiz
   const scaleBarDiv = document.getElementById(`route-scale-bar-day${day}`);
-  const totalKm = routeData.summary ? routeData.summary.distance / 1000 : 0;
-  const markerPositions = getRouteMarkerPositionsOrdered(day);
-
-  if (scaleBarDiv && totalKm > 0 && markerPositions.length > 0) {
-    try { delete scaleBarDiv._elevProfile; } catch(_){}
-    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-  } else if (scaleBarDiv) {
-    scaleBarDiv.innerHTML = "";
-  }
+  if (scaleBarDiv) scaleBarDiv.innerHTML = "";
 
   if (routeData.summary && typeof updateDistanceDurationUI === 'function') {
     updateDistanceDurationUI(routeData.summary.distance, routeData.summary.duration);
@@ -8417,18 +8412,18 @@ if (typeof wrapRouteControlsForAllDays === 'function') {
   s.id = 'tt-elev-styles';
   s.textContent = `
     /* Scale bar container */
-      .scale-bar-track {
-      position: relative;
-      left: auto;
-      right: auto;
-      bottom: auto;
-      z-index: 1;
-      background: #fff;
-      box-shadow: none;
-      border-radius: 0;
-      min-height: 150px;
-      width: 100%;
-    }
+     .scale-bar-track {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  z-index: 1;
+  background: #fff;
+  box-shadow: none;
+  border-radius: 0;
+  min-height: 150px;
+  width: 100%;
+}
     @supports (height: 100dvh) { .scale-bar-track { bottom: auto; } }
     @media (max-width:768px) { .scale-bar-track { width: 100%; } }
     /* Distance baseline and ticks (top) */
@@ -8638,7 +8633,11 @@ function renderRouteScaleBar(container, totalKm, markers) {
     if (container) container.innerHTML = "";
     return;
   }
-
+  // Sadece expanded (expanded-route-scale-bar-dayX) için çalış; küçük (route-scale-bar-dayX) bar’ı KAPAT
+  if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
+    container.innerHTML = '';
+    return;
+  }
   // Gün ve geojson
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
