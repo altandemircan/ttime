@@ -3530,8 +3530,7 @@ if (isEmptyDay) {
 }
 
 
-
-    // 2.b Dolu gün item’ları
+// 2.b Dolu gün item’ları
 else {
   let prevCoordItem = null;
   for (let idx = 0; idx < dayItemsArr.length; idx++) {
@@ -3606,9 +3605,9 @@ else {
   </div>
 </div>
 `;
-       dayList.appendChild(li);
+    dayList.appendChild(li);
 
-    // Eğer prevCoordItem ve bu item koordinatlıysa araya separator ekle
+    // ---- YENİ: Mesafe/süre separator'u ekle (sadece arka arkaya 2 koordinatlı item arasında)
     if (
       prevCoordItem &&
       prevCoordItem.location && item.location &&
@@ -3617,9 +3616,9 @@ else {
       typeof item.location.lat === "number" &&
       typeof item.location.lng === "number"
     ) {
-      // Mesafe/süre separator ekle
       const key = `route-map-day${day}`;
-      const summary = window.pairwiseRouteSummaries?.[key]?.[globalIndexMap.get(prevCoordItem)];
+      const prevIdx = globalIndexMap.get(prevCoordItem);
+      const summary = window.pairwiseRouteSummaries?.[key]?.[prevIdx];
       let distanceStr = '';
       let durationStr = '';
       if (summary) {
@@ -3642,6 +3641,7 @@ else {
       `;
       dayList.appendChild(distanceSeparator);
     }
+    // ----
 
     // prevCoordItem'ı güncelle
     if (item.location &&
