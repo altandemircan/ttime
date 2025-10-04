@@ -4710,15 +4710,17 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-       z-index: 234234242;
-    display: flex;
+         z-index: 234234242;
+    display: flex
+;
     position: absolute;
-    bottom: 0px;
+    bottom: 0;
     background: rgba(255, 255, 255, 0.95);
     padding: 0px 18px;
     width: calc(100% - 36px);
     font-size: 0.9rem;
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+    height: 200px;
 }
 
 .scale-bar-track { user-select: none; }
@@ -5182,7 +5184,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .expanded-map-header {
     display: flex;
     position: absolute;
-    bottom: 185px;
+    bottom: 200px;
     /* right: 10px; */
     z-index: 123123123;
     background: rgba(255, 255, 255, 0.95);
