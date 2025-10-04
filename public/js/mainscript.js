@@ -8543,7 +8543,8 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
     width: 100%;
     height: 186px;
     pointer-events: none;
-    z-index: 0; }
+    z-index: 0; 
+    background: #ffffff;}
     .tt-elev-grid line { stroke:#d7dde2; stroke-dasharray:4 4; opacity:.8; }
     .tt-elev-grid text { fill:#90a4ae; font-size:11px; }
     .tt-elev-area { fill:#263445; }              /* dark navy fill */
