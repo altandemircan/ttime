@@ -10039,28 +10039,53 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <button type="button" class="elev-segment-reset" style="appearance:none;border:1px solid #d0d7de;background:#fff;color:#333;border-radius:8px;padding:4px 8px;cursor:pointer;font-weight:600;">Reset</button>
   `;
 
-  // Reset -> tam profile dön
+   // Reset -> tam profile dön
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
-    // 1) Segmentle ilgili tüm UI artıklarını temizle
+    // 0) ✅ TÜM CONTAINER İÇİNDEKİ TRACK'LERDƏN SEGMENT ARTEFAKTLARINI SİL
+    container.querySelectorAll('.scale-bar-track').forEach(t => {
+      t.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+      t.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+    });
+    
+    // 1) Toolbar'ı kaldır
     tb.remove();
-    track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
-    container.querySelector('.scale-bar-selection')?.remove();
-
-    // 2) Haritadaki segment vurgusunu kaldır
+    
+    // 2) Gün bilgisini al
+    const m = container.id.match(/day(\d+)/);
+    const dnum = m ? parseInt(m[1], 10) : day;
+    
+    // 3) Segment vurgusunu temizle
     if (typeof highlightSegmentOnMap === 'function') {
-      highlightSegmentOnMap(day, null, null); // Argümanları null geçerek temizleme
+      highlightSegmentOnMap(dnum);
     }
     
-    // 3) Orijinal tam rota profilini ve ölçeğini yeniden çizdir
-    const totalKm = parseFloat(container.dataset.totalKm) || 0;
-    const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+    // 4) Selection overlay'i gizle
+    const selDiv = container.querySelector('.scale-bar-selection');
+    if (selDiv) selDiv.style.display = 'none';
     
-    // renderRouteScaleBar'ı doğrudan çağırarak tam profili geri yükle
-    if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
-      renderRouteScaleBar(container, totalKm, markers);
+    // 5) Container domain'ini TAM PROFILE çevir
+    const fullKm = Number(container.dataset.totalKm) || 0;
+    container._elevStartKm = 0;
+    container._elevKmSpan  = fullKm;
+    
+    // 6) Tam profil örneklerini geri yükle
+    if (container._elevFullSamples) {
+      container._elevSamples = container._elevFullSamples;
+    }
+    
+    // 7) Elevation verisini kullanarak yeniden çiz
+    if (container._elevationData && typeof container._redrawElevation === 'function') {
+      container._redrawElevation(container._elevationData);
+    } else {
+      // Fallback: tüm scale bar'ı sıfırdan çiz
+      const markers = (typeof getRouteMarkerPositionsOrdered === 'function' && dnum)
+        ? getRouteMarkerPositionsOrdered(dnum) : [];
+      renderRouteScaleBar(container, fullKm, markers);
     }
   });
 }
+
+
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
   const cid = `route-map-day${d}`;
@@ -10184,3 +10209,4 @@ function resetDayAction(day, confirmationContainerId) {
     setTimeout(purgeOnce, 200);
   } catch(_) {}
 }
+
