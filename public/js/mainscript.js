@@ -3410,26 +3410,32 @@ function updateCart() {
   // 0) Tamamen boş global durum
   if (!window.cart || window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
-    cartDiv.innerHTML = `
+   cartDiv.innerHTML = `
       <div id="empty-content">
         <p>Create your trip using the chat screen.</p>
         <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
           Import GPS File
         </button>
-        <div style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
+        <div id="empty-or-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
         <button id="start-map-btn" type="button">Start with map</button>
       </div>
     `;
-    if (menuCount) {
-      menuCount.textContent = 0;
-      menuCount.style.display = "none";
-    }
-    const newChatBtn = document.getElementById("newchat");
-    if (newChatBtn) newChatBtn.style.display = "none";
-    const btn = document.getElementById('start-map-btn');
-    if (btn) btn.addEventListener('click', startMapPlanning);
-    return;
-  }
+if (menuCount) {
+  menuCount.textContent = 0;
+  menuCount.style.display = "none";
+}
+const newChatBtn = document.getElementById("newchat");
+if (newChatBtn) newChatBtn.style.display = "none";
+
+const btn = document.getElementById('start-map-btn');
+if (btn) btn.addEventListener('click', startMapPlanning);
+
+// Start with map butonu YOKSA veya görünmüyorsa "or" satırını kaldır
+const sep = document.getElementById('empty-or-sep');
+if (!btn || window.getComputedStyle(btn).display === 'none') {
+  if (sep) sep.remove();
+}
+return;
 
   // 1) Gün listesi
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
@@ -3502,8 +3508,7 @@ if (isEmptyDay) {
   const emptyWrap = document.createElement("div");
   emptyWrap.className = "empty-day-block";
 
-  // Mesaj
-  emptyWrap.innerHTML = `
+emptyWrap.innerHTML = `
     <p class="empty-day-message">No item has been added for this day yet.</p>
     <div class="empty-day-actions" style="display:block;text-align:center;">
       <button type="button"
@@ -3513,7 +3518,7 @@ if (isEmptyDay) {
               title="Supports GPX, TCX, FIT, KML">
         Import GPS File
       </button>
-      <div style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
+      <div class="start-map-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
       <button type="button"
               class="start-map-btn"
               data-day="${day}">
@@ -3522,7 +3527,6 @@ if (isEmptyDay) {
     </div>
   `;
 
-
 const startBtn = emptyWrap.querySelector('.start-map-btn');
 if (startBtn) {
   const hideByFlag = !!(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[day]);
@@ -3530,6 +3534,11 @@ if (startBtn) {
   if (hideByFlag || planningThisDay) {
     startBtn.style.display = 'none'; // GİZLE
   }
+}
+// Start with map görünmüyorsa "or" ayırıcısını kaldır
+const sep = emptyWrap.querySelector('.start-map-sep');
+if (!startBtn || window.getComputedStyle(startBtn).display === 'none') {
+  if (sep) sep.remove();
 }
 
   dayList.appendChild(emptyWrap);
