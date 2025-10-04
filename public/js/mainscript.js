@@ -4614,6 +4614,40 @@ window.cart.forEach(item => {
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
 
+  // [EKLENDİ] — Elevation segment temizliği + tam profile geri döndür
+  try {
+    const sb = document.getElementById(`expanded-route-scale-bar-day${d}`);
+    if (sb) {
+      // Segment seçimi UI kalıntılarını kaldır
+      sb.querySelector('.scale-bar-selection')?.remove();
+      const track = sb.querySelector('.scale-bar-track');
+      track?.querySelector('.elev-segment-toolbar')?.remove();
+      track?.querySelector('.scale-bar-vertical-line')?.remove();
+
+      // Segment domain state'ini sıfırla
+      if ('_elevSamples' in sb) delete sb._elevSamples;
+      if ('_elevationData' in sb) delete sb._elevationData;
+      sb._elevStartKm = 0;
+      sb._elevKmSpan = null;
+      try { delete sb.dataset.elevLoadedKey; } catch(_) {}
+
+      // Haritadaki segment highlight'ını temizle
+      if (typeof highlightSegmentOnMap === 'function') {
+        try { highlightSegmentOnMap(d); } catch(_) {}
+      }
+
+      // Mümkünse hemen tam profili yeniden çiz
+      const key = `route-map-day${d}`;
+      const totalKm = (window.lastRouteSummaries?.[key]?.distance || 0) / 1000;
+      if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
+        const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
+          ? getRouteMarkerPositionsOrdered(d)
+          : [];
+        renderRouteScaleBar(sb, totalKm, markers);
+      }
+    }
+  } catch(_) {}
+
   // 1) Bu güne ait içe aktarılan ham iz varsa sil
   if (window.importedTrackByDay && window.importedTrackByDay[d]) {
     delete window.importedTrackByDay[d];
@@ -4687,57 +4721,13 @@ function resetDayAction(day, confirmationContainerId) {
   // 10) Onay penceresini kapat
   if (typeof hideConfirmation === 'function') { try { hideConfirmation(confirmationContainerId); } catch (_) {} }
 }
-
 function hideConfirmation(confirmationContainerId) {
     const confirmationContainer = document.getElementById(confirmationContainerId);
     if (confirmationContainer) {
         confirmationContainer.style.display = "none";
     }
 }
-function closeExpandedForDay(day) {
-  try {
-    const d = parseInt(day, 10);
-    const containerId = `route-map-day${d}`;
 
-    // Expanded state varsa, küçük haritayı geri getir
-    const hasExpanded = window.expandedMaps && window.expandedMaps[containerId];
-    if (hasExpanded && typeof restoreMap === 'function') {
-      try { restoreMap(containerId, d); } catch (_) {}
-    }
-
-    // Expanded state referansını temizle
-    if (window.expandedMaps) {
-      delete window.expandedMaps[containerId];
-    }
-
-    // Expanded kapsayıcıyı DOM'dan kaldır
-    const expandedWrap = document.getElementById(`expanded-map-${d}`);
-    if (expandedWrap) {
-      try { expandedWrap.remove(); } catch (_) {
-        if (expandedWrap.parentElement) {
-          try { expandedWrap.parentElement.removeChild(expandedWrap); } catch (_) {}
-        }
-      }
-    }
-
-    // Expanded irtifa/ölçek barını temizle (observer varsa kopar)
-    const expScale = document.getElementById(`expanded-route-scale-bar-day${d}`);
-    if (expScale) {
-      if (expScale._elevResizeObserver && typeof expScale._elevResizeObserver.disconnect === 'function') {
-        try { expScale._elevResizeObserver.disconnect(); } catch (_) {}
-        expScale._elevResizeObserver = null;
-      }
-      expScale.innerHTML = '';
-    }
-
-    // Varsa body'ye eklenen fullscreen sınıfını kaldır
-    if (document && document.body && document.body.classList && document.body.classList.contains('expanded-open')) {
-      document.body.classList.remove('expanded-open');
-    }
-  } catch (_) {
-    // sessizce yut
-  }
-}
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
     let maxDay = 0;
