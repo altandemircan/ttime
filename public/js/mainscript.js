@@ -10013,4 +10013,122 @@ track.appendChild(svg);
     renderRouteScaleBar(container, fullKm, markers);
     highlightSegmentOnMap(dnum); // vurguyu temizle
   });
+}/* ===== PATCH: Reset günü harita + irtifa UI’ını tamamen temizlemeli =====
+   Bu yardımcıları resetDayAction’dan yukarıda, diğer temizlik yardımcılarının yanına ekleyin.
+*/
+
+/* Belirli bir gün için irtifa UI ve önbelleklerini temizle (mini + expanded) */
+function cleanupElevationUIForDay(day) {
+  try {
+    // Genişletilmiş ölçek çubuğu (detaylı irtifa)
+    const exp = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (exp) {
+      // Bağlı resize observer varsa kopar
+      if (exp._elevResizeObserver && typeof exp._elevResizeObserver.disconnect === 'function') {
+        try { exp._elevResizeObserver.disconnect(); } catch(_) {}
+        exp._elevResizeObserver = null;
+      }
+      exp.innerHTML = '';
+    }
+
+    // Küçük ölçek çubuğu
+    const small = document.getElementById(`route-scale-bar-day${day}`);
+    if (small) {
+      if (small._elevResizeObserver && typeof small._elevResizeObserver.disconnect === 'function') {
+        try { small._elevResizeObserver.disconnect(); } catch(_) {}
+        small._elevResizeObserver = null;
+      }
+      small.innerHTML = '';
+    }
+
+    // Günlük irtifa önbelleklerini temizle
+    if (window.__ttElevDayCache && window.__ttElevDayCache[day]) {
+      delete window.__ttElevDayCache[day];
+    }
+    if (window.routeElevStatsByDay && window.routeElevStatsByDay[day]) {
+      delete window.routeElevStatsByDay[day];
+    }
+  } catch (_) {}
 }
+
+/* Belirli bir gün için genişletilmiş haritayı kapat (detay profili de temizler) */
+function closeExpandedForDay(day) {
+  try {
+    const containerId = `route-map-day${day}`;
+    const ex = window.expandedMaps && window.expandedMaps[containerId];
+    if (ex && typeof restoreMap === 'function') {
+      // Bu, expanded kapsayıcısını kaldırır ve mini haritayı (varsa) geri getirir
+      restoreMap(containerId, day);
+    }
+    if (window.expandedMaps) delete window.expandedMaps[containerId];
+
+    // Ek güvenlik: kalmış olabilecek expanded DOM’u kaldır
+    const cont = document.getElementById(`expanded-map-${day}`);
+    if (cont) cont.remove();
+    const sb = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (sb) sb.innerHTML = '';
+  } catch (_) {}
+}
+
+/* Belirli bir gün için mini haritayı ve kontrolleri tamamen kaldır (UI kalıntısı kalmaz) */
+function nukeSmallMapForDay(day) {
+  try {
+    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+
+    // Harita kaplarını da kaldır ki üst üste binme olmasın
+    if (typeof removeDayMapCompletely === 'function') removeDayMapCompletely(day);
+    else if (typeof removeDayMap === 'function') removeDayMap(day);
+    else {
+      document.getElementById(`route-map-day${day}`)?.remove();
+      document.getElementById(`route-info-day${day}`)?.remove();
+      document.getElementById(`map-bottom-controls-wrapper-day${day}`)?.remove();
+      document.getElementById(`route-controls-bar-day${day}`)?.remove();
+      document.getElementById(`route-scale-bar-day${day}`)?.remove();
+    }
+  } catch (_) {}
+}
+
+/* ===== PATCH: resetDayAction’ı günün durumunu tam sıfırlayacak şekilde değiştir =====
+   Mevcut resetDayAction fonksiyonunu bununla değiştirin.
+*/
+function resetDayAction(day, confirmationContainerId) {
+  const d = parseInt(day, 10);
+
+  // 1) Bu güne ait içe aktarılan ham iz varsa sil
+  if (window.importedTrackByDay && window.importedTrackByDay[d]) {
+    delete window.importedTrackByDay[d];
+  }
+
+  // 2) Rota/irtifa önbelleklerini ve görsellerini temizle (mini + expanded)
+  cleanupElevationUIForDay(d);
+  closeExpandedForDay(d);
+  nukeSmallMapForDay(d);
+
+  // 3) Günün item’larını sıfırla (günü görünür bırak ama boş)
+  //    Objeleri tutuyoruz ki updateCart “Day d” için boş blok render etsin.
+  window.cart.forEach(item => {
+    if (item.day == d) {
+      item.name = undefined;       // gerçek öğeler filtresinden gizler
+      item.location = null;        // koordinat kalmasın
+      item.opening_hours = null;
+      item.address = item.address || null;
+    }
+  });
+
+  // Opsiyonel: İlk gerçek nokta eklenene kadar mini harita otomatik doğmasın
+  window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+  window.__suppressMiniUntilFirstPoint[d] = true;
+
+  // 4) Mesafe etiketleri ve rota istatistiklerini temizle
+  if (typeof clearDistanceLabels === 'function') clearDistanceLabels(d);
+  if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(d);
+
+  // 5) UI’ı yenile (bu gün için boş blok render eder)
+  if (typeof updateCart === 'function') updateCart();
+
+  // 6) Onay penceresini kapat
+  hideConfirmation(confirmationContainerId);
+}
+
+/* ===== PATCH SONU ===== */
