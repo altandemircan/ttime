@@ -7526,32 +7526,6 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   }
 }
 
-// Styles (once)
-/*
-(function ensureTmInlineStyles() {
-
-  if (document.getElementById('tt-travel-mode-style-inline')) return;
-  const style = document.createElement('style');
-  style.id = 'tt-travel-mode-style-inline';
-  style.textContent = `
-    .tt-travel-mode-set {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      margin: 6px 0 8px 0;
-    }
-    .tt-travel-mode-set button {
-      border: 1px solid #ccc; background: #fff; color: #333; border-radius: 8px;
-      padding: 6px 10px; cursor: pointer; font-size: 13px; line-height: 1; min-width: 32px;
-    }
-    .tt-travel-mode-set button.active {
-      background: #ffffff; border-color: #0d6efd; color: #fff;
-    }
-    .tt-travel-mode-set button:hover { filter: brightness(0.97); }
-  `;
-  document.head.appendChild(style);
-})();*/
-// Replace this function in son9.js
 
 // Update: only clean header sets, we place the visible set near the map
 function renderTravelModeControlsForAllDays() {
@@ -7596,6 +7570,7 @@ function markActiveTravelModeButtons() {
 border-bottom:1px solid #ddd;
       margin-left: 12px;
         padding: 6px 0 12px 0;
+        width: -webkit-fill-available;
     }
     .tt-travel-mode-set button {
       border: 1px solid #ccc; background: #fff; color: #333; border-radius: 8px;
