@@ -4047,17 +4047,32 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
     }
 
     // NEW: re-render expanded scale bar with fresh route
-    const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (scaleBarDiv) {
+const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+if (scaleBarDiv) {
+  try {
+    const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+    if (!pts || pts.length < 2) {
+      scaleBarDiv.innerHTML = '';
+      scaleBarDiv.style.display = 'none';
+    } else {
       const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
-      const markerPositions = getRouteMarkerPositionsOrdered(day);
+      const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
+        ? getRouteMarkerPositionsOrdered(day)
+        : [];
       if (totalKm > 0 && markerPositions.length > 0) {
+        scaleBarDiv.style.display = '';
         try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
       } else {
         scaleBarDiv.innerHTML = '';
+        scaleBarDiv.style.display = 'none';
       }
     }
+  } catch (_) {
+    scaleBarDiv.innerHTML = '';
+    scaleBarDiv.style.display = 'none';
+  }
+}
     adjustExpandedHeader(day);
 }
 /* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
@@ -4989,10 +5004,15 @@ expandedContainer.appendChild(locBtn);
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
   // Scale bar alanı
-  const scaleBarDiv = document.createElement('div');
-  scaleBarDiv.className = 'route-scale-bar';
-  scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
-  expandedContainer.appendChild(scaleBarDiv);
+ // Scale bar alanı (0/1 item → gizli, 2+ → görünür)
+const scaleBarDiv = document.createElement('div');
+scaleBarDiv.className = 'route-scale-bar';
+scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
+try {
+  const ptsForBar = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+  scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
+} catch (_) {}
+expandedContainer.appendChild(scaleBarDiv);
 
   // Harita alanı
   const mapDivId = `${containerId}-expanded`;
@@ -5129,9 +5149,12 @@ expandedMap.flyTo([points[0].lat, points[0].lng], 15, { duration: 0.6, easeLinea
     ? getRouteMarkerPositionsOrdered(day)
     : [];
   if (totalKm > 0 && markerPositions.length > 0 && typeof renderRouteScaleBar === 'function') {
-    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-  }
-
+  scaleBarDiv.style.display = '';
+  renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+} else {
+  scaleBarDiv.innerHTML = '';
+  scaleBarDiv.style.display = 'none';
+}
   // Draggable markers / near search / header ayarı
   if (typeof addDraggableMarkersToExpandedMap === 'function') {
     addDraggableMarkersToExpandedMap(expandedMap, day);
@@ -8616,10 +8639,10 @@ function hideMarkerVerticalLineOnMap(map) {
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  if (!container || isNaN(totalKm) || totalKm <= 0) {
-    if (container) container.innerHTML = "";
-    return;
-  }
+if (!container || isNaN(totalKm) || totalKm <= 0) {
+  if (container) { container.innerHTML = ""; container.style.display = 'none'; }
+  return;
+}
 
   // Sadece expanded bar’da çalış; küçük bar’ı kapat
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
@@ -8633,11 +8656,11 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
-  if (!coords || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track"></div>`;
-    return;
-  }
-
+ if (!coords || coords.length < 2) {
+  container.innerHTML = `<div class="scale-bar-track"></div>`;
+  container.style.display = 'none';
+  return;
+}
   // Cooldown / cache anahtarı
   const mid = coords[Math.floor(coords.length / 2)];
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
