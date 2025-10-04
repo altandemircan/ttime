@@ -8861,11 +8861,13 @@ if (!track) {
     }
   }
 
+  // ✅ YENİ: TAM PROFİL ÖRNEKLERİNİ SAKLA (segment sonrası geri dönüş için)
+  container._elevFullSamples = [...samples];  // kopyasını sakla
+  
   // AKTİF DOMAIN: başta tam profil
   container._elevSamples = samples;   // aktif örnek seti
   container._elevStartKm = 0;         // domain başlangıcı (km)
   container._elevKmSpan  = totalKm;   // domain genişliği (km)
-
   // Loader
   window.showScaleBarLoading?.(container, 'Loading elevation…');
 
@@ -8966,6 +8968,7 @@ if (!track) {
       segG.appendChild(seg);
     }
   }
+  container._redrawElevation = redrawElevation;
 
   // Hover (aktif domain ile) — önce eski handler’ları kaldır
   if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
@@ -9990,15 +9993,54 @@ track.appendChild(svg);
   `;
 
   // Reset -> tam profile dön
+  // Reset -> tam profile dön
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
-    const fullKm = Number(container.dataset.totalKm) || 0;
+    // 1) Toolbar'ı kaldır
+    tb.remove();
+    
+    // 2) Segment vurgusunu temizle (haritadan kaldır)
     const m = container.id.match(/day(\d+)/);
     const dnum = m ? parseInt(m[1], 10) : day;
-    const markers = (typeof getRouteMarkerPositionsOrdered === 'function' && dnum)
-      ? getRouteMarkerPositionsOrdered(dnum) : [];
-    tb.remove();
-    renderRouteScaleBar(container, fullKm, markers);
-    highlightSegmentOnMap(dnum); // vurguyu temizle
+    if (typeof highlightSegmentOnMap === 'function') {
+      highlightSegmentOnMap(dnum); // parametresiz çağrı -> temizler
+    }
+    
+    // 3) Container'daki segment domain ayarlarını TAM PROFILE çevir
+    const fullKm = Number(container.dataset.totalKm) || 0;
+    if (fullKm > 0) {
+      container._elevStartKm = 0;
+      container._elevKmSpan  = fullKm;
+      
+      // TAM profil örneklerini geri yükle (varsa)
+      if (container._elevFullSamples) {
+        container._elevSamples = container._elevFullSamples;
+      }
+    }
+    
+    // 4) Mevcut elevation verisini kullanarak TAM PROFİLİ yeniden çiz
+    if (container._elevationData) {
+      const { smooth, min, max } = container._elevationData;
+      
+      // Önce selection overlay'i gizle
+      const selDiv = container.querySelector('.scale-bar-selection');
+      if (selDiv) selDiv.style.display = 'none';
+      
+      // redrawElevation varsa kullan (zaten var, renderRouteScaleBar içinde tanımlı)
+      // YOKSA manuel çizim:
+      if (typeof container._redrawElevation === 'function') {
+        container._redrawElevation(container._elevationData);
+      } else {
+        // Fallback: tüm scale bar'ı sıfırdan çiz
+        const markers = (typeof getRouteMarkerPositionsOrdered === 'function' && dnum)
+          ? getRouteMarkerPositionsOrdered(dnum) : [];
+        renderRouteScaleBar(container, fullKm, markers);
+      }
+    } else {
+      // Elevation verisi yoksa (olmamalı ama) tam çizimi zorla
+      const markers = (typeof getRouteMarkerPositionsOrdered === 'function' && dnum)
+        ? getRouteMarkerPositionsOrdered(dnum) : [];
+      renderRouteScaleBar(container, fullKm, markers);
+    }
   });
 }
 
