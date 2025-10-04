@@ -3530,128 +3530,116 @@ if (isEmptyDay) {
 }
 
 
-// 2.b Dolu gün item’ları
-else {
-  let prevCoordItem = null;
-  for (let idx = 0; idx < dayItemsArr.length; idx++) {
-    const item = dayItemsArr[idx];
-    const li = document.createElement("li");
-    li.className = "travel-item";
-    li.draggable = true;
-    li.dataset.index = globalIndexMap.get(item);
-    li.addEventListener("dragstart", dragStart);
 
-    let openingHoursDisplay = "No working hours info";
-    if (item.opening_hours) {
-      if (Array.isArray(item.opening_hours)) {
-        const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
-        if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-      } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-        openingHoursDisplay = item.opening_hours.trim();
-      }
-    }
+    // 2.b Dolu gün item’ları
+    else {
+      dayItemsArr.forEach((item, idx) => {
+        const li = document.createElement("li");
+        li.className = "travel-item";
+        li.draggable = true;
+        li.dataset.index = globalIndexMap.get(item);
+        li.addEventListener("dragstart", dragStart);
 
-    const mapHtml = (item.location &&
-      typeof item.location.lat === "number" &&
-      typeof item.location.lng === "number")
-      ? createMapIframe(item.location.lat, item.location.lng, 16)
-      : '<div class="map-error">Location not available</div>';
+        let openingHoursDisplay = "No working hours info";
+        if (item.opening_hours) {
+          if (Array.isArray(item.opening_hours)) {
+            const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+            if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+          } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+            openingHoursDisplay = item.opening_hours.trim();
+          }
+        }
 
-    li.innerHTML = `
-<div class="cart-item">
-  <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-  <img src="${item.image}" alt="${item.name}" class="cart-image">
-  <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
-  <div class="item-info">
-    <p class="toggle-title">${item.name}</p>
-  </div>
-  <button class="remove-btn" onclick="removeFromCart(${globalIndexMap.get(item)})">
-    <img src="img/remove-icon.svg" alt="Close">
-  </button>
-  <span class="arrow">
-    <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-  </span>
-  <div class="content">
-    <div class="info-section">
-      <div class="place-rating">${mapHtml}</div>
-      <div class="contact">
-        <p>📌 Address: ${item.address || 'Address not available'}</p>
-      </div>
-      <p class="working-hours-title">
-        🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
-      </p>
-      ${
-        item.location ? `
-          <div class="coords-info" style="margin-top:8px;">
-            📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
-            Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
-          </div>
-          ${item.website ? `
-            <div class="website-info" style="margin-top:8px;">
-              🔗 Website: <a href="${item.website}" target="_blank" rel="noopener">
-                ${item.website.replace(/^https?:\/\//, '')}
+        const mapHtml = (item.location &&
+          typeof item.location.lat === "number" &&
+          typeof item.location.lng === "number")
+          ? createMapIframe(item.location.lat, item.location.lng, 16)
+          : '<div class="map-error">Location not available</div>';
+
+        li.innerHTML = `
+  <div class="cart-item">
+    <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+    <img src="${item.image}" alt="${item.name}" class="cart-image">
+    <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+    <div class="item-info">
+      <p class="toggle-title">${item.name}</p>
+    </div>
+    <button class="remove-btn" onclick="removeFromCart(${globalIndexMap.get(item)})">
+      <img src="img/remove-icon.svg" alt="Close">
+    </button>
+    <span class="arrow">
+      <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+    </span>
+    <div class="content">
+      <div class="info-section">
+        <div class="place-rating">${mapHtml}</div>
+        <div class="contact">
+          <p>📌 Address: ${item.address || 'Address not available'}</p>
+        </div>
+        <p class="working-hours-title">
+          🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+        </p>
+        ${
+          item.location ? `
+            <div class="coords-info" style="margin-top:8px;">
+              📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+              Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+            </div>
+            ${item.website ? `
+              <div class="website-info" style="margin-top:8px;">
+                🌐 Website: <a href="${item.website}" target="_blank" rel="noopener">
+                  ${item.website.replace(/^https?:\/\//, '')}
+                </a>
+              </div>
+            ` : ''}
+            <div class="google-search-info" style="margin-top:8px;">
+              <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
+                 target="_blank" rel="noopener">
+                🇬 Search images on Google
               </a>
             </div>
-          ` : ''}
-          <div class="google-search-info" style="margin-top:8px;">
-            <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
-               target="_blank" rel="noopener">
-              🇬 Search images on Google
-            </a>
-          </div>
-        ` : ''
-      }
+          ` : ''
+        }
+      </div>
     </div>
   </div>
-</div>
 `;
-    dayList.appendChild(li);
+        dayList.appendChild(li);
 
-    // ---- YENİ: Mesafe/süre separator'u ekle (sadece arka arkaya 2 koordinatlı item arasında)
-    if (
-      prevCoordItem &&
-      prevCoordItem.location && item.location &&
-      typeof prevCoordItem.location.lat === "number" &&
-      typeof prevCoordItem.location.lng === "number" &&
-      typeof item.location.lat === "number" &&
-      typeof item.location.lng === "number"
-    ) {
-      const key = `route-map-day${day}`;
-      const prevIdx = globalIndexMap.get(prevCoordItem);
-      const summary = window.pairwiseRouteSummaries?.[key]?.[prevIdx];
-      let distanceStr = '';
-      let durationStr = '';
-      if (summary) {
-        distanceStr = summary.distance >= 1000
-          ? (summary.distance / 1000).toFixed(1) + " km"
-          : Math.round(summary.distance) + " m";
-        durationStr = summary.duration >= 60
-          ? Math.round(summary.duration / 60) + " dk"
-          : Math.round(summary.duration) + " sn";
-      }
-      const distanceSeparator = document.createElement('div');
-      distanceSeparator.className = 'distance-separator';
-      distanceSeparator.innerHTML = `
-        <div class="separator-line"></div>
-        <div class="distance-label">
-          <span class="distance-value">${distanceStr}</span> • 
-          <span class="duration-value">${durationStr}</span>
-        </div>
-        <div class="separator-line"></div>
-      `;
-      dayList.appendChild(distanceSeparator);
-    }
-    // ----
+        if (dayItemsArr.length === 1 && idx === 0) {
+          const oneItemMessage = document.createElement("p");
+          oneItemMessage.className = "one-item-message";
+          oneItemMessage.textContent = "Add one more item to see the route!";
+          dayList.appendChild(oneItemMessage);
+        }
 
-    // prevCoordItem'ı güncelle
-    if (item.location &&
-      typeof item.location.lat === "number" &&
-      typeof item.location.lng === "number"
-    ) {
-      prevCoordItem = item;
+        if (dayItemsArr.length >= 2 && idx < dayItemsArr.length - 1) {
+          const key = `route-map-day${day}`;
+          const summary = window.pairwiseRouteSummaries?.[key]?.[idx];
+          let distanceStr = '';
+          let durationStr = '';
+          if (summary) {
+            distanceStr = summary.distance >= 1000
+              ? (summary.distance / 1000).toFixed(1) + " km"
+              : Math.round(summary.distance) + " m";
+            durationStr = summary.duration >= 60
+              ? Math.round(summary.duration / 60) + " dk"
+              : Math.round(summary.duration) + " sn";
+          }
+          const distanceSeparator = document.createElement('div');
+          distanceSeparator.className = 'distance-separator';
+          distanceSeparator.innerHTML = `
+            <div class="separator-line"></div>
+            <div class="distance-label">
+              <span class="distance-value">${distanceStr}</span> • 
+              <span class="duration-value">${durationStr}</span>
+            </div>
+            <div class="separator-line"></div>
+          `;
+          dayList.appendChild(distanceSeparator);
+        }
+      });
     }
-  }
-}
 
     dayContainer.appendChild(dayList);
 
