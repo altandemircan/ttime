@@ -9877,9 +9877,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', String(heightNow));
   // Base’in ÜSTÜNDE
-  svg.style.position = 'absolute';
-  svg.style.left = '0';
-  svg.style.top = '48px';
+  
   svg.style.zIndex = '2';
   track.appendChild(svg);
 
