@@ -8422,9 +8422,9 @@ if (typeof wrapRouteControlsForAllDays === 'function') {
     .tt-elev-svg {
     position: absolute;
     left: 0;
-    top: 48px;
+    
     width: 100%;
-    height: 136px;
+    height: 186px;
     pointer-events: none;
     z-index: 0;
 }
