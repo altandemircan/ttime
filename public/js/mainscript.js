@@ -10209,3 +10209,51 @@ function resetDayAction(day, confirmationContainerId) {
     setTimeout(purgeOnce, 200);
   } catch(_) {}
 }
+
+// --- BU KODU EKLEYİN ---
+
+// Reset butonuna tıklandığında grafiği orijinal haline döndür
+d3.select("#resetButton").on("click", function() {
+  // Orijinal x ve y ekseni ölçeklerini geri yükle
+  // (x ve y değişkenlerinin orijinal tam ölçekli halleri olduğunu varsayıyoruz)
+  x.domain(d3.extent(data, function(d) { return d.distance; }));
+  y.domain([d3.min(data, function(d) { return d.elevation; }) - 20, d3.max(data, function(d) { return d.elevation; }) + 20]);
+
+  // "Context" grafiği üzerindeki fırça seçimini temizle
+  // (context grafiğinizin brush'ını tutan değişkenin "brush" olduğunu varsayıyoruz)
+  context.select(".brush").call(brush.move, null);
+
+  // Ana grafiği (focus) yeni ölçekle güncelle ve geçiş efekti ekle
+  focus.select(".area")
+      .transition().duration(750)
+      .attr("d", area(data));
+  focus.select(".line")
+      .transition().duration(750)
+      .attr("d", line(data));
+  focus.select(".axis--x").transition().duration(750).call(xAxis);
+  focus.select(".axis--y").transition().duration(750).call(yAxis);
+});
+
+
+// --- BRUSHED FONKSİYONUNUZU GÜNCELLEYİN ---
+
+// Mevcut brushed veya brushended fonksiyonunuz muhtemelen şuna benzer:
+function brushed() {
+  // Eğer fırça seçimi yoksa (örneğin reset sonrası) bir şey yapma
+  var s = d3.event.selection;
+  if (!s) return;
+
+  // Seçilen alana göre ana grafiğin (focus) x eksenini güncelle
+  x.domain(s.map(x2.invert, x2));
+  
+  // Ana grafiği yeni ölçekle yeniden çiz
+  focus.select(".area").attr("d", area);
+  focus.select(".line").attr("d", line);
+  focus.select(".axis--x").call(xAxis);
+  // Opsiyonel: Y eksenini de seçilen alandaki min/max'a göre ayarla
+  y.domain([
+      d3.min(data.filter(d => d.distance >= x.domain()[0] && d.distance <= x.domain()[1]), d => d.elevation) - 20,
+      d3.max(data.filter(d => d.distance >= x.domain()[0] && d.distance <= x.domain()[1]), d => d.elevation) + 20
+  ]);
+  focus.select(".axis--y").call(yAxis);
+}
