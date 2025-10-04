@@ -3531,11 +3531,13 @@ if (isEmptyDay) {
 
 
 
-   else {
+  else {
   let prevCoordItem = null;
   let prevCoordIdx = null;
   for (let idx = 0; idx < dayItemsArr.length; idx++) {
     const item = dayItemsArr[idx];
+
+    // 1. Önce ilk item'ı ekle
     const li = document.createElement("li");
     li.className = "travel-item";
     li.draggable = true;
@@ -3608,7 +3610,7 @@ if (isEmptyDay) {
 `;
     dayList.appendChild(li);
 
-    // Sadece arka arkaya iki koordinatlı item arasında separator oluştur
+    // 2. Eğer hem prevCoordItem, hem bu item koordinatlı ise, araya SEPARATOR ekle
     if (
       prevCoordItem &&
       prevCoordItem.location && item.location &&
@@ -3617,10 +3619,9 @@ if (isEmptyDay) {
       typeof item.location.lat === "number" &&
       typeof item.location.lng === "number"
     ) {
-      // Summary'yi doğru index ile çek
+      // SUMMARY hesapla
       const key = `route-map-day${day}`;
-      // prevCoordIdx, prevCoordItem'ın globalIndexMap'teki indexi
-      const summary = window.pairwiseRouteSummaries?.[key]?.[prevCoordIdx];
+      const summary = window.pairwiseRouteSummaries?.[key]?.[prevCoordIdx]; // DİKKAT: prevCoordIdx!
       let distanceStr = '';
       let durationStr = '';
       if (summary) {
@@ -3644,7 +3645,7 @@ if (isEmptyDay) {
       dayList.appendChild(distanceSeparator);
     }
 
-    // prevCoordItem ve index'i güncelle
+    // 3. prevCoordItem ve index'i güncelle
     if (item.location &&
       typeof item.location.lat === "number" &&
       typeof item.location.lng === "number"
@@ -3653,7 +3654,7 @@ if (isEmptyDay) {
       prevCoordIdx = globalIndexMap.get(item);
     }
 
-    // Tek item uyarısı
+    // 4. Tek item uyarısı
     if (dayItemsArr.length === 1 && idx === 0) {
       const oneItemMessage = document.createElement("p");
       oneItemMessage.className = "one-item-message";
