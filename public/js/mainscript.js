@@ -8634,6 +8634,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
   // Sadece expanded (expanded-route-scale-bar-dayX) için çalış; küçük (route-scale-bar-dayX) bar’ı KAPAT
+    // Sadece expanded bar’da çalış; küçük bar’ı devre dışı bırak
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
     container.innerHTML = '';
     return;
@@ -8685,23 +8686,17 @@ function renderRouteScaleBar(container, totalKm, markers) {
     if (!container.contains(t)) t.remove();
   });
 
-  // b) Tek track oluştur/yeniden kullan
-  let track = container.querySelector('.scale-bar-track');
-  if (!track) {
-    container.innerHTML = '';
-    track = document.createElement('div');
-    track.className = 'scale-bar-track';
-    container.appendChild(track);
-  } else {
-    // Eski handler referanslarını temizle ve içerikleri tamamen sil
-    try {
-      if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
-      if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
-      if (track.__onDown)   track.removeEventListener('mousedown', track.__onDown);
-      track.__onMove = track.__onLeave = track.__onDown = null;
-    } catch(_){}
-    track.innerHTML = '';
-  }
+ // UI set — tek track + tam temizlik
+let track = container.querySelector('.scale-bar-track');
+if (!track) {
+  container.innerHTML = '';
+  track = document.createElement('div');
+  track.className = 'scale-bar-track';
+  container.appendChild(track);
+} else {
+  // Eski tüm içerikleri komple sil (overlay/tooltip dahil) → stacking imkansız
+  track.innerHTML = '';
+}
 
   // c) Eski global window handler’larını kaldır (tekille)
   if (window.__sb_onMouseMove) { window.removeEventListener('mousemove', window.__sb_onMouseMove); window.__sb_onMouseMove = null; }
@@ -8814,6 +8809,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   // Her yeniden çizimde eski svg.tt-elev-svg’leri sil (stacking’i önle)
   track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
   // SVG kur
+  track.querySelectorAll('svg').forEach(el => el.remove());
   const svgNS = 'http://www.w3.org/2000/svg';
   const SVG_TOP = 48;
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -9866,32 +9862,26 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   // Track tekil kalsın (aynı konteynerde 2. bir track varsa kaldır)
 container.querySelectorAll('.scale-bar-track').forEach(t => { if (t !== track) t.remove(); });
 
-// Aynı track içinde birden fazla SVG/toolbar oluşmasını engelle
-const svgs = track.querySelectorAll('svg.tt-elev-svg');
-for (let i = 1; i < svgs.length; i++) svgs[i].remove();
-const tbs = track.querySelectorAll('.elev-segment-toolbar');
-for (let i = 1; i < tbs.length; i++) tbs[i].remove();
-
   // Konteyneri görünür ve yeterli yükseklikte tut
   track.style.position = track.style.position || 'relative';
   if (!track.style.minHeight) track.style.minHeight = '160px';
 
-  // SVG’yi her seferinde tekille: önce TÜM eski SVG’leri kaldır, sonra sıfırdan oluştur
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const widthNow = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
-  const heightNow = 220;
+  // SVG ve toolbar’ı her seferinde tekille: önce TÜM eski SVG/toolbar’ı kaldır, sonra sıfırdan oluştur
+const svgNS = 'http://www.w3.org/2000/svg';
+const widthNow = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
+const heightNow = 220;
 
-  // Eski tüm svg.tt-elev-svg’leri sil
-  track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+// Eski tüm SVG’leri (sınıfı ne olursa olsun) ve toolbar’ları sil
+track.querySelectorAll('svg, .elev-segment-toolbar').forEach(el => el.remove());
 
-  // Yeni tek SVG oluştur
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.className = 'tt-elev-svg';
-  svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
-  svg.setAttribute('preserveAspectRatio', 'none');
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', String(heightNow));
-  track.appendChild(svg);
+// Yeni tek SVG oluştur
+const svg = document.createElementNS(svgNS, 'svg');
+svg.className = 'tt-elev-svg';
+svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
+svg.setAttribute('preserveAspectRatio', 'none');
+svg.setAttribute('width', '100%');
+svg.setAttribute('height', String(heightNow));
+track.appendChild(svg);
 
   // Katmanları bul/oluştur
   let gridG = svg.querySelector('g.tt-elev-grid');
