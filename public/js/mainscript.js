@@ -3593,9 +3593,10 @@ if (isEmptyDay) {
               </div>
             ` : ''}
             <div class="google-search-info" style="margin-top:8px;">
-              <button type="button" onclick="searchPlaceOnGoogle('${escapeHtml(item.name)}', '${escapeHtml(window.selectedCity || '')}')">
-                🔎 Search on Google
-              </button>
+              <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
+                 target="_blank" rel="noopener">
+                👁️ Search images on Google
+              </a>
             </div>
           ` : ''
         }
