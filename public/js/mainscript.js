@@ -3510,9 +3510,7 @@ if (isEmptyDay) {
   emptyWrap.className = "empty-day-block";
 
   // Mesaj
- const hideByFlag = !!(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[day]);
-const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
-const showStartMap = !(hideByFlag || planningThisDay);
+const hideByFlag = !!(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[day]); const isPlanningThisDay = (window.mapPlanningActive && window.mapPlanningDay === day); const showStartMap = !(hideByFlag || isPlanningThisDay);;
 
 emptyWrap.innerHTML = `
   <p class="empty-day-message">No item has been added for this day yet.</p>
