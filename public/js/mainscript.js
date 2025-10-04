@@ -4613,49 +4613,46 @@ window.cart.forEach(item => {
 
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
+  const cid = `route-map-day${d}`;
 
-  // HOTFIX: Detay elevation overlay'lerini ve expanded bar'ı o gün için kökten kaldır
+  // 0) Expanded’ı ve detay overlay’lerini anında sök + kayıtları temizle
   try {
-    // 1) O güne ait expanded container + bar
+    // window.expandedMaps kaydı varsa önce restoreMap ile kapat, sonra kaydı sil
+    if (window.expandedMaps && window.expandedMaps[cid]) {
+      try { restoreMap(cid, d); } catch(_) {}
+      delete window.expandedMaps[cid];
+    }
+
+    // Expanded container + scale bar (o güne ait)
     document.getElementById(`expanded-map-${d}`)?.remove();
     document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
 
-    // 2) Aynı güne ait yetim kopyalar (olası stacking)
+    // Olası yetim kopyalar (aynı id’li wrapper/scale-bar tekrar eklenmişse)
     document.querySelectorAll(`.expanded-map-container[id="expanded-map-${d}"]`).forEach(el => el.remove());
-    document.querySelectorAll(`[id^="expanded-route-scale-bar-day"]`).forEach(el => {
-      if (el.id === `expanded-route-scale-bar-day${d}`) el.remove();
-    });
+    document.querySelectorAll(`#expanded-route-scale-bar-day${d}`).forEach(el => el.remove());
 
-    // 3) Her ihtimale karşı: bu günün bar’ı altında kalmış overlay parçaları (svg, selection, toolbar)
-    // (bar silinmiş olsa bile bekletilen track’ler olabilir)
-    const killers = [
-      `.elev-segment-toolbar`,
-      `.scale-bar-selection`,
-      `.scale-bar-vertical-line`,
-      `svg.tt-elev-svg`
-    ];
-    killers.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => el.remove());
-    });
+    // Expanded wrapper içindeki overlay parçaları (segment toolbar, seçim, svg)
+    const expWrap = document.getElementById(`expanded-map-${d}`);
+    if (expWrap) {
+      expWrap.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
+    } else {
+      // Wrapper bulunamazsa globalden sadece bu güne ait bar içinde kalanları temizle
+      const sb = document.getElementById(`expanded-route-scale-bar-day${d}`);
+      sb?.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
+    }
 
-    // 4) Görünürlüğü zorla kapat (CSS fallback) — tek seferlik stil
-    const hidId = `tt-hide-elev-day${d}`;
-    let hid = document.getElementById(hidId);
-    if (!hid) {
-      hid = document.createElement('style');
-      hid.id = hidId;
-      hid.textContent = `
-        #expanded-map-${d},
-        #expanded-route-scale-bar-day${d} { display: none !important; visibility: hidden !important; }
-      `;
-      document.head.appendChild(hid);
+    // Güvenlik: expanded-open sınıfını kaldır
+    if (document?.body?.classList?.contains('expanded-open')) {
+      document.body.classList.remove('expanded-open');
     }
   } catch(_) {}
 
-  // Devam: mevcut reset akışın
+  // 1) Bu güne ait içe aktarılan ham iz varsa sil
   if (window.importedTrackByDay && window.importedTrackByDay[d]) {
     delete window.importedTrackByDay[d];
   }
+
+  // 2) Genişletilmiş haritayı mevcut fonksiyonla kapat (varsa) — ek güvenlik
   if (typeof closeExpandedForDay === 'function') {
     try { closeExpandedForDay(d); } catch (_) {}
   } else {
@@ -4664,6 +4661,8 @@ function resetDayAction(day, confirmationContainerId) {
       document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
     } catch (_) {}
   }
+
+  // 3) Ölçek çubukları / irtifa UI temizlik (satır içi)
   try {
     const exp = document.getElementById(`expanded-route-scale-bar-day${d}`);
     if (exp) exp.innerHTML = '';
@@ -4671,11 +4670,13 @@ function resetDayAction(day, confirmationContainerId) {
     if (small) small.innerHTML = '';
   } catch (_) {}
 
+  // 4) Rota görselleri ve önbellekleri temizle
   if (typeof clearRouteVisualsForDay === 'function') { try { clearRouteVisualsForDay(d); } catch (_) {} }
   if (typeof clearRouteCachesForDay === 'function')  { try { clearRouteCachesForDay(d); } catch (_) {} }
   if (window.__ttElevDayCache && window.__ttElevDayCache[d]) delete window.__ttElevDayCache[d];
   if (window.routeElevStatsByDay && window.routeElevStatsByDay[d]) delete window.routeElevStatsByDay[d];
 
+  // 5) Mini harita kapları ve kontrolleri kaldır
   if (typeof removeDayMapCompletely === 'function') {
     try { removeDayMapCompletely(d); } catch (_) {}
   } else if (typeof removeDayMap === 'function') {
@@ -4688,6 +4689,7 @@ function resetDayAction(day, confirmationContainerId) {
     document.getElementById(`route-scale-bar-day${d}`)?.remove();
   }
 
+  // 6) Günün item’larını sıfırla (günü görünür bırak ama boş)
   if (Array.isArray(window.cart)) {
     window.cart.forEach(item => {
       if (item.day == d) {
@@ -4699,18 +4701,38 @@ function resetDayAction(day, confirmationContainerId) {
     });
   }
 
+  // 7) Mesafe etiketleri ve rota istatistikleri
   if (typeof clearDistanceLabels === 'function') { try { clearDistanceLabels(d); } catch (_) {} }
   if (typeof updateRouteStatsUI === 'function')  { try { updateRouteStatsUI(d); } catch (_) {} }
 
+  // 8) İlk gerçek nokta eklenene kadar mini harita otomatik doğmasın
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[d] = true;
 
+  // 9) UI’ı yenile
   if (typeof updateCart === 'function') { try { updateCart(); } catch (_) {} }
 
+  // 10) Onay penceresini kapat
   if (typeof hideConfirmation === 'function') { try { hideConfirmation(confirmationContainerId); } catch (_) {} }
 
-  // Son olarak: görünürlük stilini temizlemek istersen (opsiyonel)
-  // document.getElementById(`tt-hide-elev-day${d}`)?.remove();
+  // 11) Re-render ısrarını kırmak için: updateCart sonrası 2 kez daha kökten temizle
+  try {
+    const purgeOnce = () => {
+      if (window.expandedMaps && window.expandedMaps[cid]) {
+        try { restoreMap(cid, d); } catch(_) {}
+        delete window.expandedMaps[cid];
+      }
+      document.getElementById(`expanded-map-${d}`)?.remove();
+      document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
+      const expWrap2 = document.getElementById(`expanded-map-${d}`);
+      expWrap2?.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
+      if (document?.body?.classList?.contains('expanded-open')) {
+        document.body.classList.remove('expanded-open');
+      }
+    };
+    setTimeout(purgeOnce, 0);
+    setTimeout(purgeOnce, 200);
+  } catch(_) {}
 }
 function hideConfirmation(confirmationContainerId) {
     const confirmationContainer = document.getElementById(confirmationContainerId);
