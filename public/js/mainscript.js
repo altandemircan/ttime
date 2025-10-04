@@ -4694,7 +4694,50 @@ function hideConfirmation(confirmationContainerId) {
         confirmationContainer.style.display = "none";
     }
 }
+function closeExpandedForDay(day) {
+  try {
+    const d = parseInt(day, 10);
+    const containerId = `route-map-day${d}`;
 
+    // Expanded state varsa, küçük haritayı geri getir
+    const hasExpanded = window.expandedMaps && window.expandedMaps[containerId];
+    if (hasExpanded && typeof restoreMap === 'function') {
+      try { restoreMap(containerId, d); } catch (_) {}
+    }
+
+    // Expanded state referansını temizle
+    if (window.expandedMaps) {
+      delete window.expandedMaps[containerId];
+    }
+
+    // Expanded kapsayıcıyı DOM'dan kaldır
+    const expandedWrap = document.getElementById(`expanded-map-${d}`);
+    if (expandedWrap) {
+      try { expandedWrap.remove(); } catch (_) {
+        if (expandedWrap.parentElement) {
+          try { expandedWrap.parentElement.removeChild(expandedWrap); } catch (_) {}
+        }
+      }
+    }
+
+    // Expanded irtifa/ölçek barını temizle (observer varsa kopar)
+    const expScale = document.getElementById(`expanded-route-scale-bar-day${d}`);
+    if (expScale) {
+      if (expScale._elevResizeObserver && typeof expScale._elevResizeObserver.disconnect === 'function') {
+        try { expScale._elevResizeObserver.disconnect(); } catch (_) {}
+        expScale._elevResizeObserver = null;
+      }
+      expScale.innerHTML = '';
+    }
+
+    // Varsa body'ye eklenen fullscreen sınıfını kaldır
+    if (document && document.body && document.body.classList && document.body.classList.contains('expanded-open')) {
+      document.body.classList.remove('expanded-open');
+    }
+  } catch (_) {
+    // sessizce yut
+  }
+}
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
     let maxDay = 0;
