@@ -3592,6 +3592,11 @@ if (isEmptyDay) {
                 </a>
               </div>
             ` : ''}
+            <div class="google-search-info" style="margin-top:8px;">
+              <button type="button" onclick="searchPlaceOnGoogle('${escapeHtml(item.name)}', '${escapeHtml(window.selectedCity || '')}')">
+                🔎 Search on Google
+              </button>
+            </div>
           ` : ''
         }
       </div>
@@ -3826,6 +3831,21 @@ document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
     });
 });
+
+
+
+function searchPlaceOnGoogle(place, city) {
+  // Boşlukları + ile değiştir, çift tırnak ve özel karakterlerden koru
+  const query = [place, city].filter(Boolean).join(' ').replace(/"/g, '').trim();
+  const url = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+  window.open(url, '_blank');
+}
+
+// XSS koruması için (örn. "Villa Medici" gibi isimlerde sorun olmasın)
+function escapeHtml(text) {
+  return String(text || '').replace(/["'\\]/g, '');
+}
+
 
 
 // Stil bir kez eklensin
