@@ -3436,6 +3436,7 @@ if (!btn || window.getComputedStyle(btn).display === 'none') {
   if (sep) sep.remove();
 }
 return;
+  }
 
   // 1) Gün listesi
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
@@ -3509,7 +3510,7 @@ if (isEmptyDay) {
   emptyWrap.className = "empty-day-block";
 
   // Mesaj
-emptyWrap.innerHTML = `
+ emptyWrap.innerHTML = `
     <p class="empty-day-message">No item has been added for this day yet.</p>
     <div class="empty-day-actions" style="display:block;text-align:center;">
       <button type="button"
