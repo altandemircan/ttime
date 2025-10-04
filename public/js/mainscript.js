@@ -8795,7 +8795,7 @@ if (!track) {
   createScaleElements(width);
   
   // ✅ ESKİ SVG'LERİ TEMİZLE (stacking'i önle)
-  track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+track.querySelectorAll('svg').forEach(el => el.remove()); // tüm svg'leri kaldır
   
   // SVG kur
   const svgNS = 'http://www.w3.org/2000/svg';
@@ -8806,8 +8806,8 @@ if (!track) {
     : Math.max(180, Math.min(320, Math.round(track.getBoundingClientRect().height - SVG_TOP - 16)));
   if (isNaN(SVG_H)) SVG_H = isMobile ? 160 : 220;
 
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.className = 'tt-elev-svg';
+const svg = document.createElementNS(svgNS, 'svg');
+svg.setAttribute('class', 'tt-elev-svg'); // güvenli class atama
   svg.setAttribute('viewBox', `0 0 ${width} ${SVG_H}`);
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.setAttribute('width', '100%');
@@ -9154,10 +9154,10 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
   // ✅ 1) ÖNCELİKLE ESKİ SEGMENT ARTEFAKTLARINI TEMİZLE
   const existingTrack = container.querySelector('.scale-bar-track');
-  if (existingTrack) {
-    existingTrack.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
-    existingTrack.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
-  }
+if (existingTrack) {
+  existingTrack.querySelectorAll('svg').forEach(el => el.remove()); // tüm svg'leri kaldır
+  existingTrack.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+}
 
   // Haversine
   function hv(lat1, lon1, lat2, lon2) {
@@ -9920,8 +9920,8 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   track.style.position = track.style.position || 'relative';
   if (!track.style.minHeight) track.style.minHeight = '160px';
 
-  // ✅ ÖNCELİKLE ESKİ SVG VE TOOLBAR'LARI TEMİZLE
-  track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+// YENİ:
+track.querySelectorAll('svg').forEach(el => el.remove()); // track altındaki TÜM SVG'leri sil
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
   // SVG oluştur
@@ -9931,7 +9931,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   // ✅ YENİ TEK SVG OLUŞTUR
   const svg = document.createElementNS(svgNS, 'svg');
-  svg.className = 'tt-elev-svg';
+svg.setAttribute('class', 'tt-elev-svg'); // SVG için class setAttribute ile
   svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.setAttribute('width', '100%');
@@ -10056,7 +10056,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
   // 0) Segment UI artıklarını temizle
   container.querySelectorAll('.scale-bar-track').forEach(t => {
-    t.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+    t.querySelectorAll('svg').forEach(el => el.remove()); // tüm svg'leri kaldır
     t.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
   });
   tb.remove();
