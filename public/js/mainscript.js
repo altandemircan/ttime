@@ -9131,6 +9131,13 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   const coords = gj?.features?.[0]?.geometry?.coordinates;
   if (!coords || coords.length < 2) return;
 
+  // ✅ 1) ÖNCELİKLE ESKİ SEGMENT ARTEFAKTLARINI TEMİZLE
+  const existingTrack = container.querySelector('.scale-bar-track');
+  if (existingTrack) {
+    existingTrack.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+    existingTrack.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+  }
+
   // Haversine
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -9185,7 +9192,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
     const smooth = movingAverage(elev, 3);
 
-    // Aktif domaini SEGMENT’e geçir (info bar’ın görünmesi için şart)
+    // Aktif domaini SEGMENT'e geçir
     container._elevSamples = samples;
     container._elevStartKm = startKm;
     container._elevKmSpan  = (endKm - startKm);
@@ -9195,7 +9202,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
       max: Math.max(...smooth)
     };
 
-    // Segment profilini çiz + toolbar’ı göster
+    // ✅ 2) Segment profilini çiz (track'i tekrar kullanır, yeni oluşturmaz)
     drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
 
     // (İsteğe bağlı) küçük özet rozetlerini güncelle
@@ -9211,6 +9218,29 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
     window.hideScaleBarLoading?.(container);
   }
 }
+
+
+// ✅ TÜM YETIM SCALE-BAR-TRACK'LERI TEMİZLE (güvenlik)
+function cleanupOrphanScaleBars() {
+  document.querySelectorAll('.scale-bar-track').forEach(track => {
+    // Eğer track bir expanded-route-scale-bar veya route-scale-bar container'ının içinde DEĞİLSE
+    const parent = track.closest('[id^="expanded-route-scale-bar-day"], [id^="route-scale-bar-day"]');
+    if (!parent) {
+      console.warn('[cleanup] Orphan scale-bar-track removed:', track);
+      track.remove();
+    }
+  });
+}
+
+// Her segment seçiminden ÖNCE temizle
+document.addEventListener('mousedown', (e) => {
+  const scaleBar = e.target.closest('.scale-bar-track');
+  if (scaleBar) {
+    setTimeout(cleanupOrphanScaleBars, 100);
+  }
+});
+
+
 function highlightSegmentOnMap(day, startKm, endKm) {
   const cid = `route-map-day${day}`;
   const map = window.leafletMaps?.[cid];
@@ -9989,11 +10019,13 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <button type="button" class="elev-segment-reset" style="appearance:none;border:1px solid #d0d7de;background:#fff;color:#333;border-radius:8px;padding:4px 8px;cursor:pointer;font-weight:600;">Reset</button>
   `;
 
-  // Reset -> tam profile dön
+   // Reset -> tam profile dön
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
-    // 0) ✅ ÖNCE TÜM SEGMENT ARTEFAKTLARINI TEMİZLE
-    track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
-    track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+    // 0) ✅ TÜM CONTAINER İÇİNDEKİ TRACK'LERDƏN SEGMENT ARTEFAKTLARINI SİL
+    container.querySelectorAll('.scale-bar-track').forEach(t => {
+      t.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+      t.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+    });
     
     // 1) Toolbar'ı kaldır
     tb.remove();
