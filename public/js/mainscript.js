@@ -8425,7 +8425,7 @@ if (typeof wrapRouteControlsForAllDays === 'function') {
     width: 100%;
     height: 186px;
     pointer-events: none;
-    z-index: 0;
+    z-index: -1;
     background:#ffffff;
 }
     .tt-elev-grid line { stroke:#d7dde2; stroke-dasharray:4 4; opacity:.8; }
@@ -9878,8 +9878,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   svg.setAttribute('height', String(heightNow));
   // Base’in ÜSTÜNDE
   
-  svg.style.zIndex = '2';
-  track.appendChild(svg);
+   track.appendChild(svg);
 
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class','tt-elev-grid');
