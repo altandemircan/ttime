@@ -3529,9 +3529,8 @@ if (isEmptyDay) {
   dayList.appendChild(emptyWrap);
 }
 
-
-
- else {
+// 2.b Dolu gün item’ları
+else {
   // --- ATLANAN KOD BAŞLANGICI ---
   // (Burada eski kodunda kalan, forEach veya başka iş varsa onu tutabilirsin)
   // --- ATLANAN KOD BİTİŞİ ---
@@ -3667,6 +3666,7 @@ if (isEmptyDay) {
       dayList.appendChild(oneItemMessage);
     }
   }
+}
 
     dayContainer.appendChild(dayList);
 
