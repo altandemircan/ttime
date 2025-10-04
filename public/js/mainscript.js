@@ -3531,17 +3531,56 @@ if (isEmptyDay) {
 
 
 
-  else {
-  let prevCoordItem = null;
-  let prevCoordIdx = null;
+ else {
+  // --- ATLANAN KOD BAŞLANGICI ---
+  // (Burada eski kodunda kalan, forEach veya başka iş varsa onu tutabilirsin)
+  // --- ATLANAN KOD BİTİŞİ ---
+
+  let lastCoordItem = null;
+  let lastCoordIdx = null;
   for (let idx = 0; idx < dayItemsArr.length; idx++) {
     const item = dayItemsArr[idx];
+    const currIdx = globalIndexMap.get(item);
 
-    // 1. Önce ilk item'ı ekle
+    // 1) Eğer hem lastCoordItem hem bu item koordinatlıysa önce separator ekle
+    if (
+      lastCoordItem &&
+      lastCoordItem.location && item.location &&
+      typeof lastCoordItem.location.lat === "number" &&
+      typeof lastCoordItem.location.lng === "number" &&
+      typeof item.location.lat === "number" &&
+      typeof item.location.lng === "number"
+    ) {
+      const key = `route-map-day${day}`;
+      const summary = window.pairwiseRouteSummaries?.[key]?.[lastCoordIdx];
+      let distanceStr = '';
+      let durationStr = '';
+      if (summary) {
+        distanceStr = summary.distance >= 1000
+          ? (summary.distance / 1000).toFixed(1) + " km"
+          : Math.round(summary.distance) + " m";
+        durationStr = summary.duration >= 60
+          ? Math.round(summary.duration / 60) + " dk"
+          : Math.round(summary.duration) + " sn";
+      }
+      const distanceSeparator = document.createElement('div');
+      distanceSeparator.className = 'distance-separator';
+      distanceSeparator.innerHTML = `
+        <div class="separator-line"></div>
+        <div class="distance-label">
+          <span class="distance-value">${distanceStr}</span> • 
+          <span class="duration-value">${durationStr}</span>
+        </div>
+        <div class="separator-line"></div>
+      `;
+      dayList.appendChild(distanceSeparator);
+    }
+
+    // 2) Şimdi item'i ekle
     const li = document.createElement("li");
     li.className = "travel-item";
     li.draggable = true;
-    li.dataset.index = globalIndexMap.get(item);
+    li.dataset.index = currIdx;
     li.addEventListener("dragstart", dragStart);
 
     let openingHoursDisplay = "No working hours info";
@@ -3568,7 +3607,7 @@ if (isEmptyDay) {
     <div class="item-info">
       <p class="toggle-title">${item.name}</p>
     </div>
-    <button class="remove-btn" onclick="removeFromCart(${globalIndexMap.get(item)})">
+    <button class="remove-btn" onclick="removeFromCart(${currIdx})">
       <img src="img/remove-icon.svg" alt="Close">
     </button>
     <span class="arrow">
@@ -3610,51 +3649,17 @@ if (isEmptyDay) {
 `;
     dayList.appendChild(li);
 
-    // 2. Eğer hem prevCoordItem, hem bu item koordinatlı ise, araya SEPARATOR ekle
+    // 3) Eğer bu item koordinatlıysa güncelle
     if (
-      prevCoordItem &&
-      prevCoordItem.location && item.location &&
-      typeof prevCoordItem.location.lat === "number" &&
-      typeof prevCoordItem.location.lng === "number" &&
+      item.location &&
       typeof item.location.lat === "number" &&
       typeof item.location.lng === "number"
     ) {
-      // SUMMARY hesapla
-      const key = `route-map-day${day}`;
-      const summary = window.pairwiseRouteSummaries?.[key]?.[prevCoordIdx]; // DİKKAT: prevCoordIdx!
-      let distanceStr = '';
-      let durationStr = '';
-      if (summary) {
-        distanceStr = summary.distance >= 1000
-          ? (summary.distance / 1000).toFixed(1) + " km"
-          : Math.round(summary.distance) + " m";
-        durationStr = summary.duration >= 60
-          ? Math.round(summary.duration / 60) + " dk"
-          : Math.round(summary.duration) + " sn";
-      }
-      const distanceSeparator = document.createElement('div');
-      distanceSeparator.className = 'distance-separator';
-      distanceSeparator.innerHTML = `
-        <div class="separator-line"></div>
-        <div class="distance-label">
-          <span class="distance-value">${distanceStr}</span> • 
-          <span class="duration-value">${durationStr}</span>
-        </div>
-        <div class="separator-line"></div>
-      `;
-      dayList.appendChild(distanceSeparator);
+      lastCoordItem = item;
+      lastCoordIdx = currIdx;
     }
 
-    // 3. prevCoordItem ve index'i güncelle
-    if (item.location &&
-      typeof item.location.lat === "number" &&
-      typeof item.location.lng === "number"
-    ) {
-      prevCoordItem = item;
-      prevCoordIdx = globalIndexMap.get(item);
-    }
-
-    // 4. Tek item uyarısı
+    // 4) Tek item uyarısı
     if (dayItemsArr.length === 1 && idx === 0) {
       const oneItemMessage = document.createElement("p");
       oneItemMessage.className = "one-item-message";
@@ -3662,7 +3667,6 @@ if (isEmptyDay) {
       dayList.appendChild(oneItemMessage);
     }
   }
-}
 
     dayContainer.appendChild(dayList);
 
