@@ -8538,7 +8538,12 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
     .scale-bar-label { position:absolute; top:30px; transform:translateX(-50%); font-size:11px; color:#607d8b; }
 
     /* Elevation SVG layer and styling */
-    .tt-elev-svg { position:absolute; left:0; top:48px; width:100%; height:136px; pointer-events:none; z-index:0; }
+    .tt-elev-svg {     position: absolute;
+    left: 0;
+    width: 100%;
+    height: 186px;
+    pointer-events: none;
+    z-index: 0; }
     .tt-elev-grid line { stroke:#d7dde2; stroke-dasharray:4 4; opacity:.8; }
     .tt-elev-grid text { fill:#90a4ae; font-size:11px; }
     .tt-elev-area { fill:#263445; }              /* dark navy fill */
