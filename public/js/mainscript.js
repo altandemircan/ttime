@@ -1820,17 +1820,6 @@ const categoryIcons = {
 };
 
 
-// --- PATCH: addToCart başına ekle (EN BAŞA, day atamasından hemen sonra) ---
-/**
- * addToCart(name, image, day, category, address, rating, user_ratings_total,
- *           opening_hours, place_id, location, website, options?)
- *
- * options: {
- *    silent: false,       // true ise updateCart + renderRouteForDay çağrılmaz (batch ekleme için)
- *    skipRender: false,   // true ise sadece updateCart çağrılmaz; manuel sen çağırırsın
- *    forceDay: null       // day parametresi karıştıysa override edebilirsin
- * }
- */
 function addToCart(
   name,
   image,
@@ -3568,39 +3557,47 @@ if (isEmptyDay) {
           : '<div class="map-error">Location not available</div>';
 
         li.innerHTML = `
-          <div class="cart-item">
-            <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-            <img src="${item.image}" alt="${item.name}" class="cart-image">
-            <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
-            <div class="item-info">
-              <p class="toggle-title">${item.name}</p>
+  <div class="cart-item">
+    <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+    <img src="${item.image}" alt="${item.name}" class="cart-image">
+    <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+    <div class="item-info">
+      <p class="toggle-title">${item.name}</p>
+    </div>
+    <button class="remove-btn" onclick="removeFromCart(${globalIndexMap.get(item)})">
+      <img src="img/remove-icon.svg" alt="Close">
+    </button>
+    <span class="arrow">
+      <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+    </span>
+    <div class="content">
+      <div class="info-section">
+        <div class="place-rating">${mapHtml}</div>
+        <div class="contact">
+          <p>📌 Address: ${item.address || 'Address not available'}</p>
+        </div>
+        <p class="working-hours-title">
+          🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+        </p>
+        ${
+          item.location ? `
+            <div class="coords-info" style="margin-top:8px;">
+              📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+              Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
             </div>
-            <button class="remove-btn" onclick="removeFromCart(${globalIndexMap.get(item)})">
-              <img src="img/remove-icon.svg" alt="Close">
-            </button>
-            <span class="arrow">
-              <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-            </span>
-            <div class="content">
-              <div class="info-section">
-                <div class="place-rating">${mapHtml}</div>
-                <div class="contact">
-                  <p>📌 Address: ${item.address || 'Address not available'}</p>
-                </div>
-                <p class="working-hours-title">
-                  🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
-                </p>
-                ${
-                  item.location ? `
-                  <div class="coords-info" style="margin-top:8px;">
-                    📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
-                    Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
-                  </div>` : ''
-                }
+            ${item.website ? `
+              <div class="website-info" style="margin-top:8px;">
+                🌐 Website: <a href="${item.website}" target="_blank" rel="noopener">
+                  ${item.website.replace(/^https?:\/\//, '')}
+                </a>
               </div>
-            </div>
-          </div>
-        `;
+            ` : ''}
+          ` : ''
+        }
+      </div>
+    </div>
+  </div>
+`;
         dayList.appendChild(li);
 
         if (dayItemsArr.length === 1 && idx === 0) {
@@ -4860,7 +4857,7 @@ function updateRouteStatsUI(day) {
 
   // Eğer summary yoksa alanları temizle
   if (!summary) {
-    // Küçük harita altındaki span (DOĞRU ID!)
+    // Küçük harita altındaki span
     const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
     if (routeSummarySpan) routeSummarySpan.innerHTML = "";
     // Büyük harita altındaki div
@@ -4869,11 +4866,11 @@ function updateRouteStatsUI(day) {
     return;
   }
 
-  // Mapbox summary.distance metre, summary.duration saniye döndürür!
+  // Mesafe/Süre
   const distanceKm = (summary.distance / 1000).toFixed(2);
   const durationMin = Math.round(summary.duration / 60);
 
-  // Küçük harita altındaki span (DOĞRU ID!)
+  // Küçük harita altındaki span (sidebar/cart)
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     routeSummarySpan.innerHTML = `
@@ -4896,7 +4893,7 @@ function updateRouteStatsUI(day) {
     `;
   }
 
-  // Büyük harita altındaki div
+  // Büyük harita (expanded) altındaki div
   const routeStatsDiv = document.querySelector('.route-stats');
   if (routeStatsDiv) {
     routeStatsDiv.innerHTML = `
