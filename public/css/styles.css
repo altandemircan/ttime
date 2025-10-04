@@ -4955,6 +4955,9 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     min-height: fit-content !important;
 }
 
+.route-info {
+    margin-bottom:20px;
+}
 .ai-tags {
     display: flex;
     gap: 8px;
