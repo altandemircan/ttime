@@ -8421,12 +8421,12 @@ if (typeof wrapRouteControlsForAllDays === 'function') {
     /* Elevation SVG layer and styling */
     .tt-elev-svg {
     position: absolute;
-    left: 0;
-    
+    left: 0;    
     width: 100%;
     height: 186px;
     pointer-events: none;
     z-index: 0;
+    background:#ffffff;
 }
     .tt-elev-grid line { stroke:#d7dde2; stroke-dasharray:4 4; opacity:.8; }
     .tt-elev-grid text { fill:#90a4ae; font-size:11px; }
