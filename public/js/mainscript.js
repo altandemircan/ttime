@@ -10118,37 +10118,33 @@ function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
   const cid = `route-map-day${d}`;
 
-  // 0) Expanded’ı ve detay overlay’lerini anında sök + kayıtları temizle
+  // 0) Sadece DETAY elevation profilini güvenli şekilde kapat (observer’ları kopar)
   try {
-    // window.expandedMaps kaydı varsa önce restoreMap ile kapat, sonra kaydı sil
-    if (window.expandedMaps && window.expandedMaps[cid]) {
-      try { restoreMap(cid, d); } catch(_) {}
-      delete window.expandedMaps[cid];
+    const bar = document.getElementById(`expanded-route-scale-bar-day${d}`);
+    if (bar) {
+      // Bilinen observer referanslarını kopar
+      if (bar._elevResizeObserver && typeof bar._elevResizeObserver.disconnect === 'function') {
+        try { bar._elevResizeObserver.disconnect(); } catch(_) {}
+        bar._elevResizeObserver = null;
+      }
+      if (bar.__cleanupMO && typeof bar.__cleanupMO.disconnect === 'function') {
+        try { bar.__cleanupMO.disconnect(); } catch(_) {}
+        bar.__cleanupMO = null;
+      }
+      const track = bar.querySelector('.scale-bar-track');
+      if (track && track.__mo && typeof track.__mo.disconnect === 'function') {
+        try { track.__mo.disconnect(); } catch(_) {}
+        track.__mo = null;
+      }
+
+      // Detay profil UI’nı gizle ve temizle (haritaya dokunmadan)
+      bar.style.display = 'none';
+      bar.style.visibility = 'hidden';
+      bar.style.pointerEvents = 'none';
+      bar.innerHTML = ''; // overlay parçaları (svg/selection/toolbar) silinir
+      try { delete bar.dataset.elevLoadedKey; } catch(_) {}
     }
-
-    // Expanded container + scale bar (o güne ait)
-    document.getElementById(`expanded-map-${d}`)?.remove();
-    document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
-
-    // Olası yetim kopyalar (aynı id’li wrapper/scale-bar tekrar eklenmişse)
-    document.querySelectorAll(`.expanded-map-container[id="expanded-map-${d}"]`).forEach(el => el.remove());
-    document.querySelectorAll(`#expanded-route-scale-bar-day${d}`).forEach(el => el.remove());
-
-    // Expanded wrapper içindeki overlay parçaları (segment toolbar, seçim, svg)
-    const expWrap = document.getElementById(`expanded-map-${d}`);
-    if (expWrap) {
-      expWrap.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
-    } else {
-      // Wrapper bulunamazsa globalden sadece bu güne ait bar içinde kalanları temizle
-      const sb = document.getElementById(`expanded-route-scale-bar-day${d}`);
-      sb?.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
-    }
-
-    // Güvenlik: expanded-open sınıfını kaldır
-    if (document?.body?.classList?.contains('expanded-open')) {
-      document.body.classList.remove('expanded-open');
-    }
-  } catch(_) {}
+  } catch (_) {}
 
   // 1) Bu güne ait içe aktarılan ham iz varsa sil
   if (window.importedTrackByDay && window.importedTrackByDay[d]) {
@@ -10240,7 +10236,24 @@ function resetDayAction(day, confirmationContainerId) {
 
 // ✅ YETİM SCALE BAR CONTAINER TEMİZLEYİCİ (her 2 saniyede bir çalışır)
 (function initScaleBarCleanup(){
-  function cleanupOrphanScaleBars() {
+ 
+  
+  // İlk temizlik
+  cleanupOrphanScaleBars();
+  
+  // Periyodik temizlik (her 2 saniye)
+  setInterval(cleanupOrphanScaleBars, 2000);
+  
+  // MutationObserver ile anlık temizlik
+  const observer = new MutationObserver(() => {
+    cleanupOrphanScaleBars();
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: false // Sadece body'nin direkt çocukları
+  });
+})(); function cleanupOrphanScaleBars() {
     // Body'e direkt bağlı tüm scale-bar-track'leri bul ve sil
     document.querySelectorAll('body > .scale-bar-track').forEach(track => {
       console.warn('[cleanup] Removing orphan scale-bar-track from body:', track);
@@ -10267,20 +10280,3 @@ function resetDayAction(day, confirmationContainerId) {
       }
     });
   }
-  
-  // İlk temizlik
-  cleanupOrphanScaleBars();
-  
-  // Periyodik temizlik (her 2 saniye)
-  setInterval(cleanupOrphanScaleBars, 2000);
-  
-  // MutationObserver ile anlık temizlik
-  const observer = new MutationObserver(() => {
-    cleanupOrphanScaleBars();
-  });
-  
-  observer.observe(document.body, {
-    childList: true,
-    subtree: false // Sadece body'nin direkt çocukları
-  });
-})();
