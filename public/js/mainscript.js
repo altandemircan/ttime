@@ -8811,7 +8811,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
   let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
   if (isNaN(width)) width = 400;
   createScaleElements(width);
-
+  // Her yeniden çizimde eski svg.tt-elev-svg’leri sil (stacking’i önle)
+  track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
   // SVG kur
   const svgNS = 'http://www.w3.org/2000/svg';
   const SVG_TOP = 48;
@@ -9875,24 +9876,22 @@ for (let i = 1; i < tbs.length; i++) tbs[i].remove();
   track.style.position = track.style.position || 'relative';
   if (!track.style.minHeight) track.style.minHeight = '160px';
 
-  // SVG’yi bul veya oluştur
-  let svg = track.querySelector('svg.tt-elev-svg');
+  // SVG’yi her seferinde tekille: önce TÜM eski SVG’leri kaldır, sonra sıfırdan oluştur
   const svgNS = 'http://www.w3.org/2000/svg';
   const widthNow = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
   const heightNow = 220;
 
-  if (!svg) {
-    svg = document.createElementNS(svgNS, 'svg');
-    svg.className = 'tt-elev-svg';
-    svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
-    svg.setAttribute('preserveAspectRatio', 'none');
-    svg.setAttribute('width', '100%');
-    svg.setAttribute('height', String(heightNow));
-    track.appendChild(svg);
-  } else {
-    // ViewBox’ı güncelle
-    svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
-  }
+  // Eski tüm svg.tt-elev-svg’leri sil
+  track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+
+  // Yeni tek SVG oluştur
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.className = 'tt-elev-svg';
+  svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', String(heightNow));
+  track.appendChild(svg);
 
   // Katmanları bul/oluştur
   let gridG = svg.querySelector('g.tt-elev-grid');
@@ -9977,7 +9976,8 @@ for (let i = 1; i < tbs.length; i++) tbs[i].remove();
     seg.setAttribute('fill', 'none');
     segG.appendChild(seg);
   }
-
+  // Eski toolbar birikmesini önle
+  track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
   // Toolbar (her durumda oluştur)
   let tb = track.querySelector('.elev-segment-toolbar');
   if (!tb) {
