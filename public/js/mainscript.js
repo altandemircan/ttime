@@ -4614,51 +4614,56 @@ window.cart.forEach(item => {
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
 
-  // DETAY ELEVATION OVERLAY'İNİ ANINDA GİZLE (z-index/pointer-events düşür)
+  // HOTFIX: Detay elevation overlay'lerini ve expanded bar'ı o gün için kökten kaldır
   try {
-    const sb = document.getElementById(`expanded-route-scale-bar-day${d}`);
-    if (sb) {
-      const track = sb.querySelector('.scale-bar-track');
+    // 1) O güne ait expanded container + bar
+    document.getElementById(`expanded-map-${d}`)?.remove();
+    document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
 
-      // Üstte kalan yeni overlay katmanlarını kapat
-      track?.querySelectorAll('.tt-elev-svg, svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line')
-        .forEach(el => { if (typeof el.remove === 'function') el.remove(); else el.style.display = 'none'; });
+    // 2) Aynı güne ait yetim kopyalar (olası stacking)
+    document.querySelectorAll(`.expanded-map-container[id="expanded-map-${d}"]`).forEach(el => el.remove());
+    document.querySelectorAll(`[id^="expanded-route-scale-bar-day"]`).forEach(el => {
+      if (el.id === `expanded-route-scale-bar-day${d}`) el.remove();
+    });
 
-      // Overlay etkileşimini tamamen kapat, z-index’i düşür
-      if (track) {
-        track.style.pointerEvents = 'none';
-        track.style.zIndex = '0';
-      }
-      sb.style.zIndex = '0';
+    // 3) Her ihtimale karşı: bu günün bar’ı altında kalmış overlay parçaları (svg, selection, toolbar)
+    // (bar silinmiş olsa bile bekletilen track’ler olabilir)
+    const killers = [
+      `.elev-segment-toolbar`,
+      `.scale-bar-selection`,
+      `.scale-bar-vertical-line`,
+      `svg.tt-elev-svg`
+    ];
+    killers.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => el.remove());
+    });
 
-      // Alttaki orijinal görünüm için küçük bar varsa görünür kıl
-      const small = document.getElementById(`route-scale-bar-day${d}`);
-      if (small) {
-        small.style.removeProperty('display'); // gizlendiyse geri getir
-        small.style.display = 'block';
-      }
+    // 4) Görünürlüğü zorla kapat (CSS fallback) — tek seferlik stil
+    const hidId = `tt-hide-elev-day${d}`;
+    let hid = document.getElementById(hidId);
+    if (!hid) {
+      hid = document.createElement('style');
+      hid.id = hidId;
+      hid.textContent = `
+        #expanded-map-${d},
+        #expanded-route-scale-bar-day${d} { display: none !important; visibility: hidden !important; }
+      `;
+      document.head.appendChild(hid);
     }
-  } catch (_) {}
+  } catch(_) {}
 
-  // [Devamı: senin mevcut reset akışın]
-  // 1) Bu güne ait içe aktarılan ham iz varsa sil
+  // Devam: mevcut reset akışın
   if (window.importedTrackByDay && window.importedTrackByDay[d]) {
     delete window.importedTrackByDay[d];
   }
-
-  // 2) Genişletilmiş haritayı mevcut fonksiyonla kapat (varsa)
   if (typeof closeExpandedForDay === 'function') {
     try { closeExpandedForDay(d); } catch (_) {}
   } else {
-    // Fallback: expanded DOM’u kaldır
     try {
       document.getElementById(`expanded-map-${d}`)?.remove();
-      const sb = document.getElementById(`expanded-route-scale-bar-day${d}`);
-      if (sb) sb.innerHTML = '';
+      document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
     } catch (_) {}
   }
-
-  // 3) Ölçek çubukları / irtifa UI temizlik (satır içi, yeni fonksiyon yok)
   try {
     const exp = document.getElementById(`expanded-route-scale-bar-day${d}`);
     if (exp) exp.innerHTML = '';
@@ -4666,21 +4671,16 @@ function resetDayAction(day, confirmationContainerId) {
     if (small) small.innerHTML = '';
   } catch (_) {}
 
-  // 4) Rota görselleri ve önbellekleri temizle (mevcut yardımcılar)
   if (typeof clearRouteVisualsForDay === 'function') { try { clearRouteVisualsForDay(d); } catch (_) {} }
   if (typeof clearRouteCachesForDay === 'function')  { try { clearRouteCachesForDay(d); } catch (_) {} }
-
-  // Günlük irtifa önbellekleri (varsa) temizle
   if (window.__ttElevDayCache && window.__ttElevDayCache[d]) delete window.__ttElevDayCache[d];
   if (window.routeElevStatsByDay && window.routeElevStatsByDay[d]) delete window.routeElevStatsByDay[d];
 
-  // 5) Mini harita kapları ve kontrolleri kaldır (mevcut fonksiyonlar)
   if (typeof removeDayMapCompletely === 'function') {
     try { removeDayMapCompletely(d); } catch (_) {}
   } else if (typeof removeDayMap === 'function') {
     try { removeDayMap(d); } catch (_) {}
   } else {
-    // Fallback: doğrudan DOM’dan kaldır
     document.getElementById(`route-map-day${d}`)?.remove();
     document.getElementById(`route-info-day${d}`)?.remove();
     document.getElementById(`map-bottom-controls-wrapper-day${d}`)?.remove();
@@ -4688,7 +4688,6 @@ function resetDayAction(day, confirmationContainerId) {
     document.getElementById(`route-scale-bar-day${d}`)?.remove();
   }
 
-  // 6) Günün item’larını sıfırla (günü görünür bırak ama boş)
   if (Array.isArray(window.cart)) {
     window.cart.forEach(item => {
       if (item.day == d) {
@@ -4700,19 +4699,18 @@ function resetDayAction(day, confirmationContainerId) {
     });
   }
 
-  // 7) Mesafe etiketleri ve rota istatistikleri
   if (typeof clearDistanceLabels === 'function') { try { clearDistanceLabels(d); } catch (_) {} }
   if (typeof updateRouteStatsUI === 'function')  { try { updateRouteStatsUI(d); } catch (_) {} }
 
-  // 8) İlk gerçek nokta eklenene kadar mini harita otomatik doğmasın
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[d] = true;
 
-  // 9) UI’ı yenile
   if (typeof updateCart === 'function') { try { updateCart(); } catch (_) {} }
 
-  // 10) Onay penceresini kapat
   if (typeof hideConfirmation === 'function') { try { hideConfirmation(confirmationContainerId); } catch (_) {} }
+
+  // Son olarak: görünürlük stilini temizlemek istersen (opsiyonel)
+  // document.getElementById(`tt-hide-elev-day${d}`)?.remove();
 }
 function hideConfirmation(confirmationContainerId) {
     const confirmationContainer = document.getElementById(confirmationContainerId);
