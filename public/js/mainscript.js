@@ -7455,6 +7455,13 @@ function cleanupLegacyTravelMode() {
 // Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
 // ensureDayTravelModeSet fonksiyonunu güncelle
 function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
+     const realPoints = (typeof getDayPoints === "function") ? getDayPoints(day) : [];
+  if (!Array.isArray(realPoints) || realPoints.length < 2) {
+    // Eğer travel mode set zaten varsa kaldır
+    const oldSet = document.getElementById(`tt-travel-mode-set-day${day}`);
+    if (oldSet) oldSet.remove();
+    return;
+  }
   // Remove any legacy/header sets for this day
   document.querySelectorAll(`#day-container-${day} .day-header .tt-travel-mode-set`).forEach(el => el.remove());
 
