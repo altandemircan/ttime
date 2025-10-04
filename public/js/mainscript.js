@@ -3072,12 +3072,11 @@ function restoreLostDayMaps() {
 /* ================== START WITH MAP: DIRECT EXPANDED EMPTY MAP PATCH ================== */
 /* İSTENEN: Butondaki gün (data-day="X") için 1. gün haritasını yeniden kullanmak yerine
             o güne ait tamamen boş (noktasız) BÜYÜK harita açılsın ve planlama o güne başlasın. */
-
+// Bu IIFE içindeki startDayMapPlanningAndExpand fonksiyonunu bu şekilde güncelleyin
 (function initDirectDayExpandedMapPatch(){
   if (window.__tt_directExpandedPatchApplied) return;
   window.__tt_directExpandedPatchApplied = true;
 
-  // Güvenli event delegation: Her tıklamada doğru data-day alınır
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.start-map-btn');
     if (!btn) return;
@@ -3090,7 +3089,11 @@ function restoreLostDayMaps() {
   function startDayMapPlanningAndExpand(day) {
     console.log('[direct-expand] start map planning day=', day);
 
-    // 1) Daha önce açık expanded map varsa kapat
+    // DİKKAT: Bu gün için "Start with map" butonunu gizle bayrağı
+    window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
+    window.__hideStartMapButtonByDay[day] = true;
+
+    // Daha önce açık expanded map varsa kapat
     if (window.expandedMaps) {
       Object.keys(window.expandedMaps).forEach(cid => {
         const ex = window.expandedMaps[cid];
@@ -3100,35 +3103,27 @@ function restoreLostDayMaps() {
       });
     }
 
-    // 2) Planlama state
     window.mapPlanningActive = true;
     window.mapPlanningDay = day;
     window.currentDay = day;
 
-    // 3) Mini harita ilk noktaya kadar gizlenmiş / bastırılmış kalsın diye suppression set et
     window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
     window.__suppressMiniUntilFirstPoint[day] = true;
 
-    // 4) Day zaten cart'a “bare day” olarak eklenmişse ekstra starter ekleme.
-    //    Eğer ilgili day henüz yoksa day container oluşması için boş obje ekle.
     if (!Array.isArray(window.cart)) window.cart = [];
     const hasDay = window.cart.some(it => it.day === day);
     if (!hasDay) {
-      window.cart.push({ day }); // name vs. yok, updateCart yine day container yaratır.
+      window.cart.push({ day });
     }
 
-    // 5) UI güncelle (boş gün butonları yeniden çizilsin — Start with map butonu yine kalabilir)
     if (typeof updateCart === 'function') {
-      updateCart();
+      updateCart(); // yeniden çizimde buton gizlenecek
     }
 
-    // 6) Harita container + boş Leaflet map kur
     ensureDayMapContainer(day);
     initEmptyDayMap(day);
 
-    // 7) Expand'ı doğrudan tetikle (küçük haritayı bekletme)
     const containerId = `route-map-day${day}`;
-    // expandMap bazı durumlarda baseMap bulamazsa 1 tick sonra tekrar denemek için kısa bir bekleme:
     setTimeout(() => {
       if (typeof expandMap === 'function') {
         expandMap(containerId, day);
@@ -3137,7 +3132,6 @@ function restoreLostDayMaps() {
       }
     }, 40);
 
-    // 8) Click ile nokta eklemeyi aktive et
     setTimeout(() => {
       try {
         attachMapClickAddMode(day);
@@ -3147,23 +3141,22 @@ function restoreLostDayMaps() {
       }
     }, 140);
   }
-
 })();
 /* ================== END PATCH ================== */
+// Gün 1 için kullanılan global başlatıcıda da bayrağı set edin
 function startMapPlanning() {
+  window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
+  window.__hideStartMapButtonByDay[1] = true;
+
   window.__forceEmptyMapForDay = window.__forceEmptyMapForDay || {};
   window.__forceEmptyMapForDay[1] = true;
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[1] = true;
 
   if (!Array.isArray(window.cart) || window.cart.length === 0) {
-    window.cart = [{
-      day: 1, name: 'Start', category: 'Note', image: 'img/placeholder.png', _starter: true
-    }];
+    window.cart = [{ day: 1, name: 'Start', category: 'Note', image: 'img/placeholder.png', _starter: true }];
   } else if (!window.cart.some(it => it.day === 1)) {
-    window.cart.push({
-      day: 1, name: 'Start', category: 'Note', image: 'img/placeholder.png', _starter: true
-    });
+    window.cart.push({ day: 1, name: 'Start', category: 'Note', image: 'img/placeholder.png', _starter: true });
   }
 
   window.currentDay = 1;
@@ -3249,16 +3242,18 @@ ensureDayMapContainer(day);
     expandMap(cid, day); // Fallback
   }
 }
+// Belirli bir gün için başlatıcıda da bayrağı set edin
 function startMapPlanningForDay(day) {
   day = Number(day) || 1;
 
+  window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
+  window.__hideStartMapButtonByDay[day] = true;
+
   if (!Array.isArray(window.cart)) window.cart = [];
 
-  // Mini harita ilk gerçek noktaya kadar gizli
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[day] = true;
 
-  // Starter yoksa ekle
   if (!window.cart.some(it => it.day === day)) {
     window.cart.push({
       day,
@@ -3289,28 +3284,22 @@ function startMapPlanningForDay(day) {
   window.mapPlanningDay = day;
   window.mapPlanningActive = true;
 
-  // UI çiz
   updateCart();
-
-  // Mini haritayı oluştur ama görünmez yap
   ensureDayMapContainer(day);
   initEmptyDayMap(day);
   const mini = document.getElementById(`route-map-day${day}`);
   if (mini) mini.classList.add('mini-suppressed');
 
-  // Travel mode set
   if (typeof renderTravelModeControlsForAllDays === 'function') {
     renderTravelModeControlsForAllDays();
   }
 
-  // Click‑add modu (expanded içinden de çalışır)
   setTimeout(() => {
     const cid = `route-map-day${day}`;
     if (!window.leafletMaps[cid]) initEmptyDayMap(day);
     attachMapClickAddMode(day);
   }, 60);
 
-  // Direkt expanded aç
   attemptExpandDay(day);
 }
 function attachMapClickAddMode(day) {
@@ -3534,9 +3523,13 @@ if (isEmptyDay) {
   `;
 
 
-if (planningThisDay) {
-  const startBtn = emptyWrap.querySelector('.start-map-btn');
-  if (startBtn) startBtn.disabled = true;
+const startBtn = emptyWrap.querySelector('.start-map-btn');
+if (startBtn) {
+  const hideByFlag = !!(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[day]);
+  const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
+  if (hideByFlag || planningThisDay) {
+    startBtn.style.display = 'none'; // GİZLE
+  }
 }
 
   dayList.appendChild(emptyWrap);
