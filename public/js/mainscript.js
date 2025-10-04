@@ -9104,6 +9104,7 @@ if (!track) {
       const max = Math.max(...smooth, min + 1);
 
       container._elevationData = { smooth, min, max };
+      container._elevationDataFull = { smooth: smooth.slice(), min, max };
       container.dataset.elevLoadedKey = routeKey;
 
       // Ascent/Descent küçük özet
@@ -9268,7 +9269,19 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   if (!map || !gj) return;
   // cum array zaten üstte var (yeniden hesapla ya da cache’ten çek)
   // startKm/endKm’e en yakın koordinat indexlerini bulup sub-array çıkar:
-  // L.polyline(subCoords, { color:'#8a4af3', weight:6, opacity:.9 }).addTo(map);
+  // L.polyline(subCoords, { color:'#8a4af3', weight:6, opacity:.9 }).addTo(map
+
+
+  maps.forEach(m => {
+  if (window._segmentHighlight[day]?.[m._leaflet_id]) {
+    try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
+    // YENİ: referansı da sil
+    try { delete window._segmentHighlight[day][m._leaflet_id]; } catch(_){}
+  }
+});
+
+
+  
 }
 (function patchSetupScaleBarInteraction(){
   if (!window.setupScaleBarInteraction || window.__ttElevScalePatched) return;
@@ -10039,28 +10052,62 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <button type="button" class="elev-segment-reset" style="appearance:none;border:1px solid #d0d7de;background:#fff;color:#333;border-radius:8px;padding:4px 8px;cursor:pointer;font-weight:600;">Reset</button>
   `;
 
-  // Reset -> tam profile dön
+   // Reset -> tam profile dön
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
-    // 1) Segmentle ilgili tüm UI artıklarını temizle
-    tb.remove();
-    track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
-    container.querySelector('.scale-bar-selection')?.remove();
-
-    // 2) Haritadaki segment vurgusunu kaldır
-    if (typeof highlightSegmentOnMap === 'function') {
-      highlightSegmentOnMap(day, null, null); // Argümanları null geçerek temizleme
-    }
-    
-    // 3) Orijinal tam rota profilini ve ölçeğini yeniden çizdir
-    const totalKm = parseFloat(container.dataset.totalKm) || 0;
-    const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    
-    // renderRouteScaleBar'ı doğrudan çağırarak tam profili geri yükle
-    if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
-      renderRouteScaleBar(container, totalKm, markers);
-    }
+  // 0) Segment UI artıklarını temizle
+  container.querySelectorAll('.scale-bar-track').forEach(t => {
+    t.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+    t.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
   });
+  tb.remove();
+
+  // 1) Gün ve container referansları
+  const m = container.id.match(/day(\d+)/);
+  const dnum = m ? parseInt(m[1], 10) : day;
+
+  // 2) Haritadaki segment vurgusunu kaldır
+  if (typeof highlightSegmentOnMap === 'function') {
+    highlightSegmentOnMap(dnum); // start/end olmadan çağrı: mevcut highlight’ı siler
+  }
+
+  // 3) Seçim overlay’i gizle
+  const selDiv = container.querySelector('.scale-bar-selection');
+  if (selDiv) selDiv.style.display = 'none';
+
+  // 4) Domain’i TAM profile döndür
+  const fullKm = Number(container.dataset.totalKm) || 0;
+  container._elevStartKm = 0;
+  container._elevKmSpan  = fullKm;
+
+  // 5) Örnekleri ve elevation verisini tam profile geri al
+  if (Array.isArray(container._elevFullSamples) && container._elevFullSamples.length) {
+    container._elevSamples = container._elevFullSamples;
+  }
+  if (container._elevationDataFull) {
+    // Tam profil verisini aktif veriye yükle
+    container._elevationData = {
+      min: container._elevationDataFull.min,
+      max: container._elevationDataFull.max,
+      smooth: container._elevationDataFull.smooth.slice()
+    };
+  }
+
+  // 6) Yeniden çizim
+  if (container._elevationData && typeof container._redrawElevation === 'function') {
+    container._redrawElevation(container._elevationData);
+  } else {
+    // Fallback: tamamen baştan çiz
+    const markers = (typeof getRouteMarkerPositionsOrdered === 'function' && dnum)
+      ? getRouteMarkerPositionsOrdered(dnum)
+      : [];
+    if (fullKm > 0 && typeof renderRouteScaleBar === 'function') {
+      renderRouteScaleBar(container, fullKm, markers);
+    }
+  }
+});
 }
+
+
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
   const cid = `route-map-day${d}`;
@@ -10184,3 +10231,4 @@ function resetDayAction(day, confirmationContainerId) {
     setTimeout(purgeOnce, 200);
   } catch(_) {}
 }
+
