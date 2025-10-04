@@ -3248,6 +3248,24 @@ background: #fff;
     border-radius: 0px;
     padding: 10px;
 }
+.website-info {
+    color: #000000;
+    font-weight: 500;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    background: #f8f9fa;
+    border-radius: 0px;
+    padding: 10px;
+}
+.google-search-info {
+    color: #000000;
+    font-weight: 500;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    background: #f8f9fa;
+    border-radius: 0px;
+    padding: 10px;
+}
 .working-hours-title {
     background: #f8f9fa;
     border-radius: 0px;
