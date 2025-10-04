@@ -4851,61 +4851,61 @@ if (typeof setChatInputValue !== 'function') {
 
 
 function updateRouteStatsUI(day) {
-    const key = `route-map-day${day}`;
-    const summary = window.lastRouteSummaries?.[key];
+  const key = `route-map-day${day}`;
+  const summary = window.lastRouteSummaries?.[key];
 
-    // Ascent/descent verisini oku
-    const ascent = window.routeElevStatsByDay?.[day]?.ascent;
-    const descent = window.routeElevStatsByDay?.[day]?.descent;
+  // Ascent/descent verisini oku
+  const ascent = window.routeElevStatsByDay?.[day]?.ascent;
+  const descent = window.routeElevStatsByDay?.[day]?.descent;
 
-    // Eğer summary yoksa alanları temizle
-    if (!summary) {
-        // Küçük harita altındaki span (DOĞRU ID!)
-        const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-        if (routeSummarySpan) routeSummarySpan.innerHTML = "";
-        // Büyük harita altındaki div
-        const routeStatsDiv = document.querySelector('.route-stats');
-        if (routeStatsDiv) routeStatsDiv.innerHTML = "";
-        return;
-    }
-
-    // Mapbox summary.distance metre, summary.duration saniye döndürür!
-    const distanceKm = (summary.distance / 1000).toFixed(2);
-    const durationMin = Math.round(summary.duration / 60);
-
+  // Eğer summary yoksa alanları temizle
+  if (!summary) {
     // Küçük harita altındaki span (DOĞRU ID!)
     const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-    if (routeSummarySpan) {
-        routeSummarySpan.innerHTML = `
-            <span class="stat stat-distance">
-              <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
-              <span class="badge">${distanceKm} km</span>
-            </span>
-            <span class="stat stat-duration">
-              <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
-              <span class="badge">${durationMin} dk</span>
-            </span>
-            <span class="stat stat-ascent">
-              <img class="icon" src="/img/way_ascent.svg" alt="Ascent" loading="lazy" decoding="async">
-              <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
-            </span>
-            <span class="stat stat-descent">
-              <img class="icon" src="/img/way_descent.svg" alt="Descent" loading="lazy" decoding="async">
-              <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
-            </span>
-        `;
-    }
-
+    if (routeSummarySpan) routeSummarySpan.innerHTML = "";
     // Büyük harita altındaki div
     const routeStatsDiv = document.querySelector('.route-stats');
-    if (routeStatsDiv) {
-        routeStatsDiv.innerHTML = `
-               <span class="stat stat-distance"><b>Distance:</b> ${distanceKm} km</span>
-    <span class="stat stat-duration"><b>Duration:</b> ${durationMin} min</span>
-            <span class="stat stat-ascent"><b>Çıkış:</b> ${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
-            <span class="stat stat-descent"><b>İniş:</b> ${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
-        `;
-    }
+    if (routeStatsDiv) routeStatsDiv.innerHTML = "";
+    return;
+  }
+
+  // Mapbox summary.distance metre, summary.duration saniye döndürür!
+  const distanceKm = (summary.distance / 1000).toFixed(2);
+  const durationMin = Math.round(summary.duration / 60);
+
+  // Küçük harita altındaki span (DOĞRU ID!)
+  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+  if (routeSummarySpan) {
+    routeSummarySpan.innerHTML = `
+      <span class="stat stat-distance">
+        <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
+        <span class="badge">${distanceKm} km</span>
+      </span>
+      <span class="stat stat-duration">
+        <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
+        <span class="badge">${durationMin} dk</span>
+      </span>
+      <span class="stat stat-ascent">
+        <img class="icon" src="/img/way_ascent.svg" alt="Ascent" loading="lazy" decoding="async">
+        <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
+      </span>
+      <span class="stat stat-descent">
+        <img class="icon" src="/img/way_descent.svg" alt="Descent" loading="lazy" decoding="async">
+        <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
+      </span>
+    `;
+  }
+
+  // Büyük harita altındaki div
+  const routeStatsDiv = document.querySelector('.route-stats');
+  if (routeStatsDiv) {
+    routeStatsDiv.innerHTML = `
+      <span class="stat stat-distance"><b>Distance:</b> ${distanceKm} km</span>
+      <span class="stat stat-duration"><b>Duration:</b> ${durationMin} min</span>
+      <span class="stat stat-ascent"><b>Çıkış:</b> ${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
+      <span class="stat stat-descent"><b>İniş:</b> ${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
+    `;
+  }
 }
 
  
