@@ -3510,28 +3510,33 @@ if (isEmptyDay) {
   emptyWrap.className = "empty-day-block";
 
   // Mesaj
-const hideByFlag = !!(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[day]); const isPlanningThisDay = (window.mapPlanningActive && window.mapPlanningDay === day); const showStartMap = !(hideByFlag || isPlanningThisDay);;
-
-emptyWrap.innerHTML = `
-  <p class="empty-day-message">No item has been added for this day yet.</p>
-  <div class="empty-day-actions" style="display:block;text-align:center;">
-    <button type="button"
-            class="import-btn gps-import"
-            data-import-type="multi"
-            data-global="1"
-            title="Supports GPX, TCX, FIT, KML">
-      Import GPS File
-    </button>
-    ${showStartMap ? `
+ emptyWrap.innerHTML = `
+    <p class="empty-day-message">No item has been added for this day yet.</p>
+    <div class="empty-day-actions" style="display:block;text-align:center;">
+      <button type="button"
+              class="import-btn gps-import"
+              data-import-type="multi"
+              data-global="1"
+              title="Supports GPX, TCX, FIT, KML">
+        Import GPS File
+      </button>
       <div class="start-map-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
       <button type="button"
               class="start-map-btn"
               data-day="${day}">
         Start with map
       </button>
-    ` : ``}
-  </div>
-`;
+    </div>
+  `;
+
+const startBtn = emptyWrap.querySelector('.start-map-btn');
+if (startBtn) {
+  const hideByFlag = !!(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[day]);
+  const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
+  if (hideByFlag || planningThisDay) {
+    startBtn.style.display = 'none'; // GİZLE
+  }
+}
 // Start with map görünmüyorsa "or" ayırıcısını kaldır
 const sep = emptyWrap.querySelector('.start-map-sep');
 if (!startBtn || window.getComputedStyle(startBtn).display === 'none') {
