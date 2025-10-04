@@ -3587,7 +3587,7 @@ if (isEmptyDay) {
             </div>
             ${item.website ? `
               <div class="website-info" style="margin-top:8px;">
-                🌐 Website: <a href="${item.website}" target="_blank" rel="noopener">
+                🔗 Website: <a href="${item.website}" target="_blank" rel="noopener">
                   ${item.website.replace(/^https?:\/\//, '')}
                 </a>
               </div>
@@ -3595,7 +3595,7 @@ if (isEmptyDay) {
             <div class="google-search-info" style="margin-top:8px;">
               <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
                  target="_blank" rel="noopener">
-                👁️ Search images on Google
+                🇬 Search images on Google
               </a>
             </div>
           ` : ''
