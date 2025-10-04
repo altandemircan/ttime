@@ -9861,7 +9861,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
-  // SVG ve toolbar'ı her seferinde tekille: önce TÜM eski SVG/toolbar'ı kaldır, sonra sıfırdan oluştur
+  // SVG oluştur
   const svgNS = 'http://www.w3.org/2000/svg';
   const widthNow = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
   const heightNow = 220;
@@ -9875,7 +9875,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   svg.setAttribute('height', String(heightNow));
   track.appendChild(svg);
 
-  // Grid, area, segments katmanlarını oluştur
+  // ✅ YENİ KATMANLAR OLUŞTUR (querySelector DEĞİL, createElementNS)
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class','tt-elev-grid');
   svg.appendChild(gridG);
@@ -9887,22 +9887,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const segG = document.createElementNS(svgNS, 'g');
   segG.setAttribute('class','tt-elev-segments');
   svg.appendChild(segG);
-
-  // ... geri kalan çizim kodu (grid, alan, segmentler) ...
-
-  // Katmanları bul/oluştur
-  let gridG = svg.querySelector('g.tt-elev-grid');
-  if (!gridG) { gridG = document.createElementNS(svgNS, 'g'); gridG.setAttribute('class','tt-elev-grid'); svg.appendChild(gridG); }
-
-  let areaPath = svg.querySelector('path.tt-elev-area');
-  if (!areaPath) { areaPath = document.createElementNS(svgNS, 'path'); areaPath.setAttribute('class','tt-elev-area'); svg.appendChild(areaPath); }
-
-  let segG = svg.querySelector('g.tt-elev-segments');
-  if (!segG) { segG = document.createElementNS(svgNS, 'g'); segG.setAttribute('class','tt-elev-segments'); svg.appendChild(segG); }
-
-  // Temizle
-  while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
-  while (segG.firstChild) segG.removeChild(segG.firstChild);
 
   // Görsel aralık
   const min = Math.min(...elevSmooth);
@@ -9959,7 +9943,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     const dy = elevSmooth[i] - elevSmooth[i-1];
     let slope = 0, color = '#72c100';
     if (i > 1 && dx > 50) {
-      slope = (dy / dx) * 100;          // % eğim
+      slope = (dy / dx) * 100;
       color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
     }
     const seg = document.createElementNS(svgNS, 'line');
@@ -9973,23 +9957,19 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     seg.setAttribute('fill', 'none');
     segG.appendChild(seg);
   }
-  // Eski toolbar birikmesini önle
-  track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
-  // Toolbar (her durumda oluştur)
-  let tb = track.querySelector('.elev-segment-toolbar');
-  if (!tb) {
-    tb = document.createElement('div');
-    tb.className = 'elev-segment-toolbar';
-    tb.style.cssText = `
-      position:absolute;top:6px;left:8px;z-index:1005;
-      display:inline-flex;gap:10px;align-items:center;
-      background:rgba(255,255,255,0.97);
-      border:1px solid #e0e0e0;border-radius:10px;
-      padding:6px 10px;font-size:12px;color:#333;
-      box-shadow:0 4px 10px rgba(0,0,0,0.06);
-    `;
-    track.appendChild(tb);
-  }
+
+  // ✅ YENİ TOOLBAR OLUŞTUR
+  const tb = document.createElement('div');
+  tb.className = 'elev-segment-toolbar';
+  tb.style.cssText = `
+    position:absolute;top:6px;left:8px;z-index:1005;
+    display:inline-flex;gap:10px;align-items:center;
+    background:rgba(255,255,255,0.97);
+    border:1px solid #e0e0e0;border-radius:10px;
+    padding:6px 10px;font-size:12px;color:#333;
+    box-shadow:0 4px 10px rgba(0,0,0,0.06);
+  `;
+  track.appendChild(tb);
 
   // Değerler
   let up = 0, down = 0;
@@ -10009,13 +9989,13 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <button type="button" class="elev-segment-reset" style="appearance:none;border:1px solid #d0d7de;background:#fff;color:#333;border-radius:8px;padding:4px 8px;cursor:pointer;font-weight:600;">Reset</button>
   `;
 
-   // Reset -> tam profile dön
+  // Reset -> tam profile dön
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
     // 0) ✅ ÖNCE TÜM SEGMENT ARTEFAKTLARINI TEMİZLE
     track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
     track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
     
-    // 1) Toolbar'ı kaldır (zaten yukarıda silindi ama güvenlik için)
+    // 1) Toolbar'ı kaldır
     tb.remove();
     
     // 2) Gün bilgisini al
@@ -10047,7 +10027,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     } else {
       // Fallback: tüm scale bar'ı sıfırdan çiz
       const markers = (typeof getRouteMarkerPositionsOrdered === 'function' && dnum)
-        ? getRouteMarkerPositionsOrtered(dnum) : [];
+        ? getRouteMarkerPositionsOrdered(dnum) : [];
       renderRouteScaleBar(container, fullKm, markers);
     }
   });
