@@ -7453,80 +7453,91 @@ function cleanupLegacyTravelMode() {
   } catch (_) {}
 }
 // Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
-// ensureDayTravelModeSet fonksiyonunu güncelle
 function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
-     const realPoints = (typeof getDayPoints === "function") ? getDayPoints(day) : [];
-  if (!Array.isArray(realPoints) || realPoints.length < 2) {
-    // Eğer travel mode set zaten varsa kaldır
-    const oldSet = document.getElementById(`tt-travel-mode-set-day${day}`);
-    if (oldSet) oldSet.remove();
-    return;
-  }
-  // Remove any legacy/header sets for this day
-  document.querySelectorAll(`#day-container-${day} .day-header .tt-travel-mode-set`).forEach(el => el.remove());
+  const realPoints = typeof getDayPoints === "function" ? getDayPoints(day) : [];
+  const setId = `tt-travel-mode-set-day${day}`;
+  // Önce her durumda eskiyi kaldır
+  const oldSet = document.getElementById(setId);
+  if (oldSet) oldSet.remove();
 
-  // Create or reuse the set
-  let set = document.getElementById(`tt-travel-mode-set-day${day}`);
-  if (!set) {
-    set = document.createElement('div');
-    set.id = `tt-travel-mode-set-day${day}`;
+  // 0 veya 1 gerçek nokta varsa: sadece expand map tuşu
+  if (!Array.isArray(realPoints) || realPoints.length < 2) {
+    const set = document.createElement('div');
+    set.id = setId;
     set.className = 'tt-travel-mode-set';
     set.dataset.day = String(day);
     set.innerHTML = `
-      <div class="travel-modes">
-        <button type="button" data-mode="driving" aria-label="Driving">
-          <img class="tm-icon" src="/img/way_car.svg" alt="CAR" loading="lazy" decoding="async">
-          <span class="tm-label">CAR</span>
-        </button>
-        <button type="button" data-mode="cycling" aria-label="Cycling">
-          <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE" loading="lazy" decoding="async">
-          <span class="tm-label">BIKE</span>
-        </button>
-        <button type="button" data-mode="walking" aria-label="Walking">
-          <img class="tm-icon" src="/img/way_walk.svg" alt="WALK" loading="lazy" decoding="async">
-          <span class="tm-label">WALK</span>
-        </button>
-      </div>
       <button type="button" class="expand-map-btn" aria-label="Expand Map">
         <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
         <span class="tm-label">MAP</span>
       </button>
     `;
-
-    // Interaction for travel mode buttons
-    set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
-    set.addEventListener('click', (e) => {
-      e.stopPropagation();
-      
-      // Handle expand map button
-      if (e.target.closest('.expand-map-btn')) {
-        const containerId = `route-map-day${day}`;
-        expandMap(containerId, day);
-        return;
-      }
-      
-      // Handle travel mode buttons
-      const btn = e.target.closest('button[data-mode]');
-      if (!btn) return;
-      window.setTravelMode(btn.getAttribute('data-mode'), day);
-    });
+    // Insert
+    if (controlsWrapperEl && controlsWrapperEl.parentNode) {
+      controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
+    } else if (routeMapEl && routeMapEl.parentNode) {
+      routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
+    }
+    // Event: expand map butonunu tıklandığında aç
+    set.querySelector('.expand-map-btn').onclick = function() {
+      const containerId = `route-map-day${day}`;
+      expandMap(containerId, day);
+    };
+    return;
   }
 
-  // Insert set exactly before the controls wrapper
+  // 2+ nokta varsa tam travel mode set + expand map tuşu
+  const set = document.createElement('div');
+  set.id = setId;
+  set.className = 'tt-travel-mode-set';
+  set.dataset.day = String(day);
+  set.innerHTML = `
+    <div class="travel-modes">
+      <button type="button" data-mode="driving" aria-label="Driving">
+        <img class="tm-icon" src="/img/way_car.svg" alt="CAR" loading="lazy" decoding="async">
+        <span class="tm-label">CAR</span>
+      </button>
+      <button type="button" data-mode="cycling" aria-label="Cycling">
+        <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE" loading="lazy" decoding="async">
+        <span class="tm-label">BIKE</span>
+      </button>
+      <button type="button" data-mode="walking" aria-label="Walking">
+        <img class="tm-icon" src="/img/way_walk.svg" alt="WALK" loading="lazy" decoding="async">
+        <span class="tm-label">WALK</span>
+      </button>
+    </div>
+    <button type="button" class="expand-map-btn" aria-label="Expand Map">
+      <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
+      <span class="tm-label">MAP</span>
+    </button>
+  `;
+  // Insert
   if (controlsWrapperEl && controlsWrapperEl.parentNode) {
-    if (set.previousElementSibling !== routeMapEl || set.nextElementSibling !== controlsWrapperEl) {
-      controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
-    }
+    controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
   } else if (routeMapEl && routeMapEl.parentNode) {
     routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
   }
+  // Travel mode buttons
+  set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
+  set.addEventListener('click', (e) => {
+    e.stopPropagation();
+    // Expand map
+    if (e.target.closest('.expand-map-btn')) {
+      const containerId = `route-map-day${day}`;
+      expandMap(containerId, day);
+      return;
+    }
+    // Travel mode buttons
+    const btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    window.setTravelMode(btn.getAttribute('data-mode'), day);
+  });
 
-  // Mark active
+  // Actives (varsayılanı işaretle)
   if (typeof markActiveTravelModeButtons === 'function') {
     markActiveTravelModeButtons();
   }
 }
-
 
 // Update: only clean header sets, we place the visible set near the map
 function renderTravelModeControlsForAllDays() {
