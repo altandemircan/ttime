@@ -8793,10 +8793,11 @@ if (!track) {
   let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
   if (isNaN(width)) width = 400;
   createScaleElements(width);
-  // Her yeniden çizimde eski svg.tt-elev-svg’leri sil (stacking’i önle)
+  
+  // ✅ ESKİ SVG'LERİ TEMİZLE (stacking'i önle)
   track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+  
   // SVG kur
-  track.querySelectorAll('svg').forEach(el => el.remove());
   const svgNS = 'http://www.w3.org/2000/svg';
   const SVG_TOP = 48;
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -9850,28 +9851,44 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   if (!track) return;
 
   // Track tekil kalsın (aynı konteynerde 2. bir track varsa kaldır)
-container.querySelectorAll('.scale-bar-track').forEach(t => { if (t !== track) t.remove(); });
+  container.querySelectorAll('.scale-bar-track').forEach(t => { if (t !== track) t.remove(); });
 
   // Konteyneri görünür ve yeterli yükseklikte tut
   track.style.position = track.style.position || 'relative';
   if (!track.style.minHeight) track.style.minHeight = '160px';
 
-  // SVG ve toolbar’ı her seferinde tekille: önce TÜM eski SVG/toolbar’ı kaldır, sonra sıfırdan oluştur
-const svgNS = 'http://www.w3.org/2000/svg';
-const widthNow = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
-const heightNow = 220;
+  // ✅ ÖNCELİKLE ESKİ SVG VE TOOLBAR'LARI TEMİZLE
+  track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+  track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
-// Eski tüm SVG’leri (sınıfı ne olursa olsun) ve toolbar’ları sil
-track.querySelectorAll('svg, .elev-segment-toolbar').forEach(el => el.remove());
+  // SVG ve toolbar'ı her seferinde tekille: önce TÜM eski SVG/toolbar'ı kaldır, sonra sıfırdan oluştur
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const widthNow = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
+  const heightNow = 220;
 
-// Yeni tek SVG oluştur
-const svg = document.createElementNS(svgNS, 'svg');
-svg.className = 'tt-elev-svg';
-svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
-svg.setAttribute('preserveAspectRatio', 'none');
-svg.setAttribute('width', '100%');
-svg.setAttribute('height', String(heightNow));
-track.appendChild(svg);
+  // ✅ YENİ TEK SVG OLUŞTUR
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.className = 'tt-elev-svg';
+  svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', String(heightNow));
+  track.appendChild(svg);
+
+  // Grid, area, segments katmanlarını oluştur
+  const gridG = document.createElementNS(svgNS, 'g');
+  gridG.setAttribute('class','tt-elev-grid');
+  svg.appendChild(gridG);
+
+  const areaPath = document.createElementNS(svgNS, 'path');
+  areaPath.setAttribute('class','tt-elev-area');
+  svg.appendChild(areaPath);
+
+  const segG = document.createElementNS(svgNS, 'g');
+  segG.setAttribute('class','tt-elev-segments');
+  svg.appendChild(segG);
+
+  // ... geri kalan çizim kodu (grid, alan, segmentler) ...
 
   // Katmanları bul/oluştur
   let gridG = svg.querySelector('g.tt-elev-grid');
@@ -9992,53 +10009,45 @@ track.appendChild(svg);
     <button type="button" class="elev-segment-reset" style="appearance:none;border:1px solid #d0d7de;background:#fff;color:#333;border-radius:8px;padding:4px 8px;cursor:pointer;font-weight:600;">Reset</button>
   `;
 
-  // Reset -> tam profile dön
-  // Reset -> tam profile dön
+   // Reset -> tam profile dön
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
-    // 1) Toolbar'ı kaldır
+    // 0) ✅ ÖNCE TÜM SEGMENT ARTEFAKTLARINI TEMİZLE
+    track.querySelectorAll('svg.tt-elev-svg').forEach(el => el.remove());
+    track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+    
+    // 1) Toolbar'ı kaldır (zaten yukarıda silindi ama güvenlik için)
     tb.remove();
     
-    // 2) Segment vurgusunu temizle (haritadan kaldır)
+    // 2) Gün bilgisini al
     const m = container.id.match(/day(\d+)/);
     const dnum = m ? parseInt(m[1], 10) : day;
+    
+    // 3) Segment vurgusunu temizle
     if (typeof highlightSegmentOnMap === 'function') {
-      highlightSegmentOnMap(dnum); // parametresiz çağrı -> temizler
+      highlightSegmentOnMap(dnum);
     }
     
-    // 3) Container'daki segment domain ayarlarını TAM PROFILE çevir
+    // 4) Selection overlay'i gizle
+    const selDiv = container.querySelector('.scale-bar-selection');
+    if (selDiv) selDiv.style.display = 'none';
+    
+    // 5) Container domain'ini TAM PROFILE çevir
     const fullKm = Number(container.dataset.totalKm) || 0;
-    if (fullKm > 0) {
-      container._elevStartKm = 0;
-      container._elevKmSpan  = fullKm;
-      
-      // TAM profil örneklerini geri yükle (varsa)
-      if (container._elevFullSamples) {
-        container._elevSamples = container._elevFullSamples;
-      }
+    container._elevStartKm = 0;
+    container._elevKmSpan  = fullKm;
+    
+    // 6) Tam profil örneklerini geri yükle
+    if (container._elevFullSamples) {
+      container._elevSamples = container._elevFullSamples;
     }
     
-    // 4) Mevcut elevation verisini kullanarak TAM PROFİLİ yeniden çiz
-    if (container._elevationData) {
-      const { smooth, min, max } = container._elevationData;
-      
-      // Önce selection overlay'i gizle
-      const selDiv = container.querySelector('.scale-bar-selection');
-      if (selDiv) selDiv.style.display = 'none';
-      
-      // redrawElevation varsa kullan (zaten var, renderRouteScaleBar içinde tanımlı)
-      // YOKSA manuel çizim:
-      if (typeof container._redrawElevation === 'function') {
-        container._redrawElevation(container._elevationData);
-      } else {
-        // Fallback: tüm scale bar'ı sıfırdan çiz
-        const markers = (typeof getRouteMarkerPositionsOrdered === 'function' && dnum)
-          ? getRouteMarkerPositionsOrdered(dnum) : [];
-        renderRouteScaleBar(container, fullKm, markers);
-      }
+    // 7) Elevation verisini kullanarak yeniden çiz
+    if (container._elevationData && typeof container._redrawElevation === 'function') {
+      container._redrawElevation(container._elevationData);
     } else {
-      // Elevation verisi yoksa (olmamalı ama) tam çizimi zorla
+      // Fallback: tüm scale bar'ı sıfırdan çiz
       const markers = (typeof getRouteMarkerPositionsOrdered === 'function' && dnum)
-        ? getRouteMarkerPositionsOrdered(dnum) : [];
+        ? getRouteMarkerPositionsOrtered(dnum) : [];
       renderRouteScaleBar(container, fullKm, markers);
     }
   });
