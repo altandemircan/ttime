@@ -5181,7 +5181,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 .expanded-map-header {
     display: flex;
-   /* position: absolute; */
+    position: absolute;
     bottom: 185px;
     /* right: 10px; */
     z-index: 123123123;
