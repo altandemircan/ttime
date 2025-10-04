@@ -9976,12 +9976,18 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
   tb.style.cssText = `
-    position:absolute;top:6px;left:8px;z-index:1005;
-    display:inline-flex;gap:10px;align-items:center;
-    background:rgba(255,255,255,0.97);
-    border:1px solid #e0e0e0;border-radius:10px;
-    padding:6px 10px;font-size:12px;color:#333;
-    box-shadow:0 4px 10px rgba(0,0,0,0.06);
+    bottom: 15px;
+    z-index: 1005;
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;   
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: rgb(0 0 0);
+    box-shadow: rgba(0, 0, 0, 0.06) 0px 4px 10px;
+    position: absolute;    
+    right: 0px;   
   `;
   tb.innerHTML = `
     <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
