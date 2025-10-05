@@ -1503,18 +1503,26 @@ const placeCategories = {
 
 
 
-
 window.showSuggestionsInChat = async function(category, day = 1, code = null) {
-// Expanded map açıksa kapat!
-if (window.expandedMaps) {
-    Object.keys(window.expandedMaps).forEach(containerId => {
-        const expanded = window.expandedMaps[containerId];
-        if (expanded && typeof restoreMap === "function") {
-            restoreMap(containerId, expanded.day);
-        }
-    });
-}    
-
+    const city = window.selectedCity || document.getElementById("city-input")?.value;
+    if (!city) {
+        addMessage("Please select a city first.", "bot-message");
+        return;
+    }
+    // Burada code'u öncelikli kullan!
+    const places = await getPlacesForCategory(city, category, 5, 3000, code);
+    if (!places.length) {
+        addMessage(`No places found for this category in "${city}".`, "bot-message");
+        return;
+    }
+    await enrichCategoryResults(places, city);
+    displayPlacesInChat(places, category, day);
+    if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
+    if (window.innerWidth <= 768) {
+        var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
+        if (sidebar) sidebar.classList.remove('open');
+    }
+};
 
 
 
@@ -1781,15 +1789,13 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
     
 
 
-    const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
+     const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
     if (!geoCategory) {
-        console.warn("Kategori haritada bulunamadı:", category, "code:", code);
+        console.warn("Kategori haritada bulunamadı:", category, code);
         return [];
     }
 
 
-
-    
     const coords = await getCityCoordinates(city);
     if (!coords || !coords.lat || !coords.lon) return [];
     const url = `https://api.geoapify.com/v2/places?categories=${geoCategory}&filter=circle:${coords.lon},${coords.lat},${radius}&limit=${limit}&apiKey=${GEOAPIFY_API_KEY}`;
@@ -2496,11 +2502,14 @@ const travelMainCategories = [
         basicList.appendChild(subCategoryItem);
 
         // Kategoriye tıklama
-        subCategoryItem.addEventListener("click", (e) => {
-            if (!e.target.classList.contains('toggle-subcategory-btn')) {
-showSuggestionsInChat(cat.name, day, cat.code); // code'u da gönder!
-            }
-        });
+       subCategoryItem.addEventListener("click", (e) => {
+    if (!e.target.classList.contains('toggle-subcategory-btn')) {
+        showSuggestionsInChat(cat.name, day, cat.code); // <-- cat.code'u gönder!
+    }
+});
+
+
+       
         toggleBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             subCategoryItem.classList.toggle("hidden");
