@@ -3528,12 +3528,7 @@ if (isEmptyDay) {
 
   dayList.appendChild(emptyWrap);
 }
-Copilot said: Aşağıda, **custom note** itemları için sadece onlara
-Aşağıda, custom note itemları için sadece onlara özel .custom-note class’ı eklenen ve
-separator’lar her zaman iki koordinatlı itemın arasına (doğru sırada) gelen,
-tam fonksiyonel ve modern bir updateCart fonksiyon parçası bulacaksın.
 
-JavaScript
 else {
   let lastCoordItem = null;
   let lastCoordIdx = null;
