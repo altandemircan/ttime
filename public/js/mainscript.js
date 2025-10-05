@@ -2459,21 +2459,23 @@ function showCategoryList(day) {
 
     // 30 ana gezgin kategorisi (KODUN BAŞINDA veya globalde tanımlı olmalı!)
 const travelMainCategories = [
+  { name: "Coffee", code: "amenity.cafe", icon: "☕" },
   { name: "Bar", code: "amenity.bar", icon: "🍹" },
-  { name: "Fast Food", code: "amenity.fast_food", icon: "🍔" },
-  { name: "Supermarket", code: "shop.supermarket", icon: "🛒" },
-  { name: "Bakery", code: "amenity.bakery", icon: "🥐" },
+  { name: "Pub", code: "amenity.pub", icon: "🍻" },
+  { name: "Touristic attraction", code: "tourism.sights", icon: "🏞️" },
+  { name: "Restaurant", code: "amenity.restaurant", icon: "🍽️" },
+  { name: "Accommodation", code: "tourism.hotel", icon: "🏨" },
+  { name: "Bookstore", code: "shop.books", icon: "📚" },
   { name: "Nightclub", code: "amenity.nightclub", icon: "🌃" },
   { name: "Cinema", code: "amenity.cinema", icon: "🎬" },
   { name: "Art Gallery", code: "tourism.art_gallery", icon: "🎨" },
-  { name: "Theatre", code: "entertainment.theatre", icon: "🎭" },    // <-- Bunu KULLAN!
+  { name: "Theatre", code: "entertainment.theatre", icon: "🎭" },
   { name: "Casino", code: "amenity.casino", icon: "🎰" },
   { name: "Theme Park", code: "tourism.theme_park", icon: "🎢" },
   { name: "Zoo", code: "tourism.zoo", icon: "🦁" },
   { name: "Aquarium", code: "tourism.aquarium", icon: "🐠" },
   { name: "Viewpoint", code: "tourism.viewpoint", icon: "🔭" },
   { name: "Mall", code: "shop.mall", icon: "🛍️" },
-  { name: "Bookstore", code: "shop.books", icon: "📚" },
   { name: "ATM", code: "amenity.atm", icon: "🏧" },
   { name: "Pharmacy", code: "amenity.pharmacy", icon: "💊" },
   { name: "Hospital", code: "amenity.hospital", icon: "🏥" },
