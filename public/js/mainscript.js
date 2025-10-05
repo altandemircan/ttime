@@ -4299,9 +4299,15 @@ function createLeafletMapForItem(mapId, lat, lon, name) {
         zoomControl: false,
         attributionControl: false
     });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+   L.tileLayer(
+  'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=' + window.MAPBOX_TOKEN, 
+  {
+    tileSize: 256,
+    zoomOffset: 0,
+    attribution: '© Mapbox © OpenStreetMap',
+    crossOrigin: true
+  }
+).addTo(map);
     L.marker([lat, lon]).addTo(map).bindPopup(name || '').openPopup();
 
     window._leafletMaps[mapId] = map;
