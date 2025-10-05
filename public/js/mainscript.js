@@ -2548,11 +2548,11 @@ const travelMainCategories = [
         travelerList.appendChild(subCategoryItem);
 
         // Kategoriye tıklama
-        subCategoryItem.addEventListener("click", (e) => {
-            if (!e.target.classList.contains('toggle-subcategory-btn')) {
-showSuggestionsInChat(cat.name, day, cat.code); // code'u da gönder!
-            }
-        });
+        subCategoryItem.addEventListener("click", async (e) => {
+    if (!e.target.classList.contains('toggle-subcategory-btn')) {
+        await showSuggestionsInChat(cat.name, day, cat.code);
+    }
+});
         toggleBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             subCategoryItem.classList.toggle("hidden");
