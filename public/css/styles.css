@@ -152,6 +152,7 @@ li .highlight {
 }
 #cart li {
     display: block;
+    opacity: 1 !important;
 }
 #cart-items {
     margin-top: 20px;
