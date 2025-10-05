@@ -1736,36 +1736,6 @@ function addChatResultsToCart() {
 
 
 
-// Kategori adı ile Geoapify kodu eşleştirme (kategori seçiminde kullanılacak)
-const geoapifyCategoryMap = {
-  // Basic Plan
-  "Coffee": "catering.cafe",
-  "Touristic attraction": "tourism.sights",
-  "Restaurant": "catering.restaurant",
-  "Accommodation": "accommodation.hotel",
-
-  // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
- "Bar": "amenity.bar",
-  "Fast Food": "amenity.fast_food",
-  "Supermarket": "shop.supermarket",
-  "Bakery": "amenity.bakery",
-  "Nightclub": "amenity.nightclub",
-  "Cinema": "amenity.cinema",
-  "Art Gallery": "tourism.art_gallery",
-  "Theatre": "amenity.theatre",
-  "Casino": "amenity.casino",
-  "Theme Park": "tourism.theme_park",
-  "Zoo": "tourism.zoo",
-  "Aquarium": "tourism.aquarium",
-  "Viewpoint": "tourism.viewpoint",
-  "Mall": "shop.mall",
-  "Bookstore": "shop.books",
-  "ATM": "amenity.atm",
-  "Pharmacy": "amenity.pharmacy",
-  "Hospital": "amenity.hospital",
-  "Police": "amenity.police",
-  "Airport": "aeroway.aerodrome"
-};
 
 // 2. Şehir koordinatlarını almak için fonksiyon (Geoapify geocode API)
 async function getCityCoordinates(city) {
@@ -2405,6 +2375,37 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
+// Kategori adı ile Geoapify kodu eşleştirme (kategori seçiminde kullanılacak)
+const geoapifyCategoryMap = {
+  // Basic Plan
+  "Coffee": "catering.cafe",
+  "Touristic attraction": "tourism.sights",
+  "Restaurant": "catering.restaurant",
+  "Accommodation": "accommodation.hotel",
+
+  // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
+ "Bar": "amenity.bar",
+  "Fast Food": "amenity.fast_food",
+  "Supermarket": "shop.supermarket",
+  "Bakery": "amenity.bakery",
+  "Nightclub": "amenity.nightclub",
+  "Cinema": "amenity.cinema",
+  "Art Gallery": "tourism.art_gallery",
+  "Theatre": "amenity.theatre",
+  "Casino": "amenity.casino",
+  "Theme Park": "tourism.theme_park",
+  "Zoo": "tourism.zoo",
+  "Aquarium": "tourism.aquarium",
+  "Viewpoint": "tourism.viewpoint",
+  "Mall": "shop.mall",
+  "Bookstore": "shop.books",
+  "ATM": "amenity.atm",
+  "Pharmacy": "amenity.pharmacy",
+  "Hospital": "amenity.hospital",
+  "Police": "amenity.police",
+  "Airport": "aeroway.aerodrome"
+};
+
 function showCategoryList(day) {
     const cartDiv = document.getElementById("cart-items");
     cartDiv.innerHTML = "";
@@ -2465,7 +2466,7 @@ const travelMainCategories = [
   { name: "Nightclub", code: "amenity.nightclub", icon: "🌃" },
   { name: "Cinema", code: "amenity.cinema", icon: "🎬" },
   { name: "Art Gallery", code: "tourism.art_gallery", icon: "🎨" },
-  { name: "Theatre", code: "amenity.theatre", icon: "🎭" },
+  { name: "Theatre", code: "entertainment.theatre", icon: "🎭" },    // <-- Bunu KULLAN!
   { name: "Casino", code: "amenity.casino", icon: "🎰" },
   { name: "Theme Park", code: "tourism.theme_park", icon: "🎢" },
   { name: "Zoo", code: "tourism.zoo", icon: "🦁" },
@@ -2479,7 +2480,6 @@ const travelMainCategories = [
   { name: "Police", code: "amenity.police", icon: "🚓" },
   { name: "Airport", code: "aeroway.aerodrome", icon: "✈️" }
 ];
-
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
     basicPlanItem.classList.add("category-item");
@@ -2515,7 +2515,7 @@ const travelMainCategories = [
 });
 
 
-       
+
         toggleBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             subCategoryItem.classList.toggle("hidden");
