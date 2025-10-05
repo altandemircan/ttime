@@ -3440,7 +3440,9 @@ return;
       i.name &&
       !i._starter &&
       !i._placeholder
-    );
+    )
+    console.log('Gün:', day, dayItemsArr); // <-- BURAYA YAZ
+
     const isEmptyDay = dayItemsArr.length === 0;
 
     // Gün container
