@@ -2438,33 +2438,33 @@ function showCategoryList(day) {
 
     // --- Kategori tanımları ---
     const basicPlanCategories = [
-        { name: "Coffee", icon: "🍳" },
+        { name: "Coffee", icon: "☕" },
         { name: "Touristic attraction", icon: "🏞️" },
         { name: "Restaurant", icon: "🍽️" },
         { name: "Accommodation", icon: "🏨" }
     ];
 
     // 30 ana gezgin kategorisi (KODUN BAŞINDA veya globalde tanımlı olmalı!)
- const travelMainCategories = [
+const travelMainCategories = [
   { name: "Bar", code: "catering.bar", icon: "🍹" },
   { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
   { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
   { name: "Bakery", code: "catering.bakery", icon: "🥐" },
   { name: "Nightclub", code: "entertainment.nightclub", icon: "🌃" },
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-  { name: "Art Gallery", code: "entertainment.art_gallery", icon: "🎨" },    // DÜZELT!
+  { name: "Art Gallery", code: "leisure.museum", icon: "🎨" }, // Art Gallery için en yakın: leisure.museum
   { name: "Theatre", code: "entertainment.theatre", icon: "🎭" },
-  { name: "Casino", code: "entertainment.casino", icon: "🎰" },
+  { name: "Casino", code: "leisure.casino", icon: "🎰" },
   { name: "Theme Park", code: "tourism.theme_park", icon: "🎢" },
   { name: "Zoo", code: "tourism.zoo", icon: "🦁" },
   { name: "Aquarium", code: "tourism.aquarium", icon: "🐠" },
-  { name: "Viewpoint", code: "tourism.viewpoint", icon: "🔭" },              // DÜZELT!
-  { name: "Mall", code: "commercial.mall", icon: "🛍️" },                    // DÜZELT!
+  { name: "Viewpoint", code: "tourism.viewpoint", icon: "🔭" },
+  { name: "Mall", code: "commercial.mall", icon: "🛍️" },
   { name: "Bookstore", code: "commercial.books", icon: "📚" },
-  { name: "ATM", code: "finance.atm", icon: "🏧" },                          // DÜZELT!
+  { name: "ATM", code: "finance.atm", icon: "🏧" },
   { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
   { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
-  { name: "Police", code: "public.public_security", icon: "🚓" },            // DÜZELT!
+  { name: "Police", code: "public.public_security", icon: "🚓" },
   { name: "Airport", code: "transport.airport", icon: "✈️" }
 ];
 
