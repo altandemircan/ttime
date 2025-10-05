@@ -3576,7 +3576,7 @@ else {
     }
 
     // 2) Şimdi item'i ekle
-    const li = document.createElement("li");
+const li = document.createElement("li");
 li.className = "travel-item";
 if (item.category === "note" || item.type === "note" || item.isNote || item.customNote) {
   li.classList.add("custom-note");
