@@ -256,13 +256,12 @@ function loadTripFromStorage(tripKey) {
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
 
-    // 1. window.cart ve state'leri yükle (day değerlerini number'a çek!)
+    // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
     window.cart = Array.isArray(t.cart) ? JSON.parse(JSON.stringify(t.cart)) : [];
-    window.cart = window.cart.map(item => {
-        // day değeri string ise number'a çevir
-        if (typeof item.day === "string") item.day = Number(item.day);
 
-        // location varsa lat/lng string ise number'a çevir
+    // (Ekstra: day ve location dönüşümleri)
+    window.cart = window.cart.map(item => {
+        if (typeof item.day === "string") item.day = Number(item.day);
         if (item.location && typeof item.location.lat === "string") {
             item.location.lat = Number(item.location.lat);
         }
