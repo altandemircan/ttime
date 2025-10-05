@@ -3440,11 +3440,11 @@ return;
   days.forEach(day => {
     // Sadece gerçek (starter/placeholder hariç) item’lar
     const dayItemsArr = window.cart.filter(i =>
-      i.day === day &&
-      i.name &&
-      !i._starter &&
-      !i._placeholder
-    )
+  i.day === day &&
+  !i._starter &&
+  !i._placeholder &&
+  (i.name || i.category === "Note")
+);
     console.log('Gün:', day, dayItemsArr); // <-- BURAYA YAZ
 
     const isEmptyDay = dayItemsArr.length === 0;
