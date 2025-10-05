@@ -4292,13 +4292,9 @@ function createLeafletMapForItem(mapId, lat, lon, name) {
     window._leafletMaps = window._leafletMaps || {};
     if (window._leafletMaps[mapId]) return; // Aynı haritayı tekrar başlatma
 
-    var map = L.map(mapId, {
-        center: [lat, lon],
-        zoom: 16,
-        scrollWheelZoom: false,
-        zoomControl: false,
-        attributionControl: false
-    });
+    L.control.zoom({
+  position: 'topright' // veya 'bottomright', 'bottomleft', 'topleft' (istediğin yere)
+}).addTo(map);
    L.tileLayer(
   'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=' + window.MAPBOX_TOKEN, 
   {
