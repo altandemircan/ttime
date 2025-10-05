@@ -3085,12 +3085,11 @@ ease;
     font-family: 'Satoshi';
 }
 
-.custom-note {
+.travel-item.custom-note {
   width: 80%;
   left: 15%;
   position: relative;
 }
-
 
 
 .search-container {
