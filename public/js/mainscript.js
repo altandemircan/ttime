@@ -3571,17 +3571,11 @@ else {
     }
 
     // 2) Şimdi item'i ekle
-    const li = document.createElement("li");
-    li.className = "travel-item";
-    // SADECE custom note için ekle!
-    if (
-      item.category === "note" ||
-      item.type === "note" ||
-      item.isNote === true ||
-      item.customNote === true
-    ) {
-      li.classList.add("custom-note");
-    }
+   const li = document.createElement("li");
+li.className = "travel-item";
+if (item.category === "Note") {
+  li.classList.add("custom-note");
+}
     li.draggable = true;
     li.dataset.index = currIdx;
     li.addEventListener("dragstart", dragStart);
