@@ -2594,22 +2594,19 @@ function saveCustomNote(day) {
     const details = document.getElementById("noteDetails").value;
 
     if (title && details) {
-        const newItem = {
-    name: title,
-    noteDetails: details, // <-- DOĞRU OLAN BU!
-    day: parseInt(day),
-    category: "Note",
-    image: "img/added-note.png"
-};
-
-window.cart.push(newItem);
+        window.cart.push({
+            name: title,
+            noteDetails: details, // DOĞRU PROPERTY!
+            day: parseInt(day),
+            category: "Note",
+            image: "img/added-note.png"
+        });
         updateCart();
         closeCustomNoteInput();
     } else {
         alert("Please enter both title and details.");
     }
 }
-
 const apiCache = new Map();
 
 const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
