@@ -2438,7 +2438,7 @@ function showCategoryList(day) {
 
     // --- Kategori tanımları ---
     const basicPlanCategories = [
-        { name: "Coffee", icon: "🍳" },
+        { name: "Coffee", icon: "☕" },
         { name: "Touristic attraction", icon: "🏞️" },
         { name: "Restaurant", icon: "🍽️" },
         { name: "Accommodation", icon: "🏨" }
