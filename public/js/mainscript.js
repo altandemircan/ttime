@@ -2401,8 +2401,8 @@ const geoapifyCategoryMap = {
   "Bank": "finance.bank",
   "Cinema": "entertainment.cinema",
   "Nightclub": "entertainment.nightclub",
-  "Optician": "healthcare.optician",
-  "Dentist": "healthcare.dentist",
+  "Parking": "service.parking",
+  "Gas Station": "service.gas_station",
   "Embassy": "government.embassy"
 };
 
@@ -2459,7 +2459,7 @@ function showCategoryList(day) {
 
     // 30 ana gezgin kategorisi (KODUN BAŞINDA veya globalde tanımlı olmalı!)
 const travelMainCategories = [
-  { name: "Bar", code: "catering.bar", icon: "🍹" },
+   { name: "Bar", code: "catering.bar", icon: "🍹" },
   { name: "Pub", code: "catering.pub", icon: "🍻" },
   { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
   { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
@@ -2476,8 +2476,8 @@ const travelMainCategories = [
   { name: "Bank", code: "finance.bank", icon: "🏦" },
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
   { name: "Nightclub", code: "entertainment.nightclub", icon: "🌃" },
-  { name: "Optician", code: "healthcare.optician", icon: "👓" },
-  { name: "Dentist", code: "healthcare.dentist", icon: "🦷" },
+  { name: "Parking", code: "service.parking", icon: "🅿️" },
+  { name: "Gas Station", code: "service.gas_station", icon: "⛽" },
   { name: "Embassy", code: "government.embassy", icon: "🏛️" }
 ];
     // -------- BASIC PLAN BLOK --------
