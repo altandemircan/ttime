@@ -1745,26 +1745,26 @@ const geoapifyCategoryMap = {
   "Accommodation": "accommodation.hotel",
 
   // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
-  "Bar": "catering.bar",
-  "Fast Food": "catering.fast_food",
-  "Supermarket": "commercial.supermarket",
-  "Bakery": "catering.bakery",
-  "Nightclub": "entertainment.nightclub",
-  "Cinema": "entertainment.cinema",
-  "Art Gallery": "entertainment.art_gallery",      // DÜZELTİLDİ (gallery → art_gallery)
-  "Theatre": "entertainment.theatre",
-  "Casino": "entertainment.casino",
+ "Bar": "amenity.bar",
+  "Fast Food": "amenity.fast_food",
+  "Supermarket": "shop.supermarket",
+  "Bakery": "amenity.bakery",
+  "Nightclub": "amenity.nightclub",
+  "Cinema": "amenity.cinema",
+  "Art Gallery": "tourism.art_gallery",
+  "Theatre": "amenity.theatre",
+  "Casino": "amenity.casino",
   "Theme Park": "tourism.theme_park",
   "Zoo": "tourism.zoo",
   "Aquarium": "tourism.aquarium",
-  "Viewpoint": "tourism.viewpoint",                // DÜZELTİLDİ (view_point → viewpoint)
-  "Mall": "commercial.mall",                       // DÜZELTİLDİ (shopping.mall → commercial.mall)
-  "Bookstore": "commercial.books",
-  "ATM": "finance.atm",                           // DÜZELTİLDİ (service.atm → finance.atm)
-  "Pharmacy": "healthcare.pharmacy",
-  "Hospital": "healthcare.hospital",
-  "Police": "public.public_security",             // DÜZELTİLDİ (service.police → public.public_security)
-  "Airport": "transport.airport"
+  "Viewpoint": "tourism.viewpoint",
+  "Mall": "shop.mall",
+  "Bookstore": "shop.books",
+  "ATM": "amenity.atm",
+  "Pharmacy": "amenity.pharmacy",
+  "Hospital": "amenity.hospital",
+  "Police": "amenity.police",
+  "Airport": "aeroway.aerodrome"
 };
 
 // 2. Şehir koordinatlarını almak için fonksiyon (Geoapify geocode API)
