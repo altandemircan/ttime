@@ -4311,18 +4311,17 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
 
     // Özel rota marker tasarımı ile marker ekle (aynı rota haritası gibi)
     const markerHtml = `
-      <div class="custom-marker-outer red">
-        <span class="custom-marker-label">${number || 1}</span>
-      </div>
-    `;
-    const icon = L.divIcon({
-        html: markerHtml,
-        className: "",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    });
-
-    L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
+  <div class="custom-marker-outer red" style="width:32px;height:32px;">
+    <span class="custom-marker-label">${number || 1}</span>
+  </div>
+`;
+const icon = L.divIcon({
+    html: markerHtml,
+    className: "",
+    iconSize: [32, 32],
+    iconAnchor: [16, 16] // tam ortası
+});
+L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
