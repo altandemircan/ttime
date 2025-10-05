@@ -1501,16 +1501,22 @@ const placeCategories = {
     "Accommodation": "accommodation.hotel"
 };
 
-
-
 window.showSuggestionsInChat = async function(category, day = 1, code = null) {
     const city = window.selectedCity || document.getElementById("city-input")?.value;
     if (!city) {
         addMessage("Please select a city first.", "bot-message");
         return;
     }
-    // Burada code'u öncelikli kullan!
-    const places = await getPlacesForCategory(city, category, 5, 3000, code);
+    // --- Kodu öncelikle belirle ---
+    let realCategory = category;
+    let realCode = code;
+    if (code && typeof code === 'string') {
+        realCode = code;
+    } else if (geoapifyCategoryMap[category]) {
+        realCode = geoapifyCategoryMap[category];
+    }
+    const places = await getPlacesForCategory(city, realCategory, 5, 3000, realCode);
+
     if (!places.length) {
         addMessage(`No places found for this category in "${city}".`, "bot-message");
         return;
@@ -1523,43 +1529,6 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null) {
         if (sidebar) sidebar.classList.remove('open');
     }
 };
-
-
-
-    const city = window.selectedCity || document.getElementById("city-input")?.value;
-    if (!city) {
-        addMessage("Please select a city first.", "bot-message");
-        return;
-    }
-    // --- BURADA KODU ÖNCELE ---
-    let realCategory = category;
-    let realCode = code;
-    if (code && typeof code === 'string') {
-        realCode = code;
-    } else if (geoapifyCategoryMap[category]) {
-        realCode = geoapifyCategoryMap[category];
-    }
-    const places = await getPlacesForCategory(city, realCategory, 5, 3000, realCode);
-
-
-
-
-
-
-    if (!places.length) {
-addMessage(`No places found for this category in "${city}".`, "bot-message");
-        return;
-    }
-    await enrichCategoryResults(places, city);
-    displayPlacesInChat(places, category, day);
-    if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
-
-  if (window.innerWidth <= 768) {
-    var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
-    if (sidebar) sidebar.classList.remove('open');
-}  
-};
-
 
 
 
