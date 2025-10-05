@@ -3570,80 +3570,117 @@ else {
       dayList.appendChild(distanceSeparator);
     }
 
-    // 2) Şimdi item'i ekle
-   const li = document.createElement("li");
+  // 2) Şimdi item'i ekle
+const li = document.createElement("li");
 li.className = "travel-item";
 if (item.category === "Note") {
   li.classList.add("custom-note");
 }
-    li.draggable = true;
-    li.dataset.index = currIdx;
-    li.addEventListener("dragstart", dragStart);
+li.draggable = true;
+li.dataset.index = currIdx;
+li.addEventListener("dragstart", dragStart);
 
-    let openingHoursDisplay = "No working hours info";
-    if (item.opening_hours) {
-      if (Array.isArray(item.opening_hours)) {
-        const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
-        if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-      } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-        openingHoursDisplay = item.opening_hours.trim();
-      }
-    }
-
-    const mapHtml = (item.location &&
-      typeof item.location.lat === "number" &&
-      typeof item.location.lng === "number")
-      ? createMapIframe(item.location.lat, item.location.lng, 16)
-      : '<div class="map-error">Location not available</div>';
-
-    li.innerHTML = `
-  <div class="cart-item">
-    <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-    <img src="${item.image}" alt="${item.name}" class="cart-image">
-    <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
-    <div class="item-info">
-      <p class="toggle-title">${item.name}</p>
-    </div>
-    <button class="remove-btn" onclick="removeFromCart(${currIdx})">
-      <img src="img/remove-icon.svg" alt="Close">
-    </button>
-    <span class="arrow">
-      <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-    </span>
-    <div class="content">
-      <div class="info-section">
-        <div class="place-rating">${mapHtml}</div>
-        <div class="contact">
-          <p>📌 Address: ${item.address || 'Address not available'}</p>
+if (item.category === "Note") {
+  // SADECE custom note için: Yalnızca başlık ve not detayını göster
+  li.innerHTML = `
+    <div class="cart-item">
+      <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+      <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+      <img src="https://www.svgrepo.com/show/522166/location.svg" alt="Note" class="category-icon">
+      <div class="item-info">
+        <p class="toggle-title">${item.name}</p>
+      </div>
+      <button class="remove-btn" onclick="removeFromCart(${currIdx})">
+        <img src="img/remove-icon.svg" alt="Close">
+      </button>
+      <span class="arrow">
+        <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+      </span>
+      <div class="content">
+        <div class="info-section">
+          <div class="note-details">
+            <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
+          </div>
         </div>
-        <p class="working-hours-title">
-          🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
-        </p>
-        ${
-          item.location ? `
-            <div class="coords-info" style="margin-top:8px;">
-              📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
-              Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
-            </div>
-            ${item.website ? `
-              <div class="website-info" style="margin-top:8px;">
-                🌐 Website: <a href="${item.website}" target="_blank" rel="noopener">
-                  ${item.website.replace(/^https?:\/\//, '')}
-                </a>
-              </div>
-            ` : ''}
-            <div class="google-search-info" style="margin-top:8px;">
-              <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
-                 target="_blank" rel="noopener">
-                🇬 Search images on Google
-              </a>
-            </div>
-          ` : ''
-        }
       </div>
     </div>
-  </div>
-`;
+  `;
+} else {
+  // DİĞER TÜM ITEM’LAR İÇİN ESKİ DETAYLI KOD
+  let openingHoursDisplay = "No working hours info";
+  if (item.opening_hours) {
+    if (Array.isArray(item.opening_hours)) {
+      const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+      if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+    } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+      openingHoursDisplay = item.opening_hours.trim();
+    }
+  }
+
+  const mapHtml = (item.location &&
+    typeof item.location.lat === "number" &&
+    typeof item.location.lng === "number")
+    ? createMapIframe(item.location.lat, item.location.lng, 16)
+    : '<div class="map-error">Location not available</div>';
+
+  li.innerHTML = `
+    <div class="cart-item">
+      <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+      <img src="${item.image}" alt="${item.name}" class="cart-image">
+      <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+      <div class="item-info">
+        <p class="toggle-title">${item.name}</p>
+      </div>
+      <button class="remove-btn" onclick="removeFromCart(${currIdx})">
+        <img src="img/remove-icon.svg" alt="Close">
+      </button>
+      <span class="arrow">
+        <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+      </span>
+      <div class="content">
+        <div class="info-section">
+          <div class="place-rating">${mapHtml}</div>
+          <div class="contact">
+            <p>📌 Address: ${item.address || 'Address not available'}</p>
+          </div>
+          <p class="working-hours-title">
+            🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+          </p>
+          ${
+            item.location ? `
+              <div class="coords-info" style="margin-top:8px;">
+                📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+                Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+              </div>
+              ${item.website ? `
+                <div class="website-info" style="margin-top:8px;">
+                  🌐 Website: <a href="${item.website}" target="_blank" rel="noopener">
+                    ${item.website.replace(/^https?:\/\//, '')}
+                  </a>
+                </div>
+              ` : ''}
+              <div class="google-search-info" style="margin-top:8px;">
+                <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
+                   target="_blank" rel="noopener">
+                  🇬 Search images on Google
+                </a>
+              </div>
+            ` : ''
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Not: escapeHtml fonksiyonun yoksa şöyle bir şey kullanabilirsin:
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, function(m) {
+    return ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[m];
+  });
+}
 
     dayList.appendChild(li);
 
