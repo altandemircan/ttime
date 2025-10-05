@@ -2386,9 +2386,7 @@ const geoapifyCategoryMap = {
   // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
    "Bar": "catering.bar",
   "Pub": "catering.pub",
-  "Cafe": "catering.cafe",
   "Fast Food": "catering.fast_food",
-  "Restaurant": "catering.restaurant",
   "Supermarket": "commercial.supermarket",
   "Bakery": "catering.bakery",
   "Nightclub": "entertainment.nightclub",
@@ -2461,9 +2459,7 @@ function showCategoryList(day) {
 const travelMainCategories = [
   { name: "Bar", code: "catering.bar", icon: "🍹" },
   { name: "Pub", code: "catering.pub", icon: "🍻" },
-  { name: "Cafe", code: "catering.cafe", icon: "☕️" },
   { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
-  { name: "Restaurant", code: "catering.restaurant", icon: "🍽️" },
   { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
   { name: "Bakery", code: "catering.bakery", icon: "🥐" }, // ÇALIŞIR (Geoapify Explorer'da var!)
   { name: "Nightclub", code: "entertainment.nightclub", icon: "🌃" }, // ÇALIŞIR (Explorer'da test et!)
@@ -2473,7 +2469,6 @@ const travelMainCategories = [
   { name: "ATM", code: "finance.atm", icon: "🏧" }, // DOĞRU KOD BU
   { name: "Bank", code: "finance.bank", icon: "🏦" }, // DOĞRU KOD BU
   { name: "Bookstore", code: "commercial.books", icon: "📚" },
-  { name: "Hotel", code: "accommodation.hotel", icon: "🏨" },
   { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
   { name: "Bus Station", code: "public_transport.bus_station", icon: "🚌" }, // DOĞRU KOD BU
   { name: "Taxi", code: "service.taxi", icon: "🚕" }, // DOĞRU KOD BU
