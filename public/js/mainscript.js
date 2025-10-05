@@ -3528,13 +3528,13 @@ if (isEmptyDay) {
 
   dayList.appendChild(emptyWrap);
 }
+Copilot said: Aşağıda, **custom note** itemları için sadece onlara
+Aşağıda, custom note itemları için sadece onlara özel .custom-note class’ı eklenen ve
+separator’lar her zaman iki koordinatlı itemın arasına (doğru sırada) gelen,
+tam fonksiyonel ve modern bir updateCart fonksiyon parçası bulacaksın.
 
-// 2.b Dolu gün item’ları
+JavaScript
 else {
-  // --- ATLANAN KOD BAŞLANGICI ---
-  // (Burada eski kodunda kalan, forEach veya başka iş varsa onu tutabilirsin)
-  // --- ATLANAN KOD BİTİŞİ ---
-
   let lastCoordItem = null;
   let lastCoordIdx = null;
   for (let idx = 0; idx < dayItemsArr.length; idx++) {
@@ -3576,12 +3576,17 @@ else {
     }
 
     // 2) Şimdi item'i ekle
-const li = document.createElement("li");
-li.className = "travel-item";
-if (item.category === "note" || item.type === "note" || item.isNote || item.customNote) {
-  li.classList.add("custom-note");
-}
-    
+    const li = document.createElement("li");
+    li.className = "travel-item";
+    // SADECE custom note için ekle!
+    if (
+      item.category === "note" ||
+      item.type === "note" ||
+      item.isNote === true ||
+      item.customNote === true
+    ) {
+      li.classList.add("custom-note");
+    }
     li.draggable = true;
     li.dataset.index = currIdx;
     li.addEventListener("dragstart", dragStart);
@@ -3650,6 +3655,7 @@ if (item.category === "note" || item.type === "note" || item.isNote || item.cust
     </div>
   </div>
 `;
+
     dayList.appendChild(li);
 
     // 3) Eğer bu item koordinatlıysa güncelle
