@@ -1789,11 +1789,12 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
     
 
 
-     const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
+    const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
     if (!geoCategory) {
         console.warn("Kategori haritada bulunamadı:", category, code);
         return [];
     }
+
 
 
     const coords = await getCityCoordinates(city);
