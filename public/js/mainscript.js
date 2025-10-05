@@ -2598,8 +2598,8 @@ function saveCustomNote(day) {
     if (title && details) {
         window.cart.push({
             name: title,
-            noteDetails: details, // DOĞRU PROPERTY!
-            day: parseInt(day),
+            noteDetails: details,
+            day: parseInt(day), // doğru gün numarası
             category: "Note",
             image: "img/added-note.png"
         });
