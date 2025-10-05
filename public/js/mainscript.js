@@ -2384,7 +2384,7 @@ const geoapifyCategoryMap = {
   "Accommodation": "accommodation.hotel",
 
   // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
-  "Bar": "catering.bar",
+   "Bar": "catering.bar",
   "Pub": "catering.pub",
   "Cafe": "catering.cafe",
   "Fast Food": "catering.fast_food",
@@ -2395,15 +2395,15 @@ const geoapifyCategoryMap = {
   "Cinema": "entertainment.cinema",
   "Pharmacy": "healthcare.pharmacy",
   "Hospital": "healthcare.hospital",
-  "ATM": "service.atm",
-  "Bank": "service.bank",
+  "ATM": "finance.atm", // DÜZELTİLDİ!
+  "Bank": "finance.bank", // DÜZELTİLDİ!
   "Bookstore": "commercial.books",
   "Hotel": "accommodation.hotel",
   "Hostel": "accommodation.hostel",
-  "Bus Station": "transportation.bus_station",
-  "Taxi": "transportation.taxi",
-  "Parking": "transportation.parking",
-  "Shopping Center": "commercial.shopping_center"
+  "Bus Station": "public_transport.bus_station", // DÜZELTİLDİ!
+  "Taxi": "service.taxi", // DÜZELTİLDİ!
+  "Parking": "service.parking", // DÜZELTİLDİ!
+  "Shopping Center": "commercial.mall" // DÜZELTİLDİ
 };
 
 function showCategoryList(day) {
@@ -2465,20 +2465,20 @@ const travelMainCategories = [
   { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
   { name: "Restaurant", code: "catering.restaurant", icon: "🍽️" },
   { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
-  { name: "Bakery", code: "catering.bakery", icon: "🥐" },
-  { name: "Nightclub", code: "entertainment.nightclub", icon: "🌃" },
+  { name: "Bakery", code: "catering.bakery", icon: "🥐" }, // ÇALIŞIR (Geoapify Explorer'da var!)
+  { name: "Nightclub", code: "entertainment.nightclub", icon: "🌃" }, // ÇALIŞIR (Explorer'da test et!)
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
   { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
   { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
-  { name: "ATM", code: "service.atm", icon: "🏧" },
-  { name: "Bank", code: "service.bank", icon: "🏦" },
+  { name: "ATM", code: "finance.atm", icon: "🏧" }, // DOĞRU KOD BU
+  { name: "Bank", code: "finance.bank", icon: "🏦" }, // DOĞRU KOD BU
   { name: "Bookstore", code: "commercial.books", icon: "📚" },
   { name: "Hotel", code: "accommodation.hotel", icon: "🏨" },
   { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
-  { name: "Bus Station", code: "transportation.bus_station", icon: "🚌" },
-  { name: "Taxi", code: "transportation.taxi", icon: "🚕" },
-  { name: "Parking", code: "transportation.parking", icon: "🅿️" },
-  { name: "Shopping Center", code: "commercial.shopping_center", icon: "🛍️" }
+  { name: "Bus Station", code: "public_transport.bus_station", icon: "🚌" }, // DOĞRU KOD BU
+  { name: "Taxi", code: "service.taxi", icon: "🚕" }, // DOĞRU KOD BU
+  { name: "Parking", code: "service.parking", icon: "🅿️" }, // DOĞRU KOD BU
+  { name: "Shopping Center", code: "commercial.mall", icon: "🛍️" } // "commercial.shopping_center" yok, "commercial.mall" var!
 ];
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
