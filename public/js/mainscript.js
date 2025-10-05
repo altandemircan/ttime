@@ -4272,16 +4272,8 @@ return '<div class="map-error">Invalid location information</div>';
 
     return `
     <div class="map-container">
-        <iframe class="gmap-plan"
-                src="${baseUrl}?${params.toString()}"
-                width="100%"
-                height="250"
-                frameborder="0"
-                style="border:0"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade">
-        </iframe> 
-    </div>`;
+  <div class="leaflet-map" id="leaflet-map-1" style="width:100%;height:250px;"></div>
+</div>`;
 }
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
