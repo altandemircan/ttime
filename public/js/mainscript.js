@@ -2464,15 +2464,15 @@ const travelMainCategories = [
   { name: "Bakery", code: "amenity.bakery", icon: "🥐" },
   { name: "Nightclub", code: "amenity.nightclub", icon: "🌃" },
   { name: "Cinema", code: "amenity.cinema", icon: "🎬" },
-  { name: "Art Gallery", code: "tourism.art_gallery", icon: "🎨" },   // DÜZELTİLDİ
-  { name: "Theatre", code: "amenity.theatre", icon: "🎭" },           // DÜZELTİLDİ
-  { name: "Casino", code: "amenity.casino", icon: "🎰" },             // DÜZELTİLDİ
-  { name: "Theme Park", code: "tourism.theme_park", icon: "🎢" },     // DÜZELTİLDİ
-  { name: "Zoo", code: "tourism.zoo", icon: "🦁" },                   // DÜZELTİLDİ
-  { name: "Aquarium", code: "tourism.aquarium", icon: "🐠" },         // DÜZELTİLDİ
+  { name: "Art Gallery", code: "tourism.art_gallery", icon: "🎨" },
+  { name: "Theatre", code: "amenity.theatre", icon: "🎭" },
+  { name: "Casino", code: "amenity.casino", icon: "🎰" },
+  { name: "Theme Park", code: "tourism.theme_park", icon: "🎢" },
+  { name: "Zoo", code: "tourism.zoo", icon: "🦁" },
+  { name: "Aquarium", code: "tourism.aquarium", icon: "🐠" },
   { name: "Viewpoint", code: "tourism.viewpoint", icon: "🔭" },
-  { name: "Mall", code: "shop.mall", icon: "🛍️" },                   // DÜZELTİLDİ
-  { name: "Bookstore", code: "shop.books", icon: "📚" },              // DÜZELTİLDİ
+  { name: "Mall", code: "shop.mall", icon: "🛍️" },
+  { name: "Bookstore", code: "shop.books", icon: "📚" },
   { name: "ATM", code: "amenity.atm", icon: "🏧" },
   { name: "Pharmacy", code: "amenity.pharmacy", icon: "💊" },
   { name: "Hospital", code: "amenity.hospital", icon: "🏥" },
