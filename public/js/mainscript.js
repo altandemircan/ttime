@@ -3576,12 +3576,9 @@ li.dataset.index = currIdx;
 li.addEventListener("dragstart", dragStart);
 
 if (item.category === "Note") {
-  // SADECE custom note için: Yalnızca başlık ve not detayını göster
   li.innerHTML = `
     <div class="cart-item">
-      <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
       <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
-      <img src="https://www.svgrepo.com/show/522166/location.svg" alt="Note" class="category-icon">
       <div class="item-info">
         <p class="toggle-title">${item.name}</p>
       </div>
@@ -3600,6 +3597,8 @@ if (item.category === "Note") {
       </div>
     </div>
   `;
+  dayList.appendChild(li);
+  continue; // DİĞER KODLAR ÇALIŞMASIN!
 } else {
   // DİĞER TÜM ITEM’LAR İÇİN ESKİ DETAYLI KOD
   let openingHoursDisplay = "No working hours info";
