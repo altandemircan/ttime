@@ -1501,26 +1501,56 @@ const placeCategories = {
     "Accommodation": "accommodation.hotel"
 };
 
-window.showSuggestionsInChat = async function(category, day = 1, code = null) {
+// 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
+window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3) {
     const city = window.selectedCity || document.getElementById("city-input")?.value;
     if (!city) {
         addMessage("Please select a city first.", "bot-message");
         return;
     }
-    // --- Kodu öncelikle belirle ---
-    let realCategory = category;
-    let realCode = code;
-    if (code && typeof code === 'string') {
-        realCode = code;
-    } else if (geoapifyCategoryMap[category]) {
-        realCode = geoapifyCategoryMap[category];
-    }
-    const places = await getPlacesForCategory(city, realCategory, 5, 3000, realCode);
-
-    if (!places.length) {
-        addMessage(`No places found for this category in "${city}".`, "bot-message");
+    // Kategori kodunu belirle
+    let realCode = code || geoapifyCategoryMap[category] || placeCategories[category];
+    if (!realCode) {
+        addMessage("Invalid category.", "bot-message");
         return;
     }
+    // Yarıçapı metre cinsine çevir
+    const radius = Math.round(radiusKm * 1000);
+
+    // Arama yap
+    const places = await getPlacesForCategory(city, category, 5, radius, realCode);
+
+    if (!places.length) {
+        // Sonuç yoksa slider barı göster
+        addMessage(`
+            <div class="radius-slider-bar">
+                <p>No places found for this category in "${city}".</p>
+                <label for="radius-slider">
+                  🔎 Widen search area: <span id="radius-value">${radiusKm}</span> km
+                </label>
+                <input type="range" min="1" max="20" value="${radiusKm}" id="radius-slider" style="width:180px;">
+            </div>
+        `, "bot-message");
+
+        // Slider event'ini bekle
+        setTimeout(() => {
+            const slider = document.getElementById("radius-slider");
+            const valueLabel = document.getElementById("radius-value");
+            if (slider && valueLabel) {
+                slider.addEventListener("input", () => {
+                    valueLabel.textContent = slider.value;
+                });
+                slider.addEventListener("change", async () => {
+                    // Yeniden arama yap!
+                    const newRadius = Number(slider.value);
+                    await window.showSuggestionsInChat(category, day, code, newRadius);
+                });
+            }
+        }, 200);
+
+        return;
+    }
+
     await enrichCategoryResults(places, city);
     displayPlacesInChat(places, category, day);
     if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
@@ -1529,7 +1559,6 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null) {
         if (sidebar) sidebar.classList.remove('open');
     }
 };
-
 
 
 // 2. Butonla şehir seçildiğinde de güncelle
@@ -1753,18 +1782,13 @@ async function getCityCoordinates(city) {
 
 
 
-// 3. getPlacesForCategory (lat/lon number olarak!)
+// 2) Yerleri Geoapify'dan çeken fonksiyon
 async function getPlacesForCategory(city, category, limit = 4, radius = 3000, code = null) {
-    
-
-
     const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
     if (!geoCategory) {
         console.warn("Kategori haritada bulunamadı:", category, code);
         return [];
     }
-
-
 
     const coords = await getCityCoordinates(city);
     if (!coords || !coords.lat || !coords.lon) return [];
@@ -1788,6 +1812,18 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
         }));
     }
     return [];
+}
+
+// Şehir koordinatı bulma fonksiyonu
+async function getCityCoordinates(city) {
+    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(city)}&limit=1&apiKey=${GEOAPIFY_API_KEY}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.features && data.features.length > 0) {
+        const f = data.features[0];
+        return { lat: f.properties.lat, lon: f.properties.lon };
+    }
+    return null;
 }
 
 
