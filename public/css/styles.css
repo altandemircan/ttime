@@ -5839,7 +5839,10 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .leaflet-popup.drag-hint-popup .leaflet-popup-close-button {
   display: none !important;            /* X tamamen yok */
 }
-
+.leaflet-popup-content {
+        font-weight: bold;
+    text-align: center;
+}
 
 /* Hint tooltip (top) — NO close icon, just a small dark bubble, auto hides */
 .leaflet-popup.drag-hint-popup {
