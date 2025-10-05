@@ -4287,19 +4287,18 @@ return '<div class="map-error">Invalid location information</div>';
   </div>`;
 }
 
-
-function createLeafletMapForItem(mapId, lat, lon, name) {
+function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
-    if (window._leafletMaps[mapId]) return; // Aynı haritayı tekrar başlatma
+    if (window._leafletMaps[mapId]) return;
 
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
         scrollWheelZoom: false,
-        zoomControl: true,           // <-- zoom butonu aktif!
+        zoomControl: true,
         attributionControl: false
     });
- 
+
     L.tileLayer(
       'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=' + window.MAPBOX_TOKEN,
       {
@@ -4310,19 +4309,28 @@ function createLeafletMapForItem(mapId, lat, lon, name) {
       }
     ).addTo(map);
 
-    // Zoom butonlarının yerini sağ üst yap (opsiyonel)
+    // Özel rota marker tasarımı ile marker ekle (aynı rota haritası gibi)
+    const markerHtml = `
+      <div class="custom-marker-outer red">
+        <span class="custom-marker-label">${number || 1}</span>
+      </div>
+    `;
+    const icon = L.divIcon({
+        html: markerHtml,
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+
+    L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
+
     map.zoomControl.setPosition('topright');
-
-    L.marker([lat, lon]).addTo(map).bindPopup(name || '').openPopup();
-
     window._leafletMaps[mapId] = map;
 
     setTimeout(function() {
         map.invalidateSize();
     }, 100);
 }
-
-
 
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
@@ -4382,14 +4390,16 @@ function toggleContent(arrowIcon) {
     // EK: Leaflet haritayı başlat
     const item = cartItem.closest('.travel-item');
     if (!item) return;
-    const mapDiv = item.querySelector('.leaflet-map');
-if (mapDiv && mapDiv.offsetParent !== null) {
-    const mapId = mapDiv.id;
-    const lat = parseFloat(item.getAttribute('data-lat'));
-    const lon = parseFloat(item.getAttribute('data-lon'));
-    const name = item.querySelector('.toggle-title').textContent;
-    createLeafletMapForItem(mapId, lat, lon, name);
-}
+            const mapDiv = item.querySelector('.leaflet-map');
+            if (mapDiv && mapDiv.offsetParent !== null) {
+                const mapId = mapDiv.id;
+                const lat = parseFloat(item.getAttribute('data-lat'));
+                const lon = parseFloat(item.getAttribute('data-lon'));
+                const name = item.querySelector('.toggle-title').textContent;
+                // item.dataset.index veya sıralama numarası ile çağır
+                const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+                createLeafletMapForItem(mapId, lat, lon, name, number);
+            }
 }
 
 
