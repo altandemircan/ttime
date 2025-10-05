@@ -526,13 +526,14 @@ function renderMyTripsPanel() {
     deleteBtn.title = "Delete this trip";
     deleteBtn.textContent = "Delete";
     deleteBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (confirm("Are you sure you want to delete this trip?")) {
-            deleteTrip(trip.key);
-            renderMyTripsPanel();
-        }
-    };
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("Silinecek trip key:", trip.key);
+    if (confirm("Are you sure you want to delete this trip?")) {
+        deleteTrip(trip.key);
+        renderMyTripsPanel();
+    }
+};
 
     buttonRow.appendChild(renameBtn);
     buttonRow.appendChild(deleteBtn);
