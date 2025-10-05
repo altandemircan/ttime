@@ -2458,26 +2458,26 @@ function showCategoryList(day) {
 
     // 30 ana gezgin kategorisi (KODUN BAŞINDA veya globalde tanımlı olmalı!)
 const travelMainCategories = [
-  { name: "Bar", code: "catering.bar", icon: "🍹" },
-  { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
-  { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
-  { name: "Bakery", code: "catering.bakery", icon: "🥐" },
-  { name: "Nightclub", code: "entertainment.nightclub", icon: "🌃" },
-  { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-  { name: "Art Gallery", code: "entertainment.art_gallery", icon: "🎨" },
-  { name: "Theatre", code: "entertainment.theatre", icon: "🎭" },
-  { name: "Casino", code: "entertainment.casino", icon: "🎰" },
-  { name: "Theme Park", code: "entertainment.theme_park", icon: "🎢" },
-  { name: "Zoo", code: "entertainment.zoo", icon: "🦁" },
-  { name: "Aquarium", code: "entertainment.aquarium", icon: "🐠" },
+  { name: "Bar", code: "amenity.bar", icon: "🍹" },
+  { name: "Fast Food", code: "amenity.fast_food", icon: "🍔" },
+  { name: "Supermarket", code: "shop.supermarket", icon: "🛒" },
+  { name: "Bakery", code: "amenity.bakery", icon: "🥐" },
+  { name: "Nightclub", code: "amenity.nightclub", icon: "🌃" },
+  { name: "Cinema", code: "amenity.cinema", icon: "🎬" },
+  { name: "Art Gallery", code: "tourism.art_gallery", icon: "🎨" },   // DÜZELTİLDİ
+  { name: "Theatre", code: "amenity.theatre", icon: "🎭" },           // DÜZELTİLDİ
+  { name: "Casino", code: "amenity.casino", icon: "🎰" },             // DÜZELTİLDİ
+  { name: "Theme Park", code: "tourism.theme_park", icon: "🎢" },     // DÜZELTİLDİ
+  { name: "Zoo", code: "tourism.zoo", icon: "🦁" },                   // DÜZELTİLDİ
+  { name: "Aquarium", code: "tourism.aquarium", icon: "🐠" },         // DÜZELTİLDİ
   { name: "Viewpoint", code: "tourism.viewpoint", icon: "🔭" },
-  { name: "Mall", code: "commercial.mall", icon: "🛍️" },
-  { name: "Bookstore", code: "commercial.book", icon: "📚" }, // DÜZELT
-  { name: "ATM", code: "amenity.atm", icon: "🏧" }, // DÜZELT
-  { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
-  { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
-  { name: "Police", code: "amenity.police", icon: "🚓" }, // DÜZELT
-  { name: "Airport", code: "aeroway.aerodrome", icon: "✈️" } // DÜZELT
+  { name: "Mall", code: "shop.mall", icon: "🛍️" },                   // DÜZELTİLDİ
+  { name: "Bookstore", code: "shop.books", icon: "📚" },              // DÜZELTİLDİ
+  { name: "ATM", code: "amenity.atm", icon: "🏧" },
+  { name: "Pharmacy", code: "amenity.pharmacy", icon: "💊" },
+  { name: "Hospital", code: "amenity.hospital", icon: "🏥" },
+  { name: "Police", code: "amenity.police", icon: "🚓" },
+  { name: "Airport", code: "aeroway.aerodrome", icon: "✈️" }
 ];
 
     // -------- BASIC PLAN BLOK --------
