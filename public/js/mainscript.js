@@ -1504,7 +1504,7 @@ const placeCategories = {
 
 
 
-window.showSuggestionsInChat = async function(category, day = 1) {
+window.showSuggestionsInChat = async function(category, day = 1, code = null) {
 // Expanded map açıksa kapat!
 if (window.expandedMaps) {
     Object.keys(window.expandedMaps).forEach(containerId => {
@@ -1514,16 +1514,30 @@ if (window.expandedMaps) {
         }
     });
 }    
+
+
+
+
     const city = window.selectedCity || document.getElementById("city-input")?.value;
     if (!city) {
-addMessage("Please select a city first.", "bot-message");
+        addMessage("Please select a city first.", "bot-message");
         return;
     }
-    if (!geoapifyCategoryMap[category]) {
-  addMessage(`No place category found for "${category}".`, "bot-message");
-  return;
-}
-const places = await getPlacesForCategory(city, category, 5);
+    // --- BURADA KODU ÖNCELE ---
+    let realCategory = category;
+    let realCode = code;
+    if (code && typeof code === 'string') {
+        realCode = code;
+    } else if (geoapifyCategoryMap[category]) {
+        realCode = geoapifyCategoryMap[category];
+    }
+    const places = await getPlacesForCategory(city, realCategory, 5, 3000, realCode);
+
+
+
+
+
+
     if (!places.length) {
 addMessage(`No places found for this category in "${city}".`, "bot-message");
         return;
@@ -1763,12 +1777,19 @@ async function getCityCoordinates(city) {
 
 
 // 3. getPlacesForCategory (lat/lon number olarak!)
-async function getPlacesForCategory(city, category, limit = 4, radius = 3000) {
-    const geoCategory = geoapifyCategoryMap[category] || placeCategories[category];
+async function getPlacesForCategory(city, category, limit = 4, radius = 3000, code = null) {
+    
+
+
+    const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
     if (!geoCategory) {
-        console.warn("Kategori haritada bulunamadı:", category);
+        console.warn("Kategori haritada bulunamadı:", category, "code:", code);
         return [];
     }
+
+
+
+    
     const coords = await getCityCoordinates(city);
     if (!coords || !coords.lat || !coords.lon) return [];
     const url = `https://api.geoapify.com/v2/places?categories=${geoCategory}&filter=circle:${coords.lon},${coords.lat},${radius}&limit=${limit}&apiKey=${GEOAPIFY_API_KEY}`;
@@ -2477,7 +2498,7 @@ function showCategoryList(day) {
         // Kategoriye tıklama
         subCategoryItem.addEventListener("click", (e) => {
             if (!e.target.classList.contains('toggle-subcategory-btn')) {
-showSuggestionsInChat(cat.name, day);
+showSuggestionsInChat(cat.name, day, cat.code); // code'u da gönder!
             }
         });
         toggleBtn.addEventListener("click", (e) => {
@@ -2519,7 +2540,7 @@ showSuggestionsInChat(cat.name, day);
         // Kategoriye tıklama
         subCategoryItem.addEventListener("click", (e) => {
             if (!e.target.classList.contains('toggle-subcategory-btn')) {
-showSuggestionsInChat(cat.name, day);
+showSuggestionsInChat(cat.name, day, cat.code); // code'u da gönder!
             }
         });
         toggleBtn.addEventListener("click", (e) => {
