@@ -2594,20 +2594,14 @@ function closeCustomNoteInput() {
 function saveCustomNote(day) {
     const title = document.getElementById("noteTitle").value;
     const details = document.getElementById("noteDetails").value;
-
-    if (title && details) {
-        window.cart.push({
-            name: title,
-            noteDetails: details,
-            day: parseInt(day), // doğru gün numarası
-            category: "Note",
-            image: "img/added-note.png"
-        });
-        updateCart();
-        closeCustomNoteInput();
-    } else {
-        alert("Please enter both title and details.");
-    }
+    window.cart.push({
+        name: title,
+        noteDetails: details,
+        day: Number(day), // sayı olarak!
+        category: "Note",
+        image: "img/added-note.png"
+    });
+    if (typeof updateCart === "function") updateCart();
 }
 const apiCache = new Map();
 
