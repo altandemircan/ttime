@@ -2589,7 +2589,6 @@ function closeCustomNoteInput() {
     document.getElementById("customNoteContainer").style.display = "none";
     document.querySelector(".add-custom-note-btn").style.display = "block";
 }
-
 function saveCustomNote(day) {
     const title = document.getElementById("noteTitle").value;
     const details = document.getElementById("noteDetails").value;
@@ -2597,7 +2596,7 @@ function saveCustomNote(day) {
     if (title && details) {
         const newItem = {
             name: title,
-            details: details,
+            noteDetails: details, // <-- Buraya dikkat!
             day: parseInt(day),
             category: "Note",
             image: "img/added-note.png"
@@ -2610,7 +2609,6 @@ function saveCustomNote(day) {
         alert("Please enter both title and details.");
     }
 }
-
 
 const apiCache = new Map();
 
