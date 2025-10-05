@@ -1520,10 +1520,10 @@ addMessage("Please select a city first.", "bot-message");
         return;
     }
     if (!geoapifyCategoryMap[category]) {
-addMessage(`No place category found for "${category}".`, "bot-message");
-        return;
-    }
-    const places = await getPlacesForCategory(city, category, 5);
+  addMessage(`No place category found for "${category}".`, "bot-message");
+  return;
+}
+const places = await getPlacesForCategory(city, category, 4);
     if (!places.length) {
 addMessage(`No places found for this category in "${city}".`, "bot-message");
         return;
@@ -2424,26 +2424,26 @@ function showCategoryList(day) {
     ];
 
     // 30 ana gezgin kategorisi (KODUN BAŞINDA veya globalde tanımlı olmalı!)
-    const travelMainCategories = [
+ const travelMainCategories = [
   { name: "Bar", code: "catering.bar", icon: "🍹" },
   { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
   { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
   { name: "Bakery", code: "catering.bakery", icon: "🥐" },
   { name: "Nightclub", code: "entertainment.nightclub", icon: "🌃" },
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-  { name: "Art Gallery", code: "entertainment.gallery", icon: "🎨" },
+  { name: "Art Gallery", code: "entertainment.art_gallery", icon: "🎨" },    // DÜZELT!
   { name: "Theatre", code: "entertainment.theatre", icon: "🎭" },
   { name: "Casino", code: "entertainment.casino", icon: "🎰" },
   { name: "Theme Park", code: "tourism.theme_park", icon: "🎢" },
   { name: "Zoo", code: "tourism.zoo", icon: "🦁" },
   { name: "Aquarium", code: "tourism.aquarium", icon: "🐠" },
-  { name: "Viewpoint", code: "tourism.view_point", icon: "🔭" },
-  { name: "Mall", code: "shopping.mall", icon: "🛍️" },
+  { name: "Viewpoint", code: "tourism.viewpoint", icon: "🔭" },              // DÜZELT!
+  { name: "Mall", code: "commercial.mall", icon: "🛍️" },                    // DÜZELT!
   { name: "Bookstore", code: "commercial.books", icon: "📚" },
-  { name: "ATM", code: "service.atm", icon: "🏧" },
+  { name: "ATM", code: "finance.atm", icon: "🏧" },                          // DÜZELT!
   { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
   { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
-  { name: "Police", code: "service.police", icon: "🚓" },
+  { name: "Police", code: "public.public_security", icon: "🚓" },            // DÜZELT!
   { name: "Airport", code: "transport.airport", icon: "✈️" }
 ];
 
@@ -2477,7 +2477,7 @@ function showCategoryList(day) {
         // Kategoriye tıklama
         subCategoryItem.addEventListener("click", (e) => {
             if (!e.target.classList.contains('toggle-subcategory-btn')) {
-                showSuggestionsInChat(cat.name, day);
+showSuggestionsInChat(cat.name, day);
             }
         });
         toggleBtn.addEventListener("click", (e) => {
@@ -2519,7 +2519,7 @@ function showCategoryList(day) {
         // Kategoriye tıklama
         subCategoryItem.addEventListener("click", (e) => {
             if (!e.target.classList.contains('toggle-subcategory-btn')) {
-                showSuggestionsInChat(cat.name, day);
+showSuggestionsInChat(cat.name, day);
             }
         });
         toggleBtn.addEventListener("click", (e) => {
