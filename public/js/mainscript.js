@@ -3573,6 +3573,11 @@ if (item.category === "Note") {
 }
 li.draggable = true;
 li.dataset.index = currIdx;
+// Eğer koordinat varsa, ekle:
+if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+    li.setAttribute("data-lat", item.location.lat);
+    li.setAttribute("data-lon", item.location.lng);
+}
 li.addEventListener("dragstart", dragStart);
 
 if (item.category === "Note") {
@@ -4271,10 +4276,37 @@ return '<div class="map-error">Invalid location information</div>';
     });
 
     return `
-    <div class="map-container">
+   <div class="map-container">
   <div class="leaflet-map" id="leaflet-map-1" style="width:100%;height:250px;"></div>
 </div>`;
 }
+
+
+function createLeafletMapForItem(mapId, lat, lon, name) {
+    window._leafletMaps = window._leafletMaps || {};
+    if (window._leafletMaps[mapId]) return; // Aynı haritayı tekrar başlatma
+
+    var map = L.map(mapId, {
+        center: [lat, lon],
+        zoom: 16,
+        scrollWheelZoom: false,
+        zoomControl: false,
+        attributionControl: false
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    L.marker([lat, lon]).addTo(map).bindPopup(name || '').openPopup();
+
+    window._leafletMaps[mapId] = map;
+
+    setTimeout(function() {
+        map.invalidateSize();
+    }, 100);
+}
+
+
+
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
   const base = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}`;
@@ -4319,19 +4351,27 @@ async function getPlaceInfoFromLatLng(lat, lng) {
   return { name: "Unnamed Place", address: "", opening_hours: "" };
 }
 function toggleContent(arrowIcon) {
-    // İkonun en yakın .cart-item ata divini bul
     const cartItem = arrowIcon.closest('.cart-item');
     if (!cartItem) return;
-    // İçindeki .content divini bul
     const contentDiv = cartItem.querySelector('.content');
     if (!contentDiv) return;
-    // Aç/kapa
     contentDiv.classList.toggle('open');
-    // Eğer open classı varsa göster, yoksa gizle
     if (contentDiv.classList.contains('open')) {
         contentDiv.style.display = 'block';
     } else {
         contentDiv.style.display = 'none';
+    }
+
+    // EK: Leaflet haritayı başlat
+    const item = cartItem.closest('.travel-item');
+    if (!item) return;
+    const mapDiv = item.querySelector('.leaflet-map');
+    if (mapDiv && mapDiv.offsetParent !== null) {
+        const mapId = mapDiv.id;
+        const lat = parseFloat(item.getAttribute('data-lat'));
+        const lon = parseFloat(item.getAttribute('data-lon'));
+        const name = item.querySelector('.toggle-title').textContent;
+        createLeafletMapForItem(mapId, lat, lon, name);
     }
 }
 
