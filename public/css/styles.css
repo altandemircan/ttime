@@ -3084,6 +3084,15 @@ ease;
     width: -webkit-fill-available;
     font-family: 'Satoshi';
 }
+
+.custom-note {
+  width: 80%;
+  left: 15%;
+  position: relative;
+}
+
+
+
 .search-container {
     margin-top: 15px;
     position: relative;
