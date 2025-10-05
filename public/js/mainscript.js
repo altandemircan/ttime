@@ -1523,7 +1523,7 @@ addMessage("Please select a city first.", "bot-message");
   addMessage(`No place category found for "${category}".`, "bot-message");
   return;
 }
-const places = await getPlacesForCategory(city, category, 4);
+const places = await getPlacesForCategory(city, category, 5);
     if (!places.length) {
 addMessage(`No places found for this category in "${city}".`, "bot-message");
         return;
