@@ -2586,8 +2586,10 @@ function showCategoryList(day) {
 }
 
 function closeCustomNoteInput() {
-    document.getElementById("customNoteContainer").style.display = "none";
-    document.querySelector(".add-custom-note-btn").style.display = "block";
+    var input = document.getElementById("custom-note-input");
+    if (input) {
+        input.style.display = "none";
+    }
 }
 function saveCustomNote(day) {
     const title = document.getElementById("noteTitle").value;
