@@ -3439,8 +3439,8 @@ return;
   // 2) Her gün
   days.forEach(day => {
     // Sadece gerçek (starter/placeholder hariç) item’lar
-    const dayItemsArr = window.cart.filter(i =>
-  i.day === day &&
+const dayItemsArr = window.cart.filter(i =>
+  Number(i.day) === Number(day) &&
   !i._starter &&
   !i._placeholder &&
   (i.name || i.category === "Note")
