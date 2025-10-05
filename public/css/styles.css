@@ -3260,6 +3260,10 @@ ease;
 
 }
 
+.custom-note .info-section {
+    padding-left:10px;
+}
+
 .place-rating {
 background: #fff;
 }
