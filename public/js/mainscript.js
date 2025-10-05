@@ -3627,7 +3627,7 @@ const mapHtml = (item.location &&
     : '<div class="map-error">Location not available</div>';
 
 
-    
+
   li.innerHTML = `
     <div class="cart-item">
       <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
@@ -4292,18 +4292,27 @@ function createLeafletMapForItem(mapId, lat, lon, name) {
     window._leafletMaps = window._leafletMaps || {};
     if (window._leafletMaps[mapId]) return; // Aynı haritayı tekrar başlatma
 
-    L.control.zoom({
-  position: 'topright' // veya 'bottomright', 'bottomleft', 'topleft' (istediğin yere)
-}).addTo(map);
-   L.tileLayer(
-  'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=' + window.MAPBOX_TOKEN, 
-  {
-    tileSize: 256,
-    zoomOffset: 0,
-    attribution: '© Mapbox © OpenStreetMap',
-    crossOrigin: true
-  }
-).addTo(map);
+    var map = L.map(mapId, {
+        center: [lat, lon],
+        zoom: 16,
+        scrollWheelZoom: false,
+        zoomControl: true,           // <-- zoom butonu aktif!
+        attributionControl: false
+    });
+ 
+    L.tileLayer(
+      'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=' + window.MAPBOX_TOKEN,
+      {
+        tileSize: 256,
+        zoomOffset: 0,
+        attribution: '© Mapbox © OpenStreetMap',
+        crossOrigin: true
+      }
+    ).addTo(map);
+
+    // Zoom butonlarının yerini sağ üst yap (opsiyonel)
+    map.zoomControl.setPosition('topright');
+
     L.marker([lat, lon]).addTo(map).bindPopup(name || '').openPopup();
 
     window._leafletMaps[mapId] = map;
