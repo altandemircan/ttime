@@ -3090,6 +3090,29 @@ ease;
   left: 15%;
   position: relative;
 }
+.travel-item.custom-note {
+  width: 80%;
+  left: 15%;
+  position: relative;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  background: #fff; /* isteğe bağlı, arka plan */
+  /* Custom note'u öne çıkarmak için border-radius veya shadow ekleyebilirsin */
+}
+
+.travel-item.custom-note::before {
+  content: "";
+  position: absolute;
+  left: -16px; /* L'nin ana dalı için, item'ın solundan başlasın */
+  top: 0;
+  width: 12px;     /* L'nin yatay kısmı */
+  height: 22px;    /* L'nin dikey kısmı */
+  border-left: 3px solid #4CAF50;  /* Dikey L dalı */
+  border-bottom: 3px solid #4CAF50; /* Yatay L tabanı */
+  border-radius: 0 0 5px 5px;
+  box-sizing: border-box;
+  /* Daha belirgin olması için renk ve kalınlık değiştirilebilir */
+}
 
 .search-container {
     margin-top: 15px;
