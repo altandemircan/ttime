@@ -2595,14 +2595,14 @@ function saveCustomNote(day) {
 
     if (title && details) {
         const newItem = {
-            name: title,
-            noteDetails: details, // <-- Buraya dikkat!
-            day: parseInt(day),
-            category: "Note",
-            image: "img/added-note.png"
-        };
+    name: title,
+    noteDetails: details, // <-- DOĞRU OLAN BU!
+    day: parseInt(day),
+    category: "Note",
+    image: "img/added-note.png"
+};
 
-        window.cart.push(newItem);
+window.cart.push(newItem);
         updateCart();
         closeCustomNoteInput();
     } else {
