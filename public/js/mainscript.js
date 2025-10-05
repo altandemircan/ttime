@@ -3429,6 +3429,8 @@ return;
 
   // 1) Gün listesi
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+  window._debug_days = days; // <-- BU SATIRI EKLE!
+
   cartDiv.innerHTML = "";
 
   const globalIndexMap = new Map();
