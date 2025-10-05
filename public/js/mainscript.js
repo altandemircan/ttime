@@ -1723,26 +1723,27 @@ const geoapifyCategoryMap = {
   "Touristic attraction": "tourism.sights",
   "Restaurant": "catering.restaurant",
   "Accommodation": "accommodation.hotel",
-  // Traveler Needs (20 ana kategori)
+
+  // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
   "Bar": "catering.bar",
   "Fast Food": "catering.fast_food",
   "Supermarket": "commercial.supermarket",
   "Bakery": "catering.bakery",
   "Nightclub": "entertainment.nightclub",
   "Cinema": "entertainment.cinema",
-  "Art Gallery": "entertainment.gallery",
+  "Art Gallery": "entertainment.art_gallery",      // DÜZELTİLDİ (gallery → art_gallery)
   "Theatre": "entertainment.theatre",
   "Casino": "entertainment.casino",
   "Theme Park": "tourism.theme_park",
   "Zoo": "tourism.zoo",
   "Aquarium": "tourism.aquarium",
-  "Viewpoint": "tourism.view_point",
-  "Mall": "shopping.mall",
+  "Viewpoint": "tourism.viewpoint",                // DÜZELTİLDİ (view_point → viewpoint)
+  "Mall": "commercial.mall",                       // DÜZELTİLDİ (shopping.mall → commercial.mall)
   "Bookstore": "commercial.books",
-  "ATM": "service.atm",
+  "ATM": "finance.atm",                           // DÜZELTİLDİ (service.atm → finance.atm)
   "Pharmacy": "healthcare.pharmacy",
   "Hospital": "healthcare.hospital",
-  "Police": "service.police",
+  "Police": "public.public_security",             // DÜZELTİLDİ (service.police → public.public_security)
   "Airport": "transport.airport"
 };
 
