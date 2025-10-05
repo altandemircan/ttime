@@ -3568,16 +3568,20 @@ else {
   // 2) Şimdi item'i ekle
 const li = document.createElement("li");
 li.className = "travel-item";
-if (item.category === "Note") {
-  li.classList.add("custom-note");
-}
 li.draggable = true;
 li.dataset.index = currIdx;
-// Eğer koordinat varsa, ekle:
 if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
     li.setAttribute("data-lat", item.location.lat);
     li.setAttribute("data-lon", item.location.lng);
 }
+const leafletMapId = "leaflet-map-" + currIdx;
+
+if (item.category === "Note") {
+  li.classList.add("custom-note");
+}
+
+// Eğer koordinat varsa, ekle:
+
 li.addEventListener("dragstart", dragStart);
 
 if (item.category === "Note") {
@@ -3616,12 +3620,14 @@ if (item.category === "Note") {
     }
   }
 
-  const mapHtml = (item.location &&
+const mapHtml = (item.location &&
     typeof item.location.lat === "number" &&
     typeof item.location.lng === "number")
-    ? createMapIframe(item.location.lat, item.location.lng, 16)
+    ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
     : '<div class="map-error">Location not available</div>';
 
+
+    
   li.innerHTML = `
     <div class="cart-item">
       <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
@@ -4276,9 +4282,9 @@ return '<div class="map-error">Invalid location information</div>';
     });
 
     return `
-   <div class="map-container">
-  <div class="leaflet-map" id="leaflet-map-1" style="width:100%;height:250px;"></div>
-</div>`;
+     <div class="map-container">
+    <div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div>
+  </div>`;
 }
 
 
@@ -4366,13 +4372,13 @@ function toggleContent(arrowIcon) {
     const item = cartItem.closest('.travel-item');
     if (!item) return;
     const mapDiv = item.querySelector('.leaflet-map');
-    if (mapDiv && mapDiv.offsetParent !== null) {
-        const mapId = mapDiv.id;
-        const lat = parseFloat(item.getAttribute('data-lat'));
-        const lon = parseFloat(item.getAttribute('data-lon'));
-        const name = item.querySelector('.toggle-title').textContent;
-        createLeafletMapForItem(mapId, lat, lon, name);
-    }
+if (mapDiv && mapDiv.offsetParent !== null) {
+    const mapId = mapDiv.id;
+    const lat = parseFloat(item.getAttribute('data-lat'));
+    const lon = parseFloat(item.getAttribute('data-lon'));
+    const name = item.querySelector('.toggle-title').textContent;
+    createLeafletMapForItem(mapId, lat, lon, name);
+}
 }
 
 
