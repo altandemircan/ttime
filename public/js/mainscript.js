@@ -1724,18 +1724,27 @@ function addChatResultsToCart() {
         oldLeaflet.remove();
     }
 
-    if (!isNaN(lat) && !isNaN(lon)) {
-        // Harita div'i ekle
-        const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random()*10000);
-        const mapDiv = document.createElement('div');
-        mapDiv.className = "leaflet-map";
-        mapDiv.id = mapId;
-        mapDiv.style.width = "100%";
-        mapDiv.style.height = "250px";
-        visualDiv.appendChild(mapDiv);
-        image.style.display = "none";
+   if (!isNaN(lat) && !isNaN(lon)) {
+    // Harita div'i ekle
+    const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random() * 10000);
 
-        // Leaflet başlat
+    const mapDiv = document.createElement('div');
+    mapDiv.id = mapId;
+    mapDiv.className = "leaflet-map";
+    mapDiv.style.width = "100%";
+    mapDiv.style.height = "250px";
+    mapDiv.style.minHeight = "160px";
+    mapDiv.style.borderRadius = "10px";
+    mapDiv.style.margin = "8px 0";
+    mapDiv.style.background = "#f3f3f3";
+
+    // Önce DOM'a ekle!
+    visualDiv.appendChild(mapDiv);
+
+    image.style.display = "none";
+
+    // Leaflet başlatmak için kısa gecikme (DOM'a eklendikten sonra!)
+    setTimeout(function() {
         window._leafletMaps = window._leafletMaps || {};
         var map = L.map(mapId, {
             center: [lat, lon],
@@ -1758,10 +1767,8 @@ function addChatResultsToCart() {
         map.zoomControl.setPosition('topright');
         window._leafletMaps[mapId] = map;
         setTimeout(function(){ map.invalidateSize(); }, 100);
-    } else {
-        alert("Location not found.");
-    }
-};
+    }, 0);
+}
 
     window.showImage = function (element) {
     const visualDiv = element.closest('.steps').querySelector('.visual');
@@ -1898,7 +1905,7 @@ function safeCoords(obj) {
 }
 
 function addToCart(
-    
+
   name,
   image,
   day,
