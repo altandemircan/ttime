@@ -27,6 +27,35 @@ const mapBox = require("./mapBox");
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
 
+app.get('/api/elevation', async (req, res) => {
+  const { locations } = req.query;
+  const url = `https://api.open-elevation.com/api/v1/lookup?locations=${locations}`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return res.status(response.status).send('Elevation API error');
+    res.set('Access-Control-Allow-Origin', '*');
+    res.json(await response.json());
+  } catch (e) {
+    res.status(500).send('Proxy error');
+  }
+});
+
+
+app.get('/api/geoapify/reverse', async (req, res) => {
+  const { lat, lon } = req.query;
+  const apiKey = process.env.GEOAPIFY_KEY;
+  const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${apiKey}`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return res.status(response.status).send('Geoapify error');
+    res.set('Access-Control-Allow-Origin', '*');
+    res.json(await response.json());
+  } catch (e) {
+    res.status(500).send('Proxy error');
+  }
+});
+
+
 // 3.b MAPBOX ENDPOINTLERİ
 // Directions endpoint
 app.get("/api/mapbox/directions", async (req, res) => {
