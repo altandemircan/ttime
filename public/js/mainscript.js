@@ -5866,51 +5866,7 @@ window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:
 
 
 }
-(function ensureNearbyPulseStyles(){
-  if (document.getElementById('tt-nearby-pulse-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'tt-nearby-pulse-styles';
-  s.textContent = `
-    .nearby-pulse-icon-wrapper { background: transparent; border: none; }
-    .nearby-pulse-root {
-      position: relative;
-      width: 28px;
-      height: 28px;
-      transform: translate(-14px, -14px);
-      pointer-events: none;
-      z-index: 650;
-    }
-    .nearby-pulse-core {
-      position: absolute;
-      left: 50%; top: 50%;
-      width: 14px; height: 14px;
-      transform: translate(-50%, -50%);
-      background: #1976d2;
-      border: 2px solid #fff;
-      border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-      z-index: 2;
-    }
-    .nearby-pulse-ring,
-    .nearby-pulse-ring2 {
-      position: absolute;
-      left: 50%; top: 50%;
-      width: 14px; height: 14px;
-      transform: translate(-50%, -50%);
-      border: 2px solid #1976d2;
-      border-radius: 50%;
-      opacity: 0;
-      animation: ttPulse 2.8s linear infinite;
-    }
-    .nearby-pulse-ring2 { animation-delay: 1.4s; }
-    @keyframes ttPulse {
-      0%   { transform: translate(-50%, -50%) scale(0.25); opacity: 0.55; }
-      60%  { opacity: 0.05; }
-      100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
-    }
-  `;
-  document.head.appendChild(s);
-})();
+
 // Popup kapatma fonksiyonu
 window.closeNearbyPopup = function() {
   const popupElement = document.getElementById('custom-nearby-popup');
@@ -8507,18 +8463,6 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
   }
 }
 
-
-
-(function ensureElevStyles(){
-  if (document.getElementById('tt-elev-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'tt-elev-styles';
-  s.textContent = `
-    /* Scale bar container */
-   
-  `;
-  document.head.appendChild(s);
-})();
 
 /* 2) Vertical guide line on the map */
 function showMarkerVerticalLineOnMap(map, latlng) {
