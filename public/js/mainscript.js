@@ -7823,12 +7823,12 @@ function ensureCanvasRenderer(map) {
   // Başlat
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      ensureStyles();
+     
       initAll();
       watchDOM();
     });
   } else {
-    ensureStyles();
+    
     initAll();
     watchDOM();
   }
