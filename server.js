@@ -43,6 +43,19 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
+const geoapify = require('./geoapify.js'); // varsa zaten yukarıda require edilmiş olabilir
+
+// Autocomplete endpoint
+app.get('/api/geoapify/autocomplete', async (req, res) => {
+  const { q, limit } = req.query;
+  try {
+    const data = await geoapify.autocomplete(q, limit ? parseInt(limit) : 7);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
   const url = `https://api.open-elevation.com/api/v1/lookup?locations=${locations}`;
