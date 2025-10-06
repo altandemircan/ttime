@@ -3436,18 +3436,7 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-    window.cart = window.cart.filter(it =>
-    it && typeof it.name !== "undefined" &&
-    (
-      !it.location ||
-      (
-        typeof it.location.lat === "number" &&
-        typeof it.location.lng === "number" &&
-        !isNaN(it.location.lat) &&
-        !isNaN(it.location.lng)
-      )
-    )
-);
+    
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
