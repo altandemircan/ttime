@@ -8415,7 +8415,7 @@ window.TT_SVG_ICONS = {
   }
 })();
 
-/* 5) Hook into existing flows so enhancements are applied at the right time */
+/* SİL SONRA
 function enhanceAllTravelModeSets() {
   document.querySelectorAll('.day-container').forEach(dc => {
     const day = parseInt(dc.dataset.day || '0', 10);
@@ -8423,7 +8423,6 @@ function enhanceAllTravelModeSets() {
   });
 }
 
-// If you have a patched renderLeafletRoute, add enhancement after controls are drawn
 (function patchEnhancements(){
   if (!window.__tt_enhance_icons_patched && typeof renderLeafletRoute === 'function') {
     const original = renderLeafletRoute;
@@ -8436,7 +8435,7 @@ function enhanceAllTravelModeSets() {
   }
 })();
 
-// Also run after your own wrapRouteControlsForAllDays if present
+
 if (typeof wrapRouteControlsForAllDays === 'function') {
   const originalWrapAll = wrapRouteControlsForAllDays;
   window.wrapRouteControlsForAllDays = function() {
@@ -8447,11 +8446,8 @@ if (typeof wrapRouteControlsForAllDays === 'function') {
   // Fallback: run after initial render
   setTimeout(enhanceAllTravelModeSets, 0);
 }
-
-
-/* === Route summary: add Ascent/Descent badges and switch icons to distance.svg/time.svg ===
-   Safe patch to append to the end of mukemmel.js
 */
+
 (function routeSummaryAscentDescentPatch(){
   // 1) Configure icons
   window.TT_SVG_ICONS = Object.assign(window.TT_SVG_ICONS || {}, {
@@ -9902,9 +9898,6 @@ const DATASET = 'srtm30m';
 
   window.__tt_elevMuxReady = true;
 })();
-// Fixed band davranışı devre dışı
-function adjustScaleBarPosition() { /* disabled */ }
-
 
 // === Feedback Form ===
 (function initFeedbackSidebar(){
