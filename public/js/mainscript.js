@@ -1011,6 +1011,7 @@ document.querySelectorAll('.add_theme').forEach(btn => {
 });
 
 // .addtotrip butonuna basıldığında day bilgisini stepsDiv'den veya window.currentDay'den al.
+// 1) Kategori/slider'dan sepete ekleme (.addtotrip handler)
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
         document.removeEventListener('click', window.__triptime_addtotrip_listener);
@@ -1019,14 +1020,13 @@ function initializeAddToTripListener() {
     const listener = function(e) {
         const btn = e.target.closest('.addtotrip');
         if (!btn) return;
-        
+
         e.preventDefault();
         e.stopImmediatePropagation();
-        
+
         const stepsDiv = btn.closest('.steps');
         if (!stepsDiv) return;
 
-        // Gün bilgisini stepsDiv'den ya da window.currentDay'den al
         const day = stepsDiv.getAttribute('data-day') || window.currentDay || 1;
         const category = stepsDiv.getAttribute('data-category');
         const title = stepsDiv.querySelector('.title')?.textContent.trim() || '';
@@ -1036,6 +1036,12 @@ function initializeAddToTripListener() {
         const lat = stepsDiv.getAttribute('data-lat');
         const lon = stepsDiv.getAttribute('data-lon');
         const website = (stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick')?.match(/'([^']+)'/) || [])[1] || '';
+
+        // GÜVENLİ LOCATION PARAMETRESİ
+        let location = null;
+        if (lat !== null && lat !== undefined && lon !== null && lon !== undefined && !isNaN(Number(lat)) && !isNaN(Number(lon))) {
+            location = { lat: Number(lat), lng: Number(lon) };
+        }
 
         addToCart(
             title,
@@ -1047,13 +1053,13 @@ function initializeAddToTripListener() {
             null, // user_ratings_total
             opening_hours,
             null, // place_id
-            (lat && lon) ? { lat: Number(lat), lng: Number(lon) } : null,
+            location,
             website
         );
-        
+
         btn.classList.add('added');
         setTimeout(() => btn.classList.remove('added'), 1000);
-        
+
         if (typeof restoreSidebar === "function") restoreSidebar();
     };
 
@@ -1762,17 +1768,35 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
     const filtered = data.features.filter(f =>
       !!f.properties.name && f.properties.name.trim().length > 2
     );
-    return filtered.map(f => ({
-      name: f.properties.name,
-      address: f.properties.formatted || "",
-      lat: Number(f.properties.lat),
-      lon: Number(f.properties.lon),
-      website: f.properties.website || '',
-      opening_hours: f.properties.opening_hours || '',
-      categories: f.properties.categories || [],
-      city: city,
-      properties: f.properties
-    }));
+    return filtered.map(f => {
+      // Props içinden tüm olası lat/lon kaynaklarını güvenli şekilde al
+      const props = f.properties || {};
+      let lat = Number(
+        props.lat ??
+        props.latitude ??
+        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[1])
+      );
+      let lon = Number(
+        props.lon ??
+        props.longitude ??
+        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0])
+      );
+      // Geçersizse null ata
+      if (!Number.isFinite(lat)) lat = null;
+      if (!Number.isFinite(lon)) lon = null;
+      return {
+        name: props.name,
+        address: props.formatted || "",
+        lat,
+        lon,
+        location: (lat !== null && lon !== null) ? { lat, lng: lon } : null,
+        website: props.website || '',
+        opening_hours: props.opening_hours || '',
+        categories: props.categories || [],
+        city: city,
+        properties: props
+      };
+    });
   }
   return [];
 }
@@ -1815,7 +1839,15 @@ const categoryIcons = {
     "Restaurant": "img/restaurant_icon.svg",
     "Accommodation": "img/accommodation_icon.svg"
 };
-
+function safeCoords(obj) {
+  // Hem lat/lon hem location nesnesi destekle
+  const lat = Number(obj.lat ?? (obj.location && obj.location.lat));
+  const lng = Number(obj.lon ?? obj.lng ?? (obj.location && (obj.location.lng ?? obj.location.lon)));
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    return { lat, lng };
+  }
+  return null;
+}
 
 function addToCart(
   name,
@@ -2206,14 +2238,14 @@ function addItem(element, day, category, name, image, extra) {
     const lon = stepsDiv.getAttribute('data-lon');
     const place = typeof extra === 'string' ? JSON.parse(extra.replace(/&quot;/g, '"')) : extra || {};
 
-    // location'u garantile
+    // GÜVENLİ location oluştur
     let location = null;
     if (place.location && typeof place.location.lat !== "undefined" && typeof place.location.lng !== "undefined") {
         location = {
             lat: Number(place.location.lat),
             lng: Number(place.location.lng)
         };
-    } else if (lat && lon) {
+    } else if (lat && lon && !isNaN(Number(lat)) && !isNaN(Number(lon))) {
         location = {
             lat: Number(lat),
             lng: Number(lon)
@@ -2790,6 +2822,21 @@ async function appendSuggestion(suggestion, container, day) {
 
 function handleSuggestionClick(suggestion, imgUrl, day) {
     const props = suggestion.properties || suggestion;
+    // GÜVENLİ location oluştur
+    let lat = Number(props.lat ?? props.latitude ?? (props.geometry && props.geometry.coordinates && props.geometry.coordinates[1]));
+    let lon = Number(props.lon ?? props.longitude ?? (props.geometry && props.geometry.coordinates && props.geometry.coordinates[0]));
+    let location = (Number.isFinite(lat) && Number.isFinite(lon)) ? { lat, lng: lon } : null;
+
+    addToCart(
+        props.name || props.address_line1 || '',
+        imgUrl,
+        parseInt(day),
+        "Place",
+        props.formatted || "",
+        null, null, null, props.place_id,
+        location,
+        props.website || ""
+    );
     const newItem = {
         name: props.name || props.address_line1 || '',
         image: imgUrl,
@@ -2808,7 +2855,7 @@ function handleSuggestionClick(suggestion, imgUrl, day) {
         updateCart();
     }
     // Feedback ve input temizleme
-    const detailsDiv = document.getElementById(`place-details-${day}`);
+const detailsDiv = document.getElementById(`place-details-${day}`);
     if (detailsDiv) {
         detailsDiv.innerHTML = `<div class="success">✓ Added to Day ${day}</div>`;
         const input = document.getElementById(`place-input-${day}`);
