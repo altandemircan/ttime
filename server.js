@@ -19,7 +19,7 @@ app.use('/api', feedbackRoute);
 const llmProxy = require('./llm-proxy');    
 const photogetProxy = require('./photoget-proxy');
 const mapBox = require("./mapBox");
-
+ 
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
 
