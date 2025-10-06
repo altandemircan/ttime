@@ -9220,9 +9220,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 })();
 
 
-/* === Elevation provider failover + per-route cache (Open‑Meteo -> OpenTopoData -> Open‑Elevation) === */
-// 2) Sağlayıcı failover: Open‑Meteo’yu geçici olarak devre dışı bırak (429 görmeyelim)
-// ensureElevationMux bloğunda providers dizisini böyle sırala:
 (function ensureElevationMux(){
   if (window.__tt_elevMuxReady) return;
 
