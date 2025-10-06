@@ -3437,6 +3437,8 @@ function attachMapClickAddMode(day) {
 // updateCart (güncellenmiş)
 function updateCart() {
 // 1. location'ları number'a çevir
+    window.cart = window.cart.filter(it => it && typeof it === "object" && Object.keys(it).length > 1);
+
 window.cart.forEach(it => {
   if (it.location) {
     if (typeof it.location.lat !== "number") it.location.lat = Number(it.location.lat);
