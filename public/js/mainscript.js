@@ -8415,39 +8415,6 @@ window.TT_SVG_ICONS = {
   }
 })();
 
-/* SİL SONRA
-function enhanceAllTravelModeSets() {
-  document.querySelectorAll('.day-container').forEach(dc => {
-    const day = parseInt(dc.dataset.day || '0', 10);
-    if (day) enhanceTravelModeSet(day);
-  });
-}
-
-(function patchEnhancements(){
-  if (!window.__tt_enhance_icons_patched && typeof renderLeafletRoute === 'function') {
-    const original = renderLeafletRoute;
-    window.renderLeafletRoute = async function(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
-      const result = await original.apply(this, arguments);
-      try { enhanceTravelModeSet(day); } catch (_) {}
-      return result;
-    };
-    window.__tt_enhance_icons_patched = true;
-  }
-})();
-
-
-if (typeof wrapRouteControlsForAllDays === 'function') {
-  const originalWrapAll = wrapRouteControlsForAllDays;
-  window.wrapRouteControlsForAllDays = function() {
-    originalWrapAll.apply(this, arguments);
-    try { enhanceAllTravelModeSets(); } catch(_) {}
-  };
-} else {
-  // Fallback: run after initial render
-  setTimeout(enhanceAllTravelModeSets, 0);
-}
-*/
-
 (function routeSummaryAscentDescentPatch(){
   // 1) Configure icons
   window.TT_SVG_ICONS = Object.assign(window.TT_SVG_ICONS || {}, {
