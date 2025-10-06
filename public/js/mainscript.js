@@ -1870,6 +1870,32 @@ if (btn) {
     };
 }
 
+function renderChatStep(step, idx) {
+  const lat = step.lat || (step.location && step.location.lat);
+  const lon = step.lon || (step.location && step.location.lng);
+
+  let mapHtml = '';
+  let mapId = '';
+  if (!isNaN(lat) && !isNaN(lon)) {
+    mapId = `chat-leaflet-map-${Date.now()}${Math.floor(Math.random()*10000)}`;
+    mapHtml = `<div class="leaflet-map" id="${mapId}" style="width:100%;height:250px;min-height:160px;"></div>`;
+  }
+
+  return `
+    <div class="steps" data-day="${step.day}" data-category="${step.category}" data-lat="${lat}" data-lon="${lon}" draggable="true">
+      <div class="visual" style="opacity:1;">
+        <img class="check" src="${step.image}" alt="${step.name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+        ${mapHtml}
+      </div>
+      ... // info, action, vs
+    </div>
+  `;
+
+  // Harita renderı için:
+  setTimeout(() => {
+    if (mapId) createLeafletMapForItem(mapId, lat, lon, step.name, idx + 1);
+  }, 0);
+}
 
 const maxItems = Infinity;
 /* let itemRemoved = false; */
