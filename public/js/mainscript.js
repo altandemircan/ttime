@@ -3970,10 +3970,17 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
 
   setTimeout(() => {
   document.querySelectorAll('.leaflet-map').forEach(div => {
-    // Zaten başlatılmışsa bir daha başlatma
+    // Zaten başlatılmışsa bir daha başlatma (Leaflet container class'ı var mı)
+    if (div.classList.contains('leaflet-container')) return;
     if (!window._leafletMaps) window._leafletMaps = {};
-    if (window._leafletMaps[div.id]) return;
 
+    // Eski map instance'ı varsa temizle
+    if (window._leafletMaps[div.id]) {
+      try { window._leafletMaps[div.id].remove(); } catch(e){}
+      delete window._leafletMaps[div.id];
+    }
+
+    // Travel-item'dan lat/lon çek
     const item = div.closest('.travel-item');
     if (!item) return;
     const lat = parseFloat(item.getAttribute('data-lat'));
@@ -3981,12 +3988,11 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
     const name = item.querySelector('.toggle-title')?.textContent || '';
     const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
 
-    // Geçerli koordinatlar varsa haritayı başlat
     if (!isNaN(lat) && !isNaN(lon)) {
       createLeafletMapForItem(div.id, lat, lon, name, number);
     }
   });
-}, 180);
+}, 150);
 }
 
 document.addEventListener('DOMContentLoaded', updateCart);
@@ -4383,8 +4389,12 @@ return '<div class="map-error">Invalid location information</div>';
 
 function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
-    if (window._leafletMaps[mapId]) return;
-
+    if (window._leafletMaps[mapId]) {
+        try { window._leafletMaps[mapId].remove(); } catch(e){}
+        delete window._leafletMaps[mapId];
+    }
+    const el = document.getElementById(mapId);
+    if (!el) return;
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
@@ -4392,38 +4402,33 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         zoomControl: true,
         attributionControl: false
     });
-
-    // Mapbox Street tile layer (proxy endpoint ile)
     L.tileLayer(
-      '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
-      {
-        tileSize: 256,
-        zoomOffset: 0,
-        attribution: '© Mapbox © OpenStreetMap',
-        crossOrigin: true
-      }
+        '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
+        {
+            tileSize: 256,
+            zoomOffset: 0,
+            attribution: '© Mapbox © OpenStreetMap',
+            crossOrigin: true
+        }
     ).addTo(map);
 
-    // Özel rota marker tasarımı ile marker ekle (aynı rota haritası gibi)
+    // Marker
     const markerHtml = `
       <div class="custom-marker-outer red" style="width:32px;height:32px;">
-        <span class="custom-marker-label">${number || 1}</span>
+        <span class="custom-marker-label">${number}</span>
       </div>
     `;
     const icon = L.divIcon({
         html: markerHtml,
         className: "",
         iconSize: [32, 32],
-        iconAnchor: [16, 16] // tam ortası
+        iconAnchor: [16, 16]
     });
     L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
-
-    setTimeout(function() {
-        map.invalidateSize();
-    }, 100);
+    setTimeout(function() { map.invalidateSize(); }, 120);
 }
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
