@@ -4405,8 +4405,21 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
             crossOrigin: true
         }
     ).addTo(map);
-    // (Burada custom marker kullanmak istiyorsan sidebar’daki gibi ekle)
-    L.marker([lat, lon]).addTo(map).bindPopup(name || '').openPopup();
+
+    // BİREBİR SEPETTEKİYLE AYNI MARKER:
+    const markerHtml = `
+      <div class="custom-marker-outer red" style="width:32px;height:32px;">
+        <span class="custom-marker-label">${number || 1}</span>
+      </div>
+    `;
+    const icon = L.divIcon({
+        html: markerHtml,
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+    L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
+
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
     setTimeout(function() { map.invalidateSize(); }, 120);
