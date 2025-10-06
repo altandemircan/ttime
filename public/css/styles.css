@@ -2503,6 +2503,7 @@ ease;
   
     margin-block-end: 20px;
     padding-inline-start: 0;
+
 }
 
 .day-list.drag-over {
@@ -5224,6 +5225,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     border-radius: 12px;
     transition: outline 0.18s;
     box-sizing: border-box;
+        display: contents;
 }
 
 .day-list.day-list-active {
