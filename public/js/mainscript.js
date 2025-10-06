@@ -4358,7 +4358,17 @@ return '<div class="map-error">Invalid location information</div>';
 
 function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
-    if (window._leafletMaps[mapId]) return;
+    // ESKİ MAP VARSA TEMİZLE!
+    if (window._leafletMaps[mapId]) {
+        try {
+            window._leafletMaps[mapId].remove();
+        } catch(e) {}
+        delete window._leafletMaps[mapId];
+    }
+
+    // DOM’da harita div’i gerçekten var mı kontrol et (DOM update sonrası bazen silinmiş olabilir)
+    const el = document.getElementById(mapId);
+    if (!el) return; // Harita div'i yoksa işlem yapma
 
     var map = L.map(mapId, {
         center: [lat, lon],
