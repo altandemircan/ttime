@@ -3436,18 +3436,18 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-// 1. location'ları number'a çevir
-window.cart = window.cart.filter(it => it && typeof it === "object" && (it.name || it.location || it.category));
+// updateCart'ın başına ekle:
+const oldStartDate = window.cart.startDate;
+const oldEndDates  = window.cart.endDates;
 
-
-// 2. Boş veya tamamen anlamsız objeleri sil
+// Sadece array içeriğini filtrele, property'leri kaybetme!
 window.cart = window.cart.filter(it =>
-  it && typeof it === "object" &&
-  (
-    (typeof it.day !== "undefined" && Object.keys(it).length > 1) // day + başka alanı olanlar
-    || (typeof it.day === "undefined" && Object.keys(it).length > 0) // notlar, vb.
-  )
+  it && typeof it === "object" && (it.name || it.location || it.category)
 );
+
+// Filtre sonrası property'leri tekrar ekle
+if (oldStartDate) window.cart.startDate = oldStartDate;
+if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
