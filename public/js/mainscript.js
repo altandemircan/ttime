@@ -2376,6 +2376,7 @@ function displayPlacesInChat(places, category, day) {
                     <div class="day-steps">`;
 
     const mapInitQueue = [];
+
     places.forEach((place, idx) => {
         const props = place.properties || place;
         let lat = null, lon = null;
@@ -2391,21 +2392,7 @@ function displayPlacesInChat(places, category, day) {
         }
         const image = place.image || "img/placeholder.png";
         const name = props.name || category;
-        const address = props.formatted || props.address || "";
-        const description = `${category} in ${name}`;
-        const website = props.website || "";
-        const opening = props.opening_hours || "";
-        let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
-        if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
-            catIcon = "img/coffee_icon.svg";
-        else if (category === "Touristic attraction" || category === "Attractions")
-            catIcon = "img/touristic_icon.svg";
-        else if (category === "Restaurant" || category === "Restaurants")
-            catIcon = "img/restaurant_icon.svg";
-        else if (category === "Accommodation")
-            catIcon = "img/accommodation_icon.svg";
-        let mapHtml = '';
-        let mapId = '';
+        let mapHtml = '', mapId = '';
         if (!isNaN(lat) && !isNaN(lon)) {
             mapId = `chat-leaflet-map-${Date.now()}${Math.floor(Math.random()*10000)}`;
             mapHtml = `<div class="leaflet-map" id="${mapId}" style="width:100%;height:250px;min-height:160px;margin-top:6px;"></div>`;
