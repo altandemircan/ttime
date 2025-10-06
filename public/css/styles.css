@@ -6485,23 +6485,3 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 
-
-.leaflet-map, .leaflet-container {
-  background: #e0e0e0 !important;
-}
-.custom-marker-outer.red {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e74c3c;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.12);
-}
-.custom-marker-label {
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 32px;
-}
