@@ -4910,7 +4910,8 @@ window.expandedMaps = {};
 
 // Üstte tanımlı helper: setExpandedMapTile — crossOrigin ekleyin
 function setExpandedMapTile(expandedMap, styleKey) {
-  const url = `https://api.mapbox.com/styles/v1/mapbox/${styleKey}/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`;
+  const url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
 // Programatik input set helper (manuel yazımı ayırt etmek için)
 if (typeof setChatInputValue !== 'function') {
   window.__programmaticInput = false;
@@ -4931,11 +4932,11 @@ if (typeof setChatInputValue !== 'function') {
   });
   if (foundTile) expandedMap.removeLayer(foundTile);
 
-  L.tileLayer(url, {
+   L.tileLayer(url, {
     tileSize: 256,
     zoomOffset: 0,
-    attribution: '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a>',
-    crossOrigin: true // EKLENDİ
+    attribution: '© OpenStreetMap contributors',
+    crossOrigin: true
   }).addTo(expandedMap);
 }
 
