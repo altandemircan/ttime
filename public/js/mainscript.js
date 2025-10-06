@@ -4287,29 +4287,30 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         attributionControl: false
     });
 
+    // OpenStreetMap tile layer
     L.tileLayer(
-      'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=' + window.MAPBOX_TOKEN,
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {
         tileSize: 256,
         zoomOffset: 0,
-        attribution: '© Mapbox © OpenStreetMap',
+        attribution: '© OpenStreetMap contributors',
         crossOrigin: true
       }
     ).addTo(map);
 
     // Özel rota marker tasarımı ile marker ekle (aynı rota haritası gibi)
     const markerHtml = `
-  <div class="custom-marker-outer red" style="width:32px;height:32px;">
-    <span class="custom-marker-label">${number || 1}</span>
-  </div>
-`;
-const icon = L.divIcon({
-    html: markerHtml,
-    className: "",
-    iconSize: [32, 32],
-    iconAnchor: [16, 16] // tam ortası
-});
-L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
+      <div class="custom-marker-outer red" style="width:32px;height:32px;">
+        <span class="custom-marker-label">${number || 1}</span>
+      </div>
+    `;
+    const icon = L.divIcon({
+        html: markerHtml,
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16] // tam ortası
+    });
+    L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
@@ -5145,25 +5146,29 @@ const expandedMap = L.map(mapDivId, {
 });
 
   let expandedTileLayer = null;
-  function setExpandedMapTile(styleKey) {
+ // Expanded harita stil değiştirici
+function setExpandedMapTile(styleKey) {
     if (expandedTileLayer) {
       try { expandedMap.removeLayer(expandedTileLayer); } catch (_){}
       expandedTileLayer = null;
     }
+    // OSM tile, styleKey artık etkisiz (farklı sağlayıcı eklemek istersen burada switch-case yapabilirsin)
     expandedTileLayer = L.tileLayer(
-      `https://api.mapbox.com/styles/v1/mapbox/${styleKey}/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`,
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {
         tileSize: 256,
         zoomOffset: 0,
-        attribution: '© Mapbox © OpenStreetMap',
+        attribution: '© OpenStreetMap contributors',
         crossOrigin: true
       }
     );
     expandedTileLayer.addTo(expandedMap);
-  }
+}
+
   setExpandedMapTile('streets-v12');
 
-  mapStyleSelect.onchange = function() {
+  // Harita stili seçimi değiştiğinde
+mapStyleSelect.onchange = function() {
     setExpandedMapTile(this.value);
     // Küçük haritanın da stilini eşitle (opsiyonel)
     const originalMap = window.leafletMaps && window.leafletMaps[containerId];
@@ -5171,17 +5176,18 @@ const expandedMap = L.map(mapDivId, {
       let old;
       originalMap.eachLayer(l => { if (l instanceof L.TileLayer) old = l; });
       if (old) try { originalMap.removeLayer(old); } catch (_){}
+      // OSM tile (stili değiştirmek istersen burada logic ekle)
       L.tileLayer(
-        `https://api.mapbox.com/styles/v1/mapbox/${this.value}/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`,
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         {
           tileSize: 256,
           zoomOffset: 0,
-          attribution: '© Mapbox © OpenStreetMap',
+          attribution: '© OpenStreetMap contributors',
           crossOrigin: true
         }
       ).addTo(originalMap);
     }
-  };
+};
 
   // Mevcut rota / marker’ları kopyala
   const geojson = window.lastRouteGeojsons?.[containerId];
