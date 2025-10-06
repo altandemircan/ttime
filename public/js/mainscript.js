@@ -1869,32 +1869,27 @@ if (btn) {
         showLatLngUnderOpeningHoursForStepsIn('.accordion-content');
     };
 }
-
 function renderChatStep(step, idx) {
-  const lat = step.lat || (step.location && step.location.lat);
-  const lon = step.lon || (step.location && step.location.lng);
-
-  let mapHtml = '';
-  let mapId = '';
-  if (!isNaN(lat) && !isNaN(lon)) {
-    mapId = `chat-leaflet-map-${Date.now()}${Math.floor(Math.random()*10000)}`;
-    mapHtml = `<div class="leaflet-map" id="${mapId}" style="width:100%;height:250px;min-height:160px;"></div>`;
-  }
-
-  return `
+    const lat = step.lat || (step.location && step.location.lat);
+    const lon = step.lon || (step.location && step.location.lng);
+    let mapHtml = '';
+    let mapId = '';
+    if (!isNaN(lat) && !isNaN(lon)) {
+        mapId = `chat-leaflet-map-${Date.now()}${Math.floor(Math.random()*10000)}`;
+        mapHtml = `<div class="leaflet-map" id="${mapId}" style="width:100%;height:250px;min-height:160px;margin-top:6px;"></div>`;
+    }
+    const html = `
     <div class="steps" data-day="${step.day}" data-category="${step.category}" data-lat="${lat}" data-lon="${lon}" draggable="true">
       <div class="visual" style="opacity:1;">
         <img class="check" src="${step.image}" alt="${step.name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
         ${mapHtml}
       </div>
-      ... // info, action, vs
     </div>
-  `;
-
-  // Harita renderı için:
-  setTimeout(() => {
-    if (mapId) createLeafletMapForItem(mapId, lat, lon, step.name, idx + 1);
-  }, 0);
+    `;
+    setTimeout(() => {
+        if (mapId) createLeafletMapForItem(mapId, lat, lon, step.name, idx + 1);
+    }, 0);
+    return html;
 }
 
 const maxItems = Infinity;
@@ -2374,37 +2369,32 @@ function displayPlacesInChat(places, category, day) {
             <div class="accordion-container">
                 <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
                 <label for="${uniqueId}" class="accordion-label">
-    Suggestions for ${category}
+                    Suggestions for ${category}
                     <img src="img/arrow_down.svg" class="accordion-arrow">
                 </label>
                 <div class="accordion-content">
                     <div class="day-steps">`;
 
+    const mapInitQueue = [];
     places.forEach((place, idx) => {
-        // Geoapify için lat/lon çoğu zaman properties.lat/properties.lon veya geometry.coordinates
-        // Diğer API'ler için location.lat/location.lng de olabilir!
         const props = place.properties || place;
         let lat = null, lon = null;
         if (props.lat && props.lon) {
             lat = props.lat;
             lon = props.lon;
         } else if (props.geometry && props.geometry.coordinates) {
-            // Geoapify GeoJSON: coordinates = [lon, lat]
             lon = props.geometry.coordinates[0];
             lat = props.geometry.coordinates[1];
         } else if (props.location) {
             lat = props.location.lat || props.location.latitude;
             lon = props.location.lon || props.location.lng || props.location.longitude;
         }
-
         const image = place.image || "img/placeholder.png";
         const name = props.name || category;
         const address = props.formatted || props.address || "";
         const description = `${category} in ${name}`;
         const website = props.website || "";
         const opening = props.opening_hours || "";
-        const categories = props.categories ? props.categories.join(', ') : "";
-
         let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
         if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
             catIcon = "img/coffee_icon.svg";
@@ -2414,20 +2404,27 @@ function displayPlacesInChat(places, category, day) {
             catIcon = "img/restaurant_icon.svg";
         else if (category === "Accommodation")
             catIcon = "img/accommodation_icon.svg";
-
+        let mapHtml = '';
+        let mapId = '';
+        if (!isNaN(lat) && !isNaN(lon)) {
+            mapId = `chat-leaflet-map-${Date.now()}${Math.floor(Math.random()*10000)}`;
+            mapHtml = `<div class="leaflet-map" id="${mapId}" style="width:100%;height:250px;min-height:160px;margin-top:6px;"></div>`;
+            mapInitQueue.push({ mapId, lat: Number(lat), lon: Number(lon), name, number: idx + 1 });
+        }
         html += `
 <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
     <div class="visual" style="opacity: 1;">
         <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+        ${mapHtml}
     </div>
     <div class="info day_cats">
         <div class="title">${name}</div>
         <div class="address">
             <img src="img/address_icon.svg"> ${address}
         </div>
-       <div class="description" data-original-description="${description}">
-    <img src="img/information_icon.svg"> ${description}
-</div>
+        <div class="description" data-original-description="${description}">
+            <img src="img/information_icon.svg"> ${description}
+        </div>
         <div class="opening_hours">
             <img src="img/hours_icon.svg"> ${opening ? opening : "No opening hours found!"}
         </div>
@@ -4445,17 +4442,12 @@ return '<div class="map-error">Invalid location information</div>';
 
 function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
-    // ESKİ MAP VARSA TEMİZLE!
     if (window._leafletMaps[mapId]) {
-        try {
-            window._leafletMaps[mapId].remove();
-        } catch(e) {}
+        try { window._leafletMaps[mapId].remove(); } catch(e) {}
         delete window._leafletMaps[mapId];
     }
-
     const el = document.getElementById(mapId);
     if (!el) return;
-
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
@@ -4463,17 +4455,15 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         zoomControl: true,
         attributionControl: false
     });
-
     L.tileLayer(
-      '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
-      {
-        tileSize: 256,
-        zoomOffset: 0,
-        attribution: '© Mapbox © OpenStreetMap',
-        crossOrigin: true
-      }
+        '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
+        {
+            tileSize: 256,
+            zoomOffset: 0,
+            attribution: '© Mapbox © OpenStreetMap',
+            crossOrigin: true
+        }
     ).addTo(map);
-
     const markerHtml = `
       <div class="custom-marker-outer red" style="width:32px;height:32px;">
         <span class="custom-marker-label">${number || 1}</span>
@@ -4486,13 +4476,9 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         iconAnchor: [16, 16]
     });
     L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
-
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
-
-    setTimeout(function() {
-        map.invalidateSize();
-    }, 100);
+    setTimeout(function() { map.invalidateSize(); }, 100);
 }
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
