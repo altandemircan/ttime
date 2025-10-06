@@ -27,6 +27,22 @@ const mapBox = require("./mapBox");
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
 
+// --- EKLENEN ENDPOINT --- //
+app.get('/api/geoapify/geocode', async (req, res) => {
+  const { text, limit } = req.query;
+  const apiKey = process.env.GEOAPIFY_KEY;
+  if (!apiKey) return res.status(500).send('Geoapify API key eksik');
+  const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(text)}&limit=${limit || 1}&apiKey=${apiKey}`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return res.status(response.status).send('Geoapify error');
+    res.set('Access-Control-Allow-Origin', '*');
+    res.json(await response.json());
+  } catch (e) {
+    res.status(500).send('Proxy error');
+  }
+});
+
 app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
   const url = `https://api.open-elevation.com/api/v1/lookup?locations=${locations}`;
@@ -39,7 +55,6 @@ app.get('/api/elevation', async (req, res) => {
     res.status(500).send('Proxy error');
   }
 });
-
 
 app.get('/api/geoapify/reverse', async (req, res) => {
   const { lat, lon } = req.query;
@@ -54,7 +69,6 @@ app.get('/api/geoapify/reverse', async (req, res) => {
     res.status(500).send('Proxy error');
   }
 });
-
 
 // 3.b MAPBOX ENDPOINTLERİ
 // Directions endpoint
