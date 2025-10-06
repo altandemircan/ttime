@@ -2268,7 +2268,15 @@ function addItem(element, day, category, name, image, extra) {
     if (typeof restoreSidebar === "function") restoreSidebar();
 }
 
-
+function safeCoords(lat, lon) {
+  if (
+    lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
+    !isNaN(Number(lat)) && !isNaN(Number(lon))
+  ) {
+    return { lat: Number(lat), lng: Number(lon) };
+  }
+  return null;
+}
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
