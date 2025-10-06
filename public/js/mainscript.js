@@ -2387,19 +2387,11 @@ const geoapifyCategoryMap = {
   "Library": "education.library",
   "Hostel": "accommodation.hostel",
   "Cinema": "entertainment.cinema",
-  "Clothes Shop": "commercial.clothes",
+  
   "Jewelry Shop": "commercial.jewelry",
-  "Wine Shop": "catering.wine",
-  "Bicycle Shop": "commercial.bicycle",
+ 
   "University": "education.university",
-  "Campsite": "accommodation.campsite",
-  "Train Station": "public_transport.train_station",
-  "Bus Station": "public_transport.bus_station",
-  "Subway Station": "public_transport.subway_station",
-  "Hairdresser": "service.hairdresser",
-  "Police": "government.police",
-  "Park": "leisure.park",
-  "Castle": "tourism.castle",
+
   "Religion": "religion"
 
 };
@@ -2468,19 +2460,11 @@ const travelMainCategories = [
   { name: "Library", code: "education.library", icon: "📖" },
   { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-  { name: "Clothes Shop", code: "commercial.clothes", icon: "👕" },
+
   { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
-  { name: "Wine Shop", code: "catering.wine", icon: "🍷" },
-  { name: "Bicycle Shop", code: "commercial.bicycle", icon: "🚲" },
+ 
   { name: "University", code: "education.university", icon: "🎓" },
-  { name: "Campsite", code: "accommodation.campsite", icon: "⛺" },
-  { name: "Train Station", code: "public_transport.train_station", icon: "🚆" },
-  { name: "Bus Station", code: "public_transport.bus_station", icon: "🚌" },
-  { name: "Subway Station", code: "public_transport.subway_station", icon: "🚇" },
-  { name: "Hairdresser", code: "service.hairdresser", icon: "💈" },
-  { name: "Police", code: "government.police", icon: "👮" },
-  { name: "Park", code: "leisure.park", icon: "🌳" },
-  { name: "Castle", code: "tourism.castle", icon: "🏰" },
+
   { name: "Religion", code: "religion", icon: "⛪" }
 ];
     // -------- BASIC PLAN BLOK --------
