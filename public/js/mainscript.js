@@ -1724,7 +1724,7 @@ function addChatResultsToCart() {
         oldLeaflet.remove();
     }
 
-   if (!isNaN(lat) && !isNaN(lon)) {
+    if (!isNaN(lat) && !isNaN(lon)) {
     // Harita div'i ekle
     const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random() * 10000);
 
@@ -1769,6 +1769,7 @@ function addChatResultsToCart() {
         setTimeout(function(){ map.invalidateSize(); }, 100);
     }, 0);
 }
+};
 
     window.showImage = function (element) {
     const visualDiv = element.closest('.steps').querySelector('.visual');
