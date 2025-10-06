@@ -1850,7 +1850,6 @@ function safeCoords(obj) {
 }
 
 function addToCart(
-    
   name,
   image,
   day,
@@ -1876,18 +1875,17 @@ function addToCart(
     window._removeMapPlaceholderOnce = false;
   }
 
- if (typeof name === "undefined" || name === null || name === "") return false;
-if (
-  location &&
-  (
-    typeof location.lat !== "number" ||
-    typeof location.lng !== "number" ||
-    isNaN(location.lat) ||
-    isNaN(location.lng)
-  )
-) {
-  location = null;
-}
+  if (
+    location &&
+    (
+      typeof location.lat !== "number" ||
+      typeof location.lng !== "number" ||
+      isNaN(location.lat) ||
+      isNaN(location.lng)
+    )
+  ) {
+    location = null;
+  }
 
   // ---- 2) Cart yapısını garanti et
   if (!Array.isArray(window.cart)) {
@@ -3438,19 +3436,18 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-   window.cart = window.cart.filter(it =>
-  it && typeof it.name !== "undefined" &&
-  (
-    !it.location ||
+    window.cart = window.cart.filter(it =>
+    it && typeof it.name !== "undefined" &&
     (
-      typeof it.location.lat === "number" &&
-      typeof it.location.lng === "number" &&
-      !isNaN(it.location.lat) &&
-      !isNaN(it.location.lng)
+      !it.location ||
+      (
+        typeof it.location.lat === "number" &&
+        typeof it.location.lng === "number" &&
+        !isNaN(it.location.lat) &&
+        !isNaN(it.location.lng)
+      )
     )
-  )
 );
-
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
@@ -4358,17 +4355,7 @@ return '<div class="map-error">Invalid location information</div>';
 
 function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
-    // ESKİ MAP VARSA TEMİZLE!
-    if (window._leafletMaps[mapId]) {
-        try {
-            window._leafletMaps[mapId].remove();
-        } catch(e) {}
-        delete window._leafletMaps[mapId];
-    }
-
-    // DOM’da harita div’i gerçekten var mı kontrol et (DOM update sonrası bazen silinmiş olabilir)
-    const el = document.getElementById(mapId);
-    if (!el) return; // Harita div'i yoksa işlem yapma
+    if (window._leafletMaps[mapId]) return;
 
     var map = L.map(mapId, {
         center: [lat, lon],
