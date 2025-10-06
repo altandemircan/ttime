@@ -3437,27 +3437,22 @@ function attachMapClickAddMode(day) {
 // updateCart (güncellenmiş)
 function updateCart() {
 // 1. location'ları number'a çevir
-    window.cart = window.cart.filter(it => it && typeof it === "object" && Object.keys(it).length > 1);
-
 window.cart.forEach(it => {
-  if (it.location) {
+  if (it && typeof it === "object" && it.location) {
     if (typeof it.location.lat !== "number") it.location.lat = Number(it.location.lat);
     if (typeof it.location.lng !== "number") it.location.lng = Number(it.location.lng);
   }
 });
 
-// 2. Sadece bozuk olanları sil
-window.cart = window.cart.filter(it => {
-  if (typeof it.day !== "undefined" && Object.keys(it).length === 1) return true;
-  if (!it.location) return true;
-  if (
-    typeof it.location.lat !== "number" || isNaN(it.location.lat) ||
-    typeof it.location.lng !== "number" || isNaN(it.location.lng)
-  ) {
-    return false;
-  }
-  return true;
-});
+// 2. Boş veya tamamen anlamsız objeleri sil
+window.cart = window.cart.filter(it =>
+  it && typeof it === "object" &&
+  (
+    (typeof it.day !== "undefined" && Object.keys(it).length > 1) // day + başka alanı olanlar
+    || (typeof it.day === "undefined" && Object.keys(it).length > 0) // notlar, vb.
+  )
+);
+
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
