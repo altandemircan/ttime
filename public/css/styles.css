@@ -6499,5 +6499,20 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   width: 100% !important;
   height: 100% !important;
   min-height: 285px !important;
-  background: #f3f3f3;
+}
+.custom-marker-outer.red {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d32f2f;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.12);
+}
+.custom-marker-label {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 32px;
 }
