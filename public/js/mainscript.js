@@ -580,8 +580,7 @@ function parsePlanRequest(text) {
 
     return { location, days };
 }
-// === CANONICAL PLAN FORMATTER (English-only) ===
-// === Canonical Plan Normalizer & Strikethrough Helpers ===
+
 function formatCanonicalPlan(rawInput) {
     if (!rawInput || typeof rawInput !== 'string')
         return { canonical: "", city: "", days: 1, changed: false };
@@ -811,9 +810,7 @@ async function handleAnswer(answer) {
       return;
     }
 
-    window.selectedCity = location; // Diğer kodların beklentisini bozmuyoruz
-
-  
+    window.selectedCity = location; // Diğer kodların beklentisini bozmuyoruz  
 
     // OTOMATİK PLAN ÜRETİMİ (mevcut davranışı koru)
     latestTripPlan = await buildPlan(location, days);
@@ -913,8 +910,6 @@ function sendMessage() {
 }
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
-
-
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
@@ -966,7 +961,6 @@ function addMessage(text, className) {
   const typingIndicator = document.getElementById("typing-indicator");
   if (typingIndicator) typingIndicator.style.display = "none";
 }
-
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -1083,8 +1077,6 @@ async function getLLMResponse(aiData) {
     });
     return response.json();
 }
-
-
 
 function updateTripTitle() {
     const tripTitleDiv = document.getElementById("trip_title");
@@ -1388,11 +1380,6 @@ async function fillAIDescriptionsSeq() {
     }
 }
 
-// 3. Frontend'de metni biçimlendirme
-/*function formatAIResponse(text) {
-    const paragraphs = text.split("\n\n").filter(p => p.trim().length > 0);
-    return paragraphs.map(p => `<p>${p}</p>`).join('');
-}*/
 
 function toggleAccordion(accordionHeader) {
     const accordionItem = accordionHeader.parentElement;
@@ -1494,8 +1481,6 @@ function generateStepHtml(step, day, category, idx = 0) {
     </div>
     `;
 }
-
-
 
 const placeCategories = {
     "Coffee": "catering.cafe",           
@@ -1662,7 +1647,6 @@ function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
     return route;
 }
 
-
 function addChatResultsToCart() {
     // Eğer cart zaten doluysa tekrar ekleme!
     if (window.cart && window.cart.length > 0) return;
@@ -1737,9 +1721,6 @@ function addChatResultsToCart() {
     displayQuestion();
 });
 
-
-
-
 // 2. Şehir koordinatlarını almak için fonksiyon (Geoapify geocode API)
 async function getCityCoordinates(city) {
   const resp = await fetch(`/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`);
@@ -1750,7 +1731,6 @@ async function getCityCoordinates(city) {
   }
   return null;
 }
-
 
 // 2) Yerleri Geoapify'dan çeken fonksiyon
 async function getPlacesForCategory(city, category, limit = 4, radius = 3000, code = null) {
@@ -1918,7 +1898,6 @@ function addToCart(
   const safeImage = image || 'img/placeholder.png';
 
   // ---- 6) Duplicate kontrolü
-  // Aynı gün + aynı isim (case-insensitive trim) + aynı kategori + (aynı koordinatlar veya ikisi de koordinatsız)
   const isDuplicate = window.cart.some(item => {
     if (item.day !== resolvedDay) return false;
     if (!item.name || !safeName) return false;
@@ -1957,8 +1936,7 @@ function addToCart(
   };
 
   window.cart.push(newItem);
-// --- İlk gerçek nokta sonrası auto-expand (planlama aktifse) ---
-// --- İlk gerçek nokta / mini harita gösterimi ---
+
 try {
   if (!newItem._starter && newItem.location) {
     const day = newItem.day;
@@ -2073,8 +2051,6 @@ try {
   window.__gpsImportHandlerAttached = true;
 })();
 
-/* === GPS IMPORT CORE (minimal) === */
-/* Day boşluk kontrolü (updateCart içindeki mantıkla uyumlu tutuyoruz) */
 function __dayIsEmpty(day){
   day = Number(day);
   if (!day) return false;
@@ -2201,11 +2177,7 @@ async function importGpsFileForDay(file, day){
 
   console.log('[GPS] imported → points:', points.length);
 }
-// 9. removeFromCart fonksiyonu (GÜNCELLENDİ)
-// - Sepet tamamen boşalınca: expanded haritalar + tüm rota/elevation cache temizlenir.
-// - Silinen gün 0 veya 1 noktaya düştüyse: o güne ait rota/elevation + expanded map kalıntıları temizlenir.
-// - Diğer günlerin rotaları yeniden render edilir.
-// 9. removeFromCart fonksiyonu (GÜNCELLENDİ: 2 -> 1 düşüşte expanded map KAPANMAZ)
+
 function removeFromCart(index){
   if (!Array.isArray(window.cart)) return;
 
@@ -2231,8 +2203,7 @@ function removeFromCart(index){
     if (dayPoints.length < 2) {
       if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(removedDay);
       if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(removedDay);
-      // NOT: Önceki sürümde burada expanded haritayı kapatıyorduk. Artık kapatmıyoruz.
-      // renderRouteForDay 1 nokta için expanded haritada tek marker gösterimini zaten yapıyor.
+
     }
   }
 
@@ -2412,7 +2383,6 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
-// Kategori adı ile Geoapify kodu eşleştirme (kategori seçiminde kullanılacak)
 const geoapifyCategoryMap = {
   // Basic Plan
   "Coffee": "catering.cafe",
@@ -2545,8 +2515,6 @@ const travelMainCategories = [
         showSuggestionsInChat(cat.name, day, cat.code); // <-- cat.code'u gönder!
     }
 });
-
-
 
         toggleBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -2987,8 +2955,6 @@ function syncCartOrderWithDOM(day) {
         ...newOrder
     ];
 }
-
-/* updateCart: küçük haritada scale bar oluşturmayı kaldır, bar sarmayı aktif et */
 
 const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
 const INITIAL_EMPTY_MAP_ZOOM   = 6;             // Önceki 4'ten 2 kademe yakın
@@ -3433,8 +3399,6 @@ function attachMapClickAddMode(day) {
 }
 
 
-// updateCart içinde ilgili yerlere eklemeler yapıldı
-// updateCart (güncellenmiş)
 function updateCart() {
 const oldStartDate = window.cart.startDate;
 const oldEndDates  = window.cart.endDates;
@@ -3587,8 +3551,6 @@ if (isEmptyDay) {
       ` : ``}
     </div>
   `;
-
-
 
   dayList.appendChild(emptyWrap);
 }
@@ -4012,7 +3974,6 @@ function searchPlaceOnGoogle(place, city) {
 function escapeHtml(text) {
   return String(text || '').replace(/["'\\]/g, '');
 }
-
 
 
 // Stil bir kez eklensin
@@ -4633,9 +4594,6 @@ function showTripDetails(startDate) {
             daySteps.appendChild(emptyP);
         }
 
-        // ÖNEMLİ: Trip Details içinde HARİTA / ROUTE / TRAVEL MODE / ROUTE SUMMARY YOK!
-        // (Eski: route-map-dayX + travel mode + expand butonu + summary ekliyordu. Hepsi kaldırıldı.)
-
         content.appendChild(daySteps);
         container.appendChild(content);
         li.appendChild(container);
@@ -4766,8 +4724,6 @@ function showTripDetails(startDate) {
         }
     }, 0);
 
-    // Trip Details içinde harita / rota çizme YOK: renderRouteForDay çağırmıyoruz.
-
     if (typeof makeChatStepsDraggable === "function") {
         setTimeout(() => makeChatStepsDraggable(), 0);
     }
@@ -4816,9 +4772,7 @@ window.cart.forEach(item => {
 });
 
     reInitMaps();
-
     updateCart();
-
     hideConfirmation(confirmationContainerId);
 }
 
@@ -4849,10 +4803,6 @@ function addNewDay(button) {
     updateCart();
 }
 
-
-
-
-// 1. Önce koordinat bilgilerini içerik bölümüne ekleyen fonksiyon
 function addCoordinatesToContent() {
     document.querySelectorAll('.travel-item').forEach(item => {
         const contentDiv = item.querySelector('.content');
@@ -4861,8 +4811,6 @@ function addCoordinatesToContent() {
        
     });
 }
-
-
 
 
 function addNumberedMarkers(map, points) {
@@ -4915,10 +4863,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const controlRow = document.createElement("div");
     controlRow.id = controlRowId;
     controlRow.className = "map-bottom-controls";
-
-
-
-
 
     // Route summary
    const infoDiv = document.createElement("span");
@@ -5918,12 +5862,9 @@ const pulseIcon = L.divIcon({
   iconAnchor: [9,9]
 });
 
-// Hem pulslu ikon (görsel) hem de altta mantıksal nokta istersen ikinci küçük circle ekleyebilirsin.
-// Burada sadece tek DivIcon yeterli.
 window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
 
-// Eğer ayrı bir veri katmanı gerekirse (ör: popup açma) ekstra marker ekleyebilirsin:
-// window._nearbyMarker = L.circleMarker([lat, lng], { radius: 0 }).addTo(map);
+
 }
 (function ensureNearbyPulseStyles(){
   if (document.getElementById('tt-nearby-pulse-styles')) return;
@@ -6056,11 +5997,6 @@ window.handleImageError = async function(imgElement, placeName, index) {
     imgElement.src = PLACEHOLDER_IMG;
     if (loadingDiv) loadingDiv.style.opacity = '0';
 };
-
-
-
-
-
 
 
 function setupScaleBarInteraction(day, map) {
@@ -6337,9 +6273,6 @@ function attachLongPressDrag(marker, map, { delay = 400, moveThreshold = 12 } = 
 }
 
 
-
-
-// Haritadaki tüm marker'larda dragging'i kapat (başka marker aktifse devre dışı bırak)
 function disableAllMarkerDragging(expandedMap) {
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker && layer.dragging && layer.dragging.enabled && layer.dragging.enabled()) {
@@ -7140,16 +7073,11 @@ function addGeziPlanMarkers(map, poiList, currentDay) {
 window.leafletMaps = {};
 
 
-
-
-
-// 4. Aktif gün numarası (containerId ile gerekirse dinamik)
 function getActiveDay(containerId) {
 
     const dayMatch = containerId.match(/day(\d+)/);
     return dayMatch ? parseInt(dayMatch[1], 10) : 1;
 }
-
 
 function changeContent(option) {
     const sections = document.querySelectorAll('.content-section');
@@ -7223,8 +7151,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-
-
 function startNewChat() {
     document.getElementById('chat-box').innerHTML = '';
     const chatBox = document.getElementById('chat-box');
@@ -7248,9 +7174,6 @@ function switchToSignup() {
     document.getElementById("signup-form").classList.remove("hidden");
     document.getElementById("login-form").classList.add("hidden");
 }
-
-
-
 
 function hideLoadingPanel() {
     // Ekranda loading paneli gizle
@@ -7277,12 +7200,10 @@ function hideLoadingPanel() {
     });
 
 
-// Harita objelerini global tut 
 window.leafletMaps = window.leafletMaps || {};
 
 
 const PLACEHOLDER_IMG = "img/placeholder.png";
-
 const MAPBOX_STYLES = [
     {name: "Streets modes", key: "streets-v12"},        
     {name: "Navigation", key: "dark-v11"},       
@@ -7542,22 +7463,6 @@ function setupStepsDragHighlight() {
 document.addEventListener('DOMContentLoaded', setupStepsDragHighlight);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-/***** Travel mode (clean, per-day) *****/
-
-// Storage key for per-day modes
 const TT_TRAVEL_MODE_BY_DAY_KEY = 'tt_travel_mode_by_day';
 
 // Load per-day mapping once
@@ -7792,32 +7697,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try { renderTravelModeControlsForAllDays(); } catch(_) {}
 });
 
-// Add once (outside the loop): minimal styles for the travel mode set above stats
-/*
-(function ensureTmMiniStyles(){
-  if (document.getElementById('tt-travel-mode-style-inline')) return;
-  const style = document.createElement('style');
-  style.id = 'tt-travel-mode-style-inline';
-  style.textContent = `
-    .tt-travel-mode-set {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      margin: 6px 0 8px 0;
-    }
-    .tt-travel-mode-set button {
-      border: 1px solid #ccc; background: #fff; color: #333; border-radius: 8px;
-      padding: 6px 10px; cursor: pointer; font-size: 13px; line-height: 1; min-width: 32px;
-    }
-    .tt-travel-mode-set button.active {
-      background: #0d6efd; border-color: #0d6efd; color: #fff;
-    }
-    .tt-travel-mode-set button:hover { filter: brightness(0.97); }
-  `;
-  document.head.appendChild(style);
-})(); */
 
-// Canvas renderer helper (tek map için reuse edilir)
 function ensureCanvasRenderer(map) {
   if (!map._ttCanvasRenderer) {
     map._ttCanvasRenderer = L.canvas(); // you can pass padding if needed
@@ -7826,8 +7706,6 @@ function ensureCanvasRenderer(map) {
 }
 
 
-
-/* ------------------ Responsive .steps Slider (per .day-steps) ------------------ */
 (function initResponsiveStepsSliderModule(){
   function ensureStyles() {
     if (document.getElementById('tt-resp-steps-slider-styles')) return;
@@ -8252,9 +8130,7 @@ function wrapRouteControlsForAllDays() {
 })();
 
 
-/* ===== SVG icon + label (badge-like) for travel modes and route summary ===== */
 
-/* 1) Configure your SVG icon URLs from svgrepo (replace with any you like) */
 window.TT_SVG_ICONS = {
   // Travel modes
   driving: '/img/way_car.svg',
@@ -8559,65 +8435,6 @@ window.TT_SVG_ICONS = {
     };
   }
 })();
-
-(function ensureElevStyles(){
-  if (document.getElementById('tt-elev-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'tt-elev-styles';
-  s.textContent = `
-    /* Scale bar container */
-     .scale-bar-track {
-  position: relative;
-  left: auto;
-  right: auto;
-  bottom: auto;
-  z-index: 1;
-  background: #fff;
-  box-shadow: none;
-  border-radius: 0;
-  min-height: 150px;
-  width: 100%;
-}
-    @supports (height: 100dvh) { .scale-bar-track { bottom: auto; } }
-    @media (max-width:768px) { .scale-bar-track { width: 100%; } }
-    /* Distance baseline and ticks (top) */
-   
-    .scale-bar-tick { position:absolute; top:10px; width:1px; height:16px; background:#cfd8dc; }
-    .scale-bar-label { position:absolute; top:30px; transform:translateX(-50%); font-size:11px; color:#607d8b; }
-
-    /* Elevation SVG layer and styling */
-    .tt-elev-svg {
-    position: absolute;
-    left: 0;    
-    width: 100%;
-    height: 186px;
-    pointer-events: none;
-    z-index: -1;
-    background:#ffffff;
-}
-    .tt-elev-grid line { stroke:#d7dde2; stroke-dasharray:4 4; opacity:.8; }
-    .tt-elev-grid text { fill:#90a4ae; font-size:11px; }
-    .tt-elev-area { fill:#dbe2ec; }              /* dark navy fill */
-    .tt-elev-stroke { stroke:#b6ea53; fill:none; stroke-width:3; } /* lime outline */
-
-    /* Hover cursor on the chart */
-    .tt-elev-cursor { position:absolute; top:48px; bottom:16px; width:2px; background:#263238; opacity:.25; pointer-events:none; }
-    .tt-elev-tooltip {
-      position:absolute; top:26px; transform:translateX(-50%);
-      padding:2px 6px; font-size:11px; line-height:1; color:#222; background:#fff;
-      border:1px solid #d0d7de; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.08);
-      white-space:nowrap; opacity:0.96; pointer-events:none; z-index:3;
-    }
-
-    /* Vertical line under the marker on the map */
-    .tt-map-vert-line {
-      position:absolute; top:0; bottom:0; width:2px;
-      background:rgba(0,0,0,.65); pointer-events:none; z-index: 500;
-    }
-  `;
-  document.head.appendChild(s);
-})();
-
 
 function hideMarkerVerticalLineOnMap(map) {
   const cont = map?.getContainer?.();
