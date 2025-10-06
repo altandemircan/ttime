@@ -4042,6 +4042,11 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
+        setTimeout(function() {
+            Object.values(window._leafletMaps || {}).forEach(function(map) {
+                try { map.invalidateSize(); } catch(_) {}
+            });
+        }, 150);
     });
 });
 
@@ -4469,8 +4474,10 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
     L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
+    
+    // BURADA! -- invalidateSize ÇAĞRISI
     setTimeout(function() { map.invalidateSize(); }, 120);
-setTimeout(function() { map.invalidateSize(); }, 400);
+    setTimeout(function() { map.invalidateSize(); }, 400);
 }
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
