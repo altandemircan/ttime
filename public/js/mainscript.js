@@ -3939,34 +3939,30 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
   })();
 
   // 8) Tarih aralığı ve Trip Details
-  (function ensureTripDetailsBlock() {
-    if (!window.cart.startDate || !window.cart.endDates || !window.cart.endDates.length) {
-      const existing = cartDiv.querySelector('.date-range');
-      if (existing) existing.remove();
-      return;
-    }
-    let dateRangeDiv = cartDiv.querySelector('.date-range');
-    if (!dateRangeDiv) {
-      dateRangeDiv = document.createElement('div');
-      dateRangeDiv.className = 'date-range';
-      cartDiv.appendChild(dateRangeDiv);
-    }
-    const endDate = window.cart.endDates[window.cart.endDates.length - 1];
-    dateRangeDiv.innerHTML = `
-      <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
-      <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
-    `;
-    const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
-    if (detailsBtn) {
-      detailsBtn.onclick = () => {
-        if (typeof showTripDetails === 'function') {
-          showTripDetails(window.cart.startDate);
-        } else {
-          console.warn('showTripDetails not found');
-        }
-      };
-    }
-  })();
+ (function ensureTripDetailsBlock() {
+  if (!window.cart.startDate) return;
+  let dateRangeDiv = cartDiv.querySelector('.date-range');
+  if (!dateRangeDiv) {
+    dateRangeDiv = document.createElement('div');
+    dateRangeDiv.className = 'date-range';
+    cartDiv.appendChild(dateRangeDiv);
+  }
+  const endDate = window.cart.endDates?.length ? window.cart.endDates[window.cart.endDates.length - 1] : window.cart.startDate;
+  dateRangeDiv.innerHTML = `
+    <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
+    <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
+  `;
+  const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
+  if (detailsBtn) {
+    detailsBtn.onclick = () => {
+      if (typeof showTripDetails === 'function') {
+        showTripDetails(window.cart.startDate);
+      } else {
+        console.warn('showTripDetails not found');
+      }
+    };
+  }
+})();
 
   setTimeout(() => {
   document.querySelectorAll('.leaflet-map').forEach(div => {
