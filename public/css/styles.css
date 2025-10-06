@@ -6486,3 +6486,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 
+.leaflet-map, .leaflet-container {
+  background: #e0e0e0 !important;
+}
