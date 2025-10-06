@@ -3438,40 +3438,52 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-   window.cart = window.cart.filter(it =>
-  it && typeof it.name !== "undefined" &&
-  (
-    !it.location ||
+  // 0) TÜM ESKİ LEAFLET MAP INSTANCE'LARINI TEMİZLE (HER YENİLEMEDE)
+  window._leafletMaps = window._leafletMaps || {};
+  document.querySelectorAll('.leaflet-map').forEach(div => {
+    const mapId = div.id;
+    if (mapId && window._leafletMaps[mapId]) {
+      try { window._leafletMaps[mapId].remove(); } catch (e) {}
+      delete window._leafletMaps[mapId];
+      div.innerHTML = ''; // DOM'dan da temizle
+    }
+  });
+
+  // 1) CART FİLTRESİ (bozukları at)
+  window.cart = window.cart.filter(it =>
+    it && typeof it.name !== "undefined" &&
     (
-      typeof it.location.lat === "number" &&
-      typeof it.location.lng === "number" &&
-      !isNaN(it.location.lat) &&
-      !isNaN(it.location.lng)
+      !it.location ||
+      (
+        typeof it.location.lat === "number" &&
+        typeof it.location.lng === "number" &&
+        !isNaN(it.location.lat) &&
+        !isNaN(it.location.lng)
+      )
     )
-  )
-);
+  );
 
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  // 0) Tamamen boş global durum
+  // 2) Tamamen boş global durum
   if (!window.cart || window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
-const showStartMap = !(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[1]);
-cartDiv.innerHTML = `
-  <div id="empty-content">
-    <p>Create your trip using the chat screen.</p>
-    <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
-      Import GPS File
-    </button>
-    ${showStartMap ? `
-      <div id="empty-or-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
-      <button id="start-map-btn" type="button">Start with map</button>
-    ` : ``}
-  </div>
-`;
+    const showStartMap = !(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[1]);
+    cartDiv.innerHTML = `
+      <div id="empty-content">
+        <p>Create your trip using the chat screen.</p>
+        <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
+          Import GPS File
+        </button>
+        ${showStartMap ? `
+          <div id="empty-or-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
+          <button id="start-map-btn" type="button">Start with map</button>
+        ` : ``}
+      </div>
+    `;
 if (menuCount) {
   menuCount.textContent = 0;
   menuCount.style.display = "none";
@@ -4366,9 +4378,8 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         delete window._leafletMaps[mapId];
     }
 
-    // DOM’da harita div’i gerçekten var mı kontrol et (DOM update sonrası bazen silinmiş olabilir)
     const el = document.getElementById(mapId);
-    if (!el) return; // Harita div'i yoksa işlem yapma
+    if (!el) return;
 
     var map = L.map(mapId, {
         center: [lat, lon],
@@ -4378,7 +4389,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         attributionControl: false
     });
 
-    // Mapbox Street tile layer (proxy endpoint ile)
     L.tileLayer(
       '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
       {
@@ -4389,7 +4399,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
       }
     ).addTo(map);
 
-    // Özel rota marker tasarımı ile marker ekle (aynı rota haritası gibi)
     const markerHtml = `
       <div class="custom-marker-outer red" style="width:32px;height:32px;">
         <span class="custom-marker-label">${number || 1}</span>
@@ -4399,7 +4408,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         html: markerHtml,
         className: "",
         iconSize: [32, 32],
-        iconAnchor: [16, 16] // tam ortası
+        iconAnchor: [16, 16]
     });
     L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
 
