@@ -2384,26 +2384,26 @@ const geoapifyCategoryMap = {
   "Accommodation": "accommodation.hotel",
 
   // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
-    "Bar": "catering.bar",
+  "Bar": "catering.bar",
   "Pub": "catering.pub",
   "Fast Food": "catering.fast_food",
   "Supermarket": "commercial.supermarket",
   "Pharmacy": "healthcare.pharmacy",
   "Hospital": "healthcare.hospital",
   "Bookstore": "commercial.books",
-  "Laundry": "service.laundry",
   "Post Office": "service.post",
-  "Electronics": "commercial.electronics",
-  "Car Rental": "service.car_rental",
-  "Bicycle Rental": "service.bicycle_rental",
   "Library": "education.library",
-  "ATM": "finance.atm",
-  "Bank": "finance.bank",
+  "Hostel": "accommodation.hostel",  
   "Cinema": "entertainment.cinema",
-  "Nightclub": "entertainment.nightclub",
-  "Parking": "service.parking",
-  "Gas Station": "service.gas_station",
-  "Embassy": "government.embassy"
+  "Clothes Shop": "commercial.clothes",
+  "Shoe Shop": "commercial.shoes",
+  "Jewelry Shop": "commercial.jewelry",
+  "Sports Shop": "commercial.sports",
+  "Beauty Shop": "commercial.beauty",
+  "Toy Shop": "commercial.toys",
+  "Music Shop": "commercial.music",
+  "Computer Shop": "commercial.computer"
+
 };
 
 function showCategoryList(day) {
@@ -2459,26 +2459,26 @@ function showCategoryList(day) {
 
     // 30 ana gezgin kategorisi (KODUN BAŞINDA veya globalde tanımlı olmalı!)
 const travelMainCategories = [
-   { name: "Bar", code: "catering.bar", icon: "🍹" },
+  { name: "Bar", code: "catering.bar", icon: "🍹" },
   { name: "Pub", code: "catering.pub", icon: "🍻" },
   { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
   { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
   { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
   { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
   { name: "Bookstore", code: "commercial.books", icon: "📚" },
-  { name: "Laundry", code: "service.laundry", icon: "🧺" },
   { name: "Post Office", code: "service.post", icon: "📮" },
-  { name: "Electronics", code: "commercial.electronics", icon: "📱" },
-  { name: "Car Rental", code: "service.car_rental", icon: "🚗" },
-  { name: "Bicycle Rental", code: "service.bicycle_rental", icon: "🚲" },
   { name: "Library", code: "education.library", icon: "📖" },
-  { name: "ATM", code: "finance.atm", icon: "🏧" },
-  { name: "Bank", code: "finance.bank", icon: "🏦" },
+  { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
+ 
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-  { name: "Nightclub", code: "entertainment.nightclub", icon: "🌃" },
-  { name: "Parking", code: "service.parking", icon: "🅿️" },
-  { name: "Gas Station", code: "service.gas_station", icon: "⛽" },
-  { name: "Embassy", code: "government.embassy", icon: "🏛️" }
+  { name: "Clothes Shop", code: "commercial.clothes", icon: "👕" },
+  { name: "Shoe Shop", code: "commercial.shoes", icon: "👟" },
+  { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
+  { name: "Sports Shop", code: "commercial.sports", icon: "🏀" },
+  { name: "Beauty Shop", code: "commercial.beauty", icon: "💄" },
+  { name: "Toy Shop", code: "commercial.toys", icon: "🧸" },
+  { name: "Music Shop", code: "commercial.music", icon: "🎸" },
+  { name: "Computer Shop", code: "commercial.computer", icon: "💻" }
 ];
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
