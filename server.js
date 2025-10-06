@@ -22,7 +22,7 @@ const mapBox = require("./mapBox");
  
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
-
+ 
 // 3.b MAPBOX ENDPOINTLERİ
 // Directions endpoint
 app.get("/api/mapbox/directions", async (req, res) => {
