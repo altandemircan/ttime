@@ -3970,20 +3970,23 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
 
   setTimeout(() => {
   document.querySelectorAll('.leaflet-map').forEach(div => {
+    // Zaten başlatılmışsa bir daha başlatma
     if (!window._leafletMaps) window._leafletMaps = {};
-    if (!window._leafletMaps[div.id]) {
-      const item = div.closest('.travel-item');
-      if (!item) return;
-      const lat = parseFloat(item.getAttribute('data-lat'));
-      const lon = parseFloat(item.getAttribute('data-lon'));
-      const name = item.querySelector('.toggle-title')?.textContent || '';
-      const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
-      if (!isNaN(lat) && !isNaN(lon)) {
-        createLeafletMapForItem(div.id, lat, lon, name, number);
-      }
+    if (window._leafletMaps[div.id]) return;
+
+    const item = div.closest('.travel-item');
+    if (!item) return;
+    const lat = parseFloat(item.getAttribute('data-lat'));
+    const lon = parseFloat(item.getAttribute('data-lon'));
+    const name = item.querySelector('.toggle-title')?.textContent || '';
+    const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+
+    // Geçerli koordinatlar varsa haritayı başlat
+    if (!isNaN(lat) && !isNaN(lon)) {
+      createLeafletMapForItem(div.id, lat, lon, name, number);
     }
   });
-}, 200);
+}, 180);
 }
 
 document.addEventListener('DOMContentLoaded', updateCart);
