@@ -1,12 +1,12 @@
 const fetch = require("node-fetch");
 
-const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY;
+const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
 
 // Genel Geoapify GET proxy fonksiyonu
 async function geoapifyGet(endpoint, params = {}) {
-  if (!GEOAPIFY_API_KEY) throw new Error("Geoapify API key missing!");
+  if (!GEOAPIFY_KEY) throw new Error("Geoapify API key missing!");
 
-  const searchParams = new URLSearchParams({ ...params, apiKey: GEOAPIFY_API_KEY });
+  const searchParams = new URLSearchParams({ ...params, apiKey: GEOAPIFY_KEY });
   const url = `https://api.geoapify.com${endpoint}?${searchParams.toString()}`;
 
   const resp = await fetch(url);
