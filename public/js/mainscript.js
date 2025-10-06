@@ -1875,18 +1875,6 @@ function addToCart(
     window._removeMapPlaceholderOnce = false;
   }
 
-  if (
-    location &&
-    (
-      typeof location.lat !== "number" ||
-      typeof location.lng !== "number" ||
-      isNaN(location.lat) ||
-      isNaN(location.lng)
-    )
-  ) {
-    location = null;
-  }
-
   // ---- 2) Cart yapısını garanti et
   if (!Array.isArray(window.cart)) {
     window.cart = [];
@@ -3436,18 +3424,6 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-    window.cart = window.cart.filter(it =>
-    it && typeof it.name !== "undefined" &&
-    (
-      !it.location ||
-      (
-        typeof it.location.lat === "number" &&
-        typeof it.location.lng === "number" &&
-        !isNaN(it.location.lat) &&
-        !isNaN(it.location.lng)
-      )
-    )
-);
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
@@ -6738,18 +6714,6 @@ function addCircleMarkerSafe(map, latlng, options) {
 // - Diğer tüm rota / pairwise / elevation mantığı aynen bırakıldı.
 
 async function renderRouteForDay(day) {
-    window.cart = window.cart.filter(it =>
-    it && typeof it.name !== "undefined" &&
-    (
-      !it.location ||
-      (
-        typeof it.location.lat === "number" &&
-        typeof it.location.lng === "number" &&
-        !isNaN(it.location.lat) &&
-        !isNaN(it.location.lng)
-      )
-    )
-);
     // Suppression: start with map modunda ve henüz hiç gerçek nokta yoksa
 if (window.__suppressMiniUntilFirstPoint &&
     window.__suppressMiniUntilFirstPoint[day]) {
