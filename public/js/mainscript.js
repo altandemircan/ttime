@@ -1711,25 +1711,73 @@ function addChatResultsToCart() {
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
 
+    // Eski harita veya iframe varsa sil
+    const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
+    if (oldIframe) oldIframe.remove();
+    const oldLeaflet = visualDiv.querySelector('.leaflet-map');
+    if (oldLeaflet) {
+        // Eski Leaflet instance var mı sil
+        if (window._leafletMaps && window._leafletMaps[oldLeaflet.id]) {
+            try { window._leafletMaps[oldLeaflet.id].remove(); } catch(e) {}
+            delete window._leafletMaps[oldLeaflet.id];
+        }
+        oldLeaflet.remove();
+    }
+
     if (!isNaN(lat) && !isNaN(lon)) {
-        const delta = 0.001;
-        const iframeHTML = `<iframe class="gmap-chat" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-delta},${lat-delta},${lon+delta},${lat+delta}&layer=mapnik&marker=${lat},${lon}" width="100%" height="250" frameborder="0" style="border:0"></iframe>`;
-        const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
-        if (oldIframe) oldIframe.remove();
+        // Harita div'i ekle
+        const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random()*10000);
+        const mapDiv = document.createElement('div');
+        mapDiv.className = "leaflet-map";
+        mapDiv.id = mapId;
+        mapDiv.style.width = "100%";
+        mapDiv.style.height = "250px";
+        visualDiv.appendChild(mapDiv);
         image.style.display = "none";
-        visualDiv.insertAdjacentHTML('beforeend', iframeHTML);
+
+        // Leaflet başlat
+        window._leafletMaps = window._leafletMaps || {};
+        var map = L.map(mapId, {
+            center: [lat, lon],
+            zoom: 16,
+            scrollWheelZoom: false,
+            zoomControl: true,
+            attributionControl: false
+        });
+        L.tileLayer(
+            '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
+            {
+                tileSize: 256,
+                zoomOffset: 0,
+                attribution: '© Mapbox © OpenStreetMap',
+                crossOrigin: true
+            }
+        ).addTo(map);
+
+        L.marker([lat, lon]).addTo(map).bindPopup('Location').openPopup();
+        map.zoomControl.setPosition('topright');
+        window._leafletMaps[mapId] = map;
+        setTimeout(function(){ map.invalidateSize(); }, 100);
     } else {
         alert("Location not found.");
     }
 };
 
     window.showImage = function (element) {
-        const visualDiv = element.closest('.steps').querySelector('.visual');
-        const image = visualDiv.querySelector('img.check');
-        const iframe = visualDiv.querySelector('iframe.gmap-chat');
-        if (iframe) iframe.remove();
-        if (image) image.style.display = '';
-    };
+    const visualDiv = element.closest('.steps').querySelector('.visual');
+    const image = visualDiv.querySelector('img.check');
+    const iframe = visualDiv.querySelector('iframe.gmap-chat');
+    if (iframe) iframe.remove();
+    const leafletDiv = visualDiv.querySelector('.leaflet-map');
+    if (leafletDiv) {
+        if (window._leafletMaps && window._leafletMaps[leafletDiv.id]) {
+            try { window._leafletMaps[leafletDiv.id].remove(); } catch(e) {}
+            delete window._leafletMaps[leafletDiv.id];
+        }
+        leafletDiv.remove();
+    }
+    if (image) image.style.display = '';
+};
 
     document.getElementById("send-button").addEventListener("click", sendMessage);
     userInput.addEventListener("keypress", handleKeyPress);
