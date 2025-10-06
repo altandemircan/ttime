@@ -3436,16 +3436,18 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-// updateCart'ın başına ekle:
 const oldStartDate = window.cart.startDate;
 const oldEndDates  = window.cart.endDates;
 
-// Sadece array içeriğini filtrele, property'leri kaybetme!
+// Boş gün placeholder'u (sadece day olan) VEYA gerçek itemleri bırak
 window.cart = window.cart.filter(it =>
-  it && typeof it === "object" && (it.name || it.location || it.category)
+  it && typeof it === "object" &&
+  (
+    (typeof it.day !== "undefined" && Object.keys(it).length === 1) // sadece day: X objesini TUT
+    || (it.name || it.location || it.category) // gerçek itemleri TUT
+  )
 );
 
-// Filtre sonrası property'leri tekrar ekle
 if (oldStartDate) window.cart.startDate = oldStartDate;
 if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
