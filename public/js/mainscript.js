@@ -1850,7 +1850,6 @@ function safeCoords(obj) {
 }
 
 function addToCart(
-    
   name,
   image,
   day,
@@ -1875,19 +1874,6 @@ function addToCart(
     window.cart = (window.cart || []).filter(it => !it._placeholder);
     window._removeMapPlaceholderOnce = false;
   }
-
- if (typeof name === "undefined" || name === null || name === "") return false;
-if (
-  location &&
-  (
-    typeof location.lat !== "number" ||
-    typeof location.lng !== "number" ||
-    isNaN(location.lat) ||
-    isNaN(location.lng)
-  )
-) {
-  location = null;
-}
 
   // ---- 2) Cart yapısını garanti et
   if (!Array.isArray(window.cart)) {
@@ -3438,19 +3424,6 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-   window.cart = window.cart.filter(it =>
-  it && typeof it.name !== "undefined" &&
-  (
-    !it.location ||
-    (
-      typeof it.location.lat === "number" &&
-      typeof it.location.lng === "number" &&
-      !isNaN(it.location.lat) &&
-      !isNaN(it.location.lng)
-    )
-  )
-);
-
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
@@ -4358,16 +4331,7 @@ return '<div class="map-error">Invalid location information</div>';
 
 function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
-    // ESKİ MAP VARSA TEMİZLE!
-    if (window._leafletMaps[mapId]) {
-        try {
-            window._leafletMaps[mapId].remove();
-        } catch(e) {}
-        delete window._leafletMaps[mapId];
-    }
-
-    const el = document.getElementById(mapId);
-    if (!el) return;
+    if (window._leafletMaps[mapId]) return;
 
     var map = L.map(mapId, {
         center: [lat, lon],
@@ -4377,6 +4341,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         attributionControl: false
     });
 
+    // Mapbox Street tile layer (proxy endpoint ile)
     L.tileLayer(
       '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
       {
@@ -4387,6 +4352,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
       }
     ).addTo(map);
 
+    // Özel rota marker tasarımı ile marker ekle (aynı rota haritası gibi)
     const markerHtml = `
       <div class="custom-marker-outer red" style="width:32px;height:32px;">
         <span class="custom-marker-label">${number || 1}</span>
@@ -4396,7 +4362,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         html: markerHtml,
         className: "",
         iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconAnchor: [16, 16] // tam ortası
     });
     L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
 
@@ -6748,18 +6714,6 @@ function addCircleMarkerSafe(map, latlng, options) {
 // - Diğer tüm rota / pairwise / elevation mantığı aynen bırakıldı.
 
 async function renderRouteForDay(day) {
-    window.cart = window.cart.filter(it =>
-    it && typeof it.name !== "undefined" &&
-    (
-      !it.location ||
-      (
-        typeof it.location.lat === "number" &&
-        typeof it.location.lng === "number" &&
-        !isNaN(it.location.lat) &&
-        !isNaN(it.location.lng)
-      )
-    )
-);
     // Suppression: start with map modunda ve henüz hiç gerçek nokta yoksa
 if (window.__suppressMiniUntilFirstPoint &&
     window.__suppressMiniUntilFirstPoint[day]) {
