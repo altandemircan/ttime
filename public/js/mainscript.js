@@ -3437,19 +3437,13 @@ function attachMapClickAddMode(day) {
 // updateCart (güncellenmiş)
 function updateCart() {
     window.cart = window.cart.filter(it => {
-  // Eğer sadece gün objesi (ör: {day: 2}), ASLA silme!
   if (typeof it.day !== "undefined" && Object.keys(it).length === 1) return true;
-  // Diğer tüm item'larda, ismi yoksa veya location hatalıysa sil
-  if (typeof it.name === "undefined") return false;
-  if (it.location) {
-    if (
-      typeof it.location.lat !== "number" ||
-      typeof it.location.lng !== "number" ||
-      isNaN(it.location.lat) ||
-      isNaN(it.location.lng)
-    ) {
-      return false;
-    }
+  if (!it.location) return true;
+  if (
+    typeof it.location.lat !== "number" || isNaN(it.location.lat) ||
+    typeof it.location.lng !== "number" || isNaN(it.location.lng)
+  ) {
+    return false;
   }
   return true;
 });
