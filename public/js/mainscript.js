@@ -7619,33 +7619,6 @@ function markActiveTravelModeButtons() {
   });
 }
 
-// Lightweight styles for per-day set
-(function ensureTmStyles(){
-  if (document.getElementById('tt-travel-mode-style-multi')) return;
-  const style = document.createElement('style');
-  style.id = 'tt-travel-mode-style-multi';
-  style.textContent = `
-    .tt-travel-mode-set {
-      display: inline-flex;
-      gap: 6px;
- align-items: flex-start;
-    justify-content: space-between;
-border-bottom:1px solid #ddd;
-      margin-left: 12px;
-        padding: 6px 0 12px 0;
-        width: -webkit-fill-available;
-    }
-    .tt-travel-mode-set button {
-      border: 1px solid #ccc; background: #fff; color: #333; border-radius: 8px;
-      padding: 6px 10px; cursor: pointer; font-size: 13px; line-height: 1; min-width: 32px;
-    }
-    .tt-travel-mode-set button.active {
-      background: #ffffff; border-color: #0d6efd; color: #fff;
-    }
-    .tt-travel-mode-set button:hover { filter: brightness(0.97); }
-  `;
-  document.head.appendChild(style);
-})();
 
 // Init once DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -7663,47 +7636,7 @@ function ensureCanvasRenderer(map) {
 
 
 (function initResponsiveStepsSliderModule(){
-  function ensureStyles() {
-    if (document.getElementById('tt-resp-steps-slider-styles')) return;
-    const s = document.createElement('style');
-    s.id = 'tt-resp-steps-slider-styles';
-    s.textContent = `
-      .day-steps.tt-resp { position: relative; }
-      .tt-resp-viewport {width: 100%; }
-      .tt-resp-track {
-        display: flex;
-        gap: 12px;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        padding: 4px 2px 8px 2px;
-      }
-      .tt-resp-track > .steps {
-        flex: 0 0 calc(100% / var(--slides-per-view, 1));
-        scroll-snap-align: start;
-      }
-      .tt-resp-nav {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 38px; height: 38px;
-        border: none; border-radius: 50%;
-        background: rgba(0,0,0,0.38);
-        color: #fff; font-size: 20px; line-height: 38px;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; z-index: 3;
-        transition: background 0.2s ease, opacity 0.2s ease;
-      }
-      .tt-resp-nav:hover { background: rgba(0,0,0,0.5); }
-      .tt-resp-nav.prev { left: 6px; }
-      .tt-resp-nav.next { right: 6px; }
-      .tt-resp-nav[disabled] { opacity: 0.4; cursor: default; }
-      /* 1 slayt veya görünürden azsa oklar gizlensin */
-      .day-steps.tt-resp[data-nav="hidden"] .tt-resp-nav { display: none; }
-    `;
-    document.head.appendChild(s);
-  }
-
+  
   function computeSlidesPerView(el) {
     // Konteyner genişliğine göre 1 / 2 / 3
     const w = el.clientWidth || window.innerWidth;
@@ -7902,31 +7835,6 @@ function ensureCanvasRenderer(map) {
 })();
 
 
-
-/* Route controls bar styles (travel mode + map controls in one row) */
-(function ensureRouteControlsBarStyles(){
-  if (document.getElementById('tt-route-controls-bar-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'tt-route-controls-bar-styles';
-  s.textContent = `
-    .route-controls-bar {
-    display: flex;
-    gap: 8px;
-    margin: 10px 0 20px 0;
-    flex-direction: column;
-    padding: 10px;
-    border-radius: 6px;
-    background: #fafafa;
-    border: 1px solid #ddd;
-    }
-    .route-controls-bar .tt-travel-mode-set { margin: 0; }
-    @media (max-width: 560px) {
-      .route-controls-bar { gap: 8px; }
-    }
-  `;
-  document.head.appendChild(s);
-})();
-
 function wrapRouteControls(day) {
   const tm = document.getElementById(`tt-travel-mode-set-day${day}`);
   const controls = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
@@ -7979,27 +7887,6 @@ function wrapRouteControlsForAllDays() {
   }
 })();
 
-
-/* Route özeti (Mesafe/Süre) için etiketleri kaldır, ikon + değer göster */
-(function ensureRouteStatsIconStyles(){
-  if (document.getElementById('tt-route-stats-icon-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'tt-route-stats-icon-styles';
-  s.textContent = `
-    .route-summary-control 
-    {    width: 100%;
-    font-size: 0.9rem;
-    text-align: left;
-    display: inline-flex
-;
-    align-items: center;
-    gap: 12px;
-     }
-    .route-summary-control .stat { display: inline-flex; align-items: center; gap: 6px; color: inherit; }
-    .route-summary-control .stat svg { width: 16px; height: 16px; display: block; }
-  `;
-  document.head.appendChild(s);
-})();
 
 (function initRouteSummaryIconizer(){
   // Basit metin ayrıştırıcı: "Mesafe: 3.58 km  Süre: 13 dk" gibi metinden değeri çeker
@@ -8097,72 +7984,6 @@ window.TT_SVG_ICONS = {
   distance: 'https://www.svgrepo.com/show/533308/route.svg',
   duration: 'https://www.svgrepo.com/show/532984/clock-outline.svg',
 };
-
-/* 2) Styles: small, clean, tag-like labels next to icons */
-(function ensureIconLabelStyles(){
-  if (document.getElementById('tt-icon-label-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'tt-icon-label-styles';
-  s.textContent = `
-    /* Travel mode set button with SVG + small label */
-    .tt-travel-mode-set button {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0px;
-    border: none;
-}   
-    .tt-travel-mode-set button .tm-icon {
-      width: 18px;
-      height: 18px;
-      display: inline-block;
-    }
-    .tt-travel-mode-set button .tm-label {
-      display: inline-block;
-      padding: 2px 6px;
-      font-size: 12px;
-      line-height: 1;
-      border: 1px solid #d0d7de;
-      border-radius: 6px; /* tag-style */
-      color: #24292f;
-      background: #ffffff;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      font-weight: 600;
-    }
-    .tt-travel-mode-set button.active .tm-label {
-          background: #8a4af3;
-   
-    color: #ffffff;
-}
-    }
-
-    /* Route summary (distance/time) with SVG + small value badge */
-    .route-summary-control {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-  
-.route-summary-control .stat {
-    
-    font-size: 0.9rem;
-    text-align: left;
-    display: inline-flex
-;
-    align-items: center;
-    gap: 6px;
-}
-    .route-summary-control .stat .icon {
-      width: 16px;
-      height: 16px;
-      display: inline-block;
-    }
-  
-  `;
-  document.head.appendChild(s);
-})();
-
 
 /* 4) Convert route summary text ("Mesafe: ...  Süre: ...") to SVG + badge values */
 (function initRouteSummaryIconizer(){
@@ -9363,38 +9184,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 /* Scale bar ortası loader + 429 için tek seferlik yeniden deneme planlayıcı */
 (function ensureScaleBarLoadingHelpers(){
   if (window.__tt_scaleBarLoaderReady) return;
-  if (!document.getElementById('tt-scale-bar-loader-styles')) {
-    const s = document.createElement('style');
-    s.id = 'tt-scale-bar-loader-styles';
-    s.textContent = `
-      .tt-scale-loader{    position: absolute;
-    left: 50%;
-    top: 70%;
-    transform: translate(-50%, -50%);
-    display: flex
-;
-    align-items: center;
-    gap: 10px;
-    z-index: 5;
-    background: #ffffff;
-    /* border: 1px solid #e0e0e0; */
-    border-radius: 10px;
-    padding: 10px 13px;
-    /* box-shadow: 0 4px 12px rgba(0, 0, 0, .08); */
-    font-size: 12px;
-    color: #8a4af3;
-    font-weight: 700;}
-      .tt-scale-loader .spinner{width: 20px;
-    height: 20px;
-    border: 4px solid #e0e0e0;
-    border-top-color: #8a4af3;
-    border-radius: 50%;
-    animation: ttspin .9s linear infinite;}
-      @keyframes ttspin{to{transform:rotate(360deg)}}
-      .scale-bar-track{position:relative}
-    `;
-    document.head.appendChild(s);
-  }
+
   function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
   window.showScaleBarLoading = function(c,t='Loading elevation…'){
     const tr = trackOf(c); if (!tr) return;
