@@ -2985,31 +2985,33 @@ function initEmptyDayMap(day) {
 
   if (!el.style.height) el.style.height = '285px';
 
-// 1) KÜÇÜK HARİTA: initEmptyDayMap içindeki L.map(...) seçeneklerini değiştir
-const map = L.map(containerId, {
-  scrollWheelZoom: true,
-  fadeAnimation: true,
-  zoomAnimation: true,
-  zoomAnimationThreshold: 8,
-  zoomSnap: 0.25,
-  zoomDelta: 0.25,
-  wheelDebounceTime: 35,
-  wheelPxPerZoomLevel: 120,
-  inertia: true,
-  easeLinearity: 0.2
-}).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+  // KÜÇÜK HARİTA: MAPBOX STREET TILE (proxy ile)
+  const map = L.map(containerId, {
+    scrollWheelZoom: true,
+    fadeAnimation: true,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 8,
+    zoomSnap: 0.25,
+    zoomDelta: 0.25,
+    wheelDebounceTime: 35,
+    wheelPxPerZoomLevel: 120,
+    inertia: true,
+    easeLinearity: 0.2
+  }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
 
   L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {
-    attribution: '&copy; OpenStreetMap contributors'
-  }
-).addTo(map);
+    '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
+    {
+      tileSize: 256,
+      zoomOffset: 0,
+      attribution: '© Mapbox © OpenStreetMap',
+      crossOrigin: true
+    }
+  ).addTo(map);
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 }
-
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
   Object.keys(window.leafletMaps).forEach(id => {
@@ -3037,10 +3039,7 @@ function restoreLostDayMaps() {
     }
   });
 }
-/* ================== START WITH MAP: DIRECT EXPANDED EMPTY MAP PATCH ================== */
-/* İSTENEN: Butondaki gün (data-day="X") için 1. gün haritasını yeniden kullanmak yerine
-            o güne ait tamamen boş (noktasız) BÜYÜK harita açılsın ve planlama o güne başlasın. */
-// Bu IIFE içindeki startDayMapPlanningAndExpand fonksiyonunu bu şekilde güncelleyin
+
 (function initDirectDayExpandedMapPatch(){
   if (window.__tt_directExpandedPatchApplied) return;
   window.__tt_directExpandedPatchApplied = true;
@@ -4287,13 +4286,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         attributionControl: false
     });
 
-    // OpenStreetMap tile layer
+    // Mapbox Street tile layer (proxy endpoint ile)
     L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
       {
         tileSize: 256,
         zoomOffset: 0,
-        attribution: '© OpenStreetMap contributors',
+        attribution: '© Mapbox © OpenStreetMap',
         crossOrigin: true
       }
     ).addTo(map);
@@ -4319,7 +4318,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         map.invalidateSize();
     }, 100);
 }
-
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
   const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
@@ -4839,13 +4837,13 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         preferCanvas: true
     });
 
-    // Tile layer (default streets)
-    let tileLayer = L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    // Tile layer (default streets - Mapbox Street proxy ile)
+let tileLayer = L.tileLayer(
+  '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
-    attribution: '© OpenStreetMap contributors',
+    attribution: '© Mapbox © OpenStreetMap',
     crossOrigin: true
   }
 );
@@ -4911,7 +4909,7 @@ window.expandedMaps = {};
 
 // Üstte tanımlı helper: setExpandedMapTile — crossOrigin ekleyin
 function setExpandedMapTile(expandedMap, styleKey) {
-  const url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'; 
+  const url = `/api/mapbox/tiles/${styleKey}/{z}/{x}/{y}.png`;
 
 // Programatik input set helper (manuel yazımı ayırt etmek için)
 if (typeof setChatInputValue !== 'function') {
@@ -4933,10 +4931,10 @@ if (typeof setChatInputValue !== 'function') {
   });
   if (foundTile) expandedMap.removeLayer(foundTile);
 
-   L.tileLayer(url, {
+  L.tileLayer(url, {
     tileSize: 256,
     zoomOffset: 0,
-    attribution: '© OpenStreetMap contributors',
+    attribution: '© Mapbox © OpenStreetMap',
     crossOrigin: true
   }).addTo(expandedMap);
 }
@@ -5148,41 +5146,41 @@ const expandedMap = L.map(mapDivId, {
   let expandedTileLayer = null;
  // Expanded harita stil değiştirici
 function setExpandedMapTile(styleKey) {
-    if (expandedTileLayer) {
+      if (expandedTileLayer) {
       try { expandedMap.removeLayer(expandedTileLayer); } catch (_){}
       expandedTileLayer = null;
     }
     // OSM tile, styleKey artık etkisiz (farklı sağlayıcı eklemek istersen burada switch-case yapabilirsin)
     expandedTileLayer = L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      `/api/mapbox/tiles/${styleKey}/{z}/{x}/{y}.png`,
       {
         tileSize: 256,
         zoomOffset: 0,
-        attribution: '© OpenStreetMap contributors',
+        attribution: '© Mapbox © OpenStreetMap',
         crossOrigin: true
       }
     );
     expandedTileLayer.addTo(expandedMap);
 }
 
-  setExpandedMapTile('streets-v12');
+  // İlk açılışta varsayılan stil (Mapbox streets)
+setExpandedMapTile('streets-v12');
 
-  // Harita stili seçimi değiştiğinde
+// Harita stili seçimi değiştiğinde
 mapStyleSelect.onchange = function() {
     setExpandedMapTile(this.value);
-    // Küçük haritanın da stilini eşitle (opsiyonel)
+    // Küçük haritanın da stilini eşitlemek istersen benzer şekilde düzenleyebilirsin
     const originalMap = window.leafletMaps && window.leafletMaps[containerId];
     if (originalMap) {
       let old;
       originalMap.eachLayer(l => { if (l instanceof L.TileLayer) old = l; });
       if (old) try { originalMap.removeLayer(old); } catch (_){}
-      // OSM tile (stili değiştirmek istersen burada logic ekle)
       L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        `/api/mapbox/tiles/${this.value}/{z}/{x}/{y}.png`,
         {
           tileSize: 256,
           zoomOffset: 0,
-          attribution: '© OpenStreetMap contributors',
+          attribution: '© Mapbox © OpenStreetMap',
           crossOrigin: true
         }
       ).addTo(originalMap);
