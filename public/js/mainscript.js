@@ -4910,7 +4910,7 @@ window.expandedMaps = {};
 
 // Üstte tanımlı helper: setExpandedMapTile — crossOrigin ekleyin
 function setExpandedMapTile(expandedMap, styleKey) {
-  const url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'; 
 
 // Programatik input set helper (manuel yazımı ayırt etmek için)
 if (typeof setChatInputValue !== 'function') {
