@@ -1711,81 +1711,25 @@ function addChatResultsToCart() {
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
 
-    // Eski harita veya iframe varsa sil
-    const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
-    if (oldIframe) oldIframe.remove();
-    const oldLeaflet = visualDiv.querySelector('.leaflet-map');
-    if (oldLeaflet) {
-        // Eski Leaflet instance var mı sil
-        if (window._leafletMaps && window._leafletMaps[oldLeaflet.id]) {
-            try { window._leafletMaps[oldLeaflet.id].remove(); } catch(e) {}
-            delete window._leafletMaps[oldLeaflet.id];
-        }
-        oldLeaflet.remove();
-    }
-
     if (!isNaN(lat) && !isNaN(lon)) {
-    // Harita div'i ekle
-    const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random() * 10000);
-
-    const mapDiv = document.createElement('div');
-    mapDiv.id = mapId;
-    mapDiv.className = "leaflet-map";
-    mapDiv.style.width = "100%";
-    mapDiv.style.height = "250px";
-    mapDiv.style.minHeight = "160px";
-    mapDiv.style.borderRadius = "10px";
-    mapDiv.style.margin = "8px 0";
-    mapDiv.style.background = "#f3f3f3";
-
-    // Önce DOM'a ekle!
-    visualDiv.appendChild(mapDiv);
-
-    image.style.display = "none";
-
-    // Leaflet başlatmak için kısa gecikme (DOM'a eklendikten sonra!)
-    setTimeout(function() {
-        window._leafletMaps = window._leafletMaps || {};
-        var map = L.map(mapId, {
-            center: [lat, lon],
-            zoom: 16,
-            scrollWheelZoom: false,
-            zoomControl: true,
-            attributionControl: false
-        });
-        L.tileLayer(
-            '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
-            {
-                tileSize: 256,
-                zoomOffset: 0,
-                attribution: '© Mapbox © OpenStreetMap',
-                crossOrigin: true
-            }
-        ).addTo(map);
-
-        L.marker([lat, lon]).addTo(map).bindPopup('Location').openPopup();
-        map.zoomControl.setPosition('topright');
-        window._leafletMaps[mapId] = map;
-        setTimeout(function(){ map.invalidateSize(); }, 100);
-    }, 0);
-}
+        const delta = 0.001;
+        const iframeHTML = `<iframe class="gmap-chat" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-delta},${lat-delta},${lon+delta},${lat+delta}&layer=mapnik&marker=${lat},${lon}" width="100%" height="250" frameborder="0" style="border:0"></iframe>`;
+        const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
+        if (oldIframe) oldIframe.remove();
+        image.style.display = "none";
+        visualDiv.insertAdjacentHTML('beforeend', iframeHTML);
+    } else {
+        alert("Location not found.");
+    }
 };
 
     window.showImage = function (element) {
-    const visualDiv = element.closest('.steps').querySelector('.visual');
-    const image = visualDiv.querySelector('img.check');
-    const iframe = visualDiv.querySelector('iframe.gmap-chat');
-    if (iframe) iframe.remove();
-    const leafletDiv = visualDiv.querySelector('.leaflet-map');
-    if (leafletDiv) {
-        if (window._leafletMaps && window._leafletMaps[leafletDiv.id]) {
-            try { window._leafletMaps[leafletDiv.id].remove(); } catch(e) {}
-            delete window._leafletMaps[leafletDiv.id];
-        }
-        leafletDiv.remove();
-    }
-    if (image) image.style.display = '';
-};
+        const visualDiv = element.closest('.steps').querySelector('.visual');
+        const image = visualDiv.querySelector('img.check');
+        const iframe = visualDiv.querySelector('iframe.gmap-chat');
+        if (iframe) iframe.remove();
+        if (image) image.style.display = '';
+    };
 
     document.getElementById("send-button").addEventListener("click", sendMessage);
     userInput.addEventListener("keypress", handleKeyPress);
@@ -1906,7 +1850,7 @@ function safeCoords(obj) {
 }
 
 function addToCart(
-
+    
   name,
   image,
   day,
@@ -3494,52 +3438,40 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-  // 0) TÜM ESKİ LEAFLET MAP INSTANCE'LARINI TEMİZLE (HER YENİLEMEDE)
-  window._leafletMaps = window._leafletMaps || {};
-  document.querySelectorAll('.leaflet-map').forEach(div => {
-    const mapId = div.id;
-    if (mapId && window._leafletMaps[mapId]) {
-      try { window._leafletMaps[mapId].remove(); } catch (e) {}
-      delete window._leafletMaps[mapId];
-      div.innerHTML = ''; // DOM'dan da temizle
-    }
-  });
-
-  // 1) CART FİLTRESİ (bozukları at)
-  window.cart = window.cart.filter(it =>
-    it && typeof it.name !== "undefined" &&
+   window.cart = window.cart.filter(it =>
+  it && typeof it.name !== "undefined" &&
+  (
+    !it.location ||
     (
-      !it.location ||
-      (
-        typeof it.location.lat === "number" &&
-        typeof it.location.lng === "number" &&
-        !isNaN(it.location.lat) &&
-        !isNaN(it.location.lng)
-      )
+      typeof it.location.lat === "number" &&
+      typeof it.location.lng === "number" &&
+      !isNaN(it.location.lat) &&
+      !isNaN(it.location.lng)
     )
-  );
+  )
+);
 
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  // 2) Tamamen boş global durum
+  // 0) Tamamen boş global durum
   if (!window.cart || window.cart.length === 0) {
     if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
-    const showStartMap = !(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[1]);
-    cartDiv.innerHTML = `
-      <div id="empty-content">
-        <p>Create your trip using the chat screen.</p>
-        <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
-          Import GPS File
-        </button>
-        ${showStartMap ? `
-          <div id="empty-or-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
-          <button id="start-map-btn" type="button">Start with map</button>
-        ` : ``}
-      </div>
-    `;
+const showStartMap = !(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[1]);
+cartDiv.innerHTML = `
+  <div id="empty-content">
+    <p>Create your trip using the chat screen.</p>
+    <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
+      Import GPS File
+    </button>
+    ${showStartMap ? `
+      <div id="empty-or-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
+      <button id="start-map-btn" type="button">Start with map</button>
+    ` : ``}
+  </div>
+`;
 if (menuCount) {
   menuCount.textContent = 0;
   menuCount.style.display = "none";
