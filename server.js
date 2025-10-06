@@ -27,13 +27,15 @@ const mapBox = require("./mapBox");
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
 
+const geoapify = require('./geoapify.js');
+
 // --- EKLENEN ENDPOINT --- //
 app.get('/api/geoapify/geocode', async (req, res) => {
   const { text, limit } = req.query;
   console.log('[geocode] gelen text:', text, 'limit:', limit);
   const apiKey = process.env.GEOAPIFY_KEY;
   if (!apiKey) return res.status(500).send('Geoapify API key eksik');
-  if (!text) return res.status(400).json({ error: 'text parametresi eksik' }); // <-- EKLE
+  if (!text) return res.status(400).json({ error: 'text parametresi eksik' });
   const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(text)}&limit=${limit || 1}&apiKey=${apiKey}`;
   try {
     const response = await fetch(url);
@@ -48,13 +50,28 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
-const geoapify = require('./geoapify.js'); // varsa zaten yukarıda require edilmiş olabilir
-
 // Autocomplete endpoint
 app.get('/api/geoapify/autocomplete', async (req, res) => {
   const { q, limit } = req.query;
   try {
     const data = await geoapify.autocomplete(q, limit ? parseInt(limit) : 7);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- YENİ EKLENDİ: /api/geoapify/places ---
+app.get('/api/geoapify/places', async (req, res) => {
+  try {
+    const { categories, lon, lat, radius, limit } = req.query;
+    const data = await geoapify.places({
+      categories,
+      lon,
+      lat,
+      radius: radius ? parseInt(radius) : 3000,
+      limit: limit ? parseInt(limit) : 10
+    });
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });
