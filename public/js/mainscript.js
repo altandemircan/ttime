@@ -4840,12 +4840,12 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     // Tile layer (default streets)
     let tileLayer = L.tileLayer(
-  `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`,
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
-    attribution: '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a>',
-    crossOrigin: true // EKLENDİ
+    attribution: '© OpenStreetMap contributors',
+    crossOrigin: true
   }
 );
 tileLayer.addTo(map);
