@@ -2455,9 +2455,13 @@ function displayPlacesInChat(places, category, day) {
 </div>`;
     });
 
-    html += "</div></div></div></div>";
+ html += "</div></div></div></div>";
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
+
+    setTimeout(() => {
+        mapInitQueue.forEach(cfg => createLeafletMapForItem(cfg.mapId, cfg.lat, cfg.lon, cfg.name, cfg.number));
+    }, 0);
 
     if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 }
