@@ -3000,14 +3000,11 @@ const map = L.map(containerId, {
 }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
 
   L.tileLayer(
-    `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`,
-    {
-      tileSize: 256,
-      zoomOffset: 0,
-      attribution: '© Mapbox © OpenStreetMap',
-      crossOrigin: true
-    }
-  ).addTo(map);
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    attribution: '&copy; OpenStreetMap contributors'
+  }
+).addTo(map);
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
