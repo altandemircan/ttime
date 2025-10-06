@@ -2244,14 +2244,6 @@ function addItem(element, day, category, name, image, extra) {
 }
 
 
-const categories = {
-    "🎟️ Things to do": ["Attractions", "Parks", "Campgrounds", "Museums", "..."],
-    "🍽️ Food & Drink": ["Restaurants", "Bars", "Cafes", "Night Life", "..."],
-    "🎭 Art & Sports": ["Art Galleries", "Book Stores", "Movie Theater", "Stadium", "..."],
-    "🛒 Shopping": ["ATMs", "Banks", "Electronics Stores", "Clothing Stores", "..."],
-    "🛠️ Services": ["Travel Agency", "Car Rentals", "Hospitals", "Airport", "..."]
-};
-
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
