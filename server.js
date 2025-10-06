@@ -7,30 +7,50 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
-
-
-
-// (Opsiyonel) Eğer farklı origin'den istek geleceğini düşünüyorsan CORS aç:
-// const cors = require('cors');
-// app.use(cors({ origin: true, credentials: true }));
-
 // 1. BODY PARSER (limit artırıldı: screenshot base64 için)
 app.use(express.json({ limit: '6mb' }));
-// (İstersen ayrıca form-data için multer ekleyebilirsin; şimdilik gerek yok)
 app.use(express.urlencoded({ extended: true }));
+
 // 2. Feedback Route (DOSYA KONUMUNA DİKKAT)
-// Eğer feedbackRoute.js kökteyse:
 const feedbackRoute = require('./feedbackRoute');
-// Eğer server/feedback-route.js diye klasöre taşırsan:
-// const feedbackRoute = require('./server/feedback-route');
-app.use('/api', feedbackRoute); 
+app.use('/api', feedbackRoute);
 
 // 3. Diğer API Routerları
 const llmProxy = require('./llm-proxy');    
 const photogetProxy = require('./photoget-proxy');
+const mapBox = require("./mapBox");
 
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
+
+// 3.b MAPBOX ENDPOINTLERİ
+// Directions endpoint
+app.get("/api/mapbox/directions", async (req, res) => {
+  const { coordinates, profile, alternatives, overview, geometries } = req.query;
+  try {
+    const data = await mapBox.directions({
+      coordinates,
+      profile: profile || "walking",
+      alternatives: alternatives || false,
+      overview: overview || "full",
+      geometries: geometries || "geojson"
+    });
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Geocoding endpoint (isteğe bağlı)
+app.get("/api/mapbox/geocode", async (req, res) => {
+  const { query, limit } = req.query;
+  try {
+    const data = await mapBox.geocode({ query, limit: limit ? parseInt(limit) : 5 });
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // 4. Basit health / status endpoint
 app.get('/health', (req, res) => {
@@ -50,7 +70,6 @@ app.get('/test-root', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 7. API 404 yakalayıcı (yalnızca /api altı için – feedbackRoute vs. sonrası)
-// Bunu static'ten ÖNCE koyma; yoksa index.html engellenir. API’lerin ardından:
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'not_found' });
 });

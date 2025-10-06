@@ -34,10 +34,7 @@ function getSlopeColor(slope) {
   if (slope < 15) return "#EF5350"; // medium soft red
   return "#9575CD";                 // soft purple
 }
-const MAPBOX_TOKEN = "pk.eyJ1IjoiYWx0YW5kZW1pcmNhbiIsImEiOiJjbWRpaHFkZGIwZXd3Mm1yYjE2bWh3eHp5In0.hB1IaB766Iug4J26lt5itw";
-window.MAPBOX_TOKEN = MAPBOX_TOKEN;
-const GEOAPIFY_API_KEY = "d9a0dce87b1b4ef6b49054ce24aeb462";
-window.GEOAPIFY_API_KEY = GEOAPIFY_API_KEY;
+
 
 // --- PLAN SEÇİM ZORUNLULUĞU FLAGS ---
 window.__locationPickedFromSuggestions = false;
@@ -128,8 +125,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let lastResults = [];
 
     async function geoapifyAutocomplete(query) {
-        const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&limit=7&apiKey=${GEOAPIFY_API_KEY}`;
-        const response = await fetch(url);
+        const url = `/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`;
+const response = await fetch(url);
         if (!response.ok) throw new Error("API error");
         const data = await response.json();
         const sortedResults = sortLocations(data.features || []);
@@ -1739,54 +1736,50 @@ function addChatResultsToCart() {
 
 // 2. Şehir koordinatlarını almak için fonksiyon (Geoapify geocode API)
 async function getCityCoordinates(city) {
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(city)}&limit=1&apiKey=${GEOAPIFY_API_KEY}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data.features && data.features.length > 0) {
-        const f = data.features[0];
-        return { lat: f.properties.lat, lon: f.properties.lon };
-    }
-    return null;
+  const resp = await fetch(`/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`);
+  const data = await resp.json();
+  if (data.features && data.features.length > 0) {
+    const f = data.features[0];
+    return { lat: f.properties.lat, lon: f.properties.lon };
+  }
+  return null;
 }
-
-
 
 
 // 2) Yerleri Geoapify'dan çeken fonksiyon
 async function getPlacesForCategory(city, category, limit = 4, radius = 3000, code = null) {
-    const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
-    if (!geoCategory) {
-        console.warn("Kategori haritada bulunamadı:", category, code);
-        return [];
-    }
-
-    const coords = await getCityCoordinates(city);
-    if (!coords || !coords.lat || !coords.lon) return [];
-    const url = `https://api.geoapify.com/v2/places?categories=${geoCategory}&filter=circle:${coords.lon},${coords.lat},${radius}&limit=${limit}&apiKey=${GEOAPIFY_API_KEY}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data.features && data.features.length > 0) {
-        const filtered = data.features.filter(f =>
-            !!f.properties.name && f.properties.name.trim().length > 2
-        );
-        return filtered.map(f => ({
-            name: f.properties.name,
-            address: f.properties.formatted || "",
-            lat: Number(f.properties.lat),
-            lon: Number(f.properties.lon),
-            website: f.properties.website || '',
-            opening_hours: f.properties.opening_hours || '',
-            categories: f.properties.categories || [],
-            city: city,
-            properties: f.properties
-        }));
-    }
+  const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
+  if (!geoCategory) {
+    console.warn("Kategori haritada bulunamadı:", category, code);
     return [];
+  }
+  const coords = await getCityCoordinates(city);
+  if (!coords || !coords.lat || !coords.lon) return [];
+  const url = `/api/geoapify/places?categories=${geoCategory}&lon=${coords.lon}&lat=${coords.lat}&radius=${radius}&limit=${limit}`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (data.features && data.features.length > 0) {
+    const filtered = data.features.filter(f =>
+      !!f.properties.name && f.properties.name.trim().length > 2
+    );
+    return filtered.map(f => ({
+      name: f.properties.name,
+      address: f.properties.formatted || "",
+      lat: Number(f.properties.lat),
+      lon: Number(f.properties.lon),
+      website: f.properties.website || '',
+      opening_hours: f.properties.opening_hours || '',
+      categories: f.properties.categories || [],
+      city: city,
+      properties: f.properties
+    }));
+  }
+  return [];
 }
 
 // Şehir koordinatı bulma fonksiyonu
 async function getCityCoordinates(city) {
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(city)}&limit=1&apiKey=${GEOAPIFY_API_KEY}`;
+const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
     const resp = await fetch(url);
     const data = await resp.json();
     if (data.features && data.features.length > 0) {
@@ -2633,37 +2626,11 @@ const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
 let lastRequestTime = 0;
 async function geoapifyAutocomplete(query) {
-    const now = Date.now();
-    if (now - lastRequestTime < MIN_REQUEST_INTERVAL) {
-        return [];
-    }
-    lastRequestTime = now;
-
-    if (!query || query.length < 3) return [];
-    
-    // Check cache first
-    if (apiCache.has(query)) {
-        return apiCache.get(query);
-    }
-
-    // **YANLIŞ OLANI DEĞİL, DOĞRU OLANI KULLAN:**
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&limit=4&apiKey=${GEOAPIFY_API_KEY}`;
-    
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("API request failed");
-        const data = await response.json();
-        const results = data.features || [];
-        
-        // Cache results for 5 minutes
-        apiCache.set(query, results);
-        setTimeout(() => apiCache.delete(query), 300000);
-        
-        return results;
-    } catch (error) {
-        console.error("Geoapify API error:", error);
-        return [];
-    }
+  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
+  if (!resp.ok) throw new Error("API error");
+  const data = await resp.json();
+  // Eğer sıralama fonksiyonun varsa burada uygula
+  return data.features || [];
 }
 
 
@@ -4357,47 +4324,16 @@ L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
 
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
-  const base = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}`;
-
-  // Helper to read result
-  const pick = (data) => {
-    const props = data?.features?.[0]?.properties;
-    if (!props) return null;
-    return {
-      name: props.name || props.address_line1 || "Unnamed Place",
-      address: props.formatted || "",
-      opening_hours: props.opening_hours || "",
-    };
+  const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
+  const data = await resp.json();
+  const props = data?.features?.[0]?.properties || {};
+  return {
+    name: props.name || props.address_line1 || "Unnamed Place",
+    address: props.formatted || "",
+    opening_hours: props.opening_hours || "",
   };
-
-  try {
-    // a) POI (amenity) öncelik
-    const rAmenity = await fetch(`${base}&type=amenity&limit=1`);
-    const dAmenity = await rAmenity.json();
-    const amenityRes = pick(dAmenity);
-    if (amenityRes && amenityRes.name && amenityRes.name !== "Unnamed Place") {
-      return amenityRes;
-    }
-  } catch {}
-
-  try {
-    // b) Bina
-    const rBuilding = await fetch(`${base}&type=building&limit=1`);
-    const dBuilding = await rBuilding.json();
-    const buildingRes = pick(dBuilding);
-    if (buildingRes) return buildingRes;
-  } catch {}
-
-  try {
-    // c) Genel fallback
-    const r = await fetch(`${base}&limit=1`);
-    const d = await r.json();
-    const res = pick(d);
-    if (res) return res;
-  } catch {}
-
-  return { name: "Unnamed Place", address: "", opening_hours: "" };
 }
+
 function toggleContent(arrowIcon) {
     const cartItem = arrowIcon.closest('.cart-item');
     if (!cartItem) return;
@@ -7573,22 +7509,8 @@ window.setTravelMode = function(mode, day) {
 // Build Directions URL; day is optional (defaults to currentDay)
 window.buildMapboxDirectionsUrl = function(coordsStr, day) {
   const profile = getMapboxProfileForDay(day || window.currentDay || 1);
-  const token = window.MAPBOX_TOKEN || window.MAPBOX_ACCESS_TOKEN || window.mapboxToken;
-  // Programatik input set helper (manuel yazımı ayırt etmek için)
-if (typeof setChatInputValue !== 'function') {
-  window.__programmaticInput = false;
-  function setChatInputValue(str) {
-    const inp = document.getElementById('user-input');
-    if (!inp) return;
-    window.__programmaticInput = true;
-    inp.value = str;
-    // microtask sonunda flag’i geri al
-    setTimeout(() => { window.__programmaticInput = false; }, 0);
-  }
-}
-  return `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordsStr}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${token}`;
+  return `/api/mapbox/directions?profile=${profile}&coordinates=${coordsStr}`;
 };
-
 // Minimal snap; keep single definition
 if (!window.snapPointToRoad) {
   window.snapPointToRoad = function(lat, lng) {
