@@ -4469,7 +4469,8 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
     L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
-    setTimeout(function() { map.invalidateSize(); }, 100);
+    setTimeout(function() { map.invalidateSize(); }, 120);
+setTimeout(function() { map.invalidateSize(); }, 400);
 }
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
