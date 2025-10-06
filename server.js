@@ -30,16 +30,21 @@ app.use('/photoget-proxy', photogetProxy);
 // --- EKLENEN ENDPOINT --- //
 app.get('/api/geoapify/geocode', async (req, res) => {
   const { text, limit } = req.query;
+  console.log('[geocode] gelen text:', text, 'limit:', limit);
   const apiKey = process.env.GEOAPIFY_KEY;
   if (!apiKey) return res.status(500).send('Geoapify API key eksik');
+  if (!text) return res.status(400).json({ error: 'text parametresi eksik' }); // <-- EKLE
   const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(text)}&limit=${limit || 1}&apiKey=${apiKey}`;
   try {
     const response = await fetch(url);
-    if (!response.ok) return res.status(response.status).send('Geoapify error');
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: 'Geoapify error', detail: errorText });
+    }
     res.set('Access-Control-Allow-Origin', '*');
     res.json(await response.json());
   } catch (e) {
-    res.status(500).send('Proxy error');
+    res.status(500).json({ error: 'Proxy error', detail: e.message });
   }
 });
 
