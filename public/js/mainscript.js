@@ -2396,13 +2396,8 @@ const geoapifyCategoryMap = {
   "Hostel": "accommodation.hostel",  
   "Cinema": "entertainment.cinema",
   "Clothes Shop": "commercial.clothes",
-  "Shoe Shop": "commercial.shoes",
-  "Jewelry Shop": "commercial.jewelry",
-  "Sports Shop": "commercial.sports",
-  "Beauty Shop": "commercial.beauty",
-  "Toy Shop": "commercial.toys",
-  "Music Shop": "commercial.music",
-  "Computer Shop": "commercial.computer"
+  "Jewelry Shop": "commercial.jewelry"
+
 
 };
 
@@ -2468,17 +2463,10 @@ const travelMainCategories = [
   { name: "Bookstore", code: "commercial.books", icon: "📚" },
   { name: "Post Office", code: "service.post", icon: "📮" },
   { name: "Library", code: "education.library", icon: "📖" },
-  { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
- 
+  { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" }, 
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
   { name: "Clothes Shop", code: "commercial.clothes", icon: "👕" },
-  { name: "Shoe Shop", code: "commercial.shoes", icon: "👟" },
-  { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
-  { name: "Sports Shop", code: "commercial.sports", icon: "🏀" },
-  { name: "Beauty Shop", code: "commercial.beauty", icon: "💄" },
-  { name: "Toy Shop", code: "commercial.toys", icon: "🧸" },
-  { name: "Music Shop", code: "commercial.music", icon: "🎸" },
-  { name: "Computer Shop", code: "commercial.computer", icon: "💻" }
+  { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" } 
 ];
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
