@@ -3436,16 +3436,13 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-    window.cart = window.cart.filter(it => {
-  if (typeof it.day !== "undefined" && Object.keys(it).length === 1) return true;
-  if (!it.location) return true;
-  if (
-    typeof it.location.lat !== "number" || isNaN(it.location.lat) ||
-    typeof it.location.lng !== "number" || isNaN(it.location.lng)
-  ) {
-    return false;
+window.cart.forEach(it => {
+  if (it.location) {
+    if (typeof it.location.lat === "string" || typeof it.location.lat === "undefined")
+      it.location.lat = Number(it.location.lat);
+    if (typeof it.location.lng === "string" || typeof it.location.lng === "undefined")
+      it.location.lng = Number(it.location.lng);
   }
-  return true;
 });
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
