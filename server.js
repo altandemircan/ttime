@@ -10,19 +10,61 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
+<<<<<<< HEAD
 // 1. BODY PARSER
 app.use(express.json({ limit: '6mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // 2. Feedback Route
+=======
+// 1. BODY PARSER (limit artırıldı: screenshot base64 için)
+app.use(express.json({ limit: '6mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// 2. Feedback Route (DOSYA KONUMUNA DİKKAT)
+>>>>>>> a52d684975f118f98f8f67989a348bd5b00a60b6
 const feedbackRoute = require('./feedbackRoute');
 app.use('/api', feedbackRoute);
 
 // 3. Diğer API Routerları
 const llmProxy = require('./llm-proxy');
 const photogetProxy = require('./photoget-proxy');
+<<<<<<< HEAD
+=======
+const mapBox = require("./mapBox");
+ 
+>>>>>>> a52d684975f118f98f8f67989a348bd5b00a60b6
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
+ 
+// 3.b MAPBOX ENDPOINTLERİ
+// Directions endpoint
+app.get("/api/mapbox/directions", async (req, res) => {
+  const { coordinates, profile, alternatives, overview, geometries } = req.query;
+  try {
+    const data = await mapBox.directions({
+      coordinates,
+      profile: profile || "walking",
+      alternatives: alternatives || false,
+      overview: overview || "full",
+      geometries: geometries || "geojson"
+    });
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Geocoding endpoint (isteğe bağlı)
+app.get("/api/mapbox/geocode", async (req, res) => {
+  const { query, limit } = req.query;
+  try {
+    const data = await mapBox.geocode({ query, limit: limit ? parseInt(limit) : 5 });
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // 4. Health endpoint
 app.get('/health', (req, res) => {
@@ -41,7 +83,11 @@ app.get('/test-root', (req, res) => {
 // 6. Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
 
+<<<<<<< HEAD
 // 7. API 404 yakalayıcı (sadece /api altında, tanımlı route’lardan sonra)
+=======
+// 7. API 404 yakalayıcı (yalnızca /api altı için – feedbackRoute vs. sonrası)
+>>>>>>> a52d684975f118f98f8f67989a348bd5b00a60b6
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'not_found' });
 });
