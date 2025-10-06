@@ -1875,6 +1875,18 @@ function addToCart(
     window._removeMapPlaceholderOnce = false;
   }
 
+  if (
+    location &&
+    (
+      typeof location.lat !== "number" ||
+      typeof location.lng !== "number" ||
+      isNaN(location.lat) ||
+      isNaN(location.lng)
+    )
+  ) {
+    location = null;
+  }
+
   // ---- 2) Cart yapısını garanti et
   if (!Array.isArray(window.cart)) {
     window.cart = [];
