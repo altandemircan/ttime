@@ -4839,6 +4839,8 @@ function hideConfirmation(confirmationContainerId) {
 
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
+    // Eğer cart yoksa başlat
+    if (!window.cart) window.cart = [];
     let maxDay = 0;
     window.cart.forEach(item => {
         const currentDay = parseInt(item.day, 10);
@@ -4850,13 +4852,14 @@ function addNewDay(button) {
     const newDay = maxDay + 1;
 
     if (!window.cart.some(item => item.day === newDay)) {
-        window.cart.push({ day: newDay });
+        window.cart.push({ day: newDay, items: [] }); // items: [] ekle
     }
 
-     window.currentDay = newDay;
-    updateCart();
+    window.currentDay = newDay;
+    // Doğru isimli fonksiyonu çağır!
+    if (typeof updateCart === "function") updateCart();
+    else if (typeof renderCart === "function") renderCart();
 }
-
 
 
 
