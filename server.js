@@ -8,6 +8,7 @@ try {
 
 const express = require('express');
 const path = require('path');
+const fetch = require('node-fetch');
 const app = express();
 
 // 1. BODY PARSER (limit artırıldı: screenshot base64 için)
@@ -52,6 +53,26 @@ app.get("/api/mapbox/geocode", async (req, res) => {
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// MAPBOX TILE PROXY ENDPOINT (asıl önemli kısım)
+app.get('/api/mapbox/tiles/:style/:z/:x/:y.png', async (req, res) => {
+  const { style, z, x, y } = req.params;
+  const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN;
+  if (!MAPBOX_TOKEN) {
+    return res.status(500).send('Mapbox token not configured');
+  }
+  const tileUrl = `https://api.mapbox.com/styles/v1/mapbox/${style}/tiles/256/${z}/${x}/${y}@2x?access_token=${MAPBOX_TOKEN}`;
+  try {
+    const response = await fetch(tileUrl);
+    if (!response.ok) {
+      return res.status(response.status).send('Mapbox tile error');
+    }
+    res.set('Content-Type', 'image/png');
+    response.body.pipe(res);
+  } catch (e) {
+    res.status(500).send('Tile proxy error');
   }
 });
 
