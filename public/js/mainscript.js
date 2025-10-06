@@ -1702,18 +1702,21 @@ function addChatResultsToCart() {
         }
     });
 }
-window.showMap = function(element) {
+   window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
+
+    // DOM'daki gerçek koordinatı oku:
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
 
-    // Eski harita veya iframe'i temizle
+    // Eski harita veya iframe varsa sil
     const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
     if (oldIframe) oldIframe.remove();
     const oldLeaflet = visualDiv.querySelector('.leaflet-map');
     if (oldLeaflet) {
+        // Eski Leaflet instance var mı sil
         if (window._leafletMaps && window._leafletMaps[oldLeaflet.id]) {
             try { window._leafletMaps[oldLeaflet.id].remove(); } catch(e) {}
             delete window._leafletMaps[oldLeaflet.id];
@@ -1722,48 +1725,52 @@ window.showMap = function(element) {
     }
 
     if (!isNaN(lat) && !isNaN(lon)) {
-        const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random() * 10000);
-        const mapDiv = document.createElement('div');
-        mapDiv.id = mapId;
-        mapDiv.className = "leaflet-map";
-        mapDiv.style.width = "100%";
-        mapDiv.style.height = "250px";
-        mapDiv.style.minHeight = "160px";
-        mapDiv.style.background = "#f3f3f3";
-        mapDiv.style.borderRadius = "10px";
-        visualDiv.appendChild(mapDiv);
+    // Harita div'i ekle
+    const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random() * 10000);
 
-        image.style.display = "none";
+    const mapDiv = document.createElement('div');
+    mapDiv.id = mapId;
+    mapDiv.className = "leaflet-map";
+    mapDiv.style.width = "100%";
+    mapDiv.style.height = "250px";
+    mapDiv.style.minHeight = "160px";
+    mapDiv.style.borderRadius = "10px";
+    mapDiv.style.margin = "8px 0";
+    mapDiv.style.background = "#f3f3f3";
 
-        // DOM'a ekledikten ve görünür olduktan sonra haritayı başlat!
-        setTimeout(function() {
-            window._leafletMaps = window._leafletMaps || {};
-            var map = L.map(mapId, {
-                center: [lat, lon],
-                zoom: 16,
-                scrollWheelZoom: false,
-                zoomControl: true,
-                attributionControl: false
-            });
-            L.tileLayer(
-                '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
-                {
-                    tileSize: 256,
-                    zoomOffset: 0,
-                    attribution: '© Mapbox © OpenStreetMap',
-                    crossOrigin: true
-                }
-            ).addTo(map);
+    // Önce DOM'a ekle!
+    visualDiv.appendChild(mapDiv);
 
-            L.marker([lat, lon]).addTo(map).bindPopup('Location').openPopup();
-            map.zoomControl.setPosition('topright');
-            window._leafletMaps[mapId] = map;
-            setTimeout(function(){ map.invalidateSize(); }, 120); // 100-200ms arası ideal
-        }, 0); // 0 ms ile microtask, istersen 50-100 ms ile de deneyebilirsin
-    } else {
-        alert("Location not found.");
-    }
+    image.style.display = "none";
+
+    // Leaflet başlatmak için kısa gecikme (DOM'a eklendikten sonra!)
+    setTimeout(function() {
+        window._leafletMaps = window._leafletMaps || {};
+        var map = L.map(mapId, {
+            center: [lat, lon],
+            zoom: 16,
+            scrollWheelZoom: false,
+            zoomControl: true,
+            attributionControl: false
+        });
+        L.tileLayer(
+            '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
+            {
+                tileSize: 256,
+                zoomOffset: 0,
+                attribution: '© Mapbox © OpenStreetMap',
+                crossOrigin: true
+            }
+        ).addTo(map);
+
+        L.marker([lat, lon]).addTo(map).bindPopup('Location').openPopup();
+        map.zoomControl.setPosition('topright');
+        window._leafletMaps[mapId] = map;
+        setTimeout(function(){ map.invalidateSize(); }, 100);
+    }, 0);
+}
 };
+
     window.showImage = function (element) {
     const visualDiv = element.closest('.steps').querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
@@ -1869,28 +1876,7 @@ if (btn) {
         showLatLngUnderOpeningHoursForStepsIn('.accordion-content');
     };
 }
-function renderChatStep(step, idx) {
-    const lat = step.lat || (step.location && step.location.lat);
-    const lon = step.lon || (step.location && step.location.lng);
-    let mapHtml = '';
-    let mapId = '';
-    if (!isNaN(lat) && !isNaN(lon)) {
-        mapId = `chat-leaflet-map-${Date.now()}${Math.floor(Math.random()*10000)}`;
-        mapHtml = `<div class="leaflet-map" id="${mapId}" style="width:100%;height:250px;min-height:160px;margin-top:6px;"></div>`;
-    }
-    const html = `
-    <div class="steps" data-day="${step.day}" data-category="${step.category}" data-lat="${lat}" data-lon="${lon}" draggable="true">
-      <div class="visual" style="opacity:1;">
-        <img class="check" src="${step.image}" alt="${step.name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-        ${mapHtml}
-      </div>
-    </div>
-    `;
-    setTimeout(() => {
-        if (mapId) createLeafletMapForItem(mapId, lat, lon, step.name, idx + 1);
-    }, 0);
-    return html;
-}
+
 
 const maxItems = Infinity;
 /* let itemRemoved = false; */
@@ -4440,12 +4426,17 @@ return '<div class="map-error">Invalid location information</div>';
 
 function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
+    // ESKİ MAP VARSA TEMİZLE!
     if (window._leafletMaps[mapId]) {
-        try { window._leafletMaps[mapId].remove(); } catch(e) {}
+        try {
+            window._leafletMaps[mapId].remove();
+        } catch(e) {}
         delete window._leafletMaps[mapId];
     }
+
     const el = document.getElementById(mapId);
     if (!el) return;
+
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
@@ -4453,15 +4444,17 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         zoomControl: true,
         attributionControl: false
     });
+
     L.tileLayer(
-        '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
-        {
-            tileSize: 256,
-            zoomOffset: 0,
-            attribution: '© Mapbox © OpenStreetMap',
-            crossOrigin: true
-        }
+      '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
+      {
+        tileSize: 256,
+        zoomOffset: 0,
+        attribution: '© Mapbox © OpenStreetMap',
+        crossOrigin: true
+      }
     ).addTo(map);
+
     const markerHtml = `
       <div class="custom-marker-outer red" style="width:32px;height:32px;">
         <span class="custom-marker-label">${number || 1}</span>
@@ -4474,9 +4467,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         iconAnchor: [16, 16]
     });
     L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
+
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
-    setTimeout(function() { map.invalidateSize(); }, 100);
+
+    setTimeout(function() {
+        map.invalidateSize();
+    }, 100);
 }
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
