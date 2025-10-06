@@ -1709,7 +1709,7 @@ window.showMap = function(element) {
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
 
-    // Önce eski haritaları/iframe'i sil
+    // Eski harita veya iframe'i temizle
     const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
     if (oldIframe) oldIframe.remove();
     const oldLeaflet = visualDiv.querySelector('.leaflet-map');
@@ -1728,20 +1728,42 @@ window.showMap = function(element) {
         mapDiv.className = "leaflet-map";
         mapDiv.style.width = "100%";
         mapDiv.style.height = "250px";
+        mapDiv.style.minHeight = "160px";
+        mapDiv.style.background = "#f3f3f3";
+        mapDiv.style.borderRadius = "10px";
         visualDiv.appendChild(mapDiv);
 
         image.style.display = "none";
 
-        // Aynı sidebar’daki gibi aç
+        // DOM'a ekledikten ve görünür olduktan sonra haritayı başlat!
         setTimeout(function() {
-            createLeafletMapForItem(mapId, lat, lon, stepsElement.querySelector('.title')?.textContent || '', 1);
-        }, 0);
+            window._leafletMaps = window._leafletMaps || {};
+            var map = L.map(mapId, {
+                center: [lat, lon],
+                zoom: 16,
+                scrollWheelZoom: false,
+                zoomControl: true,
+                attributionControl: false
+            });
+            L.tileLayer(
+                '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
+                {
+                    tileSize: 256,
+                    zoomOffset: 0,
+                    attribution: '© Mapbox © OpenStreetMap',
+                    crossOrigin: true
+                }
+            ).addTo(map);
 
+            L.marker([lat, lon]).addTo(map).bindPopup('Location').openPopup();
+            map.zoomControl.setPosition('topright');
+            window._leafletMaps[mapId] = map;
+            setTimeout(function(){ map.invalidateSize(); }, 120); // 100-200ms arası ideal
+        }, 0); // 0 ms ile microtask, istersen 50-100 ms ile de deneyebilirsin
     } else {
         alert("Location not found.");
     }
 };
-
     window.showImage = function (element) {
     const visualDiv = element.closest('.steps').querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
