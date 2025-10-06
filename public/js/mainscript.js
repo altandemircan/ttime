@@ -4435,7 +4435,7 @@ return '<div class="map-error">Invalid location information</div>';
     <div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div>
   </div>`;
 }
-
+// Harita başlatıcı
 function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
     if (window._leafletMaps[mapId]) {
@@ -4460,25 +4460,23 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
             crossOrigin: true
         }
     ).addTo(map);
-    const markerHtml = `
-      <div class="custom-marker-outer red" style="width:32px;height:32px;">
-        <span class="custom-marker-label">${number || 1}</span>
-      </div>
-    `;
-    const icon = L.divIcon({
-        html: markerHtml,
-        className: "",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    });
-    L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
+    L.marker([lat, lon]).addTo(map).bindPopup(name || '').openPopup();
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
-    
-    // BURADA! -- invalidateSize ÇAĞRISI
     setTimeout(function() { map.invalidateSize(); }, 120);
     setTimeout(function() { map.invalidateSize(); }, 400);
 }
+
+// Accordion açılırken haritaları güncelle
+document.querySelectorAll('.accordion-label').forEach(label => {
+    label.addEventListener('click', function() {
+        setTimeout(function() {
+            Object.values(window._leafletMaps || {}).forEach(function(map) {
+                try { map.invalidateSize(); } catch(_) {}
+            });
+        }, 150);
+    });
+});
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
   const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
