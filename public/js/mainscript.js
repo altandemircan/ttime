@@ -3436,7 +3436,23 @@ function attachMapClickAddMode(day) {
 // updateCart içinde ilgili yerlere eklemeler yapıldı
 // updateCart (güncellenmiş)
 function updateCart() {
-    
+    window.cart = window.cart.filter(it => {
+  // Eğer sadece gün objesi (ör: {day: 2}), ASLA silme!
+  if (typeof it.day !== "undefined" && Object.keys(it).length === 1) return true;
+  // Diğer tüm item'larda, ismi yoksa veya location hatalıysa sil
+  if (typeof it.name === "undefined") return false;
+  if (it.location) {
+    if (
+      typeof it.location.lat !== "number" ||
+      typeof it.location.lng !== "number" ||
+      isNaN(it.location.lat) ||
+      isNaN(it.location.lng)
+    ) {
+      return false;
+    }
+  }
+  return true;
+});
   console.table(window.cart);
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
