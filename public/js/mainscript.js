@@ -2363,20 +2363,8 @@ function safeCoords(lat, lon) {
 }
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
-    const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
-    let html = `
-        <div class="survey-results bot-message message">
-            <div class="accordion-container">
-                <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
-                <label for="${uniqueId}" class="accordion-label">
-                    Suggestions for ${category}
-                    <img src="img/arrow_down.svg" class="accordion-arrow">
-                </label>
-                <div class="accordion-content">
-                    <div class="day-steps">`;
-
+    let html = "";
     const mapInitQueue = [];
-
     places.forEach((place, idx) => {
         const props = place.properties || place;
         let lat = null, lon = null;
@@ -2390,67 +2378,24 @@ function displayPlacesInChat(places, category, day) {
             lat = props.location.lat || props.location.latitude;
             lon = props.location.lon || props.location.lng || props.location.longitude;
         }
-        const image = place.image || "img/placeholder.png";
-        const name = props.name || category;
         let mapHtml = '', mapId = '';
         if (!isNaN(lat) && !isNaN(lon)) {
             mapId = `chat-leaflet-map-${Date.now()}${Math.floor(Math.random()*10000)}`;
             mapHtml = `<div class="leaflet-map" id="${mapId}" style="width:100%;height:250px;min-height:160px;margin-top:6px;"></div>`;
-            mapInitQueue.push({ mapId, lat: Number(lat), lon: Number(lon), name, number: idx + 1 });
+            mapInitQueue.push({ mapId, lat: Number(lat), lon: Number(lon), name: props.name || category, number: idx+1 });
         }
         html += `
-<div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
+<div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}">
     <div class="visual" style="opacity: 1;">
-        <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+        <img class="check" src="${place.image || "img/placeholder.png"}" alt="${props.name || category}">
         ${mapHtml}
-    </div>
-    <div class="info day_cats">
-        <div class="title">${name}</div>
-        <div class="address">
-            <img src="img/address_icon.svg"> ${address}
-        </div>
-        <div class="description" data-original-description="${description}">
-            <img src="img/information_icon.svg"> ${description}
-        </div>
-        <div class="opening_hours">
-            <img src="img/hours_icon.svg"> ${opening ? opening : "No opening hours found!"}
-        </div>
-    </div>
-    <div class="item_action">
-        <div class="change">
-            <span onclick="window.showImage && window.showImage(this)">
-                <img src="img/camera_icon.svg">
-            </span>
-            <span onclick="window.showMap && window.showMap(this)">
-                <img src="img/map_icon.svg">
-            </span>
-            ${website ? `
-            <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
-                <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
-            </span>
-            ` : ""}
-        </div>
-        <div style="display: flex; gap: 12px;">
-            <div class="cats cats${idx % 5 + 1}">
-                <img src="${catIcon}" alt="${category}"> ${category}
-            </div>
-            <a class="addtotrip">
-                <img src="img/addtotrip-icon.svg">
-            </a>
-        </div>
     </div>
 </div>`;
     });
-
- html += "</div></div></div></div>";
     chatBox.innerHTML += html;
-    chatBox.scrollTop = chatBox.scrollHeight;
-
     setTimeout(() => {
         mapInitQueue.forEach(cfg => createLeafletMapForItem(cfg.mapId, cfg.lat, cfg.lon, cfg.name, cfg.number));
     }, 0);
-
-    if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 }
 // Website açma fonksiyonu
 window.openWebsite = function(element, url) {
