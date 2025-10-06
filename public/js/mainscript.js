@@ -2393,11 +2393,22 @@ const geoapifyCategoryMap = {
   "Bookstore": "commercial.books",
   "Post Office": "service.post",
   "Library": "education.library",
-  "Hostel": "accommodation.hostel",  
+  "Hostel": "accommodation.hostel",
   "Cinema": "entertainment.cinema",
   "Clothes Shop": "commercial.clothes",
-  "Jewelry Shop": "commercial.jewelry"
-
+  "Jewelry Shop": "commercial.jewelry",
+  "Wine Shop": "catering.wine",
+  "Bicycle Shop": "commercial.bicycle",
+  "University": "education.university",
+  "Campsite": "accommodation.campsite",
+  "Train Station": "public_transport.train_station",
+  "Bus Station": "public_transport.bus_station",
+  "Subway Station": "public_transport.subway_station",
+  "Hairdresser": "service.hairdresser",
+  "Police": "government.police",
+  "Park": "leisure.park",
+  "Castle": "tourism.castle",
+  "Religion": "religion"
 
 };
 
@@ -2454,7 +2465,7 @@ function showCategoryList(day) {
 
     // 30 ana gezgin kategorisi (KODUN BAŞINDA veya globalde tanımlı olmalı!)
 const travelMainCategories = [
-  { name: "Bar", code: "catering.bar", icon: "🍹" },
+   { name: "Bar", code: "catering.bar", icon: "🍹" },
   { name: "Pub", code: "catering.pub", icon: "🍻" },
   { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
   { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
@@ -2463,10 +2474,22 @@ const travelMainCategories = [
   { name: "Bookstore", code: "commercial.books", icon: "📚" },
   { name: "Post Office", code: "service.post", icon: "📮" },
   { name: "Library", code: "education.library", icon: "📖" },
-  { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" }, 
+  { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
   { name: "Clothes Shop", code: "commercial.clothes", icon: "👕" },
-  { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" } 
+  { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
+  { name: "Wine Shop", code: "catering.wine", icon: "🍷" },
+  { name: "Bicycle Shop", code: "commercial.bicycle", icon: "🚲" },
+  { name: "University", code: "education.university", icon: "🎓" },
+  { name: "Campsite", code: "accommodation.campsite", icon: "⛺" },
+  { name: "Train Station", code: "public_transport.train_station", icon: "🚆" },
+  { name: "Bus Station", code: "public_transport.bus_station", icon: "🚌" },
+  { name: "Subway Station", code: "public_transport.subway_station", icon: "🚇" },
+  { name: "Hairdresser", code: "service.hairdresser", icon: "💈" },
+  { name: "Police", code: "government.police", icon: "👮" },
+  { name: "Park", code: "leisure.park", icon: "🌳" },
+  { name: "Castle", code: "tourism.castle", icon: "🏰" },
+  { name: "Religion", code: "religion", icon: "⛪" }
 ];
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
