@@ -3437,12 +3437,8 @@ function attachMapClickAddMode(day) {
 // updateCart (güncellenmiş)
 function updateCart() {
 // 1. location'ları number'a çevir
-window.cart.forEach(it => {
-  if (it && typeof it === "object" && it.location) {
-    if (typeof it.location.lat !== "number") it.location.lat = Number(it.location.lat);
-    if (typeof it.location.lng !== "number") it.location.lng = Number(it.location.lng);
-  }
-});
+window.cart = window.cart.filter(it => it && typeof it === "object" && (it.name || it.location || it.category));
+
 
 // 2. Boş veya tamamen anlamsız objeleri sil
 window.cart = window.cart.filter(it =>
