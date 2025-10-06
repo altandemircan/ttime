@@ -3939,7 +3939,7 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
   })();
 
   // 8) Tarih aralığı ve Trip Details
- (function ensureTripDetailsBlock() {
+(function ensureTripDetailsBlock() {
   if (!window.cart.startDate) return;
   let dateRangeDiv = cartDiv.querySelector('.date-range');
   if (!dateRangeDiv) {
@@ -3947,7 +3947,9 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
     dateRangeDiv.className = 'date-range';
     cartDiv.appendChild(dateRangeDiv);
   }
-  const endDate = window.cart.endDates?.length ? window.cart.endDates[window.cart.endDates.length - 1] : window.cart.startDate;
+  const endDate = (window.cart.endDates && window.cart.endDates.length)
+    ? window.cart.endDates[window.cart.endDates.length - 1]
+    : window.cart.startDate;
   dateRangeDiv.innerHTML = `
     <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
     <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
