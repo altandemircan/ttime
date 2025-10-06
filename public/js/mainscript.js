@@ -1702,21 +1702,18 @@ function addChatResultsToCart() {
         }
     });
 }
-   window.showMap = function(element) {
+window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
-
-    // DOM'daki gerçek koordinatı oku:
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
 
-    // Eski harita veya iframe varsa sil
+    // Önce eski haritaları/iframe'i sil
     const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
     if (oldIframe) oldIframe.remove();
     const oldLeaflet = visualDiv.querySelector('.leaflet-map');
     if (oldLeaflet) {
-        // Eski Leaflet instance var mı sil
         if (window._leafletMaps && window._leafletMaps[oldLeaflet.id]) {
             try { window._leafletMaps[oldLeaflet.id].remove(); } catch(e) {}
             delete window._leafletMaps[oldLeaflet.id];
@@ -1725,50 +1722,24 @@ function addChatResultsToCart() {
     }
 
     if (!isNaN(lat) && !isNaN(lon)) {
-    // Harita div'i ekle
-    const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random() * 10000);
+        const mapId = "chat-leaflet-map-" + Date.now() + Math.floor(Math.random() * 10000);
+        const mapDiv = document.createElement('div');
+        mapDiv.id = mapId;
+        mapDiv.className = "leaflet-map";
+        mapDiv.style.width = "100%";
+        mapDiv.style.height = "250px";
+        visualDiv.appendChild(mapDiv);
 
-    const mapDiv = document.createElement('div');
-    mapDiv.id = mapId;
-    mapDiv.className = "leaflet-map";
-    mapDiv.style.width = "100%";
-    mapDiv.style.height = "250px";
-    mapDiv.style.minHeight = "160px";
-    mapDiv.style.borderRadius = "10px";
-    mapDiv.style.margin = "8px 0";
-    mapDiv.style.background = "#f3f3f3";
+        image.style.display = "none";
 
-    // Önce DOM'a ekle!
-    visualDiv.appendChild(mapDiv);
+        // Aynı sidebar’daki gibi aç
+        setTimeout(function() {
+            createLeafletMapForItem(mapId, lat, lon, stepsElement.querySelector('.title')?.textContent || '', 1);
+        }, 0);
 
-    image.style.display = "none";
-
-    // Leaflet başlatmak için kısa gecikme (DOM'a eklendikten sonra!)
-    setTimeout(function() {
-        window._leafletMaps = window._leafletMaps || {};
-        var map = L.map(mapId, {
-            center: [lat, lon],
-            zoom: 16,
-            scrollWheelZoom: false,
-            zoomControl: true,
-            attributionControl: false
-        });
-        L.tileLayer(
-            '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
-            {
-                tileSize: 256,
-                zoomOffset: 0,
-                attribution: '© Mapbox © OpenStreetMap',
-                crossOrigin: true
-            }
-        ).addTo(map);
-
-        L.marker([lat, lon]).addTo(map).bindPopup('Location').openPopup();
-        map.zoomControl.setPosition('topright');
-        window._leafletMaps[mapId] = map;
-        setTimeout(function(){ map.invalidateSize(); }, 100);
-    }, 0);
-}
+    } else {
+        alert("Location not found.");
+    }
 };
 
     window.showImage = function (element) {
