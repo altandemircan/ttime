@@ -6485,3 +6485,16 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 
+.leaflet-map {
+  width: 100%;
+  height: 285px;        /* Bunu 285px yap! */
+  min-height: 285px;
+  border-radius: 10px;
+  margin-top: 6px;
+  background: #f3f3f3;
+}
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 285px !important;
+}
