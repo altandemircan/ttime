@@ -2363,39 +2363,101 @@ function safeCoords(lat, lon) {
 }
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
-    let html = "";
-    const mapInitQueue = [];
+    const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
+    let html = `
+        <div class="survey-results bot-message message">
+            <div class="accordion-container">
+                <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
+                <label for="${uniqueId}" class="accordion-label">
+    Suggestions for ${category}
+                    <img src="img/arrow_down.svg" class="accordion-arrow">
+                </label>
+                <div class="accordion-content">
+                    <div class="day-steps">`;
+
     places.forEach((place, idx) => {
+        // Geoapify için lat/lon çoğu zaman properties.lat/properties.lon veya geometry.coordinates
+        // Diğer API'ler için location.lat/location.lng de olabilir!
         const props = place.properties || place;
         let lat = null, lon = null;
         if (props.lat && props.lon) {
             lat = props.lat;
             lon = props.lon;
         } else if (props.geometry && props.geometry.coordinates) {
+            // Geoapify GeoJSON: coordinates = [lon, lat]
             lon = props.geometry.coordinates[0];
             lat = props.geometry.coordinates[1];
         } else if (props.location) {
             lat = props.location.lat || props.location.latitude;
             lon = props.location.lon || props.location.lng || props.location.longitude;
         }
-        let mapHtml = '', mapId = '';
-        if (!isNaN(lat) && !isNaN(lon)) {
-            mapId = `chat-leaflet-map-${Date.now()}${Math.floor(Math.random()*10000)}`;
-            mapHtml = `<div class="leaflet-map" id="${mapId}" style="width:100%;height:250px;min-height:160px;margin-top:6px;"></div>`;
-            mapInitQueue.push({ mapId, lat: Number(lat), lon: Number(lon), name: props.name || category, number: idx+1 });
-        }
+
+        const image = place.image || "img/placeholder.png";
+        const name = props.name || category;
+        const address = props.formatted || props.address || "";
+        const description = `${category} in ${name}`;
+        const website = props.website || "";
+        const opening = props.opening_hours || "";
+        const categories = props.categories ? props.categories.join(', ') : "";
+
+        let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+        if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
+            catIcon = "img/coffee_icon.svg";
+        else if (category === "Touristic attraction" || category === "Attractions")
+            catIcon = "img/touristic_icon.svg";
+        else if (category === "Restaurant" || category === "Restaurants")
+            catIcon = "img/restaurant_icon.svg";
+        else if (category === "Accommodation")
+            catIcon = "img/accommodation_icon.svg";
+
         html += `
-<div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}">
+<div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
     <div class="visual" style="opacity: 1;">
-        <img class="check" src="${place.image || "img/placeholder.png"}" alt="${props.name || category}">
-        ${mapHtml}
+        <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+    </div>
+    <div class="info day_cats">
+        <div class="title">${name}</div>
+        <div class="address">
+            <img src="img/address_icon.svg"> ${address}
+        </div>
+       <div class="description" data-original-description="${description}">
+    <img src="img/information_icon.svg"> ${description}
+</div>
+        <div class="opening_hours">
+            <img src="img/hours_icon.svg"> ${opening ? opening : "No opening hours found!"}
+        </div>
+    </div>
+    <div class="item_action">
+        <div class="change">
+            <span onclick="window.showImage && window.showImage(this)">
+                <img src="img/camera_icon.svg">
+            </span>
+            <span onclick="window.showMap && window.showMap(this)">
+                <img src="img/map_icon.svg">
+            </span>
+            ${website ? `
+            <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
+                <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+            </span>
+            ` : ""}
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <div class="cats cats${idx % 5 + 1}">
+                <img src="${catIcon}" alt="${category}"> ${category}
+            </div>
+            <a class="addtotrip">
+                <img src="img/addtotrip-icon.svg">
+            </a>
+        </div>
     </div>
 </div>`;
     });
+
+    html += "</div></div></div></div>";
     chatBox.innerHTML += html;
-    setTimeout(() => {
-        mapInitQueue.forEach(cfg => createLeafletMapForItem(cfg.mapId, cfg.lat, cfg.lon, cfg.name, cfg.number));
-    }, 0);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 }
 // Website açma fonksiyonu
 window.openWebsite = function(element, url) {
@@ -3987,11 +4049,6 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
-        setTimeout(function() {
-            Object.values(window._leafletMaps || {}).forEach(function(map) {
-                try { map.invalidateSize(); } catch(_) {}
-            });
-        }, 150);
     });
 });
 
@@ -4380,7 +4437,7 @@ return '<div class="map-error">Invalid location information</div>';
     <div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div>
   </div>`;
 }
-// Harita başlatıcı
+
 function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
     if (window._leafletMaps[mapId]) {
@@ -4405,8 +4462,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
             crossOrigin: true
         }
     ).addTo(map);
-
-    // BİREBİR SEPETTEKİYLE AYNI MARKER:
     const markerHtml = `
       <div class="custom-marker-outer red" style="width:32px;height:32px;">
         <span class="custom-marker-label">${number || 1}</span>
@@ -4419,22 +4474,10 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         iconAnchor: [16, 16]
     });
     L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
-
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
-    setTimeout(function() { map.invalidateSize(); }, 120);
-    setTimeout(function() { map.invalidateSize(); }, 400);
+    setTimeout(function() { map.invalidateSize(); }, 100);
 }
-// Accordion açılırken haritaları güncelle
-document.querySelectorAll('.accordion-label').forEach(label => {
-    label.addEventListener('click', function() {
-        setTimeout(function() {
-            Object.values(window._leafletMaps || {}).forEach(function(map) {
-                try { map.invalidateSize(); } catch(_) {}
-            });
-        }, 150);
-    });
-});
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
   const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
@@ -4839,8 +4882,6 @@ function hideConfirmation(confirmationContainerId) {
 
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
-    // Eğer cart yoksa başlat
-    if (!window.cart) window.cart = [];
     let maxDay = 0;
     window.cart.forEach(item => {
         const currentDay = parseInt(item.day, 10);
@@ -4852,14 +4893,13 @@ function addNewDay(button) {
     const newDay = maxDay + 1;
 
     if (!window.cart.some(item => item.day === newDay)) {
-        window.cart.push({ day: newDay, items: [] }); // items: [] ekle
+        window.cart.push({ day: newDay });
     }
 
-    window.currentDay = newDay;
-    // Doğru isimli fonksiyonu çağır!
-    if (typeof updateCart === "function") updateCart();
-    else if (typeof renderCart === "function") renderCart();
+     window.currentDay = newDay;
+    updateCart();
 }
+
 
 
 
