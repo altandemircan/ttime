@@ -8892,13 +8892,12 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 
-
 function highlightSegmentOnMap(day, startKm, endKm) {
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
 
-  // Mor segment için highlight kaydı
+  // Hazırlık
   window._segmentHighlight = window._segmentHighlight || {};
   const maps = [];
   const small = window.leafletMaps?.[cid];
@@ -8906,7 +8905,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const exp = window.expandedMaps?.[cid]?.expandedMap;
   if (exp) maps.push(exp);
 
-  // Eski mor segmentleri sil
+  // Önce eski highlight'ları sil
   maps.forEach(m => {
     if (window._segmentHighlight[day]?.[m._leaflet_id]) {
       try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
@@ -8914,12 +8913,12 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }
   });
 
-  // start/end verilmemişse sadece temizle
+  // Sadece temizleme gerekiyorsa return
   if (typeof startKm !== 'number' || typeof endKm !== 'number') return;
 
   const coords = gj.features[0].geometry.coordinates; // [lng,lat]
 
-  // Kümülatif mesafe
+  // Kümülatif mesafe hesapla
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -8948,12 +8947,13 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-    // SADECE MOR RENK! (EĞİM DİKKATE ALMA)
+    // Sadece mor (8a4af3) renkli polyline çiz
     const poly = L.polyline(sub, {
       color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m)
     }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
-    try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
+    // FitBounds sadece expanded view'de kullanmak isteyebilirsin, istersen yoruma al
+    // try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
   });
 }
 
