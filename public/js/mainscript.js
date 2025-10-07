@@ -9523,6 +9523,8 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     window._segmentHighlight[day][m._leaflet_id] = poly;
     try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
   });
+  const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
+createScaleElements(track, widthPx, endKm - startKm, startKm, markers
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
