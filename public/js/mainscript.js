@@ -9438,9 +9438,10 @@ const DATASET = 'srtm30m';
 
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
-
 function highlightSegmentOnMap(day, startKm, endKm) {
-  console.log('highlightSegmentOnMap CALLED', day, startKm, endKm);
+  // İlk açılış değerlerin (KENDİ haritanda neyse onu yaz!)
+  const INITIAL_MAP_CENTER = [38.5, 32.0];
+  const INITIAL_MAP_ZOOM = 7;
 
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
@@ -9461,12 +9462,15 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }
   });
 
-  // start/end yoksa sadece temizle
-  if (typeof startKm !== 'number' || typeof endKm !== 'number') return;
+  // start/end yoksa sadece temizle ve haritayı ilk haline döndür
+  if (typeof startKm !== 'number' || typeof endKm !== 'number') {
+    maps.forEach(m => {
+      try { m.setView(INITIAL_MAP_CENTER, INITIAL_MAP_ZOOM, { animate: true }); } catch(_) {}
+    });
+    return;
+  }
 
   const coords = gj.features[0].geometry.coordinates; // [lng,lat]
-
-  // Kümülatif mesafe
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -9491,15 +9495,17 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-  const poly = L.polyline(sub, {
-    color: '#8a4af3',
-    weight: 6,
-    opacity: 1,
-    dashArray: ''
-  }).addTo(m);
-  window._segmentHighlight[day][m._leaflet_id] = poly;
-  if (poly.bringToFront) poly.bringToFront();
-});
+    const poly = L.polyline(sub, {
+      color: '#8a4af3',
+      weight: 6,
+      opacity: 0.95,
+      dashArray: ''
+    }).addTo(m);
+    window._segmentHighlight[day][m._leaflet_id] = poly;
+    if (poly.bringToFront) poly.bringToFront();
+    // Mor çizgiye zoom yap
+    try { m.fitBounds(poly.getBounds(), { padding: [16, 16] }); } catch(_) {}
+  });
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
