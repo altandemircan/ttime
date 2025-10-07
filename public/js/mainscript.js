@@ -8713,7 +8713,6 @@ createScaleElements(track, width, totalKm, 0, markers);
  track.__onMove = (e) => {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
-  const { smooth, min, max } = ed;
 
   const s = container._elevSamples || [];
   const startKmDom = Number(container._elevStartKm || 0);
@@ -8721,54 +8720,51 @@ createScaleElements(track, width, totalKm, 0, markers);
 
   const rect = track.getBoundingClientRect();
   const ptX = e.clientX - rect.left;
+  let x = ptX;
+  let percent = Math.max(0, Math.min(1, ptX / rect.width));
 
-  // --- EKLE ---
-  // Segment clamp: sadece segmentte hover!
- let x = ptX;
-if (typeof track._segmentStartPx === "number" && typeof track._segmentWidthPx === "number" && track._segmentWidthPx > 0) {
-  // SEGMENT SEÇİLİYKEN: Mouse pozisyonunu scale bar'ın genişliğine oranla, segmentin başı ile sonu arasında haritalıyoruz.
-  // Mouse barın başında ise segmentin başı, sonunda ise segmentin sonu!
-  const percent = Math.max(0, Math.min(1, ptX / track.getBoundingClientRect().width));
-  x = track._segmentStartPx + percent * track._segmentWidthPx;
-}
-  // --- SONU ---
+  // --- SEGMENT clamp ve hover orantılama ---
+  if (
+    typeof track._segmentStartPx === "number" &&
+    typeof track._segmentWidthPx === "number" &&
+    track._segmentWidthPx > 0
+  ) {
+    // Mouse barın başında ise segmentin başı, sonunda ise segmentin sonu
+    x = percent * rect.width; // çizgi scale bar'ın tamamında gezinsin
 
-  const widthNow = Math.max(200, Math.round(rect.width));
+    // Segmentteki ilgili noktanın oranı (0=baş, 1=son)
+    let segPercent = Math.max(0, Math.min(1, percent));
+    // Seçilen segmentteki km karşılığı:
+    const segStartKm = startKmDom;
+    const segEndKm = startKmDom + spanKm;
+    const foundKmAbs = segStartKm + segPercent * (segEndKm - segStartKm);
 
-  let vizMin = min, vizMax = max;
-  const eSpan = max - min;
-  if (eSpan > 0) { vizMin = min - eSpan * 0.25; vizMax = max + eSpan * 0.25; }
-  else { vizMin = min - 1; vizMax = max + 1; }
-
-  const X = kmRel => (kmRel / spanKm) * widthNow;
-
-  let minDist = Infinity, foundSlope = 0, foundElev = null, foundKmAbs = 0;
-  const n = Math.min(smooth.length, s.length);
-  for (let i = 1; i < n; i++) {
-    const kmAbs1 = s[i - 1].distM / 1000;
-    const kmAbs2 = s[i].distM / 1000;
-    const x1 = Math.max(0, Math.min(widthNow, X(kmAbs1 - startKmDom)));
-    const x2 = Math.max(0, Math.min(widthNow, X(kmAbs2 - startKmDom)));
-    const mid = (x1 + x2) / 2;
-    // ***→ ptX yerine x kullan ***
-    const dist = Math.abs(x - mid);
-    if (dist < minDist) {
-      minDist = dist;
-      const dx = s[i].distM - s[i - 1].distM;
-      const dy = smooth[i] - smooth[i - 1];
-      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-      foundElev = Math.round(smooth[i]);
-      foundKmAbs = kmAbs2;
+    // Şimdi, grafikteki en yakın veriyi bul
+    let minDist = Infinity, foundSlope = 0, foundElev = null;
+    for (let i = 1; i < s.length; i++) {
+      const kmAbs1 = s[i - 1].distM / 1000;
+      const kmAbs2 = s[i].distM / 1000;
+      const midKm = (kmAbs1 + kmAbs2) / 2;
+      const dist = Math.abs(foundKmAbs - midKm);
+      if (dist < minDist) {
+        minDist = dist;
+        const dx = s[i].distM - s[i - 1].distM;
+        const dy = ed.smooth[i] - ed.smooth[i - 1];
+        foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+        foundElev = Math.round(ed.smooth[i]);
+      }
     }
+
+    tooltip.style.opacity = '1';
+    tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
+    tooltip.style.left = `${x}px`;
+    verticalLine.style.left = `${x}px`;
+    verticalLine.style.display = 'block';
+
+    return;
   }
 
-  tooltip.style.opacity = '1';
-  tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  // ***→ ptX yerine x kullan ***
-  tooltip.style.left = `${x}px`;
-  verticalLine.style.left = `${x}px`;
-  verticalLine.style.display = 'block';
-};
+  
 window.__sb_onMouseMove = (e) => {
  if (!window.__scaleBarDrag) return;
 const rect = track.getBoundingClientRect();
