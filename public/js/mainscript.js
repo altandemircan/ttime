@@ -9768,6 +9768,8 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
       }
     }
   });
+  track.removeEventListener('mousemove', track.__onMove);
+track.addEventListener('mousemove', track.__onMove);
 
 }
 
