@@ -6989,7 +6989,7 @@ if (!points || points.length === 0) {
 ) {
   setTimeout(function() {
     highlightSegmentOnMap(window._lastSegmentDay, window._lastSegmentStartKm, window._lastSegmentEndKm);
-  }, 160);
+  }, 140);
 }
 
 
@@ -8980,6 +8980,8 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
+  console.log("MOR SEGMENT ÇİZİLİYOR", sub.length, sub, "mapCount:", maps.length, "day:", day, startKm, endKm);
+
   maps.forEach(m => {
     const poly = L.polyline(sub, {
       color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m)
