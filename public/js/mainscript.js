@@ -8438,29 +8438,26 @@ function hideMarkerVerticalLineOnMap(map) {
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-if (!container || isNaN(totalKm) || totalKm <= 0) {
-  if (container) { container.innerHTML = ""; container.style.display = 'none'; }
-  return;
-}
-
-  // Sadece expanded bar’da çalış; küçük bar’ı kapat
+  if (!container || isNaN(totalKm) || totalKm <= 0) {
+    if (container) { container.innerHTML = ""; container.style.display = 'none'; }
+    return;
+  }
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
     container.innerHTML = '';
     return;
   }
 
-  // Day ve route geojson
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
- if (!coords || coords.length < 2) {
-  container.innerHTML = `<div class="scale-bar-track"></div>`;
-  container.style.display = 'none';
-  return;
-}
-  // Cooldown / cache anahtarı
+  if (!coords || coords.length < 2) {
+    container.innerHTML = `<div class="scale-bar-track"></div>`;
+    container.style.display = 'none';
+    return;
+  }
+
   const mid = coords[Math.floor(coords.length / 2)];
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
@@ -8475,7 +8472,6 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
     window.hideScaleBarLoading?.(container);
   }
 
-  // Tek track
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
     container.innerHTML = '';
@@ -8483,14 +8479,11 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
     track.className = 'scale-bar-track';
     container.appendChild(track);
   } else {
-    // Base render’ında, önceki tüm içerikleri kaldır (hem base hem segment)
     track.innerHTML = '';
   }
 
-  // Container metadata
   container.dataset.totalKm = String(totalKm);
 
-  // Seçim overlay
   const selDiv = document.createElement('div');
   selDiv.className = 'scale-bar-selection';
   selDiv.style.cssText = `
@@ -8501,31 +8494,28 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
   `;
   track.appendChild(selDiv);
 
-  // BURAYA EKLE ↓↓↓↓↓
-track.addEventListener('mousedown', function(e) {
-  const rect = track.getBoundingClientRect();
-  window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
-  selDiv.style.left = `${window.__scaleBarDrag.startX}px`;
-  selDiv.style.width = `0px`;
-  selDiv.style.display = 'block';
-});
-track.addEventListener('touchstart', function(e) {
-  const rect = track.getBoundingClientRect();
-  const x = e.touches[0].clientX - rect.left;
-  window.__scaleBarDrag = { startX: x, lastX: x };
-  selDiv.style.left = `${x}px`;
-  selDiv.style.width = `0px`;
-  selDiv.style.display = 'block';
-});
+  track.addEventListener('mousedown', function(e) {
+    const rect = track.getBoundingClientRect();
+    window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
+    selDiv.style.left = `${window.__scaleBarDrag.startX}px`;
+    selDiv.style.width = `0px`;
+    selDiv.style.display = 'block';
+  });
+  track.addEventListener('touchstart', function(e) {
+    const rect = track.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    window.__scaleBarDrag = { startX: x, lastX: x };
+    selDiv.style.left = `${x}px`;
+    selDiv.style.width = `0px`;
+    selDiv.style.display = 'block';
+  });
 
-  // Görünüm
   const MARKER_PAD_PX = 10;
   track.style.position = 'relative';
   track.style.paddingLeft = `${MARKER_PAD_PX}px`;
   track.style.paddingRight = `${MARKER_PAD_PX}px`;
   track.style.overflow = 'visible';
 
-  // Hover dikey çizgi + tooltip
   const verticalLine = document.createElement('div');
   verticalLine.className = 'scale-bar-vertical-line';
   verticalLine.style.cssText = `
@@ -8538,7 +8528,6 @@ track.addEventListener('touchstart', function(e) {
   tooltip.className = 'tt-elev-tooltip';
   tooltip.style.left = '0px';
   track.appendChild(tooltip);
-
 
   // Mesafe (Haversine)
   function hv(lat1, lon1, lat2, lon2) {
@@ -8575,18 +8564,16 @@ track.addEventListener('touchstart', function(e) {
     }
   }
 
-  // Tam profil örneklerini sakla
   container._elevFullSamples = samples.slice();
   container._elevSamples = samples.slice();
   container._elevStartKm = 0;
   container._elevKmSpan = totalKm;
 
-  // Ölçek ve SVG haznesi
-let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-if (isNaN(width)) width = 400;
-createScaleElements(track, width, totalKm, 0, markers);
+  let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+  if (isNaN(width)) width = 400;
+  createScaleElements(track, width, totalKm, 0, markers);
 
-  // BASE SVG (data-role="elev-base")
+  // BASE SVG
   const svgNS = 'http://www.w3.org/2000/svg';
   const SVG_TOP = 48;
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -8595,7 +8582,6 @@ createScaleElements(track, width, totalKm, 0, markers);
     : Math.max(180, Math.min(320, Math.round(track.getBoundingClientRect().height - SVG_TOP - 16)));
   if (isNaN(SVG_H)) SVG_H = isMobile ? 160 : 220;
 
-  // Önceki base svg’yi kaldır
   track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.remove());
 
   const svg = document.createElementNS(svgNS, 'svg');
@@ -8619,7 +8605,6 @@ createScaleElements(track, width, totalKm, 0, markers);
   segG.setAttribute('class', 'tt-elev-segments');
   svg.appendChild(segG);
 
-  // Redraw (aktif domain + örneklerle)
   function redrawElevation(elevationData) {
     if (!elevationData) return;
     const { smooth, min, max } = elevationData;
@@ -8628,7 +8613,6 @@ createScaleElements(track, width, totalKm, 0, markers);
     const startKmDom = Number(container._elevStartKm || 0);
     const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-    // Görsel min/max
     let vizMin = min, vizMax = max;
     const eSpan = max - min;
     if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
@@ -8659,7 +8643,6 @@ createScaleElements(track, width, totalKm, 0, markers);
       gridG.appendChild(tx);
     }
 
-    // Alan
     let topD = '';
     const n = Math.min(smooth.length, s.length);
     for (let i = 0; i < n; i++) {
@@ -8675,7 +8658,6 @@ createScaleElements(track, width, totalKm, 0, markers);
       areaPath.setAttribute('fill', '#263445');
     }
 
-    // Eğim renkli çizgiler
     for (let i = 1; i < n; i++) {
       const kmAbs1 = s[i - 1].distM / 1000;
       const kmAbs2 = s[i].distM / 1000;
@@ -8710,78 +8692,82 @@ createScaleElements(track, width, totalKm, 0, markers);
   if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
   if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
 
-track.__onMove = (e) => {
-  const ed = container._elevationData;
-  if (!ed || !Array.isArray(ed.smooth)) return;
-  const s = container._elevSamples || [];
+  track.__onMove = (e) => {
+    const ed = container._elevationData;
+    if (!ed || !Array.isArray(ed.smooth)) return;
+    const s = container._elevSamples || [];
 
-  // Burası ÖNEMLİ: seçili segmentin başlangıcı ve genişliği
-  const startKmDom = Number(container._elevStartKm || 0);    // ör: 3
-  const spanKm = Number(container._elevKmSpan || totalKm) || 1; // ör: 7
+    // ÖNEMLİ: sadece görünür segmentte oranla!
+    const startKmDom = Number(container._elevStartKm || 0);
+    const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-  const rect = track.getBoundingClientRect();
-  const ptX = e.clientX - rect.left;
-  // ŞU ORANLAMA ile km bul:
-  const percent = Math.max(0, Math.min(1, ptX / rect.width));
-  const currentKm = startKmDom + percent * spanKm; // BAŞLANGIÇ + oran * segment genişliği
+    const rect = track.getBoundingClientRect();
+    const ptX = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, ptX / rect.width));
+    const currentKm = startKmDom + percent * spanKm;
 
-  // En yakın sample'ı bul (değişmez)
-  let minDist = Infinity, foundSlope = 0, foundElev = null;
-  for (let i = 1; i < s.length; i++) {
-    const kmAbs1 = s[i - 1].distM / 1000;
-    const kmAbs2 = s[i].distM / 1000;
-    const mid = (kmAbs1 + kmAbs2) / 2;
-    const dist = Math.abs(currentKm - mid);
-    if (dist < minDist) {
-      minDist = dist;
-      const dx = s[i].distM - s[i - 1].distM;
-      const dy = ed.smooth[i] - ed.smooth[i - 1];
-      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-      foundElev = Math.round(ed.smooth[i]);
+    let minDist = Infinity, foundSlope = 0, foundElev = null;
+    for (let i = 1; i < s.length; i++) {
+      const kmAbs1 = s[i - 1].distM / 1000;
+      const kmAbs2 = s[i].distM / 1000;
+      const mid = (kmAbs1 + kmAbs2) / 2;
+      const dist = Math.abs(currentKm - mid);
+      if (dist < minDist) {
+        minDist = dist;
+        const dx = s[i].distM - s[i - 1].distM;
+        const dy = ed.smooth[i] - ed.smooth[i - 1];
+        foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+        foundElev = Math.round(ed.smooth[i]);
+      }
     }
-  }
 
-  tooltip.style.opacity = '1';
-  tooltip.textContent = `${currentKm.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  tooltip.style.left = `${ptX}px`;
-  verticalLine.style.left = `${ptX}px`;
-  verticalLine.style.display = 'block';
-};
-window.__sb_onMouseMove = (e) => {
- if (!window.__scaleBarDrag) return;
-const rect = track.getBoundingClientRect();
-window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-selDiv.style.left = `${left}px`;
-selDiv.style.width = `${right - left}px`;
-};
-window.addEventListener('mousemove', window.__sb_onMouseMove);
+    tooltip.style.opacity = '1';
+    tooltip.textContent = `${currentKm.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
+    tooltip.style.left = `${ptX}px`;
+    verticalLine.style.left = `${ptX}px`;
+    verticalLine.style.display = 'block';
+  };
+  track.addEventListener('mousemove', track.__onMove);
 
-window.__sb_onMouseUp = () => {
- if (!window.__scaleBarDrag) return;
-const rect = track.getBoundingClientRect();
-const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-window.__scaleBarDrag = null;
+  track.__onLeave = (e) => {
+    tooltip.style.opacity = '0';
+    verticalLine.style.display = 'none';
+  };
+  track.addEventListener('mouseleave', track.__onLeave);
 
-  if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
+  window.__sb_onMouseMove = (e) => {
+    if (!window.__scaleBarDrag) return;
+    const rect = track.getBoundingClientRect();
+    window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+    const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+    selDiv.style.left = `${left}px`;
+    selDiv.style.width = `${right - left}px`;
+  };
+  window.addEventListener('mousemove', window.__sb_onMouseMove);
 
-  const totalKmToUse = Number(container.dataset.totalKm) || totalKm;
-  const startKm = (leftPx / rect.width) * totalKmToUse;
-  const endKm   = (rightPx / rect.width) * totalKmToUse;
+  window.__sb_onMouseUp = () => {
+    if (!window.__scaleBarDrag) return;
+    const rect = track.getBoundingClientRect();
+    const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+    const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+    window.__scaleBarDrag = null;
 
-  if (day != null) {
-    fetchAndRenderSegmentElevation(container, day, startKm, endKm);
-    if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
-  }
-};
-window.addEventListener('mouseup', window.__sb_onMouseUp);
+    if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
 
-  // Loader
+    const totalKmToUse = Number(container.dataset.totalKm) || totalKm;
+    const startKm = (leftPx / rect.width) * totalKmToUse;
+    const endKm   = (rightPx / rect.width) * totalKmToUse;
+
+    if (day != null) {
+      fetchAndRenderSegmentElevation(container, day, startKm, endKm);
+      if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
+    }
+  };
+  window.addEventListener('mouseup', window.__sb_onMouseUp);
+
   window.showScaleBarLoading?.(container, 'Loading elevation…');
 
-  // Elevation verisini yükle
   (async () => {
     try {
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
@@ -8794,7 +8780,7 @@ window.addEventListener('mouseup', window.__sb_onMouseUp);
       const max = Math.max(...smooth, min + 1);
 
       container._elevationData = { smooth, min, max };
-      container._elevationDataFull = { smooth: smooth.slice(), min, max }; // Tam profil snapshot
+      container._elevationDataFull = { smooth: smooth.slice(), min, max };
       container.dataset.elevLoadedKey = routeKey;
 
       redrawElevation(container._elevationData);
@@ -8805,14 +8791,13 @@ window.addEventListener('mouseup', window.__sb_onMouseUp);
     }
   })();
 
-  // Resize
   function handleResize() {
-      const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
-      const spanKm = container._elevKmSpan || 1;
-      const startKmDom = container._elevStartKm || 0;
-      const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-      createScaleElements(track, newW, spanKm, startKmDom, markers);
-    }
+    const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
+    const spanKm = container._elevKmSpan || 1;
+    const startKmDom = container._elevStartKm || 0;
+    const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+    createScaleElements(track, newW, spanKm, startKmDom, markers);
+  }
 
   if (container._elevResizeObserver) {
     try { container._elevResizeObserver.disconnect(); } catch(_) {}
@@ -8823,7 +8808,7 @@ window.addEventListener('mouseup', window.__sb_onMouseUp);
   container._elevResizeObserver = ro;
 }
 async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
-  // Duplike container’ları temizle
+
   const containerId = container.id;
   document.querySelectorAll(`#${CSS.escape(containerId)}`).forEach((el, idx) => {
     if (idx > 0) el.remove();
@@ -8834,7 +8819,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   const coords = gj?.features?.[0]?.geometry?.coordinates;
   if (!coords || coords.length < 2) return;
 
-  // SADECE segment overlay’leri temizle
+
   const existingTrack = container.querySelector('.scale-bar-track');
   if (existingTrack) {
     existingTrack.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
