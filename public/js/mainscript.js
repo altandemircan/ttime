@@ -6060,7 +6060,7 @@ function setupScaleBarInteraction(day, map) {
     }
 
     let startPx = 0, spanPx = rect.width;
-    if (typeof scaleBar._segmentStartPx === "number" && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
+    if (typeof track._segmentStartPx === "number"  && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
         startPx = scaleBar._segmentStartPx;
         spanPx  = scaleBar._segmentWidthPx;
         x = Math.max(startPx, Math.min(x, startPx + spanPx));
@@ -7349,51 +7349,26 @@ function setupSidebarAccordion() {
   const original = window.setupScaleBarInteraction;
   window.setupScaleBarInteraction = function(day, map) {
     const cleanup = original(day, map) || null;
-
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return cleanup;
+    const track = scaleBar.querySelector('.scale-bar-track');
+    if (!track) return cleanup;
 
     function onMove(e) {
-      const rect = scaleBar.getBoundingClientRect();
-      let x;
-      if (e.touches && e.touches.length) {
-        x = e.touches[0].clientX - rect.left;
-      } else {
-        x = e.clientX - rect.left;
-      }
-
-      // --- SEGMENT PX KISITLAMASI ---
+      const rect = track.getBoundingClientRect();
+      let x = e.touches?.[0]?.clientX - rect.left || e.clientX - rect.left;
       let startPx = 0, spanPx = rect.width;
-      let segmentMode = false;
-      if (
-        typeof scaleBar._segmentStartPx === "number" &&
-        typeof scaleBar._segmentWidthPx === "number" &&
-        scaleBar._segmentWidthPx > 0
-      ) {
-        startPx = scaleBar._segmentStartPx;
-        spanPx  = scaleBar._segmentWidthPx;
+      if (typeof track._segmentStartPx === "number" && typeof track._segmentWidthPx === "number" && track._segmentWidthPx > 0) {
+        startPx = track._segmentStartPx;
+        spanPx  = track._segmentWidthPx;
         x = Math.max(startPx, Math.min(x, startPx + spanPx));
-        segmentMode = true;
       }
-
-      // --- CRITICAL: percent her zaman segment aralığına göre hesaplanmalı! ---
-      let percent;
-      if (segmentMode) {
-        percent = (x - startPx) / spanPx;
-      } else {
-        percent = x / rect.width;
-      }
+      let percent = (x - startPx) / spanPx;
       percent = Math.max(0, Math.min(1, percent));
-
-      // Segment km değerlerini oku
       let startKmDom = 0, spanKm = null;
-      if (
-        typeof scaleBar._segmentStartKm === "number" &&
-        typeof scaleBar._segmentKmSpan === "number" &&
-        scaleBar._segmentKmSpan > 0
-      ) {
-        startKmDom = scaleBar._segmentStartKm;
-        spanKm     = scaleBar._segmentKmSpan;
+      if (typeof track._segmentStartKm === "number" && typeof track._segmentKmSpan === "number" && track._segmentKmSpan > 0) {
+        startKmDom = track._segmentStartKm;
+        spanKm     = track._segmentKmSpan;
       } else {
         startKmDom = 0;
         spanKm = Number(scaleBar.dataset.totalKm) || 1;
@@ -7428,21 +7403,17 @@ function setupSidebarAccordion() {
       showMarkerVerticalLineOnMap(map, L.latLng(lat, lng));
     }
 
-    function onLeave() {
-      hideMarkerVerticalLineOnMap(map);
-    }
-
-    scaleBar.addEventListener('mousemove', onMove);
-    scaleBar.addEventListener('mouseleave', onLeave);
-    scaleBar.addEventListener('touchmove', onMove, { passive: true });
-    scaleBar.addEventListener('touchend', onLeave, { passive: true });
-
+    function onLeave() { /* ... */ }
+    track.addEventListener('mousemove', onMove);
+    track.addEventListener('mouseleave', onLeave);
+    track.addEventListener('touchmove', onMove, { passive: true });
+    track.addEventListener('touchend', onLeave, { passive: true });
     return function patchedCleanup() {
       if (cleanup) cleanup();
-      scaleBar.removeEventListener('mousemove', onMove);
-      scaleBar.removeEventListener('mouseleave', onLeave);
-      scaleBar.removeEventListener('touchmove', onMove);
-      scaleBar.removeEventListener('touchend', onLeave);
+      track.removeEventListener('mousemove', onMove);
+      track.removeEventListener('mouseleave', onLeave);
+      track.removeEventListener('touchmove', onMove);
+      track.removeEventListener('touchend', onLeave);
     };
   };
   window.__ttElevScalePatched = true;
@@ -9527,7 +9498,7 @@ window._lastSegmentStartKm = startKm;
 window._lastSegmentEndKm = endKm;
 console.log('SEGMENT PROFILE SET', day, startKm, endKm);
 
-  const track = container.querySelector('.scale-bar-track'); 
+  const track = container.querySelector('.scale-bar-track');
   if (!track) return;
 
   // Segment overlay SVG'lerini ve toolbar'ı sil
@@ -9541,29 +9512,28 @@ console.log('SEGMENT PROFILE SET', day, startKm, endKm);
 
   // --- Segment/profil marker ve km çizelgesi güncelle ---
 if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
-  // Tam profile dön
-  container._elevStartKm = 0;
-  container._elevKmSpan  = totalKm;
-  createScaleElements(track, widthPx, totalKm, 0, markers);
-
-  // Tüm profil gösteriliyorsa, sınır yok
-  track._segmentStartPx = undefined;
-  track._segmentWidthPx = undefined;
-} else {
-  // Segment seçiliyken
-  container._elevStartKm = startKm;
-  container._elevKmSpan  = endKm - startKm;
-  createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
-
-  // Segment overlay'in px aralığını kaydet
-  const rect = track.getBoundingClientRect();
-  const segStartPx = (startKm / totalKm) * rect.width;
-  const segWidthPx = ((endKm - startKm) / totalKm) * rect.width;
-track._segmentStartPx = segStartPx;
-track._segmentWidthPx = segWidthPx;
-track._segmentStartKm = startKm;
-track._segmentKmSpan  = endKm - startKm;
-}
+    // Tam profile dön
+    // ...
+    track._segmentStartPx = undefined;
+    track._segmentWidthPx = undefined;
+    track._segmentStartKm = undefined;
+    track._segmentKmSpan = undefined;
+    container._segmentStartPx = undefined;
+    container._segmentWidthPx = undefined;
+    container._segmentStartKm = undefined;
+    container._segmentKmSpan = undefined;
+  } else {
+    // Segment seçiliyken
+    // ... hesaplamalar
+    track._segmentStartPx = segStartPx;
+    track._segmentWidthPx = segWidthPx;
+    track._segmentStartKm = startKm;
+    track._segmentKmSpan = endKm - startKm;
+    container._segmentStartPx = segStartPx;
+    container._segmentWidthPx = segWidthPx;
+    container._segmentStartKm = startKm;
+    container._segmentKmSpan = endKm - startKm;
+  }
 
   // --------------------- SVG Overlay Kısmı ---------------------
   const svgNS = 'http://www.w3.org/2000/svg';
