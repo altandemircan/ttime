@@ -7364,13 +7364,25 @@ function setupSidebarAccordion() {
 
       // --- SEGMENT PX KISITLAMASI ---
       let startPx = 0, spanPx = rect.width;
-      if (typeof scaleBar._segmentStartPx === "number" && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
+      let segmentMode = false;
+      if (
+        typeof scaleBar._segmentStartPx === "number" &&
+        typeof scaleBar._segmentWidthPx === "number" &&
+        scaleBar._segmentWidthPx > 0
+      ) {
         startPx = scaleBar._segmentStartPx;
         spanPx  = scaleBar._segmentWidthPx;
-        // x değerini segmentin başı-sonu arasında tut
         x = Math.max(startPx, Math.min(x, startPx + spanPx));
+        segmentMode = true;
       }
-      let percent = (x - startPx) / spanPx;
+
+      // --- CRITICAL: percent her zaman segment aralığına göre hesaplanmalı! ---
+      let percent;
+      if (segmentMode) {
+        percent = (x - startPx) / spanPx;
+      } else {
+        percent = x / rect.width;
+      }
       percent = Math.max(0, Math.min(1, percent));
 
       // Segment km değerlerini oku
