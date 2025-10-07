@@ -5324,7 +5324,7 @@ mapStyleSelect.onchange = function() {
     // === GÜNCELLEME: fitBounds'tan HEMEN SONRA expandedMap._initialView'u kaydet ===
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
-      zoom: expandedMap.getZoom()
+       zoom: expandedMap.getZoom() - 1  // <<< BURAYI GÜNCELLE!
     };
   } else if (!expandedMap._initialView) {
     // Eğer fitBounds çalışmadıysa (ör. nokta yok) fallback olarak ilk ayarı kaydet
