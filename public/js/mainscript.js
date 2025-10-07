@@ -6045,22 +6045,17 @@ window.handleImageError = async function(imgElement, placeName, index) {
 
 
 function setupScaleBarInteraction(day, map) {
-
-
   const scaleBar = document.getElementById('expanded-route-scale-bar-day' + day);
   const track = scaleBar.querySelector('.scale-bar-track');
-  
-  let hoverMarker = null; // <-- burada tanımla
+  let hoverMarker = null; // <-- Bunu ekle
 track.addEventListener('mousemove', onMove);
+
 
 function onMove(e) {
   const rect = track.getBoundingClientRect();
-  let x;
-  if (e.touches && e.touches.length) {
-    x = e.touches[0].clientX - rect.left;
-  } else {
-    x = e.clientX - rect.left;
-  }
+  let x = (e.touches && e.touches.length)
+    ? e.touches[0].clientX - rect.left
+    : e.clientX - rect.left;
 
   let startPx = 0, spanPx = rect.width;
   if (
@@ -6088,6 +6083,7 @@ function onMove(e) {
     spanKm = Number(scaleBar.dataset.totalKm) || 1;
   }
   const currentKm = startKmDom + percent * spanKm;
+    const samples = track._elevSamples || [];
 
   // --- KRİTİK EK: targetDist'i tanımla! ---
   const targetDist = currentKm * 1000;
