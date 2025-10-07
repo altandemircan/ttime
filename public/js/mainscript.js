@@ -8861,13 +8861,14 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
     // BASE verileri DEĞİŞTİRME – sadece overlay çiz
     drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
+    if (typeof highlightSegmentOnMap === 'function') {
+    highlightSegmentOnMap(day, startKm, endKm);
+}
   } finally {
     window.hideScaleBarLoading?.(container);
   }
 
-  if (typeof highlightSegmentOnMap === 'function') {
-  highlightSegmentOnMap(day, startKm, endKm);
-}
+
 }
 
 
@@ -9550,6 +9551,10 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
+    window._lastSegmentDay = day;
+window._lastSegmentStartKm = startKm;
+window._lastSegmentEndKm = endKm;
+
   const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
 
