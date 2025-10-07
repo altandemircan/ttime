@@ -6051,22 +6051,31 @@ function setupScaleBarInteraction(day, map) {
 track.addEventListener('mousemove', onMove);
 
 function onMove(e) {
-  const rect = track.getBoundingClientRect();
-let x = e.clientX - rect.left;
-let startPx = 0, spanPx = rect.width;
-if (
-  typeof track._segmentStartPx === "number" &&
-  typeof track._segmentWidthPx === "number" &&
-  track._segmentWidthPx > 0
-) {
-  startPx = track._segmentStartPx;
-  spanPx  = track._segmentWidthPx;
-  x = Math.max(startPx, Math.min(x, startPx + spanPx)); // Segment dışına çıkamaz!
-}
-let percent = (x - startPx) / spanPx;
-percent = Math.max(0, Math.min(1, percent));
+  // scale bar üzerinde mouse/touch hareket ettiğinde çalışır
 
-  // Segment km başlangıcı ve uzunluğu
+  const rect = track.getBoundingClientRect();
+  let x;
+  if (e.touches && e.touches.length) {
+    x = e.touches[0].clientX - rect.left;
+  } else {
+    x = e.clientX - rect.left;
+  }
+
+  // Segmentli hareket için kritik blok:
+  let startPx = 0, spanPx = rect.width;
+  if (
+    typeof track._segmentStartPx === "number" &&
+    typeof track._segmentWidthPx === "number" &&
+    track._segmentWidthPx > 0
+  ) {
+    startPx = track._segmentStartPx;
+    spanPx  = track._segmentWidthPx;
+    x = Math.max(startPx, Math.min(x, startPx + spanPx));
+  }
+  let percent = (x - startPx) / spanPx;
+  percent = Math.max(0, Math.min(1, percent));
+
+  // Segmentli km başlangıcı ve uzunluğu
   let startKmDom = 0, spanKm = null;
   if (
     typeof track._segmentStartKm === "number" &&
@@ -6079,9 +6088,7 @@ percent = Math.max(0, Math.min(1, percent));
     startKmDom = 0;
     spanKm = Number(scaleBar.dataset.totalKm) || 1;
   }
-
   const currentKm = startKmDom + percent * spanKm;
-  const targetDist = currentKm * 1000;
 
         // Rota ve mesafe bilgilerini alın
         const containerId = `route-map-day${day}`;
@@ -7347,46 +7354,44 @@ function setupSidebarAccordion() {
     if (!track) return cleanup;
 
     function onMove(e) {
-      const rect = track.getBoundingClientRect();
-      let x;
-      if (e.touches && e.touches.length) {
-        x = e.touches[0].clientX - rect.left;
-      } else {
-        x = e.clientX - rect.left;
-      }
+  // scale bar üzerinde mouse/touch hareket ettiğinde çalışır
 
-      // Segment PX kısıtlaması
-      let startPx = 0, spanPx = rect.width;
-      if (
-        typeof track._segmentStartPx === "number" &&
-        typeof track._segmentWidthPx === "number" &&
-        track._segmentWidthPx > 0
-      ) {
-        startPx = track._segmentStartPx;
-        spanPx  = track._segmentWidthPx;
-        x = Math.max(startPx, Math.min(x, startPx + spanPx));
-      }
+  const rect = track.getBoundingClientRect();
+  let x;
+  if (e.touches && e.touches.length) {
+    x = e.touches[0].clientX - rect.left;
+  } else {
+    x = e.clientX - rect.left;
+  }
 
-      // Segmentli percent hesaplama
-      let percent = (x - startPx) / spanPx;
-      percent = Math.max(0, Math.min(1, percent));
+  // Segmentli hareket için kritik blok:
+  let startPx = 0, spanPx = rect.width;
+  if (
+    typeof track._segmentStartPx === "number" &&
+    typeof track._segmentWidthPx === "number" &&
+    track._segmentWidthPx > 0
+  ) {
+    startPx = track._segmentStartPx;
+    spanPx  = track._segmentWidthPx;
+    x = Math.max(startPx, Math.min(x, startPx + spanPx));
+  }
+  let percent = (x - startPx) / spanPx;
+  percent = Math.max(0, Math.min(1, percent));
 
-      // Segment km başlangıcı ve uzunluğu
-      let startKmDom = 0, spanKm = null;
-      if (
-        typeof track._segmentStartKm === "number" &&
-        typeof track._segmentKmSpan === "number" &&
-        track._segmentKmSpan > 0
-      ) {
-        startKmDom = track._segmentStartKm;
-        spanKm     = track._segmentKmSpan;
-      } else {
-        startKmDom = 0;
-        spanKm = Number(scaleBar.dataset.totalKm) || 1;
-      }
-
-      const currentKm = startKmDom + percent * spanKm;
-      const targetDist = currentKm * 1000;
+  // Segmentli km başlangıcı ve uzunluğu
+  let startKmDom = 0, spanKm = null;
+  if (
+    typeof track._segmentStartKm === "number" &&
+    typeof track._segmentKmSpan === "number" &&
+    track._segmentKmSpan > 0
+  ) {
+    startKmDom = track._segmentStartKm;
+    spanKm     = track._segmentKmSpan;
+  } else {
+    startKmDom = 0;
+    spanKm = Number(scaleBar.dataset.totalKm) || 1;
+  }
+  const currentKm = startKmDom + percent * spanKm;
 
       // --- ROTA ÜZERİNDEKİ NOKTAYI BUL ---
       const containerId = `route-map-day${day}`;
