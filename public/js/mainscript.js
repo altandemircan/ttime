@@ -10,7 +10,7 @@ function clearRouteSegmentHighlight(day) {
   window._lastSegmentStartKm = undefined;
   window._lastSegmentEndKm = undefined;
 
-  // Segment overlay DOM'u da temizle (isteğe bağlı)
+  // Segment overlay DOM'unu da temizle
   const bar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (bar) {
     bar.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
@@ -2103,16 +2103,12 @@ try {
   if (!silent && typeof attachChatDropListeners === 'function') {
     attachChatDropListeners();
   }
-     if (window.expandedMaps) {
-    const day = resolvedDay; // veya item.day
-    clearRouteSegmentHighlight(day);
-    fitExpandedMapToRoute(day);
-  }
-
-  return true;
-
-
-}
+                if (window.expandedMaps) {
+                  clearRouteSegmentHighlight(resolvedDay);
+                  fitExpandedMapToRoute(resolvedDay);
+                }
+                return true;
+                }
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
 
@@ -2324,17 +2320,17 @@ function removeFromCart(index){
     }
   }
 
-  // Kalan günlerin rotalarını yeniden çiz
- if (typeof renderRouteForDay === 'function') {
-    const days = [...new Set(window.cart.map(i => i.day))];
-    days.forEach(d => setTimeout(() => renderRouteForDay(d), 0));
-  }
-// Segment temizle & fit yap (silinen gün için)
-  if (window.expandedMaps && removedDay) {
-    clearRouteSegmentHighlight(removedDay);
-    fitExpandedMapToRoute(removedDay);
-  }
-}
+              if (typeof renderRouteForDay === 'function') {
+                const days = [...new Set(window.cart.map(i => i.day))];
+                days.forEach(d => setTimeout(() => renderRouteForDay(d), 0));
+              }
+
+              if (window.expandedMaps && removedDay) {
+                clearRouteSegmentHighlight(removedDay);
+                fitExpandedMapToRoute(removedDay);
+              }
+            }
+
 function addItem(element, day, category, name, image, extra) {
     const stepsDiv = element.closest('.steps');
     const address = stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
@@ -3061,22 +3057,27 @@ function saveDayName(day, newName) {
     // Arayüzü yeni isimle güncellemek için sepeti yeniden çiz.
     updateCart();
 }
-function syncCartOrderWithDOM(day) {
-    const items = document.querySelectorAll(`.day-container[data-day="${day}"] .travel-item`);
-    if (!items.length) return;
-    const newOrder = [];
-    items.forEach(item => {
-        const idx = item.getAttribute('data-index');
-        if (window.cart[idx]) { // <-- burada düzelt!
-            newOrder.push(window.cart[idx]);
-        }
-    });
-    // O günün cart itemlarını yeni sırayla ekle
-    window.cart = [
-        ...window.cart.filter(item => item.day != day),
-        ...newOrder
-    ];
-}
+            function syncCartOrderWithDOM(day) {
+                const items = document.querySelectorAll(`.day-container[data-day="${day}"] .travel-item`);
+                if (!items.length) return;
+                const newOrder = [];
+                items.forEach(item => {
+                    const idx = item.getAttribute('data-index');
+                    if (window.cart[idx]) { // <-- burada düzelt!
+                        newOrder.push(window.cart[idx]);
+                    }
+                });
+                // O günün cart itemlarını yeni sırayla ekle
+                window.cart = [
+                    ...window.cart.filter(item => item.day != day),
+                    ...newOrder
+                ];
+
+                if (window.expandedMaps) {
+                  clearRouteSegmentHighlight(day);
+                  fitExpandedMapToRoute(day);
+                }
+            }
 
 const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
 const INITIAL_EMPTY_MAP_ZOOM   = 6;             // Önceki 4'ten 2 kademe yakın
