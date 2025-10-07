@@ -5321,7 +5321,7 @@ mapStyleSelect.onchange = function() {
 try {
   expandedMap.fitBounds(poly.getBounds());
   const currentZoom = expandedMap.getZoom();
-  expandedMap.setView(expandedMap.getCenter(), currentZoom - 1);
+  expandedMap.setView(expandedMap.getCenter(), currentZoom - 0.2);
 } catch (_){}
 
 expandedMap._initialBounds = poly.getBounds();
