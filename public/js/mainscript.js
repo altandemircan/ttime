@@ -6982,12 +6982,14 @@ if (!points || points.length === 0) {
   setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 200);
   if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
+console.log('renderRouteForDay BİTTİ', window._lastSegmentDay, window._lastSegmentStartKm, window._lastSegmentEndKm);
 if (
   typeof window._lastSegmentDay === "number" &&
   typeof window._lastSegmentStartKm === "number" &&
   typeof window._lastSegmentEndKm === "number"
 ) {
   setTimeout(function() {
+    console.log('HIGHLIGHT CALL FROM renderRouteForDay', window._lastSegmentDay, window._lastSegmentStartKm, window._lastSegmentEndKm);
     highlightSegmentOnMap(
       window._lastSegmentDay,
       window._lastSegmentStartKm,
@@ -8877,9 +8879,10 @@ drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
   }
 
   // SADECE BUNU BIRAK!
-  setTimeout(function() {
-    highlightSegmentOnMap(day, startKm, endKm);
-  }, 200);
+setTimeout(function() {
+  highlightSegmentOnMap(day, startKm, endKm);
+  console.log('HIGHLIGHT CALL FROM fetchAndRenderSegmentElevation', day, startKm, endKm);
+}, 200);
 }
 
 
@@ -8904,6 +8907,8 @@ document.addEventListener('mousedown', (e) => {
 });
 
 function highlightSegmentOnMap(day, startKm, endKm) {
+    console.log('highlightSegmentOnMap CALLED', day, startKm, endKm);
+
   // Harita veya rota hazır değilse, tekrar dene (en çok 20 defa)
   if (
     !window.leafletMaps || !window.lastRouteGeojsons ||
@@ -9596,6 +9601,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 window._lastSegmentDay = day;
 window._lastSegmentStartKm = startKm;
 window._lastSegmentEndKm = endKm;
+console.log('SEGMENT PROFILE SET', day, startKm, endKm);
 
   const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
