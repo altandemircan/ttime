@@ -6050,80 +6050,152 @@ function setupScaleBarInteraction(day, map) {
   const verticalLine = track.querySelector('.scale-bar-vertical-line');
   const tooltip = track.querySelector('.tt-elev-tooltip');
 
- function onMove(e) {
-  const rect = track.getBoundingClientRect();
-  let x = (e.touches && e.touches.length)
-    ? e.touches[0].clientX - rect.left
-    : e.clientX - rect.left;
+  function onMove(e) {
+    const rect = track.getBoundingClientRect();
+    let x = (e.touches && e.touches.length)
+      ? e.touches[0].clientX - rect.left
+      : e.clientX - rect.left;
 
-  // Segmentin scale-bar px aralığında clamp et
-  let startPx = 0, spanPx = rect.width;
-  if (
-    typeof track._segmentStartPx === "number" &&
-    typeof track._segmentWidthPx === "number" &&
-    track._segmentWidthPx > 0
-  ) {
-    startPx = track._segmentStartPx;
-    spanPx  = track._segmentWidthPx;
-    x = Math.max(startPx, Math.min(x, startPx + spanPx));
-  }
-  let percent = (x - startPx) / spanPx;
-  percent = Math.max(0, Math.min(1, percent));
+    // Segmentli ise sadece segmentin px aralığında clamp et
+    let startPx = 0, spanPx = rect.width;
+    if (
+      typeof track._segmentStartPx === "number" &&
+      typeof track._segmentWidthPx === "number" &&
+      track._segmentWidthPx > 0
+    ) {
+      startPx = track._segmentStartPx;
+      spanPx  = track._segmentWidthPx;
+      x = Math.max(startPx, Math.min(x, startPx + spanPx));
+    }
 
-  // SEGMENT AKTİFSE
-  if (
-    typeof track._segmentStartKm === "number" &&
-    typeof track._segmentKmSpan === "number" &&
-    track._segmentKmSpan > 0
-  ) {
-    const startKmDom = track._segmentStartKm;
-    const spanKm = track._segmentKmSpan;
+    let percent = (x - startPx) / spanPx;
+    percent = Math.max(0, Math.min(1, percent));
+
+    // Segmentli mi tam profil mi?
+    let startKmDom = 0, spanKm = null;
+    if (
+      typeof track._segmentStartKm === "number" &&
+      typeof track._segmentKmSpan === "number" &&
+      track._segmentKmSpan > 0
+    ) {
+      startKmDom = track._segmentStartKm;
+      spanKm     = track._segmentKmSpan;
+    } else {
+      startKmDom = 0;
+      spanKm = Number(scaleBar.dataset.totalKm) || 1;
+    }
+
     let currentKm = startKmDom + percent * spanKm;
 
+    // --- Sadece segment örneklemesiyle clamp et ---
     const samples = track._elevSamples || [];
     const elevationData = track._elevationData || {};
-
     if (samples.length) {
+      // Segmentli modda clamp et
       const minKm = samples[0].distM / 1000;
       const maxKm = samples[samples.length - 1].distM / 1000;
-      // Clamp: segment aralığının dışına çıkarsa segment sonu/basında "takılır"
       if (currentKm < minKm) currentKm = minKm;
       if (currentKm > maxKm) currentKm = maxKm;
 
-      // En yakın örneği bul
+      // En yakın örnek indexini bul
       let idx = 0, minDist = Infinity;
       for (let i = 0; i < samples.length; i++) {
         const kmAbs = samples[i].distM / 1000;
         const dist = Math.abs(currentKm - kmAbs);
         if (dist < minDist) { minDist = dist; idx = i; }
       }
-      // Eğer index segmentin sonu ise, daima son değer gösterilir
-      const elev = elevationData.smooth ? Math.round(elevationData.smooth[idx]) : '';
+      // Marker konumu
+      const lat = samples[idx].lat;
+      const lng = samples[idx].lng;
+
+      // Tooltip ve vertical line bilgisi (slope, elevation)
+      const elev = (elevationData.smooth && elevationData.smooth[idx]) ? Math.round(elevationData.smooth[idx]) : '';
       let slope = 0;
       if (elevationData.smooth && idx > 0) {
         const dx = samples[idx].distM - samples[idx-1].distM;
         const dy = elevationData.smooth[idx] - elevationData.smooth[idx-1];
         slope = dx > 0 ? ((dy / dx) * 100) : 0;
       }
-      // Marker ve tooltip
-      const lat = samples[idx].lat;
-      const lng = samples[idx].lng;
+
+      // Marker
       if (hoverMarker) {
         hoverMarker.setLatLng([lat, lng]);
       } else {
-        hoverMarker = L.circleMarker([lat, lng], {...}).addTo(map);
+        hoverMarker = L.circleMarker([lat, lng], {
+          radius: 10,
+          color: "#fff",
+          fillColor: "#8a4af3",
+          fillOpacity: 0.9,
+          weight: 3,
+          zIndexOffset: 9999
+        }).addTo(map);
       }
+
+      // Tooltip
       if (tooltip) {
         tooltip.style.opacity = '1';
-        tooltip.textContent = `${currentKm.toFixed(2)} km • ${elev} m • %${slope.toFixed(1)} slope`;
+        tooltip.textContent = `${currentKm.toFixed(2)} km • ${elev} m${(typeof slope === "number" ? ` • %${slope.toFixed(1)} slope` : "")}`;
         tooltip.style.left = `${x}px`;
       }
+      // Dikey çizgi
       if (verticalLine) {
         verticalLine.style.left = `${x}px`;
         verticalLine.style.display = 'block';
       }
       return;
-    
+    }
+
+    // --- Tam profil fallback (segment yoksa) ---
+    const targetDist = currentKm * 1000;
+    const containerId = `route-map-day${day}`;
+    const geojson = window.lastRouteGeojsons?.[containerId];
+    if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
+    const coords = geojson.features[0].geometry.coordinates;
+
+    // Kümülatif mesafe
+    let cumDist = [0];
+    for (let i = 1; i < coords.length; i++) {
+      cumDist[i] = cumDist[i - 1] + haversine(
+        coords[i - 1][1], coords[i - 1][0],
+        coords[i][1], coords[i][0]
+      );
+    }
+
+    let idx = 0;
+    while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
+    let lat, lng;
+    if (idx === 0) {
+      lat = coords[0][1];
+      lng = coords[0][0];
+    } else {
+      const prevDist = cumDist[idx - 1];
+      const nextDist = cumDist[idx];
+      const ratio = (targetDist - prevDist) / (nextDist - prevDist);
+      lat = coords[idx - 1][1] + (coords[idx][1] - coords[idx - 1][1]) * ratio;
+      lng = coords[idx - 1][0] + (coords[idx][0] - coords[idx - 1][0]) * ratio;
+    }
+
+    if (hoverMarker) {
+      hoverMarker.setLatLng([lat, lng]);
+    } else {
+      hoverMarker = L.circleMarker([lat, lng], {
+        radius: 10,
+        color: "#fff",
+        fillColor: "#8a4af3",
+        fillOpacity: 0.9,
+        weight: 3,
+        zIndexOffset: 9999
+      }).addTo(map);
+    }
+    if (tooltip) {
+      tooltip.style.opacity = '1';
+      tooltip.textContent = `${currentKm.toFixed(2)} km`;
+      tooltip.style.left = `${x}px`;
+    }
+    if (verticalLine) {
+      verticalLine.style.left = `${x}px`;
+      verticalLine.style.display = 'block';
+    }
   }
 
   function onLeave() {
