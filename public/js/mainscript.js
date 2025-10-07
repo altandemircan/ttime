@@ -9522,9 +9522,10 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     const poly = L.polyline(sub, { color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m) }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
     try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
+
+
   });
-  const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
-createScaleElements(track, widthPx, endKm - startKm, startKm, markers
+
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
@@ -9708,6 +9709,8 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       }
     }
   });
+const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
+createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
 }
 
 
