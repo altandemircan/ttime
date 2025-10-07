@@ -8948,15 +8948,23 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-    // Sadece mor (8a4af3) renkli polyline çiz
-    const poly = L.polyline(sub, {
-      color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m)
-    }).addTo(m);
-    window._segmentHighlight[day][m._leaflet_id] = poly;
-    // FitBounds sadece expanded view'de kullanmak isteyebilirsin, istersen yoruma al
-    // try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
+    // ... polyline çiz ...
   });
-}
+
+  // --- BURASI YENİ ---
+  // Reset ise rota geneline zoomla
+  if (
+    (typeof startKm !== 'number' || typeof endKm !== 'number')
+    && maps.length
+    && coords.length > 1
+  ) {
+    maps.forEach(m => {
+      try {
+        const latlngs = coords.map(c => [c[1], c[0]]);
+        m.fitBounds(latlngs, { padding: [16, 16] });
+      } catch (_) {}
+    });
+  }
 
 (function patchSetupScaleBarInteraction(){
   if (!window.setupScaleBarInteraction || window.__ttElevScalePatched) return;
