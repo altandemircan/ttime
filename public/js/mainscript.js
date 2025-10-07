@@ -8894,7 +8894,23 @@ document.addEventListener('mousedown', (e) => {
 });
 
 function highlightSegmentOnMap(day, startKm, endKm) {
-  const cid = `route-map-day${day}`;
+  if (
+  !window.leafletMaps || !window.lastRouteGeojsons ||
+  !window.leafletMaps[`route-map-day${day}`] ||
+  !window.lastRouteGeojsons[`route-map-day${day}`] ||
+  !window.lastRouteGeojsons[`route-map-day${day}`].features?.[0]?.geometry?.coordinates
+) {
+  window._highlightSegmentOnMapTries = (window._highlightSegmentOnMapTries||0) + 1;
+  if (window._highlightSegmentOnMapTries < 10) {
+    setTimeout(() => highlightSegmentOnMap(day, startKm, endKm), 300);
+  } else {
+    window._highlightSegmentOnMapTries = 0;
+  }
+  return;
+}
+window._highlightSegmentOnMapTries = 0;
+
+const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
 
