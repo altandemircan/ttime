@@ -6982,16 +6982,19 @@ if (!points || points.length === 0) {
   setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 200);
   if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
-  if (
+if (
   typeof window._lastSegmentDay === "number" &&
   typeof window._lastSegmentStartKm === "number" &&
   typeof window._lastSegmentEndKm === "number"
 ) {
   setTimeout(function() {
-    highlightSegmentOnMap(window._lastSegmentDay, window._lastSegmentStartKm, window._lastSegmentEndKm);
-  }, 140);
+    highlightSegmentOnMap(
+      window._lastSegmentDay,
+      window._lastSegmentStartKm,
+      window._lastSegmentEndKm
+    );
+  }, 150);
 }
-
 
 }
 
@@ -9590,7 +9593,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
-    window._lastSegmentDay = day;
+window._lastSegmentDay = day;
 window._lastSegmentStartKm = startKm;
 window._lastSegmentEndKm = endKm;
 
@@ -9919,8 +9922,6 @@ function resetDayAction(day, confirmationContainerId) {
     setTimeout(purgeOnce, 0);
     setTimeout(purgeOnce, 200);
   } catch(_) {}
-  setTimeout(function() {
-  highlightSegmentOnMap(day);
-}, 120);
+  setTimeout(function(){ highlightSegmentOnMap(day); }, 120);
 }
 
