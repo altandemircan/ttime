@@ -8746,7 +8746,7 @@ track.__onMove = (e) => {
   tooltip.style.left = `${ptX}px`;
   verticalLine.style.left = `${ptX}px`;
   verticalLine.style.display = 'block';
-
+};
 window.__sb_onMouseMove = (e) => {
  if (!window.__scaleBarDrag) return;
 const rect = track.getBoundingClientRect();
