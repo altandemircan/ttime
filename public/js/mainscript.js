@@ -9735,6 +9735,21 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
       highlightSegmentOnMap(day);
     }
 
+     // --- BURAYA EKLE ---
+  // Haritayı ilk açılış zoom'una döndür
+  const cid = `route-map-day${day}`;
+  const expObj = window.expandedMaps && window.expandedMaps[cid];
+  if (expObj && expObj.expandedMap && expObj.expandedMap._initialView) {
+    try {
+      expObj.expandedMap.setView(
+        expObj.expandedMap._initialView.center,
+        expObj.expandedMap._initialView.zoom,
+        { animate: true }
+      );
+    } catch(e) {}
+  }
+  // --- EKLEME SONU ---
+
     // Seçim overlay’i gizle
     const selection = container.querySelector('.scale-bar-selection');
     if (selection) selection.style.display = 'none';
