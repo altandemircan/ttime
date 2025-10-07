@@ -8501,6 +8501,23 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
   `;
   track.appendChild(selDiv);
 
+  // BURAYA EKLE ↓↓↓↓↓
+track.addEventListener('mousedown', function(e) {
+  const rect = track.getBoundingClientRect();
+  window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
+  selDiv.style.left = `${window.__scaleBarDrag.startX}px`;
+  selDiv.style.width = `0px`;
+  selDiv.style.display = 'block';
+});
+track.addEventListener('touchstart', function(e) {
+  const rect = track.getBoundingClientRect();
+  const x = e.touches[0].clientX - rect.left;
+  window.__scaleBarDrag = { startX: x, lastX: x };
+  selDiv.style.left = `${x}px`;
+  selDiv.style.width = `0px`;
+  selDiv.style.display = 'block';
+});
+
   // Görünüm
   const MARKER_PAD_PX = 10;
   track.style.position = 'relative';
