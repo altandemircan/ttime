@@ -6072,78 +6072,56 @@ function setupScaleBarInteraction(day, map) {
     percent = Math.max(0, Math.min(1, percent));
 
     // Segmentli mi tam profil mi?
-    let startKmDom = 0, spanKm = null;
-    if (
-      typeof track._segmentStartKm === "number" &&
-      typeof track._segmentKmSpan === "number" &&
-      track._segmentKmSpan > 0
-    ) {
-      startKmDom = track._segmentStartKm;
-      spanKm     = track._segmentKmSpan;
-    } else {
-      startKmDom = 0;
-      spanKm = Number(scaleBar.dataset.totalKm) || 1;
-    }
+  let startKmDom = 0, spanKm = null;
+
+if (
+  typeof track._segmentStartKm === "number" &&
+  typeof track._segmentKmSpan === "number" &&
+  track._segmentKmSpan > 0
+) {
+  startKmDom = track._segmentStartKm; // Segment başlangıcı
+  spanKm = track._segmentKmSpan;     // Segment uzunluğu
+} else {
+  startKmDom = 0;                   // Genel rota başlangıcı
+  spanKm = Number(scaleBar.dataset.totalKm) || 1; // Genel rota uzunluğu
+}
 
     let currentKm = startKmDom + percent * spanKm;
 
     // --- Sadece segment örneklemesiyle clamp et ---
     const samples = track._elevSamples || [];
     const elevationData = track._elevationData || {};
-    if (samples.length) {
-      // Segmentli modda clamp et
-      const minKm = samples[0].distM / 1000;
-      const maxKm = samples[samples.length - 1].distM / 1000;
-      if (currentKm < minKm) currentKm = minKm;
-      if (currentKm > maxKm) currentKm = maxKm;
+   if (samples.length) {
+  // Segmentli modda clamp et
+  const minKm = samples[0].distM / 1000;
+  const maxKm = samples[samples.length - 1].distM / 1000;
+  if (currentKm < minKm) currentKm = minKm;
+  if (currentKm > maxKm) currentKm = maxKm;
 
-      // En yakın örnek indexini bul
-      let idx = 0, minDist = Infinity;
-      for (let i = 0; i < samples.length; i++) {
-        const kmAbs = samples[i].distM / 1000;
-        const dist = Math.abs(currentKm - kmAbs);
-        if (dist < minDist) { minDist = dist; idx = i; }
-      }
-      // Marker konumu
-      const lat = samples[idx].lat;
-      const lng = samples[idx].lng;
+  // En yakın örnek indexini bul
+  let idx = 0, minDist = Infinity;
+  for (let i = 0; i < samples.length; i++) {
+    const kmAbs = samples[i].distM / 1000;
+    const dist = Math.abs(currentKm - kmAbs);
+    if (dist < minDist) { minDist = dist; idx = i; }
+  }
 
-      // Tooltip ve vertical line bilgisi (slope, elevation)
-      const elev = (elevationData.smooth && elevationData.smooth[idx]) ? Math.round(elevationData.smooth[idx]) : '';
-      let slope = 0;
-      if (elevationData.smooth && idx > 0) {
-        const dx = samples[idx].distM - samples[idx-1].distM;
-        const dy = elevationData.smooth[idx] - elevationData.smooth[idx-1];
-        slope = dx > 0 ? ((dy / dx) * 100) : 0;
-      }
+  // Tooltip verilerini güncelle
+  const elev = (elevationData.smooth && elevationData.smooth[idx]) 
+    ? Math.round(elevationData.smooth[idx]) 
+    : '';
+  let slope = 0;
+  if (elevationData.smooth && idx > 0) {
+    const dx = samples[idx].distM - samples[idx-1].distM;
+    const dy = elevationData.smooth[idx] - elevationData.smooth[idx-1];
+    slope = dx > 0 ? ((dy / dx) * 100) : 0;
+  }
 
-      // Marker
-      if (hoverMarker) {
-        hoverMarker.setLatLng([lat, lng]);
-      } else {
-        hoverMarker = L.circleMarker([lat, lng], {
-          radius: 10,
-          color: "#fff",
-          fillColor: "#8a4af3",
-          fillOpacity: 0.9,
-          weight: 3,
-          zIndexOffset: 9999
-        }).addTo(map);
-      }
-
-      // Tooltip
-      if (tooltip) {
-        tooltip.style.opacity = '1';
-        tooltip.textContent = `${currentKm.toFixed(2)} km • ${elev} m${(typeof slope === "number" ? ` • %${slope.toFixed(1)} slope` : "")}`;
-        tooltip.style.left = `${x}px`;
-      }
-      // Dikey çizgi
-      if (verticalLine) {
-        verticalLine.style.left = `${x}px`;
-        verticalLine.style.display = 'block';
-      }
-      return;
-    }
+  // Tooltip'i seçilen segmente göre güncelle
+  if (tooltip) {
+    tooltip.textContent = `${currentKm.toFixed(2)} km • ${elev} m • %${slope.toFixed(1)} eğim`;
+  }
+}
 
     // --- Tam profil fallback (segment yoksa) ---
     const targetDist = currentKm * 1000;
@@ -6212,6 +6190,35 @@ function setupScaleBarInteraction(day, map) {
   track.addEventListener('touchmove', onMove);
   track.addEventListener('touchend', onLeave);
 }
+
+// Track ve Tooltip Seçimi
+const track = document.querySelector('#track'); // Track elementi
+const tooltip = document.querySelector('#tooltip'); // Tooltip elementi
+
+// Elevation Verisi (örnek)
+const elevationData = [
+  { elevation: 100 }, 
+  { elevation: 200 }, 
+  { elevation: 300 }
+];
+
+// Mousemove Olayı
+track.addEventListener('mousemove', function(e) {
+  const percent = e.offsetX / track.offsetWidth; // Fare pozisyonunu hesapla
+  const currentKm = percent * 100; // Örnek rota bilgisi (toplam 100 km)
+
+  if (track._segmentStartKm && track._segmentKmSpan) {
+    // Seçilen segmentin tooltip bilgileri:
+    const segmentKm = track._segmentStartKm + (percent * track._segmentKmSpan);
+    const segmentElev = elevationData[track._selectedSegmentIndex].elevation;
+    tooltip.textContent = `${segmentKm.toFixed(2)} km • ${segmentElev} m yükselti`;
+  } else {
+    // Genel rota bilgileri (fallback)
+    tooltip.textContent = `${currentKm.toFixed(2)} km`;
+  }
+});
+
+
 function restoreMap(containerId, day) {
     const expandedData = window.expandedMaps?.[containerId];
     if (!expandedData) return;
