@@ -1,5 +1,4 @@
   window.__scaleBarDrag = null;
-
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
     Object.values(window._segmentHighlight[day]).forEach(poly => {
@@ -9980,3 +9979,4 @@ function clearScaleBarSelection(day) {
   if (sel) sel.style.display = 'none';
   // Eğer her yerde tümünü kapatmak istersen:
   // document.querySelectorAll('.scale-bar-selection').forEach(s => s.style.display = 'none');
+}
