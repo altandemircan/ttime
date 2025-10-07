@@ -9482,6 +9482,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       try { delete window._segmentHighlight[day][m._leaflet_id]; } catch(_){}
     }
   });
+clearScaleBarSelection(day);
 
   // Eğer reset (segment yok) ise haritayı ilk açılış merkez/zoom'una döndür
 if (typeof startKm !== 'number' || typeof endKm !== 'number') {
@@ -9867,3 +9868,10 @@ function resetDayAction(day, confirmationContainerId) {
   setTimeout(function(){ highlightSegmentOnMap(day); }, 120);
 }
 
+function clearScaleBarSelection(day) {
+  // Sadece ilgili gün için expanded scale bar'ı bul ve overlay'i gizle
+  const sel = document.querySelector(`#expanded-route-scale-bar-day${day} .scale-bar-selection`);
+  if (sel) sel.style.display = 'none';
+  // Eğer her yerde tümünü kapatmak istersen:
+  // document.querySelectorAll('.scale-bar-selection').forEach(s => s.style.display = 'none');
+}
