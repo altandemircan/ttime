@@ -8893,11 +8893,12 @@ document.addEventListener('mousedown', (e) => {
 });
 
 
-function highlightSegmentOnMap(day, startKm, endKm) {function highlightSegmentOnMap(day, startKm, endKm) {
+function highlightSegmentOnMap(day, startKm, endKm) {
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
 
+  // Mor segment için highlight kaydı
   window._segmentHighlight = window._segmentHighlight || {};
   const maps = [];
   const small = window.leafletMaps?.[cid];
@@ -8905,7 +8906,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {function highlightSegmentOn
   const exp = window.expandedMaps?.[cid]?.expandedMap;
   if (exp) maps.push(exp);
 
-  // En başta eski segment çizgilerini mutlaka sil
+  // Eski mor segmentleri sil
   maps.forEach(m => {
     if (window._segmentHighlight[day]?.[m._leaflet_id]) {
       try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
@@ -8917,6 +8918,8 @@ function highlightSegmentOnMap(day, startKm, endKm) {function highlightSegmentOn
   if (typeof startKm !== 'number' || typeof endKm !== 'number') return;
 
   const coords = gj.features[0].geometry.coordinates; // [lng,lat]
+
+  // Kümülatif mesafe
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -8930,22 +8933,30 @@ function highlightSegmentOnMap(day, startKm, endKm) {function highlightSegmentOn
   }
   const segStartM = startKm*1000, segEndM=endKm*1000;
 
+  // Segment aralığını bul
   let iStart = 0, iEnd = coords.length - 1;
   for (let i=1;i<cum.length;i++){ if (cum[i] >= segStartM){ iStart = i; break; } }
   for (let i=cum.length-2;i>=0;i--){ if (cum[i] <= segEndM){ iEnd = i+1; break; } }
   iStart = Math.max(0, Math.min(iStart, coords.length-2));
   iEnd = Math.max(iStart+1, Math.min(iEnd, coords.length-1));
 
+  // [lat, lng] dizisi
   const sub = coords.slice(iStart, iEnd+1).map(c => [c[1], c[0]]);
   if (sub.length < 2) return;
 
+  function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
+
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-    const poly = L.polyline(sub, { color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m) }).addTo(m);
+    // SADECE MOR RENK! (EĞİM DİKKATE ALMA)
+    const poly = L.polyline(sub, {
+      color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m)
+    }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
     try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
   });
 }
+
 (function patchSetupScaleBarInteraction(){
   if (!window.setupScaleBarInteraction || window.__ttElevScalePatched) return;
   const original = window.setupScaleBarInteraction;
