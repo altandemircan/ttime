@@ -6066,7 +6066,21 @@ function setupScaleBarInteraction(day, map) {
     }
     // --- BLOK SONU ---
 
-    const percent = Math.max(0, Math.min(x / rect.width, 1));
+    // Segment seçiliyse sadece segment aralığında gez
+let startKmDom = 0, spanKm = null;
+if (typeof scaleBar._segmentStartPx === "number" && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
+    // drawSegmentProfile fonksiyonu buraya şu değerleri atıyor:
+    // container._elevStartKm ve container._elevKmSpan (bunları scaleBar üzerinde de saklayabilirsin)
+    startKmDom = typeof scaleBar._segmentStartKm === "number" ? scaleBar._segmentStartKm : (scaleBar._elevStartKm || 0);
+    spanKm     = typeof scaleBar._segmentKmSpan === "number" ? scaleBar._segmentKmSpan : (scaleBar._elevKmSpan || null);
+}
+if (spanKm == null) {
+    startKmDom = 0;
+    spanKm = Number(scaleBar.dataset.totalKm) || 1;
+}
+const percent = Math.max(0, Math.min(x / rect.width, 1));
+const currentKm = startKmDom + percent * spanKm;
+const targetDist = currentKm * 1000; // SADECE SEGMENT!
 
         // Rota ve mesafe bilgilerini alın
         const containerId = `route-map-day${day}`;
@@ -6080,7 +6094,7 @@ function setupScaleBarInteraction(day, map) {
             cumDist[i] = cumDist[i - 1] + haversine(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
         }
         const totalDist = cumDist[cumDist.length - 1];
-        const targetDist = percent * totalDist;
+        
 
         // Hangi noktada olduğumuzu bul
         let idx = 0;
@@ -7333,44 +7347,59 @@ function setupSidebarAccordion() {
 
     const containerId = `route-map-day${day}`;
 
-    function onMove(e) {
-      const rect = scaleBar.getBoundingClientRect();
-      const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (e.clientX - rect.left);
-      const percent = Math.max(0, Math.min(x / rect.width, 1));
-      const geojson = window.lastRouteGeojsons?.[containerId];
-      if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
-      const coords = geojson.features[0].geometry.coordinates;
+function onMove(e) {
+  const rect = scaleBar.getBoundingClientRect();
+  const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (e.clientX - rect.left);
+  const percent = Math.max(0, Math.min(x / rect.width, 1));
+  const geojson = window.lastRouteGeojsons?.[containerId];
+  if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
+  const coords = geojson.features[0].geometry.coordinates;
 
-      // cum distances
-      let cumDist = [0];
-      for (let i = 1; i < coords.length; i++) {
-        const [lng1, lat1] = coords[i - 1];
-        const [lng2, lat2] = coords[i];
-        const d = (function(lat1, lon1, lat2, lon2) {
-          const R=6371000, toRad=(x)=>x*Math.PI/180;
-          const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
-          const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-          return 2*R*Math.asin(Math.sqrt(a));
-        })(lat1, lng1, lat2, lng2);
-        cumDist[i] = cumDist[i-1] + d;
-      }
-      const totalDist = cumDist[cumDist.length - 1];
-      const target = percent * totalDist;
+  // Kümülatif mesafeleri hazırla
+  let cumDist = [0];
+  for (let i = 1; i < coords.length; i++) {
+    const [lng1, lat1] = coords[i - 1];
+    const [lng2, lat2] = coords[i];
+    const d = (function(lat1, lon1, lat2, lon2) {
+      const R=6371000, toRad=(x)=>x*Math.PI/180;
+      const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+      const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+      return 2*R*Math.asin(Math.sqrt(a));
+    })(lat1, lng1, lat2, lng2);
+    cumDist[i] = cumDist[i-1] + d;
+  }
+  const totalDist = cumDist[cumDist.length - 1];
 
-      let idx = 0;
-      while (cumDist[idx] < target && idx < cumDist.length - 1) idx++;
-      let lat, lng;
-      if (idx === 0) {
-        lat = coords[0][1]; lng = coords[0][0];
-      } else {
-        const prev = idx - 1;
-        const seg = cumDist[idx] - cumDist[prev] || 1;
-        const t = (target - cumDist[prev]) / seg;
-        lat = coords[prev][1] + (coords[idx][1] - coords[prev][1]) * t;
-        lng = coords[prev][0] + (coords[idx][0] - coords[prev][0]) * t;
-      }
-      showMarkerVerticalLineOnMap(map, L.latLng(lat, lng));
-    }
+  // ----- SEGMENT KONTROLÜ -----
+  // Segment seçiliyse sadece segment başı-sonu aralığını kullan!
+  let startKm = scaleBar._segmentStartKm;
+  let spanKm  = scaleBar._segmentKmSpan;
+  let target;
+  if (typeof startKm === "number" && typeof spanKm === "number" && spanKm > 0) {
+    // Segment seçili: target, segment başı + (percent*segment uzunluğu)
+    const segStartM = startKm * 1000;
+    const segEndM   = (startKm + spanKm) * 1000;
+    target = segStartM + percent * (segEndM - segStartM);
+  } else {
+    // Segment yok: tüm rotada gez
+    target = percent * totalDist;
+  }
+  // ----- /SEGMENT KONTROLÜ -----
+
+  let idx = 0;
+  while (cumDist[idx] < target && idx < cumDist.length - 1) idx++;
+  let lat, lng;
+  if (idx === 0) {
+    lat = coords[0][1]; lng = coords[0][0];
+  } else {
+    const prev = idx - 1;
+    const seg = cumDist[idx] - cumDist[prev] || 1;
+    const t = (target - cumDist[prev]) / seg;
+    lat = coords[prev][1] + (coords[idx][1] - coords[prev][1]) * t;
+    lng = coords[prev][0] + (coords[idx][0] - coords[prev][0]) * t;
+  }
+  showMarkerVerticalLineOnMap(map, L.latLng(lat, lng));
+}
 
     function onLeave() {
       hideMarkerVerticalLineOnMap(map);
@@ -9550,6 +9579,8 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   const segWidthPx = ((endKm - startKm) / totalKm) * rect.width;
   track._segmentStartPx = segStartPx;
   track._segmentWidthPx = segWidthPx;
+  track._segmentStartKm = startKm; // EKLE
+track._segmentKmSpan  = endKm - startKm; // EKLE
 }
 
   // --------------------- SVG Overlay Kısmı ---------------------
