@@ -1,4 +1,14 @@
-        function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
+          // Nice tick helpers
+  function niceStep(total, target) {
+    const raw = total / Math.max(1, target);
+    const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / p10;
+    const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return f * p10;
+  }
+
+
+function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
           // HATALI: track yoksa hiçbir şey çizilmez!
           if (!track) return;
 
@@ -8464,15 +8474,6 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
   tooltip.className = 'tt-elev-tooltip';
   tooltip.style.left = '0px';
   track.appendChild(tooltip);
-
-  // Nice tick helpers
-  function niceStep(total, target) {
-    const raw = total / Math.max(1, target);
-    const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
-    const n = raw / p10;
-    const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
-    return f * p10;
-  }
 
 
   // Mesafe (Haversine)
