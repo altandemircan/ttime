@@ -9731,24 +9731,35 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
     track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
     // Harita highlight’ını temizle
-    if (typeof highlightSegmentOnMap === 'function') {
-      highlightSegmentOnMap(day);
-    }
+  if (typeof highlightSegmentOnMap === 'function') {
+    highlightSegmentOnMap(day);
+  }
 
-     // --- BURAYA EKLE ---
-  // Haritayı ilk açılış zoom'una döndür
+   // --- YENİ LOGİK ---
+  // Expanded harita açıldıysa, rotanın polyline'ına fitBounds yap (en güncel rota)
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
-  if (expObj && expObj.expandedMap && expObj.expandedMap._initialView) {
-    try {
+  if (expObj && expObj.expandedMap) {
+    let fitted = false;
+    expObj.expandedMap.eachLayer(layer => {
+      if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+        try {
+          expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
+          fitted = true;
+        } catch(_) {}
+      }
+    });
+    // Fallback: eğer polyline yoksa ilk açılış view'una dön
+    if (!fitted && expObj.expandedMap._initialView) {
       expObj.expandedMap.setView(
         expObj.expandedMap._initialView.center,
         expObj.expandedMap._initialView.zoom,
         { animate: true }
       );
-    } catch(e) {}
+    }
   }
-  // --- EKLEME SONU ---
+  // --- YENİ LOGİK SONU ---
+
 
     // Seçim overlay’i gizle
     const selection = container.querySelector('.scale-bar-selection');
