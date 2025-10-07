@@ -9719,7 +9719,7 @@ container._segmentKmSpan  = endKm - startKm;
 
     const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
     const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    createScaleElements(track, widthPx, totalKm, 0, markers);
+createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
 
     if (Array.isArray(container._elevFullSamples)) {
       container._elevSamples = container._elevFullSamples.slice();
