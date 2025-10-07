@@ -9516,10 +9516,10 @@ if (typeof startKm !== 'number' || typeof endKm !== 'number') {
   });
 }
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
-window._lastSegmentDay = day;
-window._lastSegmentStartKm = startKm;
-window._lastSegmentEndKm = endKm;
-console.log('SEGMENT PROFILE SET', day, startKm, endKm);
+  window._lastSegmentDay = day;
+  window._lastSegmentStartKm = startKm;
+  window._lastSegmentEndKm = endKm;
+  console.log('SEGMENT PROFILE SET', day, startKm, endKm);
 
   const track = container.querySelector('.scale-bar-track');
   if (!track) return;
@@ -9528,18 +9528,17 @@ console.log('SEGMENT PROFILE SET', day, startKm, endKm);
   track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
- const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
-const totalKm = Number(container.dataset.totalKm) || 0;
-const segStartPx = (startKm / totalKm) * widthPx;
-const segWidthPx = ((endKm - startKm) / totalKm) * widthPx;
-
+  const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
+  const totalKm = Number(container.dataset.totalKm) || 0;
+  const segStartPx = (startKm / totalKm) * widthPx;
+  const segWidthPx = ((endKm - startKm) / totalKm) * widthPx;
   const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
     ? getRouteMarkerPositionsOrdered(day) : [];
 
   // --- Segment/profil marker ve km çizelgesi güncelle ---
-if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
+  if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
     // Tam profile dön
-    // ...
+    createScaleElements(track, widthPx, totalKm, 0, markers);
     track._segmentStartPx = undefined;
     track._segmentWidthPx = undefined;
     track._segmentStartKm = undefined;
@@ -9550,15 +9549,15 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
     container._segmentKmSpan = undefined;
   } else {
     // Segment seçiliyken
-    // ... hesaplamalar
-track._segmentStartPx = segStartPx;
-track._segmentWidthPx = segWidthPx;
-track._segmentStartKm = startKm;
-track._segmentKmSpan  = endKm - startKm;
-container._segmentStartPx = segStartPx;
-container._segmentWidthPx = segWidthPx;
-container._segmentStartKm = startKm;
-container._segmentKmSpan  = endKm - startKm;
+    createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
+    track._segmentStartPx = segStartPx;
+    track._segmentWidthPx = segWidthPx;
+    track._segmentStartKm = startKm;
+    track._segmentKmSpan  = endKm - startKm;
+    container._segmentStartPx = segStartPx;
+    container._segmentWidthPx = segWidthPx;
+    container._segmentStartKm = startKm;
+    container._segmentKmSpan  = endKm - startKm;
   }
 
   // --------------------- SVG Overlay Kısmı ---------------------
@@ -9697,7 +9696,7 @@ container._segmentKmSpan  = endKm - startKm;
   `;
   track.appendChild(tb);
 
-  // Reset → base’e dön
+   // Reset → base’e dön
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
     // Sadece segment overlay’leri ve toolbar’ı temizle
     track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
@@ -9719,7 +9718,7 @@ container._segmentKmSpan  = endKm - startKm;
 
     const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
     const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
+    createScaleElements(track, widthPx, totalKm, 0, markers);
 
     if (Array.isArray(container._elevFullSamples)) {
       container._elevSamples = container._elevFullSamples.slice();
@@ -9733,7 +9732,6 @@ createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
       };
       container._redrawElevation(container._elevationData);
     } else {
-      // Fallback: baştan kur
       if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
         renderRouteScaleBar(container, totalKm, markers);
       }
