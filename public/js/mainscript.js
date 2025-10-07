@@ -6124,7 +6124,7 @@ function setupScaleBarInteraction(day, map) {
       // Marker ve diğer kod...
       return;
     }
- 
+  }
 
     // --- Tam profil fallback (segment yoksa) ---
     const targetDist = currentKm * 1000;
