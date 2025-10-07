@@ -8544,8 +8544,7 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
   segG.setAttribute('class', 'tt-elev-segments');
   svg.appendChild(segG);
 
-  // Redraw (aktif domain + örneklerle)
-  // Redraw (aktif domain + örneklerle)
+// Redraw (aktif domain + örneklerle)
 function redrawElevation(elevationData) {
   if (!elevationData) return;
   const { smooth, min, max } = elevationData;
