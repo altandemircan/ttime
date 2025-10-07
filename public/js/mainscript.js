@@ -8710,7 +8710,7 @@ createScaleElements(track, width, totalKm, 0, markers);
   if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
   if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
 
- track.__onMove = (e) => {
+track.__onMove = (e) => {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
 
@@ -8761,9 +8761,9 @@ createScaleElements(track, width, totalKm, 0, markers);
     verticalLine.style.left = `${x}px`;
     verticalLine.style.display = 'block';
 
-
-
-
+    return;
+  }
+};
 window.__sb_onMouseMove = (e) => {
  if (!window.__scaleBarDrag) return;
 const rect = track.getBoundingClientRect();
