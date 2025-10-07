@@ -9439,9 +9439,9 @@ const DATASET = 'srtm30m';
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 function highlightSegmentOnMap(day, startKm, endKm) {
-  // İlk açılış değerlerin (KENDİ haritanda neyse onu yaz!)
-  const INITIAL_MAP_CENTER = [38.5, 32.0];
-  const INITIAL_MAP_ZOOM = 7;
+  // Açılışta haritanın merkez ve zoom değerlerin neyse onları gir!
+  const INITIAL_MAP_CENTER = [38.5, 32.0]; // Örnek: [lat, lon]
+  const INITIAL_MAP_ZOOM = 7;              // Örnek: 7
 
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
@@ -9462,7 +9462,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }
   });
 
-  // start/end yoksa sadece temizle ve haritayı ilk haline döndür
+  // Eğer reset (seçim yok) ise haritayı açılış ayarına döndür
   if (typeof startKm !== 'number' || typeof endKm !== 'number') {
     maps.forEach(m => {
       try { m.setView(INITIAL_MAP_CENTER, INITIAL_MAP_ZOOM, { animate: true }); } catch(_) {}
@@ -9470,25 +9470,26 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     return;
   }
 
-  const coords = gj.features[0].geometry.coordinates; // [lng,lat]
+  // Segment çizgisi için kümülatif mesafe
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
     const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
     return 2*R*Math.asin(Math.sqrt(a));
   }
+  const coords = gj.features[0].geometry.coordinates;
   const cum=[0];
   for (let i=1;i<coords.length;i++){
     const [lon1,lat1]=coords[i-1], [lon2,lat2]=coords[i];
     cum[i]=cum[i-1]+hv(lat1,lon1,lat2,lon2);
   }
-  const segStartM = startKm*1000, segEndM=endKm*1000;
+  const segStartM = startKm*1000, segEndM = endKm*1000;
 
   let iStart = 0, iEnd = coords.length - 1;
   for (let i=1;i<cum.length;i++){ if (cum[i] >= segStartM){ iStart = i; break; } }
   for (let i=cum.length-2;i>=0;i--){ if (cum[i] <= segEndM){ iEnd = i+1; break; } }
   iStart = Math.max(0, Math.min(iStart, coords.length-2));
-  iEnd = Math.max(iStart+1, Math.min(iEnd, coords.length-1));
+  iEnd   = Math.max(iStart+1, Math.min(iEnd, coords.length-1));
 
   const sub = coords.slice(iStart, iEnd+1).map(c => [c[1], c[0]]);
   if (sub.length < 2) return;
@@ -9503,7 +9504,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
     if (poly.bringToFront) poly.bringToFront();
-    // Mor çizgiye zoom yap
+    // Segment seçince mor çizgiye zoom yap
     try { m.fitBounds(poly.getBounds(), { padding: [16, 16] }); } catch(_) {}
   });
 }
