@@ -9439,7 +9439,10 @@ const DATASET = 'srtm30m';
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 function highlightSegmentOnMap(day, startKm, endKm) {
-  // Harita id'si ve geojson
+  // İlk açılış değerlerin (KENDİ haritanda neyse onu yaz!)
+  const INITIAL_MAP_CENTER = [38.5, 32.0];
+  const INITIAL_MAP_ZOOM = 7;
+
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
@@ -9459,25 +9462,21 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }
   });
 
-  // start/end yoksa sadece temizle ve haritayı ilk zoom/center'a döndür
+  // start/end yoksa sadece temizle ve haritayı ilk haline döndür
   if (typeof startKm !== 'number' || typeof endKm !== 'number') {
-    // Harita ilk açılış center/zoom'unu KENDİ DEĞERLERİNE göre ayarla!
-    const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];
-    const INITIAL_EMPTY_MAP_ZOOM = 6;
     maps.forEach(m => {
-      try { m.setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM, { animate: true }); } catch(_) {}
+      try { m.setView(INITIAL_MAP_CENTER, INITIAL_MAP_ZOOM, { animate: true }); } catch(_) {}
     });
     return;
   }
 
-  // Kümülatif mesafe
+  const coords = gj.features[0].geometry.coordinates; // [lng,lat]
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
     const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
     return 2*R*Math.asin(Math.sqrt(a));
   }
-  const coords = gj.features[0].geometry.coordinates;
   const cum=[0];
   for (let i=1;i<coords.length;i++){
     const [lon1,lat1]=coords[i-1], [lon2,lat2]=coords[i];
@@ -9504,7 +9503,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
     if (poly.bringToFront) poly.bringToFront();
-    // Segment seçilince mor çizgiye zoom yap
+    // Mor çizgiye zoom yap
     try { m.fitBounds(poly.getBounds(), { padding: [16, 16] }); } catch(_) {}
   });
 }
