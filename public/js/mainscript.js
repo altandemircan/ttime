@@ -1,4 +1,7 @@
-          // Nice tick helpers
+  window.__scaleBarDrag = null;
+
+
+        // Nice tick helpers
   function niceStep(total, target) {
     const raw = total / Math.max(1, target);
     const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -8690,7 +8693,7 @@ createScaleElements(track, width, totalKm, 0, markers);
   if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
   if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
 
-  track.__onMove = (e) => {
+ track.__onMove = (e) => {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
   const { smooth, min, max } = ed;
@@ -8703,6 +8706,7 @@ createScaleElements(track, width, totalKm, 0, markers);
   const ptX = e.clientX - rect.left;
 
   // --- EKLE ---
+  // Segment clamp: sadece segmentte hover!
   let x = ptX;
   if (typeof track._segmentStartPx === "number" && typeof track._segmentWidthPx === "number" && track._segmentWidthPx > 0) {
     x = Math.max(track._segmentStartPx, Math.min(track._segmentStartPx + track._segmentWidthPx, ptX));
@@ -8711,92 +8715,70 @@ createScaleElements(track, width, totalKm, 0, markers);
 
   const widthNow = Math.max(200, Math.round(rect.width));
 
-    let vizMin = min, vizMax = max;
-    const eSpan = max - min;
-    if (eSpan > 0) { vizMin = min - eSpan * 0.25; vizMax = max + eSpan * 0.25; }
-    else { vizMin = min - 1; vizMax = max + 1; }
+  let vizMin = min, vizMax = max;
+  const eSpan = max - min;
+  if (eSpan > 0) { vizMin = min - eSpan * 0.25; vizMax = max + eSpan * 0.25; }
+  else { vizMin = min - 1; vizMax = max + 1; }
 
-    const X = kmRel => (kmRel / spanKm) * widthNow;
+  const X = kmRel => (kmRel / spanKm) * widthNow;
 
-    let minDist = Infinity, foundSlope = 0, foundElev = null, foundKmAbs = 0;
-    const n = Math.min(smooth.length, s.length);
-    for (let i = 1; i < n; i++) {
-      const kmAbs1 = s[i - 1].distM / 1000;
-      const kmAbs2 = s[i].distM / 1000;
-      const x1 = Math.max(0, Math.min(widthNow, X(kmAbs1 - startKmDom)));
-      const x2 = Math.max(0, Math.min(widthNow, X(kmAbs2 - startKmDom)));
-      const mid = (x1 + x2) / 2;
-      const dist = Math.abs(ptX - mid);
-      if (dist < minDist) {
-        minDist = dist;
-        const dx = s[i].distM - s[i - 1].distM;
-        const dy = smooth[i] - smooth[i - 1];
-        foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-        foundElev = Math.round(smooth[i]);
-        foundKmAbs = kmAbs2;
-      }
+  let minDist = Infinity, foundSlope = 0, foundElev = null, foundKmAbs = 0;
+  const n = Math.min(smooth.length, s.length);
+  for (let i = 1; i < n; i++) {
+    const kmAbs1 = s[i - 1].distM / 1000;
+    const kmAbs2 = s[i].distM / 1000;
+    const x1 = Math.max(0, Math.min(widthNow, X(kmAbs1 - startKmDom)));
+    const x2 = Math.max(0, Math.min(widthNow, X(kmAbs2 - startKmDom)));
+    const mid = (x1 + x2) / 2;
+    // ***→ ptX yerine x kullan ***
+    const dist = Math.abs(x - mid);
+    if (dist < minDist) {
+      minDist = dist;
+      const dx = s[i].distM - s[i - 1].distM;
+      const dy = smooth[i] - smooth[i - 1];
+      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+      foundElev = Math.round(smooth[i]);
+      foundKmAbs = kmAbs2;
     }
+  }
 
-    tooltip.style.opacity = '1';
-    tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-    tooltip.style.left = `${ptX}px`;
-    verticalLine.style.left = `${ptX}px`;
-    verticalLine.style.display = 'block';
-  };
+  tooltip.style.opacity = '1';
+  tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
+  // ***→ ptX yerine x kullan ***
+  tooltip.style.left = `${x}px`;
+  verticalLine.style.left = `${x}px`;
+  verticalLine.style.display = 'block';
+};
+window.__sb_onMouseMove = (e) => {
+  if (!window.__scaleBarDrag) return;
+  const rect = track.getBoundingClientRect();
+  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  selDiv.style.left = `${left}px`;
+  selDiv.style.width = `${right - left}px`;
+};
+window.addEventListener('mousemove', window.__sb_onMouseMove);
 
-  track.__onLeave = () => {
-    tooltip.style.opacity = '0';
-    verticalLine.style.display = 'none';
-  };
+window.__sb_onMouseUp = () => {
+  if (!window.__scaleBarDrag) return;
+  const rect = track.getBoundingClientRect();
+  const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  window.__scaleBarDrag = null;
 
-  track.addEventListener('mousemove', track.__onMove);
-  track.addEventListener('mouseleave', track.__onLeave);
+  if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
 
-  // Mouse seçim (global handler’ları tekille)
-  if (track.__onDown) track.removeEventListener('mousedown', track.__onDown);
-  if (window.__sb_onMouseMove) { window.removeEventListener('mousemove', window.__sb_onMouseMove); window.__sb_onMouseMove = null; }
-  if (window.__sb_onMouseUp)   { window.removeEventListener('mouseup',   window.__sb_onMouseUp);   window.__sb_onMouseUp   = null; }
+  const totalKmToUse = Number(container.dataset.totalKm) || totalKm;
+  const startKm = (leftPx / rect.width) * totalKmToUse;
+  const endKm   = (rightPx / rect.width) * totalKmToUse;
 
-  let drag = null; // {startX, lastX}
-  track.__onDown = (e) => {
-    const rect = track.getBoundingClientRect();
-    drag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
-    selDiv.style.left = `${drag.startX}px`;
-    selDiv.style.width = `0px`;
-    selDiv.style.display = 'block';
-  };
-  track.addEventListener('mousedown', track.__onDown);
-
-  window.__sb_onMouseMove = (e) => {
-    if (!drag) return;
-    const rect = track.getBoundingClientRect();
-    drag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    const left = Math.min(drag.startX, drag.lastX);
-    const right = Math.max(drag.startX, drag.lastX);
-    selDiv.style.left = `${left}px`;
-    selDiv.style.width = `${right - left}px`;
-  };
-  window.addEventListener('mousemove', window.__sb_onMouseMove);
-
-  window.__sb_onMouseUp = () => {
-    if (!drag) return;
-    const rect = track.getBoundingClientRect();
-    const leftPx = Math.min(drag.startX, drag.lastX);
-    const rightPx = Math.max(drag.startX, drag.lastX);
-    drag = null;
-
-    if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
-
-    const totalKmToUse = Number(container.dataset.totalKm) || totalKm;
-    const startKm = (leftPx / rect.width) * totalKmToUse;
-    const endKm   = (rightPx / rect.width) * totalKmToUse;
-
-    if (day != null) {
-      fetchAndRenderSegmentElevation(container, day, startKm, endKm);
-      if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
-    }
-  };
-  window.addEventListener('mouseup', window.__sb_onMouseUp);
+  if (day != null) {
+    fetchAndRenderSegmentElevation(container, day, startKm, endKm);
+    if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
+  }
+};
+window.addEventListener('mouseup', window.__sb_onMouseUp);
 
   // Loader
   window.showScaleBarLoading?.(container, 'Loading elevation…');
