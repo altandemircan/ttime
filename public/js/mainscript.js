@@ -8781,7 +8781,7 @@ createScaleElements(track, width, totalKm, 0, markers);
       const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
       createScaleElements(track, newW, spanKm, startKmDom, markers);
     }
-    
+
   if (container._elevResizeObserver) {
     try { container._elevResizeObserver.disconnect(); } catch(_) {}
     container._elevResizeObserver = null;
@@ -9499,12 +9499,15 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const exp = window.expandedMaps?.[cid]?.expandedMap;
   if (exp) maps.push(exp);
 
+  // Önce mevcut highlight’ları kaldır ve referansları sil
   maps.forEach(m => {
     if (window._segmentHighlight[day]?.[m._leaflet_id]) {
       try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
+      try { delete window._segmentHighlight[day][m._leaflet_id]; } catch(_){}
     }
   });
 
+  // start/end verilmemişse sadece temizle
   if (typeof startKm !== 'number' || typeof endKm !== 'number') return;
 
   const coords = gj.features[0].geometry.coordinates; // [lng,lat]
@@ -9533,14 +9536,15 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-    const poly = L.polyline(sub, { color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m) }).addTo(m);
+    // SADECE MOR RENGİNİ KULLAN!
+    const poly = L.polyline(sub, {
+      color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m)
+    }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
     try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
-
-
   });
-
 }
+
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
   const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
