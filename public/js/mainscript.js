@@ -6050,7 +6050,7 @@ function setupScaleBarInteraction(day, map) {
   const verticalLine = track.querySelector('.scale-bar-vertical-line');
   const tooltip = track.querySelector('.tt-elev-tooltip');
 
-  function onMove(e) {
+ function onMove(e) {
   const rect = track.getBoundingClientRect();
   let x = (e.touches && e.touches.length)
     ? e.touches[0].clientX - rect.left
@@ -6124,6 +6124,7 @@ function setupScaleBarInteraction(day, map) {
       }
       return;
     }
+  }
 
   function onLeave() {
     if (hoverMarker) {
