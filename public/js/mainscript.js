@@ -5319,6 +5319,8 @@ mapStyleSelect.onchange = function() {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
     try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
+      expandedMap._initialBounds = poly.getBounds();
+
     // === GÜNCELLEME: fitBounds'tan HEMEN SONRA expandedMap._initialView'u kaydet ===
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
@@ -9482,9 +9484,11 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   });
 
   // Eğer reset (segment yok) ise haritayı ilk açılış merkez/zoom'una döndür
- if (typeof startKm !== 'number' || typeof endKm !== 'number') {
+if (typeof startKm !== 'number' || typeof endKm !== 'number') {
   maps.forEach(m => {
-    if (m && m._initialView) {
+    if (m && m._initialBounds) {
+      try { m.fitBounds(m._initialBounds, { padding: [20, 20] }); } catch(_) {}
+    } else if (m && m._initialView) {
       try { m.setView(m._initialView.center, m._initialView.zoom, { animate: true }); } catch(_) {}
     }
   });
