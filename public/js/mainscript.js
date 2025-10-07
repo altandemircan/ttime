@@ -8914,10 +8914,20 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }
   });
 
-  // Sadece temizleme gerekiyorsa return
-  if (typeof startKm !== 'number' || typeof endKm !== 'number') return;
-
   const coords = gj.features[0].geometry.coordinates; // [lng,lat]
+
+  // Sadece temizleme gerekiyorsa (reset) rota geneline fitBounds yap
+  if (typeof startKm !== 'number' || typeof endKm !== 'number') {
+    if (maps.length && coords.length > 1) {
+      maps.forEach(m => {
+        try {
+          const latlngs = coords.map(c => [c[1], c[0]]);
+          m.fitBounds(latlngs, { padding: [16, 16] });
+        } catch (_) {}
+      });
+    }
+    return;
+  }
 
   // Kümülatif mesafe hesapla
   function hv(lat1, lon1, lat2, lon2) {
@@ -8948,24 +8958,13 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-    // ... polyline çiz ...
+    // Sadece mor (8a4af3) renkli polyline çiz
+    const poly = L.polyline(sub, {
+      color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m)
+    }).addTo(m);
+    window._segmentHighlight[day][m._leaflet_id] = poly;
   });
-
-  // --- BURASI YENİ ---
-  // Reset ise rota geneline zoomla
-  if (
-    (typeof startKm !== 'number' || typeof endKm !== 'number')
-    && maps.length
-    && coords.length > 1
-  ) {
-    maps.forEach(m => {
-      try {
-        const latlngs = coords.map(c => [c[1], c[0]]);
-        m.fitBounds(latlngs, { padding: [16, 16] });
-      } catch (_) {}
-    });
-  }
-
+}
 (function patchSetupScaleBarInteraction(){
   if (!window.setupScaleBarInteraction || window.__ttElevScalePatched) return;
   const original = window.setupScaleBarInteraction;
