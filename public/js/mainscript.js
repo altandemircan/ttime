@@ -6045,8 +6045,11 @@ window.handleImageError = async function(imgElement, placeName, index) {
 
 
 function setupScaleBarInteraction(day, map) {
+
+
   const scaleBar = document.getElementById('expanded-route-scale-bar-day' + day);
   const track = scaleBar.querySelector('.scale-bar-track');
+  
   let hoverMarker = null; // <-- burada tanımla
 track.addEventListener('mousemove', onMove);
 
@@ -8445,7 +8448,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 /* 2) Vertical guide line on the map */
 function showMarkerVerticalLineOnMap(map, latlng) {
-    
+
   if (!map || !latlng) return;
   const cont = map.getContainer();
   if (!cont) return;
