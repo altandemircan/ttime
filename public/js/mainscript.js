@@ -8744,12 +8744,6 @@ track.__onMove = (e) => {
   verticalLine.style.left = `${ptX}px`;
   verticalLine.style.display = 'block';
 };
-
-  // --- SEGMENT YOKSA (tam profil) ---
-  // Buraya aynen eski hover kodunu koyabilirsin.
-  // ...
-
-};
 window.__sb_onMouseMove = (e) => {
  if (!window.__scaleBarDrag) return;
 const rect = track.getBoundingClientRect();
