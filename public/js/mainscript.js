@@ -8761,10 +8761,9 @@ createScaleElements(track, width, totalKm, 0, markers);
     verticalLine.style.left = `${x}px`;
     verticalLine.style.display = 'block';
 
-    return;
-  }
 
-  
+
+
 window.__sb_onMouseMove = (e) => {
  if (!window.__scaleBarDrag) return;
 const rect = track.getBoundingClientRect();
