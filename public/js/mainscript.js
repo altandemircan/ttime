@@ -8419,14 +8419,6 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
     return f * p10;
   }
 function createScaleElements(widthPx, spanKm, startKmDom, markers = []) {
-  // 1. TRACK'i bul
-  var track = document.querySelector('.scale-bar-track');
-  if (!track) {
-    console.error("track bulunamadı!");
-    return;
-  }
-
-  // 2. Eskiyi sil
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
@@ -8458,13 +8450,11 @@ function createScaleElements(widthPx, spanKm, startKmDom, markers = []) {
     label.style.color = '#607d8b';
     label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
     track.appendChild(label);
-
-    // Tick veya label için log
-    // console.log("TICK/label çiziliyor", leftPct, label.textContent);
   }
 
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
+      // Sadece segment aralığında kalan markerları çiz
       if (typeof m.distance !== 'number') return;
       if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
       const relKm = m.distance - startKmDom;
@@ -8475,12 +8465,9 @@ function createScaleElements(widthPx, spanKm, startKmDom, markers = []) {
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
-
-      // Marker için log
-      // console.log("MARKER çiziliyor", left, m);
     });
   }
-}}
+}
 
   // Mesafe (Haversine)
   function hv(lat1, lon1, lat2, lon2) {
