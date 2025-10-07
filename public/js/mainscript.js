@@ -6124,7 +6124,6 @@ function setupScaleBarInteraction(day, map) {
       }
       return;
     }
-  }
 
   function onLeave() {
     if (hoverMarker) {
