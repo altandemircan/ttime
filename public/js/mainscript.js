@@ -8939,8 +8939,19 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-    const poly = L.polyline(sub, { color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m) }).addTo(m);
-    window._segmentHighlight[day][m._leaflet_id] = poly;
+for (let i = 1; i < sub.length; i++) {
+  const latlng1 = sub[i-1];
+  const latlng2 = sub[i];
+  const dx = hv(latlng1[0], latlng1[1], latlng2[0], latlng2[1]);
+  let color = '#8a4af3';
+  if (window._lastSegmentElevations && window._lastSegmentElevations.length === sub.length) {
+    const dy = window._lastSegmentElevations[i] - window._lastSegmentElevations[i-1];
+    let slope = 0;
+    if (dx !== 0) slope = (dy / dx) * 100;
+    color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
+  }
+  L.polyline([latlng1, latlng2], { color, weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m) }).addTo(m);
+}    window._segmentHighlight[day][m._leaflet_id] = poly;
     try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
   });
 }
