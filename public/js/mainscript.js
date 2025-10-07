@@ -9917,5 +9917,8 @@ function resetDayAction(day, confirmationContainerId) {
     setTimeout(purgeOnce, 0);
     setTimeout(purgeOnce, 200);
   } catch(_) {}
+  setTimeout(function() {
+  highlightSegmentOnMap(day);
+}, 120);
 }
 
