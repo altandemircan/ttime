@@ -8847,28 +8847,29 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
       const [lon1, lat1] = coords[p], [lon2, lat2] = coords[idx];
       samples.push({ lat: lat1 + (lat2 - lat1) * t, lng: lon1 + (lon2 - lon1) * t, distM: target });
     }
+    
   }
 
   window.showScaleBarLoading?.(container, `Loading segment ${startKm.toFixed(1)}–${endKm.toFixed(1)} km…`);
 
   // Segment overlay’i için elevation al
   const routeKey = `seg:${coords.length}|${samples[0].lat.toFixed(4)},${samples[0].lng.toFixed(4)}|${samples[samples.length - 1].lat.toFixed(4)},${samples[samples.length - 1].lng.toFixed(4)}|${N}`;
-  try {
+   try {
     const elev = await window.getElevationsForRoute(samples, container, routeKey);
     if (!elev || elev.length !== N || elev.some(Number.isNaN)) return;
 
     const smooth = movingAverage(elev, 3);
 
     // BASE verileri DEĞİŞTİRME – sadece overlay çiz
-    drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
-    if (typeof highlightSegmentOnMap === 'function') {
-    highlightSegmentOnMap(day, startKm, endKm);
-}
+drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
   } finally {
     window.hideScaleBarLoading?.(container);
   }
 
-
+  // SADECE BUNU BIRAK!
+  setTimeout(function() {
+    highlightSegmentOnMap(day, startKm, endKm);
+  }, 120);
 }
 
 
