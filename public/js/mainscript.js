@@ -5313,8 +5313,7 @@ mapStyleSelect.onchange = function() {
     }
 };
 
-  const expandedMap = L.map(mapDivId, { center, zoom, ... });
-// Polyline ile fitBounds
+  // Polyline ile fitBounds
 if (coords && coords.length > 1) {
   const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
   expandedMap.fitBounds(poly.getBounds(), { padding: [20, 20] });
