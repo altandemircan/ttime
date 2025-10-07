@@ -8691,25 +8691,25 @@ createScaleElements(track, width, totalKm, 0, markers);
   if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
 
   track.__onMove = (e) => {
-    const ed = container._elevationData;
-    if (!ed || !Array.isArray(ed.smooth)) return;
-    const { smooth, min, max } = ed;
+  const ed = container._elevationData;
+  if (!ed || !Array.isArray(ed.smooth)) return;
+  const { smooth, min, max } = ed;
 
-    const s = container._elevSamples || [];
-    const startKmDom = Number(container._elevStartKm || 0);
-    const spanKm = Number(container._elevKmSpan || totalKm) || 1;
+  const s = container._elevSamples || [];
+  const startKmDom = Number(container._elevStartKm || 0);
+  const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-    const rect = track.getBoundingClientRect();
-    const ptX = e.clientX - rect.left;
+  const rect = track.getBoundingClientRect();
+  const ptX = e.clientX - rect.left;
 
-    let x = ptX;
-// Segment clamp: segment seçiliyken sadece segment aralığında gez
-if (typeof track._segmentStartPx === "number" && typeof track._segmentWidthPx === "number" && track._segmentWidthPx > 0) {
-  x = Math.max(track._segmentStartPx, Math.min(track._segmentStartPx + track._segmentWidthPx, ptX));
-}
+  // --- EKLE ---
+  let x = ptX;
+  if (typeof track._segmentStartPx === "number" && typeof track._segmentWidthPx === "number" && track._segmentWidthPx > 0) {
+    x = Math.max(track._segmentStartPx, Math.min(track._segmentStartPx + track._segmentWidthPx, ptX));
+  }
+  // --- SONU ---
 
-
-    const widthNow = Math.max(200, Math.round(rect.width));
+  const widthNow = Math.max(200, Math.round(rect.width));
 
     let vizMin = min, vizMax = max;
     const eSpan = max - min;
