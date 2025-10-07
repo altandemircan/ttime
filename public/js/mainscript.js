@@ -8721,30 +8721,25 @@ track.__onMove = (e) => {
   const ptX = e.clientX - rect.left;
   let x = ptX;
 
-  // SEGMENT SEÇİLİYKEN:
+  // --- SEGMENT SEÇİLİYKEN ---
   if (
     typeof track._segmentStartPx === "number" &&
     typeof track._segmentWidthPx === "number" &&
     track._segmentWidthPx > 0
   ) {
-    // Sadece segmentin başı-sonu aralığında hover çalışsın:
     const segStart = track._segmentStartPx;
     const segEnd = segStart + track._segmentWidthPx;
-
+    // Sadece segment aralığında hover göster:
     if (ptX < segStart || ptX > segEnd) {
-      // Segment dışında: tooltip ve çizgiyi gizle
       tooltip.style.opacity = '0';
       verticalLine.style.display = 'none';
       return;
     }
-
     x = Math.max(segStart, Math.min(segEnd, ptX));
     const percent = (x - segStart) / (segEnd - segStart);
-
-    // Segmentin km aralığını bul ve interpolate et
     const foundKmAbs = startKmDom + percent * spanKm;
 
-    // En yakın sample'ı bul
+    // En yakın sample'ı bul:
     let minDist = Infinity, foundSlope = 0, foundElev = null;
     for (let i = 1; i < s.length; i++) {
       const kmAbs1 = s[i - 1].distM / 1000;
@@ -8767,6 +8762,11 @@ track.__onMove = (e) => {
     verticalLine.style.display = 'block';
     return;
   }
+
+  // --- SEGMENT YOKSA (tam profil) ---
+  // Buraya aynen eski hover kodunu koyabilirsin.
+  // ...
+
 };
 window.__sb_onMouseMove = (e) => {
  if (!window.__scaleBarDrag) return;
