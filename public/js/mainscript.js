@@ -7347,6 +7347,8 @@ function setupSidebarAccordion() {
     const track = scaleBar.querySelector('.scale-bar-track');
     if (!track) return cleanup;
 
+    let hoverMarker = null; // <-- Burada da TANIMLA!
+
  function onMove(e) {
   const rect = track.getBoundingClientRect();
   let x;
@@ -7417,26 +7419,31 @@ function setupSidebarAccordion() {
 
   // Haritada göstergeyi oluştur/güncelle
   if (hoverMarker) {
-    hoverMarker.setLatLng([lat, lng]);
-  } else {
-    hoverMarker = L.circleMarker([lat, lng], {
-      radius: 10,
-      color: "#fff",
-      fillColor: "#8a4af3",
-      fillOpacity: 0.9,
-      weight: 3,
-      zIndexOffset: 9999
-    }).addTo(map);
+      hoverMarker.setLatLng([lat, lng]);
+    } else {
+      hoverMarker = L.circleMarker([lat, lng], {
+        radius: 10,
+        color: "#fff",
+        fillColor: "#8a4af3",
+        fillOpacity: 0.9,
+        weight: 3,
+        zIndexOffset: 9999
+      }).addTo(map);
+    }
   }
-}
 
     function onLeave() {
+        if (hoverMarker) {
+      map.removeLayer(hoverMarker);
+      hoverMarker = null;
+    }
       hideMarkerVerticalLineOnMap(map);
     }
-    track.addEventListener('mousemove', onMove);
+     track.addEventListener('mousemove', onMove);
     track.addEventListener('mouseleave', onLeave);
     track.addEventListener('touchmove', onMove, { passive: true });
     track.addEventListener('touchend', onLeave, { passive: true });
+
     return function patchedCleanup() {
       if (cleanup) cleanup();
       track.removeEventListener('mousemove', onMove);
