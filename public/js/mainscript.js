@@ -6059,28 +6059,37 @@ function setupScaleBarInteraction(day, map) {
         x = e.clientX - rect.left;
     }
 
-    // --- EKLENECEK BLOK ---
-    // Segment seçiliyken sadece segment içinde gezinsin
+    let startPx = 0, spanPx = rect.width;
     if (typeof scaleBar._segmentStartPx === "number" && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
-        x = Math.max(scaleBar._segmentStartPx, Math.min(scaleBar._segmentStartPx + scaleBar._segmentWidthPx, x));
+        startPx = scaleBar._segmentStartPx;
+        spanPx  = scaleBar._segmentWidthPx;
+        x = Math.max(startPx, Math.min(x, startPx + spanPx));
     }
-    // --- BLOK SONU ---
 
-    // Segment seçiliyse sadece segment aralığında gez
-let startKmDom = 0, spanKm = null;
-if (typeof scaleBar._segmentStartPx === "number" && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
-    // drawSegmentProfile fonksiyonu buraya şu değerleri atıyor:
-    // container._elevStartKm ve container._elevKmSpan (bunları scaleBar üzerinde de saklayabilirsin)
-    startKmDom = typeof scaleBar._segmentStartKm === "number" ? scaleBar._segmentStartKm : (scaleBar._elevStartKm || 0);
-    spanKm     = typeof scaleBar._segmentKmSpan === "number" ? scaleBar._segmentKmSpan : (scaleBar._elevKmSpan || null);
-}
-if (spanKm == null) {
-    startKmDom = 0;
-    spanKm = Number(scaleBar.dataset.totalKm) || 1;
-}
-const percent = Math.max(0, Math.min(x / rect.width, 1));
-const currentKm = startKmDom + percent * spanKm;
-const targetDist = currentKm * 1000; // SADECE SEGMENT!
+    // --- EN KRİTİK DEĞİŞİKLİK ---
+    let percent;
+    if (spanPx !== rect.width) {
+        percent = (x - startPx) / spanPx;
+    } else {
+        percent = x / rect.width;
+    }
+    percent = Math.max(0, Math.min(1, percent));
+    // --- SONU ---
+
+    let startKmDom = 0, spanKm = null;
+    if (
+        typeof scaleBar._segmentStartKm === "number" &&
+        typeof scaleBar._segmentKmSpan === "number" &&
+        scaleBar._segmentKmSpan > 0
+    ) {
+        startKmDom = scaleBar._segmentStartKm;
+        spanKm     = scaleBar._segmentKmSpan;
+    } else {
+        startKmDom = 0;
+        spanKm = Number(scaleBar.dataset.totalKm) || 1;
+    }
+    const currentKm = startKmDom + percent * spanKm;
+    const targetDist = currentKm * 1000;
 
         // Rota ve mesafe bilgilerini alın
         const containerId = `route-map-day${day}`;
@@ -8420,6 +8429,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 /* 2) Vertical guide line on the map */
 function showMarkerVerticalLineOnMap(map, latlng) {
+    
   if (!map || !latlng) return;
   const cont = map.getContainer();
   if (!cont) return;
