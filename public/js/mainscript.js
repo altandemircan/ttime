@@ -6124,6 +6124,59 @@ function setupScaleBarInteraction(day, map) {
       // Marker ve diğer kod...
       return;
     }
+ 
+
+    // --- Tam profil fallback (segment yoksa) ---
+    const targetDist = currentKm * 1000;
+    const containerId = `route-map-day${day}`;
+    const geojson = window.lastRouteGeojsons?.[containerId];
+    if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
+    const coords = geojson.features[0].geometry.coordinates;
+
+    // Kümülatif mesafe
+    let cumDist = [0];
+    for (let i = 1; i < coords.length; i++) {
+      cumDist[i] = cumDist[i - 1] + haversine(
+        coords[i - 1][1], coords[i - 1][0],
+        coords[i][1], coords[i][0]
+      );
+    }
+
+    let idx = 0;
+    while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
+    let lat, lng;
+    if (idx === 0) {
+      lat = coords[0][1];
+      lng = coords[0][0];
+    } else {
+      const prevDist = cumDist[idx - 1];
+      const nextDist = cumDist[idx];
+      const ratio = (targetDist - prevDist) / (nextDist - prevDist);
+      lat = coords[idx - 1][1] + (coords[idx][1] - coords[idx - 1][1]) * ratio;
+      lng = coords[idx - 1][0] + (coords[idx][0] - coords[idx - 1][0]) * ratio;
+    }
+
+    if (hoverMarker) {
+      hoverMarker.setLatLng([lat, lng]);
+    } else {
+      hoverMarker = L.circleMarker([lat, lng], {
+        radius: 10,
+        color: "#fff",
+        fillColor: "#8a4af3",
+        fillOpacity: 0.9,
+        weight: 3,
+        zIndexOffset: 9999
+      }).addTo(map);
+    }
+    if (tooltip) {
+      tooltip.style.opacity = '1';
+      tooltip.textContent = `${currentKm.toFixed(2)} km`;
+      tooltip.style.left = `${x}px`;
+    }
+    if (verticalLine) {
+      verticalLine.style.left = `${x}px`;
+      verticalLine.style.display = 'block';
+    }
   }
 
   function onLeave() {
