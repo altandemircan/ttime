@@ -6710,12 +6710,7 @@ function addCircleMarkerSafe(map, latlng, options) {
   }
 }
 
-// UPDATED renderRouteForDay
-// Değişiklikler:
-// - 0 nokta (points.length === 0) durumunda artık harita container hiç oluşturulmuyor.
-// - 0 nokta için: removeDayMapCompletely(day) (veya yoksa removeDayMap) ile mevcut küçük harita + info + controls tamamen kaldırılıyor.
-// - 1+ nokta durumunda eski davranış korunuyor.
-// - Diğer tüm rota / pairwise / elevation mantığı aynen bırakıldı.
+
 
 async function renderRouteForDay(day) {
     // Suppression: start with map modunda ve henüz hiç gerçek nokta yoksa
@@ -6986,6 +6981,18 @@ if (!points || points.length === 0) {
 
   setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 200);
   if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
+
+  if (
+  typeof window._lastSegmentDay === "number" &&
+  typeof window._lastSegmentStartKm === "number" &&
+  typeof window._lastSegmentEndKm === "number"
+) {
+  setTimeout(function() {
+    highlightSegmentOnMap(window._lastSegmentDay, window._lastSegmentStartKm, window._lastSegmentEndKm);
+  }, 160);
+}
+
+
 }
 
 
