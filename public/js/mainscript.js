@@ -9441,7 +9441,7 @@ function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L
 function highlightSegmentOnMap(day, startKm, endKm) {
   // Açılışta haritanın merkez ve zoom değerlerin neyse onları gir!
   const INITIAL_MAP_CENTER = [38.5, 32.0]; // Örnek: [lat, lon]
-  const INITIAL_MAP_ZOOM = 7;              // Örnek: 7
+  const INITIAL_MAP_ZOOM = 8;              // Örnek: 7
 
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
