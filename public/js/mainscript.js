@@ -3096,6 +3096,12 @@ function initEmptyDayMap(day) {
     inertia: true,
     easeLinearity: 0.2
   }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+  if (!map._initialView) {
+  map._initialView = {
+    center: map.getCenter(),
+    zoom: map.getZoom()
+  };
+}
 
   L.tileLayer(
     '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
@@ -5257,6 +5263,12 @@ const expandedMap = L.map(mapDivId, {
   inertia: true,
   easeLinearity: 0.2
 });
+if (!expandedMap._initialView) {
+  expandedMap._initialView = {
+    center: expandedMap.getCenter(),
+    zoom: expandedMap.getZoom()
+  };
+}
 
   let expandedTileLayer = null;
  // Expanded harita stil değiştirici
@@ -9459,14 +9471,14 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   });
 
   // Eğer reset (segment yok) ise haritayı ilk açılış merkez/zoom'una döndür
-  if (typeof startKm !== 'number' || typeof endKm !== 'number') {
-    maps.forEach(m => {
-      if (m && m._initialView) {
-        try { m.setView(m._initialView.center, m._initialView.zoom, { animate: true }); } catch(_) {}
-      }
-    });
-    return;
-  }
+ if (typeof startKm !== 'number' || typeof endKm !== 'number') {
+  maps.forEach(m => {
+    if (m && m._initialView) {
+      try { m.setView(m._initialView.center, m._initialView.zoom, { animate: true }); } catch(_) {}
+    }
+  });
+  return;
+}
 
   // Kümülatif mesafe
   function hv(lat1, lon1, lat2, lon2) {
