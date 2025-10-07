@@ -1,5 +1,48 @@
   window.__scaleBarDrag = null;
 
+function clearRouteSegmentHighlight(day) {
+  if (window._segmentHighlight && window._segmentHighlight[day]) {
+    Object.values(window._segmentHighlight[day]).forEach(poly => {
+      try { poly.remove(); } catch(_) {}
+    });
+    delete window._segmentHighlight[day];
+  }
+  window._lastSegmentDay = undefined;
+  window._lastSegmentStartKm = undefined;
+  window._lastSegmentEndKm = undefined;
+
+  // Segment overlay DOM'u da temizle (isteğe bağlı)
+  const bar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (bar) {
+    bar.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
+    bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+    const sel = bar.querySelector('.scale-bar-selection');
+    if (sel) sel.style.display = 'none';
+  }
+}
+
+function fitExpandedMapToRoute(day) {
+  const cid = `route-map-day${day}`;
+  const expObj = window.expandedMaps && window.expandedMaps[cid];
+  if (expObj && expObj.expandedMap) {
+    let fitted = false;
+    expObj.expandedMap.eachLayer(layer => {
+      if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+        try {
+          expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
+          fitted = true;
+        } catch(_) {}
+      }
+    });
+    if (!fitted && expObj.expandedMap._initialView) {
+      expObj.expandedMap.setView(
+        expObj.expandedMap._initialView.center,
+        expObj.expandedMap._initialView.zoom,
+        { animate: true }
+      );
+    }
+  }
+}
 
         // Nice tick helpers
   function niceStep(total, target) {
@@ -1897,49 +1940,6 @@ function safeCoords(obj) {
   return null;
 }
 
-function clearRouteSegmentHighlight(day) {
-  if (window._segmentHighlight && window._segmentHighlight[day]) {
-    Object.values(window._segmentHighlight[day]).forEach(poly => {
-      try { poly.remove(); } catch(_) {}
-    });
-    delete window._segmentHighlight[day];
-  }
-  window._lastSegmentDay = undefined;
-  window._lastSegmentStartKm = undefined;
-  window._lastSegmentEndKm = undefined;
-
-  // Segment overlay DOM'u da temizle (isteğe bağlı)
-  const bar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (bar) {
-    bar.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
-    bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
-    const sel = bar.querySelector('.scale-bar-selection');
-    if (sel) sel.style.display = 'none';
-  }
-}
-
-function fitExpandedMapToRoute(day) {
-  const cid = `route-map-day${day}`;
-  const expObj = window.expandedMaps && window.expandedMaps[cid];
-  if (expObj && expObj.expandedMap) {
-    let fitted = false;
-    expObj.expandedMap.eachLayer(layer => {
-      if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-        try {
-          expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
-          fitted = true;
-        } catch(_) {}
-      }
-    });
-    if (!fitted && expObj.expandedMap._initialView) {
-      expObj.expandedMap.setView(
-        expObj.expandedMap._initialView.center,
-        expObj.expandedMap._initialView.zoom,
-        { animate: true }
-      );
-    }
-  }
-}
 function addToCart(
   name,
   image,
