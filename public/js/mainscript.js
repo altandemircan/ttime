@@ -6050,17 +6050,7 @@ function setupScaleBarInteraction(day, map) {
   const verticalLine = track.querySelector('.scale-bar-vertical-line');
   const tooltip = track.querySelector('.tt-elev-tooltip');
 
-  function isSegmentActive() {
-    return (
-      typeof track._segmentStartKm === "number" &&
-      typeof track._segmentKmSpan === "number" &&
-      track._segmentKmSpan > 0 &&
-      // Toplam km'nin %99'undan küçükse → segment aktif!
-      (track._segmentKmSpan < (Number(scaleBar.dataset.totalKm) || 1) * 0.99)
-    );
-  }
-
- function onMove(e) {
+  function onMove(e) {
   const rect = track.getBoundingClientRect();
   let x = (e.touches && e.touches.length)
     ? e.touches[0].clientX - rect.left
