@@ -9491,15 +9491,15 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-    // MOR çizgi kesinlikle SVG path olacak şekilde renderer parametresi YOK!
-    const poly = L.polyline(sub, {
-      color:'#ff00cc', // veya '#8a4af3'
-      weight: 13,
-      opacity: 1
-    }).addTo(m);
-    window._segmentHighlight[day][m._leaflet_id] = poly;
-    if (poly.bringToFront) poly.bringToFront();
-  });
+  const poly = L.polyline(sub, {
+    color: '#8a4af3',
+    weight: 6,
+    opacity: 1,
+    dashArray: ''
+  }).addTo(m);
+  window._segmentHighlight[day][m._leaflet_id] = poly;
+  if (poly.bringToFront) poly.bringToFront();
+});
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
