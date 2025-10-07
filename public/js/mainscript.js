@@ -6047,11 +6047,9 @@ window.handleImageError = async function(imgElement, placeName, index) {
 function setupScaleBarInteraction(day, map) {
   const scaleBar = document.getElementById('expanded-route-scale-bar-day' + day);
   const track = scaleBar.querySelector('.scale-bar-track');
-  let hoverMarker = null; // <-- Bunu ekle
-track.addEventListener('mousemove', onMove);
+  let hoverMarker = null; // <-- TANIM BURADA!
 
-
-function onMove(e) {
+  function onMove(e) {
   const rect = track.getBoundingClientRect();
   let x = (e.touches && e.touches.length)
     ? e.touches[0].clientX - rect.left
@@ -6118,33 +6116,32 @@ function onMove(e) {
   }
 
   // Haritada göstergeyi oluştur/güncelle
-  if (hoverMarker) {
-    hoverMarker.setLatLng([lat, lng]);
-  } else {
-    hoverMarker = L.circleMarker([lat, lng], {
-      radius: 10,
-      color: "#fff",
-      fillColor: "#8a4af3",
-      fillOpacity: 0.9,
-      weight: 3,
-      zIndexOffset: 9999
-    }).addTo(map);
-  }
-}
-
-    function onLeave() {
-        if (hoverMarker) {
-            map.removeLayer(hoverMarker);
-            hoverMarker = null;
-        }
+if (hoverMarker) {
+      hoverMarker.setLatLng([lat, lng]);
+    } else {
+      hoverMarker = L.circleMarker([lat, lng], {
+        radius: 10,
+        color: "#fff",
+        fillColor: "#8a4af3",
+        fillOpacity: 0.9,
+        weight: 3,
+        zIndexOffset: 9999
+      }).addTo(map);
     }
+  }
 
-    scaleBar.addEventListener("mousemove", onMove);
-    scaleBar.addEventListener("mouseleave", onLeave);
 
-    // Mobile touch desteği
-    scaleBar.addEventListener("touchmove", onMove);
-    scaleBar.addEventListener("touchend", onLeave);
+function onLeave() {
+    if (hoverMarker) {
+      map.removeLayer(hoverMarker);
+      hoverMarker = null;
+    }
+  }
+
+  track.addEventListener('mousemove', onMove);
+  track.addEventListener('mouseleave', onLeave);
+  track.addEventListener('touchmove', onMove);
+  track.addEventListener('touchend', onLeave);
 }
 function restoreMap(containerId, day) {
     const expandedData = window.expandedMaps?.[containerId];
