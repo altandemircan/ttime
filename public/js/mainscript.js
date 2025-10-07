@@ -8894,23 +8894,24 @@ document.addEventListener('mousedown', (e) => {
 });
 
 function highlightSegmentOnMap(day, startKm, endKm) {
+  // Eksik harita veya rota datası varsa, 300ms sonra tekrar dene (max 10 kez)
   if (
-  !window.leafletMaps || !window.lastRouteGeojsons ||
-  !window.leafletMaps[`route-map-day${day}`] ||
-  !window.lastRouteGeojsons[`route-map-day${day}`] ||
-  !window.lastRouteGeojsons[`route-map-day${day}`].features?.[0]?.geometry?.coordinates
-) {
-  window._highlightSegmentOnMapTries = (window._highlightSegmentOnMapTries||0) + 1;
-  if (window._highlightSegmentOnMapTries < 10) {
-    setTimeout(() => highlightSegmentOnMap(day, startKm, endKm), 300);
-  } else {
-    window._highlightSegmentOnMapTries = 0;
+    !window.leafletMaps || !window.lastRouteGeojsons ||
+    !window.leafletMaps[`route-map-day${day}`] ||
+    !window.lastRouteGeojsons[`route-map-day${day}`] ||
+    !window.lastRouteGeojsons[`route-map-day${day}`].features?.[0]?.geometry?.coordinates
+  ) {
+    window._highlightSegmentOnMapTries = (window._highlightSegmentOnMapTries||0) + 1;
+    if (window._highlightSegmentOnMapTries < 10) {
+      setTimeout(() => highlightSegmentOnMap(day, startKm, endKm), 300);
+    } else {
+      window._highlightSegmentOnMapTries = 0;
+    }
+    return;
   }
-  return;
-}
-window._highlightSegmentOnMapTries = 0;
+  window._highlightSegmentOnMapTries = 0;
 
-const cid = `route-map-day${day}`;
+  const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
 
@@ -8921,12 +8922,6 @@ const cid = `route-map-day${day}`;
   const exp = window.expandedMaps?.[cid]?.expandedMap;
   if (exp) maps.push(exp);
 
-  // Harita hazır değilse biraz sonra tekrar dene
-  if (maps.length === 0) {
-    setTimeout(() => highlightSegmentOnMap(day, startKm, endKm), 200);
-    return;
-  }
-
   // Önce eski highlight'ları sil
   maps.forEach(m => {
     if (window._segmentHighlight[day]?.[m._leaflet_id]) {
@@ -8935,9 +8930,9 @@ const cid = `route-map-day${day}`;
     }
   });
 
-  const coords = gj.features[0].geometry.coordinates;
+  const coords = gj.features[0].geometry.coordinates; // [lng,lat]
 
-  // Reset (temizleme) ise fitBounds ile tüm rotayı göster
+  // Sadece temizleme gerekiyorsa (reset) rota geneline fitBounds yap
   if (typeof startKm !== 'number' || typeof endKm !== 'number') {
     if (maps.length && coords.length > 1) {
       setTimeout(() => {
@@ -8952,7 +8947,7 @@ const cid = `route-map-day${day}`;
     return;
   }
 
-  // Segment aralığı
+  // Kümülatif mesafe hesapla
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -8965,15 +8960,20 @@ const cid = `route-map-day${day}`;
     cum[i]=cum[i-1]+hv(lat1,lon1,lat2,lon2);
   }
   const segStartM = startKm*1000, segEndM=endKm*1000;
+
+  // Segment aralığını bul
   let iStart = 0, iEnd = coords.length - 1;
   for (let i=1;i<cum.length;i++){ if (cum[i] >= segStartM){ iStart = i; break; } }
   for (let i=cum.length-2;i>=0;i--){ if (cum[i] <= segEndM){ iEnd = i+1; break; } }
   iStart = Math.max(0, Math.min(iStart, coords.length-2));
   iEnd = Math.max(iStart+1, Math.min(iEnd, coords.length-1));
+
+  // [lat, lng] dizisi
   const sub = coords.slice(iStart, iEnd+1).map(c => [c[1], c[0]]);
   if (sub.length < 2) return;
 
   function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
+
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
     const poly = L.polyline(sub, {
