@@ -6049,25 +6049,44 @@ function setupScaleBarInteraction(day, map) {
   const track = scaleBar.querySelector('.scale-bar-track');
   let hoverMarker = null; // <-- TANIM BURADA!
 
+<<<<<<< HEAD
   function onMove(e) {
   const rect = track.getBoundingClientRect();
   let x = (e.touches && e.touches.length)
     ? e.touches[0].clientX - rect.left
     : e.clientX - rect.left;
-
-  let startPx = 0, spanPx = rect.width;
-  if (
-    typeof track._segmentStartPx === "number" &&
-    typeof track._segmentWidthPx === "number" &&
-    track._segmentWidthPx > 0
-  ) {
-    startPx = track._segmentStartPx;
-    spanPx  = track._segmentWidthPx;
-    x = Math.max(startPx, Math.min(x, startPx + spanPx));
+=======
+  function isSegmentActive() {
+    return (
+      typeof track._segmentStartKm === "number" &&
+      typeof track._segmentKmSpan === "number" &&
+      track._segmentKmSpan > 0 &&
+      // Toplam km'nin %99'undan küçükse → segment aktif!
+      (track._segmentKmSpan < (Number(scaleBar.dataset.totalKm) || 1) * 0.99)
+    );
   }
-  let percent = (x - startPx) / spanPx;
-  percent = Math.max(0, Math.min(1, percent));
 
+  function onMove(e) {
+    const rect = track.getBoundingClientRect();
+    let x = (e.touches && e.touches.length)
+      ? e.touches[0].clientX - rect.left
+      : e.clientX - rect.left;
+>>>>>>> parent of c4641db (Update mainscript.js)
+
+    let startPx = 0, spanPx = rect.width;
+    if (
+      typeof track._segmentStartPx === "number" &&
+      typeof track._segmentWidthPx === "number" &&
+      track._segmentWidthPx > 0
+    ) {
+      startPx = track._segmentStartPx;
+      spanPx  = track._segmentWidthPx;
+      x = Math.max(startPx, Math.min(x, startPx + spanPx));
+    }
+    let percent = (x - startPx) / spanPx;
+    percent = Math.max(0, Math.min(1, percent));
+
+<<<<<<< HEAD
   let startKmDom = 0, spanKm = null;
   if (
     typeof track._segmentStartKm === "number" &&
@@ -6127,6 +6146,113 @@ if (hoverMarker) {
         weight: 3,
         zIndexOffset: 9999
       }).addTo(map);
+=======
+    // --- SEGMENT AKTİFSE SADECE SEGMENT DATASI ---
+    if (isSegmentActive()) {
+      const startKmDom = track._segmentStartKm;
+      const spanKm = track._segmentKmSpan;
+      let currentKm = startKmDom + percent * spanKm;
+
+      const samples = track._elevSamples || [];
+      const elevationData = track._elevationData || {};
+
+      if (samples.length) {
+        const minKm = samples[0].distM / 1000;
+        const maxKm = samples[samples.length - 1].distM / 1000;
+        if (currentKm < minKm) currentKm = minKm;
+        if (currentKm > maxKm) currentKm = maxKm;
+
+        let idx = 0, minDist = Infinity;
+        for (let i = 0; i < samples.length; i++) {
+          const kmAbs = samples[i].distM / 1000;
+          const dist = Math.abs(currentKm - kmAbs);
+          if (dist < minDist) { minDist = dist; idx = i; }
+        }
+
+        const elev = elevationData.smooth ? Math.round(elevationData.smooth[idx]) : '';
+        let slope = 0;
+        if (elevationData.smooth && idx > 0) {
+          const dx = samples[idx].distM - samples[idx-1].distM;
+          const dy = elevationData.smooth[idx] - elevationData.smooth[idx-1];
+          slope = dx > 0 ? ((dy / dx) * 100) : 0;
+        }
+        const lat = samples[idx].lat;
+        const lng = samples[idx].lng;
+
+        if (hoverMarker) hoverMarker.setLatLng([lat, lng]);
+        else hoverMarker = L.circleMarker([lat, lng], {
+          radius: 10,
+          color: "#fff",
+          fillColor: "#8a4af3",
+          fillOpacity: 0.9,
+          weight: 3,
+          zIndexOffset: 9999
+        }).addTo(map);
+
+        if (tooltip) {
+          tooltip.style.opacity = '1';
+          tooltip.textContent = `${currentKm.toFixed(2)} km • ${elev} m • %${slope.toFixed(1)} slope`;
+          tooltip.style.left = `${x}px`;
+        }
+        if (verticalLine) {
+          verticalLine.style.left = `${x}px`;
+          verticalLine.style.display = 'block';
+        }
+        return;
+      }
+    }
+
+    // --- SEGMENT YOKSA (TAM PROFİL) ---
+    let startKmDom = 0, spanKm = Number(scaleBar.dataset.totalKm) || 1;
+    let currentKm = startKmDom + percent * spanKm;
+
+    const targetDist = currentKm * 1000;
+    const containerId = `route-map-day${day}`;
+    const geojson = window.lastRouteGeojsons?.[containerId];
+    if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
+    const coords = geojson.features[0].geometry.coordinates;
+
+    let cumDist = [0];
+    for (let i = 1; i < coords.length; i++) {
+      cumDist[i] = cumDist[i - 1] + haversine(
+        coords[i - 1][1], coords[i - 1][0],
+        coords[i][1], coords[i][0]
+      );
+    }
+
+    let idx = 0;
+    while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
+    let lat, lng;
+    if (idx === 0) {
+      lat = coords[0][1];
+      lng = coords[0][0];
+    } else {
+      const prevDist = cumDist[idx - 1];
+      const nextDist = cumDist[idx];
+      const ratio = (targetDist - prevDist) / (nextDist - prevDist);
+      lat = coords[idx - 1][1] + (coords[idx][1] - coords[idx - 1][1]) * ratio;
+      lng = coords[idx - 1][0] + (coords[idx][0] - coords[idx - 1][0]) * ratio;
+    }
+
+    if (hoverMarker) hoverMarker.setLatLng([lat, lng]);
+    else hoverMarker = L.circleMarker([lat, lng], {
+      radius: 10,
+      color: "#fff",
+      fillColor: "#8a4af3",
+      fillOpacity: 0.9,
+      weight: 3,
+      zIndexOffset: 9999
+    }).addTo(map);
+
+    if (tooltip) {
+      tooltip.style.opacity = '1';
+      tooltip.textContent = `${currentKm.toFixed(2)} km`;
+      tooltip.style.left = `${x}px`;
+    }
+    if (verticalLine) {
+      verticalLine.style.left = `${x}px`;
+      verticalLine.style.display = 'block';
+>>>>>>> parent of c4641db (Update mainscript.js)
     }
   }
 
