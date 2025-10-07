@@ -8427,8 +8427,8 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
     if (majors > 14) { stepKm = niceStep(totalKm, 14); majors = Math.round(totalKm / stepKm); }
 
     for (let i = 0; i <= majors; i++) {
-      const curKm = Math.min(totalKm, i * stepKm);
-      const leftPct = (curKm / totalKm) * 100;
+  const curKm = Math.min(spanKm, i * stepKm);
+  const leftPct = (curKm / spanKm) * 100;
 
       const tick = document.createElement('div');
       tick.className = 'scale-bar-tick';
@@ -8452,9 +8452,9 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
       track.appendChild(label);
     }
 
-    if (Array.isArray(markers)) {
-      markers.forEach((m, idx) => {
-        const left = (m.distance / totalKm) * 100;
+    markers.forEach((m, idx) => {
+    if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return; // segment dışında ise çizme!
+    const left = ((m.distance - startKmDom) / spanKm) * 100;
         const wrap = document.createElement('div');
         wrap.className = 'marker-badge';
         wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
@@ -8545,141 +8545,204 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
   svg.appendChild(segG);
 
   // Redraw (aktif domain + örneklerle)
-  function redrawElevation(elevationData) {
-    if (!elevationData) return;
-    const { smooth, min, max } = elevationData;
+  // Redraw (aktif domain + örneklerle)
+function redrawElevation(elevationData) {
+  if (!elevationData) return;
+  const { smooth, min, max } = elevationData;
+  const s = container._elevSamples || [];
+  const startKmDom = Number(container._elevStartKm || 0);
+  const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-    const s = container._elevSamples || [];
-    const startKmDom = Number(container._elevStartKm || 0);
-    const spanKm = Number(container._elevKmSpan || totalKm) || 1;
+  // Görsel min/max
+  let vizMin = min, vizMax = max;
+  const eSpan = max - min;
+  if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
+  else { vizMin = min - 1; vizMax = max + 1; }
 
-    // Görsel min/max
-    let vizMin = min, vizMax = max;
-    const eSpan = max - min;
-    if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
-    else { vizMin = min - 1; vizMax = max + 1; }
+  const X = kmRel => (kmRel / spanKm) * width;
+  const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
 
-    const X = kmRel => (kmRel / spanKm) * width;
-    const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
+  // --- PATCH Başlangıç: Marker & Km çizelgesi güncellemesi ---
+  // Önce grid ve segG temizle
+  while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
+  while (segG.firstChild) segG.removeChild(segG.firstChild);
 
-    while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
-    while (segG.firstChild) segG.removeChild(segG.firstChild);
+  // Grid (y ekseni)
+  const levels = 4;
+  for (let i = 0; i <= levels; i++) {
+    const ev = vizMin + (i / levels) * (vizMax - vizMin);
+    const y = Y(ev);
+    if (isNaN(y)) continue;
+    const ln = document.createElementNS(svgNS, 'line');
+    ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+    ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+    ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+    gridG.appendChild(ln);
 
-    // Grid
-    const levels = 4;
-    for (let i = 0; i <= levels; i++) {
-      const ev = vizMin + (i / levels) * (vizMax - vizMin);
-      const y = Y(ev);
-      if (isNaN(y)) continue;
-      const ln = document.createElementNS(svgNS, 'line');
-      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
-      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-      gridG.appendChild(ln);
+    const tx = document.createElementNS(svgNS, 'text');
+    tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+    tx.textContent = `${Math.round(ev)} m`;
+    gridG.appendChild(tx);
+  }
 
-      const tx = document.createElementNS(svgNS, 'text');
-      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-      tx.textContent = `${Math.round(ev)} m`;
-      gridG.appendChild(tx);
+  // Km çizelgesi (X ekseni) ve markerlar için scale-bar-track DOM'u:
+  // (track zaten dışarıda, markerlar için güncelleme örneği aşağıda)
+
+  // Km çizelgesi: segment aralığına göre
+  // (ör: her 1km veya segment boyuna göre adım)
+  const tickCount = Math.max(4, Math.round(spanKm));
+  for (let i = 0; i <= tickCount; i++) {
+    const curKm = (spanKm / tickCount) * i;
+    const leftPx = X(curKm);
+    // X eksenine vertical tick
+    const tick = document.createElementNS(svgNS, 'line');
+    tick.setAttribute('x1', String(leftPx));
+    tick.setAttribute('x2', String(leftPx));
+    tick.setAttribute('y1', String(SVG_H - 1));
+    tick.setAttribute('y2', String(SVG_H - 9));
+    tick.setAttribute('stroke', '#b0bec5');
+    tick.setAttribute('stroke-width', '1');
+    gridG.appendChild(tick);
+
+    // Label
+    const tx = document.createElementNS(svgNS, 'text');
+    tx.setAttribute('x', String(leftPx));
+    tx.setAttribute('y', String(SVG_H + 12));
+    tx.setAttribute('fill', '#90a4ae');
+    tx.setAttribute('font-size', '10');
+    tx.setAttribute('text-anchor', 'middle');
+    tx.textContent = `${(startKmDom + curKm).toFixed(1)} km`;
+    gridG.appendChild(tx);
+  }
+
+  // Markerlar (sıralı km pozisyonuna göre)
+  if (Array.isArray(container._routeMarkers)) {
+    container._routeMarkers.forEach((m, idx) => {
+      // m.distance: marker'ın toplam rotadaki km'si
+      // Segment aralığındaysa çiz:
+      if (m.distance >= startKmDom && m.distance <= startKmDom + spanKm) {
+        const relKm = m.distance - startKmDom;
+        const leftPx = X(relKm);
+        // SVG markerı (ör: kırmızı daire + label)
+        const markerDot = document.createElementNS(svgNS, 'circle');
+        markerDot.setAttribute('cx', String(leftPx));
+        markerDot.setAttribute('cy', String(SVG_H));
+        markerDot.setAttribute('r', '5');
+        markerDot.setAttribute('fill', '#d32f2f');
+        markerDot.setAttribute('stroke', '#fff');
+        markerDot.setAttribute('stroke-width', '2');
+        segG.appendChild(markerDot);
+
+        const markerLabel = document.createElementNS(svgNS, 'text');
+        markerLabel.setAttribute('x', String(leftPx));
+        markerLabel.setAttribute('y', String(SVG_H + 22));
+        markerLabel.setAttribute('fill', '#d32f2f');
+        markerLabel.setAttribute('font-size', '11');
+        markerLabel.setAttribute('text-anchor', 'middle');
+        markerLabel.textContent = (idx + 1).toString();
+        segG.appendChild(markerLabel);
+      }
+    });
+  }
+  // --- PATCH Sonu ---
+
+  // Alan
+  let topD = '';
+  const n = Math.min(smooth.length, s.length);
+  for (let i = 0; i < n; i++) {
+    const kmAbs = s[i].distM / 1000;
+    const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
+    const y = Y(smooth[i]);
+    if (isNaN(x) || isNaN(y)) continue;
+    topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+  }
+  if (topD) {
+    const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
+    areaPath.setAttribute('d', areaD);
+    areaPath.setAttribute('fill', '#263445');
+  }
+
+  // Eğim renkli çizgiler
+  for (let i = 1; i < n; i++) {
+    const kmAbs1 = s[i - 1].distM / 1000;
+    const kmAbs2 = s[i].distM / 1000;
+    const x1 = Math.max(0, Math.min(width, X(kmAbs1 - startKmDom)));
+    const y1 = Y(smooth[i - 1]);
+    const x2 = Math.max(0, Math.min(width, X(kmAbs2 - startKmDom)));
+    const y2 = Y(smooth[i]);
+
+    const dx = s[i].distM - s[i - 1].distM;
+    const dy = smooth[i] - smooth[i - 1];
+    let slope = 0, color = '#72c100';
+    if (i > 1 && dx > 50) {
+      slope = (dy / dx) * 100;
+      color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
     }
 
-    // Alan
-    let topD = '';
-    const n = Math.min(smooth.length, s.length);
-    for (let i = 0; i < n; i++) {
-      const kmAbs = s[i].distM / 1000;
-      const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
-      const y = Y(smooth[i]);
-      if (isNaN(x) || isNaN(y)) continue;
-      topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-    }
-    if (topD) {
-      const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
-      areaPath.setAttribute('d', areaD);
-      areaPath.setAttribute('fill', '#263445');
-    }
+    const seg = document.createElementNS(svgNS, 'line');
+    seg.setAttribute('x1', String(x1));
+    seg.setAttribute('y1', String(y1));
+    seg.setAttribute('x2', String(x2));
+    seg.setAttribute('y2', String(y2));
+    seg.setAttribute('stroke', color);
+    seg.setAttribute('stroke-width', '3');
+    seg.setAttribute('stroke-linecap', 'round');
+    seg.setAttribute('fill', 'none');
+    segG.appendChild(seg);
+  }
+}
+container._redrawElevation = redrawElevation;
 
-    // Eğim renkli çizgiler
-    for (let i = 1; i < n; i++) {
-      const kmAbs1 = s[i - 1].distM / 1000;
-      const kmAbs2 = s[i].distM / 1000;
-      const x1 = Math.max(0, Math.min(width, X(kmAbs1 - startKmDom)));
-      const y1 = Y(smooth[i - 1]);
-      const x2 = Math.max(0, Math.min(width, X(kmAbs2 - startKmDom)));
-      const y2 = Y(smooth[i]);
+// Hover (aktif domain ile)
+if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
+if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
 
+track.__onMove = (e) => {
+  const ed = container._elevationData;
+  if (!ed || !Array.isArray(ed.smooth)) return;
+  const { smooth, min, max } = ed;
+
+  const s = container._elevSamples || [];
+  const startKmDom = Number(container._elevStartKm || 0);
+  const spanKm = Number(container._elevKmSpan || totalKm) || 1;
+
+  const rect = track.getBoundingClientRect();
+  const ptX = e.clientX - rect.left;
+  const widthNow = Math.max(200, Math.round(rect.width));
+
+  let vizMin = min, vizMax = max;
+  const eSpan = max - min;
+  if (eSpan > 0) { vizMin = min - eSpan * 0.25; vizMax = max + eSpan * 0.25; }
+  else { vizMin = min - 1; vizMax = max + 1; }
+
+  const X = kmRel => (kmRel / spanKm) * widthNow;
+
+  let minDist = Infinity, foundSlope = 0, foundElev = null, foundKmAbs = 0;
+  const n = Math.min(smooth.length, s.length);
+  for (let i = 1; i < n; i++) {
+    const kmAbs1 = s[i - 1].distM / 1000;
+    const kmAbs2 = s[i].distM / 1000;
+    const x1 = Math.max(0, Math.min(widthNow, X(kmAbs1 - startKmDom)));
+    const x2 = Math.max(0, Math.min(widthNow, X(kmAbs2 - startKmDom)));
+    const mid = (x1 + x2) / 2;
+    const dist = Math.abs(ptX - mid);
+    if (dist < minDist) {
+      minDist = dist;
       const dx = s[i].distM - s[i - 1].distM;
       const dy = smooth[i] - smooth[i - 1];
-      let slope = 0, color = '#72c100';
-      if (i > 1 && dx > 50) {
-        slope = (dy / dx) * 100;
-        color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
-      }
-
-      const seg = document.createElementNS(svgNS, 'line');
-      seg.setAttribute('x1', String(x1));
-      seg.setAttribute('y1', String(y1));
-      seg.setAttribute('x2', String(x2));
-      seg.setAttribute('y2', String(y2));
-      seg.setAttribute('stroke', color);
-      seg.setAttribute('stroke-width', '3');
-      seg.setAttribute('stroke-linecap', 'round');
-      seg.setAttribute('fill', 'none');
-      segG.appendChild(seg);
+      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+      foundElev = Math.round(smooth[i]);
+      foundKmAbs = kmAbs2;
     }
   }
-  container._redrawElevation = redrawElevation;
 
-  // Hover (aktif domain ile)
-  if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
-  if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
-
-  track.__onMove = (e) => {
-    const ed = container._elevationData;
-    if (!ed || !Array.isArray(ed.smooth)) return;
-    const { smooth, min, max } = ed;
-
-    const s = container._elevSamples || [];
-    const startKmDom = Number(container._elevStartKm || 0);
-    const spanKm = Number(container._elevKmSpan || totalKm) || 1;
-
-    const rect = track.getBoundingClientRect();
-    const ptX = e.clientX - rect.left;
-    const widthNow = Math.max(200, Math.round(rect.width));
-
-    let vizMin = min, vizMax = max;
-    const eSpan = max - min;
-    if (eSpan > 0) { vizMin = min - eSpan * 0.25; vizMax = max + eSpan * 0.25; }
-    else { vizMin = min - 1; vizMax = max + 1; }
-
-    const X = kmRel => (kmRel / spanKm) * widthNow;
-
-    let minDist = Infinity, foundSlope = 0, foundElev = null, foundKmAbs = 0;
-    const n = Math.min(smooth.length, s.length);
-    for (let i = 1; i < n; i++) {
-      const kmAbs1 = s[i - 1].distM / 1000;
-      const kmAbs2 = s[i].distM / 1000;
-      const x1 = Math.max(0, Math.min(widthNow, X(kmAbs1 - startKmDom)));
-      const x2 = Math.max(0, Math.min(widthNow, X(kmAbs2 - startKmDom)));
-      const mid = (x1 + x2) / 2;
-      const dist = Math.abs(ptX - mid);
-      if (dist < minDist) {
-        minDist = dist;
-        const dx = s[i].distM - s[i - 1].distM;
-        const dy = smooth[i] - smooth[i - 1];
-        foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-        foundElev = Math.round(smooth[i]);
-        foundKmAbs = kmAbs2;
-      }
-    }
-
-    tooltip.style.opacity = '1';
-    tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-    tooltip.style.left = `${ptX}px`;
-    verticalLine.style.left = `${ptX}px`;
-    verticalLine.style.display = 'block';
-  };
+  tooltip.style.opacity = '1';
+  tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
+  tooltip.style.left = `${ptX}px`;
+  verticalLine.style.left = `${ptX}px`;
+  verticalLine.style.display = 'block';
+};
 
   track.__onLeave = () => {
     tooltip.style.opacity = '0';
@@ -9074,9 +9137,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 })();
 
 
-/* === Open‑Meteo Elevation fetch guard: throttle + singleflight + retry-after ===
-   Drop-in patch: DO NOT modify existing renderRouteScaleBar. Append at file end.
-*/
+
 (function patchOpenMeteoElevationFetch(){
   if (window.__tt_openMeteoPatched) return;
 
