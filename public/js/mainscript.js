@@ -6048,15 +6048,22 @@ function setupScaleBarInteraction(day, map) {
     let hoverMarker = null;
 
     function onMove(e) {
-        // Mouse veya dokunma pozisyonunu alın
-        const rect = scaleBar.getBoundingClientRect();
-        let x;
-        if (e.touches && e.touches.length) {
-            x = e.touches[0].clientX - rect.left;
-        } else {
-            x = e.clientX - rect.left;
-        }
-        const percent = Math.max(0, Math.min(x / rect.width, 1));
+    const rect = scaleBar.getBoundingClientRect();
+    let x;
+    if (e.touches && e.touches.length) {
+        x = e.touches[0].clientX - rect.left;
+    } else {
+        x = e.clientX - rect.left;
+    }
+
+    // --- EKLENECEK BLOK ---
+    // Segment seçiliyken sadece segment içinde gezinsin
+    if (typeof scaleBar._segmentStartPx === "number" && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
+        x = Math.max(scaleBar._segmentStartPx, Math.min(scaleBar._segmentStartPx + scaleBar._segmentWidthPx, x));
+    }
+    // --- BLOK SONU ---
+
+    const percent = Math.max(0, Math.min(x / rect.width, 1));
 
         // Rota ve mesafe bilgilerini alın
         const containerId = `route-map-day${day}`;
@@ -9553,17 +9560,28 @@ console.log('SEGMENT PROFILE SET', day, startKm, endKm);
     ? getRouteMarkerPositionsOrdered(day) : [];
 
   // --- Segment/profil marker ve km çizelgesi güncelle ---
-  if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
-    // Tam profile dön
-    container._elevStartKm = 0;
-    container._elevKmSpan  = totalKm;
-    createScaleElements(track, widthPx, totalKm, 0, markers);
-  } else {
-    // Segment seçiliyken
-    container._elevStartKm = startKm;
-    container._elevKmSpan  = endKm - startKm;
-    createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
-  }
+if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
+  // Tam profile dön
+  container._elevStartKm = 0;
+  container._elevKmSpan  = totalKm;
+  createScaleElements(track, widthPx, totalKm, 0, markers);
+
+  // Tüm profil gösteriliyorsa, sınır yok
+  track._segmentStartPx = undefined;
+  track._segmentWidthPx = undefined;
+} else {
+  // Segment seçiliyken
+  container._elevStartKm = startKm;
+  container._elevKmSpan  = endKm - startKm;
+  createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
+
+  // Segment overlay'in px aralığını kaydet
+  const rect = track.getBoundingClientRect();
+  const segStartPx = (startKm / totalKm) * rect.width;
+  const segWidthPx = ((endKm - startKm) / totalKm) * rect.width;
+  track._segmentStartPx = segStartPx;
+  track._segmentWidthPx = segWidthPx;
+}
 
   // --------------------- SVG Overlay Kısmı ---------------------
   const svgNS = 'http://www.w3.org/2000/svg';
