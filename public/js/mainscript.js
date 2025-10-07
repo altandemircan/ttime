@@ -8907,7 +8907,7 @@ document.addEventListener('mousedown', (e) => {
 });
 
 function highlightSegmentOnMap(day, startKm, endKm) {
-    console.log('highlightSegmentOnMap CALLED', day, startKm, endKm);
+  console.log('highlightSegmentOnMap CALLED', day, startKm, endKm);
 
   // Harita veya rota hazır değilse, tekrar dene (en çok 20 defa)
   if (
@@ -8992,16 +8992,22 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   maps.forEach(m => {
     const poly = L.polyline(sub, {
-      color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m)
+      color:'#8a4af3',
+      weight: 12, // DAHA KALIN YAP!
+      opacity: 1,
+      dashArray: '',
+      renderer: ensureCanvasRenderer(m)
     }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
+
+    // Mor çizgiyi HER ZAMAN ÖNE GETİR
+    if (poly.bringToFront) poly.bringToFront();
   });
 
-  // Mor çizgiyi en üste getir
+  // Ekstra güvenlik için: tüm mor çizgileri tekrar öne getir
   maps.forEach(m => {
-    const layers = Object.values(m._layers);
-    layers.forEach(layer => {
-      if (layer && layer._path && layer.options && layer.options.color === "#8a4af3") {
+    Object.values(m._layers).forEach(layer => {
+      if (layer && layer._path && layer.options && String(layer.options.color).toLowerCase() === "#8a4af3") {
         layer.bringToFront && layer.bringToFront();
       }
     });
