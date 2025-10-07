@@ -6123,7 +6123,7 @@ function setupScaleBarInteraction(day, map) {
         verticalLine.style.display = 'block';
       }
       return;
-    }
+    
   }
 
   function onLeave() {
