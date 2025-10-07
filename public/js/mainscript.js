@@ -7348,57 +7348,72 @@ function setupSidebarAccordion() {
     const containerId = `route-map-day${day}`;
 
 function onMove(e) {
-  const rect = scaleBar.getBoundingClientRect();
-  const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (e.clientX - rect.left);
-  const percent = Math.max(0, Math.min(x / rect.width, 1));
-  const geojson = window.lastRouteGeojsons?.[containerId];
-  if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
-  const coords = geojson.features[0].geometry.coordinates;
+    const rect = scaleBar.getBoundingClientRect();
+    let x;
+    if (e.touches && e.touches.length) {
+        x = e.touches[0].clientX - rect.left;
+    } else {
+        x = e.clientX - rect.left;
+    }
 
-  // Kümülatif mesafeleri hazırla
-  let cumDist = [0];
-  for (let i = 1; i < coords.length; i++) {
-    const [lng1, lat1] = coords[i - 1];
-    const [lng2, lat2] = coords[i];
-    const d = (function(lat1, lon1, lat2, lon2) {
-      const R=6371000, toRad=(x)=>x*Math.PI/180;
-      const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
-      const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-      return 2*R*Math.asin(Math.sqrt(a));
-    })(lat1, lng1, lat2, lng2);
-    cumDist[i] = cumDist[i-1] + d;
-  }
-  const totalDist = cumDist[cumDist.length - 1];
+    // --- SEGMENT PX KISITLAMASI ---
+    let startPx = 0, spanPx = rect.width;
+    if (typeof scaleBar._segmentStartPx === "number" && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
+        startPx = scaleBar._segmentStartPx;
+        spanPx  = scaleBar._segmentWidthPx;
+        // x değerini segment aralığına kısıtla
+        x = Math.max(startPx, Math.min(startPx + spanPx, x));
+    }
 
-  // ----- SEGMENT KONTROLÜ -----
-  // Segment seçiliyse sadece segment başı-sonu aralığını kullan!
-  let startKm = scaleBar._segmentStartKm;
-  let spanKm  = scaleBar._segmentKmSpan;
-  let target;
-  if (typeof startKm === "number" && typeof spanKm === "number" && spanKm > 0) {
-    // Segment seçili: target, segment başı + (percent*segment uzunluğu)
-    const segStartM = startKm * 1000;
-    const segEndM   = (startKm + spanKm) * 1000;
-    target = segStartM + percent * (segEndM - segStartM);
-  } else {
-    // Segment yok: tüm rotada gez
-    target = percent * totalDist;
-  }
-  // ----- /SEGMENT KONTROLÜ -----
+    // px → segment içindeki orana dönüştür
+    let percent = (x - startPx) / spanPx;
+    percent = Math.max(0, Math.min(1, percent));
 
-  let idx = 0;
-  while (cumDist[idx] < target && idx < cumDist.length - 1) idx++;
-  let lat, lng;
-  if (idx === 0) {
-    lat = coords[0][1]; lng = coords[0][0];
-  } else {
-    const prev = idx - 1;
-    const seg = cumDist[idx] - cumDist[prev] || 1;
-    const t = (target - cumDist[prev]) / seg;
-    lat = coords[prev][1] + (coords[idx][1] - coords[prev][1]) * t;
-    lng = coords[prev][0] + (coords[idx][0] - coords[prev][0]) * t;
-  }
-  showMarkerVerticalLineOnMap(map, L.latLng(lat, lng));
+    // Segment km değerlerini oku
+    let startKmDom = 0, spanKm = null;
+    if (
+        typeof scaleBar._segmentStartKm === "number" &&
+        typeof scaleBar._segmentKmSpan === "number" &&
+        scaleBar._segmentKmSpan > 0
+    ) {
+        startKmDom = scaleBar._segmentStartKm;
+        spanKm     = scaleBar._segmentKmSpan;
+    } else {
+        startKmDom = 0;
+        spanKm = Number(scaleBar.dataset.totalKm) || 1;
+    }
+    const currentKm = startKmDom + percent * spanKm;
+    const targetDist = currentKm * 1000; // sadece segment!
+
+    // --- ROTA İÇİN ---
+    const containerId = `route-map-day${day}`;
+    const geojson = window.lastRouteGeojsons?.[containerId];
+    if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
+    const coords = geojson.features[0].geometry.coordinates;
+
+    // Kümülatif mesafeler
+    let cumDist = [0];
+    for (let i = 1; i < coords.length; i++) {
+        const [lng1, lat1] = coords[i - 1];
+        const [lng2, lat2] = coords[i];
+        cumDist[i] = cumDist[i - 1] + haversine(lat1, lng1, lat2, lng2);
+    }
+
+    // Marker segmentin başı-sonu arası ile sınırlı
+    let idx = 0;
+    while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
+    let lat, lng;
+    if (idx === 0) {
+        lat = coords[0][1];
+        lng = coords[0][0];
+    } else {
+        const prev = idx - 1;
+        const seg = cumDist[idx] - cumDist[prev] || 1;
+        const t = (targetDist - cumDist[prev]) / seg;
+        lat = coords[prev][1] + (coords[idx][1] - coords[prev][1]) * t;
+        lng = coords[prev][0] + (coords[idx][0] - coords[prev][0]) * t;
+    }
+    showMarkerVerticalLineOnMap(map, L.latLng(lat, lng));
 }
 
     function onLeave() {
@@ -8936,51 +8951,6 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 
-
-(function patchSetupScaleBarInteraction(){
-  if (!window.setupScaleBarInteraction || window.__ttElevScalePatched) return;
-  const original = window.setupScaleBarInteraction;
-  window.setupScaleBarInteraction = function(day, map) {
-    // Keep original behavior; don't attach extra hover that draws vertical map line
-    const cleanup = original(day, map) || null;
-    return function patchedCleanup() {
-      if (cleanup) cleanup();
-    };
-  };
-  window.__ttElevScalePatched = true;
-})();
-
-(function patchMarkerDragClicks(){
-  if (!window.addDraggableMarkersToExpandedMap || window.__ttElevMarkerPatched) return;
-  const original = window.addDraggableMarkersToExpandedMap;
-
-  window.addDraggableMarkersToExpandedMap = function(expandedMap, day) {
-    original(expandedMap, day);
-
-    // Re-bind clicks for current markers
-    expandedMap.eachLayer(layer => {
-      if (!(layer instanceof L.Marker)) return;
-
-      // Click -> show vertical line under marker
-      layer.on('click', () => {
-        const ll = layer.getLatLng();
-        showMarkerVerticalLineOnMap(expandedMap, ll);
-      });
-
-      // Drag interactions update the guide line
-      layer.on('dragstart', () => hideMarkerVerticalLineOnMap(expandedMap));
-      layer.on('dragend', () => {
-        const ll = layer.getLatLng();
-        showMarkerVerticalLineOnMap(expandedMap, ll);
-      });
-    });
-
-    // Click on map background -> hide line
-    expandedMap.on('click', () => hideMarkerVerticalLineOnMap(expandedMap));
-  };
-
-  window.__ttElevMarkerPatched = true;
-})();
 
 /* 6) Ensure cleanup when closing expanded map */
 (function patchRestoreMapCleanup(){
