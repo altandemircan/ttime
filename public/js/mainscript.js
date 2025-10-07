@@ -8847,7 +8847,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
       const [lon1, lat1] = coords[p], [lon2, lat2] = coords[idx];
       samples.push({ lat: lat1 + (lat2 - lat1) * t, lng: lon1 + (lon2 - lon1) * t, distM: target });
     }
-    
+
   }
 
   window.showScaleBarLoading?.(container, `Loading segment ${startKm.toFixed(1)}–${endKm.toFixed(1)} km…`);
@@ -8869,7 +8869,7 @@ drawSegmentProfile(container, day, startKm, endKm, samples, smooth);
   // SADECE BUNU BIRAK!
   setTimeout(function() {
     highlightSegmentOnMap(day, startKm, endKm);
-  }, 120);
+  }, 200);
 }
 
 
