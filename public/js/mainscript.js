@@ -5313,13 +5313,19 @@ mapStyleSelect.onchange = function() {
     }
 };
 
-  // Mevcut rota / marker’ları kopyala
-  const geojson = window.lastRouteGeojsons?.[containerId];
-  if (geojson?.features?.[0]?.geometry?.coordinates) {
-    const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
-    try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
-  }
+  const expandedMap = L.map(mapDivId, { center, zoom, ... });
+// Polyline ile fitBounds
+if (coords && coords.length > 1) {
+  const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
+  expandedMap.fitBounds(poly.getBounds(), { padding: [20, 20] });
+}
+// Tam burada ilk görünümü kaydet!
+if (!expandedMap._initialView) {
+  expandedMap._initialView = {
+    center: expandedMap.getCenter(),
+    zoom: expandedMap.getZoom()
+  };
+}
 
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
@@ -6875,7 +6881,7 @@ if (!points || points.length === 0) {
     }
   }
 
-  // 2+ NOKTA normal rota
+
   ensureDayMapContainer(day);
   initEmptyDayMap(day);
 
