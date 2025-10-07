@@ -6045,8 +6045,9 @@ window.handleImageError = async function(imgElement, placeName, index) {
 
 
 function setupScaleBarInteraction(day, map) {
-    const scaleBar = document.getElementById('expanded-route-scale-bar-day' + day);
-const track = scaleBar.querySelector('.scale-bar-track');
+  const scaleBar = document.getElementById('expanded-route-scale-bar-day' + day);
+  const track = scaleBar.querySelector('.scale-bar-track');
+  let hoverMarker = null; // <-- burada tanımla
 track.addEventListener('mousemove', onMove);
 
 function onMove(e) {
@@ -9527,8 +9528,11 @@ console.log('SEGMENT PROFILE SET', day, startKm, endKm);
   track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
-  const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  const totalKm = Number(container.dataset.totalKm) || 0;
+ const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
+const totalKm = Number(container.dataset.totalKm) || 0;
+const segStartPx = (startKm / totalKm) * widthPx;
+const segWidthPx = ((endKm - startKm) / totalKm) * widthPx;
+
   const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
     ? getRouteMarkerPositionsOrdered(day) : [];
 
@@ -9547,14 +9551,14 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   } else {
     // Segment seçiliyken
     // ... hesaplamalar
-    track._segmentStartPx = segStartPx;
-    track._segmentWidthPx = segWidthPx;
-    track._segmentStartKm = startKm;
-    track._segmentKmSpan = endKm - startKm;
-    container._segmentStartPx = segStartPx;
-    container._segmentWidthPx = segWidthPx;
-    container._segmentStartKm = startKm;
-    container._segmentKmSpan = endKm - startKm;
+track._segmentStartPx = segStartPx;
+track._segmentWidthPx = segWidthPx;
+track._segmentStartKm = startKm;
+track._segmentKmSpan  = endKm - startKm;
+container._segmentStartPx = segStartPx;
+container._segmentWidthPx = segWidthPx;
+container._segmentStartKm = startKm;
+container._segmentKmSpan  = endKm - startKm;
   }
 
   // --------------------- SVG Overlay Kısmı ---------------------
