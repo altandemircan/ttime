@@ -8544,29 +8544,33 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
   segG.setAttribute('class', 'tt-elev-segments');
   svg.appendChild(segG);
 
-// Redraw (aktif domain + örneklerle)
-function redrawElevation(elevationData) {
+  // Redraw (aktif domain + örneklerle)
+function redrawElevation(elevationData, markers = []) {
   if (!elevationData) return;
   const { smooth, min, max } = elevationData;
+
+  // Numune (sample) datası ve segment bilgisi
   const s = container._elevSamples || [];
   const startKmDom = Number(container._elevStartKm || 0);
   const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-  // Görsel min/max
+  // Görsel min/max yükseklik
   let vizMin = min, vizMax = max;
   const eSpan = max - min;
   if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
   else { vizMin = min - 1; vizMax = max + 1; }
 
+  // X, Y yardımcıları
   const X = kmRel => (kmRel / spanKm) * width;
-  const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
+  const Y = e => (isNaN(e) || vizMin === vizMax)
+    ? (SVG_H / 2)
+    : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
 
-  // --- PATCH Başlangıç: Marker & Km çizelgesi güncellemesi ---
   // Önce grid ve segG temizle
   while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
   while (segG.firstChild) segG.removeChild(segG.firstChild);
 
-  // Grid (y ekseni)
+  // Y ekseni grid çizgileri ve yükseklik etiketleri
   const levels = 4;
   for (let i = 0; i <= levels; i++) {
     const ev = vizMin + (i / levels) * (vizMax - vizMin);
@@ -8585,16 +8589,13 @@ function redrawElevation(elevationData) {
     gridG.appendChild(tx);
   }
 
-  // Km çizelgesi (X ekseni) ve markerlar için scale-bar-track DOM'u:
-  // (track zaten dışarıda, markerlar için güncelleme örneği aşağıda)
-
-  // Km çizelgesi: segment aralığına göre
-  // (ör: her 1km veya segment boyuna göre adım)
+  // X ekseni (km) grid ve label'ları
   const tickCount = Math.max(4, Math.round(spanKm));
   for (let i = 0; i <= tickCount; i++) {
     const curKm = (spanKm / tickCount) * i;
     const leftPx = X(curKm);
-    // X eksenine vertical tick
+
+    // Dikey tick
     const tick = document.createElementNS(svgNS, 'line');
     tick.setAttribute('x1', String(leftPx));
     tick.setAttribute('x2', String(leftPx));
@@ -8608,45 +8609,44 @@ function redrawElevation(elevationData) {
     const tx = document.createElementNS(svgNS, 'text');
     tx.setAttribute('x', String(leftPx));
     tx.setAttribute('y', String(SVG_H + 12));
-    tx.setAttribute('fill', '#90a4ae');
+    tx.setAttribute('fill', '#607d8b');
     tx.setAttribute('font-size', '10');
     tx.setAttribute('text-anchor', 'middle');
     tx.textContent = `${(startKmDom + curKm).toFixed(1)} km`;
     gridG.appendChild(tx);
   }
 
-  // Markerlar (sıralı km pozisyonuna göre)
-  if (Array.isArray(container._routeMarkers)) {
-    container._routeMarkers.forEach((m, idx) => {
-      // m.distance: marker'ın toplam rotadaki km'si
-      // Segment aralığındaysa çiz:
-      if (m.distance >= startKmDom && m.distance <= startKmDom + spanKm) {
-        const relKm = m.distance - startKmDom;
-        const leftPx = X(relKm);
-        // SVG markerı (ör: kırmızı daire + label)
-        const markerDot = document.createElementNS(svgNS, 'circle');
-        markerDot.setAttribute('cx', String(leftPx));
-        markerDot.setAttribute('cy', String(SVG_H));
-        markerDot.setAttribute('r', '5');
-        markerDot.setAttribute('fill', '#d32f2f');
-        markerDot.setAttribute('stroke', '#fff');
-        markerDot.setAttribute('stroke-width', '2');
-        segG.appendChild(markerDot);
+  // Markerlar (sadece segmentte kalanlar)
+  if (Array.isArray(markers)) {
+    markers.forEach((m, idx) => {
+      if (typeof m.distance !== 'number') return;
+      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
+      const relKm = m.distance - startKmDom;
+      const leftPx = X(relKm);
 
-        const markerLabel = document.createElementNS(svgNS, 'text');
-        markerLabel.setAttribute('x', String(leftPx));
-        markerLabel.setAttribute('y', String(SVG_H + 22));
-        markerLabel.setAttribute('fill', '#d32f2f');
-        markerLabel.setAttribute('font-size', '11');
-        markerLabel.setAttribute('text-anchor', 'middle');
-        markerLabel.textContent = (idx + 1).toString();
-        segG.appendChild(markerLabel);
-      }
+      // Marker noktası
+      const markerDot = document.createElementNS(svgNS, 'circle');
+      markerDot.setAttribute('cx', String(leftPx));
+      markerDot.setAttribute('cy', String(SVG_H));
+      markerDot.setAttribute('r', '5');
+      markerDot.setAttribute('fill', '#d32f2f');
+      markerDot.setAttribute('stroke', '#fff');
+      markerDot.setAttribute('stroke-width', '2');
+      segG.appendChild(markerDot);
+
+      // Marker label (sıra numarası)
+      const markerLabel = document.createElementNS(svgNS, 'text');
+      markerLabel.setAttribute('x', String(leftPx));
+      markerLabel.setAttribute('y', String(SVG_H + 22));
+      markerLabel.setAttribute('fill', '#d32f2f');
+      markerLabel.setAttribute('font-size', '11');
+      markerLabel.setAttribute('text-anchor', 'middle');
+      markerLabel.textContent = (idx + 1).toString();
+      segG.appendChild(markerLabel);
     });
   }
-  // --- PATCH Sonu ---
 
-  // Alan
+  // Alan (elevation profil)
   let topD = '';
   const n = Math.min(smooth.length, s.length);
   for (let i = 0; i < n; i++) {
@@ -8691,57 +8691,57 @@ function redrawElevation(elevationData) {
     segG.appendChild(seg);
   }
 }
-container._redrawElevation = redrawElevation;
+  container._redrawElevation = redrawElevation;
 
-// Hover (aktif domain ile)
-if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
-if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
+  // Hover (aktif domain ile)
+  if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
+  if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
 
-track.__onMove = (e) => {
-  const ed = container._elevationData;
-  if (!ed || !Array.isArray(ed.smooth)) return;
-  const { smooth, min, max } = ed;
+  track.__onMove = (e) => {
+    const ed = container._elevationData;
+    if (!ed || !Array.isArray(ed.smooth)) return;
+    const { smooth, min, max } = ed;
 
-  const s = container._elevSamples || [];
-  const startKmDom = Number(container._elevStartKm || 0);
-  const spanKm = Number(container._elevKmSpan || totalKm) || 1;
+    const s = container._elevSamples || [];
+    const startKmDom = Number(container._elevStartKm || 0);
+    const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-  const rect = track.getBoundingClientRect();
-  const ptX = e.clientX - rect.left;
-  const widthNow = Math.max(200, Math.round(rect.width));
+    const rect = track.getBoundingClientRect();
+    const ptX = e.clientX - rect.left;
+    const widthNow = Math.max(200, Math.round(rect.width));
 
-  let vizMin = min, vizMax = max;
-  const eSpan = max - min;
-  if (eSpan > 0) { vizMin = min - eSpan * 0.25; vizMax = max + eSpan * 0.25; }
-  else { vizMin = min - 1; vizMax = max + 1; }
+    let vizMin = min, vizMax = max;
+    const eSpan = max - min;
+    if (eSpan > 0) { vizMin = min - eSpan * 0.25; vizMax = max + eSpan * 0.25; }
+    else { vizMin = min - 1; vizMax = max + 1; }
 
-  const X = kmRel => (kmRel / spanKm) * widthNow;
+    const X = kmRel => (kmRel / spanKm) * widthNow;
 
-  let minDist = Infinity, foundSlope = 0, foundElev = null, foundKmAbs = 0;
-  const n = Math.min(smooth.length, s.length);
-  for (let i = 1; i < n; i++) {
-    const kmAbs1 = s[i - 1].distM / 1000;
-    const kmAbs2 = s[i].distM / 1000;
-    const x1 = Math.max(0, Math.min(widthNow, X(kmAbs1 - startKmDom)));
-    const x2 = Math.max(0, Math.min(widthNow, X(kmAbs2 - startKmDom)));
-    const mid = (x1 + x2) / 2;
-    const dist = Math.abs(ptX - mid);
-    if (dist < minDist) {
-      minDist = dist;
-      const dx = s[i].distM - s[i - 1].distM;
-      const dy = smooth[i] - smooth[i - 1];
-      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-      foundElev = Math.round(smooth[i]);
-      foundKmAbs = kmAbs2;
+    let minDist = Infinity, foundSlope = 0, foundElev = null, foundKmAbs = 0;
+    const n = Math.min(smooth.length, s.length);
+    for (let i = 1; i < n; i++) {
+      const kmAbs1 = s[i - 1].distM / 1000;
+      const kmAbs2 = s[i].distM / 1000;
+      const x1 = Math.max(0, Math.min(widthNow, X(kmAbs1 - startKmDom)));
+      const x2 = Math.max(0, Math.min(widthNow, X(kmAbs2 - startKmDom)));
+      const mid = (x1 + x2) / 2;
+      const dist = Math.abs(ptX - mid);
+      if (dist < minDist) {
+        minDist = dist;
+        const dx = s[i].distM - s[i - 1].distM;
+        const dy = smooth[i] - smooth[i - 1];
+        foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+        foundElev = Math.round(smooth[i]);
+        foundKmAbs = kmAbs2;
+      }
     }
-  }
 
-  tooltip.style.opacity = '1';
-  tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  tooltip.style.left = `${ptX}px`;
-  verticalLine.style.left = `${ptX}px`;
-  verticalLine.style.display = 'block';
-};
+    tooltip.style.opacity = '1';
+    tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
+    tooltip.style.left = `${ptX}px`;
+    verticalLine.style.left = `${ptX}px`;
+    verticalLine.style.display = 'block';
+  };
 
   track.__onLeave = () => {
     tooltip.style.opacity = '0';
