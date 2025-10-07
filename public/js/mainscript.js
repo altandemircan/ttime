@@ -8713,7 +8713,6 @@ createScaleElements(track, width, totalKm, 0, markers);
 track.__onMove = (e) => {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
-
   const s = container._elevSamples || [];
   const startKmDom = Number(container._elevStartKm || 0);
   const spanKm = Number(container._elevKmSpan || totalKm) || 1;
@@ -8721,31 +8720,37 @@ track.__onMove = (e) => {
   const rect = track.getBoundingClientRect();
   const ptX = e.clientX - rect.left;
   let x = ptX;
-  let percent = Math.max(0, Math.min(1, ptX / rect.width));
 
-  // --- SEGMENT clamp ve hover orantılama ---
+  // SEGMENT SEÇİLİYKEN:
   if (
     typeof track._segmentStartPx === "number" &&
     typeof track._segmentWidthPx === "number" &&
     track._segmentWidthPx > 0
   ) {
-    // Mouse barın başında ise segmentin başı, sonunda ise segmentin sonu
-    x = percent * rect.width; // çizgi scale bar'ın tamamında gezinsin
+    // Sadece segmentin başı-sonu aralığında hover çalışsın:
+    const segStart = track._segmentStartPx;
+    const segEnd = segStart + track._segmentWidthPx;
 
-    // Segmentteki ilgili noktanın oranı (0=baş, 1=son)
-    let segPercent = Math.max(0, Math.min(1, percent));
-    // Seçilen segmentteki km karşılığı:
-    const segStartKm = startKmDom;
-    const segEndKm = startKmDom + spanKm;
-    const foundKmAbs = segStartKm + segPercent * (segEndKm - segStartKm);
+    if (ptX < segStart || ptX > segEnd) {
+      // Segment dışında: tooltip ve çizgiyi gizle
+      tooltip.style.opacity = '0';
+      verticalLine.style.display = 'none';
+      return;
+    }
 
-    // Şimdi, grafikteki en yakın veriyi bul
+    x = Math.max(segStart, Math.min(segEnd, ptX));
+    const percent = (x - segStart) / (segEnd - segStart);
+
+    // Segmentin km aralığını bul ve interpolate et
+    const foundKmAbs = startKmDom + percent * spanKm;
+
+    // En yakın sample'ı bul
     let minDist = Infinity, foundSlope = 0, foundElev = null;
     for (let i = 1; i < s.length; i++) {
       const kmAbs1 = s[i - 1].distM / 1000;
       const kmAbs2 = s[i].distM / 1000;
-      const midKm = (kmAbs1 + kmAbs2) / 2;
-      const dist = Math.abs(foundKmAbs - midKm);
+      const mid = (kmAbs1 + kmAbs2) / 2;
+      const dist = Math.abs(foundKmAbs - mid);
       if (dist < minDist) {
         minDist = dist;
         const dx = s[i].distM - s[i - 1].distM;
@@ -8760,7 +8765,6 @@ track.__onMove = (e) => {
     tooltip.style.left = `${x}px`;
     verticalLine.style.left = `${x}px`;
     verticalLine.style.display = 'block';
-
     return;
   }
 };
