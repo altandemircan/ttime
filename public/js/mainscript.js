@@ -8775,13 +8775,13 @@ createScaleElements(track, width, totalKm, 0, markers);
 
   // Resize
   function handleResize() {
-    const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
-    if (Math.abs(newW - width) < 10) return;
-    width = newW;
-    svg.setAttribute('viewBox', `0 0 ${newW} ${SVG_H}`);
-   createScaleElements(track, newW, spanKm, startKmDom, markers);
-    if (container._elevationData) redrawElevation(container._elevationData);
-  }
+      const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
+      const spanKm = container._elevKmSpan || 1;
+      const startKmDom = container._elevStartKm || 0;
+      const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+      createScaleElements(track, newW, spanKm, startKmDom, markers);
+    }
+    
   if (container._elevResizeObserver) {
     try { container._elevResizeObserver.disconnect(); } catch(_) {}
     container._elevResizeObserver = null;
@@ -9626,31 +9626,35 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   // Eğim renkli segmentler
   for (let i = 1; i < elevSmooth.length; i++) {
-    const kmRel1 = (samples[i-1].distM / 1000) - startKm;
-    const kmRel2 = (samples[i].distM / 1000) - startKm;
-    const x1 = Math.max(0, Math.min(widthNow, X(kmRel1)));
-    const y1 = Y(elevSmooth[i-1]);
-    const x2 = Math.max(0, Math.min(widthNow, X(kmRel2)));
-    const y2 = Y(elevSmooth[i]);
+  const kmRel1 = (samples[i-1].distM / 1000) - startKm;
+  const kmRel2 = (samples[i].distM / 1000) - startKm;
+  const x1 = Math.max(0, Math.min(widthNow, X(kmRel1)));
+  const y1 = Y(elevSmooth[i-1]);
+  const x2 = Math.max(0, Math.min(widthNow, X(kmRel2)));
+  const y2 = Y(elevSmooth[i]);
 
-    const dx = samples[i].distM - samples[i-1].distM;
-    const dy = elevSmooth[i] - elevSmooth[i-1];
-    let slope = 0, color = '#72c100';
-    if (i > 1 && dx > 50) {
-      slope = (dy / dx) * 100;
-      color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
-    }
-    const seg = document.createElementNS(svgNS, 'line');
-    seg.setAttribute('x1', String(x1));
-    seg.setAttribute('y1', String(y1));
-    seg.setAttribute('x2', String(x2));
-    seg.setAttribute('y2', String(y2));
-    seg.setAttribute('stroke', color);
-    seg.setAttribute('stroke-width', '3');
-    seg.setAttribute('stroke-linecap', 'round');
-    seg.setAttribute('fill', 'none');
-    segG.appendChild(seg);
+  const dx = samples[i].distM - samples[i-1].distM;
+  const dy = elevSmooth[i] - elevSmooth[i-1];
+  let slope = 0, color = '#72c100';
+
+  // --- SADECE BU BLOĞU DEĞİŞTİRİYORSUN ---
+  if (dx !== 0) {
+    slope = (dy / dx) * 100;
+    color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
   }
+  // ----------------------------------------
+
+  const seg = document.createElementNS(svgNS, 'line');
+  seg.setAttribute('x1', String(x1));
+  seg.setAttribute('y1', String(y1));
+  seg.setAttribute('x2', String(x2));
+  seg.setAttribute('y2', String(y2));
+  seg.setAttribute('stroke', color);
+  seg.setAttribute('stroke-width', '3');
+  seg.setAttribute('stroke-linecap', 'round');
+  seg.setAttribute('fill', 'none');
+  segG.appendChild(seg);
+}
 
   // Toolbar
   // Değerler
