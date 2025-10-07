@@ -6051,6 +6051,8 @@ function setupScaleBarInteraction(day, map) {
     let hoverMarker = null;
 
   function onMove(e) {
+    console.log('onMove segment:', scaleBar._segmentStartPx, scaleBar._segmentWidthPx, scaleBar._segmentStartKm, scaleBar._segmentKmSpan);
+
     const rect = scaleBar.getBoundingClientRect();
     let x;
     if (e.touches && e.touches.length) {
@@ -9708,6 +9710,7 @@ track._segmentKmSpan  = endKm - startKm;
   });
   track.removeEventListener('mousemove', track.__onMove);
 track.addEventListener('mousemove', track.__onMove);
+console.log('SEGMENT:', scaleBar._segmentStartPx, scaleBar._segmentWidthPx, scaleBar._segmentStartKm, scaleBar._segmentKmSpan);
 
 
 }
