@@ -8864,6 +8864,10 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   } finally {
     window.hideScaleBarLoading?.(container);
   }
+
+  if (typeof highlightSegmentOnMap === 'function') {
+  highlightSegmentOnMap(day, startKm, endKm);
+}
 }
 
 
