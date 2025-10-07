@@ -9535,19 +9535,22 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
 
-  // ... segment overlay SVG'lerini temizle ...
-  track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
-  track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+  // ... segment overlay SVG'lerini sil ...
 
   const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
   const totalKm = Number(container.dataset.totalKm) || 0;
-  const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+  const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
+    ? getRouteMarkerPositionsOrdered(day) : [];
 
-  // Eğer tam profil gösteriliyorsa (startKm = 0 ve endKm = totalKm), tam profili çiz
+  // --- Eğer reset ise (tam profile dönülüyorsa) ---
   if (startKm <= 0 && Math.abs(endKm - totalKm) < 0.01) {
+    container._elevStartKm = 0;
+    container._elevKmSpan  = totalKm;
     createScaleElements(track, widthPx, totalKm, 0, markers);
   } else {
-    // Segment seçildiyse sadece segment aralığını ve markerlarını çiz
+    // Segment seçiliyken
+    container._elevStartKm = startKm;
+    container._elevKmSpan  = endKm - startKm;
     createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
   }
 
