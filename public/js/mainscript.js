@@ -2063,6 +2063,12 @@ try {
   }
 
   return true;
+
+   if (window.expandedMaps) {
+    const day = resolvedDay; // veya item.day
+    clearRouteSegmentHighlight(day);
+    fitExpandedMapToRoute(day);
+  }
 }
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
@@ -2279,6 +2285,12 @@ function removeFromCart(index){
   if (typeof renderRouteForDay === 'function') {
     const days = [...new Set(window.cart.map(i => i.day))];
     days.forEach(d => setTimeout(() => renderRouteForDay(d), 0));
+  }
+   // Sonunda:
+  if (window.expandedMaps) {
+    const day = resolvedDay; // veya item.day
+    clearRouteSegmentHighlight(day);
+    fitExpandedMapToRoute(day);
   }
 }
 function addItem(element, day, category, name, image, extra) {
@@ -9925,4 +9937,40 @@ function clearScaleBarSelection(day) {
   if (sel) sel.style.display = 'none';
   // Eğer her yerde tümünü kapatmak istersen:
   // document.querySelectorAll('.scale-bar-selection').forEach(s => s.style.display = 'none');
+
+function clearRouteSegmentHighlight(day) {
+  // Mor highlight'ı sil
+  if (window._segmentHighlight && window._segmentHighlight[day]) {
+    Object.values(window._segmentHighlight[day]).forEach(poly => {
+      try { poly.remove(); } catch(_) {}
+    });
+    delete window._segmentHighlight[day];
+  }
+  // Segment seçimiyle ilgili state'leri temizle
+  window._lastSegmentDay = undefined;
+  window._lastSegmentStartKm = undefined;
+  window._lastSegmentEndKm = undefined;
+}
+function fitExpandedMapToRoute(day) {
+  const cid = `route-map-day${day}`;
+  const expObj = window.expandedMaps && window.expandedMaps[cid];
+  if (expObj && expObj.expandedMap) {
+    let fitted = false;
+    expObj.expandedMap.eachLayer(layer => {
+      if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+        try {
+          expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
+          fitted = true;
+        } catch(_) {}
+      }
+    });
+    // Fallback: tek nokta varsa ilk açılış view'una dön
+    if (!fitted && expObj.expandedMap._initialView) {
+      expObj.expandedMap.setView(
+        expObj.expandedMap._initialView.center,
+        expObj.expandedMap._initialView.zoom,
+        { animate: true }
+      );
+    }
+  }
 }
