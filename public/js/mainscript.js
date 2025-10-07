@@ -3403,7 +3403,6 @@ function updateCart() {
 const oldStartDate = window.cart.startDate;
 const oldEndDates  = window.cart.endDates;
 
-// Boş gün placeholder'u (sadece day olan) VEYA gerçek itemleri bırak
 window.cart = window.cart.filter(it =>
   it && typeof it === "object" &&
   (
@@ -3454,7 +3453,6 @@ if (!btn || window.getComputedStyle(btn).display === 'none') {
 return;
   }
 
-  // 1) Gün listesi
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   window._debug_days = days; // <-- BU SATIRI EKLE!
 
@@ -3463,7 +3461,6 @@ return;
   const globalIndexMap = new Map();
   window.cart.forEach((it, idx) => globalIndexMap.set(it, idx));
 
-  // 2) Her gün
   days.forEach(day => {
     // Sadece gerçek (starter/placeholder hariç) item’lar
 const dayItemsArr = window.cart.filter(i =>
@@ -3472,7 +3469,7 @@ const dayItemsArr = window.cart.filter(i =>
   !i._placeholder &&
   (i.name || i.category === "Note")
 );
-    console.log('Gün:', day, dayItemsArr); // <-- BURAYA YAZ
+    console.log('Day:', day, dayItemsArr); // <-- BURAYA YAZ
 
     const isEmptyDay = dayItemsArr.length === 0;
 
@@ -5045,8 +5042,8 @@ function updateRouteStatsUI(day) {
     routeStatsDiv.innerHTML = `
       <span class="stat stat-distance"><b>Distance:</b> ${distanceKm} km</span>
       <span class="stat stat-duration"><b>Duration:</b> ${durationMin} min</span>
-      <span class="stat stat-ascent"><b>Çıkış:</b> ${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
-      <span class="stat stat-descent"><b>İniş:</b> ${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
+      <span class="stat stat-ascent"><b>Ascent:</b> ${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
+      <span class="stat stat-descent"><b>Descent:</b> ${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
     `;
   }
 }
@@ -5216,7 +5213,6 @@ function setExpandedMapTile(styleKey) {
     expandedTileLayer.addTo(expandedMap);
 }
 
-  // İlk açılışta varsayılan stil (Mapbox streets)
 setExpandedMapTile('streets-v12');
 
 // Harita stili seçimi değiştiğinde
@@ -5603,7 +5599,7 @@ if (currentZoom < 14) {
 
     const html = `
       <div class="nearby-popup-title">
-        📍 Yakındaki Mekanlar
+        📍 Nearby Places
       </div>
       ${addPointSection}
       <ul class="nearby-places-list">${placesHtml}</ul>
@@ -6668,7 +6664,7 @@ if (window.__suppressMiniUntilFirstPoint &&
 }
   const containerId = `route-map-day${day}`;
 
-  // Günün cart item'ları (isimli olanlar)
+
   const dayNamedItems = window.cart.filter(it => it.day == day && it.name !== undefined);
 
   // Noktaları en başta al (location’u olanlar)
@@ -6859,7 +6855,7 @@ if (!points || points.length === 0) {
     missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
   } catch (e) {
     const infoPanel = document.getElementById(`route-info-day${day}`);
-    if (infoPanel) infoPanel.textContent = "Rota çizilemedi!";
+    if (infoPanel) infoPanel.textContent = "Could not draw the route!";
     return;
   }
 
@@ -7188,7 +7184,6 @@ function setupSidebarAccordion() {
         el.style.display = el.classList.contains('collapsed') ? 'none' : '';
       };
 
-      // Gün içindeki ana bloklar (mevcut davranış)
       ['.day-list', '.route-map', '.route-info'].forEach(sel => {
         const el = dayContainer.querySelector(sel);
         if (el) el.classList.toggle('collapsed'); // bunlarda mevcut CSS zaten çalışıyorsa kalsın
@@ -7204,7 +7199,6 @@ function setupSidebarAccordion() {
         toggleHide(document.getElementById(`tt-travel-mode-set-day${day}`));
       }
 
-      // + Add Category butonu (gün container’ının hemen ardından)
       const next = dayContainer.nextElementSibling;
       if (next && next.classList.contains('add-more-btn')) {
         next.classList.toggle('collapsed');
@@ -7415,7 +7409,6 @@ function setupStepsDragHighlight() {
     });
 }
 
-// Her DOM güncellemesinden sonra (örn. updateCart() fonksiyonu bitiminde) tekrar çağır!
 document.addEventListener('DOMContentLoaded', setupStepsDragHighlight);
 
 
@@ -7784,19 +7777,15 @@ function ensureCanvasRenderer(map) {
       }
     }, { passive: false });
 
-    // Resize’larda SPV güncelle
     const ro = new ResizeObserver(() => setSlidesPerViewResponsive());
     ro.observe(container);
 
-    // Başlangıç
     setSlidesPerViewResponsive();
     updateButtons();
 
-    // Dışarıdan erişim: en yakınını hizala
     container._ttRespSliderGoTo = goTo;
   }
 
-  // Tüm mevcut .day-steps için uygula
   function initAll() {
     document.querySelectorAll('.day-steps').forEach(buildSlider);
   }
@@ -7931,12 +7920,10 @@ function wrapRouteControlsForAllDays() {
     }
   }
 
-  // Mevcut tüm özetleri uygula
   function applyAll() {
     document.querySelectorAll('.route-summary-control').forEach(applyIcons);
   }
 
-  // Dinamik güncellemeleri izle (metin değişirse tekrar uygula)
   const mo = new MutationObserver((mutList) => {
     for (const mut of mutList) {
       // Yeni eklenen .route-summary-control
@@ -9231,15 +9218,12 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     { key: 'openElevation', fn: viaOpenElevation, chunk: 50, minInterval: 2000 },
     { key: 'openTopoData', fn: viaOpenTopoData, chunk: 80, minInterval: 1200 },
     
-    // { key: 'openMeteo',    fn: viaOpenMeteo,    chunk: 20, minInterval: 1800 }, // devre dışı
   ];
 
   const cooldownUntil = { openMeteo: 0, openTopoData: 0, openElevation: 0 };
   const lastTs        = { openMeteo: 0, openTopoData: 0, openElevation: 0 };
 
-  // Open‑Meteo’yu uzun süreli kapat (7 gün)
   cooldownUntil.openMeteo = Date.now() + 7 * 24 * 60 * 60 * 1000;
-  // İstersen UI’dan açıp kapatabilmek için:
   window.disableOpenMeteoElevation = function(days = 365) {
     cooldownUntil.openMeteo = Date.now() + days * 24 * 60 * 60 * 1000;
   };
@@ -9731,20 +9715,16 @@ function resetDayAction(day, confirmationContainerId) {
       delete window.expandedMaps[cid];
     }
 
-    // Expanded container + scale bar (o güne ait)
     document.getElementById(`expanded-map-${d}`)?.remove();
     document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
 
-    // Olası yetim kopyalar (aynı id’li wrapper/scale-bar tekrar eklenmişse)
     document.querySelectorAll(`.expanded-map-container[id="expanded-map-${d}"]`).forEach(el => el.remove());
     document.querySelectorAll(`#expanded-route-scale-bar-day${d}`).forEach(el => el.remove());
 
-    // Expanded wrapper içindeki overlay parçaları (segment toolbar, seçim, svg)
     const expWrap = document.getElementById(`expanded-map-${d}`);
     if (expWrap) {
       expWrap.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
     } else {
-      // Wrapper bulunamazsa globalden sadece bu güne ait bar içinde kalanları temizle
       const sb = document.getElementById(`expanded-route-scale-bar-day${d}`);
       sb?.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
     }
