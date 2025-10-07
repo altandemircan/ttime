@@ -9450,7 +9450,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const exp = window.expandedMaps?.[cid]?.expandedMap;
   if (exp) maps.push(exp);
 
-  // Eski highlight'ları sil
+  // Önce eski highlight'ları sil
   maps.forEach(m => {
     if (window._segmentHighlight[day]?.[m._leaflet_id]) {
       try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
@@ -9458,10 +9458,9 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }
   });
 
-  // --- RESET (segment yok) ise: ilk açılış merkez/zoom'una dön
+  // Eğer reset (segment yok) ise haritayı ilk açılış merkez/zoom'una döndür
   if (typeof startKm !== 'number' || typeof endKm !== 'number') {
     maps.forEach(m => {
-      // İlk açılışta kaydedilmiş merkezi ve zoom'u kullan!
       if (m && m._initialView) {
         try { m.setView(m._initialView.center, m._initialView.zoom, { animate: true }); } catch(_) {}
       }
@@ -9507,7 +9506,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     try { m.fitBounds(poly.getBounds(), { padding: [16, 16] }); } catch(_) {}
   });
 }
-
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
 window._lastSegmentDay = day;
 window._lastSegmentStartKm = startKm;
