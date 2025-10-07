@@ -8894,22 +8894,20 @@ document.addEventListener('mousedown', (e) => {
 });
 
 function highlightSegmentOnMap(day, startKm, endKm) {
-  // Eksik harita veya rota datası varsa, 300ms sonra tekrar dene (max 10 kez)
+  // Harita veya rota hazır değilse, tekrar dene (en çok 20 defa)
   if (
     !window.leafletMaps || !window.lastRouteGeojsons ||
     !window.leafletMaps[`route-map-day${day}`] ||
     !window.lastRouteGeojsons[`route-map-day${day}`] ||
     !window.lastRouteGeojsons[`route-map-day${day}`].features?.[0]?.geometry?.coordinates
   ) {
-    window._highlightSegmentOnMapTries = (window._highlightSegmentOnMapTries||0) + 1;
-    if (window._highlightSegmentOnMapTries < 10) {
-      setTimeout(() => highlightSegmentOnMap(day, startKm, endKm), 300);
-    } else {
-      window._highlightSegmentOnMapTries = 0;
+    window._highlightTries = (window._highlightTries || 0) + 1;
+    if (window._highlightTries < 20) {
+      setTimeout(() => highlightSegmentOnMap(day, startKm, endKm), 150);
     }
     return;
   }
-  window._highlightSegmentOnMapTries = 0;
+  window._highlightTries = 0;
 
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
@@ -8942,7 +8940,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
             m.fitBounds(latlngs, { padding: [16, 16] });
           } catch (_) {}
         });
-      }, 100);
+      }, 120);
     }
     return;
   }
