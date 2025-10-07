@@ -8724,10 +8724,13 @@ createScaleElements(track, width, totalKm, 0, markers);
 
   // --- EKLE ---
   // Segment clamp: sadece segmentte hover!
-  let x = ptX;
-  if (typeof track._segmentStartPx === "number" && typeof track._segmentWidthPx === "number" && track._segmentWidthPx > 0) {
-    x = Math.max(track._segmentStartPx, Math.min(track._segmentStartPx + track._segmentWidthPx, ptX));
-  }
+ let x = ptX;
+if (typeof track._segmentStartPx === "number" && typeof track._segmentWidthPx === "number" && track._segmentWidthPx > 0) {
+  // SEGMENT SEÇİLİYKEN: Mouse pozisyonunu scale bar'ın genişliğine oranla, segmentin başı ile sonu arasında haritalıyoruz.
+  // Mouse barın başında ise segmentin başı, sonunda ise segmentin sonu!
+  const percent = Math.max(0, Math.min(1, ptX / track.getBoundingClientRect().width));
+  x = track._segmentStartPx + percent * track._segmentWidthPx;
+}
   // --- SONU ---
 
   const widthNow = Math.max(200, Math.round(rect.width));
