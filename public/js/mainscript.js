@@ -6052,28 +6052,19 @@ track.addEventListener('mousemove', onMove);
 
 function onMove(e) {
   const rect = track.getBoundingClientRect();
-  let x;
-  if (e.touches && e.touches.length) {
-    x = e.touches[0].clientX - rect.left;
-  } else {
-    x = e.clientX - rect.left;
-  }
-
-  // Segment PX kısıtlaması
-  let startPx = 0, spanPx = rect.width;
-  if (
-    typeof track._segmentStartPx === "number" &&
-    typeof track._segmentWidthPx === "number" &&
-    track._segmentWidthPx > 0
-  ) {
-    startPx = track._segmentStartPx;
-    spanPx  = track._segmentWidthPx;
-    x = Math.max(startPx, Math.min(x, startPx + spanPx));
-  }
-
-  // Segmentli percent hesaplama
-  let percent = (x - startPx) / spanPx;
-  percent = Math.max(0, Math.min(1, percent));
+let x = e.clientX - rect.left;
+let startPx = 0, spanPx = rect.width;
+if (
+  typeof track._segmentStartPx === "number" &&
+  typeof track._segmentWidthPx === "number" &&
+  track._segmentWidthPx > 0
+) {
+  startPx = track._segmentStartPx;
+  spanPx  = track._segmentWidthPx;
+  x = Math.max(startPx, Math.min(x, startPx + spanPx)); // Segment dışına çıkamaz!
+}
+let percent = (x - startPx) / spanPx;
+percent = Math.max(0, Math.min(1, percent));
 
   // Segment km başlangıcı ve uzunluğu
   let startKmDom = 0, spanKm = null;
@@ -9530,8 +9521,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
   const totalKm = Number(container.dataset.totalKm) || 0;
-  const segStartPx = (startKm / totalKm) * widthPx;
-  const segWidthPx = ((endKm - startKm) / totalKm) * widthPx;
+  // Segmentin scale bar üzerindeki px karşılığı
+  const segStartPx = totalKm ? (startKm / totalKm) * widthPx : 0;
+  const segWidthPx = totalKm ? ((endKm - startKm) / totalKm) * widthPx : widthPx;
+
   const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
     ? getRouteMarkerPositionsOrdered(day) : [];
 
@@ -9539,6 +9532,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
     // Tam profile dön
     createScaleElements(track, widthPx, totalKm, 0, markers);
+    // Segment property'lerini temizle
     track._segmentStartPx = undefined;
     track._segmentWidthPx = undefined;
     track._segmentStartKm = undefined;
@@ -9548,8 +9542,9 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     container._segmentStartKm = undefined;
     container._segmentKmSpan = undefined;
   } else {
-    // Segment seçiliyken
+    // SEGMENT MODE: sadece segment aralığı için scale, tick ve property'ler
     createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
+    // Segmentin bar üzerindeki px aralığını property olarak kaydet
     track._segmentStartPx = segStartPx;
     track._segmentWidthPx = segWidthPx;
     track._segmentStartKm = startKm;
