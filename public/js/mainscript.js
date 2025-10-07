@@ -8729,11 +8729,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   };
   track.addEventListener('mousemove', track.__onMove);
 
-  track.__onLeave = (e) => {
-    tooltip.style.opacity = '0';
-    verticalLine.style.display = 'none';
-  };
-  track.addEventListener('mouseleave', track.__onLeave);
+
 
   window.__sb_onMouseMove = (e) => {
     if (!window.__scaleBarDrag) return;
@@ -9736,12 +9732,7 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   });
   track.removeEventListener('mousemove', track.__onMove);
 track.addEventListener('mousemove', track.__onMove);
-// BURAYA EKLE ↓↓↓↓↓↓
-track.__onLeave = (e) => {
-  tooltip.style.opacity = '0';
-  verticalLine.style.display = 'none';
-};
-track.addEventListener('mouseleave', track.__onLeave);
+
 
 }
 
