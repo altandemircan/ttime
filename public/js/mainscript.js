@@ -2061,14 +2061,15 @@ try {
   if (!silent && typeof attachChatDropListeners === 'function') {
     attachChatDropListeners();
   }
-
-  return true;
-
-   if (window.expandedMaps) {
+     if (window.expandedMaps) {
     const day = resolvedDay; // veya item.day
     clearRouteSegmentHighlight(day);
     fitExpandedMapToRoute(day);
   }
+
+  return true;
+
+
 }
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
@@ -2282,15 +2283,14 @@ function removeFromCart(index){
   }
 
   // Kalan günlerin rotalarını yeniden çiz
-  if (typeof renderRouteForDay === 'function') {
+ if (typeof renderRouteForDay === 'function') {
     const days = [...new Set(window.cart.map(i => i.day))];
     days.forEach(d => setTimeout(() => renderRouteForDay(d), 0));
   }
-   // Sonunda:
-  if (window.expandedMaps) {
-    const day = resolvedDay; // veya item.day
-    clearRouteSegmentHighlight(day);
-    fitExpandedMapToRoute(day);
+// Segment temizle & fit yap (silinen gün için)
+  if (window.expandedMaps && removedDay) {
+    clearRouteSegmentHighlight(removedDay);
+    fitExpandedMapToRoute(removedDay);
   }
 }
 function addItem(element, day, category, name, image, extra) {
@@ -9939,18 +9939,26 @@ function clearScaleBarSelection(day) {
   // document.querySelectorAll('.scale-bar-selection').forEach(s => s.style.display = 'none');
 
 function clearRouteSegmentHighlight(day) {
-  // Mor highlight'ı sil
   if (window._segmentHighlight && window._segmentHighlight[day]) {
     Object.values(window._segmentHighlight[day]).forEach(poly => {
       try { poly.remove(); } catch(_) {}
     });
     delete window._segmentHighlight[day];
   }
-  // Segment seçimiyle ilgili state'leri temizle
   window._lastSegmentDay = undefined;
   window._lastSegmentStartKm = undefined;
   window._lastSegmentEndKm = undefined;
+
+  // Segment overlay DOM'u da temizle (isteğe bağlı)
+  const bar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (bar) {
+    bar.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
+    bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+    const sel = bar.querySelector('.scale-bar-selection');
+    if (sel) sel.style.display = 'none';
+  }
 }
+
 function fitExpandedMapToRoute(day) {
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
@@ -9964,7 +9972,6 @@ function fitExpandedMapToRoute(day) {
         } catch(_) {}
       }
     });
-    // Fallback: tek nokta varsa ilk açılış view'una dön
     if (!fitted && expObj.expandedMap._initialView) {
       expObj.expandedMap.setView(
         expObj.expandedMap._initialView.center,
