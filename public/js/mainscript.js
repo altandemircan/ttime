@@ -9532,6 +9532,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
 
+  const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
+const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
+
   // SADECE segment overlay’leri temizle (base SVG durur)
   track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
