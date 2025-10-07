@@ -8750,22 +8750,22 @@ createScaleElements(track, width, totalKm, 0, markers);
   verticalLine.style.display = 'block';
 };
 window.__sb_onMouseMove = (e) => {
-  if (!window.__scaleBarDrag) return;
-  const rect = track.getBoundingClientRect();
-  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-  const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  selDiv.style.left = `${left}px`;
-  selDiv.style.width = `${right - left}px`;
+ if (!window.__scaleBarDrag) return;
+const rect = track.getBoundingClientRect();
+window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+selDiv.style.left = `${left}px`;
+selDiv.style.width = `${right - left}px`;
 };
 window.addEventListener('mousemove', window.__sb_onMouseMove);
 
 window.__sb_onMouseUp = () => {
-  if (!window.__scaleBarDrag) return;
-  const rect = track.getBoundingClientRect();
-  const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  window.__scaleBarDrag = null;
+ if (!window.__scaleBarDrag) return;
+const rect = track.getBoundingClientRect();
+const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+window.__scaleBarDrag = null;
 
   if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
 
