@@ -9713,8 +9713,7 @@ createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
       }
     }
   });
-const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
-createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
+
 }
 
 
