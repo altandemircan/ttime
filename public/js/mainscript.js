@@ -9439,10 +9439,6 @@ const DATASET = 'srtm30m';
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 function highlightSegmentOnMap(day, startKm, endKm) {
-  // Açılışta haritanın merkez ve zoom değerlerin neyse onları gir!
-  const INITIAL_MAP_CENTER = [38.5, 32.0]; // Örnek: [lat, lon]
-  const INITIAL_MAP_ZOOM = 8;              // Örnek: 7
-
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
@@ -9454,7 +9450,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const exp = window.expandedMaps?.[cid]?.expandedMap;
   if (exp) maps.push(exp);
 
-  // Önce eski highlight'ları sil
+  // Eski highlight'ları sil
   maps.forEach(m => {
     if (window._segmentHighlight[day]?.[m._leaflet_id]) {
       try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
@@ -9462,15 +9458,18 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }
   });
 
-  // Eğer reset (seçim yok) ise haritayı açılış ayarına döndür
+  // --- RESET (segment yok) ise: ilk açılış merkez/zoom'una dön
   if (typeof startKm !== 'number' || typeof endKm !== 'number') {
     maps.forEach(m => {
-      try { m.setView(INITIAL_MAP_CENTER, INITIAL_MAP_ZOOM, { animate: true }); } catch(_) {}
+      // İlk açılışta kaydedilmiş merkezi ve zoom'u kullan!
+      if (m && m._initialView) {
+        try { m.setView(m._initialView.center, m._initialView.zoom, { animate: true }); } catch(_) {}
+      }
     });
     return;
   }
 
-  // Segment çizgisi için kümülatif mesafe
+  // Kümülatif mesafe
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -9504,7 +9503,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
     if (poly.bringToFront) poly.bringToFront();
-    // Segment seçince mor çizgiye zoom yap
+    // Segment seçilince mor çizgiye zoom yap
     try { m.fitBounds(poly.getBounds(), { padding: [16, 16] }); } catch(_) {}
   });
 }
