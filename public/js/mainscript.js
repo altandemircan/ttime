@@ -8775,13 +8775,13 @@ createScaleElements(track, width, totalKm, 0, markers);
 
   // Resize
   function handleResize() {
-    const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
-    if (Math.abs(newW - width) < 10) return;
-    width = newW;
-    svg.setAttribute('viewBox', `0 0 ${newW} ${SVG_H}`);
-   createScaleElements(track, newW, spanKm, startKmDom, markers);
-    if (container._elevationData) redrawElevation(container._elevationData);
-  }
+      const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
+      const spanKm = container._elevKmSpan || 1;
+      const startKmDom = container._elevStartKm || 0;
+      const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+      createScaleElements(track, newW, spanKm, startKmDom, markers);
+    }
+    
   if (container._elevResizeObserver) {
     try { container._elevResizeObserver.disconnect(); } catch(_) {}
     container._elevResizeObserver = null;
