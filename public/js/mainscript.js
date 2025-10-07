@@ -8779,7 +8779,7 @@ createScaleElements(track, width, totalKm, 0, markers);
     if (Math.abs(newW - width) < 10) return;
     width = newW;
     svg.setAttribute('viewBox', `0 0 ${newW} ${SVG_H}`);
-    createScaleElements(newW);
+   createScaleElements(track, newW, spanKm, startKmDom, markers);
     if (container._elevationData) redrawElevation(container._elevationData);
   }
   if (container._elevResizeObserver) {
