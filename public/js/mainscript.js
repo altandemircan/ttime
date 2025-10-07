@@ -6103,10 +6103,8 @@ function onMove(e) {
         }
         const totalDist = cumDist[cumDist.length - 1];
         
+const targetDist = currentKm * 1000;
 
-        // Hangi noktada olduğumuzu bul
-        let idx = 0;
-        while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
         // Hedef noktayı doğrudan iki nokta arasında interpolate edelim
         let lat, lng;
         if (idx === 0) {
@@ -7405,8 +7403,8 @@ function setupSidebarAccordion() {
         const [lng2, lat2] = coords[i];
         cumDist[i] = cumDist[i - 1] + haversine(lat1, lng1, lat2, lng2);
       }
-      let idx = 0;
-      while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
+      const targetDist = currentKm * 1000;
+
       let lat, lng;
       if (idx === 0) {
         lat = coords[0][1]; lng = coords[0][0];
