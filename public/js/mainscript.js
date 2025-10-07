@@ -8893,7 +8893,7 @@ document.addEventListener('mousedown', (e) => {
 });
 
 
-function highlightSegmentOnMap(day, startKm, endKm) {
+function highlightSegmentOnMap(day, startKm, endKm) {function highlightSegmentOnMap(day, startKm, endKm) {
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
@@ -8905,7 +8905,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const exp = window.expandedMaps?.[cid]?.expandedMap;
   if (exp) maps.push(exp);
 
-  // Önce mevcut highlight’ları kaldır ve referansları sil
+  // En başta eski segment çizgilerini mutlaka sil
   maps.forEach(m => {
     if (window._segmentHighlight[day]?.[m._leaflet_id]) {
       try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
@@ -8917,7 +8917,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   if (typeof startKm !== 'number' || typeof endKm !== 'number') return;
 
   const coords = gj.features[0].geometry.coordinates; // [lng,lat]
-
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -8940,23 +8939,10 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const sub = coords.slice(iStart, iEnd+1).map(c => [c[1], c[0]]);
   if (sub.length < 2) return;
 
-  function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
-
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-for (let i = 1; i < sub.length; i++) {
-  const latlng1 = sub[i-1];
-  const latlng2 = sub[i];
-  const dx = hv(latlng1[0], latlng1[1], latlng2[0], latlng2[1]);
-  let color = '#8a4af3';
-  if (window._lastSegmentElevations && window._lastSegmentElevations.length === sub.length) {
-    const dy = window._lastSegmentElevations[i] - window._lastSegmentElevations[i-1];
-    let slope = 0;
-    if (dx !== 0) slope = (dy / dx) * 100;
-    color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
-  }
-  L.polyline([latlng1, latlng2], { color, weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m) }).addTo(m);
-}    window._segmentHighlight[day][m._leaflet_id] = poly;
+    const poly = L.polyline(sub, { color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m) }).addTo(m);
+    window._segmentHighlight[day][m._leaflet_id] = poly;
     try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
   });
 }
