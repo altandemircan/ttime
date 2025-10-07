@@ -8419,6 +8419,9 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
     return f * p10;
   }
 function createScaleElements(widthPx, spanKm, startKmDom, markers = []) {
+  // track DOM objesi burada tanımlı olmalı (örn: scale-bar-track div'i)
+  // Eğer fonksiyonun dışında değilse, parametre olarak da gönderebilirsin.
+
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
@@ -8453,8 +8456,8 @@ function createScaleElements(widthPx, spanKm, startKmDom, markers = []) {
   }
 
   if (Array.isArray(markers)) {
+    // Sadece segmentte kalan markerlar segment içinde normalize çizilir
     markers.forEach((m, idx) => {
-      // Sadece segment aralığında kalan markerları çiz
       if (typeof m.distance !== 'number') return;
       if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
       const relKm = m.distance - startKmDom;
