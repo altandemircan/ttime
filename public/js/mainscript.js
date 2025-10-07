@@ -8714,15 +8714,18 @@ track.__onMove = (e) => {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
   const s = container._elevSamples || [];
-  const startKmDom = Number(container._elevStartKm || 0);    // 3
-  const spanKm = Number(container._elevKmSpan || totalKm) || 1; // 7
+
+  // Burası ÖNEMLİ: seçili segmentin başlangıcı ve genişliği
+  const startKmDom = Number(container._elevStartKm || 0);    // ör: 3
+  const spanKm = Number(container._elevKmSpan || totalKm) || 1; // ör: 7
 
   const rect = track.getBoundingClientRect();
   const ptX = e.clientX - rect.left;
+  // ŞU ORANLAMA ile km bul:
   const percent = Math.max(0, Math.min(1, ptX / rect.width));
-  const currentKm = startKmDom + percent * spanKm;
+  const currentKm = startKmDom + percent * spanKm; // BAŞLANGIÇ + oran * segment genişliği
 
-  // En yakın sample'ı bul
+  // En yakın sample'ı bul (değişmez)
   let minDist = Infinity, foundSlope = 0, foundElev = null;
   for (let i = 1; i < s.length; i++) {
     const kmAbs1 = s[i - 1].distM / 1000;
@@ -8743,7 +8746,7 @@ track.__onMove = (e) => {
   tooltip.style.left = `${ptX}px`;
   verticalLine.style.left = `${ptX}px`;
   verticalLine.style.display = 'block';
-};
+
 window.__sb_onMouseMove = (e) => {
  if (!window.__scaleBarDrag) return;
 const rect = track.getBoundingClientRect();
