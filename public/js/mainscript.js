@@ -6047,6 +6047,8 @@ function setupScaleBarInteraction(day, map) {
   const scaleBar = document.getElementById('expanded-route-scale-bar-day' + day);
   const track = scaleBar.querySelector('.scale-bar-track');
   let hoverMarker = null;
+  const verticalLine = track.querySelector('.scale-bar-vertical-line');
+  const tooltip = track.querySelector('.tt-elev-tooltip');
 
   function onMove(e) {
     const rect = track.getBoundingClientRect();
@@ -6087,6 +6089,7 @@ function setupScaleBarInteraction(day, map) {
 
     // --- Sadece segment örneklemesiyle clamp et ---
     const samples = track._elevSamples || [];
+    const elevationData = track._elevationData || {};
     if (samples.length) {
       // Segmentli modda clamp et
       const minKm = samples[0].distM / 1000;
@@ -6105,6 +6108,16 @@ function setupScaleBarInteraction(day, map) {
       const lat = samples[idx].lat;
       const lng = samples[idx].lng;
 
+      // Tooltip ve vertical line bilgisi (slope, elevation)
+      const elev = (elevationData.smooth && elevationData.smooth[idx]) ? Math.round(elevationData.smooth[idx]) : '';
+      let slope = 0;
+      if (elevationData.smooth && idx > 0) {
+        const dx = samples[idx].distM - samples[idx-1].distM;
+        const dy = elevationData.smooth[idx] - elevationData.smooth[idx-1];
+        slope = dx > 0 ? ((dy / dx) * 100) : 0;
+      }
+
+      // Marker
       if (hoverMarker) {
         hoverMarker.setLatLng([lat, lng]);
       } else {
@@ -6117,7 +6130,18 @@ function setupScaleBarInteraction(day, map) {
           zIndexOffset: 9999
         }).addTo(map);
       }
-      // (Varsa tooltip ve vertical line güncellemesini burada güncelle)
+
+      // Tooltip
+      if (tooltip) {
+        tooltip.style.opacity = '1';
+        tooltip.textContent = `${currentKm.toFixed(2)} km • ${elev} m${(typeof slope === "number" ? ` • %${slope.toFixed(1)} slope` : "")}`;
+        tooltip.style.left = `${x}px`;
+      }
+      // Dikey çizgi
+      if (verticalLine) {
+        verticalLine.style.left = `${x}px`;
+        verticalLine.style.display = 'block';
+      }
       return;
     }
 
@@ -6163,6 +6187,15 @@ function setupScaleBarInteraction(day, map) {
         zIndexOffset: 9999
       }).addTo(map);
     }
+    if (tooltip) {
+      tooltip.style.opacity = '1';
+      tooltip.textContent = `${currentKm.toFixed(2)} km`;
+      tooltip.style.left = `${x}px`;
+    }
+    if (verticalLine) {
+      verticalLine.style.left = `${x}px`;
+      verticalLine.style.display = 'block';
+    }
   }
 
   function onLeave() {
@@ -6170,7 +6203,8 @@ function setupScaleBarInteraction(day, map) {
       map.removeLayer(hoverMarker);
       hoverMarker = null;
     }
-    // (Varsa tooltip ve vertical line'ı burada da gizle)
+    if (tooltip) tooltip.style.opacity = 0;
+    if (verticalLine) verticalLine.style.display = 'none';
   }
 
   track.addEventListener('mousemove', onMove);
