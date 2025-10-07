@@ -8714,54 +8714,36 @@ track.__onMove = (e) => {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
   const s = container._elevSamples || [];
-  const startKmDom = Number(container._elevStartKm || 0);
-  const spanKm = Number(container._elevKmSpan || totalKm) || 1;
+  const startKmDom = Number(container._elevStartKm || 0);    // 3
+  const spanKm = Number(container._elevKmSpan || totalKm) || 1; // 7
 
   const rect = track.getBoundingClientRect();
   const ptX = e.clientX - rect.left;
-  let x = ptX;
+  const percent = Math.max(0, Math.min(1, ptX / rect.width));
+  const currentKm = startKmDom + percent * spanKm;
 
-  // --- SEGMENT SEÇİLİYKEN ---
-  if (
-    typeof track._segmentStartPx === "number" &&
-    typeof track._segmentWidthPx === "number" &&
-    track._segmentWidthPx > 0
-  ) {
-    const segStart = track._segmentStartPx;
-    const segEnd = segStart + track._segmentWidthPx;
-    // Sadece segment aralığında hover göster:
-    if (ptX < segStart || ptX > segEnd) {
-      tooltip.style.opacity = '0';
-      verticalLine.style.display = 'none';
-      return;
+  // En yakın sample'ı bul
+  let minDist = Infinity, foundSlope = 0, foundElev = null;
+  for (let i = 1; i < s.length; i++) {
+    const kmAbs1 = s[i - 1].distM / 1000;
+    const kmAbs2 = s[i].distM / 1000;
+    const mid = (kmAbs1 + kmAbs2) / 2;
+    const dist = Math.abs(currentKm - mid);
+    if (dist < minDist) {
+      minDist = dist;
+      const dx = s[i].distM - s[i - 1].distM;
+      const dy = ed.smooth[i] - ed.smooth[i - 1];
+      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+      foundElev = Math.round(ed.smooth[i]);
     }
-    x = Math.max(segStart, Math.min(segEnd, ptX));
-    const percent = (x - segStart) / (segEnd - segStart);
-    const foundKmAbs = startKmDom + percent * spanKm;
-
-    // En yakın sample'ı bul:
-    let minDist = Infinity, foundSlope = 0, foundElev = null;
-    for (let i = 1; i < s.length; i++) {
-      const kmAbs1 = s[i - 1].distM / 1000;
-      const kmAbs2 = s[i].distM / 1000;
-      const mid = (kmAbs1 + kmAbs2) / 2;
-      const dist = Math.abs(foundKmAbs - mid);
-      if (dist < minDist) {
-        minDist = dist;
-        const dx = s[i].distM - s[i - 1].distM;
-        const dy = ed.smooth[i] - ed.smooth[i - 1];
-        foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-        foundElev = Math.round(ed.smooth[i]);
-      }
-    }
-
-    tooltip.style.opacity = '1';
-    tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-    tooltip.style.left = `${x}px`;
-    verticalLine.style.left = `${x}px`;
-    verticalLine.style.display = 'block';
-    return;
   }
+
+  tooltip.style.opacity = '1';
+  tooltip.textContent = `${currentKm.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
+  tooltip.style.left = `${ptX}px`;
+  verticalLine.style.left = `${ptX}px`;
+  verticalLine.style.display = 'block';
+};
 
   // --- SEGMENT YOKSA (tam profil) ---
   // Buraya aynen eski hover kodunu koyabilirsin.
