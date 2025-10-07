@@ -8701,6 +8701,14 @@ createScaleElements(track, width, totalKm, 0, markers);
 
     const rect = track.getBoundingClientRect();
     const ptX = e.clientX - rect.left;
+
+    let x = ptX;
+// Segment clamp: segment seçiliyken sadece segment aralığında gez
+if (typeof track._segmentStartPx === "number" && typeof track._segmentWidthPx === "number" && track._segmentWidthPx > 0) {
+  x = Math.max(track._segmentStartPx, Math.min(track._segmentStartPx + track._segmentWidthPx, ptX));
+}
+
+
     const widthNow = Math.max(200, Math.round(rect.width));
 
     let vizMin = min, vizMax = max;
