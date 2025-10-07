@@ -9530,20 +9530,22 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   });
 
 }
-
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
   const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
 
-  // ... segment overlay SVG'lerini sil ...
+  // Segment overlay SVG'lerini ve toolbar'ı sil
+  track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
+  track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
   const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
   const totalKm = Number(container.dataset.totalKm) || 0;
   const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
     ? getRouteMarkerPositionsOrdered(day) : [];
 
-  // --- Eğer reset ise (tam profile dönülüyorsa) ---
-  if (startKm <= 0 && Math.abs(endKm - totalKm) < 0.01) {
+  // --- Segment/profil marker ve km çizelgesi güncelle ---
+  if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
+    // Tam profile dön
     container._elevStartKm = 0;
     container._elevKmSpan  = totalKm;
     createScaleElements(track, widthPx, totalKm, 0, markers);
@@ -9554,21 +9556,19 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
   }
 
-  // Segment overlay SVG
+  // --------------------- SVG Overlay Kısmı ---------------------
   const svgNS = 'http://www.w3.org/2000/svg';
-  const widthNow = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
+  const widthNow = widthPx || 400;
   const heightNow = 220;
 
   const svg = document.createElementNS(svgNS, 'svg');
   svg.setAttribute('class', 'tt-elev-svg');
-  svg.setAttribute('data-role', 'elev-segment'); // ÖNEMLİ
+  svg.setAttribute('data-role', 'elev-segment');
   svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', String(heightNow));
-  // Base’in ÜSTÜNDE
-  
-   track.appendChild(svg);
+  track.appendChild(svg);
 
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class','tt-elev-grid');
@@ -9703,10 +9703,14 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     const selection = container.querySelector('.scale-bar-selection');
     if (selection) selection.style.display = 'none';
 
-    // Tam profile dön (base SVG ÜZERİNDE)
+    // Tam profile dön (marker ve scale-bar da tam profilde olsun)
     const totalKm = Number(container.dataset.totalKm) || 0;
     container._elevStartKm = 0;
     container._elevKmSpan  = totalKm;
+
+    const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
+    const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+    createScaleElements(track, widthPx, totalKm, 0, markers);
 
     if (Array.isArray(container._elevFullSamples)) {
       container._elevSamples = container._elevFullSamples.slice();
@@ -9721,7 +9725,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       container._redrawElevation(container._elevationData);
     } else {
       // Fallback: baştan kur
-      const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
       if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
         renderRouteScaleBar(container, totalKm, markers);
       }
