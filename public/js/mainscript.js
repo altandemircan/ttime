@@ -5318,14 +5318,17 @@ mapStyleSelect.onchange = function() {
   if (geojson?.features?.[0]?.geometry?.coordinates) {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
-    try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
-      expandedMap._initialBounds = poly.getBounds();
+try {
+  expandedMap.fitBounds(poly.getBounds());
+  const currentZoom = expandedMap.getZoom();
+  expandedMap.setView(expandedMap.getCenter(), currentZoom - 1);
+} catch (_){}
 
-    // === GÜNCELLEME: fitBounds'tan HEMEN SONRA expandedMap._initialView'u kaydet ===
-    expandedMap._initialView = {
-      center: expandedMap.getCenter(),
-       zoom: expandedMap.getZoom() - 1  // <<< BURAYI GÜNCELLE!
-    };
+expandedMap._initialBounds = poly.getBounds();
+expandedMap._initialView = {
+  center: expandedMap.getCenter(),
+  zoom: expandedMap.getZoom()
+};
   } else if (!expandedMap._initialView) {
     // Eğer fitBounds çalışmadıysa (ör. nokta yok) fallback olarak ilk ayarı kaydet
     expandedMap._initialView = {
