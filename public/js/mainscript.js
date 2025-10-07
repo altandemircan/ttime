@@ -8418,8 +8418,13 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
     const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
     return f * p10;
   }
-function createScaleElements(widthPx, spanKm, startKmDom, markers = []) {
+function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
+  // HATALI: track yoksa hiçbir şey çizilmez!
+  if (!track) return;
+
+  // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
+
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -8454,7 +8459,6 @@ function createScaleElements(widthPx, spanKm, startKmDom, markers = []) {
 
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
-      // Sadece segment aralığında kalan markerları çiz
       if (typeof m.distance !== 'number') return;
       if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
       const relKm = m.distance - startKmDom;
@@ -8511,9 +8515,9 @@ function createScaleElements(widthPx, spanKm, startKmDom, markers = []) {
   container._elevKmSpan = totalKm;
 
   // Ölçek ve SVG haznesi
-  let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  if (isNaN(width)) width = 400;
-  createScaleElements(width);
+let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+if (isNaN(width)) width = 400;
+createScaleElements(track, width, totalKm, 0, markers);
 
   // BASE SVG (data-role="elev-base")
   const svgNS = 'http://www.w3.org/2000/svg';
