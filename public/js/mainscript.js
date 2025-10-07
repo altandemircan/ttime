@@ -8906,113 +8906,7 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 
-function highlightSegmentOnMap(day, startKm, endKm) {
-  console.log('highlightSegmentOnMap CALLED', day, startKm, endKm);
 
-  // Harita veya rota hazır değilse, tekrar dene (en çok 20 defa)
-  if (
-    !window.leafletMaps || !window.lastRouteGeojsons ||
-    !window.leafletMaps[`route-map-day${day}`] ||
-    !window.lastRouteGeojsons[`route-map-day${day}`] ||
-    !window.lastRouteGeojsons[`route-map-day${day}`].features?.[0]?.geometry?.coordinates
-  ) {
-    window._highlightTries = (window._highlightTries || 0) + 1;
-    if (window._highlightTries < 20) {
-      setTimeout(() => highlightSegmentOnMap(day, startKm, endKm), 150);
-    }
-    return;
-  }
-  window._highlightTries = 0;
-
-  const cid = `route-map-day${day}`;
-  const gj = window.lastRouteGeojsons?.[cid];
-  if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
-
-  window._segmentHighlight = window._segmentHighlight || {};
-  const maps = [];
-  const small = window.leafletMaps?.[cid];
-  if (small) maps.push(small);
-  const exp = window.expandedMaps?.[cid]?.expandedMap;
-  if (exp) maps.push(exp);
-
-  // Önce eski highlight'ları sil
-  maps.forEach(m => {
-    if (window._segmentHighlight[day]?.[m._leaflet_id]) {
-      try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
-      try { delete window._segmentHighlight[day][m._leaflet_id]; } catch(_){}
-    }
-  });
-
-  const coords = gj.features[0].geometry.coordinates; // [lng,lat]
-
-  // Sadece temizleme gerekiyorsa (reset) rota geneline fitBounds yap
-  if (typeof startKm !== 'number' || typeof endKm !== 'number') {
-    if (maps.length && coords.length > 1) {
-      setTimeout(() => {
-        maps.forEach(m => {
-          try {
-            const latlngs = coords.map(c => [c[1], c[0]]);
-            m.fitBounds(latlngs, { padding: [16, 16] });
-          } catch (_) {}
-        });
-      }, 120);
-    }
-    return;
-  }
-
-  // Kümülatif mesafe hesapla
-  function hv(lat1, lon1, lat2, lon2) {
-    const R=6371000, toRad=x=>x*Math.PI/180;
-    const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
-    const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-    return 2*R*Math.asin(Math.sqrt(a));
-  }
-  const cum=[0];
-  for (let i=1;i<coords.length;i++){
-    const [lon1,lat1]=coords[i-1], [lon2,lat2]=coords[i];
-    cum[i]=cum[i-1]+hv(lat1,lon1,lat2,lon2);
-  }
-  const segStartM = startKm*1000, segEndM=endKm*1000;
-
-  // Segment aralığını bul
-  let iStart = 0, iEnd = coords.length - 1;
-  for (let i=1;i<cum.length;i++){ if (cum[i] >= segStartM){ iStart = i; break; } }
-  for (let i=cum.length-2;i>=0;i--){ if (cum[i] <= segEndM){ iEnd = i+1; break; } }
-  iStart = Math.max(0, Math.min(iStart, coords.length-2));
-  iEnd = Math.max(iStart+1, Math.min(iEnd, coords.length-1));
-
-  // [lat, lng] dizisi
-  const sub = coords.slice(iStart, iEnd+1).map(c => [c[1], c[0]]);
-  if (sub.length < 2) return;
-
-  function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
-
-  window._segmentHighlight[day] = window._segmentHighlight[day] || {};
-  console.log("MOR SEGMENT ÇİZİLİYOR", sub.length, sub, "mapCount:", maps.length, "day:", day, startKm, endKm);
-
-  maps.forEach(m => {
-    const poly = L.polyline(sub, {
-      color:'#8a4af3',
-      weight: 12, // DAHA KALIN YAP!
-      opacity: 1,
-      dashArray: '',
-      renderer: ensureCanvasRenderer(m)
-    }).addTo(m);
-    window._segmentHighlight[day][m._leaflet_id] = poly;
-
-    // Mor çizgiyi HER ZAMAN ÖNE GETİR
-    if (poly.bringToFront) poly.bringToFront();
-  });
-
-  // Ekstra güvenlik için: tüm mor çizgileri tekrar öne getir
-  maps.forEach(m => {
-    Object.values(m._layers).forEach(layer => {
-      if (layer && layer._path && layer.options && String(layer.options.color).toLowerCase() === "#8a4af3") {
-        layer.bringToFront && layer.bringToFront();
-      }
-    });
-  });
-}
 (function patchSetupScaleBarInteraction(){
   if (!window.setupScaleBarInteraction || window.__ttElevScalePatched) return;
   const original = window.setupScaleBarInteraction;
@@ -9546,6 +9440,8 @@ const DATASET = 'srtm30m';
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 
 function highlightSegmentOnMap(day, startKm, endKm) {
+  console.log('highlightSegmentOnMap CALLED', day, startKm, endKm);
+
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
@@ -9557,7 +9453,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const exp = window.expandedMaps?.[cid]?.expandedMap;
   if (exp) maps.push(exp);
 
-  // Önce mevcut highlight’ları kaldır ve referansları sil
+  // Önce eski highlight'ları sil
   maps.forEach(m => {
     if (window._segmentHighlight[day]?.[m._leaflet_id]) {
       try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
@@ -9565,11 +9461,12 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     }
   });
 
-  // start/end verilmemişse sadece temizle
+  // start/end yoksa sadece temizle
   if (typeof startKm !== 'number' || typeof endKm !== 'number') return;
 
   const coords = gj.features[0].geometry.coordinates; // [lng,lat]
 
+  // Kümülatif mesafe
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -9594,12 +9491,14 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   window._segmentHighlight[day] = window._segmentHighlight[day] || {};
   maps.forEach(m => {
-    // SADECE MOR RENGİNİ KULLAN!
+    // MOR çizgi kesinlikle SVG path olacak şekilde renderer parametresi YOK!
     const poly = L.polyline(sub, {
-      color:'#8a4af3', weight:6, opacity:0.95, dashArray:'', renderer: ensureCanvasRenderer(m)
+      color:'#ff00cc', // veya '#8a4af3'
+      weight: 13,
+      opacity: 1
     }).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
-    try { m.fitBounds(poly.getBounds(), { padding: [16,16] }); } catch(_){}
+    if (poly.bringToFront) poly.bringToFront();
   });
 }
 
