@@ -6191,33 +6191,6 @@ if (
   track.addEventListener('touchend', onLeave);
 }
 
-// Track ve Tooltip Seçimi
-const track = document.querySelector('#track'); // Track elementi
-const tooltip = document.querySelector('#tooltip'); // Tooltip elementi
-
-// Elevation Verisi (örnek)
-const elevationData = [
-  { elevation: 100 }, 
-  { elevation: 200 }, 
-  { elevation: 300 }
-];
-
-// Mousemove Olayı
-track.addEventListener('mousemove', function(e) {
-  const percent = e.offsetX / track.offsetWidth; // Fare pozisyonunu hesapla
-  const currentKm = percent * 100; // Örnek rota bilgisi (toplam 100 km)
-
-  if (track._segmentStartKm && track._segmentKmSpan) {
-    // Seçilen segmentin tooltip bilgileri:
-    const segmentKm = track._segmentStartKm + (percent * track._segmentKmSpan);
-    const segmentElev = elevationData[track._selectedSegmentIndex].elevation;
-    tooltip.textContent = `${segmentKm.toFixed(2)} km • ${segmentElev} m yükselti`;
-  } else {
-    // Genel rota bilgileri (fallback)
-    tooltip.textContent = `${currentKm.toFixed(2)} km`;
-  }
-});
-
 
 function restoreMap(containerId, day) {
     const expandedData = window.expandedMaps?.[containerId];
