@@ -3529,7 +3529,23 @@ function attachMapClickAddMode(day) {
 }
 
 
+
+
 function updateCart() {
+
+     // --- EKLENECEK BLOK ---
+  if (window.expandedMaps) {
+    const days = [...new Set((window.cart || []).map(i => i.day))];
+    days.forEach(day => {
+      clearRouteSegmentHighlight(day);
+      // fitExpandedMapToRoute(day); // İstersen ekle, ama genelde gerek yok!
+    });
+    // Tüm segment state'ini sıfırla:
+    window._lastSegmentDay = undefined;
+    window._lastSegmentStartKm = undefined;
+    window._lastSegmentEndKm = undefined;
+  }
+  
 const oldStartDate = window.cart.startDate;
 const oldEndDates  = window.cart.endDates;
 

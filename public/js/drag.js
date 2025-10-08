@@ -572,8 +572,16 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
             window.cart.splice(insertAt, 0, item);
         }
 
-        updateCart();
-        attachChatDropListeners();
+       if (window.expandedMaps) {
+      clearRouteSegmentHighlight(fromDay);
+      clearRouteSegmentHighlight(toDay);
+      window._lastSegmentDay = undefined;
+      window._lastSegmentStartKm = undefined;
+      window._lastSegmentEndKm = undefined;
+    }
+
+    updateCart();
+    attachChatDropListeners();
 
     } catch (error) {
         console.error("Reorder error:", error);
