@@ -8363,59 +8363,6 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 
-/* 2) Vertical guide line on the map */
-function showMarkerVerticalLineOnMap(map, latlng) {
-  if (!map || !latlng) return;
-  const cont = map.getContainer();
-  if (!cont) return;
-  const pt = map.latLngToContainerPoint(latlng);
-  let line = cont.querySelector('.tt-map-vert-line');
-  if (!line) {
-    line = document.createElement('div');
-    line.className = 'tt-map-vert-line';
-    cont.appendChild(line);
-  }
-  line.style.left = `${Math.round(pt.x)}px`;
-  line.style.display = 'block';
-}
-
-(function disableMapVerticalGuideLine(){
-  // 1) Force-hide any existing vertical line elements
-  document.querySelectorAll('.tt-map-vert-line').forEach(el => {
-    el.style.display = 'none';
-  });
-
-  // 2) One-time CSS to keep it hidden even if created elsewhere
-  if (!document.getElementById('tt-hide-map-vert-line-style')) {
-    const s = document.createElement('style');
-    s.id = 'tt-hide-map-vert-line-style';
-    s.textContent = `.tt-map-vert-line{ display:none !important; }`;
-    document.head.appendChild(s);
-  }
-
-  // 3) Override helpers so any future calls become no-op (safe)
-  window.showMarkerVerticalLineOnMap = function(map, latlng){
-    try {
-      const cont = map?.getContainer?.();
-      const line = cont && cont.querySelector('.tt-map-vert-line');
-      if (line) line.style.display = 'none';
-    } catch {}
-  };
-  window.hideMarkerVerticalLineOnMap = function(map){
-    try {
-      const cont = map?.getContainer?.();
-      const line = cont && cont.querySelector('.tt-map-vert-line');
-      if (line) line.style.display = 'none';
-    } catch {}
-  };
-})();
-function hideMarkerVerticalLineOnMap(map) {
-  const cont = map?.getContainer?.();
-  if (!cont) return;
-  const line = cont.querySelector('.tt-map-vert-line');
-  if (line) line.style.display = 'none';
-}
-
 function renderRouteScaleBar(container, totalKm, markers) {
 if (!container || isNaN(totalKm) || totalKm <= 0) {
   if (container) { container.innerHTML = ""; container.style.display = 'none'; }
@@ -9005,99 +8952,6 @@ document.addEventListener('mousedown', (e) => {
 })();
 
 
-
-(function patchOpenMeteoElevationFetch(){
-  if (window.__tt_openMeteoPatched) return;
-
-  const OM_BASE = 'https://api.open-meteo.com/v1/elevation?';
-  const originalFetch = window.fetch.bind(window);
-
-  // Global pacing/state for ONLY Open‑Meteo elevation calls
-  const queue = { chain: Promise.resolve() };               // serialize requests
-  let lastTs = 0;
-  const minIntervalMs = 1800;                               // >=1.8s between calls
-  let cooldownUntil = 0;                                    // set after 429
-  const inFlightByKey = new Map();                          // singleflight per URL
-
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-  // Enqueue a task so elevation calls never overlap
-  function enqueue(task) {
-    const next = queue.chain.then(task, task);
-    queue.chain = next.catch(() => {}); // keep chain alive
-    return next;
-  }
-
-  async function throttledFetchOnce(url, init) {
-    // Respect 429 cooldown if any
-    const now0 = Date.now();
-    if (now0 < cooldownUntil) {
-      await sleep(cooldownUntil - now0);
-    }
-
-    // Respect min interval
-    const now = Date.now();
-    const wait = Math.max(0, minIntervalMs - (now - lastTs));
-    if (wait) await sleep(wait);
-
-    const resp = await originalFetch(url, init);
-    lastTs = Date.now();
-
-    if (resp.status === 429) {
-      // Use Retry-After if provided; otherwise 3 minutes cooldown
-      const ra = parseInt(resp.headers.get('retry-after') || '0', 10);
-      cooldownUntil = Date.now() + (ra > 0 ? ra * 1000 : 180000);
-    }
-    return resp;
-  }
-
-  async function throttledFetchWithRetry(url, init) {
-    // First attempt (serialized)
-    let resp = await enqueue(() => throttledFetchOnce(url, init));
-
-    if (resp.status === 429) {
-      // One retry: wait until cooldown, then go again
-      const now = Date.now();
-      if (now < cooldownUntil) {
-        await sleep(cooldownUntil - now);
-      }
-      resp = await enqueue(() => throttledFetchOnce(url, init));
-    }
-    return resp;
-  }
-
-  // Monkey-patch fetch: only affect Open‑Meteo elevation calls
-  window.fetch = function(input, init) {
-    const url = typeof input === 'string' ? input : (input && input.url) || '';
-
-    if (!url.startsWith(OM_BASE)) {
-      // Not elevation endpoint -> pass through
-      return originalFetch(input, init);
-    }
-
-    // Singleflight by exact URL (same lat/lon list)
-    if (inFlightByKey.has(url)) {
-      return inFlightByKey.get(url);
-    }
-
-    const p = (async () => {
-      try {
-        const resp = await throttledFetchWithRetry(url, init);
-        return resp;
-      } finally {
-        // Clear the singleflight slot after completion
-        inFlightByKey.delete(url);
-      }
-    })();
-
-    inFlightByKey.set(url, p);
-    return p;
-  };
-
-  window.__tt_openMeteoPatched = true;
-})();
-/* === Scale bar loader helpers (centered overlay) === */
-/* Scale bar ortası loader + 429 için tek seferlik yeniden deneme planlayıcı */
 (function ensureScaleBarLoadingHelpers(){
   if (window.__tt_scaleBarLoaderReady) return;
 
@@ -9597,12 +9451,10 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   const dy = elevSmooth[i] - elevSmooth[i-1];
   let slope = 0, color = '#72c100';
 
-  // --- SADECE BU BLOĞU DEĞİŞTİRİYORSUN ---
   if (dx !== 0) {
     slope = (dy / dx) * 100;
     color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
   }
-  // ----------------------------------------
 
   const seg = document.createElementNS(svgNS, 'line');
   seg.setAttribute('x1', String(x1));
@@ -9729,7 +9581,6 @@ tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
 track.addEventListener('mousemove', track.__onMove);
 
 }
-
 
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
