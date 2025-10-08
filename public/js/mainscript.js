@@ -9819,7 +9819,7 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   `;
   track.appendChild(tb);
 
-  
+  // Reset → base’e dön
 tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
     // Sadece segment overlay’leri ve toolbar’ı temizle
     track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
@@ -9892,10 +9892,11 @@ tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
         }
     }
 });
-
-// Event handler'ı dışarıda bırak:
-track.removeEventListener('mousemove', track.__onMove);
+  track.removeEventListener('mousemove', track.__onMove);
 track.addEventListener('mousemove', track.__onMove);
+
+}
+
 
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
