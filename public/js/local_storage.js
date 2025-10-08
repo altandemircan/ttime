@@ -513,60 +513,67 @@ tripDiv.addEventListener("mouseleave", () => {
     titleDiv.textContent = trip.title || `${trip.days} day${trip.days > 1 ? 's' : ''}${trip.selectedCity ? " " + trip.selectedCity : ""}`;
 
     function startRename() {
-        const input = document.createElement("input");
-        input.type = "text";
-        input.value = titleDiv.textContent;
-        input.className = "trip-rename-input";
-        input.style.marginRight = "5px";
-        input.style.maxWidth = "120px";
-        input.addEventListener("keydown", function(e) {
-            if (e.key === "Enter") doRename();
-            if (e.key === "Escape") cancelRename();
-        });
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = titleDiv.textContent;
+    input.className = "trip-rename-input";
+    input.style.marginRight = "5px";
+    input.style.maxWidth = "120px";
+    input.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") doRename();
+        if (e.key === "Escape") cancelRename();
+    });
 
-        const saveBtn = document.createElement("button");
-        saveBtn.className = "trip-rename-save";
-        saveBtn.textContent = "Save";
-        saveBtn.title = "Save";
-        saveBtn.onclick = doRename;
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "trip-rename-save";
+    saveBtn.textContent = "Save";
+    saveBtn.title = "Save";
+    saveBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        doRename();
+    };
 
-        const cancelBtn = document.createElement("button");
-        cancelBtn.className = "trip-rename-cancel";
-        cancelBtn.textContent = "Cancel";
-        cancelBtn.title = "Cancel";
-        cancelBtn.onclick = cancelRename;
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "trip-rename-cancel";
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.title = "Cancel";
+    cancelBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        cancelRename();
+    };
 
-        titleDiv.replaceWith(input, saveBtn, cancelBtn);
-        input.focus();
+    titleDiv.replaceWith(input, saveBtn, cancelBtn);
+    input.focus();
 
-        function doRename() {
-    const newTitle = input.value.trim();
-    if (!newTitle) return;
-    const all = getAllSavedTrips();
-    const trip = all[trip.key];
-    if (!trip) return;
+    function doRename() {
+        console.log("doRename çalıştı"); // TEST için
+        const newTitle = input.value.trim();
+        if (!newTitle) return;
+        const all = getAllSavedTrips();
+        const trip = all[trip.key];
+        if (!trip) return;
 
-    // Yeni key üret
-    const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
+        // Yeni key üret
+        const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
-    // Trip objesini güncelle
-    trip.title = newTitle;
-    trip.key = newKey;
-    trip.updatedAt = Date.now();
+        // Trip objesini güncelle
+        trip.title = newTitle;
+        trip.key = newKey;
+        trip.updatedAt = Date.now();
 
-    // Eski key’i sil, yeni key ile ekle
-    delete all[trip.key];
-    all[newKey] = trip;
+        // Eski key’i sil, yeni key ile ekle
+        delete all[trip.key];
+        all[newKey] = trip;
 
-   localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
-// Paneli güncelle, trip açma!
-setTimeout(() => { renderMyTripsPanel(); }, 0);
-}
-        function cancelRename() {
-            renderMyTripsPanel();
-        }
+        localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+        setTimeout(() => { renderMyTripsPanel(); }, 0);
     }
-
+    function cancelRename() {
+        setTimeout(() => { renderMyTripsPanel(); }, 0);
+    }
+}
     // Buton satırı (Rename, Delete)
     const buttonRow = document.createElement("div");
     buttonRow.style.display = "flex";
@@ -610,7 +617,7 @@ setTimeout(() => { renderMyTripsPanel(); }, 0);
       (e.target.classList && e.target.classList.contains('trip-rename-save')) ||
       (e.target.tagName === "INPUT")
     ) return;
-            
+
         e.preventDefault();
         if (typeof window.toggleSidebarMyTrips === "function") window.toggleSidebarMyTrips();
         loadTripFromStorage(trip.key);
