@@ -613,6 +613,8 @@ function renderMyTripsPanel() {
 
     return tripDiv;
 }
+tryUpdateTripThumbnailsDelayed(1500); // 1.5 sn sonra tekrar dene; istersen daha kısa yapabilirsin
+
 }
 
 
