@@ -601,7 +601,11 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
       const maxDay = trip.days || 1;
       for (let day = 1; day <= maxDay; day++) {
         if (!trip.thumbnails) trip.thumbnails = {};
-        if (!trip.thumbnails[day] || trip.thumbnails[day].includes("placeholder")) {
+        // DÜZELTİLMİŞ SATIR (tür kontrolü ile!)
+        if (
+          !trip.thumbnails[day] ||
+          (typeof trip.thumbnails[day] === "string" && trip.thumbnails[day].includes("placeholder"))
+        ) {
           if (countPointsForDay(day, trip) < 2) continue;
           const thumb = generateTripThumbnailOffscreen(trip, day);
           if (thumb) {
