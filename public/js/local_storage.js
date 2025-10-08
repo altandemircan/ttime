@@ -829,11 +829,16 @@ async function generateMapThumbnail(day, trip = null) {
       removedImageMarkers.forEach(m => map.addLayer(m));
     });
 
+if (tempDayContainer) {
+      document.getElementById(`day-container-${day}`)?.remove();
+    }
     return dataUrl;
   } catch (_) {
     return null;
   }
 }
+
+
 // Yardımcı: bir DOM elemanı render edilebilir mi?
 function isRenderable(el) {
   if (!el) return false;
