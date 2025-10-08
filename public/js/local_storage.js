@@ -524,8 +524,6 @@ function startRename() {
         if (e.key === "Enter") doRename();
         if (e.key === "Escape") cancelRename();
     });
-
-    // !!! BLUR'DA da doRename çağır !!!
     input.addEventListener("blur", function() {
         doRename();
     });
@@ -534,25 +532,25 @@ function startRename() {
     input.focus();
 
     function doRename() {
-    const newTitle = input.value.trim();
-    if (!newTitle) return cancelRename();
-    const all = getAllSavedTrips();
-    const oldKey = trip.key;
-    const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
+        const newTitle = input.value.trim();
+        if (!newTitle) return cancelRename();
+        const all = getAllSavedTrips();
+        const oldKey = trip.key;
+        const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
-    trip.title = newTitle;
-    trip.key = newKey;
-    trip.updatedAt = Date.now();
+        trip.title = newTitle;
+        trip.key = newKey;
+        trip.updatedAt = Date.now();
 
-    delete all[oldKey];
-    all[newKey] = trip;
+        delete all[oldKey];
+        all[newKey] = trip;
 
-    // --- EKLE ---
-    window.activeTripKey = newKey;
+        // EN ÖNEMLİSİ: AKTİF KEY GÜNCELLE
+        window.activeTripKey = newKey;
 
-    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
-    setTimeout(() => { renderMyTripsPanel(); }, 0);
-}
+        localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+        setTimeout(() => { renderMyTripsPanel(); }, 0);
+    }
     function cancelRename() {
         setTimeout(() => { renderMyTripsPanel(); }, 0);
     }
