@@ -467,8 +467,8 @@ function renderMyTripsPanel() {
 const thumbBox = document.createElement("div");
 thumbBox.style.position = "relative";
 thumbBox.style.display = "inline-block";
-thumbBox.style.width = "60px";
-thumbBox.style.height = "40px";
+thumbBox.style.width = "80px"; // Görselden büyük yap!
+thumbBox.style.height = "60px";
 thumbBox.style.cursor = "pointer";
 
 const thumbImg = document.createElement("img");
@@ -478,11 +478,9 @@ thumbImg.width = 60;
 thumbImg.height = 40;
 thumbImg.dataset.tripkey = trip.key;
 
-// Önce bunları tanımla:
 const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
 const itemCount = trip.cart ? trip.cart.length : 0;
 
-// Sonra kullan:
 const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
 thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
@@ -501,6 +499,7 @@ thumbInfo.style.borderRadius = "7px";
 thumbInfo.style.zIndex = "2";
 thumbInfo.style.textShadow = "0 1px 3px #111";
 thumbInfo.style.display = "none";
+thumbInfo.style.pointerEvents = "none";
 
 thumbBox.appendChild(thumbImg);
 thumbBox.appendChild(thumbInfo);
