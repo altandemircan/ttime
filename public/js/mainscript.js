@@ -8452,14 +8452,15 @@ track.addEventListener('touchstart', function(e) {
   track.style.overflow = 'visible';
 
    // Hover dikey çizgi + tooltip
-  const verticalLine = document.createElement('div');
-  verticalLine.className = 'scale-bar-vertical-line';
+const verticalLine = document.createElement('div');
+verticalLine.className = 'scale-bar-vertical-line';
+verticalLine.style.left = (width / 2) + 'px'; // şimdi width tanımlı!
   verticalLine.style.cssText = `
     position:absolute;top:0;bottom:0;width:2px;
     background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;
   `;
   // Başlangıçta çizgi ortada olsun
-  verticalLine.style.left = (width / 2) + 'px';
+
   track.appendChild(verticalLine);
 
   const tooltip = document.createElement('div');
