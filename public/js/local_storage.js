@@ -149,8 +149,13 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   if (isDuplicate) return;
 
   // 3. Benzersiz anahtar (timestamp ile)
-  let timestamp = Date.now();
-  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
+                let tripKey;
+                if (window.activeTripKey) {
+                  tripKey = window.activeTripKey; // mevcut trip güncelleniyor, key aynı kalsın
+                } else {
+                  let timestamp = Date.now();
+                  tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
+                }
 
   // 4. Trip objesi
   const tripObj = {
@@ -693,16 +698,17 @@ document.addEventListener("DOMContentLoaded", function() {
 // 7. Yeni plan başladığında eski trip state'i sıfırla (startNewChat fonksiyonu varsa!)
 if (typeof window.startNewChat === "function") {
     const origStartNewChat = window.startNewChat;
-    window.startNewChat = function() {
-        origStartNewChat.apply(this, arguments);
-        // Sıfırla
-        window.cart = [];
-        window.customDayNames = {};
-        window.lastUserQuery = "";
-        window.selectedCity = "";
-        saveCurrentTripToStorage();
-        renderMyTripsPanel();
-    };
+                    window.startNewChat = function() {
+                    origStartNewChat.apply(this, arguments);
+                    // Sıfırla
+                    window.cart = [];
+                    window.customDayNames = {};
+                    window.lastUserQuery = "";
+                    window.selectedCity = "";
+                    window.activeTripKey = null;  // <<< EKLE
+                    saveCurrentTripToStorage();
+                    renderMyTripsPanel();
+                };
 }
 
 
