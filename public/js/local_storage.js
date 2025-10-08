@@ -223,12 +223,11 @@ function getAllSavedTrips() {
         return {};
     }
 }   
-function saveCurrentTripToStorageWithThumbnailDelay() {
-  saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 });
-}
 
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
+      window.activeTripKey = tripKey;
+
     const trips = getAllSavedTrips();
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
