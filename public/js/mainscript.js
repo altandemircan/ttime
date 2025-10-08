@@ -6124,14 +6124,11 @@ function setupScaleBarInteraction(day, map) {
 
     function onMove(e) {
         const rect = scaleBar.getBoundingClientRect();
-        let x;
-        if (e.touches && e.touches.length) {
-            x = e.touches[0].clientX - rect.left;
-        } else {
-            x = e.clientX - rect.left;
-        }
+        let x = (e.touches && e.touches.length)
+            ? (e.touches[0].clientX - rect.left)
+            : (e.clientX - rect.left);
 
-        // Eğer segment seçiliyse sadece segment aralığında gezinsin
+        // Eğer segment seçiliyse, sadece segmentte ilerle
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
         const containerId = `route-map-day${day}`;
@@ -6139,14 +6136,14 @@ function setupScaleBarInteraction(day, map) {
         if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
         const coords = geojson.features[0].geometry.coordinates;
 
-        // Her segmentin kümülatif mesafesini hesapla
+        // Kümülatif mesafe
         let cumDist = [0];
         for (let i = 1; i < coords.length; i++) {
             cumDist[i] = cumDist[i - 1] + haversine(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
         }
         const totalDist = cumDist[cumDist.length - 1];
 
-        // --- SEGMENT SEÇİLİYSE SADECE SEGMENTTE GEZİN ---
+        // SEGMENT STATE VARSA SADECE SEGMENTTE, YOKSA TÜM ROTADA
         let segStartKm = 0, segEndKm = totalDist / 1000;
         if (
             typeof window._lastSegmentDay === "number" &&
@@ -6160,15 +6157,20 @@ function setupScaleBarInteraction(day, map) {
         const segStartM = segStartKm * 1000;
         const segEndM = segEndKm * 1000;
         const segmentLength = segEndM - segStartM;
+
         let targetDist;
-        if (segmentLength > 0 && segStartM >= 0 && segEndM <= totalDist) {
+        if (
+            segmentLength > 0 &&
+            segStartM >= 0 &&
+            segEndM <= totalDist &&
+            segStartKm !== 0 || segEndKm !== (totalDist / 1000)
+        ) {
             // segment seçili
             targetDist = segStartM + percent * segmentLength;
         } else {
             // segment yok, tüm rotada gezinsin
             targetDist = percent * totalDist;
         }
-        // --- BLOK SONU ---
 
         // Noktayı bul
         let idx = 0;
@@ -6209,8 +6211,6 @@ function setupScaleBarInteraction(day, map) {
 
     scaleBar.addEventListener("mousemove", onMove);
     scaleBar.addEventListener("mouseleave", onLeave);
-
-    // Mobile touch desteği
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
