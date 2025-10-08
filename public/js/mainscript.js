@@ -9821,6 +9821,11 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
 
   // Reset → base’e dön
 tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
+
+    track.removeEventListener('mousemove', track.__onMove);
+track.addEventListener('mousemove', track.__onMove);
+
+
     // Sadece segment overlay’leri ve toolbar’ı temizle
     track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
     track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
@@ -9893,9 +9898,6 @@ tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
         }
     }
 });
-
-track.removeEventListener('mousemove', track.__onMove);
-track.addEventListener('mousemove', track.__onMove);
 
 
 function resetDayAction(day, confirmationContainerId) {
