@@ -104,103 +104,15 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
     return null;
   }
 }
-
-// Sadece mevcut haritadan thumbnail al; olmazsa placeholder
-async function saveCurrentTripToStorage() {
-  let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
-  if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
-    const maxDay = Math.max(...window.cart.map(item => item.day || 1));
-    tripTitle = `${maxDay} days ${window.selectedCity}`;
-  }
-  let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
-    ? window.cart[0].date
-    : (new Date()).toISOString().slice(0, 10);
-  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '');
-
-  const tripObj = {
-    title: tripTitle,
-    date: tripDate,
-    days: window.cart && window.cart.length > 0
-      ? Math.max(...window.cart.map(item => item.day || 1))
-      : 1,
-    cart: JSON.parse(JSON.stringify(window.cart || [])),
-    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-    lastUserQuery: window.lastUserQuery || "",
-    selectedCity: window.selectedCity || "",
-    updatedAt: Date.now(),
-    key: tripKey,
-  };
-
-  const thumbnails = {};
-  const days = tripObj.days;
-  for (let day = 1; day <= days; day++) {
-    if (countPointsForDay(day) >= 2) {
-      const thumb = await generateMapThumbnail(day);
-      thumbnails[day] = thumb || "img/placeholder.png";
-    } else {
-      thumbnails[day] = "img/placeholder.png";
-    }
-  }
-  tripObj.thumbnails = thumbnails;
-
-  let trips = {};
-  try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
-
-  tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
-
-  trips[tripKey] = tripObj;
-  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
-}
-
-
-// saveCurrentTripToStorageWithThumbnail: same guard
 async function saveCurrentTripToStorageWithThumbnail() {
-  let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
-  if (!tripTitle && window.selectedCity && window.cart.length > 0) {
-    const maxDay = Math.max(...window.cart.map(item => item.day || 1));
-    tripTitle = `${maxDay} days ${window.selectedCity}`;
-  }
-  let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
-    ? window.cart[0].date
-    : (new Date()).toISOString().slice(0, 10);
-  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '');
-
-  const tripObj = {
-    title: tripTitle,
-    date: tripDate,
-    days: window.cart && window.cart.length > 0
-      ? Math.max(...window.cart.map(item => item.day || 1))
-      : 1,
-    cart: JSON.parse(JSON.stringify(window.cart)),
-    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-    lastUserQuery: window.lastUserQuery || "",
-    selectedCity: window.selectedCity || "",
-    updatedAt: Date.now(),
-    key: tripKey,
-  };
-
-  const thumbnails = {};
-  const days = tripObj.days;
-  for (let day = 1; day <= days; day++) {
-    if (countPointsForDay(day) >= 2) {
-      thumbnails[day] = await generateMapThumbnail(day) || "img/placeholder.png";
-    } else {
-      thumbnails[day] = "img/placeholder.png";
-    }
-  }
-  tripObj.thumbnails = thumbnails;
-
-  let trips = {};
-  try {
-    trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
-  } catch (e) {}
-
-  tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
-
-  trips[tripKey] = tripObj;
-  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
+  await saveCurrentTripToStorage();
 }
-
+function saveCurrentTripToStorageWithThumbnailDelay() {
+  setTimeout(() => {
+    saveCurrentTripToStorage();
+    renderMyTripsPanel();
+  }, 1200);
+}
 
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
