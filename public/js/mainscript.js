@@ -3545,7 +3545,7 @@ function updateCart() {
     window._lastSegmentStartKm = undefined;
     window._lastSegmentEndKm = undefined;
   }
-  
+
 const oldStartDate = window.cart.startDate;
 const oldEndDates  = window.cart.endDates;
 
@@ -9548,6 +9548,14 @@ const DATASET = 'srtm30m';
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 function highlightSegmentOnMap(day, startKm, endKm) {
+                if (
+              typeof window._lastSegmentDay !== "number" ||
+              typeof window._lastSegmentStartKm !== "number" ||
+              typeof window._lastSegmentEndKm !== "number"
+            ) {
+              // Segment seçili değil, highlight çizilmesin!
+              return;
+            }
   const cid = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[cid];
   if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
