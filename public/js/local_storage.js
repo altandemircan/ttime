@@ -596,22 +596,23 @@ function renderMyTripsPanel() {
 
     // Favorite star (right side)
     const favBtn = document.createElement("button");
-    favBtn.className = "mytrips-fav-btn";
-    favBtn.type = "button";
-    favBtn.title = trip.favorite ? "Remove from favorites" : "Add to favorites";
-    favBtn.textContent = "★";
-    favBtn.style.border = "none";
-    favBtn.style.background = "transparent";
-    favBtn.style.cursor = "pointer";
-    favBtn.style.fontSize = "20px";
-    favBtn.style.marginLeft = "0";
-    favBtn.style.padding = "0";
-    favBtn.style.color = trip.favorite ? "#ffcc00" : "#bdbdbd"; // yellow vs grey
-    favBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleTripFavorite(trip.key);
-    };
+favBtn.className = "mytrips-fav-btn";
+favBtn.type = "button";
+favBtn.title = trip.favorite ? "Remove from favorites" : "Add to favorites";
+favBtn.textContent = "★";
+favBtn.style.border = "none";
+favBtn.style.background = "transparent";
+favBtn.style.cursor = "pointer";
+favBtn.style.fontSize = "20px";
+favBtn.style.marginLeft = "0";
+favBtn.style.padding = "0";
+favBtn.style.color = trip.favorite ? "#ffcc00" : "#bdbdbd"; // yellow vs grey
+favBtn.onclick = async function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    await toggleTripFavorite(trip.key);   // toggleTripFavorite fonksiyonunu async yap!
+    renderMyTripsPanel && renderMyTripsPanel(); // Paneli tekrar çiz
+};
 
     mainBox.appendChild(img);
     mainBox.appendChild(infoBox);
