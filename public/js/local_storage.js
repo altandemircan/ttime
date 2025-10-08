@@ -121,23 +121,15 @@ function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
 
   return canvas.toDataURL('image/png');
 }
-// GÜNCELLEME: Unique key için timestamp ekle!
-async function saveCurrentTripToStorage() {
-    let trips = {};
-try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
+// GÜNCELLEME: Unique key için timestamp ve duplicate kontrolü, tek fonksiyon!
+async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
+  if (delayMs && delayMs > 0) {
+    await new Promise(res => setTimeout(res, delayMs));
+  }
 
-// Aynı başlık, tarih ve cart içeriğine sahip trip varsa tekrar ekleme!
-const isDuplicate = Object.values(trips).some(t =>
-  t.title === tripTitle &&
-  t.date === tripDate &&
-  JSON.stringify(t.cart) === JSON.stringify(window.cart)
-);
-
-if (isDuplicate) {
-  // Zaten var, tekrar kaydetme!
-  return;
-}
-  let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
+  // 1. Başlık ve Tarih
+  let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
+    ? window.lastUserQuery.trim() : "My Trip";
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
     tripTitle = `${maxDay} days ${window.selectedCity}`;
@@ -146,78 +138,21 @@ if (isDuplicate) {
     ? window.cart[0].date
     : (new Date()).toISOString().slice(0, 10);
 
-  // --- BURADA ---
-  let timestamp = Date.now();
-  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
-  // --------------
-
-  const tripObj = {
-    title: tripTitle,
-    date: tripDate,
-    days: window.cart && window.cart.length > 0
-      ? Math.max(...window.cart.map(item => item.day || 1))
-      : 1,
-    cart: JSON.parse(JSON.stringify(window.cart || [])),
-    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-    lastUserQuery: window.lastUserQuery || "",
-    selectedCity: window.selectedCity || "",
-    updatedAt: Date.now(),
-    key: tripKey,
-    directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined,
-  };
-
-  const thumbnails = {};
-  const days = tripObj.days;
-  for (let day = 1; day <= days; day++) {
-    if (countPointsForDay(day) >= 2) {
-      const thumb = await generateTripThumbnailOffscreen(tripObj, day);
-      thumbnails[day] = thumb || "img/placeholder.png";
-    } else {
-      thumbnails[day] = "img/placeholder.png";
-    }
-  }
-  tripObj.thumbnails = thumbnails;
-
+  // 2. Duplicate kontrolü: Aynı başlık, tarih ve cart içeriği zaten varsa tekrar kaydetme!
   let trips = {};
   try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
+  const isDuplicate = Object.values(trips).some(t =>
+    t.title === tripTitle &&
+    t.date === tripDate &&
+    JSON.stringify(t.cart) === JSON.stringify(window.cart)
+  );
+  if (isDuplicate) return;
 
-  tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
-
-  trips[tripKey] = tripObj;
-  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
-}
-
-
-// Aynı güncelleme burada da:
-async function saveCurrentTripToStorageWithThumbnail() {
-    let trips = {};
-try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
-
-// Aynı başlık, tarih ve cart içeriğine sahip trip varsa tekrar ekleme!
-const isDuplicate = Object.values(trips).some(t =>
-  t.title === tripTitle &&
-  t.date === tripDate &&
-  JSON.stringify(t.cart) === JSON.stringify(window.cart)
-);
-
-if (isDuplicate) {
-  // Zaten var, tekrar kaydetme!
-  return;
-}
-  let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
-  if (!tripTitle && window.selectedCity && window.cart.length > 0) {
-    const maxDay = Math.max(...window.cart.map(item => item.day || 1));
-    tripTitle = `${maxDay} days ${window.selectedCity}`;
-  }
-  let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
-    ? window.cart[0].date
-    : (new Date()).toISOString().slice(0, 10);
-
-  // --- BURADA ---
+  // 3. Benzersiz anahtar (timestamp ile)
   let timestamp = Date.now();
   let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
-  // --------------
 
+  // 4. Trip objesi
   const tripObj = {
     title: tripTitle,
     date: tripDate,
@@ -233,10 +168,11 @@ if (isDuplicate) {
     directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined,
   };
 
+  // 5. Thumbnail üretimi
   const thumbnails = {};
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
-    if (countPointsForDay(day) >= 2) {
+    if (withThumbnail && countPointsForDay(day) >= 2) {
       thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
     } else {
       thumbnails[day] = "img/placeholder.png";
@@ -244,13 +180,12 @@ if (isDuplicate) {
   }
   tripObj.thumbnails = thumbnails;
 
-  let trips = {};
-  try {
-    trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
-  } catch (e) {}
+  // 6. Favori durumu kopyala
+  tripObj.favorite =
+    (trips[tripKey] && typeof trips[tripKey].favorite === "boolean")
+      ? trips[tripKey].favorite : false;
 
-  tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
-
+  // 7. Kaydet!
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
@@ -258,9 +193,9 @@ if (isDuplicate) {
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
      setTimeout(() => {
-        saveCurrentTripToStorage();
-        renderMyTripsPanel();
-    }, 1200);
+  saveCurrentTripToStorage({ withThumbnail: true });
+  renderMyTripsPanel();
+}, 1200);
  }
 
 function patchCartLocations() {
@@ -288,6 +223,9 @@ function getAllSavedTrips() {
         return {};
     }
 }   
+function saveCurrentTripToStorageWithThumbnailDelay() {
+  saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 });
+}
 
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
