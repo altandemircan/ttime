@@ -481,17 +481,26 @@ const itemCount = trip.cart ? trip.cart.length : 0;
 const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
 thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
-thumbInfo.style.cssText = `
-  display: none; 
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(25,28,44,0.68); color: #fff; font-size: 13px;
-  flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 7px; z-index: 2; text-shadow: 0 1px 3px #111;
-`;
+thumbInfo.style.position = "absolute";
+thumbInfo.style.top = "0";
+thumbInfo.style.left = "0";
+thumbInfo.style.width = "100%";
+thumbInfo.style.height = "100%";
+thumbInfo.style.background = "rgba(25,28,44,0.68)";
+thumbInfo.style.color = "#fff";
+thumbInfo.style.fontSize = "13px";
+thumbInfo.style.flexDirection = "column";
+thumbInfo.style.alignItems = "center";
+thumbInfo.style.justifyContent = "center";
+thumbInfo.style.borderRadius = "7px";
+thumbInfo.style.zIndex = "2";
+thumbInfo.style.textShadow = "0 1px 3px #111";
+thumbInfo.style.display = "none"; // Açılışta görünmesin
 
 thumbBox.appendChild(thumbImg);
 thumbBox.appendChild(thumbInfo);
 
+// Sadece mouse ile üzerine gelince göster
 thumbBox.onmouseenter = () => { thumbInfo.style.display = "flex"; };
 thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
 
