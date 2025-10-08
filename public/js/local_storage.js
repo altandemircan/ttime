@@ -484,22 +484,32 @@ function buildTripRow(trip, isFavoriteSection) {
     const itemCount = trip.cart ? trip.cart.length : 0;
 
     const thumbInfo = document.createElement("div");
-    thumbInfo.className = "mytrips-thumb-info";
-    thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
-    thumbInfo.style.position = "absolute";
-    thumbInfo.style.top = "0";
-    thumbInfo.style.left = "0";
-    thumbInfo.style.width = "100%";
-    thumbInfo.style.height = "100%";
-    thumbInfo.style.background = "#8a4af3";
-    thumbInfo.style.color = "#fff";
-    thumbInfo.style.fontSize = "13px";
-    thumbInfo.style.display = "none";
-    thumbInfo.style.flexDirection = "column";
-    thumbInfo.style.alignItems = "center";
-    thumbInfo.style.justifyContent = "center";
-    thumbInfo.style.borderRadius = "7px";
-    thumbInfo.style.zIndex = "2";
+thumbInfo.className = "mytrips-thumb-info";
+thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
+thumbInfo.style.position = "absolute";
+thumbInfo.style.top = "0";
+thumbInfo.style.left = "0";
+thumbInfo.style.width = "100%";
+thumbInfo.style.height = "100%";
+thumbInfo.style.background = "#8a4af3";
+thumbInfo.style.color = "#fff";
+thumbInfo.style.fontSize = "13px";
+thumbInfo.style.opacity = "0";
+thumbInfo.style.pointerEvents = "none"; // hover kutusu hover'ı engellemesin
+thumbInfo.style.transition = "opacity 0.25s";
+thumbInfo.style.flexDirection = "column";
+thumbInfo.style.display = "flex";
+thumbInfo.style.alignItems = "center";
+thumbInfo.style.justifyContent = "center";
+thumbInfo.style.borderRadius = "7px";
+thumbInfo.style.zIndex = "2";
+
+tripDiv.addEventListener("mouseenter", () => {
+  thumbInfo.style.opacity = "1";
+});
+tripDiv.addEventListener("mouseleave", () => {
+  thumbInfo.style.opacity = "0";
+});
 
     thumbInfo.style.pointerEvents = "none"; // info kutusu üstüne gelince hover kaybolmasın
 
