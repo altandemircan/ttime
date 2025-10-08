@@ -6123,24 +6123,17 @@ function setupScaleBarInteraction(day, map) {
     let hoverMarker = null;
 
     function onMove(e) {
-    const rect = scaleBar.getBoundingClientRect();
-    let x;
-    if (e.touches && e.touches.length) {
-        x = e.touches[0].clientX - rect.left;
-    } else {
-        x = e.clientX - rect.left;
-    }
+        const rect = scaleBar.getBoundingClientRect();
+        let x;
+        if (e.touches && e.touches.length) {
+            x = e.touches[0].clientX - rect.left;
+        } else {
+            x = e.clientX - rect.left;
+        }
 
-    // --- EKLENECEK BLOK ---
-    // Segment seçiliyken sadece segment içinde gezinsin
-    if (typeof scaleBar._segmentStartPx === "number" && typeof scaleBar._segmentWidthPx === "number" && scaleBar._segmentWidthPx > 0) {
-        x = Math.max(scaleBar._segmentStartPx, Math.min(scaleBar._segmentStartPx + scaleBar._segmentWidthPx, x));
-    }
-    // --- BLOK SONU ---
+        // Eğer segment seçiliyse sadece segment aralığında gezinsin
+        let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-    const percent = Math.max(0, Math.min(x / rect.width, 1));
-
-        // Rota ve mesafe bilgilerini alın
         const containerId = `route-map-day${day}`;
         const geojson = window.lastRouteGeojsons?.[containerId];
         if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
@@ -6152,12 +6145,34 @@ function setupScaleBarInteraction(day, map) {
             cumDist[i] = cumDist[i - 1] + haversine(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
         }
         const totalDist = cumDist[cumDist.length - 1];
-        const targetDist = percent * totalDist;
 
-        // Hangi noktada olduğumuzu bul
+        // --- SEGMENT SEÇİLİYSE SADECE SEGMENTTE GEZİN ---
+        let segStartKm = 0, segEndKm = totalDist / 1000;
+        if (
+            typeof window._lastSegmentDay === "number" &&
+            window._lastSegmentDay === day &&
+            typeof window._lastSegmentStartKm === "number" &&
+            typeof window._lastSegmentEndKm === "number"
+        ) {
+            segStartKm = window._lastSegmentStartKm;
+            segEndKm = window._lastSegmentEndKm;
+        }
+        const segStartM = segStartKm * 1000;
+        const segEndM = segEndKm * 1000;
+        const segmentLength = segEndM - segStartM;
+        let targetDist;
+        if (segmentLength > 0 && segStartM >= 0 && segEndM <= totalDist) {
+            // segment seçili
+            targetDist = segStartM + percent * segmentLength;
+        } else {
+            // segment yok, tüm rotada gezinsin
+            targetDist = percent * totalDist;
+        }
+        // --- BLOK SONU ---
+
+        // Noktayı bul
         let idx = 0;
         while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
-        // Hedef noktayı doğrudan iki nokta arasında interpolate edelim
         let lat, lng;
         if (idx === 0) {
             lat = coords[0][1];
