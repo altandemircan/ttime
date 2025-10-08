@@ -365,13 +365,16 @@ async function toggleTripFavorite(tripKey) {
     all[tripKey].updatedAt = Date.now();
     localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
     renderMyTripsPanel();
-    // --- EKLE ---
+
+    // --- EKLE: Thumbnail'ı güncelle ---
     const trip = all[tripKey];
     if (trip) {
         const days = trip.days || 1;
         trip.thumbnails = trip.thumbnails || {};
         for (let day = 1; day <= days; day++) {
-            if ((trip.directionsPolylines && trip.directionsPolylines[day]) || countPointsForDay(day, trip) >= 2) {
+            if ((trip.directionsPolylines && trip.directionsPolylines[day]) ||
+                (trip.cart || []).filter(it => it.day == day && it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number").length >= 2
+            ) {
                 trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || "img/placeholder.png";
             } else {
                 trip.thumbnails[day] = "img/placeholder.png";
