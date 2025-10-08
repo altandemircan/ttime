@@ -459,10 +459,47 @@ function renderMyTripsPanel() {
 
     // === ANA DIV: Görsel, trip-info-box, fav buton, PDF butonu ===
     const mainBox = document.createElement("div");
+    mainBox.appendChild(thumbBox); // 1. Thumbnail + hover info kutusu
+mainBox.appendChild(tripInfoBox); // 2. Trip başlık ve butonlar
+mainBox.appendChild(pdfBtn);      // 3. PDF butonu
+mainBox.appendChild(favBtn);      // 4. Favori butonu
     mainBox.className = "trip-main-box";
     mainBox.style.display = "flex";
     mainBox.style.alignItems = "center";
     mainBox.style.gap = "10px";
+
+    // --- THUMBNAIL + HOVER INFO KUTUSU ---
+const thumbBox = document.createElement("div");
+thumbBox.style.position = "relative";
+thumbBox.style.display = "inline-block";
+
+const thumbImg = document.createElement("img");
+thumbImg.className = "mytrips-thumb";
+thumbImg.src = trip.thumbnail || "img/placeholder.png";
+thumbImg.width = 60;
+thumbImg.height = 40;
+thumbImg.dataset.tripkey = trip.key;
+
+// Gün ve item sayısı:
+const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
+const itemCount = trip.cart ? trip.cart.length : 0;
+
+const thumbInfo = document.createElement("div");
+thumbInfo.className = "mytrips-thumb-info";
+thumbInfo.textContent = `${dayCount} day - ${itemCount} item`;
+thumbInfo.style.cssText = `
+  display:none;position:absolute;top:0;left:0;width:100%;height:100%;
+  background:rgba(25,28,44,0.68);color:#fff;font-size:13px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:7px;z-index:2;text-shadow:0 1px 3px #111;
+`;
+
+thumbBox.onmouseenter = () => { thumbInfo.style.display = "flex"; };
+thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
+
+thumbBox.appendChild(thumbImg);
+thumbBox.appendChild(thumbInfo);
+
 
     // Thumbnail
     let thumb = (trip.thumbnails && trip.thumbnails[1]) ? trip.thumbnails[1] : "img/placeholder.png";
