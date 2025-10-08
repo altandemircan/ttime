@@ -633,7 +633,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-sync function tryUpdateTripThumbnailsDelayed(delay = 3500) {
+async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
   setTimeout(async function () {
     const trips = getAllSavedTrips();
     for (const tripKey in trips) {
