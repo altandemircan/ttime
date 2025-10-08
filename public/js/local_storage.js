@@ -55,10 +55,34 @@ function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
   const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
 
   function project(p) {
-    const x = 12 + ((p.lng - minLng) / (maxLng - minLng || 1)) * (width - 24);
-    const y = 12 + ((maxLat - p.lat) / (maxLat - minLat || 1)) * (height - 24);
-    return [x, y];
+  // Koordinatların kapsadığı alan
+  const ptsWidth = maxLng - minLng || 1;
+  const ptsHeight = maxLat - minLat || 1;
+  const pad = 12;
+
+  // Canvas ve veri oranı
+  const canvasRatio = width / height;
+  const ptsRatio = ptsWidth / ptsHeight;
+
+  let scale, offsetX, offsetY;
+  if (ptsRatio > canvasRatio) {
+    // En-boy oranı canvas'tan geniş → genişliği tam doldur, üst-alt boşluk bırak
+    scale = (width - 2 * pad) / ptsWidth;
+    const realHeight = ptsHeight * scale;
+    offsetX = pad;
+    offsetY = (height - realHeight) / 2;
+  } else {
+    // En-boy oranı canvas'tan dar → yüksekliği tam doldur, sağ-sol boşluk bırak
+    scale = (height - 2 * pad) / ptsHeight;
+    const realWidth = ptsWidth * scale;
+    offsetX = (width - realWidth) / 2;
+    offsetY = pad;
   }
+
+  const x = offsetX + (p.lng - minLng) * scale;
+  const y = offsetY + (maxLat - p.lat) * scale;
+  return [x, y];
+}
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
