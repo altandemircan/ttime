@@ -738,7 +738,7 @@ async function generateMapThumbnail(day) {
         const icon = l.options && l.options.icon;
         const iconUrl = icon && icon.options && icon.options.iconUrl;
         // DivIcon kalabilir; sadece gerçek resimli ikonları kaldır
-        if (iconUrl) removedImageMarkers.push(l);
+        if (iconUrl) removedImageMarkers.push(l); 
       }
     });
 
