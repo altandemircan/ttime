@@ -6754,8 +6754,6 @@ border-bottom:1px solid #ddd;
 .mytrips-thumb-info {
   display: none !important;
 }
-
-.mytrips-thumb:hover .mytrips-thumb-info, 
-.mytrips-thumb-info.active {
+.thumbBox:hover .mytrips-thumb-info {
   display: flex !important;
 }
