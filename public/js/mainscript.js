@@ -4040,13 +4040,20 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
     if (!cartRoot) return;
 
     let newChat = cartRoot.querySelector('#newchat');
-    if (!newChat){
-      newChat = document.createElement('div');
-      newChat.id = 'newchat';
-      newChat.textContent = 'New Chat';
-      newChat.onclick = startNewChat;
-      newChat.style.cursor = 'pointer';
-    }
+if (!newChat){
+  newChat = document.createElement('div');
+  newChat.id = 'newchat';
+  newChat.textContent = 'New Trip Plan'; // <-- yeni ad
+  newChat.style.cursor = 'pointer';
+
+  // YENİ ONCLICK:
+  newChat.onclick = function() {
+    // Ana sayfaya git
+    window.location.href = "/?sidebar=gallery";
+    // Eğer SPA ise ve reload istemiyorsan:
+    // document.querySelector('.sidebar-overlay.sidebar-gallery')?.classList.add('open');
+  };
+}
 
     // Select Dates butonunun hemen altına yerleştir
     const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
@@ -7355,20 +7362,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-function startNewChat() {
-    document.getElementById('chat-box').innerHTML = '';
-    const chatBox = document.getElementById('chat-box');
-    const newMessage = document.createElement('div');
-    newMessage.className = 'message bot-message';
-    newMessage.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started. Please specify a location, duration, and the type of trip you want";
-    chatBox.appendChild(newMessage);
-    document.getElementById('user-input').value = '';
 
-    const inputWrapper = document.querySelector('.input-wrapper');
-    if (inputWrapper) {
-        inputWrapper.style.display = 'block';
-    }
-}
                        function switchToLogin() {
     document.getElementById("login-form").classList.remove("hidden");
     document.getElementById("signup-form").classList.add("hidden");
