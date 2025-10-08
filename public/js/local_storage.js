@@ -127,7 +127,7 @@ async function saveCurrentTripToStorage() {
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
     if (countPointsForDay(day) >= 2) {
-      const thumb = await generateMapThumbnail(day);
+      const thumb = await generateTripThumbnailOffscreen(tripObj, day);
       thumbnails[day] = thumb || "img/placeholder.png";
     } else {
       thumbnails[day] = "img/placeholder.png";
@@ -169,13 +169,13 @@ async function saveCurrentTripToStorageWithThumbnail() {
     selectedCity: window.selectedCity || "",
     updatedAt: Date.now(),
     key: tripKey,
-  };
+  }
 
   const thumbnails = {};
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
     if (countPointsForDay(day) >= 2) {
-      thumbnails[day] = await generateMapThumbnail(day) || "img/placeholder.png";
+      thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
     } else {
       thumbnails[day] = "img/placeholder.png";
     }
@@ -192,7 +192,6 @@ async function saveCurrentTripToStorageWithThumbnail() {
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
-
 
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
