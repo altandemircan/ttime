@@ -5995,7 +5995,7 @@ window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeL
         // Başarı popup'ı göster
         L.popup()
             .setLatLng([actualLat, actualLng])
-            .setContent(`<div style="text-align:center;"><b>${f.properties.name}</b><br><small style="color:#4caf50;">✓ Eklendi!</small></div>`)
+            .setContent(`<div style="text-align:center;"><b>${f.properties.name}</b><br><small style="color:#4caf50;">✓ Added!</small></div>`)
             .openOn(map);
         
         setTimeout(() => map.closePopup(), 2000);
