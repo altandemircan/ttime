@@ -673,7 +673,7 @@ function buildTripRow(trip, isFavoriteSection) {
 
     return tripDiv;
 }
-}
+
 
 
 if (!window.__trip_autosave_hooked) {
