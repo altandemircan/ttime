@@ -479,10 +479,21 @@ function renderMyTripsPanel() {
     thumbImg.dataset.tripkey = trip.key;
 
     // Gün ve item sayısı:
-    const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
-    const itemCount = trip.cart ? trip.cart.length : 0;
+const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
+const itemCount = trip.cart ? trip.cart.length : 0;
 
-    const thumbInfo = document.createElement("div");
+const thumbBox = document.createElement("div");
+thumbBox.style.position = "relative";
+thumbBox.style.display = "inline-block";
+
+const thumbImg = document.createElement("img");
+thumbImg.className = "mytrips-thumb";
+thumbImg.src = trip.thumbnail || "img/placeholder.png";
+thumbImg.width = 60;
+thumbImg.height = 40;
+thumbImg.dataset.tripkey = trip.key;
+
+const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
 thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
 thumbInfo.style.cssText = `
@@ -492,16 +503,12 @@ thumbInfo.style.cssText = `
   border-radius:7px;z-index:2;text-shadow:0 1px 3px #111;
 `;
 
-    thumbBox.onmouseenter = () => { thumbInfo.style.display = "flex"; };
-    thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
+thumbBox.appendChild(thumbImg);
+thumbBox.appendChild(thumbInfo);
 
-    thumbBox.appendChild(thumbImg);
-    thumbBox.appendChild(thumbInfo);
-
-    // === BURAYA EKLE ===
+// Sadece hover olunca göster
 thumbBox.onmouseenter = () => { thumbInfo.style.display = "flex"; };
 thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
-
 
     // Trip info box (tıklanabilir)
     const infoBox = document.createElement("div");
