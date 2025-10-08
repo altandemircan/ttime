@@ -706,25 +706,35 @@ async function generateMapThumbnail(day) {
     let el = document.getElementById(containerId);
     let map = window.leafletMaps && window.leafletMaps[containerId];
 
-    // DOM veya leaflet harita yoksa KESİNLİKLE oluştur
+    // DAY CONTAINER YOKSA GEÇİCİ OLARAK OLUŞTUR!
+    let tempDayContainer = false;
+    if (!document.getElementById(`day-container-${day}`)) {
+      const mainCart = document.getElementById('cart-items') || document.body;
+      const tempDiv = document.createElement('div');
+      tempDiv.id = `day-container-${day}`;
+      tempDiv.style.display = "none";
+      mainCart.appendChild(tempDiv);
+      tempDayContainer = true;
+    }
+
+    // Şimdi DOM'da var, harita oluşturulabilir
     if (!el || !map) {
-      // 1. DOM'da harita konteyneri yoksa oluştur
       if (typeof ensureDayMapContainer === 'function') {
         el = ensureDayMapContainer(day);
       }
-      // 2. Harita veya route yoksa çizdir
       if (typeof renderRouteForDay === 'function') {
         await renderRouteForDay(day);
       }
-      // 3. Yeniden ata
       map = window.leafletMaps && window.leafletMaps[containerId];
       el = document.getElementById(containerId);
     }
-    // Yine yoksa vazgeç
-    if (!map || !el) return null;
-
-    const container = (typeof map.getContainer === 'function') ? map.getContainer() : map._container;
-    if (!container || !document.body.contains(container)) return null;
+    if (!map || !el) {
+      // cleanup
+      if (tempDayContainer) {
+        document.getElementById(`day-container-${day}`)?.remove();
+      }
+      return null;
+    }
 
 
     // Geçici kaldırılacak katmanlar
