@@ -123,6 +123,20 @@ function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
 }
 // GÜNCELLEME: Unique key için timestamp ekle!
 async function saveCurrentTripToStorage() {
+    let trips = {};
+try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
+
+// Aynı başlık, tarih ve cart içeriğine sahip trip varsa tekrar ekleme!
+const isDuplicate = Object.values(trips).some(t =>
+  t.title === tripTitle &&
+  t.date === tripDate &&
+  JSON.stringify(t.cart) === JSON.stringify(window.cart)
+);
+
+if (isDuplicate) {
+  // Zaten var, tekrar kaydetme!
+  return;
+}
   let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
@@ -176,6 +190,20 @@ async function saveCurrentTripToStorage() {
 
 // Aynı güncelleme burada da:
 async function saveCurrentTripToStorageWithThumbnail() {
+    let trips = {};
+try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
+
+// Aynı başlık, tarih ve cart içeriğine sahip trip varsa tekrar ekleme!
+const isDuplicate = Object.values(trips).some(t =>
+  t.title === tripTitle &&
+  t.date === tripDate &&
+  JSON.stringify(t.cart) === JSON.stringify(window.cart)
+);
+
+if (isDuplicate) {
+  // Zaten var, tekrar kaydetme!
+  return;
+}
   let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
   if (!tripTitle && window.selectedCity && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
