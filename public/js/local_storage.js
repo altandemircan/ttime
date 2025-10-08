@@ -41,36 +41,11 @@ function getPointsFromTrip(trip, day) {
 }
 
 // Sadece rota ve noktalarla canvas PNG thumbnail üretir (arka plan haritasız)
-async function generateTripThumbnailWithRoute(trip, day, width = 300, height = 180) {
+function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
   const pts = getPointsFromTrip(trip, day);
   if (pts.length < 2) return null;
-
-  // 1. Mapbox Directions API'den rota alın
-  const coords = pts.map(p => `${p.lng},${p.lat}`).join(';');
-  const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?geometries=geojson&overview=full&access_token=YOUR_MAPBOX_TOKEN`;
-
-  let routeCoords = [];
-  try {
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (
-      data.routes &&
-      data.routes[0] &&
-      data.routes[0].geometry &&
-      data.routes[0].geometry.coordinates
-    ) {
-      routeCoords = data.routes[0].geometry.coordinates.map(([lng, lat]) => ({lat, lng}));
-    }
-  } catch (e) {
-    // fallback: düz çizgi
-    routeCoords = pts.map(p => ({lat: p.lat, lng: p.lng}));
-  }
-
-  if (routeCoords.length < 2) return null;
-
-  // Projeksiyon
-  const lats = routeCoords.map(p => p.lat);
-  const lngs = routeCoords.map(p => p.lng);
+  const lats = pts.map(p => p.lat);
+  const lngs = pts.map(p => p.lng);
   const minLat = Math.min(...lats), maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
 
@@ -80,20 +55,20 @@ async function generateTripThumbnailWithRoute(trip, day, width = 300, height = 1
     return [x, y];
   }
 
-  // Canvas çizimi
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, width, height);
 
-  // Rota (polyline)
+  // Rota çizgisi
   ctx.save();
   ctx.strokeStyle = '#1976d2';
   ctx.lineWidth = 6;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   ctx.beginPath();
-  routeCoords.forEach((p, i) => {
+  pts.forEach((p, i) => {
     const [x, y] = project(p);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
@@ -101,7 +76,7 @@ async function generateTripThumbnailWithRoute(trip, day, width = 300, height = 1
   ctx.stroke();
   ctx.restore();
 
-  // Nokta markerlar (waypoints)
+  // Nokta markerlar (kırmızı daireler)
   ctx.save();
   ctx.fillStyle = '#d32f2f';
   ctx.strokeStyle = "#fff";
