@@ -313,13 +313,14 @@ function getTimeGroupLabel(updatedAt) {
     const diffHour = diffMin / 60;
     const diffDay = diffHour / 24;
 
-    if (diffMin < 10) return "Son 10 dakika";
-    if (diffMin < 30) return "Son 30 dakika";
-    if (diffHour < 1) return "Son 1 saat";
-    if (diffHour < 24) return "Son 1 gün";
-    return "Daha eski";
+    if (diffMin < 15) return "Last 15 minutes";
+    if (diffHour < 1) return "Last 1 hour";
+    if (diffDay < 1) return "Last 1 day";
+    if (diffDay < 7) return "Last 1 week";
+    if (diffDay < 15) return "Last 15 days";
+    if (diffDay < 31) return "Last 1 month";
+    return "Older";
 }
-
 function formatTime(date) {
     const d = new Date(date);
     return d.toLocaleTimeString('tr-TR', { hour12: false });
@@ -399,8 +400,15 @@ function renderMyTripsPanel() {
     });
 
     // Grupları sırayla göster
-    const groupOrder = ["Son 10 dakika", "Son 30 dakika", "Son 1 saat", "Son 1 gün", "Daha eski"];
-    let firstGroup = true;
+const groupOrder = [
+    "Last 15 minutes",
+    "Last 1 hour",
+    "Last 1 day",
+    "Last 1 week",
+    "Last 15 days",
+    "Last 1 month",
+    "Older"
+];    let firstGroup = true;
     groupOrder.forEach(label => {
         if (!groups[label] || groups[label].length === 0) return;
 
