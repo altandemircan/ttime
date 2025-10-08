@@ -512,32 +512,34 @@ tripDiv.addEventListener("mouseleave", () => {
     titleDiv.className = "trip-title";
     titleDiv.textContent = trip.title || `${trip.days} day${trip.days > 1 ? 's' : ''}${trip.selectedCity ? " " + trip.selectedCity : ""}`;
 
-    function startRename() {
+function startRename() {
     const input = document.createElement("input");
     input.type = "text";
     input.value = titleDiv.textContent;
     input.className = "trip-rename-input";
     input.style.marginRight = "5px";
     input.style.maxWidth = "120px";
+
+    // Enter/Escape eventleri
     input.addEventListener("keydown", function(e) {
         if (e.key === "Enter") doRename();
         if (e.key === "Escape") cancelRename();
     });
 
-                     titleDiv.replaceWith(input);
-                    input.focus();
-                    input.addEventListener("keydown", function(e) {
-                        if (e.key === "Enter") doRename();
-                        if (e.key === "Escape") cancelRename();
-                    });
+    // BLUR EVENTİ EKLE!
+    input.addEventListener("blur", function() {
+        cancelRename();
+    });
+
+    titleDiv.replaceWith(input);
+    input.focus();
 
     function doRename() {
-        console.log("doRename çalıştı"); // TEST için
         const newTitle = input.value.trim();
-        if (!newTitle) return;
+        if (!newTitle) return cancelRename();
         const all = getAllSavedTrips();
         const trip = all[trip.key];
-        if (!trip) return;
+        if (!trip) return cancelRename();
 
         // Yeni key üret
         const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
