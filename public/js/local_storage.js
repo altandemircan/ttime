@@ -706,23 +706,26 @@ async function generateMapThumbnail(day) {
     let el = document.getElementById(containerId);
     let map = window.leafletMaps && window.leafletMaps[containerId];
 
-    // DOM veya harita yoksa önce oluştur
-    if (!el) {
+    // DOM veya leaflet harita yoksa KESİNLİKLE oluştur
+    if (!el || !map) {
+      // 1. DOM'da harita konteyneri yoksa oluştur
       if (typeof ensureDayMapContainer === 'function') {
         el = ensureDayMapContainer(day);
       }
-    }
-    if (!map || !el) {
+      // 2. Harita veya route yoksa çizdir
       if (typeof renderRouteForDay === 'function') {
         await renderRouteForDay(day);
       }
+      // 3. Yeniden ata
       map = window.leafletMaps && window.leafletMaps[containerId];
       el = document.getElementById(containerId);
     }
+    // Yine yoksa vazgeç
     if (!map || !el) return null;
 
     const container = (typeof map.getContainer === 'function') ? map.getContainer() : map._container;
     if (!container || !document.body.contains(container)) return null;
+
 
     // Geçici kaldırılacak katmanlar
     const removedTileLayers = [];
