@@ -1,9 +1,10 @@
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
 
 // Helper: how many valid points does this day have?
-function countPointsForDay(day) {
+function countPointsForDay(day, trip = null) {
+  const source = trip?.cart || window.cart || [];
   try {
-    return (window.cart || []).filter(
+    return source.filter(
       it =>
         it.day == day &&
         it.location &&
@@ -40,70 +41,112 @@ function getPointsFromTrip(trip, day) {
     .filter(p => !Number.isNaN(p.lat) && !Number.isNaN(p.lng));
 }
 
-// OFFSCREEN (tilesız) thumbnail üretimi: sadece polyline + nokta daireleri
-async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
-  try {
-    const pts = getPointsFromTrip(trip, day);
-    if (pts.length < 2) return null;
+// CANVAS: Arka plansız, sadece polyline + noktalar
+function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
+  const pts = getPointsFromTrip(trip, day);
+  if (pts.length < 2) return null;
 
-    // Directions polyline'ını veya rotayı burada elde etmen gerekiyor.
-    // Eğer directions polyline dizin varsa onu kullan, yoksa pts ile çiz.
-    const polyline = trip.directionsPolylines && trip.directionsPolylines[day] 
-      ? trip.directionsPolylines[day]
-      : pts;
+  // Eğer directionsPolylines varsa (gerçek yol güzergahı), onu kullan, yoksa düz çizgi
+  const polyline = trip.directionsPolylines && trip.directionsPolylines[day]
+    ? trip.directionsPolylines[day]
+    : pts;
 
-    // Projeksiyon
-    const lats = polyline.map(p => p.lat);
-    const lngs = polyline.map(p => p.lng);
-    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+  const lats = polyline.map(p => p.lat);
+  const lngs = polyline.map(p => p.lng);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
 
-    function project(p) {
-      const x = 12 + ((p.lng - minLng) / (maxLng - minLng || 1)) * (width - 24);
-      const y = 12 + ((maxLat - p.lat) / (maxLat - minLat || 1)) * (height - 24);
-      return [x, y];
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, width, height);
-
-    // Rota POLYLINE çizimi (kıvrımlı, gerçek güzergah)
-    ctx.save();
-    ctx.strokeStyle = '#1976d2';
-    ctx.lineWidth = 6;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    polyline.forEach((p, i) => {
-      const [x, y] = project(p);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-    ctx.restore();
-
-    // Nokta markerlar (kırmızı daireler)
-    ctx.save();
-    ctx.fillStyle = '#d32f2f';
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    pts.forEach((p) => {
-      const [x, y] = project(p);
-      ctx.beginPath();
-      ctx.arc(x, y, 7, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
-    });
-    ctx.restore();
-
-    return canvas.toDataURL('image/png');
-  } catch {
-    return null;
+  function project(p) {
+    const x = 12 + ((p.lng - minLng) / (maxLng - minLng || 1)) * (width - 24);
+    const y = 12 + ((maxLat - p.lat) / (maxLat - minLat || 1)) * (height - 24);
+    return [x, y];
   }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, width, height);
+
+  // ROTA (gerçek directions polyline veya düz çizgi)
+  ctx.save();
+  ctx.strokeStyle = '#1976d2';
+  ctx.lineWidth = 6;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  polyline.forEach((p, i) => {
+    const [x, y] = project(p);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.restore();
+
+  // Nokta markerlar (kırmızı daireler)
+  ctx.save();
+  ctx.fillStyle = '#d32f2f';
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  pts.forEach((p) => {
+    const [x, y] = project(p);
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  });
+  ctx.restore();
+
+  return canvas.toDataURL('image/png');
 }
+
+// Thumbnail üretimi ve kaydı
+async function saveCurrentTripToStorage() {
+  let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
+  if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
+    const maxDay = Math.max(...window.cart.map(item => item.day || 1));
+    tripTitle = `${maxDay} days ${window.selectedCity}`;
+  }
+  let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
+    ? window.cart[0].date
+    : (new Date()).toISOString().slice(0, 10);
+  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '');
+
+  const tripObj = {
+    title: tripTitle,
+    date: tripDate,
+    days: window.cart && window.cart.length > 0
+      ? Math.max(...window.cart.map(item => item.day || 1))
+      : 1,
+    cart: JSON.parse(JSON.stringify(window.cart || [])),
+    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
+    lastUserQuery: window.lastUserQuery || "",
+    selectedCity: window.selectedCity || "",
+    updatedAt: Date.now(),
+    key: tripKey,
+    directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined,
+  };
+
+  const thumbnails = {};
+  const days = tripObj.days;
+  for (let day = 1; day <= days; day++) {
+    if (countPointsForDay(day, tripObj) >= 2) {
+      thumbnails[day] = generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
+    } else {
+      thumbnails[day] = "img/placeholder.png";
+    }
+  }
+  tripObj.thumbnails = thumbnails;
+
+  let trips = {};
+  try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
+
+  tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
+
+  trips[tripKey] = tripObj;
+  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
+}
+
 async function saveCurrentTripToStorageWithThumbnail() {
   await saveCurrentTripToStorage();
 }
