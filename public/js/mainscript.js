@@ -9820,41 +9820,47 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   track.appendChild(tb);
 
   // Reset → base’e dön
-  tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
+tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
     // Sadece segment overlay’leri ve toolbar’ı temizle
     track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
     track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
     // Harita highlight’ını temizle
-  if (typeof highlightSegmentOnMap === 'function') {
-    highlightSegmentOnMap(day);
-  }
-
-   // --- YENİ LOGİK ---
-  // Expanded harita açıldıysa, rotanın polyline'ına fitBounds yap (en güncel rota)
-  const cid = `route-map-day${day}`;
-  const expObj = window.expandedMaps && window.expandedMaps[cid];
-  if (expObj && expObj.expandedMap) {
-    let fitted = false;
-    expObj.expandedMap.eachLayer(layer => {
-      if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-        try {
-          expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
-          fitted = true;
-        } catch(_) {}
-      }
-    });
-    // Fallback: eğer polyline yoksa ilk açılış view'una dön
-    if (!fitted && expObj.expandedMap._initialView) {
-      expObj.expandedMap.setView(
-        expObj.expandedMap._initialView.center,
-        expObj.expandedMap._initialView.zoom,
-        { animate: true }
-      );
+    if (typeof highlightSegmentOnMap === 'function') {
+        highlightSegmentOnMap(day);
     }
-  }
-  // --- YENİ LOGİK SONU ---
 
+    // ---- SEGMENT STATE’İ SIFIRLA (EN ÖNEMLİ KISIM) ----
+    window._lastSegmentDay = undefined;
+    window._lastSegmentStartKm = undefined;
+    window._lastSegmentEndKm = undefined;
+    // veya: clearRouteSegmentHighlight(day);
+    // -----------------------------------------------
+
+    // --- YENİ LOGİK ---
+    // Expanded harita açıldıysa, rotanın polyline'ına fitBounds yap (en güncel rota)
+    const cid = `route-map-day${day}`;
+    const expObj = window.expandedMaps && window.expandedMaps[cid];
+    if (expObj && expObj.expandedMap) {
+        let fitted = false;
+        expObj.expandedMap.eachLayer(layer => {
+            if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+                try {
+                    expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
+                    fitted = true;
+                } catch(_) {}
+            }
+        });
+        // Fallback: eğer polyline yoksa ilk açılış view'una dön
+        if (!fitted && expObj.expandedMap._initialView) {
+            expObj.expandedMap.setView(
+                expObj.expandedMap._initialView.center,
+                expObj.expandedMap._initialView.zoom,
+                { animate: true }
+            );
+        }
+    }
+    // --- YENİ LOGİK SONU ---
 
     // Seçim overlay’i gizle
     const selection = container.querySelector('.scale-bar-selection');
@@ -9870,27 +9876,26 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
     createScaleElements(track, widthPx, totalKm, 0, markers);
 
     if (Array.isArray(container._elevFullSamples)) {
-      container._elevSamples = container._elevFullSamples.slice();
+        container._elevSamples = container._elevFullSamples.slice();
     }
 
     if (container._elevationDataFull && typeof container._redrawElevation === 'function') {
-      container._elevationData = {
-        min: container._elevationDataFull.min,
-        max: container._elevationDataFull.max,
-        smooth: container._elevationDataFull.smooth.slice()
-      };
-      container._redrawElevation(container._elevationData);
+        container._elevationData = {
+            min: container._elevationDataFull.min,
+            max: container._elevationDataFull.max,
+            smooth: container._elevationDataFull.smooth.slice()
+        };
+        container._redrawElevation(container._elevationData);
     } else {
-      // Fallback: baştan kur
-      if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
-        renderRouteScaleBar(container, totalKm, markers);
-      }
+        // Fallback: baştan kur
+        if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
+            renderRouteScaleBar(container, totalKm, markers);
+        }
     }
-  });
-  track.removeEventListener('mousemove', track.__onMove);
-track.addEventListener('mousemove', track.__onMove);
+});
 
-}
+track.removeEventListener('mousemove', track.__onMove);
+track.addEventListener('mousemove', track.__onMove);
 
 
 function resetDayAction(day, confirmationContainerId) {
