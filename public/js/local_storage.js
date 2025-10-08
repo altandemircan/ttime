@@ -679,13 +679,11 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
     const trips = getAllSavedTrips();
     for (const tripKey in trips) {
       const trip = trips[tripKey];
-      // Trip'in kaç günü varsa hepsi için
       const maxDay = trip.days || 1;
       for (let day = 1; day <= maxDay; day++) {
-        // Thumbnail yoksa veya placeholder ise ve o günde en az 2 nokta varsa
         if (!trip.thumbnails) trip.thumbnails = {};
         if (!trip.thumbnails[day] || trip.thumbnails[day].includes("placeholder")) {
-          // O günün noktalarını trip.cart üzerinden bul!
+          // O gün için 2+ nokta var mı?
           const pts = (trip.cart || []).filter(
             it =>
               it.day == day &&
@@ -697,19 +695,8 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
           );
           if (pts.length < 2) continue;
 
-          // Geçici olarak day-container-{day} ekle
-          let tempDayContainer = false;
-          if (!document.getElementById(`day-container-${day}`)) {
-            const parent = document.body;
-            const tempDiv = document.createElement('div');
-            tempDiv.id = `day-container-${day}`;
-            tempDiv.style.display = "none";
-            parent.appendChild(tempDiv);
-            tempDayContainer = true;
-          }
-
-          // Thumbnail oluştur (generateMapThumbnail fonksiyonun kullanılacak)
-          const thumb = await generateMapThumbnail(day);
+          // Thumbnail/grafik oluştururken trip parametresini de ver
+          const thumb = await generateMapThumbnail(day, trip);
           if (thumb) {
             trip.thumbnails[day] = thumb;
             const all = getAllSavedTrips();
@@ -720,11 +707,6 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
               const img = document.querySelector(`img.mytrips-thumb[data-tripkey="${trip.key}"]`);
               if (img) img.src = thumb;
             }
-          }
-
-          // Geçici day-container'ı sil
-          if (tempDayContainer) {
-            document.getElementById(`day-container-${day}`)?.remove();
           }
         }
       }
