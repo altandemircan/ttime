@@ -40,14 +40,10 @@ function getPointsFromTrip(trip, day) {
     .filter(p => !Number.isNaN(p.lat) && !Number.isNaN(p.lng));
 }
 
-// Offscreen, çakışmasız, global state değiştirmeden thumbnail üretir
 async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
   try {
-    // 1) Noktaları al (trip.cart üzerinden)
     const pts = getPointsFromTrip(trip, day);
     if (pts.length < 2) return null;
-
-    // 2) Gizli harita konteyneri oluştur
     const off = document.createElement('div');
     off.style.position = 'fixed';
     off.style.left = '-10000px';
@@ -58,7 +54,6 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
     off.style.zIndex = '-1';
     document.body.appendChild(off);
 
-    // 3) Harita başlat (tilesız, canvas tercihli)
     const map = L.map(off, {
       preferCanvas: true,
       zoomControl: false,
@@ -69,7 +64,16 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
       inertia: false
     });
 
-    // 4) Polyline ve noktalar
+    // **Tile layer ekle**
+    L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        tileSize: 256,
+        attribution: '© OpenStreetMap contributors',
+        crossOrigin: true
+      }
+    ).addTo(map);
+
     const latlngs = pts.map(p => [p.lat, p.lng]);
     const renderer = L.canvas();
     const poly = L.polyline(latlngs, {
@@ -90,13 +94,8 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
       }).addTo(map);
     });
 
-    // Fit
     map.fitBounds(poly.getBounds(), { padding: [12, 12] });
-
-    // Bir frame bekle
     await new Promise(r => requestAnimationFrame(r));
-
-    // Görüntü al
     let dataUrl = null;
     if (typeof leafletImage === 'function') {
       await new Promise(resolve => {
@@ -108,19 +107,13 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
         });
       });
     }
-
-    // Temizlik
     try { map.remove(); } catch(_) {}
     if (off && off.parentNode) off.parentNode.removeChild(off);
-
     return dataUrl;
   } catch {
     return null;
   }
 }
-
-
-
 // Sadece mevcut haritadan thumbnail al; olmazsa placeholder
 async function saveCurrentTripToStorage() {
   let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
