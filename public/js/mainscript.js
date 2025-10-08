@@ -6273,6 +6273,13 @@ console.error('Error while closing the map:', e);
     } finally {
         delete window.expandedMaps[containerId];
     }
+// Segment seçim & event cleanup:
+window._lastSegmentDay = undefined;
+window._lastSegmentStartKm = undefined;
+window._lastSegmentEndKm = undefined;
+window.__scaleBarDrag = null;
+window.removeEventListener('mousemove', window.__sb_onMouseMove);
+window.removeEventListener('mouseup', window.__sb_onMouseUp);
 }
 
 
@@ -8443,6 +8450,13 @@ track.addEventListener('touchstart', function(e) {
   selDiv.style.width = `0px`;
   selDiv.style.display = 'block';
 });
+
+// --- Eski event handler'ları kaldır, yenisini ekle ---
+window.removeEventListener('mousemove', window.__sb_onMouseMove);
+window.removeEventListener('mouseup', window.__sb_onMouseUp);
+window.addEventListener('mousemove', window.__sb_onMouseMove);
+window.addEventListener('mouseup', window.__sb_onMouseUp);
+
 
   // Görünüm
   const MARKER_PAD_PX = 10;
