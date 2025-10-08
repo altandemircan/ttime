@@ -520,13 +520,14 @@ function startRename() {
     input.style.marginRight = "5px";
     input.style.maxWidth = "120px";
 
-    // Enter/Escape eventleri
     input.addEventListener("keydown", function(e) {
         if (e.key === "Enter") doRename();
         if (e.key === "Escape") cancelRename();
     });
+
+    // !!! BLUR'DA da doRename çağır !!!
     input.addEventListener("blur", function() {
-        cancelRename();
+        doRename();
     });
 
     titleDiv.replaceWith(input);
@@ -535,13 +536,10 @@ function startRename() {
     function doRename() {
         const newTitle = input.value.trim();
         if (!newTitle) return cancelRename();
-
-        // trip değişkeni scope'ta var! buildTripRow(trip, ...) ile zaten fonksiyon içinde
         const all = getAllSavedTrips();
-        const oldKey = trip.key; // mevcut key
+        const oldKey = trip.key;
         const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
-        // Güncelle
         trip.title = newTitle;
         trip.key = newKey;
         trip.updatedAt = Date.now();
