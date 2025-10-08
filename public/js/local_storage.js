@@ -272,17 +272,14 @@ function loadTripFromStorage(tripKey) {
 
     // 5. Route'ları çiz, sonra thumbnail üret ve paneli güncelle
     setTimeout(async () => {
-        // Her gün için harita ve route çizimi
-        for (let day = 1; day <= maxDay; day++) {
-            await renderRouteForDay(day);
-        }
-        // Route/harita DOM'da iyice otursun diye biraz daha bekle
-        setTimeout(async () => {
-            await saveCurrentTripToStorageWithThumbnail();
-            renderMyTripsPanel();
-        }, 1200);
-    }, 0);
-
+    for (let day = 1; day <= maxDay; day++) {
+        await renderRouteForDay(day);
+    }
+    setTimeout(async () => {
+        await saveCurrentTripToStorage({ withThumbnail: true });
+        renderMyTripsPanel();
+    }, 1200);
+}, 0);
     return true;
 }   
 // 8. Gezileri silme özelliği (isteğe bağlı)
