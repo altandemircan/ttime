@@ -9819,13 +9819,8 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   `;
   track.appendChild(tb);
 
-  // Reset → base’e dön
+  
 tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
-
-    track.removeEventListener('mousemove', track.__onMove);
-track.addEventListener('mousemove', track.__onMove);
-
-
     // Sadece segment overlay’leri ve toolbar’ı temizle
     track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
     track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
@@ -9835,12 +9830,11 @@ track.addEventListener('mousemove', track.__onMove);
         highlightSegmentOnMap(day);
     }
 
-    // ---- SEGMENT STATE’İ SIFIRLA (EN ÖNEMLİ KISIM) ----
+    // ---- SEGMENT STATE’İ SIFIRLA ----
     window._lastSegmentDay = undefined;
     window._lastSegmentStartKm = undefined;
     window._lastSegmentEndKm = undefined;
     // veya: clearRouteSegmentHighlight(day);
-    // -----------------------------------------------
 
     // --- YENİ LOGİK ---
     // Expanded harita açıldıysa, rotanın polyline'ına fitBounds yap (en güncel rota)
@@ -9899,6 +9893,9 @@ track.addEventListener('mousemove', track.__onMove);
     }
 });
 
+// Event handler'ı dışarıda bırak:
+track.removeEventListener('mousemove', track.__onMove);
+track.addEventListener('mousemove', track.__onMove);
 
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
