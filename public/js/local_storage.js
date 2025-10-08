@@ -531,21 +531,25 @@ function startRename() {
     titleDiv.replaceWith(input);
     input.focus();
 
-    function doRename() {
+function doRename() {
     const newTitle = input.value.trim();
     if (!newTitle) return cancelRename();
     const all = getAllSavedTrips();
     const oldKey = trip.key;
     const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
+    // Eğer isim değişmemişse, hiçbir şey yapma
+    if (newKey === oldKey) return cancelRename();
+
     trip.title = newTitle;
     trip.key = newKey;
     trip.updatedAt = Date.now();
 
+    // Eski kaydı sil, yenisini ekle
     delete all[oldKey];
     all[newKey] = trip;
 
-    // Eğer aktif trip buysa, state'i de güncelle
+    // Aktif trip ise window.activeTripKey'i değiştir
     if (window.activeTripKey === oldKey) {
         window.activeTripKey = newKey;
         window.cart = JSON.parse(JSON.stringify(trip.cart));
