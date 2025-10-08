@@ -197,10 +197,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
 
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
-     setTimeout(() => {
-  saveCurrentTripToStorage({ withThumbnail: true });
-  renderMyTripsPanel();
-}, 1200);
+    saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
  }
 
 function patchCartLocations() {
@@ -279,10 +276,7 @@ function loadTripFromStorage(tripKey) {
     for (let day = 1; day <= maxDay; day++) {
         await renderRouteForDay(day);
     }
-    setTimeout(async () => {
-        await saveCurrentTripToStorage({ withThumbnail: true });
-        renderMyTripsPanel();
-    }, 1200);
+    saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
 }, 0);
     return true;
 }   
@@ -669,20 +663,20 @@ if (!window.__trip_autosave_hooked) {
   window.updateCart = function() {
     if (typeof origUpdateCart === "function") origUpdateCart.apply(this, arguments);
     // Hemen kaydetmek yerine haritanın oturmasını bekle
-    saveCurrentTripToStorageWithThumbnailDelay();
+saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
   };
   if (typeof window.showResults === "function") {
     const origShowResults = window.showResults;
     window.showResults = function() {
       if (typeof origShowResults === "function") origShowResults.apply(this, arguments);
-      saveCurrentTripToStorageWithThumbnailDelay();
+saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
     };
   }
   if (typeof window.saveDayName === "function") {
     const origSaveDayName = window.saveDayName;
     window.saveDayName = function(day, newName) {
       if (typeof origSaveDayName === "function") origSaveDayName.apply(this, arguments);
-      saveCurrentTripToStorageWithThumbnailDelay();
+saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
     };
   }
   window.__trip_autosave_hooked = true;
