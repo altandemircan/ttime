@@ -525,8 +525,6 @@ function startRename() {
         if (e.key === "Enter") doRename();
         if (e.key === "Escape") cancelRename();
     });
-
-    // BLUR EVENTİ EKLE!
     input.addEventListener("blur", function() {
         cancelRename();
     });
@@ -537,20 +535,18 @@ function startRename() {
     function doRename() {
         const newTitle = input.value.trim();
         if (!newTitle) return cancelRename();
-        const all = getAllSavedTrips();
-        const trip = all[trip.key];
-        if (!trip) return cancelRename();
 
-        // Yeni key üret
+        // trip değişkeni scope'ta var! buildTripRow(trip, ...) ile zaten fonksiyon içinde
+        const all = getAllSavedTrips();
+        const oldKey = trip.key; // mevcut key
         const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
-        // Trip objesini güncelle
+        // Güncelle
         trip.title = newTitle;
         trip.key = newKey;
         trip.updatedAt = Date.now();
 
-        // Eski key’i sil, yeni key ile ekle
-        delete all[trip.key];
+        delete all[oldKey];
         all[newKey] = trip;
 
         localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
