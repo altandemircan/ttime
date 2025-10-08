@@ -4029,7 +4029,6 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
       }
     };
   })();
-
 (function ensureNewChatInsideCart(){
   // Dışarıda eski #newchat varsa kaldır
   const oldOutside = document.querySelector('#newchat');
@@ -4042,18 +4041,40 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
   if (!newChat){
     newChat = document.createElement('div');
     newChat.id = 'newchat';
-    newChat.textContent = 'New Trip Plan'; // <-- yeni ad
+    newChat.textContent = 'New Trip Plan';
     newChat.style.cursor = 'pointer';
 
-    // SPA mantığıyla, hızlı: sadece sidebar'ı aç
     newChat.onclick = function() {
-      // Tüm sidebar'ları kapat
+      // 1. Chat geçmişini ve input'u temizle
+      const chatBox = document.getElementById('chat-box');
+      if (chatBox) chatBox.innerHTML = '';
+      const userInput = document.getElementById('user-input');
+      if (userInput) userInput.value = '';
+
+      // 2. State'leri sıfırla
+      window.selectedCity = null;
+      window.selectedLocation = null;
+      window.selectedLocationLocked = false;
+      window.__locationPickedFromSuggestions = false;
+      window.lastUserQuery = '';
+      window.latestTripPlan = [];
+      window.cart = [];
+
+      // 3. Sepeti güncelle
+      if (typeof updateCart === "function") updateCart();
+
+      // 4. Tüm sidebar'ları kapat, sadece gallery sidebar'ı aç
       document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
-      // Sadece gallery sidebar'ı aç
       const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
       if (sidebar) sidebar.classList.add('open');
-      // Eğer ana ekranı göstermek gerekiyorsa, burada başka işlemler ekleyebilirsin
-      // Örnek: chat-box, trip-sidebar, vs. display:none yapabilirsin
+
+      // 5. Hoşgeldin mesajı ekle
+      if (chatBox) {
+        const welcome = document.createElement('div');
+        welcome.className = 'message bot-message';
+        welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started. Please specify a location, duration, and the type of trip you want";
+        chatBox.appendChild(welcome);
+      }
     };
   }
 
