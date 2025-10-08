@@ -4030,43 +4030,46 @@ const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placehold
     };
   })();
 
-  // >>> BURAYA EKLE <<<
-  (function ensureNewChatInsideCart(){
-    // Dışarıda eski #newchat varsa kaldır
-    const oldOutside = document.querySelector('#newchat');
-    if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
+(function ensureNewChatInsideCart(){
+  // Dışarıda eski #newchat varsa kaldır
+  const oldOutside = document.querySelector('#newchat');
+  if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
 
-    const cartRoot = document.getElementById('cart');
-    if (!cartRoot) return;
+  const cartRoot = document.getElementById('cart');
+  if (!cartRoot) return;
 
-    let newChat = cartRoot.querySelector('#newchat');
-if (!newChat){
-  newChat = document.createElement('div');
-  newChat.id = 'newchat';
-  newChat.textContent = 'New Trip Plan'; // <-- yeni ad
-  newChat.style.cursor = 'pointer';
+  let newChat = cartRoot.querySelector('#newchat');
+  if (!newChat){
+    newChat = document.createElement('div');
+    newChat.id = 'newchat';
+    newChat.textContent = 'New Trip Plan'; // <-- yeni ad
+    newChat.style.cursor = 'pointer';
 
-  // YENİ ONCLICK:
-  newChat.onclick = function() {
-    // Ana sayfaya git
-    window.location.href = "/?sidebar=gallery";
-    // Eğer SPA ise ve reload istemiyorsan:
-    // document.querySelector('.sidebar-overlay.sidebar-gallery')?.classList.add('open');
-  };
-}
+    // SPA mantığıyla, hızlı: sadece sidebar'ı aç
+    newChat.onclick = function() {
+      // Tüm sidebar'ları kapat
+      document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+      // Sadece gallery sidebar'ı aç
+      const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+      if (sidebar) sidebar.classList.add('open');
+      // Eğer ana ekranı göstermek gerekiyorsa, burada başka işlemler ekleyebilirsin
+      // Örnek: chat-box, trip-sidebar, vs. display:none yapabilirsin
+    };
+  }
 
-    // Select Dates butonunun hemen altına yerleştir
-    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-    if (datesBtn && datesBtn.nextSibling !== newChat){
-      datesBtn.insertAdjacentElement('afterend', newChat);
-    } else if (!datesBtn && newChat.parentNode !== cartRoot){
-      cartRoot.appendChild(newChat);
-    }
+  // Select Dates butonunun hemen altına yerleştir
+  const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+  if (datesBtn && datesBtn.nextSibling !== newChat){
+    datesBtn.insertAdjacentElement('afterend', newChat);
+  } else if (!datesBtn && newChat.parentNode !== cartRoot){
+    cartRoot.appendChild(newChat);
+  }
 
-    // Sepet doluysa göster
-const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-    newChat.style.display = itemCount > 0 ? 'block' : 'none';
-  })();
+  // Sepet doluysa göster
+  const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+  newChat.style.display = itemCount > 0 ? 'block' : 'none';
+})();
+
 
   // 7) Paylaşım bölümü (tarih seçildiyse)
   (function ensurePostDateSections() {
