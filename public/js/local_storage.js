@@ -46,74 +46,60 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
     const pts = getPointsFromTrip(trip, day);
     if (pts.length < 2) return null;
 
-    // Gizli konteyner
-    const off = document.createElement('div');
-    off.style.position = 'fixed';
-    off.style.left = '-10000px';
-    off.style.top = '0';
-    off.style.width = width + 'px';
-    off.style.height = height + 'px';
-    off.style.pointerEvents = 'none';
-    off.style.zIndex = '-1';
-    document.body.appendChild(off);
+    // Directions polyline'ını veya rotayı burada elde etmen gerekiyor.
+    // Eğer directions polyline dizin varsa onu kullan, yoksa pts ile çiz.
+    const polyline = trip.directionsPolylines && trip.directionsPolylines[day] 
+      ? trip.directionsPolylines[day]
+      : pts;
 
-    // Harita: tilesız, canvas tercihli
-    const map = L.map(off, {
-      preferCanvas: true,
-      zoomControl: false,
-      attributionControl: false,
-      scrollWheelZoom: false,
-      zoomAnimation: false,
-      fadeAnimation: false,
-      inertia: false
-    });
+    // Projeksiyon
+    const lats = polyline.map(p => p.lat);
+    const lngs = polyline.map(p => p.lng);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
 
-    // Polyline ve noktalar
-    const latlngs = pts.map(p => [p.lat, p.lng]);
-    const renderer = L.canvas();
-    const poly = L.polyline(latlngs, {
-      color: '#1976d2',
-      weight: 6,
-      opacity: 0.95,
-      renderer
-    }).addTo(map);
-
-    // Noktaları küçük kırmızı daireler olarak ekle (canvas üzerinde çizilir)
-    pts.forEach(p => {
-      L.circleMarker([p.lat, p.lng], {
-        radius: 4,
-        color: '#d32f2f',
-        fillColor: '#d32f2f',
-        fillOpacity: 1,
-        weight: 2,
-        renderer
-      }).addTo(map);
-    });
-
-    // Kapsama ayarla
-    map.fitBounds(poly.getBounds(), { padding: [12, 12] });
-
-    // Bir frame bekle
-    await new Promise(r => requestAnimationFrame(r));
-
-    // Görüntü al
-    let dataUrl = null;
-    if (typeof leafletImage === 'function') {
-      await new Promise(resolve => {
-        leafletImage(map, (err, canvas) => {
-          if (!err && canvas) {
-            try { dataUrl = canvas.toDataURL('image/png'); } catch(_) { dataUrl = null; }
-          }
-          resolve();
-        });
-      });
+    function project(p) {
+      const x = 12 + ((p.lng - minLng) / (maxLng - minLng || 1)) * (width - 24);
+      const y = 12 + ((maxLat - p.lat) / (maxLat - minLat || 1)) * (height - 24);
+      return [x, y];
     }
 
-    // Temizlik
-    try { map.remove(); } catch(_) {}
-    if (off && off.parentNode) off.parentNode.removeChild(off);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
 
-    return dataUrl;
+    // Rota POLYLINE çizimi (kıvrımlı, gerçek güzergah)
+    ctx.save();
+    ctx.strokeStyle = '#1976d2';
+    ctx.lineWidth = 6;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    polyline.forEach((p, i) => {
+      const [x, y] = project(p);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    // Nokta markerlar (kırmızı daireler)
+    ctx.save();
+    ctx.fillStyle = '#d32f2f';
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    pts.forEach((p) => {
+      const [x, y] = project(p);
+      ctx.beginPath();
+      ctx.arc(x, y, 7, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    return canvas.toDataURL('image/png');
   } catch {
     return null;
   }
@@ -331,60 +317,7 @@ function groupTripsByDate(trips) {
 }
 
 
-function generateRouteThumbnailFromPolyline(polyline, waypoints, width = 300, height = 180) {
-  // polyline: gerçek rota noktaları [{lat, lng}, ...] (directions api sonucu)
-  // waypoints: [{lat, lng}, ...] (orijinal durak noktaları)
 
-  if (!polyline || polyline.length < 2) return null;
-
-  const lats = polyline.map(p => p.lat);
-  const lngs = polyline.map(p => p.lng);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-
-  function project(p) {
-    const x = 12 + ((p.lng - minLng) / (maxLng - minLng || 1)) * (width - 24);
-    const y = 12 + ((maxLat - p.lat) / (maxLat - minLat || 1)) * (height - 24);
-    return [x, y];
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, width, height);
-
-  // ROTA (GERÇEK YOL POLYLINE'I)
-  ctx.save();
-  ctx.strokeStyle = '#1976d2';
-  ctx.lineWidth = 6;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  polyline.forEach((p, i) => {
-    const [x, y] = project(p);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  ctx.restore();
-
-  // WAYPOINT DAİRELERİ
-  ctx.save();
-  ctx.fillStyle = '#d32f2f';
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 2;
-  (waypoints || []).forEach((p) => {
-    const [x, y] = project(p);
-    ctx.beginPath();
-    ctx.arc(x, y, 7, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
-  });
-  ctx.restore();
-
-  return canvas.toDataURL('image/png');
-}
 
 
 function getTimeGroupLabel(updatedAt) {
