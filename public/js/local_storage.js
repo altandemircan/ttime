@@ -40,82 +40,60 @@ function getPointsFromTrip(trip, day) {
     .filter(p => !Number.isNaN(p.lat) && !Number.isNaN(p.lng));
 }
 
-async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
-  try {
-    const pts = getPointsFromTrip(trip, day);
-    if (pts.length < 2) return null;
-    const off = document.createElement('div');
-    off.style.position = 'fixed';
-    off.style.left = '-10000px';
-    off.style.top = '0';
-    off.style.width = width + 'px';
-    off.style.height = height + 'px';
-    off.style.pointerEvents = 'none';
-    off.style.zIndex = '-1';
-    document.body.appendChild(off);
+// Sadece rota ve noktalarla canvas PNG thumbnail üretir (arka plan haritasız)
+function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
+  const pts = getPointsFromTrip(trip, day);
+  if (pts.length < 2) return null;
+  const lats = pts.map(p => p.lat);
+  const lngs = pts.map(p => p.lng);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
 
-    const map = L.map(off, {
-      preferCanvas: true,
-      zoomControl: false,
-      attributionControl: false,
-      scrollWheelZoom: false,
-      zoomAnimation: false,
-      fadeAnimation: false,
-      inertia: false
-    });
-
-    // **Tile layer ekle**
-    L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        tileSize: 256,
-        attribution: '© OpenStreetMap contributors',
-        crossOrigin: true
-      }
-    ).addTo(map);
-
-    const latlngs = pts.map(p => [p.lat, p.lng]);
-    const renderer = L.canvas();
-    const poly = L.polyline(latlngs, {
-      color: '#1976d2',
-      weight: 6,
-      opacity: 0.95,
-      renderer
-    }).addTo(map);
-
-    pts.forEach(p => {
-      L.circleMarker([p.lat, p.lng], {
-        radius: 4,
-        color: '#d32f2f',
-        fillColor: '#d32f2f',
-        fillOpacity: 1,
-        weight: 2,
-        renderer
-      }).addTo(map);
-    });
-
-    map.fitBounds(poly.getBounds(), { padding: [12, 12] });
-    await new Promise(r => requestAnimationFrame(r));
-    let dataUrl = null;
-    if (typeof leafletImage === 'function') {
-      await new Promise(resolve => {
-        leafletImage(map, (err, canvas) => {
-          if (!err && canvas) {
-            try { dataUrl = canvas.toDataURL('image/png'); } catch(_) { dataUrl = null; }
-          }
-          resolve();
-        });
-      });
-    }
-    try { map.remove(); } catch(_) {}
-    if (off && off.parentNode) off.parentNode.removeChild(off);
-    return dataUrl;
-  } catch {
-    return null;
+  function project(p) {
+    const x = 12 + ((p.lng - minLng) / (maxLng - minLng || 1)) * (width - 24);
+    const y = 12 + ((maxLat - p.lat) / (maxLat - minLat || 1)) * (height - 24);
+    return [x, y];
   }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, width, height);
+
+  // Rota çizgisi
+  ctx.save();
+  ctx.strokeStyle = '#1976d2';
+  ctx.lineWidth = 6;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  pts.forEach((p, i) => {
+    const [x, y] = project(p);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.restore();
+
+  // Nokta markerlar (kırmızı daireler)
+  ctx.save();
+  ctx.fillStyle = '#d32f2f';
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  pts.forEach((p) => {
+    const [x, y] = project(p);
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  });
+  ctx.restore();
+
+  return canvas.toDataURL('image/png');
 }
-// Sadece mevcut haritadan thumbnail al; olmazsa placeholder
-async function saveCurrentTripToStorage() {
+
+function saveCurrentTripToStorage() {
   let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
@@ -144,7 +122,7 @@ async function saveCurrentTripToStorage() {
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
     if (countPointsForDay(day) >= 2) {
-      const thumb = await generateMapThumbnail(day);
+      const thumb = generateTripThumbnailOffscreen(tripObj, day);
       thumbnails[day] = thumb || "img/placeholder.png";
     } else {
       thumbnails[day] = "img/placeholder.png";
@@ -161,9 +139,7 @@ async function saveCurrentTripToStorage() {
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
 
-
-// saveCurrentTripToStorageWithThumbnail: same guard
-async function saveCurrentTripToStorageWithThumbnail() {
+function saveCurrentTripToStorageWithThumbnail() {
   let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
   if (!tripTitle && window.selectedCity && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
@@ -192,7 +168,7 @@ async function saveCurrentTripToStorageWithThumbnail() {
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
     if (countPointsForDay(day) >= 2) {
-      thumbnails[day] = await generateMapThumbnail(day) || "img/placeholder.png";
+      thumbnails[day] = generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
     } else {
       thumbnails[day] = "img/placeholder.png";
     }
@@ -210,40 +186,36 @@ async function saveCurrentTripToStorageWithThumbnail() {
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
 
-
-async function saveCurrentTripToStorageWithThumbnailDelay() {
-    // 500-1000ms gecikme ile harita oluşmuş olur
-     setTimeout(() => {
-        saveCurrentTripToStorage();
-        renderMyTripsPanel();
-    }, 1200);
- }
-
-function patchCartLocations() {
-    window.cart.forEach(function(item) {
-        // Eğer item.location yok ama lat/lon var ise location ekle
-        if (!item.location && (item.lat != null && item.lon != null)) {
-            item.location = { lat: Number(item.lat), lng: Number(item.lon) };
-        }
-        // Eğer location varsa ama lat/lng string ise number'a çevir
-        if (item.location) {
-            if (typeof item.location.lat === "string") item.location.lat = Number(item.location.lat);
-            if (typeof item.location.lng === "string") item.location.lng = Number(item.location.lng);
-        }
-    });
+function saveCurrentTripToStorageWithThumbnailDelay() {
+  setTimeout(() => {
+    saveCurrentTripToStorage();
+    renderMyTripsPanel();
+  }, 1200);
 }
 
+function patchCartLocations() {
+  window.cart.forEach(function(item) {
+    // Eğer item.location yok ama lat/lon var ise location ekle
+    if (!item.location && (item.lat != null && item.lon != null)) {
+      item.location = { lat: Number(item.lat), lng: Number(item.lon) };
+    }
+    // Eğer location varsa ama lat/lng string ise number'a çevir
+    if (item.location) {
+      if (typeof item.location.lat === "string") item.location.lat = Number(item.location.lat);
+      if (typeof item.location.lng === "string") item.location.lng = Number(item.location.lng);
+    }
+  });
+}
 
 // 2. Tüm gezileri getir
 function getAllSavedTrips() {
-    try {
-        const trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY));
-        if (!trips || typeof trips !== "object") return {};
-        return trips;
-    } catch(e) {
-        return {};
-    }
-}   
+  try {
+    const trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY));
+    if (!trips || typeof trips !== "object") return {};
+    return trips;
+  } catch(e) {
+    return {};
+  }
 
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
@@ -699,113 +671,6 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
     }
   }, delay);
 }
-// Sadece haritadaki görüntüyü yakalar; tiles/ikon marker'ları geçici kaldırır, sonra geri ekler
-async function generateMapThumbnail(day, trip = null) {
-  try {
-    const containerId = `route-map-day${day}`;
-    let el = document.getElementById(containerId);
-    let map = window.leafletMaps && window.leafletMaps[containerId];
-
-    // --- GEÇİCİ HARİTA CONTAINER OLUŞTUR (My Trips paneli için) ---
-    let tempDayContainer = false;
-    if (!document.getElementById(`day-container-${day}`)) {
-      // NEREYE EKLEYECEĞİ önemli: panelde görünmeyecek bir yere (body'nin sonuna)
-      const tempDiv = document.createElement('div');
-      tempDiv.id = `day-container-${day}`;
-      tempDiv.style.display = "none";
-      document.body.appendChild(tempDiv);
-      tempDayContainer = true;
-    }
-    // --- SONRA harita ve route'u oluştur ---
-    if (!el || !map) {
-      if (typeof ensureDayMapContainer === 'function') {
-        el = ensureDayMapContainer(day);
-      }
-      if (typeof renderRouteForDay === 'function') {
-        // Eğer trip parametresi verilirse eski cart'ı yüklemeden route çizdirebilmek için geçici olarak window.cart ayarla!
-        let origCart;
-        if (trip) {
-          origCart = window.cart;
-          window.cart = trip.cart;
-        }
-        await renderRouteForDay(day);
-        if (trip && origCart) window.cart = origCart;
-      }
-      map = window.leafletMaps && window.leafletMaps[containerId];
-      el = document.getElementById(containerId);
-    }
-    if (!map || !el) {
-      if (tempDayContainer) document.getElementById(`day-container-${day}`)?.remove();
-      return null;
-    }
-
-
-    // Geçici kaldırılacak katmanlar
-    const removedTileLayers = [];
-    const removedImageMarkers = [];
-    map.eachLayer(l => {
-      if (l instanceof L.TileLayer) {
-        removedTileLayers.push(l);
-      } else if (l instanceof L.Marker) {
-        const icon = l.options && l.options.icon;
-        const iconUrl = icon && icon.options && icon.options.iconUrl;
-        // DivIcon kalabilir; sadece gerçek resimli ikonları kaldır
-        if (iconUrl) removedImageMarkers.push(l); 
-      }
-    });
-
-    // Görünmez yapılacak paneller
-    const panes = map._panes || {};
-    const togglePanes = (display) => {
-      if (panes.markerPane) panes.markerPane.style.display = display;
-      if (panes.popupPane) panes.popupPane.style.display = display;
-      if (panes.tooltipPane) panes.tooltipPane.style.display = display;
-      if (panes.shadowPane) panes.shadowPane.style.display = display;
-      if (panes.tilePane) panes.tilePane.style.display = display;
-    };
-
-    let dataUrl = null;
-
-    await withTempVisible(el, 285, async () => {
-      // 1) Tiles ve resimli marker’ları kaldır
-      removedTileLayers.forEach(l => map.removeLayer(l));
-      removedImageMarkers.forEach(m => map.removeLayer(m));
-
-      // 2) Pane’leri gizle (rota canvas’ı kalır)
-      togglePanes('none');
-
-      // 3) Boyutu tazele ve hazır olmasını bekle
-      map.invalidateSize({ pan: false });
-      await waitForMapReady(map, 1200);
-      await new Promise(r => requestAnimationFrame(r));
-
-      // 4) Görüntüyü al
-      if (typeof leafletImage === 'function') {
-        await new Promise((resolve) => {
-          leafletImage(map, function(err, canvas) {
-            if (!err && canvas) {
-              try { dataUrl = canvas.toDataURL('image/png'); } catch(_) { dataUrl = null; }
-            }
-            resolve();
-          });
-        });
-      }
-
-      // 5) Her şeyi geri yükle
-      togglePanes('');
-      removedTileLayers.forEach(l => map.addLayer(l));
-      removedImageMarkers.forEach(m => map.addLayer(m));
-    });
-
-if (tempDayContainer) {
-      document.getElementById(`day-container-${day}`)?.remove();
-    }
-    return dataUrl;
-  } catch (_) {
-    return null;
-  }
-}
-
 
 // Yardımcı: bir DOM elemanı render edilebilir mi?
 function isRenderable(el) {
