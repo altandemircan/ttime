@@ -524,28 +524,12 @@ tripDiv.addEventListener("mouseleave", () => {
         if (e.key === "Escape") cancelRename();
     });
 
-    const saveBtn = document.createElement("button");
-    saveBtn.className = "trip-rename-save";
-    saveBtn.textContent = "Save";
-    saveBtn.title = "Save";
-    saveBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        doRename();
-    };
-
-    const cancelBtn = document.createElement("button");
-    cancelBtn.className = "trip-rename-cancel";
-    cancelBtn.textContent = "Cancel";
-    cancelBtn.title = "Cancel";
-    cancelBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        cancelRename();
-    };
-
-    titleDiv.replaceWith(input, saveBtn, cancelBtn);
-    input.focus();
+                     titleDiv.replaceWith(input);
+                    input.focus();
+                    input.addEventListener("keydown", function(e) {
+                        if (e.key === "Enter") doRename();
+                        if (e.key === "Escape") cancelRename();
+                    });
 
     function doRename() {
         console.log("doRename çalıştı"); // TEST için
