@@ -532,25 +532,32 @@ function startRename() {
     input.focus();
 
     function doRename() {
-        const newTitle = input.value.trim();
-        if (!newTitle) return cancelRename();
-        const all = getAllSavedTrips();
-        const oldKey = trip.key;
-        const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
+    const newTitle = input.value.trim();
+    if (!newTitle) return cancelRename();
+    const all = getAllSavedTrips();
+    const oldKey = trip.key;
+    const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
-        trip.title = newTitle;
-        trip.key = newKey;
-        trip.updatedAt = Date.now();
+    trip.title = newTitle;
+    trip.key = newKey;
+    trip.updatedAt = Date.now();
 
-        delete all[oldKey];
-        all[newKey] = trip;
+    delete all[oldKey];
+    all[newKey] = trip;
 
-        // EN ÖNEMLİSİ: AKTİF KEY GÜNCELLE
+    // Eğer aktif trip buysa, state'i de güncelle
+    if (window.activeTripKey === oldKey) {
         window.activeTripKey = newKey;
-
-        localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
-        setTimeout(() => { renderMyTripsPanel(); }, 0);
+        window.cart = JSON.parse(JSON.stringify(trip.cart));
+        window.customDayNames = trip.customDayNames ? { ...trip.customDayNames } : {};
+        window.lastUserQuery = trip.lastUserQuery || trip.title || "";
+        window.selectedCity = trip.selectedCity || "";
+        window.latestTripPlan = Array.isArray(trip.cart) ? JSON.parse(JSON.stringify(trip.cart)) : [];
     }
+
+    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+    setTimeout(() => { renderMyTripsPanel(); }, 0);
+}
     function cancelRename() {
         setTimeout(() => { renderMyTripsPanel(); }, 0);
     }
