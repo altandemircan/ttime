@@ -109,19 +109,20 @@ async function saveCurrentTripToStorage() {
     : (new Date()).toISOString().slice(0, 10);
   let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '');
 
-  const tripObj = {
-    title: tripTitle,
-    date: tripDate,
-    days: window.cart && window.cart.length > 0
-      ? Math.max(...window.cart.map(item => item.day || 1))
-      : 1,
-    cart: JSON.parse(JSON.stringify(window.cart || [])),
-    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-    lastUserQuery: window.lastUserQuery || "",
-    selectedCity: window.selectedCity || "",
-    updatedAt: Date.now(),
-    key: tripKey,
-  };
+ const tripObj = {
+  title: tripTitle,
+  date: tripDate,
+  days: window.cart && window.cart.length > 0
+    ? Math.max(...window.cart.map(item => item.day || 1))
+    : 1,
+  cart: JSON.parse(JSON.stringify(window.cart || [])),
+  customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
+  lastUserQuery: window.lastUserQuery || "",
+  selectedCity: window.selectedCity || "",
+  updatedAt: Date.now(),
+  key: tripKey,
+  directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined, // EKLEDİĞİN SATIR
+};
 
   const thumbnails = {};
   const days = tripObj.days;
@@ -158,18 +159,19 @@ async function saveCurrentTripToStorageWithThumbnail() {
   let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '');
 
   const tripObj = {
-    title: tripTitle,
-    date: tripDate,
-    days: window.cart && window.cart.length > 0
-      ? Math.max(...window.cart.map(item => item.day || 1))
-      : 1,
-    cart: JSON.parse(JSON.stringify(window.cart)),
-    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-    lastUserQuery: window.lastUserQuery || "",
-    selectedCity: window.selectedCity || "",
-    updatedAt: Date.now(),
-    key: tripKey,
-  }
+  title: tripTitle,
+  date: tripDate,
+  days: window.cart && window.cart.length > 0
+    ? Math.max(...window.cart.map(item => item.day || 1))
+    : 1,
+  cart: JSON.parse(JSON.stringify(window.cart)),
+  customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
+  lastUserQuery: window.lastUserQuery || "",
+  selectedCity: window.selectedCity || "",
+  updatedAt: Date.now(),
+  key: tripKey,
+  directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined, // EKLEDİĞİN SATIR
+};
 
   const thumbnails = {};
   const days = tripObj.days;
