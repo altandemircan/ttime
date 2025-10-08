@@ -357,14 +357,31 @@ function formatTime(date) {
 }
 
 // Favori toggle
-function toggleTripFavorite(tripKey) {
+async function toggleTripFavorite(tripKey) {
     const all = getAllSavedTrips();
     if (!all[tripKey]) return;
     const current = !!all[tripKey].favorite;
     all[tripKey].favorite = !current;
     all[tripKey].updatedAt = Date.now();
-    localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
+    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
     renderMyTripsPanel();
+    // --- EKLE ---
+    const trip = all[tripKey];
+    if (trip) {
+        const days = trip.days || 1;
+        trip.thumbnails = trip.thumbnails || {};
+        for (let day = 1; day <= days; day++) {
+            if ((trip.directionsPolylines && trip.directionsPolylines[day]) || countPointsForDay(day, trip) >= 2) {
+                trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || "img/placeholder.png";
+            } else {
+                trip.thumbnails[day] = "img/placeholder.png";
+            }
+        }
+        all[tripKey] = trip;
+        localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+        renderMyTripsPanel();
+    }
+} renderMyTripsPanel();
 }
 
 function renderMyTripsPanel() {
