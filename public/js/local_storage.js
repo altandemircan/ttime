@@ -534,22 +534,25 @@ function startRename() {
     input.focus();
 
     function doRename() {
-        const newTitle = input.value.trim();
-        if (!newTitle) return cancelRename();
-        const all = getAllSavedTrips();
-        const oldKey = trip.key;
-        const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
+    const newTitle = input.value.trim();
+    if (!newTitle) return cancelRename();
+    const all = getAllSavedTrips();
+    const oldKey = trip.key;
+    const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
-        trip.title = newTitle;
-        trip.key = newKey;
-        trip.updatedAt = Date.now();
+    trip.title = newTitle;
+    trip.key = newKey;
+    trip.updatedAt = Date.now();
 
-        delete all[oldKey];
-        all[newKey] = trip;
+    delete all[oldKey];
+    all[newKey] = trip;
 
-        localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
-        setTimeout(() => { renderMyTripsPanel(); }, 0);
-    }
+    // --- EKLE ---
+    window.activeTripKey = newKey;
+
+    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+    setTimeout(() => { renderMyTripsPanel(); }, 0);
+}
     function cancelRename() {
         setTimeout(() => { renderMyTripsPanel(); }, 0);
     }
