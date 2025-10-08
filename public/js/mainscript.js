@@ -1,25 +1,41 @@
-  window.__scaleBarDrag = null;
+// === SCALE BAR DRAG GLOBAL HANDLERLARI ===
+window.__scaleBarDrag = null;
+window.__scaleBarDragTrack = null;
+window.__scaleBarDragSelDiv = null;
 
-  // DOSYANIN BAŞINDA:
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
   const rect = window.__scaleBarDragTrack.getBoundingClientRect();
-  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, (e.touches && e.touches.length ? e.touches[0].clientX : e.clientX) - rect.left));
   const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
   const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
   window.__scaleBarDragSelDiv.style.left = `${left}px`;
   window.__scaleBarDragSelDiv.style.width = `${right - left}px`;
 };
+
 window.__sb_onMouseUp = function() {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
   const rect = window.__scaleBarDragTrack.getBoundingClientRect();
   const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
   const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
   if (rightPx - leftPx < 8) { window.__scaleBarDragSelDiv.style.display = 'none'; window.__scaleBarDrag = null; return; }
-  // ... segment seçimi logic ...
-  window.__scaleBarDrag = null;
-};
 
+  // Segment logic burada (aynısını bırakabilirsin)
+  const container = window.__scaleBarDragTrack.closest('.route-scale-bar');
+  if (!container) { window.__scaleBarDrag = null; return; }
+  const dayMatch = container.id && container.id.match(/day(\d+)/);
+  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+  const totalKmToUse = Number(container.dataset.totalKm);
+  const startKm = (leftPx / rect.width) * totalKmToUse;
+  const endKm   = (rightPx / rect.width) * totalKmToUse;
+
+  window.__scaleBarDrag = null;
+
+  if (day != null) {
+    fetchAndRenderSegmentElevation(container, day, startKm, endKm);
+    if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
+  }
+};
 
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
@@ -6300,6 +6316,8 @@ window._lastSegmentDay = undefined;
 window._lastSegmentStartKm = undefined;
 window._lastSegmentEndKm = undefined;
 window.__scaleBarDrag = null;
+window.__scaleBarDragTrack = null;
+window.__scaleBarDragSelDiv = null;
 window.removeEventListener('mousemove', window.__sb_onMouseMove);
 window.removeEventListener('mouseup', window.__sb_onMouseUp);
 }
@@ -8455,6 +8473,14 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
     display:none; z-index: 6;
   `;
   track.appendChild(selDiv);
+window.__scaleBarDragTrack = track;
+window.__scaleBarDragSelDiv = selDiv;
+
+// Event handler'ları önce kaldır, sonra ekle
+window.removeEventListener('mousemove', window.__sb_onMouseMove);
+window.removeEventListener('mouseup', window.__sb_onMouseUp);
+window.addEventListener('mousemove', window.__sb_onMouseMove);
+window.addEventListener('mouseup', window.__sb_onMouseUp);
 
   // BURAYA EKLE ↓↓↓↓↓
 track.addEventListener('mousedown', function(e) {
@@ -8470,11 +8496,12 @@ track.addEventListener('touchstart', function(e) {
   const rect = track.getBoundingClientRect();
   const x = e.touches[0].clientX - rect.left;
   window.__scaleBarDrag = { startX: x, lastX: x };
+  window.__scaleBarDragTrack = track;
+  window.__scaleBarDragSelDiv = selDiv;
   selDiv.style.left = `${x}px`;
   selDiv.style.width = `0px`;
   selDiv.style.display = 'block';
 });
-
 
 // renderRouteScaleBar içinde, scale bar track ve selDiv OLUŞTURULDUKTAN SONRA:
 window.__scaleBarDragTrack = track;
@@ -8745,36 +8772,7 @@ track.__onMove = (e) => {
     return;
   }
 };
-window.__sb_onMouseMove = (e) => {
- if (!window.__scaleBarDrag) return;
-const rect = track.getBoundingClientRect();
-window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-selDiv.style.left = `${left}px`;
-selDiv.style.width = `${right - left}px`;
-};
-window.addEventListener('mousemove', window.__sb_onMouseMove);
 
-window.__sb_onMouseUp = () => {
- if (!window.__scaleBarDrag) return;
-const rect = track.getBoundingClientRect();
-const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-window.__scaleBarDrag = null;
-
-  if (rightPx - leftPx < 8) { selDiv.style.display = 'none'; return; }
-
-  const totalKmToUse = Number(container.dataset.totalKm) || totalKm;
-  const startKm = (leftPx / rect.width) * totalKmToUse;
-  const endKm   = (rightPx / rect.width) * totalKmToUse;
-
-  if (day != null) {
-    fetchAndRenderSegmentElevation(container, day, startKm, endKm);
-    if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
-  }
-};
-window.addEventListener('mouseup', window.__sb_onMouseUp);
 
   // Loader
   window.showScaleBarLoading?.(container, 'Loading elevation…');
