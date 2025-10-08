@@ -453,16 +453,6 @@ function renderMyTripsPanel() {
     tryUpdateTripThumbnailsDelayed(3500);
 
     // İç yardımcı: tek satırlık gezi kutusu
-Copilot said: İstediğin şu: - Hover (mouseenter/leave) olayı
-İstediğin şu:
-
-Hover (mouseenter/leave) olayı sadece .mytrips-tripbox (yani tripDiv) üzerinde çalışacak.
-Hover info kutusu (thumbInfo) sadece görselin üstünde ve sadece tripbox’a mouse gelince görünecek.
-Görselin boyutu değişmeyecek.
-Sadece JS ile olacak, ek CSS gerek yok.
-Aşağıda, fonksiyonun ilgili kısmı tamamen bu mantığa göre güncellenmiştir:
-
-js
 function buildTripRow(trip, isFavoriteSection) {
     const tripDiv = document.createElement("div");
     tripDiv.className = "mytrips-tripbox";
@@ -673,7 +663,7 @@ function buildTripRow(trip, isFavoriteSection) {
 
     return tripDiv;
 }
-
+}
 
 
 if (!window.__trip_autosave_hooked) {
