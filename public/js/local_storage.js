@@ -498,6 +498,11 @@ function renderMyTripsPanel() {
     thumbBox.appendChild(thumbImg);
     thumbBox.appendChild(thumbInfo);
 
+    // === BURAYA EKLE ===
+thumbBox.onmouseenter = () => { thumbInfo.style.display = "flex"; };
+thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
+
+
     // Trip info box (tıklanabilir)
     const infoBox = document.createElement("div");
     infoBox.className = "trip-info-box";
