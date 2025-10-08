@@ -453,7 +453,17 @@ function renderMyTripsPanel() {
     tryUpdateTripThumbnailsDelayed(3500);
 
     // İç yardımcı: tek satırlık gezi kutusu
-   function buildTripRow(trip, isFavoriteSection) {
+Copilot said: İstediğin şu: - Hover (mouseenter/leave) olayı
+İstediğin şu:
+
+Hover (mouseenter/leave) olayı sadece .mytrips-tripbox (yani tripDiv) üzerinde çalışacak.
+Hover info kutusu (thumbInfo) sadece görselin üstünde ve sadece tripbox’a mouse gelince görünecek.
+Görselin boyutu değişmeyecek.
+Sadece JS ile olacak, ek CSS gerek yok.
+Aşağıda, fonksiyonun ilgili kısmı tamamen bu mantığa göre güncellenmiştir:
+
+js
+function buildTripRow(trip, isFavoriteSection) {
     const tripDiv = document.createElement("div");
     tripDiv.className = "mytrips-tripbox";
 
@@ -464,48 +474,55 @@ function renderMyTripsPanel() {
     mainBox.style.alignItems = "center";
     mainBox.style.gap = "10px";
 
-const thumbBox = document.createElement("div");
-thumbBox.style.position = "relative";
-thumbBox.style.display = "inline-block";
-thumbBox.style.width = "80px"; // Görselden büyük yap!
-thumbBox.style.height = "60px";
-thumbBox.style.cursor = "pointer";
+    // Görsel ve info kutusu için kapsayıcı
+    const thumbBox = document.createElement("div");
+    thumbBox.style.position = "relative";
+    thumbBox.style.display = "inline-block";
+    // thumbBox'ın genişliği ve yüksekliği sadece görsele göre ayarlanır:
+    thumbBox.style.width = "60px";
+    thumbBox.style.height = "40px";
+    thumbBox.style.cursor = "pointer";
 
-const thumbImg = document.createElement("img");
-thumbImg.className = "mytrips-thumb";
-thumbImg.src = trip.thumbnails && trip.thumbnails[1] ? trip.thumbnails[1] : "img/placeholder.png";
-thumbImg.width = 60;
-thumbImg.height = 40;
-thumbImg.dataset.tripkey = trip.key;
+    const thumbImg = document.createElement("img");
+    thumbImg.className = "mytrips-thumb";
+    thumbImg.src = trip.thumbnails && trip.thumbnails[1] ? trip.thumbnails[1] : "img/placeholder.png";
+    thumbImg.width = 60;
+    thumbImg.height = 40;
+    thumbImg.dataset.tripkey = trip.key;
 
-const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
-const itemCount = trip.cart ? trip.cart.length : 0;
+    const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
+    const itemCount = trip.cart ? trip.cart.length : 0;
 
-const thumbInfo = document.createElement("div");
-thumbInfo.className = "mytrips-thumb-info";
-thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
-thumbInfo.style.position = "absolute";
-thumbInfo.style.top = "0";
-thumbInfo.style.left = "0";
-thumbInfo.style.width = "100%";
-thumbInfo.style.height = "100%";
-thumbInfo.style.background = "rgba(25,28,44,0.68)";
-thumbInfo.style.color = "#fff";
-thumbInfo.style.fontSize = "13px";
-thumbInfo.style.flexDirection = "column";
-thumbInfo.style.alignItems = "center";
-thumbInfo.style.justifyContent = "center";
-thumbInfo.style.borderRadius = "7px";
-thumbInfo.style.zIndex = "2";
-thumbInfo.style.textShadow = "0 1px 3px #111";
-thumbInfo.style.display = "none";
-thumbInfo.style.pointerEvents = "none";
+    const thumbInfo = document.createElement("div");
+    thumbInfo.className = "mytrips-thumb-info";
+    thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
+    thumbInfo.style.position = "absolute";
+    thumbInfo.style.top = "0";
+    thumbInfo.style.left = "0";
+    thumbInfo.style.width = "100%";
+    thumbInfo.style.height = "100%";
+    thumbInfo.style.background = "rgba(25,28,44,0.68)";
+    thumbInfo.style.color = "#fff";
+    thumbInfo.style.fontSize = "13px";
+    thumbInfo.style.display = "none";
+    thumbInfo.style.flexDirection = "column";
+    thumbInfo.style.alignItems = "center";
+    thumbInfo.style.justifyContent = "center";
+    thumbInfo.style.borderRadius = "7px";
+    thumbInfo.style.zIndex = "2";
+    thumbInfo.style.textShadow = "0 1px 3px #111";
+    thumbInfo.style.pointerEvents = "none"; // info kutusu üstüne gelince hover kaybolmasın
 
-thumbBox.appendChild(thumbImg);
-thumbBox.appendChild(thumbInfo);
+    thumbBox.appendChild(thumbImg);
+    thumbBox.appendChild(thumbInfo);
 
-thumbBox.onmouseenter = () => { thumbInfo.style.display = "flex"; };
-thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
+    // Sadece TRIPDIV'e event ekliyoruz
+    tripDiv.addEventListener("mouseenter", () => {
+        thumbInfo.style.display = "flex";
+    });
+    tripDiv.addEventListener("mouseleave", () => {
+        thumbInfo.style.display = "none";
+    });
 
     // Trip info box (tıklanabilir)
     const infoBox = document.createElement("div");
@@ -518,7 +535,6 @@ thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
     titleDiv.className = "trip-title";
     titleDiv.textContent = trip.title || `${trip.days} day${trip.days > 1 ? 's' : ''}${trip.selectedCity ? " " + trip.selectedCity : ""}`;
 
-    // -- Başlığı düzenleme fonksiyonu
     function startRename() {
         const input = document.createElement("input");
         input.type = "text";
@@ -560,7 +576,7 @@ thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
         }
     }
 
-    // Sadece butonlar (Rename, Delete)
+    // Buton satırı (Rename, Delete)
     const buttonRow = document.createElement("div");
     buttonRow.style.display = "flex";
     buttonRow.style.alignItems = "center";
@@ -606,7 +622,7 @@ thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
         }, 400);
     };
 
-    // PDF butonu (yıldızın solunda)
+    // PDF butonu
     const pdfBtn = document.createElement("button");
     pdfBtn.className = "mytrips-pdf-btn";
     pdfBtn.type = "button";
@@ -627,7 +643,7 @@ thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
         }
     };
 
-    // Favorite star (right side)
+    // Favorite star
     const favBtn = document.createElement("button");
     favBtn.className = "mytrips-fav-btn";
     favBtn.type = "button";
@@ -639,7 +655,7 @@ thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
     favBtn.style.fontSize = "20px";
     favBtn.style.marginLeft = "0";
     favBtn.style.padding = "0";
-    favBtn.style.color = trip.favorite ? "#ffcc00" : "#bdbdbd"; // yellow vs grey
+    favBtn.style.color = trip.favorite ? "#ffcc00" : "#bdbdbd";
     favBtn.onclick = async function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -647,7 +663,7 @@ thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
         renderMyTripsPanel && renderMyTripsPanel();
     };
 
-    // === SIRALAMA: mainBox'a önce thumbBox, sonra infoBox, sonra pdf ve fav butonları ekle ===
+    // Sıralama
     mainBox.appendChild(thumbBox);
     mainBox.appendChild(infoBox);
     mainBox.appendChild(pdfBtn);
