@@ -1477,11 +1477,8 @@ function showResults() {
 
     updateCart();
 
-    // Thumbnail / trip kaydı
-    saveCurrentTripToStorageWithThumbnailDelay();
-    setTimeout(() => {
-        saveCurrentTripToStorageWithThumbnail().then(renderMyTripsPanel);
-    }, 1200);
+saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
+
 }
 
 async function fillAIDescriptionsSeq() {
