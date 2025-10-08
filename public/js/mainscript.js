@@ -8451,70 +8451,82 @@ track.addEventListener('touchstart', function(e) {
   track.style.paddingRight = `${MARKER_PAD_PX}px`;
   track.style.overflow = 'visible';
 
-   // Hover dikey çizgi + tooltip
-const verticalLine = document.createElement('div');
-verticalLine.className = 'scale-bar-vertical-line';
-verticalLine.style.left = (width / 2) + 'px'; // şimdi width tanımlı!
-  verticalLine.style.cssText = `
-    position:absolute;top:0;bottom:0;width:2px;
-    background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;
-  `;
-  // Başlangıçta çizgi ortada olsun
-
-  track.appendChild(verticalLine);
-
-  const tooltip = document.createElement('div');
-  tooltip.className = 'tt-elev-tooltip';
-  tooltip.style.left = '0px';
-  track.appendChild(tooltip);
-
-
-  // Mesafe (Haversine)
-  function hv(lat1, lon1, lat2, lon2) {
-    const R = 6371000, toRad = x => x * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(a));
-  }
-  const cum = [0];
-  for (let i = 1; i < coords.length; i++) {
-    const [lon1, lat1] = coords[i - 1];
-    const [lon2, lat2] = coords[i];
-    cum[i] = cum[i - 1] + hv(lat1, lon1, lat2, lon2);
-  }
-  const totalM = cum[cum.length - 1] || 1;
-
-  // Örnekleme (tam profil)
-  const N = Math.max(60, Math.round(totalKm * 5));
-  const samples = [];
-  for (let i = 0; i < N; i++) {
-    const target = (i / (N - 1)) * totalM;
-    let idx = 0;
-    while (idx < cum.length && cum[idx] < target) idx++;
-    if (idx === 0) {
-      const [lon, lat] = coords[0];
-      samples.push({ lat, lng: lon, distM: 0 });
-    } else if (idx >= cum.length) {
-      const [lon, lat] = coords[cum.length - 1];
-      samples.push({ lat, lng: lon, distM: totalM });
-    } else {
-      const p = idx - 1, segLen = (cum[idx] - cum[p]) || 1, t = (target - cum[p]) / segLen;
-      const [lon1, lat1] = coords[p], [lon2, lat2] = coords[idx];
-      samples.push({ lat: lat1 + (lat2 - lat1) * t, lng: lon1 + (lon2 - lon1) * t, distM: target });
-    }
-  }
-
-  // Tam profil örneklerini sakla
-  container._elevFullSamples = samples.slice();
-  container._elevSamples = samples.slice();
-  container._elevStartKm = 0;
-  container._elevKmSpan = totalKm;
-
-  // Ölçek ve SVG haznesi
+// Ölçek ve SVG haznesi
 let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
 if (isNaN(width)) width = 400;
 createScaleElements(track, width, totalKm, 0, markers);
 
+// Dikey çizgi + tooltip
+const verticalLine = document.createElement('div');
+verticalLine.className = 'scale-bar-vertical-line';
+verticalLine.style.cssText = `
+  position:absolute;top:0;bottom:0;width:2px;
+  background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;
+`;
+// Başlangıçta çizgi tam ortada
+verticalLine.style.left = (width / 2) + 'px';
+track.appendChild(verticalLine);
+
+const tooltip = document.createElement('div');
+tooltip.className = 'tt-elev-tooltip';
+tooltip.style.left = '0px';
+track.appendChild(tooltip);
+
+// Mouse ile çizgiyi hareket ettir (her zaman görünür!)
+track.addEventListener('mousemove', function(e) {
+  const rect = track.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  verticalLine.style.left = `${x}px`;
+});
+track.addEventListener('touchmove', function(e) {
+  const rect = track.getBoundingClientRect();
+  const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
+  verticalLine.style.left = `${x}px`;
+});
+// Mouseleave, touchend gibi eventlerde ÇİZGİYİ GİZLEME! Kodun başka yerinde verticalLine.style.display = 'none' geçiyorsa SİL.
+
+// Mesafe (Haversine)
+function hv(lat1, lon1, lat2, lon2) {
+  const R = 6371000, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+const cum = [0];
+for (let i = 1; i < coords.length; i++) {
+  const [lon1, lat1] = coords[i - 1];
+  const [lon2, lat2] = coords[i];
+  cum[i] = cum[i - 1] + hv(lat1, lon1, lat2, lon2);
+}
+const totalM = cum[cum.length - 1] || 1;
+
+// Örnekleme (tam profil)
+const N = Math.max(60, Math.round(totalKm * 5));
+const samples = [];
+for (let i = 0; i < N; i++) {
+  const target = (i / (N - 1)) * totalM;
+  let idx = 0;
+  while (idx < cum.length && cum[idx] < target) idx++;
+  if (idx === 0) {
+    const [lon, lat] = coords[0];
+    samples.push({ lat, lng: lon, distM: 0 });
+  } else if (idx >= cum.length) {
+    const [lon, lat] = coords[cum.length - 1];
+    samples.push({ lat, lng: lon, distM: totalM });
+  } else {
+    const p = idx - 1, segLen = (cum[idx] - cum[p]) || 1, t = (target - cum[p]) / segLen;
+    const [lon1, lat1] = coords[p], [lon2, lat2] = coords[idx];
+    samples.push({ lat: lat1 + (lat2 - lat1) * t, lng: lon1 + (lon2 - lon1) * t, distM: target });
+  }
+}
+
+// Tam profil örneklerini sakla
+container._elevFullSamples = samples.slice();
+container._elevSamples = samples.slice();
+container._elevStartKm = 0;
+container._elevKmSpan = totalKm;
+
+// (Devam eden kodlar...)
   // BASE SVG (data-role="elev-base")
   const svgNS = 'http://www.w3.org/2000/svg';
   const SVG_TOP = 48;
