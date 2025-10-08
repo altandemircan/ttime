@@ -114,13 +114,6 @@ function saveCurrentTripToStorageWithThumbnailDelay() {
   }, 1200);
 }
 
-async function saveCurrentTripToStorageWithThumbnailDelay() {
-    // 500-1000ms gecikme ile harita oluşmuş olur
-     setTimeout(() => {
-        saveCurrentTripToStorage();
-        renderMyTripsPanel();
-    }, 1200);
- }
 
 function patchCartLocations() {
     window.cart.forEach(function(item) {
