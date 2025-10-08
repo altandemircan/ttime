@@ -464,25 +464,18 @@ function renderMyTripsPanel() {
     mainBox.style.alignItems = "center";
     mainBox.style.gap = "10px";
 
-    // --- THUMBNAIL + HOVER INFO KUTUSU ---
-const thumbBox = document.createElement("div");
+ const thumbBox = document.createElement("div");
 thumbBox.style.position = "relative";
 thumbBox.style.display = "inline-block";
 
-let thumb = (trip.thumbnails && trip.thumbnails[1]) ? trip.thumbnails[1] : trip.thumbnail || "img/placeholder.png";
 const thumbImg = document.createElement("img");
-thumbImg.className = "mytrips-thumb";
-thumbImg.src = thumb;
+thumbImg.src = "img/placeholder.png";
 thumbImg.width = 60;
 thumbImg.height = 40;
-thumbImg.dataset.tripkey = trip.key;
-
-const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
-const itemCount = trip.cart ? trip.cart.length : 0;
 
 const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
-thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
+thumbInfo.innerHTML = `<div>1 day</div><div>2 item</div>`;
 thumbInfo.style.cssText = `
   display:none;position:absolute;top:0;left:0;width:100%;height:100%;
   background:rgba(25,28,44,0.68);color:#fff;font-size:13px;
