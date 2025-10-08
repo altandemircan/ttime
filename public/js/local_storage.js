@@ -381,7 +381,6 @@ async function toggleTripFavorite(tripKey) {
         localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
         renderMyTripsPanel();
     }
-} renderMyTripsPanel();
 }
 
 function renderMyTripsPanel() {
