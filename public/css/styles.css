@@ -6701,7 +6701,7 @@ border-bottom:1px solid #ddd;
       @keyframes ttspin{to{transform:rotate(360deg)}}
       .scale-bar-track{position:relative}
 
-      
+
   .scale-bar-track {
   position: relative;
   left: auto;
@@ -6750,3 +6750,7 @@ border-bottom:1px solid #ddd;
       position:absolute; top:0; bottom:0; width:2px;
       background:rgba(0,0,0,.65); pointer-events:none; z-index: 500;
     }
+
+    .mytrips-thumb-info {
+  display: none !important;
+}
