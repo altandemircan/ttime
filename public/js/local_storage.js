@@ -562,20 +562,21 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
     const trips = getAllSavedTrips();
     for (const tripKey in trips) {
       const trip = trips[tripKey];
-      if (!trip.thumbnails || !trip.thumbnails[1] || trip.thumbnails[1].includes("placeholder")) {
-        if (countPointsForDay(1) < 2) continue;
-        const map = window.leafletMaps && window.leafletMaps[`route-map-day1`];
-        const containerOk = !!(map && (map.getContainer?.() || map._container));
-        if (containerOk) {
-          const thumb = await generateMapThumbnail(1);
+      const maxDay = trip.days || 1;
+      for (let day = 1; day <= maxDay; day++) {
+        if (!trip.thumbnails) trip.thumbnails = {};
+        if (!trip.thumbnails[day] || trip.thumbnails[day].includes("placeholder")) {
+          if (countPointsForDay(day, trip) < 2) continue;
+          const thumb = generateTripThumbnailOffscreen(trip, day);
           if (thumb) {
-            trip.thumbnails = trip.thumbnails || {};
-            trip.thumbnails[1] = thumb;
+            trip.thumbnails[day] = thumb;
             const all = getAllSavedTrips();
             all[trip.key] = trip;
             localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
-            const img = document.querySelector(`img.mytrips-thumb[data-tripkey="${trip.key}"]`);
-            if (img) img.src = thumb;
+            if (day === 1) {
+              const img = document.querySelector(`img.mytrips-thumb[data-tripkey="${trip.key}"]`);
+              if (img) img.src = thumb;
+            }
           }
         }
       }
