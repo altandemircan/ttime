@@ -1,4 +1,26 @@
   window.__scaleBarDrag = null;
+
+  // DOSYANIN BAŞINDA:
+window.__sb_onMouseMove = function(e) {
+  if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
+  const rect = window.__scaleBarDragTrack.getBoundingClientRect();
+  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  window.__scaleBarDragSelDiv.style.left = `${left}px`;
+  window.__scaleBarDragSelDiv.style.width = `${right - left}px`;
+};
+window.__sb_onMouseUp = function() {
+  if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
+  const rect = window.__scaleBarDragTrack.getBoundingClientRect();
+  const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  if (rightPx - leftPx < 8) { window.__scaleBarDragSelDiv.style.display = 'none'; window.__scaleBarDrag = null; return; }
+  // ... segment seçimi logic ...
+  window.__scaleBarDrag = null;
+};
+
+
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
     Object.values(window._segmentHighlight[day]).forEach(poly => {
@@ -8438,6 +8460,8 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
 track.addEventListener('mousedown', function(e) {
   const rect = track.getBoundingClientRect();
   window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
+  window.__scaleBarDragTrack = track;
+  window.__scaleBarDragSelDiv = selDiv;
   selDiv.style.left = `${window.__scaleBarDrag.startX}px`;
   selDiv.style.width = `0px`;
   selDiv.style.display = 'block';
@@ -8451,12 +8475,14 @@ track.addEventListener('touchstart', function(e) {
   selDiv.style.display = 'block';
 });
 
-// --- Eski event handler'ları kaldır, yenisini ekle ---
+
+// renderRouteScaleBar içinde, scale bar track ve selDiv OLUŞTURULDUKTAN SONRA:
+window.__scaleBarDragTrack = track;
+window.__scaleBarDragSelDiv = selDiv;
 window.removeEventListener('mousemove', window.__sb_onMouseMove);
 window.removeEventListener('mouseup', window.__sb_onMouseUp);
 window.addEventListener('mousemove', window.__sb_onMouseMove);
 window.addEventListener('mouseup', window.__sb_onMouseUp);
-
 
   // Görünüm
   const MARKER_PAD_PX = 10;
