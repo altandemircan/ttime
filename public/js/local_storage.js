@@ -144,38 +144,7 @@ async function saveCurrentTripToStorage() {
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
-async function updateAllTripThumbnailsWithPolyline() {
-  const all = getAllSavedTrips();
-  for (const [tripKey, trip] of Object.entries(all)) {
-    if (!trip.directionsPolylines) trip.directionsPolylines = {};
-    let updated = false;
-    for (let day = 1; day <= (trip.days || 1); day++) {
-      // Eğer directionsPolylines yoksa ve noktalar 2+ ise
-      if (
-        !trip.directionsPolylines[day] &&
-        (trip.cart || []).filter(it => it.day == day && it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number").length >= 2
-      ) {
-        // Burada noktaları al, Mapbox Directions API ile rota çek, polyline dizisi üret
-        // NOT: Bu örnekte sadece noktaları düz çizgiyle birleştiriyor
-        // Gerçek directions için backend veya API çağrısı gerek!
-        const pts = getPointsFromTrip(trip, day);
-        trip.directionsPolylines[day] = pts; // DÜZ ÇİZGİ (YAPILANDIĞI GİBİ)
-        updated = true;
-      }
-    }
-    if (updated) {
-      // Thumbnail tekrar üret
-      trip.thumbnails = trip.thumbnails || {};
-      for (let day = 1; day <= (trip.days || 1); day++) {
-        if ((trip.directionsPolylines[day] || []).length >= 2) {
-          trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || "img/placeholder.png";
-        }
-      }
-      all[tripKey] = trip;
-    }
-  }
-  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
-}
+
 
 // saveCurrentTripToStorageWithThumbnail: same guard
 async function saveCurrentTripToStorageWithThumbnail() {
@@ -696,4 +665,38 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
       }
     }
   }, delay);
+}
+
+
+async function updateAllTripThumbnailsWithPolyline() {
+  const all = getAllSavedTrips();
+  for (const [tripKey, trip] of Object.entries(all)) {
+    if (!trip.directionsPolylines) trip.directionsPolylines = {};
+    let updated = false;
+    for (let day = 1; day <= (trip.days || 1); day++) {
+      // Eğer directionsPolylines yoksa ve noktalar 2+ ise
+      if (
+        !trip.directionsPolylines[day] &&
+        (trip.cart || []).filter(it => it.day == day && it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number").length >= 2
+      ) {
+        // Burada noktaları al, Mapbox Directions API ile rota çek, polyline dizisi üret
+        // NOT: Bu örnekte sadece noktaları düz çizgiyle birleştiriyor
+        // Gerçek directions için backend veya API çağrısı gerek!
+        const pts = getPointsFromTrip(trip, day);
+        trip.directionsPolylines[day] = pts; // DÜZ ÇİZGİ (YAPILANDIĞI GİBİ)
+        updated = true;
+      }
+    }
+    if (updated) {
+      // Thumbnail tekrar üret
+      trip.thumbnails = trip.thumbnails || {};
+      for (let day = 1; day <= (trip.days || 1); day++) {
+        if ((trip.directionsPolylines[day] || []).length >= 2) {
+          trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || "img/placeholder.png";
+        }
+      }
+      all[tripKey] = trip;
+    }
+  }
+  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
 }
