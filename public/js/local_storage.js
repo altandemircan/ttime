@@ -705,14 +705,25 @@ async function generateMapThumbnail(day) {
     if (!el) return null;
 
     // Harita yoksa önce çizdir
-    let map = window.leafletMaps && window.leafletMaps[containerId];
-    if (!map) {
-      if (typeof renderRouteForDay === 'function') {
-        await renderRouteForDay(day);
-      }
-      map = window.leafletMaps && window.leafletMaps[containerId];
-    }
-    if (!map) return null;
+                      let map = window.leafletMaps && window.leafletMaps[containerId];
+                    let el = document.getElementById(containerId);
+
+                    // Eğer harita DOM'da yoksa veya Leaflet instance'ı yoksa, oluştur!
+                    if (!el) {
+                      // DOM'da harita container'ı yoksa, onu oluştur!
+                      if (typeof ensureDayMapContainer === 'function') {
+                        el = ensureDayMapContainer(day);
+                      }
+                    }
+                    if (!map || !el) {
+                      if (typeof renderRouteForDay === 'function') {
+                        // Haritayı ve rotayı çizdir, böylece hem DOM hem Leaflet oluşur
+                        await renderRouteForDay(day);
+                      }
+                      map = window.leafletMaps && window.leafletMaps[containerId];
+                      el = document.getElementById(containerId);
+                    }
+                    if (!map || !el) return null;
 
     const container = (typeof map.getContainer === 'function') ? map.getContainer() : map._container;
     if (!container || !document.body.contains(container)) return null;
@@ -727,7 +738,7 @@ async function generateMapThumbnail(day) {
         const icon = l.options && l.options.icon;
         const iconUrl = icon && icon.options && icon.options.iconUrl;
         // DivIcon kalabilir; sadece gerçek resimli ikonları kaldır
-        if (iconUrl) removedImageMarkers.push(l);
+        if (iconUrl) removedImageMarkers.push(l); 
       }
     });
 
