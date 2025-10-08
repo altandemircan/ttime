@@ -1,5 +1,82 @@
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
+async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
+  const pts = getPointsFromTrip(trip, day);
+  if (pts.length < 2) return null;
 
+  // Step 1: Mapbox Directions API'den gerçek rota polyline'ı çek
+  const coords = pts.map(p => `${p.lng},${p.lat}`).join(';');
+  const MAPBOX_TOKEN = 'YOUR_MAPBOX_TOKEN'; // buraya kendi tokenını koy!
+  const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+
+  let routeCoords = [];
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (
+      data.routes &&
+      data.routes[0] &&
+      data.routes[0].geometry &&
+      data.routes[0].geometry.coordinates
+    ) {
+      routeCoords = data.routes[0].geometry.coordinates.map(([lng, lat]) => ({lat, lng}));
+    }
+  } catch (e) {
+    // fallback: düz çizgi
+    routeCoords = pts.map(p => ({lat: p.lat, lng: p.lng}));
+  }
+
+  if (routeCoords.length < 2) return null;
+
+  // Step 2: Projeksiyon
+  const lats = routeCoords.map(p => p.lat);
+  const lngs = routeCoords.map(p => p.lng);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+
+  function project(p) {
+    const x = 12 + ((p.lng - minLng) / (maxLng - minLng || 1)) * (width - 24);
+    const y = 12 + ((maxLat - p.lat) / (maxLat - minLat || 1)) * (height - 24);
+    return [x, y];
+  }
+
+  // Step 3: Canvas ile rota çizimi
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, width, height);
+
+  // Gerçek rota (polyline)
+  ctx.save();
+  ctx.strokeStyle = '#1976d2';
+  ctx.lineWidth = 6;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  routeCoords.forEach((p, i) => {
+    const [x, y] = project(p);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.restore();
+
+  // Başlangıç ve bitiş/ara noktalar
+  ctx.save();
+  ctx.fillStyle = '#d32f2f';
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  pts.forEach((p) => {
+    const [x, y] = project(p);
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  });
+  ctx.restore();
+
+  return canvas.toDataURL('image/png');
+}
 // Helper: how many valid points does this day have?
 function countPointsForDay(day) {
   try {
