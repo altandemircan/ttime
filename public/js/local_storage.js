@@ -500,7 +500,7 @@ function buildTripRow(trip, isFavoriteSection) {
     thumbInfo.style.justifyContent = "center";
     thumbInfo.style.borderRadius = "7px";
     thumbInfo.style.zIndex = "2";
-    thumbInfo.style.textShadow = "0 1px 3px #111";
+
     thumbInfo.style.pointerEvents = "none"; // info kutusu üstüne gelince hover kaybolmasın
 
     thumbBox.appendChild(thumbImg);
