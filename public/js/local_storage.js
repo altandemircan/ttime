@@ -482,19 +482,19 @@ const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
 thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
 thumbInfo.style.cssText = `
-  display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  display: none; 
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(25,28,44,0.68); color: #fff; font-size: 13px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex-direction: column; align-items: center; justify-content: center;
   border-radius: 7px; z-index: 2; text-shadow: 0 1px 3px #111;
 `;
 
 thumbBox.appendChild(thumbImg);
 thumbBox.appendChild(thumbInfo);
 
-thumbInfo.style.display = "none"; // açılışta görünmesin
-// Sadece mouse ile üzerine gelince göster
 thumbBox.onmouseenter = () => { thumbInfo.style.display = "flex"; };
 thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
+
     // Trip info box (tıklanabilir)
     const infoBox = document.createElement("div");
     infoBox.className = "trip-info-box";
