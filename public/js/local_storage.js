@@ -216,6 +216,8 @@ function getAllSavedTrips() {
   } catch(e) {
     return {};
   }
+}
+
 
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
@@ -649,7 +651,6 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
       for (let day = 1; day <= maxDay; day++) {
         if (!trip.thumbnails) trip.thumbnails = {};
         if (!trip.thumbnails[day] || trip.thumbnails[day].includes("placeholder")) {
-          // O gün için 2+ nokta var mı?
           const pts = getPointsFromTrip(trip, day);
           if (pts.length < 2) continue;
 
@@ -671,6 +672,5 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
     }
   }, delay);
 }
-
 
 
