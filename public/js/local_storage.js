@@ -121,7 +121,7 @@ function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
 
   return canvas.toDataURL('image/png');
 }
-// Sadece mevcut haritadan thumbnail al; olmazsa placeholder
+// GÜNCELLEME: Unique key için timestamp ekle!
 async function saveCurrentTripToStorage() {
   let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
@@ -131,22 +131,26 @@ async function saveCurrentTripToStorage() {
   let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
     ? window.cart[0].date
     : (new Date()).toISOString().slice(0, 10);
-  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '');
 
- const tripObj = {
-  title: tripTitle,
-  date: tripDate,
-  days: window.cart && window.cart.length > 0
-    ? Math.max(...window.cart.map(item => item.day || 1))
-    : 1,
-  cart: JSON.parse(JSON.stringify(window.cart || [])),
-  customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-  lastUserQuery: window.lastUserQuery || "",
-  selectedCity: window.selectedCity || "",
-  updatedAt: Date.now(),
-  key: tripKey,
-  directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined, // EKLEDİĞİN SATIR
-};
+  // --- BURADA ---
+  let timestamp = Date.now();
+  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
+  // --------------
+
+  const tripObj = {
+    title: tripTitle,
+    date: tripDate,
+    days: window.cart && window.cart.length > 0
+      ? Math.max(...window.cart.map(item => item.day || 1))
+      : 1,
+    cart: JSON.parse(JSON.stringify(window.cart || [])),
+    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
+    lastUserQuery: window.lastUserQuery || "",
+    selectedCity: window.selectedCity || "",
+    updatedAt: Date.now(),
+    key: tripKey,
+    directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined,
+  };
 
   const thumbnails = {};
   const days = tripObj.days;
@@ -170,7 +174,7 @@ async function saveCurrentTripToStorage() {
 }
 
 
-// saveCurrentTripToStorageWithThumbnail: same guard
+// Aynı güncelleme burada da:
 async function saveCurrentTripToStorageWithThumbnail() {
   let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0) ? window.lastUserQuery.trim() : "My Trip";
   if (!tripTitle && window.selectedCity && window.cart.length > 0) {
@@ -180,22 +184,26 @@ async function saveCurrentTripToStorageWithThumbnail() {
   let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
     ? window.cart[0].date
     : (new Date()).toISOString().slice(0, 10);
-  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '');
+
+  // --- BURADA ---
+  let timestamp = Date.now();
+  let tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
+  // --------------
 
   const tripObj = {
-  title: tripTitle,
-  date: tripDate,
-  days: window.cart && window.cart.length > 0
-    ? Math.max(...window.cart.map(item => item.day || 1))
-    : 1,
-  cart: JSON.parse(JSON.stringify(window.cart)),
-  customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-  lastUserQuery: window.lastUserQuery || "",
-  selectedCity: window.selectedCity || "",
-  updatedAt: Date.now(),
-  key: tripKey,
-  directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined, // EKLEDİĞİN SATIR
-};
+    title: tripTitle,
+    date: tripDate,
+    days: window.cart && window.cart.length > 0
+      ? Math.max(...window.cart.map(item => item.day || 1))
+      : 1,
+    cart: JSON.parse(JSON.stringify(window.cart)),
+    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
+    lastUserQuery: window.lastUserQuery || "",
+    selectedCity: window.selectedCity || "",
+    updatedAt: Date.now(),
+    key: tripKey,
+    directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined,
+  };
 
   const thumbnails = {};
   const days = tripObj.days;
@@ -563,14 +571,27 @@ tripDiv.addEventListener("mouseleave", () => {
         input.focus();
 
         function doRename() {
-            const newTitle = input.value.trim();
-            if (!newTitle) return;
-            const all = getAllSavedTrips();
-            all[trip.key].title = newTitle;
-            all[trip.key].updatedAt = Date.now();
-            localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
-            renderMyTripsPanel();
-        }
+    const newTitle = input.value.trim();
+    if (!newTitle) return;
+    const all = getAllSavedTrips();
+    const trip = all[trip.key];
+    if (!trip) return;
+
+    // Yeni key üret
+    const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
+
+    // Trip objesini güncelle
+    trip.title = newTitle;
+    trip.key = newKey;
+    trip.updatedAt = Date.now();
+
+    // Eski key’i sil, yeni key ile ekle
+    delete all[trip.key];
+    all[newKey] = trip;
+
+    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+    renderMyTripsPanel();
+}
         function cancelRename() {
             renderMyTripsPanel();
         }
