@@ -732,39 +732,42 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
   }, delay);
 }
 // Sadece haritadaki görüntüyü yakalar; tiles/ikon marker'ları geçici kaldırır, sonra geri ekler
-async function generateMapThumbnail(day) {
+async function generateMapThumbnail(day, trip = null) {
   try {
     const containerId = `route-map-day${day}`;
     let el = document.getElementById(containerId);
     let map = window.leafletMaps && window.leafletMaps[containerId];
 
-    // DAY CONTAINER YOKSA GEÇİCİ OLARAK OLUŞTUR!
+    // --- GEÇİCİ HARİTA CONTAINER OLUŞTUR (My Trips paneli için) ---
     let tempDayContainer = false;
     if (!document.getElementById(`day-container-${day}`)) {
-      const mainCart = document.getElementById('cart-items') || document.body;
+      // NEREYE EKLEYECEĞİ önemli: panelde görünmeyecek bir yere (body'nin sonuna)
       const tempDiv = document.createElement('div');
       tempDiv.id = `day-container-${day}`;
       tempDiv.style.display = "none";
-      mainCart.appendChild(tempDiv);
+      document.body.appendChild(tempDiv);
       tempDayContainer = true;
     }
-
-    // Şimdi DOM'da var, harita oluşturulabilir
+    // --- SONRA harita ve route'u oluştur ---
     if (!el || !map) {
       if (typeof ensureDayMapContainer === 'function') {
         el = ensureDayMapContainer(day);
       }
       if (typeof renderRouteForDay === 'function') {
+        // Eğer trip parametresi verilirse eski cart'ı yüklemeden route çizdirebilmek için geçici olarak window.cart ayarla!
+        let origCart;
+        if (trip) {
+          origCart = window.cart;
+          window.cart = trip.cart;
+        }
         await renderRouteForDay(day);
+        if (trip && origCart) window.cart = origCart;
       }
       map = window.leafletMaps && window.leafletMaps[containerId];
       el = document.getElementById(containerId);
     }
     if (!map || !el) {
-      // cleanup
-      if (tempDayContainer) {
-        document.getElementById(`day-container-${day}`)?.remove();
-      }
+      if (tempDayContainer) document.getElementById(`day-container-${day}`)?.remove();
       return null;
     }
 
