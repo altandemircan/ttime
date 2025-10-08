@@ -331,13 +331,14 @@ function groupTripsByDate(trips) {
 }
 
 
-function generateRouteThumbnailFromPolyline(polylinePoints, waypoints, width = 300, height = 180) {
-  // polylinePoints: directions'dan gelen yolun takip ettiği [lat, lng] dizisi (gerçek rotanın noktaları)
-  // waypoints: orijinal noktalar (rota başı/sonu vs.)
+function generateRouteThumbnailFromPolyline(polyline, waypoints, width = 300, height = 180) {
+  // polyline: gerçek rota noktaları [{lat, lng}, ...] (directions api sonucu)
+  // waypoints: [{lat, lng}, ...] (orijinal durak noktaları)
 
-  if (!polylinePoints || polylinePoints.length < 2) return null;
-  const lats = polylinePoints.map(p => p.lat);
-  const lngs = polylinePoints.map(p => p.lng);
+  if (!polyline || polyline.length < 2) return null;
+
+  const lats = polyline.map(p => p.lat);
+  const lngs = polyline.map(p => p.lng);
   const minLat = Math.min(...lats), maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
 
@@ -347,20 +348,20 @@ function generateRouteThumbnailFromPolyline(polylinePoints, waypoints, width = 3
     return [x, y];
   }
 
-  const canvas = document.createElement("canvas");
+  const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, width, height);
 
-  // Gerçek yol polyline'ı çiz
+  // ROTA (GERÇEK YOL POLYLINE'I)
   ctx.save();
-  ctx.strokeStyle = "#1976d2";
+  ctx.strokeStyle = '#1976d2';
   ctx.lineWidth = 6;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   ctx.beginPath();
-  polylinePoints.forEach((p, i) => {
+  polyline.forEach((p, i) => {
     const [x, y] = project(p);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
@@ -368,12 +369,12 @@ function generateRouteThumbnailFromPolyline(polylinePoints, waypoints, width = 3
   ctx.stroke();
   ctx.restore();
 
-  // Waypoint noktalarını daire ile göster
+  // WAYPOINT DAİRELERİ
   ctx.save();
-  ctx.fillStyle = "#d32f2f";
+  ctx.fillStyle = '#d32f2f';
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 2;
-  (waypoints || []).forEach(p => {
+  (waypoints || []).forEach((p) => {
     const [x, y] = project(p);
     ctx.beginPath();
     ctx.arc(x, y, 7, 0, 2 * Math.PI);
@@ -382,7 +383,7 @@ function generateRouteThumbnailFromPolyline(polylinePoints, waypoints, width = 3
   });
   ctx.restore();
 
-  return canvas.toDataURL("image/png");
+  return canvas.toDataURL('image/png');
 }
 
 
