@@ -6,11 +6,12 @@ function clearRouteSegmentHighlight(day) {
     });
     delete window._segmentHighlight[day];
   }
+  // MUTLAKA global state’i temizle:
   window._lastSegmentDay = undefined;
   window._lastSegmentStartKm = undefined;
   window._lastSegmentEndKm = undefined;
 
-  // Segment overlay DOM'unu da temizle
+  // Segment overlay DOM’u da temizle (isteğe bağlı)
   const bar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (bar) {
     bar.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
