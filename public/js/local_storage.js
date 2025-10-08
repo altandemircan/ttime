@@ -679,20 +679,50 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
     const trips = getAllSavedTrips();
     for (const tripKey in trips) {
       const trip = trips[tripKey];
-      if (!trip.thumbnails || !trip.thumbnails[1] || trip.thumbnails[1].includes("placeholder")) {
-        if (countPointsForDay(1) < 2) continue;
-        const map = window.leafletMaps && window.leafletMaps[`route-map-day1`];
-        const containerOk = !!(map && (map.getContainer?.() || map._container));
-        if (containerOk) {
-          const thumb = await generateMapThumbnail(1);
+      // Her gün için kontrol et
+      const maxDay = trip.days || 1;
+      for (let day = 1; day <= maxDay; day++) {
+        // Eğer thumbnail eksik ya da placeholder ise ve en az 2 nokta varsa...
+        if (!trip.thumbnails) trip.thumbnails = {};
+        if (!trip.thumbnails[day] || trip.thumbnails[day].includes("placeholder")) {
+          // O gün için gerçekten 2+ nokta var mı? (trip objesinden!)
+          const pts = (trip.cart || []).filter(
+            it =>
+              it.day == day &&
+              it.location &&
+              typeof it.location.lat !== 'undefined' &&
+              typeof it.location.lng !== 'undefined' &&
+              !Number.isNaN(Number(it.location.lat)) &&
+              !Number.isNaN(Number(it.location.lng))
+          );
+          if (pts.length < 2) continue;
+
+          // GEÇİCİ OLARAK GÜNÜN day-container'ını ekle
+          let tempDayContainer = false;
+          if (!document.getElementById(`day-container-${day}`)) {
+            const mainCart = document.getElementById('cart-items') || document.body;
+            const tempDiv = document.createElement('div');
+            tempDiv.id = `day-container-${day}`;
+            tempDiv.style.display = "none";
+            mainCart.appendChild(tempDiv);
+            tempDayContainer = true;
+          }
+
+          // Thumbnail oluştur (senin generateMapThumbnail fonksiyonun kullanılacak)
+          const thumb = await generateMapThumbnail(day);
           if (thumb) {
-            trip.thumbnails = trip.thumbnails || {};
-            trip.thumbnails[1] = thumb;
+            trip.thumbnails[day] = thumb;
             const all = getAllSavedTrips();
             all[trip.key] = trip;
             localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
+            // Panelde hemen güncelle
             const img = document.querySelector(`img.mytrips-thumb[data-tripkey="${trip.key}"]`);
-            if (img) img.src = thumb;
+            if (img && day === 1) img.src = thumb;
+          }
+
+          // Geçici day-container'ı sil
+          if (tempDayContainer) {
+            document.getElementById(`day-container-${day}`)?.remove();
           }
         }
       }
