@@ -478,6 +478,11 @@ thumbImg.width = 60;
 thumbImg.height = 40;
 thumbImg.dataset.tripkey = trip.key;
 
+// Önce bunları tanımla:
+const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
+const itemCount = trip.cart ? trip.cart.length : 0;
+
+// Sonra kullan:
 const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
 thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
