@@ -491,6 +491,7 @@ thumbInfo.style.cssText = `
 thumbBox.appendChild(thumbImg);
 thumbBox.appendChild(thumbInfo);
 
+thumbInfo.style.display = "none"; // açılışta görünmesin
 // Sadece mouse ile üzerine gelince göster
 thumbBox.onmouseenter = () => { thumbInfo.style.display = "flex"; };
 thumbBox.onmouseleave = () => { thumbInfo.style.display = "none"; };
