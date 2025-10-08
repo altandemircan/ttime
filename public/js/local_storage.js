@@ -464,23 +464,29 @@ function renderMyTripsPanel() {
     mainBox.style.alignItems = "center";
     mainBox.style.gap = "10px";
 
- const thumbBox = document.createElement("div");
+const thumbBox = document.createElement("div");
 thumbBox.style.position = "relative";
 thumbBox.style.display = "inline-block";
 
 const thumbImg = document.createElement("img");
-thumbImg.src = "img/placeholder.png";
+thumbImg.className = "mytrips-thumb";
+thumbImg.src = trip.thumbnail; // SADECE gerçekten kaydedilmiş thumbnail
 thumbImg.width = 60;
 thumbImg.height = 40;
+thumbImg.dataset.tripkey = trip.key;
+
+// Gün ve item sayısı
+const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
+const itemCount = trip.cart ? trip.cart.length : 0;
 
 const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
-thumbInfo.innerHTML = `<div>1 day</div><div>2 item</div>`;
+thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
 thumbInfo.style.cssText = `
-  display:none;position:absolute;top:0;left:0;width:100%;height:100%;
-  background:rgba(25,28,44,0.68);color:#fff;font-size:13px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  border-radius:7px;z-index:2;text-shadow:0 1px 3px #111;
+  display:none; position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(25,28,44,0.68); color:#fff; font-size:13px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:7px; z-index:2; text-shadow:0 1px 3px #111;
 `;
 
 thumbBox.appendChild(thumbImg);
