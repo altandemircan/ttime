@@ -558,8 +558,9 @@ tripDiv.addEventListener("mouseleave", () => {
     delete all[trip.key];
     all[newKey] = trip;
 
-    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
-    renderMyTripsPanel();
+   localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+// Paneli güncelle, trip açma!
+setTimeout(() => { renderMyTripsPanel(); }, 0);
 }
         function cancelRename() {
             renderMyTripsPanel();
@@ -603,7 +604,13 @@ tripDiv.addEventListener("mouseleave", () => {
     infoBox.appendChild(buttonRow);
 
     infoBox.onclick = function(e) {
-        if (e.target === renameBtn || e.target === deleteBtn) return;
+        if (
+      e.target === renameBtn ||
+      e.target === deleteBtn ||
+      (e.target.classList && e.target.classList.contains('trip-rename-save')) ||
+      (e.target.tagName === "INPUT")
+    ) return;
+            
         e.preventDefault();
         if (typeof window.toggleSidebarMyTrips === "function") window.toggleSidebarMyTrips();
         loadTripFromStorage(trip.key);
