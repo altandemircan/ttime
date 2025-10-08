@@ -7100,10 +7100,16 @@ if (!points || points.length === 0) {
     infoPanel.textContent = "";
   }
 
-  window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-  window.lastRouteGeojsons[containerId] = routeData.geojson;
-  window.lastRouteSummaries = window.lastRouteSummaries || {};
-  window.lastRouteSummaries[containerId] = routeData.summary;
+ window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+window.lastRouteGeojsons[containerId] = routeData.geojson;
+window.lastRouteSummaries = window.lastRouteSummaries || {};
+window.lastRouteSummaries[containerId] = routeData.summary;
+
+// EKLE ↓↓↓↓↓↓↓↓
+window.directionsPolylines = window.directionsPolylines || {};
+window.directionsPolylines[day] = Array.isArray(routeData.coords)
+  ? routeData.coords.map(c => ({ lat: c[1], lng: c[0] }))
+  : [];
 
   renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
 
