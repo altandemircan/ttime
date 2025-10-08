@@ -2480,7 +2480,7 @@ function displayPlacesInChat(places, category, day) {
     <img src="img/information_icon.svg"> ${description}
 </div>
         <div class="opening_hours">
-            <img src="img/hours_icon.svg"> ${opening ? opening : "No opening hours found!"}
+            <img src="img/hours_icon.svg"> ${opening ? opening : "No working hours found!"}
         </div>
     </div>
     <div class="item_action">
