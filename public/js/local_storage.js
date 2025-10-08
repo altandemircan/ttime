@@ -40,13 +40,14 @@ function getPointsFromTrip(trip, day) {
     .filter(p => !Number.isNaN(p.lat) && !Number.isNaN(p.lng));
 }
 
-// OFFSCREEN (tilesız) thumbnail üretimi: sadece polyline + nokta daireleri
+// Offscreen, çakışmasız, global state değiştirmeden thumbnail üretir
 async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
   try {
+    // 1) Noktaları al (trip.cart üzerinden)
     const pts = getPointsFromTrip(trip, day);
     if (pts.length < 2) return null;
 
-    // Gizli konteyner
+    // 2) Gizli harita konteyneri oluştur
     const off = document.createElement('div');
     off.style.position = 'fixed';
     off.style.left = '-10000px';
@@ -57,7 +58,7 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
     off.style.zIndex = '-1';
     document.body.appendChild(off);
 
-    // Harita: tilesız, canvas tercihli
+    // 3) Harita başlat (tilesız, canvas tercihli)
     const map = L.map(off, {
       preferCanvas: true,
       zoomControl: false,
@@ -68,7 +69,7 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
       inertia: false
     });
 
-    // Polyline ve noktalar
+    // 4) Polyline ve noktalar
     const latlngs = pts.map(p => [p.lat, p.lng]);
     const renderer = L.canvas();
     const poly = L.polyline(latlngs, {
@@ -78,7 +79,6 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
       renderer
     }).addTo(map);
 
-    // Noktaları küçük kırmızı daireler olarak ekle (canvas üzerinde çizilir)
     pts.forEach(p => {
       L.circleMarker([p.lat, p.lng], {
         radius: 4,
@@ -90,7 +90,7 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
       }).addTo(map);
     });
 
-    // Kapsama ayarla
+    // Fit
     map.fitBounds(poly.getBounds(), { padding: [12, 12] });
 
     // Bir frame bekle
@@ -118,6 +118,8 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
     return null;
   }
 }
+
+
 
 // Sadece mevcut haritadan thumbnail al; olmazsa placeholder
 async function saveCurrentTripToStorage() {
@@ -673,7 +675,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-// Sadece ekrandaki haritadan dene; olmazsa dokunma (placeholder kalsın)
 async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
   setTimeout(async function () {
     const trips = getAllSavedTrips();
@@ -684,19 +685,11 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
         if (!trip.thumbnails) trip.thumbnails = {};
         if (!trip.thumbnails[day] || trip.thumbnails[day].includes("placeholder")) {
           // O gün için 2+ nokta var mı?
-          const pts = (trip.cart || []).filter(
-            it =>
-              it.day == day &&
-              it.location &&
-              typeof it.location.lat !== 'undefined' &&
-              typeof it.location.lng !== 'undefined' &&
-              !Number.isNaN(Number(it.location.lat)) &&
-              !Number.isNaN(Number(it.location.lng))
-          );
+          const pts = getPointsFromTrip(trip, day);
           if (pts.length < 2) continue;
 
-          // Thumbnail/grafik oluştururken trip parametresini de ver
-          const thumb = await generateMapThumbnail(day, trip);
+          // Thumbnail/grafik oluştur
+          const thumb = await generateTripThumbnailOffscreen(trip, day);
           if (thumb) {
             trip.thumbnails[day] = thumb;
             const all = getAllSavedTrips();
