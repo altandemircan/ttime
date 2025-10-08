@@ -491,7 +491,7 @@ function buildTripRow(trip, isFavoriteSection) {
     thumbInfo.style.left = "0";
     thumbInfo.style.width = "100%";
     thumbInfo.style.height = "100%";
-    thumbInfo.style.background = "rgba(25,28,44,0.68)";
+    thumbInfo.style.background = "#8a4af3";
     thumbInfo.style.color = "#fff";
     thumbInfo.style.fontSize = "13px";
     thumbInfo.style.display = "none";
