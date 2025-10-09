@@ -943,6 +943,12 @@ async function handleAnswer(answer) {
   showTypingIndicator();
   window.lastUserQuery = raw;
 
+  // ŞEHİR VE GÜN SAYISINI PARSE ET
+const { location, days } = parsePlanRequest(raw);
+
+// Burada lastUserQuery'yi şehir ve trip plan formatında değiştir
+window.lastUserQuery = `${location} trip plan`;
+
   try {
     // Mevcut parse fonksiyonunu kullanıyoruz
     const { location, days } = parsePlanRequest(raw);
