@@ -42,6 +42,8 @@ function getPointsFromTrip(trip, day) {
 
 // OFFSCREEN (tilesız) thumbnail üretimi: sadece polyline + nokta daireleri
 function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
+    console.log("THUMB POLYLINE", trip.directionsPolylines?.[day]);
+
   // ROTAYA KARIŞMA - İster noktaları, ister directions polyline'ı kullanırsın!
   const pts = getPointsFromTrip(trip, day);
   const polyline = (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day]))
@@ -164,32 +166,37 @@ tripTitle = `${window.selectedCity} trip plan`;
                 }
 
   // 4. Trip objesi
-  const tripObj = {
-    title: tripTitle,
-    date: tripDate,
-    days: window.cart && window.cart.length > 0
-      ? Math.max(...window.cart.map(item => item.day || 1))
-      : 1,
-    cart: JSON.parse(JSON.stringify(window.cart)),
-    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-    lastUserQuery: window.lastUserQuery || "",
-    selectedCity: window.selectedCity || "",
-    updatedAt: Date.now(),
-    key: tripKey,
-    directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined,
-  };
+// 4. Trip objesi
+const tripObj = {
+  title: tripTitle,
+  date: tripDate,
+  days: window.cart && window.cart.length > 0
+    ? Math.max(...window.cart.map(item => item.day || 1))
+    : 1,
+  cart: JSON.parse(JSON.stringify(window.cart)),
+  customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
+  lastUserQuery: window.lastUserQuery || "",
+  selectedCity: window.selectedCity || "",
+  updatedAt: Date.now(),
+  key: tripKey,
+  directionsPolylines: JSON.parse(JSON.stringify(window.directionsPolylines)), // <-- BURAYI değiştirdik!
+};
 
-// --- EKLE ---
-// Eğer directionsPolylines yok VE en az 2 nokta varsa, düz çizgi üret:
-if (!tripObj.directionsPolylines) tripObj.directionsPolylines = {};
-for (let day = 1; day <= tripObj.days; day++) {
-  if (!tripObj.directionsPolylines[day]) {
-    const pts = getPointsFromTrip(tripObj, day);
-    if (pts.length >= 2) {
-      tripObj.directionsPolylines[day] = pts; // Sadece noktaları sırayla bağla (düz çizgi)
-    }
-  }
-}
+// <<< BURAYA EKLE!
+console.log("KAYIT ÖNCESİ POLYLINE", JSON.stringify(window.directionsPolylines));
+console.log("tripObj.directionsPolylines", JSON.stringify(tripObj.directionsPolylines));
+
+                        // --- EKLE ---
+                        // Eğer directionsPolylines yok VE en az 2 nokta varsa, düz çizgi üret:
+                        if (!tripObj.directionsPolylines) tripObj.directionsPolylines = {};
+                        for (let day = 1; day <= tripObj.days; day++) {
+                          if (!tripObj.directionsPolylines[day] || tripObj.directionsPolylines[day].length < 2) {
+                            // window.directionsPolylines[day] varsa onu kullan
+                            if (window.directionsPolylines && window.directionsPolylines[day] && window.directionsPolylines[day].length >= 2) {
+                              tripObj.directionsPolylines[day] = [...window.directionsPolylines[day]];
+                            }
+                          }
+                        }
   // 5. Thumbnail üretimi
   const thumbnails = {};
   const days = tripObj.days;
