@@ -136,8 +136,9 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
                     : (window.cart && window.cart.length > 0 && window.cart[0].title)
                       ? window.cart[0].title
                       : "My Trip";
-  if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
-    const maxDay = Math.max(...window.cart.map(item => item.day || 1));
+if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
+    tripTitle = `${window.selectedCity} trip plan`;
+}    const maxDay = Math.max(...window.cart.map(item => item.day || 1));
     tripTitle = `${maxDay} days ${window.selectedCity}`;
   }
   let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
