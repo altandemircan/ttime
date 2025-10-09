@@ -1483,13 +1483,11 @@ async function showResults() {
 
     updateCart();
 
-    // --- EKLEDİĞİN GÜNCELLEME ---
-    const days = [...new Set(window.cart.map(i => i.day))];
-    for (let day of days) {
-      await renderRouteForDay(day); // directionsPolylines dolacak
-    }
-    await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 200 });
-    renderMyTripsPanel();
+    // --- YENİ EKLE ---
+const days = [...new Set(window.cart.map(i => i.day))];
+await Promise.all(days.map(day => renderRouteForDay(day))); // Hepsi BİTSİN diye await
+await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 200 });
+renderMyTripsPanel();
 }
 
 async function fillAIDescriptionsSeq() {
