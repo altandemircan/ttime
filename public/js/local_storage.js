@@ -157,9 +157,9 @@ tripTitle = `${window.selectedCity} trip plan`;
   if (isDuplicate) return;
 
   // 3. Benzersiz anahtar (timestamp ile)
-                let tripKey;
+               let tripKey;
                 if (window.activeTripKey) {
-                  tripKey = window.activeTripKey; // mevcut trip güncelleniyor, key aynı kalsın
+                  tripKey = window.activeTripKey;
                 } else {
                   let timestamp = Date.now();
                   tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
@@ -215,8 +215,9 @@ console.log("tripObj.directionsPolylines", JSON.stringify(tripObj.directionsPoly
       ? trips[tripKey].favorite : false;
 
   // 7. Kaydet!
-  trips[tripKey] = tripObj;
-  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
+trips[tripKey] = tripObj;
+localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
+window.activeTripKey = tripKey;;
 }
 
 async function saveCurrentTripToStorageWithThumbnailDelay() {
