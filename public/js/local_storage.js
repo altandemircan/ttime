@@ -128,8 +128,12 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   }
 
   // 1. Başlık ve Tarih
-  let tripTitle = (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
-    ? window.lastUserQuery.trim() : "My Trip";
+  let tripTitle =
+  (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
+    ? window.lastUserQuery.trim()
+    : (window.cart && window.cart.length > 0 && window.cart[0].title)
+      ? window.cart[0].title
+      : "My Trip";
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
     tripTitle = `${maxDay} days ${window.selectedCity}`;
@@ -538,23 +542,21 @@ function doRename() {
     const oldKey = trip.key;
     const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
-    // Eğer isim değişmemişse, hiçbir şey yapma
     if (newKey === oldKey) return cancelRename();
 
     trip.title = newTitle;
     trip.key = newKey;
     trip.updatedAt = Date.now();
 
-    // Eski kaydı sil, yenisini ekle
     delete all[oldKey];
     all[newKey] = trip;
 
-    // Aktif trip ise window.activeTripKey'i değiştir
+    // Eğer aktif trip buysa, state'i de güncelle
     if (window.activeTripKey === oldKey) {
         window.activeTripKey = newKey;
         window.cart = JSON.parse(JSON.stringify(trip.cart));
         window.customDayNames = trip.customDayNames ? { ...trip.customDayNames } : {};
-        window.lastUserQuery = trip.lastUserQuery || trip.title || "";
+        window.lastUserQuery = trip.title; // EN KRİTİK SATIR!
         window.selectedCity = trip.selectedCity || "";
         window.latestTripPlan = Array.isArray(trip.cart) ? JSON.parse(JSON.stringify(trip.cart)) : [];
     }
