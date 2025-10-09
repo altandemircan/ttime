@@ -1487,7 +1487,7 @@ async function showResults() {
 const days = [...new Set(window.cart.map(i => i.day))];
 await Promise.all(days.map(day => renderRouteForDay(day)));
 await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
-renderMyTripsPan
+renderMyTripsPanel();
 }
 
 async function fillAIDescriptionsSeq() {
