@@ -127,13 +127,15 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     await new Promise(res => setTimeout(res, delayMs));
   }
 
-  // 1. Başlık ve Tarih
-  let tripTitle =
-  (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
-    ? window.lastUserQuery.trim()
-    : (window.cart && window.cart.length > 0 && window.cart[0].title)
-      ? window.cart[0].title
-      : "My Trip";
+              // 1. Başlık ve Tarih
+               let tripTitle =
+                (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
+                  ? getAllSavedTrips()[window.activeTripKey].title
+                  : (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
+                    ? window.lastUserQuery.trim()
+                    : (window.cart && window.cart.length > 0 && window.cart[0].title)
+                      ? window.cart[0].title
+                      : "My Trip";
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
     tripTitle = `${maxDay} days ${window.selectedCity}`;
@@ -535,35 +537,35 @@ function startRename() {
     titleDiv.replaceWith(input);
     input.focus();
 
-function doRename() {
-    const newTitle = input.value.trim();
-    if (!newTitle) return cancelRename();
-    const all = getAllSavedTrips();
-    const oldKey = trip.key;
-    const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
+                function doRename() {
+                    const newTitle = input.value.trim();
+                    if (!newTitle) return cancelRename();
+                    const all = getAllSavedTrips();
+                    const oldKey = trip.key;
+                    const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
 
-    if (newKey === oldKey) return cancelRename();
+                    if (newKey === oldKey) return cancelRename();
 
-    trip.title = newTitle;
-    trip.key = newKey;
-    trip.updatedAt = Date.now();
+                    trip.title = newTitle;
+                    trip.key = newKey;
+                    trip.updatedAt = Date.now();
 
-    delete all[oldKey];
-    all[newKey] = trip;
+                    delete all[oldKey];
+                    all[newKey] = trip;
 
-    // Eğer aktif trip buysa, state'i de güncelle
-    if (window.activeTripKey === oldKey) {
-        window.activeTripKey = newKey;
-        window.cart = JSON.parse(JSON.stringify(trip.cart));
-        window.customDayNames = trip.customDayNames ? { ...trip.customDayNames } : {};
-        window.lastUserQuery = trip.title; // EN KRİTİK SATIR!
-        window.selectedCity = trip.selectedCity || "";
-        window.latestTripPlan = Array.isArray(trip.cart) ? JSON.parse(JSON.stringify(trip.cart)) : [];
-    }
+                    // EN KRİTİK: lastUserQuery'yi de güncelle
+                    if (window.activeTripKey === oldKey) {
+                        window.activeTripKey = newKey;
+                        window.cart = JSON.parse(JSON.stringify(trip.cart));
+                        window.customDayNames = trip.customDayNames ? { ...trip.customDayNames } : {};
+                        window.lastUserQuery = newTitle; // <-- Burası!
+                        window.selectedCity = trip.selectedCity || "";
+                        window.latestTripPlan = Array.isArray(trip.cart) ? JSON.parse(JSON.stringify(trip.cart)) : [];
+                    }
 
-    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
-    setTimeout(() => { renderMyTripsPanel(); }, 0);
-}
+                    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+                    setTimeout(() => { renderMyTripsPanel(); }, 0);
+                }
     function cancelRename() {
         setTimeout(() => { renderMyTripsPanel(); }, 0);
     }
