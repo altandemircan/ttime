@@ -466,6 +466,7 @@ function buildTripRow(trip, isFavoriteSection) {
     const itemCount = (trip.cart || []).filter(it =>
   (it.name && it.name.trim() !== '') || (it.location && typeof it.location.lat === "number")
 ).length;
+    const itemCount = trip.cart ? trip.cart.length : 0;
 
     const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
