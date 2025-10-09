@@ -1367,7 +1367,7 @@ async function fillAIDescriptionsAutomatically() {
 }
 
 let hasAutoAddedToCart = false;
-function showResults() {
+async function showResults() {
 
     // Eski chat balonlarında kalmış route-map-day* kalıntılarını temizle (opsiyonel güvenlik)
     (function cleanupChatRouteArtifacts(){
@@ -1410,8 +1410,8 @@ function showResults() {
             <div class="sect">
                 <ul class="accordion-list">`;
 
-    const days = Math.max(...latestTripPlan.map(item => item.day));
-    for (let day = 1; day <= days; day++) {
+    const daysCount = Math.max(...latestTripPlan.map(item => item.day));
+    for (let day = 1; day <= daysCount; day++) {
         let stepsHtml = '';
         const daySteps = [];
 
@@ -1483,12 +1483,13 @@ function showResults() {
 
     updateCart();
 
-const days = [...new Set(window.cart.map(i => i.day))];
-for (let day of days) {
-  await renderRouteForDay(day); // directionsPolylines dolacak
-}
-await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 200 });
-renderMyTripsPanel();
+    // --- EKLEDİĞİN GÜNCELLEME ---
+    const days = [...new Set(window.cart.map(i => i.day))];
+    for (let day of days) {
+      await renderRouteForDay(day); // directionsPolylines dolacak
+    }
+    await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 200 });
+    renderMyTripsPanel();
 }
 
 async function fillAIDescriptionsSeq() {
