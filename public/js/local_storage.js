@@ -463,8 +463,9 @@ function buildTripRow(trip, isFavoriteSection) {
     thumbImg.height = 40;
     thumbImg.dataset.tripkey = trip.key;
 
-    const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
-    const itemCount = trip.cart ? trip.cart.length : 0;
+    const itemCount = (trip.cart || []).filter(it =>
+  (it.name && it.name.trim() !== '') || (it.location && typeof it.location.lat === "number")
+).length;
 
     const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
