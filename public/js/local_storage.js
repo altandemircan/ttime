@@ -179,6 +179,17 @@ tripTitle = `${window.selectedCity} trip plan`;
     directionsPolylines: window.directionsPolylines ? { ...window.directionsPolylines } : undefined,
   };
 
+// --- EKLE ---
+// Eğer directionsPolylines yok VE en az 2 nokta varsa, düz çizgi üret:
+if (!tripObj.directionsPolylines) tripObj.directionsPolylines = {};
+for (let day = 1; day <= tripObj.days; day++) {
+  if (!tripObj.directionsPolylines[day]) {
+    const pts = getPointsFromTrip(tripObj, day);
+    if (pts.length >= 2) {
+      tripObj.directionsPolylines[day] = pts; // Sadece noktaları sırayla bağla (düz çizgi)
+    }
+  }
+}
   // 5. Thumbnail üretimi
   const thumbnails = {};
   const days = tripObj.days;
