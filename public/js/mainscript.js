@@ -1483,8 +1483,12 @@ function showResults() {
 
     updateCart();
 
-saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
-
+const days = [...new Set(window.cart.map(i => i.day))];
+for (let day of days) {
+  await renderRouteForDay(day); // directionsPolylines dolacak
+}
+await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 200 });
+renderMyTripsPanel();
 }
 
 async function fillAIDescriptionsSeq() {
