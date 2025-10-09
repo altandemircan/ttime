@@ -1485,9 +1485,9 @@ async function showResults() {
 
     // --- YENİ EKLE ---
 const days = [...new Set(window.cart.map(i => i.day))];
-await Promise.all(days.map(day => renderRouteForDay(day))); // Hepsi BİTSİN diye await
-await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 200 });
-renderMyTripsPanel();
+await Promise.all(days.map(day => renderRouteForDay(day)));
+await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
+renderMyTripsPan
 }
 
 async function fillAIDescriptionsSeq() {
