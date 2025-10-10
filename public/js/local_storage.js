@@ -6,9 +6,17 @@ async function saveTripAfterRoutes() {
       await renderRouteForDay(day);
     }
   }
-  // --- POLYLINE SYNC HACK: window.directionsPolylines'ın gerçekten dolduğundan EMİN ol ---
-  await new Promise(res => setTimeout(res, 400)); // 400ms bekle
-  console.log("FORCE POLYLINE SYNC", JSON.stringify(window.directionsPolylines));
+
+  // POLYLINE'ın dolduğundan %100 emin ol!
+  let retry = 0;
+  while (
+    Object.values(window.directionsPolylines || {}).some(arr => !Array.isArray(arr) || arr.length < 3) &&
+    retry < 10
+  ) {
+    await new Promise(res => setTimeout(res, 100));
+    retry++;
+  }
+
   await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
   if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
