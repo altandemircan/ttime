@@ -1,5 +1,5 @@
 window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
-
+let currIdx = globalIndexMap.get(item);
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
 window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
@@ -2322,6 +2322,7 @@ async function importGpsFileForDay(file, day){
 }
 
 function removeFromCart(index){
+  console.log('Remove index:', index, window.cart[index]);
   if (!Array.isArray(window.cart)) return;
 
   const removed = window.cart[index];
@@ -3088,20 +3089,19 @@ function saveDayName(day, newName) {
     updateCart();
 }
             function syncCartOrderWithDOM(day) {
-                const items = document.querySelectorAll(`.day-container[data-day="${day}"] .travel-item`);
-                if (!items.length) return;
-                const newOrder = [];
-                items.forEach(item => {
-                    const idx = item.getAttribute('data-index');
-                    if (window.cart[idx]) { // <-- burada düzelt!
-                        newOrder.push(window.cart[idx]);
-                    }
-                });
-                // O günün cart itemlarını yeni sırayla ekle
-                window.cart = [
-                    ...window.cart.filter(item => item.day != day),
-                    ...newOrder
-                ];
+            const items = document.querySelectorAll(`.day-container[data-day="${day}"] .travel-item`);
+            if (!items.length) return;
+            const newOrder = [];
+            items.forEach(item => {
+                const idx = item.getAttribute('data-index');
+                if (window.cart[idx]) {
+                    newOrder.push(window.cart[idx]);
+                }
+            });
+            window.cart = [
+                ...window.cart.filter(item => item.day != day),
+                ...newOrder
+            ];
 
                 if (window.expandedMaps) {
                   clearRouteSegmentHighlight(day);
@@ -3604,7 +3604,7 @@ function updateCart() {
       (typeof it.day !== "undefined" && Object.keys(it).length === 1) ||
       (it.name || it.location || it.category)
     )
-  );
+);
   if (oldStartDate) window.cart.startDate = oldStartDate;
   if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
