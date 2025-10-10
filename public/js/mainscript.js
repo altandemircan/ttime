@@ -1982,60 +1982,38 @@ function safeCoords(obj) {
   return null;
 }
 
-function addToCart(
-  name,
-  image,
-  day,
-  category,
-  address = null,
-  rating = null,
-  user_ratings_total = null,
-  opening_hours = null,
-  place_id = null,
-  location = null,
-  website = null,
-  options = {}
-) {
-  const {
-    silent = false,
-    skipRender = false,
-    forceDay = null
-  } = options || {};
+function addToCart(name, image, day, category, address = null, rating = null, user_ratings_total = null, opening_hours = null, place_id = null, location = null, website = null, options = {}) {
+  const { silent = false, skipRender = false, forceDay = null } = options || {};
 
-  // ---- 1) Placeholder temizliği (ilk gerçek ekleme)
+  // 1) Placeholder temizliği (ilk gerçek ekleme)
   if (window._removeMapPlaceholderOnce) {
     window.cart = (window.cart || []).filter(it => !it._placeholder);
     window._removeMapPlaceholderOnce = false;
   }
 
-  if (
-    location &&
-    (
-      typeof location.lat !== "number" ||
-      typeof location.lng !== "number" ||
-      isNaN(location.lat) ||
-      isNaN(location.lng)
-    )
-  ) {
+  // 2) Lokasyon kontrolü
+  if (location && (
+    typeof location.lat !== "number" ||
+    typeof location.lng !== "number" ||
+    isNaN(location.lat) ||
+    isNaN(location.lng)
+  )) {
     location = null;
   }
 
-  // ---- 2) Cart yapısını garanti et
-  if (!Array.isArray(window.cart)) {
-    window.cart = [];
-  }
+  // 3) Cart yapısını garanti et
+  if (!Array.isArray(window.cart)) window.cart = [];
 
-  // ---- 3) Gün seçimi mantığı
-  // priority: forceDay > explicit day arg > window.currentDay > son öğenin günü > 1
+  // 4) Gün seçimi mantığı
   let resolvedDay = Number(
-    (forceDay != null ? forceDay :
-     (day != null ? day :
+    forceDay != null ? forceDay :
+    (day != null ? day :
       (window.currentDay != null ? window.currentDay :
-       (window.cart.length ? window.cart[window.cart.length - 1].day : 1))))
+        (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
   );
   if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
 
-  // ---- 4) Lokasyon normalizasyonu
+  // 5) Lokasyon normalizasyonu
   let loc = null;
   if (location && typeof location.lat !== "undefined" && typeof location.lng !== "undefined") {
     const latNum = Number(location.lat);
@@ -2045,19 +2023,18 @@ function addToCart(
     }
   }
 
-  // ---- 5) İsim / kategori / image fallback
+  // 6) İsim / kategori / image fallback
   const safeName = (name || '').toString().trim();
   const safeCategory = (category || 'Place').trim();
   const safeImage = image || 'img/placeholder.png';
 
-  // ---- 6) Duplicate kontrolü
+  // 7) Duplicate kontrolü
   const isDuplicate = window.cart.some(item => {
     if (item.day !== resolvedDay) return false;
     if (!item.name || !safeName) return false;
     if (item.category !== safeCategory) return false;
     const sameName = item.name.trim().toLowerCase() === safeName.toLowerCase();
     if (!sameName) return false;
-
     // Koordinat karşılaştırması
     if (loc && item.location) {
       return item.location.lat === loc.lat && item.location.lng === loc.lng;
@@ -2067,12 +2044,11 @@ function addToCart(
   });
 
   if (isDuplicate) {
-    // İstersen burada kısa bir toast gösterebilirsin:
     if (window.showToast) window.showToast('Item already exists for this day.', 'info');
     return false;
   }
 
-  // ---- 7) Yeni öğe
+  // 8) Yeni öğe ekle
   const newItem = {
     name: safeName,
     image: safeImage,
@@ -2089,6 +2065,10 @@ function addToCart(
   };
 
   window.cart.push(newItem);
+  // POLYLINE HIZLANDIRMA: her eklemede debounce ile polyline hesapla/güncelle
+const day = newItem.day;
+const points = window.cart.filter(i => i.day == day && i.location);
+debounceRoute(day, points, updatePolylineForDay);
 
   try {
     if (!newItem._starter && newItem.location) {
@@ -2100,6 +2080,7 @@ function addToCart(
         !it._placeholder
       ).length;
 
+      // Mini harita ve rota render
       if (realPoints === 1) {
         if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
           delete window.__suppressMiniUntilFirstPoint[day];
@@ -2107,20 +2088,21 @@ function addToCart(
         ensureDayMapContainer(day);
         const mini = document.getElementById(`route-map-day${day}`);
         if (mini) mini.classList.remove('mini-suppressed');
-        if (typeof renderRouteForDay === 'function') {
-          setTimeout(() => renderRouteForDay(day), 0);
-        }
+        if (typeof renderRouteForDay === 'function') setTimeout(() => renderRouteForDay(day), 0);
       } else if (realPoints > 1) {
-        if (typeof renderRouteForDay === 'function') {
-          setTimeout(() => renderRouteForDay(day), 0);
-        }
+        if (typeof renderRouteForDay === 'function') setTimeout(() => renderRouteForDay(day), 0);
       }
+
+      // --- Polyline hızlandırma önerisi ---
+      // Burada debounce ile polyline hesaplamasını hızlandırabilirsin!
+      // Örneğin:
+      // debounceRoute(day, window.cart.filter(i => i.day === day && i.location), updatePolylineForDay);
     }
   } catch (e) {
     console.warn('[mini map first point]', e);
   }
 
-  // ---- 8) UI güncellemesi
+  // 9) UI güncellemesi
   if (!silent) {
     if (typeof updateCart === "function") updateCart();
     if (!skipRender && typeof renderRouteForDay === "function") {
@@ -2128,7 +2110,7 @@ function addToCart(
     }
   }
 
-  // ---- 9) Sidebar aç (mobil)
+  // 10) Sidebar aç (mobil)
   if (!silent && typeof openSidebar === 'function') {
     openSidebar();
     if (window.innerWidth <= 768) {
@@ -2137,7 +2119,7 @@ function addToCart(
     }
   }
 
-  // ---- 10) Drag-drop vb. ek entegrasyonlar
+  // 11) Drag-drop vb. ek entegrasyonlar
   if (!silent && typeof attachChatDropListeners === 'function') {
     attachChatDropListeners();
   }
@@ -2147,15 +2129,13 @@ function addToCart(
     fitExpandedMapToRoute(resolvedDay);
   }
 
-  // ---- 11) Otomatik kaydet: silent değilse!
+  // 12) Otomatik kaydet: silent değilse!
   if (!silent && typeof saveTripAfterRoutes === "function") {
     saveTripAfterRoutes();
   }
 
   return true;
 }
-
-
 
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
