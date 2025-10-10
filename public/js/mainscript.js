@@ -3304,7 +3304,7 @@ function restoreLostDayMaps() {
 
 /* ================== END PATCH ================== */
 // Gün 1 için kullanılan global başlatıcıda da bayrağı set edin
-startMapPlanning() {
+function startMapPlanning() {
   window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
   window.__hideStartMapButtonByDay[1] = true;
   window.__hideAddCatBtnByDay[1] = true;;
