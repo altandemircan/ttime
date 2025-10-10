@@ -150,16 +150,20 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
   }
-
-  let tripTitle = (
+let tripTitle;
+if (window.__startedWithMapFlag) {
+  tripTitle = getNextTripTitle();
+} else {
+  tripTitle = (
     (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
       ? getAllSavedTrips()[window.activeTripKey].title
       : (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
         ? window.lastUserQuery.trim()
         : (window.cart && window.cart.length > 0 && window.cart[0].title)
           ? window.cart[0].title
-          : getNextTripTitle()
+          : "My Trip"
   );
+}
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     tripTitle = `${window.selectedCity} trip plan`;
   }
@@ -216,9 +220,7 @@ async function saveCurrentTripToStorageWithThumbnailDelay() {
     saveTripAfterRoutes();
  }
 function getNextTripTitle() {
-  // Tüm kayıtlı tripleri al
   const trips = getAllSavedTrips();
-  // Sadece "My Trip" ile başlayanları bul ve say
   let maxNum = 0;
   Object.values(trips).forEach(t => {
     const m = String(t.title || '').match(/^My Trip(?: #(\d+))?$/);
@@ -227,7 +229,6 @@ function getNextTripTitle() {
       if (num > maxNum) maxNum = num;
     }
   });
-  // Yeni trip için bir sonraki numarayı ata
   const nextNum = maxNum + 1;
   return nextNum === 1 ? "My Trip" : `My Trip #${nextNum}`;
 }
