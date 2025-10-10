@@ -3960,8 +3960,11 @@ if (
   dayItemsArr.length === 1 &&
   !hideAddCat
 ) {
+  // SADECE start with map modunda ve o güne henüz haritadan nokta eklenmediyse gizle
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+if (!hideAddCat) {
   cartDiv.appendChild(addMoreButton);
-}
+}}
   }); // days.forEach sonu
 
   // 3) + Add New Day
