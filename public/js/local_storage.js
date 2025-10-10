@@ -46,9 +46,9 @@ function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
 
   // ROTAYA KARIŞMA - İster noktaları, ister directions polyline'ı kullanırsın!
   const pts = getPointsFromTrip(trip, day);
-  const polyline = (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day]))
-    ? trip.directionsPolylines[day]
-    : pts;
+  const polyline = (window.directionsPolylines && window.directionsPolylines[day] && Array.isArray(window.directionsPolylines[day]))
+  ? window.directionsPolylines[day]
+  : pts;
   if (!polyline || polyline.length < 2) return null;
 
   const lats = polyline.map(p => p.lat);
