@@ -3923,24 +3923,27 @@ function updateCart() {
   addNewDayHr.className = 'add-new-day-separator';
   cartDiv.appendChild(addNewDayHr);
 
-  // + Add Category butonu (her zaman Add New Day'in hemen üstünde)
-  // (Son günün day'ını kullanıyoruz!)
-  const lastDay = days[days.length - 1];
-  const addMoreButton = document.createElement("button");
-  addMoreButton.className = "add-more-btn";
-  addMoreButton.textContent = "+ Add Category";
-  addMoreButton.dataset.day = lastDay;
-  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-  const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[lastDay];
-  if (!hideAddCat) cartDiv.appendChild(addMoreButton);
+ const lastDay = days[days.length - 1];
+const addMoreButton = document.createElement("button");
+addMoreButton.className = "add-more-btn";
+addMoreButton.textContent = "+ Add Category";
+addMoreButton.dataset.day = lastDay;
+addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[lastDay];
+if (!hideAddCat) cartDiv.appendChild(addMoreButton);
 
-  // + Add New Day butonu
-  const addNewDayButton = document.createElement("button");
-  addNewDayButton.className = "add-new-day-btn";
-  addNewDayButton.id = "add-new-day-button";
-  addNewDayButton.textContent = "+ Add New Day";
-  addNewDayButton.onclick = function () { addNewDay(this); };
-  cartDiv.appendChild(addNewDayButton);
+// Sonra separator
+const addNewDayHr = document.createElement('hr');
+addNewDayHr.className = 'add-new-day-separator';
+cartDiv.appendChild(addNewDayHr);
+
+// Sonra Add New Day butonu
+const addNewDayButton = document.createElement("button");
+addNewDayButton.className = "add-new-day-btn";
+addNewDayButton.id = "add-new-day-button";
+addNewDayButton.textContent = "+ Add New Day";
+addNewDayButton.onclick = function () { addNewDay(this); };
+cartDiv.appendChild(addNewDayButton);
 
   // Sayaç / butonlar
   const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
