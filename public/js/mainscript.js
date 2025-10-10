@@ -3736,8 +3736,8 @@ function updateCart() {
       let lastCoordItem = null;
       let lastCoordIdx = null;
       for (let idx = 0; idx < dayItemsArr.length; idx++) {
-        const item = dayItemsArr[idx];
-        const currIdx = globalIndexMap.get(item);
+  const item = dayItemsArr[idx];
+  const currIdx = globalIndexMap.get(item);
         if (
           lastCoordItem &&
           lastCoordItem.location && item.location &&
@@ -3773,7 +3773,6 @@ function updateCart() {
         const li = document.createElement("li");
         li.className = "travel-item";
         li.draggable = true;
-        const currIdx = globalIndexMap.get(item);
 li.dataset.index = currIdx;        if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
           li.setAttribute("data-lat", item.location.lat);
           li.setAttribute("data-lon", item.location.lng);
