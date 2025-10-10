@@ -13,22 +13,18 @@ async function saveTripAfterRoutes() {
   if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
 // Helper: how many valid points does this day have?
-function countPointsForDay(day) {
-  try {
-    return (window.cart || []).filter(
-      it =>
-        it.day == day &&
-        it.location &&
-        typeof it.location.lat === "number" &&
-        typeof it.location.lng === "number" &&
-        !Number.isNaN(it.location.lat) &&
-        !Number.isNaN(it.location.lng)
-    ).length;
-  } catch {
-    return 0;
-  }
+function countPointsForDay(day, trip = null) {
+  const useTrip = trip || { cart: window.cart || [] };
+  return (useTrip.cart || []).filter(
+    it =>
+      it.day == day &&
+      it.location &&
+      typeof it.location.lat === "number" &&
+      typeof it.location.lng === "number" &&
+      !Number.isNaN(it.location.lat) &&
+      !Number.isNaN(it.location.lng)
+  ).length;
 }
-
 // Yardımcı: bir thumbnail URL'si placeholder mı?
 function isPlaceholderThumb(u) {
   return !u || typeof u !== 'string' || u.includes('img/placeholder');
@@ -212,16 +208,16 @@ console.log("tripObj.directionsPolylines", JSON.stringify(tripObj.directionsPoly
                           }
                         }
   // 5. Thumbnail üretimi
-  const thumbnails = {};
-  const days = tripObj.days;
-  for (let day = 1; day <= days; day++) {
-    if (withThumbnail && countPointsForDay(day) >= 2) {
-      thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
-    } else {
-      thumbnails[day] = "img/placeholder.png";
-    }
+const thumbnails = {};
+const days = tripObj.days;
+for (let day = 1; day <= days; day++) {
+  if (withThumbnail && countPointsForDay(day, tripObj) >= 2) {
+    thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
+  } else {
+    thumbnails[day] = "img/placeholder.png";
   }
-  tripObj.thumbnails = thumbnails;
+}
+tripObj.thumbnails = thumbnails;
 
   // 6. Favori durumu kopyala
   tripObj.favorite =
