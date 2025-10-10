@@ -3958,7 +3958,7 @@ addMoreButton.onclick = function () {
 };
 
 // SADECE BU KOŞUL: GÜNDE TEK 1 GERÇEK ITEM VARSA ve şehir seçiliyse
-if (dayItemsArr.length === 1 && window.selectedCity && window.selectedLocationLocked) {
+if (dayItemsArr.length === 1 && window.selectedCity) {
   dayContainer.appendChild(addMoreButton);
 }
   }); // days.forEach sonu
