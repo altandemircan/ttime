@@ -265,7 +265,7 @@ function getAllSavedTrips() {
     const trips = JSON.parse(raw);
     if (!trips || typeof trips !== "object") return {};
     return trips;
-  } catch (e) {
+  } catch(e) {
     return {};
   }
 }
