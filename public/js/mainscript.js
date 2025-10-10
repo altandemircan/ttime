@@ -1,5 +1,4 @@
 window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
-let currIdx = globalIndexMap.get(item);
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
 window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
