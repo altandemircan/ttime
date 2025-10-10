@@ -974,9 +974,7 @@ window.lastUserQuery = `${location} trip plan`;
     if (latestTripPlan && latestTripPlan.length > 0) {
       window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
       window.cart = JSON.parse(JSON.stringify(latestTripPlan));
-          saveTripAfterRoutes();
-
-
+   
       showResults();
       updateTripTitle();
 
