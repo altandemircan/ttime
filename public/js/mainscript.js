@@ -2088,6 +2088,7 @@ function addToCart(
     addedAt: new Date().toISOString()
   };
 
+  window.cart.push(newItem);
 
 try {
   if (!newItem._starter && newItem.location) {
@@ -3002,7 +3003,7 @@ function handleSuggestionClick(suggestion, imgUrl, day) {
     };
     // Çift ekleme engeli
     if (!window.cart.some(item => item.place_id === newItem.place_id && item.day === newItem.day)) {
-        window.cart.push(newItem);
+        
         updateCart();
     }
     // Feedback ve input temizleme
