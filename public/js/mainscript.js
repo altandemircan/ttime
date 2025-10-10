@@ -3918,11 +3918,6 @@ function updateCart() {
     cartDiv.appendChild(dayContainer);
   });
 
-  // + Add New Day separator
-  const addNewDayHr = document.createElement('hr');
-  addNewDayHr.className = 'add-new-day-separator';
-  cartDiv.appendChild(addNewDayHr);
-
  const lastDay = days[days.length - 1];
 const addMoreButton = document.createElement("button");
 addMoreButton.className = "add-more-btn";
