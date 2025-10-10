@@ -950,8 +950,7 @@ const { location, days } = parsePlanRequest(raw);
 window.lastUserQuery = `${location} trip plan`;
 
   try {
-    // Mevcut parse fonksiyonunu kullanıyoruz
-    const { location, days } = parsePlanRequest(raw);
+
 
     // parsePlanRequest beklenen alanları çıkaramadıysa
     if (!location || !days || isNaN(days)) {
@@ -2153,6 +2152,11 @@ try {
                 }
                 return true;
                 }
+if (typeof updateCart === "function") updateCart();
+if (typeof saveTripAfterRoutes === "function") saveTripAfterRoutes();
+
+
+                
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
 
