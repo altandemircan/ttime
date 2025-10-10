@@ -3949,8 +3949,16 @@ if (realPointCount === 0) {
     addMoreButton.className = "add-more-btn";
     addMoreButton.textContent = "+ Add Category";
     addMoreButton.dataset.day = day;
-    addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-    cartDiv.appendChild(addMoreButton);
+            addMoreButton.onclick = function () {
+              if (!window.selectedCity || !window.selectedLocationLocked) {
+                alert("Lütfen önce bir şehir/konum seçin.");
+                return;
+              }
+              showCategoryList(this.dataset.day);
+            };    
+            if (window.selectedCity && window.selectedLocationLocked) {
+            cartDiv.appendChild(addMoreButton);
+          }
   }); // days.forEach sonu
 
   // 3) + Add New Day
