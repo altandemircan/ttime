@@ -1395,6 +1395,8 @@ async function showResults() {
             }
             return { ...item, location: loc };
         });
+        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
     }
 
     const chatBox = document.getElementById("chat-box");
@@ -2134,10 +2136,11 @@ console.log('Yeni item eklendi:', newItem);
   if (!silent && typeof saveTripAfterRoutes === "function") {
     saveTripAfterRoutes();
   }
-localStorage.setItem('cart', JSON.stringify(window.cart));
+
 
   return true;
    if (typeof updateCart === "function") updateCart();
+if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
 }
 
@@ -2330,17 +2333,18 @@ function removeFromCart(index) {
   const removedDay = removed && removed.day;
 
   window.cart.splice(index, 1);
-  localStorage.setItem('cart', JSON.stringify(window.cart));
-
 
   // Sepet tamamen boşaldıysa cleanup
   if (window.cart.length === 0) {
-  localStorage.removeItem('cart');
-  if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
-  if (typeof clearAllRouteCaches === 'function') clearAllRouteCaches();
-  updateCart();
-  return;
-}
+    localStorage.removeItem('cart');
+    if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
+    if (typeof clearAllRouteCaches === 'function') clearAllRouteCaches();
+    updateCart();
+    // EKLE:
+    if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+    return;
+  }
+
   updateCart();
 
   // Silinen günün noktası 2'den azsa, temizlik yap
@@ -2361,6 +2365,9 @@ function removeFromCart(index) {
     const days = [...new Set(window.cart.map(i => i.day))];
     days.forEach(d => setTimeout(() => renderRouteForDay(d), 0));
   }
+
+  // ---- BURAYA EKLE ----
+  if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 }
 
 function addItem(element, day, category, name, image, extra) {
