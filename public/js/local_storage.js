@@ -254,8 +254,9 @@ function safeParseTrips() {
 function getAllSavedTrips() {
   try {
     const raw = localStorage.getItem(TRIP_STORAGE_KEY);
-    if (!raw || raw === "undefined") return {};
-    const trips = JSON.parse(raw);
+let trips = {};
+if (!raw || raw === "undefined" || raw === "") trips = {};
+else trips = JSON.parse(raw);
     if (!trips || typeof trips !== "object") return {};
     return trips;
   } catch (e) {
