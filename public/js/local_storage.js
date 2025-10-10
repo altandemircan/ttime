@@ -169,13 +169,12 @@ tripTitle = `${window.selectedCity} trip plan`;
 
   // 2. Duplicate kontrolü: Aynı başlık, tarih ve cart içeriği zaten varsa tekrar kaydetme!
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
-  const isDuplicate = Object.values(trips).some(t =>
-    t.title === tripTitle &&
-    t.date === tripDate &&
-    JSON.stringify(t.cart) === JSON.stringify(window.cart)
-  );
-  if (isDuplicate) return;
-
+  // const isDuplicate = Object.values(trips).some(t =>
+//   t.title === tripTitle &&
+//   t.date === tripDate &&
+//   JSON.stringify(t.cart) === JSON.stringify(window.cart)
+// );
+// if (isDuplicate) return;
   // 3. Benzersiz anahtar (timestamp ile)
                 let tripKey;
                 if (window.activeTripKey) {
