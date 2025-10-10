@@ -158,7 +158,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
         ? window.lastUserQuery.trim()
         : (window.cart && window.cart.length > 0 && window.cart[0].title)
           ? window.cart[0].title
-          : "My Trip"
+          : getNextTripTitle()
   );
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     tripTitle = `${window.selectedCity} trip plan`;
@@ -215,7 +215,22 @@ async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
     saveTripAfterRoutes();
  }
-
+function getNextTripTitle() {
+  // Tüm kayıtlı tripleri al
+  const trips = getAllSavedTrips();
+  // Sadece "My Trip" ile başlayanları bul ve say
+  let maxNum = 0;
+  Object.values(trips).forEach(t => {
+    const m = String(t.title || '').match(/^My Trip(?: #(\d+))?$/);
+    if (m) {
+      const num = m[1] ? parseInt(m[1], 10) : 1;
+      if (num > maxNum) maxNum = num;
+    }
+  });
+  // Yeni trip için bir sonraki numarayı ata
+  const nextNum = maxNum + 1;
+  return nextNum === 1 ? "My Trip" : `My Trip #${nextNum}`;
+}
 function patchCartLocations() {
     window.cart.forEach(function(item) {
         // Eğer item.location yok ama lat/lon var ise location ekle
