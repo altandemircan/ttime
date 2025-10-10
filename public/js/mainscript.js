@@ -3955,16 +3955,15 @@ addMoreButton.className = "add-more-btn";
 addMoreButton.textContent = "+ Add Category";
 addMoreButton.dataset.day = day;
 addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-if (
-  dayItemsArr.length === 1 &&
-  !hideAddCat
-) {
-  // SADECE start with map modunda ve o güne henüz haritadan nokta eklenmediyse gizle
+
+// Sadece 'start with map' modunda, haritadan henüz nokta eklenmemişse gizle.
+// Diğer tüm durumlarda buton HER ZAMAN görünsün.
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 if (!hideAddCat) {
   cartDiv.appendChild(addMoreButton);
-}}
+}
+
+
   }); // days.forEach sonu
 
   // 3) + Add New Day
