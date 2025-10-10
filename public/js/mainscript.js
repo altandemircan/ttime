@@ -7142,22 +7142,21 @@ window.lastRouteGeojsons[containerId] = routeData.geojson;
 window.lastRouteSummaries = window.lastRouteSummaries || {};
 window.lastRouteSummaries[containerId] = routeData.summary;
 
-                // EKLE ↓↓↓↓↓↓↓↓
-                window.directionsPolylines = window.directionsPolylines || {};
-                if (routeData && Array.isArray(routeData.coords) && routeData.coords.length > 1) {
-                  window.directionsPolylines[day] = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
-                  // DEBUG:
-                  console.log('Polyline güncellendi:', day, window.directionsPolylines[day]);
-                } else {
-                  // API başarısız döndüyse eski polyline'ı silme!
-                  if (!window.directionsPolylines[day]) {
-                    const pts = getDayPoints(day);
-                    if (pts.length >= 2) {
-                      window.directionsPolylines[day] = pts;
-                      console.log('Polyline fallback:', day, pts);
-                    }
+               window.directionsPolylines = window.directionsPolylines || {};
+              if (routeData && Array.isArray(routeData.coords) && routeData.coords.length > 1) {
+                window.directionsPolylines[day] = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
+                // DEBUG:
+                console.log('Polyline güncellendi:', day, window.directionsPolylines[day]);
+              } else {
+                // API başarısız döndüyse eski polyline'ı silme!
+                if (!window.directionsPolylines[day]) {
+                  const pts = getDayPoints(day);
+                  if (pts.length >= 2) {
+                    window.directionsPolylines[day] = pts;
+                    console.log('Polyline fallback:', day, pts);
                   }
                 }
+              }
 
   renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
 
