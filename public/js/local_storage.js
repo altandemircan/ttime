@@ -242,17 +242,17 @@ function patchCartLocations() {
 }
 
 
-// 2. Tüm gezileri getir
 function getAllSavedTrips() {
     try {
-        const trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY));
+        const raw = localStorage.getItem(TRIP_STORAGE_KEY);
+        if (!raw) return {};
+        const trips = JSON.parse(raw);
         if (!trips || typeof trips !== "object") return {};
         return trips;
     } catch(e) {
         return {};
     }
-}   
-
+}
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
       window.activeTripKey = tripKey;
