@@ -170,8 +170,6 @@ tripTitle = `${window.selectedCity} trip plan`;
                   tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
                 }
 
-  // 4. Trip objesi
-// 4. Trip objesi
 const tripObj = {
   title: tripTitle,
   date: tripDate,
@@ -184,7 +182,7 @@ const tripObj = {
   selectedCity: window.selectedCity || "",
   updatedAt: Date.now(),
   key: tripKey,
-  directionsPolylines: JSON.parse(JSON.stringify(window.directionsPolylines)), // <-- BURAYI değiştirdik!
+  directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
 };
 
 // <<< BURAYA EKLE!
