@@ -2,6 +2,7 @@
 window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
+window.__mapCategoryUnlockedByDay = window.__mapCategoryUnlockedByDay || {};
 
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
@@ -3518,6 +3519,8 @@ function attachMapClickAddMode(day) {
         '',
         { forceDay: day } // garanti
       );
+      window.__mapCategoryUnlockedByDay[day] = true;
+
 
       // Marker çiz
       const marker = L.circleMarker([lat, lng], {
