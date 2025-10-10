@@ -6,9 +6,9 @@ async function saveTripAfterRoutes() {
       await renderRouteForDay(day);
     }
   }
-  // POLYLINE gerçekten oluştu mu bak!
-  console.log("AFTER ROUTES: window.directionsPolylines", JSON.stringify(window.directionsPolylines));
-  await new Promise(res => setTimeout(res, 800)); // 800ms gecikme, API'nın bitmesi için
+  // --- POLYLINE SYNC HACK: window.directionsPolylines'ın gerçekten dolduğundan EMİN ol ---
+  await new Promise(res => setTimeout(res, 400)); // 400ms bekle
+  console.log("FORCE POLYLINE SYNC", JSON.stringify(window.directionsPolylines));
   await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
   if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
@@ -141,12 +141,11 @@ function safeParse(jsonStr) {
   try { return JSON.parse(jsonStr); } catch { return null; }
 }
 
-// GÜNCELLEME: Unique key için timestamp ve duplicate kontrolü, tek fonksiyon!
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
+  window.directionsPolylines = window.directionsPolylines || {};
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
   }
-
               // 1. Başlık ve Tarih
                let tripTitle =
                 (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
