@@ -3967,6 +3967,7 @@ if (realPointCount === 0) {
   if (realPointCount === 1) initEmptyDayMap(day);
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
+
 // Gün container'ı sepete ekle
 cartDiv.appendChild(dayContainer);
 
