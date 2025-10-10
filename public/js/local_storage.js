@@ -779,3 +779,28 @@ async function updateAllTripThumbnailsWithPolyline() {
   }
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
 }
+
+
+// Debounce fonksiyonu (örnek)
+let lastRouteRequest = {};
+function debounceRoute(day, points, cb, delay = 600) {
+  if (lastRouteRequest[day]) clearTimeout(lastRouteRequest[day]);
+  lastRouteRequest[day] = setTimeout(() => cb(points), delay);
+}
+
+// Polyline çizim fonksiyonu
+function updatePolylineForDay(day, points) {
+  // 2'den az nokta varsa polyline yok
+  if (points.length < 2) return;
+  // Önce yerel çizgi çiz (kullanıcıyı bekletme)
+  window.directionsPolylines[day] = points.map(p => ({ lat: p.lat, lng: p.lng }));
+  // API'dan gerçek polyline alınacaksa:
+  fetchDirectionsPolylineAPI(points).then(apiPolyline => {
+    window.directionsPolylines[day] = apiPolyline;
+    // Haritayı/thumbnaili güncelle!
+    renderRouteForDay(day);
+  });
+}
+
+// Kullanımı:
+debounceRoute(day, points, updatePolylineForDay);
