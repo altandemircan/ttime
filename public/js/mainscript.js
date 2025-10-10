@@ -3941,26 +3941,25 @@ if (realPointCount === 0) {
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
 
-    // Gün container'ı sepete ekle
-    cartDiv.appendChild(dayContainer);
+// Gün container'ı sepete ekle
+cartDiv.appendChild(dayContainer);
 
-    // + Add Category butonu
-    const addMoreButton = document.createElement("button");
-    addMoreButton.className = "add-more-btn";
-    addMoreButton.textContent = "+ Add Category";
-    addMoreButton.dataset.day = day;
-            addMoreButton.onclick = function () {
-              if (!window.selectedCity || !window.selectedLocationLocked) {
-                alert("Lütfen önce bir şehir/konum seçin.");
-                return;
-              }
-              showCategoryList(this.dataset.day);
-            };    
-          // Sadece gün BOŞ DEĞİLSE ve şehir seçiliyse göster!
+// + Add Category butonu
+const addMoreButton = document.createElement("button");
+addMoreButton.className = "add-more-btn";
+addMoreButton.textContent = "+ Add Category";
+addMoreButton.dataset.day = day;
+addMoreButton.onclick = function () {
+  if (!window.selectedCity || !window.selectedLocationLocked) {
+    alert("Lütfen önce bir şehir/konum seçin.");
+    return;
+  }
+  showCategoryList(this.dataset.day);
+};
+// Sadece gün BOŞ DEĞİLSE ve şehir seçiliyse GÜN BLOĞUNUN SONUNA ekle!
 if (!isEmptyDay && window.selectedCity && window.selectedLocationLocked) {
-  cartDiv.appendChild(addMoreButton);
+  dayContainer.appendChild(addMoreButton);
 }
-  }); // days.forEach sonu
 
   // 3) + Add New Day
   const addNewDayHr = document.createElement('hr');
