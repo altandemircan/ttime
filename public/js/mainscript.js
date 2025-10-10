@@ -3956,9 +3956,10 @@ if (realPointCount === 0) {
               }
               showCategoryList(this.dataset.day);
             };    
-            if (window.selectedCity && window.selectedLocationLocked) {
-            cartDiv.appendChild(addMoreButton);
-          }
+          // Sadece gün BOŞ DEĞİLSE ve şehir seçiliyse göster!
+if (!isEmptyDay && window.selectedCity && window.selectedLocationLocked) {
+  cartDiv.appendChild(addMoreButton);
+}
   }); // days.forEach sonu
 
   // 3) + Add New Day
