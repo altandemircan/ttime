@@ -224,9 +224,20 @@ console.log("tripObj.directionsPolylines", JSON.stringify(tripObj.directionsPoly
 
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
-    saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
+    saveTripAfterRoutes();
  }
-
+async function saveTripAfterRoutes() {
+  // Kaç gün varsa, önce hepsinin rotasını çiz
+  const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
+  for (let day = 1; day <= maxDay; day++) {
+    if (typeof renderRouteForDay === "function") {
+      await renderRouteForDay(day);
+    }
+  }
+  // Sonra kaydet ve paneli güncelle
+  await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
+  if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
+}
 function patchCartLocations() {
     window.cart.forEach(function(item) {
         // Eğer item.location yok ama lat/lon var ise location ekle
@@ -299,7 +310,7 @@ window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.string
     for (let day = 1; day <= maxDay; day++) {
         await renderRouteForDay(day);
     }
-    saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
+    saveTripAfterRoutes();
 }, 0);
     return true;
 }   
@@ -700,20 +711,20 @@ if (!window.__trip_autosave_hooked) {
   window.updateCart = function() {
     if (typeof origUpdateCart === "function") origUpdateCart.apply(this, arguments);
     // Hemen kaydetmek yerine haritanın oturmasını bekle
-saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
+saveTripAfterRoutes();
   };
   if (typeof window.showResults === "function") {
     const origShowResults = window.showResults;
     window.showResults = function() {
       if (typeof origShowResults === "function") origShowResults.apply(this, arguments);
-saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
+saveTripAfterRoutes();
     };
   }
   if (typeof window.saveDayName === "function") {
     const origSaveDayName = window.saveDayName;
     window.saveDayName = function(day, newName) {
       if (typeof origSaveDayName === "function") origSaveDayName.apply(this, arguments);
-saveCurrentTripToStorage({ withThumbnail: true, delayMs: 1200 }).then(renderMyTripsPanel);
+saveTripAfterRoutes();
     };
   }
   window.__trip_autosave_hooked = true;
