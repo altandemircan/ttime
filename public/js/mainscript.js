@@ -3918,7 +3918,7 @@ function updateCart() {
 
 dayContainer.appendChild(dayList);
 
-// --- MAP LOGIC (final + force empty map desteği) ---
+// --- MAP LOGIC ---
 window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
 const realPointCount = dayItemsArr.filter(it =>
   it.location &&
@@ -3944,32 +3944,52 @@ if (realPointCount === 0) {
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
 
-// Gün container'ı sepete ekle
+// GÜNÜ CART'A EKLE (önce harita ve kontroller dayContainer'da olmalı)
 cartDiv.appendChild(dayContainer);
 
-// ----- AŞAĞIDAKİ BLOĞU KULLAN -----
-
-// + Add New Day separator
-const addNewDayHr = document.createElement('hr');
-addNewDayHr.className = 'add-new-day-separator';
-cartDiv.appendChild(addNewDayHr);
-
-// + Add Category butonu (Add New Day'in ÜSTÜNE!)
+// + Add Category butonu
 const addMoreButton = document.createElement("button");
 addMoreButton.className = "add-more-btn";
 addMoreButton.textContent = "+ Add Category";
 addMoreButton.dataset.day = day;
 addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-if (!hideAddCat) cartDiv.appendChild(addMoreButton);
 
-// + Add New Day butonu
-const addNewDayButton = document.createElement("button");
-addNewDayButton.className = "add-new-day-btn";
-addNewDayButton.id = "add-new-day-button";
-addNewDayButton.textContent = "+ Add New Day";
-addNewDayButton.onclick = function () { addNewDay(this); };
-cartDiv.appendChild(addNewDayButton);
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+if (!hideAddCat) {
+  // Harita ve info'dan hemen sonra ekle!
+  const infoDiv = dayContainer.querySelector(`#route-info-day${day}`);
+  if (infoDiv) {
+    infoDiv.insertAdjacentElement('afterend', addMoreButton);
+  } else {
+    const travelModeDiv = dayContainer.querySelector(`#tt-travel-mode-set-day${day}`);
+    if (travelModeDiv) {
+      travelModeDiv.insertAdjacentElement('afterend', addMoreButton);
+    } else {
+      const routeMapDiv = dayContainer.querySelector(`#route-map-day${day}`);
+      if (routeMapDiv) {
+        routeMapDiv.insertAdjacentElement('afterend', addMoreButton);
+      } else {
+        dayContainer.appendChild(addMoreButton);
+      }
+    }
+  }
+  console.log("Add Category EKLENİYOR!", day);
+} else {
+  console.log("Add Category GİZLENİYOR!", day);
+}
+  });
+
+  // 3) + Add New Day
+  const addNewDayHr = document.createElement('hr');
+  addNewDayHr.className = 'add-new-day-separator';
+  cartDiv.appendChild(addNewDayHr);
+
+  const addNewDayButton = document.createElement("button");
+  addNewDayButton.className = "add-new-day-btn";
+  addNewDayButton.id = "add-new-day-button";
+  addNewDayButton.textContent = "+ Add New Day";
+  addNewDayButton.onclick = function () { addNewDay(this); };
+  cartDiv.appendChild(addNewDayButton);
 
   // 4) Sayaç / butonlar
   const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
