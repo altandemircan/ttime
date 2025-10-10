@@ -3941,26 +3941,16 @@ if (realPointCount === 0) {
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
 
-// Gün container'ı sepete ekle
-cartDiv.appendChild(dayContainer);
+    // Gün container'ı sepete ekle
+    cartDiv.appendChild(dayContainer);
 
-// + Add Category butonu
-const addMoreButton = document.createElement("button");
-addMoreButton.className = "add-more-btn";
-addMoreButton.textContent = "+ Add Category";
-addMoreButton.dataset.day = day;
-addMoreButton.onclick = function () {
-  if (!window.selectedCity || !window.selectedLocationLocked) {
-    alert("Lütfen önce bir şehir/konum seçin.");
-    return;
-  }
-  showCategoryList(this.dataset.day);
-};
-
-// SADECE BU KOŞUL: GÜNDE TEK 1 GERÇEK ITEM VARSA ve şehir seçiliyse
-if (dayItemsArr.length === 1 && window.selectedCity) {
-  dayContainer.appendChild(addMoreButton);
-}
+    // + Add Category butonu
+    const addMoreButton = document.createElement("button");
+    addMoreButton.className = "add-more-btn";
+    addMoreButton.textContent = "+ Add Category";
+    addMoreButton.dataset.day = day;
+    addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+    cartDiv.appendChild(addMoreButton);
   }); // days.forEach sonu
 
   // 3) + Add New Day
