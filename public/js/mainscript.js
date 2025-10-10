@@ -3647,8 +3647,7 @@ function updateCart() {
 
   window._debug_days = days;
   cartDiv.innerHTML = "";
-  const globalIndexMap = new Map();
-  window.cart.forEach((it, idx) => globalIndexMap.set(it, idx));
+
 
   days.forEach(day => {
     const dayItemsArr = window.cart.filter(i =>
@@ -3734,9 +3733,9 @@ function updateCart() {
     } else {
       let lastCoordItem = null;
       let lastCoordIdx = null;
-      for (let idx = 0; idx < dayItemsArr.length; idx++) {
-  const item = dayItemsArr[idx];
-  const currIdx = globalIndexMap.get(item);
+                for (let idx = 0; idx < dayItemsArr.length; idx++) {
+              const item = dayItemsArr[idx];
+              const currIdx = window.cart.indexOf(item);
         if (
           lastCoordItem &&
           lastCoordItem.location && item.location &&
@@ -3772,7 +3771,8 @@ function updateCart() {
         const li = document.createElement("li");
         li.className = "travel-item";
         li.draggable = true;
-li.dataset.index = currIdx;        if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+li.dataset.index = currIdx;        
+if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
           li.setAttribute("data-lat", item.location.lat);
           li.setAttribute("data-lon", item.location.lng);
         }
