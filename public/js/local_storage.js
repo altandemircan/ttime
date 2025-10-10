@@ -797,7 +797,8 @@ async function updateAllTripThumbnailsWithPolyline() {
         // NOT: Bu örnekte sadece noktaları düz çizgiyle birleştiriyor
         // Gerçek directions için backend veya API çağrısı gerek!
         const pts = getPointsFromTrip(trip, day);
-        trip.directionsPolylines[day] = pts; // DÜZ ÇİZGİ (YAPILANDIĞI GİBİ)
+        trip.directionsPolylines[day] = polyline;
+ // DÜZ ÇİZGİ (YAPILANDIĞI GİBİ)
         updated = true;
       }
     }
