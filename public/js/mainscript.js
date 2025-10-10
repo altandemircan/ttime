@@ -2090,40 +2090,45 @@ function addToCart(
 
   window.cart.push(newItem);
 
-  try {
-    if (!newItem._starter && newItem.location) {
-      const day = newItem.day;
-      const realPoints = window.cart.filter(it =>
-        it.day === day &&
-        it.location &&
-        !it._starter &&
-        !it._placeholder
-      ).length;
-
-      if (realPoints === 1) {
-        if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
-          delete window.__suppressMiniUntilFirstPoint[day];
-        }
-        ensureDayMapContainer(day);
-        const mini = document.getElementById(`route-map-day${day}`);
-        if (mini) mini.classList.remove('mini-suppressed');
-        if (typeof renderRouteForDay === 'function') {
-          setTimeout(() => renderRouteForDay(day), 0);
-        }
-      } else if (realPoints > 1) {
-        if (typeof renderRouteForDay === 'function') {
-          setTimeout(() => renderRouteForDay(day), 0);
-        }
+try {
+  if (!newItem._starter && newItem.location) {
+    const day = newItem.day;
+    const realPoints = window.cart.filter(it =>
+      it.day === day &&
+      it.location &&
+      !it._starter &&
+      !it._placeholder
+    ).length;
+ 
+    if (realPoints === 1) {
+      if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
+        delete window.__suppressMiniUntilFirstPoint[day];
+      }
+      ensureDayMapContainer(day);
+      const mini = document.getElementById(`route-map-day${day}`);
+      if (mini) mini.classList.remove('mini-suppressed');
+      if (typeof renderRouteForDay === 'function') {
+        setTimeout(() => renderRouteForDay(day), 0);
+      }
+    } else if (realPoints > 1) {
+      if (typeof renderRouteForDay === 'function') {
+        setTimeout(() => renderRouteForDay(day), 0);
       }
     }
-  } catch (e) {
-    console.warn('[mini map first point]', e);
   }
-
+} catch (e) {
+  console.warn('[mini map first point]', e);
+}
   // ---- 8) UI güncellemesi
+  // silent = true ise hiçbir şey yapma (batch import için)
   if (!silent) {
-    if (typeof updateCart === "function") updateCart();
+    if (typeof updateCart === "function") {
+      updateCart(); // Gün & map container yenilensin
+    }
+
+    // skipRender değilse rota/haritayı güncelle (0-1-2+ senaryosunu hallediyor)
     if (!skipRender && typeof renderRouteForDay === "function") {
+      // DOM güncellemeleri bitti & Leaflet detach riskini azalt
       setTimeout(() => renderRouteForDay(resolvedDay), 0);
     }
   }
@@ -2141,19 +2146,14 @@ function addToCart(
   if (!silent && typeof attachChatDropListeners === 'function') {
     attachChatDropListeners();
   }
+                if (window.expandedMaps) {
+                  clearRouteSegmentHighlight(resolvedDay);
+                  fitExpandedMapToRoute(resolvedDay);
+                }
+                return true;
+                }
 
-  if (window.expandedMaps) {
-    clearRouteSegmentHighlight(resolvedDay);
-    fitExpandedMapToRoute(resolvedDay);
-  }
 
-  // ---- 11) Otomatik kaydet: silent değilse!
-  if (!silent && typeof saveTripAfterRoutes === "function") {
-    saveTripAfterRoutes();
-  }
-
-  return true;
-}
 
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
@@ -3003,7 +3003,6 @@ function handleSuggestionClick(suggestion, imgUrl, day) {
     };
     // Çift ekleme engeli
     if (!window.cart.some(item => item.place_id === newItem.place_id && item.day === newItem.day)) {
-        window.cart.push(newItem);
         updateCart();
     }
     // Feedback ve input temizleme
