@@ -3937,7 +3937,7 @@ function escapeHtml(str) {
   }
 }
 
-   dayContainer.appendChild(dayList);
+ dayContainer.appendChild(dayList);
 
 // --- MAP LOGIC (final + force empty map desteği) ---
 // --- MAP LOGIC (mini harita gecikmeli) ---
@@ -3967,7 +3967,6 @@ if (realPointCount === 0) {
   if (realPointCount === 1) initEmptyDayMap(day);
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
-
 // Gün container'ı sepete ekle
 cartDiv.appendChild(dayContainer);
 
@@ -3978,16 +3977,12 @@ addMoreButton.textContent = "+ Add Category";
 addMoreButton.dataset.day = day;
 addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
 
-// Sadece 'start with map' modunda, haritadan henüz nokta eklenmemişse gizle.
-// Diğer tüm durumlarda buton HER ZAMAN görünsün.
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 if (!hideAddCat) {
-  // Harita varsa, butonu haritanın hemen altına ekle
   const routeMap = dayContainer.querySelector(`#route-map-day${day}`);
   if (routeMap) {
     routeMap.insertAdjacentElement('afterend', addMoreButton);
   } else {
-    // Harita yoksa, günün en sonuna ekle
     dayContainer.appendChild(addMoreButton);
   }
   console.log("Add Category EKLENİYOR!", day);
