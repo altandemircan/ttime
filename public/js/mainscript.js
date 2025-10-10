@@ -1,5 +1,19 @@
 const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];
 const INITIAL_EMPTY_MAP_ZOOM   = 6;
+async function setCityFromFirstPointIfNeeded() {
+  if (!window.cart || window.cart.length === 0) return;
+  const first = window.cart.find(it => it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number");
+  if (!first) return;
+  if (window.selectedCity && window.selectedCity !== "My Trip") return;
+  try {
+    const resp = await fetch(`/api/geoapify/reverse?lat=${first.location.lat}&lon=${first.location.lng}`);
+    const data = await resp.json();
+    const city = data?.features?.[0]?.properties?.city || data?.features?.[0]?.properties?.county || data?.features?.[0]?.properties?.state;
+    if (city) {
+      window.selectedCity = city;
+    }
+  } catch (e) {}
+}
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
 window.__scaleBarDrag = null;
@@ -1496,20 +1510,6 @@ renderMyTripsPanel();s
 }
 
 
-async function setCityFromFirstPointIfNeeded() {
-  if (!window.cart || window.cart.length === 0) return;
-  const first = window.cart.find(it => it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number");
-  if (!first) return;
-  if (window.selectedCity && window.selectedCity !== "My Trip") return;
-  try {
-    const resp = await fetch(`/api/geoapify/reverse?lat=${first.location.lat}&lon=${first.location.lng}`);
-    const data = await resp.json();
-    const city = data?.features?.[0]?.properties?.city || data?.features?.[0]?.properties?.county || data?.features?.[0]?.properties?.state;
-    if (city) {
-      window.selectedCity = city;
-    }
-  } catch (e) {}
-}
 
 
 async function fillAIDescriptionsSeq() {
