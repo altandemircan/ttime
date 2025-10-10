@@ -3947,19 +3947,26 @@ if (realPointCount === 0) {
     // Gün container'ı sepete ekle
     cartDiv.appendChild(dayContainer);
 
-    // + Add Category butonu
-    const addMoreButton = document.createElement("button");
-    addMoreButton.className = "add-more-btn";
-    addMoreButton.textContent = "+ Add Category";
-    addMoreButton.dataset.day = day;
-    addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-    if (
+// updateCart fonksiyonu içinde
+const addMoreButton = document.createElement("button");
+addMoreButton.className = "add-more-btn";
+addMoreButton.textContent = "+ Add Category";
+addMoreButton.dataset.day = day;
+addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+
+// SADECE haritadan gerçek item eklenmişse göster
+if (
     dayItemsArr.length === 1 &&
     dayItemsArr[0].category === "Place" &&
     window.__mapCategoryUnlockedByDay &&
     window.__mapCategoryUnlockedByDay[day]
 ) {
     cartDiv.appendChild(addMoreButton);
+}
+
+// Opsiyonel: hiç item kalmadıysa flag’i sıfırla
+if (dayItemsArr.length === 0 && window.__mapCategoryUnlockedByDay) {
+    window.__mapCategoryUnlockedByDay[day] = false;
 }
 
   }); // days.forEach sonu
