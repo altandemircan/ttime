@@ -3152,8 +3152,7 @@ function saveDayName(day, newName) {
                 }
             }
 
-const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
-const INITIAL_EMPTY_MAP_ZOOM   = 6;             // Önceki 4'ten 2 kademe yakın
+
 /* ---------- Helpers: Ensure Map Container ---------- */
 function ensureDayMapContainer(day) {
   const dayContainer = document.getElementById(`day-container-${day}`);
