@@ -6,10 +6,12 @@ async function saveTripAfterRoutes() {
       await renderRouteForDay(day);
     }
   }
+  // POLYLINE gerçekten oluştu mu bak!
+  console.log("AFTER ROUTES: window.directionsPolylines", JSON.stringify(window.directionsPolylines));
+  await new Promise(res => setTimeout(res, 800)); // 800ms gecikme, API'nın bitmesi için
   await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
   if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
-
 // Helper: how many valid points does this day have?
 function countPointsForDay(day) {
   try {
