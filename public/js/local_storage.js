@@ -1,4 +1,14 @@
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
+async function saveTripAfterRoutes() {
+  const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
+  for (let day = 1; day <= maxDay; day++) {
+    if (typeof renderRouteForDay === "function") {
+      await renderRouteForDay(day);
+    }
+  }
+  await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
+  if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
+}
 
 // Helper: how many valid points does this day have?
 function countPointsForDay(day) {
@@ -40,16 +50,16 @@ function getPointsFromTrip(trip, day) {
     .filter(p => !Number.isNaN(p.lat) && !Number.isNaN(p.lng));
 }
 
-// OFFSCREEN (tilesız) thumbnail üretimi: sadece polyline + nokta daireleri
+// Thumbnail fonksiyonunu DÜZELT:
 function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
     console.log("THUMB POLYLINE", trip.directionsPolylines?.[day]);
 
-  // ROTAYA KARIŞMA - İster noktaları, ister directions polyline'ı kullanırsın!
-  const pts = getPointsFromTrip(trip, day);
-  const polyline = (window.directionsPolylines && window.directionsPolylines[day] && Array.isArray(window.directionsPolylines[day]))
-  ? window.directionsPolylines[day]
-  : pts;
-  if (!polyline || polyline.length < 2) return null;
+    const pts = getPointsFromTrip(trip, day);
+    // SADECE trip.directionsPolylines kullan!
+    const polyline = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
+      ? trip.directionsPolylines[day]
+      : pts;
+    if (!polyline || polyline.length < 2) return null;;
 
   const lats = polyline.map(p => p.lat);
   const lngs = polyline.map(p => p.lng);
@@ -226,18 +236,7 @@ async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
     saveTripAfterRoutes();
  }
-async function saveTripAfterRoutes() {
-  // Kaç gün varsa, önce hepsinin rotasını çiz
-  const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
-  for (let day = 1; day <= maxDay; day++) {
-    if (typeof renderRouteForDay === "function") {
-      await renderRouteForDay(day);
-    }
-  }
-  // Sonra kaydet ve paneli güncelle
-  await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
-  if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
-}
+
 function patchCartLocations() {
     window.cart.forEach(function(item) {
         // Eğer item.location yok ama lat/lon var ise location ekle
