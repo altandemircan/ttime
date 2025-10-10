@@ -163,7 +163,7 @@ function movingAverage(arr, win = 5) {
   });
 }
 
-window.cart = window.cart || [];
+window.cart = JSON.parse(localStorage.getItem('cart')) || [];
 
 // Haversine mesafe (metre)
 function haversine(lat1, lon1, lat2, lon2) {
@@ -2134,6 +2134,7 @@ console.log('Yeni item eklendi:', newItem);
   if (!silent && typeof saveTripAfterRoutes === "function") {
     saveTripAfterRoutes();
   }
+localStorage.setItem('cart', JSON.stringify(window.cart));
 
   return true;
    if (typeof updateCart === "function") updateCart();
@@ -2329,15 +2330,17 @@ function removeFromCart(index) {
   const removedDay = removed && removed.day;
 
   window.cart.splice(index, 1);
+  localStorage.setItem('cart', JSON.stringify(window.cart));
+
 
   // Sepet tamamen boşaldıysa cleanup
   if (window.cart.length === 0) {
-    if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
-    if (typeof clearAllRouteCaches === 'function') clearAllRouteCaches();
-    updateCart();
-    return;
-  }
-
+  localStorage.removeItem('cart');
+  if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
+  if (typeof clearAllRouteCaches === 'function') clearAllRouteCaches();
+  updateCart();
+  return;
+}
   updateCart();
 
   // Silinen günün noktası 2'den azsa, temizlik yap
