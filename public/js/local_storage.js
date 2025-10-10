@@ -131,10 +131,13 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
 
               // 1. Başlık ve Tarih
                let tripTitle =
-  (window.selectedCity && window.selectedCity.trim() && window.selectedCity !== "My Trip")
-    ? `${window.selectedCity} trip plan`
-    : "My Trip";
-
+                (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
+                  ? getAllSavedTrips()[window.activeTripKey].title
+                  : (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
+                    ? window.lastUserQuery.trim()
+                    : (window.cart && window.cart.length > 0 && window.cart[0].title)
+                      ? window.cart[0].title
+                      : "My Trip";
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
 tripTitle = `${window.selectedCity} trip plan`;
@@ -143,22 +146,9 @@ tripTitle = `${window.selectedCity} trip plan`;
     ? window.cart[0].date
     : (new Date()).toISOString().slice(0, 10);
 
-
-
   // 2. Duplicate kontrolü: Aynı başlık, tarih ve cart içeriği zaten varsa tekrar kaydetme!
-let trips = {};
-try {
-  const raw = localStorage.getItem(TRIP_STORAGE_KEY);
-  if (!raw || raw === "undefined" || raw === "") {
-    trips = {};
-  } else {
-    trips = JSON.parse(raw);
-  }
-} catch (e) {
-  trips = {};
-}
-
-
+  let trips = {};
+  try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
   const isDuplicate = Object.values(trips).some(t =>
     t.title === tripTitle &&
     t.date === tripDate &&
@@ -167,9 +157,9 @@ try {
   if (isDuplicate) return;
 
   // 3. Benzersiz anahtar (timestamp ile)
-               let tripKey;
+                let tripKey;
                 if (window.activeTripKey) {
-                  tripKey = window.activeTripKey;
+                  tripKey = window.activeTripKey; // mevcut trip güncelleniyor, key aynı kalsın
                 } else {
                   let timestamp = Date.now();
                   tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
@@ -225,9 +215,8 @@ console.log("tripObj.directionsPolylines", JSON.stringify(tripObj.directionsPoly
       ? trips[tripKey].favorite : false;
 
   // 7. Kaydet!
-trips[tripKey] = tripObj;
-localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
-window.activeTripKey = tripKey;;
+  trips[tripKey] = tripObj;
+  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
 
 async function saveCurrentTripToStorageWithThumbnailDelay() {
@@ -249,26 +238,18 @@ function patchCartLocations() {
     });
 }
 
-function safeParseTrips() {
-  try {
-    const raw = localStorage.getItem(TRIP_STORAGE_KEY);
-    if (!raw || raw === "undefined" || raw === "") return {};
-    return JSON.parse(raw);
-  } catch (e) {
-    return {};
-  }
-}
+
+// 2. Tüm gezileri getir
 function getAllSavedTrips() {
-  try {
-    const raw = localStorage.getItem(TRIP_STORAGE_KEY);
-    if (!raw || raw === "undefined" || raw === "") return {};
-    const trips = JSON.parse(raw);
-    if (!trips || typeof trips !== "object") return {};
-    return trips;
-  } catch(e) {
-    return {};
-  }
-}
+    try {
+        const trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY));
+        if (!trips || typeof trips !== "object") return {};
+        return trips;
+    } catch(e) {
+        return {};
+    }
+}   
+
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
       window.activeTripKey = tripKey;

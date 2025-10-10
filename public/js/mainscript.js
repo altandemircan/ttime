@@ -1,26 +1,7 @@
-const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];
-const INITIAL_EMPTY_MAP_ZOOM   = 6;
-async function setCityFromFirstPointIfNeeded() {
-  if (!window.cart || window.cart.length === 0) return;
-  const first = window.cart.find(it => it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number");
-  if (!first) return;
-  if (window.selectedCity && window.selectedCity !== "My Trip") return;
-  try {
-    const resp = await fetch(`/api/geoapify/reverse?lat=${first.location.lat}&lon=${first.location.lng}`);
-    const data = await resp.json();
-    const city = data?.features?.[0]?.properties?.city || data?.features?.[0]?.properties?.county || data?.features?.[0]?.properties?.state;
-    if (city) {
-      window.selectedCity = city;
-    }
-  } catch (e) {}
-}
-
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
 window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
-
-
 
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
@@ -1506,11 +1487,8 @@ async function showResults() {
 const days = [...new Set(window.cart.map(i => i.day))];
 await Promise.all(days.map(day => renderRouteForDay(day)));
 await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
-renderMyTripsPanel();s
+renderMyTripsPanel();
 }
-
-
-
 
 async function fillAIDescriptionsSeq() {
     const steps = Array.from(document.querySelectorAll('.steps'));
@@ -2166,22 +2144,16 @@ try {
     }
   }
 
-   // ---- 10) Drag-drop vb. ek entegrasyonlar
+  // ---- 10) Drag-drop vb. ek entegrasyonlar
   if (!silent && typeof attachChatDropListeners === 'function') {
     attachChatDropListeners();
   }
-  if (window.expandedMaps) {
-    clearRouteSegmentHighlight(resolvedDay);
-    fitExpandedMapToRoute(resolvedDay);
-  }
-  return true;
-}
-
-// <<< BURAYA EKLE!
-setCityFromFirstPointIfNeeded();
-
-
-
+                if (window.expandedMaps) {
+                  clearRouteSegmentHighlight(resolvedDay);
+                  fitExpandedMapToRoute(resolvedDay);
+                }
+                return true;
+                }
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
 
@@ -3152,7 +3124,8 @@ function saveDayName(day, newName) {
                 }
             }
 
-
+const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
+const INITIAL_EMPTY_MAP_ZOOM   = 6;             // Önceki 4'ten 2 kademe yakın
 /* ---------- Helpers: Ensure Map Container ---------- */
 function ensureDayMapContainer(day) {
   const dayContainer = document.getElementById(`day-container-${day}`);
