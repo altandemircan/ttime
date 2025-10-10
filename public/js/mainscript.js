@@ -3522,9 +3522,16 @@ addToCart(
   '',
   { forceDay: day }
 );
-// Starter fake not silinsin!
+
+// ======= EKLE! =======
+// O güne ait starter not varsa sil
 window.cart = window.cart.filter(it => !(it.day === day && it._starter));
+
+// Add Category butonunu aç
 window.__hideAddCatBtnByDay[day] = false;
+
+// Sonra updateCart çağır
+if (typeof updateCart === "function") updateCart();
 
       // Marker çiz
       const marker = L.circleMarker([lat, lng], {
