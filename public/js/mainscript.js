@@ -3916,54 +3916,52 @@ function updateCart() {
       }
     }
 
-    dayContainer.appendChild(dayList);
+   dayContainer.appendChild(dayList);
 
-    // --- MAP LOGIC ---
-    window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
-    const realPointCount = dayItemsArr.filter(it =>
-      it.location &&
-      typeof it.location.lat === 'number' &&
-      typeof it.location.lng === 'number'
-    ).length;
+// --- MAP LOGIC ---
+window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+const realPointCount = dayItemsArr.filter(it =>
+  it.location &&
+  typeof it.location.lat === 'number' &&
+  typeof it.location.lng === 'number'
+).length;
 
-    const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
+const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
 
-    if (realPointCount === 0) {
-      if (suppress) {
-        ensureDayMapContainer(day);
-        const mini = document.getElementById(`route-map-day${day}`);
-        if (mini) mini.classList.add('mini-suppressed');
-      } else {
-        removeDayMapCompletely(day);
-      }
-    } else {
-      ensureDayMapContainer(day);
-      const mini = document.getElementById(`route-map-day${day}`);
-      if (mini) mini.classList.remove('mini-suppressed');
-      if (realPointCount === 1) initEmptyDayMap(day);
-      if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
-    }
-    cartDiv.appendChild(dayContainer);
+if (realPointCount === 0) {
+  if (suppress) {
+    ensureDayMapContainer(day);
+    const mini = document.getElementById(`route-map-day${day}`);
+    if (mini) mini.classList.add('mini-suppressed');
+  } else {
+    removeDayMapCompletely(day);
+  }
+} else {
+  ensureDayMapContainer(day);
+  const mini = document.getElementById(`route-map-day${day}`);
+  if (mini) mini.classList.remove('mini-suppressed');
+  if (realPointCount === 1) initEmptyDayMap(day);
+  if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
+}
 
-    // + Add Category butonu
-    const addMoreButton = document.createElement("button");
-    addMoreButton.className = "add-more-btn";
-    addMoreButton.textContent = "+ Add Category";
-    addMoreButton.dataset.day = day;
-    addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+// HARİTA VE ALT KONTROLLERİN SONRASINDA EKLEMEK İÇİN:
+cartDiv.appendChild(dayContainer);
 
-    const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-    if (!hideAddCat) {
-      const routeMap = dayContainer.querySelector(`#route-map-day${day}`);
-      if (routeMap) {
-        routeMap.insertAdjacentElement('afterend', addMoreButton);
-      } else {
-        dayContainer.appendChild(addMoreButton);
-      }
-      console.log("Add Category EKLENİYOR!", day);
-    } else {
-      console.log("Add Category GİZLENİYOR!", day);
-    }
+// + Add Category butonu
+const addMoreButton = document.createElement("button");
+addMoreButton.className = "add-more-btn";
+addMoreButton.textContent = "+ Add Category";
+addMoreButton.dataset.day = day;
+addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+
+// Harita ve altındaki kontrollerin SONRASINA ekle:
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+if (!hideAddCat) {
+  dayContainer.appendChild(addMoreButton);
+  console.log("Add Category EKLENİYOR!", day);
+} else {
+  console.log("Add Category GİZLENİYOR!", day);
+}
   });
 
   // 3) + Add New Day
@@ -4049,6 +4047,7 @@ function updateCart() {
       }
     };
   })();
+  
 (function ensureNewChatInsideCart(){
   // Dışarıda eski #newchat varsa kaldır
   const oldOutside = document.querySelector('#newchat');
