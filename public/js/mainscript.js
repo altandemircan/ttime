@@ -3916,9 +3916,9 @@ function updateCart() {
       }
     }
 
-   dayContainer.appendChild(dayList);
+ dayContainer.appendChild(dayList);
 
-// --- MAP LOGIC ---
+// --- MAP LOGIC (final + force empty map desteği) ---
 window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
 const realPointCount = dayItemsArr.filter(it =>
   it.location &&
@@ -3930,6 +3930,7 @@ const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
 
 if (realPointCount === 0) {
   if (suppress) {
+    // Mini konteyner var olsun ama gizli kalsın
     ensureDayMapContainer(day);
     const mini = document.getElementById(`route-map-day${day}`);
     if (mini) mini.classList.add('mini-suppressed');
@@ -3944,8 +3945,19 @@ if (realPointCount === 0) {
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
 
-// HARİTA VE ALT KONTROLLERİN SONRASINDA EKLEMEK İÇİN:
-cartDiv.appendChild(dayContainer);
+// + Add Category butonu (HER ZAMAN GÜNÜN SONUNDA OLSUN!)
+const addMoreButton = document.createElement("button");
+addMoreButton.className = "add-more-btn";
+addMoreButton.textContent = "+ Add Category";
+addMoreButton.dataset.day = day;
+addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+if (!hideAddCat) {
+  dayContainer.appendChild(addMoreButton); // GÜNÜN ALTINA EKLE!
+}
+
+cartDiv.appendChild(dayContainer); // Gün bitince sepete ekle
 
 // + Add Category butonu
 const addMoreButton = document.createElement("button");
