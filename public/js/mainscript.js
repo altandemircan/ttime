@@ -3507,7 +3507,8 @@ function attachMapClickAddMode(day) {
       try {
         imageUrl = await getImageForPlace(placeInfo.name, 'Place', window.selectedCity || '');
       } catch(_) {}
-
+// 1. Önce starter'ı sil
+window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 addToCart(
   placeInfo.name || 'Point',
   imageUrl,
@@ -3523,9 +3524,6 @@ addToCart(
   { forceDay: day }
 );
 
-// ======= EKLE! =======
-// O güne ait starter not varsa sil
-window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 
 // Add Category butonunu aç
 window.__hideAddCatBtnByDay[day] = false;
