@@ -1487,9 +1487,27 @@ async function showResults() {
 const days = [...new Set(window.cart.map(i => i.day))];
 await Promise.all(days.map(day => renderRouteForDay(day)));
 await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
-renderMyTripsPanel();
+renderMyTripsPanel();s
 }
+async function setCityFromFirstPointIfNeeded() {
+  if (!window.cart || window.cart.length === 0) return;
+  const first = window.cart.find(it => it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number");
+  if (!first) return;
+  // Eğer şehir zaten setliyse, tekrar çağırma
+  if (window.selectedCity && window.selectedCity !== "My Trip") return;
 
+  // Geoapify reverse geocode çağrısı
+  try {
+    const resp = await fetch(`/api/geoapify/reverse?lat=${first.location.lat}&lon=${first.location.lng}`);
+    const data = await resp.json();
+    const city = data?.features?.[0]?.properties?.city || data?.features?.[0]?.properties?.county || data?.features?.[0]?.properties?.state;
+    if (city) {
+      window.selectedCity = city;
+    }
+  } catch (e) {
+    // Hata olursa city setlenmeden devam
+  }
+}
 async function fillAIDescriptionsSeq() {
     const steps = Array.from(document.querySelectorAll('.steps'));
     for (const stepsDiv of steps) {
@@ -2144,16 +2162,22 @@ try {
     }
   }
 
-  // ---- 10) Drag-drop vb. ek entegrasyonlar
+   // ---- 10) Drag-drop vb. ek entegrasyonlar
   if (!silent && typeof attachChatDropListeners === 'function') {
     attachChatDropListeners();
   }
-                if (window.expandedMaps) {
-                  clearRouteSegmentHighlight(resolvedDay);
-                  fitExpandedMapToRoute(resolvedDay);
-                }
-                return true;
-                }
+  if (window.expandedMaps) {
+    clearRouteSegmentHighlight(resolvedDay);
+    fitExpandedMapToRoute(resolvedDay);
+  }
+  return true;
+}
+
+// <<< BURAYA EKLE!
+setCityFromFirstPointIfNeeded();
+
+
+                
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
 
