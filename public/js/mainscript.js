@@ -3584,6 +3584,22 @@ function updateCart() {
     window._lastSegmentStartKm = undefined;
     window._lastSegmentEndKm = undefined;
   }
+// --- FLAG OTOMATİK SIFIRLAMA ---
+// Her gün için, eğer gerçek item varsa flag'i zorla false yap
+const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+days.forEach(day => {
+  const hasRealItem = window.cart.some(i =>
+    Number(i.day) === Number(day) &&
+    !i._starter &&
+    !i._placeholder &&
+    (i.name || i.category === "Note")
+  );
+  if (hasRealItem && window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day]) {
+    window.__hideAddCatBtnByDay[day] = false;
+    console.log("Flag otomatik sıfırlandı (updateCart içinde):", day);
+  }
+});
+
 
 const oldStartDate = window.cart.startDate;
 const oldEndDates  = window.cart.endDates;
