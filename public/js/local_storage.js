@@ -176,7 +176,7 @@ const tripObj = {
   days: window.cart && window.cart.length > 0
     ? Math.max(...window.cart.map(item => item.day || 1))
     : 1,
-  cart: JSON.parse(JSON.stringify(window.cart)),
+cart: window.cart ? JSON.parse(JSON.stringify(window.cart)) : [],
   customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
   lastUserQuery: window.lastUserQuery || "",
   selectedCity: window.selectedCity || "",
@@ -258,8 +258,8 @@ function loadTripFromStorage(tripKey) {
     const t = trips[tripKey];
 
     // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
-    window.cart = Array.isArray(t.cart) ? JSON.parse(JSON.stringify(t.cart)) : [];
-
+window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
+window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     // (Ekstra: day ve location dönüşümleri)
     window.cart = window.cart.map(item => {
         if (typeof item.day === "string") item.day = Number(item.day);
@@ -271,7 +271,7 @@ function loadTripFromStorage(tripKey) {
         }
         return item;
     });
-    window.latestTripPlan = Array.isArray(t.cart) ? JSON.parse(JSON.stringify(t.cart)) : [];
+   
     patchCartLocations();
 
     window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
