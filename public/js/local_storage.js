@@ -254,11 +254,11 @@ function safeParseTrips() {
 function getAllSavedTrips() {
   try {
     const raw = localStorage.getItem(TRIP_STORAGE_KEY);
-    if (!raw || raw === "undefined" || raw === "") return {};
+    if (!raw || raw === "undefined") return {};
     const trips = JSON.parse(raw);
     if (!trips || typeof trips !== "object") return {};
     return trips;
-  } catch(e) {
+  } catch (e) {
     return {};
   }
 }
