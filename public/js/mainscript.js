@@ -2152,6 +2152,11 @@ try {
                 }
                 return true;
                 }
+if (typeof updateCart === "function") updateCart();
+if (typeof saveTripAfterRoutes === "function") saveTripAfterRoutes();
+
+
+                
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
 
