@@ -1982,10 +1982,15 @@ function safeCoords(obj) {
   return null;
 }
 
-function addToCart(name, image, day, category, address = null, rating = null, user_ratings_total = null, opening_hours = null, place_id = null, location = null, website = null, options = {}) {
+
+
+function addToCart(
+  name, image, day, category, address = null, rating = null, user_ratings_total = null,
+  opening_hours = null, place_id = null, location = null, website = null, options = {}
+) {
   const { silent = false, skipRender = false, forceDay = null } = options || {};
 
-  // 1) Placeholder temizliği (ilk gerçek ekleme)
+  // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
     window.cart = (window.cart || []).filter(it => !it._placeholder);
     window._removeMapPlaceholderOnce = false;
@@ -2065,16 +2070,16 @@ function addToCart(name, image, day, category, address = null, rating = null, us
   };
 
   window.cart.push(newItem);
+
   // POLYLINE HIZLANDIRMA: her eklemede debounce ile polyline hesapla/güncelle
-const day = newItem.day;
-const points = window.cart.filter(i => i.day == day && i.location);
-debounceRoute(day, points, updatePolylineForDay);
+  const dayNum = newItem.day;
+  const points = window.cart.filter(i => i.day == dayNum && i.location);
+  debounceRoute(dayNum, points, updatePolylineForDay);
 
   try {
     if (!newItem._starter && newItem.location) {
-      const day = newItem.day;
       const realPoints = window.cart.filter(it =>
-        it.day === day &&
+        it.day === dayNum &&
         it.location &&
         !it._starter &&
         !it._placeholder
@@ -2082,27 +2087,22 @@ debounceRoute(day, points, updatePolylineForDay);
 
       // Mini harita ve rota render
       if (realPoints === 1) {
-        if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
-          delete window.__suppressMiniUntilFirstPoint[day];
+        if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[dayNum]) {
+          delete window.__suppressMiniUntilFirstPoint[dayNum];
         }
-        ensureDayMapContainer(day);
-        const mini = document.getElementById(`route-map-day${day}`);
+        ensureDayMapContainer(dayNum);
+        const mini = document.getElementById(`route-map-day${dayNum}`);
         if (mini) mini.classList.remove('mini-suppressed');
-        if (typeof renderRouteForDay === 'function') setTimeout(() => renderRouteForDay(day), 0);
+        if (typeof renderRouteForDay === 'function') setTimeout(() => renderRouteForDay(dayNum), 0);
       } else if (realPoints > 1) {
-        if (typeof renderRouteForDay === 'function') setTimeout(() => renderRouteForDay(day), 0);
+        if (typeof renderRouteForDay === 'function') setTimeout(() => renderRouteForDay(dayNum), 0);
       }
-
-      // --- Polyline hızlandırma önerisi ---
-      // Burada debounce ile polyline hesaplamasını hızlandırabilirsin!
-      // Örneğin:
-      // debounceRoute(day, window.cart.filter(i => i.day === day && i.location), updatePolylineForDay);
     }
   } catch (e) {
     console.warn('[mini map first point]', e);
   }
 
-  // 9) UI güncellemesi
+  // UI güncellemesi
   if (!silent) {
     if (typeof updateCart === "function") updateCart();
     if (!skipRender && typeof renderRouteForDay === "function") {
@@ -2110,7 +2110,7 @@ debounceRoute(day, points, updatePolylineForDay);
     }
   }
 
-  // 10) Sidebar aç (mobil)
+  // Sidebar aç (mobil)
   if (!silent && typeof openSidebar === 'function') {
     openSidebar();
     if (window.innerWidth <= 768) {
@@ -2119,7 +2119,7 @@ debounceRoute(day, points, updatePolylineForDay);
     }
   }
 
-  // 11) Drag-drop vb. ek entegrasyonlar
+  // Drag-drop vb. ek entegrasyonlar
   if (!silent && typeof attachChatDropListeners === 'function') {
     attachChatDropListeners();
   }
@@ -2129,7 +2129,7 @@ debounceRoute(day, points, updatePolylineForDay);
     fitExpandedMapToRoute(resolvedDay);
   }
 
-  // 12) Otomatik kaydet: silent değilse!
+  // Otomatik kaydet: silent değilse!
   if (!silent && typeof saveTripAfterRoutes === "function") {
     saveTripAfterRoutes();
   }
