@@ -3956,8 +3956,9 @@ addMoreButton.onclick = function () {
   }
   showCategoryList(this.dataset.day);
 };
-// Sadece gün BOŞ DEĞİLSE ve şehir seçiliyse GÜN BLOĞUNUN SONUNA ekle!
-if (!isEmptyDay && window.selectedCity && window.selectedLocationLocked) {
+
+// SADECE BU KOŞUL: GÜNDE TEK 1 GERÇEK ITEM VARSA ve şehir seçiliyse
+if (dayItemsArr.length === 1 && window.selectedCity && window.selectedLocationLocked) {
   dayContainer.appendChild(addMoreButton);
 }
   }); // days.forEach sonu
