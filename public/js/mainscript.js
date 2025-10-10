@@ -3522,6 +3522,8 @@ addToCart(
   '',
   { forceDay: day }
 );
+// Gerçek item eklenince starter'ı sil
+window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 window.__hideAddCatBtnByDay[day] = false;
 
       // Marker çiz
