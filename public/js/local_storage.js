@@ -684,31 +684,6 @@ function startRename() {
 }
 
 
-if (!window.__trip_autosave_hooked) {
-  const origUpdateCart = window.updateCart;
-  window.updateCart = function() {
-    if (typeof origUpdateCart === "function") origUpdateCart.apply(this, arguments);
-    // Hemen kaydetmek yerine haritanın oturmasını bekle
-saveTripAfterRoutes();
-  };
-  if (typeof window.showResults === "function") {
-    const origShowResults = window.showResults;
-    window.showResults = function() {
-      if (typeof origShowResults === "function") origShowResults.apply(this, arguments);
-saveTripAfterRoutes();
-    };
-  }
-  if (typeof window.saveDayName === "function") {
-    const origSaveDayName = window.saveDayName;
-    window.saveDayName = function(day, newName) {
-      if (typeof origSaveDayName === "function") origSaveDayName.apply(this, arguments);
-saveTripAfterRoutes();
-    };
-  }
-  window.__trip_autosave_hooked = true;
-}
-
-
 // 6. Sayfa açılışında My Trips panelini doldur
 document.addEventListener("DOMContentLoaded", function() {
     renderMyTripsPanel();
