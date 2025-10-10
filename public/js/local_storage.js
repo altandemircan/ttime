@@ -788,18 +788,18 @@ async function updateAllTripThumbnailsWithPolyline() {
     if (!trip.directionsPolylines) trip.directionsPolylines = {};
     let updated = false;
     for (let day = 1; day <= (trip.days || 1); day++) {
-      // Eğer directionsPolylines yoksa ve noktalar 2+ ise
+      // Şu an sadece düz çizgi: getPointsFromTrip(trip, day)
+      // YERİNE, GERÇEK Polyline'ı Directions API'den çekmelisin:
       if (
         !trip.directionsPolylines[day] &&
         (trip.cart || []).filter(it => it.day == day && it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number").length >= 2
       ) {
-        // Burada noktaları al, Mapbox Directions API ile rota çek, polyline dizisi üret
-        // NOT: Bu örnekte sadece noktaları düz çizgiyle birleştiriyor
-        // Gerçek directions için backend veya API çağrısı gerek!
-        const pts = getPointsFromTrip(trip, day);
-        trip.directionsPolylines[day] = polyline;
- // DÜZ ÇİZGİ (YAPILANDIĞI GİBİ)
-        updated = true;
+        // DÜZELTME: Directions API'ye istek at, polyline'ı bul
+        // const polyline = await fetchDirectionsPolyline(trip, day);  // <--- Senin Directions fonksiyonun
+        // trip.directionsPolylines[day] = polyline;
+        // updated = true;
+
+        // Şu anda Directions API yoksa, sadece düz çizgi çizer!
       }
     }
     if (updated) {
