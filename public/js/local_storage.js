@@ -208,17 +208,20 @@ console.log("tripObj.directionsPolylines", JSON.stringify(tripObj.directionsPoly
                           }
                         }
   // 5. Thumbnail üretimi
+// directionsPolylines'ın DOLU olduğundan %100 emin ol!
+await new Promise(res => setTimeout(res, 300));
+
 const thumbnails = {};
 const days = tripObj.days;
 for (let day = 1; day <= days; day++) {
-  if (withThumbnail && countPointsForDay(day, tripObj) >= 2) {
+  // directionsPolylines güncellendiyse rota çıkar, güncellenmediyse düz çizgi çıkar
+  if (withThumbnail && tripObj.directionsPolylines[day] && tripObj.directionsPolylines[day].length > 2) {
     thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
   } else {
     thumbnails[day] = "img/placeholder.png";
   }
 }
 tripObj.thumbnails = thumbnails;
-
   // 6. Favori durumu kopyala
   tripObj.favorite =
     (trips[tripKey] && typeof trips[tripKey].favorite === "boolean")
