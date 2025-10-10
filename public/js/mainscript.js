@@ -3952,7 +3952,6 @@ if (realPointCount === 0) {
   if (realPointCount === 1) initEmptyDayMap(day);
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
-
 // Gün container'ı sepete ekle
 cartDiv.appendChild(dayContainer);
 
@@ -3967,9 +3966,9 @@ addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
 // Diğer tüm durumlarda buton HER ZAMAN görünsün.
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 if (!hideAddCat) {
-  cartDiv.appendChild(addMoreButton);
+  // GÜNÜN ALTINA EKLE
+  dayContainer.appendChild(addMoreButton);
 }
-
   }); // days.forEach sonu
 
   // 3) + Add New Day
