@@ -3937,7 +3937,7 @@ function escapeHtml(str) {
   }
 }
 
- dayContainer.appendChild(dayList);
+dayContainer.appendChild(dayList);
 
 // --- MAP LOGIC (final + force empty map desteği) ---
 // --- MAP LOGIC (mini harita gecikmeli) ---
@@ -3953,7 +3953,6 @@ const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
 
 if (realPointCount === 0) {
   if (suppress) {
-    // Mini konteyner var olsun ama gizli kalsın
     ensureDayMapContainer(day);
     const mini = document.getElementById(`route-map-day${day}`);
     if (mini) mini.classList.add('mini-suppressed');
@@ -3967,7 +3966,6 @@ if (realPointCount === 0) {
   if (realPointCount === 1) initEmptyDayMap(day);
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
-// Gün container'ı sepete ekle
 cartDiv.appendChild(dayContainer);
 
 // + Add Category butonu
