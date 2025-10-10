@@ -3953,7 +3953,15 @@ if (realPointCount === 0) {
     addMoreButton.textContent = "+ Add Category";
     addMoreButton.dataset.day = day;
     addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+    if (
+    dayItemsArr.length === 1 &&
+    dayItemsArr[0].category === "Place" &&
+    window.__mapCategoryUnlockedByDay &&
+    window.__mapCategoryUnlockedByDay[day]
+) {
     cartDiv.appendChild(addMoreButton);
+}
+
   }); // days.forEach sonu
 
   // 3) + Add New Day
