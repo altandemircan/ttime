@@ -3508,7 +3508,7 @@ function attachMapClickAddMode(day) {
         imageUrl = await getImageForPlace(placeInfo.name, 'Place', window.selectedCity || '');
       } catch(_) {}
 
-      addToCart(
+addToCart(
   placeInfo.name || 'Point',
   imageUrl,
   day,
@@ -3520,7 +3520,7 @@ function attachMapClickAddMode(day) {
   null,
   { lat, lng },
   '',
-  { forceDay: day } // garanti
+  { forceDay: day }
 );
 window.__hideAddCatBtnByDay[day] = false;
 
