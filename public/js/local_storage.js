@@ -123,6 +123,12 @@ function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
 
   return canvas.toDataURL('image/png');
 }
+
+function safeParse(jsonStr) {
+  if (!jsonStr || jsonStr === "undefined" || jsonStr === undefined || jsonStr === null) return null;
+  try { return JSON.parse(jsonStr); } catch { return null; }
+}
+
 // GÜNCELLEME: Unique key için timestamp ve duplicate kontrolü, tek fonksiyon!
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
   if (delayMs && delayMs > 0) {
@@ -147,8 +153,7 @@ tripTitle = `${window.selectedCity} trip plan`;
     : (new Date()).toISOString().slice(0, 10);
 
   // 2. Duplicate kontrolü: Aynı başlık, tarih ve cart içeriği zaten varsa tekrar kaydetme!
-  let trips = {};
-  try { trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY)) || {}; } catch (e) {}
+  let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   const isDuplicate = Object.values(trips).some(t =>
     t.title === tripTitle &&
     t.date === tripDate &&
@@ -241,14 +246,10 @@ function patchCartLocations() {
 
 // 2. Tüm gezileri getir
 function getAllSavedTrips() {
-    try {
-        const trips = JSON.parse(localStorage.getItem(TRIP_STORAGE_KEY));
-        if (!trips || typeof trips !== "object") return {};
-        return trips;
-    } catch(e) {
-        return {};
-    }
-}   
+    const trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY));
+    if (!trips || typeof trips !== "object") return {};
+    return trips;
+}  
 
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
