@@ -260,7 +260,8 @@ window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.string
         }
         return item;
     });
-   
+   if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
     patchCartLocations();
 
     window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
