@@ -3,6 +3,9 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
+const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];
+const INITIAL_EMPTY_MAP_ZOOM   = 6;
+
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
   const rect = window.__scaleBarDragTrack.getBoundingClientRect();
@@ -1489,14 +1492,13 @@ await Promise.all(days.map(day => renderRouteForDay(day)));
 await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
 renderMyTripsPanel();s
 }
+
+
 async function setCityFromFirstPointIfNeeded() {
   if (!window.cart || window.cart.length === 0) return;
   const first = window.cart.find(it => it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number");
   if (!first) return;
-  // Eğer şehir zaten setliyse, tekrar çağırma
   if (window.selectedCity && window.selectedCity !== "My Trip") return;
-
-  // Geoapify reverse geocode çağrısı
   try {
     const resp = await fetch(`/api/geoapify/reverse?lat=${first.location.lat}&lon=${first.location.lng}`);
     const data = await resp.json();
@@ -1504,10 +1506,10 @@ async function setCityFromFirstPointIfNeeded() {
     if (city) {
       window.selectedCity = city;
     }
-  } catch (e) {
-    // Hata olursa city setlenmeden devam
-  }
+  } catch (e) {}
 }
+
+
 async function fillAIDescriptionsSeq() {
     const steps = Array.from(document.querySelectorAll('.steps'));
     for (const stepsDiv of steps) {
@@ -2177,7 +2179,7 @@ try {
 setCityFromFirstPointIfNeeded();
 
 
-                
+
 (function attachGpsImportClick(){
   if (window.__gpsImportHandlerAttached) return;
 
