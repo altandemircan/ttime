@@ -3960,6 +3960,7 @@ addMoreButton.onclick = function () {
 if (!isEmptyDay && window.selectedCity && window.selectedLocationLocked) {
   dayContainer.appendChild(addMoreButton);
 }
+  }); // days.forEach sonu
 
   // 3) + Add New Day
   const addNewDayHr = document.createElement('hr');
