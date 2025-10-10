@@ -3972,7 +3972,6 @@ if (!hideAddCat) {
   cartDiv.appendChild(addMoreButton);
 }
 
-
   }); // days.forEach sonu
 
   // 3) + Add New Day
