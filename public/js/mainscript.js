@@ -950,8 +950,7 @@ const { location, days } = parsePlanRequest(raw);
 window.lastUserQuery = `${location} trip plan`;
 
   try {
-    // Mevcut parse fonksiyonunu kullanıyoruz
-    const { location, days } = parsePlanRequest(raw);
+
 
     // parsePlanRequest beklenen alanları çıkaramadıysa
     if (!location || !days || isNaN(days)) {
