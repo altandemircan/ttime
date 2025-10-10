@@ -144,7 +144,7 @@ tripTitle = `${window.selectedCity} trip plan`;
     : (new Date()).toISOString().slice(0, 10);
 
   // 2. Duplicate kontrolü: Aynı başlık, tarih ve cart içeriği zaten varsa tekrar kaydetme!
-                    let trips = {};
+let trips = {};
 try {
   const raw = localStorage.getItem(TRIP_STORAGE_KEY);
   trips = raw ? JSON.parse(raw) : {};
