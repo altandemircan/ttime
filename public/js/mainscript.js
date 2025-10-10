@@ -3937,9 +3937,9 @@ function escapeHtml(str) {
   }
 }
 
-    dayContainer.appendChild(dayList);
+   dayContainer.appendChild(dayList);
 
-    // --- MAP LOGIC (final + force empty map desteği) ---
+// --- MAP LOGIC (final + force empty map desteği) ---
 // --- MAP LOGIC (mini harita gecikmeli) ---
 // --- MAP LOGIC (mini harita bastırma) ---
 window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
@@ -3981,15 +3981,21 @@ addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
 // Diğer tüm durumlarda buton HER ZAMAN görünsün.
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 if (!hideAddCat) {
-  dayContainer.appendChild(addMoreButton);
+  // Harita varsa, butonu haritanın hemen altına ekle
+  const routeMap = dayContainer.querySelector(`#route-map-day${day}`);
+  if (routeMap) {
+    routeMap.insertAdjacentElement('afterend', addMoreButton);
+  } else {
+    // Harita yoksa, günün en sonuna ekle
+    dayContainer.appendChild(addMoreButton);
+  }
   console.log("Add Category EKLENİYOR!", day);
 } else {
   console.log("Add Category GİZLENİYOR!", day);
 }
-  }); // days.forEach sonu
 
-  // 3) + Add New Day
-  const addNewDayHr = document.createElement('hr');
+// 3) + Add New Day
+const addNewDayHr = document.createElement('hr');
 addNewDayHr.className = 'add-new-day-separator';
 cartDiv.appendChild(addNewDayHr);
 
@@ -4000,13 +4006,12 @@ addNewDayButton.textContent = "+ Add New Day";
 addNewDayButton.onclick = function () { addNewDay(this); };
 cartDiv.appendChild(addNewDayButton);
 
-  // 4) Sayaç / butonlar
+// 4) Sayaç / butonlar
 const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-  if (menuCount) {
-    menuCount.textContent = itemCount;
-    menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
-  }
-
+if (menuCount) {
+  menuCount.textContent = itemCount;
+  menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
+}
 
   // 5) Çeşitli init
   attachDragListeners();
