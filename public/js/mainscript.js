@@ -3522,7 +3522,7 @@ addToCart(
   '',
   { forceDay: day }
 );
-// Gerçek item eklenince starter'ı sil
+// Starter fake not silinsin!
 window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 window.__hideAddCatBtnByDay[day] = false;
 
