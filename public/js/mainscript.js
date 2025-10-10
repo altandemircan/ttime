@@ -3938,6 +3938,9 @@ function escapeHtml(str) {
 }
 
     dayContainer.appendChild(dayList);
+if (!hideAddCat) {
+  dayContainer.insertBefore(addMoreButton, dayList.nextSibling);
+}
 
     // --- MAP LOGIC (final + force empty map desteği) ---
 // --- MAP LOGIC (mini harita gecikmeli) ---
