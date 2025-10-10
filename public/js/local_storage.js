@@ -134,7 +134,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   (window.selectedCity && window.selectedCity.trim() && window.selectedCity !== "My Trip")
     ? `${window.selectedCity} trip plan`
     : "My Trip";
-                  
+
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     const maxDay = Math.max(...window.cart.map(item => item.day || 1));
 tripTitle = `${window.selectedCity} trip plan`;
@@ -143,14 +143,22 @@ tripTitle = `${window.selectedCity} trip plan`;
     ? window.cart[0].date
     : (new Date()).toISOString().slice(0, 10);
 
+
+
   // 2. Duplicate kontrolü: Aynı başlık, tarih ve cart içeriği zaten varsa tekrar kaydetme!
 let trips = {};
 try {
   const raw = localStorage.getItem(TRIP_STORAGE_KEY);
-  trips = raw ? JSON.parse(raw) : {};
+  if (!raw || raw === "undefined" || raw === "") {
+    trips = {};
+  } else {
+    trips = JSON.parse(raw);
+  }
 } catch (e) {
   trips = {};
 }
+
+
   const isDuplicate = Object.values(trips).some(t =>
     t.title === tripTitle &&
     t.date === tripDate &&
@@ -244,8 +252,7 @@ function patchCartLocations() {
 function safeParseTrips() {
   try {
     const raw = localStorage.getItem(TRIP_STORAGE_KEY);
-    // Hem null/boş hem de "undefined" stringine karşı koruma
-    if (!raw || raw === "undefined") return {};
+    if (!raw || raw === "undefined" || raw === "") return {};
     return JSON.parse(raw);
   } catch (e) {
     return {};
@@ -254,9 +261,8 @@ function safeParseTrips() {
 function getAllSavedTrips() {
   try {
     const raw = localStorage.getItem(TRIP_STORAGE_KEY);
-let trips = {};
-if (!raw || raw === "undefined" || raw === "") trips = {};
-else trips = JSON.parse(raw);
+    if (!raw || raw === "undefined" || raw === "") return {};
+    const trips = JSON.parse(raw);
     if (!trips || typeof trips !== "object") return {};
     return trips;
   } catch (e) {
