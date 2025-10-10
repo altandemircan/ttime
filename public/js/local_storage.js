@@ -17,7 +17,7 @@ async function saveTripAfterRoutes() {
     retry++;
   }
 
-  await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
+  await saveTripAfterRoutes();
   if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
 // Helper: how many valid points does this day have?

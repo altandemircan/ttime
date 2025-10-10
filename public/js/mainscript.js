@@ -974,7 +974,8 @@ window.lastUserQuery = `${location} trip plan`;
     if (latestTripPlan && latestTripPlan.length > 0) {
       window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
       window.cart = JSON.parse(JSON.stringify(latestTripPlan));
-      saveCurrentTripToStorage();
+          saveTripAfterRoutes();
+
 
       showResults();
       updateTripTitle();
@@ -1486,7 +1487,7 @@ async function showResults() {
     // --- YENİ EKLE ---
 const days = [...new Set(window.cart.map(i => i.day))];
 await Promise.all(days.map(day => renderRouteForDay(day)));
-await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
+await saveTripAfterRoutes();
 renderMyTripsPanel();
 }
 
