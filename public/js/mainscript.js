@@ -1,10 +1,12 @@
+const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];
+const INITIAL_EMPTY_MAP_ZOOM   = 6;
+
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
 window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
-const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];
-const INITIAL_EMPTY_MAP_ZOOM   = 6;
+
 
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
