@@ -2090,9 +2090,6 @@ function addToCart(
 
   window.cart.push(newItem);
 
-
-  window.cart.push(newItem);
-
   try {
     if (!newItem._starter && newItem.location) {
       const day = newItem.day;
