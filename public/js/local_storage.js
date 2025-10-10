@@ -7,17 +7,17 @@ async function saveTripAfterRoutes() {
     }
   }
 
-  // POLYLINE'ın dolduğundan %100 emin ol!
+  // 2. directionsPolylines'ın dolu olduğundan %100 emin ol!
   let retry = 0;
   while (
-    Object.values(window.directionsPolylines || {}).some(arr => !Array.isArray(arr) || arr.length < 3) &&
+    Object.values(window.directionsPolylines || {}).some(arr => !Array.isArray(arr) || arr.length < 2) &&
     retry < 10
   ) {
-    await new Promise(res => setTimeout(res, 100));
+    await new Promise(res => setTimeout(res, 120));
     retry++;
   }
 
-  await saveTripAfterRoutes();
+  await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
   if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
 // Helper: how many valid points does this day have?
@@ -150,86 +150,59 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
   }
-              // 1. Başlık ve Tarih
-               let tripTitle =
-                (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
-                  ? getAllSavedTrips()[window.activeTripKey].title
-                  : (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
-                    ? window.lastUserQuery.trim()
-                    : (window.cart && window.cart.length > 0 && window.cart[0].title)
-                      ? window.cart[0].title
-                      : "My Trip";
+
+  let tripTitle = (
+    (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
+      ? getAllSavedTrips()[window.activeTripKey].title
+      : (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
+        ? window.lastUserQuery.trim()
+        : (window.cart && window.cart.length > 0 && window.cart[0].title)
+          ? window.cart[0].title
+          : "My Trip"
+  );
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
-    const maxDay = Math.max(...window.cart.map(item => item.day || 1));
-tripTitle = `${window.selectedCity} trip plan`;
+    tripTitle = `${window.selectedCity} trip plan`;
   }
   let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
     ? window.cart[0].date
     : (new Date()).toISOString().slice(0, 10);
 
-  // 2. Duplicate kontrolü: Aynı başlık, tarih ve cart içeriği zaten varsa tekrar kaydetme!
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
-  // const isDuplicate = Object.values(trips).some(t =>
-//   t.title === tripTitle &&
-//   t.date === tripDate &&
-//   JSON.stringify(t.cart) === JSON.stringify(window.cart)
-// );
-// if (isDuplicate) return;
-  // 3. Benzersiz anahtar (timestamp ile)
-                let tripKey;
-                if (window.activeTripKey) {
-                  tripKey = window.activeTripKey; // mevcut trip güncelleniyor, key aynı kalsın
-                } else {
-                  let timestamp = Date.now();
-                  tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
-                }
-
-const tripObj = {
-  title: tripTitle,
-  date: tripDate,
-  days: window.cart && window.cart.length > 0
-    ? Math.max(...window.cart.map(item => item.day || 1))
-    : 1,
-cart: window.cart ? JSON.parse(JSON.stringify(window.cart)) : [],
-  customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
-  lastUserQuery: window.lastUserQuery || "",
-  selectedCity: window.selectedCity || "",
-  updatedAt: Date.now(),
-  key: tripKey,
-  directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
-};
-
-// <<< BURAYA EKLE!
-console.log("KAYIT ÖNCESİ POLYLINE", JSON.stringify(window.directionsPolylines));
-console.log("tripObj.directionsPolylines", JSON.stringify(tripObj.directionsPolylines));
-
-                        // --- EKLE ---
-                        // Eğer directionsPolylines yok VE en az 2 nokta varsa, düz çizgi üret:
-                        if (!tripObj.directionsPolylines) tripObj.directionsPolylines = {};
-                        for (let day = 1; day <= tripObj.days; day++) {
-                          if (!tripObj.directionsPolylines[day] || tripObj.directionsPolylines[day].length < 2) {
-                            // window.directionsPolylines[day] varsa onu kullan
-                            if (window.directionsPolylines && window.directionsPolylines[day] && window.directionsPolylines[day].length >= 2) {
-                              tripObj.directionsPolylines[day] = [...window.directionsPolylines[day]];
-                            }
-                          }
-                        }
-  // 5. Thumbnail üretimi
-// directionsPolylines'ın DOLU olduğundan %100 emin ol!
-await new Promise(res => setTimeout(res, 300));
-
-const thumbnails = {};
-const days = tripObj.days;
-for (let day = 1; day <= days; day++) {
-  // directionsPolylines güncellendiyse rota çıkar, güncellenmediyse düz çizgi çıkar
-  if (withThumbnail && tripObj.directionsPolylines[day] && tripObj.directionsPolylines[day].length > 2) {
-    thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
+  let tripKey;
+  if (window.activeTripKey) {
+    tripKey = window.activeTripKey;
   } else {
-    thumbnails[day] = "img/placeholder.png";
+    let timestamp = Date.now();
+    tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
   }
-}
-tripObj.thumbnails = thumbnails;
-  // 6. Favori durumu kopyala
+
+  const tripObj = {
+    title: tripTitle,
+    date: tripDate,
+    days: window.cart && window.cart.length > 0
+      ? Math.max(...window.cart.map(item => item.day || 1))
+      : 1,
+    cart: window.cart ? JSON.parse(JSON.stringify(window.cart)) : [],
+    customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
+    lastUserQuery: window.lastUserQuery || "",
+    selectedCity: window.selectedCity || "",
+    updatedAt: Date.now(),
+    key: tripKey,
+    directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
+  };
+
+  // Thumbnail üretimi
+  const thumbnails = {};
+  const days = tripObj.days;
+  for (let day = 1; day <= days; day++) {
+    if (withThumbnail && tripObj.directionsPolylines[day] && tripObj.directionsPolylines[day].length > 2) {
+      thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
+    } else {
+      thumbnails[day] = "img/placeholder.png";
+    }
+  }
+  tripObj.thumbnails = thumbnails;
+
   tripObj.favorite =
     (trips[tripKey] && typeof trips[tripKey].favorite === "boolean")
       ? trips[tripKey].favorite : false;
@@ -238,7 +211,6 @@ tripObj.thumbnails = thumbnails;
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
-
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
     saveTripAfterRoutes();
