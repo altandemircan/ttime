@@ -3575,15 +3575,13 @@ function updateCart() {
     const days = [...new Set((window.cart || []).map(i => i.day))];
     days.forEach(day => {
       clearRouteSegmentHighlight(day);
-      // fitExpandedMapToRoute(day); // İstersen ekle, ama genelde gerek yok!
     });
-    // Tüm segment state'ini sıfırla:
     window._lastSegmentDay = undefined;
     window._lastSegmentStartKm = undefined;
     window._lastSegmentEndKm = undefined;
   }
+
   // --- FLAG OTOMATİK SIFIRLAMA ---
-  // Her gün için, eğer gerçek item varsa flag'i zorla false yap
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   days.forEach(day => {
     const hasRealItem = window.cart.some(i =>
@@ -3600,15 +3598,13 @@ function updateCart() {
 
   const oldStartDate = window.cart.startDate;
   const oldEndDates  = window.cart.endDates;
-
   window.cart = window.cart.filter(it =>
     it && typeof it === "object" &&
     (
-      (typeof it.day !== "undefined" && Object.keys(it).length === 1) // sadece day: X objesini TUT
-      || (it.name || it.location || it.category) // gerçek itemleri TUT
+      (typeof it.day !== "undefined" && Object.keys(it).length === 1) ||
+      (it.name || it.location || it.category)
     )
   );
-
   if (oldStartDate) window.cart.startDate = oldStartDate;
   if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
@@ -3652,22 +3648,17 @@ function updateCart() {
   }
 
   window._debug_days = days;
-
   cartDiv.innerHTML = "";
-
   const globalIndexMap = new Map();
   window.cart.forEach((it, idx) => globalIndexMap.set(it, idx));
 
   days.forEach(day => {
-    // Sadece gerçek (starter/placeholder hariç) item’lar
     const dayItemsArr = window.cart.filter(i =>
       Number(i.day) === Number(day) &&
       !i._starter &&
       !i._placeholder &&
       (i.name || i.category === "Note")
     );
-    console.log('Day:', day, dayItemsArr);
-
     const isEmptyDay = dayItemsArr.length === 0;
 
     // Gün container
@@ -3682,8 +3673,6 @@ function updateCart() {
       const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
       const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
       dayContainer.innerHTML = "";
-
-      // (Artık boşsa küçük harita hiç gösterilmeyecek; bu yüzden sadece gerçek item varsa geri koy)
       if (!isEmptyDay) {
         if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
         if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
@@ -3716,7 +3705,6 @@ function updateCart() {
     dayList.className = "day-list";
     dayList.dataset.day = day;
 
-    // 2.a Boş gün görünümü (YENİ TASARIM)
     if (isEmptyDay) {
       const hideByFlag = !!(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[day]);
       const planningThisDay = window.mapPlanningActive && window.mapPlanningDay === day;
@@ -3724,7 +3712,6 @@ function updateCart() {
 
       const emptyWrap = document.createElement("div");
       emptyWrap.className = "empty-day-block";
-
       emptyWrap.innerHTML = `
         <p class="empty-day-message">No item has been added for this day yet.</p>
         <div class="empty-day-actions" style="display:block;text-align:center;">
@@ -3752,8 +3739,6 @@ function updateCart() {
       for (let idx = 0; idx < dayItemsArr.length; idx++) {
         const item = dayItemsArr[idx];
         const currIdx = globalIndexMap.get(item);
-
-        // 1) Eğer hem lastCoordItem hem bu item koordinatlıysa önce separator ekle
         if (
           lastCoordItem &&
           lastCoordItem.location && item.location &&
@@ -3786,8 +3771,6 @@ function updateCart() {
           `;
           dayList.appendChild(distanceSeparator);
         }
-
-        // 2) Şimdi item'i ekle
         const li = document.createElement("li");
         li.className = "travel-item";
         li.draggable = true;
@@ -3797,11 +3780,7 @@ function updateCart() {
           li.setAttribute("data-lon", item.location.lng);
         }
         const leafletMapId = "leaflet-map-" + currIdx;
-
-        if (item.category === "Note") {
-          li.classList.add("custom-note");
-        }
-
+        if (item.category === "Note") li.classList.add("custom-note");
         li.addEventListener("dragstart", dragStart);
 
         if (item.category === "Note") {
@@ -3838,13 +3817,11 @@ function updateCart() {
               openingHoursDisplay = item.opening_hours.trim();
             }
           }
-
           const mapHtml = (item.location &&
               typeof item.location.lat === "number" &&
               typeof item.location.lng === "number")
               ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
               : '<div class="map-error">Location not available</div>';
-
           li.innerHTML = `
             <div class="cart-item">
               <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
@@ -3896,7 +3873,6 @@ function updateCart() {
         }
         dayList.appendChild(li);
 
-        // 3) Eğer bu item koordinatlıysa güncelle
         if (
           item.location &&
           typeof item.location.lat === "number" &&
@@ -3905,8 +3881,6 @@ function updateCart() {
           lastCoordItem = item;
           lastCoordIdx = currIdx;
         }
-
-        // 4) Tek item uyarısı
         if (dayItemsArr.length === 1 && idx === 0) {
           const oneItemMessage = document.createElement("p");
           oneItemMessage.className = "one-item-message";
@@ -3916,74 +3890,51 @@ function updateCart() {
       }
     }
 
-dayContainer.appendChild(dayList);
+    dayContainer.appendChild(dayList);
 
-// --- MAP LOGIC ---
-window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
-const realPointCount = dayItemsArr.filter(it =>
-  it.location &&
-  typeof it.location.lat === 'number' &&
-  typeof it.location.lng === 'number'
-).length;
-
-const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
-
-if (realPointCount === 0) {
-  if (suppress) {
-    ensureDayMapContainer(day);
-    const mini = document.getElementById(`route-map-day${day}`);
-    if (mini) mini.classList.add('mini-suppressed');
-  } else {
-    removeDayMapCompletely(day);
-  }
-} else {
-  ensureDayMapContainer(day);
-  const mini = document.getElementById(`route-map-day${day}`);
-  if (mini) mini.classList.remove('mini-suppressed');
-  if (realPointCount === 1) initEmptyDayMap(day);
-  if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
-}
-
-// GÜNÜ CART'A EKLE (önce harita ve kontroller dayContainer'da olmalı)
-cartDiv.appendChild(dayContainer);
-
-// + Add Category butonu
-const addMoreButton = document.createElement("button");
-addMoreButton.className = "add-more-btn";
-addMoreButton.textContent = "+ Add Category";
-addMoreButton.dataset.day = day;
-addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-
-const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-if (!hideAddCat) {
-  // Harita ve info'dan hemen sonra ekle!
-  const infoDiv = dayContainer.querySelector(`#route-info-day${day}`);
-  if (infoDiv) {
-    infoDiv.insertAdjacentElement('afterend', addMoreButton);
-  } else {
-    const travelModeDiv = dayContainer.querySelector(`#tt-travel-mode-set-day${day}`);
-    if (travelModeDiv) {
-      travelModeDiv.insertAdjacentElement('afterend', addMoreButton);
-    } else {
-      const routeMapDiv = dayContainer.querySelector(`#route-map-day${day}`);
-      if (routeMapDiv) {
-        routeMapDiv.insertAdjacentElement('afterend', addMoreButton);
+    // --- MAP LOGIC ---
+    window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+    const realPointCount = dayItemsArr.filter(it =>
+      it.location &&
+      typeof it.location.lat === 'number' &&
+      typeof it.location.lng === 'number'
+    ).length;
+    const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
+    if (realPointCount === 0) {
+      if (suppress) {
+        ensureDayMapContainer(day);
+        const mini = document.getElementById(`route-map-day${day}`);
+        if (mini) mini.classList.add('mini-suppressed');
       } else {
-        dayContainer.appendChild(addMoreButton);
+        removeDayMapCompletely(day);
       }
+    } else {
+      ensureDayMapContainer(day);
+      const mini = document.getElementById(`route-map-day${day}`);
+      if (mini) mini.classList.remove('mini-suppressed');
+      if (realPointCount === 1) initEmptyDayMap(day);
+      if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
     }
-  }
-  console.log("Add Category EKLENİYOR!", day);
-} else {
-  console.log("Add Category GİZLENİYOR!", day);
-}
+    cartDiv.appendChild(dayContainer);
   });
 
-  // 3) + Add New Day
+  // + Add New Day separator
   const addNewDayHr = document.createElement('hr');
   addNewDayHr.className = 'add-new-day-separator';
   cartDiv.appendChild(addNewDayHr);
 
+  // + Add Category butonu (her zaman Add New Day'in hemen üstünde)
+  // (Son günün day'ını kullanıyoruz!)
+  const lastDay = days[days.length - 1];
+  const addMoreButton = document.createElement("button");
+  addMoreButton.className = "add-more-btn";
+  addMoreButton.textContent = "+ Add Category";
+  addMoreButton.dataset.day = lastDay;
+  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+  const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[lastDay];
+  if (!hideAddCat) cartDiv.appendChild(addMoreButton);
+
+  // + Add New Day butonu
   const addNewDayButton = document.createElement("button");
   addNewDayButton.className = "add-new-day-btn";
   addNewDayButton.id = "add-new-day-button";
@@ -3991,7 +3942,7 @@ if (!hideAddCat) {
   addNewDayButton.onclick = function () { addNewDay(this); };
   cartDiv.appendChild(addNewDayButton);
 
-  // 4) Sayaç / butonlar
+  // Sayaç / butonlar
   const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
   if (menuCount) {
     menuCount.textContent = itemCount;
@@ -4005,10 +3956,9 @@ if (!hideAddCat) {
   days.forEach(d => {
     const suppressing = window.__suppressMiniUntilFirstPoint &&
                         window.__suppressMiniUntilFirstPoint[d];
-    // Suppression aktif ve henüz 0 gerçek nokta varsa rota çizme / map’i oynama
     const realPoints = getDayPoints ? getDayPoints(d) : [];
     if (suppressing && realPoints.length === 0) {
-      return; // renderRouteForDay atlanır
+      return;
     }
     renderRouteForDay(d);
   });
@@ -4045,88 +3995,51 @@ if (!hideAddCat) {
     };
   })();
 
-  // 6) Trip dates butonu
-  (function ensureSelectDatesButton() {
-    let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.className = 'add-to-calendar-btn';
-      btn.setAttribute('data-role', 'trip-dates');
-      cartDiv.appendChild(btn);
+  (function ensureNewChatInsideCart(){
+    const oldOutside = document.querySelector('#newchat');
+    if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
+    const cartRoot = document.getElementById('cart');
+    if (!cartRoot) return;
+    let newChat = cartRoot.querySelector('#newchat');
+    if (!newChat){
+      newChat = document.createElement('div');
+      newChat.id = 'newchat';
+      newChat.textContent = 'New Trip Plan';
+      newChat.style.cursor = 'pointer';
+      newChat.onclick = function() {
+        const chatBox = document.getElementById('chat-box');
+        if (chatBox) chatBox.innerHTML = '';
+        const userInput = document.getElementById('user-input');
+        if (userInput) userInput.value = '';
+        window.selectedCity = null;
+        window.selectedLocation = null;
+        window.selectedLocationLocked = false;
+        window.__locationPickedFromSuggestions = false;
+        window.lastUserQuery = '';
+        window.latestTripPlan = [];
+        window.cart = [];
+        if (typeof updateCart === "function") updateCart();
+        document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+        const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+        if (sidebar) sidebar.classList.add('open');
+        if (chatBox) {
+          const welcome = document.createElement('div');
+          welcome.className = 'message bot-message';
+          welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started. Please specify a location, duration, and the type of trip you want";
+          chatBox.appendChild(welcome);
+        }
+      };
     }
-    btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
-    btn.onclick = () => {
-      if (typeof openCalendar === 'function') {
-        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
-        openCalendar(maxDay);
-      }
-    };
+    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    if (datesBtn && datesBtn.nextSibling !== newChat){
+      datesBtn.insertAdjacentElement('afterend', newChat);
+    } else if (!datesBtn && newChat.parentNode !== cartRoot){
+      cartRoot.appendChild(newChat);
+    }
+    const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+    newChat.style.display = itemCount > 0 ? 'block' : 'none';
   })();
-  
-(function ensureNewChatInsideCart(){
-  // Dışarıda eski #newchat varsa kaldır
-  const oldOutside = document.querySelector('#newchat');
-  if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
 
-  const cartRoot = document.getElementById('cart');
-  if (!cartRoot) return;
-
-  let newChat = cartRoot.querySelector('#newchat');
-  if (!newChat){
-    newChat = document.createElement('div');
-    newChat.id = 'newchat';
-    newChat.textContent = 'New Trip Plan';
-    newChat.style.cursor = 'pointer';
-
-    newChat.onclick = function() {
-      // 1. Chat geçmişini ve input'u temizle
-      const chatBox = document.getElementById('chat-box');
-      if (chatBox) chatBox.innerHTML = '';
-      const userInput = document.getElementById('user-input');
-      if (userInput) userInput.value = '';
-
-      // 2. State'leri sıfırla
-      window.selectedCity = null;
-      window.selectedLocation = null;
-      window.selectedLocationLocked = false;
-      window.__locationPickedFromSuggestions = false;
-      window.lastUserQuery = '';
-      window.latestTripPlan = [];
-      window.cart = [];
-
-      // 3. Sepeti güncelle
-      if (typeof updateCart === "function") updateCart();
-
-      // 4. Tüm sidebar'ları kapat, sadece gallery sidebar'ı aç
-      document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
-      const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
-      if (sidebar) sidebar.classList.add('open');
-
-      // 5. Hoşgeldin mesajı ekle
-      if (chatBox) {
-        const welcome = document.createElement('div');
-        welcome.className = 'message bot-message';
-        welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started. Please specify a location, duration, and the type of trip you want";
-        chatBox.appendChild(welcome);
-      }
-    };
-  }
-
-  // Select Dates butonunun hemen altına yerleştir
-  const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-  if (datesBtn && datesBtn.nextSibling !== newChat){
-    datesBtn.insertAdjacentElement('afterend', newChat);
-  } else if (!datesBtn && newChat.parentNode !== cartRoot){
-    cartRoot.appendChild(newChat);
-  }
-
-  // Sepet doluysa göster
-  const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-  newChat.style.display = itemCount > 0 ? 'block' : 'none';
-})();
-
-
-  // 7) Paylaşım bölümü (tarih seçildiyse)
   (function ensurePostDateSections() {
     if (!window.cart.startDate) return;
     let share = document.getElementById('trip-share-section');
@@ -4141,66 +4054,57 @@ if (!hideAddCat) {
     if (oldAI) oldAI.remove();
   })();
 
-  // 8) Tarih aralığı ve Trip Details
-(function ensureTripDetailsBlock() {
-  if (!window.cart.startDate) {
-    const existing = cartDiv.querySelector('.date-range');
-    if (existing) existing.remove();
-    return;
-  }
-  let dateRangeDiv = cartDiv.querySelector('.date-range');
-  if (!dateRangeDiv) {
-    dateRangeDiv = document.createElement('div');
-    dateRangeDiv.className = 'date-range';
-    cartDiv.appendChild(dateRangeDiv);
-  }
-  // endDate: varsa son günü kullan, yoksa startDate göster
-  const endDate = (window.cart.endDates && window.cart.endDates.length)
-    ? window.cart.endDates[window.cart.endDates.length - 1]
-    : window.cart.startDate;
-  dateRangeDiv.innerHTML = `
-    <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
-    <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
-  `;
-  const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
-  if (detailsBtn) {
-    detailsBtn.onclick = () => {
-      if (typeof showTripDetails === 'function') {
-        showTripDetails(window.cart.startDate);
-      } else {
-        console.warn('showTripDetails not found');
-      }
-    };
-  }
-})();
+  (function ensureTripDetailsBlock() {
+    if (!window.cart.startDate) {
+      const existing = cartDiv.querySelector('.date-range');
+      if (existing) existing.remove();
+      return;
+    }
+    let dateRangeDiv = cartDiv.querySelector('.date-range');
+    if (!dateRangeDiv) {
+      dateRangeDiv = document.createElement('div');
+      dateRangeDiv.className = 'date-range';
+      cartDiv.appendChild(dateRangeDiv);
+    }
+    const endDate = (window.cart.endDates && window.cart.endDates.length)
+      ? window.cart.endDates[window.cart.endDates.length - 1]
+      : window.cart.startDate;
+    dateRangeDiv.innerHTML = `
+      <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
+      <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
+    `;
+    const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
+    if (detailsBtn) {
+      detailsBtn.onclick = () => {
+        if (typeof showTripDetails === 'function') {
+          showTripDetails(window.cart.startDate);
+        } else {
+          console.warn('showTripDetails not found');
+        }
+      };
+    }
+  })();
 
   setTimeout(() => {
-  document.querySelectorAll('.leaflet-map').forEach(div => {
-    // Zaten başlatılmışsa bir daha başlatma (Leaflet container class'ı var mı)
-    if (div.classList.contains('leaflet-container')) return;
-    if (!window._leafletMaps) window._leafletMaps = {};
-
-    // Eski map instance'ı varsa temizle
-    if (window._leafletMaps[div.id]) {
-      try { window._leafletMaps[div.id].remove(); } catch(e){}
-      delete window._leafletMaps[div.id];
-    }
-
-    // Travel-item'dan lat/lon çek
-    const item = div.closest('.travel-item');
-    if (!item) return;
-    const lat = parseFloat(item.getAttribute('data-lat'));
-    const lon = parseFloat(item.getAttribute('data-lon'));
-    const name = item.querySelector('.toggle-title')?.textContent || '';
-    const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
-
-    if (!isNaN(lat) && !isNaN(lon)) {
-      createLeafletMapForItem(div.id, lat, lon, name, number);
-    }
-  });
-}, 150);
+    document.querySelectorAll('.leaflet-map').forEach(div => {
+      if (div.classList.contains('leaflet-container')) return;
+      if (!window._leafletMaps) window._leafletMaps = {};
+      if (window._leafletMaps[div.id]) {
+        try { window._leafletMaps[div.id].remove(); } catch(e){}
+        delete window._leafletMaps[div.id];
+      }
+      const item = div.closest('.travel-item');
+      if (!item) return;
+      const lat = parseFloat(item.getAttribute('data-lat'));
+      const lon = parseFloat(item.getAttribute('data-lon'));
+      const name = item.querySelector('.toggle-title')?.textContent || '';
+      const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+      if (!isNaN(lat) && !isNaN(lon)) {
+        createLeafletMapForItem(div.id, lat, lon, name, number);
+      }
+    });
+  }, 150);
 }
-
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
