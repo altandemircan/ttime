@@ -2137,6 +2137,8 @@ console.log('Yeni item eklendi:', newItem);
   }
 
   return true;
+   if (typeof updateCart === "function") updateCart();
+
 }
 
 (function attachGpsImportClick(){
