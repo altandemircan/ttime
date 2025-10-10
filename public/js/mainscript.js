@@ -3654,7 +3654,6 @@ if (!btn || window.getComputedStyle(btn).display === 'none') {
 return;
   }
 
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   window._debug_days = days; // <-- BU SATIRI EKLE!
 
   cartDiv.innerHTML = "";
