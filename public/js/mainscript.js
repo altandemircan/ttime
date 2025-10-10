@@ -3966,8 +3966,10 @@ addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
 // Diğer tüm durumlarda buton HER ZAMAN görünsün.
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 if (!hideAddCat) {
-  // GÜNÜN ALTINA EKLE
   dayContainer.appendChild(addMoreButton);
+  console.log("Add Category EKLENİYOR!", day);
+} else {
+  console.log("Add Category GİZLENİYOR!", day);
 }
   }); // days.forEach sonu
 
