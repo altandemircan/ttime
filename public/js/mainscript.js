@@ -3954,10 +3954,28 @@ addMoreButton.textContent = "+ Add Category";
 addMoreButton.dataset.day = day;
 addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
 
-// Harita ve altındaki kontrollerin SONRASINA ekle:
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 if (!hideAddCat) {
-  dayContainer.appendChild(addMoreButton);
+  // Sona eklemek yerine, harita ve alt kontrollerin SONRASINA ekle:
+  const infoDiv = dayContainer.querySelector(`#route-info-day${day}`);
+  if (infoDiv) {
+    infoDiv.insertAdjacentElement('afterend', addMoreButton);
+  } else {
+    // Eğer infoDiv yoksa, travel mode set'in sonrasına ekle
+    const travelModeDiv = dayContainer.querySelector(`#tt-travel-mode-set-day${day}`);
+    if (travelModeDiv) {
+      travelModeDiv.insertAdjacentElement('afterend', addMoreButton);
+    } else {
+      // Eğer o da yoksa, haritanın sonrasına ekle
+      const routeMapDiv = dayContainer.querySelector(`#route-map-day${day}`);
+      if (routeMapDiv) {
+        routeMapDiv.insertAdjacentElement('afterend', addMoreButton);
+      } else {
+        // Hiçbiri yoksa, dayContainer'ın en sonuna ekle
+        dayContainer.appendChild(addMoreButton);
+      }
+    }
+  }
   console.log("Add Category EKLENİYOR!", day);
 } else {
   console.log("Add Category GİZLENİYOR!", day);
