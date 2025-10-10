@@ -3916,9 +3916,9 @@ function updateCart() {
       }
     }
 
- dayContainer.appendChild(dayList);
+dayContainer.appendChild(dayList);
 
-// --- MAP LOGIC (final + force empty map desteği) ---
+// --- MAP LOGIC ---
 window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
 const realPointCount = dayItemsArr.filter(it =>
   it.location &&
@@ -3930,7 +3930,6 @@ const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
 
 if (realPointCount === 0) {
   if (suppress) {
-    // Mini konteyner var olsun ama gizli kalsın
     ensureDayMapContainer(day);
     const mini = document.getElementById(`route-map-day${day}`);
     if (mini) mini.classList.add('mini-suppressed');
@@ -3945,19 +3944,8 @@ if (realPointCount === 0) {
   if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
 }
 
-// + Add Category butonu (HER ZAMAN GÜNÜN SONUNDA OLSUN!)
-const addMoreButton = document.createElement("button");
-addMoreButton.className = "add-more-btn";
-addMoreButton.textContent = "+ Add Category";
-addMoreButton.dataset.day = day;
-addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-
-const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-if (!hideAddCat) {
-  dayContainer.appendChild(addMoreButton); // GÜNÜN ALTINA EKLE!
-}
-
-cartDiv.appendChild(dayContainer); // Gün bitince sepete ekle
+// GÜNÜ CART'A EKLE (önce harita ve kontroller dayContainer'da olmalı)
+cartDiv.appendChild(dayContainer);
 
 // + Add Category butonu
 const addMoreButton = document.createElement("button");
@@ -3968,22 +3956,19 @@ addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
 
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 if (!hideAddCat) {
-  // Sona eklemek yerine, harita ve alt kontrollerin SONRASINA ekle:
+  // Harita ve info'dan hemen sonra ekle!
   const infoDiv = dayContainer.querySelector(`#route-info-day${day}`);
   if (infoDiv) {
     infoDiv.insertAdjacentElement('afterend', addMoreButton);
   } else {
-    // Eğer infoDiv yoksa, travel mode set'in sonrasına ekle
     const travelModeDiv = dayContainer.querySelector(`#tt-travel-mode-set-day${day}`);
     if (travelModeDiv) {
       travelModeDiv.insertAdjacentElement('afterend', addMoreButton);
     } else {
-      // Eğer o da yoksa, haritanın sonrasına ekle
       const routeMapDiv = dayContainer.querySelector(`#route-map-day${day}`);
       if (routeMapDiv) {
         routeMapDiv.insertAdjacentElement('afterend', addMoreButton);
       } else {
-        // Hiçbiri yoksa, dayContainer'ın en sonuna ekle
         dayContainer.appendChild(addMoreButton);
       }
     }
