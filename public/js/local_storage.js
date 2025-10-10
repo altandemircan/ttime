@@ -801,6 +801,3 @@ function updatePolylineForDay(day, points) {
     renderRouteForDay(day);
   });
 }
-
-// Kullanımı:
-debounceRoute(day, points, updatePolylineForDay);
