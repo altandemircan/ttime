@@ -6766,15 +6766,30 @@ function ensureExpandedScaleBar(day, raw) {
       dists.push(dist);
     }
     expandedScaleBar.innerHTML = "";
-    renderRouteScaleBar(
-      expandedScaleBar,
-      dist/1000,
-      samples.map((p,i)=>({
-        name: '',
-        distance: dists[i]/1000,
-        snapped: true
-      }))
-    );
+    // GPS import track varsa, tüm noktaları marker gibi ver
+const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+if (imported) {
+  renderRouteScaleBar(
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p, i) => ({
+      name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+      distance: dists[i]/1000,
+      snapped: true
+    }))
+  );
+} else {
+  // Eski haliyle devam et
+  renderRouteScaleBar(
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p,i)=>({
+      name: '',
+      distance: dists[i]/1000,
+      snapped: true
+    }))
+  );
+}
   }
 }
 
