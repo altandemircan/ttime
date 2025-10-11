@@ -3892,52 +3892,24 @@ function updateCart() {
         }
       }
     }
+dayContainer.appendChild(dayList);
 
-    dayContainer.appendChild(dayList);
+// --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
+const anyDayHasRealItem = window.cart.some(i =>
+  !i._starter && !i._placeholder && i.category !== "Note" && i.name
+);
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 
-    window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
-    const realPointCount = dayItemsArr.filter(it =>
-      it.location &&
-      typeof it.location.lat === 'number' &&
-      typeof it.location.lng === 'number'
-    ).length;
-    const suppress = window.__suppressMiniUntilFirstPoint[day] === true;
-    if (realPointCount === 0) {
-      if (suppress) {
-        ensureDayMapContainer(day);
-        const mini = document.getElementById(`route-map-day${day}`);
-        if (mini) mini.classList.add('mini-suppressed');
-      } else {
-        removeDayMapCompletely(day);
-      }
-    } else {
-      ensureDayMapContainer(day);
-      const mini = document.getElementById(`route-map-day${day}`);
-      if (mini) mini.classList.remove('mini-suppressed');
-      if (realPointCount === 1) initEmptyDayMap(day);
-      if (suppress) delete window.__suppressMiniUntilFirstPoint[day];
-    }
+if (anyDayHasRealItem && !hideAddCat) {
+  const addMoreButton = document.createElement("button");
+  addMoreButton.className = "add-more-btn";
+  addMoreButton.textContent = "+ Add Category";
+  addMoreButton.dataset.day = day;
+  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+  dayContainer.appendChild(addMoreButton);
+}
 
-    // --- Add Category butonu EN ALTA EKLENİYOR ---
-    const realItemsForThisDay = window.cart.filter(i =>
-      Number(i.day) === Number(day) &&
-      !i._starter && !i._placeholder &&
-      i.category !== "Note" &&
-      i.name
-    );
-    const hasRealItem = realItemsForThisDay.length > 0;
-    const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-
-    if (hasRealItem && !hideAddCat) {
-      const addMoreButton = document.createElement("button");
-      addMoreButton.className = "add-more-btn";
-      addMoreButton.textContent = "+ Add Category";
-      addMoreButton.dataset.day = day;
-      addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-      dayContainer.appendChild(addMoreButton);
-    }
-
-    cartDiv.appendChild(dayContainer);
+cartDiv.appendChild(dayContainer);
   }
 
   // --- Add New Day butonu döngü SONRASINDA, sadece 1 defa ---
