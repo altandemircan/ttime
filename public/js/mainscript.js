@@ -5398,6 +5398,15 @@ expandedMap.flyTo([points[0].lat, points[0].lng], 15, { duration: 0.6, easeLinea
   });
 
   console.log('[expandMap] done for day', day);
+  if (
+  window.importedTrackByDay &&
+  window.importedTrackByDay[day] &&
+  window.importedTrackByDay[day].drawRaw &&
+  window.importedTrackByDay[day].rawPoints &&
+  window.importedTrackByDay[day].rawPoints.length > 1
+) {
+  ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
+}
 }
 
 /* ==== NEW: Click-based nearby search (replaces long-press) ==== */
@@ -6728,7 +6737,45 @@ function addCircleMarkerSafe(map, latlng, options) {
     return L.circleMarker(latlng, options).addTo(map);
   }
 }
+function ensureExpandedScaleBar(day, raw) {
+  let expandedMapDiv =
+    document.getElementById(`expanded-map-${day}`) ||
+    document.getElementById(`expanded-route-map-day${day}`);
+  if (!expandedMapDiv) return; // DOM yoksa ekleme!
 
+  let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (!expandedScaleBar) {
+    expandedScaleBar = document.createElement('div');
+    expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+    expandedScaleBar.className = 'route-scale-bar expanded';
+    expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+  }
+  if (typeof renderRouteScaleBar === 'function') {
+    let samples = raw;
+    if (samples.length > 600) {
+      const step = Math.ceil(samples.length / 600);
+      samples = samples.filter((_,i)=>i%step===0);
+    }
+    let dist = 0, dists = [0];
+    for (let i=1; i<samples.length; i++) {
+      dist += haversine(
+        samples[i-1].lat, samples[i-1].lng,
+        samples[i].lat, samples[i].lng
+      );
+      dists.push(dist);
+    }
+    expandedScaleBar.innerHTML = "";
+    renderRouteScaleBar(
+      expandedScaleBar,
+      dist/1000,
+      samples.map((p,i)=>({
+        name: '',
+        distance: dists[i]/1000,
+        snapped: true
+      }))
+    );
+  }
+}
 
 async function renderRouteForDay(day) {
   let scaleBar = document.getElementById(`route-scale-bar-day${day}`);
