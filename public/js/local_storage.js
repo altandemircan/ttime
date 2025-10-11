@@ -144,16 +144,17 @@ function safeParse(jsonStr) {
   if (!jsonStr || jsonStr === "undefined" || jsonStr === undefined || jsonStr === null) return null;
   try { return JSON.parse(jsonStr); } catch { return null; }
 }
-
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
   window.directionsPolylines = window.directionsPolylines || {};
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
   }
- let tripTitle;
+
+  let tripTitle;
   if (window.__startedWithMapFlag) {
     tripTitle = getNextTripTitle();
-    window.__startedWithMapFlag = false; // SIFIRLA
+    window.__startedWithMapFlag = false; // Sıfırla (sadece ilk kayıtta çalışacak)
+    window.activeTripKey = null; // Kritik: yeni trip başlatılırken key sıfırlansın
   } else {
     tripTitle = (
       (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
@@ -162,24 +163,31 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
           ? window.lastUserQuery.trim()
           : (window.cart && window.cart.length > 0 && window.cart[0].title)
             ? window.cart[0].title
-            : getNextTripTitle() // <-- DÜZELT: "My Trip" yerine getNextTripTitle()
+            : getNextTripTitle()
     );
   }
+
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     tripTitle = `${window.selectedCity} trip plan`;
   }
+
   let tripDate = (window.cart && window.cart.length > 0 && window.cart[0].date)
     ? window.cart[0].date
     : (new Date()).toISOString().slice(0, 10);
 
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   let tripKey;
+  // --- En önemli blok ---
   if (window.activeTripKey) {
+    // Zaten aktif bir trip varsa, ona ekle
     tripKey = window.activeTripKey;
   } else {
+    // Yeni bir trip başlatılıyorsa (ör: Start with map veya yeni chat)
     let timestamp = Date.now();
     tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
+    window.activeTripKey = tripKey; // Sadece ilk defa trip oluşturulurken atanır
   }
+  // --------------------------------
 
   const tripObj = {
     title: tripTitle,
@@ -212,7 +220,6 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     (trips[tripKey] && typeof trips[tripKey].favorite === "boolean")
       ? trips[tripKey].favorite : false;
 
-  // 7. Kaydet!
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
