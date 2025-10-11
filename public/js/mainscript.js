@@ -3979,21 +3979,33 @@ cartDiv.appendChild(addNewDayButton);
 
   // 6) Trip dates butonu
   (function ensureSelectDatesButton() {
+  // Gerçek item var mı kontrolü (starter ve placeholder'lar hariç)
+  const hasRealItem = Array.isArray(window.cart) && window.cart.some(i =>
+    !i._starter && !i._placeholder && i.name && i.name.trim() !== ''
+  );
+  if (!hasRealItem) {
+    // Eğer buton zaten varsa kaldır
     let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.className = 'add-to-calendar-btn';
-      btn.setAttribute('data-role', 'trip-dates');
-      cartDiv.appendChild(btn);
+    if (btn) btn.remove();
+    return; // Hiçbir şey ekleme
+  }
+
+  // Aşağısı olduğu gibi devam et (yani item varsa buton görünür)
+  let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.className = 'add-to-calendar-btn';
+    btn.setAttribute('data-role', 'trip-dates');
+    cartDiv.appendChild(btn);
+  }
+  btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
+  btn.onclick = () => {
+    if (typeof openCalendar === 'function') {
+      const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
+      openCalendar(maxDay);
     }
-    btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
-    btn.onclick = () => {
-      if (typeof openCalendar === 'function') {
-        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
-        openCalendar(maxDay);
-      }
-    };
-  })();
+  };
+})();
 
   (function ensureNewChatInsideCart(){
     const oldOutside = document.querySelector('#newchat');
