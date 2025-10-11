@@ -3325,11 +3325,7 @@ function startMapPlanning() {
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[1] = true;
 
-  if (!Array.isArray(window.cart) || window.cart.length === 0) {
-    window.cart = [{ day: 1, name: 'Start', category: 'Note', image: 'img/placeholder.png', _starter: true }];
-  } else if (!window.cart.some(it => it.day === 1)) {
-    window.cart.push({ day: 1, name: 'Start', category: 'Note', image: 'img/placeholder.png', _starter: true });
-  }
+window.cart = [];
 
   window.currentDay = 1;
   window.mapPlanningDay = 1;
