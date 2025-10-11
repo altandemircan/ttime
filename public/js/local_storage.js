@@ -150,21 +150,21 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
   }
-let tripTitle;
-if (window.__startedWithMapFlag) {
-  tripTitle = getNextTripTitle();
-  window.__startedWithMapFlag = false; // YAKALANDIĞI ANDA SIFIRLA
-} else {
-  tripTitle = (
-    (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
-      ? getAllSavedTrips()[window.activeTripKey].title
-      : (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
-        ? window.lastUserQuery.trim()
-        : (window.cart && window.cart.length > 0 && window.cart[0].title)
-          ? window.cart[0].title
-          : "My Trip"
-  );
-}
+ let tripTitle;
+  if (window.__startedWithMapFlag) {
+    tripTitle = getNextTripTitle();
+    window.__startedWithMapFlag = false; // SIFIRLA
+  } else {
+    tripTitle = (
+      (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
+        ? getAllSavedTrips()[window.activeTripKey].title
+        : (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
+          ? window.lastUserQuery.trim()
+          : (window.cart && window.cart.length > 0 && window.cart[0].title)
+            ? window.cart[0].title
+            : getNextTripTitle() // <-- DÜZELT: "My Trip" yerine getNextTripTitle()
+    );
+  }
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     tripTitle = `${window.selectedCity} trip plan`;
   }
@@ -231,7 +231,7 @@ function getNextTripTitle() {
     }
   });
   const nextNum = maxNum + 1;
-  return nextNum === 1 ? "My Trip" : `My Trip #${nextNum}`;
+  return `My Trip #${nextNum}`;
 }
 function patchCartLocations() {
     window.cart.forEach(function(item) {
@@ -820,4 +820,9 @@ function updatePolylineForDay(day, points) {
     // Harita & thumbnail güncelle
     renderRouteForDay(day);
   });
+}
+
+function fetchDirectionsPolylineAPI(points) {
+  // Directions API yoksa, sadece düz çizgi döndür
+  return Promise.resolve(points.map(p => ({ lat: p.lat, lng: p.lng })));
 }
