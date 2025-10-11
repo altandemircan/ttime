@@ -3626,17 +3626,17 @@ function updateCart() {
       <div class="confirmation-container" id="confirmation-container-1" style="display:none"></div>
       <ul class="day-list" data-day="1">
         <div class="empty-day-block">
-          <p class="empty-day-message">No item has been added for this day yet.<br>Select a point on the map to start trip!</p>
-          <div class="empty-day-actions" style="display:block;text-align:center;">
-            <button type="button"
-                    class="import-btn gps-import"
-                    data-import-type="multi"
-                    data-global="1"
-                    title="Supports GPX, TCX, FIT, KML">
-              Import GPS File
-            </button>
-          </div>
-        </div>
+  <p class="empty-day-message">
+    No item has been added for this day yet.<br>
+    Select a point on the map to start the trip!
+  </p>
+  <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
+  <div class="empty-day-actions" style="display:block;text-align:center;">
+    <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
+      Import GPS File
+    </button>
+  </div>
+</div>
       </ul>
     </div>
     <hr class="add-new-day-separator">
