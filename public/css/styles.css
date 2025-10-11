@@ -5277,10 +5277,13 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 .empty-day-message, .one-item-message {
-    text-align: center;
+   text-align: center;
     margin-bottom: 0;
     color: #333333;
     font-weight: 500;
+    background: aliceblue;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 .travel-modes {
