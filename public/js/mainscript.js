@@ -6730,9 +6730,7 @@ function addCircleMarkerSafe(map, latlng, options) {
 }
 
 
-
 async function renderRouteForDay(day) {
-  // Scale bar container her çağrıda gün bazlı oluştur
   let scaleBar = document.getElementById(`route-scale-bar-day${day}`);
   if (!scaleBar) {
     const mapDiv = document.getElementById(`route-map-day${day}`);
@@ -6744,28 +6742,19 @@ async function renderRouteForDay(day) {
     }
   }
 
-  // Suppression: start with map modunda ve henüz hiç gerçek nokta yoksa
-  if (window.__suppressMiniUntilFirstPoint &&
-      window.__suppressMiniUntilFirstPoint[day]) {
+  if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
     const pts0 = getDayPoints(day);
-    if (!pts0 || pts0.length === 0) {
-      // Küçük haritayı SİLME, dokunma, sadece çık
-      return;
-    }
+    if (!pts0 || pts0.length === 0) return;
   }
-  const containerId = `route-map-day${day}`;
-  const dayNamedItems = window.cart.filter(it => it.day == day && it.name !== undefined);
 
-  // Noktaları en başta al (location’u olanlar)
+  const containerId = `route-map-day${day}`;
   const points = getDayPoints(day);
 
-  // 0 NOKTA (location yok) -> küçük harita YOK
   if (!points || points.length === 0) {
     if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
     if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
     if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
     if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-
     if (typeof removeDayMapCompletely === 'function') {
       removeDayMapCompletely(day);
     } else if (typeof removeDayMap === 'function') {
@@ -6776,59 +6765,44 @@ async function renderRouteForDay(day) {
       document.getElementById(`map-bottom-controls-wrapper-day${day}`)?.remove();
       document.getElementById(`route-controls-bar-day${day}`)?.remove();
     }
-    // Barı da temizle
     scaleBar.innerHTML = "";
     return;
   }
 
-  // 1 NOKTA
   if (points.length === 1) {
     if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
     if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-
     ensureDayMapContainer(day);
     initEmptyDayMap(day);
-
     const map = window.leafletMaps?.[containerId];
     if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
     if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-
     if (map) {
       map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
       const p = points[0];
       const marker = L.circleMarker([p.lat, p.lng], {
-        radius: 8,
-        color: '#8a4af3',
-        fillColor: '#8a4af3',
-        fillOpacity: 0.9,
-        weight: 2
+        radius: 8, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
       }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
       if (marker._path) marker._path.classList.add('single-point-pulse');
       else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
       try { map.flyTo([p.lat, p.lng], 14, { duration: 0.6, easeLinearity: 0.2 }); } catch {}
     }
-
     const expandedMapObj = window.expandedMaps?.[containerId];
     if (expandedMapObj?.expandedMap) {
       const eMap = expandedMapObj.expandedMap;
       eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
       const p = points[0];
       const m = L.circleMarker([p.lat, p.lng], {
-        radius: 11,
-        color: '#8a4af3',
-        fillColor: '#8a4af3',
-        fillOpacity: 0.92,
-        weight: 3
+        radius: 11, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.92, weight: 3
       }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
       if (m._path) m._path.classList.add('single-point-pulse');
-      try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 });
-    } catch {}
+      try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 }); } catch {}
     }
     scaleBar.innerHTML = "";
     return;
   }
 
-  // 2 nokta + importedTrackByDay varsa → ham track (GPS import polyline ve elevation bar)
+  // --- GPS IMPORT: 2 nokta + importedTrackByDay varsa (expanded bar sadece burada) ---
   if (points.length === 2 &&
       window.importedTrackByDay &&
       window.importedTrackByDay[day] &&
@@ -6849,10 +6823,9 @@ async function renderRouteForDay(day) {
         try { map.fitBounds(poly.getBounds(), { padding:[20,20] }); } catch(_){}
       }
 
-       // --- Sadece expanded harita için elevation profile çiz (her expanded harita id'sini dene) ---
+      // ---- ONLY ONCE: Expanded elevation bar (try both expanded id's) ----
       let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
       if (!expandedScaleBar) {
-        // Expanded harita DIV id'si değişebiliyor. İkisini de sırayla dene:
         let expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
         expandedScaleBar = document.createElement('div');
         expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
@@ -6860,7 +6833,6 @@ async function renderRouteForDay(day) {
         if (expandedMapDiv && expandedMapDiv.parentNode) {
           expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
         } else {
-          // Yedek: body'ye ekle
           document.body.appendChild(expandedScaleBar);
         }
       }
@@ -6890,7 +6862,6 @@ async function renderRouteForDay(day) {
         );
       }
 
-      // ... (diğer kodlar: mesafe-hesap, stats, expandedMap vs.) ...
       let distM = 0;
       for (let i=1;i<raw.length;i++){
         const a = raw[i-1], b = raw[i];
@@ -6910,75 +6881,36 @@ async function renderRouteForDay(day) {
         durationSec = distM / speedMps;
       }
       window.lastRouteSummaries = window.lastRouteSummaries || {};
-window.lastRouteSummaries[containerId] = { distance: distM, duration: durationSec };
-window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-window.pairwiseRouteSummaries[containerId] = [{ distance: distM, duration: durationSec }];
-window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-delete window.lastRouteGeojsons[containerId];
+      window.lastRouteSummaries[containerId] = { distance: distM, duration: durationSec };
+      window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+      window.pairwiseRouteSummaries[containerId] = [{ distance: distM, duration: durationSec }];
+      window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+      delete window.lastRouteGeojsons[containerId];
 
-if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
-if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
+      if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+      if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
+      if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
-let expandedMapObj = window.expandedMaps?.[containerId];
-let eMap = expandedMapObj?.expandedMap;
-
-// Eğer expandedMap yoksa, oluşturmayı dene
-if (!eMap && typeof expandMap === "function") {
-  await expandMap(containerId, day); // fonksiyonunun parametrelerine göre güncelle
-  expandedMapObj = window.expandedMaps?.[containerId];
-  eMap = expandedMapObj?.expandedMap;
-}
-if (eMap) {
-  eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
-  const latlngs = raw.map(pt => [pt.lat, pt.lng]);
-  const polyEx = L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
-  try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
-  L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
-  L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
-
-  // --- Sadece expanded harita için elevation profile çiz ---
-  let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (!expandedScaleBar) {
-    const expandedMapDiv = document.getElementById(`expanded-route-map-day${day}`);
-    expandedScaleBar = document.createElement('div');
-    expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
-    expandedScaleBar.className = 'route-scale-bar expanded';
-    if (expandedMapDiv && expandedMapDiv.parentNode) {
-      expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
-    }
-  }
-  if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
-    let samples = raw;
-    if (samples.length > 600) {
-      const step = Math.ceil(samples.length / 600);
-      samples = samples.filter((_,i)=>i%step===0);
-    }
-    let dist = 0, dists = [0];
-    for (let i=1; i<samples.length; i++) {
-      dist += haversine(
-        samples[i-1].lat, samples[i-1].lng,
-        samples[i].lat, samples[i].lng
-      );
-      dists.push(dist);
-    }
-    expandedScaleBar.innerHTML = "";
-    renderRouteScaleBar(
-      expandedScaleBar,
-      dist/1000,
-      samples.map((p,i)=>({
-        name: '',
-        distance: dists[i]/1000,
-        snapped: true
-      }))
-    );
-  }
-}
-return;
+      let expandedMapObj = window.expandedMaps?.[containerId];
+      let eMap = expandedMapObj?.expandedMap;
+      if (!eMap && typeof expandMap === "function") {
+        await expandMap(containerId, day);
+        expandedMapObj = window.expandedMaps?.[containerId];
+        eMap = expandedMapObj?.expandedMap;
+      }
+      if (eMap) {
+        eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
+        const latlngs = raw.map(pt => [pt.lat, pt.lng]);
+        const polyEx = L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
+        try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
+        L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
+        L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
+      }
+      return;
     }
   }
 
-  // Standart Mapbox Directions yolunu çiz (ve elevation için scaleBar'ı temizle)
+  // --- MAPBOX (standart yol çizimi, küçük barı temizle) ---
   ensureDayMapContainer(day);
   initEmptyDayMap(day);
 
@@ -7055,15 +6987,11 @@ return;
   window.directionsPolylines = window.directionsPolylines || {};
   if (routeData && Array.isArray(routeData.coords) && routeData.coords.length > 1) {
     window.directionsPolylines[day] = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
-    // DEBUG:
-    console.log('Polyline güncellendi:', day, window.directionsPolylines[day]);
   } else {
-    // API başarısız döndüyse eski polyline'ı silme!
     if (!window.directionsPolylines[day]) {
       const pts = getDayPoints(day);
       if (pts.length >= 2) {
         window.directionsPolylines[day] = pts;
-        console.log('Polyline fallback:', day, pts);
       }
     }
   }
@@ -7100,7 +7028,6 @@ return;
   window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
   if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
 
-  // Küçük scale bar DEVRE DIŞI: expanded haritada göstereceğiz
   scaleBar.innerHTML = "";
 
   if (routeData.summary && typeof updateDistanceDurationUI === 'function') {
@@ -7113,7 +7040,6 @@ return;
   setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 200);
   if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
-  // Segment vurgusu vs.
   if (
     typeof window._lastSegmentDay === "number" &&
     typeof window._lastSegmentStartKm === "number" &&
@@ -7128,7 +7054,6 @@ return;
     }, 150);
   }
 }
-
 /** Her iki mekan arası ayraçlara pairwise summary'leri yazar */
 function updatePairwiseDistanceLabels(day) {
     const containerId = `route-map-day${day}`;
