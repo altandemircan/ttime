@@ -3921,25 +3921,23 @@ function updateCart() {
     cartDiv.appendChild(dayContainer);
   }
 
-  const lastDay = totalDays;
-  const addMoreButton = document.createElement("button");
-  addMoreButton.className = "add-more-btn";
-  addMoreButton.textContent = "+ Add Category";
-  addMoreButton.dataset.day = lastDay;
-  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-  const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[lastDay];
+            const realItemsForThisDay = window.cart.filter(i =>
+              Number(i.day) === Number(day) &&
+              !i._starter && !i._placeholder &&
+              i.category !== "Note" &&
+              i.name
+            );
+            const hasRealItem = realItemsForThisDay.length > 0;
+            const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 
-
-const lastDayItems = window.cart.filter(i =>
-  Number(i.day) === Number(lastDay) &&
-  !i._starter && !i._placeholder &&
-  i.category !== "Note" &&
-  i.name
-);
-
-const hasRealItem = lastDayItems.length > 0;
-
-if (lastDay >= 1 && hasRealItem && !hideAddCat) cartDiv.appendChild(addMoreButton);
+            if (hasRealItem && !hideAddCat) {
+              const addMoreButton = document.createElement("button");
+              addMoreButton.className = "add-more-btn";
+              addMoreButton.textContent = "+ Add Category";
+              addMoreButton.dataset.day = day;
+              addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+              dayContainer.appendChild(addMoreButton);
+            }
 
 const addNewDayHr = document.createElement('hr');
 addNewDayHr.className = 'add-new-day-separator';
