@@ -6915,15 +6915,28 @@ if (expandedMapDiv) {
       dists.push(dist);
     }
     expandedScaleBar.innerHTML = "";
-    renderRouteScaleBar(
-      expandedScaleBar,
-      dist/1000,
-      samples.map((p,i)=>({
-        name: '',
-        distance: dists[i]/1000,
-        snapped: true
-      }))
-    );
+const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+if (imported) {
+  renderRouteScaleBar(
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p, i) => ({
+      name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+      distance: dists[i]/1000,
+      snapped: true
+    }))
+  );
+} else {
+  renderRouteScaleBar(
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p,i)=>({
+      name: '',
+      distance: dists[i]/1000,
+      snapped: true
+    }))
+  );
+}
   }
 }
 
