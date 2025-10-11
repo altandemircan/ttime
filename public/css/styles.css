@@ -2416,6 +2416,7 @@ ease;
     font-size: 0.9rem;
     color: #8a4af3;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    margin:20px 0;
 }
 .import-btn {
    padding: 10px;
