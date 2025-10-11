@@ -3906,33 +3906,32 @@ function updateCart() {
     cartDiv.appendChild(dayContainer);
   }
 
-  const lastDay = totalDays;
-  const addMoreButton = document.createElement("button");
-  addMoreButton.className = "add-more-btn";
-  addMoreButton.textContent = "+ Add Category";
-  addMoreButton.dataset.day = lastDay;
-  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-  const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[lastDay];
+ const daysWithRealItems = window.cart
+  .filter(it => !it._starter && !it._placeholder && it.category !== "Note" && it.name)
+  .map(it => Number(it.day));
+const lastDay = daysWithRealItems.length ? Math.max(...daysWithRealItems) : 1;
 
-  const lastDayItems = window.cart.filter(i =>
-    Number(i.day) === Number(lastDay) &&
-    !i._starter && !i._placeholder &&
-    (i.name || i.category === "Note")
-  );
-  const hasRealItem = lastDayItems.some(i => i.category !== "Note");
+const lastDayItems = window.cart.filter(i =>
+  Number(i.day) === Number(lastDay) &&
+  !i._starter && !i._placeholder &&
+  i.category !== "Note" &&
+  i.name
+);
 
-  if (hasRealItem && !hideAddCat) cartDiv.appendChild(addMoreButton);
+const hasRealItem = lastDayItems.length > 0;
 
-  const addNewDayHr = document.createElement('hr');
-  addNewDayHr.className = 'add-new-day-separator';
-  cartDiv.appendChild(addNewDayHr);
+if (lastDay >= 1 && hasRealItem && !hideAddCat) cartDiv.appendChild(addMoreButton);
 
-  const addNewDayButton = document.createElement("button");
-  addNewDayButton.className = "add-new-day-btn";
-  addNewDayButton.id = "add-new-day-button";
-  addNewDayButton.textContent = "+ Add New Day";
-  addNewDayButton.onclick = function () { addNewDay(this); };
-  cartDiv.appendChild(addNewDayButton);
+const addNewDayHr = document.createElement('hr');
+addNewDayHr.className = 'add-new-day-separator';
+cartDiv.appendChild(addNewDayHr);
+
+const addNewDayButton = document.createElement("button");
+addNewDayButton.className = "add-new-day-btn";
+addNewDayButton.id = "add-new-day-button";
+addNewDayButton.textContent = "+ Add New Day";
+addNewDayButton.onclick = function () { addNewDay(this); };
+cartDiv.appendChild(addNewDayButton);
 
   const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
   if (menuCount) {
