@@ -6732,6 +6732,19 @@ function addCircleMarkerSafe(map, latlng, options) {
 
 
 async function renderRouteForDay(day) {
+
+  if (!scaleBar) {
+  const mapDiv = document.getElementById(`route-map-day${day}`);
+  scaleBar = document.createElement('div');
+  scaleBar.id = `route-scale-bar-day${day}`;
+  scaleBar.className = 'route-scale-bar';
+  // Haritanın hemen altına ekle
+  if (mapDiv && mapDiv.parentNode) {
+    mapDiv.parentNode.insertBefore(scaleBar, mapDiv.nextSibling);
+  }
+}
+
+
     // Suppression: start with map modunda ve henüz hiç gerçek nokta yoksa
 if (window.__suppressMiniUntilFirstPoint &&
     window.__suppressMiniUntilFirstPoint[day]) {
@@ -6817,18 +6830,18 @@ if (!points || points.length === 0) {
   }
 
   // (Aşağıdaki kısım senin son kodundaki ile AYNI – ham track modu + normal rota)
-  if (points.length === 2 &&
-      window.importedTrackByDay &&
-      window.importedTrackByDay[day] &&
-      window.importedTrackByDay[day].drawRaw) {
+if (points.length === 2 &&
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.importedTrackByDay[day].drawRaw) {
 
-    const trackObj = window.importedTrackByDay[day];
-    const raw = trackObj.rawPoints || [];
-    if (raw.length > 1) {
-      ensureDayMapContainer(day);
-      initEmptyDayMap(day);
-      const map = window.leafletMaps?.[containerId];
-      if (map) {
+  const trackObj = window.importedTrackByDay[day];
+  const raw = trackObj.rawPoints || [];
+  if (raw.length > 1) {
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+    const map = window.leafletMaps?.[containerId];
+    if (map) {
         map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
         const latlngs = raw.map(pt => [pt.lat, pt.lng]);
         const poly = addPolylineSafe(map, latlngs, { color: '#1565c0', weight: 5, opacity: 0.9 });
@@ -6870,7 +6883,7 @@ if (!points || points.length === 0) {
                                     );
                                   }
                                 }
-      
+
 
       let distM = 0;
       for (let i=1;i<raw.length;i++){
