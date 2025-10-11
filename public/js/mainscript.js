@@ -6907,23 +6907,23 @@ async function renderRouteForDay(day) {
       if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
       if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
-      let expandedMapObj = window.expandedMaps?.[containerId];
-        let eMap = expandedMapObj?.expandedMap;
+              let expandedMapObj = window.expandedMaps?.[containerId];
+                let eMap = expandedMapObj?.expandedMap;
 
-        // Eğer expandedMap yoksa, oluşturmayı dene
-        if (!eMap && typeof expandMap === "function") {
-          await expandMap(containerId, day); // fonksiyonun parametreleri farklıysa onları kullan
-          expandedMapObj = window.expandedMaps?.[containerId];
-          eMap = expandedMapObj?.expandedMap;
-        }
-        if (eMap) {
-          eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
-          const latlngs = raw.map(pt => [pt.lat, pt.lng]);
-          const polyEx = L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
-          try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
-          L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
-          L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
-        }
+                // Eğer expandedMap yoksa, oluşturmayı dene
+                if (!eMap && typeof expandMap === "function") {
+                  await expandMap(containerId, day); // fonksiyonun parametreleri farklıysa onları kullan
+                  expandedMapObj = window.expandedMaps?.[containerId];
+                  eMap = expandedMapObj?.expandedMap;
+                }
+                if (eMap) {
+                  eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
+                  const latlngs = raw.map(pt => [pt.lat, pt.lng]);
+                  const polyEx = L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
+                  try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
+                  L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
+                  L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
+                }
       return;
     }
   }
