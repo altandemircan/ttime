@@ -6813,6 +6813,16 @@ async function renderRouteForDay(day) {
   const containerId = `route-map-day${day}`;
   const points = getDayPoints(day);
 
+  // --- Eğer cart'ta 2'den fazla nokta varsa: GPS track'i devre dışı bırak ---
+  if (
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.importedTrackByDay[day].drawRaw &&
+    points.length > 2
+  ) {
+    window.importedTrackByDay[day].drawRaw = false;
+  }
+
   if (!points || points.length === 0) {
     if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
     if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
@@ -6865,11 +6875,11 @@ async function renderRouteForDay(day) {
     return;
   }
 
-  // --- GPS IMPORT: 2 nokta + importedTrackByDay varsa (expanded bar sadece burada) ---
-if (points.length === 2 &&
-    window.importedTrackByDay &&
-    window.importedTrackByDay[day] &&
-    window.importedTrackByDay[day].drawRaw) {
+  // --- GPS IMPORT: SADECE 2 nokta varsa ve importedTrackByDay aktifse, GPS track'i çiz ---
+  if (points.length === 2 &&
+      window.importedTrackByDay &&
+      window.importedTrackByDay[day] &&
+      window.importedTrackByDay[day].drawRaw) {
 
     const trackObj = window.importedTrackByDay[day];
     const raw = trackObj.rawPoints || [];
@@ -6886,59 +6896,45 @@ if (points.length === 2 &&
         try { map.fitBounds(poly.getBounds(), { padding:[20,20] }); } catch(_){}
       }
 
-      // ---- ONLY ONCE: Expanded elevation bar (try both expanded id's) ----
-// --- Expanded harita daha DOM'da yoksa, bar eklemeye çalışma ---
-let expandedMapDiv =
-  document.getElementById(`expanded-map-${day}`) ||
-  document.getElementById(`expanded-route-map-day${day}`);
+      // Expanded elevation bar (try both expanded id's)
+      let expandedMapDiv =
+        document.getElementById(`expanded-map-${day}`) ||
+        document.getElementById(`expanded-route-map-day${day}`);
 
-if (expandedMapDiv) {
-  let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (!expandedScaleBar) {
-    expandedScaleBar = document.createElement('div');
-    expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
-    expandedScaleBar.className = 'route-scale-bar expanded';
-    expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
-  }
-  if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
-    let samples = raw;
-    if (samples.length > 600) {
-      const step = Math.ceil(samples.length / 600);
-      samples = samples.filter((_,i)=>i%step===0);
-    }
-    let dist = 0, dists = [0];
-    for (let i=1; i<samples.length; i++) {
-      dist += haversine(
-        samples[i-1].lat, samples[i-1].lng,
-        samples[i].lat, samples[i].lng
-      );
-      dists.push(dist);
-    }
-    expandedScaleBar.innerHTML = "";
-const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-if (imported) {
-  renderRouteScaleBar(
-    expandedScaleBar,
-    dist/1000,
-    samples.map((p, i) => ({
-      name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
-      distance: dists[i]/1000,
-      snapped: true
-    }))
-  );
-} else {
-  renderRouteScaleBar(
-    expandedScaleBar,
-    dist/1000,
-    samples.map((p,i)=>({
-      name: '',
-      distance: dists[i]/1000,
-      snapped: true
-    }))
-  );
-}
-  }
-}
+      if (expandedMapDiv) {
+        let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        if (!expandedScaleBar) {
+          expandedScaleBar = document.createElement('div');
+          expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+          expandedScaleBar.className = 'route-scale-bar expanded';
+          expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+        }
+        if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
+          let samples = raw;
+          if (samples.length > 600) {
+            const step = Math.ceil(samples.length / 600);
+            samples = samples.filter((_,i)=>i%step===0);
+          }
+          let dist = 0, dists = [0];
+          for (let i=1; i<samples.length; i++) {
+            dist += haversine(
+              samples[i-1].lat, samples[i-1].lng,
+              samples[i].lat, samples[i].lng
+            );
+            dists.push(dist);
+          }
+          expandedScaleBar.innerHTML = "";
+          renderRouteScaleBar(
+            expandedScaleBar,
+            dist/1000,
+            samples.map((p, i) => ({
+              name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : ""),
+              distance: dists[i]/1000,
+              snapped: true
+            }))
+          );
+        }
+      }
 
       let distM = 0;
       for (let i=1;i<raw.length;i++){
@@ -6963,7 +6959,17 @@ if (imported) {
       window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
       window.pairwiseRouteSummaries[containerId] = [{ distance: distM, duration: durationSec }];
       window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-      delete window.lastRouteGeojsons[containerId];
+      window.lastRouteGeojsons[containerId] = {
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          geometry: {
+            type: "LineString",
+            coordinates: raw.map(p => [p.lng, p.lat])
+          },
+          properties: {}
+        }]
+      };
 
       if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
       if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
@@ -6988,7 +6994,7 @@ if (imported) {
     }
   }
 
-  // --- MAPBOX (standart yol çizimi, küçük barı temizle) ---
+  // --- MAPBOX veya elle rota (cart > 2 nokta) ---
   ensureDayMapContainer(day);
   initEmptyDayMap(day);
 
@@ -7132,7 +7138,6 @@ if (imported) {
     }, 150);
   }
 }
-
 /** Her iki mekan arası ayraçlara pairwise summary'leri yazar */
 function updatePairwiseDistanceLabels(day) {
     const containerId = `route-map-day${day}`;
