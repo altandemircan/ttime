@@ -3920,14 +3920,23 @@ if (item.location && typeof item.location.lat === "number" && typeof item.locati
     cartDiv.appendChild(dayContainer);
   });
 
- const lastDay = days[days.length - 1];
-const addMoreButton = document.createElement("button");
-addMoreButton.className = "add-more-btn";
-addMoreButton.textContent = "+ Add Category";
-addMoreButton.dataset.day = lastDay;
-addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[lastDay];
-if (!hideAddCat) cartDiv.appendChild(addMoreButton);
+                const lastDay = days[days.length - 1];
+                const addMoreButton = document.createElement("button");
+                addMoreButton.className = "add-more-btn";
+                addMoreButton.textContent = "+ Add Category";
+                addMoreButton.dataset.day = lastDay;
+                addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+                const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[lastDay];
+
+                // GERÇEK item kontrolü (_starter ve _placeholder hariç, Note hariç)
+                const lastDayItems = window.cart.filter(i =>
+                  Number(i.day) === Number(lastDay) &&
+                  !i._starter && !i._placeholder &&
+                  (i.name || i.category === "Note")
+                );
+                const hasRealItem = lastDayItems.some(i => i.category !== "Note");
+
+                if (hasRealItem && !hideAddCat) cartDiv.appendChild(addMoreButton);
 
 // Sonra separator
 const addNewDayHr = document.createElement('hr');
