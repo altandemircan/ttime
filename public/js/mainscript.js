@@ -6781,14 +6781,15 @@ if (imported) {
 } else {
   // Eski haliyle devam et
   renderRouteScaleBar(
-  expandedScaleBar,
-  dist/1000,
-  samples.map((p, i) => ({
-    name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
-    distance: dists[i]/1000,
-    snapped: true
-  }))
-);
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p,i)=>({
+      name: '',
+      distance: dists[i]/1000,
+      snapped: true
+    }))
+  );
+}
   }
 }
 
@@ -6927,7 +6928,7 @@ async function renderRouteForDay(day) {
             expandedScaleBar,
             dist/1000,
             samples.map((p, i) => ({
-              name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : ""),
+              name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
               distance: dists[i]/1000,
               snapped: true
             }))
