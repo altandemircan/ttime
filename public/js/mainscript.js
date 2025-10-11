@@ -6850,7 +6850,18 @@ async function renderRouteForDay(day) {
       }
 
       // --- Elevation Profile ÇİZ ---
-      if (typeof renderRouteScaleBar === 'function' && scaleBar) {
+           // --- Sadece expanded harita için elevation profile çiz ---
+      let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+      if (!expandedScaleBar) {
+        const expandedMapDiv = document.getElementById(`expanded-route-map-day${day}`);
+        expandedScaleBar = document.createElement('div');
+        expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+        expandedScaleBar.className = 'route-scale-bar expanded';
+        if (expandedMapDiv && expandedMapDiv.parentNode) {
+          expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+        }
+      }
+      if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
         let samples = raw;
         if (samples.length > 600) {
           const step = Math.ceil(samples.length / 600);
@@ -6864,10 +6875,9 @@ async function renderRouteForDay(day) {
           );
           dists.push(dist);
         }
-        // Barı önce temizle, sonra elevation çiz
-        scaleBar.innerHTML = "";
+        expandedScaleBar.innerHTML = "";
         renderRouteScaleBar(
-          scaleBar,
+          expandedScaleBar,
           dist/1000,
           samples.map((p,i)=>({
             name: '',
