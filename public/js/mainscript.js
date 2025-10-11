@@ -3618,36 +3618,42 @@ function updateCart() {
   if (!cartDiv) return;
 
   if (!window.cart || window.cart.length === 0) {
-    if (typeof closeAllExpandedMapsAndReset === 'function') closeAllExpandedMapsAndReset();
-    const showStartMap = !(window.__hideStartMapButtonByDay && window.__hideStartMapButtonByDay[1]);
-    cartDiv.innerHTML = `
-      <div id="empty-content">
-        <p>Create your trip using the chat screen.</p>
-        <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
-          Import GPS File
-        </button>
-        ${showStartMap ? `
-          <div id="empty-or-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
-          <button id="start-map-btn" type="button">Start with map</button>
-        ` : ``}
-      </div>
-    `;
-    if (menuCount) {
-      menuCount.textContent = 0;
-      menuCount.style.display = "none";
-    }
-    const newChatBtn = document.getElementById("newchat");
-    if (newChatBtn) newChatBtn.style.display = "none";
-
-    const btn = document.getElementById('start-map-btn');
-    if (btn) btn.addEventListener('click', startMapPlanning);
-
-    const sep = document.getElementById('empty-or-sep');
-    if (!btn || window.getComputedStyle(btn).display === 'none') {
-      if (sep) sep.remove();
-    }
-    return;
+  cartDiv.innerHTML = `
+    <div class="day-container" id="day-container-1" data-day="1">
+      <h4 class="day-header">
+        <div class="title-container"><span class="day-title">Day 1</span></div>
+      </h4>
+      <div class="confirmation-container" id="confirmation-container-1" style="display:none"></div>
+      <ul class="day-list" data-day="1">
+        <div class="empty-day-block">
+          <p class="empty-day-message">No item has been added for this day yet.</p>
+          <div class="empty-day-actions" style="display:block;text-align:center;">
+            <button type="button"
+                    class="import-btn gps-import"
+                    data-import-type="multi"
+                    data-global="1"
+                    title="Supports GPX, TCX, FIT, KML">
+              Import GPS File
+            </button>
+          </div>
+        </div>
+      </ul>
+    </div>
+    <hr class="add-new-day-separator">
+    <button class="add-new-day-btn" id="add-new-day-button">+ Add New Day</button>
+  `;
+  if (menuCount) {
+    menuCount.textContent = 0;
+    menuCount.style.display = "none";
   }
+  // buton eventleri
+  const addNewDayButton = document.getElementById("add-new-day-button");
+  if (addNewDayButton) addNewDayButton.onclick = function () { addNewDay(this); };
+  const gpsBtn = document.querySelector(".gps-import");
+  if (gpsBtn) gpsBtn.onclick = function () { /* GPS import fonksiyonun */ };
+
+  return;
+}
 
   const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
   cartDiv.innerHTML = "";
