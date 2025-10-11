@@ -6837,6 +6837,41 @@ if (!points || points.length === 0) {
         try { map.fitBounds(poly.getBounds(), { padding:[20,20] }); } catch(_){}
       }
 
+                                // --- Elevation Profile ÇİZ ---
+                                if (typeof renderRouteScaleBar === 'function') {
+                                  // Sample noktaları: ham track nokta sayısı ~1000'den fazla ise örnekle
+                                  let samples = raw;
+                                  if (samples.length > 600) {
+                                    const step = Math.ceil(samples.length / 600);
+                                    samples = samples.filter((_,i)=>i%step===0);
+                                  }
+                                  // Kümülatif mesafe hesapla
+                                  let dist = 0, dists = [0];
+                                  for (let i=1; i<samples.length; i++) {
+                                    dist += haversine(
+                                      samples[i-1].lat, samples[i-1].lng,
+                                      samples[i].lat, samples[i].lng
+                                    );
+                                    dists.push(dist);
+                                  }
+                                  // Elevation API için formatla
+                                  // renderRouteScaleBar(container, totalKm, markers)
+                                  const container = document.getElementById(`expanded-route-scale-bar-day${day}`) ||
+                                                    document.getElementById(`route-scale-bar-day${day}`);
+                                  if (container) {
+                                    renderRouteScaleBar(
+                                      container,
+                                      dist/1000,
+                                      samples.map((p,i)=>({
+                                        name: '',
+                                        distance: dists[i]/1000, // km
+                                        snapped: true
+                                      }))
+                                    );
+                                  }
+                                }
+      
+
       let distM = 0;
       for (let i=1;i<raw.length;i++){
         const a = raw[i-1], b = raw[i];
