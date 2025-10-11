@@ -3906,10 +3906,14 @@ function updateCart() {
     cartDiv.appendChild(dayContainer);
   }
 
- const daysWithRealItems = window.cart
-  .filter(it => !it._starter && !it._placeholder && it.category !== "Note" && it.name)
-  .map(it => Number(it.day));
-const lastDay = daysWithRealItems.length ? Math.max(...daysWithRealItems) : 1;
+  const lastDay = totalDays;
+  const addMoreButton = document.createElement("button");
+  addMoreButton.className = "add-more-btn";
+  addMoreButton.textContent = "+ Add Category";
+  addMoreButton.dataset.day = lastDay;
+  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+  const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[lastDay];
+
 
 const lastDayItems = window.cart.filter(i =>
   Number(i.day) === Number(lastDay) &&
