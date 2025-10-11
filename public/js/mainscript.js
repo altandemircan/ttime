@@ -2057,22 +2057,37 @@ function addToCart(
   }
 
   // 8) Yeni öğe ekle
-  const newItem = {
-    name: safeName,
-    image: safeImage,
-    day: resolvedDay,
-    category: safeCategory,
-    address: address ? address.trim() : null,
-    rating,
-    user_ratings_total,
-    opening_hours,
-    place_id,
-    location: loc,
-    website,
-    addedAt: new Date().toISOString()
-  };
+const newItem = {
+  name: safeName,
+  image: safeImage,
+  day: resolvedDay,
+  category: safeCategory,
+  address: address ? address.trim() : null,
+  rating,
+  user_ratings_total,
+  opening_hours,
+  place_id,
+  location: loc,
+  website,
+  addedAt: new Date().toISOString()
+};
 
-  window.cart.push(newItem);
+window.cart.push(newItem);
+
+// --- ŞEHİR TESPİTİ VE SET ETME ---
+if (newItem.address && (!window.selectedCity || window.selectedCity === "")) {
+  const parts = newItem.address.split(",");
+  if (parts.length >= 2) {
+    // Şehir genellikle sondan ikinci parça
+    const city = parts[parts.length - 2].trim();
+    if (city && city.length > 1) {
+      window.selectedCity = city;
+      window.selectedLocation = city;
+      console.log("selectedCity set:", city);
+    }
+  }
+}
+
 console.log('Yeni item eklendi:', newItem);
   // POLYLINE HIZLANDIRMA: her eklemede debounce ile polyline hesapla/güncelle
   const dayNum = newItem.day;
@@ -4262,7 +4277,21 @@ function createDayActionMenu(day) {
   return container;
 }
 
-
+function setCityFromAddress(address) {
+  if (!address) return;
+  // Türkiye için örnek: "Döşemealtı, Antalya, Turkey"
+  // veya "DC118, 407151 Dângău Mic, Romania"
+  let city = "";
+  const parts = address.split(",");
+  if (parts.length >= 2) {
+    // Şehir genellikle sondan ikinci
+    city = parts[parts.length - 2].trim();
+  }
+  if (city) {
+    window.selectedCity = city;
+    window.selectedLocation = city;
+  }
+}
 // PATCH: refresh expanded scale bar after route updates
 function updateExpandedMap(expandedMap, day) {
     expandedMap.eachLayer(layer => {
