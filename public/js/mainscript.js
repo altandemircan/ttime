@@ -6850,32 +6850,9 @@ async function renderRouteForDay(day) {
       }
 
       // --- Elevation Profile ÇİZ ---
-      if (typeof renderRouteScaleBar === 'function' && scaleBar) {
-        let samples = raw;
-        if (samples.length > 600) {
-          const step = Math.ceil(samples.length / 600);
-          samples = samples.filter((_,i)=>i%step===0);
-        }
-        let dist = 0, dists = [0];
-        for (let i=1; i<samples.length; i++) {
-          dist += haversine(
-            samples[i-1].lat, samples[i-1].lng,
-            samples[i].lat, samples[i].lng
-          );
-          dists.push(dist);
-        }
-        // Barı önce temizle, sonra elevation çiz
-        scaleBar.innerHTML = "";
-        renderRouteScaleBar(
-          scaleBar,
-          dist/1000,
-          samples.map((p,i)=>({
-            name: '',
-            distance: dists[i]/1000,
-            snapped: true
-          }))
-        );
-      }
+           // --- Sadece expanded harita için elevation profile çiz ---
+          let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+      if (!expandedScaleBar) {
 
       // ... (diğer kodlar: mesafe-hesap, stats, expandedMap vs.) ...
       let distM = 0;
