@@ -597,3 +597,89 @@
   });
 
 })();
+
+
+
+/* Ana import fonksiyonu */
+async function importGpsFileForDay(file, day){
+  console.log('[GPS] import start', file.name, '→ day', day);
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const text = await file.text();
+
+
+            let points = [];
+            if (ext === 'gpx') points = parseGpxToLatLng(text);
+            else if (ext === 'kml') points = parseKmlToLatLng(text);
+            else if (ext === 'tcx') points = parseTcxToLatLng(text);
+            else if (ext === 'fit') points = await parseFitToLatLng(file); // FIT dosyası binary, async fonksiyon gerekir
+            else throw new Error('Unsupported file type: ' + e
+
+  if (!points.length) throw new Error('No coordinates found in file.');
+
+  if (!__dayIsEmpty(day)) {
+    console.warn('[GPS] Day not empty, aborting.');
+    return;
+  }
+
+  // Starter & placeholder temizle
+  window.cart = window.cart.filter(it => !it._starter && !it._placeholder);
+
+  // Track meta kaydet (ham çizim modu)
+  window.importedTrackByDay = window.importedTrackByDay || {};
+  window.importedTrackByDay[day] = {
+    rawPoints: points.map(p => ({ lat: p.lat, lng: p.lng, time: p.time || null })),
+    drawRaw: true,
+    fileName: file.name
+  };
+
+  const start = points[0];
+  const finish = points[points.length - 1];
+
+  // Aynı koordinatsa tek item ekle
+  const baseName = file.name.replace(/\.[^.]+$/, '');
+  addToCart(
+    baseName + ' Start',
+    'img/placeholder.png',
+    day,
+    'Track',
+    null,null,null,null,null,
+    { lat: start.lat, lng: start.lng },
+    null,
+    { forceDay: day }
+  );
+
+  if (points.length > 1 &&
+      (Math.abs(finish.lat - start.lat) > 1e-6 || Math.abs(finish.lng - start.lng) > 1e-6)) {
+    addToCart(
+      baseName + ' Finish',
+      'img/placeholder.png',
+      day,
+      'Track',
+      null,null,null,null,null,
+      { lat: finish.lat, lng: finish.lng },
+      null,
+      { forceDay: day }
+    );
+  }
+
+  // UI yenile (addToCart zaten çağırdı ama garanti olsun)
+  if (typeof updateCart === 'function') updateCart();
+  if (typeof renderRouteForDay === 'function') renderRouteForDay(day);
+
+  console.log('[GPS] imported → points:', points.length);
+}
+
+function parseTcxToLatLng(tcxText) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(tcxText, 'application/xml');
+  const pts = [];
+  xml.querySelectorAll('Trackpoint').forEach(tp => {
+    const latNode = tp.querySelector('LatitudeDegrees');
+    const lonNode = tp.querySelector('LongitudeDegrees');
+    if (!latNode || !lonNode) return;
+    const lat = parseFloat(latNode.textContent);
+    const lng = parseFloat(lonNode.textContent);
+    if (!isNaN(lat) && !isNaN(lng)) pts.push({ lat, lng });
+  });
+  return pts;
+}
