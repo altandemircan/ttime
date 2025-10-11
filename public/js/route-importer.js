@@ -612,7 +612,8 @@ async function importGpsFileForDay(file, day){
             else if (ext === 'kml') points = parseKmlToLatLng(text);
             else if (ext === 'tcx') points = parseTcxToLatLng(text);
             else if (ext === 'fit') points = await parseFitToLatLng(file); // FIT dosyası binary, async fonksiyon gerekir
-            else throw new Error('Unsupported file type: ' + e
+            else throw new Error('Unsupported file type: ' + ext);
+
 
   if (!points.length) throw new Error('No coordinates found in file.');
 
