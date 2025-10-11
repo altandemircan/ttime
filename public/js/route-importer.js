@@ -275,107 +275,108 @@
   }
 
   /* ---------------- FIT LOADER + PARSER ---------------- */
-  async function ensureFitParser() {
-    if (window.FitParser) return true;
-    if (ensureFitParser.__inflight) return ensureFitParser.__inflight;
+async function ensureFitParser() {
+  if (window.FitParser) return true;
+  if (ensureFitParser.__inflight) return ensureFitParser.__inflight;
 
-    const UMD_SOURCES = [
-      'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.js',
-      'https://unpkg.com/fit-file-parser@1.10.0/dist/fit-file-parser.js'
-    ];
+  const DEBUG = false; // Debug logunu aç-kapat
+  function log(...a){ if(DEBUG) console.log('[fit-import]', ...a); }
 
-    function loadUMD(src) {
-      return new Promise((resolve, reject) => {
-        if (window.FitParser) return resolve(true);
-        if (document.querySelector(`script[data-fit-src="${src}"]`)) {
-          setTimeout(() => {
-            if (window.FitParser) resolve(true);
-            else reject(new Error('Already injected but FitParser still missing: ' + src));
-          }, 50);
-          return;
-        }
-        const s = document.createElement('script');
-        s.src = src;
-        s.async = true;
-        s.dataset.fitSrc = src;
-        const timeout = setTimeout(() => {
-          s.remove();
-          reject(new Error('Timeout: ' + src));
-        }, 8000);
-        s.onload = () => {
-          clearTimeout(timeout);
-          setTimeout(() => {
-            if (window.FitParser) resolve(true);
-            else reject(new Error('Loaded but global FitParser not found: ' + src));
-          }, 30);
-        };
-        s.onerror = () => {
-          clearTimeout(timeout);
-          reject(new Error('Network load failed: ' + src));
-        };
-        document.head.appendChild(s);
-      });
-    }
+  const ESM_URLS = [
+    'https://esm.sh/fit-file-parser@1.10.0',
+    'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.esm.js'
+  ];
+  const UMD_SOURCES = [
+    'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.js',
+    'https://unpkg.com/fit-file-parser@1.10.0/dist/fit-file-parser.js'
+  ];
 
-    async function loadESM() {
-      const ESM_URLS = [
-        'https://esm.sh/fit-file-parser@1.10.0',
-        'https://cdn.jsdelivr.net/npm/fit-file-parser@1.10.0/dist/fit-file-parser.esm.js'
-      ];
-      const errors = [];
-      for (const url of ESM_URLS) {
-        try {
-          const mod = await import(/* @vite-ignore */ url);
-          const FP = mod.default || mod.FitParser || mod.fitFileParser || null;
-          if (!FP) {
-            errors.push('ESM okundu ama sınıf yok: ' + url);
-            continue;
-          }
-            window.FitParser = FP;
-          return true;
-        } catch (e) {
-          errors.push(`${url} -> ${e.message}`);
-        }
-      }
-      throw new Error('ESM dynamic import başarısız: ' + errors.join(' | '));
-    }
-
-    const attempt = (async () => {
-      const umdErrors = [];
-      for (const src of UMD_SOURCES) {
-        try {
-          await loadUMD(src);
-          if (window.FitParser) {
-            console.log('[fit-import] UMD loaded from', src);
-            return true;
-          }
-        } catch (e) {
-          console.warn('[fit-import] UMD source failed:', src, e.message);
-          umdErrors.push(e.message);
-        }
-      }
-
+  async function loadESM() {
+    const errors = [];
+    for (const url of ESM_URLS) {
       try {
-        await loadESM();
-        if (window.FitParser) {
-          console.log('[fit-import] ESM loaded via dynamic import');
+        const mod = await import(/* @vite-ignore */ url);
+        const FP = mod.default || mod.FitParser || mod.fitFileParser || null;
+        if (FP) {
+          window.FitParser = FP;
+          log('ESM loaded via dynamic import', url);
           return true;
         }
-      } catch (esmErr) {
-        umdErrors.push(esmErr.message);
+        errors.push('ESM loaded but no class: ' + url);
+      } catch (e) {
+        errors.push(`${url} -> ${e.message}`);
       }
-
-      throw new Error('FIT parser yüklenemedi: ' + umdErrors.join(' || '));
-    })();
-
-    ensureFitParser.__inflight = attempt;
-    try {
-      await attempt;
-      return true;
-    } finally {
-      ensureFitParser.__inflight = null;
     }
+    throw new Error('ESM dynamic import failed: ' + errors.join(' | '));
   }
+
+  function loadUMD(src) {
+    return new Promise((resolve, reject) => {
+      if (window.FitParser) return resolve(true);
+      if (document.querySelector(`script[data-fit-src="${src}"]`)) {
+        setTimeout(() => {
+          if (window.FitParser) resolve(true);
+          else reject(new Error('Script injected but FitParser missing: ' + src));
+        }, 80);
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.dataset.fitSrc = src;
+      const timeout = setTimeout(() => {
+        s.remove();
+        reject(new Error('Timeout: ' + src));
+      }, 8000);
+      s.onload = () => {
+        clearTimeout(timeout);
+        setTimeout(() => {
+          if (window.FitParser) resolve(true);
+          else reject(new Error('Loaded but global FitParser not found: ' + src));
+        }, 30);
+      };
+      s.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error('Network load failed: ' + src));
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  const attempt = (async () => {
+    // 1. ESM import dene (modern browser, daha hızlı)
+    try {
+      await loadESM();
+      if (window.FitParser) return true;
+    } catch (esmErr) {
+      log('ESM import failed', esmErr.message);
+    }
+
+    // 2. UMD fallback (eski browser/CDN)
+    const umdErrors = [];
+    for (const src of UMD_SOURCES) {
+      try {
+        await loadUMD(src);
+        if (window.FitParser) {
+          log('UMD loaded from', src);
+          return true;
+        }
+      } catch (e) {
+        log('UMD source failed:', src, e.message);
+        umdErrors.push(e.message);
+      }
+    }
+    throw new Error('FIT parser yüklenemedi: ' + umdErrors.join(' || '));
+  })();
+
+  ensureFitParser.__inflight = attempt;
+  try {
+    await attempt;
+    return true;
+  } finally {
+    ensureFitParser.__inflight = null;
+  }
+}
 
   async function parseFITFile(file) {
     await ensureFitParser();
