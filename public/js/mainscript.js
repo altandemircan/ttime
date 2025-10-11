@@ -6803,10 +6803,10 @@ async function renderRouteForDay(day) {
   }
 
   // --- GPS IMPORT: 2 nokta + importedTrackByDay varsa (expanded bar sadece burada) ---
-  if (points.length === 2 &&
-      window.importedTrackByDay &&
-      window.importedTrackByDay[day] &&
-      window.importedTrackByDay[day].drawRaw) {
+if (points.length === 2 &&
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.importedTrackByDay[day].drawRaw) {
 
     const trackObj = window.importedTrackByDay[day];
     const raw = trackObj.rawPoints || [];
@@ -6824,45 +6824,44 @@ async function renderRouteForDay(day) {
       }
 
       // ---- ONLY ONCE: Expanded elevation bar (try both expanded id's) ----
-      let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-if (!expandedScaleBar) {
-  let expandedMapDiv =
-    document.getElementById(`expanded-map-${day}`) ||
-    document.getElementById(`expanded-route-map-day${day}`);
-  expandedScaleBar = document.createElement('div');
-  expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
-  expandedScaleBar.className = 'route-scale-bar expanded';
-  if (expandedMapDiv && expandedMapDiv.parentNode) {
+// --- Expanded harita daha DOM'da yoksa, bar eklemeye çalışma ---
+let expandedMapDiv =
+  document.getElementById(`expanded-map-${day}`) ||
+  document.getElementById(`expanded-route-map-day${day}`);
+
+if (expandedMapDiv) {
+  let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (!expandedScaleBar) {
+    expandedScaleBar = document.createElement('div');
+    expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+    expandedScaleBar.className = 'route-scale-bar expanded';
     expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
-  } else {
-    // fallback: body'ye ekle
-    document.body.appendChild(expandedScaleBar);
   }
-}
-if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
-  let samples = raw;
-  if (samples.length > 600) {
-    const step = Math.ceil(samples.length / 600);
-    samples = samples.filter((_,i)=>i%step===0);
-  }
-  let dist = 0, dists = [0];
-  for (let i=1; i<samples.length; i++) {
-    dist += haversine(
-      samples[i-1].lat, samples[i-1].lng,
-      samples[i].lat, samples[i].lng
+  if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
+    let samples = raw;
+    if (samples.length > 600) {
+      const step = Math.ceil(samples.length / 600);
+      samples = samples.filter((_,i)=>i%step===0);
+    }
+    let dist = 0, dists = [0];
+    for (let i=1; i<samples.length; i++) {
+      dist += haversine(
+        samples[i-1].lat, samples[i-1].lng,
+        samples[i].lat, samples[i].lng
+      );
+      dists.push(dist);
+    }
+    expandedScaleBar.innerHTML = "";
+    renderRouteScaleBar(
+      expandedScaleBar,
+      dist/1000,
+      samples.map((p,i)=>({
+        name: '',
+        distance: dists[i]/1000,
+        snapped: true
+      }))
     );
-    dists.push(dist);
   }
-  expandedScaleBar.innerHTML = "";
-  renderRouteScaleBar(
-    expandedScaleBar,
-    dist/1000,
-    samples.map((p,i)=>({
-      name: '',
-      distance: dists[i]/1000,
-      snapped: true
-    }))
-  );
 }
 
       let distM = 0;
