@@ -153,6 +153,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
 let tripTitle;
 if (window.__startedWithMapFlag) {
   tripTitle = getNextTripTitle();
+  window.__startedWithMapFlag = false; // YAKALANDIĞI ANDA SIFIRLA
 } else {
   tripTitle = (
     (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
@@ -708,7 +709,8 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // 7. Yeni plan başladığında eski trip state'i sıfırla (startNewChat fonksiyonu varsa!)
-if (typeof window.startNewChat === "function") {
+window.startNewChat = function() {
+    window.__startedWithMapFlag = false;
     const origStartNewChat = window.startNewChat;
     window.startNewChat = function() {
         origStartNewChat.apply(this, arguments);
