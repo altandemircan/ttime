@@ -6773,10 +6773,10 @@ if (imported) {
     expandedScaleBar,
     dist/1000,
     samples.map((p, i) => ({
-      name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
-      distance: dists[i]/1000,
-      snapped: true
-    }))
+  name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+  distance: dists[i]/1000,
+  snapped: true
+}))
   );
 } else {
   // Eski haliyle devam et
