@@ -717,6 +717,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // 7. Yeni plan başladığında eski trip state'i sıfırla (startNewChat fonksiyonu varsa!)
 window.startNewChat = function() {
+     window.cart = []; // EKLE
     window.__startedWithMapFlag = false;
     const origStartNewChat = window.startNewChat;
     window.startNewChat = function() {
