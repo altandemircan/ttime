@@ -8523,7 +8523,7 @@ for (let i = 1; i < coords.length; i++) {
 const totalM = cum[cum.length - 1] || 1;
 
 // Örnekleme (tam profil)
-const N = Math.max(60, Math.round(totalKm * 5));
+const N = Math.max(60, Math.round(totalKm * 2));
 const samples = [];
 for (let i = 0; i < N; i++) {
   const target = (i / (N - 1)) * totalM;
