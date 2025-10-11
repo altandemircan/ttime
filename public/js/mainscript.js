@@ -6962,7 +6962,7 @@ if (eMap) {
   }
 }
 return;
-  }
+ 
 
   // Standart Mapbox Directions yolunu çiz (ve elevation için scaleBar'ı temizle)
   ensureDayMapContainer(day);
