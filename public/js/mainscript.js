@@ -3626,7 +3626,7 @@ function updateCart() {
       <div class="confirmation-container" id="confirmation-container-1" style="display:none"></div>
       <ul class="day-list" data-day="1">
         <div class="empty-day-block">
-          <p class="empty-day-message">No item has been added for this day yet. Select a point on the map to start your trip!</p>
+          <p class="empty-day-message">No item has been added for this day yet.<br>Select a point on the map to start trip!</p>
           <div class="empty-day-actions" style="display:block;text-align:center;">
             <button type="button"
                     class="import-btn gps-import"
