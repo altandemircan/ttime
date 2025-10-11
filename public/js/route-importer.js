@@ -723,7 +723,23 @@ async function importGpsFileForDay(file, day){
   if (typeof renderRouteForDay === 'function') renderRouteForDay(day);
 
   console.log('[GPS] imported → points:', points.length);
+
+   // --- BURAYA EKLE ---
+  window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+  window.lastRouteGeojsons['route-map-day' + day] = {
+    type: "FeatureCollection",
+    features: [{
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: points.map(p => [p.lng, p.lat])
+      },
+      properties: {}
+    }]
+  };
 }
+
+
 
 function parseTcxToLatLng(tcxText) {
   const parser = new DOMParser();
