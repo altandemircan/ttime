@@ -3894,7 +3894,26 @@ function updateCart() {
       }
     }
 
-    dayContainer.appendChild(dayList);
+                const realItemsForThisDay = window.cart.filter(i =>
+              Number(i.day) === Number(day) &&
+              !i._starter && !i._placeholder &&
+              i.category !== "Note" &&
+              i.name
+            );
+            const hasRealItem = realItemsForThisDay.length > 0;
+            const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+
+            if (hasRealItem && !hideAddCat) {
+              const addMoreButton = document.createElement("button");
+              addMoreButton.className = "add-more-btn";
+              addMoreButton.textContent = "+ Add Category";
+              addMoreButton.dataset.day = day;
+              addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+              dayContainer.appendChild(addMoreButton);
+            }
+
+
+dayContainer.appendChild(dayList);
 
     window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
     const realPointCount = dayItemsArr.filter(it =>
@@ -3921,23 +3940,6 @@ function updateCart() {
     cartDiv.appendChild(dayContainer);
   }
 
-            const realItemsForThisDay = window.cart.filter(i =>
-              Number(i.day) === Number(day) &&
-              !i._starter && !i._placeholder &&
-              i.category !== "Note" &&
-              i.name
-            );
-            const hasRealItem = realItemsForThisDay.length > 0;
-            const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-
-            if (hasRealItem && !hideAddCat) {
-              const addMoreButton = document.createElement("button");
-              addMoreButton.className = "add-more-btn";
-              addMoreButton.textContent = "+ Add Category";
-              addMoreButton.dataset.day = day;
-              addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-              dayContainer.appendChild(addMoreButton);
-            }
 
 const addNewDayHr = document.createElement('hr');
 addNewDayHr.className = 'add-new-day-separator';
