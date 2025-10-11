@@ -3723,25 +3723,17 @@ function updateCart() {
       const emptyWrap = document.createElement("div");
       emptyWrap.className = "empty-day-block";
       emptyWrap.innerHTML = `
-        <p class="empty-day-message">No item has been added for this day yet.</p>
-        <div class="empty-day-actions" style="display:block;text-align:center;">
-          <button type="button"
-                  class="import-btn gps-import"
-                  data-import-type="multi"
-                  data-global="1"
-                  title="Supports GPX, TCX, FIT, KML">
-            Import GPS File
-          </button>
-          ${showStartMap ? `
-            <div class="start-map-sep" style="text-align:center;padding:10px 0 4px;font-weight:500;">or</div>
-            <button type="button"
-                    class="start-map-btn"
-                    data-day="${day}">
-              Start with map
-            </button>
-          ` : ``}
-        </div>
-      `;
+  <p class="empty-day-message">No item has been added for this day yet.</p>
+  <div class="empty-day-actions" style="display:block;text-align:center;">
+    <button type="button"
+            class="import-btn gps-import"
+            data-import-type="multi"
+            data-global="1"
+            title="Supports GPX, TCX, FIT, KML">
+      Import GPS File
+    </button>
+  </div>
+`;
       dayList.appendChild(emptyWrap);
     } else {
       let lastCoordItem = null;
