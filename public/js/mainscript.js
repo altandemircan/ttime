@@ -6924,7 +6924,7 @@ if (eMap) {
   L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
   L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
 
-  // --- Expanded Harita için Elevation Profile ÇİZ ---
+  // --- Sadece expanded harita için elevation profile çiz ---
   let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (!expandedScaleBar) {
     const expandedMapDiv = document.getElementById(`expanded-route-map-day${day}`);
@@ -6962,7 +6962,8 @@ if (eMap) {
   }
 }
 return;
- 
+    }
+  }
 
   // Standart Mapbox Directions yolunu çiz (ve elevation için scaleBar'ı temizle)
   ensureDayMapContainer(day);
