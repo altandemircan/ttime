@@ -5198,8 +5198,13 @@ const imported = window.importedTrackByDay && window.importedTrackByDay[day] && 
 if (imported) {
   scaleBarDiv.style.display = '';
 } else {
+  // GPS import track varsa, barı HER ZAMAN göster
+const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+if (imported) {
+  scaleBarDiv.style.display = '';
+} else {
   scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
-}  } catch (_) {}
+}}  } catch (_) {}
   expandedContainer.appendChild(scaleBarDiv);
 
   const mapDivId = `${containerId}-expanded`;
