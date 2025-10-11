@@ -6897,35 +6897,71 @@ async function renderRouteForDay(day) {
         durationSec = distM / speedMps;
       }
       window.lastRouteSummaries = window.lastRouteSummaries || {};
-      window.lastRouteSummaries[containerId] = { distance: distM, duration: durationSec };
-      window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-      window.pairwiseRouteSummaries[containerId] = [{ distance: distM, duration: durationSec }];
-      window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-      delete window.lastRouteGeojsons[containerId];
+window.lastRouteSummaries[containerId] = { distance: distM, duration: durationSec };
+window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+window.pairwiseRouteSummaries[containerId] = [{ distance: distM, duration: durationSec }];
+window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+delete window.lastRouteGeojsons[containerId];
 
-      if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-      if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
-      if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
+if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
+if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
-              let expandedMapObj = window.expandedMaps?.[containerId];
-                let eMap = expandedMapObj?.expandedMap;
+let expandedMapObj = window.expandedMaps?.[containerId];
+let eMap = expandedMapObj?.expandedMap;
 
-                // Eğer expandedMap yoksa, oluşturmayı dene
-                if (!eMap && typeof expandMap === "function") {
-                  await expandMap(containerId, day); // fonksiyonun parametreleri farklıysa onları kullan
-                  expandedMapObj = window.expandedMaps?.[containerId];
-                  eMap = expandedMapObj?.expandedMap;
-                }
-                if (eMap) {
-                  eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
-                  const latlngs = raw.map(pt => [pt.lat, pt.lng]);
-                  const polyEx = L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
-                  try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
-                  L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
-                  L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
-                }
-      return;
+// Eğer expandedMap yoksa, oluşturmayı dene
+if (!eMap && typeof expandMap === "function") {
+  await expandMap(containerId, day); // fonksiyonunun parametrelerine göre güncelle
+  expandedMapObj = window.expandedMaps?.[containerId];
+  eMap = expandedMapObj?.expandedMap;
+}
+if (eMap) {
+  eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
+  const latlngs = raw.map(pt => [pt.lat, pt.lng]);
+  const polyEx = L.polyline(latlngs, { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
+  try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
+  L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
+  L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
+
+  // --- Expanded Harita için Elevation Profile ÇİZ ---
+  let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (!expandedScaleBar) {
+    const expandedMapDiv = document.getElementById(`expanded-route-map-day${day}`);
+    expandedScaleBar = document.createElement('div');
+    expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+    expandedScaleBar.className = 'route-scale-bar expanded';
+    if (expandedMapDiv && expandedMapDiv.parentNode) {
+      expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
     }
+  }
+  if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
+    let samples = raw;
+    if (samples.length > 600) {
+      const step = Math.ceil(samples.length / 600);
+      samples = samples.filter((_,i)=>i%step===0);
+    }
+    let dist = 0, dists = [0];
+    for (let i=1; i<samples.length; i++) {
+      dist += haversine(
+        samples[i-1].lat, samples[i-1].lng,
+        samples[i].lat, samples[i].lng
+      );
+      dists.push(dist);
+    }
+    expandedScaleBar.innerHTML = "";
+    renderRouteScaleBar(
+      expandedScaleBar,
+      dist/1000,
+      samples.map((p,i)=>({
+        name: '',
+        distance: dists[i]/1000,
+        snapped: true
+      }))
+    );
+  }
+}
+return;
   }
 
   // Standart Mapbox Directions yolunu çiz (ve elevation için scaleBar'ı temizle)
