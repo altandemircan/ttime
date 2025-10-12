@@ -7296,8 +7296,6 @@ async function renderRouteForDay(day) {
 }
 
 
-
-/** Her iki mekan arası ayraçlara pairwise summary'leri yazar */
 function updatePairwiseDistanceLabels(day) {
     const containerId = `route-map-day${day}`;
     const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
@@ -7319,15 +7317,26 @@ function updatePairwiseDistanceLabels(day) {
         }
         const label = separator.querySelector('.distance-label');
         if (label) {
-            label.innerHTML = `
-               
-                <span class="distance-value">${distanceStr}</span> • 
-                <span class="duration-value">${durationStr}</span>
-            `;
+            // BUTON VARSA KORU
+            const lockBtn = label.querySelector('.route-lock-toggle');
+            label.innerHTML = '';
+            if (lockBtn) label.appendChild(lockBtn);
+
+            // Sonra mesafe/süreyi ekle
+            const distanceValue = document.createElement('span');
+            distanceValue.className = 'distance-value';
+            distanceValue.textContent = distanceStr;
+            label.appendChild(distanceValue);
+
+            label.appendChild(document.createTextNode(' • '));
+
+            const durationValue = document.createElement('span');
+            durationValue.className = 'duration-value';
+            durationValue.textContent = durationStr;
+            label.appendChild(durationValue);
         }
     });
 }
-
 
 function clearDistanceLabels(day) {
     document.querySelectorAll(`#route-map-day${day} .distance-label, #route-info-day${day} .distance-label`).forEach(label => {
