@@ -8856,26 +8856,19 @@ container._elevKmSpan = totalKm;
   }
   container._redrawElevation = redrawElevation;
 
-  // Hover (aktif domain ile)
-  if (track.__onMove)   track.removeEventListener('mousemove', track.__onMove);
-  if (track.__onLeave)  track.removeEventListener('mouseleave', track.__onLeave);
-
-track.__onMove = (e) => {
+// Tooltip ve vertical line hareket ettirme (her zaman görünür!)
+if (track.__onMove) track.removeEventListener('mousemove', track.__onMove);
+track.__onMove = function(e) {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
-
   const s = container._elevSamples || [];
   const startKmDom = Number(container._elevStartKm || 0);
   const spanKm = Number(container._elevKmSpan || totalKm) || 1;
-
   const rect = track.getBoundingClientRect();
   const ptX = (e.touches && e.touches[0]) ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
   let x = ptX;
   let percent = Math.max(0, Math.min(1, ptX / rect.width));
-
   let foundKmAbs, foundSlope = 0, foundElev = null;
-
-  // SEGMENT SEÇİLİYKEN
   if (
     typeof track._segmentStartPx === "number" &&
     typeof track._segmentWidthPx === "number" &&
@@ -8886,11 +8879,8 @@ track.__onMove = (e) => {
     const segEndKm = startKmDom + spanKm;
     foundKmAbs = segStartKm + segPercent * (segEndKm - segStartKm);
   } else {
-    // SEGMENT YOKKEN (GENEL BAR)
     foundKmAbs = startKmDom + percent * spanKm;
   }
-
-  // Her iki durumda da aynı kod
   let minDist = Infinity;
   for (let i = 1; i < s.length; i++) {
     const kmAbs1 = s[i - 1].distM / 1000;
@@ -8905,13 +8895,15 @@ track.__onMove = (e) => {
       foundElev = Math.round(ed.smooth[i]);
     }
   }
-
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
   tooltip.style.left = `${x}px`;
   verticalLine.style.left = `${x}px`;
   verticalLine.style.display = 'block';
 };
+// Bağla!
+track.addEventListener('mousemove', track.__onMove);
+track.addEventListener('touchmove', track.__onMove);
 
 
   // Loader
