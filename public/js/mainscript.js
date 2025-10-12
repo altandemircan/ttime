@@ -6837,6 +6837,7 @@ if (imported) {
 
 // GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
+  // Kilitli mod ve GPS track varsa
   if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
     const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
     const points = getDayPoints(day);
@@ -6848,35 +6849,24 @@ async function renderRouteForDay(day) {
       trackDistance += haversine(gpsRaw[i-1].lat, gpsRaw[i-1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
     }
     let fullGeojsonCoords = [...gpsCoords];
-    let pairwiseSummaries = [{ distance: trackDistance, duration: trackDistance / 1.3 }];
-    let durations = [trackDistance / 1.3];
+    let totalExtraDistance = 0;
 
     // 2. marker'dan başlayıp, her yeni segmenti Mapbox ile al
-    let prev = points[1];
-    for (let i = 2; i < points.length; i++) {
-      const next = points[i];
-      const url = buildMapboxDirectionsUrl(`${prev.lng},${prev.lat};${next.lng},${next.lat}`, day);
+    let extraMarkers = points.slice(1);
+    for (let i = 0; i < extraMarkers.length - 1; i++) {
+      const from = extraMarkers[i];
+      const to = extraMarkers[i+1];
+      const url = buildMapboxDirectionsUrl(`${from.lng},${from.lat};${to.lng},${to.lat}`, day);
       try {
         const resp = await fetch(url);
         const data = await resp.json();
         if (data.routes && data.routes[0]) {
           const seg = data.routes[0].geometry.coordinates;
           fullGeojsonCoords.push(...seg.slice(1));
-          pairwiseSummaries.push({
-            distance: data.routes[0].distance,
-            duration: data.routes[0].duration
-          });
-          durations.push(data.routes[0].duration);
+          totalExtraDistance += data.routes[0].distance;
         }
-      } catch (e) {
-        pairwiseSummaries.push({ distance: null, duration: null });
-        durations.push(null);
-      }
-      prev = next;
+      } catch (e) {}
     }
-
-    const totalDistance = pairwiseSummaries.reduce((a, b) => a + (b.distance || 0), 0);
-    const totalDuration = durations.reduce((a, b) => a + (b || 0), 0);
 
     const finalGeojson = {
       type: "FeatureCollection",
@@ -6887,70 +6877,16 @@ async function renderRouteForDay(day) {
       }]
     };
 
-    const containerId = `route-map-day${day}`;
-    window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-    window.lastRouteGeojsons[containerId] = finalGeojson;
-    window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-    window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
-    window.lastRouteSummaries = window.lastRouteSummaries || {};
-    window.lastRouteSummaries[containerId] = { distance: totalDistance, duration: totalDuration };
-
-    renderLeafletRoute(containerId, finalGeojson, points, { distance: totalDistance, duration: totalDuration }, day);
+    const totalDistance = trackDistance + totalExtraDistance;
+    renderLeafletRoute(`route-map-day${day}`, finalGeojson, points, { distance: totalDistance, duration: null }, day);
 
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (infoPanel) {
       infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
     }
-    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-    if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
-    if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
-
-    let expandedMapObj = window.expandedMaps?.[containerId];
-    let eMap = expandedMapObj?.expandedMap;
-    if (!eMap && typeof expandMap === "function") {
-      await expandMap(containerId, day);
-      expandedMapObj = window.expandedMaps?.[containerId];
-      eMap = expandedMapObj?.expandedMap;
-    }
-    if (eMap) {
-      eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
-      const polyEx = L.polyline(fullGeojsonCoords.map(c => [c[1], c[0]]), { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
-      try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
-      L.circleMarker([fullGeojsonCoords[0][1], fullGeojsonCoords[0][0]], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
-      L.circleMarker([fullGeojsonCoords[fullGeojsonCoords.length-1][1], fullGeojsonCoords[fullGeojsonCoords.length-1][0]], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
-    }
-
-    let scaleBar = document.getElementById(`route-scale-bar-day${day}`);
-    if (!scaleBar) {
-      const mapDiv = document.getElementById(containerId);
-      scaleBar = document.createElement('div');
-      scaleBar.id = `route-scale-bar-day${day}`;
-      scaleBar.className = 'route-scale-bar';
-      if (mapDiv && mapDiv.parentNode) {
-        mapDiv.parentNode.insertBefore(scaleBar, mapDiv.nextSibling);
-      }
-    }
-    scaleBar.innerHTML = "";
-    if (typeof renderRouteScaleBar === 'function') {
-      let dist = 0, dists = [0];
-      for (let i=1; i<fullGeojsonCoords.length; i++) {
-        dist += haversine(fullGeojsonCoords[i-1][1], fullGeojsonCoords[i-1][0], fullGeojsonCoords[i][1], fullGeojsonCoords[i][0]);
-        dists.push(dist);
-      }
-      renderRouteScaleBar(
-        scaleBar,
-        dist/1000,
-        fullGeojsonCoords.map((p, i) => ({
-          name: (i === 0 ? "Start" : (i === fullGeojsonCoords.length - 1 ? "Finish" : "")),
-          distance: dists[i]/1000,
-          snapped: true
-        }))
-      );
-    }
     return;
   }
 
-  // --- BURADAN SONRASI EKSİKSİZ ESKİ KODUN: ---
   let scaleBar = document.getElementById(`route-scale-bar-day${day}`);
   if (!scaleBar) {
     const mapDiv = document.getElementById(`route-map-day${day}`);
@@ -7146,12 +7082,11 @@ async function renderRouteForDay(day) {
       }
       return;
     }
-
-
+  }
 
   ensureDayMapContainer(day);
   initEmptyDayMap(day);
-  }
+
   const snappedPoints = [];
   for (const pt of points) {
     const snapped = await snapPointToRoad(pt.lat, pt.lng);
