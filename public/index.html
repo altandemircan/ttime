@@ -796,13 +796,12 @@ Your browser does not support the video tag.                  </video>
             max-height: 0;
             overflow: hidden;
             background: #fff;           
-                   
+            transition: max-height 0.5s ease-in-out, padding 0.3s ease-in-out;            
             margin-bottom: 4px !important;
             padding: 0px 0px !important;
             font-size: 0.9rem !important;
             font-weight: 400 !important;
-                transition: max-height 0.5s cubic-bezier(.4,0,.2,1), padding 0.3s, background 0.3s;
-
+            
         }
         .custom-accordion-content p {
             margin-block-start: 0em;
@@ -1206,16 +1205,15 @@ function toggleCustomAccordion(element) {
     if (!content || !icon) return;
 
     if (parent.classList.contains('active')) {
-        // KAPANIŞ
+        // KAPANIŞ: önce mevcut yüksekliğe sabitle, sonra sıfıra çek
+        content.style.maxHeight = content.scrollHeight + 'px';
+        // Reflow ile hemen uygulanmasını sağla
+        void content.offsetHeight;
+        content.style.maxHeight = '0';
         parent.classList.remove('active');
-        content.style.maxHeight = content.scrollHeight + 'px'; // Yüksekliği sabitle
-        // Bir sonraki frame'de sıfırla ki animasyon olsun
-        setTimeout(() => {
-            content.style.maxHeight = '0';
-        }, 10);
         icon.textContent = '+';
     } else {
-        // DİĞERLERİNİ KAPAT (aynı tripbox içindekileri)
+        // Aynı tripbox'taki diğerlerini kapat
         let tripbox = parent.closest('.tripbox');
         if (!tripbox) tripbox = document;
         tripbox.querySelectorAll('.custom-accordion').forEach(acc => {
@@ -1228,11 +1226,11 @@ function toggleCustomAccordion(element) {
             }
         });
 
-        // AÇILIŞ
+        // AÇILIŞ: önce 0, sonra scrollHeight
         parent.classList.add('active');
-        content.style.maxHeight = '0px'; // Önce sıfırda başlat
+        content.style.maxHeight = '0';
         icon.textContent = '−';
-        // Bir sonraki frame'de scrollHeight ile animasyonu başlat
+        // Animasyonu başlatmak için bir sonraki frame'de scrollHeight ver
         setTimeout(() => {
             content.style.maxHeight = content.scrollHeight + 'px';
         }, 10);
