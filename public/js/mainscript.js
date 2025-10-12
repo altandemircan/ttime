@@ -3658,21 +3658,25 @@ const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
 // GPS import sonrası ilk separator'a butonu KESİN ekle ve kilitli başlat
-if (idx === 1 && window.importedTrackByDay && window.importedTrackByDay[day]) {
+if (
+  idx === 1 &&
+  window.importedTrackByDay &&
+  window.importedTrackByDay[day]
+) {
   window.routeLockByDay = window.routeLockByDay || {};
-  window.routeLockByDay[day] = true;
+  if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
   const lockBtn = document.createElement('button');
   lockBtn.className = 'route-lock-toggle';
   lockBtn.style.marginRight = '10px';
-  lockBtn.textContent = '🔒 GPS Route Locked';
-  lockBtn.onclick = function() {
+  lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+  lockBtn.onclick = function(e) {
+    e.stopPropagation(); // BU ÇOK ÖNEMLİ! Parent'a event gitmesin, harita açılmasın.
     window.routeLockByDay[day] = !window.routeLockByDay[day];
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
     renderRouteForDay(day);
   };
   labelDiv.appendChild(lockBtn);
 }
-
 // Mesafe ve süreyi label'a ekle
 const distanceValue = document.createElement('span');
 distanceValue.className = 'distance-value';
@@ -6837,48 +6841,68 @@ if (imported) {
 
 // GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
-  // Kilitli mod ve GPS track varsa
-  if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
-    const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
-    const points = getDayPoints(day);
-    if (gpsRaw.length < 2 || points.length < 2) return;
+  const points = getDayPoints(day);
+  const imported = window.importedTrackByDay?.[day];
+  const isLocked = window.routeLockByDay?.[day];
+  const containerId = `route-map-day${day}`;
 
+  // --- KİLİTLİ, GPS importlu gün ---
+  if (imported && isLocked && points.length >= 2) {
+    // 1-2 arası GPS
+    const gpsRaw = imported.rawPoints || [];
     let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
-    let trackDistance = 0;
-    for (let i = 1; i < gpsRaw.length; i++) {
-      trackDistance += haversine(gpsRaw[i-1].lat, gpsRaw[i-1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
-    }
-    let fullGeojsonCoords = [...gpsCoords];
-    let totalExtraDistance = 0;
+    let summaries = [];
+    let durations = [];
 
-    // 2. marker'dan başlayıp, her yeni segmenti Mapbox ile al
-    let extraMarkers = points.slice(1);
-    for (let i = 0; i < extraMarkers.length - 1; i++) {
-      const from = extraMarkers[i];
-      const to = extraMarkers[i+1];
-      const url = buildMapboxDirectionsUrl(`${from.lng},${from.lat};${to.lng},${to.lat}`, day);
+    let gpsDist = 0;
+    for (let i = 1; i < gpsRaw.length; i++) {
+      gpsDist += haversine(gpsRaw[i-1].lat, gpsRaw[i-1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
+    }
+    summaries.push({ distance: gpsDist, duration: gpsDist / 1.3 });
+    durations.push(gpsDist / 1.3);
+
+    // 2. nokta sonrası için Mapbox
+    let fullCoords = [...gpsCoords];
+    let prev = points[1];
+    for (let i = 2; i < points.length; i++) {
+      const next = points[i];
+      const url = buildMapboxDirectionsUrl(`${prev.lng},${prev.lat};${next.lng},${next.lat}`, day);
       try {
         const resp = await fetch(url);
         const data = await resp.json();
         if (data.routes && data.routes[0]) {
           const seg = data.routes[0].geometry.coordinates;
-          fullGeojsonCoords.push(...seg.slice(1));
-          totalExtraDistance += data.routes[0].distance;
+          fullCoords.push(...seg.slice(1));
+          summaries.push({ distance: data.routes[0].distance, duration: data.routes[0].duration });
+          durations.push(data.routes[0].duration);
         }
-      } catch (e) {}
+      } catch (e) {
+        summaries.push({ distance: null, duration: null });
+        durations.push(null);
+      }
+      prev = next;
     }
 
-    const finalGeojson = {
+    const totalDistance = summaries.reduce((a, b) => a + (b.distance || 0), 0);
+    const totalDuration = durations.reduce((a, b) => a + (b || 0), 0);
+
+    // --- Polyline, elevation, scale bar, küçük ve büyük harita, her şey birleşik çizilir ---
+    const geojson = {
       type: "FeatureCollection",
       features: [{
         type: "Feature",
-        geometry: { type: "LineString", coordinates: fullGeojsonCoords },
+        geometry: { type: "LineString", coordinates: fullCoords },
         properties: {}
       }]
     };
 
-    const totalDistance = trackDistance + totalExtraDistance;
-    renderLeafletRoute(`route-map-day${day}`, finalGeojson, points, { distance: totalDistance, duration: null }, day);
+    window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+    window.lastRouteGeojsons[containerId] = geojson;
+    window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+    window.pairwiseRouteSummaries[containerId] = summaries;
+    window.lastRouteSummaries = window.lastRouteSummaries || {};
+    window.lastRouteSummaries[containerId] = { distance: totalDistance, duration: totalDuration };
+
 
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (infoPanel) {
