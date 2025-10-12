@@ -3656,34 +3656,29 @@ distanceSeparator.appendChild(document.createElement('div')).className = 'separa
 const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
-// --- KİLİT BUTONU LABEL'IN EN BAŞINA, GPS import varsa ilk separatorda ve HER ZAMAN KİLİTLİ ---
+// GPS import sonrası ilk separator'a butonu KESİN ekle ve kilitli başlat
 if (idx === 0 && window.importedTrackByDay && window.importedTrackByDay[day]) {
   window.routeLockByDay = window.routeLockByDay || {};
   window.routeLockByDay[day] = true;
-}
 
-if (idx === 0) {
+  // Buton her zaman ilk label'da ve başta!
   const lockBtn = document.createElement('button');
   lockBtn.className = 'route-lock-toggle';
   lockBtn.style.marginRight = '10px';
-  // Her durumda kilitli başlasın!
   lockBtn.textContent = '🔒 GPS Route Locked';
   lockBtn.onclick = function() {
-    // Sadece ilk separator ve GPS importu varsa toggle'a izin ver!
     window.routeLockByDay[day] = !window.routeLockByDay[day];
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
     renderRouteForDay(day);
   };
-  // Butonu label'in BAŞINA EKLE
   labelDiv.appendChild(lockBtn);
 }
 
+// Mesafe ve süreyi label'a ekle
 const distanceValue = document.createElement('span');
 distanceValue.className = 'distance-value';
 distanceValue.textContent = distanceStr;
-
 const bullet = document.createTextNode(' • ');
-
 const durationValue = document.createElement('span');
 durationValue.className = 'duration-value';
 durationValue.textContent = durationStr;
