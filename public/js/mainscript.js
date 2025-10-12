@@ -3658,17 +3658,13 @@ const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
 // GPS import sonrası ilk separator'a butonu KESİN ekle ve kilitli başlat
-if (
-  idx === 1 &&
-  window.importedTrackByDay &&
-  window.importedTrackByDay[day]
-) {
+if (idx === 1 && window.importedTrackByDay && window.importedTrackByDay[day]) {
   window.routeLockByDay = window.routeLockByDay || {};
-  if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
+  window.routeLockByDay[day] = true;
   const lockBtn = document.createElement('button');
   lockBtn.className = 'route-lock-toggle';
   lockBtn.style.marginRight = '10px';
-  lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+  lockBtn.textContent = '🔒 GPS Route Locked';
   lockBtn.onclick = function() {
     window.routeLockByDay[day] = !window.routeLockByDay[day];
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
@@ -6841,21 +6837,10 @@ if (imported) {
 
 // GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
-  // === GPS importlu ve kilitli GÜN ===
-  if (
-    window.importedTrackByDay &&
-    window.importedTrackByDay[day] &&
-    window.routeLockByDay &&
-    window.routeLockByDay[day]
-  ) {
+  if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
     const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
     const points = getDayPoints(day);
     if (gpsRaw.length < 2 || points.length < 2) return;
-
-    const containerId = `route-map-day${day}`;
-    // --- HARİTA CONTAINER HER ZAMAN OLUŞTURULUYOR ---
-    ensureDayMapContainer(day);
-    initEmptyDayMap(day);
 
     let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
     let trackDistance = 0;
@@ -6866,6 +6851,7 @@ async function renderRouteForDay(day) {
     let pairwiseSummaries = [{ distance: trackDistance, duration: trackDistance / 1.3 }];
     let durations = [trackDistance / 1.3];
 
+    // 2. marker'dan başlayıp, her yeni segmenti Mapbox ile al
     let prev = points[1];
     for (let i = 2; i < points.length; i++) {
       const next = points[i];
@@ -6901,6 +6887,7 @@ async function renderRouteForDay(day) {
       }]
     };
 
+    const containerId = `route-map-day${day}`;
     window.lastRouteGeojsons = window.lastRouteGeojsons || {};
     window.lastRouteGeojsons[containerId] = finalGeojson;
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
