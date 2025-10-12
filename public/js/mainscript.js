@@ -3658,13 +3658,17 @@ const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
 // GPS import sonrası ilk separator'a butonu KESİN ekle ve kilitli başlat
-if (idx === 1 && window.importedTrackByDay && window.importedTrackByDay[day]) {
+if (
+  idx === 1 &&
+  window.importedTrackByDay &&
+  window.importedTrackByDay[day]
+) {
   window.routeLockByDay = window.routeLockByDay || {};
-  window.routeLockByDay[day] = true;
+  if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
   const lockBtn = document.createElement('button');
   lockBtn.className = 'route-lock-toggle';
   lockBtn.style.marginRight = '10px';
-  lockBtn.textContent = '🔒 GPS Route Locked';
+  lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
   lockBtn.onclick = function() {
     window.routeLockByDay[day] = !window.routeLockByDay[day];
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
