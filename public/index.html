@@ -796,11 +796,13 @@ Your browser does not support the video tag.                  </video>
             max-height: 0;
             overflow: hidden;
             background: #fff;           
-            transition: max-height 0.5s ease-in-out, padding 0.3s ease-in-out;            
+                   
             margin-bottom: 4px !important;
             padding: 0px 0px !important;
             font-size: 0.9rem !important;
             font-weight: 400 !important;
+                transition: max-height 0.5s cubic-bezier(.4,0,.2,1), padding 0.3s, background 0.3s;
+
         }
         .custom-accordion-content p {
             margin-block-start: 0em;
