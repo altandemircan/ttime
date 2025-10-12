@@ -3646,7 +3646,6 @@ function updateCart() {
           }
 
 
-
 const distanceSeparator = document.createElement('div');
 distanceSeparator.className = 'distance-separator';
 
@@ -3657,7 +3656,7 @@ distanceSeparator.appendChild(document.createElement('div')).className = 'separa
 const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
-// Eğer ilk separator VE GPS importluysa, state'i kesin kilitli yap
+// --- KİLİT BUTONU LABEL'IN EN BAŞINA, GPS import varsa ilk separatorda ve HER ZAMAN KİLİTLİ ---
 if (idx === 0 && window.importedTrackByDay && window.importedTrackByDay[day]) {
   window.routeLockByDay = window.routeLockByDay || {};
   window.routeLockByDay[day] = true;
@@ -3666,22 +3665,32 @@ if (idx === 0 && window.importedTrackByDay && window.importedTrackByDay[day]) {
 if (idx === 0) {
   const lockBtn = document.createElement('button');
   lockBtn.className = 'route-lock-toggle';
-  lockBtn.style.marginRight = '12px';
-  const isLocked = !!window.routeLockByDay[day];
-  lockBtn.textContent = isLocked ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+  lockBtn.style.marginRight = '10px';
+  // Her durumda kilitli başlasın!
+  lockBtn.textContent = '🔒 GPS Route Locked';
   lockBtn.onclick = function() {
+    // Sadece ilk separator ve GPS importu varsa toggle'a izin ver!
     window.routeLockByDay[day] = !window.routeLockByDay[day];
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
     renderRouteForDay(day);
   };
-  // Buton labelDiv'in EN BAŞINA ekleniyor!
+  // Butonu label'in BAŞINA EKLE
   labelDiv.appendChild(lockBtn);
 }
 
-labelDiv.innerHTML += `
-  <span class="distance-value">${distanceStr}</span> • 
-  <span class="duration-value">${durationStr}</span>
-`;
+const distanceValue = document.createElement('span');
+distanceValue.className = 'distance-value';
+distanceValue.textContent = distanceStr;
+
+const bullet = document.createTextNode(' • ');
+
+const durationValue = document.createElement('span');
+durationValue.className = 'duration-value';
+durationValue.textContent = durationStr;
+
+labelDiv.appendChild(distanceValue);
+labelDiv.appendChild(bullet);
+labelDiv.appendChild(durationValue);
 
 distanceSeparator.appendChild(labelDiv);
 
