@@ -1204,10 +1204,16 @@ function toggleCustomAccordion(element) {
     if (!content || !icon) return;
 
     if (parent.classList.contains('active')) {
+        // KAPANIŞ
         parent.classList.remove('active');
-        content.style.maxHeight = '0';
+        content.style.maxHeight = content.scrollHeight + 'px'; // Yüksekliği sabitle
+        // Bir sonraki frame'de sıfırla ki animasyon olsun
+        setTimeout(() => {
+            content.style.maxHeight = '0';
+        }, 10);
         icon.textContent = '+';
     } else {
+        // DİĞERLERİNİ KAPAT (aynı tripbox içindekileri)
         let tripbox = parent.closest('.tripbox');
         if (!tripbox) tripbox = document;
         tripbox.querySelectorAll('.custom-accordion').forEach(acc => {
@@ -1220,13 +1226,14 @@ function toggleCustomAccordion(element) {
             }
         });
 
+        // AÇILIŞ
         parent.classList.add('active');
-        content.style.maxHeight = '0px'; // önce kapalıya çek
+        content.style.maxHeight = '0px'; // Önce sıfırda başlat
         icon.textContent = '−';
-        // KÜÇÜK GECİKMEYLE (1 frame sonra) gerçek yüksekliğe animasyonla aç
+        // Bir sonraki frame'de scrollHeight ile animasyonu başlat
         setTimeout(() => {
             content.style.maxHeight = content.scrollHeight + 'px';
-        }, 15); // 10-20ms arası yeterli, 1 frame
+        }, 10);
     }
 }
 </script>
