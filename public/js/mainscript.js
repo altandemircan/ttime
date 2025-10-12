@@ -4,6 +4,8 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
+window.routeLockByDay = window.routeLockByDay || {};
+
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
   const rect = window.__scaleBarDragTrack.getBoundingClientRect();
@@ -3975,6 +3977,8 @@ document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
     });
+    renderRouteLockButton(day);
+
 });
 
 
@@ -6792,8 +6796,103 @@ if (imported) {
 }
   }
 }
+function renderRouteLockButton(day) {
+  const container = document.getElementById(`day-container-${day}`);
+  if (!container) return;
+  let btn = container.querySelector('.route-lock-toggle');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.className = 'route-lock-toggle';
+    btn.style.marginLeft = '16px';
+    container.querySelector('.day-header')?.appendChild(btn);
+  }
+  const isLocked = !!window.routeLockByDay[day];
+  btn.textContent = isLocked ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+  btn.onclick = function() {
+    window.routeLockByDay[day] = !window.routeLockByDay[day];
+    btn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+    renderRouteForDay(day);
+  };
+}
 
+// GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
+  // --- GPS LOCK özelliği: başta kontrol ---
+  renderRouteLockButton(day);
+
+  // Eğer GPS import edilmiş ve kilitliyse:
+  if (
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.routeLockByDay &&
+    window.routeLockByDay[day]
+  ) {
+    // Sadece GPS dosyasından gelen rawPoints ile çizim ve elevation
+    const raw = window.importedTrackByDay[day].rawPoints || [];
+    if (raw.length > 1) {
+      ensureDayMapContainer(day);
+      initEmptyDayMap(day);
+      const containerId = `route-map-day${day}`;
+      const map = window.leafletMaps?.[containerId];
+      if (map) {
+        map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
+        const latlngs = raw.map(pt => [pt.lat, pt.lng]);
+        const poly = addPolylineSafe(map, latlngs, { color: '#1565c0', weight: 5, opacity: 0.9 });
+        addCircleMarkerSafe(map, latlngs[0], { radius:8, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).bindPopup('Start');
+        addCircleMarkerSafe(map, latlngs[latlngs.length - 1], { radius:8, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).bindPopup('Finish');
+        try { map.fitBounds(poly.getBounds(), { padding:[20,20] }); } catch(_){}
+      }
+
+      // Expanded elevation bar
+      let expandedMapDiv =
+        document.getElementById(`expanded-map-${day}`) ||
+        document.getElementById(`expanded-route-map-day${day}`);
+
+      if (expandedMapDiv) {
+        let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        if (!expandedScaleBar) {
+          expandedScaleBar = document.createElement('div');
+          expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+          expandedScaleBar.className = 'route-scale-bar expanded';
+          expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+        }
+        if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
+          let samples = raw;
+          if (samples.length > 600) {
+            const step = Math.ceil(samples.length / 600);
+            samples = samples.filter((_,i)=>i%step===0);
+          }
+          let dist = 0, dists = [0];
+          for (let i=1; i<samples.length; i++) {
+            dist += haversine(
+              samples[i-1].lat, samples[i-1].lng,
+              samples[i].lat, samples[i].lng
+            );
+            dists.push(dist);
+          }
+          expandedScaleBar.innerHTML = "";
+          renderRouteScaleBar(
+            expandedScaleBar,
+            dist/1000,
+            samples.map((p, i) => ({
+              name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+              distance: dists[i]/1000,
+              snapped: true
+            }))
+          );
+        }
+      }
+
+      // UI bilgilendirme
+      const infoPanel = document.getElementById(`route-info-day${day}`);
+      if (infoPanel) {
+        infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota KİLİTLİ. Yeni eklenen noktalar haritaya ve profile dahil edilmez.</span>`;
+      }
+    }
+    return; // GPS kilitliyken başka hiçbir şey çizilmez!
+  }
+
+  // --- DEVAMI: Orijinal kodun aynen devam eder ---
   let scaleBar = document.getElementById(`route-scale-bar-day${day}`);
   if (!scaleBar) {
     const mapDiv = document.getElementById(`route-map-day${day}`);
@@ -7137,6 +7236,7 @@ async function renderRouteForDay(day) {
       );
     }, 150);
   }
+  renderRouteLockButton(day);
 }
 /** Her iki mekan arası ayraçlara pairwise summary'leri yazar */
 function updatePairwiseDistanceLabels(day) {
@@ -8524,7 +8624,7 @@ const totalM = cum[cum.length - 1] || 1;
 
 // Örnekleme (tam profil)
 
-const N = Math.max(60, Math.round(totalKm * 2));
+const N = Math.max(60, Math.round(totalKm *5));
 
 const samples = [];
 for (let i = 0; i < N; i++) {
