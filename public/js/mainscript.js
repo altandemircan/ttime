@@ -3644,6 +3644,9 @@ function updateCart() {
               ? Math.round(summary.duration / 60) + " dk"
               : Math.round(summary.duration) + " sn";
           }
+
+
+
 const distanceSeparator = document.createElement('div');
 distanceSeparator.className = 'distance-separator';
 
@@ -3660,20 +3663,27 @@ if (idx === 0) {
   };
   distanceSeparator.appendChild(lockBtn);
 }
+
 distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
 
+// Distance label
+const labelDiv = document.createElement('div');
+labelDiv.className = 'distance-label';
+labelDiv.innerHTML = `
+  <span class="distance-value">${distanceStr}</span> • 
+  <span class="duration-value">${durationStr}</span>
+`;
+distanceSeparator.appendChild(labelDiv);
+
+distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
+
+dayList.appendChild(distanceSeparator);
 
 
 
-          distanceSeparator.innerHTML = `
-            <div class="separator-line"></div>
-            <div class="distance-label">
-              <span class="distance-value">${distanceStr}</span> • 
-              <span class="duration-value">${durationStr}</span>
-            </div>
-            <div class="separator-line"></div>
-          `;
-          dayList.appendChild(distanceSeparator);
+
+
+
         }
         const li = document.createElement("li");
         li.className = "travel-item";
