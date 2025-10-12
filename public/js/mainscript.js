@@ -4266,31 +4266,31 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
 
     // NEW: re-render expanded scale bar with fresh route
 const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (scaleBarDiv) {
-    try {
-      const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-      if (!pts || pts.length < 2) {
-        scaleBarDiv.innerHTML = '';
-        scaleBarDiv.style.display = 'none';
-      } else {
-        const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
-        const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
-          ? getRouteMarkerPositionsOrdered(day)
-          : [];
-        if (totalKm > 0 && markerPositions.length > 0) {
-          scaleBarDiv.style.display = '';
-          try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
-          renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-        } else {
-          scaleBarDiv.innerHTML = '';
-          scaleBarDiv.style.display = 'none';
-        }
-      }
-    } catch (_) {
+if (scaleBarDiv) {
+  try {
+    const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+    if (!pts || pts.length < 2) {
       scaleBarDiv.innerHTML = '';
       scaleBarDiv.style.display = 'none';
+    } else {
+      const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
+      const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
+        ? getRouteMarkerPositionsOrdered(day)
+        : [];
+      if (totalKm > 0 && markerPositions.length > 0) {
+        scaleBarDiv.style.display = '';
+        try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
+        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+      } else {
+        scaleBarDiv.innerHTML = '';
+        scaleBarDiv.style.display = 'none';
+      }
     }
+  } catch (_) {
+    scaleBarDiv.innerHTML = '';
+    scaleBarDiv.style.display = 'none';
   }
+}
     adjustExpandedHeader(day);
 }
 /* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
@@ -7238,12 +7238,10 @@ async function renderRouteForDay(day) {
 
   renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
 
-setTimeout(() => {
   const expandedMapObj = window.expandedMaps?.[containerId];
-  if (expandedMapObj?.expandedMap && typeof updateExpandedMap === 'function') {
+  if (expandedMapObj?.expandedMap) {
     updateExpandedMap(expandedMapObj.expandedMap, day);
   }
-}, 400); // 400ms sonra tekrar dene
 
   const pairwiseSummaries = [];
   for (let i = 0; i < points.length - 1; i++) {
