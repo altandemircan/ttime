@@ -3660,8 +3660,6 @@ labelDiv.className = 'distance-label';
 if (idx === 0 && window.importedTrackByDay && window.importedTrackByDay[day]) {
   window.routeLockByDay = window.routeLockByDay || {};
   window.routeLockByDay[day] = true;
-
-  // Buton her zaman ilk label'da ve başta!
   const lockBtn = document.createElement('button');
   lockBtn.className = 'route-lock-toggle';
   lockBtn.style.marginRight = '10px';
@@ -3670,6 +3668,7 @@ if (idx === 0 && window.importedTrackByDay && window.importedTrackByDay[day]) {
     window.routeLockByDay[day] = !window.routeLockByDay[day];
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
     renderRouteForDay(day);
+    // Separetor dışında hiçbir yere buton ekleme!
   };
   labelDiv.appendChild(lockBtn);
 }
@@ -4017,7 +4016,6 @@ document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
     });
-    renderRouteLockButton(day);
 
 });
 
@@ -6836,24 +6834,6 @@ if (imported) {
 }
   }
 }
-function renderRouteLockButton(day) {
-  const container = document.getElementById(`day-container-${day}`);
-  if (!container) return;
-  let btn = container.querySelector('.route-lock-toggle');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.className = 'route-lock-toggle';
-    btn.style.marginLeft = '16px';
-    container.querySelector('.day-header')?.appendChild(btn);
-  }
-  const isLocked = !!window.routeLockByDay[day];
-  btn.textContent = isLocked ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-  btn.onclick = function() {
-    window.routeLockByDay[day] = !window.routeLockByDay[day];
-    btn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-    renderRouteForDay(day);
-  };
-}
 
 // GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
@@ -7246,7 +7226,7 @@ async function renderRouteForDay(day) {
       );
     }, 150);
   }
-  renderRouteLockButton(day);
+
 }
 /** Her iki mekan arası ayraçlara pairwise summary'leri yazar */
 function updatePairwiseDistanceLabels(day) {
