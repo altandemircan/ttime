@@ -818,7 +818,7 @@ Your browser does not support the video tag.                  </video>
 
 
 
-        <!-- privacy and terms -->
+        <!-- updates -->
     <div class="sidebar-overlay sidebar-updates" id="sidebar-overlay-updates">
         <div id="sidebar-updates">
             <div class="sidebar_title">
@@ -896,224 +896,184 @@ More features, transparency, and official updates will come with our full launch
 
 
 
-
-
-    <!-- privacy and terms -->
-    <div class="sidebar-overlay sidebar-privacyterms" id="sidebar-overlay-privacyterms">
-        <div id="sidebar-privacyterms">
-            <div class="sidebar_title">
-                Privacy and Terms
-                <button class="sidebar-toggle" onclick="toggleSidebarPrivacyTerms()">
-                    <img src="/img/close-icon.svg" alt="Close">
-                </button>
-                <div class="mytripsall">
-                    <div class="tripbox">
-                        <p class="date">1. PRIVACY AND DATA POLICY</p>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>1.1. Purpose and Scope</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    This Privacy and Data Policy outlines how Triptime AI ("platform," "we," or "project") collects, processes, stores, and protects the personal data of our users ("user" or "member") through our website, which provides AI-powered travel recommendations and trip list management services. Although we are not currently an official company, we have created this policy to ensure the transparent and reliable operation of our platform.
-                                </p>
-                            </div>
+<!-- privacy and terms -->
+<div class="sidebar-overlay sidebar-privacyterms" id="sidebar-overlay-privacyterms">
+    <div id="sidebar-privacyterms">
+        <div class="sidebar_title">
+            Privacy and Terms
+            <button class="sidebar-toggle" onclick="toggleSidebarPrivacyTerms()">
+                <img src="/img/close-icon.svg" alt="Close">
+            </button>
+            <div class="mytripsall">
+                <div class="tripbox">
+                    <p class="date">1. PRIVACY AND DATA POLICY</p>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>1.1. Purpose and Scope</span>
+                            <span class="custom-icon">+</span>
                         </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>1.2. Collected Data and Sources</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    Registration and Membership Process: Information such as name, surname, email, phone number, payment details, username, and password.
-                                </p>
-                                <p>
-                                    Travel Preferences and Interaction Data: Data such as the user's desired travel destination, travel duration, preferred activities, trip list data, IP address, browser, and device information.
-                                </p>
-                                <p>
-                                    Data Sources: Recommendations are generated using OpenAI's ChatGPT-4-mini model and data pulled from Google. Additionally, automatic data is collected using cookies and tracking technologies.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>1.3. Purposes of Data Usage</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    The collected data is used to provide personalized travel recommendations, improve service quality, manage membership and payment processes, conduct analysis, and ensure security.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>1.4. Cookies and Tracking Technologies</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    Our platform uses cookies to enhance site performance and personalize the user experience. You can manage your cookie settings through your browser; however, rejecting cookies may limit the functionality of some services.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>1.5. Data Security and Sharing</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    User data is stored with security measures to protect against unauthorized access, disclosure, modification, and destruction. Data may be shared with third-party service providers for payment processing, technical support, legal obligations, or in response to official requests. If necessary, data may be processed on international servers in compliance with legal regulations.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>1.6. User Rights</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    Users have the right to access, correct, delete, object to certain data processing activities, and request data portability regarding their personal data.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>1.7. Policy Changes</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    This policy may be updated due to legal requirements or service updates. All changes will be announced on our website and will take effect from the update date.
-                                </p>
-                            </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                This Privacy and Data Policy explains how Triptime AI ("platform," "we," or "project") handles and protects user data. Triptime AI provides AI-powered travel recommendations and trip list management services. The platform currently does not require official membership or payments. User data is stored only on their own device.
+                            </p>
                         </div>
                     </div>
-                    <div class="tripbox">
-                        <p class="date">2. TERMS OF USE AND AGREEMENTS</p>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.1. Introduction and Definitions</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    These Terms of Use govern the use of AI-powered travel planning services provided by Triptime AI ("platform," "we," or "project"). Although we are not currently an official company, our services are available to users. Definitions of user, member, and guest user apply within this scope.
-                                </p>
-                            </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>1.2. Collected Data and Sources</span>
+                            <span class="custom-icon">+</span>
                         </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.2. Service Description</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    Triptime AI provides personalized travel recommendations based on user inputs such as desired travel destination, travel duration, and preferred activities. Users can add, edit, delete, and share selected items from the recommendations in their trip lists.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.3. Membership, Pricing, and Subscription</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    Membership Types: Paid Membership (full access and all benefits) and Guest User (free, limited access).
-                                </p>
-                                <p>
-                                    Payment and Subscription Management: Paid membership is activated upon payment of the subscription fee. Payments are processed through secure third-party payment systems. Subscriptions renew monthly or annually; cancellation and refund terms are detailed on the relevant pages.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.4. User Responsibilities</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    Users are responsible for ensuring that the information they provide is accurate, complete, and up-to-date, maintaining account security, and using the service in compliance with the law.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.5. Use of Trip Lists and Personalized Services</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    The travel recommendations provided by the platform are for informational purposes only. Users can add, edit, delete, or share selected items from the recommendations in their trip lists. However, any responsibility arising from these actions lies solely with the user.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.6. Special Provisions for Paid Services</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    Paid membership is governed by a separate membership agreement between the user and the platform. This agreement details the scope of services, subscription terms, cancellation, renewal, and refund conditions. Paid members have full access to the platform's services and benefits; however, no guarantees are provided regarding the accuracy of the information.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.7. Disclaimer and Limitation of Liability</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    The content and travel recommendations provided by Triptime AI are for informational purposes only. Since the recommendations do not provide definitive results, users are responsible for supplementing this information with their own research and assuming any risks. The platform is not liable for any inaccuracies, errors, or delays.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.8. Intellectual Property and Copyright</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    All content, graphics, software, and other materials on the platform are owned by Triptime AI. Unauthorized copying, distribution, or modification will result in legal action.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>2.9. Changes to Terms and Dispute Resolution</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                    Triptime AI reserves the right to update these Terms of Use. Changes will be announced on the website and are considered accepted upon continued use of the service. In case of disputes, negotiation will be prioritized; otherwise, the relevant legal authorities will have jurisdiction.
-                                </p>
-                            </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                Trip lists and user preferences are stored locally on the user's device.  
+                                Recommendations are generated using the <strong>LLaMA 3.2:1b</strong> model and open-source software when possible.  
+                                Location data is optional; users can activate it to see their position on the map or leave it off.  
+                                Cookies or tracking are minimal and only used if necessary for platform functionality.
+                            </p>
                         </div>
                     </div>
-                    <hr>
-                    <div class="tripbox">
-                        <p class="date">Last updated: 26.02.2025</p>
-                        <p class="date">CONTACT AND SUPPORT</p>
-                        <p class="date">For questions about our privacy policy or requests regarding your data processing, please contact us:</p>
-                        <div>Email: info@triptime.ai</div>
-                        <div>Web: www.triptime.ai</div>
-                        <p class="date">
-                            <strong>Important Note:</strong>
-                            These texts have been prepared to provide transparent and reliable service to our users during our current phase (without official company status). Updates to the relevant legal texts will be made upon investment and formal company establishment.
-                        </p>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>1.3. Purposes of Data Usage</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                Data is used solely to provide travel planning features and AI-generated recommendations. User data is never shared with third parties or transferred externally.
+                            </p>
+                        </div>
                     </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>1.4. Data Security</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                All user data is stored on their device and cannot be accessed by the platform. Users can view, edit, or delete their data at any time.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>1.5. Policy Changes</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                This policy may be updated due to platform improvements or legal requirements. Changes will be announced on the website and take effect on the date published.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="tripbox">
+                    <p class="date">2. TERMS OF USE</p>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>2.1. Introduction and Definitions</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                These Terms govern the use of Triptime AI's AI-powered travel planning services. Users plan trips according to their own preferences. Official membership or payment systems are not required at this time.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>2.2. Service Description</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                Triptime AI allows users to create and visualize travel plans based on destination and duration, using a local trip list stored on the user's device.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>2.3. Membership and User Data</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                The platform is free to use. Users manage their trip lists locally and can freely create and edit their travel plans.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>2.4. User Responsibilities</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                Users are responsible for how they use the platform and manage their own data. The platform does not interfere with or access user data.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>2.5. Trip Lists and Personalized Services</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                The platform provides AI-generated recommendations. Users are fully responsible for planning and managing their trips.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>2.6. Responsibility and Usage</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                Triptime AI does not guarantee the accuracy or completeness of recommendations. Users plan trips based on their own judgment and preferences.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>2.7. Intellectual Property</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                All content, software, design, and graphics on the platform belong to Triptime AI. Users may freely use their own trip data stored on their device.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>2.8. Changes to Terms</span>
+                            <span class="custom-icon">+</span>
+                        </div>
+                        <div class="custom-accordion-content">
+                            <p>
+                                Triptime AI may update these Terms of Use. Updates are announced on the website and apply to continued use of the platform.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="tripbox">
+                    <p class="date">Last updated: 26.02.2025</p>
+                    <p class="date">CONTACT AND SUPPORT</p>
+                    <p class="date">For questions about our privacy policy or data processing, please contact us:</p>
+                    <div>Email: info@triptime.ai</div>
+                    <div>Web: www.triptime.ai</div>
+                    <p class="date">
+                        <strong>Important Note:</strong>
+                        These texts are prepared to provide a transparent and reliable service during our current phase (without official company status). Updates will be made upon formal company establishment.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
 
 </section>
     </div>
