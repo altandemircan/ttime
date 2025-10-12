@@ -3916,7 +3916,7 @@ cartDiv.appendChild(dayContainer);
         if (chatBox) chatBox.innerHTML = '';
         const userInput = document.getElementById('user-input');
         if (userInput) userInput.value = '';
-        
+
          // ... eski kodlar ...
   window.selectedCity = null;
   window.selectedLocation = null;
@@ -8863,7 +8863,6 @@ container._elevKmSpan = totalKm;
 track.__onMove = (e) => {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
-
   const s = container._elevSamples || [];
   const startKmDom = Number(container._elevStartKm || 0);
   const spanKm = Number(container._elevKmSpan || totalKm) || 1;
@@ -8873,12 +8872,13 @@ track.__onMove = (e) => {
   let x = ptX;
   let percent = Math.max(0, Math.min(1, ptX / rect.width));
 
-  // --- SEGMENT clamp ve hover orantılama ---
+  // SEGMENT SEÇİLİYSE
   if (
     typeof track._segmentStartPx === "number" &&
     typeof track._segmentWidthPx === "number" &&
     track._segmentWidthPx > 0
   ) {
+
     // Mouse barın başında ise segmentin başı, sonunda ise segmentin sonu
     x = percent * rect.width; // çizgi scale bar'ın tamamında gezinsin
 
@@ -8913,6 +8913,31 @@ track.__onMove = (e) => {
 
     return;
   }
+
+  // --- BURAYA EKLE ---
+  // SEGMENT SEÇİLİ DEĞİLSE DE tooltipi göster!
+  const foundKmAbs = startKmDom + percent * spanKm;
+  let minDist = Infinity, foundSlope = 0, foundElev = null;
+  for (let i = 1; i < s.length; i++) {
+    const kmAbs1 = s[i - 1].distM / 1000;
+    const kmAbs2 = s[i].distM / 1000;
+    const midKm = (kmAbs1 + kmAbs2) / 2;
+    const dist = Math.abs(foundKmAbs - midKm);
+    if (dist < minDist) {
+      minDist = dist;
+      const dx = s[i].distM - s[i - 1].distM;
+      const dy = ed.smooth[i] - ed.smooth[i - 1];
+      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+      foundElev = Math.round(ed.smooth[i]);
+    }
+  }
+  tooltip.style.opacity = '1';
+  tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
+  tooltip.style.left = `${x}px`;
+  verticalLine.style.left = `${x}px`;
+  verticalLine.style.display = 'block';
+};
+
 };
 
 
