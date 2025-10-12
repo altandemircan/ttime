@@ -5174,7 +5174,6 @@ async function expandMap(containerId, day) {
   const expandButton = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
 
   console.log('[expandMap] elements:', { originalContainer, map, expandButton });
-
   if (!originalContainer) {
     console.error('[expandMap] original small map container yok. İptal.');
     return;
@@ -5198,7 +5197,7 @@ async function expandMap(containerId, day) {
   expandedContainer.className = 'expanded-map-container';
   document.body.appendChild(expandedContainer);
 
-  // HEADER
+  // === WRAPPER PANEL: HEADER + SCALE BAR ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
 
@@ -5220,8 +5219,31 @@ async function expandMap(containerId, day) {
   statsDiv.className = 'route-stats';
   headerDiv.appendChild(statsDiv);
 
-  expandedContainer.appendChild(headerDiv);
+  const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (oldBar) oldBar.remove();
 
+  const scaleBarDiv = document.createElement('div');
+  scaleBarDiv.className = 'route-scale-bar';
+  scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
+  try {
+    const ptsForBar = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+    const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+    if (imported) {
+      scaleBarDiv.style.display = '';
+    } else {
+      scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
+    }
+  } catch (_) {}
+
+  // PANEL WRAPPER
+  const panelDiv = document.createElement('div');
+  panelDiv.className = 'expanded-map-panel';
+  panelDiv.appendChild(headerDiv);
+  panelDiv.appendChild(scaleBarDiv);
+  expandedContainer.appendChild(panelDiv);
+  // === PANEL BİTTİ ===
+
+  // Diğer kontroller (location ve close butonları)
   const locBtn = document.createElement('button');
   locBtn.type = 'button';
   locBtn.id = `use-my-location-btn-day${day}`;
@@ -5239,28 +5261,6 @@ async function expandMap(containerId, day) {
   `;
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
-
-  const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (oldBar) oldBar.remove();
-
-  const scaleBarDiv = document.createElement('div');
-  scaleBarDiv.className = 'route-scale-bar';
-  scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
-  try {
-    const ptsForBar = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-    // Eğer GPS import track varsa, barı HER ZAMAN göster
-const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-if (imported) {
-  scaleBarDiv.style.display = '';
-} else {
-  // GPS import track varsa, barı HER ZAMAN göster
-const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-if (imported) {
-  scaleBarDiv.style.display = '';
-} else {
-  scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
-}}  } catch (_) {}
-  expandedContainer.appendChild(scaleBarDiv);
 
   const mapDivId = `${containerId}-expanded`;
   const mapDiv = document.createElement('div');
