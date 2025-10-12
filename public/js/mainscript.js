@@ -3644,6 +3644,7 @@ function updateCart() {
               ? Math.round(summary.duration / 60) + " dk"
               : Math.round(summary.duration) + " sn";
           }
+    console.log('SEPARATOR BLOCK', { idx, day, imported: !!(window.importedTrackByDay && window.importedTrackByDay[day]), lastCoordItem, item });
 
 
 const distanceSeparator = document.createElement('div');
