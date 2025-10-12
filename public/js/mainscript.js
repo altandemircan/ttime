@@ -6841,28 +6841,23 @@ if (imported) {
 
 // GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
-  const points = getDayPoints(day);
-  const imported = window.importedTrackByDay?.[day];
-  const isLocked = window.routeLockByDay?.[day];
-  const containerId = `route-map-day${day}`;
+  if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
+    const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
+    const points = getDayPoints(day);
+    if (gpsRaw.length < 2 || points.length < 2) return;
+    const containerId = `route-map-day${day}`;
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
 
-  // --- KİLİTLİ, GPS importlu gün ---
-  if (imported && isLocked && points.length >= 2) {
-    // 1-2 arası GPS
-    const gpsRaw = imported.rawPoints || [];
     let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
-    let summaries = [];
-    let durations = [];
-
-    let gpsDist = 0;
+    let trackDistance = 0;
     for (let i = 1; i < gpsRaw.length; i++) {
-      gpsDist += haversine(gpsRaw[i-1].lat, gpsRaw[i-1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
+      trackDistance += haversine(gpsRaw[i-1].lat, gpsRaw[i-1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
     }
-    summaries.push({ distance: gpsDist, duration: gpsDist / 1.3 });
-    durations.push(gpsDist / 1.3);
+    let fullGeojsonCoords = [...gpsCoords];
+    let pairwiseSummaries = [{ distance: trackDistance, duration: trackDistance / 1.3 }];
+    let durations = [trackDistance / 1.3];
 
-    // 2. nokta sonrası için Mapbox
-    let fullCoords = [...gpsCoords];
     let prev = points[1];
     for (let i = 2; i < points.length; i++) {
       const next = points[i];
@@ -6872,41 +6867,97 @@ async function renderRouteForDay(day) {
         const data = await resp.json();
         if (data.routes && data.routes[0]) {
           const seg = data.routes[0].geometry.coordinates;
-          fullCoords.push(...seg.slice(1));
-          summaries.push({ distance: data.routes[0].distance, duration: data.routes[0].duration });
+          fullGeojsonCoords.push(...seg.slice(1));
+          pairwiseSummaries.push({
+            distance: data.routes[0].distance,
+            duration: data.routes[0].duration
+          });
           durations.push(data.routes[0].duration);
         }
       } catch (e) {
-        summaries.push({ distance: null, duration: null });
+        pairwiseSummaries.push({ distance: null, duration: null });
         durations.push(null);
       }
       prev = next;
     }
 
-    const totalDistance = summaries.reduce((a, b) => a + (b.distance || 0), 0);
+    const totalDistance = pairwiseSummaries.reduce((a, b) => a + (b.distance || 0), 0);
     const totalDuration = durations.reduce((a, b) => a + (b || 0), 0);
 
-    // --- Polyline, elevation, scale bar, küçük ve büyük harita, her şey birleşik çizilir ---
-    const geojson = {
+    const finalGeojson = {
       type: "FeatureCollection",
       features: [{
         type: "Feature",
-        geometry: { type: "LineString", coordinates: fullCoords },
+        geometry: { type: "LineString", coordinates: fullGeojsonCoords },
         properties: {}
       }]
     };
 
     window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-    window.lastRouteGeojsons[containerId] = geojson;
+    window.lastRouteGeojsons[containerId] = finalGeojson;
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-    window.pairwiseRouteSummaries[containerId] = summaries;
+    window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
     window.lastRouteSummaries = window.lastRouteSummaries || {};
     window.lastRouteSummaries[containerId] = { distance: totalDistance, duration: totalDuration };
 
+    renderLeafletRoute(containerId, finalGeojson, points, { distance: totalDistance, duration: totalDuration }, day);
 
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (infoPanel) {
       infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
+    }
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+    if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
+    if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
+
+    let expandedMapObj = window.expandedMaps?.[containerId];
+    let eMap = expandedMapObj?.expandedMap;
+    if (!eMap && typeof expandMap === "function") {
+      await expandMap(containerId, day);
+      expandedMapObj = window.expandedMaps?.[containerId];
+      eMap = expandedMapObj?.expandedMap;
+    }
+    if (eMap) {
+      eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
+      const polyEx = L.polyline(fullGeojsonCoords.map(c => [c[1], c[0]]), { color:'#1565c0', weight:7, opacity:0.9 }).addTo(eMap);
+      try { eMap.fitBounds(polyEx.getBounds()); } catch(_){}
+      L.circleMarker([fullGeojsonCoords[0][1], fullGeojsonCoords[0][0]], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
+      L.circleMarker([fullGeojsonCoords[fullGeojsonCoords.length-1][1], fullGeojsonCoords[fullGeojsonCoords.length-1][0]], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
+    }
+
+    let expandedMapDiv =
+      document.getElementById(`expanded-map-${day}`) ||
+      document.getElementById(`expanded-route-map-day${day}`);
+    if (expandedMapDiv) {
+      let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+      if (!expandedScaleBar) {
+        expandedScaleBar = document.createElement('div');
+        expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+        expandedScaleBar.className = 'route-scale-bar expanded';
+        expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+      }
+      if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
+        let samples = gpsRaw;
+        if (samples.length > 600) {
+          const step = Math.ceil(samples.length / 600);
+          samples = samples.filter((_,i)=>i%step===0);
+        }
+        let dist = 0, dists = [0];
+        for (let i=1; i<samples.length; i++) {
+          dist += haversine(samples[i-1].lat, samples[i-1].lng, samples[i].lat, samples[i].lng);
+          dists.push(dist);
+        }
+        expandedScaleBar.innerHTML = "";
+        renderRouteScaleBar(
+          expandedScaleBar,
+          dist/1000,
+          samples.map((p, i) => ({
+            name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+            distance: dists[i]/1000,
+            snapped: true
+          }))
+        );
+      }
     }
     return;
   }
@@ -7250,8 +7301,10 @@ async function renderRouteForDay(day) {
       );
     }, 150);
   }
-
 }
+
+
+
 /** Her iki mekan arası ayraçlara pairwise summary'leri yazar */
 function updatePairwiseDistanceLabels(day) {
     const containerId = `route-map-day${day}`;
