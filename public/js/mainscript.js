@@ -3649,15 +3649,12 @@ function updateCart() {
 
 const distanceSeparator = document.createElement('div');
 distanceSeparator.className = 'distance-separator';
-
-// Soldaki çizgi
 distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
 
-// Label div (butonun geleceği yer)
 const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
-// --- BUTON HER ZAMAN EKLENECEK ---
+// --- KİLİT BUTONU HER ZAMAN EKLENİR ---
 window.routeLockByDay = window.routeLockByDay || {};
 if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
 const lockBtn = document.createElement('button');
@@ -3671,14 +3668,11 @@ lockBtn.onclick = function(e) {
   renderRouteForDay(day);
 };
 labelDiv.appendChild(lockBtn);
-// --- BUTON HER ZAMAN BURADA ---
 
 const distanceValue = document.createElement('span');
 distanceValue.className = 'distance-value';
 distanceValue.textContent = distanceStr;
-
 const bullet = document.createTextNode(' • ');
-
 const durationValue = document.createElement('span');
 durationValue.className = 'duration-value';
 durationValue.textContent = durationStr;
@@ -3688,9 +3682,7 @@ labelDiv.appendChild(bullet);
 labelDiv.appendChild(durationValue);
 
 distanceSeparator.appendChild(labelDiv);
-// Sağdaki çizgi
 distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
-
 dayList.appendChild(distanceSeparator);
 
         }
