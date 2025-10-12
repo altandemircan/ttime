@@ -7146,12 +7146,12 @@ async function renderRouteForDay(day) {
       }
       return;
     }
-  }
+
 
 
   ensureDayMapContainer(day);
   initEmptyDayMap(day);
-
+  }
   const snappedPoints = [];
   for (const pt of points) {
     const snapped = await snapPointToRoad(pt.lat, pt.lng);
