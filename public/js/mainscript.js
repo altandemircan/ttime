@@ -3649,35 +3649,27 @@ function updateCart() {
 
 const distanceSeparator = document.createElement('div');
 distanceSeparator.className = 'distance-separator';
-
-// Soldaki çizgi
 distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
 
-// Mesafe/duration label + buton
 const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
-// GPS import sonrası ilk separator'a butonu KESİN ekle ve kilitli başlat
-if (
-  idx === 1 &&
-  window.importedTrackByDay &&
-  window.importedTrackByDay[day]
-) {
-  window.routeLockByDay = window.routeLockByDay || {};
-  if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
-  const lockBtn = document.createElement('button');
-  lockBtn.className = 'route-lock-toggle';
-  lockBtn.style.marginRight = '10px';
+// --- BURADA HER ZAMAN BUTONU EKLE ---
+window.routeLockByDay = window.routeLockByDay || {};
+if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
+const lockBtn = document.createElement('button');
+lockBtn.className = 'route-lock-toggle';
+lockBtn.style.marginRight = '10px';
+lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+lockBtn.onclick = function(e) {
+  e.stopPropagation();
+  window.routeLockByDay[day] = !window.routeLockByDay[day];
   lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-  lockBtn.onclick = function(e) {
-    e.stopPropagation(); // BU ÇOK ÖNEMLİ! Parent'a event gitmesin, harita açılmasın.
-    window.routeLockByDay[day] = !window.routeLockByDay[day];
-    lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-    renderRouteForDay(day);
-  };
-  labelDiv.appendChild(lockBtn);
-}
-// Mesafe ve süreyi label'a ekle
+  renderRouteForDay(day);
+};
+labelDiv.appendChild(lockBtn);
+// --- BUTTON HER ZAMAN EKLENDİ ---
+
 const distanceValue = document.createElement('span');
 distanceValue.className = 'distance-value';
 distanceValue.textContent = distanceStr;
@@ -3691,10 +3683,7 @@ labelDiv.appendChild(bullet);
 labelDiv.appendChild(durationValue);
 
 distanceSeparator.appendChild(labelDiv);
-
-// Sağdaki çizgi
 distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
-
 dayList.appendChild(distanceSeparator);
 
 
