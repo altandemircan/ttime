@@ -882,17 +882,13 @@ Your browser does not support the video tag.                  </video>
                             <strong>Important Note:</strong>
                             Triptime AI is continuously evolving! Behind the scenes, we’re improving map accuracy, trip logic, and AI travel insights.
 The platform is currently in beta, and some features may change or be temporarily limited as we refine the experience.
-More features, transparency, and official updates will come with our full launch in 2026
-
-
+More features, transparency, and official updates will come with our full launch in 2026.
                         </p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-
 
 
 
@@ -926,7 +922,7 @@ More features, transparency, and official updates will come with our full launch
                         <div class="custom-accordion-content">
                             <p>
                                 Trip lists and user preferences are stored locally on the user's device.  
-                                Recommendations are generated using the <strong>LLaMA 3.2:1b</strong> model and open-source software when possible.  
+                                Recommendations are generated using the <strong>llama 3.2:1b</strong> model and open-source software when possible.  
                                 Location data is optional; users can activate it to see their position on the map or leave it off.  
                                 Cookies or tracking are minimal and only used if necessary for platform functionality.
                             </p>
@@ -1211,20 +1207,20 @@ function toggleCustomAccordion(element) {
     let content = parent.querySelector('.custom-accordion-content');
     let icon = element.querySelector('.custom-icon');
 
-    // Eğer içerik veya ikon bulunamazsa fonksiyondan çık
     if (!content || !icon) {
         console.error("İçerik veya ikon bulunamadı!");
         return;
     }
 
-    // Eğer accordion zaten açıksa kapat
     if (parent.classList.contains('active')) {
         parent.classList.remove('active');
         content.style.maxHeight = '0';
         icon.textContent = '+';
     } else {
-        // Diğer tüm accordion'ları kapat
-        document.querySelectorAll('.custom-accordion').forEach(acc => {
+        // --- SADECE AYNI TRIPBOX İÇİNDEKİLERİ KAPAT ---
+        let tripbox = parent.closest('.tripbox');
+        if (!tripbox) tripbox = document;
+        tripbox.querySelectorAll('.custom-accordion').forEach(acc => {
             let accContent = acc.querySelector('.custom-accordion-content');
             let accIcon = acc.querySelector('.custom-icon');
 
@@ -1233,11 +1229,11 @@ function toggleCustomAccordion(element) {
                 accContent.style.maxHeight = '0';
                 accIcon.textContent = '+';
             }
-        }); 
+        });
 
-        // Tıklanan accordion'u aç
+        // Tıklananı aç
         parent.classList.add('active');
-        content.style.maxHeight = content.scrollHeight + 'px'; // İçeriğin yüksekliğine göre ayarla
+        content.style.maxHeight = content.scrollHeight + 'px';
         icon.textContent = '−';
     }
 }
