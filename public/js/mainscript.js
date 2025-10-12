@@ -3658,7 +3658,7 @@ const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
 // GPS import sonrası ilk separator'a butonu KESİN ekle ve kilitli başlat
-if (idx === 0 && window.importedTrackByDay && window.importedTrackByDay[day]) {
+if (idx === 1 && window.importedTrackByDay && window.importedTrackByDay[day]) {
   window.routeLockByDay = window.routeLockByDay || {};
   window.routeLockByDay[day] = true;
   const lockBtn = document.createElement('button');
@@ -3669,7 +3669,6 @@ if (idx === 0 && window.importedTrackByDay && window.importedTrackByDay[day]) {
     window.routeLockByDay[day] = !window.routeLockByDay[day];
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
     renderRouteForDay(day);
-    // Separetor dışında hiçbir yere buton ekleme!
   };
   labelDiv.appendChild(lockBtn);
 }
