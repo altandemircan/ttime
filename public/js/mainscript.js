@@ -6837,10 +6837,21 @@ if (imported) {
 
 // GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
-  if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
+  // === GPS importlu ve kilitli GÜN ===
+  if (
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.routeLockByDay &&
+    window.routeLockByDay[day]
+  ) {
     const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
     const points = getDayPoints(day);
     if (gpsRaw.length < 2 || points.length < 2) return;
+
+    const containerId = `route-map-day${day}`;
+    // --- HARİTA CONTAINER HER ZAMAN OLUŞTURULUYOR ---
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
 
     let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
     let trackDistance = 0;
@@ -6851,7 +6862,6 @@ async function renderRouteForDay(day) {
     let pairwiseSummaries = [{ distance: trackDistance, duration: trackDistance / 1.3 }];
     let durations = [trackDistance / 1.3];
 
-    // 2. marker'dan başlayıp, her yeni segmenti Mapbox ile al
     let prev = points[1];
     for (let i = 2; i < points.length; i++) {
       const next = points[i];
@@ -6887,7 +6897,6 @@ async function renderRouteForDay(day) {
       }]
     };
 
-    const containerId = `route-map-day${day}`;
     window.lastRouteGeojsons = window.lastRouteGeojsons || {};
     window.lastRouteGeojsons[containerId] = finalGeojson;
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
