@@ -6836,8 +6836,7 @@ if (imported) {
 }
 
 // GÜNCELLENMİŞ renderRouteForDay
-sync function renderRouteForDay(day) {
-  // Kilitli mod ve GPS track varsa: 1-2 arası GPS, sonrası Mapbox
+async function renderRouteForDay(day) {
   if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
     const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
     const points = getDayPoints(day);
@@ -7148,6 +7147,7 @@ sync function renderRouteForDay(day) {
       return;
     }
   }
+
 
   ensureDayMapContainer(day);
   initEmptyDayMap(day);
