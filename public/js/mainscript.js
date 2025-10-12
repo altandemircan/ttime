@@ -3644,7 +3644,7 @@ function updateCart() {
               ? Math.round(summary.duration / 60) + " dk"
               : Math.round(summary.duration) + " sn";
           }
-        const distanceSeparator = document.createElement('div');
+const distanceSeparator = document.createElement('div');
 distanceSeparator.className = 'distance-separator';
 
 if (idx === 0) {
