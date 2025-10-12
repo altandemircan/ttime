@@ -1196,34 +1196,23 @@ More features, transparency, and official updates will come with our full launch
 <script>
     
 function toggleCustomAccordion(element) {
-    // Tıklanan accordion'u bul
     let parent = element.closest('.custom-accordion');
-    if (!parent) {
-        console.error("Parent element bulunamadı!");
-        return;
-    }
+    if (!parent) return;
 
-    // İçeriği ve ikonu bul
     let content = parent.querySelector('.custom-accordion-content');
     let icon = element.querySelector('.custom-icon');
-
-    if (!content || !icon) {
-        console.error("İçerik veya ikon bulunamadı!");
-        return;
-    }
+    if (!content || !icon) return;
 
     if (parent.classList.contains('active')) {
         parent.classList.remove('active');
         content.style.maxHeight = '0';
         icon.textContent = '+';
     } else {
-        // --- SADECE AYNI TRIPBOX İÇİNDEKİLERİ KAPAT ---
         let tripbox = parent.closest('.tripbox');
         if (!tripbox) tripbox = document;
         tripbox.querySelectorAll('.custom-accordion').forEach(acc => {
             let accContent = acc.querySelector('.custom-accordion-content');
             let accIcon = acc.querySelector('.custom-icon');
-
             if (accContent && accIcon) {
                 acc.classList.remove('active');
                 accContent.style.maxHeight = '0';
@@ -1231,14 +1220,13 @@ function toggleCustomAccordion(element) {
             }
         });
 
-        // Tıklananı aç
-parent.classList.add('active');
-content.style.maxHeight = '0px'; // Önce sıfırla
-icon.textContent = '−';
-// Küçük bir gecikmeyle gerçek yükseklik değerini ata ki transition çalışsın
-setTimeout(() => {
-  content.style.maxHeight = content.scrollHeight + 'px';
-}, 10);
+        parent.classList.add('active');
+        content.style.maxHeight = '0px'; // önce kapalıya çek
+        icon.textContent = '−';
+        // KÜÇÜK GECİKMEYLE (1 frame sonra) gerçek yüksekliğe animasyonla aç
+        setTimeout(() => {
+            content.style.maxHeight = content.scrollHeight + 'px';
+        }, 15); // 10-20ms arası yeterli, 1 frame
     }
 }
 </script>
