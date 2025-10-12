@@ -3644,10 +3644,9 @@ function updateCart() {
               ? Math.round(summary.duration / 60) + " dk"
               : Math.round(summary.duration) + " sn";
           }
-          const distanceSeparator = document.createElement('div');
-          distanceSeparator.className = 'distance-separator';
+        const distanceSeparator = document.createElement('div');
+distanceSeparator.className = 'distance-separator';
 
-          // Sadece ilk (1-2 arası) için buton
 if (idx === 0) {
   const lockBtn = document.createElement('button');
   lockBtn.className = 'route-lock-toggle';
@@ -3659,9 +3658,10 @@ if (idx === 0) {
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
     renderRouteForDay(day);
   };
-  separator.appendChild(lockBtn);
+  distanceSeparator.appendChild(lockBtn);
 }
-separator.appendChild(document.createElement('div')).className = 'separator-line';
+distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
+
 
 
 
