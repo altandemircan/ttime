@@ -6757,3 +6757,8 @@ border-bottom:1px solid #ddd;
       background:rgba(0,0,0,.65); pointer-events:none; z-index: 500;
     }
 
+
+
+.route-lock-toggle { position: relative; z-index: 22; pointer-events: auto; }
+.distance-separator, .separator-line { pointer-events: none; }
+.distance-label, .route-lock-toggle { pointer-events: auto; }
