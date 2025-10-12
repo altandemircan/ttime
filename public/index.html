@@ -1232,9 +1232,13 @@ function toggleCustomAccordion(element) {
         });
 
         // Tıklananı aç
-        parent.classList.add('active');
-        content.style.maxHeight = content.scrollHeight + 'px';
-        icon.textContent = '−';
+parent.classList.add('active');
+content.style.maxHeight = '0px'; // Önce sıfırla
+icon.textContent = '−';
+// Küçük bir gecikmeyle gerçek yükseklik değerini ata ki transition çalışsın
+setTimeout(() => {
+  content.style.maxHeight = content.scrollHeight + 'px';
+}, 10);
     }
 }
 </script>
