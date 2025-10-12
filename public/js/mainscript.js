@@ -3646,6 +3646,25 @@ function updateCart() {
           }
           const distanceSeparator = document.createElement('div');
           distanceSeparator.className = 'distance-separator';
+
+          // Sadece ilk (1-2 arası) için buton
+if (idx === 0) {
+  const lockBtn = document.createElement('button');
+  lockBtn.className = 'route-lock-toggle';
+  lockBtn.style.marginLeft = '16px';
+  const isLocked = !!window.routeLockByDay[day];
+  lockBtn.textContent = isLocked ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+  lockBtn.onclick = function() {
+    window.routeLockByDay[day] = !window.routeLockByDay[day];
+    lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+    renderRouteForDay(day);
+  };
+  separator.appendChild(lockBtn);
+}
+separator.appendChild(document.createElement('div')).className = 'separator-line';
+
+
+
           distanceSeparator.innerHTML = `
             <div class="separator-line"></div>
             <div class="distance-label">
@@ -6817,14 +6836,8 @@ function renderRouteLockButton(day) {
 
 // GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
-  renderRouteLockButton(day);
-
-  if (
-    window.importedTrackByDay &&
-    window.importedTrackByDay[day] &&
-    window.routeLockByDay &&
-    window.routeLockByDay[day]
-  ) {
+  // Kilitli mod ve GPS track varsa
+  if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
     const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
     const points = getDayPoints(day);
     if (gpsRaw.length < 2 || points.length < 2) return;
@@ -6835,9 +6848,10 @@ async function renderRouteForDay(day) {
       trackDistance += haversine(gpsRaw[i-1].lat, gpsRaw[i-1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
     }
     let fullGeojsonCoords = [...gpsCoords];
-    let extraMarkers = points.slice(1);
     let totalExtraDistance = 0;
 
+    // 2. marker'dan başlayıp, her yeni segmenti Mapbox ile al
+    let extraMarkers = points.slice(1);
     for (let i = 0; i < extraMarkers.length - 1; i++) {
       const from = extraMarkers[i];
       const to = extraMarkers[i+1];
@@ -6850,7 +6864,7 @@ async function renderRouteForDay(day) {
           fullGeojsonCoords.push(...seg.slice(1));
           totalExtraDistance += data.routes[0].distance;
         }
-      } catch (e) { }
+      } catch (e) {}
     }
 
     const finalGeojson = {
