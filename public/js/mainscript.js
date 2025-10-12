@@ -7080,7 +7080,18 @@ async function renderRouteForDay(day) {
         L.circleMarker(latlngs[0], { radius:9, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:0.95, weight:2 }).addTo(eMap);
         L.circleMarker(latlngs[latlngs.length -1], { radius:9, color:'#c62828', fillColor:'#c62828', fillOpacity:0.95, weight:2 }).addTo(eMap);
       }
-      return;
+       // <<< BURAYA EKLE >>>
+  console.log('ROUTE DEBUG', {
+    containerId,
+    lastRouteSummaries: window.lastRouteSummaries?.[containerId],
+    pairwiseRouteSummaries: window.pairwiseRouteSummaries?.[containerId],
+    lastRouteGeojsons: window.lastRouteGeojsons?.[containerId],
+    importedTrack: window.importedTrackByDay?.[day],
+    points,
+    rawLength: raw.length
+  });
+
+  return;
     }
   }
 
