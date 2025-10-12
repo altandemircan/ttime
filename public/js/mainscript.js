@@ -8863,61 +8863,35 @@ container._elevKmSpan = totalKm;
 track.__onMove = (e) => {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
+
   const s = container._elevSamples || [];
   const startKmDom = Number(container._elevStartKm || 0);
   const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
   const rect = track.getBoundingClientRect();
-  const ptX = e.clientX - rect.left;
+  const ptX = (e.touches && e.touches[0]) ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
   let x = ptX;
   let percent = Math.max(0, Math.min(1, ptX / rect.width));
 
-  // SEGMENT SEÇİLİYSE
+  let foundKmAbs, foundSlope = 0, foundElev = null;
+
+  // SEGMENT SEÇİLİYKEN
   if (
     typeof track._segmentStartPx === "number" &&
     typeof track._segmentWidthPx === "number" &&
     track._segmentWidthPx > 0
   ) {
-
-    // Mouse barın başında ise segmentin başı, sonunda ise segmentin sonu
-    x = percent * rect.width; // çizgi scale bar'ın tamamında gezinsin
-
-    // Segmentteki ilgili noktanın oranı (0=baş, 1=son)
-    let segPercent = Math.max(0, Math.min(1, percent));
-    // Seçilen segmentteki km karşılığı:
+    let segPercent = percent;
     const segStartKm = startKmDom;
     const segEndKm = startKmDom + spanKm;
-    const foundKmAbs = segStartKm + segPercent * (segEndKm - segStartKm);
-
-    // Şimdi, grafikteki en yakın veriyi bul
-    let minDist = Infinity, foundSlope = 0, foundElev = null;
-    for (let i = 1; i < s.length; i++) {
-      const kmAbs1 = s[i - 1].distM / 1000;
-      const kmAbs2 = s[i].distM / 1000;
-      const midKm = (kmAbs1 + kmAbs2) / 2;
-      const dist = Math.abs(foundKmAbs - midKm);
-      if (dist < minDist) {
-        minDist = dist;
-        const dx = s[i].distM - s[i - 1].distM;
-        const dy = ed.smooth[i] - ed.smooth[i - 1];
-        foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-        foundElev = Math.round(ed.smooth[i]);
-      }
-    }
-
-    tooltip.style.opacity = '1';
-    tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-    tooltip.style.left = `${x}px`;
-    verticalLine.style.left = `${x}px`;
-    verticalLine.style.display = 'block';
-
-    return;
+    foundKmAbs = segStartKm + segPercent * (segEndKm - segStartKm);
+  } else {
+    // SEGMENT YOKKEN (GENEL BAR)
+    foundKmAbs = startKmDom + percent * spanKm;
   }
 
-  // --- BURAYA EKLE ---
-  // SEGMENT SEÇİLİ DEĞİLSE DE tooltipi göster!
-  const foundKmAbs = startKmDom + percent * spanKm;
-  let minDist = Infinity, foundSlope = 0, foundElev = null;
+  // Her iki durumda da aynı kod
+  let minDist = Infinity;
   for (let i = 1; i < s.length; i++) {
     const kmAbs1 = s[i - 1].distM / 1000;
     const kmAbs2 = s[i].distM / 1000;
@@ -8931,13 +8905,13 @@ track.__onMove = (e) => {
       foundElev = Math.round(ed.smooth[i]);
     }
   }
+
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
   tooltip.style.left = `${x}px`;
   verticalLine.style.left = `${x}px`;
   verticalLine.style.display = 'block';
 };
-
 
 
   // Loader
