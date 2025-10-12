@@ -4,7 +4,7 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
-window.routeLockByDay = window.routeLockByDay || {};
+
 
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
@@ -3649,25 +3649,29 @@ function updateCart() {
 
 const distanceSeparator = document.createElement('div');
 distanceSeparator.className = 'distance-separator';
+
 distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
 
 const labelDiv = document.createElement('div');
 labelDiv.className = 'distance-label';
 
-// --- KİLİT BUTONU HER ZAMAN EKLENİR ---
-window.routeLockByDay = window.routeLockByDay || {};
-if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
-const lockBtn = document.createElement('button');
-lockBtn.className = 'route-lock-toggle';
-lockBtn.style.marginRight = '10px';
-lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-lockBtn.onclick = function(e) {
-  e.stopPropagation();
-  window.routeLockByDay[day] = !window.routeLockByDay[day];
+// --- KİLİT BUTONU SADECE İLK SEPARATOR VE GPS IMPORTLU GÜNDE EKLENECEK ---
+if (idx === 1 && window.importedTrackByDay && window.importedTrackByDay[day]) {
+  window.routeLockByDay = window.routeLockByDay || {};
+  if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
+  const lockBtn = document.createElement('button');
+  lockBtn.className = 'route-lock-toggle';
+  lockBtn.style.marginRight = '10px';
   lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-  renderRouteForDay(day);
-};
-labelDiv.appendChild(lockBtn);
+  lockBtn.onclick = function(e) {
+    e.stopPropagation();
+    window.routeLockByDay[day] = !window.routeLockByDay[day];
+    lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+    renderRouteForDay(day);
+  };
+  labelDiv.appendChild(lockBtn);
+}
+  
 
 const distanceValue = document.createElement('span');
 distanceValue.className = 'distance-value';
@@ -3683,6 +3687,7 @@ labelDiv.appendChild(durationValue);
 
 distanceSeparator.appendChild(labelDiv);
 distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
+
 dayList.appendChild(distanceSeparator);
 
         }
