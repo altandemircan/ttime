@@ -8938,7 +8938,6 @@ track.__onMove = (e) => {
   verticalLine.style.display = 'block';
 };
 
-};
 
 
   // Loader
