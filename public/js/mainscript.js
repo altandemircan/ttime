@@ -3916,13 +3916,30 @@ cartDiv.appendChild(dayContainer);
         if (chatBox) chatBox.innerHTML = '';
         const userInput = document.getElementById('user-input');
         if (userInput) userInput.value = '';
-        window.selectedCity = null;
-        window.selectedLocation = null;
-        window.selectedLocationLocked = false;
-        window.__locationPickedFromSuggestions = false;
-        window.lastUserQuery = '';
-        window.latestTripPlan = [];
-        window.cart = [];
+        
+         // ... eski kodlar ...
+  window.selectedCity = null;
+  window.selectedLocation = null;
+  window.selectedLocationLocked = false;
+  window.__locationPickedFromSuggestions = false;
+  window.lastUserQuery = '';
+  window.latestTripPlan = [];
+  window.cart = [];
+  
+  // --- EKLE ---
+  if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+  // Ekstra: elevation, segment, cache temizliği
+  window.routeElevStatsByDay = {};
+  window.__ttElevDayCache = {};
+  window._segmentHighlight = {};
+  window._lastSegmentDay = undefined;
+  window._lastSegmentStartKm = undefined;
+  window._lastSegmentEndKm = undefined;
+
+  // Tüm scale bar, popup ve overlayleri DOM'dan sil
+  document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
+
+        
         if (typeof updateCart === "function") updateCart();
         document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
         const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
