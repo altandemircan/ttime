@@ -479,90 +479,6 @@ form.classList.add('feedback-form-sent');
 })();
 </script>
 
-  <!--  <div class="sidebar-overlay sidebar-language" id="sidebar-overlay-language">
-        <div id="sidebar-language">
-            <button class="sidebar-toggle" onclick="toggleSidebarLanguage()">
-                <img src="/img/close-icon.svg" alt="Close">
-            </button>                 
-            <div class="langs" id="langs">
-                <div class="sidebar_title">Select a language and continue</div>
-                <div class="language-selector">
-                    <a href="#" data-lang="en">English</a>
-                   <a href="#" data-lang="sq">Shqip</a>
-                    <a href="#" data-lang="ar">العربية</a>
-                    <a href="#" data-lang="hy">Հայերեն</a>
-                    <a href="#" data-lang="az">Azərbaycan</a>
-                    <a href="#" data-lang="eu">Euskara</a>
-                    <a href="#" data-lang="be">Беларуская</a>
-                    <a href="#" data-lang="bn">বাংলা</a>
-                    <a href="#" data-lang="bs">Bosanski</a>
-                    <a href="#" data-lang="bg">Български</a>
-                    <a href="#" data-lang="my">ဗမာစာ</a>
-                    <a href="#" data-lang="ca">Català</a>
-                    <a href="#" data-lang="zh">中文 (简体)</a>
-                    <a href="#" data-lang="zh-TW">中文 (繁體)</a>
-                    <a href="#" data-lang="hr">Hrvatski</a>
-                    <a href="#" data-lang="cs">Čeština</a>
-                    <a href="#" data-lang="da">Dansk</a>
-                    <a href="#" data-lang="nl">Nederlands</a>
-                    <a href="#" data-lang="et">Eesti</a>
-                    <a href="#" data-lang="fil">Filipino</a>
-                    <a href="#" data-lang="fi">Suomi</a>
-                    <a href="#" data-lang="fr">Français</a>
-                    <a href="#" data-lang="gl">Galego</a>
-                    <a href="#" data-lang="ka">ქართული</a>
-                    <a href="#" data-lang="de">Deutsch</a>
-                    <a href="#" data-lang="el">Ελληνικά</a>
-                    <a href="#" data-lang="gu">ગુજરાતી</a>
-                    <a href="#" data-lang="he">עברית</a>
-                    <a href="#" data-lang="hi">हिन्दी</a>
-                    <a href="#" data-lang="hu">Magyar</a>
-                    <a href="#" data-lang="is">Íslenska</a>
-                    <a href="#" data-lang="id">Bahasa Indonesia</a>
-                    <a href="#" data-lang="ga">Gaeilge</a>
-                    <a href="#" data-lang="it">Italiano</a>
-                    <a href="#" data-lang="ja">日本語</a>
-                    <a href="#" data-lang="kn">ಕನ್ನಡ</a>
-                    <a href="#" data-lang="kk">Қазақ</a>
-                    <a href="#" data-lang="km">ខ្មែរ</a>
-                    <a href="#" data-lang="ko">한국어</a>
-                    <a href="#" data-lang="lo">ລາວ</a>
-                    <a href="#" data-lang="lv">Latviešu</a>
-                    <a href="#" data-lang="lt">Lietuvių</a>
-                    <a href="#" data-lang="mk">Македонски</a>
-                    <a href="#" data-lang="ms">Bahasa Melayu</a>
-                    <a href="#" data-lang="ml">മലയാളം</a>
-                    <a href="#" data-lang="mr">मराठी</a>
-                    <a href="#" data-lang="mn">Монгол</a>
-                    <a href="#" data-lang="ne">नेपाली</a>
-                    <a href="#" data-lang="no">Norsk</a>
-                    <a href="#" data-lang="fa">فارسی</a>
-                    <a href="#" data-lang="pl">Polski</a>
-                    <a href="#" data-lang="pt">Português</a>
-                    <a href="#" data-lang="pa">ਪੰਜਾਬੀ</a>
-                    <a href="#" data-lang="ro">Română</a>
-                    <a href="#" data-lang="ru">Русский</a>
-                    <a href="#" data-lang="si">සිංහල</a>
-                    <a href="#" data-lang="sk">Slovenčina</a>
-                    <a href="#" data-lang="sl">Slovenščina</a>
-                    <a href="#" data-lang="es">Español</a>
-                    <a href="#" data-lang="sw">Kiswahili</a>
-                    <a href="#" data-lang="sv">Svenska</a>
-                    <a href="#" data-lang="ta">தமிழ்</a>
-                    <a href="#" data-lang="te">తెలుగు</a>
-                    <a href="#" data-lang="th">ไทย</a>
-                    <a href="#" data-lang="tr">Türkçe</a>
-                    <a href="#" data-lang="uk">Українська</a>
-                    <a href="#" data-lang="ur">اردو</a>
-                    <a href="#" data-lang="uz">Oʻzbek</a>
-                    <a href="#" data-lang="vi">Tiếng Việt</a>
-                    <a href="#" data-lang="xh">isiXhosa</a>
-                    <a href="#" data-lang="zu">isiZulu</a> 
-                </div>
-            </div>
-        </div>
-    </div> -->
-
     <!-- gallery sidebar -->
     <style>
         video {
@@ -792,26 +708,25 @@ Your browser does not support the video tag.                  </video>
             font-size: 18px;
             transition: transform 0.3s ease-in-out;
         }
-        .custom-accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            background: #fff;           
-            transition: max-height 0.5s ease-in-out, padding 0.3s ease-in-out;            
-            margin-bottom: 4px !important;
-            padding: 0px 0px !important;
-            font-size: 0.9rem !important;
-            font-weight: 400 !important;
-            
-        }
+.custom-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    background: #fff;           
+    transition: max-height 0.5s cubic-bezier(.4,0,.2,1), padding 0.3s, background 0.3s;
+    margin-bottom: 4px !important;
+    padding: 0px 0px !important;
+    font-size: 0.9rem !important;
+    font-weight: 400 !important;
+}
+.custom-accordion.active .custom-accordion-content {
+    /* sadece padding değişebilir, max-height YOK! */
+    padding: 4px 0;
+    font-weight: 400;
+}
         .custom-accordion-content p {
             margin-block-start: 0em;
         }
-        .active .custom-accordion-content {
-            max-height: 400px;
-            padding: 4px 0;
-            font-weight: 400;
-            transition: background 0.3s ease-in-out;
-        }
+       
         .active .custom-icon {
             transform: rotate(180deg);
         }
@@ -1195,8 +1110,7 @@ More features, transparency, and official updates will come with our full launch
     <script src="/js/type_writer_animation.js?v=2" defer></script>
     <script src="/js/share.js" defer></script>
 <script>
-    
-function toggleCustomAccordion(element) {
+    function toggleCustomAccordion(element) {
     let parent = element.closest('.custom-accordion');
     if (!parent) return;
 
@@ -1205,15 +1119,12 @@ function toggleCustomAccordion(element) {
     if (!content || !icon) return;
 
     if (parent.classList.contains('active')) {
-        // KAPANIŞ: önce mevcut yüksekliğe sabitle, sonra sıfıra çek
         content.style.maxHeight = content.scrollHeight + 'px';
-        // Reflow ile hemen uygulanmasını sağla
         void content.offsetHeight;
         content.style.maxHeight = '0';
         parent.classList.remove('active');
         icon.textContent = '+';
     } else {
-        // Aynı tripbox'taki diğerlerini kapat
         let tripbox = parent.closest('.tripbox');
         if (!tripbox) tripbox = document;
         tripbox.querySelectorAll('.custom-accordion').forEach(acc => {
@@ -1226,11 +1137,9 @@ function toggleCustomAccordion(element) {
             }
         });
 
-        // AÇILIŞ: önce 0, sonra scrollHeight
         parent.classList.add('active');
         content.style.maxHeight = '0';
         icon.textContent = '−';
-        // Animasyonu başlatmak için bir sonraki frame'de scrollHeight ver
         setTimeout(() => {
             content.style.maxHeight = content.scrollHeight + 'px';
         }, 10);
