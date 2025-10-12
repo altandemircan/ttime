@@ -3650,19 +3650,23 @@ function updateCart() {
 const distanceSeparator = document.createElement('div');
 distanceSeparator.className = 'distance-separator';
 
-// Eğer bu ilk ayraç ise VE GPS import edilmişse otomatik kilitli gelsin
+// Soldaki çizgi
+distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
+
+// Mesafe/duration label + buton
+const labelDiv = document.createElement('div');
+labelDiv.className = 'distance-label';
+
+// Eğer ilk separator VE GPS importluysa, state'i kesin kilitli yap
 if (idx === 0 && window.importedTrackByDay && window.importedTrackByDay[day]) {
-  // GPS import edildiği için default olarak locked yap
   window.routeLockByDay = window.routeLockByDay || {};
-  if (window.routeLockByDay[day] !== true) {
-    window.routeLockByDay[day] = true;
-  }
+  window.routeLockByDay[day] = true;
 }
 
 if (idx === 0) {
   const lockBtn = document.createElement('button');
   lockBtn.className = 'route-lock-toggle';
-  lockBtn.style.marginLeft = '16px';
+  lockBtn.style.marginRight = '12px';
   const isLocked = !!window.routeLockByDay[day];
   lockBtn.textContent = isLocked ? '🔒 GPS Route Locked' : '🔓 Route Editable';
   lockBtn.onclick = function() {
@@ -3670,20 +3674,18 @@ if (idx === 0) {
     lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
     renderRouteForDay(day);
   };
-  distanceSeparator.appendChild(lockBtn);
+  // Buton labelDiv'in EN BAŞINA ekleniyor!
+  labelDiv.appendChild(lockBtn);
 }
 
-distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
-
-// Mesafe/duration label
-const labelDiv = document.createElement('div');
-labelDiv.className = 'distance-label';
-labelDiv.innerHTML = `
+labelDiv.innerHTML += `
   <span class="distance-value">${distanceStr}</span> • 
   <span class="duration-value">${durationStr}</span>
 `;
+
 distanceSeparator.appendChild(labelDiv);
 
+// Sağdaki çizgi
 distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
 
 dayList.appendChild(distanceSeparator);
