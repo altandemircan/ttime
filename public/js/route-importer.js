@@ -614,6 +614,10 @@ async function ensureFitParser() {
       input.type = 'file';
       input.accept = '.gpx,.kml,.tcx,.fit';
       input.onchange = async () => {
+        if (event) {
+    event.preventDefault && event.preventDefault();
+    event.stopPropagation && event.stopPropagation();
+  }
         const file = input.files && input.files[0];
         if (!file) return;
         try {
