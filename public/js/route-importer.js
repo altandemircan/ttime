@@ -607,65 +607,6 @@ async function ensureFitParser() {
 })();
 
 
-(function attachGpsImportClick(){
-  if (window.__gpsImportHandlerAttached) return;
-
-  document.addEventListener('click', function(e){
-    const btn = e.target.closest('.gps-import');
-    if (!btn) return;
-
-    // Dosya seçim input’u
-    const pickFile = () => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.gpx,.kml,.tcx,.fit';
-      input.onchange = async () => {
-        if (event) {
-    event.preventDefault && event.preventDefault();
-    event.stopPropagation && event.stopPropagation();
-  }
-        const file = input.files && input.files[0];
-        if (!file) return;
-        try {
-          if (btn.dataset.global === '1') {
-            // Global başlangıç: Day 1’i garanti et
-            if (!Array.isArray(window.cart) || window.cart.length === 0) {
-              window.cart = [];
-            }
-            // Day 1 gerçek item yoksa (starter vs temizle)
-            window.cart = window.cart.filter(it => !(it._starter || it._placeholder));
-
-            await importGpsFileForDay(file, 1);  // importGpsFileForDay fonksiyonun zaten varsa onu kullan
-          } else {
-            const day = Number(btn.dataset.day);
-            if (!day) return;
-            // Gün dolu kontrolü
-            const hasItems = window.cart.some(it =>
-              it.day === day &&
-              it.name &&
-              !it._starter &&
-              !it._placeholder
-            );
-            if (hasItems) {
-              alert(`Day ${day} is not empty. Remove items first to import a GPS track.`);
-              return;
-            }
-            await importGpsFileForDay(file, day);
-          }
-        } catch(err) {
-          console.error('GPS import failed:', err);
-          alert('GPS file could not be imported.');
-        }
-      };
-      input.click();
-    };
-
-    pickFile();
-  });
-
-  window.__gpsImportHandlerAttached = true;
-})();
-
 /* Ana import fonksiyonu */
 async function importGpsFileForDay(file, day){
   console.log('[GPS] import start', file.name, '→ day', day);
