@@ -4870,6 +4870,8 @@ function hideConfirmation(confirmationContainerId) {
 
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
+    if (button.disabled) return;
+    button.disabled = true;
     let maxDay = 0;
     window.cart.forEach(item => {
         const currentDay = parseInt(item.day, 10);
@@ -4884,8 +4886,12 @@ function addNewDay(button) {
         window.cart.push({ day: newDay });
     }
 
-     window.currentDay = newDay;
+    window.currentDay = newDay;
     updateCart();
+
+    setTimeout(() => {
+        button.disabled = false;
+    }, 400);
 }
 
 function addCoordinatesToContent() {
