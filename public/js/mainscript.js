@@ -7006,7 +7006,7 @@ async function renderRouteForDay(day) {
       document.getElementById(`map-bottom-controls-wrapper-day${day}`)?.remove();
       document.getElementById(`route-controls-bar-day${day}`)?.remove();
     }
-    scaleBar.innerHTML = "";
+
     return;
   }
 
@@ -7039,7 +7039,7 @@ async function renderRouteForDay(day) {
       if (m._path) m._path.classList.add('single-point-pulse');
       try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 }); } catch {}
     }
-    scaleBar.innerHTML = "";
+
     return;
   }
 
@@ -7277,7 +7277,7 @@ async function renderRouteForDay(day) {
   window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
   if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
 
-  scaleBar.innerHTML = "";
+
 
   if (routeData.summary && typeof updateDistanceDurationUI === 'function') {
     updateDistanceDurationUI(routeData.summary.distance, routeData.summary.duration);
