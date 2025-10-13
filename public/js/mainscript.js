@@ -9893,3 +9893,39 @@ function clearScaleBarSelection(day) {
   // Eğer her yerde tümünü kapatmak istersen:
   // document.querySelectorAll('.scale-bar-selection').forEach(s => s.style.display = 'none');
 }
+
+    function toggleCustomAccordion(element) {
+    let parent = element.closest('.custom-accordion');
+    if (!parent) return;
+
+    let content = parent.querySelector('.custom-accordion-content');
+    let icon = element.querySelector('.custom-icon');
+    if (!content || !icon) return;
+
+    if (parent.classList.contains('active')) {
+        content.style.maxHeight = content.scrollHeight + 'px';
+        void content.offsetHeight;
+        content.style.maxHeight = '0';
+        parent.classList.remove('active');
+        icon.textContent = '+';
+    } else {
+        let tripbox = parent.closest('.tripbox');
+        if (!tripbox) tripbox = document;
+        tripbox.querySelectorAll('.custom-accordion').forEach(acc => {
+            let accContent = acc.querySelector('.custom-accordion-content');
+            let accIcon = acc.querySelector('.custom-icon');
+            if (accContent && accIcon) {
+                acc.classList.remove('active');
+                accContent.style.maxHeight = '0';
+                accIcon.textContent = '+';
+            }
+        });
+
+        parent.classList.add('active');
+        content.style.maxHeight = '0';
+        icon.textContent = '−';
+        setTimeout(() => {
+            content.style.maxHeight = content.scrollHeight + 'px';
+        }, 10);
+    }
+}
