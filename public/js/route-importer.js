@@ -11,13 +11,13 @@
   /* ---------------- File input + delegation ---------------- */
   let fileInput = document.getElementById('__route_import_hidden_input');
   if (!fileInput) {
-    fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.id = '__route_import_hidden_input';
-    fileInput.accept = '.gpx,.tcx,.fit,.kml';
-    fileInput.style.display = 'none';
-    document.body.appendChild(fileInput);
-  }
+  fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.id = '__route_import_hidden_input';
+  fileInput.accept = '.gpx,.tcx,.fit,.kml';
+  fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+}
 
   let currentType = null;        // 'multi' veya geçmiş uyumluluk
   let currentImportDay = 1;      // Import edilecek gün
@@ -49,7 +49,12 @@
     fileInput.click();
   });
 
- fileInput.addEventListener('change', async () => {
+fileInput.addEventListener('change', async (event) => {
+  if (event) {
+    event.preventDefault && event.preventDefault();
+    event.stopPropagation && event.stopPropagation();
+  }
+
   const file = fileInput.files && fileInput.files[0];
   if (!file || !currentType) return;;
     const day = currentImportDay || 1;
@@ -147,8 +152,9 @@
       notify('Import failed: ' + err.message, 'error');
     } finally {
       currentType = null;
+       fileInput.value = "";
     }
-      fileInput.value = "";
+     
   });
 
   /* ---------------- Normalization & Name Derivation ---------------- */
