@@ -639,9 +639,9 @@ const response = await fetch(url);
 
     const surveyData = [
         {
-            question: "Let's get started. Please specify a location, duration, and the type of trip you want.",
+            question: "Let's get started.",
             options: [
-                { name: "Plan a 2-day tour for Romet" },
+                { name: "Plan a 2-day tour for Rome" },
                 { name: "Do a 3-day city tour in Helsinki" },
                 { name: "Do a 1-day city tour in Osaka" },
             ]
@@ -3950,7 +3950,7 @@ cartDiv.appendChild(dayContainer);
         if (chatBox) {
           const welcome = document.createElement('div');
           welcome.className = 'message bot-message';
-          welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started. Please specify a location, duration, and the type of trip you want";
+          welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
           chatBox.appendChild(welcome);
         }
       };
