@@ -4867,33 +4867,23 @@ function hideConfirmation(confirmationContainerId) {
         confirmationContainer.style.display = "none";
     }
 }
-function bindAddNewDayButton() {
-    const btn = document.getElementById("add-new-day-button");
-    if (btn && !btn.__bound) {
-        btn.addEventListener("click", function() { addNewDay(this); });
-        btn.__bound = true;
-    }
-}
-// updateCart() sonrası çağır:
-updateCart();
-bindAddNewDayButton();
+
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
-    if (button.disabled) return;
-    button.disabled = true;
-
-    let maxDay = 0;
-    window.cart.forEach(item => {
-        const currentDay = parseInt(item.day, 10);
-        if (currentDay > maxDay) maxDay = currentDay;
-    });
-    const newDay = maxDay + 1;
-    if (!window.cart.some(item => item.day === newDay)) {
-        window.cart.push({ day: newDay });
+    // Tüm günleri bul
+    let maxDay = 1;
+    if (Array.isArray(window.cart) && window.cart.length > 0) {
+        window.cart.forEach(item => {
+            if (typeof item.day === "number" && item.day > maxDay) {
+                maxDay = item.day;
+            }
+        });
     }
+    // Her zaman yeni gün ekle!
+    const newDay = maxDay + 1;
+    window.cart.push({ day: newDay });
     window.currentDay = newDay;
     updateCart();
-    // updateCart sonrası yeni butona tekrar event bağlanacağı için, eski butonun tekrar enable olmasına gerek yok!
 }
 
 function addCoordinatesToContent() {
