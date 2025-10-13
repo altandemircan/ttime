@@ -1146,21 +1146,7 @@ More features, transparency, and official updates will come with our full launch
     }
 }
 </script>
-<div id="wall" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-  <input type="text" id="txtweather" autocomplete="off" placeholder="Bir şey yazın">
-  <button onclick="go()">Login</button>
-  <div id="err" style="color:red;display:none;margin-top:8px;">Error</div>
-</div>
-<script>
-  var mapelement = "function";
-  function go() {
-    if (document.getElementById("txtweather").value === mapelement) {
-      document.getElementById("wall").style.display = "none";
-    } else {
-      document.getElementById("err").style.display = "block";
-    }
-  }
-</script>
+
 <script src="/js/route-importer.js" defer></script>
 
 
