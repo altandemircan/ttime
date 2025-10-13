@@ -135,11 +135,11 @@
                         </div>
                         <div class="toggleMenu" onclick="toggleMenu()">☰</div>
                         <div class="dropDown" id="menuDropdown">
-                            <a href="#" onclick="toggleSidebarLogin(); toggleMenu();" class="profile-btn">
+                            <!-- <a href="#" onclick="toggleSidebarLogin(); toggleMenu();" class="profile-btn">
                                 <img src="/img/profile-icon.svg" alt="Profile">Profile
                             </a>  <a href="#" onclick="toggleSidebarSettings(); toggleMenu();" class="settings-btn">
                                 <img src="/img/settings-icon.svg" alt="Settings">Settings
-                            </a> 
+                            </a> -->
                             <a href="#" onclick="toggleSidebarMyTrips(); toggleMenu();" class="mytrips-btn">
                                 <img src="/img/mytrips-icon.svg" alt="My Trips">My Trips
                             </a>       
@@ -955,43 +955,6 @@ More features, transparency, and official updates will come with our full launch
     <script src="/js/calendar.js" defer></script>
     <script src="/js/type_writer_animation.js?v=2" defer></script>
     <script src="/js/share.js" defer></script>
-<script>
-    function toggleCustomAccordion(element) {
-    let parent = element.closest('.custom-accordion');
-    if (!parent) return;
-
-    let content = parent.querySelector('.custom-accordion-content');
-    let icon = element.querySelector('.custom-icon');
-    if (!content || !icon) return;
-
-    if (parent.classList.contains('active')) {
-        content.style.maxHeight = content.scrollHeight + 'px';
-        void content.offsetHeight;
-        content.style.maxHeight = '0';
-        parent.classList.remove('active');
-        icon.textContent = '+';
-    } else {
-        let tripbox = parent.closest('.tripbox');
-        if (!tripbox) tripbox = document;
-        tripbox.querySelectorAll('.custom-accordion').forEach(acc => {
-            let accContent = acc.querySelector('.custom-accordion-content');
-            let accIcon = acc.querySelector('.custom-icon');
-            if (accContent && accIcon) {
-                acc.classList.remove('active');
-                accContent.style.maxHeight = '0';
-                accIcon.textContent = '+';
-            }
-        });
-
-        parent.classList.add('active');
-        content.style.maxHeight = '0';
-        icon.textContent = '−';
-        setTimeout(() => {
-            content.style.maxHeight = content.scrollHeight + 'px';
-        }, 10);
-    }
-}
-</script>
 
 <script src="/js/route-importer.js" defer></script>
 
