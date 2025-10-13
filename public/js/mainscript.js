@@ -3475,6 +3475,8 @@ if (typeof updateCart === "function") updateCart();
 
 function updateCart() {
   console.log("updateCart başlatıldı");
+  document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
+
 
   if (window.expandedMaps) {
     const days = [...new Set((window.cart || []).map(i => i.day))];
@@ -6971,16 +6973,6 @@ async function renderRouteForDay(day) {
     return;
   }
 
-  // let scaleBar = document.getElementById(`route-scale-bar-day${day}`);
-  // if (!scaleBar) {
-  //   const mapDiv = document.getElementById(`route-map-day${day}`);
-  //   scaleBar = document.createElement('div');
-  //   scaleBar.id = `route-scale-bar-day${day}`;
-  //   scaleBar.className = 'route-scale-bar';
-  //   if (mapDiv && mapDiv.parentNode) {
-  //     mapDiv.parentNode.insertBefore(scaleBar, mapDiv.nextSibling);
-  //   }
-  // }
 
   if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
     const pts0 = getDayPoints(day);
