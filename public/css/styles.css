@@ -4757,17 +4757,11 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-         z-index: 234234242;
-    display: flex
-;
-    position: absolute;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 0px 18px;
-    width: calc(100% - 36px);
+  width: 96%;
     font-size: 0.9rem;
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
     height: 200px;
+    text-align: left;
+    display: inherit;
 }
 
 .scale-bar-track { user-select: none; }
@@ -4777,8 +4771,24 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .scale-bar-tick { background: #666; }
 .scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
 
-
-
+.expanded-map-panel {
+display: flex
+;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    left: 20px;
+    background: rgb(255 255 255);
+    gap: 12px;
+    padding: 6px;
+    width: calc(100% - 475px);
+    z-index: 1231231231231;
+    /* border-radius: 6px; */
+    align-items: center;
+    box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
+    flex-direction: column;
+    }
+    
 .expanded-map {
     width: 100%;
     height: calc(100% - 50px);
@@ -5234,19 +5244,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 .expanded-map-header {
     display: flex;
-    position: absolute;
-    bottom: 200px;
-    /* right: 10px; */
-    z-index: 123123123;
-    background: rgba(255, 255, 255, 0.95);
     gap: 12px;
-    padding: 6px;
-    width: calc(100% - 12px);
-    z-index: 1231231231231;
-    /* border-radius: 6px; */
-    align-items: center;
-    box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
-
+    width: 100%;
 }
 
 .expanded-map-container select {
