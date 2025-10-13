@@ -4029,7 +4029,7 @@ document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
     });
-
+setTimeout(bindAddNewDayButton, 10);
 });
 
 
@@ -4867,7 +4867,16 @@ function hideConfirmation(confirmationContainerId) {
         confirmationContainer.style.display = "none";
     }
 }
-
+function bindAddNewDayButton() {
+    const btn = document.getElementById("add-new-day-button");
+    if (btn && !btn.__bound) {
+        btn.addEventListener("click", function() { addNewDay(this); });
+        btn.__bound = true;
+    }
+}
+// updateCart() sonrası çağır:
+updateCart();
+bindAddNewDayButton();
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
     if (button.disabled) return; // Çift tıkı engelle
