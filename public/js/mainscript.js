@@ -7450,7 +7450,6 @@ function changeContent(option) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
-        const homeIcon = document.getElementById("home-icon");
         if (homeIcon) homeIcon.classList.add('active');
     } else if (option === 2) {
         if (aboutUsSection) {
@@ -7466,26 +7465,25 @@ document.addEventListener('click', function(event) {
     const chatBox = document.getElementById('chat-box');
     if (!chatBox) return;
 
-    const homeIcon = document.querySelector('img[src="img/home-icon.svg"]');
-    const ttIcon = document.querySelector('img[src="img/tt-icon.svg"]');
-    const welcomeSection = document.getElementById('tt-welcome');
-    const aboutUsSection = document.getElementById('tt-about-us');
-    const userMessageDiv = document.querySelector('.message.user-message');
 
-    let clickedOnHomeIcon = homeIcon && homeIcon.contains(event.target);
-    let clickedOnTtIcon = ttIcon && ttIcon.contains(event.target);
-    let clickedInsideWelcome = welcomeSection && welcomeSection.contains(event.target);
-    let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.target);
+   // homeIcon ile ilgili satırları tamamen kaldır
+const ttIcon = document.querySelector('img[src="img/tt-icon.svg"]');
+const welcomeSection = document.getElementById('tt-welcome');
+const aboutUsSection = document.getElementById('tt-about-us');
+const userMessageDiv = document.querySelector('.message.user-message');
 
-    if (!clickedOnHomeIcon && !clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
-        if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
-            // Hide content sections only if user message exists
-            if (welcomeSection) welcomeSection.style.display = 'none';
-            if (aboutUsSection) aboutUsSection.style.display = 'none';
-        }
-        chatBox.style.display = 'block';
+let clickedOnTtIcon = ttIcon && ttIcon.contains(event.target);
+let clickedInsideWelcome = welcomeSection && welcomeSection.contains(event.target);
+let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.target);
 
+if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
+    if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
+        // Hide content sections only if user message exists
+        if (welcomeSection) welcomeSection.style.display = 'none';
+        if (aboutUsSection) aboutUsSection.style.display = 'none';
     }
+    chatBox.style.display = 'block';
+}
 });
 
 // Show tt-welcome on page load
