@@ -49,7 +49,12 @@
     fileInput.click();
   });
 
- fileInput.addEventListener('change', async () => {
+fileInput.addEventListener('change', async (event) => {
+  if (event) {
+    event.preventDefault && event.preventDefault();
+    event.stopPropagation && event.stopPropagation();
+  }
+
   const file = fileInput.files && fileInput.files[0];
   if (!file || !currentType) return;;
     const day = currentImportDay || 1;
@@ -147,8 +152,9 @@
       notify('Import failed: ' + err.message, 'error');
     } finally {
       currentType = null;
+       fileInput.value = "";
     }
-      fileInput.value = "";
+     
   });
 
   /* ---------------- Normalization & Name Derivation ---------------- */
