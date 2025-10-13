@@ -7450,7 +7450,7 @@ function changeContent(option) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
-        if (homeIcon) homeIcon.classList.add('active');
+     
     } else if (option === 2) {
         if (aboutUsSection) {
             aboutUsSection.style.display = 'block';
