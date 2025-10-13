@@ -3474,6 +3474,8 @@ if (typeof updateCart === "function") updateCart();
 
 
 function updateCart() {
+  console.log("updateCart başlatıldı");
+
   if (window.expandedMaps) {
     const days = [...new Set((window.cart || []).map(i => i.day))];
     days.forEach(day => {
@@ -3515,6 +3517,7 @@ function updateCart() {
 
   if (!window.cart || window.cart.length === 0) {
     cartDiv.innerHTML = `
+      <div class="my-custom-title">Plan Günleri</div>
       <div class="day-container" id="day-container-1" data-day="1">
         <h4 class="day-header">
           <div class="title-container"><span class="day-title">Day 1</span></div>
@@ -4870,7 +4873,7 @@ function hideConfirmation(confirmationContainerId) {
 
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
-    // Tüm günleri bul
+    // Tüm mevcut günleri bul:
     let maxDay = 1;
     if (Array.isArray(window.cart) && window.cart.length > 0) {
         window.cart.forEach(item => {
@@ -4879,13 +4882,12 @@ function addNewDay(button) {
             }
         });
     }
-    // Her zaman yeni gün ekle!
+    // Her zaman yeni gün objesi ekle:
     const newDay = maxDay + 1;
-    window.cart.push({ day: newDay });
+window.cart = [...window.cart, { day: newDay }];
     window.currentDay = newDay;
     updateCart();
 }
-
 function addCoordinatesToContent() {
     document.querySelectorAll('.travel-item').forEach(item => {
         const contentDiv = item.querySelector('.content');
