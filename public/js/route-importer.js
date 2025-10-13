@@ -11,13 +11,13 @@
   /* ---------------- File input + delegation ---------------- */
   let fileInput = document.getElementById('__route_import_hidden_input');
   if (!fileInput) {
-    fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.id = '__route_import_hidden_input';
-    fileInput.accept = '.gpx,.tcx,.fit,.kml';
-    fileInput.style.display = 'none';
-    document.body.appendChild(fileInput);
-  }
+  fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.id = '__route_import_hidden_input';
+  fileInput.accept = '.gpx,.tcx,.fit,.kml';
+  fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+}
 
   let currentType = null;        // 'multi' veya geçmiş uyumluluk
   let currentImportDay = 1;      // Import edilecek gün
