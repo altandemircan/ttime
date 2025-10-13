@@ -49,9 +49,9 @@
     fileInput.click();
   });
 
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files && fileInput.files[0];
-    if (!file || !currentType) return;
+ fileInput.addEventListener('change', async () => {
+  const file = fileInput.files && fileInput.files[0];
+  if (!file || !currentType) return;;
     const day = currentImportDay || 1;
     log('Selected file:', file.name, 'multi-type=', currentType, 'day=', day);
 
@@ -148,6 +148,7 @@
     } finally {
       currentType = null;
     }
+      fileInput.value = "";
   });
 
   /* ---------------- Normalization & Name Derivation ---------------- */

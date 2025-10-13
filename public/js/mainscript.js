@@ -3517,7 +3517,7 @@ function updateCart() {
 
   if (!window.cart || window.cart.length === 0) {
     cartDiv.innerHTML = `
-      <div class="my-custom-title">Plan Günleri</div>
+
       <div class="day-container" id="day-container-1" data-day="1">
         <h4 class="day-header">
           <div class="title-container"><span class="day-title">Day 1</span></div>
