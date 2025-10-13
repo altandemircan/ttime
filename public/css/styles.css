@@ -4482,9 +4482,7 @@ ease;
 .day-item,
 .survey-results {
  
-    border-radius: 10px;
-  
-    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+      
     overflow: hidden;
 }
 .accordion-container {
@@ -4535,7 +4533,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .day-steps {
     width: calc(100vw - 485px);
     position: relative;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  
     border-radius: 10px;
     display: flex;
     gap: 20px;
@@ -4545,7 +4543,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
         "stats";
     border-radius: 18px;
     background: white;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+
     transition: 0.5s ease;
 }
 .steps {
@@ -6566,7 +6564,7 @@ border-bottom:1px solid #ddd;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
-        padding: 4px 2px 8px 2px;
+   
       }
       .tt-resp-track > .steps {
         flex: 0 0 calc(100% / var(--slides-per-view, 1));
