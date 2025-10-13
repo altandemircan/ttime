@@ -4879,7 +4879,7 @@ updateCart();
 bindAddNewDayButton();
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
-    if (button.disabled) return; // Çift tıkı engelle
+    if (button.disabled) return;
     button.disabled = true;
 
     let maxDay = 0;
@@ -4887,21 +4887,13 @@ function addNewDay(button) {
         const currentDay = parseInt(item.day, 10);
         if (currentDay > maxDay) maxDay = currentDay;
     });
-
     const newDay = maxDay + 1;
-
     if (!window.cart.some(item => item.day === newDay)) {
         window.cart.push({ day: newDay });
     }
-
     window.currentDay = newDay;
     updateCart();
-
-    // updateCart sonrası DOM tekrar oluşuyor, yeni butona tekrar event bağla
-    setTimeout(() => {
-        const btn = document.getElementById("add-new-day-button");
-        if (btn) btn.disabled = false;
-    }, 250); // Yeterli küçük bir bekleme, updateCart sonrası tekrar aktif eder
+    // updateCart sonrası yeni butona tekrar event bağlanacağı için, eski butonun tekrar enable olmasına gerek yok!
 }
 
 function addCoordinatesToContent() {
