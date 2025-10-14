@@ -9843,36 +9843,27 @@ function renderGeneralAIInfo(aiInfo, city, day) {
     </div>
   `;
 }
-
-function isProbablyRealPlace(name) {
-  const genericPatterns = [
-    /accommodation/i,
-    /food scene/i,
-    /local cuisine/i,
-    /public transportation/i,
-    /transportation/i,
-    /cuisine/i,
-    /landmarks?/i,
-    /attractions?/i,
-    /delicious food/i,
-    /comfortable/i,
-    /budget/i,
-    /free/i,
-    /city\b/i,
-    /scene/i
-  ];
-  // Eğer jenerik bir pattern'e denk gelirse false döndür
-  return !genericPatterns.some(re => re.test(name));
+function normalizePlaceName(name) {
+  return (name || "")
+    .toLowerCase()
+    .replace(/[çÇ]/g, "c")
+    .replace(/[ğĞ]/g, "g")
+    .replace(/[ıİ]/g, "i")
+    .replace(/[öÖ]/g, "o")
+    .replace(/[şŞ]/g, "s")
+    .replace(/[üÜ]/g, "u")
+    .replace(/[^a-z0-9]/g, ""); // Sadece harf ve rakam kalsın
 }
-
 function renderAITextWithAddButtons(text, city, day) {
+  // "Visit", "at", "in", "on", "of" + mekan adı
   const regex = /(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/ig;
 
   return text.replace(regex, function(full, placeName) {
     const cleanName = placeName.trim().replace(/[.,;!?]+$/, "");
     if (!isProbablyRealPlace(cleanName)) {
-      return `<span class="ai-place">${full}</span>`; // Buton koyma
+      return `<span class="ai-place">${full}</span>`; // Buton ekleme
     }
+    // O günkü planda zaten varsa uyarı göster
     const alreadyInPlan = window.cart.some(item =>
       item.day == day &&
       item.name && item.name.toLowerCase().includes(cleanName.toLowerCase())
@@ -9880,6 +9871,7 @@ function renderAITextWithAddButtons(text, city, day) {
     if (alreadyInPlan) {
       return `<span class="ai-place">${full} <span style="color:#aaa;font-size:12px">(already in plan)</span></span>`;
     }
+    // Yoksa buton ekle
     return `<span class="ai-place">${full}</span> <button class="ai-add-btn" data-place="${cleanName}" data-city="${city}" data-day="${day}">+</button>`;
   });
 }
@@ -9906,6 +9898,7 @@ async function searchPlace(place, city) {
   return null;
 }
 // + butonu click handler'ı (tek sefer bağla)
+// + butonuna tıklanınca Geoapify'dan gerçekten mekan bulunursa ekle
 document.addEventListener('click', async function(e){
   const btn = e.target.closest('.ai-add-btn');
   if (!btn) return;
@@ -9915,7 +9908,10 @@ document.addEventListener('click', async function(e){
   const city = btn.getAttribute('data-city');
   const day = btn.getAttribute('data-day');
   try {
-    const found = await searchPlace(place, city);
+    // Geoapify'dan arama
+    const resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
+    const data = await resp.json();
+    const found = data.features && data.features[0];
     if (found) {
       const props = found.properties;
       addToCart(
@@ -9953,6 +9949,7 @@ async function showGeneralAIInfo(city, day, plan) {
   const aiInfo = await resp.json();
   aiDiv.innerHTML = renderGeneralAIInfo(aiInfo, city, day);
 }
+// 2) + butonu handler'ında searchPlaceFuzzy fonksiyonunu kullan:
 document.addEventListener('click', async function(e){
   const btn = e.target.closest('.ai-add-btn');
   if (!btn) return;
@@ -9962,9 +9959,8 @@ document.addEventListener('click', async function(e){
   const city = btn.getAttribute('data-city');
   const day = btn.getAttribute('data-day');
   try {
-    const resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
-    const data = await resp.json();
-    const found = data.features && data.features[0];
+    // Burada searchPlaceFuzzy fonksiyonunu çağırıyoruz!
+    const found = await searchPlaceFuzzy(place, city);
     if (found) {
       const props = found.properties;
       addToCart(
@@ -10000,4 +9996,24 @@ function ensureAIInfoRoot(chatBox) {
   const aiDiv = document.createElement('div');
   aiDiv.id = 'ai-info-root';
   chatBox.prepend(aiDiv); // veya .appendChild(aiDiv) istersen
+}
+async function searchPlaceFuzzy(place, city) {
+  // 1. Tam isim + şehir
+  let resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
+  let data = await resp.json();
+  if (data.features && data.features[0]) return data.features[0];
+
+  // 2. Sadece isim
+  resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place)}&limit=1`);
+  data = await resp.json();
+  if (data.features && data.features[0]) return data.features[0];
+
+  // 3. Sadece ilk kelime
+  const tokens = place.split(' ');
+  if (tokens.length > 1) {
+    resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(tokens[0] + " " + city)}&limit=1`);
+    data = await resp.json();
+    if (data.features && data.features[0]) return data.features[0];
+  }
+  return null;
 }
