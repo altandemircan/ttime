@@ -4772,8 +4772,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
 
 .expanded-map-panel {
-display: flex
-;
+    display: flex;
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -4788,11 +4787,10 @@ display: flex
     box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
     flex-direction: column;
     }
-    
+
 .expanded-map {
     width: 100%;
-    height: calc(100% - 50px);
-   
+    height: calc(100% - 50px);   
 }
 
 
