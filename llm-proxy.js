@@ -3,94 +3,52 @@ const router = express.Router();
 const axios = require('axios');
 
 
-router.post('/clarify-location', async (req, res) => {
-    try {
-        const { query } = req.body;
-        // Basit bir dönüşüm örneği (gerçekte AI entegrasyonu yapılacak)
-        const result = {
-            city: query.split(' ')[0].charAt(0).toUpperCase() + query.split(' ')[0].slice(1),
-            country: ""
-        };
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: "Location clarification failed" });
-    }
-});
+// router.post('/clarify-location', async (req, res) => {
+//     try {
+//         const { query } = req.body;
+//         // Basit bir dönüşüm örneği (gerçekte AI entegrasyonu yapılacak)
+//         const result = {
+//             city: query.split(' ')[0].charAt(0).toUpperCase() + query.split(' ')[0].slice(1),
+//             country: ""
+//         };
+//         res.json(result);
+//     } catch (error) {
+//         res.status(500).json({ error: "Location clarification failed" });
+//     }
+// });
 
-router.post('/item-guide', async (req, res) => {
-    const { name, address, city, category } = req.body;
-    const prompt = `Describe "${name}" (${category}) in ${city} for a tourist in max 50 words. Address: ${address}.`;
 
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
-        });
-        res.json({ text: response.data.response.trim() });
-    } catch (error) {
-        res.json({ text: "", error: "AI açıklama alınamadı." });
-    }
-});
+// router.post('/suggest-categories', async (req, res) => {
+//     const { city, days } = req.body;
+//     const prompt = `Suggest ${days} day trip categories for ${city}. Choose from: Coffee, Touristic, Restaurant, Accommodation, Historic, Adventure, Luxury. Respond as JSON array.`;
 
-router.post('/suggest-categories', async (req, res) => {
-    const { city, days } = req.body;
-    const prompt = `Suggest ${days} day trip categories for ${city}. Choose from: Coffee, Touristic, Restaurant, Accommodation, Historic, Adventure, Luxury. Respond as JSON array.`;
+//     try {
+//         const response = await axios.post('http://localhost:11434/api/generate', {
+//             model: "llama3.2:1b",
+//             prompt,
+//             stream: false
+//         });
+//         res.json(JSON.parse(response.data.response));
+//     } catch (error) {
+//         res.json([]);
+//     }
+// });
 
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
-        });
-        res.json(JSON.parse(response.data.response));
-    } catch (error) {
-        res.json([]);
-    }
-});
+// router.post('/generate-notes', async (req, res) => {
+//     const { name, city, category } = req.body;
+//     const prompt = `Describe ${name} in ${city} (category: ${category}) for tourists in 15 words max.`;
 
-router.post('/generate-notes', async (req, res) => {
-    const { name, city, category } = req.body;
-    const prompt = `Describe ${name} in ${city} (category: ${category}) for tourists in 15 words max.`;
-
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
-        });
-        res.json({ notes: response.data.response.trim() });
-    } catch (error) {
-        res.json({ notes: "" });
-    }
-});
-
-router.post('/generate-tags', async (req, res) => {
-    const { name, category } = req.body;
-    const prompt = `Generate 3 hashtags for ${name} (${category}). Respond as JSON array.`;
-
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
-        });
-        console.log("LLM raw response:", response.data.response); // <-- EKLE
-        let tags = [];
-        try {
-            tags = JSON.parse(response.data.response);
-        } catch (e) {
-            // Fallback: #hashtag veya "keyword" içerenleri regex ile yakala
-            tags = (response.data.response.match(/#?([a-zA-Z0-9_]{3,})/g) || [])
-                .map(t => t.replace(/^#/, ''))
-                .filter((t, i, arr) => arr.indexOf(t) === i); // unique
-        }
-        res.json({ tags });
-    } catch (error) {
-        console.error("LLM error:", error);
-        res.json({ tags: [] });
-    }
-});
+//     try {
+//         const response = await axios.post('http://localhost:11434/api/generate', {
+//             model: "llama3.2:1b",
+//             prompt,
+//             stream: false
+//         });
+//         res.json({ notes: response.data.response.trim() });
+//     } catch (error) {
+//         res.json({ notes: "" });
+//     }
+// });
 
 
 router.post('/trip-info', async (req, res) => {
