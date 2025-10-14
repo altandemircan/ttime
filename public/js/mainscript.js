@@ -1514,13 +1514,13 @@ function generateStepHtml(step, day, category, idx = 0) {
             </div>
             <div class="description" data-original-description="No detailed description.">
                 <img src="img/information_icon.svg">
-               
-            </div>
+               <div class="geoapify-tags-section">
 
-<div class="geoapify-tags-section">
-  <div class="geoapify-tags-title">OSM/Geoapify Tags:</div>
   <div class="geoapify-tags">Loading...</div>
 </div>
+            </div>
+
+
             <div class="opening_hours">
 <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
             </div>
@@ -4569,10 +4569,7 @@ function showTripDetails(startDate) {
     <div class="title">${item.name}</div>
     <div class="address"><img src="img/address_icon.svg"> ${address}</div>
     <div class="description" data-original-description="${(item.description || 'No detailed description.').replace(/"/g, '&quot;')}">
-<div class="ai-tags-section">
-  <div class="ai-tags-title">AI Tags:</div>
-  <div class="ai-tags">Loading...</div>
-</div>
+
 <div class="geoapify-tags-section">
   <div class="geoapify-tags-title">OSM/Geoapify Tags:</div>
   <div class="geoapify-tags">Loading...</div>
