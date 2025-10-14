@@ -9869,7 +9869,6 @@ function clearScaleBarSelection(day) {
 }
 
 
-
 async function fillAIDescriptionsAutomatically() {
     document.querySelectorAll('.steps').forEach(async stepsDiv => {
         const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
@@ -9878,7 +9877,7 @@ async function fillAIDescriptionsAutomatically() {
         const name = infoView.querySelector('.title')?.textContent?.trim() || '';
         const category = stepsDiv.getAttribute('data-category') || '';
 
-        // AI Tags
+        // --- AI Tags ---
         const aiTagsDiv = infoView.querySelector('.ai-tags');
         if (aiTagsDiv && name && category) {
             aiTagsDiv.textContent = "Loading...";
@@ -9886,7 +9885,7 @@ async function fillAIDescriptionsAutomatically() {
                 const resp = await fetch('/llm-proxy/generate-tags', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, category, count: 6 })
+                    body: JSON.stringify({ name, category })
                 });
                 const data = await resp.json();
                 const tags = Array.isArray(data.tags) ? data.tags : [];
@@ -9897,7 +9896,8 @@ async function fillAIDescriptionsAutomatically() {
                 aiTagsDiv.textContent = "AI tagler yüklenemedi.";
             }
         }
-        // OSM/Geoapify Tags
+
+        // --- OSM/Geoapify Tags ---
         const geoTagsDiv = infoView.querySelector('.geoapify-tags');
         const step = window.cart.find(i => i.name === name && i.category === category);
         if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
