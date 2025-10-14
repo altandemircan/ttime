@@ -1512,7 +1512,7 @@ function generateStepHtml(step, day, category, idx = 0) {
             <div class="address">
                 <img src="img/address_icon.svg"> ${address}
             </div>
-            <div class="geoapify-tags-section"
+            <div class="geoapify-tags-section">
               <div class="geoapify-tags">Loading...</div>
             </div>
             <div class="opening_hours">
