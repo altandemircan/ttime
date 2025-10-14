@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
+// --- PASİFLEŞTİRİLEN ENDPOINTLER ---
+// Aşağıdaki endpointler artık kullanılmıyor, gereksiz AI yükünü ve yavaşlatmayı önlemek için kapalılar:
 
 // router.post('/clarify-location', async (req, res) => {
 //     try {
@@ -16,7 +18,6 @@ const axios = require('axios');
 //         res.status(500).json({ error: "Location clarification failed" });
 //     }
 // });
-
 
 // router.post('/suggest-categories', async (req, res) => {
 //     const { city, days } = req.body;
@@ -50,41 +51,36 @@ const axios = require('axios');
 //     }
 // });
 
+// router.post('/trip-info', async (req, res) => {
+//     const { tripPlan } = req.body;
+//     if (!Array.isArray(tripPlan) || tripPlan.length === 0) {
+//         return res.json({ summary: "", error: "No trip steps provided." });
+//     }
+//     const steps = tripPlan.map(x => x.name).filter(Boolean).join(', ');
+//     const prompt = `
+// Given these trip steps: ${steps}.
+// Write a single-sentence summary in JSON: { "summary": "..." }
+// Respond only in valid JSON. Do not use code block formatting or extra text.
+// `.trim();
 
-router.post('/trip-info', async (req, res) => {
-    const { tripPlan } = req.body;
-    if (!Array.isArray(tripPlan) || tripPlan.length === 0) {
-        return res.json({ summary: "", error: "No trip steps provided." });
-    }
-    const steps = tripPlan.map(x => x.name).filter(Boolean).join(', ');
-    const prompt = `
-Given these trip steps: ${steps}.
-Write a single-sentence summary in JSON: { "summary": "..." }
-Respond only in valid JSON. Do not use code block formatting or extra text.
-`.trim();
-
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
-        });
-        let data = response.data.response.trim();
-        // Remove code block if present
-        data = data.replace(/```json|```/g, '').trim();
-        let summary = "";
-        try { summary = JSON.parse(data).summary; }
-        catch { summary = (data.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || ""; }
-        if (!summary) return res.json({ summary: "", error: "AI trip info could not be generated.", raw: data });
-        res.json({ summary });
-    } catch (error) {
-        res.json({ summary: "", error: "AI trip info could not be generated.", errorDetail: error.message });
-    }
-});
-
-
-
-
+//     try {
+//         const response = await axios.post('http://localhost:11434/api/generate', {
+//             model: "llama3.2:1b",
+//             prompt,
+//             stream: false
+//         });
+//         let data = response.data.response.trim();
+//         // Remove code block if present
+//         data = data.replace(/```json|```/g, '').trim();
+//         let summary = "";
+//         try { summary = JSON.parse(data).summary; }
+//         catch { summary = (data.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || ""; }
+//         if (!summary) return res.json({ summary: "", error: "AI trip info could not be generated.", raw: data });
+//         res.json({ summary });
+//     } catch (error) {
+//         res.json({ summary: "", error: "AI trip info could not be generated.", errorDetail: error.message });
+//     }
+// });
 
 router.post('/plan-summary', async (req, res) => {
     const { plan, city, days } = req.body;
@@ -141,7 +137,5 @@ Respond as formatted JSON: { "summary": "...", "tip": "...", "highlight": "..." 
         res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
     }
 });
-
-
 
 module.exports = router;
