@@ -9742,9 +9742,9 @@ console.log("AI INFO SUMMARY:", aiInfo.summary);
 aiDiv.innerHTML = `
   <h3>AI Information</h3>
   <div class="ai-info-content">
-    ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
-    ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
-    ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
+    <p><b>Summary:</b> ${aiInfo.summary}</p>
+    <p><b>Tip:</b> ${aiInfo.tip}</p>
+    <p><b>Highlight:</b> ${aiInfo.highlight}</p>
   </div>
 `;
     // Add Category butonunu bul
