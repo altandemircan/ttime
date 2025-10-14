@@ -9805,10 +9805,23 @@ function fillGeoapifyTagsOnly() {
 
 // AI Highlight içindeki yeri ve butonu oluştur
 function renderAIHighlightWithAdd(highlightText, city, day) {
-  // Daha kapsamlı regex: of|at|in|on|Visit ile başlayan veya geçen, ardından mekan adı
+  // Çıkarılan mekan adı
   const match = highlightText.match(/(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
   if (match && match[1]) {
     const placeName = match[1].trim().replace(/[.,;!?]+$/, "");
+    // O günkü planı kontrol et
+    const alreadyInPlan = window.cart.some(item =>
+      item.day == day &&
+      item.name && item.name.toLowerCase().includes(placeName.toLowerCase())
+    );
+    if (alreadyInPlan) {
+      // Buton ekleme, sadece ismi vurgula
+      return highlightText.replace(
+        match[0],
+        `<span class="ai-place">${match[0]} <span style="color:#aaa;font-size:12px">(already in plan)</span></span>`
+      );
+    }
+    // Farklı ise buton ekle
     const html = highlightText.replace(
       match[0],
       `<span class="ai-place">${match[0]}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
@@ -9817,19 +9830,36 @@ function renderAIHighlightWithAdd(highlightText, city, day) {
   }
   return highlightText;
 }
-
 function renderGeneralAIInfo(aiInfo, city, day) {
   if (!aiInfo) return '';
   return `
     <div class="ai-info-section">
       <h3>AI Information</h3>
       <div class="ai-info-content">
-        <p><b>Summary:</b> ${aiInfo.summary || ""}</p>
-        <p><b>Tip:</b> ${aiInfo.tip || ""}</p>
-        <p><b>Highlight:</b> ${renderAIHighlightWithAdd(aiInfo.highlight || "", city, day)}</p>
+        <p><b>Summary:</b> ${renderAITextWithAddButtons(aiInfo.summary || "", city, day)}</p>
+        <p><b>Tip:</b> ${renderAITextWithAddButtons(aiInfo.tip || "", city, day)}</p>
+        <p><b>Highlight:</b> ${renderAITextWithAddButtons(aiInfo.highlight || "", city, day)}</p>
       </div>
     </div>
   `;
+}
+function renderAITextWithAddButtons(text, city, day) {
+  // Birden fazla eşleşme için global regex, non-capturing ile
+  const regex = /(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/ig;
+  // Kaç kez geçtiyse hepsini yakala
+  return text.replace(regex, function(full, placeName) {
+    // Sonda noktalama varsa temizle
+    const cleanName = placeName.trim().replace(/[.,;!?]+$/, "");
+    // Planla çakışıyorsa uyarı ekle
+    const alreadyInPlan = window.cart.some(item =>
+      item.day == day &&
+      item.name && item.name.toLowerCase().includes(cleanName.toLowerCase())
+    );
+    if (alreadyInPlan) {
+      return `<span class="ai-place">${full} <span style="color:#aaa;font-size:12px">(already in plan)</span></span>`;
+    }
+    return `<span class="ai-place">${full}</span> <button class="ai-add-btn" data-place="${cleanName}" data-city="${city}" data-day="${day}">+</button>`;
+  });
 }
 async function searchPlace(place, city) {
   // Önce tam metinle dene
