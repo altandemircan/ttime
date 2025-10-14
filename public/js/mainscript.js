@@ -9737,13 +9737,13 @@ async function insertAiInfoForAllDays() {
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
-      <h3>AI Information</h3>
-      <div class="ai-info-content">
-        ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
-        ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
-        ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
-      </div>
-    `;
+  <h3>AI Information</h3>
+  <div class="ai-info-content">
+    ${aiInfo.summary ? `<p><b>Summary:</b> ${String(aiInfo.summary).replace(/^Summary:\s*/i, "")}</p>` : ''}
+    ${aiInfo.tip ? `<p><b>Tip:</b> ${String(aiInfo.tip).replace(/^Tip:\s*/i, "")}</p>` : ''}
+    ${aiInfo.highlight ? `<p><b>Highlight:</b> ${String(aiInfo.highlight).replace(/^Highlight:\s*/i, "")}</p>` : ''}
+  </div>
+`;
 
     // Add Category butonunu bul
     let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
