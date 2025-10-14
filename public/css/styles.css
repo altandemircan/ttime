@@ -6757,3 +6757,27 @@ border-bottom:1px solid #ddd;
 .route-lock-toggle { position: relative; z-index: 22; pointer-events: auto; }
 .distance-separator, .separator-line { pointer-events: none; }
 .distance-label, .route-lock-toggle { pointer-events: auto; }
+
+.ai-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.ai-tag {
+  background: #ede7f6;
+  color: #512da8;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.95em;
+  font-weight: 500;
+}
+.geoapify-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.geo-tag {
+  background: #e0f2f1;
+  color: #00897b;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.95em;
+  font-weight: 500;
+}
+.ai-tags-title, .geoapify-tags-title {
+  font-size: 0.93em;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
