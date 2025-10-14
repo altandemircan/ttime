@@ -9843,14 +9843,14 @@ function renderGeneralAIInfo(aiInfo, city, day) {
     </div>
   `;
 }
+
 function renderAITextWithAddButtons(text, city, day) {
-  // Birden fazla eşleşme için global regex, non-capturing ile
+  // Tüm eşleşmeler için global regex (case-insensitive)
   const regex = /(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/ig;
-  // Kaç kez geçtiyse hepsini yakala
+
   return text.replace(regex, function(full, placeName) {
-    // Sonda noktalama varsa temizle
     const cleanName = placeName.trim().replace(/[.,;!?]+$/, "");
-    // Planla çakışıyorsa uyarı ekle
+    // O günkü planı kontrol et (çakışma varsa uyarı)
     const alreadyInPlan = window.cart.some(item =>
       item.day == day &&
       item.name && item.name.toLowerCase().includes(cleanName.toLowerCase())
@@ -9858,6 +9858,7 @@ function renderAITextWithAddButtons(text, city, day) {
     if (alreadyInPlan) {
       return `<span class="ai-place">${full} <span style="color:#aaa;font-size:12px">(already in plan)</span></span>`;
     }
+    // Farklı ise buton ekle
     return `<span class="ai-place">${full}</span> <button class="ai-add-btn" data-place="${cleanName}" data-city="${city}" data-day="${day}">+</button>`;
   });
 }
@@ -9884,7 +9885,7 @@ async function searchPlace(place, city) {
   return null;
 }
 // + butonu click handler'ı (tek sefer bağla)
-ddocument.addEventListener('click', async function(e){
+document.addEventListener('click', async function(e){
   const btn = e.target.closest('.ai-add-btn');
   if (!btn) return;
   btn.disabled = true;
