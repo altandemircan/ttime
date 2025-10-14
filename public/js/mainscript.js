@@ -9844,13 +9844,32 @@ function renderGeneralAIInfo(aiInfo, city, day) {
   `;
 }
 
+function isProbablyRealPlace(name) {
+  // Jenerik kelimeler veya tematik ifadeler
+  const genericWords = [
+    "architecture", "culture", "history", "trip", "tour", "day", "plan", "city", "delicacies"
+  ];
+  const lower = name.trim().toLowerCase();
+
+  // Çok kısa veya çok uzun veya jenerikse atla
+  if (lower.length < 3) return false;
+  if (genericWords.some(word => lower === word || lower.endsWith(" " + word) || lower.startsWith(word + " "))) {
+    return false;
+  }
+  // "in one day" gibi bitiyorsa atla
+  if (/in one day$/.test(lower)) return false;
+
+  return true;
+}
+
 function renderAITextWithAddButtons(text, city, day) {
-  // Tüm eşleşmeler için global regex (case-insensitive)
   const regex = /(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/ig;
 
   return text.replace(regex, function(full, placeName) {
     const cleanName = placeName.trim().replace(/[.,;!?]+$/, "");
-    // O günkü planı kontrol et (çakışma varsa uyarı)
+    if (!isProbablyRealPlace(cleanName)) {
+      return `<span class="ai-place">${full}</span>`; // Buton koyma
+    }
     const alreadyInPlan = window.cart.some(item =>
       item.day == day &&
       item.name && item.name.toLowerCase().includes(cleanName.toLowerCase())
@@ -9858,7 +9877,6 @@ function renderAITextWithAddButtons(text, city, day) {
     if (alreadyInPlan) {
       return `<span class="ai-place">${full} <span style="color:#aaa;font-size:12px">(already in plan)</span></span>`;
     }
-    // Farklı ise buton ekle
     return `<span class="ai-place">${full}</span> <button class="ai-add-btn" data-place="${cleanName}" data-city="${city}" data-day="${day}">+</button>`;
   });
 }
