@@ -9805,12 +9805,10 @@ function fillGeoapifyTagsOnly() {
 
 // AI Highlight içindeki yeri ve butonu oluştur
 function renderAIHighlightWithAdd(highlightText, city, day) {
-  // Hem "Visit", hem "at", hem "in", hem "on" gibi kelimeleri yakalasın
-  const match = highlightText.match(/(?:Visit|at|in|on)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
+  // Daha kapsamlı regex: of|at|in|on|Visit ile başlayan veya geçen, ardından mekan adı
+  const match = highlightText.match(/(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
   if (match && match[1]) {
-    // Virgül, nokta, tire vb. sonda varsa sil
     const placeName = match[1].trim().replace(/[.,;!?]+$/, "");
-    // Sadece placeName kısmını değil, tüm match'i (örn: "at Sky Business Hotel") butonla değiştir
     const html = highlightText.replace(
       match[0],
       `<span class="ai-place">${match[0]}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
