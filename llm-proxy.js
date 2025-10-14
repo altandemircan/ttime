@@ -97,9 +97,14 @@ Please write:
 - It must be at least 300 characters, up to 400.
 - A creative tip for the traveler.
 - A highlight that makes this trip special.
-IMPORTANT: Whenever you mention a specific place (cafe, monument, hotel, park, etc.), always use one of these patterns: 'Visit <place>', 'at <place>', 'in <place>', 'on <place>', or 'of <place>' -- with the place name directly after the keyword. These can appear anywhere in the sentence and there may be multiple such mentions per field.
-Example: "Enjoy coffee at Lokal Cafe before you explore the old town. Visit Ataturk Park for a sunset walk. The spirit of the city lives in the streets of Kaleici."
-Never repeat a place already in the trip plan. If you mention multiple places, use the patterns above for each.
+
+IMPORTANT RULES:
+- When mentioning a place, ALWAYS use the real, specific, and named location as it appears on the map (e.g. "ABC Restaurant", "Gençlik Parkı", "Kocatepe Camii", "Lokal Cafe", etc.).
+- NEVER use generic or category words like: "accommodation", "restaurant", "hotel", "museum", "local cuisine", "food scene", "public transportation", "attraction", "landmark", "park", "sight", "trip", "day", "city", "history", "culture" etc. after the keywords below. Only use real, specific place names.
+- In every field, whenever you mention a place, use one of these patterns: 'Visit <place>', 'at <place>', 'in <place>', 'on <place>', or 'of <place>' — always followed by a real, named place. These can appear anywhere in the sentence and there may be multiple such mentions per field.
+- Never repeat a place already in the trip plan. If you mention multiple places, use the patterns above for each.
+- Example: "Enjoy coffee at Lokal Cafe before you explore the old town. Visit Ataturk Park for a sunset walk. The spirit of the city lives in the streets of Kaleici."
+
 Respond as formatted JSON: { "summary": "...", "tip": "...", "highlight": "..." }
     `.trim();
 
