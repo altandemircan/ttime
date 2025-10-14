@@ -1326,13 +1326,11 @@ async function fillAIDescriptionsAutomatically() {
     document.querySelectorAll('.steps').forEach(async stepsDiv => {
         const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
         if (!infoView) return;
-
+        // *** SADECE TAGS KISMI ***
         const name = infoView.querySelector('.title')?.textContent?.trim() || '';
-        const address = infoView.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '';
-        const city = window.selectedCity || '';
         const category = stepsDiv.getAttribute('data-category') || '';
 
-        // === AI TAGS ===
+        // AI Tags
         const aiTagsDiv = infoView.querySelector('.ai-tags');
         if (aiTagsDiv && name && category) {
             aiTagsDiv.textContent = "Loading...";
@@ -1344,13 +1342,12 @@ async function fillAIDescriptionsAutomatically() {
                 });
                 const data = await resp.json();
                 const tags = Array.isArray(data.tags) ? data.tags : [];
-                aiTagsDiv.innerHTML = tags.length ? tags.map(t => `<span class="ai-tag">#${t}</span>`).join(' ') : '<span class="ai-tag">No AI tags found</span>';
+                aiTagsDiv.innerHTML = tags.map(t => `<span class="ai-tag">#${t}</span>`).join(' ');
             } catch {
-                aiTagsDiv.textContent = "AI tags yüklenemedi.";
+                aiTagsDiv.textContent = "AI tagler yüklenemedi.";
             }
         }
-
-        // === OSM/Geoapify TAGS ===
+        // OSM/Geoapify Tags
         const geoTagsDiv = infoView.querySelector('.geoapify-tags');
         const step = window.cart.find(i => i.name === name && i.category === category);
         if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
@@ -1358,40 +1355,7 @@ async function fillAIDescriptionsAutomatically() {
         } else if (geoTagsDiv) {
             geoTagsDiv.textContent = "No tags found.";
         }
-
-        // === AI AÇIKLAMASI ===
-        const descriptionDiv = infoView.querySelector('.description');
-        if (!descriptionDiv) return;
-        if (descriptionDiv.dataset.aiFilled) return;
-        // Loading animasyonu gösterme -- kaldırıyoruz
-        // descriptionDiv.innerHTML = `
-        //     <img src="img/information_icon.svg">
-        //     <span class="ai-guide-loading">
-        //         AI Guide loading...
-        //         <span class="dot-anim">.</span>
-        //         <span class="dot-anim">.</span>
-        //         <span class="dot-anim">.</span>
-        //     </span>
-        // `;
-        // AI açıklaması sadece boşsa yükle
-        if (!descriptionDiv.textContent.trim() || descriptionDiv.textContent.includes('AI Guide loading')) {
-            try {
-                const resp = await fetch('/llm-proxy/item-guide', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, address, city, category }),
-                });
-                const data = await resp.json();
-                if (data.text) {
-                    descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
-                    descriptionDiv.dataset.aiFilled = "1";
-                } else {
-                    descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI description could not be retrieved."}</span>`;
-                }
-            } catch {
-                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
-            }
-        }
+        // *** DESCRIPTION ALANINA HİÇBİR ŞEY YAZMA ***
     });
 }
 let hasAutoAddedToCart = false;
