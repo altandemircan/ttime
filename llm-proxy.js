@@ -89,15 +89,20 @@ router.post('/plan-summary', async (req, res) => {
         category: p.category,
         day: p.day
     })) : [];
-    const prompt = `
+const prompt = `
 You are an expert travel assistant. Given this ${days}-day trip plan for ${city}:
 ${JSON.stringify(places, null, 2)}
-Please write:
-- An inspiring and positive summary of this trip (max 60 words).
-- A creative tip for the traveler.
-- A highlight that makes this trip special.
-Respond as formatted JSON: { "summary": "...", "tip": "...", "highlight": "..." }
-IMPORTANT: The values MUST NOT start with "Summary:", "Tip:", or "Highlight:". Just return the text only, **not** prefixed with any label.
+Respond ONLY as JSON with these 3 fields:
+{
+  "summary": "A 60-word inspiring summary of the trip.",
+  "tip": "A creative tip for the traveler.",
+  "highlight": "A highlight that makes this trip special."
+}
+IMPORTANT:
+- Each field MUST be filled and unique.
+- DO NOT merge them.
+- DO NOT add any label like "Summary:", "Tip:", or "Highlight:" inside the values.
+- NO explanation, NO markdown, NO code block. Just plain JSON object.
 `.trim();
 
     try {
