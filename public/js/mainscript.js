@@ -1445,6 +1445,7 @@ await Promise.all(days.map(day => renderRouteForDay(day)));
 await saveTripAfterRoutes();
 renderMyTripsPanel();
 fillGeoapifyTagsOnly();
+  showGeneralAIInfo(window.selectedCity, 1, window.cart);
 
 }
 
@@ -9779,4 +9780,90 @@ function fillGeoapifyTagsOnly() {
       geoTagsDiv.textContent = "No tags found.";
     }
   });
+}
+
+
+// AI Highlight içindeki yeri ve butonu oluştur
+function renderAIHighlightWithAdd(highlightText, city, day) {
+  // Basitçe: "Highlight: Visit Özkaymak Park Otel, offering..." gibi bir metinde Özkaymak Park Otel'i bulup span+buton yap
+  const match = highlightText.match(/Visit\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
+  if (match && match[1]) {
+    const placeName = match[1].trim();
+    // Highlight metnini <span> ile değiştir ve yanına + butonu ekle
+    const html = highlightText.replace(
+      placeName,
+      `<span class="ai-place">${placeName}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
+    );
+    return html;
+  }
+  // Bulamazsa düz göster
+  return highlightText;
+}
+
+// + butonu click handler'ı (tek sefer bağla)
+document.addEventListener('click', async function(e){
+  const btn = e.target.closest('.ai-add-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '...';
+  const place = btn.getAttribute('data-place');
+  const city = btn.getAttribute('data-city');
+  const day = btn.getAttribute('data-day');
+  // Geoapify ile arama
+  try {
+    const resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
+    const data = await resp.json();
+    const found = data.features && data.features[0];
+    if (found) {
+      const props = found.properties;
+      addToCart(
+        props.name || place,
+        '', // image (isteğe bağlı: getImageForPlace ile çekebilirsin)
+        Number(day) || 1,
+        "Place",
+        props.formatted || "",
+        null, null,
+        props.opening_hours || "",
+        props.place_id,
+        { lat: props.lat, lng: props.lon },
+        props.website || ""
+      );
+      btn.textContent = '✓';
+      btn.disabled = true;
+    } else {
+      btn.textContent = 'Not found';
+      btn.disabled = true;
+    }
+  } catch(err) {
+    btn.textContent = 'Err';
+    btn.disabled = false;
+  }
+});
+
+// --- AI Information render örneği ---
+function renderGeneralAIInfo(aiInfo, city, day) {
+  if (!aiInfo) return '';
+  return `
+    <div class="ai-info-section">
+      <h3>AI Information</h3>
+      <div class="ai-info-content">
+        <p><b>Summary:</b> ${aiInfo.summary || ""}</p>
+        <p><b>Tip:</b> ${aiInfo.tip || ""}</p>
+        <p><b>Highlight:</b> ${renderAIHighlightWithAdd(aiInfo.highlight || "", city, day)}</p>
+      </div>
+    </div>
+  `;
+}
+
+// Kullandığın yerde, örneğin plan oluşturunca:
+async function showGeneralAIInfo(city, day, plan) {
+  // plan = o güne ait adımlar (veya tüm plan)
+  const resp = await fetch('/llm-proxy/plan-summary', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan, city, days: 1 })
+  });
+  const aiInfo = await resp.json();
+  // renderGeneralAIInfo ile HTML'i oluştur, istediğin yere ekle
+  document.getElementById('ai-info-root').innerHTML = renderGeneralAIInfo(aiInfo, city, day);
 }
