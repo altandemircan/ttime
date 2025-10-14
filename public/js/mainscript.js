@@ -9780,3 +9780,9 @@ function fillGeoapifyTagsOnly() {
     }
   });
 }
+function renderGeoapifyTags(tags) {
+  return tags.map(tag => {
+    const label = tag.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return `<span class="geo-tag" title="${tag}">${label}</span>`;
+  }).join(' ');
+}
