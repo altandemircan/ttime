@@ -1512,17 +1512,9 @@ function generateStepHtml(step, day, category, idx = 0) {
             </div>
             <div class="description" data-original-description="No detailed description.">
                 <img src="img/information_icon.svg">
-                <span class="ai-guide-loading">
-                  AI Guide loading...
-                  <span class="dot-anim">.</span>
-                  <span class="dot-anim">.</span>
-                  <span class="dot-anim">.</span>
-                </span>
+               
             </div>
-    <div class="ai-tags-section">
-  <div class="ai-tags-title">AI Tags:</div>
-  <div class="ai-tags">Loading...</div>
-</div>
+
 <div class="geoapify-tags-section">
   <div class="geoapify-tags-title">OSM/Geoapify Tags:</div>
   <div class="geoapify-tags">Loading...</div>
