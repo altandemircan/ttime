@@ -9771,7 +9771,10 @@ function fillGeoapifyTagsOnly() {
     const geoTagsDiv = infoView.querySelector('.geoapify-tags');
     const step = window.cart.find(i => i.name === name && i.category === category);
     if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
-      geoTagsDiv.innerHTML = step.properties.categories.map(t => `<span class="geo-tag">${t}</span>`).join(' ');
+      geoTagsDiv.innerHTML = step.properties.categories.map(t => {
+        const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return `<span class="geo-tag" title="${t}">${label}</span>`;
+      }).join(' ');
     } else if (geoTagsDiv) {
       geoTagsDiv.textContent = "No tags found.";
     }
