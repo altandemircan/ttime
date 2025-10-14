@@ -9736,26 +9736,32 @@ async function insertAiInfoForAllDays() {
     // AI info içeriği oluştur
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
-    aiDiv.innerHTML = `
+    
+// --- BURAYA EKLE! ---
+console.log("AI INFO SUMMARY:", aiInfo.summary);
+   aiDiv.innerHTML = `
   <h3>AI Information</h3>
   <div class="ai-info-content">
     ${aiInfo.summary ? `<p><b>Summary:</b> ${
       String(aiInfo.summary)
-        .replace(/<\/?p>/gi, '')         // <p> ve </p> sil
-        .replace(/<\/?b>/gi, '')         // <b> ve </b> sil
-        .replace(/^Summary:\s*/i, '')    // baştaki "Summary:" sil
+        .replace(/<\/?p[^>]*>/gi, '')      // <p> ve </p> sil
+        .replace(/<\/?b[^>]*>/gi, '')      // <b> ve </b> sil
+        .replace(/^Summary:\s*/i, '')      // baştaki "Summary:" sil
+        .trim()
     }</p>` : ''}
     ${aiInfo.tip ? `<p><b>Tip:</b> ${
       String(aiInfo.tip)
-        .replace(/<\/?p>/gi, '')
-        .replace(/<\/?b>/gi, '')
+        .replace(/<\/?p[^>]*>/gi, '')
+        .replace(/<\/?b[^>]*>/gi, '')
         .replace(/^Tip:\s*/i, '')
+        .trim()
     }</p>` : ''}
     ${aiInfo.highlight ? `<p><b>Highlight:</b> ${
       String(aiInfo.highlight)
-        .replace(/<\/?p>/gi, '')
-        .replace(/<\/?b>/gi, '')
+        .replace(/<\/?p[^>]*>/gi, '')
+        .replace(/<\/?b[^>]*>/gi, '')
         .replace(/^Highlight:\s*/i, '')
+        .trim()
     }</p>` : ''}
   </div>
 `;
