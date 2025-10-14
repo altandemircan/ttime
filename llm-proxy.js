@@ -97,7 +97,8 @@ Please write:
 - A creative tip for the traveler.
 - A highlight that makes this trip special.
 Respond as formatted JSON: { "summary": "...", "tip": "...", "highlight": "..." }
-    `.trim();
+IMPORTANT: The values MUST NOT start with "Summary:", "Tip:", or "Highlight:". Just return the text only, **not** prefixed with any label.
+`.trim();
 
     try {
         const response = await axios.post('http://localhost:11434/api/generate', {
