@@ -9831,9 +9831,30 @@ function renderGeneralAIInfo(aiInfo, city, day) {
     </div>
   `;
 }
+async function searchPlace(place, city) {
+  // Önce tam metinle dene
+  let resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
+  let data = await resp.json();
+  if (data.features && data.features[0]) return data.features[0];
 
+  // Eğer bulamazsa, ilk kelimeyi ve son 2 kelimeyi dene
+  const tokens = place.split(' ');
+  if (tokens.length > 2) {
+    const short = tokens.slice(-2).join(' ');
+    resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(short + " " + city)}&limit=1`);
+    data = await resp.json();
+    if (data.features && data.features[0]) return data.features[0];
+  }
+
+  // Sadece ilk isimle dene
+  resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(tokens[0] + " " + city)}&limit=1`);
+  data = await resp.json();
+  if (data.features && data.features[0]) return data.features[0];
+
+  return null;
+}
 // + butonu click handler'ı (tek sefer bağla)
-document.addEventListener('click', async function(e){
+ddocument.addEventListener('click', async function(e){
   const btn = e.target.closest('.ai-add-btn');
   if (!btn) return;
   btn.disabled = true;
@@ -9841,16 +9862,13 @@ document.addEventListener('click', async function(e){
   const place = btn.getAttribute('data-place');
   const city = btn.getAttribute('data-city');
   const day = btn.getAttribute('data-day');
-  // Geoapify ile arama
   try {
-    const resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
-    const data = await resp.json();
-    const found = data.features && data.features[0];
+    const found = await searchPlace(place, city);
     if (found) {
       const props = found.properties;
       addToCart(
         props.name || place,
-        '', // image (isteğe bağlı: getImageForPlace ile çekebilirsin)
+        '', // image
         Number(day) || 1,
         "Place",
         props.formatted || "",
