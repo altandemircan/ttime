@@ -87,6 +87,9 @@ router.post('/generate-tags', async (req, res) => {
 
 router.post('/trip-info', async (req, res) => {
     const { tripPlan } = req.body;
+    if (!Array.isArray(tripPlan) || tripPlan.length === 0) {
+        return res.json({ summary: "", error: "No trip steps provided." });
+    }
     const steps = tripPlan.map(x => x.name).filter(Boolean).join(', ');
     const prompt = `
 Given these trip steps: ${steps}.
@@ -101,18 +104,15 @@ Respond only in valid JSON. Do not use code block formatting or extra text.
             stream: false
         });
         let data = response.data.response.trim();
-        if (data.startsWith('```json')) data = data.replace(/```json|```/g, '').trim();
-        else if (data.startsWith('```')) data = data.replace(/```/g, '').trim();
-
-        // JSON parse veya regex fallback
+        // Remove code block if present
+        data = data.replace(/```json|```/g, '').trim();
         let summary = "";
         try { summary = JSON.parse(data).summary; }
         catch { summary = (data.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || ""; }
-
-        if (!summary) return res.json({ summary: "", error: "AI trip info could not be generated." });
+        if (!summary) return res.json({ summary: "", error: "AI trip info could not be generated.", raw: data });
         res.json({ summary });
     } catch (error) {
-        res.json({ summary: "", error: "AI trip info could not be generated." });
+        res.json({ summary: "", error: "AI trip info could not be generated.", errorDetail: error.message });
     }
 });
 
