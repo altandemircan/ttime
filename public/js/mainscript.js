@@ -1324,6 +1324,7 @@ function showAITags(place) {
 
 async function fillAIDescriptionsAutomatically() {
     document.querySelectorAll('.steps').forEach(async stepsDiv => {
+        // === AI AÇIKLAMASI ===
         const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
         if (!infoView) return;
         const descriptionDiv = infoView.querySelector('.description');
@@ -1348,25 +1349,51 @@ async function fillAIDescriptionsAutomatically() {
 
         if (!name || !city) return;
 
-            try {
-        const resp = await fetch('/llm-proxy/item-guide', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, address, city, category }),
-        });
-        const data = await resp.json();
-        if (data.text) {
-            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
-            descriptionDiv.dataset.aiFilled = "1";
-        } else {
-            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI description could not be retrieved."}</span>`;
+        try {
+            const resp = await fetch('/llm-proxy/item-guide', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, address, city, category }),
+            });
+            const data = await resp.json();
+            if (data.text) {
+                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
+                descriptionDiv.dataset.aiFilled = "1";
+            } else {
+                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI description could not be retrieved."}</span>`;
+            }
+        } catch {
+            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
         }
-    } catch {
-        descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
-    }
-});
-}
 
+        // === AI & OSM TAG EKLEME BLOĞU ===
+        // AI Tags
+        const aiTagsDiv = infoView.querySelector('.ai-tags');
+        if (aiTagsDiv && name && category) {
+            aiTagsDiv.textContent = "Loading...";
+            try {
+                const resp = await fetch('/llm-proxy/generate-tags', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, category, count: 6 })
+                });
+                const data = await resp.json();
+                const tags = Array.isArray(data.tags) ? data.tags : [];
+                aiTagsDiv.innerHTML = tags.map(t => `<span class="ai-tag">#${t}</span>`).join(' ');
+            } catch {
+                aiTagsDiv.textContent = "AI tagler yüklenemedi.";
+            }
+        }
+        // OSM/Geoapify Tags
+        const geoTagsDiv = infoView.querySelector('.geoapify-tags');
+        const step = window.cart.find(i => i.name === name && i.category === category);
+        if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
+            geoTagsDiv.innerHTML = step.properties.categories.map(t => `<span class="geo-tag">${t}</span>`).join(' ');
+        } else if (geoTagsDiv) {
+            geoTagsDiv.textContent = "No tags found.";
+        }
+    });
+}
 let hasAutoAddedToCart = false;
 async function showResults() {
 
@@ -1609,6 +1636,14 @@ function generateStepHtml(step, day, category, idx = 0) {
                   <span class="dot-anim">.</span>
                 </span>
             </div>
+    <div class="ai-tags-section">
+  <div class="ai-tags-title">AI Tags:</div>
+  <div class="ai-tags">Loading...</div>
+</div>
+<div class="geoapify-tags-section">
+  <div class="geoapify-tags-title">OSM/Geoapify Tags:</div>
+  <div class="geoapify-tags">Loading...</div>
+</div>
             <div class="opening_hours">
 <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
             </div>
@@ -4657,6 +4692,14 @@ function showTripDetails(startDate) {
     <div class="title">${item.name}</div>
     <div class="address"><img src="img/address_icon.svg"> ${address}</div>
     <div class="description" data-original-description="${(item.description || 'No detailed description.').replace(/"/g, '&quot;')}">
+<div class="ai-tags-section">
+  <div class="ai-tags-title">AI Tags:</div>
+  <div class="ai-tags">Loading...</div>
+</div>
+<div class="geoapify-tags-section">
+  <div class="geoapify-tags-title">OSM/Geoapify Tags:</div>
+  <div class="geoapify-tags">Loading...</div>
+</div>
       <img src="img/information_icon.svg">
       <span class="ai-guide-loading">
         AI Guide loading...
