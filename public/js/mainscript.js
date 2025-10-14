@@ -2315,6 +2315,11 @@ function displayPlacesInChat(places, category, day) {
 
     html += "</div></div></div></div>";
     chatBox.innerHTML += html;
+    if (!document.getElementById('ai-info-root')) {
+    const aiDiv = document.createElement('div');
+    aiDiv.id = 'ai-info-root';
+    chatBox.appendChild(aiDiv);
+}
     chatBox.scrollTop = chatBox.scrollHeight;
 
     if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
@@ -9840,7 +9845,19 @@ document.addEventListener('click', async function(e){
   }
 });
 
-// --- AI Information render örneği ---
+function renderAIHighlightWithAdd(highlightText, city, day) {
+  const match = highlightText.match(/Visit\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
+  if (match && match[1]) {
+    const placeName = match[1].trim();
+    const html = highlightText.replace(
+      placeName,
+      `<span class="ai-place">${placeName}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
+    );
+    return html;
+  }
+  return highlightText;
+}
+
 function renderGeneralAIInfo(aiInfo, city, day) {
   if (!aiInfo) return '';
   return `
@@ -9855,15 +9872,49 @@ function renderGeneralAIInfo(aiInfo, city, day) {
   `;
 }
 
-// Kullandığın yerde, örneğin plan oluşturunca:
 async function showGeneralAIInfo(city, day, plan) {
-  // plan = o güne ait adımlar (veya tüm plan)
   const resp = await fetch('/llm-proxy/plan-summary', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ plan, city, days: 1 })
   });
   const aiInfo = await resp.json();
-  // renderGeneralAIInfo ile HTML'i oluştur, istediğin yere ekle
   document.getElementById('ai-info-root').innerHTML = renderGeneralAIInfo(aiInfo, city, day);
 }
+document.addEventListener('click', async function(e){
+  const btn = e.target.closest('.ai-add-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '...';
+  const place = btn.getAttribute('data-place');
+  const city = btn.getAttribute('data-city');
+  const day = btn.getAttribute('data-day');
+  try {
+    const resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
+    const data = await resp.json();
+    const found = data.features && data.features[0];
+    if (found) {
+      const props = found.properties;
+      addToCart(
+        props.name || place,
+        '', // image (isteğe bağlı: getImageForPlace ile çekebilirsin)
+        Number(day) || 1,
+        "Place",
+        props.formatted || "",
+        null, null,
+        props.opening_hours || "",
+        props.place_id,
+        { lat: props.lat, lng: props.lon },
+        props.website || ""
+      );
+      btn.textContent = '✓';
+      btn.disabled = true;
+    } else {
+      btn.textContent = 'Not found';
+      btn.disabled = true;
+    }
+  } catch(err) {
+    btn.textContent = 'Err';
+    btn.disabled = false;
+  }
+});
