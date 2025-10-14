@@ -1415,9 +1415,6 @@ async function showResults() {
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // AI açıklamaları
-
-    setTimeout(fillAIDescriptionsAutomatically, 300);
 
     // Sepeti (sidebar) doldur
     if (typeof addChatResultsToCart === "function" && !window.hasAutoAddedToCart) {
@@ -4645,14 +4642,7 @@ function showTripDetails(startDate) {
         return String(str).replace(/^\s+|\s+$/g, '').replace(/\n{2,}/g, '\n').replace(/<[^>]*>/g, '');
     }
 
-   
-
-    // Step içi AI açıklamalar
-    setTimeout(() => {
-        if (typeof fillAIDescriptionsAutomatically === "function") {
-            fillAIDescriptionsAutomatically();
-        }
-    }, 0);
+ 
 
     if (typeof makeChatStepsDraggable === "function") {
         setTimeout(() => makeChatStepsDraggable(), 0);
@@ -9727,46 +9717,6 @@ function clearScaleBarSelection(day) {
 }
 
 
-async function fillAIDescriptionsAutomatically() {
-    document.querySelectorAll('.steps').forEach(async stepsDiv => {
-        const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
-        if (!infoView) return;
-
-        const name = infoView.querySelector('.title')?.textContent?.trim() || '';
-        const category = stepsDiv.getAttribute('data-category') || '';
-
-        // --- AI Tags ---
-        const aiTagsDiv = infoView.querySelector('.ai-tags');
-        if (aiTagsDiv && name && category) {
-            aiTagsDiv.textContent = "Loading...";
-            try {
-                const resp = await fetch('/llm-proxy/generate-tags', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, category })
-                });
-                const data = await resp.json();
-                const tags = Array.isArray(data.tags) ? data.tags : [];
-                aiTagsDiv.innerHTML = tags.length
-                    ? tags.map(t => `<span class="ai-tag">#${t}</span>`).join(' ')
-                    : '<span class="ai-tag">No AI tags found</span>';
-            } catch {
-                aiTagsDiv.textContent = "AI tagler yüklenemedi.";
-            }
-        }
-
-        // --- OSM/Geoapify Tags ---
-        const geoTagsDiv = infoView.querySelector('.geoapify-tags');
-        const step = window.cart.find(i => i.name === name && i.category === category);
-        if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
-            geoTagsDiv.innerHTML = step.properties.categories.map(t => `<span class="geo-tag">${t}</span>`).join(' ');
-        } else if (geoTagsDiv) {
-            geoTagsDiv.textContent = "No tags found.";
-        }
-    });
-}
-
-
 // --- YENİ: Her gün için AI Information ekle ---
 async function insertAiInfoForAllDays() {
   // Günleri sırala
@@ -9824,3 +9774,21 @@ if (aiContent && typeof typeWriterEffect === "function") {
   }
 }
 
+
+
+// Sadece Geoapify tags güncellensin:
+function fillGeoapifyTagsOnly() {
+  document.querySelectorAll('.steps').forEach(stepsDiv => {
+    const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
+    if (!infoView) return;
+    const name = infoView.querySelector('.title')?.textContent?.trim() || '';
+    const category = stepsDiv.getAttribute('data-category') || '';
+    const geoTagsDiv = infoView.querySelector('.geoapify-tags');
+    const step = window.cart.find(i => i.name === name && i.category === category);
+    if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
+      geoTagsDiv.innerHTML = step.properties.categories.map(t => `<span class="geo-tag">${t}</span>`).join(' ');
+    } else if (geoTagsDiv) {
+      geoTagsDiv.textContent = "No tags found.";
+    }
+  });
+}
