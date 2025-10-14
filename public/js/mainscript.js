@@ -9736,6 +9736,9 @@ async function insertAiInfoForAllDays() {
     // AI info içeriği oluştur
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
+    
+// --- BURAYA EKLE! ---
+console.log("AI INFO SUMMARY:", aiInfo.summary);
    aiDiv.innerHTML = `
   <h3>AI Information</h3>
   <div class="ai-info-content">
