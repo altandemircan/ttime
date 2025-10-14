@@ -9739,12 +9739,26 @@ async function insertAiInfoForAllDays() {
     aiDiv.innerHTML = `
   <h3>AI Information</h3>
   <div class="ai-info-content">
-    ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
-    ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
-    ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
+    ${aiInfo.summary ? `<p><b>Summary:</b> ${
+      String(aiInfo.summary)
+        .replace(/<\/?p>/gi, '')         // <p> ve </p> sil
+        .replace(/<\/?b>/gi, '')         // <b> ve </b> sil
+        .replace(/^Summary:\s*/i, '')    // baştaki "Summary:" sil
+    }</p>` : ''}
+    ${aiInfo.tip ? `<p><b>Tip:</b> ${
+      String(aiInfo.tip)
+        .replace(/<\/?p>/gi, '')
+        .replace(/<\/?b>/gi, '')
+        .replace(/^Tip:\s*/i, '')
+    }</p>` : ''}
+    ${aiInfo.highlight ? `<p><b>Highlight:</b> ${
+      String(aiInfo.highlight)
+        .replace(/<\/?p>/gi, '')
+        .replace(/<\/?b>/gi, '')
+        .replace(/^Highlight:\s*/i, '')
+    }</p>` : ''}
   </div>
 `;
-
     // Add Category butonunu bul
     let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
     // AI info'yu dayList'in altına, add-more-btn'den önce ekle
