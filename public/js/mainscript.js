@@ -1444,6 +1444,8 @@ const days = [...new Set(window.cart.map(i => i.day))];
 await Promise.all(days.map(day => renderRouteForDay(day)));
 await saveTripAfterRoutes();
 renderMyTripsPanel();
+fillGeoapifyTagsOnly();
+
 }
 
 
