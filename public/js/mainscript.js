@@ -4697,28 +4697,6 @@ function showTripDetails(startDate) {
 
     tripDetailsSection.appendChild(sect);
 
-    // Trip Information (AI adım yorumları)
-    const tripInfoDiv = document.createElement("div");
-    tripInfoDiv.className = "trip-info-section";
-    tripInfoDiv.innerHTML = `
-        <h3>Trip Information</h3>
-        <div class="trip-info-content">
-            <span style="color:#888;">AI is analyzing your trip steps...</span>
-        </div>
-    `;
-    tripDetailsSection.appendChild(tripInfoDiv);
-
-    // AI Summary
-    const aiInfoDiv = document.createElement("div");
-    aiInfoDiv.className = "ai-info-section";
-    aiInfoDiv.innerHTML = `
-        <h3>AI Information</h3>
-        <div class="ai-info-content">
-            <span style="color:#888;">AI is summarizing your trip...</span>
-        </div>
-    `;
-    tripDetailsSection.appendChild(aiInfoDiv);
-
     // Share buttons
     const shareButtonsContainer = document.createElement("div");
     shareButtonsContainer.classList.add("share-buttons-container");
@@ -4759,58 +4737,7 @@ function showTripDetails(startDate) {
         return String(str).replace(/^\s+|\s+$/g, '').replace(/\n{2,}/g, '\n').replace(/<[^>]*>/g, '');
     }
 
-    // AI Summary
-    (async function(){
-        try {
-            const plan = (window.latestTripPlan && window.latestTripPlan.length) ? window.latestTripPlan : window.cart;
-            if (!Array.isArray(plan) || plan.length === 0) return;
-            const city = window.selectedCity || plan[0]?.city || "";
-            const days = plan.reduce((max, p) => Math.max(max, p.day || 1), 1);
-            aiInfoDiv.querySelector('.ai-info-content').innerHTML = `<span style="color:#888;">AI is summarizing your trip...</span>`;
-            const resp = await fetch('/llm-proxy/plan-summary', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ plan, city, days })
-            });
-            const data = await resp.json();
-            let html = "";
-            if (data.summary) html += `<p><b>Summary:</b> ${safeHtml(data.summary)}</p>`;
-            if (data.tip) html += `<p><b>Tip:</b> ${safeHtml(data.tip)}</p>`;
-            if (data.highlight) html += `<p><b>Highlight:</b> ${safeHtml(data.highlight)}</p>`;
-            if (!html) html = `<span style="color:#d32f2f">AI summary could not be generated.</span>`;
-            typeWriterEffect(aiInfoDiv.querySelector('.ai-info-content'), html, 18);
-        } catch (e) {
-            aiInfoDiv.querySelector('.ai-info-content').innerHTML = `<span style="color:#d32f2f">AI summary could not be generated.</span>`;
-        }
-    })();
-
-    // Trip Info
-    (async function(){
-      try {
-        const resp = await fetch('/llm-proxy/trip-info', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tripPlan: window.cart || [] })
-        });
-        const data = await resp.json();
-        let html = "";
-        if (data.steps && data.steps.length) {
-          data.steps.forEach(s => {
-            html += `<div class="trip-step"><b>${safeHtml(s.name)}:</b> ${safeHtml(s.ai_comment)}</div>`;
-          });
-        }
-        if (data.route_summary) {
-          html += `<div class="trip-route-summary"><b>Route summary:</b> ${safeHtml(data.route_summary)}</div>`;
-        }
-        if (data.summary) {
-          html += `<div class="trip-summary"><b>AI Program:</b><br>${safeHtml(data.summary)}</div>`;
-        }
-        if (!html.trim()) html = `<span style="color:#d32f2f">AI trip info could not be generated.</span>`;
-        typeWriterEffect(tripInfoDiv.querySelector('.trip-info-content'), html, 15);
-      } catch (e) {
-        tripInfoDiv.querySelector('.trip-info-content').innerHTML = `<span style="color:#d32f2f">AI trip info could not be generated.</span>`;
-      }
-    })();
+   
 
     // Step içi AI açıklamalar
     setTimeout(() => {
