@@ -9805,9 +9805,12 @@ function fillGeoapifyTagsOnly() {
 
 // AI Highlight içindeki yeri ve butonu oluştur
 function renderAIHighlightWithAdd(highlightText, city, day) {
+  // Hem "Visit", hem "at", hem "in", hem "on" gibi kelimeleri yakalasın
   const match = highlightText.match(/(?:Visit|at|in|on)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
   if (match && match[1]) {
+    // Virgül, nokta, tire vb. sonda varsa sil
     const placeName = match[1].trim().replace(/[.,;!?]+$/, "");
+    // Sadece placeName kısmını değil, tüm match'i (örn: "at Sky Business Hotel") butonla değiştir
     const html = highlightText.replace(
       match[0],
       `<span class="ai-place">${match[0]}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
@@ -9816,6 +9819,21 @@ function renderAIHighlightWithAdd(highlightText, city, day) {
   }
   return highlightText;
 }
+
+function renderGeneralAIInfo(aiInfo, city, day) {
+  if (!aiInfo) return '';
+  return `
+    <div class="ai-info-section">
+      <h3>AI Information</h3>
+      <div class="ai-info-content">
+        <p><b>Summary:</b> ${aiInfo.summary || ""}</p>
+        <p><b>Tip:</b> ${aiInfo.tip || ""}</p>
+        <p><b>Highlight:</b> ${renderAIHighlightWithAdd(aiInfo.highlight || "", city, day)}</p>
+      </div>
+    </div>
+  `;
+}
+
 // + butonu click handler'ı (tek sefer bağla)
 document.addEventListener('click', async function(e){
   const btn = e.target.closest('.ai-add-btn');
@@ -9856,32 +9874,6 @@ document.addEventListener('click', async function(e){
   }
 });
 
-function renderAIHighlightWithAdd(highlightText, city, day) {
-  const match = highlightText.match(/Visit\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
-  if (match && match[1]) {
-    const placeName = match[1].trim();
-    const html = highlightText.replace(
-      placeName,
-      `<span class="ai-place">${placeName}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
-    );
-    return html;
-  }
-  return highlightText;
-}
-
-function renderGeneralAIInfo(aiInfo, city, day) {
-  if (!aiInfo) return '';
-  return `
-    <div class="ai-info-section">
-      <h3>AI Information</h3>
-      <div class="ai-info-content">
-        <p><b>Summary:</b> ${aiInfo.summary || ""}</p>
-        <p><b>Tip:</b> ${aiInfo.tip || ""}</p>
-        <p><b>Highlight:</b> ${renderAIHighlightWithAdd(aiInfo.highlight || "", city, day)}</p>
-      </div>
-    </div>
-  `;
-}
 async function showGeneralAIInfo(city, day, plan) {
   const aiDiv = document.getElementById('ai-info-root');
   if (!aiDiv) return;
