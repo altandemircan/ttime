@@ -4710,28 +4710,7 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(shareButtonsContainer);
 
-    // Typewriter
-    function typeWriterEffect(element, html, speed = 16) {
-        let i = 0;
-        element.innerHTML = "";
-        function type() {
-            if (i < html.length) {
-                if (html[i] === "<") {
-                    const close = html.indexOf(">", i);
-                    if (close !== -1) {
-                        element.innerHTML += html.slice(i, close + 1);
-                        i = close + 1;
-                    } else {
-                        element.innerHTML += html[i++];
-                    }
-                } else {
-                    element.innerHTML += html[i++];
-                }
-                setTimeout(type, speed);
-            }
-        }
-        type();
-    }
+   
     function safeHtml(str) {
         if (!str) return "";
         return String(str).replace(/^\s+|\s+$/g, '').replace(/\n{2,}/g, '\n').replace(/<[^>]*>/g, '');
@@ -9867,5 +9846,14 @@ async function insertAiInfoForAllDays() {
     let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
     // AI info'yu dayList'in altına, add-more-btn'den önce ekle
     dayList.parentNode.insertBefore(aiDiv, addBtn ?? null);
+    // Typewriter efekt uygula
+const aiContent = aiDiv.querySelector('.ai-info-content');
+if (aiContent && typeof typeWriterEffect === "function") {
+    const html = aiContent.innerHTML;
+    aiContent.innerHTML = "";
+    typeWriterEffect(aiContent, html, 18);
+}
   }
 }
+
+
