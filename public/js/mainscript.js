@@ -9805,10 +9805,23 @@ function fillGeoapifyTagsOnly() {
 
 // AI Highlight içindeki yeri ve butonu oluştur
 function renderAIHighlightWithAdd(highlightText, city, day) {
-  // Daha kapsamlı regex: of|at|in|on|Visit ile başlayan veya geçen, ardından mekan adı
+  // Çıkarılan mekan adı
   const match = highlightText.match(/(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
   if (match && match[1]) {
     const placeName = match[1].trim().replace(/[.,;!?]+$/, "");
+    // O günkü planı kontrol et
+    const alreadyInPlan = window.cart.some(item =>
+      item.day == day &&
+      item.name && item.name.toLowerCase().includes(placeName.toLowerCase())
+    );
+    if (alreadyInPlan) {
+      // Buton ekleme, sadece ismi vurgula
+      return highlightText.replace(
+        match[0],
+        `<span class="ai-place">${match[0]} <span style="color:#aaa;font-size:12px">(already in plan)</span></span>`
+      );
+    }
+    // Farklı ise buton ekle
     const html = highlightText.replace(
       match[0],
       `<span class="ai-place">${match[0]}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
@@ -9817,16 +9830,17 @@ function renderAIHighlightWithAdd(highlightText, city, day) {
   }
   return highlightText;
 }
-
 function renderGeneralAIInfo(aiInfo, city, day) {
   if (!aiInfo) return '';
+  let highlight = aiInfo.highlight || '';
+  if (highlight.length > 400) highlight = highlight.slice(0, 397) + '...';
   return `
     <div class="ai-info-section">
       <h3>AI Information</h3>
       <div class="ai-info-content">
         <p><b>Summary:</b> ${aiInfo.summary || ""}</p>
         <p><b>Tip:</b> ${aiInfo.tip || ""}</p>
-        <p><b>Highlight:</b> ${renderAIHighlightWithAdd(aiInfo.highlight || "", city, day)}</p>
+        <p><b>Highlight:</b> ${renderAIHighlightWithAdd(highlight, city, day)}</p>
       </div>
     </div>
   `;
