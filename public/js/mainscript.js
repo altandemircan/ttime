@@ -1412,9 +1412,23 @@ async function showResults() {
     }
 
     html += `</ul></div></div>`;
-    chatBox.innerHTML += html;
-    chatBox.scrollTop = chatBox.scrollHeight;
 
+    // --- AI kutusunu plan çıktısından hemen sonra ekle ---
+    // Önce eski kutu varsa kaldır
+    const oldAI = document.getElementById('ai-info-root');
+    if (oldAI) oldAI.remove();
+
+    // Plan çıktısını ekle
+    chatBox.innerHTML += html;
+
+    // AI kutusunu başa ekle
+    if (!document.getElementById('ai-info-root')) {
+        const aiDiv = document.createElement('div');
+        aiDiv.id = 'ai-info-root';
+        chatBox.prepend(aiDiv); // En başa ekler. En sona istersen: chatBox.appendChild(aiDiv);
+    }
+
+    chatBox.scrollTop = chatBox.scrollHeight;
 
     // Sepeti (sidebar) doldur
     if (typeof addChatResultsToCart === "function" && !window.hasAutoAddedToCart) {
@@ -1440,15 +1454,16 @@ async function showResults() {
     updateCart();
 
     // --- YENİ EKLE ---
-const days = [...new Set(window.cart.map(i => i.day))];
-await Promise.all(days.map(day => renderRouteForDay(day)));
-await saveTripAfterRoutes();
-renderMyTripsPanel();
-fillGeoapifyTagsOnly();
-  showGeneralAIInfo(window.selectedCity, 1, window.cart);
+    const days = [...new Set(window.cart.map(i => i.day))];
+    await Promise.all(days.map(day => renderRouteForDay(day)));
+    await saveTripAfterRoutes();
+    renderMyTripsPanel();
+    fillGeoapifyTagsOnly();
+
+    // --- AI bilgi kutusunu doldur ---
+    showGeneralAIInfo(window.selectedCity, 1, window.cart);
 
 }
-
 
 
 
@@ -9790,21 +9805,17 @@ function fillGeoapifyTagsOnly() {
 
 // AI Highlight içindeki yeri ve butonu oluştur
 function renderAIHighlightWithAdd(highlightText, city, day) {
-  // Basitçe: "Highlight: Visit Özkaymak Park Otel, offering..." gibi bir metinde Özkaymak Park Otel'i bulup span+buton yap
   const match = highlightText.match(/Visit\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
   if (match && match[1]) {
     const placeName = match[1].trim();
-    // Highlight metnini <span> ile değiştir ve yanına + butonu ekle
     const html = highlightText.replace(
       placeName,
       `<span class="ai-place">${placeName}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
     );
     return html;
   }
-  // Bulamazsa düz göster
   return highlightText;
 }
-
 // + butonu click handler'ı (tek sefer bağla)
 document.addEventListener('click', async function(e){
   const btn = e.target.closest('.ai-add-btn');
@@ -9871,15 +9882,16 @@ function renderGeneralAIInfo(aiInfo, city, day) {
     </div>
   `;
 }
-
 async function showGeneralAIInfo(city, day, plan) {
+  const aiDiv = document.getElementById('ai-info-root');
+  if (!aiDiv) return;
   const resp = await fetch('/llm-proxy/plan-summary', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ plan, city, days: 1 })
   });
   const aiInfo = await resp.json();
-  document.getElementById('ai-info-root').innerHTML = renderGeneralAIInfo(aiInfo, city, day);
+  aiDiv.innerHTML = renderGeneralAIInfo(aiInfo, city, day);
 }
 document.addEventListener('click', async function(e){
   const btn = e.target.closest('.ai-add-btn');
@@ -9897,7 +9909,7 @@ document.addEventListener('click', async function(e){
       const props = found.properties;
       addToCart(
         props.name || place,
-        '', // image (isteğe bağlı: getImageForPlace ile çekebilirsin)
+        '', // image
         Number(day) || 1,
         "Place",
         props.formatted || "",
@@ -9918,3 +9930,14 @@ document.addEventListener('click', async function(e){
     btn.disabled = false;
   }
 });
+
+function ensureAIInfoRoot(chatBox) {
+  // Eski kutu varsa sil
+  const oldAI = document.getElementById('ai-info-root');
+  if (oldAI) oldAI.remove();
+
+  // Yeni kutu oluştur ve chatBox'ın en başına ekle
+  const aiDiv = document.createElement('div');
+  aiDiv.id = 'ai-info-root';
+  chatBox.prepend(aiDiv); // veya .appendChild(aiDiv) istersen
+}
