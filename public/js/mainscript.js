@@ -9845,21 +9845,24 @@ function renderGeneralAIInfo(aiInfo, city, day) {
 }
 
 function isProbablyRealPlace(name) {
-  // Jenerik kelimeler veya tematik ifadeler
-  const genericWords = [
-    "architecture", "culture", "history", "trip", "tour", "day", "plan", "city", "delicacies"
+  const genericPatterns = [
+    /accommodation/i,
+    /food scene/i,
+    /local cuisine/i,
+    /public transportation/i,
+    /transportation/i,
+    /cuisine/i,
+    /landmarks?/i,
+    /attractions?/i,
+    /delicious food/i,
+    /comfortable/i,
+    /budget/i,
+    /free/i,
+    /city\b/i,
+    /scene/i
   ];
-  const lower = name.trim().toLowerCase();
-
-  // Çok kısa veya çok uzun veya jenerikse atla
-  if (lower.length < 3) return false;
-  if (genericWords.some(word => lower === word || lower.endsWith(" " + word) || lower.startsWith(word + " "))) {
-    return false;
-  }
-  // "in one day" gibi bitiyorsa atla
-  if (/in one day$/.test(lower)) return false;
-
-  return true;
+  // Eğer jenerik bir pattern'e denk gelirse false döndür
+  return !genericPatterns.some(re => re.test(name));
 }
 
 function renderAITextWithAddButtons(text, city, day) {
