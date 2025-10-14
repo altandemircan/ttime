@@ -1326,7 +1326,7 @@ async function fillAIDescriptionsAutomatically() {
     document.querySelectorAll('.steps').forEach(async stepsDiv => {
         const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
         if (!infoView) return;
-        // *** SADECE TAGS KISMI ***
+
         const name = infoView.querySelector('.title')?.textContent?.trim() || '';
         const category = stepsDiv.getAttribute('data-category') || '';
 
@@ -1342,7 +1342,9 @@ async function fillAIDescriptionsAutomatically() {
                 });
                 const data = await resp.json();
                 const tags = Array.isArray(data.tags) ? data.tags : [];
-                aiTagsDiv.innerHTML = tags.map(t => `<span class="ai-tag">#${t}</span>`).join(' ');
+                aiTagsDiv.innerHTML = tags.length
+                    ? tags.map(t => `<span class="ai-tag">#${t}</span>`).join(' ')
+                    : '<span class="ai-tag">No AI tags found</span>';
             } catch {
                 aiTagsDiv.textContent = "AI tagler yüklenemedi.";
             }
@@ -1355,9 +1357,71 @@ async function fillAIDescriptionsAutomatically() {
         } else if (geoTagsDiv) {
             geoTagsDiv.textContent = "No tags found.";
         }
-        // *** DESCRIPTION ALANINA HİÇBİR ŞEY YAZMA ***
     });
 }
+
+
+// --- YENİ: Her gün için AI Information ekle ---
+async function insertAiInfoForAllDays() {
+  // Günleri sırala
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+
+  for (const day of days) {
+    const dayList = document.querySelector(`.day-list[data-day="${day}"]`);
+    if (!dayList) continue;
+
+    // O güne ait planı filtrele
+    const dayPlan = window.cart.filter(i => i.day === day);
+
+    // Eski AI info varsa kaldır
+    let next = dayList.nextElementSibling;
+    if (next && next.classList.contains('ai-info-section')) next.remove();
+
+    // Fetch AI summary ONLY for this day
+    let aiInfo = { summary: '', tip: '', highlight: '' };
+    try {
+      const resp = await fetch('/llm-proxy/plan-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: dayPlan,
+          city: window.selectedCity || '',
+          days: 1
+        })
+      });
+      aiInfo = await resp.json();
+    } catch { /* boş bırak */ }
+
+    // AI info içeriği oluştur
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'ai-info-section';
+    aiDiv.innerHTML = `
+      <h3>AI Information</h3>
+      <div class="ai-info-content">
+        ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
+        ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
+        ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
+      </div>
+    `;
+
+    // Add Category butonunu bul
+    let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
+    // AI info'yu dayList'in altına, add-more-btn'den önce ekle
+    dayList.parentNode.insertBefore(aiDiv, addBtn ?? null);
+    // Typewriter efekt uygula
+const aiContent = aiDiv.querySelector('.ai-info-content');
+if (aiContent && typeof typeWriterEffect === "function") {
+    const html = aiContent.innerHTML;
+    aiContent.innerHTML = "";
+    typeWriterEffect(aiContent, html, 18);
+}
+  }
+}
+
+
+
+
+
 let hasAutoAddedToCart = false;
 async function showResults() {
 
@@ -9802,65 +9866,6 @@ function clearScaleBarSelection(day) {
   if (sel) sel.style.display = 'none';
   // Eğer her yerde tümünü kapatmak istersen:
   // document.querySelectorAll('.scale-bar-selection').forEach(s => s.style.display = 'none');
-}
-
-
-
-// --- YENİ: Her gün için AI Information ekle ---
-async function insertAiInfoForAllDays() {
-  // Günleri sırala
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
-
-  for (const day of days) {
-    const dayList = document.querySelector(`.day-list[data-day="${day}"]`);
-    if (!dayList) continue;
-
-    // O güne ait planı filtrele
-    const dayPlan = window.cart.filter(i => i.day === day);
-
-    // Eski AI info varsa kaldır
-    let next = dayList.nextElementSibling;
-    if (next && next.classList.contains('ai-info-section')) next.remove();
-
-    // Fetch AI summary ONLY for this day
-    let aiInfo = { summary: '', tip: '', highlight: '' };
-    try {
-      const resp = await fetch('/llm-proxy/plan-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: dayPlan,
-          city: window.selectedCity || '',
-          days: 1
-        })
-      });
-      aiInfo = await resp.json();
-    } catch { /* boş bırak */ }
-
-    // AI info içeriği oluştur
-    const aiDiv = document.createElement('div');
-    aiDiv.className = 'ai-info-section';
-    aiDiv.innerHTML = `
-      <h3>AI Information</h3>
-      <div class="ai-info-content">
-        ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
-        ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
-        ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
-      </div>
-    `;
-
-    // Add Category butonunu bul
-    let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
-    // AI info'yu dayList'in altına, add-more-btn'den önce ekle
-    dayList.parentNode.insertBefore(aiDiv, addBtn ?? null);
-    // Typewriter efekt uygula
-const aiContent = aiDiv.querySelector('.ai-info-content');
-if (aiContent && typeof typeWriterEffect === "function") {
-    const html = aiContent.innerHTML;
-    aiContent.innerHTML = "";
-    typeWriterEffect(aiContent, html, 18);
-}
-  }
 }
 
 
