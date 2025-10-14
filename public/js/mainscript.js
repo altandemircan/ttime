@@ -3520,6 +3520,8 @@ function updateCart() {
   if (!window.cart || window.cart.length === 0) {
     cartDiv.innerHTML = `
 
+
+
       <div class="day-container" id="day-container-1" data-day="1">
         <h4 class="day-header">
           <div class="title-container"><span class="day-title">Day 1</span></div>
@@ -3558,6 +3560,8 @@ function updateCart() {
 
   const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
   cartDiv.innerHTML = "";
+
+
 
   for (let day = 1; day <= totalDays; day++) {
     const dayItemsArr = window.cart.filter(i =>
@@ -3833,7 +3837,8 @@ if (anyDayHasRealItem && !hideAddCat) {
 
 cartDiv.appendChild(dayContainer);
   }
-
+// Her gün için AI info ekle
+insertAiInfoForAllDays();
   // --- Add New Day butonu döngü SONRASINDA, sadece 1 defa ---
   const addNewDayHr = document.createElement('hr');
   addNewDayHr.className = 'add-new-day-separator';
@@ -9886,3 +9891,54 @@ function clearScaleBarSelection(day) {
   // document.querySelectorAll('.scale-bar-selection').forEach(s => s.style.display = 'none');
 }
 
+
+
+// --- YENİ: Her gün için AI Information ekle ---
+async function insertAiInfoForAllDays() {
+  // Günleri sırala
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+
+  for (const day of days) {
+    const dayList = document.querySelector(`.day-list[data-day="${day}"]`);
+    if (!dayList) continue;
+
+    // O güne ait planı filtrele
+    const dayPlan = window.cart.filter(i => i.day === day);
+
+    // Eski AI info varsa kaldır
+    let next = dayList.nextElementSibling;
+    if (next && next.classList.contains('ai-info-section')) next.remove();
+
+    // Fetch AI summary ONLY for this day
+    let aiInfo = { summary: '', tip: '', highlight: '' };
+    try {
+      const resp = await fetch('/llm-proxy/plan-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: dayPlan,
+          city: window.selectedCity || '',
+          days: 1
+        })
+      });
+      aiInfo = await resp.json();
+    } catch { /* boş bırak */ }
+
+    // AI info içeriği oluştur
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'ai-info-section';
+    aiDiv.innerHTML = `
+      <h3>AI Information</h3>
+      <div class="ai-info-content">
+        ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
+        ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
+        ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
+      </div>
+    `;
+
+    // Add Category butonunu bul
+    let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
+    // AI info'yu dayList'in altına, add-more-btn'den önce ekle
+    dayList.parentNode.insertBefore(aiDiv, addBtn ?? null);
+  }
+}
