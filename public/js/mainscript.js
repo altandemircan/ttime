@@ -9843,6 +9843,30 @@ function renderGeneralAIInfo(aiInfo, city, day) {
     </div>
   `;
 }
+function isProbablyRealPlace(name) {
+  const genericPatterns = [
+    /accommodation/i,
+    /food scene/i,
+    /local cuisine/i,
+    /public transportation/i,
+    /transportation/i,
+    /cuisine/i,
+    /landmarks?/i,
+    /attractions?/i,
+    /delicious food/i,
+    /comfortable/i,
+    /budget/i,
+    /free/i,
+    /city\b/i,
+    /scene/i,
+    /trip/i,
+    /plan/i,
+    /day/i,
+    /history/i,
+    /culture/i
+  ];
+  return !genericPatterns.some(re => re.test((name || '').toLowerCase()));
+}
 function normalizePlaceName(name) {
   return (name || "")
     .toLowerCase()
@@ -9855,9 +9879,7 @@ function normalizePlaceName(name) {
     .replace(/[^a-z0-9]/g, ""); // Sadece harf ve rakam kalsın
 }
 function renderAITextWithAddButtons(text, city, day) {
-  // "Visit", "at", "in", "on", "of" + mekan adı
   const regex = /(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/ig;
-
   return text.replace(regex, function(full, placeName) {
     const cleanName = placeName.trim().replace(/[.,;!?]+$/, "");
     if (!isProbablyRealPlace(cleanName)) {
