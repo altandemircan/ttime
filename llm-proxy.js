@@ -71,18 +71,26 @@ router.post('/generate-tags', async (req, res) => {
 
     try {
         const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3:2:1b",
+            model: "llama3.2:1b",
             prompt,
             stream: false
         });
-        res.json({ tags: JSON.parse(response.data.response) });
+        console.log("LLM raw response:", response.data.response); // <-- EKLE
+        let tags = [];
+        try {
+            tags = JSON.parse(response.data.response);
+        } catch (e) {
+            // Fallback: #hashtag veya "keyword" içerenleri regex ile yakala
+            tags = (response.data.response.match(/#?([a-zA-Z0-9_]{3,})/g) || [])
+                .map(t => t.replace(/^#/, ''))
+                .filter((t, i, arr) => arr.indexOf(t) === i); // unique
+        }
+        res.json({ tags });
     } catch (error) {
+        console.error("LLM error:", error);
         res.json({ tags: [] });
     }
 });
-
-
-
 
 
 router.post('/trip-info', async (req, res) => {
