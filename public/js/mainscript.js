@@ -9737,13 +9737,13 @@ async function insertAiInfoForAllDays() {
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
-      <h3>AI Information</h3>
-      <div class="ai-info-content">
-        ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
-        ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
-        ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
-      </div>
-    `;
+  <h3>AI Information</h3>
+  <div class="ai-info-content">
+    ${aiInfo.summary ? `<p><b>Summary:</b> ${String(aiInfo.summary).replace(/^Summary:\s*/i, "")}</p>` : ''}
+    ${aiInfo.tip ? `<p><b>Tip:</b> ${String(aiInfo.tip).replace(/^Tip:\s*/i, "")}</p>` : ''}
+    ${aiInfo.highlight ? `<p><b>Highlight:</b> ${String(aiInfo.highlight).replace(/^Highlight:\s*/i, "")}</p>` : ''}
+  </div>
+`;
 
     // Add Category butonunu bul
     let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
@@ -9759,3 +9759,24 @@ if (aiContent && typeof typeWriterEffect === "function") {
   }
 }
 
+
+
+// Sadece Geoapify tags güncellensin:
+function fillGeoapifyTagsOnly() {
+  document.querySelectorAll('.steps').forEach(stepsDiv => {
+    const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
+    if (!infoView) return;
+    const name = infoView.querySelector('.title')?.textContent?.trim() || '';
+    const category = stepsDiv.getAttribute('data-category') || '';
+    const geoTagsDiv = infoView.querySelector('.geoapify-tags');
+    const step = window.cart.find(i => i.name === name && i.category === category);
+    if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
+      geoTagsDiv.innerHTML = step.properties.categories.map(t => {
+        const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return `<span class="geo-tag" title="${t}">${label}</span>`;
+      }).join(' ');
+    } else if (geoTagsDiv) {
+      geoTagsDiv.textContent = "No tags found.";
+    }
+  });
+}
