@@ -1322,105 +1322,6 @@ function showAITags(place) {
     return tagsContainer;
 }
 
-async function fillAIDescriptionsAutomatically() {
-    document.querySelectorAll('.steps').forEach(async stepsDiv => {
-        const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
-        if (!infoView) return;
-
-        const name = infoView.querySelector('.title')?.textContent?.trim() || '';
-        const category = stepsDiv.getAttribute('data-category') || '';
-
-        // AI Tags
-        const aiTagsDiv = infoView.querySelector('.ai-tags');
-        if (aiTagsDiv && name && category) {
-            aiTagsDiv.textContent = "Loading...";
-            try {
-                const resp = await fetch('/llm-proxy/generate-tags', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, category, count: 6 })
-                });
-                const data = await resp.json();
-                const tags = Array.isArray(data.tags) ? data.tags : [];
-                aiTagsDiv.innerHTML = tags.length
-                    ? tags.map(t => `<span class="ai-tag">#${t}</span>`).join(' ')
-                    : '<span class="ai-tag">No AI tags found</span>';
-            } catch {
-                aiTagsDiv.textContent = "AI tagler yüklenemedi.";
-            }
-        }
-        // OSM/Geoapify Tags
-        const geoTagsDiv = infoView.querySelector('.geoapify-tags');
-        const step = window.cart.find(i => i.name === name && i.category === category);
-        if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
-            geoTagsDiv.innerHTML = step.properties.categories.map(t => `<span class="geo-tag">${t}</span>`).join(' ');
-        } else if (geoTagsDiv) {
-            geoTagsDiv.textContent = "No tags found.";
-        }
-    });
-}
-
-
-// --- YENİ: Her gün için AI Information ekle ---
-async function insertAiInfoForAllDays() {
-  // Günleri sırala
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
-
-  for (const day of days) {
-    const dayList = document.querySelector(`.day-list[data-day="${day}"]`);
-    if (!dayList) continue;
-
-    // O güne ait planı filtrele
-    const dayPlan = window.cart.filter(i => i.day === day);
-
-    // Eski AI info varsa kaldır
-    let next = dayList.nextElementSibling;
-    if (next && next.classList.contains('ai-info-section')) next.remove();
-
-    // Fetch AI summary ONLY for this day
-    let aiInfo = { summary: '', tip: '', highlight: '' };
-    try {
-      const resp = await fetch('/llm-proxy/plan-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: dayPlan,
-          city: window.selectedCity || '',
-          days: 1
-        })
-      });
-      aiInfo = await resp.json();
-    } catch { /* boş bırak */ }
-
-    // AI info içeriği oluştur
-    const aiDiv = document.createElement('div');
-    aiDiv.className = 'ai-info-section';
-    aiDiv.innerHTML = `
-      <h3>AI Information</h3>
-      <div class="ai-info-content">
-        ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
-        ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
-        ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
-      </div>
-    `;
-
-    // Add Category butonunu bul
-    let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
-    // AI info'yu dayList'in altına, add-more-btn'den önce ekle
-    dayList.parentNode.insertBefore(aiDiv, addBtn ?? null);
-    // Typewriter efekt uygula
-const aiContent = aiDiv.querySelector('.ai-info-content');
-if (aiContent && typeof typeWriterEffect === "function") {
-    const html = aiContent.innerHTML;
-    aiContent.innerHTML = "";
-    typeWriterEffect(aiContent, html, 18);
-}
-  }
-}
-
-
-
-
 
 let hasAutoAddedToCart = false;
 async function showResults() {
@@ -1515,7 +1416,7 @@ async function showResults() {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     // AI açıklamaları
-    setTimeout(fillAIDescriptionsSeq, 300);
+
     setTimeout(fillAIDescriptionsAutomatically, 300);
 
     // Sepeti (sidebar) doldur
@@ -1548,50 +1449,7 @@ await saveTripAfterRoutes();
 renderMyTripsPanel();
 }
 
-async function fillAIDescriptionsSeq() {
-    const steps = Array.from(document.querySelectorAll('.steps'));
-    for (const stepsDiv of steps) {
-        const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
-        if (!infoView) continue;
-        const descriptionDiv = infoView.querySelector('.description');
-        if (!descriptionDiv) continue;
-        if (descriptionDiv.dataset.aiFilled) continue;
 
-        descriptionDiv.innerHTML = `
-            <img src="img/information_icon.svg">
-            <span class="ai-guide-loading">
-                AI Guide loading...
-                <span class="dot-anim">.</span>
-                <span class="dot-anim">.</span>
-                <span class="dot-anim">.</span>
-            </span>
-        `;
-
-        const name = infoView.querySelector('.title')?.textContent?.trim() || '';
-        const address = infoView.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '';
-        const city = window.selectedCity || '';
-        const category = stepsDiv.getAttribute('data-category') || '';
-
-        if (!name || !city) continue;
-
-        try {
-            const resp = await fetch('/llm-proxy/item-guide', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, address, city, category })
-            });
-            const data = await resp.json();
-            if (data.text) {
-                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> ${data.text}`;
-                descriptionDiv.dataset.aiFilled = "1";
-            } else {
-                descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">${data.error || "AI açıklama alınamadı."}</span>`;
-            }
-        } catch {
-            descriptionDiv.innerHTML = `<img src="img/information_icon.svg"> <span class="error">AI servisine erişilemedi.</span>`;
-        }
-    }
-}
 
 
 function toggleAccordion(accordionHeader) {
