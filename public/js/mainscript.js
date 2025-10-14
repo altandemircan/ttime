@@ -9759,24 +9759,3 @@ if (aiContent && typeof typeWriterEffect === "function") {
   }
 }
 
-
-
-// Sadece Geoapify tags güncellensin:
-function fillGeoapifyTagsOnly() {
-  document.querySelectorAll('.steps').forEach(stepsDiv => {
-    const infoView = stepsDiv.querySelector('.item-info-view, .info.day_cats');
-    if (!infoView) return;
-    const name = infoView.querySelector('.title')?.textContent?.trim() || '';
-    const category = stepsDiv.getAttribute('data-category') || '';
-    const geoTagsDiv = infoView.querySelector('.geoapify-tags');
-    const step = window.cart.find(i => i.name === name && i.category === category);
-    if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
-      geoTagsDiv.innerHTML = step.properties.categories.map(t => {
-        const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        return `<span class="geo-tag" title="${t}">${label}</span>`;
-      }).join(' ');
-    } else if (geoTagsDiv) {
-      geoTagsDiv.textContent = "No tags found.";
-    }
-  });
-}
