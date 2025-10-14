@@ -1412,23 +1412,9 @@ async function showResults() {
     }
 
     html += `</ul></div></div>`;
-
-    // --- AI kutusunu plan çıktısından hemen sonra ekle ---
-    // Önce eski kutu varsa kaldır
-    const oldAI = document.getElementById('ai-info-root');
-    if (oldAI) oldAI.remove();
-
-    // Plan çıktısını ekle
     chatBox.innerHTML += html;
-
-    // AI kutusunu başa ekle
-    if (!document.getElementById('ai-info-root')) {
-        const aiDiv = document.createElement('div');
-        aiDiv.id = 'ai-info-root';
-        chatBox.prepend(aiDiv); // En başa ekler. En sona istersen: chatBox.appendChild(aiDiv);
-    }
-
     chatBox.scrollTop = chatBox.scrollHeight;
+
 
     // Sepeti (sidebar) doldur
     if (typeof addChatResultsToCart === "function" && !window.hasAutoAddedToCart) {
@@ -1454,16 +1440,14 @@ async function showResults() {
     updateCart();
 
     // --- YENİ EKLE ---
-    const days = [...new Set(window.cart.map(i => i.day))];
-    await Promise.all(days.map(day => renderRouteForDay(day)));
-    await saveTripAfterRoutes();
-    renderMyTripsPanel();
-    fillGeoapifyTagsOnly();
-
-    // --- AI bilgi kutusunu doldur ---
-    showGeneralAIInfo(window.selectedCity, 1, window.cart);
+const days = [...new Set(window.cart.map(i => i.day))];
+await Promise.all(days.map(day => renderRouteForDay(day)));
+await saveTripAfterRoutes();
+renderMyTripsPanel();
+fillGeoapifyTagsOnly();
 
 }
+
 
 
 
@@ -2330,11 +2314,6 @@ function displayPlacesInChat(places, category, day) {
 
     html += "</div></div></div></div>";
     chatBox.innerHTML += html;
-    if (!document.getElementById('ai-info-root')) {
-    const aiDiv = document.createElement('div');
-    aiDiv.id = 'ai-info-root';
-    chatBox.appendChild(aiDiv);
-}
     chatBox.scrollTop = chatBox.scrollHeight;
 
     if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
@@ -9800,242 +9779,4 @@ function fillGeoapifyTagsOnly() {
       geoTagsDiv.textContent = "No tags found.";
     }
   });
-}
-
-
-// AI Highlight içindeki yeri ve butonu oluştur
-function renderAIHighlightWithAdd(highlightText, city, day) {
-  // Çıkarılan mekan adı
-  const match = highlightText.match(/(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
-  if (match && match[1]) {
-    const placeName = match[1].trim().replace(/[.,;!?]+$/, "");
-    // O günkü planı kontrol et
-    const alreadyInPlan = window.cart.some(item =>
-      item.day == day &&
-      item.name && item.name.toLowerCase().includes(placeName.toLowerCase())
-    );
-    if (alreadyInPlan) {
-      // Buton ekleme, sadece ismi vurgula
-      return highlightText.replace(
-        match[0],
-        `<span class="ai-place">${match[0]} <span style="color:#aaa;font-size:12px">(already in plan)</span></span>`
-      );
-    }
-    // Farklı ise buton ekle
-    const html = highlightText.replace(
-      match[0],
-      `<span class="ai-place">${match[0]}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
-    );
-    return html;
-  }
-  return highlightText;
-}
-function renderGeneralAIInfo(aiInfo, city, day) {
-  if (!aiInfo) return '';
-  return `
-    <div class="ai-info-section">
-      <h3>AI Information</h3>
-      <div class="ai-info-content">
-        <p><b>Summary:</b> ${renderAITextWithAddButtons(aiInfo.summary || "", city, day)}</p>
-        <p><b>Tip:</b> ${renderAITextWithAddButtons(aiInfo.tip || "", city, day)}</p>
-        <p><b>Highlight:</b> ${renderAITextWithAddButtons(aiInfo.highlight || "", city, day)}</p>
-      </div>
-    </div>
-  `;
-}
-function isProbablyRealPlace(name) {
-  const genericPatterns = [
-    /accommodation/i,
-    /food scene/i,
-    /local cuisine/i,
-    /public transportation/i,
-    /transportation/i,
-    /cuisine/i,
-    /landmarks?/i,
-    /attractions?/i,
-    /delicious food/i,
-    /comfortable/i,
-    /budget/i,
-    /free/i,
-    /city\b/i,
-    /scene/i,
-    /trip/i,
-    /plan/i,
-    /day/i,
-    /history/i,
-    /culture/i
-  ];
-  return !genericPatterns.some(re => re.test((name || '').toLowerCase()));
-}
-function normalizePlaceName(name) {
-  return (name || "")
-    .toLowerCase()
-    .replace(/[çÇ]/g, "c")
-    .replace(/[ğĞ]/g, "g")
-    .replace(/[ıİ]/g, "i")
-    .replace(/[öÖ]/g, "o")
-    .replace(/[şŞ]/g, "s")
-    .replace(/[üÜ]/g, "u")
-    .replace(/[^a-z0-9]/g, ""); // Sadece harf ve rakam kalsın
-}
-function renderAITextWithAddButtons(text, city, day) {
-  const regex = /(?:Visit|at|in|on|of)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/ig;
-  return text.replace(regex, function(full, placeName) {
-    const cleanName = placeName.trim().replace(/[.,;!?]+$/, "");
-    if (!isProbablyRealPlace(cleanName)) {
-      return `<span class="ai-place">${full}</span>`; // Buton ekleme
-    }
-    // O günkü planda zaten varsa uyarı göster
-    const alreadyInPlan = window.cart.some(item =>
-      item.day == day &&
-      item.name && item.name.toLowerCase().includes(cleanName.toLowerCase())
-    );
-    if (alreadyInPlan) {
-      return `<span class="ai-place">${full} <span style="color:#aaa;font-size:12px">(already in plan)</span></span>`;
-    }
-    // Yoksa buton ekle
-    return `<span class="ai-place">${full}</span> <button class="ai-add-btn" data-place="${cleanName}" data-city="${city}" data-day="${day}">+</button>`;
-  });
-}
-async function searchPlace(place, city) {
-  // Önce tam metinle dene
-  let resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
-  let data = await resp.json();
-  if (data.features && data.features[0]) return data.features[0];
-
-  // Eğer bulamazsa, ilk kelimeyi ve son 2 kelimeyi dene
-  const tokens = place.split(' ');
-  if (tokens.length > 2) {
-    const short = tokens.slice(-2).join(' ');
-    resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(short + " " + city)}&limit=1`);
-    data = await resp.json();
-    if (data.features && data.features[0]) return data.features[0];
-  }
-
-  // Sadece ilk isimle dene
-  resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(tokens[0] + " " + city)}&limit=1`);
-  data = await resp.json();
-  if (data.features && data.features[0]) return data.features[0];
-
-  return null;
-}
-// + butonu click handler'ı (tek sefer bağla)
-// + butonuna tıklanınca Geoapify'dan gerçekten mekan bulunursa ekle
-document.addEventListener('click', async function(e){
-  const btn = e.target.closest('.ai-add-btn');
-  if (!btn) return;
-  btn.disabled = true;
-  btn.textContent = '...';
-  const place = btn.getAttribute('data-place');
-  const city = btn.getAttribute('data-city');
-  const day = btn.getAttribute('data-day');
-  try {
-    // Geoapify'dan arama
-    const resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
-    const data = await resp.json();
-    const found = data.features && data.features[0];
-    if (found) {
-      const props = found.properties;
-      addToCart(
-        props.name || place,
-        '', // image
-        Number(day) || 1,
-        "Place",
-        props.formatted || "",
-        null, null,
-        props.opening_hours || "",
-        props.place_id,
-        { lat: props.lat, lng: props.lon },
-        props.website || ""
-      );
-      btn.textContent = '✓';
-      btn.disabled = true;
-    } else {
-      btn.textContent = 'Not found';
-      btn.disabled = true;
-    }
-  } catch(err) {
-    btn.textContent = 'Err';
-    btn.disabled = false;
-  }
-});
-
-async function showGeneralAIInfo(city, day, plan) {
-  const aiDiv = document.getElementById('ai-info-root');
-  if (!aiDiv) return;
-  const resp = await fetch('/llm-proxy/plan-summary', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plan, city, days: 1 })
-  });
-  const aiInfo = await resp.json();
-  aiDiv.innerHTML = renderGeneralAIInfo(aiInfo, city, day);
-}
-// 2) + butonu handler'ında searchPlaceFuzzy fonksiyonunu kullan:
-document.addEventListener('click', async function(e){
-  const btn = e.target.closest('.ai-add-btn');
-  if (!btn) return;
-  btn.disabled = true;
-  btn.textContent = '...';
-  const place = btn.getAttribute('data-place');
-  const city = btn.getAttribute('data-city');
-  const day = btn.getAttribute('data-day');
-  try {
-    // Burada searchPlaceFuzzy fonksiyonunu çağırıyoruz!
-    const found = await searchPlaceFuzzy(place, city);
-    if (found) {
-      const props = found.properties;
-      addToCart(
-        props.name || place,
-        '', // image
-        Number(day) || 1,
-        "Place",
-        props.formatted || "",
-        null, null,
-        props.opening_hours || "",
-        props.place_id,
-        { lat: props.lat, lng: props.lon },
-        props.website || ""
-      );
-      btn.textContent = '✓';
-      btn.disabled = true;
-    } else {
-      btn.textContent = 'Not found';
-      btn.disabled = true;
-    }
-  } catch(err) {
-    btn.textContent = 'Err';
-    btn.disabled = false;
-  }
-});
-
-function ensureAIInfoRoot(chatBox) {
-  // Eski kutu varsa sil
-  const oldAI = document.getElementById('ai-info-root');
-  if (oldAI) oldAI.remove();
-
-  // Yeni kutu oluştur ve chatBox'ın en başına ekle
-  const aiDiv = document.createElement('div');
-  aiDiv.id = 'ai-info-root';
-  chatBox.prepend(aiDiv); // veya .appendChild(aiDiv) istersen
-}
-async function searchPlaceFuzzy(place, city) {
-  // 1. Tam isim + şehir
-  let resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place + " " + city)}&limit=1`);
-  let data = await resp.json();
-  if (data.features && data.features[0]) return data.features[0];
-
-  // 2. Sadece isim
-  resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(place)}&limit=1`);
-  data = await resp.json();
-  if (data.features && data.features[0]) return data.features[0];
-
-  // 3. Sadece ilk kelime
-  const tokens = place.split(' ');
-  if (tokens.length > 1) {
-    resp = await fetch(`/api/geoapify/places?categories=&text=${encodeURIComponent(tokens[0] + " " + city)}&limit=1`);
-    data = await resp.json();
-    if (data.features && data.features[0]) return data.features[0];
-  }
-  return null;
 }
