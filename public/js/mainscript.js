@@ -9805,12 +9805,12 @@ function fillGeoapifyTagsOnly() {
 
 // AI Highlight içindeki yeri ve butonu oluştur
 function renderAIHighlightWithAdd(highlightText, city, day) {
-  const match = highlightText.match(/Visit\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
+  const match = highlightText.match(/(?:Visit|at|in|on)\s+([A-Za-z0-9ÇĞİÖŞÜçğıöşü\s.'’\-]+)/i);
   if (match && match[1]) {
-    const placeName = match[1].trim();
+    const placeName = match[1].trim().replace(/[.,;!?]+$/, "");
     const html = highlightText.replace(
-      placeName,
-      `<span class="ai-place">${placeName}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
+      match[0],
+      `<span class="ai-place">${match[0]}</span> <button class="ai-add-btn" data-place="${placeName}" data-city="${city}" data-day="${day}">+</button>`
     );
     return html;
   }
