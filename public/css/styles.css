@@ -4095,13 +4095,19 @@ ease;
 
 
 .ai-info-section, .trip-info-section {
-  background: #f9f7fd;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 16px 18px;
-  margin-bottom: 18px;
-  margin-top: 12px;
-  font-weight: 400;
+ background: #f9f7fd;
+
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    margin-top: 20px;
+    font-weight: 400;
+    transition: background-color 0.2s 
+ease, transform 0.2s 
+ease, box-shadow 0.2s 
+ease;
+    border-radius: 12px;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }
 .ai-info-section h3, .trip-info-section h3 {
   margin: 0 0 6px 0;
