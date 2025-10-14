@@ -9739,9 +9739,9 @@ async function insertAiInfoForAllDays() {
     aiDiv.innerHTML = `
   <h3>AI Information</h3>
   <div class="ai-info-content">
-    ${aiInfo.summary ? `<p><b>Summary:</b> ${String(aiInfo.summary).replace(/^Summary:\s*/i, "")}</p>` : ''}
-    ${aiInfo.tip ? `<p><b>Tip:</b> ${String(aiInfo.tip).replace(/^Tip:\s*/i, "")}</p>` : ''}
-    ${aiInfo.highlight ? `<p><b>Highlight:</b> ${String(aiInfo.highlight).replace(/^Highlight:\s*/i, "")}</p>` : ''}
+    ${aiInfo.summary ? `<p><b>Summary:</b> ${aiInfo.summary}</p>` : ''}
+    ${aiInfo.tip ? `<p><b>Tip:</b> ${aiInfo.tip}</p>` : ''}
+    ${aiInfo.highlight ? `<p><b>Highlight:</b> ${aiInfo.highlight}</p>` : ''}
   </div>
 `;
 
