@@ -1512,15 +1512,9 @@ function generateStepHtml(step, day, category, idx = 0) {
             <div class="address">
                 <img src="img/address_icon.svg"> ${address}
             </div>
-            <div class="description" data-original-description="No detailed description.">
-                <img src="img/information_icon.svg">
-               <div class="geoapify-tags-section">
-
-  <div class="geoapify-tags">Loading...</div>
-</div>
+            <div class="geoapify-tags-section"
+              <div class="geoapify-tags">Loading...</div>
             </div>
-
-
             <div class="opening_hours">
 <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
             </div>
