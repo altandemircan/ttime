@@ -9739,30 +9739,12 @@ async function insertAiInfoForAllDays() {
     
 // --- BURAYA EKLE! ---
 console.log("AI INFO SUMMARY:", aiInfo.summary);
-   aiDiv.innerHTML = `
+  aiDiv.innerHTML = `
   <h3>AI Information</h3>
   <div class="ai-info-content">
-    ${aiInfo.summary ? `<p><b>Summary:</b> ${
-      String(aiInfo.summary)
-        .replace(/<\/?p[^>]*>/gi, '')      // <p> ve </p> sil
-        .replace(/<\/?b[^>]*>/gi, '')      // <b> ve </b> sil
-        .replace(/^Summary:\s*/i, '')      // baştaki "Summary:" sil
-        .trim()
-    }</p>` : ''}
-    ${aiInfo.tip ? `<p><b>Tip:</b> ${
-      String(aiInfo.tip)
-        .replace(/<\/?p[^>]*>/gi, '')
-        .replace(/<\/?b[^>]*>/gi, '')
-        .replace(/^Tip:\s*/i, '')
-        .trim()
-    }</p>` : ''}
-    ${aiInfo.highlight ? `<p><b>Highlight:</b> ${
-      String(aiInfo.highlight)
-        .replace(/<\/?p[^>]*>/gi, '')
-        .replace(/<\/?b[^>]*>/gi, '')
-        .replace(/^Highlight:\s*/i, '')
-        .trim()
-    }</p>` : ''}
+    <p><b>Summary:</b> ${aiInfo.summary}</p>
+    <p><b>Tip:</b> ${aiInfo.tip}</p>
+    <p><b>Highlight:</b> ${aiInfo.highlight}</p>
   </div>
 `;
     // Add Category butonunu bul
