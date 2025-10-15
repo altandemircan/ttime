@@ -172,10 +172,9 @@ function toggleAI() {
         } catch (e) {
             aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
         }
-        let elapsed = Math.round(performance.now() - t0);
-        aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
-    } catch (e) {
-        aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "";
-        aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
-    }
+           let elapsed = Math.round(performance.now() - t0);
+    if (aiTime) aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
+} catch (e) {
+    if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
+}
 }
