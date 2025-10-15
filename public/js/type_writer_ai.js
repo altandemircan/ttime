@@ -77,10 +77,9 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     // COLLAPSIBLE LOGIC
    const aiHeader = aiDiv.querySelector('#ai-toggle-header');
 const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
-const aiIcon = aiBtn.querySelector('.arrow-icon'); // SVG img
+const aiIcon = aiBtn.querySelector('.arrow-icon');
 const aiContent = aiDiv.querySelector('.ai-info-content');
 let expanded = false;
-
 
 aiBtn.addEventListener('click', function(e) {
   e.stopPropagation();
@@ -92,7 +91,7 @@ function toggleAI() {
   if (expanded) {
     aiContent.style.maxHeight = "1200px";
     aiContent.style.opacity = "1";
-    aiIcon.classList.add('open');      // OK aşağıya bakıyor
+    aiIcon.classList.add('open');      // OK aşağıya bakıyor (rotate 90deg)
   } else {
     aiContent.style.maxHeight = "0";
     aiContent.style.opacity = "0";
