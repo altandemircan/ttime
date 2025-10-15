@@ -510,7 +510,7 @@ function buildTripRow(trip, isFavoriteSection) {
 
     const thumbInfo = document.createElement("div");
 thumbInfo.className = "mytrips-thumb-info";
-    thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} item</div>`;
+    thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} place</div>`;
 thumbInfo.style.position = "absolute";
 thumbInfo.style.top = "0";
 thumbInfo.style.left = "0";
