@@ -1983,6 +1983,49 @@ const newItem = {
 
 window.cart.push(newItem);
 
+
+
+// --- ŞEHİR TESPİTİ ---
+// 1. Önce eğer newItem.properties?.city varsa onu kullan
+// 2. Yoksa koordinat varsa reverse geocode ile çek
+// 3. Hiçbiri yoksa eski fallback ile adresi parçala
+async function setSelectedCityFromItem(item) {
+  // 1) properties.city varsa
+  if (item.properties && item.properties.city && item.properties.city.length > 2) {
+    window.selectedCity = item.properties.city;
+    window.selectedLocation = item.properties.city;
+    console.log("selectedCity set (properties.city):", item.properties.city);
+    return;
+  }
+  // 2) Koordinat varsa reverse geocode ile
+  if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+    try {
+      const resp = await fetch(`/api/geoapify/reverse?lat=${item.location.lat}&lon=${item.location.lng}`);
+      const data = await resp.json();
+      const city = data?.features?.[0]?.properties?.city;
+      if (city && city.length > 2) {
+        window.selectedCity = city;
+        window.selectedLocation = city;
+        console.log("selectedCity set (reverse):", city);
+        return;
+      }
+    } catch(e) { /* ignore */ }
+  }
+  // 3) Eski fallback: adresi parçala (senin eski kodun)
+  const city = extractCityFromAddress(item.address);
+  if (city) {
+    window.selectedCity = city;
+    window.selectedLocation = city;
+    console.log("selectedCity set (fallback):", city);
+  }
+}
+
+// addToCart fonksiyonu içinde, window.cart.push(newItem);'dan HEMEN SONRA:
+if (!window.selectedCity || window.selectedCity === "") {
+  setSelectedCityFromItem(newItem); // async, AI kutusu butonunu/gecikmesini etkilemez
+}
+
+
 // Adresten şehir adını bul (sadece sayı değil, ülke değil, mümkünse harfli ve uzun olanı al)
 function extractCityFromAddress(address) {
   if (!address) return "";
