@@ -17,6 +17,8 @@ function typeWriterEffect(element, text, speed = 18, callback) {
 // Şehir seçince çağrılır: AI başlasın, ilk karakter gelince plan aktifleşsin
 function onCitySelected(city) {
     let planAktif = false;
+        window.lastTripAIInfo = null;
+
     insertTripAiInfo(() => {
         if (!planAktif) {
             insertTripPlan(city);
@@ -41,7 +43,8 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
     const city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
-    if (!city) return;
+// Eğer localStorage'dan veri geliyorsa city boş olsa bile devam etsin
+if (!city && !aiStaticInfo) return;
 
     // AI kutusunu oluştur
     const aiDiv = document.createElement('div');
@@ -134,6 +137,8 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
                 tip: aiObj.tip || "",
                 highlight: aiObj.highlight || ""
             };
+            if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
 
             // Sadece summary > tip > highlight zinciri
             typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
