@@ -37,7 +37,7 @@ function extractFirstJson(str) {
 }
 
 // Ana AI kutusu fonksiyonu
-async function insertTripAiInfo(onFirstToken) {
+async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     // Eski AI info bölümünü sil
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     const tripTitleDiv = document.getElementById('trip_title');
@@ -62,7 +62,7 @@ async function insertTripAiInfo(onFirstToken) {
       </div>
       <div class="ai-info-time" style="opacity:.6;font-size:13px;margin-top:8px;"></div>
     `;
-    tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
+     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
     const aiSummary = document.getElementById('ai-summary');
     const aiTip = document.getElementById('ai-tip');
@@ -71,6 +71,17 @@ async function insertTripAiInfo(onFirstToken) {
     const aiSpinner = document.getElementById('ai-spinner');
     const aiInfoContent = aiDiv.querySelector('.ai-info-content');
     let t0 = performance.now();
+
+    // Eğer aiStaticInfo verilmişse, doğrudan yaz ve çık
+    if (aiStaticInfo) {
+        aiSpinner.style.display = "none";
+        aiInfoContent.style.display = "";
+        aiSummary.textContent = aiStaticInfo.summary || "";
+        aiTip.textContent = aiStaticInfo.tip || "";
+        aiHighlight.textContent = aiStaticInfo.highlight || "";
+        aiTime.textContent = "";
+        return;
+    }
 
     let jsonText = "";
     let firstChunkWritten = false;
