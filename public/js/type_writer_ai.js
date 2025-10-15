@@ -11,7 +11,6 @@ function typeWriterEffect(element, text, speed = 18, callback) {
     }
     type();
 }
-
 async function insertTripAiInfo() {
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
 
@@ -26,14 +25,21 @@ async function insertTripAiInfo() {
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
       <h3>AI Information</h3>
-      <div class="ai-info-content"><span style="opacity:.6">Loading...</span></div>
+      <div class="ai-info-content">
+        <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
+        <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
+        <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
+      </div>
     `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    const aiContent = aiDiv.querySelector('.ai-info-content');
-    aiContent.innerHTML = "";
+    const aiSummary = document.getElementById('ai-summary');
+    const aiTip = document.getElementById('ai-tip');
+    const aiHighlight = document.getElementById('ai-highlight');
 
-    let fullText = "";
+    let active = "summary";
+    let firstFieldStarted = false;
+
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
@@ -55,46 +61,33 @@ async function insertTripAiInfo() {
                 try {
                     const obj = JSON.parse(line);
                     if (obj.response) {
-                        fullText += obj.response;
+                        // Aktif alanı tespit et
+                        if (obj.response.includes('"summary')) {
+                            active = "summary";
+                            firstFieldStarted = true;
+                            continue;
+                        }
+                        if (obj.response.includes('"tip')) {
+                            active = "tip";
+                            continue;
+                        }
+                        if (obj.response.includes('"highlight')) {
+                            active = "highlight";
+                            continue;
+                        }
+                        // İlk alanın başındaki gereksiz karakterleri atla
+                        if (!firstFieldStarted) continue;
+                        // Alanlara karakter ekle
+                        if (active === "summary") aiSummary.textContent += obj.response;
+                        else if (active === "tip") aiTip.textContent += obj.response;
+                        else if (active === "highlight") aiHighlight.textContent += obj.response;
                     }
                 } catch {}
             }
         }
-        if (buffer.trim()) {
-            try {
-                const obj = JSON.parse(buffer);
-                if (obj.response) {
-                    fullText += obj.response;
-                }
-            } catch {}
-        }
-
-        // Şimdi typewriter ile alanları ekrana yaz
-        let summary = "", tip = "", highlight = "";
-        try {
-            const resObj = JSON.parse(fullText);
-            summary = resObj.summary || "";
-            tip = resObj.tip || "";
-            highlight = resObj.highlight || "";
-        } catch {
-            summary = (fullText.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            tip = (fullText.match(/"tip"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            highlight = (fullText.match(/"highlight"\s*:\s*"([^"]+)"/) || [])[1] || "";
-        }
-
-        aiContent.innerHTML = `
-          <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
-          <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
-          <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
-        `;
-
-        // Typewriter ile tek tek yaz
-        typeWriterEffect(document.getElementById('ai-summary'), summary, 18, function() {
-            typeWriterEffect(document.getElementById('ai-tip'), tip, 18, function() {
-                typeWriterEffect(document.getElementById('ai-highlight'), highlight, 18);
-            });
-        });
     } catch (e) {
-        aiContent.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
+        const aiContent = aiDiv.querySelector('.ai-info-content');
+        if (aiContent)
+            aiContent.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
     }
 }
