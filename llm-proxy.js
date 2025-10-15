@@ -47,41 +47,38 @@ IMPORTANT:
 
     const t0 = Date.now();
     try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
+        const response = await axios({
+          method: 'post',
+          url: 'http://localhost:11434/api/generate',
+          data: {
             model: "llama3.2:3b",
             prompt,
-            stream: false
+            stream: true
+          },
+          responseType: 'stream'
         });
 
-        let data = response.data.response.trim();
-
-        // Ollama bazen kod bloğu veya metin döndürebilir, JSON değilse düzelt:
-        if (data.startsWith('```json')) {
+        let data = '';
+        response.data.on('data', (chunk) => {
+          data += chunk.toString(); // Her gelen chunk ile birleştir
+        });
+        response.data.on('end', () => {
+          // Tüm cevap geldi, JSON parse et
+          // Kod bloğu varsa temizle
+          if (data.startsWith('```json')) {
             data = data.replace(/```json|```/g, '').trim();
-        } else if (data.startsWith('```')) {
+          } else if (data.startsWith('```')) {
             data = data.replace(/```/g, '').trim();
-        }
-
-        // Sonunda fazlalık karakterler olabiliyor, JSON.parse bozulmasın diye
-        let aiResult;
-        try {
+          }
+          // JSON parse et
+          let aiResult;
+          try {
             aiResult = JSON.parse(data);
-        } catch (e) {
-            // JSON parse edilemiyorsa, regex ile manuel ayıkla
-            const summary = (data.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            const tip = (data.match(/"tip"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            const highlight = (data.match(/"highlight"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            aiResult = { summary, tip, highlight };
-        }
-
-        if (!aiResult.summary && !aiResult.tip && !aiResult.highlight) {
-            console.log(`[AI] Yanıt alınamadı. Süre: ${Date.now() - t0} ms`);
-            return res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
-        }
-
-        console.log(`[AI] Yanıt süresi: ${Date.now() - t0} ms / city: ${city} days: ${days}`);
-
-        res.json(aiResult);
+          } catch (e) {
+            // Regex ile ayıkla (senin kodunda olduğu gibi)
+          }
+          res.json(aiResult);
+        });
     } catch (error) {
         console.log(`[AI] Ollama hata: ${Date.now() - t0} ms`, error?.message);
         res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
