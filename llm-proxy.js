@@ -1,6 +1,6 @@
 const express = require('express');
-const router = express.Router();
 const axios = require('axios');
+const router = express.Router();
 
 router.post('/plan-summary', async (req, res) => {
     const { city } = req.body;
@@ -17,7 +17,6 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
-        // Streaming olarak Ollama'dan al
         const response = await axios.post('http://localhost:11434/api/generate', {
             model: "llama3.2:3b",
             prompt,
@@ -25,7 +24,6 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         }, { responseType: 'stream' });
 
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-
         response.data.pipe(res);
     } catch (error) {
         res.status(500).send('AI bilgi alınamadı.');
