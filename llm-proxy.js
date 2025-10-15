@@ -5,15 +5,10 @@ const router = express.Router();
 router.post('/plan-summary', async (req, res) => {
     const { city } = req.body;
 
-    const prompt = `
-You are an expert travel assistant.
-Provide the following information about the city "${city}":
-{
-  "summary": "A 2-3 sentence inspiring and informative summary about the city for travelers.",
-  "tip": "A creative travel tip specific to this city.",
-  "highlight": "A unique highlight or must-see point for a visitor."
-}
-Respond only as JSON. Do not include any extra text, explanation, or code block.
+const prompt = `
+Write a JSON object only, with no explanations or markdown, for the city "${city}".
+Keys: summary (2 sentences), tip, highlight.
+Example: {"summary":"...","tip":"...","highlight":"..."}
 `.trim();
 
     try {
