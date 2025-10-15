@@ -4,6 +4,7 @@ const axios = require('axios');
 
 router.post('/plan-summary', async (req, res) => {
     const { city } = req.body;
+    const t0 = Date.now();
 
     const prompt = `
 You are an expert travel assistant.
@@ -43,13 +44,11 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
             aiResult = { summary, tip, highlight };
         }
 
-        if (!aiResult.summary && !aiResult.tip && !aiResult.highlight) {
-            return res.json({ summary: "", tip: "", highlight: "", error: "AI bilgi alınamadı." });
-        }
-
-        res.json(aiResult);
+        const elapsedMs = Date.now() - t0;
+        res.json({ ...aiResult, elapsedMs });
     } catch (error) {
-        res.json({ summary: "", tip: "", highlight: "", error: "AI bilgi alınamadı." });
+        const elapsedMs = Date.now() - t0;
+        res.json({ summary: "", tip: "", highlight: "", error: "AI bilgi alınamadı.", elapsedMs });
     }
 });
 

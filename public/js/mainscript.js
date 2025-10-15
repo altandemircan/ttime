@@ -9731,21 +9731,20 @@ function fillGeoapifyTagsOnly() {
 // --- YENİ: Her gün için AI Information ekle ---
 
 
-
 async function insertTripAiInfo() {
-    // Eski AI info bölümünü sil (başlık altında birden fazla olmasın)
+    // 1. Eski AI info bölümünü sil (başlık altında birden fazla olmasın)
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
 
-    // Başlık divini bul
+    // 2. Başlık divini bul
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir adını başlıktan veya window.selectedCity'den al
+    // 3. Şehir adını başlıktan veya window.selectedCity'den al
     const city = (window.selectedCity || tripTitleDiv.textContent || '')
       .replace(/ trip plan.*$/i, '').trim();
     if (!city) return;
 
-    // Loading göstergesi ekle
+    // 4. Loading göstergesi ekle
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -9754,7 +9753,7 @@ async function insertTripAiInfo() {
     `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    // API çağrısı
+    // 5. API çağrısı ve süre ölçümü
     let aiInfo = { summary: '', tip: '', highlight: '' };
     let elapsed = 0;
     const t0 = performance.now();
@@ -9765,12 +9764,13 @@ async function insertTripAiInfo() {
             body: JSON.stringify({ city })
         });
         aiInfo = await resp.json();
-        // Backend süreyi dönüyorsa onu kullan, yoksa hesapla
+        // Backend süreyi döndürüyorsa onu kullan, yoksa hesapla
         elapsed = aiInfo.elapsedMs || Math.round(performance.now() - t0);
     } catch {
         elapsed = Math.round(performance.now() - t0);
     }
 
+    // 6. Sonucu yaz
     aiDiv.innerHTML = `
       <h3>AI Information</h3>
       <div class="ai-info-content">
@@ -9781,7 +9781,7 @@ async function insertTripAiInfo() {
       </div>
     `;
 
-    // (İsteğe bağlı) Typewriter efekti uygula
+    // 7. (İsteğe bağlı) Typewriter efekti uygula
     const aiContent = aiDiv.querySelector('.ai-info-content');
     if (aiContent && typeof typeWriterEffect === "function") {
         const html = aiContent.innerHTML;
