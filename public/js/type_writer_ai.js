@@ -50,7 +50,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     aiDiv.innerHTML = `
       <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
         <span>AI Information</span>
-<button id="ai-toggle-btn" class="arrow-btn" style="border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;">
+<div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
   <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" style="width:18px;vertical-align:middle;transition:transform 0.2s;">
 </button>        <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
           <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
@@ -78,7 +78,8 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
 const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
 const aiIcon = aiBtn.querySelector('.arrow-icon'); // SVG img
 const aiContent = aiDiv.querySelector('.ai-info-content');
-let expanded = true;
+let expanded = false;
+
 
 aiBtn.addEventListener('click', function(e) {
   e.stopPropagation();
@@ -90,11 +91,11 @@ function toggleAI() {
   if (expanded) {
     aiContent.style.maxHeight = "1200px";
     aiContent.style.opacity = "1";
-    aiIcon.classList.remove('open');  // OK sağa bakıyor
+    aiIcon.classList.add('open');      // OK aşağıya bakıyor
   } else {
     aiContent.style.maxHeight = "0";
     aiContent.style.opacity = "0";
-    aiIcon.classList.add('open');     // OK aşağıya bakıyor
+    aiIcon.classList.remove('open');   // OK sağa bakıyor
   }
 }
 
