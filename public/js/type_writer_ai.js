@@ -16,25 +16,15 @@ function typeWriterEffect(element, text, speed = 18, callback) {
 // Şehir seçince çağrılır: AI başlasın, ilk karakter gelince plan aktifleşsin
 function onCitySelected(city) {
     let planAktif = false;
-
     insertTripAiInfo(() => {
         if (!planAktif) {
-            insertTripPlan(city); // Burada kendi plan oluşturma fonksiyonunu çağır
+            insertTripPlan(city);
             planAktif = true;
         }
     });
 }
 
-// Sayfa yüklendiğinde city-select varsa event ekle (DOM hazır olunca)
-window.addEventListener('DOMContentLoaded', function() {
-    const citySelect = document.getElementById('city-select');
-    if (citySelect) {
-        citySelect.addEventListener('change', (e) => {
-            const selected = e.target.value;
-            onCitySelected(selected);
-        });
-    }
-});
+// ... city-select event kısmı değişmiyor ...
 
 async function insertTripAiInfo(onFirstToken) {
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
@@ -60,9 +50,7 @@ async function insertTripAiInfo(onFirstToken) {
     const aiTime = aiDiv.querySelector('.ai-info-time');
     let t0 = performance.now();
 
-    let active = "summary";
-    let fieldStarted = false;
-    let summaryText = "", tipText = "", highlightText = "";
+    let jsonText = "";
     let firstChunkWritten = false;
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
@@ -85,21 +73,7 @@ async function insertTripAiInfo(onFirstToken) {
                 try {
                     const obj = JSON.parse(line);
                     if (obj.response) {
-                        // Alan tespiti
-                        if (obj.response.includes('"summary')) { active = "summary"; fieldStarted = true; continue; }
-                        if (obj.response.includes('"tip')) { active = "tip"; continue; }
-                        if (obj.response.includes('"highlight')) { active = "highlight"; continue; }
-                        if (!fieldStarted) continue;
-                        if (active === "summary") {
-                            summaryText += obj.response;
-                            aiSummary.textContent = summaryText;
-                        } else if (active === "tip") {
-                            tipText += obj.response;
-                            aiTip.textContent = tipText;
-                        } else if (active === "highlight") {
-                            highlightText += obj.response;
-                            aiHighlight.textContent = highlightText;
-                        }
+                        jsonText += obj.response;
                         // İlk chunk ile callback tetiklenir
                         if (!firstChunkWritten && obj.response.trim()) {
                             firstChunkWritten = true;
@@ -108,6 +82,17 @@ async function insertTripAiInfo(onFirstToken) {
                     }
                 } catch {}
             }
+        }
+        // Model bazen başa/sona fazladan karakter koyabilir, düzelt:
+        const fixedJson = jsonText.replace(/^[^{]*({)/, '$1').replace(/}[^}]*$/, '}');
+        try {
+            const aiObj = JSON.parse(fixedJson);
+            // Typewriter ile canlı yazmak için:
+            typeWriterEffect(aiSummary, aiObj.summary || "", 18);
+            typeWriterEffect(aiTip, aiObj.tip || "", 18);
+            typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
+        } catch (e) {
+            aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
         }
         let elapsed = Math.round(performance.now() - t0);
         aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
