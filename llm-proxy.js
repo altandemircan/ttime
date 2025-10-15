@@ -2,23 +2,20 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-
 router.post('/plan-summary', async (req, res) => {
-    const { plan, city, days } = req.body;
-    const places = Array.isArray(plan) ? plan.map(p => ({
-        name: p.name,
-        category: p.category,
-        day: p.day
-    })) : [];
+    const { city } = req.body;
+
+    // Şehir adı dışında başka parametre yok
     const prompt = `
-You are an expert travel assistant. Given this ${days}-day trip plan for ${city}:
-${JSON.stringify(places, null, 2)}
-Please write:
-- An inspiring and positive summary of this trip (max 60 words).
-- A creative tip for the traveler.
-- A highlight that makes this trip special.
-Respond as formatted JSON: { "summary": "...", "tip": "...", "highlight": "..." }
-    `.trim();
+You are an expert travel assistant.
+Provide the following information about the city "${city}":
+{
+  "summary": "A 2-3 sentence inspiring and informative summary about the city for travelers.",
+  "tip": "A creative travel tip specific to this city.",
+  "highlight": "A unique highlight or must-see point for a visitor."
+}
+Respond only as JSON. Do not include any extra text, explanation, or code block.
+`.trim();
 
     try {
         const response = await axios.post('http://localhost:11434/api/generate', {
@@ -29,20 +26,18 @@ Respond as formatted JSON: { "summary": "...", "tip": "...", "highlight": "..." 
 
         let data = response.data.response.trim();
 
-        // Ollama bazen kod bloğu veya metin döndürebilir, JSON değilse düzelt:
-        // Kod bloğu varsa çıkar
+        // Kod bloğu veya fazlalık varsa temizle
         if (data.startsWith('```json')) {
             data = data.replace(/```json|```/g, '').trim();
         } else if (data.startsWith('```')) {
             data = data.replace(/```/g, '').trim();
         }
 
-        // Sonunda fazlalık karakterler olabiliyor, JSON.parse bozulmasın diye
         let aiResult;
         try {
             aiResult = JSON.parse(data);
         } catch (e) {
-            // JSON parse edilemiyorsa, regex ile manuel ayıkla
+            // Regex fallback
             const summary = (data.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || "";
             const tip = (data.match(/"tip"\s*:\s*"([^"]+)"/) || [])[1] || "";
             const highlight = (data.match(/"highlight"\s*:\s*"([^"]+)"/) || [])[1] || "";
@@ -50,12 +45,12 @@ Respond as formatted JSON: { "summary": "...", "tip": "...", "highlight": "..." 
         }
 
         if (!aiResult.summary && !aiResult.tip && !aiResult.highlight) {
-            return res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
+            return res.json({ summary: "", tip: "", highlight: "", error: "AI bilgi alınamadı." });
         }
 
         res.json(aiResult);
     } catch (error) {
-        res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
+        res.json({ summary: "", tip: "", highlight: "", error: "AI bilgi alınamadı." });
     }
 });
 
