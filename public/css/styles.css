@@ -4095,6 +4095,7 @@ ease;
 
 
 .ai-info-section, .trip-info-section {
+    margin-top: 20px;
 background: #f9f7fd;
     border-radius: 10px; 
     font-weight: 400;
@@ -4112,7 +4113,7 @@ ease;
 .ai-info-section h3, .trip-info-section h3 {
   margin: 0 0 6px 0;
   color: #8a4af3;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
       margin-block-end: 0em;
 }
 .trip-step {
