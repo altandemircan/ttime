@@ -24,7 +24,16 @@ function onCitySelected(city) {
     });
 }
 
-// ... city-select event kısmı değişmiyor ...
+// JSON stringten sadece ilk {...} bloğunu çek:
+function extractFirstJson(str) {
+    const start = str.indexOf('{');
+    const end = str.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+        return str.substring(start, end + 1);
+    }
+    return "";
+}
+
 async function insertTripAiInfo(onFirstToken) {
     // Eski AI info bölümünü sil
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
@@ -44,6 +53,7 @@ async function insertTripAiInfo(onFirstToken) {
         </span>
       </h3>
       <div class="ai-info-content" style="display:none;">
+        <p><b>🗓️ Day:</b> <span id="ai-day"></span></p>
         <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
         <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
         <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
@@ -51,6 +61,8 @@ async function insertTripAiInfo(onFirstToken) {
       <div class="ai-info-time" style="opacity:.6;font-size:13px;margin-top:8px;"></div>
     `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
+
+    const aiDay = document.getElementById('ai-day');
     const aiSummary = document.getElementById('ai-summary');
     const aiTip = document.getElementById('ai-tip');
     const aiHighlight = document.getElementById('ai-highlight');
@@ -97,28 +109,22 @@ async function insertTripAiInfo(onFirstToken) {
         const jsonStr = extractFirstJson(jsonText);
         try {
             const aiObj = JSON.parse(jsonStr);
-            typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
-                typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
-                    typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
+
+            // Zincirli typewriter: önce day/title, sonra summary, tip, highlight
+            typeWriterEffect(aiDay, aiObj.day || aiObj.title || "", 18, function() {
+                typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
+                    typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
+                        typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
+                    });
                 });
             });
         } catch (e) {
-            aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
+            aiDay.textContent = aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
         }
         let elapsed = Math.round(performance.now() - t0);
         aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
     } catch (e) {
-        aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "";
+        aiDay.textContent = aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "";
         aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
     }
-}
-
-// JSON stringten sadece ilk {...} bloğunu çek:
-function extractFirstJson(str) {
-    const start = str.indexOf('{');
-    const end = str.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-        return str.substring(start, end + 1);
-    }
-    return "";
 }
