@@ -60,7 +60,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
   <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
   <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
 </div>
-<div class="ai-info-time" style="opacity:.6;font-size:13px;margin-top:8px;"></div>
+<div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
 `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
