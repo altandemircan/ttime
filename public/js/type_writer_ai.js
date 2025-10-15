@@ -35,8 +35,6 @@ function extractFirstJson(str) {
     }
     return "";
 }
-
-// Ana AI kutusu fonksiyonu
 async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     // Eski AI info bölümünü sil
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
@@ -62,7 +60,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
       </div>
       <div class="ai-info-time" style="opacity:.6;font-size:13px;margin-top:8px;"></div>
     `;
-     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
+    tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
     const aiSummary = document.getElementById('ai-summary');
     const aiTip = document.getElementById('ai-tip');
@@ -72,10 +70,10 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     const aiInfoContent = aiDiv.querySelector('.ai-info-content');
     let t0 = performance.now();
 
-    // Eğer aiStaticInfo verilmişse, doğrudan yaz ve çık
+    // Eğer localStorage'dan/parametreyle geldiyse API'ya gitmeden direkt göster!
     if (aiStaticInfo) {
-        aiSpinner.style.display = "none";
-        aiInfoContent.style.display = "";
+        if (aiSpinner) aiSpinner.style.display = "none";
+        if (aiInfoContent) aiInfoContent.style.display = "";
         aiSummary.textContent = aiStaticInfo.summary || "";
         aiTip.textContent = aiStaticInfo.tip || "";
         aiHighlight.textContent = aiStaticInfo.highlight || "";
@@ -83,6 +81,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
         return;
     }
 
+    // API'dan AI içeriği çekilecek
     let jsonText = "";
     let firstChunkWritten = false;
     try {
@@ -125,17 +124,16 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
             jsonStr = jsonStr.trim() + '}';
         }
         // Konsolda logla (debug için)
-        console.log('LLM yanıtı:', jsonText);
-        console.log('Extracted JSON:', jsonStr);
+        //console.log('LLM yanıtı:', jsonText);
+        //console.log('Extracted JSON:', jsonStr);
 
         try {
             const aiObj = JSON.parse(jsonStr);
-                                                window.lastTripAIInfo = {
-                                      summary: aiObj.summary || "",
-                                      tip: aiObj.tip || "",
-                                      highlight: aiObj.highlight || ""
-                                    };
-
+            window.lastTripAIInfo = {
+                summary: aiObj.summary || "",
+                tip: aiObj.tip || "",
+                highlight: aiObj.highlight || ""
+            };
 
             // Sadece summary > tip > highlight zinciri
             typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
