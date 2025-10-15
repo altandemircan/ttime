@@ -49,20 +49,21 @@ if (!city && !aiStaticInfo) return;
     // AI kutusunu oluştur
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
-    aiDiv.innerHTML = `
-      <h3 style="display:flex;align-items:center;justify-content:space-between;">
-        AI Information
-        <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
-          <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
-        </span>
-      </h3>
-      <div class="ai-info-content" style="display:none;">
-        <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
-        <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
-        <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
-      </div>
-      <div class="ai-info-time" style="opacity:.6;font-size:13px;margin-top:8px;"></div>
-    `;
+   aiDiv.innerHTML = `
+  <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+    <span>AI Information</span>
+    <button id="ai-toggle-btn" style="border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;">▼</button>
+    <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
+      <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
+    </span>
+  </h3>
+  <div class="ai-info-content" style="max-height:1200px;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;opacity:1;">
+    <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
+    <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
+    <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
+  </div>
+  <div class="ai-info-time" style="opacity:.6;font-size:13px;margin-top:8px;"></div>
+`;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
     const aiSummary = document.getElementById('ai-summary');
@@ -155,4 +156,26 @@ if (!city && !aiStaticInfo) return;
         aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "";
         aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
     }
+
+
 }
+// AI kutusunu daraltıp/açma özelliği:
+const aiHeader = aiDiv.querySelector('#ai-toggle-header');
+const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
+const aiContent = aiDiv.querySelector('.ai-info-content');
+let expanded = true;
+
+function toggleAI() {
+  expanded = !expanded;
+  if (expanded) {
+    aiContent.style.maxHeight = "1200px";
+    aiContent.style.opacity = "1";
+    aiBtn.textContent = "▼";
+  } else {
+    aiContent.style.maxHeight = "0";
+    aiContent.style.opacity = "0";
+    aiBtn.textContent = "▲";
+  }
+}
+aiHeader.addEventListener('click', toggleAI);
+aiBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleAI(); });
