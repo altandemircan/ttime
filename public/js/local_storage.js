@@ -202,6 +202,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
+    aiInfo: window.lastTripAIInfo || null // <-- EKLE
   };
 
   // Thumbnail üretimi
@@ -262,6 +263,15 @@ function getAllSavedTrips() {
     return trips;
 }  
 
+function showTripAiInfo(aiInfo) {
+  const aiSummary = document.getElementById('ai-summary');
+  const aiTip = document.getElementById('ai-tip');
+  const aiHighlight = document.getElementById('ai-highlight');
+  if (aiSummary) aiSummary.textContent = aiInfo.summary || "";
+  if (aiTip) aiTip.textContent = aiInfo.tip || "";
+  if (aiHighlight) aiHighlight.textContent = aiInfo.highlight || "";
+}
+
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
       window.activeTripKey = tripKey;
@@ -269,6 +279,17 @@ function loadTripFromStorage(tripKey) {
     const trips = getAllSavedTrips();
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
+                            if (t.aiInfo) {
+                            window.lastTripAIInfo = t.aiInfo;
+                            showTripAiInfo(t.aiInfo);
+                          // AI kutusu varsa güncelle
+                          const aiSummary = document.getElementById('ai-summary');
+                          const aiTip = document.getElementById('ai-tip');
+                          const aiHighlight = document.getElementById('ai-highlight');
+                          if (aiSummary) aiSummary.textContent = t.aiInfo.summary || "";
+                          if (aiTip) aiTip.textContent = t.aiInfo.tip || "";
+                          if (aiHighlight) aiHighlight.textContent = t.aiInfo.highlight || "";
+                        }
 
     // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
 window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];

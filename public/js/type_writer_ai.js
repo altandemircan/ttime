@@ -119,6 +119,12 @@ async function insertTripAiInfo(onFirstToken) {
 
         try {
             const aiObj = JSON.parse(jsonStr);
+                                                window.lastTripAIInfo = {
+                                      summary: aiObj.summary || "",
+                                      tip: aiObj.tip || "",
+                                      highlight: aiObj.highlight || ""
+                                    };
+
 
             // Sadece summary > tip > highlight zinciri
             typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
