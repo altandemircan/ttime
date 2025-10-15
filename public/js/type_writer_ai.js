@@ -12,26 +12,30 @@ function typeWriterEffect(element, text, speed = 18, callback) {
     }
     type();
 }
+
+// Şehir seçince çağrılır: AI başlasın, ilk karakter gelince plan aktifleşsin
 function onCitySelected(city) {
     let planAktif = false;
 
-    // AI yazısı başlasın, ilk karakter DOM'a yazılır yazılmaz plan aktifleşsin
     insertTripAiInfo(() => {
         if (!planAktif) {
             insertTripPlan(city); // Burada kendi plan oluşturma fonksiyonunu çağır
             planAktif = true;
         }
     });
-
-    // Alternatif olarak, AI ve planı aynı anda da başlatabilirsin (isteğe bağlı):
-    // insertTripPlan(city);
 }
 
-// Kullanıcı şehir seçince çağır:
-document.getElementById('city-select').addEventListener('change', (e) => {
-    const selected = e.target.value;
-    onCitySelected(selected);
+// Sayfa yüklendiğinde city-select varsa event ekle (DOM hazır olunca)
+window.addEventListener('DOMContentLoaded', function() {
+    const citySelect = document.getElementById('city-select');
+    if (citySelect) {
+        citySelect.addEventListener('change', (e) => {
+            const selected = e.target.value;
+            onCitySelected(selected);
+        });
+    }
 });
+
 async function insertTripAiInfo(onFirstToken) {
     // Eski AI info bölümünü sil (başlık altında birden fazla olmasın)
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
