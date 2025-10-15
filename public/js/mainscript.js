@@ -1987,15 +1987,15 @@ window.cart.push(newItem);
 
 // --- ŞEHİR TESPİTİ ---
 async function setSelectedCityFromItem(item) {
-  // 1) properties.city varsa onu kullan (sadece city!)
   const props = item.properties || {};
+  // 1) Sadece city
   if (props.city && props.city.length > 2) {
     window.selectedCity = props.city;
     window.selectedLocation = props.city;
     console.log("selectedCity set (properties.city):", props.city);
     return;
   }
-  // 2) Koordinat varsa reverse geocode ile SADECE city, city yoksa state
+  // 2) Reverse geocode ile sadece city
   if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
     try {
       const resp = await fetch(`/api/geoapify/reverse?lat=${item.location.lat}&lon=${item.location.lng}`);
@@ -2005,23 +2005,20 @@ async function setSelectedCityFromItem(item) {
         window.selectedLocation = props2.city;
         console.log("selectedCity set (reverse city):", props2.city);
         return;
-      } else if (props2.state && props2.state.length > 2) {
-        window.selectedCity = props2.state;
-        window.selectedLocation = props2.state;
-        console.log("selectedCity set (reverse state):", props2.state);
-        return;
       }
+      // Eğer state, ülke değilse ve büyükşehir ise (ör: "Bucharest", "İstanbul", "Antalya") — manüel bir beyaz liste gerekebilir!
+      // Aksi halde, asla kasaba/ilçe atama!
     } catch(e) { /* ignore */ }
   }
-  // 3) Fallback: adresi parçala (en mantıklı isim)
+  // Fallback: adresi parçala. Ama ülke, posta kodu, kasaba, ilçe, köy, vs. olursa atla.
   const city = extractCityFromAddress(item.address);
-  if (city) {
+  // Burada "Voluntari" gibi isimler çıkıyorsa, Türkiye/Romanya gibi ülkeler için white-list ile büyükşehirleri zorunlu tutabilirsin.
+  if (city && city.length > 2 && !/voluntari|ilçe|kasaba|mahalle|köy|commune|municipality|town|village|suburb|neighbourhood/i.test(city)) {
     window.selectedCity = city;
     window.selectedLocation = city;
     console.log("selectedCity set (fallback):", city);
   }
 }
-
 // Adresten şehir adını bul (sadece sayı değil, ülke değil, mümkünse harfli ve uzun olanı al)
 function extractCityFromAddress(address) {
   if (!address) return "";
