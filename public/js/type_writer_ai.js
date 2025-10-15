@@ -12,17 +12,40 @@ function typeWriterEffect(element, text, speed = 18, callback) {
     }
     type();
 }
+function onCitySelected(city) {
+    let planAktif = false;
 
-async function insertTripAiInfo() {
+    // AI yazısı başlasın, ilk karakter DOM'a yazılır yazılmaz plan aktifleşsin
+    insertTripAiInfo(() => {
+        if (!planAktif) {
+            insertTripPlan(city); // Burada kendi plan oluşturma fonksiyonunu çağır
+            planAktif = true;
+        }
+    });
+
+    // Alternatif olarak, AI ve planı aynı anda da başlatabilirsin (isteğe bağlı):
+    // insertTripPlan(city);
+}
+
+// Kullanıcı şehir seçince çağır:
+document.getElementById('city-select').addEventListener('change', (e) => {
+    const selected = e.target.value;
+    onCitySelected(selected);
+});
+async function insertTripAiInfo(onFirstToken) {
+    // Eski AI info bölümünü sil (başlık altında birden fazla olmasın)
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
 
+    // Başlık divini bul
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
+    // Şehir adını başlıktan veya window.selectedCity'den al
     const city = (window.selectedCity || tripTitleDiv.textContent || '')
       .replace(/ trip plan.*$/i, '').trim();
     if (!city) return;
 
+    // AI kutusunu ekle
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -46,6 +69,7 @@ async function insertTripAiInfo() {
     let active = "summary";
     let fieldStarted = false;
     let summaryText = "", tipText = "", highlightText = "";
+    let firstChunkWritten = false;
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
@@ -79,7 +103,7 @@ async function insertTripAiInfo() {
                         if (obj.response.includes('"highlight')) {
                             active = "highlight"; continue;
                         }
-                        // Alanlara karakter ekle (typewriter ile)
+                        // Alanlara karakter ekle
                         if (!fieldStarted) continue;
                         if (active === "summary") {
                             summaryText += obj.response;
@@ -90,6 +114,11 @@ async function insertTripAiInfo() {
                         } else if (active === "highlight") {
                             highlightText += obj.response;
                             aiHighlight.textContent = highlightText;
+                        }
+                        // İlk chunk yazılırsa callback tetikle (plan aktifleşmesi için)
+                        if (!firstChunkWritten && obj.response.trim()) {
+                            firstChunkWritten = true;
+                            if (typeof onFirstToken === "function") onFirstToken();
                         }
                     }
                 } catch {}
