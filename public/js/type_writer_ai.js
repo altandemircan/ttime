@@ -73,25 +73,26 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     let t0 = performance.now();
 
     // COLLAPSIBLE LOGIC
-    const aiHeader = aiDiv.querySelector('#ai-toggle-header');
-    const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
-    const aiContent = aiDiv.querySelector('.ai-info-content');
-    let expanded = true;
+   const aiHeader = aiDiv.querySelector('#ai-toggle-header');
+const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
+const aiContent = aiDiv.querySelector('.ai-info-content');
+let expanded = true;
 
-    function toggleAI() {
-      expanded = !expanded;
-      if (expanded) {
-        aiContent.style.maxHeight = "1200px";
-        aiContent.style.opacity = "1";
-        aiBtn.textContent = "▼";
-      } else {
-        aiContent.style.maxHeight = "0";
-        aiContent.style.opacity = "0";
-        aiBtn.textContent = "▲";
-      }
-    }
-    aiHeader.addEventListener('click', toggleAI);
-    aiBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleAI(); });
+// YALNIZCA BU
+aiBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleAI(); });
+
+function toggleAI() {
+  expanded = !expanded;
+  if (expanded) {
+    aiContent.style.maxHeight = "1200px";
+    aiContent.style.opacity = "1";
+    aiBtn.textContent = "▼";
+  } else {
+    aiContent.style.maxHeight = "0";
+    aiContent.style.opacity = "0";
+    aiBtn.textContent = "▲";
+  }
+}
 
     // Eğer localStorage'dan/parametreyle geldiyse API'ya gitmeden direkt göster!
     if (aiStaticInfo) {
