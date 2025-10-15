@@ -38,13 +38,14 @@ function extractFirstJson(str) {
     return "";
 }
 async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
+    // Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
     const city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
     if (!city && !aiStaticInfo) return;
 
-    // AI kutusu
+    // Kutuyu oluştururken: içerik kapalı, ok sağa bakıyor, spinner açık
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -57,7 +58,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     <!-- spinner svg burada -->
   </span>
 </h3>
-<div class="ai-info-content" style="max-height:1200px;opacity:1;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
+<div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
   <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
   <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
   <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
@@ -66,47 +67,45 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
+    // Seçiciler
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
     const aiTime = aiDiv.querySelector('.ai-info-time');
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
-    const aiInfoContent = aiDiv.querySelector('.ai-info-content');
+    const aiContent = aiDiv.querySelector('.ai-info-content');
+    const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
+    const aiIcon = aiBtn.querySelector('.arrow-icon');
     let t0 = performance.now();
 
     // COLLAPSIBLE LOGIC
-   const aiHeader = aiDiv.querySelector('#ai-toggle-header');
-const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
-const aiIcon = aiBtn.querySelector('.arrow-icon');
-const aiContent = aiDiv.querySelector('.ai-info-content');
-let expanded = true; // BAŞLANGIÇTA AÇIK
+    let expanded = false;
+    aiBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleAI();
+    });
+    function toggleAI() {
+      expanded = !expanded;
+      if (expanded) {
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity = "1";
+        aiIcon.classList.add('open');      // OK aşağıya bakıyor
+      } else {
+        aiContent.style.maxHeight = "0";
+        aiContent.style.opacity = "0";
+        aiIcon.classList.remove('open');   // OK sağa bakıyor
+      }
+    }
 
-// İLK HALDE OK AŞAĞIYA BAKSIN
-aiIcon.classList.add('open');
-aiContent.style.maxHeight = "1200px";
-aiContent.style.opacity = "1";
-
-aiBtn.addEventListener('click', function(e) {
-  e.stopPropagation();
-  toggleAI();
-});
-
-function toggleAI() {
-  expanded = !expanded;
-  if (expanded) {
-    aiContent.style.maxHeight = "1200px";
-    aiContent.style.opacity = "1";
-    aiIcon.classList.add('open');      // OK aşağıya bakıyor
-  } else {
-    aiContent.style.maxHeight = "0";
-    aiContent.style.opacity = "0";
-    aiIcon.classList.remove('open');   // OK sağa bakıyor
-  }
-}
-
-    // Eğer localStorage'dan/parametreyle geldiyse API'ya gitmeden direkt göster!
+    // Localstorage'dan gelen AI info ise: spinnerı gizle, içerik aç, ok aşağıya
     if (aiStaticInfo) {
         if (aiSpinner) aiSpinner.style.display = "none";
+        if (aiContent) {
+            aiContent.style.maxHeight = "1200px";
+            aiContent.style.opacity = "1";
+        }
+        if (aiIcon) aiIcon.classList.add('open');
+        expanded = true;
         aiSummary.textContent = aiStaticInfo.summary || "";
         aiTip.textContent = aiStaticInfo.tip || "";
         aiHighlight.textContent = aiStaticInfo.highlight || "";
@@ -114,7 +113,7 @@ function toggleAI() {
         return;
     }
 
-    // API'dan AI içeriği çekilecek
+    // API'dan AI içeriği çekilecek (loading anında sadece spinner açık, içerik ve ok kapalı)
     let jsonText = "";
     let firstChunkWritten = false;
     try {
@@ -139,10 +138,16 @@ function toggleAI() {
                     const obj = JSON.parse(line);
                     if (obj.response) {
                         jsonText += obj.response;
-                        // İlk chunk ile loading gizle, içerik göster, callback tetikle
+                        // İlk chunk ile loading gizle, içerik aç, ok aşağıya, callback tetikle
                         if (!firstChunkWritten && obj.response.trim()) {
                             firstChunkWritten = true;
                             if (aiSpinner) aiSpinner.style.display = "none";
+                            if (aiContent) {
+                                aiContent.style.maxHeight = "1200px";
+                                aiContent.style.opacity = "1";
+                            }
+                            if (aiIcon) aiIcon.classList.add('open');
+                            expanded = true;
                             if (typeof onFirstToken === "function") onFirstToken();
                         }
                     }
@@ -172,9 +177,9 @@ function toggleAI() {
         } catch (e) {
             aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
         }
-           let elapsed = Math.round(performance.now() - t0);
-    if (aiTime) aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
-} catch (e) {
-    if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
-}
+        let elapsed = Math.round(performance.now() - t0);
+        if (aiTime) aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
+    } catch (e) {
+        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
+    }
 }
