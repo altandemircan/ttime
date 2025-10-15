@@ -1983,17 +1983,34 @@ const newItem = {
 
 window.cart.push(newItem);
 
-// --- ŞEHİR TESPİTİ VE SET ETME ---
-if (newItem.address && (!window.selectedCity || window.selectedCity === "")) {
-  const parts = newItem.address.split(",");
-  if (parts.length >= 2) {
-    // Şehir genellikle sondan ikinci parça
-    const city = parts[parts.length - 2].trim();
-    if (city && city.length > 1) {
-      window.selectedCity = city;
-      window.selectedLocation = city;
-      console.log("selectedCity set:", city);
+// Adresten şehir adını bul (sadece sayı değil, ülke değil, mümkünse harfli ve uzun olanı al)
+function extractCityFromAddress(address) {
+  if (!address) return "";
+  const parts = address.split(",").map(p => p.trim()).filter(Boolean);
+  // Tersten ilerle, ülke ve posta kodunu atla, harfli ve uzun olana bak
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const part = parts[i];
+    // Sadece harflerden oluşuyorsa ve ülke adı değilse
+    if (
+      /^[A-Za-zÇĞİÖŞÜçğıöşü\s\-'.]+$/.test(part) && // sadece harf
+      !/^(turkey|türkiye|ukraine|ukrayna|romania|italy|france|germany|usa|united states|russia|rossiya|poland|bulgaria)$/i.test(part.toLowerCase()) &&
+      part.length > 2
+    ) {
+      return part;
     }
+  }
+  // Hiçbiri tutmazsa ilk harfli parçayı dene
+  const fallback = parts.find(p => /^[A-Za-zÇĞİÖŞÜçğıöşü\s\-'.]+$/.test(p) && p.length > 2);
+  return fallback || "";
+}
+
+// ... addToCart fonksiyonu içinde, yeni eklenen item sonrası:
+if (newItem.address && (!window.selectedCity || window.selectedCity === "")) {
+  const city = extractCityFromAddress(newItem.address);
+  if (city) {
+    window.selectedCity = city;
+    window.selectedLocation = city;
+    console.log("selectedCity set:", city);
   }
 }
 
