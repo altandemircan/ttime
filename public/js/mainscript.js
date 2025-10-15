@@ -3422,6 +3422,41 @@ function updateCart() {
   if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
   const cartDiv = document.getElementById("cart-items");
+  // AI info butonu ekle
+// AI info butonu ekle
+if (
+  window.cart && window.cart.length > 0 &&
+  !document.querySelector('.ai-info-section') &&
+  !document.getElementById('generate-ai-info-btn')
+) {
+  // İlk gerçek noktanın şehir bilgisini çek
+  let city = null;
+  const first = window.cart.find(it =>
+    it.location &&
+    typeof it.location.lat === "number" &&
+    typeof it.location.lng === "number"
+  );
+  if (first && first.address) {
+    const parts = first.address.split(",");
+    if (parts.length >= 2) {
+      city = parts[parts.length - 2].trim();
+    }
+  }
+  // Şehir bulunmuşsa butonu ekle
+  if (city) {
+    const btn = document.createElement('button');
+    btn.id = 'generate-ai-info-btn';
+    btn.textContent = 'Generate AI Info';
+    btn.style = "margin: 12px 0 0 0; display:block; width:100%;";
+    btn.onclick = async function() {
+      btn.disabled = true;
+      btn.textContent = 'Yükleniyor...';
+      await insertTripAiInfo(null, null, city);
+      btn.remove();
+    };
+    cartDiv.parentNode.insertBefore(btn, cartDiv.nextSibling);
+  }
+}
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
