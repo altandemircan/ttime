@@ -4767,7 +4767,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .route-scale-bar {
   width: 96%;
     font-size: 0.9rem;
-    height: 200px;
+    height: 120px;
     text-align: left;
     display: inherit;
 }
