@@ -34,7 +34,7 @@ You are an expert travel assistant. Given this ${days}-day trip plan for ${city}
 ${JSON.stringify(places, null, 2)}
 Respond ONLY as JSON with these 3 fields:
 {
-  "summary": "A 60-word inspiring summary of the trip.",
+  "summary": "A 100-word inspiring summary of the trip.",
   "tip": "A creative tip for the traveler.",
   "highlight": "A highlight that makes this trip special."
 }
