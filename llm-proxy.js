@@ -6,9 +6,12 @@ router.post('/plan-summary', async (req, res) => {
     const { city } = req.body;
 
 const prompt = `
-Write a JSON object only, with no explanations or markdown, for the city "${city}".
-Keys: summary (2 sentences), tip, highlight.
-Example: {"summary":"...","tip":"...","highlight":"..."}
+Write a JSON object, for the city "${city}", with keys:
+day: a sample day name or number,
+summary: 2 sentence summary,
+tip: a specific tip,
+highlight: a unique highlight.
+Only return JSON, no explanations.
 `.trim();
 
     try {
