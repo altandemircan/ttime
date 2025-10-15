@@ -50,8 +50,9 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     aiDiv.innerHTML = `
       <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
         <span>AI Information</span>
-        <button id="ai-toggle-btn" style="border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;">▼</button>
-        <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
+<button id="ai-toggle-btn" class="arrow-btn" style="border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;">
+  <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" style="width:18px;vertical-align:middle;transition:transform 0.2s;">
+</button>        <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
           <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
         </span>
       </h3>
@@ -75,22 +76,25 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     // COLLAPSIBLE LOGIC
    const aiHeader = aiDiv.querySelector('#ai-toggle-header');
 const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
+const aiIcon = aiBtn.querySelector('.arrow-icon'); // SVG img
 const aiContent = aiDiv.querySelector('.ai-info-content');
 let expanded = true;
 
-// YALNIZCA BU
-aiBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleAI(); });
+aiBtn.addEventListener('click', function(e) {
+  e.stopPropagation();
+  toggleAI();
+});
 
 function toggleAI() {
   expanded = !expanded;
   if (expanded) {
     aiContent.style.maxHeight = "1200px";
     aiContent.style.opacity = "1";
-    aiBtn.textContent = "▼";
+    aiIcon.classList.remove('open');  // OK sağa bakıyor
   } else {
     aiContent.style.maxHeight = "0";
     aiContent.style.opacity = "0";
-    aiBtn.textContent = "▲";
+    aiIcon.classList.add('open');     // OK aşağıya bakıyor
   }
 }
 
