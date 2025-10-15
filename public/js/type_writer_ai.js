@@ -42,7 +42,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
-    let city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
+    let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
 let country = (window.selectedLocation && window.selectedLocation.country) || "";
 if (!city && !aiStaticInfo) return;
 
