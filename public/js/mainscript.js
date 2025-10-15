@@ -979,6 +979,7 @@ window.lastUserQuery = `${location} trip plan`;
    
       showResults();
       updateTripTitle();
+      insertTripAiInfo();
 
       const inputWrapper = document.querySelector('.input-wrapper');
       if (inputWrapper) inputWrapper.style.display = 'none';
@@ -3744,7 +3745,7 @@ if (anyDayHasRealItem && !hideAddCat) {
 cartDiv.appendChild(dayContainer);
   }
 // Her gün için AI info ekle
-insertAiInfoForAllDays();
+
   // --- Add New Day butonu döngü SONRASINDA, sadece 1 defa ---
   const addNewDayHr = document.createElement('hr');
   addNewDayHr.className = 'add-new-day-separator';
@@ -9703,61 +9704,53 @@ function clearScaleBarSelection(day) {
 
 
 // --- YENİ: Her gün için AI Information ekle ---
-async function insertAiInfoForAllDays() {
-  // Günleri sırala
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
-  for (const day of days) {
-    const dayList = document.querySelector(`.day-list[data-day="${day}"]`);
-    if (!dayList) continue;
+async function insertTripAiInfo() {
+    // Önce eski AI info bölümü varsa sil
+    document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
 
-    // O güne ait planı filtrele
-    const dayPlan = window.cart.filter(i => i.day === day);
+    const tripTitleDiv = document.getElementById('trip_title');
+    if (!tripTitleDiv) return;
 
-    // Eski AI info varsa kaldır
-    let next = dayList.nextElementSibling;
-    if (next && next.classList.contains('ai-info-section')) next.remove();
+    const city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
+    if (!city) return;
 
-    // Fetch AI summary ONLY for this day
-    let aiInfo = { summary: '', tip: '', highlight: '' };
-    try {
-                  // Sadece city ve days gönder
-            const resp = await fetch('/llm-proxy/plan-summary', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              city: window.selectedCity || ''
-            })
-        });
-        aiInfo = await resp.json();
-    } catch { /* boş bırak */ }
-
-    // AI info içeriği oluştur
+    // Hızlıca loading göstergesi ekle
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
+    aiDiv.innerHTML = `
+      <h3>AI Information</h3>
+      <div class="ai-info-content"><span style="opacity:.6">Loading...</span></div>
+    `;
+    tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-// --- BURAYA EKLE! ---
-console.log("AI INFO SUMMARY:", aiInfo.summary);
-aiDiv.innerHTML = `
-  <h3>AI Information</h3>
-  <div class="ai-info-content">
-    <p><b>🧳 Summary:</b> ${aiInfo.summary || "—"}</p>
-    <p><b>👉 Tip:</b> ${aiInfo.tip || "—"}</p>
-    <p><b>🔆 Highlight:</b> ${aiInfo.highlight || "—"}</p>
-  </div>
-`;
-    // Add Category butonunu bul
-    let addBtn = dayList.parentNode.querySelector(`.add-more-btn[data-day="${day}"]`);
-    // AI info'yu dayList'in altına, add-more-btn'den önce ekle
-    dayList.parentNode.insertBefore(aiDiv, addBtn ?? null);
-    // Typewriter efekt uygula
-const aiContent = aiDiv.querySelector('.ai-info-content');
-if (aiContent && typeof typeWriterEffect === "function") {
-    const html = aiContent.innerHTML;
-    aiContent.innerHTML = "";
-    typeWriterEffect(aiContent, html, 18);
-}
-  }
+    // AI çağrısı
+    let aiInfo = { summary: '', tip: '', highlight: '' };
+    try {
+        const resp = await fetch('/llm-proxy/plan-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city })
+        });
+        aiInfo = await resp.json();
+    } catch {}
+
+    // Sonucu yaz
+    aiDiv.innerHTML = `
+      <h3>AI Information</h3>
+      <div class="ai-info-content">
+        <p><b>🧳 Summary:</b> ${aiInfo.summary || "—"}</p>
+        <p><b>👉 Tip:</b> ${aiInfo.tip || "—"}</p>
+        <p><b>🔆 Highlight:</b> ${aiInfo.highlight || "—"}</p>
+      </div>
+    `;
+    // (İsteğe bağlı) Typewriter efekti uygula
+    const aiContent = aiDiv.querySelector('.ai-info-content');
+    if (aiContent && typeof typeWriterEffect === "function") {
+        const html = aiContent.innerHTML;
+        aiContent.innerHTML = "";
+        typeWriterEffect(aiContent, html, 18);
+    }
 }
 
 
