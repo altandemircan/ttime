@@ -104,7 +104,9 @@ async function insertTripAiInfo(onFirstToken) {
                 } catch {}
             }
         }
-        const jsonStr = extractFirstJson(jsonText);
+       const jsonStr = extractFirstJson(jsonText);
+console.log('LLM yanıtı:', jsonText); // <--- EKLE
+console.log('Extracted JSON:', jsonStr); // <--- EKLE
         try {
             const aiObj = JSON.parse(jsonStr);
 
