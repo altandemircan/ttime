@@ -37,19 +37,11 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 async function insertTripAiInfo(onFirstToken) {
-    // Eski AI info bölümünü sil (başlık altında birden fazla olmasın)
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
-
-    // Başlık divini bul
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
-
-    // Şehir adını başlıktan veya window.selectedCity'den al
-    const city = (window.selectedCity || tripTitleDiv.textContent || '')
-      .replace(/ trip plan.*$/i, '').trim();
+    const city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
     if (!city) return;
-
-    // AI kutusunu ekle
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -62,14 +54,12 @@ async function insertTripAiInfo(onFirstToken) {
       <div class="ai-info-time" style="opacity:.6;font-size:13px;margin-top:8px;"></div>
     `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
-
     const aiSummary = document.getElementById('ai-summary');
     const aiTip = document.getElementById('ai-tip');
     const aiHighlight = document.getElementById('ai-highlight');
     const aiTime = aiDiv.querySelector('.ai-info-time');
     let t0 = performance.now();
 
-    // Streaming fetch
     let active = "summary";
     let fieldStarted = false;
     let summaryText = "", tipText = "", highlightText = "";
@@ -80,7 +70,6 @@ async function insertTripAiInfo(onFirstToken) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city })
         });
-
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
@@ -91,23 +80,15 @@ async function insertTripAiInfo(onFirstToken) {
             buffer += decoder.decode(value, { stream: true });
             let lines = buffer.split('\n');
             buffer = lines.pop();
-
             for (const line of lines) {
                 if (!line.trim()) continue;
                 try {
                     const obj = JSON.parse(line);
                     if (obj.response) {
-                        // Aktif alanı tespit et
-                        if (obj.response.includes('"summary')) {
-                            active = "summary"; fieldStarted = true; continue;
-                        }
-                        if (obj.response.includes('"tip')) {
-                            active = "tip"; continue;
-                        }
-                        if (obj.response.includes('"highlight')) {
-                            active = "highlight"; continue;
-                        }
-                        // Alanlara karakter ekle
+                        // Alan tespiti
+                        if (obj.response.includes('"summary')) { active = "summary"; fieldStarted = true; continue; }
+                        if (obj.response.includes('"tip')) { active = "tip"; continue; }
+                        if (obj.response.includes('"highlight')) { active = "highlight"; continue; }
                         if (!fieldStarted) continue;
                         if (active === "summary") {
                             summaryText += obj.response;
@@ -119,7 +100,7 @@ async function insertTripAiInfo(onFirstToken) {
                             highlightText += obj.response;
                             aiHighlight.textContent = highlightText;
                         }
-                        // İlk chunk yazılırsa callback tetikle (plan aktifleşmesi için)
+                        // İlk chunk ile callback tetiklenir
                         if (!firstChunkWritten && obj.response.trim()) {
                             firstChunkWritten = true;
                             if (typeof onFirstToken === "function") onFirstToken();
@@ -128,7 +109,6 @@ async function insertTripAiInfo(onFirstToken) {
                 } catch {}
             }
         }
-        // Yanıt süresi
         let elapsed = Math.round(performance.now() - t0);
         aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
     } catch (e) {
