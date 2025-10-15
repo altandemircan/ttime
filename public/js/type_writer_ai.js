@@ -37,23 +37,20 @@ function extractFirstJson(str) {
     }
     return "";
 }
-
 async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
+    // Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
     const city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
     if (!city && !aiStaticInfo) return;
 
-    // Spinner ilk başta AÇIK, içerik kapalı, ok sağa bakıyor
+    // --- 1) İlk başta sadece spinner ve başlık var, ok YOK ---
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
-<h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+<h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
   <span>AI Information</span>
-  <button id="ai-toggle-btn" class="arrow-btn" style="border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;">
-    <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" style="width:18px;vertical-align:middle;transition:transform 0.2s;">
-  </button>
   <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
     <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
   </span>
@@ -64,7 +61,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
   <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
 </div>
 <div class="ai-info-time" style="opacity:.6;font-size:13px;margin-top:8px;"></div>
-    `;
+`;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
     // Seçiciler
@@ -74,38 +71,40 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     const aiTime = aiDiv.querySelector('.ai-info-time');
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
-    const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
-    const aiIcon = aiBtn.querySelector('.arrow-icon');
     let t0 = performance.now();
 
-    // COLLAPSIBLE LOGIC
-    let expanded = false;
-    aiBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      toggleAI();
-    });
-    function toggleAI() {
-      expanded = !expanded;
-      if (expanded) {
-        aiContent.style.maxHeight = "1200px";
-        aiContent.style.opacity = "1";
-        aiIcon.classList.add('open');      // OK aşağıya bakıyor
-      } else {
-        aiContent.style.maxHeight = "0";
-        aiContent.style.opacity = "0";
-        aiIcon.classList.remove('open');   // OK sağa bakıyor
-      }
-    }
-
-    // Localstorage'dan gelen AI info ise: spinnerı gizle, içerik aç, ok aşağıya
+    // === 2) EĞER LOCALSTORAGE'DAN GELİYORSA: Spinnerı gizle, ok ekle, içerik aç ===
     if (aiStaticInfo) {
         if (aiSpinner) aiSpinner.style.display = "none";
-        if (aiContent) {
-            aiContent.style.maxHeight = "1200px";
-            aiContent.style.opacity = "1";
-        }
+        // OK'u ekle
+        const header = aiDiv.querySelector('#ai-toggle-header');
+        const btn = document.createElement('button');
+        btn.id = "ai-toggle-btn";
+        btn.className = "arrow-btn";
+        btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
+        btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
+        header.appendChild(btn);
+
+        // COLLAPSE LOGIC
+        const aiIcon = btn.querySelector('.arrow-icon');
+        let expanded = true;
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            expanded = !expanded;
+            if (expanded) {
+                aiContent.style.maxHeight = "1200px";
+                aiContent.style.opacity = "1";
+                aiIcon.classList.add('open');
+            } else {
+                aiContent.style.maxHeight = "0";
+                aiContent.style.opacity = "0";
+                aiIcon.classList.remove('open');
+            }
+        });
+
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity = "1";
         if (aiIcon) aiIcon.classList.add('open');
-        expanded = true;
         aiSummary.textContent = aiStaticInfo.summary || "";
         aiTip.textContent = aiStaticInfo.tip || "";
         aiHighlight.textContent = aiStaticInfo.highlight || "";
@@ -113,7 +112,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
         return;
     }
 
-    // API'dan AI içeriği çekilecek (loading anında sadece spinner açık, içerik ve ok kapalı)
+    // === 3) API'dan veri çekiliyor: loading anında sadece spinner var ===
     let jsonText = "";
     let firstChunkWritten = false;
     try {
@@ -138,16 +137,39 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
                     const obj = JSON.parse(line);
                     if (obj.response) {
                         jsonText += obj.response;
-                        // İlk chunk ile loading gizle, içerik aç, ok aşağıya, callback tetikle
+                        // === İLK CHUNK GELİNCE SPINNERI GİZLE, OKU EKLE, İÇERİĞİ AÇ ===
                         if (!firstChunkWritten && obj.response.trim()) {
                             firstChunkWritten = true;
                             if (aiSpinner) aiSpinner.style.display = "none";
-                            if (aiContent) {
-                                aiContent.style.maxHeight = "1200px";
-                                aiContent.style.opacity = "1";
-                            }
+                            // OK'u ekle
+                            const header = aiDiv.querySelector('#ai-toggle-header');
+                            const btn = document.createElement('button');
+                            btn.id = "ai-toggle-btn";
+                            btn.className = "arrow-btn";
+                            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
+                            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
+                            header.appendChild(btn);
+
+                            // COLLAPSE LOGIC
+                            const aiIcon = btn.querySelector('.arrow-icon');
+                            let expanded = true;
+                            btn.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                expanded = !expanded;
+                                if (expanded) {
+                                    aiContent.style.maxHeight = "1200px";
+                                    aiContent.style.opacity = "1";
+                                    aiIcon.classList.add('open');
+                                } else {
+                                    aiContent.style.maxHeight = "0";
+                                    aiContent.style.opacity = "0";
+                                    aiIcon.classList.remove('open');
+                                }
+                            });
+
+                            aiContent.style.maxHeight = "1200px";
+                            aiContent.style.opacity = "1";
                             if (aiIcon) aiIcon.classList.add('open');
-                            expanded = true;
                             if (typeof onFirstToken === "function") onFirstToken();
                         }
                     }
