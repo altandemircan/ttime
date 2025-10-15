@@ -272,28 +272,27 @@ function showTripAiInfo(aiInfo) {
   if (aiHighlight) aiHighlight.textContent = aiInfo.highlight || "";
 }
 
-// 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
-window.activeTripKey = tripKey;
+    window.activeTripKey = tripKey;
+
     const trips = getAllSavedTrips();
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
 
-    window.lastTripAIInfo = t.aiInfo;
-
-    // AI kutusu DOM'da yoksa oluştur, varsa güncelle
-    let aiDiv = document.querySelector('.ai-info-section');
-    if (!aiDiv) {
-        insertTripAiInfo(null, t.aiInfo); // Sadece kutuyu oluşturup localStorage bilgisini dolduracak
-    } else {
-        showTripAiInfo(t.aiInfo); // Kutuyu yeniden doldur
+    // --- AI kutusu işlemleri ---
+    if (t.aiInfo) {
+        window.lastTripAIInfo = t.aiInfo;
+        let aiDiv = document.querySelector('.ai-info-section');
+        if (!aiDiv) {
+            insertTripAiInfo(null, t.aiInfo); // Sadece kutuyu oluşturup localStorage bilgisini dolduracak
+        } else {
+            showTripAiInfo(t.aiInfo); // Kutuyu yeniden doldur
+        }
     }
-}
 
     // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
-window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
-window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
-    // (Ekstra: day ve location dönüşümleri)
+    window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
+    window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.cart = window.cart.map(item => {
         if (typeof item.day === "string") item.day = Number(item.day);
         if (item.location && typeof item.location.lat === "string") {
@@ -304,7 +303,7 @@ window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.string
         }
         return item;
     });
-   if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+    if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
     patchCartLocations();
 
@@ -330,24 +329,14 @@ window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.string
 
     // 5. Route'ları çiz, sonra thumbnail üret ve paneli güncelle
     setTimeout(async () => {
-    for (let day = 1; day <= maxDay; day++) {
-        await renderRouteForDay(day);
-    }
-    saveTripAfterRoutes();
-}, 0);
+        for (let day = 1; day <= maxDay; day++) {
+            await renderRouteForDay(day);
+        }
+        saveTripAfterRoutes();
+    }, 0);
+
     return true;
-}   
-// 8. Gezileri silme özelliği (isteğe bağlı)
-function deleteTrip(tripKey) {
-    let trips = getAllSavedTrips();
-    if (!trips[tripKey]) return;
-    delete trips[tripKey];
-    localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
-    renderMyTripsPanel();
 }
-
-
-
 
 function groupTripsByDate(trips) {
     const grouped = {};
