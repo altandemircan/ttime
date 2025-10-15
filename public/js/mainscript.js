@@ -2024,8 +2024,6 @@ async function setSelectedCityFromItem(item) {
 if (!window.selectedCity || window.selectedCity === "") {
   setSelectedCityFromItem(newItem); // async, AI kutusu butonunu/gecikmesini etkilemez
 }
-
-
 // Adresten şehir adını bul (sadece sayı değil, ülke değil, mümkünse harfli ve uzun olanı al)
 function extractCityFromAddress(address) {
   if (!address) return "";
