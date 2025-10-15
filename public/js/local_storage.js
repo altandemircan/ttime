@@ -274,22 +274,23 @@ function showTripAiInfo(aiInfo) {
 
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
-      window.activeTripKey = tripKey;
-
+    window.activeTripKey = tripKey;
     const trips = getAllSavedTrips();
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
-                            if (t.aiInfo) {
-                            window.lastTripAIInfo = t.aiInfo;
-                            showTripAiInfo(t.aiInfo);
-                          // AI kutusu varsa güncelle
-                          const aiSummary = document.getElementById('ai-summary');
-                          const aiTip = document.getElementById('ai-tip');
-                          const aiHighlight = document.getElementById('ai-highlight');
-                          if (aiSummary) aiSummary.textContent = t.aiInfo.summary || "";
-                          if (aiTip) aiTip.textContent = t.aiInfo.tip || "";
-                          if (aiHighlight) aiHighlight.textContent = t.aiInfo.highlight || "";
-                        }
+
+    window.lastTripAIInfo = t.aiInfo;
+
+    // AI kutusu DOM'da yoksa oluştur, varsa güncelle
+    let aiDiv = document.querySelector('.ai-info-section');
+    if (!aiDiv) {
+        insertTripAiInfo(null, t.aiInfo); // Sadece kutuyu oluşturup localStorage bilgisini dolduracak
+    } else {
+        showTripAiInfo(t.aiInfo); // Kutuyu yeniden doldur
+    }
+
+    // ... (diğer kodların burada devam edecek)
+}
 
     // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
 window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
