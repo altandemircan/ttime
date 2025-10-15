@@ -85,12 +85,16 @@ async function insertTripAiInfo(onFirstToken) {
         }
         // Model bazen başa/sona fazladan karakter koyabilir, düzelt:
         const fixedJson = jsonText.replace(/^[^{]*({)/, '$1').replace(/}[^}]*$/, '}');
+      
         try {
             const aiObj = JSON.parse(fixedJson);
-            // Typewriter ile canlı yazmak için:
-            typeWriterEffect(aiSummary, aiObj.summary || "", 18);
-            typeWriterEffect(aiTip, aiObj.tip || "", 18);
-            typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
+
+            // Zincirli typewriter: önce summary, bitince tip, sonra highlight
+            typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
+                typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
+                    typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
+                });
+            });
         } catch (e) {
             aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
         }
