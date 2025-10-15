@@ -25,18 +25,25 @@ function onCitySelected(city) {
 }
 
 // ... city-select event kısmı değişmiyor ...
-
 async function insertTripAiInfo(onFirstToken) {
+    // Eski AI info bölümünü sil
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
     const city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
     if (!city) return;
+
+    // AI kutusunu oluştur
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
-      <h3>AI Information</h3>
-      <div class="ai-info-content">
+      <h3 style="display:flex;align-items:center;justify-content:space-between;">
+        AI Information
+        <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
+          <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
+        </span>
+      </h3>
+      <div class="ai-info-content" style="display:none;">
         <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
         <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
         <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
@@ -48,6 +55,8 @@ async function insertTripAiInfo(onFirstToken) {
     const aiTip = document.getElementById('ai-tip');
     const aiHighlight = document.getElementById('ai-highlight');
     const aiTime = aiDiv.querySelector('.ai-info-time');
+    const aiSpinner = document.getElementById('ai-spinner');
+    const aiInfoContent = aiDiv.querySelector('.ai-info-content');
     let t0 = performance.now();
 
     let jsonText = "";
@@ -74,22 +83,20 @@ async function insertTripAiInfo(onFirstToken) {
                     const obj = JSON.parse(line);
                     if (obj.response) {
                         jsonText += obj.response;
-                        // İlk chunk ile callback tetiklenir
+                        // İlk chunk ile loading gizle, içerik göster, callback tetikle
                         if (!firstChunkWritten && obj.response.trim()) {
                             firstChunkWritten = true;
+                            if (aiSpinner) aiSpinner.style.display = "none";
+                            if (aiInfoContent) aiInfoContent.style.display = "";
                             if (typeof onFirstToken === "function") onFirstToken();
                         }
                     }
                 } catch {}
             }
         }
-        // Model bazen başa/sona fazladan karakter koyabilir, düzelt:
-        const fixedJson = jsonText.replace(/^[^{]*({)/, '$1').replace(/}[^}]*$/, '}');
-      
+        const jsonStr = extractFirstJson(jsonText);
         try {
-            const aiObj = JSON.parse(fixedJson);
-
-            // Zincirli typewriter: önce summary, bitince tip, sonra highlight
+            const aiObj = JSON.parse(jsonStr);
             typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
                 typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
                     typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
@@ -104,4 +111,14 @@ async function insertTripAiInfo(onFirstToken) {
         aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "";
         aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
     }
+}
+
+// JSON stringten sadece ilk {...} bloğunu çek:
+function extractFirstJson(str) {
+    const start = str.indexOf('{');
+    const end = str.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+        return str.substring(start, end + 1);
+    }
+    return "";
 }
