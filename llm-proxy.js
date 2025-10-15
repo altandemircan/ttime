@@ -58,26 +58,36 @@ IMPORTANT:
           responseType: 'stream'
         });
 
+        // Streaming olarak chunk chunk cevabı frontend'e aktar
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
         let data = '';
         response.data.on('data', (chunk) => {
-          data += chunk.toString(); // Her gelen chunk ile birleştir
+          const text = chunk.toString();
+          data += text;
         });
         response.data.on('end', () => {
-          // Tüm cevap geldi, JSON parse et
           // Kod bloğu varsa temizle
-          if (data.startsWith('```json')) {
-            data = data.replace(/```json|```/g, '').trim();
-          } else if (data.startsWith('```')) {
-            data = data.replace(/```/g, '').trim();
+          let clean = data.trim();
+          if (clean.startsWith('```json')) {
+            clean = clean.replace(/```json|```/g, '').trim();
+          } else if (clean.startsWith('```')) {
+            clean = clean.replace(/```/g, '').trim();
           }
           // JSON parse et
           let aiResult;
           try {
-            aiResult = JSON.parse(data);
+            aiResult = JSON.parse(clean);
           } catch (e) {
-            // Regex ile ayıkla (senin kodunda olduğu gibi)
+            // Regex ile manuel ayıkla (fallback)
+            const summary = (clean.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || "";
+            const tip = (clean.match(/"tip"\s*:\s*"([^"]+)"/) || [])[1] || "";
+            const highlight = (clean.match(/"highlight"\s*:\s*"([^"]+)"/) || [])[1] || "";
+            aiResult = { summary, tip, highlight };
           }
           res.json(aiResult);
+        });
+        response.data.on('error', (err) => {
+          res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
         });
     } catch (error) {
         console.log(`[AI] Ollama hata: ${Date.now() - t0} ms`, error?.message);
