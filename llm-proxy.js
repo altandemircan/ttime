@@ -81,6 +81,29 @@ const axios = require('axios');
 //         res.json({ summary: "", error: "AI trip info could not be generated.", errorDetail: error.message });
 //     }
 // });
+const express = require('express');
+const router = express.Router();
+const axios = require('axios');
+
+let ollamaWarmed = false; // Model ısındı mı?
+
+// Modeli ısıtmak için sunucu açılışında dummy istek at:
+async function warmUpOllama() {
+    try {
+        const prompt = "Say hello in JSON: {\"summary\":\"Hello\"}";
+        const t0 = Date.now();
+        await axios.post('http://localhost:11434/api/generate', {
+            model: "llama3.2:1b",
+            prompt,
+            stream: false
+        });
+        console.log(`[Ollama] Warm-up complete in ${Date.now() - t0} ms.`);
+        ollamaWarmed = true;
+    } catch (e) {
+        console.log("[Ollama] Warm-up failed:", e.message);
+    }
+}
+warmUpOllama();
 
 router.post('/plan-summary', async (req, res) => {
     const { plan, city, days } = req.body;
@@ -89,7 +112,7 @@ router.post('/plan-summary', async (req, res) => {
         category: p.category,
         day: p.day
     })) : [];
-const prompt = `
+    const prompt = `
 You are an expert travel assistant. Given this ${days}-day trip plan for ${city}:
 ${JSON.stringify(places, null, 2)}
 Respond ONLY as JSON with these 3 fields:
@@ -105,6 +128,7 @@ IMPORTANT:
 - NO explanation, NO markdown, NO code block. Just plain JSON object.
 `.trim();
 
+    const t0 = Date.now();
     try {
         const response = await axios.post('http://localhost:11434/api/generate', {
             model: "llama3.2:1b",
@@ -115,7 +139,6 @@ IMPORTANT:
         let data = response.data.response.trim();
 
         // Ollama bazen kod bloğu veya metin döndürebilir, JSON değilse düzelt:
-        // Kod bloğu varsa çıkar
         if (data.startsWith('```json')) {
             data = data.replace(/```json|```/g, '').trim();
         } else if (data.startsWith('```')) {
@@ -135,11 +158,15 @@ IMPORTANT:
         }
 
         if (!aiResult.summary && !aiResult.tip && !aiResult.highlight) {
+            console.log(`[AI] Yanıt alınamadı. Süre: ${Date.now() - t0} ms`);
             return res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
         }
 
+        console.log(`[AI] Yanıt süresi: ${Date.now() - t0} ms / city: ${city} days: ${days}`);
+
         res.json(aiResult);
     } catch (error) {
+        console.log(`[AI] Ollama hata: ${Date.now() - t0} ms`, error?.message);
         res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
     }
 });
