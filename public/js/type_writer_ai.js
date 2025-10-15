@@ -37,7 +37,7 @@ function extractFirstJson(str) {
     }
     return "";
 }
-async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
+async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride = null) {
     // Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     const tripTitleDiv = document.getElementById('trip_title');
