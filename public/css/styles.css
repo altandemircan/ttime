@@ -4237,7 +4237,7 @@ ease;
   transition: transform 0.2s;
 }
 .arrow-icon.open {
-  transform: rotate(90deg); /* sağdan aşağıya çevir */
+  transform: rotate(90deg); /* sağdan aşağıya çevirir */
 }
 .ai-info-content {
   transition: max-height 0.2s, opacity 0.2s;
