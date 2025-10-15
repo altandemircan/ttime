@@ -274,7 +274,7 @@ function showTripAiInfo(aiInfo) {
 
 // 2. Planı localStorage'dan yüklerken location'ları number'a zorla!
 function loadTripFromStorage(tripKey) {
-    window.activeTripKey = tripKey;
+window.activeTripKey = tripKey;
     const trips = getAllSavedTrips();
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
@@ -288,8 +288,6 @@ function loadTripFromStorage(tripKey) {
     } else {
         showTripAiInfo(t.aiInfo); // Kutuyu yeniden doldur
     }
-
-    // ... (diğer kodların burada devam edecek)
 }
 
     // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
