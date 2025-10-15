@@ -2470,12 +2470,13 @@ const travelMainCategories = [
         subCategoryItem.appendChild(toggleBtn);
         basicList.appendChild(subCategoryItem);
 
-        // Kategoriye tıklama
-       subCategoryItem.addEventListener("click", (e) => {
-    if (!e.target.classList.contains('toggle-subcategory-btn')) {
-        showSuggestionsInChat(cat.name, day, cat.code); // <-- cat.code'u gönder!
-    }
-});
+        // Kategoriye tıklama ve harita kapatıp chat ekranını gösterme
+            subCategoryItem.addEventListener("click", (e) => {
+              if (!e.target.classList.contains('toggle-subcategory-btn')) {
+                if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+                showSuggestionsInChat(cat.name, day, cat.code);
+              }
+            });
 
         toggleBtn.addEventListener("click", (e) => {
             e.stopPropagation();
