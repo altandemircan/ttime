@@ -5,7 +5,6 @@ const axios = require('axios');
 router.post('/plan-summary', async (req, res) => {
     const { city } = req.body;
 
-    // Şehir adı dışında başka parametre yok
     const prompt = `
 You are an expert travel assistant.
 Provide the following information about the city "${city}":
