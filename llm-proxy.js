@@ -48,7 +48,7 @@ IMPORTANT:
     const t0 = Date.now();
     try {
         const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
+            model: "llama3.2:3b",
             prompt,
             stream: false
         });
