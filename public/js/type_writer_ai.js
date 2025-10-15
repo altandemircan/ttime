@@ -1,6 +1,7 @@
 // Typewriter efekti, her harf için delay uygular
 function typeWriterEffect(element, text, speed = 18, callback) {
     let i = 0;
+    element.innerHTML = ""; // Hatalı üst üste birikmeyi engelle!
     function type() {
         if (i < text.length) {
             element.innerHTML += text.charAt(i);
@@ -24,16 +25,18 @@ function onCitySelected(city) {
     });
 }
 
-// JSON stringten sadece ilk {...} bloğunu çek:
+// JSON stringten sadece ilk {...} bloğunu çek, kapanış } yoksa sona kadar al
 function extractFirstJson(str) {
     const start = str.indexOf('{');
     const end = str.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-        return str.substring(start, end + 1);
+    if (start !== -1) {
+        // Kapanış } yoksa sona kadar al
+        return str.substring(start, (end !== -1 && end > start) ? end + 1 : undefined);
     }
     return "";
 }
 
+// Ana AI kutusu fonksiyonu
 async function insertTripAiInfo(onFirstToken) {
     // Eski AI info bölümünü sil
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
@@ -104,9 +107,16 @@ async function insertTripAiInfo(onFirstToken) {
                 } catch {}
             }
         }
-       const jsonStr = extractFirstJson(jsonText);
-console.log('LLM yanıtı:', jsonText); // <--- EKLE
-console.log('Extracted JSON:', jsonStr); // <--- EKLE
+
+        // JSON stringi al, kapanış } yoksa ekle
+        let jsonStr = extractFirstJson(jsonText);
+        if (jsonStr && jsonStr.trim().length > 0 && !jsonStr.trim().endsWith('}')) {
+            jsonStr = jsonStr.trim() + '}';
+        }
+        // Konsolda logla (debug için)
+        console.log('LLM yanıtı:', jsonText);
+        console.log('Extracted JSON:', jsonStr);
+
         try {
             const aiObj = JSON.parse(jsonStr);
 
