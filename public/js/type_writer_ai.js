@@ -42,8 +42,9 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
-    const city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
-    if (!city && !aiStaticInfo) return;
+    let city = (window.selectedCity || tripTitleDiv.textContent || '').replace(/ trip plan.*$/i, '').trim();
+let country = (window.selectedLocation && window.selectedLocation.country) || "";
+if (!city && !aiStaticInfo) return;
 
     // --- 1) İlk başta sadece spinner ve başlık var, ok YOK ---
     const aiDiv = document.createElement('div');
@@ -117,10 +118,10 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null) {
     let firstChunkWritten = false;
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city })
-        });
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ city, country })
+});
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
