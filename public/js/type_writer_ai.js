@@ -53,7 +53,6 @@ async function insertTripAiInfo(onFirstToken) {
         </span>
       </h3>
       <div class="ai-info-content" style="display:none;">
-        <p><b>🗓️ Day:</b> <span id="ai-day"></span></p>
         <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
         <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
         <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
