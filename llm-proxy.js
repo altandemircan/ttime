@@ -3,15 +3,18 @@ const router = express.Router();
 const axios = require('axios');
 
 router.post('/plan-summary', async (req, res) => {
-    const { city, days } = req.body;
+    const { city } = req.body;
 
-    // Eski: plan listesini prompta ekliyordun
-    // const places = Array.isArray(plan) ? ... (bunları kaldırıyoruz)
-
-    // YENİ PROMPT — plan yok, sadece city ve days
+    // Şehir adı dışında başka parametre yok
     const prompt = `
-${city} trip plan ${days || 2} days
-Respond as JSON: { "summary": "...", "tip": "...", "highlight": "..." }
+You are an expert travel assistant.
+Provide the following information about the city "${city}":
+{
+  "summary": "A 2-3 sentence inspiring and informative summary about the city for travelers.",
+  "tip": "A creative travel tip specific to this city.",
+  "highlight": "A unique highlight or must-see point for a visitor."
+}
+Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
@@ -23,7 +26,7 @@ Respond as JSON: { "summary": "...", "tip": "...", "highlight": "..." }
 
         let data = response.data.response.trim();
 
-        // JSON/kod bloğu varsa çıkar
+        // Kod bloğu veya fazlalık varsa temizle
         if (data.startsWith('```json')) {
             data = data.replace(/```json|```/g, '').trim();
         } else if (data.startsWith('```')) {
@@ -42,12 +45,12 @@ Respond as JSON: { "summary": "...", "tip": "...", "highlight": "..." }
         }
 
         if (!aiResult.summary && !aiResult.tip && !aiResult.highlight) {
-            return res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
+            return res.json({ summary: "", tip: "", highlight: "", error: "AI bilgi alınamadı." });
         }
 
         res.json(aiResult);
     } catch (error) {
-        res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
+        res.json({ summary: "", tip: "", highlight: "", error: "AI bilgi alınamadı." });
     }
 });
 

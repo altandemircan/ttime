@@ -9721,16 +9721,15 @@ async function insertAiInfoForAllDays() {
     // Fetch AI summary ONLY for this day
     let aiInfo = { summary: '', tip: '', highlight: '' };
     try {
-      const resp = await fetch('/llm-proxy/plan-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: dayPlan,
-          city: window.selectedCity || '',
-          days: 1
-        })
-      });
-      aiInfo = await resp.json();
+                  // Sadece city ve days gönder
+            const resp = await fetch('/llm-proxy/plan-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              city: window.selectedCity || ''
+            })
+        });
+        aiInfo = await resp.json();
     } catch { /* boş bırak */ }
 
     // AI info içeriği oluştur
