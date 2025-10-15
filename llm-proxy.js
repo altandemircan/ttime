@@ -10,7 +10,7 @@ async function warmUpOllama() {
         const prompt = "Say hello in JSON: {\"summary\":\"Hello\"}";
         const t0 = Date.now();
         await axios.post('http://localhost:11434/api/generate', {
-            model: "tinyllama:1.1b",
+            model: "llama3.2:3b",
             prompt,
             stream: false
         });
