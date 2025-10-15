@@ -4,7 +4,6 @@ const axios = require('axios');
 
 router.post('/plan-summary', async (req, res) => {
     const { city } = req.body;
-    const t0 = Date.now();
 
     const prompt = `
 You are an expert travel assistant.
@@ -18,37 +17,18 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
+        // Streaming olarak Ollama'dan al
         const response = await axios.post('http://localhost:11434/api/generate', {
             model: "llama3.2:3b",
             prompt,
-            stream: false
-        });
+            stream: true
+        }, { responseType: 'stream' });
 
-        let data = response.data.response.trim();
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
 
-        // Kod bloğu veya fazlalık varsa temizle
-        if (data.startsWith('```json')) {
-            data = data.replace(/```json|```/g, '').trim();
-        } else if (data.startsWith('```')) {
-            data = data.replace(/```/g, '').trim();
-        }
-
-        let aiResult;
-        try {
-            aiResult = JSON.parse(data);
-        } catch (e) {
-            // Regex fallback
-            const summary = (data.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            const tip = (data.match(/"tip"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            const highlight = (data.match(/"highlight"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            aiResult = { summary, tip, highlight };
-        }
-
-        const elapsedMs = Date.now() - t0;
-        res.json({ ...aiResult, elapsedMs });
+        response.data.pipe(res);
     } catch (error) {
-        const elapsedMs = Date.now() - t0;
-        res.json({ summary: "", tip: "", highlight: "", error: "AI bilgi alınamadı.", elapsedMs });
+        res.status(500).send('AI bilgi alınamadı.');
     }
 });
 
