@@ -843,3 +843,9 @@ function fetchDirectionsPolylineAPI(points) {
   // Directions API yoksa, sadece düz çizgi döndür
   return Promise.resolve(points.map(p => ({ lat: p.lat, lng: p.lng })));
 }
+function deleteTrip(tripId) {
+    let allTrips = JSON.parse(localStorage.getItem("myTrips") || "[]");
+    allTrips = allTrips.filter(trip => trip.id !== tripId);
+    localStorage.setItem("myTrips", JSON.stringify(allTrips));
+    if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
+}
