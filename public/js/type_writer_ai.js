@@ -61,7 +61,6 @@ async function insertTripAiInfo(onFirstToken) {
     `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    const aiDay = document.getElementById('ai-day');
     const aiSummary = document.getElementById('ai-summary');
     const aiTip = document.getElementById('ai-tip');
     const aiHighlight = document.getElementById('ai-highlight');
@@ -109,21 +108,19 @@ async function insertTripAiInfo(onFirstToken) {
         try {
             const aiObj = JSON.parse(jsonStr);
 
-            // Zincirli typewriter: önce day/title, sonra summary, tip, highlight
-            typeWriterEffect(aiDay, aiObj.day || aiObj.title || "", 18, function() {
-                typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
-                    typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
-                        typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
-                    });
+            // Sadece summary > tip > highlight zinciri
+            typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
+                typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
+                    typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
                 });
             });
         } catch (e) {
-            aiDay.textContent = aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
+            aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
         }
         let elapsed = Math.round(performance.now() - t0);
         aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
     } catch (e) {
-        aiDay.textContent = aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "";
+        aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "";
         aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
     }
 }
