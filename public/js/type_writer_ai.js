@@ -25,7 +25,7 @@ function onCitySelected(city) {
             planAktif = true;
         }
     });
-}
+} 
 
 // JSON stringten sadece ilk {...} bloğunu çek, kapanış } yoksa sona kadar al
 function extractFirstJson(str) {
