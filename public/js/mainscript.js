@@ -8548,7 +8548,7 @@ container._elevKmSpan = totalKm;
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   let SVG_H = isMobile
     ? Math.max(180, Math.min(240, Math.round(track.getBoundingClientRect().height - SVG_TOP - 12)))
-    : Math.max(180, Math.min(320, Math.round(track.getBoundingClientRect().height - SVG_TOP - 16)));
+    : Math.max(120, Math.min(320, Math.round(track.getBoundingClientRect().height - SVG_TOP - 16)));
   if (isNaN(SVG_H)) SVG_H = isMobile ? 160 : 220;
 
   // Önceki base svg’yi kaldır
