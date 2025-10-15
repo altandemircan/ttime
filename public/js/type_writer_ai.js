@@ -156,9 +156,6 @@ if (!city && !aiStaticInfo) return;
         aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "";
         aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
     }
-
-
-}
 // AI kutusunu daraltıp/açma özelliği:
 const aiHeader = aiDiv.querySelector('#ai-toggle-header');
 const aiBtn = aiDiv.querySelector('#ai-toggle-btn');
@@ -179,3 +176,5 @@ function toggleAI() {
 }
 aiHeader.addEventListener('click', toggleAI);
 aiBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleAI(); });
+
+}
