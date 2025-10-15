@@ -5054,11 +5054,13 @@ async function expandMap(containerId, day) {
   } catch (_) {}
 
   // PANEL WRAPPER
-  const panelDiv = document.createElement('div');
-  panelDiv.className = 'expanded-map-panel';
-  panelDiv.appendChild(headerDiv);
-  panelDiv.appendChild(scaleBarDiv);
-  expandedContainer.appendChild(panelDiv);
+ // Sıra: önce scaleBarDiv, sonra headerDiv
+const panelDiv = document.createElement('div');
+panelDiv.className = 'expanded-map-panel';
+panelDiv.appendChild(scaleBarDiv);
+panelDiv.appendChild(headerDiv);
+expandedContainer.appendChild(panelDiv);
+
   // === PANEL BİTTİ ===
 
   // Diğer kontroller (location ve close butonları)
