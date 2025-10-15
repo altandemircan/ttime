@@ -4765,7 +4765,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-  width: 96%;
+  width: 98%;
     font-size: 0.9rem;
     height: 130px;
     text-align: left;
@@ -5251,7 +5251,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .expanded-map-header {
     display: flex;
     gap: 12px;
-    width: 100%;
+    width: 98%;
 }
 
 .expanded-map-container select {
