@@ -4361,6 +4361,7 @@ const polyline = L.polyline(coords, {
 polyline.on('click', async function(e) {
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
+    // Restoranları çek
     const bufferMeters = 1000;
     const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
@@ -4370,23 +4371,18 @@ polyline.on('click', async function(e) {
         alert("Bu alanda restoran bulunamadı!");
         return;
     }
-    data.features.forEach((f) => {
+    // Her restoran için marker ve çizgi ekle
+    data.features.forEach((f, idx) => {
         // Marker
         L.marker([f.properties.lat, f.properties.lon])
             .addTo(expandedMap)
             .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
-        // Gradient Polyline (mor-yeşil)
-        L.polyline.gradient([
-            [lat, lng],
-            [f.properties.lat, f.properties.lon]
-        ], {
-            gradient: true,
-            colors: [
-                { offset: '0%', color: '#8a4af3' },   // mor
-                { offset: '100%', color: '#2e7d32' } // yeşil
-            ],
-            weight: 6,
-            opacity: 0.9
+        // Mor-yeşil gradient polyline
+        L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
+            color: idx % 2 === 0 ? "#8a4af3" : "#2e7d32", // mor veya yeşil sırayla
+            weight: 4,
+            opacity: 0.85,
+            dashArray: "8,8"
         }).addTo(expandedMap);
     });
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
