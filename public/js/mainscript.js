@@ -4963,7 +4963,12 @@ tileLayer.addTo(map);
   opacity: 0.92,
   renderer: ensureCanvasRenderer(map)
 }).addTo(map);
-
+// BURAYA EKLE!
+polyline.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    showSearchButton(lat, lng, map);
+});
     if (Array.isArray(missingPoints) && missingPoints.length > 0) {
         const routeCoords = geojson.features[0].geometry.coordinates;
         function haversine(lat1, lon1, lat2, lon2) {
@@ -9888,4 +9893,35 @@ function showMarkerOnExpandedMap(lat, lon, name, day) {
   if (bigMap) {
     L.marker([lat, lon]).addTo(bigMap).bindPopup(`<b>${name}</b>`);
   }
+}
+function showSearchButton(lat, lng, map) {
+    // Harita üzerinde bir popup veya özel bir buton göster
+    const button = L.control({position: 'topright'});
+    button.onAdd = function () {
+        const div = L.DomUtil.create('div', 'custom-search-btn');
+        div.innerHTML = '<button id="search-restaurants-btn" style="padding:8px 16px;border-radius:8px;background:#1976d2;color:#fff;font-weight:600;">Bu alanda restoran ara</button>';
+        div.onclick = function() {
+            searchRestaurantsAt(lat, lng, map);
+            map.removeControl(button); // Butonu kaldır
+        };
+        return div;
+    };
+    button.addTo(map);
+}
+async function searchRestaurantsAt(lat, lng, map) {
+    const bufferMeters = 1000; // 1 km çap
+    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (!data.features || data.features.length === 0) {
+        alert("Bu alanda restoran bulunamadı!");
+        return;
+    }
+    data.features.forEach(f => {
+        L.marker([f.properties.lat, f.properties.lon])
+            .addTo(map)
+            .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
+    });
+    alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 }
