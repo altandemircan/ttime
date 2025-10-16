@@ -3523,7 +3523,6 @@ if (mapDiv && !document.getElementById(`restaurant-on-the-road-btn-day${day}`)) 
     mapDiv.parentNode.insertBefore(btn, mapDiv); // Haritanın üstüne ekle!
 
 btn.onclick = async function() {
-    // Eski markerları sil
     window._roadMarkers = window._roadMarkers || [];
     window._roadMarkers.forEach(m => { try { m.remove(); } catch(_){} });
     window._roadMarkers = [];
@@ -3534,7 +3533,7 @@ btn.onclick = async function() {
         return;
     }
 
-    // Rota noktalarının ortasını bul
+    // Rota noktalarının ortalamasını bul:
     let avgLat = 0, avgLng = 0;
     points.forEach(pt => {
         avgLat += pt.lat;
@@ -3543,9 +3542,8 @@ btn.onclick = async function() {
     avgLat /= points.length;
     avgLng /= points.length;
 
-    const bufferMeters = 800; // arama yarıçapı (istediğin gibi değiştir)
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462"; // kendi anahtarını koy!
-
+    const bufferMeters = 800; // arama yarıçapı
+    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${avgLng},${avgLat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
 
     const resp = await fetch(url);
@@ -3558,7 +3556,6 @@ btn.onclick = async function() {
     const names = data.features.map(f => f.properties.name).filter(Boolean);
     alert("Restaurants on the route:\n\n" + names.join("\n"));
 
-    // SADECE BÜYÜK HARİTA (expand map) için marker ekle:
     const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
     const bigMap = expObj && expObj.expandedMap;
     if (bigMap) {
