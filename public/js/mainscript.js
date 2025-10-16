@@ -4346,6 +4346,7 @@ function updateExpandedMap(expandedMap, day) {
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
     const points = getDayPoints(day);
+
 if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const polyline = addRoutePolylineWithClick(expandedMap, coords);
@@ -4386,7 +4387,6 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
             if (!(layer instanceof L.TileLayer)) expandedMap.removeLayer(layer);
         }
     });
-}
 
   if (pts.length === 1) {
     const p = pts[0];
