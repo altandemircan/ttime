@@ -9811,10 +9811,9 @@ function fillGeoapifyTagsOnly() {
 }
 
 
-
 function showMarkerOnMap(lat, lon, name, day) {
-  // Küçük harita
-  const smallMap = window.leafletMaps[`route-map-day${day}`];
+  // Küçük harita (sidebar)
+  const smallMap = window.leafletMaps && window.leafletMaps[`route-map-day${day}`];
   if (smallMap) {
     const marker = L.marker([lat, lon]).addTo(smallMap).bindPopup(`<b>${name}</b>`);
     window._roadMarkers = window._roadMarkers || [];
