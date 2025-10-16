@@ -4391,7 +4391,6 @@ polyline.on('click', async function(e) {
     });
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 });
-
         addNumberedMarkers(expandedMap, points);
         expandedMap.fitBounds(polyline.getBounds());
 
@@ -5356,13 +5355,44 @@ expandedContainer.appendChild(panelDiv);
   const geojson = window.lastRouteGeojsons?.[containerId];
   if (geojson?.features?.[0]?.geometry?.coordinates) {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    
     const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
-    poly.on('click', function(e) {
-    showSearchButton(e.latlng.lat, e.latlng.lng, expandedMap, {
-        categories: "catering.restaurant",
-        radius: 2000
+poly.on('click', async function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    const bufferMeters = 2000;
+    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (!data.features || data.features.length === 0) {
+        alert("Bu alanda restoran bulunamadı!");
+        return;
+    }
+
+    // Her restoran için marker ve gradient çizgi ekle
+    data.features.forEach((f) => {
+        // Marker ekle
+        L.marker([f.properties.lat, f.properties.lon])
+            .addTo(expandedMap)
+            .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
+
+        // Gradient polyline: mor → yeşil
+        L.polyline.gradient([
+            [lat, lng],
+            [f.properties.lat, f.properties.lon]
+        ], {
+            gradient: true,
+            colors: [
+                { offset: '0%', color: '#8a4af3' },   // mor
+                { offset: '100%', color: '#2e7d32' } // yeşil
+            ],
+            weight: 6,
+            opacity: 0.92
+        }).addTo(expandedMap);
     });
+
+    alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 });
     try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
     expandedMap._initialBounds = poly.getBounds();
