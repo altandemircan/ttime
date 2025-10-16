@@ -4957,26 +4957,19 @@ let tileLayer = L.tileLayer(
 );
 tileLayer.addTo(map);
 
-    const polyline = L.polyline(coords, {
-  color: '#1976d2',
-  weight: 5,
-  opacity: 0.92,
-  renderer: ensureCanvasRenderer(map)
+const polyline = L.polyline(coords, {
+    color: '#1976d2',
+    weight: 8, // Kalın yap, kolay tıklansın
+    opacity: 0.92,
+    interactive: true // Tıklanabilir olsun!
 }).addTo(map);
 
-
-
-    
-// BURAYA EKLE!
 polyline.on('click', function(e) {
-    // Tıklanan noktanın koordinatı:
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
-
-    // Sadece restoran arama popup'ı aç (nearby değil, sadece catering.restaurant)
     showSearchButton(lat, lng, map, {
         categories: "catering.restaurant",
-        radius: 1000 // 1 km çap
+        radius: 1000
     });
 });
 
