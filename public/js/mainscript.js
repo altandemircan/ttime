@@ -4957,18 +4957,28 @@ let tileLayer = L.tileLayer(
 );
 tileLayer.addTo(map);
 
-    const polyline = L.polyline(coords, {
-  color: '#1976d2',
-  weight: 5,
-  opacity: 0.92,
-  renderer: ensureCanvasRenderer(map)
+const polyline = L.polyline(coords, {
+    color: '#1976d2',
+    weight: 8, // Kalın yap, kolay tıklansın
+    opacity: 0.92,
+    interactive: true // Tıklanabilir olsun!
 }).addTo(map);
-// BURAYA EKLE!
+
 polyline.on('click', function(e) {
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
-    showSearchButton(lat, lng, map);
+    showSearchButton(lat, lng, map, {
+        categories: "catering.restaurant",
+        radius: 1000
+    });
 });
+
+
+
+
+
+
+
     if (Array.isArray(missingPoints) && missingPoints.length > 0) {
         const routeCoords = geojson.features[0].geometry.coordinates;
         function haversine(lat1, lon1, lat2, lon2) {
@@ -9894,15 +9904,33 @@ function showMarkerOnExpandedMap(lat, lon, name, day) {
     L.marker([lat, lon]).addTo(bigMap).bindPopup(`<b>${name}</b>`);
   }
 }
-function showSearchButton(lat, lng, map) {
-    // Harita üzerinde bir popup veya özel bir buton göster
+function showSearchButton(lat, lng, map, options = {}) {
+    const bufferMeters = options.radius || 1000;
+    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+    const categories = options.categories || "catering.restaurant";
+    const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
+
+    // Haritada buton göster
     const button = L.control({position: 'topright'});
     button.onAdd = function () {
         const div = L.DomUtil.create('div', 'custom-search-btn');
         div.innerHTML = '<button id="search-restaurants-btn" style="padding:8px 16px;border-radius:8px;background:#1976d2;color:#fff;font-weight:600;">Bu alanda restoran ara</button>';
-        div.onclick = function() {
-            searchRestaurantsAt(lat, lng, map);
-            map.removeControl(button); // Butonu kaldır
+        div.onclick = async function() {
+            // Restoranları çek
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (!data.features || data.features.length === 0) {
+                alert("Bu alanda restoran bulunamadı!");
+                map.removeControl(button);
+                return;
+            }
+            data.features.forEach(f => {
+                L.marker([f.properties.lat, f.properties.lon])
+                    .addTo(map)
+                    .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
+            });
+            alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+            map.removeControl(button);
         };
         return div;
     };
