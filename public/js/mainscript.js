@@ -9964,7 +9964,7 @@ function addRoutePolylineWithClick(map, coords) {
             alert("Bu alanda restoran bulunamadı!");
             return;
         }
-        data.features.forEach((f, idx) => {
+        data.features.forEach((f) => {
             L.marker([f.properties.lat, f.properties.lon])
                 .addTo(map)
                 .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
@@ -9972,7 +9972,7 @@ function addRoutePolylineWithClick(map, coords) {
                 [lat, lng],
                 [f.properties.lat, f.properties.lon]
             ], {
-                color: idx % 2 === 0 ? "#8a4af3" : "#2e7d32",
+                color: "#1976d2",     // sadece mavi çizgi!
                 weight: 4,
                 opacity: 0.85,
                 dashArray: "8,8"
