@@ -4360,7 +4360,7 @@ const polyline = L.polyline(coords, {
 polyline.on('click', function(e) {
     showSearchButton(e.latlng.lat, e.latlng.lng, expandedMap, {
         categories: "catering.restaurant",
-        radius: 1000
+        radius: 2000
     });
 });
 
@@ -5329,6 +5329,12 @@ expandedContainer.appendChild(panelDiv);
   if (geojson?.features?.[0]?.geometry?.coordinates) {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
+    poly.on('click', function(e) {
+    showSearchButton(e.latlng.lat, e.latlng.lng, expandedMap, {
+        categories: "catering.restaurant",
+        radius: 2000
+    });
+});
     try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
     expandedMap._initialBounds = poly.getBounds();
     expandedMap._initialView = {
