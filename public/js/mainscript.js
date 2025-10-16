@@ -3538,11 +3538,11 @@ if (mapDiv && !document.getElementById(`restaurant-on-the-road-btn-day${day}`)) 
         const resp = await fetch(`/api/geoapify/places?categories=catering.restaurant&filter=buffer:${routeCoords},${bufferMeters}&limit=50`);
         const data = await resp.json();
         if (!data.features || data.features.length === 0) {
-            alert("No restaurant found on the route!");
-            return;
-        }
-        const names = data.features.map(f => f.properties.name).filter(Boolean);
-        alert("Restaurants on the route:\n\n" + names.join("\n"));
+        alert("No restaurant found on the route!");
+        return;
+    }
+    const names = data.features.map(f => f.properties.name).filter(Boolean);
+    alert("Restaurants on the route:\n\n" + names.join("\n"));
         data.features.forEach(f => showMarkerOnMap(f.properties.lat, f.properties.lon, f.properties.name));
     };
 }
@@ -4087,7 +4087,7 @@ setTimeout(() => {
   const names = data.features.map(f => f.properties.name).filter(Boolean);
   alert("Restaurants on the route:\n\n" + names.join("\n"));
   // DÜZELT: markerları hem küçük hem büyük haritaya ekle!
-  data.features.forEach(f => showMarkerOnMap(f.properties.lat, f.properties.lon, f.properties.name, day));
+  data.features.forEach(f => showMarkerOnExpandedMap(f.properties.lat, f.properties.lon, f.properties.name, day));
 }
     }
   }
@@ -9813,14 +9813,7 @@ function fillGeoapifyTagsOnly() {
 }
 
 
-function showMarkerOnMap(lat, lon, name, day) {
-  // Küçük harita (sidebar)
-  const smallMap = window.leafletMaps && window.leafletMaps[`route-map-day${day}`];
-  if (smallMap) {
-    const marker = L.marker([lat, lon]).addTo(smallMap).bindPopup(`<b>${name}</b>`);
-    window._roadMarkers = window._roadMarkers || [];
-    window._roadMarkers.push(marker);
-  }
+function showMarkerOnExpandedMap(lat, lon, name, day) {
   // Büyük harita (expand map)
   const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
   const bigMap = expObj && expObj.expandedMap;
