@@ -9812,11 +9812,18 @@ function fillGeoapifyTagsOnly() {
 
 
 
-function showMarkerOnMap(lat, lon, name) {
-    if (typeof L === "undefined" || !window.leafletMaps) return;
-    const map = window.leafletMaps[`route-map-day${window.currentDay || 1}`];
-    if (!map) return;
+function showMarkerOnMap(lat, lon, name, day) {
+  // Küçük harita
+  const smallMap = window.leafletMaps[`route-map-day${day}`];
+  if (smallMap) {
+    const marker = L.marker([lat, lon]).addTo(smallMap).bindPopup(`<b>${name}</b>`);
     window._roadMarkers = window._roadMarkers || [];
-    const marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${name}</b>`);
     window._roadMarkers.push(marker);
+  }
+  // Büyük harita (expand map)
+  const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
+  const bigMap = expObj && expObj.expandedMap;
+  if (bigMap) {
+    L.marker([lat, lon]).addTo(bigMap).bindPopup(`<b>${name}</b>`);
+  }
 }
