@@ -17,11 +17,22 @@ function generateStepHtml(step, day, category, idx = 0) {
     if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
         catIcon = "img/coffee_icon.svg";
     else if (category === "Touristic attraction")
-        catIcon = "img/touristic_icon.svg";
+        catIcon = "img/tourist_icon.svg";
     else if (category === "Restaurant" || category === "Restaurants")
         catIcon = "img/restaurant_icon.svg";
     else if (category === "Accommodation")
         catIcon = "img/accommodation_icon.svg";
+
+    // --- TAGS DİNAMİK ---
+    let tagsHtml = "No tags found.";
+    // Geoapify/OSM tags array varsa göster
+    const tags = (step.properties && step.properties.categories) || step.categories;
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+        tagsHtml = tags.map(t => {
+            const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return `<span class="geo-tag" title="${t}">${label}</span>`;
+        }).join(' ');
+    }
 
     return `
     <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
@@ -34,10 +45,10 @@ function generateStepHtml(step, day, category, idx = 0) {
                 <img src="img/address_icon.svg"> ${address}
             </div>
             <div class="geoapify-tags-section">
-              <div class="geoapify-tags">Loading...</div>
+              <div class="geoapify-tags">${tagsHtml}</div>
             </div>
             <div class="opening_hours">
-<img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
+                <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
             </div>
         </div>
         <div class="item_action">
