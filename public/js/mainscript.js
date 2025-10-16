@@ -4346,83 +4346,47 @@ function updateExpandedMap(expandedMap, day) {
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
     const points = getDayPoints(day);
-
 if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-        const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-const polyline = L.polyline(coords, {
-  color: '#1976d2',
-  weight: 7,
-  opacity: 0.93,
-  renderer: ensureCanvasRenderer(expandedMap)
-}).addTo(expandedMap);
+    const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    const polyline = addRoutePolylineWithClick(expandedMap, coords);
 
-// SADECE BÜYÜK HARİTADA ETKİN!
-// Polyline tıklama eventinde:
-polyline.on('click', async function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-    // Restoranları çek
-    const bufferMeters = 1000;
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (!data.features || data.features.length === 0) {
-        alert("Bu alanda restoran bulunamadı!");
-        return;
-    }
-    // Her restoran için marker ve çizgi ekle
-    data.features.forEach((f, idx) => {
-        // Marker
-        L.marker([f.properties.lat, f.properties.lon])
-            .addTo(expandedMap)
-            .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
-        // Mor-yeşil gradient polyline
-        L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
-            color: idx % 2 === 0 ? "#8a4af3" : "#2e7d32", // mor veya yeşil sırayla
-            weight: 4,
-            opacity: 0.85,
-            dashArray: "8,8"
-        }).addTo(expandedMap);
-    });
-    alert(`Bu alanda ${data.features.length} restoran bulundu.`);
-});
-        addNumberedMarkers(expandedMap, points);
-        expandedMap.fitBounds(polyline.getBounds());
+    addNumberedMarkers(expandedMap, points);
+    expandedMap.fitBounds(polyline.getBounds());
 
-        // EKSIK NOKTALAR İÇİN KIRMIZI KESİK ÇİZGİ
-        points.forEach((mp) => {
-            if (isPointReallyMissing(mp, geojson.features[0].geometry.coordinates, 50)) {
-                let minIdx = 0, minDist = Infinity;
-                for (let i = 0; i < coords.length; i++) {
-                    const [lat, lng] = coords[i];
-                    const d = haversine(lat, lng, mp.lat, mp.lng);
-                    if (d < minDist) {
-                        minDist = d;
-                        minIdx = i;
-                    }
+    // EKSIK NOKTALAR İÇİN KIRMIZI KESİK ÇİZGİ
+    points.forEach((mp) => {
+        if (isPointReallyMissing(mp, geojson.features[0].geometry.coordinates, 50)) {
+            let minIdx = 0, minDist = Infinity;
+            for (let i = 0; i < coords.length; i++) {
+                const [lat, lng] = coords[i];
+                const d = haversine(lat, lng, mp.lat, mp.lng);
+                if (d < minDist) {
+                    minDist = d;
+                    minIdx = i;
                 }
-                const start = [mp.lat, mp.lng];
-                const end = coords[minIdx];
-               L.polyline([start, end], {
-  dashArray: '8, 12',
-  color: '#d32f2f',
-  weight: 4,
-  opacity: 0.8,
-  interactive: false,
-  renderer: ensureCanvasRenderer(expandedMap)
-}).addTo(expandedMap);
             }
-        });
-    } else {
-  // Fallback: 0 veya 1 nokta
-  const pts = getDayPoints(day);
-  // Eski marker / polyline temizle
-  expandedMap.eachLayer(layer => {
-    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-      if (!(layer instanceof L.TileLayer)) expandedMap.removeLayer(layer);
-    }
-  });
+            const start = [mp.lat, mp.lng];
+            const end = coords[minIdx];
+            L.polyline([start, end], {
+                dashArray: '8, 12',
+                color: '#d32f2f',
+                weight: 4,
+                opacity: 0.8,
+                interactive: false,
+                renderer: ensureCanvasRenderer(expandedMap)
+            }).addTo(expandedMap);
+        }
+    });
+} else {
+    // Fallback: 0 veya 1 nokta
+    const pts = getDayPoints(day);
+    // Eski marker / polyline temizle
+    expandedMap.eachLayer(layer => {
+        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+            if (!(layer instanceof L.TileLayer)) expandedMap.removeLayer(layer);
+        }
+    });
+}
 
   if (pts.length === 1) {
     const p = pts[0];
@@ -5349,55 +5313,22 @@ expandedContainer.appendChild(panelDiv);
   };
 
   const geojson = window.lastRouteGeojsons?.[containerId];
-  if (geojson?.features?.[0]?.geometry?.coordinates) {
+if (geojson?.features?.[0]?.geometry?.coordinates) {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
-poly.on('click', async function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-    const bufferMeters = 2000;
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
+    const polyline = addRoutePolylineWithClick(expandedMap, coords);
 
-    if (!data.features || data.features.length === 0) {
-        alert("Bu alanda restoran bulunamadı!");
-        return;
-    }
-
-    data.features.forEach((f, idx) => {
-        // Marker
-        L.marker([f.properties.lat, f.properties.lon])
-            .addTo(expandedMap)
-            .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
-        // Düz çizgi (mor-yeşil dönüşümlü)
-        L.polyline([
-            [lat, lng],
-            [f.properties.lat, f.properties.lon]
-        ], {
-            color: idx % 2 === 0 ? "#8a4af3" : "#2e7d32", // mor ve yeşil sırayla
-            weight: 5,
-            opacity: 0.85,
-            dashArray: "8,8"
-        }).addTo(expandedMap);
-    });
-
-    alert(`Bu alanda ${data.features.length} restoran bulundu.`);
-});
-
-    try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
-    expandedMap._initialBounds = poly.getBounds();
+    try { expandedMap.fitBounds(polyline.getBounds()); } catch (_){}
+    expandedMap._initialBounds = polyline.getBounds();
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
       zoom: expandedMap.getZoom()
     };
-  } else if (!expandedMap._initialView) {
+} else if (!expandedMap._initialView) {
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
       zoom: expandedMap.getZoom()
     };
-  }
+}
 
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
@@ -10012,4 +9943,43 @@ async function searchRestaurantsAt(lat, lng, map) {
             .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
     });
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+}
+
+function addRoutePolylineWithClick(map, coords) {
+    const polyline = L.polyline(coords, {
+        color: '#1976d2',
+        weight: 7,
+        opacity: 0.93
+    }).addTo(map);
+
+    polyline.on('click', async function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        const bufferMeters = 2000;
+        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+        const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (!data.features || data.features.length === 0) {
+            alert("Bu alanda restoran bulunamadı!");
+            return;
+        }
+        data.features.forEach((f, idx) => {
+            L.marker([f.properties.lat, f.properties.lon])
+                .addTo(map)
+                .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
+            L.polyline([
+                [lat, lng],
+                [f.properties.lat, f.properties.lon]
+            ], {
+                color: idx % 2 === 0 ? "#8a4af3" : "#2e7d32",
+                weight: 4,
+                opacity: 0.85,
+                dashArray: "8,8"
+            }).addTo(map);
+        });
+        alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+    });
+
+    return polyline;
 }
