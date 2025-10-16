@@ -4360,7 +4360,7 @@ const polyline = L.polyline(coords, {
 polyline.on('click', function(e) {
     showSearchButton(e.latlng.lat, e.latlng.lng, expandedMap, {
         categories: "catering.restaurant",
-        radius: 1000
+        radius: 2000
     });
 });
 
@@ -5329,6 +5329,12 @@ expandedContainer.appendChild(panelDiv);
   if (geojson?.features?.[0]?.geometry?.coordinates) {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
+    poly.on('click', function(e) {
+    showSearchButton(e.latlng.lat, e.latlng.lng, expandedMap, {
+        categories: "catering.restaurant",
+        radius: 2000
+    });
+});
     try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
     expandedMap._initialBounds = poly.getBounds();
     expandedMap._initialView = {
@@ -9905,8 +9911,10 @@ function showMarkerOnExpandedMap(lat, lon, name, day) {
   }
 }
 function showSearchButton(lat, lng, map, options = {}) {
-   alert(`Polyline tıklama noktası: ${lat}, ${lng}`);
-    const bufferMeters = options.radius || 1000;
+    // Sadece test için alert bırakabilirsin (çalıştığı belli)
+    // alert(`Polyline tıklama noktası: ${lat}, ${lng}`);
+
+    const bufferMeters = options.radius || 2000;
     const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const categories = options.categories || "catering.restaurant";
     const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
