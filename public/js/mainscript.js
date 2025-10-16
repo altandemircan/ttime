@@ -4097,8 +4097,8 @@ setTimeout(() => {
   }
   const routeCoords = points.map(pt => `${pt.lng},${pt.lat}`).join(',');
   const bufferMeters = 600;
-  const resp = await fetch(`/api/geoapify/places?categories=catering.restaurant&filter=buffer:${routeCoords},${bufferMeters}&limit=50`);
-  const data = await resp.json();
+    const resp = await fetch(`/api/geoapify/places?categories=catering.restaurant&lon=${avgLng}&lat=${avgLat}&radius=${bufferMeters}&limit=50`);
+    const data = await resp.json();;
   if (!data.features || data.features.length === 0) {
     alert("No restaurant found on the route!");
     return;
