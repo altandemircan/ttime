@@ -4349,14 +4349,15 @@ function updateExpandedMap(expandedMap, day) {
 
 if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
         const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        const polyline = L.polyline(coords, {
+const polyline = L.polyline(coords, {
   color: '#1976d2',
   weight: 7,
   opacity: 0.93,
   renderer: ensureCanvasRenderer(expandedMap)
 }).addTo(expandedMap);
 
-        polyline.on('click', function(e) {
+// SADECE BÜYÜK HARİTADA ETKİN!
+polyline.on('click', function(e) {
     showSearchButton(e.latlng.lat, e.latlng.lng, expandedMap, {
         categories: "catering.restaurant",
         radius: 1000
