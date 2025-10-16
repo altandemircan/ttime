@@ -4958,9 +4958,9 @@ tileLayer.addTo(map);
 
 // ROTAYI EKLE
 const polyline = L.polyline(coords, {
-    color: '#1976d2',
-    weight: 8,
-    opacity: 0.92,
+    color: 'red',
+    weight: 16,
+    opacity: 0.98,
     interactive: true
 }).addTo(map);
 
