@@ -3515,6 +3515,44 @@ function updateCart() {
     const isEmptyDay = dayItemsArr.length === 0;
 
     let dayContainer = document.getElementById(`day-container-${day}`);
+
+
+    // --- Restaurant-on-the-road butonu ekle ---
+let mapDiv = document.getElementById(`route-map-day${day}`);
+if (mapDiv && !document.getElementById(`restaurant-on-the-road-btn-day${day}`)) {
+    const btn = document.createElement('button');
+    btn.id = `restaurant-on-the-road-btn-day${day}`;
+    btn.textContent = '🍽️ Restaurant on the road';
+    btn.style = "padding:9px 18px;font-size:16px;font-weight:600;border-radius:8px;background:#fff;color:#1976d2;border:1px solid #1976d2;box-shadow:0 2px 8px #e0e0e0;cursor:pointer;margin:12px 0;";
+    mapDiv.parentNode.insertBefore(btn, mapDiv); // Haritanın üstüne ekle!
+
+    btn.onclick = async function() {
+        // Eski markerları sil
+        window._roadMarkers = window._roadMarkers || [];
+        window._roadMarkers.forEach(m => { try { m.remove(); } catch(_){} });
+        window._roadMarkers = [];
+
+        const points = typeof getDayPoints === "function" ? getDayPoints(day) : [];
+        if (!points || points.length < 2) {
+            alert("Route not found!");
+            return;
+        }
+        const routeCoords = points.map(pt => `${pt.lng},${pt.lat}`).join(',');
+        const bufferMeters = 600;
+        const resp = await fetch(`/api/geoapify/places?categories=catering.restaurant&filter=buffer:${routeCoords},${bufferMeters}&limit=50`);
+        const data = await resp.json();
+        if (!data.features || data.features.length === 0) {
+            alert("No restaurant found on the route!");
+            return;
+        }
+        const names = data.features.map(f => f.properties.name).filter(Boolean);
+        alert("Restaurants on the route:\n\n" + names.join("\n"));
+        data.features.forEach(f => showMarkerOnMap(f.properties.lat, f.properties.lon, f.properties.name));
+    };
+}
+
+
+
     if (!dayContainer) {
       dayContainer = document.createElement("div");
       dayContainer.className = "day-container";
