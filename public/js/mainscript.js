@@ -9952,7 +9952,7 @@ function addRoutePolylineWithClick(map, coords) {
         opacity: 0.93
     }).addTo(map);
 
-    polyline.on('click', async function(e) {
+polyline.on('click', async function(e) {
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
     const bufferMeters = 2000;
@@ -9966,28 +9966,28 @@ function addRoutePolylineWithClick(map, coords) {
         return;
     }
 
-    // Her restoran için marker ve popup aç
-    data.features.forEach((f) => {
+    // Her restoran için marker ve asenkron popup
+    for (const f of data.features) {
         const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
-        marker.bindPopup(getRestaurantPopupHTML(f, window.currentDay || 1), { maxWidth: 320 });
-    });
+        const html = await getRestaurantPopupHTML(f, window.currentDay || 1);
+        marker.bindPopup(html, { maxWidth: 320 });
+    }
 
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 });
 
-
     return polyline;
 }
-function getRestaurantPopupHTML(f, day) {
+async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
     const address = f.properties.formatted || "";
     const lat = f.properties.lat;
     const lon = f.properties.lon;
-
-    // Varsa resim
-    const img = f.properties.datasource?.raw?.image
-        || f.properties.image
-        || "img/restaurant_icon.svg";
+    // Stock fotoğraf çek (Pexels, Pixabay, fallback img)
+    let img = "img/restaurant_icon.svg";
+    try {
+        img = await getImageForPlace(name, "restaurant", window.selectedCity || "");
+    } catch(e) { /* fallback kullan */ }
 
     return `
       <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
