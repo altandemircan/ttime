@@ -2282,88 +2282,14 @@ function displayPlacesInChat(places, category, day) {
             <div class="accordion-container">
                 <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
                 <label for="${uniqueId}" class="accordion-label">
-    Suggestions for ${category}
+                    Suggestions for ${category}
                     <img src="img/arrow_down.svg" class="accordion-arrow">
                 </label>
                 <div class="accordion-content">
                     <div class="day-steps">`;
 
     places.forEach((place, idx) => {
-        // Geoapify için lat/lon çoğu zaman properties.lat/properties.lon veya geometry.coordinates
-        // Diğer API'ler için location.lat/location.lng de olabilir!
-        const props = place.properties || place;
-        let lat = null, lon = null;
-        if (props.lat && props.lon) {
-            lat = props.lat;
-            lon = props.lon;
-        } else if (props.geometry && props.geometry.coordinates) {
-            // Geoapify GeoJSON: coordinates = [lon, lat]
-            lon = props.geometry.coordinates[0];
-            lat = props.geometry.coordinates[1];
-        } else if (props.location) {
-            lat = props.location.lat || props.location.latitude;
-            lon = props.location.lon || props.location.lng || props.location.longitude;
-        }
-
-        const image = place.image || "img/placeholder.png";
-        const name = props.name || category;
-        const address = props.formatted || props.address || "";
-        const description = `${category} in ${name}`;
-        const website = props.website || "";
-        const opening = props.opening_hours || "";
-        const categories = props.categories ? props.categories.join(', ') : "";
-
-        let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
-        if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
-            catIcon = "img/coffee_icon.svg";
-        else if (category === "Touristic attraction" || category === "Attractions")
-            catIcon = "img/touristic_icon.svg";
-        else if (category === "Restaurant" || category === "Restaurants")
-            catIcon = "img/restaurant_icon.svg";
-        else if (category === "Accommodation")
-            catIcon = "img/accommodation_icon.svg";
-
-        html += `
-<div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
-    <div class="visual" style="opacity: 1;">
-        <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-    </div>
-    <div class="info day_cats">
-        <div class="title">${name}</div>
-        <div class="address">
-            <img src="img/address_icon.svg"> ${address}
-        </div>
-       <div class="description" data-original-description="${description}">
-    <img src="img/information_icon.svg"> ${description}
-</div>
-        <div class="opening_hours">
-            <img src="img/hours_icon.svg"> ${opening ? opening : "No working hours found!"}
-        </div>
-    </div>
-    <div class="item_action">
-        <div class="change">
-            <span onclick="window.showImage && window.showImage(this)">
-                <img src="img/camera_icon.svg">
-            </span>
-            <span onclick="window.showMap && window.showMap(this)">
-                <img src="img/map_icon.svg">
-            </span>
-            ${website ? `
-            <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
-                <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
-            </span>
-            ` : ""}
-        </div>
-        <div style="display: flex; gap: 12px;">
-            <div class="cats cats${idx % 5 + 1}">
-                <img src="${catIcon}" alt="${category}"> ${category}
-            </div>
-            <a class="addtotrip">
-                <img src="img/addtotrip-icon.svg">
-            </a>
-        </div>
-    </div>
-</div>`;
+        html += generateStepHtml(place, day, category, idx);
     });
 
     html += "</div></div></div></div>";
@@ -4531,12 +4457,10 @@ function toggleContent(arrowIcon) {
 
 /* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
 function showTripDetails(startDate) {
-    // Mobil: sadece paylaşım butonları (AYNI KALDI)
     if (window.innerWidth <= 768) {
         const dateRangeDiv = document.querySelector('.date-range');
         if (!dateRangeDiv) return;
         if (document.getElementById('mobile-share-buttons')) return;
-
         const shareDiv = document.createElement('div');
         shareDiv.id = 'mobile-share-buttons';
         shareDiv.className = 'share-buttons-container';
@@ -4553,7 +4477,6 @@ function showTripDetails(startDate) {
         return;
     }
 
-    // Konteyner hazırla
     let chatScreen = document.getElementById("chat-screen");
     if (!chatScreen) {
         chatScreen = document.createElement("div");
@@ -4630,67 +4553,10 @@ function showTripDetails(startDate) {
         daySteps.setAttribute("data-day", String(day));
 
         if (dayItems.length > 0) {
-            const stepsHtml = dayItems.map((item, idx) => {
-                const step = {
-                    ...item,
-                    location: item.location ? {
-                        lat: Number(item.location.lat),
-                        lng: Number(item.location.lng)
-                    } : item.location
-                };
-                if (!step.location && typeof item.lat === "number" && typeof item.lon === "number") {
-                    step.location = { lat: item.lat, lng: item.lon };
-                }
-                if (typeof generateStepHtml === "function") {
-                    return generateStepHtml(step, day, item.category, idx);
-                }
-                const lat = step.location?.lat ?? item.lat;
-                const lon = step.location?.lng ?? item.lon;
-                const address = item.address || "Address not available";
-                const opening = item.opening_hours || "";
-                const website = item.website || "";
-                let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
-                if (item.category === "Coffee" || item.category === "Breakfast" || item.category === "Cafes") catIcon = "img/coffee_icon.svg";
-                else if (item.category === "Touristic attraction") catIcon = "img/touristic_icon.svg";
-                else if (item.category === "Restaurant" || item.category === "Restaurants") catIcon = "img/restaurant_icon.svg";
-                else if (item.category === "Accommodation") catIcon = "img/accommodation_icon.svg";
-                return `
-<div class="steps" data-day="${day}" data-category="${item.category}"${(lat!=null && lon!=null) ? ` data-lat="${lat}" data-lon="${lon}"` : ""} draggable="true">
-  <div class="visual" style="opacity:1;">
-    <img class="check" src="${item.image}" alt="${item.name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-  </div>
-  <div class="info day_cats item-info-view">
-    <div class="title">${item.name}</div>
-    <div class="address"><img src="img/address_icon.svg"> ${address}</div>
-    <div class="description" data-original-description="${(item.description || 'No detailed description.').replace(/"/g, '&quot;')}">
-
-<div class="geoapify-tags-section">
-  <div class="geoapify-tags-title">OSM/Geoapify Tags:</div>
-  <div class="geoapify-tags">Loading...</div>
-</div>
-      <img src="img/information_icon.svg">
-      <span class="ai-guide-loading">
-        AI Guide loading...
-        <span class="dot-anim">.</span><span class="dot-anim">.</span><span class="dot-anim">.</span>
-      </span>
-    </div>
-    <div class="opening_hours"><img src="img/hours_icon.svg"> ${opening ? opening : "No opening hours found!"}</div>
-  </div>
-  <div class="item_action">
-    <div class="change">
-      <span onclick="window.showImage && window.showImage(this)"><img src="img/camera_icon.svg"></span>
-      <span onclick="window.showMap && window.showMap(this)"><img src="img/map_icon.svg"></span>
-      ${website ? `<span onclick="window.openWebsite && window.openWebsite(this, '${website}')"><img src="img/website_link.svg" style="vertical-align:middle;width:20px;"></span>` : ""}
-    </div>
-    <div style="display:flex;gap:12px;">
-      <div class="cats cats${(idx % 5) + 1}">
-        <img src="${catIcon}" alt="${item.category}"> ${item.category}
-      </div>
-      <a class="addtotrip"><img src="img/addtotrip-icon.svg"></a>
-    </div>
-  </div>
-</div>`;
-            }).join("");
+            let stepsHtml = "";
+            dayItems.forEach((item, idx) => {
+                stepsHtml += generateStepHtml(item, day, item.category, idx);
+            });
             daySteps.innerHTML = stepsHtml;
             daySteps.querySelectorAll(".steps").forEach(el => el.setAttribute("draggable", "true"));
         } else {
@@ -4720,14 +4586,6 @@ function showTripDetails(startDate) {
        </button>
     `;
     tripDetailsSection.appendChild(shareButtonsContainer);
-
-   
-    function safeHtml(str) {
-        if (!str) return "";
-        return String(str).replace(/^\s+|\s+$/g, '').replace(/\n{2,}/g, '\n').replace(/<[^>]*>/g, '');
-    }
-
- 
 
     if (typeof makeChatStepsDraggable === "function") {
         setTimeout(() => makeChatStepsDraggable(), 0);
