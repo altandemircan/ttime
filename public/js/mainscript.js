@@ -9984,5 +9984,3 @@ function addRoutePolylineWithClick(map, coords) {
 
     return polyline;
 }
-    return polyline;
-}
