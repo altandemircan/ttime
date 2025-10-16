@@ -9774,35 +9774,7 @@ function fillGeoapifyTagsOnly() {
 }
 
 
-const btn = document.getElementById(`restaurant-on-the-road-btn-day${day}`);
-if (btn) {
-  btn.onclick = async function() {
-    // Eski markerları sil
-    window._roadMarkers = window._roadMarkers || [];
-    window._roadMarkers.forEach(m => { try { m.remove(); } catch(_){} });
-    window._roadMarkers = [];
 
-    // Gün parametresiyle noktaları al
-    const points = (typeof getDayPoints === "function") ? getDayPoints(day) : [];
-    if (!points || points.length < 2) {
-      alert("Route not found!");
-      return;
-    }
-    const routeCoords = points.map(pt => `${pt.lng},${pt.lat}`).join(',');
-    const bufferMeters = 600;
-
-    const resp = await fetch(`/api/geoapify/places?categories=catering.restaurant&filter=buffer:${routeCoords},${bufferMeters}&limit=50`);
-    const data = await resp.json();
-
-    if (!data.features || data.features.length === 0) {
-      alert("No restaurant found on the route!");
-      return;
-    }
-    const names = data.features.map(f => f.properties.name).filter(Boolean);
-    alert("Restaurants on the route:\n\n" + names.join("\n"));
-    data.features.forEach(f => showMarkerOnMap(f.properties.lat, f.properties.lon, f.properties.name));
-  };
-}
 function showMarkerOnMap(lat, lon, name) {
     if (typeof L === "undefined" || !window.leafletMaps) return;
     const map = window.leafletMaps[`route-map-day${window.currentDay || 1}`];
