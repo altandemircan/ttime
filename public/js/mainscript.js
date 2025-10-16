@@ -5358,7 +5358,7 @@ expandedContainer.appendChild(panelDiv);
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     
     const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
-   poly.on('click', async function(e) {
+  poly.on('click', async function(e) {
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
     const bufferMeters = 2000;
