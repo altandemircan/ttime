@@ -4936,16 +4936,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // ADD RIGHT AFTER IT:
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // Harita oluşturma kodu aynı kalacak...
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    const map = L.map(containerId, { 
-        scrollWheelZoom: true,
-        fadeAnimation: false,
-        zoomAnimation: false,
-        preferCanvas: true
-    });
+const map = L.map(containerId, { 
+    scrollWheelZoom: true,
+    fadeAnimation: false,
+    zoomAnimation: false,
+    preferCanvas: true
+});
 
-    // Tile layer (default streets - Mapbox Street proxy ile)
+// Tile layer (default streets - Mapbox Street proxy ile)
 let tileLayer = L.tileLayer(
   '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
   {
@@ -4957,6 +4956,7 @@ let tileLayer = L.tileLayer(
 );
 tileLayer.addTo(map);
 
+// ROTAYI EKLE
 const polyline = L.polyline(coords, {
     color: '#1976d2',
     weight: 8,
@@ -4964,7 +4964,7 @@ const polyline = L.polyline(coords, {
     interactive: true
 }).addTo(map);
 
-// HEMEN ALTINA EVENTİ EKLE!
+// ---- BURAYA YAZ ----
 polyline.on('click', function(e) {
     console.log('Polyline tıklama!', e.latlng);
     showSearchButton(e.latlng.lat, e.latlng.lng, map, {
@@ -4972,6 +4972,7 @@ polyline.on('click', function(e) {
         radius: 1000
     });
 });
+
 
 
 
