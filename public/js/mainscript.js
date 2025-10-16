@@ -4091,24 +4091,42 @@ btn.onclick = async function() {
         alert("Route not found!");
         return;
     }
-    const bufferMeters = 500;
+
+    const bufferMeters = 500; // yolun sağı/solu
     const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
 
-    // Polyline üzerinde her 250-500 metrede bir örnekleme
-    let sampledPoints = [];
-    for (let i = 0; i < points.length - 1; i++) {
-        const start = points[i], end = points[i + 1];
-        const steps = 4; // 4 örnek: her segmenti 5 parçaya böler (~200m aralık için ayarla)
-        for (let s = 0; s < steps; s++) {
-            const lat = start.lat + (end.lat - start.lat) * (s / steps);
-            const lng = start.lng + (end.lng - start.lng) * (s / steps);
-            sampledPoints.push({ lat, lng });
+    // Polyline üzerinde yaklaşık her 1 km'de bir örnekleme
+    let sampledPoints = [points[0]];
+    let lastSampledPt = points[0];
+    let accumulatedDist = 0;
+
+    function haversine(lat1, lng1, lat2, lng2) {
+        // km cinsinden mesafe
+        const R = 6371;
+        const dLat = (lat2-lat1)*Math.PI/180;
+        const dLng = (lng2-lng1)*Math.PI/180;
+        const a =
+            Math.sin(dLat/2)*Math.sin(dLat/2) +
+            Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180) *
+            Math.sin(dLng/2)*Math.sin(dLng/2);
+        const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R*c;
+    }
+
+    for (let i=1; i<points.length; i++) {
+        const dist = haversine(lastSampledPt.lat, lastSampledPt.lng, points[i].lat, points[i].lng);
+        accumulatedDist += dist;
+        if (accumulatedDist >= 1) { // 1 km
+            sampledPoints.push(points[i]);
+            lastSampledPt = points[i];
+            accumulatedDist = 0;
         }
     }
     // Son noktayı ekle
-    sampledPoints.push(points[points.length - 1]);
+    if (sampledPoints[sampledPoints.length-1] !== points[points.length-1])
+        sampledPoints.push(points[points.length-1]);
 
-    // Tüm örnek noktalar için restoran ara
+    // Her sampled noktada arama yap
     let allRestaurants = {};
     for (let pt of sampledPoints) {
         const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${pt.lng},${pt.lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
@@ -4123,22 +4141,21 @@ btn.onclick = async function() {
                     }
                 });
             }
-        } catch(e) { /* hata olursa atla */ }
+        } catch(e) {/* hata olursa atla */}
     }
 
     // Markerları büyük haritaya ekle
     const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
     const bigMap = expObj && expObj.expandedMap;
+    const found = Object.values(allRestaurants);
     if (bigMap) {
-        Object.values(allRestaurants).forEach(f => {
+        found.forEach(f => {
             L.marker([f.properties.lat, f.properties.lon])
               .addTo(bigMap)
               .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
         });
-        alert(`Toplam ${Object.keys(allRestaurants).length} restoran yol boyunca bulundu.`);
-    } else {
-        alert(`Toplam ${Object.keys(allRestaurants).length} restoran yol boyunca bulundu.`);
     }
+    alert(`Toplam ${found.length} restoran yol boyunca bulundu.`);
 };
     }
   }
