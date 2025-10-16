@@ -1308,7 +1308,6 @@ async function getLLMResponse(aiData) {
 }
 
 function updateTripTitle() {
-    const tripTitleDiv = document.getElementById("trip_title");
     // mainscript.js dosyanın DOMContentLoaded veya showResults fonksiyonunun içine ekle!
 // Trip başlığının hemen altına buton eklemek için:
 const tripTitleDiv = document.getElementById("trip_title");
