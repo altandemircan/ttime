@@ -1308,10 +1308,7 @@ async function getLLMResponse(aiData) {
 }
 
 function updateTripTitle() {
-    // mainscript.js dosyanın DOMContentLoaded veya showResults fonksiyonunun içine ekle!
-// Trip başlığının hemen altına buton eklemek için:
-const tripTitleDiv = document.getElementById("trip_title");
-
+    const tripTitleDiv = document.getElementById("trip_title");
     const userQuery = window.lastUserQuery ? window.lastUserQuery.trim() : "";
     tripTitleDiv.textContent = userQuery.length > 0 ? userQuery : "Trip Plan";
 }
