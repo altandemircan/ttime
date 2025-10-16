@@ -1312,42 +1312,7 @@ function updateTripTitle() {
     // mainscript.js dosyanın DOMContentLoaded veya showResults fonksiyonunun içine ekle!
 // Trip başlığının hemen altına buton eklemek için:
 const tripTitleDiv = document.getElementById("trip_title");
-if (tripTitleDiv && !document.getElementById('restaurant-on-the-road-btn')) {
-    const btn = document.createElement('button');
-    btn.id = 'restaurant-on-the-road-btn';
-    btn.textContent = '🍽️ Restaurant on the road';
-    btn.style = "padding:9px 18px;font-size:16px;font-weight:600;border-radius:8px;background:#fff;color:#1976d2;border:1px solid #1976d2;box-shadow:0 2px 8px #e0e0e0;cursor:pointer;margin:12px 0;";
-    tripTitleDiv.insertAdjacentElement('afterend', btn);
-    btn.onclick = async function() {
-        // 1. Rota noktalarını al
-        const points = typeof getDayPoints === "function" ? getDayPoints(window.currentDay || 1) : [];
-        if (!points || points.length < 2) {
-            alert("Route not found!");
-            return;
-        }
-        // 2. Polyline'ı al
-        const routeCoords = points.map(pt => `${pt.lng},${pt.lat}`).join(',');
-        // 3. Buffer mesafesi
-        const bufferMeters = 600;
-        // 4. Geoapify'dan restoranları çek
-        const resp = await fetch(`/api/geoapify/places?categories=catering.restaurant&filter=buffer:${routeCoords},${bufferMeters}&limit=50`);
-        const data = await resp.json();
-        if (!data.features || data.features.length === 0) {
-            alert("No restaurant found on the route!");
-            return;
-        }
-        // 5. İsimleri göster
-        const names = data.features.map(f => f.properties.name).filter(Boolean);
-        alert("Restaurants on the route:\n\n" + names.join("\n"));
-        // 6. Markerları haritaya ekle
-        if (window._roadMarkers) {
-            window._roadMarkers.forEach(m => { try { m.remove(); } catch(_){} });
-            window._roadMarkers = [];
-        }
-        window._roadMarkers = [];
-        data.features.forEach(f => showMarkerOnMap(f.properties.lat, f.properties.lon, f.properties.name));
-    };
-}
+
     const userQuery = window.lastUserQuery ? window.lastUserQuery.trim() : "";
     tripTitleDiv.textContent = userQuery.length > 0 ? userQuery : "Trip Plan";
 }
@@ -9775,8 +9740,13 @@ function fillGeoapifyTagsOnly() {
 }
 
 
-
 document.getElementById('restaurant-on-the-road-btn').onclick = async function() {
+    // Eski markerları sil
+    if (window._roadMarkers) {
+        window._roadMarkers.forEach(m => { try { m.remove(); } catch(_){} });
+        window._roadMarkers = [];
+    }
+
     // 1. Rota noktalarını al
     const points = typeof getDayPoints === "function" ? getDayPoints(window.currentDay || 1) : [];
 
@@ -9786,16 +9756,12 @@ document.getElementById('restaurant-on-the-road-btn').onclick = async function()
     }
 
     // 2. Polyline'ı al
-    // Polyline'ı Geoapify API'ye uygun şekilde stringe çevir
     const routeCoords = points.map(pt => `${pt.lng},${pt.lat}`).join(',');
 
     // 3. Buffer mesafesi (ör: 600m sağlı sollu)
     const bufferMeters = 600;
 
     // 4. Geoapify 'places' API ile polyline+buffer içinde restoranları ara:
-    // Geoapify API endpoint örneği:
-    // /api/geoapify/places?categories=catering.restaurant&filter=buffer:${routeCoords},${bufferMeters}&limit=50
-
     const resp = await fetch(`/api/geoapify/places?categories=catering.restaurant&filter=buffer:${routeCoords},${bufferMeters}&limit=50`);
     const data = await resp.json();
 
@@ -9804,17 +9770,16 @@ document.getElementById('restaurant-on-the-road-btn').onclick = async function()
         return;
     }
 
-    // 5. Sonuçları ekrana uygun şekilde göster (örneğin bir popup veya harita üzerinde marker)
-    // Kısa örnek: alert ile isim listesini göster
     const names = data.features.map(f => f.properties.name).filter(Boolean);
     alert("Restaurants on the route:\n\n" + names.join("\n"));
     
-    // Eğer haritada marker basmak istiyorsan:
-   data.features.forEach(f => showMarkerOnMap(f.properties.lat, f.properties.lon, f.properties.name));
+    data.features.forEach(f => showMarkerOnMap(f.properties.lat, f.properties.lon, f.properties.name));
 };
 function showMarkerOnMap(lat, lon, name) {
     if (typeof L === "undefined" || !window.leafletMaps) return;
     const map = window.leafletMaps[`route-map-day${window.currentDay || 1}`];
     if (!map) return;
-    L.marker([lat, lon]).addTo(map).bindPopup(`<b>${name}</b>`).openPopup();
+    window._roadMarkers = window._roadMarkers || [];
+    const marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${name}</b>`);
+    window._roadMarkers.push(marker);
 }
