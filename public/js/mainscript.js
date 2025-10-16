@@ -4356,6 +4356,13 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
   renderer: ensureCanvasRenderer(expandedMap)
 }).addTo(expandedMap);
 
+        polyline.on('click', function(e) {
+    showSearchButton(e.latlng.lat, e.latlng.lng, expandedMap, {
+        categories: "catering.restaurant",
+        radius: 1000
+    });
+});
+
         addNumberedMarkers(expandedMap, points);
         expandedMap.fitBounds(polyline.getBounds());
 
@@ -4958,20 +4965,11 @@ tileLayer.addTo(map);
 
 // ROTAYI EKLE
 const polyline = L.polyline(coords, {
-    color: 'red',
-    weight: 16,
-    opacity: 0.98,
+    color: '#1976d2',
+    weight: 8,
+    opacity: 0.92,
     interactive: true
 }).addTo(map);
-
-// ---- BURAYA YAZ ----
-polyline.on('click', function(e) {
-    console.log('Polyline tıklama!', e.latlng);
-    showSearchButton(e.latlng.lat, e.latlng.lng, map, {
-        categories: "catering.restaurant",
-        radius: 1000
-    });
-});
 
 
 
