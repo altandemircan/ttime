@@ -5366,30 +5366,26 @@ poly.on('click', async function(e) {
         return;
     }
 
-    // Her restoran için marker ve gradient çizgi ekle
-    data.features.forEach((f) => {
-        // Marker ekle
+    data.features.forEach((f, idx) => {
+        // Marker
         L.marker([f.properties.lat, f.properties.lon])
             .addTo(expandedMap)
             .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
-
-        // Gradient polyline: mor → yeşil
-        L.polyline.gradient([
+        // Düz çizgi (mor-yeşil dönüşümlü)
+        L.polyline([
             [lat, lng],
             [f.properties.lat, f.properties.lon]
         ], {
-            gradient: true,
-            colors: [
-                { offset: '0%', color: '#8a4af3' },   // mor
-                { offset: '100%', color: '#2e7d32' } // yeşil
-            ],
-            weight: 6,
-            opacity: 0.92
+            color: idx % 2 === 0 ? "#8a4af3" : "#2e7d32", // mor ve yeşil sırayla
+            weight: 5,
+            opacity: 0.85,
+            dashArray: "8,8"
         }).addTo(expandedMap);
     });
 
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 });
+
     try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
     expandedMap._initialBounds = poly.getBounds();
     expandedMap._initialView = {
