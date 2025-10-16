@@ -5351,12 +5351,10 @@ expandedContainer.appendChild(panelDiv);
   const geojson = window.lastRouteGeojsons?.[containerId];
   if (geojson?.features?.[0]?.geometry?.coordinates) {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-
+    
     const poly = L.polyline(coords, { color: '#1976d2', weight: 7, opacity: 0.93 }).addTo(expandedMap);
-
-
-polyline.on('click', async function(e) {
-    const lat = e.latlng.lat;
+    poly.on('click', function(e) {
+   const lat = e.latlng.lat;
     const lng = e.latlng.lng;
     // Restoranları çek
     const bufferMeters = 1000;
@@ -5384,10 +5382,6 @@ polyline.on('click', async function(e) {
     });
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 });
-
-
-
-    
     try { expandedMap.fitBounds(poly.getBounds()); } catch (_){}
     expandedMap._initialBounds = poly.getBounds();
     expandedMap._initialView = {
