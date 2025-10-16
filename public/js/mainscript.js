@@ -1485,73 +1485,66 @@ function toggleAccordion(accordionHeader) {
     }
 
 function generateStepHtml(step, day, category, idx = 0) {
-  const name = step?.name || category;
-  const address = step?.address || "";
-  const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
-  const website = step?.website || "";
-  const opening = step?.opening_hours || "";
-  const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
-  const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
+    const name = step?.name || category;
+    const address = step?.address || "";
+    const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
+    const website = step?.website || "";
+    const opening = step?.opening_hours || "";
+    const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
+    const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
 
-  // Geoapify tags
-  let tags_html = "No tags found.";
-  if (step.properties && Array.isArray(step.properties.categories) && step.properties.categories.length > 0) {
-    tags_html = step.properties.categories.map(t => {
-      const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      return `<span class="geo-tag" title="${t}">${label}</span>`;
-    }).join(' ');
-  }
+    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+    if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
+        catIcon = "img/coffee_icon.svg";
+    else if (category === "Touristic attraction")
+        catIcon = "img/touristic_icon.svg";
+    else if (category === "Restaurant" || category === "Restaurants")
+        catIcon = "img/restaurant_icon.svg";
+    else if (category === "Accommodation")
+        catIcon = "img/accommodation_icon.svg";
 
-  // Description
-  let description_html = "";
-  if (step.description) {
-    description_html = `<div class="description" data-original-description="${step.description}">
-      <img src="img/information_icon.svg"> ${step.description}
-    </div>`;
-  }
-
-  let catIcon = categoryIcons[category] || "https://www.svgrepo.com/show/522166/location.svg";
-  let website_html = website ? `<span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
-    <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
-  </span>` : "";
-
-  return `
-  <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""} draggable="true">
-    <div class="visual" style="opacity: 1;">
-      <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-    </div>
-    <div class="info day_cats item-info-view">
-      <div class="title">${name}</div>
-      <div class="address"><img src="img/address_icon.svg"> ${address}</div>
-      <div class="geoapify-tags-section">
-        <div class="geoapify-tags">${tags_html}</div>
-      </div>
-      ${description_html}
-      <div class="opening_hours">
-        <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
-      </div>
-    </div>
-    <div class="item_action">
-      <div class="change">
-        <span onclick="window.showImage && window.showImage(this)">
-          <img src="img/camera_icon.svg">
-        </span>
-        <span onclick="window.showMap && window.showMap(this)">
-          <img src="img/map_icon.svg">
-        </span>
-        ${website_html}
-      </div>
-      <div style="display: flex; gap: 12px;">
-        <div class="cats cats${idx % 5 + 1}">
-          <img src="${catIcon}" alt="${category}"> ${category}
+    return `
+    <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
+        <div class="visual" style="opacity: 1;">
+           <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
         </div>
-        <a class="addtotrip">
-          <img src="img/addtotrip-icon.svg">
-        </a>
-      </div>
+        <div class="info day_cats item-info-view">
+            <div class="title">${name}</div>
+            <div class="address">
+                <img src="img/address_icon.svg"> ${address}
+            </div>
+            <div class="geoapify-tags-section">
+              <div class="geoapify-tags">Loading...</div>
+            </div>
+            <div class="opening_hours">
+<img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
+            </div>
+        </div>
+        <div class="item_action">
+            <div class="change">
+                <span onclick="window.showImage && window.showImage(this)">
+                    <img src="img/camera_icon.svg">
+                </span>
+                <span onclick="window.showMap && window.showMap(this)">
+                    <img src="img/map_icon.svg">
+                </span>
+                ${website ? `
+                <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
+                    <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+                </span>
+                ` : ""}
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <div class="cats cats${idx % 5 + 1}">
+                    <img src="${catIcon}" alt="${category}"> ${category}
+                </div>
+                <a class="addtotrip">
+                    <img src="img/addtotrip-icon.svg">
+                </a>
+            </div>
+        </div>
     </div>
-  </div>
-  `;
+    `;
 }
 
 const placeCategories = {
