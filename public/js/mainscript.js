@@ -9947,10 +9947,9 @@ async function searchRestaurantsAt(lat, lng, map) {
 
 function addRoutePolylineWithClick(map, coords) {
     const polyline = L.polyline(coords, {
-        color: '#1976d2',          // mavi
+        color: '#1976d2',
         weight: 7,
-        opacity: 0.93,
-        dashArray: "8,8"           // kesik çizgi
+        opacity: 0.93
     }).addTo(map);
 
     polyline.on('click', async function(e) {
@@ -9969,7 +9968,7 @@ function addRoutePolylineWithClick(map, coords) {
             L.marker([f.properties.lat, f.properties.lon])
                 .addTo(map)
                 .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
-            // Mavi, kesik çizgi ile bağlantı
+            // Sadece restorana giden çizgi: mavi kesik!
             L.polyline([
                 [lat, lng],
                 [f.properties.lat, f.properties.lon]
@@ -9977,11 +9976,13 @@ function addRoutePolylineWithClick(map, coords) {
                 color: "#1976d2",   // mavi
                 weight: 4,
                 opacity: 0.85,
-                dashArray: "8,8"
+                dashArray: "8,8"    // kesik çizgi
             }).addTo(map);
         });
         alert(`Bu alanda ${data.features.length} restoran bulundu.`);
     });
 
+    return polyline;
+}
     return polyline;
 }
