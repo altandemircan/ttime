@@ -4085,46 +4085,59 @@ setTimeout(() => {
       btn.textContent = '🍽️ Restaurant on the road';
       btn.style = "padding:9px 18px;font-size:16px;font-weight:600;border-radius:8px;background:#fff;color:#1976d2;border:1px solid #1976d2;box-shadow:0 2px 8px #e0e0e0;cursor:pointer;margin:12px 0;";
       mapDiv.parentNode.insertBefore(btn, mapDiv);
- btn.onclick = async function() {
-    window._roadMarkers = window._roadMarkers || [];
-    window._roadMarkers.forEach(m => { try { m.remove(); } catch(_){} });
-    window._roadMarkers = [];
-
+btn.onclick = async function() {
     const points = typeof getDayPoints === "function" ? getDayPoints(day) : [];
     if (!points || points.length < 2) {
         alert("Route not found!");
         return;
     }
-
-    // Rota noktalarının ortalamasını bul:
-    let avgLat = 0, avgLng = 0;
-    points.forEach(pt => {
-        avgLat += pt.lat;
-        avgLng += pt.lng;
-    });
-    avgLat /= points.length;
-    avgLng /= points.length;
-
-    const bufferMeters = 800;
+    const bufferMeters = 500;
     const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${avgLng},${avgLat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
 
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-    if (!data.features || data.features.length === 0) {
-        alert("No restaurant found on the route!");
-        return;
+    // Polyline üzerinde her 250-500 metrede bir örnekleme
+    let sampledPoints = [];
+    for (let i = 0; i < points.length - 1; i++) {
+        const start = points[i], end = points[i + 1];
+        const steps = 4; // 4 örnek: her segmenti 5 parçaya böler (~200m aralık için ayarla)
+        for (let s = 0; s < steps; s++) {
+            const lat = start.lat + (end.lat - start.lat) * (s / steps);
+            const lng = start.lng + (end.lng - start.lng) * (s / steps);
+            sampledPoints.push({ lat, lng });
+        }
     }
-    const names = data.features.map(f => f.properties.name).filter(Boolean);
-    alert("Restaurants on the route:\n\n" + names.join("\n"));
+    // Son noktayı ekle
+    sampledPoints.push(points[points.length - 1]);
 
+    // Tüm örnek noktalar için restoran ara
+    let allRestaurants = {};
+    for (let pt of sampledPoints) {
+        const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${pt.lng},${pt.lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.features && data.features.length > 0) {
+                data.features.forEach(f => {
+                    let key = f.properties.place_id || `${f.properties.lat},${f.properties.lon}`;
+                    if (!allRestaurants[key]) {
+                        allRestaurants[key] = f;
+                    }
+                });
+            }
+        } catch(e) { /* hata olursa atla */ }
+    }
+
+    // Markerları büyük haritaya ekle
     const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
     const bigMap = expObj && expObj.expandedMap;
     if (bigMap) {
-        data.features.forEach(f => {
-            L.marker([f.properties.lat, f.properties.lon]).addTo(bigMap).bindPopup(`<b>${f.properties.name}</b>`);
+        Object.values(allRestaurants).forEach(f => {
+            L.marker([f.properties.lat, f.properties.lon])
+              .addTo(bigMap)
+              .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
         });
+        alert(`Toplam ${Object.keys(allRestaurants).length} restoran yol boyunca bulundu.`);
+    } else {
+        alert(`Toplam ${Object.keys(allRestaurants).length} restoran yol boyunca bulundu.`);
     }
 };
     }
