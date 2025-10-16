@@ -4959,15 +4959,15 @@ tileLayer.addTo(map);
 
 const polyline = L.polyline(coords, {
     color: '#1976d2',
-    weight: 8, // Kalın yap, kolay tıklansın
+    weight: 8,
     opacity: 0.92,
-    interactive: true // Tıklanabilir olsun!
+    interactive: true
 }).addTo(map);
 
+// HEMEN ALTINA EVENTİ EKLE!
 polyline.on('click', function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-    showSearchButton(lat, lng, map, {
+    console.log('Polyline tıklama!', e.latlng);
+    showSearchButton(e.latlng.lat, e.latlng.lng, map, {
         categories: "catering.restaurant",
         radius: 1000
     });
