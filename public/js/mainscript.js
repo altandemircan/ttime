@@ -10350,9 +10350,7 @@ function renderFavoritePlacesInSidebar() {
 function renderFavoritePlacesPanel() {
     const favPanel = document.getElementById("favorite-places-panel");
     if (!favPanel) return;
-
     favPanel.innerHTML = ""; // Temizle
-
     const favList = window.favTrips || [];
     if (favList.length === 0) {
         favPanel.innerHTML = `<div class="mytrips-empty">No favorite places yet.<br>Add places to favorites to see them here!</div>`;
