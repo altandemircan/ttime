@@ -393,7 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let selectedOption = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-    renderFavoritePlacesSection();
+    // renderFavoritePlacesSection();
 });
 
     function showSuggestions() {
@@ -1632,7 +1632,7 @@ if (tripTitleDiv && !document.getElementById('restaurant-on-the-road-btn')) {
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
-renderFavoritePlacesSection(); // FAVORITE PLACES alanını ekle/güncelle
+// renderFavoritePlacesSection(); // FAVORITE PLACES alanını ekle/güncelle
 
 attachFavEvents(); // <-- BURAYA EKLE
 
@@ -2453,7 +2453,7 @@ function displayPlacesInChat(places, category, day) {
     html += "</div></div></div></div>";
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
-renderFavoritePlacesSection(); // FAVORITE PLACES alanını ekle/güncelle
+// renderFavoritePlacesSection(); // FAVORITE PLACES alanını ekle/güncelle
 
 attachFavEvents(); // <-- BURAYA EKLE
 
@@ -2719,7 +2719,9 @@ const travelMainCategories = [
     closeButton.addEventListener("click", restoreSidebar);
 
 
-    // --- FAVORITE PLACE BUTTON EKLE ---
+   cartDiv.appendChild(toggleAllButton);
+cartDiv.appendChild(closeButton);
+
 const addFavBtn = document.createElement("button");
 addFavBtn.className = "add-favorite-place-btn";
 addFavBtn.textContent = "❤️ Add favorite place";
@@ -2735,13 +2737,7 @@ addFavBtn.onclick = function() {
 };
 cartDiv.appendChild(addFavBtn);
 
-
-
-
-    cartDiv.appendChild(toggleAllButton);
-    cartDiv.appendChild(closeButton);
-
-    initPlaceSearch(day);
+initPlaceSearch(day);
 }
 
 function closeCustomNoteInput() {
@@ -10366,7 +10362,7 @@ function renderFavoritePlacesSection() {
             if (idx >= 0) {
                 window.favTrips.splice(idx, 1);
                 saveFavTrips();
-                renderFavoritePlacesSection();
+                // renderFavoritePlacesSection();
             }
         };
     });
