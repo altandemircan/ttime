@@ -4,6 +4,7 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
+
 function generateStepHtml(step, day, category, idx = 0) {
     const name = step?.name || category;
     const address = step?.address || "";
@@ -25,13 +26,12 @@ function generateStepHtml(step, day, category, idx = 0) {
 
     // --- TAGS DİNAMİK ---
     let tagsHtml = "No tags found.";
-    // Geoapify/OSM tags array varsa göster
     const tags = (step.properties && step.properties.categories) || step.categories;
     if (tags && Array.isArray(tags) && tags.length > 0) {
-        tagsHtml = tags.map(t => {
-            const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            return `<span class="geo-tag" title="${t}">${label}</span>`;
-        }).join(' ');
+        const uniqueTags = getUniqueSpecificTags(tags);
+        tagsHtml = uniqueTags.length > 0
+            ? uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ')
+            : "No tags found.";
     }
 
     return `
@@ -10394,4 +10394,30 @@ function getPurpleRestaurantMarkerHtml() {
              style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="Restaurant">
       </div>
     `;
+}
+// tags: ["building", "building.historic", "building.place_of_worship", ...]
+function getUniqueSpecificTags(tags) {
+    if (!Array.isArray(tags)) return [];
+    // 1. String olarak sırala, en uzunlardan başla (en spesifik en sonda olur)
+    tags = tags.slice().sort((a, b) => b.length - a.length);
+    const used = new Set();
+    // 2. Her tag için, eğer daha genel hali varsa onu gösterme
+    const result = [];
+    for (const t of tags) {
+        // Eğer bu tag'in bir üst kategorisi 'used' içinde ise, atla
+        let isSubOfUsed = false;
+        for (const u of used) {
+            if (t !== u && t.startsWith(u + ".")) {
+                isSubOfUsed = true;
+                break;
+            }
+        }
+        // Aynı label'ı da tekrar etmesin (örn: Place Of Worship)
+        const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        if (!isSubOfUsed && !result.some(r => r.label === label)) {
+            used.add(t);
+            result.push({ tag: t, label });
+        }
+    }
+    return result;
 }
