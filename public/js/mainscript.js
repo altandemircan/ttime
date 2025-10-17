@@ -9956,7 +9956,15 @@ function addRoutePolylineWithClick(map, coords) {
         opacity: 0.93
     }).addTo(map);
 
-    polyline.on('click', async function(e) {
+   function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000, toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+polyline.on('click', async function(e) {
     const lat = e.latlng.lat, lng = e.latlng.lng;
     const bufferMeters = 2000;
     const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
@@ -9969,8 +9977,14 @@ function addRoutePolylineWithClick(map, coords) {
         return;
     }
 
-    // SADECE EN YAKIN 10 RESTORANI AL
-    const nearest10 = data.features.slice(0, 10);
+    // Her restoran için merkeze olan mesafeyi hesapla ve sırala
+    const nearest10 = data.features
+      .map(f => ({
+        ...f,
+        distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 10);
 
     nearest10.forEach((f, idx) => {
         L.polyline([
