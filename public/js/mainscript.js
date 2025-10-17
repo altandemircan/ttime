@@ -1861,7 +1861,7 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
   const data = await resp.json();
   if (data.features && data.features.length > 0) {
     const filtered = data.features.filter(f =>
-      !!f.properties.name && f.properties.name.trim().length > 2
+     typeof f.properties.name === "string" && f.properties.name.trim().length > 2
     );
     return filtered.map(f => {
       // Props içinden tüm olası lat/lon kaynaklarını güvenli şekilde al
