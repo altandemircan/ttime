@@ -857,7 +857,7 @@ li .highlight {
 
 .chat-btn,
 .profile-btn,
-.settings-btn,
+.favorite-places-btn,
 .feedback-btn,
 .hamburger-btn,
 .mytrips-btn,
@@ -881,7 +881,7 @@ li .highlight {
 
 .chat-btn img,
 .profile-btn img,
-.settings-btn img,
+.favorite-places-btn img,
 .feedback-btn img,
 .mytrips-btn img,
 .privacyterms-btn img,
@@ -1469,7 +1469,7 @@ li .highlight {
     right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
 }
 /* Sidebar Settings */
-.sidebar-settings {
+.sidebar-favorite-places {
   width: 375px;
   scrollbar-width: thin;
   scrollbar-color: #8a4af3 #f1f1f1;
@@ -1491,7 +1491,7 @@ li .highlight {
   right: -415px;
   transition: 0.3s ease;
 }
-.sidebar-settings.open {
+.sidebar-favorite-places.open {
   right: 0; /* Sağdan sıfırlandığında görünür hale gelir */
 }
 /* Sidebar Feedback */
@@ -1605,7 +1605,7 @@ li .highlight {
     .sidebar-mytrips,
     .sidebar-privacyterms,
     .sidebar-login,
-    .sidebar-settings,
+    .sidebar-favorite-places,
     .sidebar-feedback {
         width: calc(0px);
     }
@@ -1616,7 +1616,7 @@ li .highlight {
     .sidebar-privacyterms.open,
     .sidebar-trip.open,
     .sidebar-login.open,
-    .sidebar-settings.open,
+    .sidebar-favorite-places.open,
     .sidebar-feedback.open {
         width: calc(100% - 40px);
         right: 0;
@@ -2181,7 +2181,7 @@ li .highlight {
     color: #1e293b;
 }
 
-#sidebar-overlay-settings .name {
+#sidebar-overlay-favorite-places .name {
     font-size: 1.8rem;
     font-weight: 600;
     color: #1e293b;
@@ -2189,7 +2189,7 @@ li .highlight {
     line-height: 20px;
     }
 
-#sidebar-overlay-settings .tripbox img {
+#sidebar-overlay-favorite-places .tripbox img {
     border-radius: 50%;
     margin: 0 auto;
     margin-top: 20px;
