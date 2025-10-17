@@ -4645,7 +4645,159 @@ function showTripDetails(startDate) {
     if (window.innerWidth <= 768) {
         const dateRangeDiv = document.querySelector('.date-range');
         if (!dateRangeDiv) return;
-        if (document.getElementById('mobile-share-buttons')) return;
+        document.querySelectorAll('#mobile-share-buttons').forEach(el => el.remove());
+
+        let chatScreen = document.getElementById("chat-screen");
+        if (!chatScreen) {
+            chatScreen = document.createElement("div");
+            chatScreen.id = "chat-screen";
+            document.body.appendChild(chatScreen);
+        }
+
+        let tripDetailsSection = document.getElementById("tt-trip-details");
+        if (!tripDetailsSection) {
+            tripDetailsSection = document.createElement("section");
+            tripDetailsSection.id = "tt-trip-details";
+            chatScreen.appendChild(tripDetailsSection);
+        }
+        tripDetailsSection.innerHTML = "";
+
+        if (!Array.isArray(window.cart) || window.cart.length === 0) {
+            tripDetailsSection.textContent = "No trip details available.";
+            return;
+        }
+
+        const sect = document.createElement("div");
+        sect.className = "sect";
+        const ul = document.createElement("ul");
+        ul.className = "accordion-list";
+        sect.appendChild(ul);
+
+        let maxDay = 0;
+        window.cart.forEach(it => { if (it.day > maxDay) maxDay = it.day; });
+
+        const startDateObj = startDate ? new Date(startDate) : null;
+        if (typeof window.customDayNames === "undefined") window.customDayNames = {};
+
+        for (let day = 1; day <= maxDay; day++) {
+            const dayItems = window.cart.filter(it => it.day == day && it.name !== undefined);
+            let dateStr = "";
+            if (startDateObj) {
+                const d = new Date(startDateObj);
+                d.setDate(startDateObj.getDate() + (day - 1));
+                dateStr = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+            }
+            const dayTitle = window.customDayNames[day] || `Day ${day}`;
+            const labelText = `${dayTitle}${dateStr ? ` (${dateStr})` : ""}`;
+            const li = document.createElement("li");
+            li.className = "day-item";
+            const container = document.createElement("div");
+            container.className = "accordion-container";
+            const inputId = `tt-day-${day}`;
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.id = inputId;
+            input.className = "accordion-toggle";
+            input.checked = true;
+            container.appendChild(input);
+            const label = document.createElement("label");
+            label.setAttribute("for", inputId);
+            label.className = "accordion-label";
+            label.innerHTML = `
+                ${labelText}
+                <img src="img/arrow_down.svg" class="accordion-arrow">
+            `;
+            container.appendChild(label);
+            const content = document.createElement("div");
+            content.className = "accordion-content";
+            const daySteps = document.createElement("div");
+            daySteps.className = "day-steps active-view";
+            daySteps.setAttribute("data-day", String(day));
+            if (dayItems.length > 0) {
+                let stepsHtml = "";
+                dayItems.forEach((step, idx) => {
+                    const name = step?.name || step?.category;
+                    const address = step?.address || "";
+                    const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
+                    const website = step?.website || "";
+                    const opening = step?.opening_hours || "";
+                    const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
+                    const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
+                    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+                    if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
+                        catIcon = "img/coffee_icon.svg";
+                    else if (step.category === "Touristic attraction")
+                        catIcon = "img/tourist_icon.svg";
+                    else if (step.category === "Restaurant" || step.category === "Restaurants")
+                        catIcon = "img/restaurant_icon.svg";
+                    else if (step.category === "Accommodation")
+                        catIcon = "img/accommodation_icon.svg";
+                    let tagsHtml = "No tags found.";
+                    const tags = (step.properties && step.properties.categories) || step.categories;
+                    if (tags && Array.isArray(tags) && tags.length > 0) {
+                        tagsHtml = tags.map(t => {
+                            const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            return `<span class="geo-tag" title="${t}">${label}</span>`;
+                        }).join(' ');
+                    }
+                    stepsHtml += `
+                    <div class="steps" data-day="${day}" data-category="${step.category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
+                        <div class="visual" style="opacity: 1;">
+                            <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx + 1}</div>
+                            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+                        </div>
+                        <div class="info day_cats item-info-view">
+                            <div class="title">${name}</div>
+                            <div class="address">
+                                <img src="img/address_icon.svg"> ${address}
+                            </div>
+                            <div class="geoapify-tags-section">
+                              <div class="geoapify-tags">${tagsHtml}</div>
+                            </div>
+                            <div class="opening_hours">
+                                <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
+                            </div>
+                        </div>
+                        <div class="item_action">
+                            <div class="change">
+                                <span onclick="window.showImage && window.showImage(this)">
+                                    <img src="img/camera_icon.svg">
+                                </span>
+                                <span onclick="window.showMap && window.showMap(this)">
+                                    <img src="img/map_icon.svg">
+                                </span>
+                                ${website ? `
+                                <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
+                                    <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+                                </span>
+                                ` : ""}
+                            </div>
+                            <div style="display: flex; gap: 12px;">
+                                <div class="cats cats${idx % 5 + 1}">
+                                    <img src="${catIcon}" alt="${step.category}"> ${step.category}
+                                </div>
+                                <a class="addtotrip">
+                                    <img src="img/addtotrip-icon.svg">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                });
+                daySteps.innerHTML = stepsHtml;
+                daySteps.querySelectorAll(".steps").forEach(el => el.setAttribute("draggable", "true"));
+            } else {
+                const emptyP = document.createElement("p");
+                emptyP.className = "empty-day-message";
+                emptyP.textContent = "No item has been added for this day yet.";
+                daySteps.appendChild(emptyP);
+            }
+            content.appendChild(daySteps);
+            container.appendChild(content);
+            li.appendChild(container);
+            ul.appendChild(li);
+        }
+        tripDetailsSection.appendChild(sect);
         const shareDiv = document.createElement('div');
         shareDiv.id = 'mobile-share-buttons';
         shareDiv.className = 'share-buttons-container';
@@ -4657,8 +4809,10 @@ function showTripDetails(startDate) {
                 <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Copy for Instagram
             </button>
         `;
-        document.querySelectorAll('#mobile-share-buttons').forEach(el => el.remove());
-        dateRangeDiv.insertAdjacentElement('afterend', shareDiv);
+        tripDetailsSection.appendChild(shareDiv);
+        if (typeof makeChatStepsDraggable === "function") {
+            setTimeout(() => makeChatStepsDraggable(), 0);
+        }
         return;
     }
 
@@ -4696,8 +4850,6 @@ function showTripDetails(startDate) {
 
     for (let day = 1; day <= maxDay; day++) {
         const dayItems = window.cart.filter(it => it.day == day && it.name !== undefined);
-
-        // Tarih etiketi
         let dateStr = "";
         if (startDateObj) {
             const d = new Date(startDateObj);
@@ -4706,13 +4858,10 @@ function showTripDetails(startDate) {
         }
         const dayTitle = window.customDayNames[day] || `Day ${day}`;
         const labelText = `${dayTitle}${dateStr ? ` (${dateStr})` : ""}`;
-
         const li = document.createElement("li");
         li.className = "day-item";
-
         const container = document.createElement("div");
         container.className = "accordion-container";
-
         const inputId = `tt-day-${day}`;
         const input = document.createElement("input");
         input.type = "checkbox";
@@ -4720,7 +4869,6 @@ function showTripDetails(startDate) {
         input.className = "accordion-toggle";
         input.checked = true;
         container.appendChild(input);
-
         const label = document.createElement("label");
         label.setAttribute("for", inputId);
         label.className = "accordion-label";
@@ -4729,101 +4877,83 @@ function showTripDetails(startDate) {
             <img src="img/arrow_down.svg" class="accordion-arrow">
         `;
         container.appendChild(label);
-
         const content = document.createElement("div");
         content.className = "accordion-content";
-
         const daySteps = document.createElement("div");
         daySteps.className = "day-steps active-view";
         daySteps.setAttribute("data-day", String(day));
-
         if (dayItems.length > 0) {
-           
-
-
-
             let stepsHtml = "";
-dayItems.forEach((step, idx) => {
-    const name = step?.name || step?.category;
-    const address = step?.address || "";
-    const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
-    const website = step?.website || "";
-    const opening = step?.opening_hours || "";
-    const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
-    const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
-
-    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
-    if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
-        catIcon = "img/coffee_icon.svg";
-    else if (step.category === "Touristic attraction")
-        catIcon = "img/tourist_icon.svg";
-    else if (step.category === "Restaurant" || step.category === "Restaurants")
-        catIcon = "img/restaurant_icon.svg";
-    else if (step.category === "Accommodation")
-        catIcon = "img/accommodation_icon.svg";
-
-    // --- TAGS DİNAMİK ---
-    let tagsHtml = "No tags found.";
-    const tags = (step.properties && step.properties.categories) || step.categories;
-    if (tags && Array.isArray(tags) && tags.length > 0) {
-        tagsHtml = tags.map(t => {
-            const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            return `<span class="geo-tag" title="${t}">${label}</span>`;
-        }).join(' ');
-    }
-
-    stepsHtml += `
-    <div class="steps" data-day="${day}" data-category="${step.category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
-        <div class="visual" style="opacity: 1;">
-               <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx + 1}</div>
-
-           <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-        </div>
-        <div class="info day_cats item-info-view">
-            <div class="title">${name}</div>
-            <div class="address">
-                <img src="img/address_icon.svg"> ${address}
-            </div>
-            <div class="geoapify-tags-section">
-              <div class="geoapify-tags">${tagsHtml}</div>
-            </div>
-            <div class="opening_hours">
-                <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
-            </div>
-        </div>
-        <div class="item_action">
-            <div class="change">
-                <span onclick="window.showImage && window.showImage(this)">
-                    <img src="img/camera_icon.svg">
-                </span>
-                <span onclick="window.showMap && window.showMap(this)">
-                    <img src="img/map_icon.svg">
-                </span>
-                ${website ? `
-                <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
-                    <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
-                </span>
-                ` : ""}
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <div class="cats cats${idx % 5 + 1}">
-                    <img src="${catIcon}" alt="${step.category}"> ${step.category}
+            dayItems.forEach((step, idx) => {
+                const name = step?.name || step?.category;
+                const address = step?.address || "";
+                const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
+                const website = step?.website || "";
+                const opening = step?.opening_hours || "";
+                const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
+                const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
+                let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+                if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
+                    catIcon = "img/coffee_icon.svg";
+                else if (step.category === "Touristic attraction")
+                    catIcon = "img/tourist_icon.svg";
+                else if (step.category === "Restaurant" || step.category === "Restaurants")
+                    catIcon = "img/restaurant_icon.svg";
+                else if (step.category === "Accommodation")
+                    catIcon = "img/accommodation_icon.svg";
+                let tagsHtml = "No tags found.";
+                const tags = (step.properties && step.properties.categories) || step.categories;
+                if (tags && Array.isArray(tags) && tags.length > 0) {
+                    tagsHtml = tags.map(t => {
+                        const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        return `<span class="geo-tag" title="${t}">${label}</span>`;
+                    }).join(' ');
+                }
+                stepsHtml += `
+                <div class="steps" data-day="${day}" data-category="${step.category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
+                    <div class="visual" style="opacity: 1;">
+                        <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx + 1}</div>
+                        <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+                    </div>
+                    <div class="info day_cats item-info-view">
+                        <div class="title">${name}</div>
+                        <div class="address">
+                            <img src="img/address_icon.svg"> ${address}
+                        </div>
+                        <div class="geoapify-tags-section">
+                          <div class="geoapify-tags">${tagsHtml}</div>
+                        </div>
+                        <div class="opening_hours">
+                            <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
+                        </div>
+                    </div>
+                    <div class="item_action">
+                        <div class="change">
+                            <span onclick="window.showImage && window.showImage(this)">
+                                <img src="img/camera_icon.svg">
+                            </span>
+                            <span onclick="window.showMap && window.showMap(this)">
+                                <img src="img/map_icon.svg">
+                            </span>
+                            ${website ? `
+                            <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
+                                <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+                            </span>
+                            ` : ""}
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <div class="cats cats${idx % 5 + 1}">
+                                <img src="${catIcon}" alt="${step.category}"> ${step.category}
+                            </div>
+                            <a class="addtotrip">
+                                <img src="img/addtotrip-icon.svg">
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <a class="addtotrip">
-                    <img src="img/addtotrip-icon.svg">
-                </a>
-            </div>
-        </div>
-    </div>
-    `;
-});
-daySteps.innerHTML = stepsHtml;
-
-
-
-
-
-
+                `;
+            });
+            daySteps.innerHTML = stepsHtml;
             daySteps.querySelectorAll(".steps").forEach(el => el.setAttribute("draggable", "true"));
         } else {
             const emptyP = document.createElement("p");
@@ -4831,16 +4961,12 @@ daySteps.innerHTML = stepsHtml;
             emptyP.textContent = "No item has been added for this day yet.";
             daySteps.appendChild(emptyP);
         }
-
         content.appendChild(daySteps);
         container.appendChild(content);
         li.appendChild(container);
         ul.appendChild(li);
     }
-
     tripDetailsSection.appendChild(sect);
-
-    // Share buttons
     const shareButtonsContainer = document.createElement("div");
     shareButtonsContainer.classList.add("share-buttons-container");
     shareButtonsContainer.innerHTML = `
