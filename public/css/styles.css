@@ -6799,4 +6799,28 @@ border-bottom:1px solid #ddd;
   font-weight: 500;
   margin-bottom: 2px;
 }
-.ai-info-content
+
+
+
+/* Animasyonlu yeşil çizgi için (dash hareketi) */
+.leaflet-interactive[stroke="#22bb33"] {
+    animation: dash-move 1s linear infinite;
+}
+
+@keyframes dash-move {
+    to {
+        stroke-dashoffset: -100;
+    }
+}
+
+/* Tooltip için */
+.route-tooltip {
+    background: #22bb33;
+    color: #fff;
+    font-weight: 500;
+    font-size: 15px;
+    border-radius: 7px;
+    padding: 6px 15px;
+    box-shadow: 0 2px 12px #1976d2;
+    border: none;
+}
