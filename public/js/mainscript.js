@@ -4595,12 +4595,12 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
       </div>
     `;
     const icon = L.divIcon({
-        html: markerHtml,
-        className: "",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    });
-    L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
+    html: getPurpleRestaurantMarkerHtml(),
+    className: "",
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+});
+L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
@@ -10196,7 +10196,7 @@ function getPurpleRestaurantMarkerHtml() {
         box-shadow:0 2px 8px #888;
         border:2px solid #fff;
       ">
-        <img src="https://www.svgrepo.com/show/326791/restaurant-outline.svg"
+        <img src="https://www.svgrepo.com/show/327200/restaurant-sharp.svg"
              style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="Restaurant">
       </div>
     `;
