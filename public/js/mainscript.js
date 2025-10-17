@@ -4,6 +4,8 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
+
+
 document.addEventListener("DOMContentLoaded", function () {
 if (!document.getElementById("favorite-places-sidebar")) {
   const sidebar = document.createElement("div");
@@ -26,6 +28,20 @@ if (!document.getElementById("favorite-places-sidebar")) {
   document.body.appendChild(sidebar);
 }
 });
+document.addEventListener("DOMContentLoaded", function () {
+  const closeBtn = document.getElementById('close-favorite-places-sidebar');
+  if (closeBtn) {
+    closeBtn.onclick = function() {
+      document.getElementById('favorite-places-sidebar').style.display = 'none';
+      document.body.style.overflow = '';
+    };
+  }
+});
+
+
+
+
+
 // Favori listesi (localStorage ile kalıcı)
 window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
 function saveFavTrips() {
@@ -10383,10 +10399,7 @@ function openFavoritePlacesSidebar() {
   document.body.style.overflow = 'hidden';
   renderFavoritePlacesInSidebar();
 }
-document.getElementById('close-favorite-places-sidebar').onclick = function() {
-  document.getElementById('favorite-places-sidebar').style.display = 'none';
-  document.body.style.overflow = '';
-};
+
 
 function renderFavoritePlacesInSidebar() {
   const favTrips = window.favTrips || [];
