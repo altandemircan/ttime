@@ -6833,4 +6833,7 @@ border-bottom:1px solid #ddd;
     z-index: 123;
     bottom: 0;
     width: -webkit-fill-available;
+    border-radius: 16px;
+    min-height: 80px;
+    justify-content: flex-end;
 }
