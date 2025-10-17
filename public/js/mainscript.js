@@ -4589,18 +4589,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
     ).addTo(map);
 
     // Marker
-    const markerHtml = `
-      <div class="custom-marker-outer red" style="width:32px;height:32px;">
-        <span class="custom-marker-label">${number}</span>
-      </div>
-    `;
     const icon = L.divIcon({
-    html: getPurpleRestaurantMarkerHtml(),
-    className: "",
-    iconSize: [32, 32],
-    iconAnchor: [16, 16]
-});
-L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
+        html: getPurpleRestaurantMarkerHtml(),
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+    L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
