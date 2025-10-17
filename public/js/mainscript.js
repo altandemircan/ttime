@@ -9988,9 +9988,9 @@ function addRoutePolylineWithClick(map, coords) {
             marker.bindPopup(html, { maxWidth: 320 });
 
             // TAM BURADA popupopen eventine handlePopupImageLoading ekle!
-            marker.on("popupopen", function() {
-                handlePopupImageLoading(f, imgId);
-            });
+           marker.on("popupopen", function() {
+    handlePopupImageLoading(f, imgId);
+});
         });
 
         alert(`Bu alanda ${data.features.length} restoran bulundu.`);
@@ -10050,20 +10050,24 @@ function handlePopupImageLoading(f, imgId) {
         .then(src => {
             const img = document.getElementById(imgId);
             const spin = document.getElementById(imgId + "-spin");
-            if (img && src && src !== "img/restaurant_icon.svg") {
+            if (img && src) {
                 img.src = src;
+                img.classList.remove("hidden-img");
+                // Eğer görsel cache'den geldiyse spinnerı hemen kaldır
                 if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
             }
             if (img) {
-                img.onload = () => { if (spin) spin.style.display = "none"; };
-                img.onerror = () => { if (spin) spin.style.display = "none"; };
+                img.onload = () => { if (spin) spin.style.display = "none"; img.classList.remove("hidden-img"); };
+                img.onerror = () => { if (spin) spin.style.display = "none"; img.classList.add("hidden-img"); };
             } else if (spin) {
                 spin.style.display = "none";
             }
         })
         .catch(() => {
             const spin = document.getElementById(imgId + "-spin");
+            const img = document.getElementById(imgId);
             if (spin) spin.style.display = "none";
+            if (img) img.classList.add("hidden-img");
         });
 }
 function getFastRestaurantPopupHTML(f, imgId, day) {
@@ -10075,7 +10079,7 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
     return `
       <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
         <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-          <img id="${imgId}" src="img/restaurant_icon.svg" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+          <img id="${imgId}" class="hidden-img" src="" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
           <div class="img-loading-spinner" id="${imgId}-spin"></div>
         </div>
         <div class="point-info" style="flex: 1; min-width: 0;">
@@ -10086,7 +10090,7 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
         </div>
         <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           <button class="add-point-to-cart-btn" style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;"
-            onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', 'img/restaurant_icon.svg', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})">+</button>
+            onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', '', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})">+</button>
         </div>
       </div>
     `;
@@ -10111,6 +10115,7 @@ function ensureSpinnerCSS() {
     @keyframes img-spin {
       to { transform: translate(-50%, -50%) rotate(360deg); }
     }
+    .hidden-img { display: none !important; }
     `;
     document.head.appendChild(style);
 }
