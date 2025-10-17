@@ -9982,7 +9982,13 @@ function addRoutePolylineWithClick(map, coords) {
             return;
         }
 
-        // Gerçekten merkeze en yakın 10 noktayı sırala
+        // En yakın 10 noktayı sırala
+        const haversine = (lat1, lon1, lat2, lon2) => {
+            const R = 6371000, toRad = x => x * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+            return 2 * R * Math.asin(Math.sqrt(a));
+        };
         const nearest10 = data.features
             .map(f => ({
                 ...f,
@@ -10003,9 +10009,9 @@ function addRoutePolylineWithClick(map, coords) {
                 dashArray: "8,8"
             }).addTo(map);
 
-            // --- KIRMIZI "R" MARKER ---
+            // --- MOR MARKER ---
             const icon = L.divIcon({
-                html: getRedRestaurantMarkerHtml(),
+                html: getPurpleRestaurantMarkerHtml(),
                 className: "",
                 iconSize: [32, 32],
                 iconAnchor: [16, 16]
@@ -10173,6 +10179,25 @@ function getRedRestaurantMarkerHtml() {
     return `
       <div class="custom-marker-outer red" style="position:relative;">
         <span class="custom-marker-label">R</span>
+      </div>
+    `;
+}
+
+function getPurpleRestaurantMarkerHtml() {
+    return `
+      <div class="custom-marker-outer" style="
+        position:relative;
+        width:32px;height:32px;
+        background:#8a4af3;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        box-shadow:0 2px 8px #888;
+        border:2px solid #fff;
+      ">
+        <img src="https://www.svgrepo.com/show/326791/restaurant-outline.svg"
+             style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="Restaurant">
       </div>
     `;
 }
