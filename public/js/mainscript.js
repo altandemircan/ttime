@@ -4,26 +4,6 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
-if (!document.getElementById("favorite-places-sidebar")) {
-  const sidebar = document.createElement("div");
-  sidebar.id = "favorite-places-sidebar";
-  sidebar.className = "favorite-places-sidebar";
-  sidebar.style = `
-    display:none;position:fixed;right:0;top:0;height:100%;width:370px;max-width:98vw;z-index:12000;
-    background:#fff;box-shadow:-3px 0 20px #0002;overflow-y:auto;transition:.2s right;
-    padding:20px 18px 18px 18px;
-  `;
-  sidebar.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;">
-      <h3 style="margin:0;font-size:1.25em;"><span style="font-size:1.3em;">❤️</span> Favorite Places</h3>
-      <button id="close-favorite-places-sidebar" style="
-        background:none;border:none;color:#d32f2f;font-size:30px;line-height:1;cursor:pointer;
-        margin-left:10px;">&times;</button>
-    </div>
-    <div id="sidebar-fav-list-content"></div>
-  `;
-  document.body.appendChild(sidebar);
-}
 
 // Favori listesi (localStorage ile kalıcı)
 window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
@@ -378,6 +358,30 @@ document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener('DOMContentLoaded', function() {
     renderFavoritePlacesSection();
 });
+
+
+if (!document.getElementById("favorite-places-sidebar")) {
+  const sidebar = document.createElement("div");
+  sidebar.id = "favorite-places-sidebar";
+  sidebar.className = "favorite-places-sidebar";
+  sidebar.style = `
+    display:none;position:fixed;right:0;top:0;height:100%;width:370px;max-width:98vw;z-index:12000;
+    background:#fff;box-shadow:-3px 0 20px #0002;overflow-y:auto;transition:.2s right;
+    padding:20px 18px 18px 18px;
+  `;
+  sidebar.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;">
+      <h3 style="margin:0;font-size:1.25em;"><span style="font-size:1.3em;">❤️</span> Favorite Places</h3>
+      <button id="close-favorite-places-sidebar" style="
+        background:none;border:none;color:#d32f2f;font-size:30px;line-height:1;cursor:pointer;
+        margin-left:10px;">&times;</button>
+    </div>
+    <div id="sidebar-fav-list-content"></div>
+  `;
+  document.body.appendChild(sidebar);
+}
+
+
 
     function showSuggestions() {
         if (!suggestionsDiv) return;
