@@ -38,15 +38,16 @@ function generateStepHtml(step, day, category, idx = 0) {
     <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
         <div class="visual" style="opacity: 1;">
            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+           <div class="geoapify-tags-section">
+              <div class="geoapify-tags">${tagsHtml}</div>
+           </div>
         </div>
         <div class="info day_cats item-info-view">
             <div class="title">${name}</div>
             <div class="address">
                 <img src="img/address_icon.svg"> ${address}
             </div>
-            <div class="geoapify-tags-section">
-              <div class="geoapify-tags">${tagsHtml}</div>
-            </div>
+            
             <div class="opening_hours">
                 <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
             </div>
