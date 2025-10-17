@@ -9952,10 +9952,37 @@ const RESTAURANT_CATEGORIES = [
 // Ana fonksiyon — ÇİZGİ, MARKER, POPUP, SPINNER, FOTO HER ŞEY DAHİL!
 function addRoutePolylineWithClick(map, coords) {
     const polyline = L.polyline(coords, {
-        color: '#1976d2',
+        color: '#1976d2', // Normalde mavi
         weight: 7,
         opacity: 0.93
     }).addTo(map);
+
+    // --- Animasyonlu hover için ek eventler ---
+    polyline.on('mouseover', function(e) {
+        // YEŞİL animasyonlu çizgiye geç
+        polyline.setStyle({
+            color: '#22bb33',
+            dashArray: '12,6',
+            weight: 10,
+            opacity: 1
+        });
+        // Tooltip göster
+        polyline.bindTooltip(
+            '<b>Rotaya tıkla, yol üzerindeki restoranları gör!</b>',
+            { permanent: false, direction: 'top', className: 'route-tooltip' }
+        ).openTooltip(e.latlng);
+    });
+
+    polyline.on('mouseout', function(e) {
+        // Eski stile dön
+        polyline.setStyle({
+            color: '#1976d2',
+            dashArray: null,
+            weight: 7,
+            opacity: 0.93
+        });
+        polyline.closeTooltip();
+    });
 
     polyline.on('click', async function(e) {
         const lat = e.latlng.lat, lng = e.latlng.lng;
