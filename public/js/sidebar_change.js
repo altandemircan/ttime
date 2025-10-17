@@ -85,7 +85,7 @@ function toggleSidebarLogin() {
 }
 
 function toggleSidebarFavoritePlaces() {
-    const sidebarSettings = document.getElementById('sidebar-settings');
+    const sidebarSettings = document.getElementById('sidebar-favorite-places');
     if (sidebarSettings && !sidebarSettings.classList.contains('open')) {
         sidebarSettings.classList.add('open');
         const sidebarOverlaySettings = document.getElementById('sidebar-overlay-favorite-places');
