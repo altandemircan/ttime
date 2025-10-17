@@ -10089,8 +10089,11 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
           <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
         </div>
         <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-          <button class="add-point-to-cart-btn" style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;"
-            onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', '', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})">+</button>
+          <button class="add-point-to-cart-btn"
+            onclick="window.addRestaurantToTripFromPopup('${imgId}', '${name.replace(/'/g,"")}', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})"
+            style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            +
+          </button>
         </div>
       </div>
     `;
