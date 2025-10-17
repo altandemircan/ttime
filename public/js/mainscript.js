@@ -10122,3 +10122,22 @@ function ensureSpinnerCSS() {
     `;
     document.head.appendChild(style);
 }
+window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+    const img = document.getElementById(imgId);
+    // Eğer görsel yüklendiyse onun src'sini, yoksa fallback'i kullan
+    const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
+        ? img.src
+        : 'https://dev.triptime.ai/img/restaurant_icon.svg';
+    addToCart(
+        name,
+        imgSrc,
+        day,
+        "Restaurant",
+        address,
+        null, null, null, null,
+        { lat: Number(lat), lng: Number(lon) },
+        ""
+    );
+    if (typeof updateCart === "function") updateCart();
+    alert(`${name} gezi planına eklendi!`);
+};
