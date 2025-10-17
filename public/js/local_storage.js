@@ -334,6 +334,7 @@ function loadTripFromStorage(tripKey) {
         }
         saveTripAfterRoutes();
     }, 0);
+    renderFavoritePlacesSection();
 
     return true;
 }
