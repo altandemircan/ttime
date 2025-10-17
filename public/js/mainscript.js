@@ -9955,7 +9955,7 @@ function addRoutePolylineWithClick(map, coords) {
     polyline.on('click', async function(e) {
     const lat = e.latlng.lat, lng = e.latlng.lng;
     const bufferMeters = 2000;
-  
+    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
     const resp = await fetch(url);
     const data = await resp.json();
