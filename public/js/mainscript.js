@@ -4,6 +4,26 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
+if (!document.getElementById("favorite-places-sidebar")) {
+  const sidebar = document.createElement("div");
+  sidebar.id = "favorite-places-sidebar";
+  sidebar.className = "favorite-places-sidebar";
+  sidebar.style = `
+    display:none;position:fixed;right:0;top:0;height:100%;width:370px;max-width:98vw;z-index:12000;
+    background:#fff;box-shadow:-3px 0 20px #0002;overflow-y:auto;transition:.2s right;
+    padding:20px 18px 18px 18px;
+  `;
+  sidebar.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;">
+      <h3 style="margin:0;font-size:1.25em;"><span style="font-size:1.3em;">❤️</span> Favorite Places</h3>
+      <button id="close-favorite-places-sidebar" style="
+        background:none;border:none;color:#d32f2f;font-size:30px;line-height:1;cursor:pointer;
+        margin-left:10px;">&times;</button>
+    </div>
+    <div id="sidebar-fav-list-content"></div>
+  `;
+  document.body.appendChild(sidebar);
+}
 
 // Favori listesi (localStorage ile kalıcı)
 window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
@@ -2680,6 +2700,26 @@ const travelMainCategories = [
     closeButton.classList.add("close-btn");
     closeButton.textContent = "Close";
     closeButton.addEventListener("click", restoreSidebar);
+
+
+    // --- FAVORITE PLACE BUTTON EKLE ---
+const addFavBtn = document.createElement("button");
+addFavBtn.className = "add-favorite-place-btn";
+addFavBtn.textContent = "❤️ Add favorite place";
+addFavBtn.style = `
+  width:100%;margin:10px 0 0 0;padding:10px 0;
+  background:#ffe5f1;color:#bc1976;
+  border:none;border-radius:8px;font-size:16px;
+  font-weight:600;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;gap:7px;
+`;
+addFavBtn.onclick = function() {
+  openFavoritePlacesSidebar();
+};
+cartDiv.appendChild(addFavBtn);
+
+
+
 
     cartDiv.appendChild(toggleAllButton);
     cartDiv.appendChild(closeButton);
@@ -10335,4 +10375,100 @@ function renderFavoritePlacesSection() {
             if (typeof updateCart === "function") updateCart();
         };
     });
+}
+
+function openFavoritePlacesSidebar() {
+  document.getElementById('favorite-places-sidebar').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  renderFavoritePlacesInSidebar();
+}
+document.getElementById('close-favorite-places-sidebar').onclick = function() {
+  document.getElementById('favorite-places-sidebar').style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+function renderFavoritePlacesInSidebar() {
+  const favTrips = window.favTrips || [];
+  const listEl = document.getElementById('sidebar-fav-list-content');
+  if (!listEl) return;
+  if (!favTrips.length) {
+    listEl.innerHTML = `<div style="color:#888;padding:22px 0;font-size:1.1em;">No favorite places yet.</div>`;
+    return;
+  }
+  listEl.innerHTML = `
+    <ul style="list-style:none;padding:0;margin:0;">
+      ${favTrips.map((item, i) => `
+        <li class="fav-item" style="margin-bottom:12px;background:#f8f9fa;border-radius:12px;box-shadow:0 1px 6px #e3e3e3;padding:9px 12px;display:flex;align-items:center;gap:16px;min-width:0;">
+          <div style="width:42px;height:42px;"><img src="${item.image || 'img/placeholder.png'}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+            <span style="font-weight:500;font-size:15px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</span>
+            <span style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.address || ''}</span>
+            <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;max-width:90px;text-overflow:ellipsis;overflow:hidden;">${item.category || ''}</span>
+          </div>
+          <div style="display:flex;flex-direction:row;align-items:center;gap:7px;">
+            <button class="add-fav-to-trip-btn"
+              data-index="${i}"
+              title="Add to trip"
+              style="width:32px;height:32px;background:#1976d2;color:#fff;border:none;border-radius:50%;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+              +
+            </button>
+            <button class="remove-fav-btn"
+              data-name="${item.name}"
+              data-category="${item.category}"
+              data-lat="${item.lat}"
+              data-lon="${item.lon}"
+              title="Remove from favorites"
+              style="width:32px;height:32px;background:#ffecec;color:#d32f2f;border:none;border-radius:50%;font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+              –
+            </button>
+          </div>
+        </li>
+      `).join('')}
+    </ul>
+  `;
+  // Sepete ekle event
+  listEl.querySelectorAll('.add-fav-to-trip-btn').forEach(btn => {
+    btn.onclick = function() {
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      const item = window.favTrips[idx];
+      if (!item) return;
+      addToCart(
+        item.name,
+        item.image,
+        window.currentDay || 1,
+        item.category,
+        item.address || "",
+        null, null, item.opening_hours || "",
+        null,
+        item.lat && item.lon ? { lat: Number(item.lat), lng: Number(item.lon) } : null,
+        item.website || ""
+      );
+      if (typeof updateCart === "function") updateCart();
+      // Paneli kapat
+      document.getElementById('favorite-places-sidebar').style.display = 'none';
+      document.body.style.overflow = '';
+    };
+  });
+  // Favoriden çıkar event
+  listEl.querySelectorAll('.remove-fav-btn').forEach(btn => {
+    btn.onclick = function() {
+      const item = {
+        name: btn.getAttribute('data-name'),
+        category: btn.getAttribute('data-category'),
+        lat: btn.getAttribute('data-lat'),
+        lon: btn.getAttribute('data-lon')
+      };
+      const idx = window.favTrips.findIndex(f =>
+        f.name === item.name &&
+        f.category === item.category &&
+        String(f.lat) === String(item.lat) &&
+        String(f.lon) === String(item.lon)
+      );
+      if (idx >= 0) {
+        window.favTrips.splice(idx, 1);
+        saveFavTrips();
+        renderFavoritePlacesInSidebar();
+      }
+    };
+  });
 }
