@@ -49,7 +49,17 @@ function generateStepHtml(step, day, category, idx = 0) {
     const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
     const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
 
-    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+     let tagsHtml = "";
+    const tags = (step.properties && step.properties.categories) || step.categories;
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+        tagsHtml = tags.map(t => {
+            const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return `<span class="geo-tag" title="${t}">${label}</span>`;
+        }).join(' ');
+    }
+
+
+let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
         catIcon = "img/coffee_icon.svg";
     else if (category === "Touristic attraction")
