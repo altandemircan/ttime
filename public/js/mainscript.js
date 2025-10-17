@@ -9957,99 +9957,39 @@ function addRoutePolylineWithClick(map, coords) {
         opacity: 0.93
     }).addTo(map);
 
-    // --- Animasyonlu hover için ek eventler ---
+    // Animasyonlu hover için eventler
     polyline.on('mouseover', function(e) {
-        // YEŞİL animasyonlu çizgiye geç
         polyline.setStyle({
             color: '#22bb33',
-            dashArray: '12,6',
-            weight: 10,
+            dashArray: '16,8', // daha uzun dash, daha yavaş animasyon
+            weight: 7,         // kalınlık değişmez
             opacity: 1
         });
-        // Tooltip göster
-        polyline.bindTooltip(
-            '<b>Rotaya tıkla, yol üzerindeki restoranları gör!</b>',
-            { permanent: false, direction: 'top', className: 'route-tooltip' }
-        ).openTooltip(e.latlng);
     });
 
     polyline.on('mouseout', function(e) {
-        // Eski stile dön
         polyline.setStyle({
             color: '#1976d2',
             dashArray: null,
             weight: 7,
             opacity: 0.93
         });
-        polyline.closeTooltip();
     });
 
-    polyline.on('click', async function(e) {
-        const lat = e.latlng.lat, lng = e.latlng.lng;
-        const bufferMeters = 400;
-        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-        const categories = [
-            "catering.restaurant",
-            "catering.cafe",
-            "catering.bar",
-            "catering.fast_food",
-            "catering.pub"
-        ].join(",");
-        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
-        const resp = await fetch(url);
-        const data = await resp.json();
-
-        if (!data.features || data.features.length === 0) {
-            alert("Bu alanda restoran/cafe/bar bulunamadı!");
-            return;
-        }
-
-        // En yakın 10 noktayı sırala
-        const haversine = (lat1, lon1, lat2, lon2) => {
-            const R = 6371000, toRad = x => x * Math.PI / 180;
-            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-            const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-            return 2 * R * Math.asin(Math.sqrt(a));
-        };
-        const nearest10 = data.features
-            .map(f => ({
-                ...f,
-                distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
-            }))
-            .sort((a, b) => a.distance - b.distance)
-            .slice(0, 10);
-
-        nearest10.forEach((f, idx) => {
-            // --- YEŞİL ÇİZGİ ---
-            L.polyline([
-                [lat, lng],
-                [f.properties.lat, f.properties.lon]
-            ], {
-                color: "#22bb33", // YEŞİL
-                weight: 4,
-                opacity: 0.95,
-                dashArray: "8,8"
-            }).addTo(map);
-
-            // --- MOR MARKER ---
-            const icon = L.divIcon({
-                html: getPurpleRestaurantMarkerHtml(),
-                className: "",
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-            const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
-
-            // Popup
-            const imgId = `rest-img-${f.properties.place_id || idx}`;
-            const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
-            marker.bindPopup(html, { maxWidth: 320 });
-            marker.on("popupopen", function() {
-                handlePopupImageLoading(f, imgId);
-            });
-        });
-
-        alert(`Bu alanda en yakın ${nearest10.length} restoran/cafe/bar gösterildi.`);
+    polyline.on('click', function(e) {
+        // Tooltip doğrudan tıklanan noktada açılır
+        polyline.bindTooltip(
+            '<b>Rotaya tıkladınız! Yol üzerindeki restoranları görebilirsiniz.</b>',
+            {
+                permanent: false,
+                direction: 'top',
+                className: 'route-tooltip',
+                offset: [0, -8], // noktanın biraz üstünde
+                opacity: 1
+            }
+        ).openTooltip(e.latlng);
+        // Burada restaurant arama kodlarını çağırabilirsin...
+        // ...
     });
 
     return polyline;
