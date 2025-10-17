@@ -111,6 +111,16 @@ function toggleSidebarTrip() {
     }
 }
 
+window.toggleSidebarFavoritePlaces = function() {
+    toggleSidebar('sidebar-overlay-favorite-places');
+    const favPanelOverlay = document.getElementById('sidebar-overlay-favorite-places');
+    if (favPanelOverlay && favPanelOverlay.classList.contains('open')) {
+        if (typeof renderFavoritePlacesPanel === 'function') {
+            renderFavoritePlacesPanel();
+        }
+    }
+};
+
 window.toggleSidebarMyTrips = function(event) {
     const sidebarMyTripsOverlay = document.getElementById('sidebar-overlay-mytrips');
     const sidebar = document.getElementById('sidebar-overlay-mytrips');
