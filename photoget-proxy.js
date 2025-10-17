@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
             const data = await response.json();
             if (data.photos && data.photos.length > 0) {
                 const randomPhoto = data.photos[Math.floor(Math.random() * data.photos.length)];
-                imageUrl = randomPhoto.src.tiny || randomPhoto.src.small || randomPhoto.src.medium || randomPhoto.src.large || randomPhoto.src.original;
+                imageUrl = randomPhoto.src.medium || randomPhoto.src.large || randomPhoto.src.tiny || randomPhoto.src.small || randomPhoto.src.original;
             }
         } else if (source === 'pixabay') {
             const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=10&safesearch=true`;
