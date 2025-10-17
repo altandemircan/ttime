@@ -6825,6 +6825,7 @@ border-bottom:1px solid #ddd;
 }
 #tt-trip-details .info .title {
     color: #ffffff !important;
+    font-size: 1rem !important;
 }
 
 #tt-trip-details .info {
