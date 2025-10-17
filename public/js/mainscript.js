@@ -4775,6 +4775,8 @@ dayItems.forEach((step, idx) => {
     stepsHtml += `
     <div class="steps" data-day="${day}" data-category="${step.category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
         <div class="visual" style="opacity: 1;">
+               <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx + 1}</div>
+
            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
         </div>
         <div class="info day_cats item-info-view">
