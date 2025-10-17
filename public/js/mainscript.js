@@ -9970,7 +9970,7 @@ function addRoutePolylineWithClick(map, coords) {
         }
 
         data.features.forEach((f, idx) => {
-            // --- ÇİZGİ ---
+            // Çizgi çiz
             L.polyline([
                 [lat, lng],
                 [f.properties.lat, f.properties.lon]
@@ -9981,27 +9981,15 @@ function addRoutePolylineWithClick(map, coords) {
                 dashArray: "8,8"
             }).addTo(map);
 
-            // --- MARKER ve POPUP ---
-            // Benzersiz ID: hem place_id varsa hem yoksa
-            const imgId = `rest-img-${f.properties.place_id || (lat + '-' + lng + '-' + idx)}`;
+            // Marker ve popup
+            const imgId = `rest-img-${f.properties.place_id || idx}`;
             const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
             const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
             marker.bindPopup(html, { maxWidth: 320 });
 
-            // --- Stock fotoğraf, spinner yönetimi ---
+            // TAM BURADA popupopen eventine handlePopupImageLoading ekle!
             marker.on("popupopen", function() {
-                getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
-                    .then(src => {
-                        const img = document.getElementById(imgId);
-                        const spin = document.getElementById(imgId + "-spin");
-                        if (img && src && src !== "img/restaurant_icon.svg") img.src = src;
-                        if (img) {
-                            img.onload = () => { if (spin) spin.style.display = "none"; };
-                            img.onerror = () => { if (spin) spin.style.display = "none"; };
-                        }
-                        // Eğer img bulunamazsa yine spinnerı gizle
-                        else if (spin) spin.style.display = "none";
-                    });
+                handlePopupImageLoading(f, imgId);
             });
         });
 
@@ -10057,20 +10045,41 @@ window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
     if (typeof updateCart === "function") updateCart();
     alert(`${name} gezi planına eklendi!`);
 };
-
+function handlePopupImageLoading(f, imgId) {
+    // Stock fotoğrafı getir, img'yi güncelle ve spinner'ı yönet
+    getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
+        .then(src => {
+            const img = document.getElementById(imgId);
+            const spin = document.getElementById(imgId + "-spin");
+            // Eğer stock görsel başarılıysa güncelle
+            if (img && src && src !== "img/restaurant_icon.svg") img.src = src;
+            // Fotoğraf yüklendiğinde veya hata olduğunda spinner'ı gizle
+            if (img) {
+                img.onload = () => { if (spin) spin.style.display = "none"; };
+                img.onerror = () => { if (spin) spin.style.display = "none"; };
+                // Eğer görsel zaten yüklenmişse (cache) spinner'ı hemen gizle
+                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
+            } else if (spin) {
+                spin.style.display = "none";
+            }
+        })
+        .catch(() => {
+            // Her ihtimale karşı spinner'ı gizle
+            const spin = document.getElementById(imgId + "-spin");
+            if (spin) spin.style.display = "none";
+        });
+}
 function getFastRestaurantPopupHTML(f, imgId, day) {
     ensureSpinnerCSS();
     const name = f.properties.name || "Restoran";
     const address = f.properties.formatted || "";
     const lat = f.properties.lat;
     const lon = f.properties.lon;
-    // img id'si ve spinner id'si benzersiz!
     return `
       <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
         <div class="point-image" style="width: 42px; height: 42px; position: relative;">
           <img id="${imgId}" src="img/restaurant_icon.svg" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 1;">
           <div class="img-loading-spinner" id="${imgId}-spin"></div>
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">🍽️</div>
         </div>
         <div class="point-info" style="flex: 1; min-width: 0;">
           <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
@@ -10087,7 +10096,6 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
 }
 
 function ensureSpinnerCSS() {
-    // CSS sadece bir kez eklenir!
     if (document.getElementById('img-loading-spinner-style')) return;
     const style = document.createElement('style');
     style.id = 'img-loading-spinner-style';
