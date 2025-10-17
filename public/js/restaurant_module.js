@@ -61,14 +61,6 @@ async function searchRestaurantsAt(lat, lng, map) {
 }
 
 
-
-const RESTAURANT_CATEGORIES = [
-  "catering.restaurant",
-  "catering.cafe",
-  "catering.bar",
-  "catering.fast_food",
-  "catering.pub"
-];
 // Ana fonksiyon — ÇİZGİ, MARKER, POPUP, SPINNER, FOTO HER ŞEY DAHİL!
 function addRoutePolylineWithClick(map, coords) {
     const polyline = L.polyline(coords, {
