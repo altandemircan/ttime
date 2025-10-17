@@ -469,9 +469,7 @@ li .highlight {
 }
 
 .info .address {
-    padding: 8px;
-    background: #f9f9f9;
-    border-radius: 8px;
+    font-weight: 500;
 }
 
 .cats {
@@ -6773,7 +6771,23 @@ border-bottom:1px solid #ddd;
   font-size: 0.95em;
   font-weight: 500;
 }
-.geoapify-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+
+
+.geoapify-tags-section {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+}
+.geoapify-tags { 
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    flex-direction: row;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
 .geo-tag {
   background: #e0f2f1;
   color: #00897b;
