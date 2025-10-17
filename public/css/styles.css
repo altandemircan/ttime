@@ -6801,21 +6801,4 @@ border-bottom:1px solid #ddd;
 }
 
 
-.route-tooltip {
-    background: #fff;
-    color: #222;
-    font-weight: 500;
-    font-size: 15px;
-    border-radius: 8px;
-    padding: 8px 22px;
-    box-shadow: 0 2px 12px #1976d2;
-    border: none !important;
-    opacity: 1;
-}
 
-.leaflet-interactive[stroke="#22bb33"] {
-    animation: dash-move 3s linear infinite;
-}
-@keyframes dash-move {
-    to { stroke-dashoffset: -200; }
-}

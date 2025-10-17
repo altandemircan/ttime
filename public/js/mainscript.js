@@ -1861,7 +1861,7 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
   const data = await resp.json();
   if (data.features && data.features.length > 0) {
     const filtered = data.features.filter(f =>
-     typeof f.properties.name === "string" && f.properties.name.trim().length > 2
+      !!f.properties.name && f.properties.name.trim().length > 2
     );
     return filtered.map(f => {
       // Props içinden tüm olası lat/lon kaynaklarını güvenli şekilde al
@@ -5001,11 +5001,6 @@ const polyline = L.polyline(coords, {
     }
 
     map.fitBounds(polyline.getBounds());
-    map.eachLayer(function(layer){
-    if(layer instanceof L.Rectangle){
-        map.removeLayer(layer);
-    }
-});
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
@@ -9993,6 +9988,7 @@ function addRoutePolylineWithClick(map, coords) {
                 opacity: 1
             }
         ).openTooltip(e.latlng);
+
         // Burada restaurant arama kodlarını çağırabilirsin...
         // ...
     });
