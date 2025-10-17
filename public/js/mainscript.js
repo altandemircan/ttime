@@ -4738,11 +4738,90 @@ function showTripDetails(startDate) {
         daySteps.setAttribute("data-day", String(day));
 
         if (dayItems.length > 0) {
+           
+
+
+
             let stepsHtml = "";
-            dayItems.forEach((item, idx) => {
-                stepsHtml += generateStepHtml(item, day, item.category, idx);
-            });
-            daySteps.innerHTML = stepsHtml;
+dayItems.forEach((step, idx) => {
+    const name = step?.name || step?.category;
+    const address = step?.address || "";
+    const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
+    const website = step?.website || "";
+    const opening = step?.opening_hours || "";
+    const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
+    const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
+
+    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+    if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
+        catIcon = "img/coffee_icon.svg";
+    else if (step.category === "Touristic attraction")
+        catIcon = "img/tourist_icon.svg";
+    else if (step.category === "Restaurant" || step.category === "Restaurants")
+        catIcon = "img/restaurant_icon.svg";
+    else if (step.category === "Accommodation")
+        catIcon = "img/accommodation_icon.svg";
+
+    // --- TAGS DİNAMİK ---
+    let tagsHtml = "No tags found.";
+    const tags = (step.properties && step.properties.categories) || step.categories;
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+        tagsHtml = tags.map(t => {
+            const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return `<span class="geo-tag" title="${t}">${label}</span>`;
+        }).join(' ');
+    }
+
+    stepsHtml += `
+    <div class="steps" data-day="${day}" data-category="${step.category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
+        <div class="visual" style="opacity: 1;">
+           <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+        </div>
+        <div class="info day_cats item-info-view">
+            <div class="title">${name}</div>
+            <div class="address">
+                <img src="img/address_icon.svg"> ${address}
+            </div>
+            <div class="geoapify-tags-section">
+              <div class="geoapify-tags">${tagsHtml}</div>
+            </div>
+            <div class="opening_hours">
+                <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
+            </div>
+        </div>
+        <div class="item_action">
+            <div class="change">
+                <span onclick="window.showImage && window.showImage(this)">
+                    <img src="img/camera_icon.svg">
+                </span>
+                <span onclick="window.showMap && window.showMap(this)">
+                    <img src="img/map_icon.svg">
+                </span>
+                ${website ? `
+                <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
+                    <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+                </span>
+                ` : ""}
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <div class="cats cats${idx % 5 + 1}">
+                    <img src="${catIcon}" alt="${step.category}"> ${step.category}
+                </div>
+                <a class="addtotrip">
+                    <img src="img/addtotrip-icon.svg">
+                </a>
+            </div>
+        </div>
+    </div>
+    `;
+});
+daySteps.innerHTML = stepsHtml;
+
+
+
+
+
+
             daySteps.querySelectorAll(".steps").forEach(el => el.setAttribute("draggable", "true"));
         } else {
             const emptyP = document.createElement("p");
