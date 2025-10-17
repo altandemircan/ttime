@@ -3613,18 +3613,6 @@ ease;
     cursor: default;
     width: -webkit-fill-available;
 }
-#tt-trip-details {
-    z-index: 1010;
-    background-color: white;
-    position: relative;
-    width: auto;
-    padding: 20px;
-    overflow-y: scroll;
-    top: 50px;
-    bottom: 180px;
-    width: calc(100% - 455px);
-    position: absolute;
-}
 
 .insertion-placeholder {
     height: 40px;
@@ -6805,6 +6793,27 @@ border-bottom:1px solid #ddd;
 
 /* trip details özel tasarım */
 
+#tt-trip-details {
+    z-index: 1010;
+    background-color: white;
+    position: relative;
+    width: auto;
+    padding: 20px;
+    overflow-y: scroll;
+    top: 50px;
+    bottom: 180px;
+    width: calc(100% - 455px);
+    position: absolute;
+}
+@media (max-width: 768px) {
+    #tt-trip-details {
+        display: block;
+        /* veya flex, grid, vs. */
+        width: 100vw;
+        height: 100vh;
+    }
+}
+
 #tt-trip-details .tt-resp-track {
     flex-wrap: wrap;
 }
@@ -6835,7 +6844,7 @@ border-bottom:1px solid #ddd;
     bottom: 0;
     width: -webkit-fill-available;
     border-radius: 16px;
-    min-height: 80px;
+    min-height: 40px;
     justify-content: flex-end;
 }
 
