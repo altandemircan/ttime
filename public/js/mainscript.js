@@ -2733,7 +2733,7 @@ addFavBtn.style = `
   align-items:center;justify-content:center;gap:7px;
 `;
 addFavBtn.onclick = function() {
-  openFavoritePlacesSidebar();
+  openFavoritePlacesSidebar(); // Panel/modal açan fonksiyonun!
 };
 cartDiv.appendChild(addFavBtn);
 
