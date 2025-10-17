@@ -9957,44 +9957,43 @@ function addRoutePolylineWithClick(map, coords) {
     }).addTo(map);
 
     polyline.on('click', async function(e) {
-        const lat = e.latlng.lat, lng = e.latlng.lng;
-        const bufferMeters = 500;
-        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-        const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
-        const resp = await fetch(url);
-        const data = await resp.json();
+    const lat = e.latlng.lat, lng = e.latlng.lng;
+    const bufferMeters = 2000;
+    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
 
-        if (!data.features || data.features.length === 0) {
-            alert("Bu alanda restoran bulunamadı!");
-            return;
-        }
+    if (!data.features || data.features.length === 0) {
+        alert("Bu alanda restoran bulunamadı!");
+        return;
+    }
 
-        data.features.forEach((f, idx) => {
-            // Çizgi çiz
-            L.polyline([
-                [lat, lng],
-                [f.properties.lat, f.properties.lon]
-            ], {
-                color: "#1976d2",
-                weight: 4,
-                opacity: 0.85,
-                dashArray: "8,8"
-            }).addTo(map);
+    // SADECE EN YAKIN 10 RESTORANI AL
+    const nearest10 = data.features.slice(0, 10);
 
-            // Marker ve popup
-            const imgId = `rest-img-${f.properties.place_id || idx}`;
-            const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
-            const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
-            marker.bindPopup(html, { maxWidth: 320 });
+    nearest10.forEach((f, idx) => {
+        L.polyline([
+            [lat, lng],
+            [f.properties.lat, f.properties.lon]
+        ], {
+            color: "#1976d2",
+            weight: 4,
+            opacity: 0.85,
+            dashArray: "8,8"
+        }).addTo(map);
 
-            // TAM BURADA popupopen eventine handlePopupImageLoading ekle!
-           marker.on("popupopen", function() {
-    handlePopupImageLoading(f, imgId);
-});
+        const imgId = `rest-img-${f.properties.place_id || idx}`;
+        const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
+        const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
+        marker.bindPopup(html, { maxWidth: 320 });
+        marker.on("popupopen", function() {
+            handlePopupImageLoading(f, imgId);
         });
-
-        alert(`Bu alanda ${data.features.length} restoran bulundu.`);
     });
+
+    alert(`Bu alanda en yakın ${nearest10.length} restoran gösterildi.`);
+});
 
     return polyline;
 }
