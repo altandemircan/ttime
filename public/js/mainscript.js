@@ -3947,11 +3947,6 @@ const anyDayHasRealItem = window.cart.some(i =>
 );
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 
-// --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
-const anyDayHasRealItem = window.cart.some(i =>
-  !i._starter && !i._placeholder && i.category !== "Note" && i.name
-);
-const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 
 // EKLE: FAVORİ BUTONU (tam burada, addMoreButton'dan önce)
 if (anyDayHasRealItem && !hideAddCat) {
