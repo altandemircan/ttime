@@ -10198,24 +10198,96 @@ function renderFavoritePlacesSection() {
         <h3 style="margin:10px 0 8px 0;"><span style="font-size:1.3em;">❤️</span> Favorite Places</h3>
         ${favTrips.length === 0 ? '<div class="empty-fav-list">No favorite places yet.</div>' : `
         <ul class="fav-list" style="list-style:none;padding-left:0;">
-          ${favTrips.map((item, i) => `
-            <li class="fav-item" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
-              <img src="${item.image || 'img/placeholder.png'}" style="width:32px;height:32px;border-radius:7px;">
-              <span style="font-weight:500">${item.name}</span>
-              <span style="font-size:0.96em;color:#888;">${item.address || ''}</span>
-              <span style="color:#1976d2;font-size:0.92em">${item.category || ''}</span>
-              <button class="add-fav-to-trip-btn" 
-                data-index="${i}" 
-                style="margin-left:8px;background:#1976d2;color:#fff;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;">+ Add to trip</button>
-              <button class="remove-fav-btn" 
-                data-name="${item.name}" 
-                data-category="${item.category}" 
-                data-lat="${item.lat}" 
-                data-lon="${item.lon}" 
-                style="margin-left:8px;">✖️</button>
-            </li>
-          `).join('')}
-        </ul>
+  ${favTrips.map((item, i) => `
+    <li class="fav-item" style="
+      margin-bottom:12px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px #e3e3e3;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    ">
+      <div class="fav-img" style="width:42px;height:42px;position:relative;">
+        <img src="${item.image || 'img/placeholder.png'}" alt="${item.name}" style="
+          width:100%;height:100%;object-fit:cover;border-radius:8px;">
+      </div>
+      <div class="fav-info" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+        <span style="
+          font-weight:500;
+          font-size:15px;
+          color:#333;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        ">${item.name}</span>
+        <span style="
+          font-size:12px;
+          color:#888;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        ">${item.address || ''}</span>
+        <span style="
+          font-size:11px;
+          color:#1976d2;
+          background:#e3e8ff;
+          border-radius:6px;
+          padding:1px 7px;
+          display:inline-block;
+          margin-top:2px;
+          width:max-content;
+          max-width:90px;
+          text-overflow:ellipsis;
+          overflow:hidden;
+        ">${item.category || ''}</span>
+      </div>
+      <div class="fav-actions" style="display:flex;flex-direction:column;align-items:center;gap:7px;">
+        <button class="add-fav-to-trip-btn"
+          data-index="${i}"
+          title="Add to trip"
+          style="
+            width:32px;height:32px;
+            background:#1976d2;
+            color:#fff;
+            border:none;
+            border-radius:50%;
+            font-size:18px;
+            font-weight:bold;
+            cursor:pointer;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          ">
+          +
+        </button>
+        <button class="remove-fav-btn"
+          data-name="${item.name}"
+          data-category="${item.category}"
+          data-lat="${item.lat}"
+          data-lon="${item.lon}"
+          title="Remove from favorites"
+          style="
+            width:32px;height:32px;
+            background:#ffecec;
+            color:#d32f2f;
+            border:none;
+            border-radius:50%;
+            font-size:20px;
+            font-weight:bold;
+            cursor:pointer;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          ">
+          –
+        </button>
+      </div>
+    </li>
+  `).join('')}
+</ul>
         `}
     `;
 
