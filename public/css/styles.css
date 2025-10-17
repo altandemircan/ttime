@@ -6810,3 +6810,14 @@ border-bottom:1px solid #ddd;
 #tt-trip-details .item_action {
     display: none !important;
 }
+
+#tt-trip-details .steps {
+    max-width: 285px !important;
+}
+#tt-trip-details .visual img {
+    width: 285px !important;
+    border-radius: 16px !important;
+}
+#tt-trip-details .info .title {
+    color: #ffffff !important;
+}
