@@ -10046,25 +10046,22 @@ window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
     alert(`${name} gezi planına eklendi!`);
 };
 function handlePopupImageLoading(f, imgId) {
-    // Stock fotoğrafı getir, img'yi güncelle ve spinner'ı yönet
     getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
         .then(src => {
             const img = document.getElementById(imgId);
             const spin = document.getElementById(imgId + "-spin");
-            // Eğer stock görsel başarılıysa güncelle
-            if (img && src && src !== "img/restaurant_icon.svg") img.src = src;
-            // Fotoğraf yüklendiğinde veya hata olduğunda spinner'ı gizle
+            if (img && src && src !== "img/restaurant_icon.svg") {
+                img.src = src;
+                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
+            }
             if (img) {
                 img.onload = () => { if (spin) spin.style.display = "none"; };
                 img.onerror = () => { if (spin) spin.style.display = "none"; };
-                // Eğer görsel zaten yüklenmişse (cache) spinner'ı hemen gizle
-                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
             } else if (spin) {
                 spin.style.display = "none";
             }
         })
         .catch(() => {
-            // Her ihtimale karşı spinner'ı gizle
             const spin = document.getElementById(imgId + "-spin");
             if (spin) spin.style.display = "none";
         });
@@ -10078,7 +10075,7 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
     return `
       <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
         <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-          <img id="${imgId}" src="img/restaurant_icon.svg" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 1;">
+          <img id="${imgId}" src="img/restaurant_icon.svg" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
           <div class="img-loading-spinner" id="${imgId}-spin"></div>
         </div>
         <div class="point-info" style="flex: 1; min-width: 0;">
