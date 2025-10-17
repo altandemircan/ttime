@@ -355,6 +355,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const suggestionsDiv = document.getElementById("suggestions");
     let selectedOption = null;
 
+    document.addEventListener('DOMContentLoaded', function() {
+    renderFavoritePlacesSection();
+});
+
     function showSuggestions() {
         if (!suggestionsDiv) return;
         suggestionsDiv.innerHTML = "";
@@ -10194,13 +10198,21 @@ function renderFavoritePlacesSection() {
         <h3 style="margin:10px 0 8px 0;"><span style="font-size:1.3em;">❤️</span> Favorite Places</h3>
         ${favTrips.length === 0 ? '<div class="empty-fav-list">No favorite places yet.</div>' : `
         <ul class="fav-list" style="list-style:none;padding-left:0;">
-          ${favTrips.map(item => `
+          ${favTrips.map((item, i) => `
             <li class="fav-item" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
               <img src="${item.image || 'img/placeholder.png'}" style="width:32px;height:32px;border-radius:7px;">
               <span style="font-weight:500">${item.name}</span>
               <span style="font-size:0.96em;color:#888;">${item.address || ''}</span>
               <span style="color:#1976d2;font-size:0.92em">${item.category || ''}</span>
-              <button class="remove-fav-btn" data-name="${item.name}" data-category="${item.category}" data-lat="${item.lat}" data-lon="${item.lon}" style="margin-left:auto;">✖️</button>
+              <button class="add-fav-to-trip-btn" 
+                data-index="${i}" 
+                style="margin-left:8px;background:#1976d2;color:#fff;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;">+ Add to trip</button>
+              <button class="remove-fav-btn" 
+                data-name="${item.name}" 
+                data-category="${item.category}" 
+                data-lat="${item.lat}" 
+                data-lon="${item.lon}" 
+                style="margin-left:8px;">✖️</button>
             </li>
           `).join('')}
         </ul>
@@ -10227,6 +10239,28 @@ function renderFavoritePlacesSection() {
                 saveFavTrips();
                 renderFavoritePlacesSection();
             }
+        };
+    });
+
+    // "Add to trip" butonu eventleri
+    favSection.querySelectorAll('.add-fav-to-trip-btn').forEach(btn => {
+        btn.onclick = function() {
+            const idx = parseInt(btn.getAttribute('data-index'), 10);
+            const item = window.favTrips[idx];
+            if (!item) return;
+            // Sepete ekle (gün: 1, kategori ve diğer alanlar aktarılabilir)
+            addToCart(
+                item.name,
+                item.image,
+                window.currentDay || 1,
+                item.category,
+                item.address || "",
+                null, null, item.opening_hours || "",
+                null,
+                item.lat && item.lon ? { lat: Number(item.lat), lng: Number(item.lon) } : null,
+                item.website || ""
+            );
+            if (typeof updateCart === "function") updateCart();
         };
     });
 }
