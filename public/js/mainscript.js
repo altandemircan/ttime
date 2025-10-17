@@ -9948,7 +9948,7 @@ async function searchRestaurantsAt(lat, lng, map) {
 
 
 
-
+// Ana fonksiyon — ÇİZGİ, MARKER, POPUP, SPINNER, FOTO HER ŞEY DAHİL!
 function addRoutePolylineWithClick(map, coords) {
     const polyline = L.polyline(coords, {
         color: '#1976d2',
@@ -9970,7 +9970,7 @@ function addRoutePolylineWithClick(map, coords) {
         }
 
         data.features.forEach((f, idx) => {
-            // --- ÇİZGİYİ BURADA EKLE ---
+            // --- ÇİZGİ ---
             L.polyline([
                 [lat, lng],
                 [f.properties.lat, f.properties.lon]
@@ -9981,18 +9981,26 @@ function addRoutePolylineWithClick(map, coords) {
                 dashArray: "8,8"
             }).addTo(map);
 
-            // --- MARKER ve HIZLI POPUP ---
-            const imgId = `rest-img-${f.properties.place_id || idx}`;
+            // --- MARKER ve POPUP ---
+            // Benzersiz ID: hem place_id varsa hem yoksa
+            const imgId = `rest-img-${f.properties.place_id || (lat + '-' + lng + '-' + idx)}`;
             const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
             const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
             marker.bindPopup(html, { maxWidth: 320 });
 
-            // --- Stock fotoğrafı popup açıldıktan sonra güncelle (her zaman) ---
+            // --- Stock fotoğraf, spinner yönetimi ---
             marker.on("popupopen", function() {
                 getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
                     .then(src => {
                         const img = document.getElementById(imgId);
+                        const spin = document.getElementById(imgId + "-spin");
                         if (img && src && src !== "img/restaurant_icon.svg") img.src = src;
+                        if (img) {
+                            img.onload = () => { if (spin) spin.style.display = "none"; };
+                            img.onerror = () => { if (spin) spin.style.display = "none"; };
+                        }
+                        // Eğer img bulunamazsa yine spinnerı gizle
+                        else if (spin) spin.style.display = "none";
                     });
             });
         });
@@ -10051,15 +10059,17 @@ window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
 };
 
 function getFastRestaurantPopupHTML(f, imgId, day) {
+    ensureSpinnerCSS();
     const name = f.properties.name || "Restoran";
     const address = f.properties.formatted || "";
     const lat = f.properties.lat;
     const lon = f.properties.lon;
-    // HIZLI: img src placeholder, id veriyoruz!
+    // img id'si ve spinner id'si benzersiz!
     return `
       <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
         <div class="point-image" style="width: 42px; height: 42px; position: relative;">
           <img id="${imgId}" src="img/restaurant_icon.svg" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 1;">
+          <div class="img-loading-spinner" id="${imgId}-spin"></div>
           <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">🍽️</div>
         </div>
         <div class="point-info" style="flex: 1; min-width: 0;">
@@ -10074,4 +10084,28 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
         </div>
       </div>
     `;
+}
+
+function ensureSpinnerCSS() {
+    // CSS sadece bir kez eklenir!
+    if (document.getElementById('img-loading-spinner-style')) return;
+    const style = document.createElement('style');
+    style.id = 'img-loading-spinner-style';
+    style.innerHTML = `
+    .img-loading-spinner {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 32px; height: 32px;
+      border: 4px solid #eee;
+      border-top: 4px solid #1976d2;
+      border-radius: 50%;
+      animation: img-spin 1s linear infinite;
+      z-index: 2;
+    }
+    @keyframes img-spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    `;
+    document.head.appendChild(style);
 }
