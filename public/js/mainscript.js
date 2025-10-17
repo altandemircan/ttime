@@ -68,9 +68,9 @@ function generateStepHtml(step, day, category, idx = 0) {
     <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
         <div class="visual" style="position:relative;">
            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-    <div class="geoapify-tags-section">
+     <div class="geoapify-tags-section">
               <div class="geoapify-tags">${tagsHtml}</div>
-            </div>
+           </div>
            <span class="fav-heart ${favClass}"
                  data-name="${name}"
                  data-category="${category}"
