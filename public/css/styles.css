@@ -6828,8 +6828,9 @@ border-bottom:1px solid #ddd;
 }
 
 #tt-trip-details .info {
-        background: linear-gradient(0deg, rgb(0 0 0) 0%, rgb(0 0 0 / 0%) 100%);
+    background: linear-gradient(0deg, rgb(0 0 0) 0%, rgb(0 0 0 / 0%) 100%);
+    position: absolute;
     z-index: 123;
     bottom: 0;
-    width: -webkit-fill-available;e;
+    width: -webkit-fill-available;
 }
