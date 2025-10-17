@@ -4785,7 +4785,6 @@ function showTripDetails(startDate) {
                     `;
                 });
                 daySteps.innerHTML = stepsHtml;
-                daySteps.querySelectorAll(".steps").forEach(el => el.setAttribute("draggable", "true"));
             } else {
                 const emptyP = document.createElement("p");
                 emptyP.className = "empty-day-message";
@@ -4810,9 +4809,6 @@ function showTripDetails(startDate) {
             </button>
         `;
         tripDetailsSection.appendChild(shareDiv);
-        if (typeof makeChatStepsDraggable === "function") {
-            setTimeout(() => makeChatStepsDraggable(), 0);
-        }
         return;
     }
 
@@ -4954,7 +4950,6 @@ function showTripDetails(startDate) {
                 `;
             });
             daySteps.innerHTML = stepsHtml;
-            daySteps.querySelectorAll(".steps").forEach(el => el.setAttribute("draggable", "true"));
         } else {
             const emptyP = document.createElement("p");
             emptyP.className = "empty-day-message";
@@ -4978,10 +4973,6 @@ function showTripDetails(startDate) {
        </button>
     `;
     tripDetailsSection.appendChild(shareButtonsContainer);
-
-    if (typeof makeChatStepsDraggable === "function") {
-        setTimeout(() => makeChatStepsDraggable(), 0);
-    }
 }
 
 function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
