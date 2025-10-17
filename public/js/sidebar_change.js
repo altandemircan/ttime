@@ -33,8 +33,8 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleSidebar('sidebar-overlay-login');
     };
 
-    window.toggleSidebarSettings = function() {
-        toggleSidebar('sidebar-overlay-settings');
+    window.toggleSidebarFavoritePlaces = function() {
+        toggleSidebar('sidebar-overlay-favorite-places');
     };
 
     window.toggleSidebarFeedback = function() {
@@ -84,11 +84,11 @@ function toggleSidebarLogin() {
     }
 }
 
-function toggleSidebarSettings() {
+function toggleSidebarFavoritePlaces() {
     const sidebarSettings = document.getElementById('sidebar-settings');
     if (sidebarSettings && !sidebarSettings.classList.contains('open')) {
         sidebarSettings.classList.add('open');
-        const sidebarOverlaySettings = document.getElementById('sidebar-overlay-settings');
+        const sidebarOverlaySettings = document.getElementById('sidebar-overlay-favorite-places');
         if (sidebarOverlaySettings) sidebarOverlaySettings.classList.add('show');
     }
 }
