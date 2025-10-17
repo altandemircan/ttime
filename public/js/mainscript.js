@@ -9896,7 +9896,7 @@ function showSearchButton(lat, lng, map, options = {}) {
     // Sadece test için alert bırakabilirsin (çalıştığı belli)
     // alert(`Polyline tıklama noktası: ${lat}, ${lng}`);
 
-    const bufferMeters = options.radius || 2000;
+    const bufferMeters = options.radius || 500;
     const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const categories = options.categories || "catering.restaurant";
     const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
