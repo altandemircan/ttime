@@ -392,9 +392,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const suggestionsDiv = document.getElementById("suggestions");
     let selectedOption = null;
 
-    document.addEventListener('DOMContentLoaded', function() {
-    // renderFavoritePlacesSection();
-});
 
     function showSuggestions() {
         if (!suggestionsDiv) return;
@@ -1632,7 +1629,7 @@ if (tripTitleDiv && !document.getElementById('restaurant-on-the-road-btn')) {
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
-// renderFavoritePlacesSection(); // FAVORITE PLACES alanını ekle/güncelle
+
 
 attachFavEvents(); // <-- BURAYA EKLE
 
@@ -2453,7 +2450,7 @@ function displayPlacesInChat(places, category, day) {
     html += "</div></div></div></div>";
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
-// renderFavoritePlacesSection(); // FAVORITE PLACES alanını ekle/güncelle
+
 
 attachFavEvents(); // <-- BURAYA EKLE
 
