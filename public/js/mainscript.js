@@ -9952,29 +9952,39 @@ function addRoutePolylineWithClick(map, coords) {
         opacity: 0.93
     }).addTo(map);
 
-polyline.on('click', async function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-    const bufferMeters = 2000;
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
+    polyline.on('click', async function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        const bufferMeters = 2000;
+        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+        const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
 
-    if (!data.features || data.features.length === 0) {
-        alert("Bu alanda restoran bulunamadı!");
-        return;
-    }
+        if (!data.features || data.features.length === 0) {
+            alert("Bu alanda restoran bulunamadı!");
+            return;
+        }
 
-    // Her restoran için marker ve asenkron popup
-    for (const f of data.features) {
-        const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
-        const html = await getRestaurantPopupHTML(f, window.currentDay || 1);
-        marker.bindPopup(html, { maxWidth: 320 });
-    }
+        for (const f of data.features) {
+            // Restorana giden çizgi EKLE!
+            L.polyline([
+                [lat, lng],
+                [f.properties.lat, f.properties.lon]
+            ], {
+                color: "#1976d2",
+                weight: 4,
+                opacity: 0.85,
+                dashArray: "8,8"
+            }).addTo(map);
 
-    alert(`Bu alanda ${data.features.length} restoran bulundu.`);
-});
+            const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
+            const html = await getRestaurantPopupHTML(f, window.currentDay || 1);
+            marker.bindPopup(html, { maxWidth: 320 });
+        }
+
+        alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+    });
 
     return polyline;
 }
