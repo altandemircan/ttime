@@ -6801,16 +6801,6 @@ border-bottom:1px solid #ddd;
 }
 
 
-.leaflet-interactive[stroke="#22bb33"] {
-    animation: dash-move 3s linear infinite; /* 3 saniyede bir döngü -- yavaş animasyon */
-}
-
-@keyframes dash-move {
-    to {
-        stroke-dashoffset: -200;
-    }
-}
-
 .route-tooltip {
     background: #fff;
     color: #222;
@@ -6821,4 +6811,11 @@ border-bottom:1px solid #ddd;
     box-shadow: 0 2px 12px #1976d2;
     border: none !important;
     opacity: 1;
+}
+
+.leaflet-interactive[stroke="#22bb33"] {
+    animation: dash-move 3s linear infinite;
+}
+@keyframes dash-move {
+    to { stroke-dashoffset: -200; }
 }
