@@ -17,7 +17,7 @@ function generateStepHtml(step, day, category, idx = 0) {
     if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
         catIcon = "img/coffee_icon.svg";
     else if (category === "Touristic attraction")
-        catIcon = "img/tourist_icon.svg";
+        catIcon = "img/touristic_icon.svg";
     else if (category === "Restaurant" || category === "Restaurants")
         catIcon = "img/restaurant_icon.svg";
     else if (category === "Accommodation")
@@ -1589,7 +1589,7 @@ function toggleAccordion(accordionHeader) {
     function categoryIcon(category) {
         switch (category) {
             case "Coffee": return "img/coffee_icon.svg";
-            case "Touristic attraction": return "img/tourist_icon.svg";
+            case "Touristic attraction": return "img/touristic_icon.svg";
             case "Restaurant": return "img/restaurant_icon.svg";
             case "Accommodation": return "img/accommodation_icon.svg";
             default: return "https://www.svgrepo.com/show/522166/location.svg";
@@ -4728,7 +4728,7 @@ function showTripDetails(startDate) {
                     if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
                         catIcon = "img/coffee_icon.svg";
                     else if (step.category === "Touristic attraction")
-                        catIcon = "img/tourist_icon.svg";
+                        catIcon = "img/touristic_icon.svg";
                     else if (step.category === "Restaurant" || step.category === "Restaurants")
                         catIcon = "img/restaurant_icon.svg";
                     else if (step.category === "Accommodation")
@@ -4893,7 +4893,7 @@ function showTripDetails(startDate) {
                 if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
                     catIcon = "img/coffee_icon.svg";
                 else if (step.category === "Touristic attraction")
-                    catIcon = "img/tourist_icon.svg";
+                    catIcon = "img/touristic_icon.svg";
                 else if (step.category === "Restaurant" || step.category === "Restaurants")
                     catIcon = "img/restaurant_icon.svg";
                 else if (step.category === "Accommodation")
