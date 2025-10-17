@@ -9953,38 +9953,35 @@ function addRoutePolylineWithClick(map, coords) {
     }).addTo(map);
 
     polyline.on('click', async function(e) {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
-        const bufferMeters = 2000;
-        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-        const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
-        const resp = await fetch(url);
-        const data = await resp.json();
+    const lat = e.latlng.lat, lng = e.latlng.lng;
+    const bufferMeters = 2000;
+  
+    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
 
-        if (!data.features || data.features.length === 0) {
-            alert("Bu alanda restoran bulunamadı!");
-            return;
-        }
+    if (!data.features || data.features.length === 0) {
+        alert("Bu alanda restoran bulunamadı!");
+        return;
+    }
 
-        for (const f of data.features) {
-            // Restorana giden çizgi EKLE!
-            L.polyline([
-                [lat, lng],
-                [f.properties.lat, f.properties.lon]
-            ], {
-                color: "#1976d2",
-                weight: 4,
-                opacity: 0.85,
-                dashArray: "8,8"
-            }).addTo(map);
+    data.features.forEach((f, idx) => {
+        const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
+        // Her popup için unique img id üret:
+        const imgId = `rest-img-${f.properties.place_id || idx}`;
+        const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
+        marker.bindPopup(html, { maxWidth: 320 });
 
-            const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
-            const html = await getRestaurantPopupHTML(f, window.currentDay || 1);
-            marker.bindPopup(html, { maxWidth: 320 });
-        }
-
-        alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+        // Asenkron: Stock fotoğrafı yükle, img src'sini değiştir
+        getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
+            .then(src => {
+                const img = document.getElementById(imgId);
+                if (img && src && src !== "img/restaurant_icon.svg") img.src = src;
+            });
     });
+
+    alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+});
 
     return polyline;
 }
