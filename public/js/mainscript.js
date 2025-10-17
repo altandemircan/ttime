@@ -5001,6 +5001,11 @@ const polyline = L.polyline(coords, {
     }
 
     map.fitBounds(polyline.getBounds());
+    map.eachLayer(function(layer){
+    if(layer instanceof L.Rectangle){
+        map.removeLayer(layer);
+    }
+});
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
