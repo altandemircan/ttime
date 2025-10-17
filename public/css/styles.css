@@ -6804,6 +6804,11 @@ border-bottom:1px solid #ddd;
 
 
 /* trip details özel tasarım */
+
+#tt-trip-details .tt-resp-track {
+    flex-wrap: wrap;
+}
+
 #tt-trip-details .address, 
 #tt-trip-details .geoapify-tags-section, 
 #tt-trip-details .opening_hours,
@@ -6820,4 +6825,11 @@ border-bottom:1px solid #ddd;
 }
 #tt-trip-details .info .title {
     color: #ffffff !important;
+}
+
+#tt-trip-details .info {
+        background: linear-gradient(0deg, rgb(0 0 0) 0%, rgb(0 0 0 / 0%) 100%);
+    z-index: 123;
+    bottom: 0;
+    width: -webkit-fill-available;e;
 }
