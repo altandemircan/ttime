@@ -9953,38 +9953,35 @@ function addRoutePolylineWithClick(map, coords) {
     }).addTo(map);
 
     polyline.on('click', async function(e) {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
-        const bufferMeters = 2000;
-        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-        const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
-        const resp = await fetch(url);
-        const data = await resp.json();
+    const lat = e.latlng.lat, lng = e.latlng.lng;
+    const bufferMeters = 2000;
+  
+    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
 
-        if (!data.features || data.features.length === 0) {
-            alert("Bu alanda restoran bulunamadı!");
-            return;
-        }
+    if (!data.features || data.features.length === 0) {
+        alert("Bu alanda restoran bulunamadı!");
+        return;
+    }
 
-        for (const f of data.features) {
-            // Restorana giden çizgi EKLE!
-            L.polyline([
-                [lat, lng],
-                [f.properties.lat, f.properties.lon]
-            ], {
-                color: "#1976d2",
-                weight: 4,
-                opacity: 0.85,
-                dashArray: "8,8"
-            }).addTo(map);
+    data.features.forEach((f, idx) => {
+        const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
+        // Her popup için unique img id üret:
+        const imgId = `rest-img-${f.properties.place_id || idx}`;
+        const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
+        marker.bindPopup(html, { maxWidth: 320 });
 
-            const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
-            const html = await getRestaurantPopupHTML(f, window.currentDay || 1);
-            marker.bindPopup(html, { maxWidth: 320 });
-        }
-
-        alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+        // Asenkron: Stock fotoğrafı yükle, img src'sini değiştir
+        getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
+            .then(src => {
+                const img = document.getElementById(imgId);
+                if (img && src && src !== "img/restaurant_icon.svg") img.src = src;
+            });
     });
+
+    alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+});
 
     return polyline;
 }
@@ -10035,3 +10032,29 @@ window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
     if (typeof updateCart === "function") updateCart();
     alert(`${name} gezi planına eklendi!`);
 };
+
+function getFastRestaurantPopupHTML(f, imgId, day) {
+    const name = f.properties.name || "Restoran";
+    const address = f.properties.formatted || "";
+    const lat = f.properties.lat;
+    const lon = f.properties.lon;
+    // HIZLI: img src placeholder, id veriyoruz!
+    return `
+      <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+        <div class="point-image" style="width: 42px; height: 42px; position: relative;">
+          <img id="${imgId}" src="img/restaurant_icon.svg" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 1;">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">🍽️</div>
+        </div>
+        <div class="point-info" style="flex: 1; min-width: 0;">
+          <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <span style="font-weight: 500; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+          </div>
+          <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
+        </div>
+        <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <button class="add-point-to-cart-btn" style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+            onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', 'img/restaurant_icon.svg', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})">+</button>
+        </div>
+      </div>
+    `;
+}
