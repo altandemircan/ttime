@@ -36,7 +36,9 @@ function toggleFavTrip(item, heartEl) {
     }
     saveFavTrips();
 }
-
+function getFavoriteTrips() {
+    return window.favTrips || [];
+}
 // Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
     const name = step?.name || category;
@@ -1576,6 +1578,7 @@ if (tripTitleDiv && !document.getElementById('restaurant-on-the-road-btn')) {
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
+renderFavoritePlacesSection(); // FAVORITE PLACES alanını ekle/güncelle
 
 attachFavEvents(); // <-- BURAYA EKLE
 
@@ -2396,6 +2399,7 @@ function displayPlacesInChat(places, category, day) {
     html += "</div></div></div></div>";
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
+renderFavoritePlacesSection(); // FAVORITE PLACES alanını ekle/güncelle
 
 attachFavEvents(); // <-- BURAYA EKLE
 
@@ -10474,3 +10478,62 @@ function getUniqueSpecificTags(tags) {
     return result;
 }
 
+
+
+
+function renderFavoritePlacesSection() {
+    // Trip başlığı (AI Info) ile Day X arasına eklemek için
+    const tripTitleDiv = document.getElementById('trip_title');
+    if (!tripTitleDiv) return;
+
+    // Eğer zaten varsa tekrar ekleme
+    let favSection = document.getElementById('favorite-places-section');
+    if (!favSection) {
+        favSection = document.createElement('div');
+        favSection.id = 'favorite-places-section';
+        favSection.className = 'favorite-places-section';
+        tripTitleDiv.insertAdjacentElement('afterend', favSection);
+    }
+
+    // Favori itemlar (favTrips dizisi)
+    const favTrips = window.favTrips || [];
+    favSection.innerHTML = `
+        <h3 style="margin:10px 0 8px 0;"><span style="font-size:1.3em;">❤️</span> Favorite Places</h3>
+        ${favTrips.length === 0 ? '<div class="empty-fav-list">No favorite places yet.</div>' : `
+        <ul class="fav-list" style="list-style:none;padding-left:0;">
+          ${favTrips.map(item => `
+            <li class="fav-item" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+              <img src="${item.image || 'img/placeholder.png'}" style="width:32px;height:32px;border-radius:7px;">
+              <span style="font-weight:500">${item.name}</span>
+              <span style="font-size:0.96em;color:#888;">${item.address || ''}</span>
+              <span style="color:#1976d2;font-size:0.92em">${item.category || ''}</span>
+              <button class="remove-fav-btn" data-name="${item.name}" data-category="${item.category}" data-lat="${item.lat}" data-lon="${item.lon}" style="margin-left:auto;">✖️</button>
+            </li>
+          `).join('')}
+        </ul>
+        `}
+    `;
+
+    // Remove fav eventleri
+    favSection.querySelectorAll('.remove-fav-btn').forEach(btn => {
+        btn.onclick = function() {
+            const item = {
+                name: btn.getAttribute('data-name'),
+                category: btn.getAttribute('data-category'),
+                lat: btn.getAttribute('data-lat'),
+                lon: btn.getAttribute('data-lon')
+            };
+            const idx = window.favTrips.findIndex(f =>
+                f.name === item.name &&
+                f.category === item.category &&
+                String(f.lat) === String(item.lat) &&
+                String(f.lon) === String(item.lon)
+            );
+            if (idx >= 0) {
+                window.favTrips.splice(idx, 1);
+                saveFavTrips();
+                renderFavoritePlacesSection();
+            }
+        };
+    });
+}
