@@ -1577,6 +1577,7 @@ if (tripTitleDiv && !document.getElementById('restaurant-on-the-road-btn')) {
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
 
+attachFavEvents(); // <-- BURAYA EKLE
 
     // Sepeti (sidebar) doldur
     if (typeof addChatResultsToCart === "function" && !window.hasAutoAddedToCart) {
@@ -2395,6 +2396,8 @@ function displayPlacesInChat(places, category, day) {
     html += "</div></div></div></div>";
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
+
+attachFavEvents(); // <-- BURAYA EKLE
 
     if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 }
