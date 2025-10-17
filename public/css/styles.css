@@ -6837,3 +6837,11 @@ border-bottom:1px solid #ddd;
     min-height: 80px;
     justify-content: flex-end;
 }
+
+
+#tt-trip-details .marker-num {
+        position: absolute;
+    right: 10px;
+    top: 10px;
+    margin-right: 0;
+}
