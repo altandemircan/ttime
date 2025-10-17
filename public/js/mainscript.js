@@ -10346,3 +10346,96 @@ function renderFavoritePlacesInSidebar() {
     };
   });
 }
+
+function renderFavoritePlacesPanel() {
+    const favPanel = document.getElementById("favorite-places-panel");
+    if (!favPanel) return;
+
+    favPanel.innerHTML = ""; // Temizle
+
+    const favList = window.favTrips || [];
+    if (favList.length === 0) {
+        favPanel.innerHTML = `<div class="mytrips-empty">No favorite places yet.<br>Add places to favorites to see them here!</div>`;
+        return;
+    }
+
+    const ul = document.createElement("ul");
+    ul.style = "list-style:none;padding:0;margin:0;";
+    favList.forEach((place, i) => {
+        const li = document.createElement("li");
+        li.className = "fav-item";
+        li.style = "margin-bottom:12px;background:#f8f9fa;border-radius:12px;box-shadow:0 1px 6px #e3e3e3;padding:9px 12px;display:flex;align-items:center;gap:16px;min-width:0;";
+
+        // Resim alanı
+        const imgDiv = document.createElement("div");
+        imgDiv.style = "width:42px;height:42px;";
+        const img = document.createElement("img");
+        img.src = place.image || "img/placeholder.png";
+        img.alt = place.name || "";
+        img.style = "width:100%;height:100%;object-fit:cover;border-radius:8px;";
+        imgDiv.appendChild(img);
+
+        // Bilgi alanı
+        const infoDiv = document.createElement("div");
+        infoDiv.style = "flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;";
+        infoDiv.innerHTML = `
+            <span style="font-weight:500;font-size:15px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.name}</span>
+            <span style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.address || ""}</span>
+            <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;max-width:90px;text-overflow:ellipsis;overflow:hidden;">${place.category || ""}</span>
+        `;
+
+        // Butonlar
+        const btnDiv = document.createElement("div");
+        btnDiv.style = "display:flex;flex-direction:row;align-items:center;gap:7px;";
+
+        // Sepete ekle
+        const addBtn = document.createElement("button");
+        addBtn.className = "add-fav-to-trip-btn";
+        addBtn.setAttribute("data-index", i);
+        addBtn.title = "Add to trip";
+        addBtn.style = "width:32px;height:32px;background:#1976d2;color:#fff;border:none;border-radius:50%;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
+        addBtn.textContent = "+";
+        addBtn.onclick = function() {
+            // Sepete ekleme kodun burada
+            addToCart(
+                place.name,
+                place.image,
+                window.currentDay || 1,
+                place.category,
+                place.address || "",
+                null, null, place.opening_hours || "",
+                null,
+                place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
+                place.website || ""
+            );
+            if (typeof updateCart === "function") updateCart();
+        };
+
+        // Favoriden çıkar
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "remove-fav-btn";
+        removeBtn.setAttribute("data-name", place.name);
+        removeBtn.setAttribute("data-category", place.category);
+        removeBtn.setAttribute("data-lat", place.lat || "");
+        removeBtn.setAttribute("data-lon", place.lon || "");
+        removeBtn.title = "Remove from favorites";
+        removeBtn.style = "width:32px;height:32px;background:#ffecec;color:#d32f2f;border:none;border-radius:50%;font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
+        removeBtn.textContent = "–";
+        removeBtn.onclick = function() {
+            window.favTrips.splice(i, 1);
+            localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
+            renderFavoritePlacesPanel();
+        };
+
+        btnDiv.appendChild(addBtn);
+        btnDiv.appendChild(removeBtn);
+
+        li.appendChild(imgDiv);
+        li.appendChild(infoDiv);
+        li.appendChild(btnDiv);
+
+        ul.appendChild(li);
+    });
+
+    favPanel.appendChild(ul);
+}

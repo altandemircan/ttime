@@ -104,7 +104,8 @@ function toggleSidebarFeedback() {
 
 function toggleSidebarTrip() {
     const sidebarTrip = document.getElementById('sidebar-trip');
-    if (sidebarTrip && !sidebarTrip.classList.contains('open')) {
+    if (sidebarTrip && !sidebarTrip.classList.contains('open'))function renderFavoritePlacesPanel() {
+ {
         sidebarTrip.classList.add('open');
         const sidebarOverlayTrip = document.getElementById('sidebar-overlay-trip');
         if (sidebarOverlayTrip) sidebarOverlayTrip.classList.add('show');
@@ -115,9 +116,7 @@ window.toggleSidebarFavoritePlaces = function() {
     toggleSidebar('sidebar-overlay-favorite-places');
     const favPanelOverlay = document.getElementById('sidebar-overlay-favorite-places');
     if (favPanelOverlay && favPanelOverlay.classList.contains('open')) {
-        if (typeof renderFavoritePlacesPanel === 'function') {
-            renderFavoritePlacesPanel();
-        }
+        renderFavoritePlacesPanel();
     }
 };
 
