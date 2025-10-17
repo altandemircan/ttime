@@ -6799,3 +6799,14 @@ border-bottom:1px solid #ddd;
   font-weight: 500;
   margin-bottom: 2px;
 }
+
+
+
+
+/* trip details özel tasarım */
+#tt-trip-details .address, 
+#tt-trip-details .geoapify-tags-section, 
+#tt-trip-details .opening_hours,
+#tt-trip-details .item_action {
+    display: none !important;
+}
