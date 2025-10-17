@@ -6812,13 +6812,13 @@ border-bottom:1px solid #ddd;
 }
 
 .route-tooltip {
-    background: #22bb33;
-    color: #fff;
+    background: #fff;
+    color: #222;
     font-weight: 500;
     font-size: 15px;
     border-radius: 8px;
     padding: 8px 22px;
     box-shadow: 0 2px 12px #1976d2;
-    border: none;
+    border: none !important;
     opacity: 1;
 }
