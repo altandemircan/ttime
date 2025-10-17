@@ -6808,5 +6808,5 @@ border-bottom:1px solid #ddd;
 #tt-trip-details .geoapify-tags-section, 
 #tt-trip-details .opening_hours,
 #tt-trip-details .item_action {
-    display: none;
+    display: none !important;
 }
