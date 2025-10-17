@@ -9964,15 +9964,21 @@ function addRoutePolylineWithClick(map, coords) {
 
     polyline.on('click', async function(e) {
         const lat = e.latlng.lat, lng = e.latlng.lng;
-        const bufferMeters = 400; // YAKIN RESTORANLAR İÇİN KÜÇÜK YARIÇAP
+        const bufferMeters = 400;
         const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-        const categories = RESTAURANT_CATEGORIES.join(",");
+        const categories = [
+            "catering.restaurant",
+            "catering.cafe",
+            "catering.bar",
+            "catering.fast_food",
+            "catering.pub"
+        ].join(",");
         const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
         const resp = await fetch(url);
         const data = await resp.json();
 
         if (!data.features || data.features.length === 0) {
-            alert("Bu alanda restoran/bar/cafe bulunamadı!");
+            alert("Bu alanda restoran/cafe/bar bulunamadı!");
             return;
         }
 
@@ -9986,19 +9992,29 @@ function addRoutePolylineWithClick(map, coords) {
             .slice(0, 10);
 
         nearest10.forEach((f, idx) => {
+            // --- YEŞİL ÇİZGİ ---
             L.polyline([
                 [lat, lng],
                 [f.properties.lat, f.properties.lon]
             ], {
-                color: "#1976d2",
+                color: "#22bb33", // YEŞİL
                 weight: 4,
-                opacity: 0.85,
+                opacity: 0.95,
                 dashArray: "8,8"
             }).addTo(map);
 
+            // --- KIRMIZI "R" MARKER ---
+            const icon = L.divIcon({
+                html: getRedRestaurantMarkerHtml(),
+                className: "",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+            const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
+
+            // Popup
             const imgId = `rest-img-${f.properties.place_id || idx}`;
             const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
-            const marker = L.marker([f.properties.lat, f.properties.lon]).addTo(map);
             marker.bindPopup(html, { maxWidth: 320 });
             marker.on("popupopen", function() {
                 handlePopupImageLoading(f, imgId);
@@ -10153,3 +10169,10 @@ window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, l
     if (typeof updateCart === "function") updateCart();
     alert(`${name} gezi planına eklendi!`);
 };
+function getRedRestaurantMarkerHtml() {
+    return `
+      <div class="custom-marker-outer red" style="position:relative;">
+        <span class="custom-marker-label">R</span>
+      </div>
+    `;
+}
