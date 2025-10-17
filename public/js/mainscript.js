@@ -5,6 +5,39 @@ window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
 
+// Favori listesi (localStorage ile kalıcı)
+window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
+function saveFavTrips() {
+    localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
+}
+function isTripFav(item) {
+    return window.favTrips.some(f =>
+        f.name === item.name &&
+        f.category === item.category &&
+        String(f.lat) === String(item.lat) &&
+        String(f.lon) === String(item.lon)
+    );
+}
+function toggleFavTrip(item, heartEl) {
+    const idx = window.favTrips.findIndex(f =>
+        f.name === item.name &&
+        f.category === item.category &&
+        String(f.lat) === String(item.lat) &&
+        String(f.lon) === String(item.lon)
+    );
+    if (idx >= 0) {
+        window.favTrips.splice(idx, 1);
+        heartEl.textContent = "♡";
+        heartEl.classList.remove("is-fav");
+    } else {
+        window.favTrips.push(item);
+        heartEl.textContent = "♥";
+        heartEl.classList.add("is-fav");
+    }
+    saveFavTrips();
+}
+
+// Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
     const name = step?.name || category;
     const address = step?.address || "";
@@ -24,30 +57,29 @@ function generateStepHtml(step, day, category, idx = 0) {
     else if (category === "Accommodation")
         catIcon = "img/accommodation_icon.svg";
 
-    // --- TAGS DİNAMİK ---
-    let tagsHtml = "No tags found.";
-    const tags = (step.properties && step.properties.categories) || step.categories;
-    if (tags && Array.isArray(tags) && tags.length > 0) {
-        const uniqueTags = getUniqueSpecificTags(tags);
-        tagsHtml = uniqueTags.length > 0
-            ? uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ')
-            : "No tags found.";
-    }
+    // Favori mi?
+    const favState = isTripFav({ name, category, lat, lon }) ? "♥" : "♡";
+    const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
 
+    // Kalp için data attributeleriyle HTML:
     return `
     <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
-        <div class="visual" style="opacity: 1;">
+        <div class="visual" style="position:relative;">
            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-           <div class="geoapify-tags-section">
-              <div class="geoapify-tags">${tagsHtml}</div>
-           </div>
+           <span class="fav-heart ${favClass}"
+                 data-name="${name}"
+                 data-category="${category}"
+                 data-lat="${lat}"
+                 data-lon="${lon}"
+                 style="position:absolute;top:5px;right:8px;font-size:22px;cursor:pointer;user-select:none;">
+            ${favState}
+           </span>
         </div>
         <div class="info day_cats item-info-view">
             <div class="title">${name}</div>
             <div class="address">
                 <img src="img/address_icon.svg"> ${address}
             </div>
-            
             <div class="opening_hours">
                 <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
             </div>
@@ -78,6 +110,23 @@ function generateStepHtml(step, day, category, idx = 0) {
     </div>
     `;
 }
+
+// DOM'a ekledikten sonra, kalplere event ekle:
+function attachFavEvents() {
+    document.querySelectorAll('.fav-heart').forEach(function(el){
+        el.onclick = function(){
+            const item = {
+                name: el.getAttribute('data-name'),
+                category: el.getAttribute('data-category'),
+                lat: el.getAttribute('data-lat'),
+                lon: el.getAttribute('data-lon')
+            };
+            toggleFavTrip(item, el);
+        };
+    });
+}
+
+// Kartları ekledikten sonra çağır: attachFavEvents();
 
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
@@ -10421,3 +10470,4 @@ function getUniqueSpecificTags(tags) {
     }
     return result;
 }
+
