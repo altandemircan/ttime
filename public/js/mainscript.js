@@ -1701,23 +1701,17 @@ async function buildPlan(city, days) {
   let categoryResults = {};
   const cityCoords = await getCityCoordinates(city);
 
-  // Arama yarıçapı km olarak başlar
-  let baseRadius = 3;
-
+  // Kategorilerde arama: Cafe ve Accommodation sabit, diğeri boşsa lucky ile sonradan dolacak
   for (const cat of categories) {
-    // Kategoride farklı mekan bulana kadar alanı genişlet
-    let radius = baseRadius;
+    let radius = 3;
     let places = await getPlacesForCategory(city, cat, 30, radius * 1000);
     let attempt = 0;
     const maxAttempts = 5;
     const triedNames = new Set();
-
-    // Kategoride farklı isim bulamazsan, alanı genişlet
     while (places.length <= 1 && attempt < maxAttempts) {
       if (places.length === 1) triedNames.add(places[0].name);
       radius += 5;
       let newPlaces = await getPlacesForCategory(city, cat, 30, radius * 1000);
-      // Sadece yeni isim olan mekanları ekle
       newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
       if (newPlaces.length > 0) {
         places = places.concat(newPlaces);
@@ -1730,44 +1724,25 @@ async function buildPlan(city, days) {
   for (let day = 1; day <= days; day++) {
     let dailyPlaces = [];
     for (const cat of categories) {
-      let places = categoryResults[cat];
+      const places = categoryResults[cat];
       if (places.length > 0) {
-        // Aynı mekan gelmesin
-        let filteredPlaces = places.filter(p =>
-          !dailyPlaces.some(x =>
-            x.name === p.name &&
-            x.lat === p.lat &&
-            x.lon === p.lon
-          )
-        );
-
-        // Alan genişletilmiş olsa bile hala yeni mekan yoksa ilkini ver
-        if (filteredPlaces.length === 0 && places.length > 0) {
-          filteredPlaces = [places[0]];
+        if (cat === "Coffee" || cat === "Accommodation") {
+          // Cafe ve Accommodation sabit kalsın
+          dailyPlaces.push({ day, category: cat, ...places[0] });
+        } else {
+          // Diğer kategoriler gün başında boş gelsin (Lucky ile dolacak)
+          dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
         }
-
-        dailyPlaces.push({ day, category: cat, ...filteredPlaces[0] });
       } else {
         dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
       }
     }
-
-    const limitedPlaces = await limitDayRouteToMaxDistance(
-      dailyPlaces.filter(p => p.lat && p.lon),
-      day,
-      10
-    );
-    if (limitedPlaces.length < categories.length) {
-      plan = plan.concat(dailyPlaces);
-    } else {
-      plan = plan.concat(limitedPlaces);
-    }
+    plan = plan.concat(dailyPlaces);
   }
 
   plan = await enrichPlanWithWiki(plan);
   return plan;
 }
-
 
 function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
     if (places.length < 2) return places;
@@ -9994,36 +9969,41 @@ function attachImLuckyEvents() {
     btn.onclick = async function() {
       const stepsDiv = btn.closest('.steps');
       const day = stepsDiv.getAttribute('data-day');
+      const category = stepsDiv.getAttribute('data-category');
       const city = window.selectedCity;
-      const nearbyCats = ["Coffee", "Restaurant", "Touristic attraction", "Park"];
+
+      // O gün ve kategori için daha önce eklenen mekanları bul
+      const usedKeys = new Set();
+      document.querySelectorAll(`.steps[data-day="${day}"][data-category="${category}"]`).forEach(el => {
+        const name = el.querySelector('.title')?.textContent?.trim();
+        const lat = el.getAttribute('data-lat');
+        const lon = el.getAttribute('data-lon');
+        if (name && lat && lon) {
+          usedKeys.add(`${name}__${lat}__${lon}`);
+        }
+      });
+
+      let radius = 3;
+      let attempt = 0;
+      const maxAttempts = 6;
       let foundPlace = null;
-
-      // Eğer o gün/kategoriye eklenmiş mekanları bulmak istiyorsan, eklenenleri bir array'de tut
-      const usedPlaces = [];
-      // stepsDiv dışındaki mevcut mekan isimlerini bulabilirsin
-
-      for (let cat of nearbyCats) {
-        let radius = 3;
-        let attempt = 0;
-        const maxAttempts = 5;
-        while (!foundPlace && attempt < maxAttempts) {
-          const results = await getPlacesForCategory(city, cat, 8, radius * 1000);
-          // Aynı mekan tekrar gelmesin
-          foundPlace = results.find(p =>
-            p.lat && p.lon &&
-            !usedPlaces.includes(p.name)
-          );
-          radius += 5;
-          attempt++;
+      while (!foundPlace && attempt < maxAttempts) {
+        const results = await getPlacesForCategory(city, category, 10, radius * 1000);
+        for (const p of results) {
+          const key = `${p.name}__${p.lat}__${p.lon}`;
+          if (!usedKeys.has(key)) {
+            foundPlace = p;
+            break;
+          }
         }
-        if (foundPlace) {
-          foundPlace.day = day;
-          foundPlace.category = cat;
-          break;
-        }
+        radius += 5;
+        attempt++;
       }
+
       if (foundPlace) {
-        stepsDiv.outerHTML = generateStepHtml(foundPlace, day, foundPlace.category, 0);
+        foundPlace.day = day;
+        foundPlace.category = category;
+        stepsDiv.outerHTML = generateStepHtml(foundPlace, day, category, 0);
         attachFavEvents();
         attachImLuckyEvents();
       } else {
