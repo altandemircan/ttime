@@ -1859,32 +1859,25 @@ async function getCityCoordinates(city) {
 async function getPlacesForCategory(city, category, limit = 4, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
   if (!geoCategory) {
-    console.warn("Category not found in map:", category, code);
-    return [{ error: "Invalid category", category }];
+    return [];
   }
-
   const coords = await getCityCoordinates(city);
   if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
-    console.warn(`City coordinates not found for "${city}"`);
-    return [{ error: "City coordinates not found", city }];
+    return [];
   }
-
   const url = `/api/geoapify/places?categories=${geoCategory}&lon=${coords.lon}&lat=${coords.lat}&radius=${radius}&limit=${limit}`;
   let resp, data;
   try {
     resp = await fetch(url);
     data = await resp.json();
   } catch (e) {
-    console.warn("Geoapify place fetch failed:", e);
-    return [{ error: "API error", city, category }];
+    return [];
   }
-
   if (data.features && data.features.length > 0) {
-  const filtered = data.features.filter(f =>
-    !!f.properties.name && f.properties.name.trim().length > 2
-  );
-  const result = filtered.map(f => {
-      // Props içinden tüm olası lat/lon kaynaklarını güvenli şekilde al
+    const filtered = data.features.filter(f =>
+      !!f.properties.name && f.properties.name.trim().length > 2
+    );
+    const result = filtered.map(f => {
       const props = f.properties || {};
       let lat = Number(
         props.lat ??
@@ -1896,7 +1889,6 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
         props.longitude ??
         (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0])
       );
-      // Geçersizse null ata
       if (!Number.isFinite(lat)) lat = null;
       if (!Number.isFinite(lon)) lon = null;
       return {
@@ -1912,25 +1904,14 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
         properties: props
       };
     });
-
-    if (data.features && data.features.length > 0) {
-  const filtered = data.features.filter(f =>
-    !!f.properties.name && f.properties.name.trim().length > 2
-  );
-  const result = filtered.map(f => {
-    // ... mapping kodu ...
-  });
-
-  // Eğer hiç lat/lon yoksa, API sonuçları anlamsızdır
-  if (!result.some(item => item.lat !== null && item.lon !== null)) {
-    return [];
+    if (!result.some(item => item.lat !== null && item.lon !== null)) {
+      return [];
+    }
+    return result;
   }
-
-  return result;
+  return [];
 }
 
-// Hiç sonuç yoksa
-return [];
 
 // Şehir koordinatı bulma fonksiyonu
 async function getCityCoordinates(city) {
