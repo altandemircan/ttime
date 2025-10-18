@@ -60,7 +60,6 @@ async function searchRestaurantsAt(lat, lng, map) {
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 }
 
-
 // Ana fonksiyon — ÇİZGİ, MARKER, POPUP, SPINNER, FOTO HER ŞEY DAHİL!
 function addRoutePolylineWithClick(map, coords) {
     const polyline = L.polyline(coords, {
