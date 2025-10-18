@@ -10110,7 +10110,6 @@ function getUniqueSpecificTags(tags) {
     }
     return result;
 }
-
 function renderFavoritePlacesPanel() {
     const favPanel = document.getElementById("favorite-places-panel");
     if (!favPanel) return;
