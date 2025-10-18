@@ -11,6 +11,8 @@ window.__scaleBarDragSelDiv = null;
 
 // Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
+
+    
     const name = step?.name || category;
     const address = step?.address || "";
     const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
@@ -1489,15 +1491,17 @@ async function showResults() {
 
         // Aynı sırayı (Coffee → Attraction → Restaurant → Accommodation) koru
         for (const cat of dailyCategories) {
-            const step = latestTripPlan.find(item =>
-                item.day == day &&
-                (item.category === cat.en || item.category === cat.tr)
-            );
-            if (step) {
-                daySteps.push(step);
-                stepsHtml += generateStepHtml(step, day, cat.en);
-            }
-        }
+    let step = latestTripPlan.find(item =>
+        item.day == day &&
+        (item.category === cat.en || item.category === cat.tr)
+    );
+    // Eğer step yoksa, _noPlace step ekle!
+    if (!step) {
+        step = { day, category: cat.en, name: null, _noPlace: true };
+    }
+    daySteps.push(step);
+    stepsHtml += generateStepHtml(step, day, cat.en);
+}
 
         const dayId = `day-${day}`;
 
