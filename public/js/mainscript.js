@@ -44,7 +44,7 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
 
     
-    if (step._noPlace) {
+   if (step._noPlace && (!step.name || step.name === null)) {
   return `
     <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #c9e6ef; text-align:center; padding:32px 0;">
       <div style="font-size:18px; color:#1976d2; margin-bottom:16px;">No place found!</div>
@@ -1491,16 +1491,16 @@ async function showResults() {
 
         // Aynı sırayı (Coffee → Attraction → Restaurant → Accommodation) koru
         for (const cat of dailyCategories) {
-    let step = latestTripPlan.find(item =>
-        item.day == day &&
-        (item.category === cat.en || item.category === cat.tr)
-    );
-    // Eğer step yoksa, _noPlace step ekle!
-    if (!step) {
-        step = { day, category: cat.en, name: null, _noPlace: true };
-    }
-    daySteps.push(step);
-    stepsHtml += generateStepHtml(step, day, cat.en);
+  let step = latestTripPlan.find(item =>
+    item.day == day &&
+    (item.category === cat.en || item.category === cat.tr)
+  );
+  // step yoksa, _noPlace step ekle; name kesinlikle null olsun!
+  if (!step) {
+    step = { day, category: cat.en, name: null, _noPlace: true };
+  }
+  daySteps.push(step);
+  stepsHtml += generateStepHtml(step, day, cat.en);
 }
 
         const dayId = `day-${day}`;
@@ -1720,7 +1720,7 @@ async function buildPlan(city, days) {
 
         dailyPlaces.push({ day, category: cat, ...places[idx] });
       } else {
-  dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
+dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
 }
     }
 
