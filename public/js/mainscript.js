@@ -9313,7 +9313,6 @@ const DATASET = 'srtm30m';
     if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
     return res;
   }
-
   async function viaOpenElevation(samples) {
     const CHUNK = 100;
     const res = [];
@@ -9436,7 +9435,6 @@ const DATASET = 'srtm30m';
             r.readAsDataURL(file);
         });
       }
-
       const payload = {
         type,
         message,
@@ -9512,7 +9510,6 @@ if (typeof startKm !== 'number' || typeof endKm !== 'number') {
   });
   return;
 }
-
   // Kümülatif mesafe
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
@@ -9568,7 +9565,6 @@ console.log('SEGMENT PROFILE SET', day, startKm, endKm);
   const totalKm = Number(container.dataset.totalKm) || 0;
   const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
     ? getRouteMarkerPositionsOrdered(day) : [];
-
   // --- Segment/profil marker ve km çizelgesi güncelle ---
 if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   // Tam profile dön
@@ -9646,7 +9642,6 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
     tx.textContent = `${Math.round(ev)} m`;
     gridG.appendChild(tx);
   }
-
   // Alan
   let topD = '';
   for (let i = 0; i < elevSmooth.length; i++) {
@@ -9802,9 +9797,7 @@ tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
 });
   track.removeEventListener('mousemove', track.__onMove);
 track.addEventListener('mousemove', track.__onMove);
-
 }
-
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
   const cid = `route-map-day${d}`;
@@ -9852,7 +9845,6 @@ function resetDayAction(day, confirmationContainerId) {
     } catch (_) {}
   }
 
-  // 3) Ölçek çubukları / irtifa UI temizlik (satır içi)
   try {
     const exp = document.getElementById(`expanded-route-scale-bar-day${d}`);
     if (exp) exp.innerHTML = '';
@@ -9890,7 +9882,6 @@ function resetDayAction(day, confirmationContainerId) {
       }
     });
   }
-
   // 7) Mesafe etiketleri ve rota istatistikleri
   if (typeof clearDistanceLabels === 'function') { try { clearDistanceLabels(d); } catch (_) {} }
   if (typeof updateRouteStatsUI === 'function')  { try { updateRouteStatsUI(d); } catch (_) {} }
