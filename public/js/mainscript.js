@@ -12,7 +12,7 @@ window.__scaleBarDragSelDiv = null;
 // Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
 
-    
+
     const name = step?.name || category;
     const address = step?.address || "";
     const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
@@ -2769,10 +2769,14 @@ async function enrichCategoryResults(places, city) {
 
 async function enrichPlanWithWiki(plan) {
     for (const step of plan) {
+        // _noPlace step ise, image ve description ekleme!
+        if (step._noPlace) continue;
         step.image = await getImageForPlace(step.name, step.category, step.city || selectedCity);
-step.description = "No detailed description.";
+        step.description = "No detailed description.";
     }
     return plan;
+    console.log(plan);
+
 }
 
 // Proxy çağrısı
