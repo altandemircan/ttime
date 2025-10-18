@@ -3916,7 +3916,6 @@ if (anyDayHasRealItem && !hideAddCat) {
   dayList.appendChild(addMoreButton);
 }
 
-
 cartDiv.appendChild(dayContainer);
   }
 // Her gün için AI info ekle
