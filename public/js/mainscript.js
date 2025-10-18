@@ -802,28 +802,30 @@ function parsePlanRequest(text) {
     let days = null;
     let location = null;
 
-    // İngilizce cümlelerin sonundaki şehir adını bul (ör: in Helsinki)
-    let cityMatch = text.match(/(?:in|for|to)\s+([A-Za-zçğıöşüÇĞİÖŞÜ0-9'’\s]+)$/i);
-    if (cityMatch) {
-        location = cityMatch[1].trim();
+    // 1. Eğer seçili öneri varsa, doğrudan onu kullan
+    if (window.selectedSuggestion && window.selectedSuggestion.props) {
+        const props = window.selectedSuggestion.props;
+        // city + country varsa birleştir, yoksa name kullan
+        location = [props.city || props.name, props.country].filter(Boolean).join(', ');
+    } else if (window.selectedLocation && typeof window.selectedLocation === "object") {
+        location = [window.selectedLocation.city || window.selectedLocation.name, window.selectedLocation.country].filter(Boolean).join(', ');
     }
 
-    // 4-day, 3 day vb. gün sayısını bul
+    // 2. Gün sayısını yine inputtan çek
     let dayMatch = text.match(/(\d+)[- ]*day/);
     if (dayMatch) {
         days = parseInt(dayMatch[1]);
     }
-
-    // Türkçe "2 gün", "Roma 2 gün" vb.
+    // Türkçe "2 gün" vs.
     if (!days) {
-        let trMatch = text.match(/([A-Za-zçğıöşüÇĞİÖŞÜ0-9'’\s]+)[, ]+(\d+)[, ]*gün/i);
+        let trMatch = text.match(/(\d+)[, ]*gün/i);
         if (trMatch) {
-            location = trMatch[1].trim();
-            days = parseInt(trMatch[2]);
+            days = parseInt(trMatch[1]);
         }
     }
+    if (!days || isNaN(days) || days < 1) days = 2;
 
-    // Sadece şehir adı (tek kelime)
+    // Eğer hala location yoksa, eski regexlerle dene (fallback)
     if (!location) {
         let wordMatch = text.match(/\b([A-Z][a-z'’]+)\b/);
         if (wordMatch) location = wordMatch[1];
