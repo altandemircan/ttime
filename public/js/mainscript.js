@@ -41,8 +41,19 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     const favState = isTripFav({ name, category, lat, lon }) ? "♥" : "♡";
     const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
 
-    // Kalp için data attributeleriyle HTML:
-    return `
+    
+    if (step._noPlace) {
+  return `
+    <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #c9e6ef; text-align:center; padding:32px 0;">
+      <div style="font-size:18px; color:#1976d2; margin-bottom:16px;">No place found!</div>
+      <button class="im-lucky-btn" style="padding:8px 22px;font-size:17px;font-weight:500;border-radius:8px;background:#1976d2;color:#fff;cursor:pointer;">
+        I'm lucky!
+      </button>
+    </div>
+  `;
+}
+
+return `
     <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
         <div class="visual" style="position:relative;">
            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
@@ -423,7 +434,7 @@ const response = await fetch(url);
       if (!chatInput || !suggestionsDiv) return;
       if (window.selectedLocationLocked) return;
 
-      const raw = chatInput.value.trim();
+      const raw = chatInput.value.trim();generateStepHtml
       if (raw.length < 2) {
         suggestionsDiv.innerHTML = "";
         suggestionsDiv.classList.add('hidden');
@@ -1549,6 +1560,7 @@ await Promise.all(days.map(day => renderRouteForDay(day)));
 await saveTripAfterRoutes();
 renderMyTripsPanel();
 fillGeoapifyTagsOnly();
+attachImLuckyEvents();
 
 }
 
@@ -1704,8 +1716,8 @@ async function buildPlan(city, days) {
 
         dailyPlaces.push({ day, category: cat, ...places[idx] });
       } else {
-        dailyPlaces.push({ day, category: cat, name: cat, address: "No address found" });
-      }
+  dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
+}
     }
 
     // Günün toplam rotasını limitle: day ile çağır!
@@ -6356,31 +6368,6 @@ function attachLongPressDrag(marker, map, { delay = 400, moveThreshold = 12 } = 
         timer = null;
         pressed = false;
         armed = false;
-        handedToLeaflet = false;
-        // Marker drag aktif bayrağını kapat
-        window.__tt_markerDragActive = false;
-    };
-
-    const onDown = (e) => {
-        const isTouch = e.type.startsWith('touch');
-        const pt = isTouch ? (e.touches[0] || e.changedTouches?.[0]) : e;
-        if (!pt) return;
-
-        startX = pt.clientX;
-        startY = pt.clientY;
-        pressed = true;
-        armed = false;
-        handedToLeaflet = false;
-
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
-            armed = true;
-            if ('vibrate' in navigator) navigator.vibrate(20);
-        }, delay);
-        // Burada stopPropagation yapmıyoruz; harita long-press tarafı kendi filtresiyle marker’ı ayıklayacak.
-    };
-
-    const maybeStartDrag = (e) => {
         if (!pressed) return;
 
         const isTouch = e.type.startsWith('touch');
@@ -9977,4 +9964,32 @@ function getUniqueSpecificTags(tags) {
     });
     // Sonuç: [{tag, label}]
     return Object.entries(labelToTag).map(([label, tag]) => ({ tag, label }));
+}
+function attachImLuckyEvents() {
+  document.querySelectorAll('.im-lucky-btn').forEach(btn => {
+    btn.onclick = async function() {
+      const stepsDiv = btn.closest('.steps');
+      const day = stepsDiv.getAttribute('data-day');
+      const city = window.selectedCity;
+      const nearbyCats = ["Coffee", "Restaurant", "Touristic attraction", "Park"];
+      let foundPlace = null;
+      for (let cat of nearbyCats) {
+        const results = await getPlacesForCategory(city, cat, 8);
+        if (results.length > 0 && results[0].lat && results[0].lon) {
+          foundPlace = results[Math.floor(Math.random() * results.length)];
+          foundPlace.day = day;
+          foundPlace.category = cat;
+          break;
+        }
+      }
+      if (foundPlace) {
+        stepsDiv.outerHTML = generateStepHtml(foundPlace, day, foundPlace.category, 0);
+        attachFavEvents();
+        attachImLuckyEvents();
+      } else {
+        btn.textContent = "No place found!";
+        btn.disabled = true;
+      }
+    };
+  });
 }
