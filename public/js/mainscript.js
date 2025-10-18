@@ -1511,45 +1511,7 @@ async function showResults() {
             <p>Here are some suggestions for your trip:</p>
             <div class="sect">
                 <ul class="accordion-list">`;
-// mainscript.js dosyanın DOMContentLoaded veya showResults fonksiyonunun içine ekle!
-// Trip başlığının hemen altına buton eklemek için:
-const tripTitleDiv = document.getElementById("trip_title");
-if (tripTitleDiv && !document.getElementById('restaurant-on-the-road-btn')) {
-    const btn = document.createElement('button');
-    btn.id = 'restaurant-on-the-road-btn';
-    btn.textContent = '🍽️ Restaurant on the road';
-    btn.style = "padding:9px 18px;font-size:16px;font-weight:600;border-radius:8px;background:#fff;color:#1976d2;border:1px solid #1976d2;box-shadow:0 2px 8px #e0e0e0;cursor:pointer;margin:12px 0;";
-    tripTitleDiv.insertAdjacentElement('afterend', btn);
-    btn.onclick = async function() {
-        // 1. Rota noktalarını al
-        const points = typeof getDayPoints === "function" ? getDayPoints(window.currentDay || 1) : [];
-        if (!points || points.length < 2) {
-            alert("Route not found!");
-            return;
-        }
-        // 2. Polyline'ı al
-        const routeCoords = points.map(pt => `${pt.lng},${pt.lat}`).join(',');
-        // 3. Buffer mesafesi
-        const bufferMeters = 600;
-        // 4. Geoapify'dan restoranları çek
-        const resp = await fetch(`/api/geoapify/places?categories=catering.restaurant&filter=buffer:${routeCoords},${bufferMeters}&limit=50`);
-        const data = await resp.json();
-        if (!data.features || data.features.length === 0) {
-            alert("No restaurant found on the route!");
-            return;
-        }
-        // 5. İsimleri göster
-        const names = data.features.map(f => f.properties.name).filter(Boolean);
-        alert("Restaurants on the route:\n\n" + names.join("\n"));
-        // 6. Markerları haritaya ekle
-        if (window._roadMarkers) {
-            window._roadMarkers.forEach(m => { try { m.remove(); } catch(_){} });
-            window._roadMarkers = [];
-        }
-        window._roadMarkers = [];
-        data.features.forEach(f => showMarkerOnMap(f.properties.lat, f.properties.lon, f.properties.name));
-    };
-}
+
     const daysCount = Math.max(...latestTripPlan.map(item => item.day));
     for (let day = 1; day <= daysCount; day++) {
         let stepsHtml = '';
@@ -3610,62 +3572,6 @@ function updateCart() {
     const isEmptyDay = dayItemsArr.length === 0;
 
     let dayContainer = document.getElementById(`day-container-${day}`);
-
-
-    // --- Restaurant-on-the-road butonu ekle ---
-let mapDiv = document.getElementById(`route-map-day${day}`);
-if (mapDiv && !document.getElementById(`restaurant-on-the-road-btn-day${day}`)) {
-    const btn = document.createElement('button');
-    btn.id = `restaurant-on-the-road-btn-day${day}`;
-    btn.textContent = '🍽️ Restaurant on the road';
-    btn.style = "padding:9px 18px;font-size:16px;font-weight:600;border-radius:8px;background:#fff;color:#1976d2;border:1px solid #1976d2;box-shadow:0 2px 8px #e0e0e0;cursor:pointer;margin:12px 0;";
-    mapDiv.parentNode.insertBefore(btn, mapDiv); // Haritanın üstüne ekle!
-
-btn.onclick = async function() {
-    window._roadMarkers = window._roadMarkers || [];
-    window._roadMarkers.forEach(m => { try { m.remove(); } catch(_){} });
-    window._roadMarkers = [];
-
-    const points = typeof getDayPoints === "function" ? getDayPoints(day) : [];
-    if (!points || points.length < 2) {
-        alert("Route not found!");
-        return;
-    }
-
-    // Rota noktalarının ortalamasını bul:
-    let avgLat = 0, avgLng = 0;
-    points.forEach(pt => {
-        avgLat += pt.lat;
-        avgLng += pt.lng;
-    });
-    avgLat /= points.length;
-    avgLng /= points.length;
-
-    const bufferMeters = 800; // arama yarıçapı
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${avgLng},${avgLat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
-
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-    if (!data.features || data.features.length === 0) {
-        alert("No restaurant found on the route!");
-        return;
-    }
-    const names = data.features.map(f => f.properties.name).filter(Boolean);
-    alert("Restaurants on the route:\n\n" + names.join("\n"));
-
-    const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
-    const bigMap = expObj && expObj.expandedMap;
-    if (bigMap) {
-        data.features.forEach(f => {
-            L.marker([f.properties.lat, f.properties.lon]).addTo(bigMap).bindPopup(`<b>${f.properties.name}</b>`);
-        });
-    }
-};
-}
-
-
 
     if (!dayContainer) {
       dayContainer = document.createElement("div");
