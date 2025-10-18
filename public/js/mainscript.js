@@ -1416,20 +1416,6 @@ async function generateAITags(name, category) {
     }
 }
 
-function showAITags(place) {
-    const tagsContainer = document.createElement('div');
-    tagsContainer.className = 'ai-tags';
-    
-    place.ai_tags.forEach(tag => {
-        const tagElement = document.createElement('span');
-        tagElement.textContent = `#${tag}`;
-        tagsContainer.appendChild(tagElement);
-    });
-    
-    return tagsContainer;
-}
-
-
 let hasAutoAddedToCart = false;
 async function showResults() {
 
