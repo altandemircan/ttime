@@ -10265,20 +10265,25 @@ function renderFavoritePlacesPanel() {
         addBtn.style = "width:32px;height:32px;background:#1976d2;color:#fff;border:none;border-radius:50%;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
         addBtn.textContent = "+";
         addBtn.onclick = function() {
-            // Sepete ekleme kodun burada
-            addToCart(
-                place.name,
-                place.image,
-                window.currentDay || 1,
-                place.category,
-                place.address || "",
-                null, null, place.opening_hours || "",
-                null,
-                place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
-                place.website || ""
-            );
-            if (typeof updateCart === "function") updateCart();
-        };
+    // Sepete ekleme kodun burada
+    addToCart(
+        place.name,
+        place.image,
+        window.currentDay || 1,
+        place.category,
+        place.address || "",
+        null, null, place.opening_hours || "",
+        null,
+        place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
+        place.website || ""
+    );
+    if (typeof updateCart === "function") updateCart();
+
+    // Favorite paneli kapat
+    document.getElementById('sidebar-overlay-favorite-places').classList.remove('open');
+    // Trip plan panelini aç
+    window.toggleSidebar('sidebar-overlay-trip');
+};
 
         // Favoriden çıkar
         const removeBtn = document.createElement("button");
