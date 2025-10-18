@@ -2489,13 +2489,7 @@ function showCategoryList(day) {
     const addFavBtn = document.createElement("button");
 addFavBtn.className = "add-favorite-place-btn";
 addFavBtn.textContent = "❤️ Add favorite place";
-addFavBtn.style = `
-  width:100%;margin:10px 0 0 0;padding:10px 0;
-  background:#ffe5f1;color:#bc1976;
-  border:none;border-radius:8px;font-size:16px;
-  font-weight:600;cursor:pointer;display:flex;
-  align-items:center;justify-content:center;gap:7px;
-`;
+
 addFavBtn.onclick = function() {
     window.toggleSidebarFavoritePlaces();
 };
