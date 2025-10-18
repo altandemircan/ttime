@@ -6830,11 +6830,9 @@ border-bottom:1px solid #ddd;
 
 #tt-trip-details .tt-resp-track {
     flex-wrap: wrap;
-        padding: 20px 0;
+    padding: 20px 10px;
 }
-#tt-trip-details .tt-resp {
-        padding: 20px;
-}
+
 #tt-trip-details .address, 
 #tt-trip-details .geoapify-tags-section, 
 #tt-trip-details .opening_hours,
