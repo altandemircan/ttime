@@ -108,7 +108,7 @@ function toggleSidebarTrip() {
 }
 
 window.toggleSidebarFavoritePlaces = function() {
-    toggleSidebar('sidebar-overlay-favorite-places');
+    window.toggleSidebar('sidebar-overlay-favorite-places');
     const favPanelOverlay = document.getElementById('sidebar-overlay-favorite-places');
     if (favPanelOverlay && favPanelOverlay.classList.contains('open')) {
         renderFavoritePlacesPanel();
