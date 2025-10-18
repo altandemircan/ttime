@@ -9983,9 +9983,9 @@ function fillGeoapifyTagsOnly() {
     const step = window.cart.find(i => i.name === name && i.category === category);
     if (geoTagsDiv && step && step.properties && Array.isArray(step.properties.categories)) {
       const uniqueTags = getUniqueSpecificTags(step.properties.categories);
-      geoTagsDiv.innerHTML = uniqueTags.map(t =>
-        `<span class="geo-tag" title="${t.tag}">${t.label}</span>`
-      ).join(' ');
+geoTagsDiv.innerHTML = uniqueTags.map(t =>
+  `<span class="geo-tag" title="${t.tag}">${t.label}</span>`
+).join(' ');
     } else if (geoTagsDiv) {
       geoTagsDiv.textContent = "No tags found.";
     }
@@ -9995,17 +9995,17 @@ function fillGeoapifyTagsOnly() {
 
 function getUniqueSpecificTags(tags) {
     if (!Array.isArray(tags)) return [];
-    // label => tag eşlemesi
+    // label => {tag, length}
     const labelToTag = {};
     tags.forEach(t => {
         const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        // Eğer aynı label zaten varsa, daha uzun olanı seç
-        if (!labelToTag[label] || t.length > labelToTag[label].length) {
-            labelToTag[label] = t;
+        // Eğer aynı label zaten varsa, en uzun olanı seç
+        if (!labelToTag[label] || t.length > labelToTag[label].tag.length) {
+            labelToTag[label] = { tag: t, label };
         }
     });
     // Sonuç: [{tag, label}]
-    return Object.entries(labelToTag).map(([label, tag]) => ({ tag, label }));
+    return Object.values(labelToTag);
 }
 
 function renderFavoritePlacesPanel() {
