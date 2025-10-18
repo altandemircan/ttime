@@ -7,19 +7,18 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener('DOMContentLoaded', function() {
     const allSidebars = document.querySelectorAll('.sidebar-overlay');
     
-    function toggleSidebar(sidebarId) {
-        const clickedSidebar = document.getElementById(sidebarId);
-        if (clickedSidebar) {
-            // Close all sidebars except the one clicked
-            allSidebars.forEach(sidebar => {
-                if (sidebar.id !== sidebarId) {
-                    sidebar.classList.remove('open');
-                }
-            });
-            // Toggle the clicked sidebar
-            clickedSidebar.classList.toggle('open');
-        }
+    window.toggleSidebar = function(sidebarId) {
+    const allSidebars = document.querySelectorAll('.sidebar-overlay');
+    const clickedSidebar = document.getElementById(sidebarId);
+    if (clickedSidebar) {
+        allSidebars.forEach(sidebar => {
+            if (sidebar.id !== sidebarId) {
+                sidebar.classList.remove('open');
+            }
+        });
+        clickedSidebar.classList.toggle('open');
     }
+};
     
     window.toggleSidebarUpdates = function() {
         toggleSidebar('sidebar-overlay-updates');
