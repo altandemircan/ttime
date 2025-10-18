@@ -33,10 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleSidebar('sidebar-overlay-login');
     };
 
-    window.toggleSidebarFavoritePlaces = function() {
-        toggleSidebar('sidebar-overlay-favorite-places');
-    };
-
     window.toggleSidebarFeedback = function() {
         toggleSidebar('sidebar-overlay-feedback');
     };
