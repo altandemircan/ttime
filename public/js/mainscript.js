@@ -9966,7 +9966,9 @@ function getUniqueSpecificTags(tags) {
 }
 function attachImLuckyEvents() {
   document.querySelectorAll('.im-lucky-btn').forEach(btn => {
-    btn.onclick = async function() {
+    // Önce eski click eventini kaldır
+    btn.onclick = null;
+    btn.addEventListener('click', async function() {
       const stepsDiv = btn.closest('.steps');
       const day = stepsDiv.getAttribute('data-day');
       const category = stepsDiv.getAttribute('data-category');
@@ -10003,13 +10005,17 @@ function attachImLuckyEvents() {
       if (foundPlace) {
         foundPlace.day = day;
         foundPlace.category = category;
-        stepsDiv.outerHTML = generateStepHtml(foundPlace, day, category, 0);
+        const newStepHtml = generateStepHtml(foundPlace, day, category, 0);
+        // stepsDiv'u yeni kart ile değiştir
+        stepsDiv.insertAdjacentHTML('afterend', newStepHtml);
+        stepsDiv.remove();
+        // Favori ve Lucky butonlarını tekrar bağla
         attachFavEvents();
         attachImLuckyEvents();
       } else {
         btn.textContent = "No place found!";
         btn.disabled = true;
       }
-    };
+    });
   });
 }
