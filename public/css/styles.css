@@ -6832,7 +6832,9 @@ border-bottom:1px solid #ddd;
     flex-wrap: wrap;
         padding: 20px 0;
 }
-
+#tt-trip-details .tt-resp {
+        padding: 20px;
+}
 #tt-trip-details .address, 
 #tt-trip-details .geoapify-tags-section, 
 #tt-trip-details .opening_hours,
@@ -6845,7 +6847,7 @@ border-bottom:1px solid #ddd;
 }
 #tt-trip-details .visual img {
     width: 285px !important;
-    border-radius: 16px !important;
+
 }
 #tt-trip-details .info .title {
 
