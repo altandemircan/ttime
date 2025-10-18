@@ -9991,21 +9991,19 @@ geoTagsDiv.innerHTML = uniqueTags.map(t =>
     }
   });
 }
-
-
 function getUniqueSpecificTags(tags) {
     if (!Array.isArray(tags)) return [];
-    // label => {tag, length}
     const labelToTag = {};
     tags.forEach(t => {
+        // Label'ı bul
         const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        // Eğer aynı label zaten varsa, en uzun olanı seç
-        if (!labelToTag[label] || t.length > labelToTag[label].tag.length) {
-            labelToTag[label] = { tag: t, label };
+        // Daha önce label eklenmemişse veya yeni tag daha uzun ise güncelle
+        if (!labelToTag[label] || t.length > labelToTag[label].length) {
+            labelToTag[label] = t;
         }
     });
-    // Sonuç: [{tag, label}]
-    return Object.values(labelToTag);
+    // [{tag, label}]
+    return Object.entries(labelToTag).map(([label, tag]) => ({ tag, label }));
 }
 
 function renderFavoritePlacesPanel() {
