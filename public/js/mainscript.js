@@ -55,10 +55,8 @@ function generateStepHtml(step, day, category, idx = 0) {
      let tagsHtml = "";
     const tags = (step.properties && step.properties.categories) || step.categories;
     if (tags && Array.isArray(tags) && tags.length > 0) {
-        tagsHtml = tags.map(t => {
-            const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            return `<span class="geo-tag" title="${t}">${label}</span>`;
-        }).join(' ');
+       const uniqueTags = getUniqueSpecificTags(tags);
+tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
     }
 
 
@@ -4655,10 +4653,8 @@ function showTripDetails(startDate) {
                     let tagsHtml = "No tags found.";
                     const tags = (step.properties && step.properties.categories) || step.categories;
                     if (tags && Array.isArray(tags) && tags.length > 0) {
-                        tagsHtml = tags.map(t => {
-                            const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                            return `<span class="geo-tag" title="${t}">${label}</span>`;
-                        }).join(' ');
+                        const uniqueTags = getUniqueSpecificTags(tags);
+tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
                     }
                     stepsHtml += `
                     <div class="steps" data-day="${day}" data-category="${step.category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
@@ -4820,10 +4816,8 @@ function showTripDetails(startDate) {
                 let tagsHtml = "No tags found.";
                 const tags = (step.properties && step.properties.categories) || step.categories;
                 if (tags && Array.isArray(tags) && tags.length > 0) {
-                    tagsHtml = tags.map(t => {
-                        const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        return `<span class="geo-tag" title="${t}">${label}</span>`;
-                    }).join(' ');
+                   const uniqueTags = getUniqueSpecificTags(tags);
+tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
                 }
                 stepsHtml += `
                 <div class="steps" data-day="${day}" data-category="${step.category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
