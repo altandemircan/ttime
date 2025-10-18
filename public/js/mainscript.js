@@ -9993,32 +9993,21 @@ function fillGeoapifyTagsOnly() {
 }
 
 
-// tags: ["building", "building.historic", "building.place_of_worship", ...]
 function getUniqueSpecificTags(tags) {
     if (!Array.isArray(tags)) return [];
-    // 1. String olarak sırala, en uzunlardan başla (en spesifik en sonda olur)
-    tags = tags.slice().sort((a, b) => b.length - a.length);
-    const used = new Set();
-    // 2. Her tag için, eğer daha genel hali varsa onu gösterme
-    const result = [];
-    for (const t of tags) {
-        // Eğer bu tag'in bir üst kategorisi 'used' içinde ise, atla
-        let isSubOfUsed = false;
-        for (const u of used) {
-            if (t !== u && t.startsWith(u + ".")) {
-                isSubOfUsed = true;
-                break;
-            }
-        }
-        // Aynı label'ı da tekrar etmesin (örn: Place Of Worship)
+    // label => tag eşlemesi
+    const labelToTag = {};
+    tags.forEach(t => {
         const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        if (!isSubOfUsed && !result.some(r => r.label === label)) {
-            used.add(t);
-            result.push({ tag: t, label });
+        // Eğer aynı label zaten varsa, daha uzun olanı seç
+        if (!labelToTag[label] || t.length > labelToTag[label].length) {
+            labelToTag[label] = t;
         }
-    }
-    return result;
+    });
+    // Sonuç: [{tag, label}]
+    return Object.entries(labelToTag).map(([label, tag]) => ({ tag, label }));
 }
+
 function renderFavoritePlacesPanel() {
     const favPanel = document.getElementById("favorite-places-panel");
     if (!favPanel) return;
