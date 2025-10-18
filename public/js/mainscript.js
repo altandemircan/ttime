@@ -1706,28 +1706,28 @@ async function buildPlan(city, days) {
 
   for (let day = 1; day <= days; day++) {
     let dailyPlaces = [];
-    let usedIndexes = {};
     for (const cat of categories) {
       const places = categoryResults[cat];
       if (places.length > 0) {
-        let idx;
-        do {
-          idx = Math.floor(Math.random() * places.length);
-        } while (usedIndexes[cat] && usedIndexes[cat].includes(idx) && usedIndexes[cat].length < places.length);
-
-        usedIndexes[cat] = usedIndexes[cat] || [];
-        usedIndexes[cat].push(idx);
-
-        dailyPlaces.push({ day, category: cat, ...places[idx] });
+        // Aynı mekan gelmesin (isim + lat + lon kontrolü)
+        let filteredPlaces = places.filter(p =>
+          !dailyPlaces.some(x =>
+            x.name === p.name &&
+            x.lat === p.lat &&
+            x.lon === p.lon
+          )
+        );
+        if (filteredPlaces.length === 0) filteredPlaces = places;
+        let idx = Math.floor(Math.random() * filteredPlaces.length);
+        dailyPlaces.push({ day, category: cat, ...filteredPlaces[idx] });
       } else {
-dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
-}
+        dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
+      }
     }
 
-    // Günün toplam rotasını limitle: day ile çağır!
     const limitedPlaces = await limitDayRouteToMaxDistance(
       dailyPlaces.filter(p => p.lat && p.lon),
-      day,            // <-- eklendi
+      day,
       10
     );
     if (limitedPlaces.length < categories.length) {
@@ -1740,7 +1740,6 @@ dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
   plan = await enrichPlanWithWiki(plan);
   return plan;
 }
-
 function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
     if (places.length < 2) return places;
     let remaining = [...places];
