@@ -21,32 +21,32 @@ document.addEventListener('DOMContentLoaded', function() {
 };
     
     window.toggleSidebarUpdates = function() {
-        toggleSidebar('sidebar-overlay-updates');
-    };
-    
-    window.toggleSidebarGallery = function() {
-        toggleSidebar('sidebar-overlay-gallery');
-    };
-    
-    window.toggleSidebarLogin = function() {
-        toggleSidebar('sidebar-overlay-login');
-    };
+    window.toggleSidebar('sidebar-overlay-updates');
+};
 
-    window.toggleSidebarFeedback = function() {
-        toggleSidebar('sidebar-overlay-feedback');
-    };
-    
-    window.toggleSidebarTrip = function() {
-        toggleSidebar('sidebar-overlay-trip');
-    };
+window.toggleSidebarGallery = function() {
+    window.toggleSidebar('sidebar-overlay-gallery');
+};
 
-    window.toggleSidebarMyTrips = function() {
-        toggleSidebar('sidebar-overlay-mytrips');
-    };
+window.toggleSidebarLogin = function() {
+    window.toggleSidebar('sidebar-overlay-login');
+};
 
-    window.toggleSidebarPrivacyTerms = function() {
-        toggleSidebar('sidebar-overlay-privacyterms');
-    };
+window.toggleSidebarFeedback = function() {
+    window.toggleSidebar('sidebar-overlay-feedback');
+};
+
+window.toggleSidebarTrip = function() {
+    window.toggleSidebar('sidebar-overlay-trip');
+};
+
+window.toggleSidebarMyTrips = function() {
+    window.toggleSidebar('sidebar-overlay-mytrips');
+};
+
+window.toggleSidebarPrivacyTerms = function() {
+    window.toggleSidebar('sidebar-overlay-privacyterms');
+};
 });
 
 
