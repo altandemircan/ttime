@@ -2479,30 +2479,35 @@ function showCategoryList(day) {
     console.log("showCategoryList ÇAĞRILDI, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
+    // --- AI info section kaldır ---
+    const aiInfo = cartDiv.querySelector('.ai-info-section') || document.querySelector('.ai-info-section');
+    if (aiInfo) aiInfo.remove();
+
     cartDiv.innerHTML = "";
 
-    // --- Üstteki otomatik plan ve custom note bölümleri aynı ---
+    // --- Üstteki otomatik plan bölümü ---
     const autoPlanContainer = document.createElement("div");
     autoPlanContainer.id = "auto-plan-container";
     cartDiv.appendChild(autoPlanContainer);
 
+    // --- FAVORİ BUTONU (manuel eklemeden önce) ---
     const addFavBtn = document.createElement("button");
-addFavBtn.className = "add-favorite-place-btn";
-addFavBtn.textContent = "❤️ Add favorite place";
-addFavBtn.style = `
-  width:100%;margin:10px 0 0 0;padding:10px 0;
-  background:#ffe5f1;color:#bc1976;
-  border:none;border-radius:8px;font-size:16px;
-  font-weight:600;cursor:pointer;display:flex;
-  align-items:center;justify-content:center;gap:7px;
-`;
-addFavBtn.onclick = function() {
-    window.toggleSidebarFavoritePlaces();
-};
-cartDiv.appendChild(addFavBtn);
+    addFavBtn.className = "add-favorite-place-btn";
+    addFavBtn.textContent = "❤️ Add favorite place";
+    addFavBtn.style = `
+      width:100%;margin:10px 0 0 0;padding:10px 0;
+      background:#ffe5f1;color:#bc1976;
+      border:none;border-radius:8px;font-size:16px;
+      font-weight:600;cursor:pointer;display:flex;
+      align-items:center;justify-content:center;gap:7px;
+    `;
+    addFavBtn.onclick = function() {
+        window.toggleSidebarFavoritePlaces();
+    };
+    cartDiv.appendChild(addFavBtn);
 
-
-const manualAddSection = document.createElement("div");
+    // --- Manuel yer ekleme bölümü ---
+    const manualAddSection = document.createElement("div");
     manualAddSection.className = "manual-add-section";
     manualAddSection.innerHTML = `
         <h3>Add Custom Place to Day ${day}</h3>
@@ -2513,6 +2518,7 @@ const manualAddSection = document.createElement("div");
     `;
     cartDiv.appendChild(manualAddSection);
 
+    // --- Custom note bölümü ---
     const customNoteContainer = document.createElement("div");
     customNoteContainer.id = "customNoteContainer";
     customNoteContainer.style.display = "none";
@@ -2535,6 +2541,7 @@ const manualAddSection = document.createElement("div");
         addCustomNoteButton.style.display = "none";
     };
     cartDiv.appendChild(addCustomNoteButton);
+
 
     // --- Kategori tanımları ---
     const basicPlanCategories = [
