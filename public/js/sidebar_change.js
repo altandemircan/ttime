@@ -33,10 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleSidebar('sidebar-overlay-login');
     };
 
-    window.toggleSidebarFavoritePlaces = function() {
-        toggleSidebar('sidebar-overlay-favorite-places');
-    };
-
     window.toggleSidebarFeedback = function() {
         toggleSidebar('sidebar-overlay-feedback');
     };
@@ -110,6 +106,14 @@ function toggleSidebarTrip() {
         if (sidebarOverlayTrip) sidebarOverlayTrip.classList.add('show');
     }
 }
+
+window.toggleSidebarFavoritePlaces = function() {
+    toggleSidebar('sidebar-overlay-favorite-places');
+    const favPanelOverlay = document.getElementById('sidebar-overlay-favorite-places');
+    if (favPanelOverlay && favPanelOverlay.classList.contains('open')) {
+        renderFavoritePlacesPanel();
+    }
+};
 
 window.toggleSidebarMyTrips = function(event) {
     const sidebarMyTripsOverlay = document.getElementById('sidebar-overlay-mytrips');
