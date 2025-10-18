@@ -6830,6 +6830,7 @@ border-bottom:1px solid #ddd;
 
 #tt-trip-details .tt-resp-track {
     flex-wrap: wrap;
+        padding: 20px 0;
 }
 
 #tt-trip-details .address, 
@@ -6847,19 +6848,8 @@ border-bottom:1px solid #ddd;
     border-radius: 16px !important;
 }
 #tt-trip-details .info .title {
-    color: #ffffff !important;
-    font-size: 1rem !important;
-}
 
-#tt-trip-details .info {
-    background: linear-gradient(0deg, rgb(0 0 0) 0%, rgb(0 0 0 / 0%) 100%);
-    position: absolute;
-    z-index: 123;
-    bottom: 0;
-    width: -webkit-fill-available;
-    border-radius: 16px;
-    min-height: 40px;
-    justify-content: flex-end;
+    font-size: 1rem !important;
 }
 
 
