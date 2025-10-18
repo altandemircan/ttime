@@ -9973,16 +9973,20 @@ function attachImLuckyEvents() {
       const category = stepsDiv.getAttribute('data-category');
       const city = window.selectedCity;
 
-      // Lucky geçmişini globalde tut
+      // Lucky geçmişini tüm günler için o kategoriye bak!
       window.luckyHistory = window.luckyHistory || {};
-      window.luckyHistory[day] = window.luckyHistory[day] || {};
-      window.luckyHistory[day][category] = window.luckyHistory[day][category] || [];
+      let usedKeys = new Set();
 
-      const usedKeys = new Set(window.luckyHistory[day][category]);
+      // Tüm günlerde aynı kategoriye eklenen mekanları topla
+      Object.values(window.luckyHistory).forEach(dayObj => {
+        if (dayObj[category]) {
+          dayObj[category].forEach(key => usedKeys.add(key));
+        }
+      });
 
       let radius = 3;
       let attempt = 0;
-      const maxAttempts = 6;
+      const maxAttempts = 8;
       let foundPlace = null;
       while (!foundPlace && attempt < maxAttempts) {
         const results = await getPlacesForCategory(city, category, 10, radius * 1000);
@@ -9990,7 +9994,9 @@ function attachImLuckyEvents() {
           const key = `${p.name}__${p.lat}__${p.lon}`;
           if (!usedKeys.has(key)) {
             foundPlace = p;
-            // Lucky geçmişine ekle!
+            // ŞİMDİKİ günün luckyHistory'sine de ekle
+            window.luckyHistory[day] = window.luckyHistory[day] || {};
+            window.luckyHistory[day][category] = window.luckyHistory[day][category] || [];
             window.luckyHistory[day][category].push(key);
             break;
           }
@@ -10000,29 +10006,23 @@ function attachImLuckyEvents() {
       }
 
       if (foundPlace) {
-  foundPlace.day = day;
-  foundPlace.category = category;
-  const newStepHtml = generateStepHtml(foundPlace, day, category, 0);
+        foundPlace.day = day;
+        foundPlace.category = category;
+        const newStepHtml = generateStepHtml(foundPlace, day, category, 0);
 
-  // stepsDiv'un parentNode'unu kontrol et
-  const parent = stepsDiv.parentNode;
-  if (parent) {
-    // Yeni bir DOM elemanı oluştur (div), innerHTML ile yeni kartı koy
-    const tmp = document.createElement('div');
-    tmp.innerHTML = newStepHtml;
-    const newStepEl = tmp.firstElementChild;
-
-    // stepsDiv'u DOM'dan çıkar, yerine yeni kartı koy
-    parent.replaceChild(newStepEl, stepsDiv);
-
-    // Favori ve Lucky butonlarını tekrar bağla
-    attachFavEvents();
-    attachImLuckyEvents();
-  }
-} else {
-  btn.textContent = "No place found!";
-  btn.disabled = true;
-}
+        const parent = stepsDiv.parentNode;
+        if (parent) {
+          const tmp = document.createElement('div');
+          tmp.innerHTML = newStepHtml;
+          const newStepEl = tmp.firstElementChild;
+          parent.replaceChild(newStepEl, stepsDiv);
+          attachFavEvents();
+          attachImLuckyEvents();
+        }
+      } else {
+        btn.textContent = "No place found!";
+        btn.disabled = true;
+      }
     });
   });
 }
