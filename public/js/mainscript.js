@@ -46,7 +46,7 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
         <div class="visual" style="position:relative;">
            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-     <div class="geoapify-tags-section">
+            <div class="geoapify-tags-section">
               <div class="geoapify-tags">${tagsHtml}</div>
            </div>
            <span class="fav-heart ${favClass}"
@@ -61,10 +61,10 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
         <div class="info day_cats item-info-view">
             <div class="title">${name}</div>
             <div class="address">
-                <img src="img/address_icon.svg"> ${address}
+                <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
             </div>
             <div class="opening_hours">
-                <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
+                <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
             </div>
         </div>
         <div class="item_action">
@@ -4626,7 +4626,7 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
                               <div class="geoapify-tags">${tagsHtml}</div>
                             </div>
                             <div class="opening_hours">
-                                <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
+                                <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
                             </div>
                         </div>
                         <div class="item_action">
@@ -4789,7 +4789,7 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
                           <div class="geoapify-tags">${tagsHtml}</div>
                         </div>
                         <div class="opening_hours">
-                            <img src="img/hours_icon.svg"> ${opening ? opening : "Opening hours not found."}
+                            <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
                         </div>
                     </div>
                     <div class="item_action">
