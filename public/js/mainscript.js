@@ -1880,10 +1880,10 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
   }
 
   if (data.features && data.features.length > 0) {
-    const filtered = data.features.filter(f =>
-      !!f.properties.name && f.properties.name.trim().length > 2
-    );
-    const result = filtered.map(f => {
+  const filtered = data.features.filter(f =>
+    !!f.properties.name && f.properties.name.trim().length > 2
+  );
+  const result = filtered.map(f => {
       // Props içinden tüm olası lat/lon kaynaklarını güvenli şekilde al
       const props = f.properties || {};
       let lat = Number(
@@ -1913,17 +1913,24 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
       };
     });
 
-    // Eğer hiç lat/lon yoksa, API sonuçları anlamsızdır
-    if (!result.some(item => item.lat !== null && item.lon !== null)) {
-      return [{ error: "No results with valid coordinates", city, category }];
-    }
+    if (data.features && data.features.length > 0) {
+  const filtered = data.features.filter(f =>
+    !!f.properties.name && f.properties.name.trim().length > 2
+  );
+  const result = filtered.map(f => {
+    // ... mapping kodu ...
+  });
 
-    return result;
+  // Eğer hiç lat/lon yoksa, API sonuçları anlamsızdır
+  if (!result.some(item => item.lat !== null && item.lon !== null)) {
+    return [];
   }
 
-  // Hiç sonuç yoksa
-  return [{ error: "No places found", city, category }];
+  return result;
 }
+
+// Hiç sonuç yoksa
+return [];
 
 // Şehir koordinatı bulma fonksiyonu
 async function getCityCoordinates(city) {
