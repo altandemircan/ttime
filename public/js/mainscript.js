@@ -1029,7 +1029,7 @@ async function handleAnswer(answer) {
   const inputEl = document.getElementById("user-input");
   const raw = (answer || "").toString().trim();
 
-   // ZORUNLU: Öneriden şehir seçilmediyse planlama yapma
+  // ZORUNLU: Öneriden şehir seçilmediyse planlama yapma
   if (!window.__locationPickedFromSuggestions) {
     addMessage("Please select a city from the suggestions first.", "bot-message");
     window.isProcessing = false;
@@ -1041,37 +1041,43 @@ async function handleAnswer(answer) {
 
   // Çok kısa veya tamamen boş ise
   if (!raw || raw.length < 2) {
-    addMessage("Please enter a location request (e.g. 'Rome 2 days').", "bot-message");
+    addMessage("Please enter a location request (e.g. 'Rome 2 days trip plan').", "bot-message");
     window.isProcessing = false;
     return;
   }
 
   if (window.__suppressNextUserEcho) {
-      window.__suppressNextUserEcho = false;
+    window.__suppressNextUserEcho = false;
   } else {
-      addMessage(raw, "user-message");
+    addMessage(raw, "user-message");
   }
   showTypingIndicator();
   window.lastUserQuery = raw;
 
   // ŞEHİR VE GÜN SAYISINI PARSE ET
-const { location, days } = parsePlanRequest(raw);
+  const { location, days } = parsePlanRequest(raw);
 
-// Burada lastUserQuery'yi şehir ve trip plan formatında değiştir
-window.lastUserQuery = `${location} trip plan`;
+  // Burada lastUserQuery'yi şehir ve trip plan formatında değiştir
+  window.lastUserQuery = `${location} trip plan`;
 
   try {
-
-
     // parsePlanRequest beklenen alanları çıkaramadıysa
     if (!location || !days || isNaN(days)) {
-      addMessage("I could not understand that. Try for example: 'Paris 3 days' or 'Plan a 2-day tour for Rome'.", "bot-message");
+      addMessage("I could not understand that. Try for example: 'Paris 3 days trip' or 'Plan a 2-day tour for Rome'.", "bot-message");
       return;
     }
 
     // Ekstra gürültü filtresi
     if (location.length < 2) {
-      addMessage("Location name looks too short. Please clarify (e.g. 'Osaka 1 day').", "bot-message");
+      addMessage("Location name looks too short. Please clarify (e.g. 'Tokyo 1 day trip plan').", "bot-message");
+      return;
+    }
+
+    // EKLENDİ: Şehir koordinatı kontrolü
+    const coords = await getCityCoordinates(location);
+    if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
+      addMessage("Could not find a valid location for your selection. Please select a valid city from the suggestions.", "bot-message");
+      window.isProcessing = false;
       return;
     }
 
