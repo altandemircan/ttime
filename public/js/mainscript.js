@@ -10000,16 +10000,29 @@ function attachImLuckyEvents() {
       }
 
       if (foundPlace) {
-        foundPlace.day = day;
-        foundPlace.category = category;
-        const newStepHtml = generateStepHtml(foundPlace, day, category, 0);
-        stepsDiv.outerHTML = newStepHtml;
-        attachFavEvents();
-        attachImLuckyEvents();
-      } else {
-        btn.textContent = "No place found!";
-        btn.disabled = true;
-      }
+  foundPlace.day = day;
+  foundPlace.category = category;
+  const newStepHtml = generateStepHtml(foundPlace, day, category, 0);
+
+  // stepsDiv'un parentNode'unu kontrol et
+  const parent = stepsDiv.parentNode;
+  if (parent) {
+    // Yeni bir DOM elemanı oluştur (div), innerHTML ile yeni kartı koy
+    const tmp = document.createElement('div');
+    tmp.innerHTML = newStepHtml;
+    const newStepEl = tmp.firstElementChild;
+
+    // stepsDiv'u DOM'dan çıkar, yerine yeni kartı koy
+    parent.replaceChild(newStepEl, stepsDiv);
+
+    // Favori ve Lucky butonlarını tekrar bağla
+    attachFavEvents();
+    attachImLuckyEvents();
+  }
+} else {
+  btn.textContent = "No place found!";
+  btn.disabled = true;
+}
     });
   });
 }
