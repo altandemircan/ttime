@@ -3907,35 +3907,7 @@ dayList.appendChild(distanceSeparator);
     }
 dayContainer.appendChild(dayList);
 
-// --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
-const anyDayHasRealItem = window.cart.some(i =>
-  !i._starter && !i._placeholder && i.category !== "Note" && i.name
-);
-const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-
-
-// EKLE: FAVORİ BUTONU (tam burada, addMoreButton'dan önce)
 if (anyDayHasRealItem && !hideAddCat) {
-  // 1. FAVORİ BUTON
-  if (!document.getElementById('add-favorite-place-btn-' + day)) {
-    const favBtn = document.createElement('button');
-    favBtn.className = "add-favorite-place-btn";
-    favBtn.id = 'add-favorite-place-btn-' + day;
-    favBtn.textContent = "❤️ Add2 favorite place";
-    favBtn.style = `
-      width:100%;margin:10px 0 0 0;padding:10px 0;
-      background:#ffe5f1;color:#bc1976;
-      border:none;border-radius:8px;font-size:16px;
-      font-weight:600;cursor:pointer;display:flex;
-      align-items:center;justify-content:center;gap:7px;
-    `;
-   favBtn.onclick = function() {
-    window.toggleSidebarFavoritePlaces();
-};
-    dayList.appendChild(favBtn);
-  }
-
-  // 2. ADD CATEGORY BUTONU
   const addMoreButton = document.createElement("button");
   addMoreButton.className = "add-more-btn";
   addMoreButton.textContent = "+ Add Category";
@@ -3943,6 +3915,7 @@ if (anyDayHasRealItem && !hideAddCat) {
   addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
   dayList.appendChild(addMoreButton);
 }
+
 
 cartDiv.appendChild(dayContainer);
   }
