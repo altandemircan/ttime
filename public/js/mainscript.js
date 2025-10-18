@@ -2689,7 +2689,7 @@ cartDiv.appendChild(closeButton);
 
 const addFavBtn = document.createElement("button");
 addFavBtn.className = "add-favorite-place-btn";
-addFavBtn.textContent = "❤️ Add favorite place";
+addFavBtn.textContent = "❤️ Add1 favorite place";
 addFavBtn.style = `
   width:100%;margin:10px 0 0 0;padding:10px 0;
   background:#ffe5f1;color:#bc1976;
@@ -3921,7 +3921,7 @@ if (anyDayHasRealItem && !hideAddCat) {
     const favBtn = document.createElement('button');
     favBtn.className = "add-favorite-place-btn";
     favBtn.id = 'add-favorite-place-btn-' + day;
-    favBtn.textContent = "❤️ Add favorite place";
+    favBtn.textContent = "❤️ Add2 favorite place";
     favBtn.style = `
       width:100%;margin:10px 0 0 0;padding:10px 0;
       background:#ffe5f1;color:#bc1976;
