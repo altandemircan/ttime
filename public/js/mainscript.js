@@ -9993,16 +9993,15 @@ geoTagsDiv.innerHTML = uniqueTags.map(t =>
 }
 function getUniqueSpecificTags(tags) {
     if (!Array.isArray(tags)) return [];
+    // Sadece en uzun tag'ı ve label'ı eşle
     const labelToTag = {};
     tags.forEach(t => {
-        // Label'ı bul
         const label = t.split('.').pop().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        // Daha önce label eklenmemişse veya yeni tag daha uzun ise güncelle
         if (!labelToTag[label] || t.length > labelToTag[label].length) {
             labelToTag[label] = t;
         }
     });
-    // [{tag, label}]
+    // Sonuç: [{tag, label}]
     return Object.entries(labelToTag).map(([label, tag]) => ({ tag, label }));
 }
 
