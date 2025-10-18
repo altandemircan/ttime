@@ -9966,24 +9966,19 @@ function getUniqueSpecificTags(tags) {
 }
 function attachImLuckyEvents() {
   document.querySelectorAll('.im-lucky-btn').forEach(btn => {
-    // Önce eski click eventini kaldır
     btn.onclick = null;
     btn.addEventListener('click', async function() {
       const stepsDiv = btn.closest('.steps');
-      const day = stepsDiv.getAttribute('data-day');
+      const day = String(stepsDiv.getAttribute('data-day'));
       const category = stepsDiv.getAttribute('data-category');
       const city = window.selectedCity;
 
-      // O gün ve kategori için daha önce eklenen mekanları bul
-      const usedKeys = new Set();
-      document.querySelectorAll(`.steps[data-day="${day}"][data-category="${category}"]`).forEach(el => {
-        const name = el.querySelector('.title')?.textContent?.trim();
-        const lat = el.getAttribute('data-lat');
-        const lon = el.getAttribute('data-lon');
-        if (name && lat && lon) {
-          usedKeys.add(`${name}__${lat}__${lon}`);
-        }
-      });
+      // Lucky geçmişini globalde tut
+      window.luckyHistory = window.luckyHistory || {};
+      window.luckyHistory[day] = window.luckyHistory[day] || {};
+      window.luckyHistory[day][category] = window.luckyHistory[day][category] || [];
+
+      const usedKeys = new Set(window.luckyHistory[day][category]);
 
       let radius = 3;
       let attempt = 0;
@@ -9995,6 +9990,8 @@ function attachImLuckyEvents() {
           const key = `${p.name}__${p.lat}__${p.lon}`;
           if (!usedKeys.has(key)) {
             foundPlace = p;
+            // Lucky geçmişine ekle!
+            window.luckyHistory[day][category].push(key);
             break;
           }
         }
@@ -10006,10 +10003,7 @@ function attachImLuckyEvents() {
         foundPlace.day = day;
         foundPlace.category = category;
         const newStepHtml = generateStepHtml(foundPlace, day, category, 0);
-        // stepsDiv'u yeni kart ile değiştir
-        stepsDiv.insertAdjacentHTML('afterend', newStepHtml);
-        stepsDiv.remove();
-        // Favori ve Lucky butonlarını tekrar bağla
+        stepsDiv.outerHTML = newStepHtml;
         attachFavEvents();
         attachImLuckyEvents();
       } else {
