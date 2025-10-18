@@ -3907,7 +3907,15 @@ dayList.appendChild(distanceSeparator);
     }
 dayContainer.appendChild(dayList);
 
+// --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
+const anyDayHasRealItem = window.cart.some(i =>
+  !i._starter && !i._placeholder && i.category !== "Note" && i.name
+);
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+
+
 if (anyDayHasRealItem && !hideAddCat) {
+  // 2. ADD CATEGORY BUTONU
   const addMoreButton = document.createElement("button");
   addMoreButton.className = "add-more-btn";
   addMoreButton.textContent = "+ Add Category";
