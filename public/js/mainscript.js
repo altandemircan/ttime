@@ -2486,15 +2486,6 @@ function showCategoryList(day) {
     autoPlanContainer.id = "auto-plan-container";
     cartDiv.appendChild(autoPlanContainer);
 
-    const addFavBtn = document.createElement("button");
-addFavBtn.className = "add-favorite-place-btn";
-addFavBtn.textContent = "❤️ Add favorite place";
-
-addFavBtn.onclick = function() {
-    window.toggleSidebarFavoritePlaces();
-};
-cartDiv.appendChild(addFavBtn);
-
 
 const manualAddSection = document.createElement("div");
     manualAddSection.className = "manual-add-section";
@@ -2529,6 +2520,20 @@ const manualAddSection = document.createElement("div");
         addCustomNoteButton.style.display = "none";
     };
     cartDiv.appendChild(addCustomNoteButton);
+
+
+
+    const addFavBtn = document.createElement("button");
+addFavBtn.className = "add-favorite-place-btn";
+addFavBtn.textContent = "❤️ Add favorite place";
+
+addFavBtn.onclick = function() {
+    window.toggleSidebarFavoritePlaces();
+};
+cartDiv.appendChild(addFavBtn);
+
+
+
 
     // --- Kategori tanımları ---
     const basicPlanCategories = [
