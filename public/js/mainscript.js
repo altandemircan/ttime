@@ -2698,7 +2698,7 @@ addFavBtn.style = `
   align-items:center;justify-content:center;gap:7px;
 `;
 addFavBtn.onclick = function() {
-  openFavoritePlacesSidebar(); // Panel/modal açan fonksiyonun!
+    window.toggleSidebarFavoritePlaces();
 };
 cartDiv.appendChild(addFavBtn);
 
@@ -3929,9 +3929,9 @@ if (anyDayHasRealItem && !hideAddCat) {
       font-weight:600;cursor:pointer;display:flex;
       align-items:center;justify-content:center;gap:7px;
     `;
-    favBtn.onclick = function() {
-      openFavoritePlacesSidebar();
-    };
+   favBtn.onclick = function() {
+    window.toggleSidebarFavoritePlaces();
+};
     dayList.appendChild(favBtn);
   }
 
