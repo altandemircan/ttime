@@ -3780,7 +3780,7 @@ dayList.appendChild(distanceSeparator);
                       </div>
                       ${item.website ? `
                         <div class="website-info" style="margin-top:8px;">
-                          🌐 Website: <a href="${item.website}" target="_blank" rel="noopener">
+                          🔗 <a href="${item.website}" target="_blank" rel="noopener">
                             ${item.website.replace(/^https?:\/\//, '')}
                           </a>
                         </div>
