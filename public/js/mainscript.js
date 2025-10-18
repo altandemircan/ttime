@@ -1843,19 +1843,31 @@ async function getCityCoordinates(city) {
 async function getPlacesForCategory(city, category, limit = 4, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
   if (!geoCategory) {
-    console.warn("Kategori haritada bulunamadı:", category, code);
-    return [];
+    console.warn("Category not found in map:", category, code);
+    return [{ error: "Invalid category", category }];
   }
+
   const coords = await getCityCoordinates(city);
-  if (!coords || !coords.lat || !coords.lon) return [];
+  if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
+    console.warn(`City coordinates not found for "${city}"`);
+    return [{ error: "City coordinates not found", city }];
+  }
+
   const url = `/api/geoapify/places?categories=${geoCategory}&lon=${coords.lon}&lat=${coords.lat}&radius=${radius}&limit=${limit}`;
-  const resp = await fetch(url);
-  const data = await resp.json();
+  let resp, data;
+  try {
+    resp = await fetch(url);
+    data = await resp.json();
+  } catch (e) {
+    console.warn("Geoapify place fetch failed:", e);
+    return [{ error: "API error", city, category }];
+  }
+
   if (data.features && data.features.length > 0) {
     const filtered = data.features.filter(f =>
       !!f.properties.name && f.properties.name.trim().length > 2
     );
-    return filtered.map(f => {
+    const result = filtered.map(f => {
       // Props içinden tüm olası lat/lon kaynaklarını güvenli şekilde al
       const props = f.properties || {};
       let lat = Number(
@@ -1884,8 +1896,17 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
         properties: props
       };
     });
+
+    // Eğer hiç lat/lon yoksa, API sonuçları anlamsızdır
+    if (!result.some(item => item.lat !== null && item.lon !== null)) {
+      return [{ error: "No results with valid coordinates", city, category }];
+    }
+
+    return result;
   }
-  return [];
+
+  // Hiç sonuç yoksa
+  return [{ error: "No places found", city, category }];
 }
 
 // Şehir koordinatı bulma fonksiyonu
