@@ -44,8 +44,15 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
 
     
-if (step._noPlace && (!step.name || step.name === null)) {
-  return '';
+   if (step._noPlace && (!step.name || step.name === null)) {
+  return `
+    <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #c9e6ef; text-align:center; padding:32px 0;">
+      <div style="font-size:18px; color:#1976d2; margin-bottom:16px;">No place found!</div>
+      <button class="im-lucky-btn" style="padding:8px 22px;font-size:17px;font-weight:500;border-radius:8px;background:#1976d2;color:#fff;cursor:pointer;">
+        I'm lucky!
+      </button>
+    </div>
+  `;
 }
 
 return `
@@ -1483,32 +1490,15 @@ async function showResults() {
         const daySteps = [];
 
         // Aynı sırayı (Coffee → Attraction → Restaurant → Accommodation) koru
-for (const cat of dailyCategories) {
+        for (const cat of dailyCategories) {
   let step = latestTripPlan.find(item =>
     item.day == day &&
     (item.category === cat.en || item.category === cat.tr)
   );
-
-  // step yoksa veya step._noPlace ise, Lucky ile yeni mekan bul:
-  if (!step || step._noPlace) {
-    const places = await getPlacesForCategory(window.selectedCity, cat.en, 10, 3000);
-    if (places.length > 0) {
-      // Lucky mantığı: daha önce eklenmeyen ilk mekanı bul
-      const usedNames = new Set(daySteps.map(s => s.name));
-      const place = places.find(p => !usedNames.has(p.name));
-      if (place) {
-        place.day = day;
-        place.category = cat.en;
-        step = place;
-      }
-    }
+  // step yoksa, _noPlace step ekle; name kesinlikle null olsun!
+  if (!step) {
+    step = { day, category: cat.en, name: null, _noPlace: true };
   }
-
-  if (!step || !step.name) {
-    // Hala mekan yoksa, o kategoriyi DOM'a ekleme!
-    continue;
-  }
-
   daySteps.push(step);
   stepsHtml += generateStepHtml(step, day, cat.en);
 }
