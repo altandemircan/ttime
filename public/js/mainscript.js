@@ -519,28 +519,33 @@ async function geoapifyLocationAutocomplete(query) {
  
 
 function extractLocationQuery(input) {
-    // 1. "for X", "in X", "to X", "at X" gibi ifadeler varsa onları al
+    // 1. "for X", "in X", "to X", "at X" gibi kalıplar varsa onları al
     let cityMatch = input.match(/\b(?:for|in|to|at)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/i);
     if (cityMatch) return cityMatch[1].trim();
 
-    // 2. Cümlede geçen büyük harfle başlayan kelime(leri) bul
-    let cityWord = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)?)/);
-    if (cityWord) return cityWord[0].trim();
-
-    // 3. Token'lar arasında büyük harfle başlayanı al
-    let tokens = input.split(/\s+/);
-    for (let i = 0; i < tokens.length; i++) {
-        if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(tokens[i])) return tokens[i];
+    // 2. Tüm harfli kelimeleri bul (küçük/büyük harf ayrımı yok)
+    const matches = input.match(/[A-Za-zÇĞİÖŞÜçğıöşü'’\-]{3,}/g);
+    if (matches && matches.length > 0) {
+        // En anlamlı kelimeyi veya en sondakini döndür
+        return matches[matches.length - 1].trim();
     }
 
-    // 4. fallback: tüm harfli, uzun kelimeler arasından en sonuncuyu al
-    let fallback = input.match(/([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/g);
-    if (fallback && fallback.length) return fallback[fallback.length-1].trim();
+    // 3. fallback: inputtaki en son harfli kelime
+    const tokens = input.trim().split(/\s+/);
+    for (let i = tokens.length - 1; i >= 0; i--) {
+        let t = tokens[i].replace(/[^A-Za-zÇĞİÖŞÜçğıöşü'’\-]/g, "");
+        if (t.length > 2) return t;
+    }
 
-    // 5. Son çare: ilk kelime
-    return input.split(" ")[0].trim();
-}
+    // 4. Son çare: ilk harfli kelime
+    for (let i = 0; i < tokens.length; i++) {
+        let t = tokens[i].replace(/[^A-Za-zÇĞİÖŞÜçğıöşü'’\-]/g, "");
+        if (t.length > 2) return t;
+    }
 
+    // 5. En son fallback: inputun tamamı
+    return input.trim();
+}}
 
  
     let __autoAbort = null;
