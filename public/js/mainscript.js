@@ -9964,43 +9964,25 @@ function attachImLuckyEvents() {
       const category = stepsDiv.getAttribute('data-category');
       const city = window.selectedCity;
 
-      // Tüm önceki lucky ve sepete eklenenleri dışla!
+      // --- SADECE O GÜN/KATEGORİ LUCKY HISTORY ---
       window.luckyHistory = window.luckyHistory || {};
-      let usedKeys = new Set();
+      window.luckyHistory[day] = window.luckyHistory[day] || {};
+      window.luckyHistory[day][category] = window.luckyHistory[day][category] || [];
 
-      // Lucky geçmişi
-      Object.values(window.luckyHistory).forEach(dayObj => {
-        if (dayObj[category]) {
-          dayObj[category].forEach(key => usedKeys.add(key));
-        }
-      });
-      // Sepetteki aynı isim/lat/lon'lu mekanlar da dışlansın:
-      if (window.cart && Array.isArray(window.cart)) {
-        window.cart.forEach(item => {
-          if (item.category === category) {
-            const key = `${item.name}__${item.location?.lat}__${item.location?.lng}`;
-            usedKeys.add(key);
-          }
-        });
-      }
-
+      const usedKeys = new Set(window.luckyHistory[day][category]);
       let radius = 3;
       let attempt = 0;
       const maxAttempts = 8;
       let foundPlace = null;
       while (!foundPlace && attempt < maxAttempts) {
-        let results = await getPlacesForCategory(city, category, 10, radius * 1000);
-        // Farklı mekanları filtrele!
-        results = results.filter(p => {
+        const results = await getPlacesForCategory(city, category, 10, radius * 1000);
+        for (const p of results) {
           const key = `${p.name}__${p.lat}__${p.lon}`;
-          return !usedKeys.has(key);
-        });
-        if (results.length > 0) {
-          foundPlace = results[0];
-          const key = `${foundPlace.name}__${foundPlace.lat}__${foundPlace.lon}`;
-          window.luckyHistory[day] = window.luckyHistory[day] || {};
-          window.luckyHistory[day][category] = window.luckyHistory[day][category] || [];
-          window.luckyHistory[day][category].push(key);
+          if (!usedKeys.has(key)) {
+            foundPlace = p;
+            window.luckyHistory[day][category].push(key);
+            break;
+          }
         }
         radius += 5;
         attempt++;
