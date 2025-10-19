@@ -5,9 +5,10 @@ window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
 function countryFlag(iso2) {
-        if (!iso2) return "";
-        return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => 127397 + c.charCodeAt()));
-    }
+  // ISO2 kodunu Unicode bayrağa çevirir
+  if (!iso2) return "";
+  return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => 127397 + c.charCodeAt()));
+}
 function hideSuggestionsDiv(clear = false) {
     const el = document.getElementById('suggestions');
     if (!el) return;
@@ -25,13 +26,13 @@ function showSuggestionsDiv() {
     if (!el.getAttribute('style')) el.removeAttribute('style');
 }
 
-    function enableSendButton() {
+function enableSendButton() {
       const btn = document.getElementById("send-button");
       if (!btn) return;
       btn.removeAttribute("disabled");
       btn.classList.remove("disabled");
     }
-    function disableSendButton() {
+function disableSendButton() {
       const btn = document.getElementById("send-button");
       if (!btn) return;
       btn.setAttribute("disabled","disabled");
@@ -452,48 +453,48 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     function showSuggestions() {
-        if (!suggestionsDiv) return;
-        suggestionsDiv.innerHTML = "";
+    if (!suggestionsDiv) return;
+    suggestionsDiv.innerHTML = "";
 
-        const options = [
-            "Plan a 2-day tour for Rome",
-            "Do a 3 days city tour in Helsinki",
-            "1-day city tour in Osaka"
-        ];
+    const options = [
+        { text: "Plan a 2-day tour for Rome", flag: countryFlag("IT") },      // 🇮🇹
+        { text: "Do a 3 days city tour in Helsinki", flag: countryFlag("FI") }, // 🇫🇮
+        { text: "1-day city tour in Osaka", flag: countryFlag("JP") }         // 🇯🇵
+    ];
 
-        if (selectedOption) {
+    if (selectedOption) {
+        const suggestion = document.createElement("div");
+        suggestion.className = "category-area-option selected-suggestion";
+        suggestion.innerText = selectedOption;
+
+        const close = document.createElement("span");
+        close.className = "close-suggestion";
+        close.innerText = "✖";
+        close.style.marginLeft = "8px";
+        close.style.cursor = "pointer";
+        close.onclick = function(e) {
+            e.stopPropagation();
+            selectedOption = null;
+            chatInput.value = "";
+            showSuggestions();
+        };
+
+        suggestion.appendChild(close);
+        suggestionsDiv.appendChild(suggestion);
+    } else {
+        options.forEach(option => {
             const suggestion = document.createElement("div");
-            suggestion.className = "category-area-option selected-suggestion";
-            suggestion.innerText = selectedOption;
-
-            const close = document.createElement("span");
-            close.className = "close-suggestion";
-            close.innerText = "✖";
-            close.style.marginLeft = "8px";
-            close.style.cursor = "pointer";
-            close.onclick = function(e) {
-                e.stopPropagation();
-                selectedOption = null;
+            suggestion.className = "category-area-option";
+            suggestion.innerText = `${option.text} ${option.flag}`;
+            suggestion.onclick = () => {
+                selectedOption = option.text;
                 chatInput.value = "";
                 showSuggestions();
             };
-
-            suggestion.appendChild(close);
             suggestionsDiv.appendChild(suggestion);
-        } else {
-            options.forEach(option => {
-                const suggestion = document.createElement("div");
-                suggestion.className = "category-area-option";
-                suggestion.innerText = option;
-                suggestion.onclick = () => {
-                    selectedOption = option;
-                    chatInput.value = "";
-                    showSuggestions();
-                };
-                suggestionsDiv.appendChild(suggestion);
-            });
-        }
+        });
     }
+}
 
     if (!chatInput) return;
 
