@@ -506,44 +506,43 @@ let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
 async function geoapifyLocationAutocomplete(query) {
+    // 1. İlk autocomplete isteği
     let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
     let data = await response.json();
     let features = data.features || [];
 
-    // Eğer sonuç yoksa, Türkiye ile tekrar dene
+    // 2. Eğer hiç sonuç yoksa, sadece ülke parametresiyle tekrar dene (bu genel bir UX fallback, manuel değil)
     if (!features.length) {
-        response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query + ', Turkey')}`);
+        response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
         data = await response.json();
         features = data.features || [];
     }
 
-    // Eğer sadece region veya area suggestion geldiyse, yakın şehirleri de çek
+    // 3. Region/area suggestion varsa, onun koordinatına yakın şehirleri de ekle
     const region = features.find(f => {
         const t = f.properties.result_type || f.properties.place_type || '';
-        return ['region', 'area'].includes(t);
+        return ['region', 'area'].includes(t) && f.properties.lat && f.properties.lon;
     });
     if (region) {
-        const { lat, lon } = region.properties;
-        // İkinci bir arama: bu koordinatlara yakın (örn. 80km) şehirler
-        const url = `/api/geoapify/nearby-cities?lat=${lat}&lon=${lon}&radius=80000`; // 80km
         try {
-            const resNearby = await fetch(url);
+            const resNearby = await fetch(
+                `/api/geoapify/nearby-cities?lat=${region.properties.lat}&lon=${region.properties.lon}&radius=80000`
+            );
             const nearbyData = await resNearby.json();
             let nearbyCities = (nearbyData.features || []).filter(f => {
                 const t = f.properties.result_type || f.properties.place_type || '';
                 return ['city', 'town', 'village'].includes(t);
             });
-            // Region suggestion'larla aynı isimde olanları çıkar
+            // Aynı isimdeki şehirleri çıkar
             const regionNames = new Set(features.map(f =>
                 (f.properties.city || f.properties.name || '').toLowerCase()
             ));
             nearbyCities = nearbyCities.filter(f =>
                 !regionNames.has((f.properties.city || f.properties.name || '').toLowerCase())
             );
-            // Sonuçları birleştir
             features = [...features, ...nearbyCities];
         } catch (err) {
-            // Yakın şehirler bulunamazsa sessizce atla
+            // Hata olursa sessizce atla
         }
     }
 
