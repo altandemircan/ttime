@@ -1218,18 +1218,21 @@ function initializeAddToTripListener() {
         }
 
         addToCart(
-            title,
-            image,
-            day,
-            category,
-            address,
-            null, // rating
-            null, // user_ratings_total
-            opening_hours,
-            null, // place_id
-            location,
-            website
-        );
+    stepsDiv.querySelector('.title')?.textContent.trim() || '', // Latin ad
+    image,
+    day,
+    category,
+    address,
+    null, // rating
+    null, // user_ratings_total
+    opening_hours,
+    null, // place_id
+    location,
+    website,
+    {
+        localName: stepsDiv.querySelector('.local-name')?.textContent.trim() || ''
+    }
+);
 
         btn.classList.add('added');
         setTimeout(() => btn.classList.remove('added'), 1000);
@@ -1709,18 +1712,18 @@ function addChatResultsToCart() {
         // Sadece lat/lon varsa ekle!
         if (lat && lon) {
             addToCart(
-                name, // Latin/İngilizce ad
-                image,
-                day,
-                category,
-                address,
-                null, null,
-                opening,
-                null,
-                { lat: Number(lat), lng: Number(lon) },
-                '',
-                { localName } // Sepete local ad da eklemek istersen
-            );
+    result.querySelector('.title')?.textContent.trim() || '', // Latin ad
+    image,
+    day,
+    category,
+    address,
+    null, null,
+    opening,
+    null,
+    { lat: Number(lat), lng: Number(lon) },
+    '',
+    { localName: result.querySelector('.local-name')?.textContent.trim() || '' }
+);
         }
     });
 }
@@ -2234,18 +2237,19 @@ function addItem(element, day, category, name, image, extra) {
     }
 
     addToCart(
-        name,
-        image,
-        day,
-        category,
-        place.address || address,
-        place.rating,
-        place.user_ratings_total,
-        place.opening_hours || opening_hours,
-        place.place_id,
-        location,
-        place.website
-    );
+    getDisplayName(place), // Latin/İngilizce ad
+    image,
+    day,
+    category,
+    place.address || address,
+    place.rating,
+    place.user_ratings_total,
+    place.opening_hours || opening_hours,
+    place.place_id,
+    location,
+    place.website,
+    { localName: place.name }
+);
     if (typeof restoreSidebar === "function") restoreSidebar();
 }
 
@@ -2773,15 +2777,16 @@ function handleSuggestionClick(suggestion, imgUrl, day) {
     let location = (Number.isFinite(lat) && Number.isFinite(lon)) ? { lat, lng: lon } : null;
 
     addToCart(
-        props.name || props.address_line1 || '',
-        imgUrl,
-        parseInt(day),
-        "Place",
-        props.formatted || "",
-        null, null, null, props.place_id,
-        location,
-        props.website || ""
-    );
+    getDisplayName(props), // Latin/İngilizce ad
+    imgUrl,
+    parseInt(day),
+    "Place",
+    props.formatted || "",
+    null, null, null, props.place_id,
+    location,
+    props.website || "",
+    { localName: props.name }
+);
     const newItem = {
         name: props.name || props.address_line1 || '',
         image: imgUrl,
@@ -5838,17 +5843,19 @@ window.addClickedPointToCart = async function(lat, lng, day) {
         
         // Sepete ekle
         addToCart(
-            placeName,
-            imageUrl,
-            day,
-            "Place",
-            pointInfo.address || "",
-            null, null,
-            pointInfo.opening_hours || "",
-            null,
-            { lat: lat, lng: lng },
-            ""
-        );
+    getDisplayName(pointInfo), // Latin/İngilizce ad
+    imageUrl,
+    day,
+    "Place",
+    pointInfo.address || "",
+    null, null,
+    pointInfo.opening_hours || "",
+    null,
+    { lat: lat, lng: lng },
+    "",
+    { localName: pointInfo.name }
+);
+
 
         
         // Popup'ı kapat
@@ -5875,18 +5882,20 @@ window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeL
     
     console.log(`Adding place: ${f.properties.name} at ${actualLat}, ${actualLng}`); // Debug log
     
-    addToCart(
-        f.properties.name || "Unnamed",
-        photo,
-        day,
-        "Place",
-        f.properties.formatted || "",
-        null, null,
-        f.properties.opening_hours || "",
-        null,
-        { lat: actualLat, lng: actualLng }, // FIX: Doğru koordinatlar
-        f.properties.website || ""
-    );
+   addToCart(
+    getDisplayName(f.properties), // Latin/İngilizce ad
+    photo,
+    day,
+    "Place",
+    f.properties.formatted || "",
+    null, null,
+    f.properties.opening_hours || "",
+    null,
+    { lat: actualLat, lng: actualLng },
+    f.properties.website || "",
+    { localName: f.properties.name }
+);
+
     
     // Popup'ı kapat ve başarı mesajı göster
     closeNearbyPopup();
@@ -7351,18 +7360,19 @@ function addGeziPlanMarkers(map, poiList, currentDay) {
       );
       if (!exists) {
         addToCart(
-          poi.name,
-          poi.image || "img/placeholder.png",
-          currentDay,
-          "Place",
-          poi.address || "",
-          null,
-          null,
-          poi.opening_hours || "",
-          null,
-          { lat: poi.lat, lng: poi.lng },
-          poi.website || ""
-        );
+    getDisplayName(poi), // Latin/İngilizce ad
+    poi.image || "img/placeholder.png",
+    currentDay,
+    "Place",
+    poi.address || "",
+    null,
+    null,
+    poi.opening_hours || "",
+    null,
+    { lat: poi.lat, lng: poi.lng },
+    poi.website || "",
+    { localName: poi.name }
+);
         marker.closePopup();
         marker.setOpacity(0.5);
       }
