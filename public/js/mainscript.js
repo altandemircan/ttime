@@ -1483,15 +1483,32 @@ async function showResults() {
         const daySteps = [];
 
         // Aynı sırayı (Coffee → Attraction → Restaurant → Accommodation) koru
-        for (const cat of dailyCategories) {
+for (const cat of dailyCategories) {
   let step = latestTripPlan.find(item =>
     item.day == day &&
     (item.category === cat.en || item.category === cat.tr)
   );
-  // step yoksa, _noPlace step ekle; name kesinlikle null olsun!
-  if (!step) {
-    step = { day, category: cat.en, name: null, _noPlace: true };
+
+  // step yoksa veya step._noPlace ise, Lucky ile yeni mekan bul:
+  if (!step || step._noPlace) {
+    const places = await getPlacesForCategory(window.selectedCity, cat.en, 10, 3000);
+    if (places.length > 0) {
+      // Lucky mantığı: daha önce eklenmeyen ilk mekanı bul
+      const usedNames = new Set(daySteps.map(s => s.name));
+      const place = places.find(p => !usedNames.has(p.name));
+      if (place) {
+        place.day = day;
+        place.category = cat.en;
+        step = place;
+      }
+    }
   }
+
+  if (!step) {
+    // Hala mekan yoksa, boş step ekleme (gizle)
+    continue;
+  }
+
   daySteps.push(step);
   stepsHtml += generateStepHtml(step, day, cat.en);
 }
