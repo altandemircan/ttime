@@ -1638,17 +1638,22 @@ async function buildPlan(city, days) {
   for (let day = 1; day <= days; day++) {
     let dailyPlaces = [];
     for (const cat of categories) {
-      const places = categoryResults[cat];
-      if (places.length > 0) {
-        // Her gün için farklı mekan gelsin!
-        const idx = (day - 1) % places.length;
-        dailyPlaces.push({ day, category: cat, ...places[idx] });
-      } else {
-        dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
-      }
+        const places = categoryResults[cat];
+        if (places.length > 0) {
+            const idx = (day - 1) % places.length;
+            dailyPlaces.push({
+                day,
+                category: cat,
+                ...places[idx],
+                name: getDisplayName(places[idx]),     // Latin ad
+                localName: places[idx].name            // Lokal ad
+            });
+        } else {
+            dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
+        }
     }
     plan = plan.concat(dailyPlaces);
-  }
+}
 
   plan = await enrichPlanWithWiki(plan);
   return plan;
