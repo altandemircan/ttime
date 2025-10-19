@@ -43,16 +43,9 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     const favState = isTripFav({ name, category, lat, lon }) ? "♥" : "♡";
     const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
 
-    
-   if (step._noPlace && (!step.name || step.name === null)) {
-  return `
-    <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #c9e6ef; text-align:center; padding:32px 0;">
-      <div style="font-size:18px; color:#1976d2; margin-bottom:16px;">No place found!</div>
-      <button class="im-lucky-btn" style="padding:8px 22px;font-size:17px;font-weight:500;border-radius:8px;background:#1976d2;color:#fff;cursor:pointer;">
-        I'm lucky!
-      </button>
-    </div>
-  `;
+if (step._noPlace && (!step.name || step.name === null)) {
+  // Hiçbir şey gösterme, boş döndür (veya dilersen hidden bir div)
+  return '';
 }
 
 return `
