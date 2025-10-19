@@ -551,34 +551,24 @@ async function geoapifyLocationAutocomplete(query) {
  
 
 function extractLocationQuery(input) {
-    // 1. "for X", "in X", "to X", "at X" gibi kalıplar varsa onları al
-    let cityMatch = input.match(/\b(?:for|in|to|at)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/i);
-    if (cityMatch) return cityMatch[1].trim();
+    // 1. Sık kullanılan gezi kelimelerini sil (tamamen otomatik, manuel isim yok!)
+    let cleaned = input.replace(/\b(plan|trip|tour|itinerary|days?|day|for|in|to|city|please|show|give|a|the|of|program|generate|make|build|do|visit|program|route)\b/gi, " ");
+    cleaned = cleaned.replace(/\d+/g, " "); // gün sayısını da sil
+    cleaned = cleaned.replace(/[,.;:!?]+/g, " ");
+    cleaned = cleaned.replace(/\s+/g, " ").trim();
 
-    // 2. Tüm harfli kelimeleri bul (küçük/büyük harf ayrımı yok)
-    const matches = input.match(/[A-Za-zÇĞİÖŞÜçğıöşü'’\-]{3,}/g);
-    if (matches && matches.length > 0) {
-        // En anlamlı kelimeyi veya en sondakini döndür
-        return matches[matches.length - 1].trim();
+    // 2. Çift kelime varsa, sondan iki kelimeyi birleştir (örn. "New York", "Los Angeles")
+    const tokens = cleaned.split(" ").filter(Boolean);
+    if (tokens.length >= 2) {
+        // Sondan iki kelimeyi birleştir ve API ile test et
+        return tokens.slice(-2).join(" ");
     }
+    // 3. Tek kelime varsa, onu döndür
+    if (tokens.length === 1) return tokens[0];
 
-    // 3. fallback: inputtaki en son harfli kelime
-    const tokens = input.trim().split(/\s+/);
-    for (let i = tokens.length - 1; i >= 0; i--) {
-        let t = tokens[i].replace(/[^A-Za-zÇĞİÖŞÜçğıöşü'’\-]/g, "");
-        if (t.length > 2) return t;
-    }
-
-    // 4. Son çare: ilk harfli kelime
-    for (let i = 0; i < tokens.length; i++) {
-        let t = tokens[i].replace(/[^A-Za-zÇĞİÖŞÜçğıöşü'’\-]/g, "");
-        if (t.length > 2) return t;
-    }
-
-    // 5. En son fallback: inputun tamamı
+    // 4. Son çare: inputun tamamı
     return input.trim();
 }
-
  
     let __autoAbort = null;
 
