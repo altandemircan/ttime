@@ -622,7 +622,7 @@ chatInput.addEventListener("input", debounce(async function () {
     console.log("Kullanıcı input:", queryText);  // EKLE
 
     if (queryText.length < 2) {
-        hideSuggestionsDiv(true);
+        showSuggestions(); // <-- hazır suggestions her zaman göster!
         return;
     }
     const locationQuery = extractLocationQuery(queryText);
