@@ -545,7 +545,7 @@ function extractLocationQuery(input) {
 
     // 5. En son fallback: inputun tamamı
     return input.trim();
-}}
+}
 
  
     let __autoAbort = null;
