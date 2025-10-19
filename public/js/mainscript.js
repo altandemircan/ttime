@@ -4,7 +4,10 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
-
+function countryFlag(iso2) {
+        if (!iso2) return "";
+        return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => 127397 + c.charCodeAt()));
+    }
 function hideSuggestionsDiv(clear = false) {
     const el = document.getElementById('suggestions');
     if (!el) return;
@@ -21,11 +24,10 @@ function showSuggestionsDiv() {
     el.style.removeProperty('display');
     if (!el.getAttribute('style')) el.removeAttribute('style');
 }
-   function countryFlag(iso2) {
-        if (!iso2) return "";
-        return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => 127397 + c.charCodeAt()));
-    }
+
 function renderSuggestions(results = []) {
+        console.log("renderSuggestions çalıştı, results:", results); // EKLE
+
         const suggestionsDiv = document.getElementById("suggestions");
         const chatInput = document.getElementById("user-input");
         if (!suggestionsDiv || !chatInput) return;
@@ -490,6 +492,8 @@ let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
 async function geoapifyLocationAutocomplete(query) {
+        console.log("geoapifyLocationAutocomplete çağrıldı, query:", query); // EKLE
+
     if (lastAutocompleteController) lastAutocompleteController.abort();
     lastAutocompleteController = new AbortController();
     lastAutocompleteQuery = query.trim();
@@ -574,21 +578,25 @@ async function geoapifyLocationAutocomplete(query) {
     }
 
 
-
-// Sadece bir tane autocomplete event handler bırak!
 chatInput.addEventListener("input", debounce(async function () {
     const queryText = this.value.trim();
+    console.log("Kullanıcı input:", queryText);  // EKLE
+
     if (queryText.length < 2) {
         hideSuggestionsDiv(true);
         return;
     }
     const locationQuery = extractLocationQuery(queryText);
+    console.log("LocationQuery:", locationQuery); // EKLE
+
     let suggestions = [];
     try {
         suggestions = await geoapifyLocationAutocomplete(locationQuery);
+        console.log("API'dan gelen suggestions:", suggestions); // EKLE
     } catch (err) {
         if (err.name === "AbortError") return;
         suggestions = [];
+        console.error("Autocomplete API hatası:", err); // EKLE
     }
     window.lastResults = suggestions;
     renderSuggestions(suggestions);
