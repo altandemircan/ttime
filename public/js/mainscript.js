@@ -573,30 +573,6 @@ function extractLocationQuery(input) {
  
     let __autoAbort = null;
 
-    function lockSelectedCity(city, days) {
-        const chatInput = document.getElementById("user-input");
-        if (!chatInput) return;
-        if (!days || days < 1) days = 2;
-        window.selectedLocation = {
-            name: city,
-            city: city,
-            country: "",
-            lat: null,
-            lon: null,
-            country_code: ""
-        };
-        window.selectedSuggestion = { displayText: city };
-        const canon = formatCanonicalPlan(`${city} ${days} days`);
-        const uiInput = document.getElementById('user-input');
-        if (uiInput) uiInput.value = canon.canonical;
-        chatInput.value = canon.canonical;
-        window.selectedLocationLocked = true;
-        enableSendButton();
-        updateCanonicalPreview();
-        const suggestionsDiv = document.getElementById("suggestions");
-        if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
-    }
-
     if (typeof showSuggestionsDiv !== "function") {
       function showSuggestionsDiv() {
         const el = document.getElementById('suggestions');
@@ -757,7 +733,7 @@ function formatCanonicalPlan(rawInput) {
     if (!rawInput || typeof rawInput !== 'string')
         return { canonical: "", city: "", days: 1, changed: false };
 
-    let raw = rawInput.replace(/\u0336/g, '').trim(); // strip combining strikethrough if any
+    let raw = rawInput.replace(/\u0336/g, '').trim(); 
 
     // Extract days (English only)
     let dayMatch = raw.match(/(\d+)\s*(?:-?\s*(day|days))\b/i);
@@ -860,16 +836,7 @@ function debouncePreview(fn, wait=120){
 }
 const debouncedUpdateCanonicalPreview = debouncePreview(updateCanonicalPreview, 140);
 let isFirstQuery = true; // Flag to track the first query
-function selectSuggestion(option) {
-    const userInput = document.getElementById("user-input");
-    userInput.value = option;
-    if (isFirstQuery) {
-        handleAnswer(option);
-    } else {
-        // For subsequent queries, just populate the input field
-        userInput.focus();
-    }
-}
+
 function handleKeyPress(event) {
   if (event.key !== "Enter") return;
   if (window.isProcessing) {
@@ -879,13 +846,7 @@ function handleKeyPress(event) {
   sendMessage();
   event.preventDefault();
 }
-// Basit şehir adı normalizasyonu (ör: "rome", "ROMe  " -> "Rome")
-function normalizeCityName(raw) {
-  if (!raw) return "";
-  const trimmed = raw.trim();
-  if (!trimmed) return "";
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-}
+
 
 function extractCityAndDays(input) {
     let city = null, days = null;
@@ -936,11 +897,6 @@ function extractCityAndDays(input) {
 // Geocode doğrulama (cache ile)
 const __cityCoordCache = new Map();
 
-
-(function unifyChatInputListener(){
-  // DEVRE DISI: Lokasyon kilit mantığını bozduğundan kapatıldı
-  return;
-})();
 
 chatInput.addEventListener("input", function() {
     // Kullanıcı kilitli formatı bozdu mu?
