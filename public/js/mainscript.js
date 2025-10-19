@@ -9964,36 +9964,50 @@ function attachImLuckyEvents() {
       const category = stepsDiv.getAttribute('data-category');
       const city = window.selectedCity;
 
+      // Tüm önceki lucky ve sepete eklenenleri dışla!
       window.luckyHistory = window.luckyHistory || {};
       let usedKeys = new Set();
+
+      // Lucky geçmişi
       Object.values(window.luckyHistory).forEach(dayObj => {
         if (dayObj[category]) {
           dayObj[category].forEach(key => usedKeys.add(key));
         }
       });
+      // Sepetteki aynı isim/lat/lon'lu mekanlar da dışlansın:
+      if (window.cart && Array.isArray(window.cart)) {
+        window.cart.forEach(item => {
+          if (item.category === category) {
+            const key = `${item.name}__${item.location?.lat}__${item.location?.lng}`;
+            usedKeys.add(key);
+          }
+        });
+      }
 
       let radius = 3;
       let attempt = 0;
       const maxAttempts = 8;
       let foundPlace = null;
       while (!foundPlace && attempt < maxAttempts) {
-        const results = await getPlacesForCategory(city, category, 10, radius * 1000);
-        for (const p of results) {
+        let results = await getPlacesForCategory(city, category, 10, radius * 1000);
+        // Farklı mekanları filtrele!
+        results = results.filter(p => {
           const key = `${p.name}__${p.lat}__${p.lon}`;
-          if (!usedKeys.has(key)) {
-            foundPlace = p;
-            window.luckyHistory[day] = window.luckyHistory[day] || {};
-            window.luckyHistory[day][category] = window.luckyHistory[day][category] || [];
-            window.luckyHistory[day][category].push(key);
-            break;
-          }
+          return !usedKeys.has(key);
+        });
+        if (results.length > 0) {
+          foundPlace = results[0];
+          const key = `${foundPlace.name}__${foundPlace.lat}__${foundPlace.lon}`;
+          window.luckyHistory[day] = window.luckyHistory[day] || {};
+          window.luckyHistory[day][category] = window.luckyHistory[day][category] || [];
+          window.luckyHistory[day][category].push(key);
         }
         radius += 5;
         attempt++;
       }
 
       if (foundPlace) {
-        // --- FOTOĞRAF GETİRME PATCH ---
+        // FOTOĞRAF GETİRME PATCH
         if (!foundPlace.image) {
           try {
             foundPlace.image = await getImageForPlace(
@@ -10008,7 +10022,7 @@ function attachImLuckyEvents() {
         foundPlace.day = day;
         foundPlace.category = category;
 
-        // --- SEPETE OTOMATİK EKLEME ---
+        // === SEPETE EKLEME ===
         addToCart(
           foundPlace.name,
           foundPlace.image,
