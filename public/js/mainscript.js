@@ -4,11 +4,16 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
+function getDisplayName(place) {
+  return place.name_en || place.name_latin || place.name || "";
+}
+
 function countryFlag(iso2) {
   // ISO2 kodunu Unicode bayrağa çevirir
   if (!iso2) return "";
   return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => 127397 + c.charCodeAt()));
 }
+
 function hideSuggestionsDiv(clear = false) {
     const el = document.getElementById('suggestions');
     if (!el) return;
@@ -128,7 +133,7 @@ function renderSuggestions(results = []) {
 function generateStepHtml(step, day, category, idx = 0) {
 
 
-    const name = step?.name || category;
+    const name = getDisplayName(step) || category;
     const address = step?.address || "";
     const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
     const website = step?.website || "";
