@@ -1696,7 +1696,6 @@ async function buildPlan(city, days) {
   let categoryResults = {};
   const cityCoords = await getCityCoordinates(city);
 
-  // Kategorilerde arama: Cafe ve Accommodation sabit, diğeri boşsa lucky ile sonradan dolacak
   for (const cat of categories) {
     let radius = 3;
     let places = await getPlacesForCategory(city, cat, 30, radius * 1000);
@@ -1713,26 +1712,38 @@ async function buildPlan(city, days) {
       }
       attempt++;
     }
-    // Şu satırı ekle:
+    // Lucky algoritmasını SADECE mekan yoksa devreye sok!
     if (places.length === 0) {
-      // Lucky algoritmayı burada otomatik tetikle!
-      places = await getPlacesForCategory(city, cat, 30, (radius + 5) * 1000);
+      // Lucky: radius'u büyüterek en yakındaki mekanı bul
+      let luckyRadius = radius + 5;
+      let foundPlace = null;
+      let luckyAttempts = 0;
+      while (!foundPlace && luckyAttempts < 8) {
+        const luckyResults = await getPlacesForCategory(city, cat, 10, luckyRadius * 1000);
+        if (luckyResults.length > 0) {
+          // Sadece daha önce eklenmemiş mekan gelsin
+          const usedKeys = new Set(places.map(p => `${p.name}__${p.lat}__${p.lon}`));
+          const newLucky = luckyResults.find(p => !usedKeys.has(`${p.name}__${p.lat}__${p.lon}`));
+          if (newLucky) {
+            foundPlace = newLucky;
+            places.push(foundPlace);
+          }
+        }
+        luckyRadius += 7;
+        luckyAttempts++;
+      }
     }
     categoryResults[cat] = places;
-}
+  }
 
   for (let day = 1; day <= days; day++) {
     let dailyPlaces = [];
     for (const cat of categories) {
       const places = categoryResults[cat];
       if (places.length > 0) {
-        if (cat === "Coffee" || cat === "Accommodation") {
-          // Cafe ve Accommodation sabit kalsın
-          dailyPlaces.push({ day, category: cat, ...places[0] });
-        } else {
-          // Diğer kategoriler gün başında boş gelsin (Lucky ile dolacak)
-          dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
-        }
+        // Her gün için farklı mekan gelsin!
+        const idx = (day - 1) % places.length;
+        dailyPlaces.push({ day, category: cat, ...places[idx] });
       } else {
         dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
       }
@@ -1743,7 +1754,6 @@ async function buildPlan(city, days) {
   plan = await enrichPlanWithWiki(plan);
   return plan;
 }
-
 function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
     if (places.length < 2) return places;
     let remaining = [...places];
