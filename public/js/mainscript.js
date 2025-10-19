@@ -525,7 +525,7 @@ async function geoapifyLocationAutocomplete(query) {
 
  
 
-    function extractLocationQuery(input) {
+function extractLocationQuery(input) {
     // 1. "for X", "in X", "to X", "at X" gibi son kelimeyi yakala
     let cityMatch = input.match(/\b(?:for|in|to|at)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/i);
     if (cityMatch) return cityMatch[1].trim();
