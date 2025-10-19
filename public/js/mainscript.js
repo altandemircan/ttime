@@ -25,20 +25,6 @@ function showSuggestionsDiv() {
     if (!el.getAttribute('style')) el.removeAttribute('style');
 }
 
-function enableSendButton() {
-      const btn = document.getElementById("send-button");
-      if (!btn) return;
-      btn.removeAttribute("disabled");
-      btn.classList.remove("disabled");
-    }
-function disableSendButton() {
-      const btn = document.getElementById("send-button");
-      if (!btn) return;
-      btn.setAttribute("disabled","disabled");
-      btn.classList.add("disabled");
-    }
-
-
 function renderSuggestions(results = []) {
         console.log("renderSuggestions çalıştı, results:", results); // EKLE
 
@@ -531,6 +517,18 @@ async function geoapifyLocationAutocomplete(query) {
         return input.split(" ")[0];
     }
 
+    function enableSendButton() {
+      const btn = document.getElementById("send-button");
+      if (!btn) return;
+      btn.removeAttribute("disabled");
+      btn.classList.remove("disabled");
+    }
+    function disableSendButton() {
+      const btn = document.getElementById("send-button");
+      if (!btn) return;
+      btn.setAttribute("disabled","disabled");
+      btn.classList.add("disabled");
+    }
 
  
     let __autoAbort = null;
