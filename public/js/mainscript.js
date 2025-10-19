@@ -721,7 +721,18 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
     const locationQuery = extractLocationQuery(queryText);
-    const suggestions = await geoapifyLocationAutocomplete(locationQuery); // <-- GÜNCELLEME
+    let suggestions = [];
+    try {
+        suggestions = await geoapifyLocationAutocomplete(locationQuery);
+    } catch (err) {
+        if (err.name === "AbortError") {
+            // Bir sonraki fetch başlatıldığı için önceki iptal edildi, sorun yok.
+            return;
+        }
+        // Diğer hataları logla veya fallback göster
+        console.warn("Autocomplete error:", err);
+        suggestions = [];
+    }
     window.lastResults = suggestions;
     document.getElementById("chat-location-suggestions").style.display = "none";
     renderSuggestions(suggestions);
