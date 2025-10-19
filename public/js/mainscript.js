@@ -383,14 +383,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!chatInput) return;
 
-    let chatSuggestions = document.getElementById("chat-location-suggestions");
-    if (!chatSuggestions) {
-        chatSuggestions = document.createElement("div");
-        chatSuggestions.id = "chat-location-suggestions";
-        chatSuggestions.className = "autocomplete-suggestions";
-        const wrapper = chatInput.closest('.input-wrapper') || chatInput.parentNode;
-        wrapper.appendChild(chatSuggestions);
-    }
 
     let selectedSuggestion = null;
     let lastResults = [];
