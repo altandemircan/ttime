@@ -1490,17 +1490,12 @@ async function showResults() {
         const daySteps = [];
 
         // Aynı sırayı (Coffee → Attraction → Restaurant → Accommodation) koru
-        for (const cat of dailyCategories) {
+for (const cat of dailyCategories) {
   let step = latestTripPlan.find(item =>
     item.day == day &&
     (item.category === cat.en || item.category === cat.tr)
   );
-  // step yoksa, _noPlace step ekle; name kesinlikle null olsun!
-  if (!step) {
-    step = { day, category: cat.en, name: null, _noPlace: true };
-  }
-  daySteps.push(step);
-  stepsHtml += generateStepHtml(step, day, cat.en);
+  stepsHtml += generateStepHtml(step || {_noPlace: true}, day, cat.en);
 }
 
         const dayId = `day-${day}`;
@@ -10022,6 +10017,6 @@ function attachImLuckyEvents() {
       if (btn && typeof btn.click === "function") {
         btn.click();
       }
-    }, 120); // 120ms küçük bir gecikme bırakmak iyi olur
+    }, 100); // Çok kısa gecikme bırak
   });
 }
