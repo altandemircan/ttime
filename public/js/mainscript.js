@@ -1786,6 +1786,8 @@ async function getPlacesForCategory(city, category, limit = 4, radius = 3000, co
       if (!Number.isFinite(lon)) lon = null;
       return {
         name: props.name,
+          name_en: props.name_en,
+          name_latin: props.name_latin,
         address: props.formatted || "",
         lat,
         lon,
