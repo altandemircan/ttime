@@ -732,11 +732,15 @@ chatInput.addEventListener("focus", function () {
         if (lastResults.length) renderSuggestions(lastResults);
     });
 
-    document.addEventListener("mousedown", function (event) {
-        if (!chatSuggestions.contains(event.target) && event.target !== chatInput) {
-            if (!selectedSuggestion) chatSuggestions.style.display = "none";
-        }
-    });
+  document.addEventListener("mousedown", function (event) {
+    const suggestionsDiv = document.getElementById("suggestions");
+    const chatInput = document.getElementById("user-input");
+    if (!suggestionsDiv) return;
+    if (!suggestionsDiv.contains(event.target) && event.target !== chatInput) {
+        // Sadece öneri seçilmediyse gizle
+        if (!window.selectedSuggestion) suggestionsDiv.style.display = "none";
+    }
+});
 
     window.buildPlanFromSelection = function (days) {
         if (!window.selectedLocation) {
