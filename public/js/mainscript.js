@@ -9993,6 +9993,18 @@ function attachImLuckyEvents() {
       }
 
       if (foundPlace) {
+        // --- FOTOĞRAF GETİRME PATCH ---
+        if (!foundPlace.image) {
+          try {
+            foundPlace.image = await getImageForPlace(
+              foundPlace.name,
+              foundPlace.category || category,
+              city
+            );
+          } catch (e) {
+            foundPlace.image = "img/placeholder.png";
+          }
+        }
         foundPlace.day = day;
         foundPlace.category = category;
         const newStepHtml = generateStepHtml(foundPlace, day, category, 0);
@@ -10012,11 +10024,10 @@ function attachImLuckyEvents() {
       }
     });
 
-    // **OTOMATİK TIKLATMA**: DOM'a eklenir eklenmez butona programatik olarak tıkla!
     setTimeout(() => {
       if (btn && typeof btn.click === "function") {
         btn.click();
       }
-    }, 100); // Çok kısa gecikme bırak
+    }, 100);
   });
 }
