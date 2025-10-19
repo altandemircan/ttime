@@ -44,16 +44,16 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
 
     
-if (step._noPlace && (!step.name || step.name === null)) {
+   if (step._noPlace && (!step.name || step.name === null)) {
   return `
-    <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #e9f3fa; text-align:center; padding:32px 0;">
-      <div class="loading-msg" style="font-size:17px; color:#1976d2; margin-bottom:14px;">
-        Loading...
-      </div>
+    <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #c9e6ef; text-align:center; padding:32px 0;">
+      <div style="font-size:18px; color:#1976d2; margin-bottom:16px;">No place found!</div>
+      <button class="im-lucky-btn" style="padding:8px 22px;font-size:17px;font-weight:500;border-radius:8px;background:#1976d2;color:#fff;cursor:pointer;">
+        I'm lucky!
+      </button>
     </div>
   `;
 }
-
 
 return `
     <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
@@ -9969,11 +9969,8 @@ function attachImLuckyEvents() {
       const category = stepsDiv.getAttribute('data-category');
       const city = window.selectedCity;
 
-      // Lucky geçmişini tüm günler için o kategoriye bak!
       window.luckyHistory = window.luckyHistory || {};
       let usedKeys = new Set();
-
-      // Tüm günlerde aynı kategoriye eklenen mekanları topla
       Object.values(window.luckyHistory).forEach(dayObj => {
         if (dayObj[category]) {
           dayObj[category].forEach(key => usedKeys.add(key));
@@ -9990,7 +9987,6 @@ function attachImLuckyEvents() {
           const key = `${p.name}__${p.lat}__${p.lon}`;
           if (!usedKeys.has(key)) {
             foundPlace = p;
-            // ŞİMDİKİ günün luckyHistory'sine de ekle
             window.luckyHistory[day] = window.luckyHistory[day] || {};
             window.luckyHistory[day][category] = window.luckyHistory[day][category] || [];
             window.luckyHistory[day][category].push(key);
@@ -10020,41 +10016,12 @@ function attachImLuckyEvents() {
         btn.disabled = true;
       }
     });
-  });
-}
-function autoLuckyLoad() {
-  document.querySelectorAll('.steps.no-place-step').forEach(async el => {
-    if (el.__luckyLoaded) return; // bir kere çalışsın
-    el.__luckyLoaded = true;
-    const day = el.getAttribute('data-day');
-    const category = el.getAttribute('data-category');
-    const city = window.selectedCity;
 
-    let radius = 3;
-    let attempt = 0;
-    let foundPlace = null;
-    const maxAttempts = 7;
-    while (!foundPlace && attempt < maxAttempts) {
-      const results = await getPlacesForCategory(city, category, 10, radius * 1000);
-      if (results.length > 0) {
-        foundPlace = results[0];
+    // **OTOMATİK TIKLATMA**: DOM'a eklenir eklenmez butona programatik olarak tıkla!
+    setTimeout(() => {
+      if (btn && typeof btn.click === "function") {
+        btn.click();
       }
-      radius += 5;
-      attempt++;
-    }
-
-    if (foundPlace) {
-      foundPlace.day = day;
-      foundPlace.category = category;
-      // Yeni step html’i oluştur
-      const newStepHtml = generateStepHtml(foundPlace, day, category, 0);
-      const tmp = document.createElement('div');
-      tmp.innerHTML = newStepHtml;
-      const newStepEl = tmp.firstElementChild;
-      el.parentNode.replaceChild(newStepEl, el);
-      attachFavEvents();
-    } else {
-      el.querySelector('.loading-msg').textContent = "No place found.";
-    }
+    }, 120); // 120ms küçük bir gecikme bırakmak iyi olur
   });
 }
