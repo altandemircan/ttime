@@ -395,14 +395,25 @@ document.addEventListener("DOMContentLoaded", function () {
     let selectedSuggestion = null;
     let lastResults = [];
 
-    async function geoapifyAutocomplete(query) {
-        const url = `/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`;
-const response = await fetch(url);
-        if (!response.ok) throw new Error("API error");
-        const data = await response.json();
-        const sortedResults = sortLocations(data.features || []);
-        return sortedResults;
-    }
+
+let lastAutocompleteQuery = '';
+let lastAutocompleteController = null;
+
+async function geoapifyLocationAutocomplete(query) {
+    if (lastAutocompleteController) lastAutocompleteController.abort();
+    lastAutocompleteController = new AbortController();
+    lastAutocompleteQuery = query.trim();
+
+    const url = `/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`;
+    const response = await fetch(url, { signal: lastAutocompleteController.signal });
+    if (!response.ok) throw new Error("API error");
+    const data = await response.json();
+    const sortedResults = sortLocations(data.features || []);
+    // Sadece en güncel input'a cevap ver!
+    const currentInput = document.getElementById('user-input').value.trim();
+    if (currentInput !== lastAutocompleteQuery) return [];
+    return sortedResults;
+}
 
     function countryFlag(iso2) {
         if (!iso2) return "";
@@ -701,41 +712,25 @@ const response = await fetch(url);
         }
     }
 
-    // (REMOVED BRANCH) countryPopularCities based suggestion override
-    chatInput.addEventListener("input", debounce(async function () {
-        const queryText = this.value.trim();
-        if (queryText.length < 2) {
-            document.getElementById("chat-location-suggestions").style.display = "none";
-            document.getElementById("suggestions").classList.add('hidden');
-            return;
-        }
-        const locationQuery = extractLocationQuery(queryText);
-        const suggestions = await geoapifyAutocomplete(locationQuery);
-        window.lastResults = suggestions;
+// Sadece bir tane autocomplete event handler bırak!
+chatInput.addEventListener("input", debounce(async function () {
+    const queryText = this.value.trim();
+    if (queryText.length < 2) {
         document.getElementById("chat-location-suggestions").style.display = "none";
-        renderSuggestions(suggestions);
-    }, 400));
-
-    function debounce(func, wait) {
-        let timeout;
-        return function (...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
+        document.getElementById("suggestions").classList.add('hidden');
+        return;
     }
+    const locationQuery = extractLocationQuery(queryText);
+    const suggestions = await geoapifyLocationAutocomplete(locationQuery); // <-- GÜNCELLEME
+    window.lastResults = suggestions;
+    document.getElementById("chat-location-suggestions").style.display = "none";
+    renderSuggestions(suggestions);
+}, 400));
 
-    chatInput.addEventListener("input", debounce(async function () {
-        const queryText = this.value.trim();
-        if (queryText.length < 2) {
-            chatSuggestions.innerHTML = "";
-            chatSuggestions.style.display = "none";
-            return;
-        }
-        const locationQuery = extractLocationQuery(queryText);
-        const suggestions = await geoapifyAutocomplete(locationQuery);
-        lastResults = suggestions;
-        renderSuggestions(suggestions);
-    }, 400));
+// focus event'i aynı kalsın
+chatInput.addEventListener("focus", function () {
+    if (lastResults.length) renderSuggestions(lastResults);
+});
 
     chatInput.addEventListener("focus", function () {
         if (lastResults.length) renderSuggestions(lastResults);
