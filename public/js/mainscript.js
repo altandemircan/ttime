@@ -716,8 +716,7 @@ async function geoapifyLocationAutocomplete(query) {
 chatInput.addEventListener("input", debounce(async function () {
     const queryText = this.value.trim();
     if (queryText.length < 2) {
-        document.getElementById("chat-location-suggestions").style.display = "none";
-        document.getElementById("suggestions").classList.add('hidden');
+        hideSuggestionsDiv?.(true);
         return;
     }
     const locationQuery = extractLocationQuery(queryText);
@@ -725,16 +724,10 @@ chatInput.addEventListener("input", debounce(async function () {
     try {
         suggestions = await geoapifyLocationAutocomplete(locationQuery);
     } catch (err) {
-        if (err.name === "AbortError") {
-            // Bir sonraki fetch başlatıldığı için önceki iptal edildi, sorun yok.
-            return;
-        }
-        // Diğer hataları logla veya fallback göster
-        console.warn("Autocomplete error:", err);
+        if (err.name === "AbortError") return;
         suggestions = [];
     }
     window.lastResults = suggestions;
-    document.getElementById("chat-location-suggestions").style.display = "none";
     renderSuggestions(suggestions);
 }, 400));
 
