@@ -526,10 +526,27 @@ async function geoapifyLocationAutocomplete(query) {
  
 
     function extractLocationQuery(input) {
-        const match = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)?)/);
-        if (match) return match[1];
-        return input.split(" ")[0];
+    // 1. "for X", "in X", "to X", "at X" gibi son kelimeyi yakala
+    let cityMatch = input.match(/\b(?:for|in|to|at)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/i);
+    if (cityMatch) return cityMatch[1].trim();
+
+    // 2. Cümlede geçen büyük harfle başlayan kelime(leri) bul
+    let cityWord = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)?)/);
+    if (cityWord) return cityWord[0].trim();
+
+    // 3. "Rome trip", "Rome 1day" gibi metinlerde ilk büyük harfle başlayanı al
+    let tokens = input.split(/\s+/);
+    for (let i = 0; i < tokens.length; i++) {
+        if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(tokens[i])) return tokens[i];
     }
+
+    // 4. fallback: tüm harfli, uzun kelimeler arasından en sonuncuyu al
+    let fallback = input.match(/([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/g);
+    if (fallback && fallback.length) return fallback[fallback.length-1].trim();
+
+    // 5. Son çare: ilk kelime
+    return input.split(" ")[0].trim();
+}
 
 
  
