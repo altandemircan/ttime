@@ -451,50 +451,6 @@ document.addEventListener("DOMContentLoaded", function () {
     let selectedOption = null;
 
 
-    function showSuggestions() {
-        if (!suggestionsDiv) return;
-        suggestionsDiv.innerHTML = "";
-
-        const options = [
-            "Plan a 2-day tour for Rome",
-            "Do a 3 days city tour in Helsinki",
-            "1-day city tour in Osaka"
-        ];
-
-        if (selectedOption) {
-            const suggestion = document.createElement("div");
-            suggestion.className = "category-area-option selected-suggestion";
-            suggestion.innerText = selectedOption;
-
-            const close = document.createElement("span");
-            close.className = "close-suggestion";
-            close.innerText = "✖";
-            close.style.marginLeft = "8px";
-            close.style.cursor = "pointer";
-            close.onclick = function(e) {
-                e.stopPropagation();
-                selectedOption = null;
-                chatInput.value = "";
-                showSuggestions();
-            };
-
-            suggestion.appendChild(close);
-            suggestionsDiv.appendChild(suggestion);
-        } else {
-            options.forEach(option => {
-                const suggestion = document.createElement("div");
-                suggestion.className = "category-area-option";
-                suggestion.innerText = option;
-                suggestion.onclick = () => {
-                    selectedOption = option;
-                    chatInput.value = "";
-                    showSuggestions();
-                };
-                suggestionsDiv.appendChild(suggestion);
-            });
-        }
-    }
-
     if (!chatInput) return;
 
 
