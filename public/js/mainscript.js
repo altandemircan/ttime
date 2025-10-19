@@ -21,8 +21,11 @@ function showSuggestionsDiv() {
     el.style.removeProperty('display');
     if (!el.getAttribute('style')) el.removeAttribute('style');
 }
-
-    function renderSuggestions(results = []) {
+   function countryFlag(iso2) {
+        if (!iso2) return "";
+        return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => 127397 + c.charCodeAt()));
+    }
+function renderSuggestions(results = []) {
         const suggestionsDiv = document.getElementById("suggestions");
         const chatInput = document.getElementById("user-input");
         if (!suggestionsDiv || !chatInput) return;
@@ -502,10 +505,7 @@ async function geoapifyLocationAutocomplete(query) {
     return sortedResults;
 }
 
-    function countryFlag(iso2) {
-        if (!iso2) return "";
-        return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => 127397 + c.charCodeAt()));
-    }
+ 
 
     function extractLocationQuery(input) {
         const match = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)?)/);
