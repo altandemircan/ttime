@@ -383,14 +383,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!chatInput) return;
 
-    let chatSuggestions = document.getElementById("chat-location-suggestions");
-    if (!chatSuggestions) {
-        chatSuggestions = document.createElement("div");
-        chatSuggestions.id = "chat-location-suggestions";
-        chatSuggestions.className = "autocomplete-suggestions";
-        const wrapper = chatInput.closest('.input-wrapper') || chatInput.parentNode;
-        wrapper.appendChild(chatSuggestions);
-    }
 
     let selectedSuggestion = null;
     let lastResults = [];
@@ -716,8 +708,7 @@ async function geoapifyLocationAutocomplete(query) {
 chatInput.addEventListener("input", debounce(async function () {
     const queryText = this.value.trim();
     if (queryText.length < 2) {
-        document.getElementById("chat-location-suggestions").style.display = "none";
-        document.getElementById("suggestions").classList.add('hidden');
+        hideSuggestionsDiv?.(true);
         return;
     }
     const locationQuery = extractLocationQuery(queryText);
@@ -725,16 +716,10 @@ chatInput.addEventListener("input", debounce(async function () {
     try {
         suggestions = await geoapifyLocationAutocomplete(locationQuery);
     } catch (err) {
-        if (err.name === "AbortError") {
-            // Bir sonraki fetch başlatıldığı için önceki iptal edildi, sorun yok.
-            return;
-        }
-        // Diğer hataları logla veya fallback göster
-        console.warn("Autocomplete error:", err);
+        if (err.name === "AbortError") return;
         suggestions = [];
     }
     window.lastResults = suggestions;
-    document.getElementById("chat-location-suggestions").style.display = "none";
     renderSuggestions(suggestions);
 }, 400));
 
