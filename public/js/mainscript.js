@@ -433,151 +433,6 @@ async function geoapifyLocationAutocomplete(query) {
 
     // --- Instant suggestions (fastAutocomplete) ---
     let __autoAbort = null;
-    function fastAutocomplete() {
-      const chatInput = document.getElementById('user-input');
-      const suggestionsDiv = document.getElementById('suggestions');
-      if (!chatInput || !suggestionsDiv) return;
-      if (window.selectedLocationLocked) return;
-
-      const raw = chatInput.value.trim();generateStepHtml
-      if (raw.length < 2) {
-        suggestionsDiv.innerHTML = "";
-        suggestionsDiv.classList.add('hidden');
-        return;
-      }
-
-      if (__autoAbort) __autoAbort.abort();
-      __autoAbort = new AbortController();
-
-      const seed = (typeof tt_extractSeedFromRaw === 'function')
-        ? tt_extractSeedFromRaw(raw)
-        : raw.split(/\s+/).pop();
-      if (!seed || seed.length < 2) {
-        suggestionsDiv.innerHTML = "";
-        suggestionsDiv.classList.add('hidden');
-        return;
-      }
-
-      suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.55;">Loading...</div>`;
-      suggestionsDiv.classList.remove('hidden');
-
-      geoapifyAutocomplete(seed, __autoAbort.signal)
-        .then(results => {
-          renderSuggestions(results || []);
-        })
-        .catch(err => {
-          if (err.name === 'AbortError') return;
-            suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.55;">No results</div>`;
-          suggestionsDiv.classList.remove('hidden');
-        });
-    }
-
-    (function attachLightAutocomplete(){
-        const chatInput = document.getElementById("user-input");
-        const suggestionsDiv = document.getElementById("suggestions");
-        if (!chatInput || !suggestionsDiv) return;
-
-        function debounce(fn, w=350){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),w);} }
-
-        function tt_extractSeedFromRaw(raw){
-            if (!raw || typeof raw !== 'string') return '';
-            const original = raw.trim();
-            let cleaned = original.replace(/\u0336/g, '').trim();
-            cleaned = cleaned
-                .replace(/\b(plan|planning|travel|trip|tour|itinerary|program|create|make|build|generate|please|show|give)\b/ig, ' ')
-                .replace(/\b(for|in|to|a|an|the|of|city)\b/ig, ' ')
-                .replace(/\d+\s*(?:-?\s*(day|days))\b/ig, ' ')
-                .replace(/[,.;:!?]+/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-            if (!cleaned) cleaned = original;
-            const tokens = cleaned.split(/\s+/).filter(Boolean);
-            if (!tokens.length) return '';
-            for (let span = Math.min(4, tokens.length); span >= 2; span--) {
-                const slice = tokens.slice(tokens.length - span);
-                const candidate = slice.join(' ');
-                if (/^[\p{L}0-9][\p{L}\p{M}0-9'’\-\s.]+$/u.test(candidate)) {
-                    return candidate.split(/\s+/)
-                        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                        .join(' ');
-                }
-            }
-            const last = tokens[tokens.length - 1];
-            return last.charAt(0).toUpperCase() + last.slice(1);
-        }
-
-        async function doAutocomplete(){
-            if (window.selectedLocationLocked) return;
-            const raw = chatInput.value.trim();
-            if (raw.length < 2){
-                suggestionsDiv.innerHTML="";
-                suggestionsDiv.classList.add('hidden');
-                return;
-            }
-            const dayMatch = raw.match(/(\d+)\s*-?\s*(day|gün)/i);
-            let days = dayMatch ? parseInt(dayMatch[1],10) : 2;
-            if (!days || days<1) days=2;
-
-            const seed = tt_extractSeedFromRaw(raw);
-            if (!seed || seed.length < 2){
-                suggestionsDiv.innerHTML = "";
-                suggestionsDiv.classList.add('hidden');
-                return;
-            }
-            let results=[];
-            try { results = await geoapifyAutocomplete(seed); } catch(e){ results=[]; }
-
-            const filtered = results.filter(r=>{
-                const p = r.properties||{};
-                return (p.city||p.name) && (p.country || p.country_code);
-            }).slice(0,7);
-
-            if (!filtered.length){
-                suggestionsDiv.innerHTML = `<div class="category-area-option" style="opacity:.6;">No results</div>`;
-                suggestionsDiv.classList.remove('hidden');
-                return;
-            }
-
-            suggestionsDiv.innerHTML="";
-            filtered.forEach(f=>{
-                const p=f.properties;
-                const city=p.city||p.name;
-                const country=p.country||p.country_code?.toUpperCase()||"";
-                const flag=p.country_code
-                    ? String.fromCodePoint(...[...p.country_code.toUpperCase()].map(c=>127397+c.charCodeAt()))
-                    : "";
-                const div=document.createElement("div");
-                div.className="category-area-option";
-                div.textContent=`${city}, ${country} ${flag}`.trim();
-                div.onclick=()=>{
-                    window.selectedLocation={
-                        name:p.name||city,
-                        city:city,
-                        country:country,
-                        lat:p.lat,
-                        lon:p.lon,
-                        country_code:p.country_code||""
-                    };
-                    window.selectedSuggestion={ displayText: div.textContent, props:p };
-                    window.selectedLocationLocked = true;
-                    window.__locationPickedFromSuggestions = true;
-                    if (typeof setChatInputValue === 'function')
-                        setChatInputValue(`Plan a ${days}-day tour for ${city}`);
-                    else
-                        chatInput.value = `Plan a ${days}-day tour for ${city}`;
-                    suggestionsDiv.classList.add('hidden');
-                    enableSendButton && enableSendButton();
-                    updateCanonicalPreview();
-                };
-                suggestionsDiv.appendChild(div);
-            });
-        }
-
-        chatInput.addEventListener("input", () => {
-          if (window.__skipInputOnce) { window.__skipInputOnce = false; return; }
-          fastAutocomplete();
-        });
-    })();
 
     function lockSelectedCity(city, days) {
         const chatInput = document.getElementById("user-input");
@@ -610,16 +465,6 @@ async function geoapifyLocationAutocomplete(query) {
         el.hidden = false;
         el.style.removeProperty('display');
         if (!el.getAttribute('style')) el.removeAttribute('style');
-      }
-    }
-    if (typeof hideSuggestionsDiv !== "function") {
-      function hideSuggestionsDiv(clear = false) {
-        const el = document.getElementById('suggestions');
-        if (!el) return;
-        el.hidden = true;
-        el.style.removeProperty('display');
-        if (!el.getAttribute('style')) el.removeAttribute('style');
-        if (clear) el.innerHTML = "";
       }
     }
 
@@ -722,7 +567,6 @@ chatInput.addEventListener("input", debounce(async function () {
     window.lastResults = suggestions;
     renderSuggestions(suggestions);
 }, 400));
-
 
     chatInput.addEventListener("focus", function () {
         if (lastResults.length) renderSuggestions(lastResults);
