@@ -508,13 +508,46 @@ let lastAutocompleteController = null;
 async function geoapifyLocationAutocomplete(query) {
     let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
     let data = await response.json();
+    let features = data.features || [];
 
-    // Eğer sonuç gelmezse, ülke ile tekrar dene
-    if (!data.features || data.features.length === 0) {
+    // Eğer sonuç yoksa, Türkiye ile tekrar dene
+    if (!features.length) {
         response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query + ', Turkey')}`);
         data = await response.json();
+        features = data.features || [];
     }
-    return sortLocations(data.features || []);
+
+    // Eğer sadece region veya area suggestion geldiyse, yakın şehirleri de çek
+    const region = features.find(f => {
+        const t = f.properties.result_type || f.properties.place_type || '';
+        return ['region', 'area'].includes(t);
+    });
+    if (region) {
+        const { lat, lon } = region.properties;
+        // İkinci bir arama: bu koordinatlara yakın (örn. 80km) şehirler
+        const url = `/api/geoapify/nearby-cities?lat=${lat}&lon=${lon}&radius=80000`; // 80km
+        try {
+            const resNearby = await fetch(url);
+            const nearbyData = await resNearby.json();
+            let nearbyCities = (nearbyData.features || []).filter(f => {
+                const t = f.properties.result_type || f.properties.place_type || '';
+                return ['city', 'town', 'village'].includes(t);
+            });
+            // Region suggestion'larla aynı isimde olanları çıkar
+            const regionNames = new Set(features.map(f =>
+                (f.properties.city || f.properties.name || '').toLowerCase()
+            ));
+            nearbyCities = nearbyCities.filter(f =>
+                !regionNames.has((f.properties.city || f.properties.name || '').toLowerCase())
+            );
+            // Sonuçları birleştir
+            features = [...features, ...nearbyCities];
+        } catch (err) {
+            // Yakın şehirler bulunamazsa sessizce atla
+        }
+    }
+
+    return sortLocations(features);
 }
  
 
@@ -863,9 +896,6 @@ function normalizeCityName(raw) {
   if (!trimmed) return "";
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
-
-// Kullanıcı girdisinden (örn: "Plan a 2-day tour for Rome") şehir + gün çekmeye çalış
-
 
 function extractCityAndDays(input) {
     let city = null, days = null;

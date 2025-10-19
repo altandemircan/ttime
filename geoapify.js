@@ -31,7 +31,19 @@ async function places({ categories, lon, lat, radius = 3000, limit = 10 }) {
   });
 }
 
+// YENİ: Bölgeye yakın şehirleri çek
+async function nearbyCities({ lat, lon, radius = 80000, limit = 10 }) {
+  return geoapifyGet("/v1/geocode/search", {
+    lat,
+    lon,
+    type: "city",
+    radius,
+    limit
+  });
+}
+
 module.exports = {
   autocomplete,
-  places
+  places,
+  nearbyCities
 };
