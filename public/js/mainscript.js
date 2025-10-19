@@ -867,29 +867,52 @@ function normalizeCityName(raw) {
 }
 
 // Kullanıcı girdisinden (örn: "Plan a 2-day tour for Rome") şehir + gün çekmeye çalış
-function extractCityAndDays(query) {
-  let days = null;
-  let city = null;
 
-  // ör: "Plan a 2-day tour for Rome"
-  const dayMatch = query.match(/(\d+)\s*-?\s*day/i);
-  if (dayMatch) days = parseInt(dayMatch[1], 10);
 
-  // "for X", "in X", "to X" kalıbı
-  const cityMatch = query.match(/\b(?:for|in|to)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})$/i);
-  if (cityMatch) {
-    city = cityMatch[1].trim();
-  } else {
-    // Sonda tek kelime ihtimali
-    const tail = query.trim().split(/\s+/).pop();
-    if (tail && /^[A-Za-zÇĞİÖŞÜçğıöşü'’-]{2,}$/.test(tail)) {
-      city = tail;
+function extractCityAndDays(input) {
+    let city = null, days = null;
+
+    // 1. Gün sayısını yakala (hem "2 days", "2 gün", "2-day", "for 2 days", vs.)
+    let dayMatch = input.match(/(\d+)\s*(?:-?\s*)?(?:day|days|gün)/i);
+    if (dayMatch) days = parseInt(dayMatch[1], 10);
+
+    // 2. "for X", "in X", "to X", "at X" gibi kalıpları dene
+    let cityMatch = input.match(/\b(?:for|in|to|at)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})\b/i);
+    if (cityMatch) city = cityMatch[1].trim();
+
+    // 3. Büyük harfle başlayan kelime(leri) bul (örn. "Rome trip 2 days")
+    if (!city) {
+        let cityWord = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)?)/);
+        if (cityWord) city = cityWord[0].trim();
     }
-  }
 
-  if (!days || isNaN(days) || days < 1) days = 2;
-  city = normalizeCityName(city);
-  return { city, days };
+    // 4. Tüm kelimeler içinde büyük harfle başlayan ilk/son kelimeyi bul (örn. "2 days Rome")
+    if (!city) {
+        let tokens = input.split(/\s+/);
+        for (let i = 0; i < tokens.length; i++) {
+            if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(tokens[i])) {
+                city = tokens[i];
+                break;
+            }
+        }
+    }
+
+    // 5. fallback: cümledeki harfli uzun kelimelerden en sonuncusu
+    if (!city) {
+        let fallback = input.match(/([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/g);
+        if (fallback && fallback.length) city = fallback[fallback.length-1].trim();
+    }
+
+    // 6. Son çare: ilk kelime
+    if (!city) city = input.split(" ")[0].trim();
+
+    // Gün sayısı bulunamazsa default 2
+    if (!days || isNaN(days) || days < 1) days = 2;
+
+    // Şehir adını düzelt (ilk harfi büyük)
+    city = city.charAt(0).toUpperCase() + city.slice(1);
+
+    return { city, days };
 }
 
 // Geocode doğrulama (cache ile)
