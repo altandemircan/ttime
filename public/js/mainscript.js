@@ -506,27 +506,20 @@ let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
 async function geoapifyLocationAutocomplete(query) {
-        console.log("geoapifyLocationAutocomplete çağrıldı, query:", query); // EKLE
+    let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
+    let data = await response.json();
 
-    if (lastAutocompleteController) lastAutocompleteController.abort();
-    lastAutocompleteController = new AbortController();
-    lastAutocompleteQuery = query.trim();
-
-    const url = `/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`;
-    const response = await fetch(url, { signal: lastAutocompleteController.signal });
-    if (!response.ok) throw new Error("API error");
-    const data = await response.json();
-    const sortedResults = sortLocations(data.features || []);
-    // Sadece en güncel input'a cevap ver!
-    const currentInput = document.getElementById('user-input').value.trim();
-    if (currentInput !== lastAutocompleteQuery) return [];
-    return sortedResults;
+    // Eğer sonuç gelmezse, ülke ile tekrar dene
+    if (!data.features || data.features.length === 0) {
+        response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query + ', Turkey')}`);
+        data = await response.json();
+    }
+    return sortLocations(data.features || []);
 }
-
  
 
 function extractLocationQuery(input) {
-    // 1. "for X", "in X", "to X", "at X" gibi son kelimeyi yakala
+    // 1. "for X", "in X", "to X", "at X" gibi ifadeler varsa onları al
     let cityMatch = input.match(/\b(?:for|in|to|at)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/i);
     if (cityMatch) return cityMatch[1].trim();
 
@@ -534,7 +527,7 @@ function extractLocationQuery(input) {
     let cityWord = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)?)/);
     if (cityWord) return cityWord[0].trim();
 
-    // 3. "Rome trip", "Rome 1day" gibi metinlerde ilk büyük harfle başlayanı al
+    // 3. Token'lar arasında büyük harfle başlayanı al
     let tokens = input.split(/\s+/);
     for (let i = 0; i < tokens.length; i++) {
         if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(tokens[i])) return tokens[i];
