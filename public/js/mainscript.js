@@ -1504,8 +1504,8 @@ for (const cat of dailyCategories) {
     }
   }
 
-  if (!step) {
-    // Hala mekan yoksa, boş step ekleme (gizle)
+  if (!step || !step.name) {
+    // Hala mekan yoksa, o kategoriyi DOM'a ekleme!
     continue;
   }
 
