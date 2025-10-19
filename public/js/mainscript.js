@@ -1697,23 +1697,29 @@ function addChatResultsToCart() {
     sorted.forEach(result => {
         const day = Number(result.getAttribute('data-day') || 1);
         const category = result.getAttribute('data-category');
-        const name = result.querySelector('.title').textContent;
+        // ADIM: title'da Latin/İngilizce ad varsa onu al
+        const name = result.querySelector('.title')?.textContent?.trim() || '';
+        // ADIM: local-name varsa onu da al (opsiyonel)
+        const localName = result.querySelector('.local-name')?.textContent?.trim() || '';
         const image = result.querySelector('img.check').src;
         const lat = result.getAttribute('data-lat');
         const lon = result.getAttribute('data-lon');
+        const address = result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+        const opening = result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
         // Sadece lat/lon varsa ekle!
         if (lat && lon) {
             addToCart(
-                name,
+                name, // Latin/İngilizce ad
                 image,
                 day,
                 category,
-                result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
+                address,
                 null, null,
-                result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
+                opening,
                 null,
                 { lat: Number(lat), lng: Number(lon) },
-                ''
+                '',
+                { localName } // Sepete local ad da eklemek istersen
             );
         }
     });
