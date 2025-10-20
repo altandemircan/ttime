@@ -1684,7 +1684,6 @@ function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
 }
 
 function addChatResultsToCart() {
-    // Eğer cart zaten doluysa tekrar ekleme!
     if (window.cart && window.cart.length > 0) return;
 
     const chatResults = document.querySelectorAll(".steps");
@@ -1715,13 +1714,17 @@ function addChatResultsToCart() {
 
         // Latin adı al
         let name = "";
+        // PATCH: Latin/İngilizce ad yoksa TITLE'dan al!
         if (stepObj && typeof getDisplayName === "function") {
             name = getDisplayName(stepObj);
+            // Eğer name_en ve name_latin yoksa başlıktan al
+            if ((!stepObj.name_en && !stepObj.name_latin) && result.querySelector('.title')) {
+                name = result.querySelector('.title').textContent;
+            }
         } else {
             name = result.querySelector('.title').textContent;
         }
 
-        // Sadece lat/lon varsa ekle!
         if (lat && lon) {
             addToCart(
                 name,
