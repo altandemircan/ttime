@@ -8275,17 +8275,13 @@ window.TT_SVG_ICONS = {
     }
   }
 
-  // 3) Override updateRouteStatsUI to also include ascent/descent and new icons
-  window.updateRouteStatsUI = function(day) {
-    const key = `route-map-day${day}`;
-    const summary = window.lastRouteSummaries?.[key] || null;
+    window.updateRouteStatsUI = function(day) {
+        const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+        if (span) span.innerHTML = '';
+        const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+        if (statsDiv) statsDiv.innerHTML = '';
+    };
 
-    const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-    if (span) span.innerHTML = '';
-
-    const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-    if (statsDiv) statsDiv.innerHTML = `<b>${getDayDisplayName(day)}</b>`;
-};
   // 4) Compute ascent/descent from elevation profile (when available) and refresh UI
   function computeAscDesc(profile) {
     if (!profile || !Array.isArray(profile.points) || profile.points.length < 2) return { ascent: 0, descent: 0 };
