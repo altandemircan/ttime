@@ -1652,6 +1652,7 @@ async function buildPlan(city, days) {
   }
 
   plan = await enrichPlanWithWiki(plan);
+plan = plan.map(normalizePlaceName);
   return plan;
 }
 function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
