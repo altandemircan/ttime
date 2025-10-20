@@ -145,8 +145,8 @@ function renderSuggestions(results = []) {
 // Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
 
-    const name = getDisplayName(step) || category;       // Latin/İngilizce ad
-    const localName = getLocalName(step);                // Lokal ad (Kiril/Japonca vs.)
+ const name = getDisplayName(step) || category;
+const localName = (step.name && step.name !== name) ? step.name : "";
     const address = step?.address || "";
     const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
     const website = step?.website || "";
@@ -201,9 +201,9 @@ function generateStepHtml(step, day, category, idx = 0) {
                     ${favState}
                 </span>
             </div>
-            <div class="info day_cats item-info-view">
-                <div class="title">${name}</div>
-${step.name && step.name !== name ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${step.name}</div>` : ""}
+              <div class="info day_cats item-info-view">
+    <div class="title">${name}</div>
+    ${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
                 <div class="address">
                     <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
                 </div>
