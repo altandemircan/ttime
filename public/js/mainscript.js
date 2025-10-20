@@ -5286,8 +5286,7 @@ if (geojson?.features?.[0]?.geometry?.coordinates) {
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
   const summary = window.lastRouteSummaries?.[containerId];
-  statsDiv.innerHTML = `<b>${getDayDisplayName(day)}</b>`;
-
+statsDiv.innerHTML = '';
 
   window.expandedMaps = window.expandedMaps || {};
   window.expandedMaps[containerId] = {
@@ -8275,12 +8274,12 @@ window.TT_SVG_ICONS = {
     }
   }
 
-    window.updateRouteStatsUI = function(day) {
-        const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-        if (span) span.innerHTML = '';
-        const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-        if (statsDiv) statsDiv.innerHTML = '';
-    };
+        window.updateRouteStatsUI = function(day) {
+            const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+            if (span) span.innerHTML = '';
+            const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+            if (statsDiv) statsDiv.innerHTML = '';
+        };
 
   // 4) Compute ascent/descent from elevation profile (when available) and refresh UI
   function computeAscDesc(profile) {
