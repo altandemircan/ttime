@@ -4778,13 +4778,14 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   display: flex
 ;
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    left: 20px;
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
     background: rgb(255 255 255);
     gap: 4px;
     padding: 6px;
     width: calc(100% - 475px);
+    max-width: 900px;
     z-index: 1231231231231;
     border-radius: 10px;
     align-items: center;
