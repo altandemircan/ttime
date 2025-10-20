@@ -1873,7 +1873,6 @@ function safeCoords(obj) {
 }
 
 
-
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}
@@ -1963,92 +1962,80 @@ function addToCart(
   }
 
   // 8) Yeni öğe ekle
-const newItem = {
-  name: safeName,
-  image: safeImage,
-  day: resolvedDay,
-  category: safeCategory,
-  address: address ? address.trim() : null,
-  rating,
-  user_ratings_total,
-  opening_hours,
-  place_id,
-  location: loc,
-  website,
-  addedAt: new Date().toISOString()
-};
+  const newItem = {
+    name: safeName,
+    image: safeImage,
+    day: resolvedDay,
+    category: safeCategory,
+    address: address ? address.trim() : null,
+    rating,
+    user_ratings_total,
+    opening_hours,
+    place_id,
+    location: loc,
+    website,
+    addedAt: new Date().toISOString()
+  };
 
-window.cart.push(newItem);
+  window.cart.push(newItem);
 
-
-
-// --- ŞEHİR TESPİTİ ---
-async function setSelectedCityFromItem(item) {
-  const props = item.properties || {};
-  // 1) Sadece city
-  if (props.city && props.city.length > 2) {
-    window.selectedCity = props.city;
-    window.selectedLocation = props.city;
-    console.log("selectedCity set (properties.city):", props.city);
-    return;
-  }
-  // 2) Reverse geocode ile sadece city
-  if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
-    try {
-      const resp = await fetch(`/api/geoapify/reverse?lat=${item.location.lat}&lon=${item.location.lng}`);
-      const props2 = (await resp.json())?.features?.[0]?.properties || {};
-      if (props2.city && props2.city.length > 2) {
-        window.selectedCity = props2.city;
-        window.selectedLocation = props2.city;
-        console.log("selectedCity set (reverse city):", props2.city);
-        return;
-      }
-      // Eğer state, ülke değilse ve büyükşehir ise (ör: "Bucharest", "İstanbul", "Antalya") — manüel bir beyaz liste gerekebilir!
-      // Aksi halde, asla kasaba/ilçe atama!
-    } catch(e) { /* ignore */ }
-  }
-  // Fallback: adresi parçala. Ama ülke, posta kodu, kasaba, ilçe, köy, vs. olursa atla.
-  const city = extractCityFromAddress(item.address);
-  // Burada "Voluntari" gibi isimler çıkıyorsa, Türkiye/Romanya gibi ülkeler için white-list ile büyükşehirleri zorunlu tutabilirsin.
-  if (city && city.length > 2 && !/voluntari|ilçe|kasaba|mahalle|köy|commune|municipality|town|village|suburb|neighbourhood/i.test(city)) {
-    window.selectedCity = city;
-    window.selectedLocation = city;
-    console.log("selectedCity set (fallback):", city);
-  }
-}
-// Adresten şehir adını bul (sadece sayı değil, ülke değil, mümkünse harfli ve uzun olanı al)
-function extractCityFromAddress(address) {
-  if (!address) return "";
-  const parts = address.split(",").map(p => p.trim()).filter(Boolean);
-  // Tersten ilerle, ülke ve posta kodunu atla, harfli ve uzun olana bak
-  for (let i = parts.length - 2; i >= 0; i--) {
-    const part = parts[i];
-    // Sadece harflerden oluşuyorsa ve ülke adı değilse
-    if (
-      /^[A-Za-zÇĞİÖŞÜçğıöşü\s\-'.]+$/.test(part) && // sadece harf
-      !/^(turkey|türkiye|ukraine|ukrayna|romania|italy|france|germany|usa|united states|russia|rossiya|poland|bulgaria)$/i.test(part.toLowerCase()) &&
-      part.length > 2
-    ) {
-      return part;
+  // --- ŞEHİR TESPİTİ ---
+  async function setSelectedCityFromItem(item) {
+    const props = item.properties || {};
+    // 1) Sadece city
+    if (props.city && props.city.length > 2) {
+      window.selectedCity = props.city;
+      window.selectedLocation = props.city;
+      console.log("selectedCity set (properties.city):", props.city);
+      return;
+    }
+    // 2) Reverse geocode ile sadece city
+    if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+      try {
+        const resp = await fetch(`/api/geoapify/reverse?lat=${item.location.lat}&lon=${item.location.lng}`);
+        const props2 = (await resp.json())?.features?.[0]?.properties || {};
+        if (props2.city && props2.city.length > 2) {
+          window.selectedCity = props2.city;
+          window.selectedLocation = props2.city;
+          console.log("selectedCity set (reverse city):", props2.city);
+          return;
+        }
+      } catch(e) { /* ignore */ }
+    }
+    // Fallback: adresi parçala
+    const city = extractCityFromAddress(item.address);
+    if (city && city.length > 2 && !/voluntari|ilçe|kasaba|mahalle|köy|commune|municipality|town|village|suburb|neighbourhood/i.test(city)) {
+      window.selectedCity = city;
+      window.selectedLocation = city;
+      console.log("selectedCity set (fallback):", city);
     }
   }
-  // Hiçbiri tutmazsa ilk harfli parçayı dene
-  const fallback = parts.find(p => /^[A-Za-zÇĞİÖŞÜçğıöşü\s\-'.]+$/.test(p) && p.length > 2);
-  return fallback || "";
-}
-
-// ... addToCart fonksiyonu içinde, yeni eklenen item sonrası:
-if (newItem.address && (!window.selectedCity || window.selectedCity === "")) {
-  const city = extractCityFromAddress(newItem.address);
-  if (city) {
-    window.selectedCity = city;
-    window.selectedLocation = city;
-    console.log("selectedCity set:", city);
+  function extractCityFromAddress(address) {
+    if (!address) return "";
+    const parts = address.split(",").map(p => p.trim()).filter(Boolean);
+    for (let i = parts.length - 2; i >= 0; i--) {
+      const part = parts[i];
+      if (
+        /^[A-Za-zÇĞİÖŞÜçğıöşü\s\-'.]+$/.test(part) &&
+        !/^(turkey|türkiye|ukraine|ukrayna|romania|italy|france|germany|usa|united states|russia|rossiya|poland|bulgaria)$/i.test(part.toLowerCase()) &&
+        part.length > 2
+      ) {
+        return part;
+      }
+    }
+    const fallback = parts.find(p => /^[A-Za-zÇĞİÖŞÜçğıöşü\s\-'.]+$/.test(p) && p.length > 2);
+    return fallback || "";
   }
-}
+  if (newItem.address && (!window.selectedCity || window.selectedCity === "")) {
+    const city = extractCityFromAddress(newItem.address);
+    if (city) {
+      window.selectedCity = city;
+      window.selectedLocation = city;
+      console.log("selectedCity set:", city);
+    }
+  }
 
-console.log('Yeni item eklendi:', newItem);
-  // POLYLINE HIZLANDIRMA: her eklemede debounce ile polyline hesapla/güncelle
+  console.log('Yeni item eklendi:', newItem);
   const dayNum = newItem.day;
   const points = window.cart.filter(i => i.day == dayNum && i.location);
   debounceRoute(dayNum, points, updatePolylineForDay);
@@ -2062,7 +2049,6 @@ console.log('Yeni item eklendi:', newItem);
         !it._placeholder
       ).length;
 
-      // Mini harita ve rota render
       if (realPoints === 1) {
         if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[dayNum]) {
           delete window.__suppressMiniUntilFirstPoint[dayNum];
@@ -2079,15 +2065,12 @@ console.log('Yeni item eklendi:', newItem);
     console.warn('[mini map first point]', e);
   }
 
-  // UI güncellemesi
   if (!silent) {
     if (typeof updateCart === "function") updateCart();
     if (!skipRender && typeof renderRouteForDay === "function") {
       setTimeout(() => renderRouteForDay(resolvedDay), 0);
     }
   }
-
-  // Sidebar aç (mobil)
   if (!silent && typeof openSidebar === 'function') {
     openSidebar();
     if (window.innerWidth <= 768) {
@@ -2095,29 +2078,20 @@ console.log('Yeni item eklendi:', newItem);
       if (sidebar) sidebar.classList.add('open');
     }
   }
-
-  // Drag-drop vb. ek entegrasyonlar
   if (!silent && typeof attachChatDropListeners === 'function') {
     attachChatDropListeners();
   }
-
   if (window.expandedMaps) {
     clearRouteSegmentHighlight(resolvedDay);
     fitExpandedMapToRoute(resolvedDay);
   }
-
-  // Otomatik kaydet: silent değilse!
   if (!silent && typeof saveTripAfterRoutes === "function") {
     saveTripAfterRoutes();
   }
-
-
   return true;
-   if (typeof updateCart === "function") updateCart();
-if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-
+  if (typeof updateCart === "function") updateCart();
+  if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 }
-
 
 function __dayIsEmpty(day){
   day = Number(day);
