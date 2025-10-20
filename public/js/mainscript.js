@@ -1899,15 +1899,12 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}
 ) {
-  // Latin/İngilizce adı öncelikli olarak ayarla
-  if (typeof getDisplayName === "function" && arguments[0] && typeof arguments[0] === "object") {
-    if (arguments[0].properties) {
-      name = getDisplayName(arguments[0].properties);
-    } else {
-      name = getDisplayName(arguments[0]);
-    }
-  }
 
+
+  function addToCart(
+  name, image, day, category, address = null, rating = null, user_ratings_total = null,
+  opening_hours = null, place_id = null, location = null, website = null, options = {}
+) {
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
     window.cart = (window.cart || []).filter(it => !it._placeholder);
@@ -1928,6 +1925,7 @@ function addToCart(
   if (!Array.isArray(window.cart)) window.cart = [];
 
   // 4) Gün seçimi mantığı
+  let forceDay = options && options.forceDay;
   let resolvedDay = Number(
     forceDay != null ? forceDay :
     (day != null ? day :
