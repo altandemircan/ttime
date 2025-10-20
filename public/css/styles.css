@@ -4784,7 +4784,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     background: rgb(255 255 255);
     gap: 4px;
     padding: 6px;
-    width: calc(100% - 475px);
+    width: calc(100% - 445px);
     max-width: 900px;
     z-index: 1231231231231;
     border-radius: 10px;
