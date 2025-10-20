@@ -1892,7 +1892,6 @@ function safeCoords(obj) {
   return null;
 }
 
-
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}
@@ -1904,7 +1903,6 @@ function addToCart(
     } else {
       name = getDisplayName(arguments[0]);
     }
-  }
   }
 
   // 1) Placeholder temizliği
