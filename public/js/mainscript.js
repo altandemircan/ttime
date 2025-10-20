@@ -8,11 +8,9 @@ function getDisplayName(place) {
   return place.name_en || place.name_latin || place.name || "";
 }
 function getLocalName(place) {
-  // Latin ad ile aynı değilse, local ad
   if (place.name && getDisplayName(place) !== place.name) return place.name;
   return "";
 }
-
 function countryFlag(iso2) {
   // ISO2 kodunu Unicode bayrağa çevirir
   if (!iso2) return "";
