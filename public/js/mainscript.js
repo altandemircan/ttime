@@ -1899,14 +1899,6 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}
 ) {
-  // PATCH: forceDay buradan gelsin!
-  let forceDay = options && options.forceDay;
-  let resolvedDay = Number(
-    forceDay != null ? forceDay :
-    (day != null ? day :
-      (window.currentDay != null ? window.currentDay :
-        (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
-  );
   // Latin/İngilizce adı öncelikli olarak ayarla
   if (typeof getDisplayName === "function" && arguments[0] && typeof arguments[0] === "object") {
     if (arguments[0].properties) {
