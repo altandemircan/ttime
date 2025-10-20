@@ -5968,22 +5968,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   z-index: 100;
  
 }
-@media (max-width: 600px) {
-    .tt-elev-svg {
-    height: 220px !important;
-  }
-}
 
-
-/***********************
-  FEEDBACK FORM STYLES
-  Scope: #sidebar-feedback #feedback-form
-  Palette reference from existing design:
-  - Purple: #8a4af3
-  - Accent cyan: #02aee4
-  - Dark text: #1e293b
-  - Light bg blocks: #faf8ff / #f8f9fa
-***********************/
 
 /* Container refinements */
 #sidebar-overlay-feedback .sidebar_title {
