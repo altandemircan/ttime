@@ -1683,7 +1683,11 @@ function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
     }
     return route;
 }
-
+function normalizePlaceName(place) {
+  // .name alanını Latin/İngilizce yap
+  place.name = getDisplayName(place);
+  return place;
+}
 function addChatResultsToCart() {
     if (window.cart && window.cart.length > 0) return;
 
