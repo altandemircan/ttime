@@ -8280,16 +8280,12 @@ window.TT_SVG_ICONS = {
     const key = `route-map-day${day}`;
     const summary = window.lastRouteSummaries?.[key] || null;
 
-    if (!summary) {
-      const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-      if (span) span.innerHTML = '';
-      const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-      if (statsDiv) statsDiv.innerHTML = '';
-      return;
-    }
-    setSummaryForDay(day, summary.distance, summary.duration);
-  };
+    const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+    if (span) span.innerHTML = '';
 
+    const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+    if (statsDiv) statsDiv.innerHTML = `<b>${getDayDisplayName(day)}</b>`;
+};
   // 4) Compute ascent/descent from elevation profile (when available) and refresh UI
   function computeAscDesc(profile) {
     if (!profile || !Array.isArray(profile.points) || profile.points.length < 2) return { ascent: 0, descent: 0 };
