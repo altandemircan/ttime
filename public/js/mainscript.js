@@ -5047,11 +5047,9 @@ function updateRouteStatsUI(day) {
 async function expandMap(containerId, day) {
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // Önce varsa aynı gün için tekrar açmaya çalışma
+  // Daha önce açılmış expanded map varsa kapat
   if (window.expandedMaps && window.expandedMaps[containerId]) {
     console.log('[expandMap] already expanded, returning');
-
-    // --- GÜNCEL: GPS import sonrası expanded harita zaten açıksa elevation barı yine de güncelle! ---
     if (
       window.importedTrackByDay &&
       window.importedTrackByDay[day] &&
@@ -5059,14 +5057,12 @@ async function expandMap(containerId, day) {
       window.importedTrackByDay[day].rawPoints &&
       window.importedTrackByDay[day].rawPoints.length > 1
     ) {
-      // Expanded harita DOM'da, barı tekrar çiz
       ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
     }
-
     return;
   }
 
-  // Diğer expanded haritaları kapat (yalnızca farklı günler)
+  // Diğer günlerin expanded'ını kapat
   if (window.expandedMaps) {
     Object.keys(window.expandedMaps).forEach(otherId => {
       if (otherId !== containerId) {
@@ -5080,7 +5076,6 @@ async function expandMap(containerId, day) {
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
   const expandButton = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
 
-  console.log('[expandMap] elements:', { originalContainer, map, expandButton });
   if (!originalContainer) {
     console.error('[expandMap] original small map container yok. İptal.');
     return;
@@ -5092,71 +5087,96 @@ async function expandMap(containerId, day) {
 
   if (expandButton) {
     expandButton.style.visibility = 'hidden';
-  } else {
-    console.warn('[expandMap] expandButton bulunamadı, devam ediyorum.');
   }
 
   originalContainer.style.display = 'none';
 
+  // === HEADER DIV OLUŞTUR ===
+  const headerDiv = document.createElement('div');
+  headerDiv.className = 'expanded-map-header';
+
+
+  const layersBtn = document.createElement('button');
+  layersBtn.className = 'map-layers-btn';
+  layersBtn.style.cssText = 'background:#fff;border:1px solid #e0e0e0;border-radius:7px;padding:7px;cursor:pointer;margin-right:11px;';
+  layersBtn.innerHTML = '<img src="/img/layers_icon.svg" alt="Layers" style="width:28px;height:28px;">';
+  headerDiv.appendChild(layersBtn);
+
+
+  const layersPanel = document.createElement('div');
+  layersPanel.className = 'map-layers-panel';
+  layersPanel.style.cssText = 'position:absolute;top:56px;left:16px;z-index:12001;background:#fff;border-radius:18px;box-shadow:0 2px 18px #0002;padding:18px 20px 14px 20px;min-width:320px;max-width:410px;display:none;';
+  layersPanel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:20px;margin-bottom:8px;">
+      <span>Map type</span>
+      <button style="background:none;border:none;font-size:26px;cursor:pointer;" class="close-layers-panel">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+      <div class="map-type-option" data-value="streets-v12" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
+        <img src="/img/preview_streets.png" alt="Default" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Default</span>
+      </div>
+      <div class="map-type-option" data-value="satellite-streets-v12" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
+        <img src="/img/preview_satellite.png" alt="Satellite" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Satellite</span>
+      </div>
+      <div class="map-type-option" data-value="dark-v11" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
+        <img src="/img/preview_dark.png" alt="Navigation" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Navigation</span>
+      </div>
+    </div>
+  `;
+  headerDiv.appendChild(layersPanel);
+
+  // Layer panel aç/kapa
+  layersBtn.onclick = function() {
+    layersPanel.style.display = '';
+  };
+  layersPanel.querySelector('.close-layers-panel').onclick = function() {
+    layersPanel.style.display = 'none';
+  };
+
+  // Layer seçimi ve map tile değişimi
+  let currentLayer = 'streets-v12';
+  function setExpandedMapTile(styleKey) {
+    if (expandedTileLayer) {
+      try { expandedMap.removeLayer(expandedTileLayer); } catch (_){}
+      expandedTileLayer = null;
+    }
+    expandedTileLayer = L.tileLayer(
+      `/api/mapbox/tiles/${styleKey}/{z}/{x}/{y}.png`,
+      {
+        tileSize: 256,
+        zoomOffset: 0,
+        attribution: '© Mapbox © OpenStreetMap',
+        crossOrigin: true
+      }
+    );
+    expandedTileLayer.addTo(expandedMap);
+    currentLayer = styleKey;
+  }
+  layersPanel.querySelectorAll('.map-type-option').forEach(opt => {
+    opt.onclick = function() {
+      layersPanel.querySelectorAll('.map-type-option').forEach(o => o.style.border = '2px solid #eee');
+      opt.style.border = '2px solid #1976d2';
+      const style = opt.getAttribute('data-value');
+      setExpandedMapTile(style);
+      layersPanel.style.display = 'none';
+    };
+  });
+
+  // Route stats (mesafe/süre/ascent/descent) için alan
+  const statsDiv = document.createElement('div');
+  statsDiv.className = 'route-stats';
+  headerDiv.appendChild(statsDiv);
+
+  // --- EXPANDED MAP CONTAINER ---
   const expandedMapId = `expanded-map-${day}`;
   const expandedContainer = document.createElement('div');
   expandedContainer.id = expandedMapId;
   expandedContainer.className = 'expanded-map-container';
   document.body.appendChild(expandedContainer);
 
-  // === WRAPPER PANEL: HEADER + SCALE BAR ===
-// --- Yeni Layer Button ---
-const layersBtn = document.createElement('button');
-layersBtn.className = 'map-layers-btn';
-layersBtn.style.cssText = 'background:#fff;border:1px solid #e0e0e0;border-radius:7px;padding:7px;cursor:pointer;margin-right:11px;';
-layersBtn.innerHTML = '<img src="/img/layers_icon.svg" alt="Layers" style="width:28px;height:28px;">';
-headerDiv.appendChild(layersBtn);
-
-// --- Layer Panel ---
-const layersPanel = document.createElement('div');
-layersPanel.className = 'map-layers-panel';
-layersPanel.style.cssText = 'position:absolute;top:56px;left:16px;z-index:12001;background:#fff;border-radius:18px;box-shadow:0 2px 18px #0002;padding:18px 20px 14px 20px;min-width:320px;max-width:410px;display:none;';
-layersPanel.innerHTML = `
-  <div style="display:flex;justify-content:space-between;align-items:center;font-size:20px;margin-bottom:8px;">
-    <span>Map type</span>
-    <button style="background:none;border:none;font-size:26px;cursor:pointer;" class="close-layers-panel">×</button>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
-    <div class="map-type-option" data-value="streets-v12" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
-      <img src="/img/preview_streets.png" alt="Default" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Default</span>
-    </div>
-    <div class="map-type-option" data-value="satellite-streets-v12" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
-      <img src="/img/preview_satellite.png" alt="Satellite" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Satellite</span>
-    </div>
-    <div class="map-type-option" data-value="dark-v11" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
-      <img src="/img/preview_dark.png" alt="Navigation" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Navigation</span>
-    </div>
-  </div>
-`;
-headerDiv.appendChild(layersPanel);
-
-// --- Button ile aç/kapa ---
-layersBtn.onclick = function() {
-  layersPanel.style.display = '';
-};
-layersPanel.querySelector('.close-layers-panel').onclick = function() {
-  layersPanel.style.display = 'none';
-};
-
-// --- Option seçimi ve layer değişimi ---
-layersPanel.querySelectorAll('.map-type-option').forEach(opt => {
-  opt.onclick = function() {
-    layersPanel.querySelectorAll('.map-type-option').forEach(o => o.style.border = '2px solid #eee');
-    opt.style.border = '2px solid #1976d2';
-    const style = opt.getAttribute('data-value');
-    setExpandedMapTile(style); // senin fonksiyonun
-    layersPanel.style.display = 'none';
-  };
-});
-
+  // Ölçek (scale) bar
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
-
   const scaleBarDiv = document.createElement('div');
   scaleBarDiv.className = 'route-scale-bar';
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
@@ -5170,20 +5190,16 @@ layersPanel.querySelectorAll('.map-type-option').forEach(opt => {
     }
   } catch (_) {}
 
-  // PANEL WRAPPER
- // Sıra: önce scaleBarDiv, sonra headerDiv
-const panelDiv = document.createElement('div');
-panelDiv.className = 'expanded-map-panel';
-panelDiv.appendChild(scaleBarDiv);
+  // Panel wrapper: önce scaleBarDiv, sonra headerDiv (dışarıya taşındı)
+  const panelDiv = document.createElement('div');
+  panelDiv.className = 'expanded-map-panel';
+  panelDiv.appendChild(scaleBarDiv);
+  expandedContainer.appendChild(panelDiv);
 
-expandedContainer.appendChild(panelDiv);
+  // Header'ı expandedContainer'ın dışına ekle!
+  document.body.appendChild(headerDiv);
 
-document.body.appendChild(headerDiv);
-document.body.appendChild(expandedContainer);
-
-  // === PANEL BİTTİ ===
-
-  // Diğer kontroller (location ve close butonları)
+  // Diğer kontroller (lokasyon/kapat)
   const locBtn = document.createElement('button');
   locBtn.type = 'button';
   locBtn.id = `use-my-location-btn-day${day}`;
@@ -5202,12 +5218,14 @@ document.body.appendChild(expandedContainer);
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
 
+  // Harita div
   const mapDivId = `${containerId}-expanded`;
   const mapDiv = document.createElement('div');
   mapDiv.id = mapDivId;
   mapDiv.className = 'expanded-map';
   expandedContainer.appendChild(mapDiv);
 
+  // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
   let center = [42, 12];
   let zoom = 6;
@@ -5238,63 +5256,28 @@ document.body.appendChild(expandedContainer);
       zoom: expandedMap.getZoom()
     };
   }
-
   let expandedTileLayer = null;
-  function setExpandedMapTile(styleKey) {
-    if (expandedTileLayer) {
-      try { expandedMap.removeLayer(expandedTileLayer); } catch (_){}
-      expandedTileLayer = null;
-    }
-    expandedTileLayer = L.tileLayer(
-      `/api/mapbox/tiles/${styleKey}/{z}/{x}/{y}.png`,
-      {
-        tileSize: 256,
-        zoomOffset: 0,
-        attribution: '© Mapbox © OpenStreetMap',
-        crossOrigin: true
-      }
-    );
-    expandedTileLayer.addTo(expandedMap);
-  }
+  setExpandedMapTile(currentLayer);
 
-  setExpandedMapTile('streets-v12');
+  // [Kapanan select kodlarını tamamen kaldırdık!]
 
-  mapStyleSelect.onchange = function() {
-    setExpandedMapTile(this.value);
-    const originalMap = window.leafletMaps && window.leafletMaps[containerId];
-    if (originalMap) {
-      let old;
-      originalMap.eachLayer(l => { if (l instanceof L.TileLayer) old = l; });
-      if (old) try { originalMap.removeLayer(old); } catch (_){}
-      L.tileLayer(
-        `/api/mapbox/tiles/${this.value}/{z}/{x}/{y}.png`,
-        {
-          tileSize: 256,
-          zoomOffset: 0,
-          attribution: '© Mapbox © OpenStreetMap',
-          crossOrigin: true
-        }
-      ).addTo(originalMap);
-    }
-  };
-
+  // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
-if (geojson?.features?.[0]?.geometry?.coordinates) {
+  if (geojson?.features?.[0]?.geometry?.coordinates) {
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const polyline = addRoutePolylineWithClick(expandedMap, coords);
-
     try { expandedMap.fitBounds(polyline.getBounds()); } catch (_){}
     expandedMap._initialBounds = polyline.getBounds();
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
       zoom: expandedMap.getZoom()
     };
-} else if (!expandedMap._initialView) {
+  } else if (!expandedMap._initialView) {
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
       zoom: expandedMap.getZoom()
     };
-}
+  }
 
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
@@ -5322,7 +5305,7 @@ if (geojson?.features?.[0]?.geometry?.coordinates) {
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
   const summary = window.lastRouteSummaries?.[containerId];
-statsDiv.innerHTML = '';
+  statsDiv.innerHTML = '';
 
   window.expandedMaps = window.expandedMaps || {};
   window.expandedMaps[containerId] = {
@@ -5333,6 +5316,7 @@ statsDiv.innerHTML = '';
     expandButton
   };
 
+  // Ölçek barı render
   const totalKm = summary ? summary.distance / 1000 : 0;
   const markerPositions = getRouteMarkerPositionsOrdered
     ? getRouteMarkerPositionsOrdered(day)
