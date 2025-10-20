@@ -1899,6 +1899,10 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false
 ) {
+  // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
+  // (getDisplayName ile name'i tekrar değiştiren kod OLMAYACAK!)
+
+  // ... diğer kodlar aynı ...
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
     window.cart = (window.cart || []).filter(it => !it._placeholder);
@@ -1950,7 +1954,6 @@ function addToCart(
     if (item.category !== safeCategory) return false;
     const sameName = item.name.trim().toLowerCase() === safeName.toLowerCase();
     if (!sameName) return false;
-    // Koordinat karşılaştırması
     if (loc && item.location) {
       return item.location.lat === loc.lat && item.location.lng === loc.lng;
     }
@@ -1981,118 +1984,31 @@ function addToCart(
 
   window.cart.push(newItem);
 
-  // --- ŞEHİR TESPİTİ ---
-  async function setSelectedCityFromItem(item) {
-    const props = item.properties || {};
-    // 1) Sadece city
-    if (props.city && props.city.length > 2) {
-      window.selectedCity = props.city;
-      window.selectedLocation = props.city;
-      console.log("selectedCity set (properties.city):", props.city);
-      return;
-    }
-    // 2) Reverse geocode ile sadece city
-    if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
-      try {
-        const resp = await fetch(`/api/geoapify/reverse?lat=${item.location.lat}&lon=${item.location.lng}`);
-        const props2 = (await resp.json())?.features?.[0]?.properties || {};
-        if (props2.city && props2.city.length > 2) {
-          window.selectedCity = props2.city;
-          window.selectedLocation = props2.city;
-          console.log("selectedCity set (reverse city):", props2.city);
-          return;
-        }
-      } catch(e) { /* ignore */ }
-    }
-    // Fallback: adresi parçala
-    const city = extractCityFromAddress(item.address);
-    if (city && city.length > 2 && !/voluntari|ilçe|kasaba|mahalle|köy|commune|municipality|town|village|suburb|neighbourhood/i.test(city)) {
-      window.selectedCity = city;
-      window.selectedLocation = city;
-      console.log("selectedCity set (fallback):", city);
-    }
-  }
-  function extractCityFromAddress(address) {
-    if (!address) return "";
-    const parts = address.split(",").map(p => p.trim()).filter(Boolean);
-    for (let i = parts.length - 2; i >= 0; i--) {
-      const part = parts[i];
-      if (
-        /^[A-Za-zÇĞİÖŞÜçğıöşü\s\-'.]+$/.test(part) &&
-        !/^(turkey|türkiye|ukraine|ukrayna|romania|italy|france|germany|usa|united states|russia|rossiya|poland|bulgaria)$/i.test(part.toLowerCase()) &&
-        part.length > 2
-      ) {
-        return part;
-      }
-    }
-    const fallback = parts.find(p => /^[A-Za-zÇĞİÖŞÜçğıöşü\s\-'.]+$/.test(p) && p.length > 2);
-    return fallback || "";
-  }
-  if (newItem.address && (!window.selectedCity || window.selectedCity === "")) {
-    const city = extractCityFromAddress(newItem.address);
-    if (city) {
-      window.selectedCity = city;
-      window.selectedLocation = city;
-      console.log("selectedCity set:", city);
-    }
-  }
-
-  console.log('Yeni item eklendi:', newItem);
-  const dayNum = newItem.day;
-  const points = window.cart.filter(i => i.day == dayNum && i.location);
-  debounceRoute(dayNum, points, updatePolylineForDay);
-
-  try {
-    if (!newItem._starter && newItem.location) {
-      const realPoints = window.cart.filter(it =>
-        it.day === dayNum &&
-        it.location &&
-        !it._starter &&
-        !it._placeholder
-      ).length;
-
-      if (realPoints === 1) {
-        if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[dayNum]) {
-          delete window.__suppressMiniUntilFirstPoint[dayNum];
-        }
-        ensureDayMapContainer(dayNum);
-        const mini = document.getElementById(`route-map-day${dayNum}`);
-        if (mini) mini.classList.remove('mini-suppressed');
-        if (typeof renderRouteForDay === 'function') setTimeout(() => renderRouteForDay(dayNum), 0);
-      } else if (realPoints > 1) {
-        if (typeof renderRouteForDay === 'function') setTimeout(() => renderRouteForDay(dayNum), 0);
-      }
-    }
-  } catch (e) {
-    console.warn('[mini map first point]', e);
-  }
-
+  // Sonraki kodlar aynı, silent değişkeni başta false olmalı
   if (!silent) {
     if (typeof updateCart === "function") updateCart();
     if (!skipRender && typeof renderRouteForDay === "function") {
       setTimeout(() => renderRouteForDay(resolvedDay), 0);
     }
-  }
-  if (!silent && typeof openSidebar === 'function') {
-    openSidebar();
-    if (window.innerWidth <= 768) {
-      const sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
-      if (sidebar) sidebar.classList.add('open');
+    if (typeof openSidebar === 'function') {
+      openSidebar();
+      if (window.innerWidth <= 768) {
+        const sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
+        if (sidebar) sidebar.classList.add('open');
+      }
+    }
+    if (typeof attachChatDropListeners === 'function') {
+      attachChatDropListeners();
+    }
+    if (window.expandedMaps) {
+      clearRouteSegmentHighlight(resolvedDay);
+      fitExpandedMapToRoute(resolvedDay);
+    }
+    if (typeof saveTripAfterRoutes === "function") {
+      saveTripAfterRoutes();
     }
   }
-  if (!silent && typeof attachChatDropListeners === 'function') {
-    attachChatDropListeners();
-  }
-  if (window.expandedMaps) {
-    clearRouteSegmentHighlight(resolvedDay);
-    fitExpandedMapToRoute(resolvedDay);
-  }
-  if (!silent && typeof saveTripAfterRoutes === "function") {
-    saveTripAfterRoutes();
-  }
   return true;
-  if (typeof updateCart === "function") updateCart();
-  if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 }
 
 function __dayIsEmpty(day){
