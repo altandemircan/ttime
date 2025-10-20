@@ -2180,9 +2180,12 @@ function displayPlacesInChat(places, category, day) {
                 <div class="accordion-content">
                     <div class="day-steps">`;
 
-    places.forEach((place, idx) => {
-        html += generateStepHtml(place, day, category, idx);
-    });
+    places.forEach(place => {
+    if (typeof place.name_local === "undefined") {
+        place.name_local = place.name;
+    }
+    place.name = getDisplayName(place);
+});
 
     html += "</div></div></div></div>";
     chatBox.innerHTML += html;
@@ -2571,6 +2574,11 @@ async function getOptimizedImage(properties) {
 
 async function enrichCategoryResults(places, city) {
     await Promise.all(places.map(async (place) => {
+        // PATCH: Kiril adı koru, Latin adı .name'e yaz
+        if (typeof place.name_local === "undefined") {
+            place.name_local = place.name;
+        }
+        place.name = getDisplayName(place);
         place.image = await getImageForPlace(
             place.name || place.properties?.name,
             place.category,
