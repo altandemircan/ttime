@@ -16,10 +16,7 @@ function getDisplayName(place) {
 }
 
 function getLocalName(place) {
-  // Öncelikli: name_local varsa onu döndür (Kiril)
   if (place.name_local && place.name_local !== place.name) return place.name_local;
-  // Eski fallback:
-  if (place.name && getDisplayName(place) !== place.name) return place.name;
   return "";
 }
 
@@ -2589,7 +2586,11 @@ async function enrichPlanWithWiki(plan) {
         if (step._noPlace) continue;
         step.image = await getImageForPlace(step.name, step.category, step.city || selectedCity);
         step.description = "No detailed description.";
-        // PATCH: Latin/İngilizce ad .name'e yaz!
+        // Orijinal ad (Kiril/yerel) kaybolmasın diye sakla:
+        if (typeof step.name_local === "undefined") {
+            step.name_local = step.name;
+        }
+        // Latin/İngilizce ad .name'e yaz!
         step.name = getDisplayName(step);
     }
     return plan;
