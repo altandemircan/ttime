@@ -2583,12 +2583,11 @@ async function enrichPlanWithWiki(plan) {
         if (step._noPlace) continue;
         step.image = await getImageForPlace(step.name, step.category, step.city || selectedCity);
         step.description = "No detailed description.";
+        // PATCH: Latin/İngilizce ad .name'e yaz!
+        step.name = getDisplayName(step);
     }
     return plan;
-    console.log(plan);
-
 }
-
 // Proxy çağrısı
 async function getPhoto(query, source = 'pexels') {
     const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=${source}`;
