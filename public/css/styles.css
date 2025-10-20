@@ -6871,3 +6871,5 @@ ease;
     font-family: 'Satoshi';
     margin-top:20px;
 }
+
+.leaflet-bottom leaflet-right { font-size:0.5rem !important }
