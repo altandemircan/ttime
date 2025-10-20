@@ -5174,56 +5174,56 @@ async function expandMap(containerId, day) {
   expandedContainer.className = 'expanded-map-container';
   document.body.appendChild(expandedContainer);
 
-  // Ölçek (scale) bar
-  const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (oldBar) oldBar.remove();
-  const scaleBarDiv = document.createElement('div');
-  scaleBarDiv.className = 'route-scale-bar';
-  scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
-  try {
-    const ptsForBar = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-    const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-    if (imported) {
-      scaleBarDiv.style.display = '';
-    } else {
-      scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
-    }
-  } catch (_) {}
+ // Ölçek (scale) bar
+const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+if (oldBar) oldBar.remove();
+const scaleBarDiv = document.createElement('div');
+scaleBarDiv.className = 'route-scale-bar';
+scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
+try {
+  const ptsForBar = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+  const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+  if (imported) {
+    scaleBarDiv.style.display = '';
+  } else {
+    scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
+  }
+} catch (_) {}
 
-  // Panel wrapper: önce scaleBarDiv, sonra headerDiv (dışarıya taşındı)
-  const panelDiv = document.createElement('div');
-  panelDiv.className = 'expanded-map-panel';
-  panelDiv.appendChild(scaleBarDiv);
-  expandedContainer.appendChild(panelDiv);
+// Panel wrapper: önce scaleBarDiv, sonra headerDiv (dışarıya taşındı)
+const panelDiv = document.createElement('div');
+panelDiv.className = 'expanded-map-panel';
+panelDiv.appendChild(scaleBarDiv);
+expandedContainer.appendChild(panelDiv);
 
-  // Header'ı expandedContainer'ın dışına ekle!
-  document.body.appendChild(headerDiv);
+// --- PATCH: headerDiv'i expandedContainer'ın en başına ekle ---
+expandedContainer.appendChild(headerDiv); // burada headerDiv'in tüm özellikleri olduğu gibi kalır!
 
-  // Diğer kontroller (lokasyon/kapat)
-  const locBtn = document.createElement('button');
-  locBtn.type = 'button';
-  locBtn.id = `use-my-location-btn-day${day}`;
-  locBtn.classList.add('use-my-location-btn');
-  locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
-  expandedContainer.appendChild(locBtn);
+// Diğer kontroller (lokasyon/kapat)
+const locBtn = document.createElement('button');
+locBtn.type = 'button';
+locBtn.id = `use-my-location-btn-day${day}`;
+locBtn.classList.add('use-my-location-btn');
+locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
+expandedContainer.appendChild(locBtn);
 
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'close-expanded-map';
-  closeBtn.textContent = '✕ Close';
-  closeBtn.style.cssText = `
-    position:absolute;top:16px;right:16px;z-index:10001;
-    background:#ff4444;color:#fff;border:none;padding:8px 12px;
-    border-radius:4px;font-weight:500;cursor:pointer;
-  `;
-  closeBtn.onclick = () => restoreMap(containerId, day);
-  expandedContainer.appendChild(closeBtn);
+const closeBtn = document.createElement('button');
+closeBtn.className = 'close-expanded-map';
+closeBtn.textContent = '✕ Close';
+closeBtn.style.cssText = `
+  position:absolute;top:16px;right:16px;z-index:10001;
+  background:#ff4444;color:#fff;border:none;padding:8px 12px;
+  border-radius:4px;font-weight:500;cursor:pointer;
+`;
+closeBtn.onclick = () => restoreMap(containerId, day);
+expandedContainer.appendChild(closeBtn);
 
-  // Harita div
-  const mapDivId = `${containerId}-expanded`;
-  const mapDiv = document.createElement('div');
-  mapDiv.id = mapDivId;
-  mapDiv.className = 'expanded-map';
-  expandedContainer.appendChild(mapDiv);
+// Harita div
+const mapDivId = `${containerId}-expanded`;
+const mapDiv = document.createElement('div');
+mapDiv.id = mapDivId;
+mapDiv.className = 'expanded-map';
+expandedContainer.appendChild(mapDiv);
 
   // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
