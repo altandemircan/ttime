@@ -15,13 +15,13 @@ function getDisplayName(place) {
   return place.name || "";
 }
 
-
 function getLocalName(place) {
   // Eğer Latin ad varsa, local ad sadece name olur
   if (place.name && getDisplayName(place) !== place.name) return place.name;
   // Yoksa local adı gösterme
   return "";
 }
+
 function countryFlag(iso2) {
   // ISO2 kodunu Unicode bayrağa çevirir
   if (!iso2) return "";
@@ -146,12 +146,9 @@ function renderSuggestions(results = []) {
 // Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
 
-  const name = getDisplayName(step) || category;
-  const showLocalName = step.name && step.name !== name;
-  const localName = (step.name && step.name !== name) ? step.name : "";
 
-
-
+    const name = getDisplayName(step) || category;
+    const localName = getLocalName(step);
     const address = step?.address || "";
     const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
     const website = step?.website || "";
@@ -159,14 +156,15 @@ function generateStepHtml(step, day, category, idx = 0) {
     const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
     const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
 
-    let tagsHtml = "";
-    const tags = (step.properties && step.properties.categories) || step.categories;
-    if (tags && Array.isArray(tags) && tags.length > 0) {
-        const uniqueTags = getUniqueSpecificTags(tags);
-        tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
-    }
+     let tagsHtml = "";
+        const tags = (step.properties && step.properties.categories) || step.categories;
+        if (tags && Array.isArray(tags) && tags.length > 0) {
+           const uniqueTags = getUniqueSpecificTags(tags);
+    tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
+        }
 
-    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+
+let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
         catIcon = "img/coffee_icon.svg";
     else if (category === "Touristic attraction")
@@ -176,70 +174,72 @@ function generateStepHtml(step, day, category, idx = 0) {
     else if (category === "Accommodation")
         catIcon = "img/accommodation_icon.svg";
 
+    // Favori mi?
     const favState = isTripFav({ name, category, lat, lon }) ? "♥" : "♡";
     const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
 
-    if (step._noPlace && (!step.name || step.name === null)) {
-        return `
-            <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #c9e6ef; text-align:center; padding:32px 0;">
-                <div style="font-size:18px; color:#1976d2; margin-bottom:16px;">No place found!</div>
-                <button class="im-lucky-btn" style="padding:8px 22px;font-size:17px;font-weight:500;border-radius:8px;background:#1976d2;color:#fff;cursor:pointer;">
-                    I'm lucky!
-                </button>
-            </div>
-        `;
-    }
+    
+   if (step._noPlace && (!step.name || step.name === null)) {
+  return `
+    <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #c9e6ef; text-align:center; padding:32px 0;">
+      <div style="font-size:18px; color:#1976d2; margin-bottom:16px;">No place found!</div>
+      <button class="im-lucky-btn" style="padding:8px 22px;font-size:17px;font-weight:500;border-radius:8px;background:#1976d2;color:#fff;cursor:pointer;">
+        I'm lucky!
+      </button>
+    </div>
+  `;
+}
 
-    return `
-        <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
-            <div class="visual" style="position:relative;">
-                <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-                <div class="geoapify-tags-section">
-                    <div class="geoapify-tags">${tagsHtml}</div>
-                </div>
-                <span class="fav-heart ${favClass}"
-                      data-name="${name}"
-                      data-category="${category}"
-                      data-lat="${lat}"
-                      data-lon="${lon}"
-                      style="position:absolute;top:5px;right:8px;font-size:22px;cursor:pointer;user-select:none;">
-                    ${favState}
+return `
+    <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
+        <div class="visual" style="position:relative;">
+           <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+            <div class="geoapify-tags-section">
+              <div class="geoapify-tags">${tagsHtml}</div>
+           </div>
+           <span class="fav-heart ${favClass}"
+                 data-name="${name}"
+                 data-category="${category}"
+                 data-lat="${lat}"
+                 data-lon="${lon}"
+                 style="position:absolute;top:5px;right:8px;font-size:22px;cursor:pointer;user-select:none;">
+            ${favState}
+           </span>
+        </div>
+        <div class="info day_cats item-info-view">
+        <div class="title">${name}</div>
+        ${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
+        <div class="address">
+            <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
+        </div>
+        <div class="opening_hours">
+            <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
+        </div>
+    </div>
+        <div class="item_action">
+            <div class="change">
+                <span onclick="window.showImage && window.showImage(this)">
+                    <img src="img/camera_icon.svg">
                 </span>
+                <span onclick="window.showMap && window.showMap(this)">
+                    <img src="img/map_icon.svg">
+                </span>
+                ${website ? `
+                <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
+                    <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+                </span>
+                ` : ""}
             </div>
-              <div class="info day_cats item-info-view">
-    <div class="title">${name}</div>
-${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
-                <div class="address">
-                    <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
+            <div style="display: flex; gap: 12px;">
+                <div class="cats cats${idx % 5 + 1}">
+                    <img src="${catIcon}" alt="${category}"> ${category}
                 </div>
-                <div class="opening_hours">
-                    <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
-                </div>
-            </div>
-            <div class="item_action">
-                <div class="change">
-                    <span onclick="window.showImage && window.showImage(this)">
-                        <img src="img/camera_icon.svg">
-                    </span>
-                    <span onclick="window.showMap && window.showMap(this)">
-                        <img src="img/map_icon.svg">
-                    </span>
-                    ${website ? `
-                    <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
-                        <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
-                    </span>
-                    ` : ""}
-                </div>
-                <div style="display: flex; gap: 12px;">
-                    <div class="cats cats${idx % 5 + 1}">
-                        <img src="${catIcon}" alt="${category}"> ${category}
-                    </div>
-                    <a class="addtotrip">
-                        <img src="img/addtotrip-icon.svg">
-                    </a>
-                </div>
+                <a class="addtotrip">
+                    <img src="img/addtotrip-icon.svg">
+                </a>
             </div>
         </div>
+    </div>
     `;
 }
 
@@ -1218,21 +1218,18 @@ function initializeAddToTripListener() {
         }
 
         addToCart(
-    stepsDiv.querySelector('.title')?.textContent.trim() || '', // Latin ad
-    image,
-    day,
-    category,
-    address,
-    null, // rating
-    null, // user_ratings_total
-    opening_hours,
-    null, // place_id
-    location,
-    website,
-    {
-        localName: stepsDiv.querySelector('.local-name')?.textContent.trim() || ''
-    }
-);
+            title,
+            image,
+            day,
+            category,
+            address,
+            null, // rating
+            null, // user_ratings_total
+            opening_hours,
+            null, // place_id
+            location,
+            website
+        );
 
         btn.classList.add('added');
         setTimeout(() => btn.classList.remove('added'), 1000);
@@ -1638,22 +1635,17 @@ async function buildPlan(city, days) {
   for (let day = 1; day <= days; day++) {
     let dailyPlaces = [];
     for (const cat of categories) {
-        const places = categoryResults[cat];
-        if (places.length > 0) {
-            const idx = (day - 1) % places.length;
-            dailyPlaces.push({
-                day,
-                category: cat,
-                ...places[idx],
-                name: getDisplayName(places[idx]),     // Latin ad
-                localName: places[idx].name            // Lokal ad
-            });
-        } else {
-            dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
-        }
+      const places = categoryResults[cat];
+      if (places.length > 0) {
+        // Her gün için farklı mekan gelsin!
+        const idx = (day - 1) % places.length;
+        dailyPlaces.push({ day, category: cat, ...places[idx] });
+      } else {
+        dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
+      }
     }
     plan = plan.concat(dailyPlaces);
-}
+  }
 
   plan = await enrichPlanWithWiki(plan);
   return plan;
@@ -1705,30 +1697,24 @@ function addChatResultsToCart() {
     sorted.forEach(result => {
         const day = Number(result.getAttribute('data-day') || 1);
         const category = result.getAttribute('data-category');
-        // ADIM: title'da Latin/İngilizce ad varsa onu al
-        const name = result.querySelector('.title')?.textContent?.trim() || '';
-        // ADIM: local-name varsa onu da al (opsiyonel)
-        const localName = result.querySelector('.local-name')?.textContent?.trim() || '';
+        const name = result.querySelector('.title').textContent;
         const image = result.querySelector('img.check').src;
         const lat = result.getAttribute('data-lat');
         const lon = result.getAttribute('data-lon');
-        const address = result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-        const opening = result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
         // Sadece lat/lon varsa ekle!
         if (lat && lon) {
             addToCart(
-    result.querySelector('.title')?.textContent.trim() || '', // Latin ad
-    image,
-    day,
-    category,
-    address,
-    null, null,
-    opening,
-    null,
-    { lat: Number(lat), lng: Number(lon) },
-    '',
-    { localName: result.querySelector('.local-name')?.textContent.trim() || '' }
-);
+                name,
+                image,
+                day,
+                category,
+                result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
+                null, null,
+                result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
+                null,
+                { lat: Number(lat), lng: Number(lon) },
+                ''
+            );
         }
     });
 }
@@ -2242,19 +2228,18 @@ function addItem(element, day, category, name, image, extra) {
     }
 
     addToCart(
-    getDisplayName(place), // Latin/İngilizce ad
-    image,
-    day,
-    category,
-    place.address || address,
-    place.rating,
-    place.user_ratings_total,
-    place.opening_hours || opening_hours,
-    place.place_id,
-    location,
-    place.website,
-    { localName: place.name }
-);
+        name,
+        image,
+        day,
+        category,
+        place.address || address,
+        place.rating,
+        place.user_ratings_total,
+        place.opening_hours || opening_hours,
+        place.place_id,
+        location,
+        place.website
+    );
     if (typeof restoreSidebar === "function") restoreSidebar();
 }
 
@@ -2782,16 +2767,15 @@ function handleSuggestionClick(suggestion, imgUrl, day) {
     let location = (Number.isFinite(lat) && Number.isFinite(lon)) ? { lat, lng: lon } : null;
 
     addToCart(
-    getDisplayName(props), // Latin/İngilizce ad
-    imgUrl,
-    parseInt(day),
-    "Place",
-    props.formatted || "",
-    null, null, null, props.place_id,
-    location,
-    props.website || "",
-    { localName: props.name }
-);
+        props.name || props.address_line1 || '',
+        imgUrl,
+        parseInt(day),
+        "Place",
+        props.formatted || "",
+        null, null, null, props.place_id,
+        location,
+        props.website || ""
+    );
     const newItem = {
         name: props.name || props.address_line1 || '',
         image: imgUrl,
@@ -4581,7 +4565,6 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
                         </div>
                         <div class="info day_cats item-info-view">
                             <div class="title">${name}</div>
-${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
                             <div class="address">
                                 <img src="img/address_icon.svg"> ${address}
                             </div>
@@ -4745,7 +4728,6 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
                     </div>
                     <div class="info day_cats item-info-view">
                         <div class="title">${name}</div>
-${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
                         <div class="address">
                             <img src="img/address_icon.svg"> ${address}
                         </div>
@@ -5850,19 +5832,17 @@ window.addClickedPointToCart = async function(lat, lng, day) {
         
         // Sepete ekle
         addToCart(
-    getDisplayName(pointInfo), // Latin/İngilizce ad
-    imageUrl,
-    day,
-    "Place",
-    pointInfo.address || "",
-    null, null,
-    pointInfo.opening_hours || "",
-    null,
-    { lat: lat, lng: lng },
-    "",
-    { localName: pointInfo.name }
-);
-
+            placeName,
+            imageUrl,
+            day,
+            "Place",
+            pointInfo.address || "",
+            null, null,
+            pointInfo.opening_hours || "",
+            null,
+            { lat: lat, lng: lng },
+            ""
+        );
 
         
         // Popup'ı kapat
@@ -5889,20 +5869,18 @@ window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeL
     
     console.log(`Adding place: ${f.properties.name} at ${actualLat}, ${actualLng}`); // Debug log
     
-   addToCart(
-    getDisplayName(f.properties), // Latin/İngilizce ad
-    photo,
-    day,
-    "Place",
-    f.properties.formatted || "",
-    null, null,
-    f.properties.opening_hours || "",
-    null,
-    { lat: actualLat, lng: actualLng },
-    f.properties.website || "",
-    { localName: f.properties.name }
-);
-
+    addToCart(
+        f.properties.name || "Unnamed",
+        photo,
+        day,
+        "Place",
+        f.properties.formatted || "",
+        null, null,
+        f.properties.opening_hours || "",
+        null,
+        { lat: actualLat, lng: actualLng }, // FIX: Doğru koordinatlar
+        f.properties.website || ""
+    );
     
     // Popup'ı kapat ve başarı mesajı göster
     closeNearbyPopup();
@@ -7367,19 +7345,18 @@ function addGeziPlanMarkers(map, poiList, currentDay) {
       );
       if (!exists) {
         addToCart(
-    getDisplayName(poi), // Latin/İngilizce ad
-    poi.image || "img/placeholder.png",
-    currentDay,
-    "Place",
-    poi.address || "",
-    null,
-    null,
-    poi.opening_hours || "",
-    null,
-    { lat: poi.lat, lng: poi.lng },
-    poi.website || "",
-    { localName: poi.name }
-);
+          poi.name,
+          poi.image || "img/placeholder.png",
+          currentDay,
+          "Place",
+          poi.address || "",
+          null,
+          null,
+          poi.opening_hours || "",
+          null,
+          { lat: poi.lat, lng: poi.lng },
+          poi.website || ""
+        );
         marker.closePopup();
         marker.setOpacity(0.5);
       }
