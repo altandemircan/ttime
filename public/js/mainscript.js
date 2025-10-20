@@ -1880,6 +1880,25 @@ function addToCart(
 ) {
   const { silent = false, skipRender = false, forceDay = null } = options || {};
 
+  // 0) Latin/İngilizce adı öncelikli şekilde ayarla
+  // Eğer parametre olarak place objesi gelirse ve name_en/name_latin varsa bunları kullan
+  // arguments[0] = name veya place objesi
+  if (
+    typeof getDisplayName === "function"
+  ) {
+    // Birçok çağrıda name parametresi aslında place objesidir, özellikleri varsa Latin adı çek
+    if (arguments[0] && typeof arguments[0] === "object") {
+      // 1) properties varsa
+      if (arguments[0].properties) {
+        name = getDisplayName(arguments[0].properties);
+      } 
+      // 2) name_en veya name_latin varsa
+      else if (arguments[0].name_en || arguments[0].name_latin) {
+        name = getDisplayName(arguments[0]);
+      }
+    }
+  }
+
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
     window.cart = (window.cart || []).filter(it => !it._placeholder);
