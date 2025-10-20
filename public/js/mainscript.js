@@ -148,6 +148,9 @@ function generateStepHtml(step, day, category, idx = 0) {
 
   const name = getDisplayName(step) || category;
   const showLocalName = step.name && step.name !== name;
+  const localName = (step.name && step.name !== name) ? step.name : "";
+
+
 
     const address = step?.address || "";
     const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
@@ -205,7 +208,7 @@ function generateStepHtml(step, day, category, idx = 0) {
             </div>
               <div class="info day_cats item-info-view">
     <div class="title">${name}</div>
-${showLocalName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${step.name}</div>` : ""}
+${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
                 <div class="address">
                     <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
                 </div>
