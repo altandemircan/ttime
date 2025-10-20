@@ -2180,12 +2180,9 @@ function displayPlacesInChat(places, category, day) {
                 <div class="accordion-content">
                     <div class="day-steps">`;
 
-    places.forEach(place => {
-    if (typeof place.name_local === "undefined") {
-        place.name_local = place.name;
-    }
-    place.name = getDisplayName(place);
-});
+    places.forEach((place, idx) => {
+        html += generateStepHtml(place, day, category, idx);
+    });
 
     html += "</div></div></div></div>";
     chatBox.innerHTML += html;
