@@ -14,7 +14,6 @@ function getDisplayName(place) {
   }
   return place.name || "";
 }
-const showLocalName = step.name && step.name !== name;
 
 
 function getLocalName(place) {
@@ -147,7 +146,8 @@ function renderSuggestions(results = []) {
 // Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
 
- const name = getDisplayName(step) || category;
+  const name = getDisplayName(step) || category;
+  const showLocalName = step.name && step.name !== name;
 const localName = (step.name && step.name !== name) ? step.name : "";
     const address = step?.address || "";
     const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
