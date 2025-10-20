@@ -5,13 +5,7 @@ window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
 function getDisplayName(place) {
-  return place.name_en || place.name_latin || (
-    place.address
-      ? place.address.split(',')[0].trim().match(/^[A-Za-z\s\-'.]+$/)
-        ? place.address.split(',')[0].trim()
-        : null
-      : null
-  ) || place.name || "";
+  return place.name_en || place.name_latin || place.name || "";
 }
 function getLocalName(place) {
   // Latin ad ile aynı değilse, local ad
