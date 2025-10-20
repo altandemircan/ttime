@@ -5286,15 +5286,8 @@ if (geojson?.features?.[0]?.geometry?.coordinates) {
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
   const summary = window.lastRouteSummaries?.[containerId];
-  if (summary) {
-    statsDiv.innerHTML = `
-      <b>${getDayDisplayName(day)}</b>&nbsp;—&nbsp;
-      <b>Distance:</b> ${(summary.distance / 1000).toFixed(2)} km&nbsp;—&nbsp;
-      <b>Duration:</b> ${Math.round(summary.duration / 60)} min
-    `;
-  } else {
-    statsDiv.innerHTML = `<b>${getDayDisplayName(day)}</b>`;
-  }
+  statsDiv.innerHTML = `<b>${getDayDisplayName(day)}</b>`;
+
 
   window.expandedMaps = window.expandedMaps || {};
   window.expandedMaps[containerId] = {
