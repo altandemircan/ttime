@@ -1897,7 +1897,7 @@ function safeCoords(obj) {
 
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
-  opening_hours = null, place_id = null, location = null, website = null, options = {}
+  opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false
 ) {
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
