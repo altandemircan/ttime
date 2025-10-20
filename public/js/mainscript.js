@@ -4848,10 +4848,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
    const infoDiv = document.createElement("span");
     infoDiv.className = "route-summary-control";
     if (summary) {
-        infoDiv.innerHTML =
-    `<b>Distance:</b> ${(summary.distance / 1000).toFixed(1)} km&nbsp;&nbsp;` +
-                `<b>Duration:</b> ${Math.round(summary.duration / 60)} min`;
-
+      infoDiv.innerHTML =
+    `<span class="stat stat-distance">
+      <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
+      <span class="badge">${(summary.distance / 1000).toFixed(1)} km</span>
+    </span>
+    <span class="stat stat-duration">
+      <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
+      <span class="badge">${Math.round(summary.duration / 60)} dk</span>
+    </span>`;
     }
     controlRow.appendChild(infoDiv);
 
@@ -8276,10 +8281,19 @@ window.TT_SVG_ICONS = {
   }
 
   // 3) Override updateRouteStatsUI to also include ascent/descent and new icons
-window.updateRouteStatsUI = function(day) {
-    const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-    if (statsDiv) statsDiv.innerHTML = '';
-};
+  window.updateRouteStatsUI = function(day) {
+    const key = `route-map-day${day}`;
+    const summary = window.lastRouteSummaries?.[key] || null;
+
+    if (!summary) {
+      const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+      if (span) span.innerHTML = '';
+      const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+      if (statsDiv) statsDiv.innerHTML = '';
+      return;
+    }
+    setSummaryForDay(day, summary.distance, summary.duration);
+  };
 
   // 4) Compute ascent/descent from elevation profile (when available) and refresh UI
   function computeAscDesc(profile) {
