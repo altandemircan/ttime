@@ -5,10 +5,20 @@ window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
 function getDisplayName(place) {
-  return place.name_en || place.name_latin || place.name || "";
+  // Latin/İngilizce ad döndür
+  if (place.name_en) return place.name_en;
+  if (place.name_latin) return place.name_latin;
+  if (place.address) {
+    const first = place.address.split(',')[0].trim();
+    if (/^[A-Za-z0-9\s\-'.]+$/.test(first) && first.length > 2) return first;
+  }
+  return place.name || "";
 }
+
 function getLocalName(place) {
+  // Eğer Latin ad varsa, local ad sadece name olur
   if (place.name && getDisplayName(place) !== place.name) return place.name;
+  // Yoksa local adı gösterme
   return "";
 }
 function countryFlag(iso2) {
