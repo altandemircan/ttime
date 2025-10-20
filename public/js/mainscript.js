@@ -1695,31 +1695,38 @@ function addChatResultsToCart() {
     });
 
     sorted.forEach(result => {
-        const day = Number(result.getAttribute('data-day') || 1);
-        const category = result.getAttribute('data-category');
-        let name = result.querySelector('.title').textContent;
-if (typeof getDisplayName === "function") {
-    name = getDisplayName({ name: name });
-}
-        const image = result.querySelector('img.check').src;
-        const lat = result.getAttribute('data-lat');
-        const lon = result.getAttribute('data-lon');
-        // Sadece lat/lon varsa ekle!
-        if (lat && lon) {
-            addToCart(
-                name,
-                image,
-                day,
-                category,
-                result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
-                null, null,
-                result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
-                null,
-                { lat: Number(lat), lng: Number(lon) },
-                ''
-            );
-        }
-    });
+    const day = Number(result.getAttribute('data-day') || 1);
+    const category = result.getAttribute('data-category');
+    const lat = result.getAttribute('data-lat');
+    const lon = result.getAttribute('data-lon');
+    // Orijinal step objesini çek
+    let stepObj = null;
+    if (result.dataset.step) {
+        try { stepObj = JSON.parse(result.dataset.step); } catch (e) { stepObj = null; }
+    }
+    // Latin adı al
+    let name = "";
+    if (stepObj && typeof getDisplayName === "function") {
+        name = getDisplayName(stepObj);
+    } else {
+        name = result.querySelector('.title').textContent;
+    }
+    // Sadece lat/lon varsa ekle!
+    if (lat && lon) {
+        addToCart(
+            name,
+            result.querySelector('img.check').src,
+            day,
+            category,
+            result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
+            null, null,
+            result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
+            null,
+            { lat: Number(lat), lng: Number(lon) },
+            ''
+        );
+    }
+});
 }
    window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
