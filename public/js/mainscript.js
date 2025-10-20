@@ -191,8 +191,11 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
 }
 
 return `
-    <div class="steps" data-day="${day}" data-category="${category}"${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}>
-        <div class="visual" style="position:relative;">
+<div class="steps" 
+    data-day="${day}" 
+    data-category="${category}"
+    ${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}
+    data-step='${JSON.stringify(step)}'>        <div class="visual" style="position:relative;">
            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             <div class="geoapify-tags-section">
               <div class="geoapify-tags">${tagsHtml}</div>
@@ -1695,38 +1698,44 @@ function addChatResultsToCart() {
     });
 
     sorted.forEach(result => {
-    const day = Number(result.getAttribute('data-day') || 1);
-    const category = result.getAttribute('data-category');
-    const lat = result.getAttribute('data-lat');
-    const lon = result.getAttribute('data-lon');
-    // Orijinal step objesini çek
-    let stepObj = null;
-    if (result.dataset.step) {
-        try { stepObj = JSON.parse(result.dataset.step); } catch (e) { stepObj = null; }
-    }
-    // Latin adı al
-    let name = "";
-    if (stepObj && typeof getDisplayName === "function") {
-        name = getDisplayName(stepObj);
-    } else {
-        name = result.querySelector('.title').textContent;
-    }
-    // Sadece lat/lon varsa ekle!
-    if (lat && lon) {
-        addToCart(
-            name,
-            result.querySelector('img.check').src,
-            day,
-            category,
-            result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
-            null, null,
-            result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
-            null,
-            { lat: Number(lat), lng: Number(lon) },
-            ''
-        );
-    }
-});
+        const day = Number(result.getAttribute('data-day') || 1);
+        const category = result.getAttribute('data-category');
+        const lat = result.getAttribute('data-lat');
+        const lon = result.getAttribute('data-lon');
+        const image = result.querySelector('img.check')?.src || 'img/placeholder.png';
+        const address = result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+        const opening_hours = result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+
+        // Orijinal step objesini çek
+        let stepObj = null;
+        if (result.dataset.step) {
+            try { stepObj = JSON.parse(result.dataset.step); } catch (e) { stepObj = null; }
+        }
+
+        // Latin adı al
+        let name = "";
+        if (stepObj && typeof getDisplayName === "function") {
+            name = getDisplayName(stepObj);
+        } else {
+            name = result.querySelector('.title').textContent;
+        }
+
+        // Sadece lat/lon varsa ekle!
+        if (lat && lon) {
+            addToCart(
+                name,
+                image,
+                day,
+                category,
+                address,
+                null, null,
+                opening_hours,
+                null,
+                { lat: Number(lat), lng: Number(lon) },
+                ''
+            );
+        }
+    });
 }
    window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
@@ -1887,25 +1896,14 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}
 ) {
-  const { silent = false, skipRender = false, forceDay = null } = options || {};
-
-  // 0) Latin/İngilizce adı öncelikli şekilde ayarla
-  // Eğer parametre olarak place objesi gelirse ve name_en/name_latin varsa bunları kullan
-  // arguments[0] = name veya place objesi
-  if (
-    typeof getDisplayName === "function"
-  ) {
-    // Birçok çağrıda name parametresi aslında place objesidir, özellikleri varsa Latin adı çek
-    if (arguments[0] && typeof arguments[0] === "object") {
-      // 1) properties varsa
-      if (arguments[0].properties) {
-        name = getDisplayName(arguments[0].properties);
-      } 
-      // 2) name_en veya name_latin varsa
-      else if (arguments[0].name_en || arguments[0].name_latin) {
-        name = getDisplayName(arguments[0]);
-      }
+  // Latin/İngilizce adı öncelikli olarak ayarla
+  if (typeof getDisplayName === "function" && arguments[0] && typeof arguments[0] === "object") {
+    if (arguments[0].properties) {
+      name = getDisplayName(arguments[0].properties);
+    } else {
+      name = getDisplayName(arguments[0]);
     }
+  }
   }
 
   // 1) Placeholder temizliği
