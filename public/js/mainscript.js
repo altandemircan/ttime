@@ -191,11 +191,12 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
 }
 
 return `
-<div class="steps" 
+    <div class="steps" 
     data-day="${day}" 
     data-category="${category}"
     ${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}
-    data-step='${JSON.stringify(step)}'>        <div class="visual" style="position:relative;">
+    data-step='${JSON.stringify(step)}'>
+        <div class="visual" style="position:relative;">
            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             <div class="geoapify-tags-section">
               <div class="geoapify-tags">${tagsHtml}</div>
