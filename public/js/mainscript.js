@@ -5147,8 +5147,11 @@ async function expandMap(containerId, day) {
 const panelDiv = document.createElement('div');
 panelDiv.className = 'expanded-map-panel';
 panelDiv.appendChild(scaleBarDiv);
-panelDiv.appendChild(headerDiv);
+
 expandedContainer.appendChild(panelDiv);
+
+document.body.appendChild(headerDiv);
+document.body.appendChild(expandedContainer);
 
   // === PANEL BİTTİ ===
 
