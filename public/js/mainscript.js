@@ -1697,7 +1697,10 @@ function addChatResultsToCart() {
     sorted.forEach(result => {
         const day = Number(result.getAttribute('data-day') || 1);
         const category = result.getAttribute('data-category');
-        const name = result.querySelector('.title').textContent;
+        let name = result.querySelector('.title').textContent;
+if (typeof getDisplayName === "function") {
+    name = getDisplayName({ name: name });
+}
         const image = result.querySelector('img.check').src;
         const lat = result.getAttribute('data-lat');
         const lon = result.getAttribute('data-lon');
