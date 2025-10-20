@@ -5,20 +5,17 @@ window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
 function getDisplayName(place) {
-  // Latin/İngilizce ad döndür
-  if (place.name_en) return place.name_en;
-  if (place.name_latin) return place.name_latin;
-  if (place.address) {
-    const first = place.address.split(',')[0].trim();
-    if (/^[A-Za-z0-9\s\-'.]+$/.test(first) && first.length > 2) return first;
-  }
-  return place.name || "";
+  return place.name_en || place.name_latin || (
+    place.address
+      ? place.address.split(',')[0].trim().match(/^[A-Za-z\s\-'.]+$/)
+        ? place.address.split(',')[0].trim()
+        : null
+      : null
+  ) || place.name || "";
 }
-
 function getLocalName(place) {
-  // Eğer Latin ad varsa, local ad sadece name olur
+  // Latin ad ile aynı değilse, local ad
   if (place.name && getDisplayName(place) !== place.name) return place.name;
-  // Yoksa local adı gösterme
   return "";
 }
 
@@ -207,15 +204,15 @@ return `
            </span>
         </div>
         <div class="info day_cats item-info-view">
-            <div class="title">${name}</div>
-            ${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
-            <div class="address">
-                <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
-            </div>
-            <div class="opening_hours">
-                <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
-            </div>
-        </div>
+      <div class="title">${name}</div>
+      ${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
+      <div class="address">
+          <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
+      </div>
+      <div class="opening_hours">
+          <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
+      </div>
+  </div>
         <div class="item_action">
             <div class="change">
                 <span onclick="window.showImage && window.showImage(this)">
