@@ -5286,15 +5286,8 @@ if (geojson?.features?.[0]?.geometry?.coordinates) {
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
   const summary = window.lastRouteSummaries?.[containerId];
-  if (summary) {
-    statsDiv.innerHTML = `
-      <b>${getDayDisplayName(day)}</b>&nbsp;—&nbsp;
-      <b>Distance:</b> ${(summary.distance / 1000).toFixed(2)} km&nbsp;—&nbsp;
-      <b>Duration:</b> ${Math.round(summary.duration / 60)} min
-    `;
-  } else {
-    statsDiv.innerHTML = `<b>${getDayDisplayName(day)}</b>`;
-  }
+  statsDiv.innerHTML = `<b>${getDayDisplayName(day)}</b>`;
+
 
   window.expandedMaps = window.expandedMaps || {};
   window.expandedMaps[containerId] = {
@@ -8287,16 +8280,12 @@ window.TT_SVG_ICONS = {
     const key = `route-map-day${day}`;
     const summary = window.lastRouteSummaries?.[key] || null;
 
-    if (!summary) {
-      const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-      if (span) span.innerHTML = '';
-      const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-      if (statsDiv) statsDiv.innerHTML = '';
-      return;
-    }
-    setSummaryForDay(day, summary.distance, summary.duration);
-  };
+    const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+    if (span) span.innerHTML = '';
 
+    const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+    if (statsDiv) statsDiv.innerHTML = `<b>${getDayDisplayName(day)}</b>`;
+};
   // 4) Compute ascent/descent from elevation profile (when available) and refresh UI
   function computeAscDesc(profile) {
     if (!profile || !Array.isArray(profile.points) || profile.points.length < 2) return { ascent: 0, descent: 0 };
