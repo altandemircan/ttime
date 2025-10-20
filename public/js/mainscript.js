@@ -4846,13 +4846,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     // Route summary
    const infoDiv = document.createElement("span");
-infoDiv.className = "route-summary-control";
-if (summary) {
-    infoDiv.innerHTML =
-        `<b>Distance:</b> ${(summary.distance / 1000).toFixed(1)} km&nbsp;&nbsp;` +
-        `<b>Duration:</b> ${Math.round(summary.duration / 60)} min`;
-}
-controlRow.appendChild(infoDiv);
+    infoDiv.className = "route-summary-control";
+    if (summary) {
+        infoDiv.innerHTML =
+    `<b>Distance:</b> ${(summary.distance / 1000).toFixed(1)} km&nbsp;&nbsp;` +
+                `<b>Duration:</b> ${Math.round(summary.duration / 60)} min`;
+
+    }
+    controlRow.appendChild(infoDiv);
 
     controlsWrapper.appendChild(controlRow);
     sidebarContainer.parentNode.insertBefore(controlsWrapper, sidebarContainer.nextSibling);
