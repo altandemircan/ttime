@@ -5105,26 +5105,54 @@ async function expandMap(containerId, day) {
   document.body.appendChild(expandedContainer);
 
   // === WRAPPER PANEL: HEADER + SCALE BAR ===
-  const headerDiv = document.createElement('div');
-  headerDiv.className = 'expanded-map-header';
+// --- Yeni Layer Button ---
+const layersBtn = document.createElement('button');
+layersBtn.className = 'map-layers-btn';
+layersBtn.style.cssText = 'background:#fff;border:1px solid #e0e0e0;border-radius:7px;padding:7px;cursor:pointer;margin-right:11px;';
+layersBtn.innerHTML = '<img src="/img/layers_icon.svg" alt="Layers" style="width:28px;height:28px;">';
+headerDiv.appendChild(layersBtn);
 
-  const mapStyleSelect = document.createElement('select');
-  mapStyleSelect.id = `map-style-select-day${day}`;
-  [
-    { value: 'streets-v12', text: 'Street modes' },
-    { value: 'dark-v11', text: 'Navigation' },
-    { value: 'satellite-streets-v12', text: 'Satellite' }
-  ].forEach(o => {
-    const opt = document.createElement('option');
-    opt.value = o.value;
-    opt.textContent = o.text;
-    mapStyleSelect.appendChild(opt);
-  });
-  headerDiv.appendChild(mapStyleSelect);
+// --- Layer Panel ---
+const layersPanel = document.createElement('div');
+layersPanel.className = 'map-layers-panel';
+layersPanel.style.cssText = 'position:absolute;top:56px;left:16px;z-index:12001;background:#fff;border-radius:18px;box-shadow:0 2px 18px #0002;padding:18px 20px 14px 20px;min-width:320px;max-width:410px;display:none;';
+layersPanel.innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center;font-size:20px;margin-bottom:8px;">
+    <span>Map type</span>
+    <button style="background:none;border:none;font-size:26px;cursor:pointer;" class="close-layers-panel">×</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+    <div class="map-type-option" data-value="streets-v12" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
+      <img src="/img/preview_streets.png" alt="Default" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Default</span>
+    </div>
+    <div class="map-type-option" data-value="satellite-streets-v12" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
+      <img src="/img/preview_satellite.png" alt="Satellite" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Satellite</span>
+    </div>
+    <div class="map-type-option" data-value="dark-v11" style="cursor:pointer;padding:8px;border-radius:10px;border:2px solid #eee;display:flex;flex-direction:column;align-items:center;">
+      <img src="/img/preview_dark.png" alt="Navigation" style="width:52px;height:52px;border-radius:7px;margin-bottom:6px;"><span>Navigation</span>
+    </div>
+  </div>
+`;
+headerDiv.appendChild(layersPanel);
 
-  const statsDiv = document.createElement('div');
-  statsDiv.className = 'route-stats';
-  headerDiv.appendChild(statsDiv);
+// --- Button ile aç/kapa ---
+layersBtn.onclick = function() {
+  layersPanel.style.display = '';
+};
+layersPanel.querySelector('.close-layers-panel').onclick = function() {
+  layersPanel.style.display = 'none';
+};
+
+// --- Option seçimi ve layer değişimi ---
+layersPanel.querySelectorAll('.map-type-option').forEach(opt => {
+  opt.onclick = function() {
+    layersPanel.querySelectorAll('.map-type-option').forEach(o => o.style.border = '2px solid #eee');
+    opt.style.border = '2px solid #1976d2';
+    const style = opt.getAttribute('data-value');
+    setExpandedMapTile(style); // senin fonksiyonun
+    layersPanel.style.display = 'none';
+  };
+});
 
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
