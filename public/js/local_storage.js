@@ -1,4 +1,13 @@
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
+function toLatin(str) {
+  if (!str) return '';
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x00-\x7F]/g, "")
+    .replace(/[^A-Za-z0-9_ ]/g, "")
+    .trim();
+}
 async function saveTripAfterRoutes() {
   const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
   for (let day = 1; day <= maxDay; day++) {
