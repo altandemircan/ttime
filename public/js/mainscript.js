@@ -1182,47 +1182,30 @@ function extractCityAndDaysFromTheme(title) {
   return { city, days };
 }
 
-// Temaya tıklayınca input doldurulur, suggestions API'dan doldurulur, ilgili şehir seçili yapılır
+// Temaya tıklayınca sadece öneri paneli dolsun, hiçbirini otomatik seçme!
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
-    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
 
-    // API suggestions panelini doldursun
+    // API suggestions panelini doldurur (manuel seçim yok!)
     if (typeof updateSuggestions === 'function') {
       await updateSuggestions(themeTitle);
     }
     document.getElementById('user-input').focus();
 
-    // DOM güncellendikten sonra suggestions içinden şehir seç
+    // DOM güncellendikten sonra hiçbir öneriyi otomatik seçme
     setTimeout(() => {
       const suggestionsDiv = document.getElementById("suggestions");
       if (suggestionsDiv) {
-        let selected = false;
         Array.from(suggestionsDiv.children).forEach(div => {
-          if (
-            (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
-            div.textContent.toLowerCase().includes(city.toLowerCase())
-          ) {
-            div.classList.add("selected-suggestion");
-            window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
-            window.selectedLocationLocked = true;
-            window.selectedLocation = { city: city };
-            window.__locationPickedFromSuggestions = true;
-            enableSendButton && enableSendButton();
-            selected = true;
-          } else {
-            div.classList.remove("selected-suggestion");
-          }
+          div.classList.remove("selected-suggestion");
         });
-        if (!selected) {
-          window.selectedSuggestion = null;
-          window.selectedLocationLocked = false;
-          window.selectedLocation = null;
-          window.__locationPickedFromSuggestions = false;
-          disableSendButton && disableSendButton();
-        }
+        window.selectedSuggestion = null;
+        window.selectedLocationLocked = false;
+        window.selectedLocation = null;
+        window.__locationPickedFromSuggestions = false;
+        disableSendButton && disableSendButton();
         showSuggestionsDiv && showSuggestionsDiv();
       }
     }, 120);
@@ -1235,7 +1218,6 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     e.stopPropagation();
     const themeTitle = btn.parentNode.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
-    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
 
     if (typeof updateSuggestions === 'function') {
       await updateSuggestions(themeTitle);
@@ -1245,30 +1227,14 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     setTimeout(() => {
       const suggestionsDiv = document.getElementById("suggestions");
       if (suggestionsDiv) {
-        let selected = false;
         Array.from(suggestionsDiv.children).forEach(div => {
-          if (
-            (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
-            div.textContent.toLowerCase().includes(city.toLowerCase())
-          ) {
-            div.classList.add("selected-suggestion");
-            window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
-            window.selectedLocationLocked = true;
-            window.selectedLocation = { city: city };
-            window.__locationPickedFromSuggestions = true;
-            enableSendButton && enableSendButton();
-            selected = true;
-          } else {
-            div.classList.remove("selected-suggestion");
-          }
+          div.classList.remove("selected-suggestion");
         });
-        if (!selected) {
-          window.selectedSuggestion = null;
-          window.selectedLocationLocked = false;
-          window.selectedLocation = null;
-          window.__locationPickedFromSuggestions = false;
-          disableSendButton && disableSendButton();
-        }
+        window.selectedSuggestion = null;
+        window.selectedLocationLocked = false;
+        window.selectedLocation = null;
+        window.__locationPickedFromSuggestions = false;
+        disableSendButton && disableSendButton();
         showSuggestionsDiv && showSuggestionsDiv();
       }
     }, 120);
