@@ -1,22 +1,3 @@
-document.addEventListener('DOMContentLoaded', function() {
-  window.resultSlider = new Siema({
-    selector: '#result-slider', // id veya class
-    perPage: 1,                 // Kaç item gözüksün (mobilde 1, masaüstünde 2-3 ayarlayabilirsin)
-    loop: false,                // Döngü istemiyorsan
-    draggable: true,            // Swipe ile kaydırma aktif
-    onInit: function() {
-      // Slider ilk kurulduğunda
-    },
-    onChange: function() {
-      // Slider kayınca
-    }
-  });
-
-  // Oklar ile kontrol
-  document.getElementById('prev-btn').onclick = () => window.resultSlider.prev();
-  document.getElementById('next-btn').onclick = () => window.resultSlider.next();
-});
-
 function attachDragDropEvents() {
   document.querySelectorAll('.steps[draggable="true"]').forEach(item => {
     item.addEventListener('dragstart', function(e) {
