@@ -4845,9 +4845,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     controlRow.className = "map-bottom-controls";
 
 // Route summary
+// Route summary
 const infoDiv = document.createElement("span");
 infoDiv.className = "route-summary-control";
 controlRow.appendChild(infoDiv);
+
+controlsWrapper.appendChild(controlRow);
+sidebarContainer.parentNode.insertBefore(controlsWrapper, sidebarContainer.nextSibling);
+
 
 // DOĞRU YERDE SADECE BUNU ÇAĞIR:
 if (summary) {
