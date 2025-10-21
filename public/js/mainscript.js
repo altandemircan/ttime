@@ -8307,11 +8307,11 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
   return;
 }
 
-  // Sadece expanded bar’da çalış; küçük bar’ı kapat
-  if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
+// Sadece küçük harita scale bar'ını iptal et, expanded haritada çalışmaya devam et
+if (/^route-scale-bar-day\d+$/.test(container.id || '') && !/^expanded-route-scale-bar-day\d+$/.test(container.id || '')) {
     container.innerHTML = '';
     return;
-  }
+}
 
   // Day ve route geojson
   const dayMatch = container.id && container.id.match(/day(\d+)/);
