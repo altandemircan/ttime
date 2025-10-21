@@ -1208,37 +1208,58 @@ function selectSuggestionCity(cityName) {
   });
 }
 
-// gallery-item için
+function updateSuggestionsWithTheme(city, days) {
+  const suggestionsDiv = document.getElementById("suggestions");
+  if (!suggestionsDiv) return;
+  suggestionsDiv.innerHTML = "";
+
+  // Temadan gelen şehir ve günle özel öneri ekle
+  const displayText = `Plan a ${days}-day tour for ${city}`;
+  const suggestion = document.createElement("div");
+  suggestion.className = "category-area-option";
+  suggestion.textContent = displayText;
+  suggestion.dataset.displayText = displayText;
+  suggestion.onclick = () => {
+    window.selectedSuggestion = { displayText, props: { city } };
+    suggestion.classList.add("selected-suggestion");
+    window.selectedLocationLocked = true;
+    window.selectedLocation = { city: city };
+    window.__locationPickedFromSuggestions = true;
+    enableSendButton && enableSendButton();
+    hideSuggestionsDiv && hideSuggestionsDiv();
+    document.getElementById('user-input').value = displayText;
+  };
+  suggestionsDiv.appendChild(suggestion);
+
+  // Paneli göster
+  showSuggestionsDiv && showSuggestionsDiv();
+}
+
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
-    document.getElementById('user-input').value = themeTitle;
-    if (typeof updateSuggestions === 'function') {
-      await updateSuggestions(themeTitle);
-    }
-    document.getElementById('user-input').focus();
     const { city, days } = extractCityAndDaysFromTheme(themeTitle);
+    document.getElementById('user-input').value = themeTitle;
+    // Artık klasik updateSuggestions yerine temadan gelen şehirle suggestions paneli güncellenecek!
+    updateSuggestionsWithTheme(city, days);
+    document.getElementById('user-input').focus();
     setTimeout(() => {
       if (city) selectSuggestionCity(city);
-      // sendMessage(); // otomatik başlatmak için açabilirsin
     }, 120);
   });
 });
 
-// .add_theme için
+// Aynı mantığı .add_theme için de uygula!
 document.querySelectorAll('.add_theme').forEach(btn => {
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
     const themeTitle = btn.parentNode.querySelector('.caption p').textContent.trim();
-    document.getElementById('user-input').value = themeTitle;
-    if (typeof updateSuggestions === 'function') {
-      await updateSuggestions(themeTitle);
-    }
-    document.getElementById('user-input').focus();
     const { city, days } = extractCityAndDaysFromTheme(themeTitle);
+    document.getElementById('user-input').value = themeTitle;
+    updateSuggestionsWithTheme(city, days);
+    document.getElementById('user-input').focus();
     setTimeout(() => {
       if (city) selectSuggestionCity(city);
-      // sendMessage();
     }, 120);
   });
 });
