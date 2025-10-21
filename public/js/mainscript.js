@@ -1238,32 +1238,69 @@ function updateSuggestionsWithTheme(city, days) {
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
-    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
     document.getElementById('user-input').value = themeTitle;
-    // Artık klasik updateSuggestions yerine temadan gelen şehirle suggestions paneli güncellenecek!
-    updateSuggestionsWithTheme(city, days);
+    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
+    if (typeof updateSuggestions === 'function') {
+      await updateSuggestions(themeTitle);
+    }
     document.getElementById('user-input').focus();
     setTimeout(() => {
-      if (city) selectSuggestionCity(city);
+      const suggestionsDiv = document.getElementById("suggestions");
+      if (suggestionsDiv) {
+        Array.from(suggestionsDiv.children).forEach(div => {
+          if (
+            (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
+            div.textContent.toLowerCase().includes(city.toLowerCase())
+          ) {
+            div.classList.add("selected-suggestion");
+            window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
+            window.selectedLocationLocked = true;
+            window.selectedLocation = { city: city };
+            window.__locationPickedFromSuggestions = true;
+            enableSendButton && enableSendButton();
+          } else {
+            div.classList.remove("selected-suggestion");
+          }
+        });
+        showSuggestionsDiv && showSuggestionsDiv();
+      }
     }, 120);
   });
 });
 
-// Aynı mantığı .add_theme için de uygula!
 document.querySelectorAll('.add_theme').forEach(btn => {
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
     const themeTitle = btn.parentNode.querySelector('.caption p').textContent.trim();
-    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
     document.getElementById('user-input').value = themeTitle;
-    updateSuggestionsWithTheme(city, days);
+    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
+    if (typeof updateSuggestions === 'function') {
+      await updateSuggestions(themeTitle);
+    }
     document.getElementById('user-input').focus();
     setTimeout(() => {
-      if (city) selectSuggestionCity(city);
+      const suggestionsDiv = document.getElementById("suggestions");
+      if (suggestionsDiv) {
+        Array.from(suggestionsDiv.children).forEach(div => {
+          if (
+            (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
+            div.textContent.toLowerCase().includes(city.toLowerCase())
+          ) {
+            div.classList.add("selected-suggestion");
+            window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
+            window.selectedLocationLocked = true;
+            window.selectedLocation = { city: city };
+            window.__locationPickedFromSuggestions = true;
+            enableSendButton && enableSendButton();
+          } else {
+            div.classList.remove("selected-suggestion");
+          }
+        });
+        showSuggestionsDiv && showSuggestionsDiv();
+      }
     }, 120);
   });
 });
-
 // .addtotrip butonuna basıldığında day bilgisini stepsDiv'den veya window.currentDay'den al.
 // 1) Kategori/slider'dan sepete ekleme (.addtotrip handler)
 function initializeAddToTripListener() {
