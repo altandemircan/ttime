@@ -1900,12 +1900,10 @@ function safeCoords(obj) {
 
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
-  opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false
+  opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
-  // (getDisplayName ile name'i tekrar değiştiren kod OLMAYACAK!)
 
-  // ... diğer kodlar aynı ...
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
     window.cart = (window.cart || []).filter(it => !it._placeholder);
@@ -1987,6 +1985,9 @@ function addToCart(
 
   window.cart.push(newItem);
 
+  // === skipRender fix ===
+  if (typeof skipRender === "undefined") skipRender = false;
+
   // Sonraki kodlar aynı, silent değişkeni başta false olmalı
   if (!silent) {
     if (typeof updateCart === "function") updateCart();
@@ -2013,7 +2014,6 @@ function addToCart(
   }
   return true;
 }
-
 function __dayIsEmpty(day){
   day = Number(day);
   if (!day) return false;
