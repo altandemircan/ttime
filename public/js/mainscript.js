@@ -5007,6 +5007,8 @@ function updateRouteStatsUI(day) {
   // Mesafe/Süre
   const distanceKm = (summary.distance / 1000).toFixed(2);
   const durationMin = Math.round(summary.duration / 60);
+  const ascent = window.routeElevStatsByDay?.[day]?.ascent;
+const descent = window.routeElevStatsByDay?.[day]?.descent;
 
   // Küçük harita altındaki span (sidebar/cart)
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
