@@ -492,7 +492,7 @@ li .highlight {
 }
 
 
-.cats1 img,
+/*.cats1 img,
 .cats2 img,
 .cats3 img,
 .cats4 img,
@@ -502,7 +502,13 @@ li .highlight {
 .cats-place img {
     width: 14px !important;
     margin-right: 6px;
+}*/
+
+.cats img {
+    width: 14px !important;
+    margin-right: 6px;
 }
+
 
 /* Bot Mesajı */
 .bot-message {
