@@ -6937,7 +6937,7 @@ display: flex
     pointer-events: none;;
 }
 
-.fav-heart {
+.visual .fav-heart {
   position: absolute;
   top: 5px;
   right: 8px;
@@ -6945,13 +6945,18 @@ display: flex
   cursor: pointer;
   user-select: none;
 }
-.fav-heart.is-fav .fav-icon {
+.visual .fav-heart.is-fav .fav-icon {
   filter: drop-shadow(0 0 2px #d32f2f);
   /* veya istediğin favori stilini burada uygula */
 }
-.fav-icon {
-  width: 22px !important;
-  height: 22px !important;
-  vertical-align: middle;
-  transition: filter 0.2s;
+.visual .fav-icon {
+    all: unset;
+    width: 22px !important;
+    height: 22px !important;
+    vertical-align: middle !important;
+    transition: filter 0.2s !important;
+    display: inline !important;
+    border-radius: 0 !important;
+    object-fit: unset !important;
+    margin-right: 0 !important;
 }
