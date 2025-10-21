@@ -1,3 +1,36 @@
+document.addEventListener('DOMContentLoaded', function() {
+  window.resultSlider = new Siema({
+    selector: '#result-slider', // id veya class
+    perPage: 1,                 // Kaç item gözüksün (mobilde 1, masaüstünde 2-3 ayarlayabilirsin)
+    loop: false,                // Döngü istemiyorsan
+    draggable: true,            // Swipe ile kaydırma aktif
+    onInit: function() {
+      // Slider ilk kurulduğunda
+    },
+    onChange: function() {
+      // Slider kayınca
+    }
+  });
+
+  // Oklar ile kontrol
+  document.getElementById('prev-btn').onclick = () => window.resultSlider.prev();
+  document.getElementById('next-btn').onclick = () => window.resultSlider.next();
+});
+
+function attachDragDropEvents() {
+  document.querySelectorAll('.steps[draggable="true"]').forEach(item => {
+    item.addEventListener('dragstart', function(e) {
+      // Drag başlatma işlemleri (senin mevcut kodun)
+    });
+    item.addEventListener('dragend', function(e) {
+      // Drag bitiş işlemleri
+    });
+  });
+}
+
+// Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
+attachDragDropEvents();
+
 window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
 window.__scaleBarDrag = null;
@@ -2313,7 +2346,7 @@ function displayPlacesInChat(places, category, day) {
                     <img src="img/arrow_down.svg" class="accordion-arrow">
                 </label>
                 <div class="accordion-content">
-                    <div class="day-steps">`;
+                    <div class="siema" id="result-slider">`;
 
     places.forEach((place, idx) => {
         html += generateStepHtml(place, day, category, idx);
