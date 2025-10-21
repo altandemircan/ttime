@@ -172,7 +172,7 @@ function generateStepHtml(step, day, category, idx = 0) {
 
     // Favori mi?
     const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
-    const favIcon = isTripFav({ name, category, lat, lon }) ? "img/like_on.svg" : "img/like_off.svg";
+    const favIcon = isTripFav({ name, category, lat, lon }) ? "/img/like_on.svg" : "/img/like_off.svg";
 
     if (step._noPlace && (!step.name || step.name === null)) {
         return `
