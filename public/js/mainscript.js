@@ -1150,31 +1150,99 @@ window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_
 window.__lastAddedItem = null;
 let lastUserQuery = ""
 
-// See travel themes
+// Tema başlığından şehir ve gün ayıklama fonksiyonu
+function extractCityAndDaysFromTheme(title) {
+  // 1. Gün sayısı ("2-day", "3 days", "weekend", "for 3 days" vs.)
+  let days = 2;
+  let dayMatch = title.match(/(\d+)[- ]*day|(\d+)[- ]*days|(\d+)[- ]*gün/i);
+  if (dayMatch) {
+    days = parseInt(dayMatch[1] || dayMatch[2] || dayMatch[3], 10);
+  } else if (/weekend/i.test(title)) {
+    days = 2;
+  }
+
+  // 2. Şehir adını bul ("in ...", "in Kaleiçi, Antalya", "in Lima, the capital of Peru")
+  let city = null;
+  let cityMatch = title.match(/\bin ([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s,]+)$/i); // "in Barcelona", "in Kaleiçi, Antalya"
+  if (cityMatch) {
+    city = cityMatch[1].replace(/,.*/,'').trim();
+  }
+  if (!city) {
+    // "in Amsterdam", "in Bali", "in Cappadocia" vs.
+    let altMatch = title.match(/in ([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
+    if (altMatch) city = altMatch[1].trim();
+  }
+  if (!city) {
+    // "in Istanbul for 2 days" veya "in Rio for 3 days"
+    let altMatch = title.match(/in ([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
+    if (altMatch) city = altMatch[1].split('for')[0].trim();
+  }
+  if (!city) {
+    // Son çare: başlıktaki son kelime veya şehir ismi
+    let tokens = title.split(/in |for |in |in |at |to |on /i);
+    city = tokens[tokens.length - 1].replace(/[\d]+.*/, '').replace(/days?.*/, '').trim();
+    // Eğer "Antalya" gibi virgüllü gelirse
+    if (city.indexOf(',') > -1) city = city.split(',')[0].trim();
+  }
+  // Bazı başlıklarda "in Lima, the capital of Peru" gibi, sadece Lima'yı almak istersin
+  if (city.indexOf(' ') > -1 && !/Antalya|Rio|Kaleiçi|Istanbul|Barcelona|Amsterdam|Bali|Cappadocia|Petra|Mardin|Pattaya|Lima/.test(city)) {
+    city = city.split(' ')[0];
+  }
+  return { city, days };
+}
+
+// Suggestions panelinden şehir seçme fonksiyonu
+function selectSuggestionCity(cityName) {
+  const suggestionsDiv = document.getElementById("suggestions");
+  if (!suggestionsDiv) return;
+  Array.from(suggestionsDiv.children).forEach(div => {
+    if (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(cityName.toLowerCase())) {
+      window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
+      div.classList.add("selected-suggestion");
+      window.selectedLocationLocked = true;
+      window.selectedLocation = { city: cityName };
+      window.__locationPickedFromSuggestions = true;
+      enableSendButton && enableSendButton();
+      hideSuggestionsDiv && hideSuggestionsDiv();
+    }
+  });
+}
+
+// .gallery-item ve .add_theme tıklama event’lerine ekle
 document.querySelectorAll('.gallery-item').forEach(item => {
-  // Tüm itema tıklama
-  item.addEventListener('click', function() {
+  item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
     if (typeof updateSuggestions === 'function') {
-      updateSuggestions(themeTitle);
+      await updateSuggestions(themeTitle);
     }
     document.getElementById('user-input').focus();
-    // sendMessage(); // otomatik gönderilmesini istiyorsan aç
+
+    // Şehir ve gün bul
+    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
+    if (city) selectSuggestionCity(city);
+
+    // Otomatik plan başlatmak istersen:
+    // sendMessage();
   });
 });
 
-// Sadece add_theme ikonuna tıklama ile eklemek istersen
 document.querySelectorAll('.add_theme').forEach(btn => {
-  btn.addEventListener('click', function(e) {
+  btn.addEventListener('click', async function(e) {
     e.stopPropagation();
     const themeTitle = btn.parentNode.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
     if (typeof updateSuggestions === 'function') {
-      updateSuggestions(themeTitle);
+      await updateSuggestions(themeTitle);
     }
     document.getElementById('user-input').focus();
-    // sendMessage(); // otomatik gönderilmesini istiyorsan aç
+
+    // Şehir ve gün bul
+    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
+    if (city) selectSuggestionCity(city);
+
+    // Otomatik plan başlatmak istersen:
+    // sendMessage();
   });
 });
 
