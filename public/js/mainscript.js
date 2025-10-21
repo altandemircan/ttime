@@ -3,21 +3,7 @@ window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
 window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
-// Bunu sayfanın başında bir defa çalıştır:
-(function forceFourStats() {
-  const mo = new MutationObserver(() => {
-    document.querySelectorAll('.route-summary-control').forEach(span => {
-      const text = span.innerText || '';
-      if ((text.match(/km/) || []).length === 1 && (text.match(/dk/) || []).length === 1 && !span.querySelector('.stat-ascent')) {
-        // Yani, sadece 2 kutu varsa, tekrar updateRouteStatsUI çağır
-        const dayMatch = span.closest('[id^="map-bottom-controls-day"]')?.id?.match(/day(\d+)/);
-        const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-        if (day) setTimeout(() => updateRouteStatsUI(day), 100);
-      }
-    });
-  });
-  mo.observe(document.body, { childList: true, subtree: true });
-})();
+
 function getDisplayName(place) {
   // Latin/İngilizce ad döndür
   if (place.name_en) return place.name_en;
@@ -9874,3 +9860,18 @@ function attachImLuckyEvents() {
     }, 100);
   });
 }
+// Bunu sayfanın başında bir defa çalıştır:
+(function forceFourStats() {
+  const mo = new MutationObserver(() => {
+    document.querySelectorAll('.route-summary-control').forEach(span => {
+      const text = span.innerText || '';
+      if ((text.match(/km/) || []).length === 1 && (text.match(/dk/) || []).length === 1 && !span.querySelector('.stat-ascent')) {
+        // Yani, sadece 2 kutu varsa, tekrar updateRouteStatsUI çağır
+        const dayMatch = span.closest('[id^="map-bottom-controls-day"]')?.id?.match(/day(\d+)/);
+        const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+        if (day) setTimeout(() => updateRouteStatsUI(day), 100);
+      }
+    });
+  });
+  mo.observe(document.body, { childList: true, subtree: true });
+})();
