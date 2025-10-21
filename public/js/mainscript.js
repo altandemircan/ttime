@@ -4987,10 +4987,6 @@ if (typeof setChatInputValue !== 'function') {
 
 
 function updateRouteStatsUI(day) {
- console.log('[updateRouteStatsUI]', day, document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`));
-     console.log('updateRouteStatsUI çalıştı', day);
-       console.log('[updateRouteStatsUI] FONKSİYON BAŞI', day);
-
   const key = `route-map-day${day}`;
   const summary = window.lastRouteSummaries?.[key];
 
@@ -5035,7 +5031,6 @@ function updateRouteStatsUI(day) {
       </span>
     `;
   }
-
   // Büyük harita (expanded) altındaki div
   const routeStatsDiv = document.querySelector('.route-stats');
   if (routeStatsDiv) {
@@ -5047,7 +5042,6 @@ function updateRouteStatsUI(day) {
     `;
   }
 }
-
  
 async function expandMap(containerId, day) {
   console.log('[expandMap] start →', containerId, 'day=', day);
