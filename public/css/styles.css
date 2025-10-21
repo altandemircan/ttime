@@ -4595,7 +4595,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     transition: 0.5s ease;
     align-content: space-between;
-        border: 3px solid #fff;
+        border: 3px solid #f3ecff;
 }
 
 
