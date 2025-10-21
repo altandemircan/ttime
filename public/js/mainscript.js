@@ -4986,7 +4986,7 @@ if (typeof setChatInputValue !== 'function') {
 
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
-  const summary = window.lastRouteSummaries?.[key];
+  const summary = window.lastRouteSummaries?.[key] || null;
 
   // Ascent/descent verisini oku
   const ascent = window.routeElevStatsByDay?.[day]?.ascent;
@@ -4996,37 +4996,26 @@ function updateRouteStatsUI(day) {
   const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "—";
   const durationMin = summary ? Math.round(summary.duration / 60) : "—";
 
-  // Küçük harita altındaki span (sidebar/cart)
+  // SADECE küçük harita altındaki kutunun içeriğini güncelle (başka hiçbir DOM'a dokunma)
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     routeSummarySpan.innerHTML = `
       <span class="stat stat-distance">
-        <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
+        <img class="icon" src="/img/way_distance.svg" alt="Distance">
         <span class="badge">${distanceKm} km</span>
       </span>
       <span class="stat stat-duration">
-        <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
+        <img class="icon" src="/img/way_time.svg" alt="Duration">
         <span class="badge">${durationMin} dk</span>
       </span>
       <span class="stat stat-ascent">
-        <img class="icon" src="/img/way_ascent.svg" alt="Ascent" loading="lazy" decoding="async">
+        <img class="icon" src="/img/way_ascent.svg" alt="Ascent">
         <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
       </span>
       <span class="stat stat-descent">
-        <img class="icon" src="/img/way_descent.svg" alt="Descent" loading="lazy" decoding="async">
+        <img class="icon" src="/img/way_descent.svg" alt="Descent">
         <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
       </span>
-    `;
-  }
-
-  // Büyük harita (expanded) altındaki div (opsiyonel, kaldırmak istersen bu bloğu silebilirsin)
-  const routeStatsDiv = document.querySelector('.route-stats');
-  if (routeStatsDiv) {
-    routeStatsDiv.innerHTML = `
-      <span class="stat stat-distance"><b>Distance:</b> ${distanceKm} km</span>
-      <span class="stat stat-duration"><b>Duration:</b> ${durationMin} min</span>
-      <span class="stat stat-ascent"><b>Ascent:</b> ${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
-      <span class="stat stat-descent"><b>Descent:</b> ${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
     `;
   }
 }
