@@ -4942,7 +4942,7 @@ const polyline = L.polyline(coords, {
     window.leafletMaps[containerId] = map;
 console.log('updateRouteStatsUI çağrılacak', day);
 
-    setTimeout(() => updateRouteStatsUI(day), 100);
+setTimeout(() => updateRouteStatsUI(day), 100);
 
 }
 // Harita durumlarını yönetmek için global değişken
@@ -4987,6 +4987,7 @@ if (typeof setChatInputValue !== 'function') {
 
 
 function updateRouteStatsUI(day) {
+  console.log('[updateRouteStatsUI] FONKSİYON BAŞI', day);
   const key = `route-map-day${day}`;
   const summary = window.lastRouteSummaries?.[key];
 
@@ -5009,7 +5010,7 @@ function updateRouteStatsUI(day) {
   const distanceKm = (summary.distance / 1000).toFixed(2);
   const durationMin = Math.round(summary.duration / 60);
 
-  // Küçük harita altındaki span (sidebar/cart)
+  // Küçük harita altındaki span
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     routeSummarySpan.innerHTML = `
@@ -5031,6 +5032,7 @@ function updateRouteStatsUI(day) {
       </span>
     `;
   }
+
   // Büyük harita (expanded) altındaki div
   const routeStatsDiv = document.querySelector('.route-stats');
   if (routeStatsDiv) {
