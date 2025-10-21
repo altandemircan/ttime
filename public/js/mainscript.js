@@ -8764,6 +8764,22 @@ track.addEventListener('touchmove', track.__onMove);
 
       redrawElevation(container._elevationData);
       window.hideScaleBarLoading?.(container);
+
+      // === BURAYA EKLE ===
+      // GÜN NUMARASINI AL (day değişkeni yukarıda tanımlı olmalı; eğer yoksa fonksiyonun başından al)
+      if (typeof day !== "undefined") {
+        // Yalnızca elevation miktarı ile hesapla:
+        let ascent = 0, descent = 0;
+        for (let i = 1; i < elevations.length; i++) {
+          const d = elevations[i] - elevations[i - 1];
+          if (d > 0) ascent += d;
+          else descent -= d;
+        }
+        window.routeElevStatsByDay = window.routeElevStatsByDay || {};
+        window.routeElevStatsByDay[day] = { ascent: Math.round(ascent), descent: Math.round(descent) };
+        if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
+      }
+      // ===================
     } catch {
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
