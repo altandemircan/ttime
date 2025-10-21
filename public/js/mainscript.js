@@ -4984,7 +4984,6 @@ if (typeof setChatInputValue !== 'function') {
   }).addTo(expandedMap);
 }
 
-
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   const summary = window.lastRouteSummaries?.[key];
@@ -4993,22 +4992,9 @@ function updateRouteStatsUI(day) {
   const ascent = window.routeElevStatsByDay?.[day]?.ascent;
   const descent = window.routeElevStatsByDay?.[day]?.descent;
 
-  // Eğer summary yoksa alanları temizle
-  if (!summary) {
-    // Küçük harita altındaki span
-    const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-    if (routeSummarySpan) routeSummarySpan.innerHTML = "";
-    // Büyük harita altındaki div
-    const routeStatsDiv = document.querySelector('.route-stats');
-    if (routeStatsDiv) routeStatsDiv.innerHTML = "";
-    return;
-  }
-
   // Mesafe/Süre
-  const distanceKm = (summary.distance / 1000).toFixed(2);
-  const durationMin = Math.round(summary.duration / 60);
-  const ascent = window.routeElevStatsByDay?.[day]?.ascent;
-const descent = window.routeElevStatsByDay?.[day]?.descent;
+  const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "—";
+  const durationMin = summary ? Math.round(summary.duration / 60) : "—";
 
   // Küçük harita altındaki span (sidebar/cart)
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
@@ -5033,7 +5019,7 @@ const descent = window.routeElevStatsByDay?.[day]?.descent;
     `;
   }
 
-  // Büyük harita (expanded) altındaki div
+  // Büyük harita (expanded) altındaki div (opsiyonel, kaldırmak istersen bu bloğu silebilirsin)
   const routeStatsDiv = document.querySelector('.route-stats');
   if (routeStatsDiv) {
     routeStatsDiv.innerHTML = `
