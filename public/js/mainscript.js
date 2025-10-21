@@ -4848,16 +4848,9 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
    const infoDiv = document.createElement("span");
     infoDiv.className = "route-summary-control";
     if (summary) {
-      infoDiv.innerHTML =
-    `<span class="stat stat-distance">
-      <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
-      <span class="badge">${(summary.distance / 1000).toFixed(1)} km</span>
-    </span>
-    <span class="stat stat-duration">
-      <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
-      <span class="badge">${Math.round(summary.duration / 60)} dk</span>
-    </span>`;
-    }
+  updateRouteStatsUI(day);
+}
+
     controlRow.appendChild(infoDiv);
 
     controlsWrapper.appendChild(controlRow);
