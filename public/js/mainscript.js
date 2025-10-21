@@ -1158,24 +1158,26 @@ function extractCityAndDaysFromTheme(title) {
   if (dayMatch) days = parseInt(dayMatch[1] || dayMatch[2] || dayMatch[3], 10);
   else if (/weekend/i.test(title)) days = 2;
 
+  // Şehir adını en sağlam şekilde bulmak için tüm kelimeleri ayır
+  let words = title.split(/[\s,]+/); // boşluk ve virgül ile ayır
   let city = null;
 
-  // En olası şehir bulma: "in", "to", "for", "at", "on" gibi kelimeler sonrası
-  let cityMatch = title.match(/\b(?:in|to|for|at|on)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
-  if (cityMatch) city = cityMatch[1].trim();
-
-  // Fallback: cümlenin son kelimesi büyük harfle başlıyorsa onu şehir olarak al
-  if (!city) {
-    let words = title.trim().split(' ');
-    let lastWord = words[words.length - 1];
-    if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(lastWord)) city = lastWord;
+  // En son büyük harfle başlayan, harf içeren kelimeyi bul ("Barcelona", "Mardin" vs.)
+  for (let i = words.length - 1; i >= 0; i--) {
+    if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(words[i])) {
+      city = words[i];
+      break;
+    }
   }
 
-  // Fallback: cümlenin tamamını şehir olarak al (hiçbir şey bulamazsa)
-  if (!city) city = title.trim();
+  // Fallback: "in X", "for X", "to X" sonrası kelime(leri)
+  if (!city) {
+    let cityMatch = title.match(/\b(?:in|to|for|at|on)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
+    if (cityMatch) city = cityMatch[1].trim();
+  }
 
-  // Temizle
-  city = city.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+$/, '').trim();
+  // Fallback: inputun tamamı
+  if (!city) city = title.trim();
 
   return { city, days };
 }
