@@ -216,7 +216,7 @@ function generateStepHtml(step, day, category, idx = 0) {
                 ` : ""}
             </div>
             
-            <a class="addtotrip">
+            <a class="addtotrip"><span>Add to cart</span>
                 <img src="img/addtotrip-icon.svg">
             </a>
         </div>
