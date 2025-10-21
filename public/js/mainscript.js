@@ -5101,10 +5101,10 @@ async function expandMap(containerId, day) {
 
   headerDiv.appendChild(layersBar);
 
-// Route stats (mesafe/süre/ascent/descent) için alan
-const statsDiv = document.createElement('div');
-statsDiv.className = 'route-stats';
-// headerDiv.appendChild(statsDiv); // ← BUNU YORUM SATIRI YAP, DOM'A EKLEME!
+  // Route stats (mesafe/süre/ascent/descent) için alan
+  const statsDiv = document.createElement('div');
+  statsDiv.className = 'route-stats';
+  headerDiv.appendChild(statsDiv);
 
   // --- EXPANDED MAP CONTAINER ---
   const expandedMapId = `expanded-map-${day}`;
