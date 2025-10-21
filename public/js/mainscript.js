@@ -4844,10 +4844,13 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     controlRow.id = controlRowId;
     controlRow.className = "map-bottom-controls";
 
-    // Route summary
-   const infoDiv = document.createElement("span");
-    infoDiv.className = "route-summary-control";
-    if (summary) {
+// Route summary
+const infoDiv = document.createElement("span");
+infoDiv.className = "route-summary-control";
+controlRow.appendChild(infoDiv);
+
+// DOĞRU YERDE SADECE BUNU ÇAĞIR:
+if (summary) {
   updateRouteStatsUI(day);
 }
 
@@ -4979,6 +4982,7 @@ if (typeof setChatInputValue !== 'function') {
 
 
 function updateRouteStatsUI(day) {
+      console.log('updateRouteStatsUI çalıştı', day);
   const key = `route-map-day${day}`;
   const summary = window.lastRouteSummaries?.[key];
 
