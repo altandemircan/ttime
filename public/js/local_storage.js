@@ -305,7 +305,6 @@ function loadTripFromStorage(tripKey) {
         }
         return item;
     });
-    if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
     patchCartLocations();
 
