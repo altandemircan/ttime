@@ -1208,31 +1208,24 @@ function selectSuggestionCity(cityName) {
   });
 }
 
-// .gallery-item ve .add_theme tıklama event’lerine ekle
+// gallery-item için
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
-
-    // Suggestions güncellensin
     if (typeof updateSuggestions === 'function') {
       await updateSuggestions(themeTitle);
     }
-
     document.getElementById('user-input').focus();
-
-    // Şehir ve gün bul
     const { city, days } = extractCityAndDaysFromTheme(themeTitle);
-
-    // DOM'a suggestions eklenmesini bekle
     setTimeout(() => {
       if (city) selectSuggestionCity(city);
-    }, 120); // 120ms sonra DOM kesin dolmuş olur
-
-    // sendMessage(); // otomatik başlatmak için açabilirsin
+      // sendMessage(); // otomatik başlatmak için açabilirsin
+    }, 120);
   });
 });
 
+// .add_theme için
 document.querySelectorAll('.add_theme').forEach(btn => {
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
@@ -1242,13 +1235,11 @@ document.querySelectorAll('.add_theme').forEach(btn => {
       await updateSuggestions(themeTitle);
     }
     document.getElementById('user-input').focus();
-
-    // Şehir ve gün bul
     const { city, days } = extractCityAndDaysFromTheme(themeTitle);
-    if (city) selectSuggestionCity(city);
-
-    // Otomatik plan başlatmak istersen:
-    // sendMessage();
+    setTimeout(() => {
+      if (city) selectSuggestionCity(city);
+      // sendMessage();
+    }, 120);
   });
 });
 
