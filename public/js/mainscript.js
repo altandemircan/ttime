@@ -705,11 +705,21 @@ function parsePlanRequest(text) {
     let days = null;
     let location = null;
 
-    // Gün sayısını bul
+    // 1. Eğer seçili öneri varsa, doğrudan onu kullan
+    if (window.selectedSuggestion && window.selectedSuggestion.props) {
+        const props = window.selectedSuggestion.props;
+        // city + country varsa birleştir, yoksa name kullan
+        location = [props.city || props.name, props.country].filter(Boolean).join(', ');
+    } else if (window.selectedLocation && typeof window.selectedLocation === "object") {
+        location = [window.selectedLocation.city || window.selectedLocation.name, window.selectedLocation.country].filter(Boolean).join(', ');
+    }
+
+    // 2. Gün sayısını yine inputtan çek
     let dayMatch = text.match(/(\d+)[- ]*day/);
     if (dayMatch) {
         days = parseInt(dayMatch[1]);
     }
+    // Türkçe "2 gün" vs.
     if (!days) {
         let trMatch = text.match(/(\d+)[, ]*gün/i);
         if (trMatch) {
@@ -718,27 +728,15 @@ function parsePlanRequest(text) {
     }
     if (!days || isNaN(days) || days < 1) days = 2;
 
-    // Şehir adını bulmak için: "for ...", "in ..." veya cümlenin sonu
-    let locMatch = text.match(/for (.+)$/i) || text.match(/in (.+)$/i);
-    if (locMatch) {
-        // Son kelime veya kelime grubu
-        location = locMatch[1].trim().split(' ').slice(-1)[0];
-    }
-    // Son kelimeyi (veya son iki kelimeyi) al
+    // Eğer hala location yoksa, eski regexlerle dene (fallback)
     if (!location) {
-        let words = text.trim().split(' ');
-        location = words[words.length-1];
-        // Eğer son iki kelime bir şehir ismi gibi görünüyorsa:
-        if (words.length > 2 && /^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(words[words.length-2])) {
-            location = words[words.length-2] + ' ' + words[words.length-1];
-        }
+        let wordMatch = text.match(/\b([A-Z][a-z'’]+)\b/);
+        if (wordMatch) location = wordMatch[1];
     }
 
-    // Sonunda hala location yoksa fallback: inputun tamamı
-    if (!location) location = text.trim();
-
-    // Temizle
-    location = location.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+$/, '').trim();
+    // Default gün sayısı (sıfır veya geçersizse 2 yap)
+    if (!days || isNaN(days) || days < 1) days = 2;
+    if (!location) throw new Error("Invalid city name");
 
     // Debug için log
     console.log("parsePlanRequest result:", { location, days });
@@ -1151,129 +1149,132 @@ document.addEventListener("DOMContentLoaded", function() {
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
 window.__lastAddedItem = null;
 let lastUserQuery = ""
-// Şehir ve gün ayıklama fonksiyonu (sadece en mantıklı hali)
+
+// Tema başlığından şehir ve gün ayıklama fonksiyonu (kalsın)
 function extractCityAndDaysFromTheme(title) {
   let days = 2;
   let dayMatch = title.match(/(\d+)[- ]*day|(\d+)[- ]*days|(\d+)[- ]*gün/i);
-  if (dayMatch) days = parseInt(dayMatch[1] || dayMatch[2] || dayMatch[3], 10);
-  else if (/weekend/i.test(title)) days = 2;
+  if (dayMatch) {
+    days = parseInt(dayMatch[1] || dayMatch[2] || dayMatch[3], 10);
+  } else if (/weekend/i.test(title)) {
+    days = 2;
+  }
 
-  // Şehir adını en sağlam şekilde bulmak için tüm kelimeleri ayır
-  let words = title.split(/[\s,]+/); // boşluk ve virgül ile ayır
   let city = null;
-
-  // En son büyük harfle başlayan, harf içeren kelimeyi bul ("Barcelona", "Mardin" vs.)
-  for (let i = words.length - 1; i >= 0; i--) {
-    if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(words[i])) {
-      city = words[i];
-      break;
-    }
+  let cityMatch = title.match(/\bin ([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s,]+)$/i);
+  if (cityMatch) {
+    city = cityMatch[1].replace(/,.*/,'').trim();
   }
-
-  // Fallback: "in X", "for X", "to X" sonrası kelime(leri)
   if (!city) {
-    let cityMatch = title.match(/\b(?:in|to|for|at|on)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
-    if (cityMatch) city = cityMatch[1].trim();
+    let altMatch = title.match(/in ([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
+    if (altMatch) city = altMatch[1].trim();
   }
-
-  // Fallback: inputun tamamı
-  if (!city) city = title.trim();
-
-  return { city, days };
-}
-
-// Suggestions panelini API ile doldurur
-async function updateSuggestions(queryText) {
-  const { city } = extractCityAndDaysFromTheme(queryText);
-  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(city)}`);
-  const data = await resp.json();
-  const features = data.features || [];
-  const suggestionsDiv = document.getElementById("suggestions");
-  if (!suggestionsDiv) return;
-  suggestionsDiv.innerHTML = "";
-
-  features.forEach(feature => {
-    const props = feature.properties || {};
-    const cityText = props.city || props.name || "";
-    const countryText = props.country || "";
-    const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-    const displayText = [cityText, countryText].filter(Boolean).join(", ") + flag;
-
-    const div = document.createElement("div");
-    div.className = "category-area-option";
-    div.textContent = displayText;
-    div.dataset.displayText = displayText;
-    suggestionsDiv.appendChild(div);
-  });
-
-  showSuggestionsDiv && showSuggestionsDiv();
-}
-
-// Sadece ilk eşleşen öneriyi seçili yapan mantık
-function selectFirstMatchingSuggestion(city) {
-  const suggestionsDiv = document.getElementById("suggestions");
-  if (!suggestionsDiv) return;
-  let selected = false;
-  Array.from(suggestionsDiv.children).forEach(div => {
-    if (!selected &&
-        (
-          (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
-          div.textContent.toLowerCase().includes(city.toLowerCase())
-        )
-    ) {
-      div.classList.add("selected-suggestion");
-      window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
-      window.selectedLocationLocked = true;
-      window.selectedLocation = { city: city };
-      window.__locationPickedFromSuggestions = true;
-      enableSendButton && enableSendButton();
-      selected = true;
-    } else {
-      div.classList.remove("selected-suggestion");
-    }
-  });
-  if (!selected) {
-    window.selectedSuggestion = null;
-    window.selectedLocationLocked = false;
-    window.selectedLocation = null;
-    window.__locationPickedFromSuggestions = false;
-    disableSendButton && disableSendButton();
+  if (!city) {
+    let altMatch = title.match(/in ([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
+    if (altMatch) city = altMatch[1].split('for')[0].trim();
   }
-  showSuggestionsDiv && showSuggestionsDiv();
+  if (!city) {
+    let tokens = title.split(/in |for |in |in |at |to |on /i);
+    city = tokens[tokens.length - 1].replace(/[\d]+.*/, '').replace(/days?.*/, '').trim();
+    if (city.indexOf(',') > -1) city = city.split(',')[0].trim();
+  }
+   return { city, days };
 }
 
-// Temaya ve .add_theme'e tıklayınca akış
+// Temaya tıklayınca input doldurulur, suggestions API'dan doldurulur, ilgili şehir seçili yapılır
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
-    const { city } = extractCityAndDaysFromTheme(themeTitle);
+    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
 
-    await updateSuggestions(themeTitle);
+    // API suggestions panelini doldursun
+    if (typeof updateSuggestions === 'function') {
+      await updateSuggestions(themeTitle);
+    }
     document.getElementById('user-input').focus();
 
+    // DOM güncellendikten sonra suggestions içinden şehir seç
     setTimeout(() => {
-      selectFirstMatchingSuggestion(city);
+      const suggestionsDiv = document.getElementById("suggestions");
+      if (suggestionsDiv) {
+        let selected = false;
+        Array.from(suggestionsDiv.children).forEach(div => {
+          if (
+            (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
+            div.textContent.toLowerCase().includes(city.toLowerCase())
+          ) {
+            div.classList.add("selected-suggestion");
+            window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
+            window.selectedLocationLocked = true;
+            window.selectedLocation = { city: city };
+            window.__locationPickedFromSuggestions = true;
+            enableSendButton && enableSendButton();
+            selected = true;
+          } else {
+            div.classList.remove("selected-suggestion");
+          }
+        });
+        if (!selected) {
+          window.selectedSuggestion = null;
+          window.selectedLocationLocked = false;
+          window.selectedLocation = null;
+          window.__locationPickedFromSuggestions = false;
+          disableSendButton && disableSendButton();
+        }
+        showSuggestionsDiv && showSuggestionsDiv();
+      }
     }, 120);
   });
 });
 
+// .add_theme için aynı mantık
 document.querySelectorAll('.add_theme').forEach(btn => {
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
     const themeTitle = btn.parentNode.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
-    const { city } = extractCityAndDaysFromTheme(themeTitle);
+    const { city, days } = extractCityAndDaysFromTheme(themeTitle);
 
-    await updateSuggestions(themeTitle);
+    if (typeof updateSuggestions === 'function') {
+      await updateSuggestions(themeTitle);
+    }
     document.getElementById('user-input').focus();
 
     setTimeout(() => {
-      selectFirstMatchingSuggestion(city);
+      const suggestionsDiv = document.getElementById("suggestions");
+      if (suggestionsDiv) {
+        let selected = false;
+        Array.from(suggestionsDiv.children).forEach(div => {
+          if (
+            (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
+            div.textContent.toLowerCase().includes(city.toLowerCase())
+          ) {
+            div.classList.add("selected-suggestion");
+            window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
+            window.selectedLocationLocked = true;
+            window.selectedLocation = { city: city };
+            window.__locationPickedFromSuggestions = true;
+            enableSendButton && enableSendButton();
+            selected = true;
+          } else {
+            div.classList.remove("selected-suggestion");
+          }
+        });
+        if (!selected) {
+          window.selectedSuggestion = null;
+          window.selectedLocationLocked = false;
+          window.selectedLocation = null;
+          window.__locationPickedFromSuggestions = false;
+          disableSendButton && disableSendButton();
+        }
+        showSuggestionsDiv && showSuggestionsDiv();
+      }
     }, 120);
   });
 });
-
+// .addtotrip butonuna basıldığında day bilgisini stepsDiv'den veya window.currentDay'den al.
+// 1) Kategori/slider'dan sepete ekleme (.addtotrip handler)
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
         document.removeEventListener('click', window.__triptime_addtotrip_listener);
