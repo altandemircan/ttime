@@ -166,6 +166,8 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
             : getNextTripTitle()
     );
   }
+  // TRIP TITLE HER ZAMAN LATIN OLSUN
+tripTitle = toLatin(tripTitle);
 
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     tripTitle = `${window.selectedCity} trip plan`;
@@ -184,7 +186,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   } else {
     // Yeni bir trip başlatılıyorsa (ör: Start with map veya yeni chat)
     let timestamp = Date.now();
-    tripKey = tripTitle.replace(/\s+/g, "_") + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
+tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
     window.activeTripKey = tripKey; // Sadece ilk defa trip oluşturulurken atanır
   }
   // --------------------------------
@@ -303,7 +305,6 @@ function loadTripFromStorage(tripKey) {
         }
         return item;
     });
-    if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
     patchCartLocations();
 
@@ -585,7 +586,7 @@ function startRename() {
                     if (!newTitle) return cancelRename();
                     const all = getAllSavedTrips();
                     const oldKey = trip.key;
-                    const newKey = newTitle.replace(/\s+/g, "_") + "_" + trip.date.replace(/[^\d]/g, '');
+const newKey = toLatin(newTitle.replace(/\s+/g, "_")) + "_" + trip.date.replace(/[^\d]/g, '');
 
                     if (newKey === oldKey) return cancelRename();
 
