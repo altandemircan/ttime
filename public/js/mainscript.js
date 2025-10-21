@@ -174,7 +174,8 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
         catIcon = "img/accommodation_icon.svg";
 
     // Favori mi?
-    const favState = isTripFav({ name, category, lat, lon })
+       const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
+ const favState = isTripFav({ name, category, lat, lon })
   ? `<img src="img/like_on.svg" alt="fav" style="width:22px;height:22px;vertical-align:middle;">`
   : `<img src="img/like_off.svg" alt="notfav" style="width:22px;height:22px;vertical-align:middle;">`;
     
