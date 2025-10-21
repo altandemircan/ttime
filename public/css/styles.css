@@ -6588,10 +6588,11 @@ border-bottom:1px solid #ddd;
       .tt-resp-viewport {width: 100%; }
       .tt-resp-track {
         display: flex;
-        gap: 12px;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
+    gap: 30px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 0;
    
       }
       .tt-resp-track > .steps {
