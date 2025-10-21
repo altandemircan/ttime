@@ -504,10 +504,6 @@ li .highlight {
     margin-right: 6px;
 }*/
 
-.cats img {
-    width: 14px !important;
-    margin-right: 6px;
-}
 
 
 /* Bot Mesajı */
@@ -1210,6 +1206,14 @@ li .highlight {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
 }
+
+.cats img {
+    width: 14px !important;
+    margin-right: 6px;
+}
+
+
+
 @media (max-width: 768px) {
 
   .info {
