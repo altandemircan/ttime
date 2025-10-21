@@ -1180,7 +1180,8 @@ async function updateSuggestions(queryText) {
   const features = data.features || [];
 
   const suggestionsDiv = document.getElementById("suggestions");
-  if (!suggestionsDiv) return;
+  const chatInput = document.getElementById("user-input");
+  if (!suggestionsDiv || !chatInput) return;
   suggestionsDiv.innerHTML = "";
 
   // API’dan gelen şehir önerilerini panelde göster
@@ -1195,6 +1196,43 @@ async function updateSuggestions(queryText) {
     div.className = "category-area-option";
     div.textContent = displayText;
     div.dataset.displayText = displayText;
+
+    // === BURAYA TIKLAMA EVENTİNİ EKLE ===
+    div.onclick = function() {
+      Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+      div.classList.add("selected-suggestion");
+      window.selectedSuggestion = { displayText, props };
+      window.selectedLocation = {
+        name: props.name || cityText,
+        city: cityText,
+        country: countryText,
+        lat: props.lat ?? props.latitude ?? null,
+        lon: props.lon ?? props.longitude ?? null,
+        country_code: props.country_code || ""
+      };
+      // Gün sayısı inputtan
+      const raw = chatInput.value.trim();
+      const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+      let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+      if (!days || days < 1) days = 2;
+      let canonicalStr = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
+      if (typeof formatCanonicalPlan === "function") {
+        const c = formatCanonicalPlan(`${window.selectedLocation.city} ${days} days`);
+        if (c && c.canonical) canonicalStr = c.canonical;
+      }
+      if (typeof setChatInputValue === "function") {
+        setChatInputValue(canonicalStr);
+      } else {
+        chatInput.value = canonicalStr;
+      }
+      window.selectedLocationLocked = true;
+      window.__locationPickedFromSuggestions = true;
+      enableSendButton && enableSendButton();
+      showSuggestionsDiv && showSuggestionsDiv();
+      if (typeof updateCanonicalPreview === "function") {
+        updateCanonicalPreview();
+      }
+    };
 
     suggestionsDiv.appendChild(div);
   });
