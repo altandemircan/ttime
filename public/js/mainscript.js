@@ -162,13 +162,13 @@ function generateStepHtml(step, day, category, idx = 0) {
 
     let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
-        catIcon = "img/coffee_icon.svg";
+        catIcon = "/img/coffee_icon.svg";
     else if (category === "Touristic attraction")
-        catIcon = "img/touristic_icon.svg";
+        catIcon = "/img/touristic_icon.svg";
     else if (category === "Restaurant" || category === "Restaurants")
-        catIcon = "img/restaurant_icon.svg";
+        catIcon = "/img/restaurant_icon.svg";
     else if (category === "Accommodation")
-        catIcon = "img/accommodation_icon.svg";
+        catIcon = "/img/accommodation_icon.svg";
 
     // Favori mi?
     const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
