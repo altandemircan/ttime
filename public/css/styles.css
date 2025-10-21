@@ -472,24 +472,7 @@ li .highlight {
     font-weight: 500;
 }
 
-.cats {
-    padding: 4px 10px;
-    width: fit-content;
-    height: 20px;
-    text-align: center;
-    border-radius: 6px;
-    color: #8a4af3;
-    font-size: 0.8rem;
-    font-weight: 500;
-    line-height: 20px;
-    right: 60px;
-    top: 199px;
-    z-index: 12321;
-    display: flex;
-    align-items: center;
-    flex-direction: row;
-    background: #fff;
-}
+
 
 
 /*.cats1 img,
@@ -1207,9 +1190,30 @@ li .highlight {
     border-bottom-right-radius: 15px;
 }
 
+.cats {
+    padding: 5px 10px;
+    height: 20px;
+    border-radius: 6px;
+    color: #8a4af3;
+    font-weight: 500;
+    line-height: 20px;
+    top: 199px;
+    z-index: 12321;
+    display: flex;
+    flex-direction: row;
+    background: #ffffff;
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
 .cats img {
-    width: 14px !important;
-    margin-right: 6px;
+   width: 16px !important;
+    height: 16px !important;
+    margin-right: 6px !important;
+    margin-top: 1px;
 }
 
 
