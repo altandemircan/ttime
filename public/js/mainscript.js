@@ -4939,6 +4939,9 @@ const polyline = L.polyline(coords, {
     map.fitBounds(polyline.getBounds());
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
+
+    setTimeout(() => updateRouteStatsUI(day), 100);
+    
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
