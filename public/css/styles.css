@@ -4548,7 +4548,7 @@ input[type="checkbox"].accordion-toggle {
     padding: 0;
     overflow: hidden;
     background: #fff;
-    border-top: 1px solid #dedede;
+ 
 }
 input[type="checkbox"].accordion-toggle:checked ~ .accordion-content {
     max-height: 5000px;
