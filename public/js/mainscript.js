@@ -8130,17 +8130,13 @@ window.TT_SVG_ICONS = {
 })();
 
 (function routeSummaryAscentDescentPatch(){
-  // 1) Configure icons
   window.TT_SVG_ICONS = Object.assign(window.TT_SVG_ICONS || {}, {
-    // distance/time switched to local svgs (you said you'll place them)
     distance: '/img/way_distance.svg',
     duration: '/img/way_time.svg',
-    // new ascent/descent icons
     ascent: '/img/way_ascent.svg',
     descent: '/img/way_descent.svg'
   });
 
-  // 2) Keep per-day elevation stats here when ready
   window.routeElevStatsByDay = window.routeElevStatsByDay || {};
 
   function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
@@ -8210,68 +8206,19 @@ window.TT_SVG_ICONS = {
     }
   }
 
-  // 3) Override updateRouteStatsUI to also include ascent/descent and new icons
- window.updateRouteStatsUI = function(day) {
-  const key = `route-map-day${day}`;
-  const summary = window.lastRouteSummaries?.[key] || null;
-
-  if (!summary) {
-    const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-    if (span) span.innerHTML = '';
-    const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-    if (statsDiv) statsDiv.innerHTML = '';
-    return;
-  }
-  setSummaryForDay(day, summary.distance, summary.duration);
-};
-
-  // 4) Compute ascent/descent from elevation profile (when available) and refresh UI
-  function computeAscDesc(profile) {
-    if (!profile || !Array.isArray(profile.points) || profile.points.length < 2) return { ascent: 0, descent: 0 };
-    let up = 0, down = 0;
-    for (let i = 1; i < profile.points.length; i++) {
-      const d = profile.points[i].elev - profile.points[i - 1].elev;
-      if (d > 0) up += d;
-      else down += -d;
-    }
-    return { ascent: Math.round(up), descent: Math.round(down) };
-  }
-
-  function refreshAscentDescentForDay(day) {
-    const cache = window.__ttElevDayCache?.[day];
-    const profile = cache?.profile;
-    if (!profile) return false;
-    window.routeElevStatsByDay[day] = computeAscDesc(profile);
-
-    // Also refresh distance/time with new elevation info
+  window.updateRouteStatsUI = function(day) {
     const key = `route-map-day${day}`;
     const summary = window.lastRouteSummaries?.[key] || null;
-    if (summary) setSummaryForDay(day, summary.distance, summary.duration);
-    return true;
-  }
-  window.refreshAscentDescentForDay = refreshAscentDescentForDay;
 
-  // 5) After scale bar render (where elevation is fetched), try to update ascent/descent
-  const origRenderRouteScaleBar = window.renderRouteScaleBar;
-  if (typeof origRenderRouteScaleBar === 'function') {
-    window.renderRouteScaleBar = function(container, totalKm, markers) {
-      const res = origRenderRouteScaleBar.apply(this, arguments);
-      try {
-        const id = container?.id || '';
-        const m = id.match(/day(\d+)/);
-        const day = m ? parseInt(m[1], 10) : null;
-        if (day) {
-          // Try now, then retry shortly if the elevation fetch is still in-flight
-          setTimeout(() => {
-            if (!refreshAscentDescentForDay(day)) {
-              setTimeout(() => refreshAscentDescentForDay(day), 1200);
-            }
-          }, 200);
-        }
-      } catch (_) {}
-      return res;
-    };
-  }
+    if (!summary) {
+      const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+      if (span) span.innerHTML = '';
+      const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+      if (statsDiv) statsDiv.innerHTML = '';
+      return;
+    }
+    setSummaryForDay(day, summary.distance, summary.duration);
+  };
 })();
 
 function hideMarkerVerticalLineOnMap(map) {
