@@ -1178,10 +1178,7 @@ function extractCityAndDaysFromTheme(title) {
     city = tokens[tokens.length - 1].replace(/[\d]+.*/, '').replace(/days?.*/, '').trim();
     if (city.indexOf(',') > -1) city = city.split(',')[0].trim();
   }
-  if (city.indexOf(' ') > -1 && !/Antalya|Rio|Kaleiçi|Istanbul|Barcelona|Amsterdam|Bali|Cappadocia|Petra|Mardin|Pattaya|Lima/.test(city)) {
-    city = city.split(' ')[0];
-  }
-  return { city, days };
+   return { city, days };
 }
 
 // Temaya tıklayınca input doldurulur, suggestions API'dan doldurulur, ilgili şehir seçili yapılır
