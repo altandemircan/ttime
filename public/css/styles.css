@@ -6996,3 +6996,16 @@ ease;
 }
 
 
+.siema {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.steps {
+  min-width: 220px;
+  margin: 0 8px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+  cursor: grab;
+}
