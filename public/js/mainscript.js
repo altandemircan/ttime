@@ -180,6 +180,9 @@ function generateStepHtml(step, day, category, idx = 0) {
             <div class="geoapify-tags-section">
                 <div class="geoapify-tags">${tagsHtml}</div>
             </div>
+        <div class="cats cats${idx % 5 + 1}">
+                <img src="${catIcon}" alt="${category}"> ${category}
+            </div>
             <span class="fav-heart ${favClass}"
                 data-name="${name}"
                 data-category="${category}"
@@ -212,10 +215,8 @@ function generateStepHtml(step, day, category, idx = 0) {
                 </span>
                 ` : ""}
             </div>
-            <div class="cats cats${idx % 5 + 1}">
-                <img src="${catIcon}" alt="${category}"> ${category}
-            </div>
-            <a class="addtotrip">
+            
+            <a class="addtotrip"><span>Add to trip</span>
                 <img src="img/addtotrip-icon.svg">
             </a>
         </div>
