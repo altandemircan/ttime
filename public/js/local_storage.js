@@ -878,11 +878,11 @@ function toggleFavTrip(item, heartEl) {
     );
     if (idx >= 0) {
         window.favTrips.splice(idx, 1);
-        heartEl.textContent = "♡";
+        heartEl.innerHTML = '<img class="fav-icon" src="img/like_off.svg" alt="notfav">';
         heartEl.classList.remove("is-fav");
     } else {
         window.favTrips.push(item);
-        heartEl.textContent = "♥";
+        heartEl.innerHTML = '<img class="fav-icon" src="img/like_on.svg" alt="fav">';
         heartEl.classList.add("is-fav");
     }
     saveFavTrips();
