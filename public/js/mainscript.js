@@ -3,7 +3,21 @@ window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
 window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
-
+// Bunu sayfanın başında bir defa çalıştır:
+(function forceFourStats() {
+  const mo = new MutationObserver(() => {
+    document.querySelectorAll('.route-summary-control').forEach(span => {
+      const text = span.innerText || '';
+      if ((text.match(/km/) || []).length === 1 && (text.match(/dk/) || []).length === 1 && !span.querySelector('.stat-ascent')) {
+        // Yani, sadece 2 kutu varsa, tekrar updateRouteStatsUI çağır
+        const dayMatch = span.closest('[id^="map-bottom-controls-day"]')?.id?.match(/day(\d+)/);
+        const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+        if (day) setTimeout(() => updateRouteStatsUI(day), 100);
+      }
+    });
+  });
+  mo.observe(document.body, { childList: true, subtree: true });
+})();
 function getDisplayName(place) {
   // Latin/İngilizce ad döndür
   if (place.name_en) return place.name_en;
@@ -4854,11 +4868,6 @@ controlsWrapper.appendChild(controlRow);
 sidebarContainer.parentNode.insertBefore(controlsWrapper, sidebarContainer.nextSibling);
 
 
-// DOĞRU YERDE SADECE BUNU ÇAĞIR:
-if (summary) {
-  updateRouteStatsUI(day);
-}
-
     controlRow.appendChild(infoDiv);
 
     controlsWrapper.appendChild(controlRow);
@@ -4946,7 +4955,7 @@ const polyline = L.polyline(coords, {
     window.leafletMaps[containerId] = map;
 
     setTimeout(() => updateRouteStatsUI(day), 100);
-    
+
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
@@ -4990,7 +4999,9 @@ if (typeof setChatInputValue !== 'function') {
 
 
 function updateRouteStatsUI(day) {
-      console.log('updateRouteStatsUI çalıştı', day);
+ console.log('[updateRouteStatsUI]', day, document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`));
+
+     console.log('updateRouteStatsUI çalıştı', day);
   const key = `route-map-day${day}`;
   const summary = window.lastRouteSummaries?.[key];
 
