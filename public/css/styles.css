@@ -5259,8 +5259,10 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     border: none;
     padding: 8px 8px;
     border-radius: 16px;
-    font-weight: 5
+
 }
+
+
 
 .expanded-map-container select {
     font-size: 0.85rem !important;
@@ -6962,4 +6964,22 @@ display: flex
     object-fit: unset !important;
     margin-right: 0 !important;
     padding: 4px;
+}
+
+
+@media (max-width: 1024px) {
+    .expanded-map-header {
+        position: absolute;
+    bottom: 180px;
+    right: 9px;
+    left: 20px;
+    height: 300px;
+    z-index: 12312313123123;
+    background: rgb(255 146 146 / 70%);
+    /* color: rgb(255, 255, 255); */
+    border: none;
+    padding: 8px 8px;
+    border-radius: 16px;
+
+    }
 }
