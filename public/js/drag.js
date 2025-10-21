@@ -580,13 +580,16 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
       window._lastSegmentEndKm = undefined;
     }
 
-    updateCart();
+ updateCart();
     attachChatDropListeners();
 
-    } catch (error) {
-        console.error("Reorder error:", error);
-        showWarning && showWarning("Reorder error. Please try again.");
-    }
+    // --- EKLE: ---
+    if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
+  } catch (error) {
+    console.error("Reorder error:", error);
+    showWarning && showWarning("Reorder error. Please try again.");
+  }
 }
 
 // ========== CHAT TO CART DRAG & DROP ==========
