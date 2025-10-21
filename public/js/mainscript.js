@@ -58,8 +58,6 @@ function disableSendButton() {
     }
 
 function renderSuggestions(results = []) {
-    console.log("renderSuggestions çalıştı, results:", results);
-
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
@@ -77,17 +75,15 @@ function renderSuggestions(results = []) {
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = [city, country].filter(Boolean).join(", ") + flag;
 
-        // Öneri kutusu oluştur
         const div = document.createElement("div");
         div.className = "category-area-option";
         div.textContent = displayText;
         div.dataset.displayText = displayText;
 
-        // Her öneriye tıklama ile seçili class, window flagleri ve input formatı ekle
         div.onclick = () => {
-            // Tüm önerilerde seçili class'ı kaldır
+            // TIKLAMADA PROGRAMATIK SET
+            window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            // Sadece tıklanan öneriye ekle
             div.classList.add("selected-suggestion");
             window.selectedSuggestion = { displayText, props };
             window.selectedLocation = {
@@ -98,7 +94,7 @@ function renderSuggestions(results = []) {
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
             };
-            // Gün sayısı inputtan çekiliyor (veya 2 default)
+            // Gün sayısı inputtan (veya 2 default)
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
@@ -120,6 +116,7 @@ function renderSuggestions(results = []) {
             if (typeof updateCanonicalPreview === "function") {
                 updateCanonicalPreview();
             }
+            setTimeout(() => { window.__programmaticInput = false; }, 0); // ARTIK kullanıcı yazıyor
         };
 
         suggestionsDiv.appendChild(div);
@@ -131,7 +128,6 @@ function renderSuggestions(results = []) {
         hideSuggestionsDiv?.(true);
     }
 }
-
 // Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
@@ -902,16 +898,12 @@ function extractCityAndDays(input) {
 // Geocode doğrulama (cache ile)
 const __cityCoordCache = new Map();
 
-
 chatInput.addEventListener("input", function() {
-    // Kullanıcı kilitli formatı bozdu mu?
-    if (window.selectedLocationLocked) {
-        if (!/^Plan a \d+-day tour for /.test(this.value.trim())) {
-            window.selectedLocationLocked = false;
-            window.selectedLocation = null;
-            disableSendButton();
-        }
-    }
+    if (window.__programmaticInput) return;
+    window.__locationPickedFromSuggestions = false;
+    window.selectedLocationLocked = false;
+    window.selectedLocation = null;
+    disableSendButton && disableSendButton();
 });
 
 async function handleAnswer(answer) {
@@ -1213,13 +1205,16 @@ async function updateSuggestions(queryText) {
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
+    // PROGRAMATIK SET BAŞLIYOR
+    window.__programmaticInput = true;
     document.getElementById('user-input').value = themeTitle;
-
-    // Sadece API suggestions panelini doldurur (manuel seçim yok!)
     if (typeof updateSuggestions === 'function') {
       await updateSuggestions(themeTitle);
     }
     document.getElementById('user-input').focus();
+    setTimeout(() => {
+      window.__programmaticInput = false; // ARTIK kullanıcı yazıyor
+    }, 0);
 
     // DOM güncellendikten sonra hiçbir öneriyi otomatik seçme
     setTimeout(() => {
