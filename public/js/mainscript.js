@@ -5092,76 +5092,37 @@ async function expandMap(containerId, day) {
   originalContainer.style.display = 'none';
 
   // === HEADER DIV OLUŞTUR ===
- const headerDiv = document.createElement('div');
-headerDiv.className = 'expanded-map-header';
+  const headerDiv = document.createElement('div');
+  headerDiv.className = 'expanded-map-header';
 
-// --- LAYER BAR: Üste yatay olarak, doğrudan görünür ---
-const layersBar = document.createElement('div');
-layersBar.className = 'map-layers-row'; // CSS'de ayarlayacaksın
+  // --- Layer seçenekleri: doğrudan üstte yatay olarak görünür ---
+  const layersBar = document.createElement('div');
+  layersBar.className = 'map-layers-row'; // CSS'i dosyaya ekleyeceksin
 
-// Layer seçenekleri
-const layerOptions = [
-  { value: 'streets-v12', img: '/img/preview_streets.png', label: 'Default' },
-  { value: 'satellite-streets-v12', img: '/img/preview_satellite.png', label: 'Satellite' },
-  { value: 'dark-v11', img: '/img/preview_dark.png', label: 'Navigation' }
-];
+  const layerOptions = [
+    { value: 'streets-v12', img: '/img/preview_streets.png', label: 'Default' },
+    { value: 'satellite-streets-v12', img: '/img/preview_satellite.png', label: 'Satellite' },
+    { value: 'dark-v11', img: '/img/preview_dark.png', label: 'Navigation' }
+  ];
 
-let currentLayer = 'streets-v12';
-let expandedTileLayer = null; // Harita için
-
-layerOptions.forEach(opt => {
-  const div = document.createElement('div');
-  div.className = 'map-type-option';
-  div.setAttribute('data-value', opt.value);
-  div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
-  if (opt.value === currentLayer) div.classList.add('selected');
-  div.onclick = function() {
-    layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
-    div.classList.add('selected');
-    setExpandedMapTile(opt.value); // Layer değiştir
-  };
-  layersBar.appendChild(div);
-});
-
-headerDiv.appendChild(layersBar);
-
-
-  // Layer panel aç/kapa
-  layersBtn.onclick = function() {
-    layersPanel.style.display = '';
-  };
-  layersPanel.querySelector('.close-layers-panel').onclick = function() {
-    layersPanel.style.display = 'none';
-  };
-
-  // Layer seçimi ve map tile değişimi
   let currentLayer = 'streets-v12';
-  function setExpandedMapTile(styleKey) {
-    if (expandedTileLayer) {
-      try { expandedMap.removeLayer(expandedTileLayer); } catch (_){}
-      expandedTileLayer = null;
-    }
-    expandedTileLayer = L.tileLayer(
-      `/api/mapbox/tiles/${styleKey}/{z}/{x}/{y}.png`,
-      {
-        tileSize: 256,
-        zoomOffset: 0,
-        attribution: '© Mapbox © OpenStreetMap',
-        crossOrigin: true
-      }
-    );
-    expandedTileLayer.addTo(expandedMap);
-    currentLayer = styleKey;
-  }
-  layersPanel.querySelectorAll('.map-type-option').forEach(opt => {
-    opt.onclick = function() {
-      layersPanel.querySelectorAll('.map-type-option').forEach(o => o.style.border = '2px solid #eee');
-      opt.style.border = '2px solid #1976d2';
-      const style = opt.getAttribute('data-value');
-      setExpandedMapTile(style);
-      layersPanel.style.display = 'none';
+  let expandedTileLayer = null;
+
+  layerOptions.forEach(opt => {
+    const div = document.createElement('div');
+    div.className = 'map-type-option';
+    div.setAttribute('data-value', opt.value);
+    div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
+    if (opt.value === currentLayer) div.classList.add('selected');
+    div.onclick = function() {
+      layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+      div.classList.add('selected');
+      setExpandedMapTile(opt.value); // Harita layer değişimi
     };
+    layersBar.appendChild(div);
   });
+
+  headerDiv.appendChild(layersBar);
 
   // Route stats (mesafe/süre/ascent/descent) için alan
   const statsDiv = document.createElement('div');
@@ -5173,58 +5134,59 @@ headerDiv.appendChild(layersBar);
   const expandedContainer = document.createElement('div');
   expandedContainer.id = expandedMapId;
   expandedContainer.className = 'expanded-map-container';
+
+  // --- PATCH: headerDiv'i expandedContainer'ın en başına ekle ---
+  expandedContainer.appendChild(headerDiv);
+
+  // Ölçek (scale) bar
+  const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (oldBar) oldBar.remove();
+  const scaleBarDiv = document.createElement('div');
+  scaleBarDiv.className = 'route-scale-bar';
+  scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
+  try {
+    const ptsForBar = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+    const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+    if (imported) {
+      scaleBarDiv.style.display = '';
+    } else {
+      scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
+    }
+  } catch (_) {}
+
+  // Panel wrapper: scaleBarDiv
+  const panelDiv = document.createElement('div');
+  panelDiv.className = 'expanded-map-panel';
+  panelDiv.appendChild(scaleBarDiv);
+  expandedContainer.appendChild(panelDiv);
+
+  // Diğer kontroller (lokasyon/kapat)
+  const locBtn = document.createElement('button');
+  locBtn.type = 'button';
+  locBtn.id = `use-my-location-btn-day${day}`;
+  locBtn.classList.add('use-my-location-btn');
+  locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
+  expandedContainer.appendChild(locBtn);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-expanded-map';
+  closeBtn.textContent = '✕ Close';
+  closeBtn.style.cssText = `
+    position:absolute;top:16px;right:16px;z-index:10001;
+    background:#ff4444;color:#fff;border:none;padding:8px 12px;
+    border-radius:4px;font-weight:500;cursor:pointer;
+  `;
+  closeBtn.onclick = () => restoreMap(containerId, day);
+  expandedContainer.appendChild(closeBtn);
+
+  // Harita div
+  const mapDivId = `${containerId}-expanded`;
+  const mapDiv = document.createElement('div');
+  mapDiv.id = mapDivId;
+  mapDiv.className = 'expanded-map';
+  expandedContainer.appendChild(mapDiv);
+
   document.body.appendChild(expandedContainer);
-
- // Ölçek (scale) bar
-const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-if (oldBar) oldBar.remove();
-const scaleBarDiv = document.createElement('div');
-scaleBarDiv.className = 'route-scale-bar';
-scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
-try {
-  const ptsForBar = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-  const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-  if (imported) {
-    scaleBarDiv.style.display = '';
-  } else {
-    scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
-  }
-} catch (_) {}
-
-// Panel wrapper: önce scaleBarDiv, sonra headerDiv (dışarıya taşındı)
-const panelDiv = document.createElement('div');
-panelDiv.className = 'expanded-map-panel';
-panelDiv.appendChild(scaleBarDiv);
-expandedContainer.appendChild(panelDiv);
-
-// --- PATCH: headerDiv'i expandedContainer'ın en başına ekle ---
-expandedContainer.appendChild(headerDiv); // burada headerDiv'in tüm özellikleri olduğu gibi kalır!
-
-// Diğer kontroller (lokasyon/kapat)
-const locBtn = document.createElement('button');
-locBtn.type = 'button';
-locBtn.id = `use-my-location-btn-day${day}`;
-locBtn.classList.add('use-my-location-btn');
-locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
-expandedContainer.appendChild(locBtn);
-
-const closeBtn = document.createElement('button');
-closeBtn.className = 'close-expanded-map';
-closeBtn.textContent = '✕ Close';
-closeBtn.style.cssText = `
-  position:absolute;top:16px;right:16px;z-index:10001;
-  background:#ff4444;color:#fff;border:none;padding:8px 12px;
-  border-radius:4px;font-weight:500;cursor:pointer;
-`;
-closeBtn.onclick = () => restoreMap(containerId, day);
-expandedContainer.appendChild(closeBtn);
-
-// Harita div
-const mapDivId = `${containerId}-expanded`;
-const mapDiv = document.createElement('div');
-mapDiv.id = mapDivId;
-mapDiv.className = 'expanded-map';
-expandedContainer.appendChild(mapDiv);
 
   // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
@@ -5257,10 +5219,27 @@ expandedContainer.appendChild(mapDiv);
       zoom: expandedMap.getZoom()
     };
   }
-  let expandedTileLayer = null;
-  setExpandedMapTile(currentLayer);
 
-  // [Kapanan select kodlarını tamamen kaldırdık!]
+  // Layer değişim fonksiyonu
+  function setExpandedMapTile(styleKey) {
+    if (expandedTileLayer) {
+      try { expandedMap.removeLayer(expandedTileLayer); } catch (_){}
+      expandedTileLayer = null;
+    }
+    expandedTileLayer = L.tileLayer(
+      `/api/mapbox/tiles/${styleKey}/{z}/{x}/{y}.png`,
+      {
+        tileSize: 256,
+        zoomOffset: 0,
+        attribution: '© Mapbox © OpenStreetMap',
+        crossOrigin: true
+      }
+    );
+    expandedTileLayer.addTo(expandedMap);
+    currentLayer = styleKey;
+  }
+
+  setExpandedMapTile(currentLayer);
 
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
