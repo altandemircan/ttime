@@ -8138,7 +8138,15 @@ window.TT_SVG_ICONS = {
   });
 
   window.routeElevStatsByDay = window.routeElevStatsByDay || {};
-
+function calculateAscentDescent(elevations) {
+  let ascent = 0, descent = 0;
+  for (let i = 1; i < elevations.length; i++) {
+    const diff = elevations[i] - elevations[i-1];
+    if (diff > 0) ascent += diff;
+    else descent -= diff;
+  }
+  return { ascent, descent };
+}
 function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
   const distStr = (typeof distanceMeters === 'number')
     ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
@@ -8653,29 +8661,35 @@ track.addEventListener('touchmove', track.__onMove);
   window.showScaleBarLoading?.(container, 'Loading elevation…');
 
   // Elevation verisini yükle
-  (async () => {
-    try {
-      const elevations = await window.getElevationsForRoute(samples, container, routeKey);
-      if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
-        container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div></div>`;
-        return;
-      }
-      const smooth = movingAverage(elevations, 3);
-      const min = Math.min(...smooth);
-      const max = Math.max(...smooth, min + 1);
-
-      container._elevationData = { smooth, min, max };
-      container._elevationDataFull = { smooth: smooth.slice(), min, max }; // Tam profil snapshot
-      container.dataset.elevLoadedKey = routeKey;
-
-      redrawElevation(container._elevationData);
-      window.hideScaleBarLoading?.(container);
-    } catch {
-      window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
-      try { delete container.dataset.elevLoadedKey; } catch(_) {}
+(async () => {
+  try {
+    const elevations = await window.getElevationsForRoute(samples, container, routeKey);
+    if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
+      container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div></div>`;
+      return;
     }
-  })();
+    const smooth = movingAverage(elevations, 3);
+    const min = Math.min(...smooth);
+    const max = Math.max(...smooth, min + 1);
 
+    // --- BURAYA EKLE ---
+    if (day && Array.isArray(elevations) && elevations.length > 1) {
+      const { ascent, descent } = calculateAscentDescent(elevations);
+      window.routeElevStatsByDay[day] = { ascent, descent };
+      updateRouteStatsUI(day);
+    }
+
+    container._elevationData = { smooth, min, max };
+    container._elevationDataFull = { smooth: smooth.slice(), min, max }; // Tam profil snapshot
+    container.dataset.elevLoadedKey = routeKey;
+
+    redrawElevation(container._elevationData);
+    window.hideScaleBarLoading?.(container);
+  } catch {
+    window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
+    try { delete container.dataset.elevLoadedKey; } catch(_) {}
+  }
+})();
   // Resize
   function handleResize() {
       const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
