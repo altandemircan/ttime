@@ -6946,7 +6946,7 @@ display: flex
   user-select: none;
 }
 .visual .fav-heart.is-fav .fav-icon {
-  filter: drop-shadow(0 0 2px #d32f2f);
+ 
   /* veya istediğin favori stilini burada uygula */
 }
 .visual .fav-icon {
