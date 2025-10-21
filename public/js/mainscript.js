@@ -8139,17 +8139,17 @@ window.TT_SVG_ICONS = {
 
   window.routeElevStatsByDay = window.routeElevStatsByDay || {};
 
-  function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
-    const distStr = (typeof distanceMeters === 'number')
-      ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
-    const duraStr = (typeof durationSeconds === 'number')
-      ? Math.round(durationSeconds / 60) + ' dk' : '';
-    const ascStr = (typeof ascentM === 'number')
-      ? Math.round(ascentM) + ' m' : '';
-    const descStr = (typeof descentM === 'number')
-      ? Math.round(descentM) + ' m' : '';
-    return { distStr, duraStr, ascStr, descStr };
-  }
+function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
+  const distStr = (typeof distanceMeters === 'number')
+    ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
+  const duraStr = (typeof durationSeconds === 'number')
+    ? Math.round(durationSeconds / 60) + ' dk' : '';
+  const ascStr = (typeof ascentM === 'number')
+    ? Math.round(ascentM) + ' m' : '';
+  const descStr = (typeof descentM === 'number')
+    ? Math.round(descentM) + ' m' : '';
+  return { distStr, duraStr, ascStr, descStr };
+}
 
   function buildBadgesHTML(strings) {
     const parts = [];
@@ -8188,7 +8188,7 @@ window.TT_SVG_ICONS = {
     return parts.join(' ');
   }
 
-  function setSummaryForDay(day, distanceM, durationS) {
+function setSummaryForDay(day, distanceM, durationS) {
   const elev = window.routeElevStatsByDay?.[day] || {};
   const strings = fmt(distanceM, durationS, elev.ascent, elev.descent);
 
