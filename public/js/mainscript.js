@@ -1150,6 +1150,13 @@ window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_
 window.__lastAddedItem = null;
 let lastUserQuery = ""
 
+
+
+
+
+
+
+// Tema başlığından şehir ve gün ayıklama fonksiyonu (kalsın)
 // Tema başlığından şehir ve gün ayıklama fonksiyonu (kalsın)
 function extractCityAndDaysFromTheme(title) {
   let days = 2;
@@ -1188,7 +1195,7 @@ document.querySelectorAll('.gallery-item').forEach(item => {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
 
-    // API suggestions panelini doldurur (manuel seçim yok!)
+    // Sadece API suggestions panelini doldurur (manuel seçim yok!)
     if (typeof updateSuggestions === 'function') {
       await updateSuggestions(themeTitle);
     }
@@ -1240,6 +1247,20 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     }, 120);
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // .addtotrip butonuna basıldığında day bilgisini stepsDiv'den veya window.currentDay'den al.
 // 1) Kategori/slider'dan sepete ekleme (.addtotrip handler)
 function initializeAddToTripListener() {
