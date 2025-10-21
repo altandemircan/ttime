@@ -705,21 +705,11 @@ function parsePlanRequest(text) {
     let days = null;
     let location = null;
 
-    // 1. Eğer seçili öneri varsa, doğrudan onu kullan
-    if (window.selectedSuggestion && window.selectedSuggestion.props) {
-        const props = window.selectedSuggestion.props;
-        // city + country varsa birleştir, yoksa name kullan
-        location = [props.city || props.name, props.country].filter(Boolean).join(', ');
-    } else if (window.selectedLocation && typeof window.selectedLocation === "object") {
-        location = [window.selectedLocation.city || window.selectedLocation.name, window.selectedLocation.country].filter(Boolean).join(', ');
-    }
-
-    // 2. Gün sayısını yine inputtan çek
+    // Gün sayısını bul
     let dayMatch = text.match(/(\d+)[- ]*day/);
     if (dayMatch) {
         days = parseInt(dayMatch[1]);
     }
-    // Türkçe "2 gün" vs.
     if (!days) {
         let trMatch = text.match(/(\d+)[, ]*gün/i);
         if (trMatch) {
@@ -728,22 +718,33 @@ function parsePlanRequest(text) {
     }
     if (!days || isNaN(days) || days < 1) days = 2;
 
-    // Eğer hala location yoksa, eski regexlerle dene (fallback)
+    // Şehir adını bulmak için: "for ...", "in ..." veya cümlenin sonu
+    let locMatch = text.match(/for (.+)$/i) || text.match(/in (.+)$/i);
+    if (locMatch) {
+        // Son kelime veya kelime grubu
+        location = locMatch[1].trim().split(' ').slice(-1)[0];
+    }
+    // Son kelimeyi (veya son iki kelimeyi) al
     if (!location) {
-        let wordMatch = text.match(/\b([A-Z][a-z'’]+)\b/);
-        if (wordMatch) location = wordMatch[1];
+        let words = text.trim().split(' ');
+        location = words[words.length-1];
+        // Eğer son iki kelime bir şehir ismi gibi görünüyorsa:
+        if (words.length > 2 && /^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(words[words.length-2])) {
+            location = words[words.length-2] + ' ' + words[words.length-1];
+        }
     }
 
-    // Default gün sayısı (sıfır veya geçersizse 2 yap)
-    if (!days || isNaN(days) || days < 1) days = 2;
-    if (!location) throw new Error("Invalid city name");
+    // Sonunda hala location yoksa fallback: inputun tamamı
+    if (!location) location = text.trim();
+
+    // Temizle
+    location = location.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+$/, '').trim();
 
     // Debug için log
     console.log("parsePlanRequest result:", { location, days });
 
     return { location, days };
 }
-
 function formatCanonicalPlan(rawInput) {
     if (!rawInput || typeof rawInput !== 'string')
         return { canonical: "", city: "", days: 1, changed: false };
