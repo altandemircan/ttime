@@ -1150,7 +1150,6 @@ window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_
 window.__lastAddedItem = null;
 let lastUserQuery = ""
 
-// Şehir ve gün ayıklama fonksiyonu (SADELEŞTİRİLDİ, hardcode yok)
 function extractCityAndDaysFromTheme(title) {
   let days = 2;
   let dayMatch = title.match(/(\d+)[- ]*day|(\d+)[- ]*days|(\d+)[- ]*gün/i);
@@ -1158,7 +1157,7 @@ function extractCityAndDaysFromTheme(title) {
   else if (/weekend/i.test(title)) days = 2;
 
   let city = null;
-  let cityMatch = title.match(/\bin ([^,]+)(,|$)/i); // "in Barcelona", "in Kaleiçi, Antalya"
+  let cityMatch = title.match(/\bin ([^,]+)(,|$)/i);
   if (cityMatch) city = cityMatch[1].trim();
   if (!city) {
     let altMatch = title.match(/in ([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
@@ -1171,21 +1170,16 @@ function extractCityAndDaysFromTheme(title) {
   }
   return { city, days };
 }
-async function updateSuggestions(queryText) {
-  // Şehir/gün ayıkla
-  const { city } = extractCityAndDaysFromTheme(queryText);
 
-  // API'dan suggestions çek (örneğin Geoapify, burada örnek fetch kullandım)
-  // Senin backend veya Geoapify endpoint'ini kullan!
+async function updateSuggestions(queryText) {
+  const { city } = extractCityAndDaysFromTheme(queryText);
   const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(city)}`);
   const data = await resp.json();
   const features = data.features || [];
-
   const suggestionsDiv = document.getElementById("suggestions");
   if (!suggestionsDiv) return;
   suggestionsDiv.innerHTML = "";
 
-  // API'dan gelen şehirler panelde gösterilsin
   features.forEach(feature => {
     const props = feature.properties || {};
     const cityText = props.city || props.name || "";
@@ -1197,106 +1191,59 @@ async function updateSuggestions(queryText) {
     div.className = "category-area-option";
     div.textContent = displayText;
     div.dataset.displayText = displayText;
-
     suggestionsDiv.appendChild(div);
   });
 
-  // Paneli göster
   showSuggestionsDiv && showSuggestionsDiv();
 }
-// Temaya tıklayınca input doldur, suggestions panelini API ile doldur, şehir önerisini otomatik seç
+
+function selectFirstMatchingSuggestion(city) {
+  const suggestionsDiv = document.getElementById("suggestions");
+  if (!suggestionsDiv) return;
+  let selected = false;
+  Array.from(suggestionsDiv.children).forEach(div => {
+    if (!selected &&
+        (
+          (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
+          div.textContent.toLowerCase().includes(city.toLowerCase())
+        )
+    ) {
+      div.classList.add("selected-suggestion");
+      window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
+      window.selectedLocationLocked = true;
+      window.selectedLocation = { city: city };
+      window.__locationPickedFromSuggestions = true;
+      enableSendButton && enableSendButton();
+      selected = true;
+    } else {
+      div.classList.remove("selected-suggestion");
+    }
+  });
+  if (!selected) {
+    window.selectedSuggestion = null;
+    window.selectedLocationLocked = false;
+    window.selectedLocation = null;
+    window.__locationPickedFromSuggestions = false;
+    disableSendButton && disableSendButton();
+  }
+  showSuggestionsDiv && showSuggestionsDiv();
+}
+
+// Temaya tıklayınca sadece ilk eşleşen öneri seçili olacak
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
     const { city } = extractCityAndDaysFromTheme(themeTitle);
 
-    // API suggestions panelini doldur
     if (typeof updateSuggestions === 'function') {
-      await updateSuggestions(themeTitle); // updateSuggestions şehir suggestions API ile çalışmalı!
-    }
-    document.getElementById('user-input').focus();
-
-    // DOM güncellendikten sonra şehir önerisi otomatik seçili olsun
-    setTimeout(() => {
-      const suggestionsDiv = document.getElementById("suggestions");
-      if (suggestionsDiv) {
-        let selected = false;
-        Array.from(suggestionsDiv.children).forEach(div => {
-          if (
-            (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
-            div.textContent.toLowerCase().includes(city.toLowerCase())
-          ) {
-            div.classList.add("selected-suggestion");
-            window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
-            window.selectedLocationLocked = true;
-            window.selectedLocation = { city: city };
-            window.__locationPickedFromSuggestions = true;
-            enableSendButton && enableSendButton();
-            selected = true;
-          } else {
-            div.classList.remove("selected-suggestion");
-          }
-        });
-        if (!selected) {
-          window.selectedSuggestion = null;
-          window.selectedLocationLocked = false;
-          window.selectedLocation = null;
-          window.__locationPickedFromSuggestions = false;
-          disableSendButton && disableSendButton();
-        }
-        showSuggestionsDiv && showSuggestionsDiv();
-      }
-    }, 120);
-  });
-});
-
-// .add_theme için aynı mantık
-document.querySelectorAll('.add_theme').forEach(btn => {
-  btn.addEventListener('click', async function(e) {
-    e.stopPropagation();
-    const themeTitle = btn.parentNode.querySelector('.caption p').textContent.trim();
-    document.getElementById('user-input').value = themeTitle;
-    const { city } = extractCityAndDaysFromTheme(themeTitle);
-
-    if (typeof updateSuggestions === 'function') {
-      await updateSuggestions(themeTitle); // updateSuggestions şehir suggestions API ile çalışmalı!
+      await updateSuggestions(themeTitle);
     }
     document.getElementById('user-input').focus();
 
     setTimeout(() => {
-      const suggestionsDiv = document.getElementById("suggestions");
-      if (suggestionsDiv) {
-        let selected = false;
-        Array.from(suggestionsDiv.children).forEach(div => {
-          if (
-            (div.dataset.displayText && div.dataset.displayText.toLowerCase().includes(city.toLowerCase())) ||
-            div.textContent.toLowerCase().includes(city.toLowerCase())
-          ) {
-            div.classList.add("selected-suggestion");
-            window.selectedSuggestion = { displayText: div.dataset.displayText, props: {} };
-            window.selectedLocationLocked = true;
-            window.selectedLocation = { city: city };
-            window.__locationPickedFromSuggestions = true;
-            enableSendButton && enableSendButton();
-            selected = true;
-          } else {
-            div.classList.remove("selected-suggestion");
-          }
-        });
-        if (!selected) {
-          window.selectedSuggestion = null;
-          window.selectedLocationLocked = false;
-          window.selectedLocation = null;
-          window.__locationPickedFromSuggestions = false;
-          disableSendButton && disableSendButton();
-        }
-        showSuggestionsDiv && showSuggestionsDiv();
-      }
-    }, 120);
-  });
-});
-
+      selectFirstMatching
+
 
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
