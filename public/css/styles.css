@@ -6997,22 +6997,21 @@ ease;
 
 
 .siema {
-  display: flex !important;
-  gap: 16px;
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+  /* Siema default olarak display:block, flex değil! */
   overflow: hidden;
   box-sizing: border-box;
 }
 
-.siema .steps {
-  min-width: 220px;
-  flex: 0 0 220px;
+.steps {
+  min-width: 100%;
+  box-sizing: border-box;
   margin: 0;
   border-radius: 12px;
   border: 1px solid #eee;
   background: #fff;
   cursor: grab;
-  box-sizing: border-box;
+  display: block;
 }
