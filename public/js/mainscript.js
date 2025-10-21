@@ -452,51 +452,57 @@ document.addEventListener("DOMContentLoaded", function () {
     const suggestionsDiv = document.getElementById("suggestions");
     let selectedOption = null;
 
-
-    function showSuggestions() {
+function showSuggestions() {
     if (!suggestionsDiv) return;
     suggestionsDiv.innerHTML = "";
 
     const options = [
-        { text: "Plan a 2-day tour for Rome", flag: countryFlag("IT") },      // 🇮🇹
-        { text: "Do a 3 days city tour in Helsinki", flag: countryFlag("FI") }, // 🇫🇮
-        { text: "1-day city tour in Osaka", flag: countryFlag("JP") }         // 🇯🇵
+        { text: "Plan a 2-day tour for Rome", flag: countryFlag("IT") },
+        { text: "Do a 3 days city tour in Helsinki", flag: countryFlag("FI") },
+        { text: "1-day city tour in Osaka", flag: countryFlag("JP") }
     ];
 
-    if (selectedOption) {
+    options.forEach(option => {
         const suggestion = document.createElement("div");
-        suggestion.className = "category-area-option selected-suggestion";
-        suggestion.innerText = selectedOption;
+        suggestion.className = "category-area-option";
+        suggestion.innerText = `${option.text} ${option.flag}`;
 
-        const close = document.createElement("span");
-        close.className = "close-suggestion";
-        close.innerText = "✖";
-        close.style.marginLeft = "8px";
-        close.style.cursor = "pointer";
-        close.onclick = function(e) {
-            e.stopPropagation();
-            selectedOption = null;
-            chatInput.value = "";
-            showSuggestions();
+        // --- BURAYA EKLE ---
+        suggestion.onclick = function() {
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            suggestion.classList.add("selected-suggestion");
+
+            const { city, days } = extractCityAndDaysFromTheme(option.text);
+
+            let canonicalStr = `Plan a ${days}-day tour for ${city}`;
+            if (typeof formatCanonicalPlan === "function") {
+                const c = formatCanonicalPlan(`${city} ${days} days`);
+                if (c && c.canonical) canonicalStr = c.canonical;
+            }
+
+            window.__programmaticInput = true;
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
+
+            window.selectedSuggestion = { displayText: canonicalStr, city, days };
+            window.selectedLocation = { city, days };
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
+            enableSendButton?.();
+            showSuggestionsDiv?.();
+            if (typeof updateCanonicalPreview === "function") {
+                updateCanonicalPreview();
+            }
         };
 
-        suggestion.appendChild(close);
         suggestionsDiv.appendChild(suggestion);
-    } else {
-        options.forEach(option => {
-            const suggestion = document.createElement("div");
-            suggestion.className = "category-area-option";
-            suggestion.innerText = `${option.text} ${option.flag}`;
-            suggestion.onclick = () => {
-                selectedOption = option.text;
-                chatInput.value = "";
-                showSuggestions();
-            };
-            suggestionsDiv.appendChild(suggestion);
-        });
-    }
+    });
+    showSuggestionsDiv?.();
 }
-
     if (!chatInput) return;
 
 
