@@ -201,13 +201,14 @@ return `
               <div class="geoapify-tags">${tagsHtml}</div>
            </div>
            <span class="fav-heart ${favClass}"
-                 data-name="${name}"
-                 data-category="${category}"
-                 data-lat="${lat}"
-                 data-lon="${lon}"
-                 style="position:absolute;top:5px;right:8px;font-size:22px;cursor:pointer;user-select:none;">
-            ${favState}
-           </span>
+              data-name="${name}"
+              data-category="${category}"
+              data-lat="${lat}"
+              data-lon="${lon}"
+              style="position:absolute;top:5px;right:8px;font-size:22px;cursor:pointer;user-select:none;">
+           <img src="${isTripFav({ name, category, lat, lon }) ? 'img/like_on.svg' : 'img/like_off.svg'}"
+                alt="Favorite" style="width:22px;height:22px;vertical-align:middle;">
+        </span>
         </div>
         <div class="info day_cats item-info-view">
         <div class="title">${name}</div>
