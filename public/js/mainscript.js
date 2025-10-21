@@ -4821,7 +4821,6 @@ function addNumberedMarkers(map, points) {
 }
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
-    console.log('renderLeafletRoute çağrıldı', day);
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
@@ -4845,16 +4844,20 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     controlRow.id = controlRowId;
     controlRow.className = "map-bottom-controls";
 
-// Route summary
-// Route summary
-const infoDiv = document.createElement("span");
-infoDiv.className = "route-summary-control";
-controlRow.appendChild(infoDiv);
-
-controlsWrapper.appendChild(controlRow);
-sidebarContainer.parentNode.insertBefore(controlsWrapper, sidebarContainer.nextSibling);
-
-
+    // Route summary
+   const infoDiv = document.createElement("span");
+    infoDiv.className = "route-summary-control";
+    if (summary) {
+      infoDiv.innerHTML =
+    `<span class="stat stat-distance">
+      <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
+      <span class="badge">${(summary.distance / 1000).toFixed(1)} km</span>
+    </span>
+    <span class="stat stat-duration">
+      <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
+      <span class="badge">${Math.round(summary.duration / 60)} dk</span>
+    </span>`;
+    }
     controlRow.appendChild(infoDiv);
 
     controlsWrapper.appendChild(controlRow);
@@ -4940,10 +4943,6 @@ const polyline = L.polyline(coords, {
     map.fitBounds(polyline.getBounds());
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
-console.log('updateRouteStatsUI çağrılacak', day);
-
-setTimeout(() => updateRouteStatsUI(day), 100);
-
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
@@ -4986,6 +4985,65 @@ if (typeof setChatInputValue !== 'function') {
 }
 
 
+function updateRouteStatsUI(day) {
+  const key = `route-map-day${day}`;
+  const summary = window.lastRouteSummaries?.[key];
+
+  // Ascent/descent verisini oku
+  const ascent = window.routeElevStatsByDay?.[day]?.ascent;
+  const descent = window.routeElevStatsByDay?.[day]?.descent;
+
+  // Eğer summary yoksa alanları temizle
+  if (!summary) {
+    // Küçük harita altındaki span
+    const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+    if (routeSummarySpan) routeSummarySpan.innerHTML = "";
+    // Büyük harita altındaki div
+    const routeStatsDiv = document.querySelector('.route-stats');
+    if (routeStatsDiv) routeStatsDiv.innerHTML = "";
+    return;
+  }
+
+  // Mesafe/Süre
+  const distanceKm = (summary.distance / 1000).toFixed(2);
+  const durationMin = Math.round(summary.duration / 60);
+
+  // Küçük harita altındaki span (sidebar/cart)
+  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+  if (routeSummarySpan) {
+    routeSummarySpan.innerHTML = `
+      <span class="stat stat-distance">
+        <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
+        <span class="badge">${distanceKm} km</span>
+      </span>
+      <span class="stat stat-duration">
+        <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
+        <span class="badge">${durationMin} dk</span>
+      </span>
+      <span class="stat stat-ascent">
+        <img class="icon" src="/img/way_ascent.svg" alt="Ascent" loading="lazy" decoding="async">
+        <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
+      </span>
+      <span class="stat stat-descent">
+        <img class="icon" src="/img/way_descent.svg" alt="Descent" loading="lazy" decoding="async">
+        <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
+      </span>
+    `;
+  }
+
+  // Büyük harita (expanded) altındaki div
+  const routeStatsDiv = document.querySelector('.route-stats');
+  if (routeStatsDiv) {
+    routeStatsDiv.innerHTML = `
+      <span class="stat stat-distance"><b>Distance:</b> ${distanceKm} km</span>
+      <span class="stat stat-duration"><b>Duration:</b> ${durationMin} min</span>
+      <span class="stat stat-ascent"><b>Ascent:</b> ${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
+      <span class="stat stat-descent"><b>Descent:</b> ${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
+    `;
+  }
+}
+
+ 
 async function expandMap(containerId, day) {
   console.log('[expandMap] start →', containerId, 'day=', day);
 
@@ -5065,6 +5123,11 @@ async function expandMap(containerId, day) {
   });
 
   headerDiv.appendChild(layersBar);
+
+  // Route stats (mesafe/süre/ascent/descent) için alan
+  const statsDiv = document.createElement('div');
+  statsDiv.className = 'route-stats';
+  headerDiv.appendChild(statsDiv);
 
   // --- EXPANDED MAP CONTAINER ---
   const expandedMapId = `expanded-map-${day}`;
@@ -5222,6 +5285,7 @@ async function expandMap(containerId, day) {
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
   const summary = window.lastRouteSummaries?.[containerId];
+  statsDiv.innerHTML = '';
 
   window.expandedMaps = window.expandedMaps || {};
   window.expandedMaps[containerId] = {
@@ -8130,34 +8194,30 @@ window.TT_SVG_ICONS = {
 })();
 
 (function routeSummaryAscentDescentPatch(){
+  // 1) Configure icons
   window.TT_SVG_ICONS = Object.assign(window.TT_SVG_ICONS || {}, {
+    // distance/time switched to local svgs (you said you'll place them)
     distance: '/img/way_distance.svg',
     duration: '/img/way_time.svg',
+    // new ascent/descent icons
     ascent: '/img/way_ascent.svg',
     descent: '/img/way_descent.svg'
   });
 
+  // 2) Keep per-day elevation stats here when ready
   window.routeElevStatsByDay = window.routeElevStatsByDay || {};
-function calculateAscentDescent(elevations) {
-  let ascent = 0, descent = 0;
-  for (let i = 1; i < elevations.length; i++) {
-    const diff = elevations[i] - elevations[i-1];
-    if (diff > 0) ascent += diff;
-    else descent -= diff;
+
+  function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
+    const distStr = (typeof distanceMeters === 'number')
+      ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
+    const duraStr = (typeof durationSeconds === 'number')
+      ? Math.round(durationSeconds / 60) + ' dk' : '';
+    const ascStr = (typeof ascentM === 'number')
+      ? Math.round(ascentM) + ' m' : '';
+    const descStr = (typeof descentM === 'number')
+      ? Math.round(descentM) + ' m' : '';
+    return { distStr, duraStr, ascStr, descStr };
   }
-  return { ascent, descent };
-}
-function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
-  const distStr = (typeof distanceMeters === 'number')
-    ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
-  const duraStr = (typeof durationSeconds === 'number')
-    ? Math.round(durationSeconds / 60) + ' dk' : '';
-  const ascStr = (typeof ascentM === 'number')
-    ? Math.round(ascentM) + ' m' : '';
-  const descStr = (typeof descentM === 'number')
-    ? Math.round(descentM) + ' m' : '';
-  return { distStr, duraStr, ascStr, descStr };
-}
 
   function buildBadgesHTML(strings) {
     const parts = [];
@@ -8196,37 +8256,86 @@ function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
     return parts.join(' ');
   }
 
-function setSummaryForDay(day, distanceM, durationS) {
-  const elev = window.routeElevStatsByDay?.[day] || {};
-  const strings = fmt(distanceM, durationS, elev.ascent, elev.descent);
+  function setSummaryForDay(day, distanceM, durationS) {
+    const elev = window.routeElevStatsByDay?.[day] || {};
+    const strings = fmt(distanceM, durationS, elev.ascent, elev.descent);
 
-  // Small map control bar
-  const smallSpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-  if (smallSpan) {
-    smallSpan.innerHTML = buildBadgesHTML(strings);
+    // Small map control bar
+    const smallSpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+    if (smallSpan) {
+      smallSpan.innerHTML = buildBadgesHTML(strings);
+    }
+
+    // Expanded map header
+    const expandedContainer = document.getElementById(`expanded-map-${day}`);
+    const headerStats = expandedContainer?.querySelector('.route-stats');
+    if (headerStats) {
+      headerStats.innerHTML = buildBadgesHTML(strings);
+    }
   }
 
-  // Expanded map header
-  const expandedContainer = document.getElementById(`expanded-map-${day}`);
-  const headerStats = expandedContainer?.querySelector('.route-stats');
-  if (headerStats) {
-    headerStats.innerHTML = buildBadgesHTML(strings);
-  }
-}
+  // 3) Override updateRouteStatsUI to also include ascent/descent and new icons
+  window.updateRouteStatsUI = function(day) {
+    const key = `route-map-day${day}`;
+    const summary = window.lastRouteSummaries?.[key] || null;
 
-window.updateRouteStatsUI = function(day) {
-  const key = `route-map-day${day}`;
-  const summary = window.lastRouteSummaries?.[key] || null;
+    if (!summary) {
+      const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+      if (span) span.innerHTML = '';
+      const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+      if (statsDiv) statsDiv.innerHTML = '';
+      return;
+    }
+    setSummaryForDay(day, summary.distance, summary.duration);
+  };
 
-  if (!summary) {
-    const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-    if (span) span.innerHTML = '';
-    const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-    if (statsDiv) statsDiv.innerHTML = '';
-    return;
+  // 4) Compute ascent/descent from elevation profile (when available) and refresh UI
+  function computeAscDesc(profile) {
+    if (!profile || !Array.isArray(profile.points) || profile.points.length < 2) return { ascent: 0, descent: 0 };
+    let up = 0, down = 0;
+    for (let i = 1; i < profile.points.length; i++) {
+      const d = profile.points[i].elev - profile.points[i - 1].elev;
+      if (d > 0) up += d;
+      else down += -d;
+    }
+    return { ascent: Math.round(up), descent: Math.round(down) };
   }
-  setSummaryForDay(day, summary.distance, summary.duration);
-};
+
+  function refreshAscentDescentForDay(day) {
+    const cache = window.__ttElevDayCache?.[day];
+    const profile = cache?.profile;
+    if (!profile) return false;
+    window.routeElevStatsByDay[day] = computeAscDesc(profile);
+
+    // Also refresh distance/time with new elevation info
+    const key = `route-map-day${day}`;
+    const summary = window.lastRouteSummaries?.[key] || null;
+    if (summary) setSummaryForDay(day, summary.distance, summary.duration);
+    return true;
+  }
+  window.refreshAscentDescentForDay = refreshAscentDescentForDay;
+
+  // 5) After scale bar render (where elevation is fetched), try to update ascent/descent
+  const origRenderRouteScaleBar = window.renderRouteScaleBar;
+  if (typeof origRenderRouteScaleBar === 'function') {
+    window.renderRouteScaleBar = function(container, totalKm, markers) {
+      const res = origRenderRouteScaleBar.apply(this, arguments);
+      try {
+        const id = container?.id || '';
+        const m = id.match(/day(\d+)/);
+        const day = m ? parseInt(m[1], 10) : null;
+        if (day) {
+          // Try now, then retry shortly if the elevation fetch is still in-flight
+          setTimeout(() => {
+            if (!refreshAscentDescentForDay(day)) {
+              setTimeout(() => refreshAscentDescentForDay(day), 1200);
+            }
+          }, 200);
+        }
+      } catch (_) {}
+      return res;
+    };
+  }
 })();
 
 function hideMarkerVerticalLineOnMap(map) {
@@ -8307,11 +8416,11 @@ if (!container || isNaN(totalKm) || totalKm <= 0) {
   return;
 }
 
-// Sadece küçük harita scale bar'ını iptal et, expanded haritada çalışmaya devam et
-if (/^route-scale-bar-day\d+$/.test(container.id || '') && !/^expanded-route-scale-bar-day\d+$/.test(container.id || '')) {
+  // Sadece expanded bar’da çalış; küçük bar’ı kapat
+  if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
     container.innerHTML = '';
     return;
-}
+  }
 
   // Day ve route geojson
   const dayMatch = container.id && container.id.match(/day(\d+)/);
@@ -8661,35 +8770,29 @@ track.addEventListener('touchmove', track.__onMove);
   window.showScaleBarLoading?.(container, 'Loading elevation…');
 
   // Elevation verisini yükle
-(async () => {
-  try {
-    const elevations = await window.getElevationsForRoute(samples, container, routeKey);
-    if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
-      container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div></div>`;
-      return;
+  (async () => {
+    try {
+      const elevations = await window.getElevationsForRoute(samples, container, routeKey);
+      if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
+        container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div></div>`;
+        return;
+      }
+      const smooth = movingAverage(elevations, 3);
+      const min = Math.min(...smooth);
+      const max = Math.max(...smooth, min + 1);
+
+      container._elevationData = { smooth, min, max };
+      container._elevationDataFull = { smooth: smooth.slice(), min, max }; // Tam profil snapshot
+      container.dataset.elevLoadedKey = routeKey;
+
+      redrawElevation(container._elevationData);
+      window.hideScaleBarLoading?.(container);
+    } catch {
+      window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
+      try { delete container.dataset.elevLoadedKey; } catch(_) {}
     }
-    const smooth = movingAverage(elevations, 3);
-    const min = Math.min(...smooth);
-    const max = Math.max(...smooth, min + 1);
+  })();
 
-    // --- BURAYA EKLE ---
-    if (day && Array.isArray(elevations) && elevations.length > 1) {
-      const { ascent, descent } = calculateAscentDescent(elevations);
-      window.routeElevStatsByDay[day] = { ascent, descent };
-      updateRouteStatsUI(day);
-    }
-
-    container._elevationData = { smooth, min, max };
-    container._elevationDataFull = { smooth: smooth.slice(), min, max }; // Tam profil snapshot
-    container.dataset.elevLoadedKey = routeKey;
-
-    redrawElevation(container._elevationData);
-    window.hideScaleBarLoading?.(container);
-  } catch {
-    window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
-    try { delete container.dataset.elevLoadedKey; } catch(_) {}
-  }
-})();
   // Resize
   function handleResize() {
       const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
