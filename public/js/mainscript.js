@@ -5102,7 +5102,7 @@ async function expandMap(containerId, day) {
   const layerOptions = [
     { value: 'streets-v12', img: '/img/preview_streets.png', label: 'Default' },
     { value: 'satellite-streets-v12', img: '/img/preview_satellite.png', label: 'Satellite' },
-    { value: 'dark-v11', img: '/img/preview_dark.png', label: 'Navigation' }
+    { value: 'dark-v11', img: '/img/preview_navigation.png', label: 'Navigation' }
   ];
 
   let currentLayer = 'streets-v12';
