@@ -8189,36 +8189,36 @@ window.TT_SVG_ICONS = {
   }
 
   function setSummaryForDay(day, distanceM, durationS) {
-    const elev = window.routeElevStatsByDay?.[day] || {};
-    const strings = fmt(distanceM, durationS, elev.ascent, elev.descent);
+  const elev = window.routeElevStatsByDay?.[day] || {};
+  const strings = fmt(distanceM, durationS, elev.ascent, elev.descent);
 
-    // Small map control bar
-    const smallSpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-    if (smallSpan) {
-      smallSpan.innerHTML = buildBadgesHTML(strings);
-    }
-
-    // Expanded map header
-    const expandedContainer = document.getElementById(`expanded-map-${day}`);
-    const headerStats = expandedContainer?.querySelector('.route-stats');
-    if (headerStats) {
-      headerStats.innerHTML = buildBadgesHTML(strings);
-    }
+  // Small map control bar
+  const smallSpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+  if (smallSpan) {
+    smallSpan.innerHTML = buildBadgesHTML(strings);
   }
 
-  window.updateRouteStatsUI = function(day) {
-    const key = `route-map-day${day}`;
-    const summary = window.lastRouteSummaries?.[key] || null;
+  // Expanded map header
+  const expandedContainer = document.getElementById(`expanded-map-${day}`);
+  const headerStats = expandedContainer?.querySelector('.route-stats');
+  if (headerStats) {
+    headerStats.innerHTML = buildBadgesHTML(strings);
+  }
+}
 
-    if (!summary) {
-      const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-      if (span) span.innerHTML = '';
-      const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-      if (statsDiv) statsDiv.innerHTML = '';
-      return;
-    }
-    setSummaryForDay(day, summary.distance, summary.duration);
-  };
+window.updateRouteStatsUI = function(day) {
+  const key = `route-map-day${day}`;
+  const summary = window.lastRouteSummaries?.[key] || null;
+
+  if (!summary) {
+    const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+    if (span) span.innerHTML = '';
+    const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+    if (statsDiv) statsDiv.innerHTML = '';
+    return;
+  }
+  setSummaryForDay(day, summary.distance, summary.duration);
+};
 })();
 
 function hideMarkerVerticalLineOnMap(map) {
