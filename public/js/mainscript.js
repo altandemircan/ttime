@@ -745,6 +745,7 @@ function parsePlanRequest(text) {
 
     return { location, days };
 }
+
 function formatCanonicalPlan(rawInput) {
     if (!rawInput || typeof rawInput !== 'string')
         return { canonical: "", city: "", days: 1, changed: false };
@@ -1150,7 +1151,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
 window.__lastAddedItem = null;
 let lastUserQuery = ""
-
+// Şehir ve gün ayıklama fonksiyonu (sadece en mantıklı hali)
 function extractCityAndDaysFromTheme(title) {
   let days = 2;
   let dayMatch = title.match(/(\d+)[- ]*day|(\d+)[- ]*days|(\d+)[- ]*gün/i);
@@ -1158,20 +1159,28 @@ function extractCityAndDaysFromTheme(title) {
   else if (/weekend/i.test(title)) days = 2;
 
   let city = null;
-  let cityMatch = title.match(/\bin ([^,]+)(,|$)/i);
+
+  // En olası şehir bulma: "in", "to", "for", "at", "on" gibi kelimeler sonrası
+  let cityMatch = title.match(/\b(?:in|to|for|at|on)\s+([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
   if (cityMatch) city = cityMatch[1].trim();
+
+  // Fallback: cümlenin son kelimesi büyük harfle başlıyorsa onu şehir olarak al
   if (!city) {
-    let altMatch = title.match(/in ([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+)/i);
-    if (altMatch) city = altMatch[1].trim();
+    let words = title.trim().split(' ');
+    let lastWord = words[words.length - 1];
+    if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+$/.test(lastWord)) city = lastWord;
   }
-  if (!city) {
-    let tokens = title.split(/in |for |at |to |on /i);
-    city = tokens[tokens.length - 1].replace(/[\d]+.*/, '').replace(/days?.*/, '').trim();
-    if (city.indexOf(',') > -1) city = city.split(',')[0].trim();
-  }
+
+  // Fallback: cümlenin tamamını şehir olarak al (hiçbir şey bulamazsa)
+  if (!city) city = title.trim();
+
+  // Temizle
+  city = city.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]+$/, '').trim();
+
   return { city, days };
 }
 
+// Suggestions panelini API ile doldurur
 async function updateSuggestions(queryText) {
   const { city } = extractCityAndDaysFromTheme(queryText);
   const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(city)}`);
@@ -1198,6 +1207,7 @@ async function updateSuggestions(queryText) {
   showSuggestionsDiv && showSuggestionsDiv();
 }
 
+// Sadece ilk eşleşen öneriyi seçili yapan mantık
 function selectFirstMatchingSuggestion(city) {
   const suggestionsDiv = document.getElementById("suggestions");
   if (!suggestionsDiv) return;
@@ -1230,16 +1240,14 @@ function selectFirstMatchingSuggestion(city) {
   showSuggestionsDiv && showSuggestionsDiv();
 }
 
-// Temaya tıklayınca sadece ilk eşleşen öneri seçili olacak
+// Temaya ve .add_theme'e tıklayınca akış
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
     const themeTitle = item.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
     const { city } = extractCityAndDaysFromTheme(themeTitle);
 
-    if (typeof updateSuggestions === 'function') {
-      await updateSuggestions(themeTitle);
-    }
+    await updateSuggestions(themeTitle);
     document.getElementById('user-input').focus();
 
     setTimeout(() => {
@@ -1248,7 +1256,6 @@ document.querySelectorAll('.gallery-item').forEach(item => {
   });
 });
 
-// .add_theme için aynı mantık
 document.querySelectorAll('.add_theme').forEach(btn => {
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
@@ -1256,9 +1263,7 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     document.getElementById('user-input').value = themeTitle;
     const { city } = extractCityAndDaysFromTheme(themeTitle);
 
-    if (typeof updateSuggestions === 'function') {
-      await updateSuggestions(themeTitle);
-    }
+    await updateSuggestions(themeTitle);
     document.getElementById('user-input').focus();
 
     setTimeout(() => {
