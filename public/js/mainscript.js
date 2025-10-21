@@ -4984,7 +4984,6 @@ if (typeof setChatInputValue !== 'function') {
   }).addTo(expandedMap);
 }
 
-
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   const summary = window.lastRouteSummaries?.[key];
@@ -5009,31 +5008,27 @@ function updateRouteStatsUI(day) {
   const durationMin = Math.round(summary.duration / 60);
 
   // Küçük harita altındaki span (sidebar/cart)
-  // Küçük harita altındaki span (sidebar/cart)
-const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-const ascent = window.routeElevStatsByDay?.[day]?.ascent;
-const descent = window.routeElevStatsByDay?.[day]?.descent;
-
-if (routeSummarySpan) {
-  routeSummarySpan.innerHTML = `
-    <span class="stat stat-distance">
-      <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
-      <span class="badge">${distanceKm} km</span>
-    </span>
-    <span class="stat stat-duration">
-      <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
-      <span class="badge">${durationMin} dk</span>
-    </span>
-    <span class="stat stat-ascent">
-      <img class="icon" src="/img/way_ascent.svg" alt="Ascent" loading="lazy" decoding="async">
-      <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
-    </span>
-    <span class="stat stat-descent">
-      <img class="icon" src="/img/way_descent.svg" alt="Descent" loading="lazy" decoding="async">
-      <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
-    </span>
-  `;
-}
+  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+  if (routeSummarySpan) {
+    routeSummarySpan.innerHTML = `
+      <span class="stat stat-distance">
+        <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
+        <span class="badge">${distanceKm} km</span>
+      </span>
+      <span class="stat stat-duration">
+        <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
+        <span class="badge">${durationMin} dk</span>
+      </span>
+      <span class="stat stat-ascent">
+        <img class="icon" src="/img/way_ascent.svg" alt="Ascent" loading="lazy" decoding="async">
+        <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
+      </span>
+      <span class="stat stat-descent">
+        <img class="icon" src="/img/way_descent.svg" alt="Descent" loading="lazy" decoding="async">
+        <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
+      </span>
+    `;
+  }
 
   // Büyük harita (expanded) altındaki div
   const routeStatsDiv = document.querySelector('.route-stats');
