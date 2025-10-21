@@ -1857,6 +1857,7 @@ li .highlight {
     font-weight: bold;
     gap: 4px;
     align-items: center;
+    font-size: 0.85rem;
 }
 .addtotrip img {
     transition: transform 0.3s ease;
