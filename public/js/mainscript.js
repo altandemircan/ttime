@@ -5100,9 +5100,9 @@ async function expandMap(containerId, day) {
   layersBar.className = 'map-layers-row'; // CSS'i dosyaya ekleyeceksin
 
   const layerOptions = [
-    { value: 'streets-v12', img: '/img/preview_streets.png', label: 'Default' },
-    { value: 'satellite-streets-v12', img: '/img/preview_satellite.png', label: 'Satellite' },
-    { value: 'dark-v11', img: '/img/preview_navigation.png', label: 'Navigation' }
+    { value: 'streets-v12', img: '/img/preview_streets.png', label: 'Default' },   
+    { value: 'dark-v11', img: '/img/preview_navigation.png', label: 'Navigation' },
+    { value: 'satellite-streets-v12', img: '/img/preview_satellite.png', label: 'Satellite' }
   ];
 
   let currentLayer = 'streets-v12';
