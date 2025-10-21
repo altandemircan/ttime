@@ -1171,7 +1171,39 @@ function extractCityAndDaysFromTheme(title) {
   }
   return { city, days };
 }
+async function updateSuggestions(queryText) {
+  // Şehir/gün ayıkla
+  const { city } = extractCityAndDaysFromTheme(queryText);
 
+  // API'dan suggestions çek (örneğin Geoapify, burada örnek fetch kullandım)
+  // Senin backend veya Geoapify endpoint'ini kullan!
+  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(city)}`);
+  const data = await resp.json();
+  const features = data.features || [];
+
+  const suggestionsDiv = document.getElementById("suggestions");
+  if (!suggestionsDiv) return;
+  suggestionsDiv.innerHTML = "";
+
+  // API'dan gelen şehirler panelde gösterilsin
+  features.forEach(feature => {
+    const props = feature.properties || {};
+    const cityText = props.city || props.name || "";
+    const countryText = props.country || "";
+    const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+    const displayText = [cityText, countryText].filter(Boolean).join(", ") + flag;
+
+    const div = document.createElement("div");
+    div.className = "category-area-option";
+    div.textContent = displayText;
+    div.dataset.displayText = displayText;
+
+    suggestionsDiv.appendChild(div);
+  });
+
+  // Paneli göster
+  showSuggestionsDiv && showSuggestionsDiv();
+}
 // Temaya tıklayınca input doldur, suggestions panelini API ile doldur, şehir önerisini otomatik seç
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
