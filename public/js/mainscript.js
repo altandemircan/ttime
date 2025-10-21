@@ -144,8 +144,6 @@ function renderSuggestions(results = []) {
 
 // Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
 function generateStepHtml(step, day, category, idx = 0) {
-
-
     const name = getDisplayName(step) || category;
     const localName = getLocalName(step);
     const address = step?.address || "";
@@ -155,15 +153,14 @@ function generateStepHtml(step, day, category, idx = 0) {
     const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
     const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
 
-     let tagsHtml = "";
-        const tags = (step.properties && step.properties.categories) || step.categories;
-        if (tags && Array.isArray(tags) && tags.length > 0) {
-           const uniqueTags = getUniqueSpecificTags(tags);
-    tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
-        }
+    let tagsHtml = "";
+    const tags = (step.properties && step.properties.categories) || step.categories;
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+        const uniqueTags = getUniqueSpecificTags(tags);
+        tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
+    }
 
-
-let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
         catIcon = "img/coffee_icon.svg";
     else if (category === "Touristic attraction")
@@ -174,53 +171,47 @@ let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
         catIcon = "img/accommodation_icon.svg";
 
     // Favori mi?
-       const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
- const favState = isTripFav({ name, category, lat, lon })
-  ? `<img src="img/like_on.svg" alt="fav" style="width:22px!important;height:22px !important;vertical-align:middle;">`
-  : `<img src="img/like_off.svg" alt="notfav" style="width:22px !important;height:22px !important;vertical-align:middle;">`;
-    
-   if (step._noPlace && (!step.name || step.name === null)) {
-  return `
-    <div class="steps no-place-step" data-day="${day}" data-category="${category}" style="background: #c9e6ef; text-align:center; padding:32px 0;">
-      <div style="font-size:18px; color:#1976d2; margin-bottom:16px;">No place found!</div>
-      <button class="im-lucky-btn" style="padding:8px 22px;font-size:17px;font-weight:500;border-radius:8px;background:#1976d2;color:#fff;cursor:pointer;">
-        I'm lucky!
-      </button>
-    </div>
-  `;
-}
+    const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
+    const favIcon = isTripFav({ name, category, lat, lon }) ? "img/like_on.svg" : "img/like_off.svg";
 
-return `
+    if (step._noPlace && (!step.name || step.name === null)) {
+        return `
+        <div class="steps no-place-step" data-day="${day}" data-category="${category}">
+            <div class="no-place-msg">No place found!</div>
+            <button class="im-lucky-btn">I'm lucky!</button>
+        </div>
+        `;
+    }
+
+    return `
     <div class="steps" 
-    data-day="${day}" 
-    data-category="${category}"
-    ${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}
-    data-step='${JSON.stringify(step)}'>
-        <div class="visual" style="position:relative;">
-           <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+        data-day="${day}" 
+        data-category="${category}"
+        ${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}
+        data-step='${JSON.stringify(step)}'>
+        <div class="visual">
+            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             <div class="geoapify-tags-section">
-              <div class="geoapify-tags">${tagsHtml}</div>
-           </div>
-           <span class="fav-heart ${favClass}"
-              data-name="${name}"
-              data-category="${category}"
-              data-lat="${lat}"
-              data-lon="${lon}"
-              style="position:absolute;top:5px;right:8px;font-size:22px;cursor:pointer;user-select:none;">
-           <img src="${isTripFav({ name, category, lat, lon }) ? 'img/like_on.svg' : 'img/like_off.svg'}"
-                alt="Favorite" style="width:22px;height:22px;vertical-align:middle;">
-        </span>
+                <div class="geoapify-tags">${tagsHtml}</div>
+            </div>
+            <span class="fav-heart ${favClass}"
+                data-name="${name}"
+                data-category="${category}"
+                data-lat="${lat}"
+                data-lon="${lon}">
+                <img class="fav-icon" src="${favIcon}" alt="Favorite">
+            </span>
         </div>
         <div class="info day_cats item-info-view">
-        <div class="title">${name}</div>
-        ${localName ? `<div class="local-name" style="font-size:14px;color:#888;margin-top:2px;">${localName}</div>` : ""}
-        <div class="address">
-            <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
+            <div class="title">${name}</div>
+            ${localName ? `<div class="local-name">${localName}</div>` : ""}
+            <div class="address">
+                <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
+            </div>
+            <div class="opening_hours">
+                <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
+            </div>
         </div>
-        <div class="opening_hours">
-            <img src="img/hours_icon.svg"> ${opening ? opening : "Working hours not found."}
-        </div>
-    </div>
         <div class="item_action">
             <div class="change">
                 <span onclick="window.showImage && window.showImage(this)">
@@ -231,18 +222,16 @@ return `
                 </span>
                 ${website ? `
                 <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
-                    <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+                    <img src="img/website_link.svg">
                 </span>
                 ` : ""}
             </div>
-            <div style="display: flex; gap: 12px;">
-                <div class="cats cats${idx % 5 + 1}">
-                    <img src="${catIcon}" alt="${category}"> ${category}
-                </div>
-                <a class="addtotrip">
-                    <img src="img/addtotrip-icon.svg">
-                </a>
+            <div class="cats cats${idx % 5 + 1}">
+                <img src="${catIcon}" alt="${category}"> ${category}
             </div>
+            <a class="addtotrip">
+                <img src="img/addtotrip-icon.svg">
+            </a>
         </div>
     </div>
     `;

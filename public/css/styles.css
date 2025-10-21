@@ -6936,3 +6936,22 @@ display: flex
     font-weight: bold;
     pointer-events: none;;
 }
+
+.fav-heart {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  font-size: 22px;
+  cursor: pointer;
+  user-select: none;
+}
+.fav-heart.is-fav .fav-icon {
+  filter: drop-shadow(0 0 2px #d32f2f);
+  /* veya istediğin favori stilini burada uygula */
+}
+.fav-icon {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+  transition: filter 0.2s;
+}
