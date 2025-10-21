@@ -1242,8 +1242,29 @@ document.querySelectorAll('.gallery-item').forEach(item => {
     document.getElementById('user-input').focus();
 
     setTimeout(() => {
-      selectFirstMatching
-
+      selectFirstMatchingSuggestion(city);
+    }, 120);
+  });
+});
+
+// .add_theme için aynı mantık
+document.querySelectorAll('.add_theme').forEach(btn => {
+  btn.addEventListener('click', async function(e) {
+    e.stopPropagation();
+    const themeTitle = btn.parentNode.querySelector('.caption p').textContent.trim();
+    document.getElementById('user-input').value = themeTitle;
+    const { city } = extractCityAndDaysFromTheme(themeTitle);
+
+    if (typeof updateSuggestions === 'function') {
+      await updateSuggestions(themeTitle);
+    }
+    document.getElementById('user-input').focus();
+
+    setTimeout(() => {
+      selectFirstMatchingSuggestion(city);
+    }, 120);
+  });
+});
 
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
