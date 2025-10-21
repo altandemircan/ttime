@@ -8773,6 +8773,11 @@ track.addEventListener('touchmove', track.__onMove);
   (async () => {
     try {
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
+      if (day && Array.isArray(elevations) && elevations.length > 1) {
+  const { ascent, descent } = calculateAscentDescent(elevations);
+  window.routeElevStatsByDay[day] = { ascent, descent };
+  updateRouteStatsUI(day);
+}
       if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
         container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div></div>`;
         return;
