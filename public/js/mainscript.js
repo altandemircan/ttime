@@ -1188,7 +1188,37 @@ function extractCityAndDaysFromTheme(title) {
  
   return { city, days };
 }
+async function updateSuggestions(queryText) {
+  // Şehir adını ayıkla (örneğin "Barcelona")
+  const { city } = extractCityAndDaysFromTheme(queryText);
 
+  // API autocomplete ile şehir önerilerini çek
+  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(city)}`);
+  const data = await resp.json();
+  const features = data.features || [];
+
+  const suggestionsDiv = document.getElementById("suggestions");
+  if (!suggestionsDiv) return;
+  suggestionsDiv.innerHTML = "";
+
+  // API’dan gelen şehir önerilerini panelde göster
+  features.forEach(feature => {
+    const props = feature.properties || {};
+    const cityText = props.city || props.name || "";
+    const countryText = props.country || "";
+    const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+    const displayText = [cityText, countryText].filter(Boolean).join(", ") + flag;
+
+    const div = document.createElement("div");
+    div.className = "category-area-option";
+    div.textContent = displayText;
+    div.dataset.displayText = displayText;
+
+    suggestionsDiv.appendChild(div);
+  });
+
+  showSuggestionsDiv && showSuggestionsDiv();
+}
 // Temaya tıklayınca sadece öneri paneli dolsun, hiçbirini otomatik seçme!
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
