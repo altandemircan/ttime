@@ -2356,8 +2356,21 @@ function displayPlacesInChat(places, category, day) {
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
 
+    attachFavEvents();
 
-attachFavEvents(); // <-- BURAYA EKLE
+    // === BURAYA EKLE ===
+    // Sliderı her seferinde yeniden kur!
+    if (window.resultSlider) window.resultSlider.destroy(true);
+    window.resultSlider = new Siema({
+      selector: '#result-slider',
+      perPage: window.innerWidth > 1000 ? 3 : window.innerWidth > 600 ? 2 : 1,
+      draggable: true
+    });
+    // Ok tuşlarını tekrar bağla
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (prevBtn) prevBtn.onclick = () => window.resultSlider.prev();
+    if (nextBtn) nextBtn.onclick = () => window.resultSlider.next();
 
     if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 }
