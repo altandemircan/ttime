@@ -5250,9 +5250,17 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 .expanded-map-header {
-    display: flex;
-    gap: 12px;
-    width: 98%;
+        position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10001;
+    background: rgb(255, 68, 68);
+    color: rgb(255, 255, 255);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
 }
 
 .expanded-map-container select {
