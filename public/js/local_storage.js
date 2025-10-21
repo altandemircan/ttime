@@ -728,21 +728,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // 7. Yeni plan başladığında eski trip state'i sıfırla (startNewChat fonksiyonu varsa!)
 window.startNewChat = function() {
-     window.cart = []; // EKLE
-    window.__startedWithMapFlag = false;
-    const origStartNewChat = window.startNewChat;
-    window.startNewChat = function() {
-        origStartNewChat.apply(this, arguments);
-        // Sıfırla
-        window.cart = [];
-        window.customDayNames = {};
-        window.lastUserQuery = "";
-        window.selectedCity = "";
-        window.activeTripKey = null;
-        saveTripAfterRoutes(); // <-- SADECE BU OLACAK!
-        // renderMyTripsPanel(); // GEREK YOK, fonksiyonun içinde zaten çağrılıyor
-    };
-}
+    window.cart = [];
+    window.customDayNames = {};
+    window.lastUserQuery = "";
+    window.selectedCity = "";
+    window.activeTripKey = null;
+    saveTripAfterRoutes();
+};
 
 
 
