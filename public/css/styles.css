@@ -6928,17 +6928,16 @@ ease;
     color: #222;
     margin-top: 2px;
     font-weight: 500;
-    /* letter-spacing: 0.01em; */
     display: none;
 }
 
 .map-type-option.selected::after {
-    content: "✔";
+   content: "✔";
     position: absolute;
     top: -4px;
     right: 0px;
     color: #00bbfc;
-    font-size: 21px;
+    font-size: 19px;
     font-weight: bold;
     pointer-events: none;
 }
