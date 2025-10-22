@@ -6976,26 +6976,28 @@ ease;
 
 .siema {
   width: 100%;
-  max-width: 900px;
+  /* max-width: 900px;  // İstersen kaldırabilirsin */
   margin: 0 auto;
-  /* Siema kendi track ve slide yapılandırmasını yönetir */
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .steps {
-
-      max-width: 335px;
-    position: relative;  
-    flex-direction: column;
-    display: grid;
-    grid-template-areas:
-        "image"
-        "text"
-        "stats";
-    border-radius: 18px;
-    background: white;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    transition: 0.5s 
-ease;
-    align-content: space-between;
-    border: 3px solid #f3ecff;
+  max-width: 335px;
+  width: 100%;
+  position: relative;  
+  flex-direction: column;
+  display: grid;
+  grid-template-areas:
+      "image"
+      "text"
+      "stats";
+  border-radius: 18px;
+  background: white;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  transition: 0.5s ease;
+  align-content: space-between;
+  border: 3px solid #f3ecff;
+  margin: 0 10px; /* Kartlar arasına boşluk */
+  box-sizing: border-box;
 }
