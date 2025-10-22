@@ -2359,7 +2359,7 @@ function displayPlacesInChat(places, category, day) {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     attachFavEvents();
-    
+
     // Responsive perPage ayarı
     function getPerPage() {
         if (window.innerWidth >= 1900) return 4;
@@ -2393,7 +2393,7 @@ function displayPlacesInChat(places, category, day) {
             // Responsive: pencere boyutu değişirse kart sayısını güncelle
             window.addEventListener('resize', function() {
                 siemaInstance.config.perPage = getPerPage();
-                siemaInstance.resize();
+    
             });
         }
 
