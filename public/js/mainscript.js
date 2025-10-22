@@ -2345,16 +2345,11 @@ if (window.resultSlider) window.resultSlider.destroy(true);
 
 // Responsive perPage ayarı
 function getPerPage() {
-  if (window.innerWidth >= 1200) return 5;
-  if (window.innerWidth >= 800) return 4;
+  if (window.innerWidth >= 1200) return 4;
+  if (window.innerWidth >= 900) return 3;
+  if (window.innerWidth >= 600) return 2;
   return 1;
 }
-
-window.resultSlider = new Siema({
-  selector: '#result-slider',
-  perPage: getPerPage(), // Responsive!
-  draggable: true
-});
 
 // Ok tuşlarını bağla
 const prevBtn = document.getElementById('prev-btn');
@@ -2362,11 +2357,18 @@ const nextBtn = document.getElementById('next-btn');
 if (prevBtn) prevBtn.onclick = () => window.resultSlider.prev();
 if (nextBtn) nextBtn.onclick = () => window.resultSlider.next();
 
-// Ekran boyutu değişince otomatik güncelle!
+
+if (window.resultSlider) window.resultSlider.destroy(true);
+window.resultSlider = new Siema({
+  selector: '#result-slider',
+  perPage: getPerPage(),
+  draggable: true
+});
 window.addEventListener('resize', function() {
   window.resultSlider.config.perPage = getPerPage();
   window.resultSlider.resize();
 });
+
 
 if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 }
