@@ -2318,71 +2318,81 @@ function safeCoords(lat, lon) {
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
+    const sliderId = `result-slider-${uniqueId}`;
+    const prevBtnId = `prev-btn-${uniqueId}`;
+    const nextBtnId = `next-btn-${uniqueId}`;
+
     let html = `
-    <div class="survey-results bot-message message">
-        <div class="accordion-container">
-            <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
-            <label for="${uniqueId}" class="accordion-label">
-                Suggestions for ${category}
-                <img src="img/arrow_down.svg" class="accordion-arrow">
-            </label>
-            <div class="accordion-content">
-                <div class="siema" id="result-slider">`;
-places.forEach((place, idx) => {
-    html += generateStepHtml(place, day, category, idx);
-});
-html += `
-                </div>
-                <div class="siema-nav">
-                    <button id="prev-btn" class="siema-btn">&lt;</button>
-                    <button id="next-btn" class="siema-btn">&gt;</button>
-                </div>
-            </div>
-        </div>
-    </div>`;
+        <div class="survey-results bot-message message">
+            <div class="accordion-container">
+                <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
+                <label for="${uniqueId}" class="accordion-label">
+                    Suggestions for ${category}
+                    <img src="img/arrow_down.svg" class="accordion-arrow">
+                </label>
+                <div class="accordion-content">
+                    <div class="siema" id="${sliderId}">`;
 
     places.forEach((place, idx) => {
         html += generateStepHtml(place, day, category, idx);
     });
 
-    html += "</div></div></div></div>";
+    html += `
+                    </div>
+                    <div class="siema-nav">
+                        <button id="${prevBtnId}" class="siema-btn">&lt;</button>
+                        <button id="${nextBtnId}" class="siema-btn">&gt;</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
 
     attachFavEvents();
 
-    // === BURAYA EKLE ===
-    // Sliderı her seferinde yeniden kur!
-if (window.resultSlider) window.resultSlider.destroy(true);
+    // Responsive perPage ayarı
+    function getPerPage() {
+        if (window.innerWidth >= 1900) return 4;
+        if (window.innerWidth >= 1520) return 3;
+        if (window.innerWidth >= 900) return 2;
+        return 1;
+    }
 
-// Responsive perPage ayarı
-function getPerPage() {
-  if (window.innerWidth >= 1900) return 4;
-  if (window.innerWidth >= 1520) return 3;
-  if (window.innerWidth >= 600) return 2;
-  return 1;
-}
+    // Slider ve okları kur
+    setTimeout(() => {
+        const sliderElem = document.getElementById(sliderId);
+        if (sliderElem) {
+            // Önce eski instance varsa destroy et
+            if (sliderElem._siemaInstance) {
+                sliderElem._siemaInstance.destroy(true);
+            }
+            // Yeni Siema instance
+            const siemaInstance = new Siema({
+                selector: `#${sliderId}`,
+                perPage: getPerPage(),
+                draggable: true
+            });
+            sliderElem._siemaInstance = siemaInstance;
 
-// Ok tuşlarını bağla
-const prevBtn = document.getElementById('prev-btn');
-const nextBtn = document.getElementById('next-btn');
-if (prevBtn) prevBtn.onclick = () => window.resultSlider.prev();
-if (nextBtn) nextBtn.onclick = () => window.resultSlider.next();
+            // Ok tuşlarına event bağla
+            const prevBtn = document.getElementById(prevBtnId);
+            const nextBtn = document.getElementById(nextBtnId);
+            if (prevBtn) prevBtn.onclick = () => siemaInstance.prev();
+            if (nextBtn) nextBtn.onclick = () => siemaInstance.next();
 
+            // Responsive: pencere boyutu değişirse kart sayısını güncelle
+            window.addEventListener('resize', function() {
+                siemaInstance.config.perPage = getPerPage();
+                siemaInstance.resize();
+            });
+        }
 
-if (window.resultSlider) window.resultSlider.destroy(true);
-window.resultSlider = new Siema({
-  selector: '#result-slider',
-  perPage: getPerPage(),
-  draggable: true
-});
-window.addEventListener('resize', function() {
-  window.resultSlider.config.perPage = getPerPage();
-  window.resultSlider.resize();
-});
+        // Drag & drop eventlerini tekrar bağla
+        if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
+    }, 1); // DOM'a eklenmesi için küçük gecikme
 
-
-if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 }
 // Website açma fonksiyonu
 window.openWebsite = function(element, url) {
