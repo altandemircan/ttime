@@ -6993,3 +6993,8 @@ ease;
   margin: 0 10px;
   box-sizing: border-box;
 }
+.steps.dragging {
+    opacity: 0.8 !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+    transform: scale(1.02);
+}
