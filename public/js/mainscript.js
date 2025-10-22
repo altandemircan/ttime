@@ -2345,8 +2345,8 @@ if (window.resultSlider) window.resultSlider.destroy(true);
 
 // Responsive perPage ayarı
 function getPerPage() {
-  if (window.innerWidth >= 1200) return 4;
-  if (window.innerWidth >= 800) return 3;
+  if (window.innerWidth >= 1200) return 5;
+  if (window.innerWidth >= 800) return 4;
   return 1;
 }
 
