@@ -2324,21 +2324,17 @@ function safeCoords(lat, lon) {
 
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
-        chatBox.querySelectorAll('.survey-results').forEach(el => el.remove());
 
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     const sliderId = `result-slider-${uniqueId}`;
-    const prevBtnId = `prev-btn-${uniqueId}`;    // <-- BURADA OLMALI!
-    const nextBtnId = `next-btn-${uniqueId}`;    // <-- BURADA OLMALI!
-    // --- ESKİ SLIDER VE STEPSLERİ SİL ---
-    // Eski sliderı sil:
-      chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
+    const prevBtnId = `prev-btn-${uniqueId}`;
+    const nextBtnId = `next-btn-${uniqueId}`;
+
+    // Sadece aynı kategori/gün sliderını sil
+    chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
         el.closest('.survey-results')?.remove();
     });
-    // Eski stepsleri sil (güvenlik için):
-    chatBox.querySelectorAll(`.steps[data-day="${day}"][data-category="${category}"]`).forEach(el => el.remove());
 
-    // --- SLIDER EKLEME ---
     let html = `
         <div class="survey-results bot-message message">
             <div class="accordion-container">
@@ -2369,7 +2365,6 @@ function displayPlacesInChat(places, category, day) {
 
     attachFavEvents();
 
-    // Responsive perPage ayarı
     function getPerPage() {
         if (window.innerWidth >= 1900) return 4;
         if (window.innerWidth >= 1520) return 3;
@@ -2377,15 +2372,12 @@ function displayPlacesInChat(places, category, day) {
         return 1;
     }
 
-    // Slider ve okları kur
     setTimeout(() => {
         const sliderElem = document.getElementById(sliderId);
         if (sliderElem) {
-            // Eski instance varsa destroy et
             if (sliderElem._siemaInstance) {
                 sliderElem._siemaInstance.destroy(true);
             }
-            // Yeni Siema instance
             const siemaInstance = new Siema({
                 selector: `#${sliderId}`,
                 perPage: getPerPage(),
@@ -2393,32 +2385,25 @@ function displayPlacesInChat(places, category, day) {
             });
             sliderElem._siemaInstance = siemaInstance;
 
-            // Ok eventleri
             const prevBtn = document.getElementById(prevBtnId);
             const nextBtn = document.getElementById(nextBtnId);
             if (prevBtn) prevBtn.onclick = () => siemaInstance.prev();
             if (nextBtn) nextBtn.onclick = () => siemaInstance.next();
         }
-
-        // Drag & drop eventlerini tekrar bağla
         if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
     }, 1);
 
-    // GLOBALDE BİR KERE resize listener ekle!
     if (!window._siemaResizeListenerAdded) {
         window.addEventListener('resize', function() {
             document.querySelectorAll('.siema').forEach(sliderElem => {
                 if (sliderElem._siemaInstance) {
                     sliderElem._siemaInstance.config.perPage = getPerPage();
-                    // Siema'nın responsive desteği için destroy + tekrar kurmak gerekebilir!
                 }
             });
         });
         window._siemaResizeListenerAdded = true;
     }
 }
-
-
 
 
 
