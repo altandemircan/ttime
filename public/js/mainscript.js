@@ -2372,25 +2372,26 @@ function displayPlacesInChat(places, category, day) {
     }
 
     setTimeout(() => {
-        const sliderElem = document.getElementById(sliderId);
-        if (sliderElem) {
-            if (sliderElem._splideInstance) sliderElem._splideInstance.destroy();
-            const splideInstance = new Splide(sliderElem, {
-                type: 'slide',
-                perPage: getPerPage(),
-                gap: '18px',
-                arrows: true,
-                pagination: false,
-                drag: true,
-                breakpoints: {
-                    900: { perPage: 1 },
-                    1520: { perPage: 2 },
-                    1900: { perPage: 3 }
-                }
-            });
-            splideInstance.mount();
-            sliderElem._splideInstance = splideInstance;
-        }
+        // Tüm .splide sliderları için instance mount et
+        document.querySelectorAll('.splide').forEach(sliderElem => {
+            if (!sliderElem._splideInstance) {
+                const splideInstance = new Splide(sliderElem, {
+                    type: 'slide',
+                    perPage: getPerPage(),
+                    gap: '18px',
+                    arrows: true,
+                    pagination: false,
+                    drag: true,
+                    breakpoints: {
+                        900: { perPage: 1 },
+                        1520: { perPage: 2 },
+                        1900: { perPage: 3 }
+                    }
+                });
+                splideInstance.mount();
+                sliderElem._splideInstance = splideInstance;
+            }
+        });
     }, 1);
 
     if (!window._splideResizeListenerAdded) {
@@ -2405,7 +2406,6 @@ function displayPlacesInChat(places, category, day) {
         window._splideResizeListenerAdded = true;
     }
 }
-
 
 
 
