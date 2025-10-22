@@ -6976,15 +6976,13 @@ ease;
 
 .siema {
   width: 100%;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  /* Siema default olarak display:block, flex değil! */
-  overflow: hidden;
-  box-sizing: border-box;
+  /* Siema kendi track ve slide yapılandırmasını yönetir */
 }
 
 .steps {
-    
+
       max-width: 335px;
     position: relative;  
     flex-direction: column;

@@ -2341,16 +2341,33 @@ function displayPlacesInChat(places, category, day) {
 
     // === BURAYA EKLE ===
     // Sliderı her seferinde yeniden kur!
-    if (window.resultSlider) window.resultSlider.destroy(true);
+if (window.resultSlider) window.resultSlider.destroy(true);
+
+// Responsive perPage ayarı
+function getPerPage() {
+  if (window.innerWidth >= 1200) return 3;
+  if (window.innerWidth >= 800) return 2;
+  return 1;
+}
+
 window.resultSlider = new Siema({
   selector: '#result-slider',
-  perPage: 4, // HER ZAMAN TEK ITEM GÖRÜNÜR!
+  perPage: getPerPage(), // Responsive!
   draggable: true
 });
+
+// Ok tuşlarını bağla
 const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
 if (prevBtn) prevBtn.onclick = () => window.resultSlider.prev();
 if (nextBtn) nextBtn.onclick = () => window.resultSlider.next();
+
+// Ekran boyutu değişince otomatik güncelle!
+window.addEventListener('resize', function() {
+  window.resultSlider.config.perPage = getPerPage();
+  window.resultSlider.resize();
+});
+
 if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 }
 // Website açma fonksiyonu
