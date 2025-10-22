@@ -2320,17 +2320,13 @@ function safeCoords(lat, lon) {
 
 
 
-
-
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
 
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
-    const sliderId = `result-slider-${uniqueId}`;
-    const prevBtnId = `prev-btn-${uniqueId}`;
-    const nextBtnId = `next-btn-${uniqueId}`;
+    const sliderId = `splide-slider-${uniqueId}`;
 
-    // Sadece aynı kategori/gün sliderını sil
+    // Sadece aynı kategori-gün sliderını sil
     chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
         el.closest('.survey-results')?.remove();
     });
@@ -2344,17 +2340,22 @@ function displayPlacesInChat(places, category, day) {
                     <img src="img/arrow_down.svg" class="accordion-arrow">
                 </label>
                 <div class="accordion-content">
-                    <div class="siema" id="${sliderId}">`;
+                    <div class="splide" id="${sliderId}">
+                        <div class="splide__track">
+                            <ul class="splide__list">
+    `;
 
     places.forEach((place, idx) => {
-        html += generateStepHtml(place, day, category, idx);
+        html += `
+            <li class="splide__slide">
+                ${generateStepHtml(place, day, category, idx)}
+            </li>
+        `;
     });
 
     html += `
-                    </div>
-                    <div class="siema-nav">
-                        <button id="prev-btn-${uniqueId}" class="siema-btn">&lt;</button>
-                        <button id="next-btn-${uniqueId}" class="siema-btn">&gt;</button>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2375,33 +2376,39 @@ function displayPlacesInChat(places, category, day) {
     setTimeout(() => {
         const sliderElem = document.getElementById(sliderId);
         if (sliderElem) {
-            if (sliderElem._siemaInstance) {
-                sliderElem._siemaInstance.destroy(true);
+            // Eski Splide varsa destroy et (gerekirse)
+            if (sliderElem._splideInstance) {
+                sliderElem._splideInstance.destroy();
             }
-            const siemaInstance = new Siema({
-                selector: `#${sliderId}`,
+            const splideInstance = new Splide(sliderElem, {
+                type: 'slide',
                 perPage: getPerPage(),
-                draggable: true
+                gap: '18px',
+                arrows: true,
+                pagination: false,
+                drag: true,
+                breakpoints: {
+                    900: { perPage: 1 },
+                    1520: { perPage: 2 },
+                    1900: { perPage: 3 }
+                }
             });
-            sliderElem._siemaInstance = siemaInstance;
-
-            const prevBtn = document.getElementById(prevBtnId);
-            const nextBtn = document.getElementById(nextBtnId);
-            if (prevBtn) prevBtn.onclick = () => siemaInstance.prev();
-            if (nextBtn) nextBtn.onclick = () => siemaInstance.next();
+            splideInstance.mount();
+            sliderElem._splideInstance = splideInstance;
         }
         if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
     }, 1);
 
-    if (!window._siemaResizeListenerAdded) {
+    if (!window._splideResizeListenerAdded) {
         window.addEventListener('resize', function() {
-            document.querySelectorAll('.siema').forEach(sliderElem => {
-                if (sliderElem._siemaInstance) {
-                    sliderElem._siemaInstance.config.perPage = getPerPage();
+            document.querySelectorAll('.splide').forEach(sliderElem => {
+                if (sliderElem._splideInstance) {
+                    sliderElem._splideInstance.options = { perPage: getPerPage() };
+                    sliderElem._splideInstance.refresh();
                 }
             });
         });
-        window._siemaResizeListenerAdded = true;
+        window._splideResizeListenerAdded = true;
     }
 }
 
