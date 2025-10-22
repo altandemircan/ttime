@@ -2322,11 +2322,9 @@ function safeCoords(lat, lon) {
 
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
-
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     const sliderId = `splide-slider-${uniqueId}`;
 
-    // Sadece aynı kategori-gün sliderını sil
     chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
         el.closest('.survey-results')?.remove();
     });
@@ -2376,10 +2374,7 @@ function displayPlacesInChat(places, category, day) {
     setTimeout(() => {
         const sliderElem = document.getElementById(sliderId);
         if (sliderElem) {
-            // Eski Splide varsa destroy et (gerekirse)
-            if (sliderElem._splideInstance) {
-                sliderElem._splideInstance.destroy();
-            }
+            if (sliderElem._splideInstance) sliderElem._splideInstance.destroy();
             const splideInstance = new Splide(sliderElem, {
                 type: 'slide',
                 perPage: getPerPage(),
@@ -2396,7 +2391,6 @@ function displayPlacesInChat(places, category, day) {
             splideInstance.mount();
             sliderElem._splideInstance = splideInstance;
         }
-        if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
     }, 1);
 
     if (!window._splideResizeListenerAdded) {
