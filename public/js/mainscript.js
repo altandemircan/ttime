@@ -2437,14 +2437,10 @@ const geoapifyCategoryMap = {
   "Post Office": "service.post",
   "Library": "education.library",
   "Hostel": "accommodation.hostel",
-  "Cinema": "entertainment.cinema",
-  
-  "Jewelry Shop": "commercial.jewelry",
- 
+  "Cinema": "entertainment.cinema",  
+  "Jewelry Shop": "commercial.jewelry", 
   "University": "education.university",
-
   "Religion": "religion"
-
 };
 
 function showCategoryList(day) {
@@ -2493,8 +2489,6 @@ const manualAddSection = document.createElement("div");
     };
     cartDiv.appendChild(addCustomNoteButton);
 
-
-
     const addFavBtn = document.createElement("button");
 addFavBtn.className = "add-favorite-place-btn";
 addFavBtn.textContent = "❤️ Add favorite place";
@@ -2506,16 +2500,13 @@ cartDiv.appendChild(addFavBtn);
 
 
 
-
-    // --- Kategori tanımları ---
-    const basicPlanCategories = [
+const basicPlanCategories = [
         { name: "Coffee", icon: "☕" },
         { name: "Touristic attraction", icon: "🏞️" },
         { name: "Restaurant", icon: "🍽️" },
         { name: "Accommodation", icon: "🏨" }
     ];
 
-    // 30 ana gezgin kategorisi (KODUN BAŞINDA veya globalde tanımlı olmalı!)
 const travelMainCategories = [
    { name: "Bar", code: "catering.bar", icon: "🍹" },
   { name: "Pub", code: "catering.pub", icon: "🍻" },
@@ -2528,11 +2519,8 @@ const travelMainCategories = [
   { name: "Library", code: "education.library", icon: "📖" },
   { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-
-  { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
- 
+  { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" }, 
   { name: "University", code: "education.university", icon: "🎓" },
-
   { name: "Religion", code: "religion", icon: "⛪" }
 ];
     // -------- BASIC PLAN BLOK --------
