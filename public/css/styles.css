@@ -6974,33 +6974,6 @@ ease;
 }
 
 
-.siema {
-  width: 100%;
-  margin: 0 auto;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.siema-nav {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin: 12px 0;
-}
-
-.siema-btn {
-  padding: 8px 20px;
-  font-size: 22px;
-  border-radius: 12px;
-  border: 1px solid #ccc;
-  background: #faf8ff;
-  color: #666;
-  cursor: pointer;
-}
-.siema-btn:active {
-  background: #ede7f6;
-}
-
 /* steps tasarımını koru, sadece margin ekle */
 .steps {
   max-width: 335px;
@@ -7019,7 +6992,4 @@ ease;
   border: 3px solid #f3ecff;
   margin: 0 10px;
   box-sizing: border-box;
-}
-.siema-btn:active {
-  background: #ede7f6;
 }
