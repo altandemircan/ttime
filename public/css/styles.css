@@ -6984,23 +6984,9 @@ ease;
 }
 
 .steps {
-  min-width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  border-radius: 12px;
-  border: 1px solid #eee;
-  background: #fff;
-  cursor: grab;
-  display: block;
-      flex-shrink: 0;
-    background: #fff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: row;
-    max-width: 335px;
-    position: relative;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    border-radius: 10px;
+    
+      max-width: 335px;
+    position: relative;  
     flex-direction: column;
     display: grid;
     grid-template-areas:
@@ -7010,7 +6996,8 @@ ease;
     border-radius: 18px;
     background: white;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    transition: 0.5s ease;
+    transition: 0.5s 
+ease;
     align-content: space-between;
-        border: 3px solid #f3ecff;
+    border: 3px solid #f3ecff;
 }
