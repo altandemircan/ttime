@@ -2319,7 +2319,8 @@ function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     const sliderId = `result-slider-${uniqueId}`;
-
+    const prevBtnId = `prev-btn-${uniqueId}`;    // <-- BURADA OLMALI!
+    const nextBtnId = `next-btn-${uniqueId}`;    // <-- BURADA OLMALI!
     // --- ESKİ SLIDER VE STEPSLERİ SİL ---
     // Eski sliderı sil:
     chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
