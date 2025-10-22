@@ -2315,6 +2315,13 @@ function safeCoords(lat, lon) {
   }
   return null;
 }
+
+
+
+
+
+
+
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
@@ -2323,7 +2330,7 @@ function displayPlacesInChat(places, category, day) {
     const nextBtnId = `next-btn-${uniqueId}`;    // <-- BURADA OLMALI!
     // --- ESKİ SLIDER VE STEPSLERİ SİL ---
     // Eski sliderı sil:
-    chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
+      chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
         el.closest('.survey-results')?.remove();
     });
     // Eski stepsleri sil (güvenlik için):
@@ -2372,7 +2379,7 @@ function displayPlacesInChat(places, category, day) {
     setTimeout(() => {
         const sliderElem = document.getElementById(sliderId);
         if (sliderElem) {
-            // Önce eski instance varsa destroy et
+            // Eski instance varsa destroy et
             if (sliderElem._siemaInstance) {
                 sliderElem._siemaInstance.destroy(true);
             }
@@ -2384,24 +2391,39 @@ function displayPlacesInChat(places, category, day) {
             });
             sliderElem._siemaInstance = siemaInstance;
 
-            // Ok tuşlarına event bağla
+            // Ok eventleri
             const prevBtn = document.getElementById(prevBtnId);
             const nextBtn = document.getElementById(nextBtnId);
             if (prevBtn) prevBtn.onclick = () => siemaInstance.prev();
             if (nextBtn) nextBtn.onclick = () => siemaInstance.next();
-
-            // Responsive: pencere boyutu değişirse kart sayısını güncelle
-            window.addEventListener('resize', function() {
-                siemaInstance.config.perPage = getPerPage();
-    
-            });
         }
 
         // Drag & drop eventlerini tekrar bağla
         if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
-    }, 1); // DOM'a eklenmesi için küçük gecikme
+    }, 1);
 
+    // GLOBALDE BİR KERE resize listener ekle!
+    if (!window._siemaResizeListenerAdded) {
+        window.addEventListener('resize', function() {
+            document.querySelectorAll('.siema').forEach(sliderElem => {
+                if (sliderElem._siemaInstance) {
+                    sliderElem._siemaInstance.config.perPage = getPerPage();
+                    // Siema'nın responsive desteği için destroy + tekrar kurmak gerekebilir!
+                }
+            });
+        });
+        window._siemaResizeListenerAdded = true;
+    }
 }
+
+
+
+
+
+
+
+
+
 // Website açma fonksiyonu
 window.openWebsite = function(element, url) {
     if (url) window.open(url, '_blank');
