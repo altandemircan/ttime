@@ -2319,9 +2319,16 @@ function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     const sliderId = `result-slider-${uniqueId}`;
-    const prevBtnId = `prev-btn-${uniqueId}`;
-    const nextBtnId = `next-btn-${uniqueId}`;
 
+    // --- ESKİ SLIDER VE STEPSLERİ SİL ---
+    // Eski sliderı sil:
+    chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
+        el.closest('.survey-results')?.remove();
+    });
+    // Eski stepsleri sil (güvenlik için):
+    chatBox.querySelectorAll(`.steps[data-day="${day}"][data-category="${category}"]`).forEach(el => el.remove());
+
+    // --- SLIDER EKLEME ---
     let html = `
         <div class="survey-results bot-message message">
             <div class="accordion-container">
@@ -2340,8 +2347,8 @@ function displayPlacesInChat(places, category, day) {
     html += `
                     </div>
                     <div class="siema-nav">
-                        <button id="${prevBtnId}" class="siema-btn">&lt;</button>
-                        <button id="${nextBtnId}" class="siema-btn">&gt;</button>
+                        <button id="prev-btn-${uniqueId}" class="siema-btn">&lt;</button>
+                        <button id="next-btn-${uniqueId}" class="siema-btn">&gt;</button>
                     </div>
                 </div>
             </div>
@@ -2351,7 +2358,7 @@ function displayPlacesInChat(places, category, day) {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     attachFavEvents();
-
+    
     // Responsive perPage ayarı
     function getPerPage() {
         if (window.innerWidth >= 1900) return 4;
@@ -2508,7 +2515,7 @@ const basicPlanCategories = [
     ];
 
 const travelMainCategories = [
-   { name: "Bar", code: "catering.bar", icon: "🍹" },
+  { name: "Bar", code: "catering.bar", icon: "🍹" },
   { name: "Pub", code: "catering.pub", icon: "🍻" },
   { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
   { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
