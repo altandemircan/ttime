@@ -2324,6 +2324,8 @@ function safeCoords(lat, lon) {
 
 function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
+        chatBox.querySelectorAll('.survey-results').forEach(el => el.remove());
+
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     const sliderId = `result-slider-${uniqueId}`;
     const prevBtnId = `prev-btn-${uniqueId}`;    // <-- BURADA OLMALI!
