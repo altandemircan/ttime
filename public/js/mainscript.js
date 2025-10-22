@@ -1,12 +1,13 @@
 function attachDragDropEvents() {
   document.querySelectorAll('.steps[draggable="true"]').forEach(item => {
-    item.addEventListener('dragstart', function(e) {
-      // Drag başlatma işlemleri (senin mevcut kodun)
-    });
-    item.addEventListener('dragend', function(e) {
-      // Drag bitiş işlemleri
-    });
+  item.addEventListener('dragstart', function(e) {
+    document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
+    item.classList.add('dragging');
   });
+  item.addEventListener('dragend', function(e) {
+    item.classList.remove('dragging');
+  });
+});
 }
 
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
