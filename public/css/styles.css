@@ -7001,3 +7001,21 @@ ease;
   margin: 0 10px; /* Kartlar arasına boşluk */
   box-sizing: border-box;
 }
+.siema-nav {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 12px 0;
+}
+.siema-btn {
+  padding: 8px 20px;
+  font-size: 22px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  background: #faf8ff;
+  color: #666;
+  cursor: pointer;
+}
+.siema-btn:active {
+  background: #ede7f6;
+}

@@ -2319,15 +2319,27 @@ function displayPlacesInChat(places, category, day) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     let html = `
-        <div class="survey-results bot-message message">
-            <div class="accordion-container">
-                <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
-                <label for="${uniqueId}" class="accordion-label">
-                    Suggestions for ${category}
-                    <img src="img/arrow_down.svg" class="accordion-arrow">
-                </label>
-                <div class="accordion-content">
-                    <div class="siema" id="result-slider">`;
+    <div class="survey-results bot-message message">
+        <div class="accordion-container">
+            <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
+            <label for="${uniqueId}" class="accordion-label">
+                Suggestions for ${category}
+                <img src="img/arrow_down.svg" class="accordion-arrow">
+            </label>
+            <div class="accordion-content">
+                <div class="siema" id="result-slider">`;
+places.forEach((place, idx) => {
+    html += generateStepHtml(place, day, category, idx);
+});
+html += `
+                </div>
+                <div class="siema-nav">
+                    <button id="prev-btn" class="siema-btn">&lt;</button>
+                    <button id="next-btn" class="siema-btn">&gt;</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
 
     places.forEach((place, idx) => {
         html += generateStepHtml(place, day, category, idx);
