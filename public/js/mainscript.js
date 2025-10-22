@@ -2344,7 +2344,7 @@ function displayPlacesInChat(places, category, day) {
     if (window.resultSlider) window.resultSlider.destroy(true);
 window.resultSlider = new Siema({
   selector: '#result-slider',
-  perPage: 1, // HER ZAMAN TEK ITEM GÖRÜNÜR!
+  perPage: 4, // HER ZAMAN TEK ITEM GÖRÜNÜR!
   draggable: true
 });
 const prevBtn = document.getElementById('prev-btn');
