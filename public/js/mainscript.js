@@ -1539,25 +1539,19 @@ async function showResults() {
             let categorySteps = latestTripPlan.filter(item =>
                 item.day == day && (item.category === cat.en || item.category === cat.tr)
             );
-            if (categorySteps.length > 1) {
-                // SLIDER İLE GÖSTER
-                stepsHtml += `
-                  <div class="splide" id="splide-slider-day${day}-${cat.en}">
-                    <div class="splide__track">
-                      <ul class="splide__list">
-                        ${categorySteps.map((step, idx) => `
-                          <li class="splide__slide">
-                            ${generateStepHtml(step, day, cat.en, idx)}
-                          </li>
-                        `).join('')}
-                      </ul>
-                    </div>
-                  </div>
-                `;
-            } else {
-                // Sadece 1 mekan varsa slider olmadan göster
-                stepsHtml += generateStepHtml(categorySteps[0] || {_noPlace: true}, day, cat.en, 0);
-            }
+            stepsHtml += `
+  <div class="splide" id="splide-slider-day${day}-${cat.en}">
+    <div class="splide__track">
+      <ul class="splide__list">
+        ${categorySteps.map((step, idx) => `
+          <li class="splide__slide">
+            ${generateStepHtml(step, day, cat.en, idx)}
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  </div>
+`;
         }
 
         const dayId = `day-${day}`;
