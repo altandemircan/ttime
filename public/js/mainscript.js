@@ -1579,7 +1579,7 @@ async function showResults() {
             if (!sliderElem._splideInstance) {
                 const splideInstance = new Splide(sliderElem, {
   type: 'slide',
-  perPage: 1, // veya perPage: 1 (her seferinde bir item gözüksün)
+  perPage: 4, // veya perPage: 1 (her seferinde bir item gözüksün)
   gap: '18px',
   arrows: true,
   pagination: false,
@@ -2384,7 +2384,7 @@ function displayPlacesInChat(places, category, day) {
         if (window.innerWidth >= 1900) return 4;
         if (window.innerWidth >= 1520) return 3;
         if (window.innerWidth >= 900) return 2;
-        return 1;
+        return 4;
     }
 
     setTimeout(() => {
