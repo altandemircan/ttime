@@ -7984,6 +7984,7 @@ function wrapRouteControls(day) {
   // --- Arrow (Açılır/Kapanır) ---
   const arrowSpan = document.createElement('span');
   arrowSpan.className = 'arrow';
+  arrowSpan.style.position = 'initial'; // <-- senin istediğin!
   arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon">`;
   arrowSpan.style.cursor = 'pointer';
   mapButtonWrap.appendChild(arrowSpan);
