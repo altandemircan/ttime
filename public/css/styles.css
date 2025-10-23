@@ -989,7 +989,11 @@ li .highlight {
 
 .visual {
     position: relative;
-    /* width: fit-content; ESKİ SABİT GENİŞLİK */
+    /* width: fit-content; ESKİ SABİT GENİŞLİK */ 
+    width: 100%;
+    float: left;
+}
+
 .visual a {
     position: absolute;
     right: 12px;
