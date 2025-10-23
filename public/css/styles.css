@@ -563,19 +563,7 @@ li .highlight {
     gap: 6px;
 }
 
-.survey-results li {
-    border-radius: 10px;
-    display: grid;
-    width: fit-content;
 
-    align-items: center;
-    transition: transform 0.3s ease;
-    width: 100%;
-}
-
-.survey-results li a:hover {
-    color: #0056b3;
-}
 
 .tag-container {
     display: flex;
@@ -6965,8 +6953,4 @@ width: 335px;
     opacity: 1 !important;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px !important;
     transform: scale(1) !important;
-}
-.splide {
-  padding: 0 20px;
-  box-sizing: border-box;
 }
