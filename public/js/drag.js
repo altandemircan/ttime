@@ -141,31 +141,24 @@ function dragEnd(event) {
 
 // ========== CHAT DRAG & DROP FUNCTIONS ==========
 function makeChatStepsDraggable() {
-    // .steps'lerin draggable özelliğini KALDIR!
+    // .steps'lerin draggable özelliğini kaldır
     document.querySelectorAll('.steps[draggable]').forEach(el => {
         el.removeAttribute('draggable');
         el.removeEventListener('dragstart', handleStepDragStart);
         el.removeEventListener('dragend', handleStepDragEnd);
     });
 
-    // Sadece .drag-handle'lara draggable ve event ekle
+    // Sadece .drag-handle için drag-drop eventlerini ekle
     document.querySelectorAll('.drag-handle').forEach(handle => {
-        handle.setAttribute('draggable', 'true');
-        handle.removeEventListener('dragstart', handleStepDragStart);
-        handle.addEventListener('dragstart', handleStepDragStart);
-        handle.removeEventListener('dragend', handleStepDragEnd);
-        handle.addEventListener('dragend', handleStepDragEnd);
-
-        // --- BURADA SLIDER KAYMASINI ENGELLE ---
-        handle.addEventListener('mousedown', function(e) {
+    ['mousedown', 'touchstart', 'pointerdown', 'dragstart'].forEach(evName => {
+        handle.addEventListener(evName, function(e) {
             e.stopPropagation();
-        });
-        handle.addEventListener('touchstart', function(e) {
-            e.stopPropagation();
-        });
+            e.stopImmediatePropagation && e.stopImmediatePropagation();
+            console.log('drag-handle', evName, 'STOPPED');
+        }, true); // <-- capture aşamasında da dinle!
     });
+});
 }
-
 function chatDragOverHandler(e) {
     e.preventDefault();
     this.classList.add('drop-hover');
