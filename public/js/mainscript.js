@@ -7838,33 +7838,12 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
-  // 0 veya 1 gerçek nokta varsa: sadece expand map tuşu
+  // 0 veya 1 gerçek nokta varsa: hiç travel mode set gösterme, sadece MAP tuşu route-controls-bar'da olacak!
   if (!Array.isArray(realPoints) || realPoints.length < 2) {
-    const set = document.createElement('div');
-    set.id = setId;
-    set.className = 'tt-travel-mode-set';
-    set.dataset.day = String(day);
-    set.innerHTML = `
-      <button type="button" class="expand-map-btn" aria-label="Expand Map">
-        <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
-        <span class="tm-label">MAP</span>
-      </button>
-    `;
-    // Insert
-    if (controlsWrapperEl && controlsWrapperEl.parentNode) {
-      controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
-    } else if (routeMapEl && routeMapEl.parentNode) {
-      routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
-    }
-    // Event: expand map butonunu tıklandığında aç
-    set.querySelector('.expand-map-btn').onclick = function() {
-      const containerId = `route-map-day${day}`;
-      expandMap(containerId, day);
-    };
-    return;
+    return; // Travel mode set yok, MAP tuşu bar'da!
   }
 
-  // 2+ nokta varsa tam travel mode set + expand map tuşu
+  // 2+ nokta varsa travel mode set (MAP tuşu yok!)
   const set = document.createElement('div');
   set.id = setId;
   set.className = 'tt-travel-mode-set';
@@ -7884,10 +7863,6 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
         <span class="tm-label">WALK</span>
       </button>
     </div>
-    <button type="button" class="expand-map-btn" aria-label="Expand Map">
-      <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
-      <span class="tm-label">MAP</span>
-    </button>
   `;
   // Insert
   if (controlsWrapperEl && controlsWrapperEl.parentNode) {
@@ -7899,12 +7874,6 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
   set.addEventListener('click', (e) => {
     e.stopPropagation();
-    // Expand map
-    if (e.target.closest('.expand-map-btn')) {
-      const containerId = `route-map-day${day}`;
-      expandMap(containerId, day);
-      return;
-    }
     // Travel mode buttons
     const btn = e.target.closest('button[data-mode]');
     if (!btn) return;
