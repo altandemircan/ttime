@@ -139,24 +139,25 @@ function dragEnd(event) {
     }
 }
 
+
 function makeChatStepsDraggable() {
-    document.querySelectorAll('.drag-handle').forEach(handle => {
-        handle.setAttribute('draggable', 'true');
-        handle.removeEventListener('dragstart', handleStepDragStart);
-        handle.addEventListener('dragstart', handleStepDragStart);
-        handle.removeEventListener('dragend', handleStepDragEnd);
-        handle.addEventListener('dragend', handleStepDragEnd);
-
-        // Slider kaymasını engelle, preventDefault sadece burada!
-        ['mousedown', 'touchstart', 'pointerdown'].forEach(evName => {
-            handle.addEventListener(evName, function(e) {
-                e.stopPropagation();
-            }, true);
-        });
+    // .steps'lerde draggable varsa kaldır
+    document.querySelectorAll('.steps[draggable]').forEach(el => {
+        el.removeAttribute('draggable');
+        el.removeEventListener('dragstart', handleStepDragStart);
+        el.removeEventListener('dragend', handleStepDragEnd);
     });
+    // Sadece .drag-handle için ekle!
+   document.querySelectorAll('.drag-handle').forEach(handle => {
+    ['mousedown', 'touchstart', 'pointerdown', 'dragstart'].forEach(evName => {
+        handle.addEventListener(evName, function(e) {
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            e.preventDefault();
+        }, true);
+    });
+});
 }
-
-
 function chatDragOverHandler(e) {
     e.preventDefault();
     this.classList.add('drop-hover');
@@ -170,30 +171,41 @@ function chatDropHandler(e) {
     e.preventDefault();
     e.stopPropagation();
     this.classList.remove('drop-hover');
-
+    
     const source = e.dataTransfer.getData('source') || e.dataTransfer.getData('text/plain');
     if (source !== 'chat') return;
 
     const dataStr = e.dataTransfer.getData('application/json');
     if (!dataStr) return;
+    
+    try {
+        const data = JSON.parse(dataStr);
+        const toDay = this.dataset?.day ? parseInt(this.dataset.day, 10) : 1;
+        const location = (data.lat && data.lon) ? { 
+            lat: Number(data.lat), 
+            lng: Number(data.lon) 
+        } : null;
 
-    const data = JSON.parse(dataStr);
-    const toDay = this.dataset.day ? parseInt(this.dataset.day, 10) : 1;
-    const location = (data.lat && data.lon) ? { lat: Number(data.lat), lng: Number(data.lon) } : null;
-
-    addToCart(
-        data.name,
-        data.image,
-        toDay,
-        data.category,
-        data.address,
-        null,
-        null,
-        data.opening_hours,
-        null,
-        location,
-        data.website
-    );
+        window._forceAddToCart = true;
+        addToCart(
+            data.name,
+            data.image,
+            toDay,
+            data.category,
+            data.address,
+            null,
+            null,
+            data.opening_hours,
+            null,
+            location,
+            data.website
+        );
+        window._forceAddToCart = false;
+        
+        if (typeof restoreSidebar === "function") restoreSidebar();
+    } catch (error) {
+        console.error('Drop error:', error);
+    }
 }
 
 // ========== DESKTOP HANDLERS ==========
@@ -629,18 +641,25 @@ function attachChatDropListeners() {
 function handleStepDragStart(e) {
     const stepsDiv = e.currentTarget.closest('.steps');
     if (!stepsDiv) return;
+
+    document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
     stepsDiv.classList.add('dragging');
 
     const data = {
         name: stepsDiv.querySelector('.title')?.textContent?.trim() || '',
         image: stepsDiv.querySelector('img.check')?.src || '',
         category: stepsDiv.getAttribute('data-category') || '',
-        address: stepsDiv.querySelector('.address')?.textContent?.trim() || '',
-        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent?.trim() || '',
+        address: stepsDiv.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '',
+        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '',
         lat: stepsDiv.getAttribute('data-lat'),
         lon: stepsDiv.getAttribute('data-lon'),
-        website: stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick') || ''
+        website: (stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick')?.match(/'([^']+)'/) || [])[1] || ''
     };
+
+    if (data.lat && data.lon) {
+        data.lat = Number(data.lat);
+        data.lon = Number(data.lon);
+    }
 
     e.dataTransfer.setData('application/json', JSON.stringify(data));
     e.dataTransfer.setData('text/plain', 'chat');
