@@ -1537,13 +1537,32 @@ async function showResults() {
         const daySteps = [];
 
         // Aynı sırayı (Coffee → Attraction → Restaurant → Accommodation) koru
-for (const cat of dailyCategories) {
-  let step = latestTripPlan.find(item =>
-    item.day == day &&
-    (item.category === cat.en || item.category === cat.tr)
-  );
-  stepsHtml += generateStepHtml(step || {_noPlace: true}, day, cat.en);
-}
+                                for (const cat of dailyCategories) {
+                                  // O gün ve o kategorideki tüm mekanları bul
+                                  let categorySteps = latestTripPlan.filter(item =>
+                                    item.day == day && (item.category === cat.en || item.category === cat.tr)
+                                  );
+
+                                  if (categorySteps.length > 1) {
+                                    // SLIDER İLE GÖSTER
+                                    stepsHtml += `
+                                      <div class="splide" id="splide-slider-day${day}-${cat.en}">
+                                        <div class="splide__track">
+                                          <ul class="splide__list">
+                                            ${categorySteps.map((step, idx) => `
+                                              <li class="splide__slide">
+                                                ${generateStepHtml(step, day, cat.en, idx)}
+                                              </li>
+                                            `).join('')}
+                                          </ul>
+                                        </div>
+                                      </div>
+                                    `;
+                                  } else {
+                                    // Sadece 1 mekan varsa slider olmadan göster
+                                    stepsHtml += generateStepHtml(categorySteps[0] || {_noPlace: true}, day, cat.en, 0);
+                                  }
+                                }
 
         const dayId = `day-${day}`;
 
@@ -1573,6 +1592,22 @@ for (const cat of dailyCategories) {
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
+
+    setTimeout(() => {
+  document.querySelectorAll('.splide').forEach(sliderElem => {
+    if (!sliderElem._splideInstance) {
+      const splideInstance = new Splide(sliderElem, {
+        type: 'slide',
+        perPage: 1,
+        gap: '18px',
+        arrows: true,
+        pagination: false
+      });
+      splideInstance.mount();
+      sliderElem._splideInstance = splideInstance;
+    }
+  });
+}, 1);
 
 
 attachFavEvents(); // <-- BURAYA EKLE
