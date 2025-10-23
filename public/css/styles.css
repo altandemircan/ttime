@@ -6562,39 +6562,7 @@ border-bottom:1px solid #ddd;
 
 
 
-      .day-steps.tt-resp { position: relative; }
-      .tt-resp-viewport {width: 100%; }
-      .tt-resp-track {
-        display: flex;
-    gap: 30px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding: 20px 0;
-   
-      }
-      .tt-resp-track > .steps {
-        flex: 0 0 calc(100% / var(--slides-per-view, 1));
-        scroll-snap-align: start;
-      }
-      .tt-resp-nav {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 38px; height: 38px;
-        border: none; border-radius: 50%;
-        background: rgba(0,0,0,0.38);
-        color: #fff; font-size: 20px; line-height: 38px;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; z-index: 3;
-        transition: background 0.2s ease, opacity 0.2s ease;
-      }
-      .tt-resp-nav:hover { background: rgba(0,0,0,0.5); }
-      .tt-resp-nav.prev { left: 6px; }
-      .tt-resp-nav.next { right: 6px; }
-      .tt-resp-nav[disabled] { opacity: 0.4; cursor: default; }
-      /* 1 slayt veya görünürden azsa oklar gizlensin */
-      .day-steps.tt-resp[data-nav="hidden"] .tt-resp-nav { display: none; }
+     
 
 
  .route-controls-bar {
