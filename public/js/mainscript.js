@@ -1531,27 +1531,27 @@ async function showResults() {
                 <ul class="accordion-list">`;
 
     const daysCount = Math.max(...latestTripPlan.map(item => item.day));
-    for (let day = 1; day <= daysCount; day++) {
-        let stepsHtml = '';
-        // Her kategori için Splide slider ile göster
-        for (const cat of dailyCategories) {
-            // O gün ve o kategorideki tüm mekanları bul
-            let categorySteps = latestTripPlan.filter(item =>
-                item.day == day && (item.category === cat.en || item.category === cat.tr)
-            );
-            stepsHtml += `
-  <div class="splide" id="splide-slider-day${day}-${cat.en}">
-    <div class="splide__track">
-      <ul class="splide__list">
-        ${categorySteps.map((step, idx) => `
-          <li class="splide__slide">
-            ${generateStepHtml(step, day, cat.en, idx)}
-          </li>
-        `).join('')}
-      </ul>
+   for (let day = 1; day <= daysCount; day++) {
+  let stepsHtml = '';
+  let sliderItems = [];
+  for (const cat of dailyCategories) {
+    let step = latestTripPlan.find(item =>
+      item.day == day && (item.category === cat.en || item.category === cat.tr)
+    );
+    if (step) {
+      sliderItems.push(generateStepHtml(step, day, cat.en));
+    }
+  }
+
+  stepsHtml += `
+    <div class="splide" id="splide-slider-day${day}">
+      <div class="splide__track">
+        <ul class="splide__list">
+          ${sliderItems.map(itemHtml => `<li class="splide__slide">${itemHtml}</li>`).join('')}
+        </ul>
+      </div>
     </div>
-  </div>
-`;
+  `;
         }
 
         const dayId = `day-${day}`;
