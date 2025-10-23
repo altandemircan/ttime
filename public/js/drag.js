@@ -580,29 +580,18 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
       window._lastSegmentEndKm = undefined;
     }
 
- updateCart();
+    updateCart();
     attachChatDropListeners();
 
-    // --- EKLE: ---
-    if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-
-  } catch (error) {
-    console.error("Reorder error:", error);
-    showWarning && showWarning("Reorder error. Please try again.");
-  }
+    } catch (error) {
+        console.error("Reorder error:", error);
+        showWarning && showWarning("Reorder error. Please try again.");
+    }
 }
 
 // ========== CHAT TO CART DRAG & DROP ==========
-function makeChatStepsDraggable() {
-  // Sadece drag-handle'ı draggable yap
-  document.querySelectorAll('.drag-handle').forEach(handle => {
-    handle.setAttribute('draggable', 'true');
-    handle.removeEventListener('dragstart', handleStepDragStart);
-    handle.addEventListener('dragstart', handleStepDragStart);
-    handle.removeEventListener('dragend', handleStepDragEnd);
-    handle.addEventListener('dragend', handleStepDragEnd);
-  });
-}
+
+
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.removeEventListener('dragstart', dragStart);
@@ -664,10 +653,7 @@ function handleStepDragStart(e) {
     e.dataTransfer.effectAllowed = 'copyMove';
     stepsDiv.classList.add('dragging');
 }
-function handleStepDragEnd(e) {
-  const stepsDiv = e.currentTarget.closest('.steps');
-  if (stepsDiv) stepsDiv.classList.remove('dragging');
-}
+
 // ========== EVENT LISTENERS ==========
 document.addEventListener('DOMContentLoaded', function() {
     initDragDropSystem();
