@@ -7952,21 +7952,31 @@ function wrapRouteControls(day) {
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
 
-  // --- 1. MAP EXPAND BUTTON EKLE ---
-  // Bu tuşu bar'ın başına koymak için travel mode setten ayırıyoruz!
+  // --- 1. MAP BAŞLIĞI + BUTON KUTUSU EKLE ---
+  const mapButtonWrap = document.createElement('div');
+
+  // MAP başlığı
+  const mapTitleDiv = document.createElement('div');
+  mapTitleDiv.textContent = "MAP";
+  mapButtonWrap.appendChild(mapTitleDiv);
+
+  // MAP butonu
   const expandBtn = document.createElement('button');
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
   expandBtn.innerHTML = `
     <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
-    <span class="tm-label">MAP</span>
+    <span class="tm-label">EXPAND MAP</span>
   `;
   expandBtn.onclick = function() {
     const containerId = `route-map-day${day}`;
     if (typeof expandMap === "function") expandMap(containerId, day);
   };
-  bar.appendChild(expandBtn);
+  mapButtonWrap.appendChild(expandBtn);
+
+  // MAP kutusunu bar'a ekle
+  bar.appendChild(mapButtonWrap);
 
   // --- 2. HARİTA EKLE ---
   bar.appendChild(mapDiv);
