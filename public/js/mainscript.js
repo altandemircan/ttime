@@ -7962,44 +7962,60 @@ function ensureCanvasRenderer(map) {
 }
 
 
-
+// KÜÇÜK HARİTA İŞLEVLERİ SIRALAMA
 function wrapRouteControls(day) {
+  // Gerekli elementleri çek
   const tm = document.getElementById(`tt-travel-mode-set-day${day}`);
   const controls = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
-  const mapDiv = document.getElementById(`route-map-day${day}`); // <-- harita div'i
+  const mapDiv = document.getElementById(`route-map-day${day}`);
 
   if (!controls || !mapDiv) return;
 
   const dayContainer = document.getElementById(`day-container-${day}`);
   const parent = dayContainer || controls.parentNode;
 
-  // Eski bar'ı kaldır
+  // Önce eski bar'ı kaldır
   const existing = document.getElementById(`route-controls-bar-day${day}`);
   if (existing) existing.remove();
 
-  // Yeni bar'ı oluştur
+  // Route controls bar oluştur
   const bar = document.createElement('div');
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
 
-  // İstenilen DOM sırası:
-  // <div class="route-controls-bar">
-  //   <div id="route-map-dayX"></div>
-  //   (travel mode set)
-  //   (controls)
-  // </div>
-  bar.appendChild(mapDiv); // <-- harita önce!
+  // --- 1. MAP EXPAND BUTTON EKLE ---
+  // Bu tuşu bar'ın başına koymak için travel mode setten ayırıyoruz!
+  const expandBtn = document.createElement('button');
+  expandBtn.type = 'button';
+  expandBtn.className = 'expand-map-btn';
+  expandBtn.setAttribute('aria-label', 'Expand Map');
+  expandBtn.innerHTML = `
+    <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
+    <span class="tm-label">MAP</span>
+  `;
+  expandBtn.onclick = function() {
+    const containerId = `route-map-day${day}`;
+    if (typeof expandMap === "function") expandMap(containerId, day);
+  };
+  bar.appendChild(expandBtn);
+
+  // --- 2. HARİTA EKLE ---
+  bar.appendChild(mapDiv);
+
+  // --- 3. TRAVEL MODE SET EKLE ---
   if (tm) bar.appendChild(tm);
+
+  // --- 4. MAP CONTROLS EKLE ---
   bar.appendChild(controls);
 
-  // DOM'a yerleştir
+  // Bar'ı DOM'a yerleştir
   if (controls && controls.parentNode === parent) {
     parent.insertBefore(bar, controls);
   } else {
     parent.appendChild(bar);
   }
 
-  // Küçük scale bar'ı kaldır
+  // Küçük scale bar varsa kaldır
   const smallScaleBar = parent.querySelector(`#route-scale-bar-day${day}`);
   if (smallScaleBar) smallScaleBar.remove();
 }
