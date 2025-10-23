@@ -7952,12 +7952,18 @@ function wrapRouteControls(day) {
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
 
-  // --- 1. MAP BAŞLIĞI + BUTON KUTUSU EKLE ---
+  // --- MAP BAŞLIK + BUTON + ARROW ---
   const mapButtonWrap = document.createElement('div');
+  mapButtonWrap.className = 'map-bar-header';
+  mapButtonWrap.style.display = 'flex';
+  mapButtonWrap.style.alignItems = 'center';
+  mapButtonWrap.style.gap = '12px';
 
   // MAP başlığı
   const mapTitleDiv = document.createElement('div');
   mapTitleDiv.textContent = "MAP";
+  mapTitleDiv.style.fontWeight = 'bold';
+  mapTitleDiv.style.fontSize = '17px';
   mapButtonWrap.appendChild(mapTitleDiv);
 
   // MAP butonu
@@ -7975,17 +7981,45 @@ function wrapRouteControls(day) {
   };
   mapButtonWrap.appendChild(expandBtn);
 
-  // MAP kutusunu bar'a ekle
+  // --- Arrow (Açılır/Kapanır) ---
+  const arrowSpan = document.createElement('span');
+  arrowSpan.className = 'arrow';
+  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon">`;
+  arrowSpan.style.cursor = 'pointer';
+  mapButtonWrap.appendChild(arrowSpan);
+
+  // --- Map içeriğini bir wrapper'a al ---
+  const mapContentWrap = document.createElement('div');
+  mapContentWrap.className = 'map-content-wrap';
+  mapContentWrap.style.transition = 'max-height 0.3s, opacity 0.3s';
+  mapContentWrap.style.overflow = 'hidden';
+  mapContentWrap.style.maxHeight = '700px'; // açıkken
+  mapContentWrap.style.opacity = '1';
+
+  // --- İçeriği ekle ---
+  mapContentWrap.appendChild(mapDiv);
+  if (tm) mapContentWrap.appendChild(tm);
+  mapContentWrap.appendChild(controls);
+
+  // Başlangıçta açık olsun (istersen kapalı başlat)
+  let open = true;
+
+  // --- Arrow click ile aç/kapa ---
+  arrowSpan.onclick = function() {
+    open = !open;
+    if (open) {
+      mapContentWrap.style.maxHeight = '700px';
+      mapContentWrap.style.opacity = '1';
+      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
+    } else {
+      mapContentWrap.style.maxHeight = '0px';
+      mapContentWrap.style.opacity = '0.2';
+      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(-90deg)';
+    }
+  };
+
   bar.appendChild(mapButtonWrap);
-
-  // --- 2. HARİTA EKLE ---
-  bar.appendChild(mapDiv);
-
-  // --- 3. TRAVEL MODE SET EKLE ---
-  if (tm) bar.appendChild(tm);
-
-  // --- 4. MAP CONTROLS EKLE ---
-  bar.appendChild(controls);
+  bar.appendChild(mapContentWrap);
 
   // Bar'ı DOM'a yerleştir
   if (controls && controls.parentNode === parent) {
@@ -7998,6 +8032,7 @@ function wrapRouteControls(day) {
   const smallScaleBar = parent.querySelector(`#route-scale-bar-day${day}`);
   if (smallScaleBar) smallScaleBar.remove();
 }
+
 function wrapRouteControlsForAllDays() {
   document.querySelectorAll('.day-container').forEach(dc => {
     const day = parseInt(dc.dataset.day || '0', 10);
