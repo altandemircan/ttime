@@ -6900,3 +6900,13 @@ width: 341px;
     box-shadow: rgb(149 157 165 / 60%) 0px 8px 24px;
      border: 3px solid #8a4af3;
 }
+.splide__list {
+  display: flex;
+  justify-content: flex-start; /* Sola yaslı */
+  gap: 0;                     /* Hiç boşluk olmasın */
+  margin: 0;
+}
+.splide__slide {
+  /* Gerekirse: */
+  margin: 0;
+}
