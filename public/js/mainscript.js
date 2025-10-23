@@ -1,4 +1,16 @@
-
+function attachDragDropEvents() {
+  document.querySelectorAll('.steps[draggable="true"]').forEach(item => {
+  item.addEventListener('dragstart', function(e) {
+    document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
+    item.classList.add('dragging');
+  });
+  item.addEventListener('dragend', function(e) {
+    item.classList.remove('dragging');
+  });
+});
+}
+// Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
+attachDragDropEvents();
 
 window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
@@ -4106,11 +4118,6 @@ cartDiv.appendChild(dayContainer);
     });
   }, 150);
 
- document.querySelectorAll('.day-list').forEach(list => {
-        list.addEventListener('drop', chatDropHandler);
-        list.addEventListener('dragover', chatDragOverHandler);
-        list.addEventListener('dragleave', chatDragLeaveHandler);
-    });
 }
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {

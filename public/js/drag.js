@@ -139,23 +139,15 @@ function dragEnd(event) {
     }
 }
 
-function makeChatStepsDraggable() {
-    document.querySelectorAll('.drag-handle').forEach(handle => {
-        handle.setAttribute('draggable', 'true');
-        handle.removeEventListener('dragstart', handleStepDragStart);
-        handle.addEventListener('dragstart', handleStepDragStart);
-        handle.removeEventListener('dragend', handleStepDragEnd);
-        handle.addEventListener('dragend', handleStepDragEnd);
+// ========== CHAT DRAG & DROP FUNCTIONS ==========
 
-        // Slider kaymasını engelle, preventDefault sadece burada!
-        ['mousedown', 'touchstart', 'pointerdown'].forEach(evName => {
-            handle.addEventListener(evName, function(e) {
-                e.stopPropagation();
-            }, true);
-        });
+function makeChatStepsDraggable() {
+    document.querySelectorAll('.steps').forEach(el => {
+        el.setAttribute('draggable', 'true');
+        el.removeEventListener('dragstart', handleStepDragStart);
+        el.addEventListener('dragstart', handleStepDragStart);
     });
 }
-
 
 function chatDragOverHandler(e) {
     e.preventDefault();
@@ -170,30 +162,41 @@ function chatDropHandler(e) {
     e.preventDefault();
     e.stopPropagation();
     this.classList.remove('drop-hover');
-
+    
     const source = e.dataTransfer.getData('source') || e.dataTransfer.getData('text/plain');
     if (source !== 'chat') return;
 
     const dataStr = e.dataTransfer.getData('application/json');
     if (!dataStr) return;
+    
+    try {
+        const data = JSON.parse(dataStr);
+        const toDay = this.dataset?.day ? parseInt(this.dataset.day, 10) : 1;
+        const location = (data.lat && data.lon) ? { 
+            lat: Number(data.lat), 
+            lng: Number(data.lon) 
+        } : null;
 
-    const data = JSON.parse(dataStr);
-    const toDay = this.dataset.day ? parseInt(this.dataset.day, 10) : 1;
-    const location = (data.lat && data.lon) ? { lat: Number(data.lat), lng: Number(data.lon) } : null;
-
-    addToCart(
-        data.name,
-        data.image,
-        toDay,
-        data.category,
-        data.address,
-        null,
-        null,
-        data.opening_hours,
-        null,
-        location,
-        data.website
-    );
+        window._forceAddToCart = true;
+        addToCart(
+            data.name,
+            data.image,
+            toDay,
+            data.category,
+            data.address,
+            null,
+            null,
+            data.opening_hours,
+            null,
+            location,
+            data.website
+        );
+        window._forceAddToCart = false;
+        
+        if (typeof restoreSidebar === "function") restoreSidebar();
+    } catch (error) {
+        console.error('Drop error:', error);
+    }
 }
 
 // ========== DESKTOP HANDLERS ==========
@@ -589,7 +592,17 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
   }
 }
 
-
+// ========== CHAT TO CART DRAG & DROP ==========
+function makeChatStepsDraggable() {
+  // Sadece drag-handle'ı draggable yap
+  document.querySelectorAll('.drag-handle').forEach(handle => {
+    handle.setAttribute('draggable', 'true');
+    handle.removeEventListener('dragstart', handleStepDragStart);
+    handle.addEventListener('dragstart', handleStepDragStart);
+    handle.removeEventListener('dragend', handleStepDragEnd);
+    handle.addEventListener('dragend', handleStepDragEnd);
+  });
+}
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.removeEventListener('dragstart', dragStart);
@@ -626,22 +639,35 @@ function attachChatDropListeners() {
         list.addEventListener('drop', chatDropHandler);
     });
 }
+
 function handleStepDragStart(e) {
+    // Sürüklenen drag-handle'ın en yakın .steps container'ını bul
     const stepsDiv = e.currentTarget.closest('.steps');
     if (!stepsDiv) return;
+
+    // Diğer dragging'leri temizle, sadece bu kart aktif olsun
+    document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
     stepsDiv.classList.add('dragging');
 
+    // Kartın bilgilerini topla
     const data = {
         name: stepsDiv.querySelector('.title')?.textContent?.trim() || '',
         image: stepsDiv.querySelector('img.check')?.src || '',
         category: stepsDiv.getAttribute('data-category') || '',
-        address: stepsDiv.querySelector('.address')?.textContent?.trim() || '',
-        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent?.trim() || '',
+        address: stepsDiv.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '',
+        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '',
         lat: stepsDiv.getAttribute('data-lat'),
         lon: stepsDiv.getAttribute('data-lon'),
-        website: stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick') || ''
+        website: (stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick')?.match(/'([^']+)'/) || [])[1] || ''
     };
 
+    // Lat/Lon sayısal olsun
+    if (data.lat && data.lon) {
+        data.lat = Number(data.lat);
+        data.lon = Number(data.lon);
+    }
+
+    // Drag & drop için gerekli dataları ekle
     e.dataTransfer.setData('application/json', JSON.stringify(data));
     e.dataTransfer.setData('text/plain', 'chat');
     e.dataTransfer.setData('source', 'chat');
