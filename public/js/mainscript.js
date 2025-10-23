@@ -2391,7 +2391,7 @@ function displayPlacesInChat(places, category, day) {
                     gap: '18px',
                     arrows: true,
                     pagination: false,
-                    drag: true,
+                       drag: 'free', // ← EKLE
                     breakpoints: {
                         900: { perPage: 1 },
                         1520: { perPage: 2 },
