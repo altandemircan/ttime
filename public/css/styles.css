@@ -5762,9 +5762,10 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 .expand-map-btn img {
-       border-radius: 50%;
- 
+border-radius: 50%;
     background: #fff;
+    width: 40px;
+    height: 40px;
   
 }
 .leaflet-popup-pane {
