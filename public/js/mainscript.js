@@ -1578,11 +1578,17 @@ async function showResults() {
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (!sliderElem._splideInstance) {
                 const splideInstance = new Splide(sliderElem, {
-                    type: 'slide',
-                    perPage: 1,
+                   type: 'slide',
+                    perPage: getPerPage(),
                     gap: '18px',
                     arrows: true,
-                    pagination: false
+                    pagination: false,
+                    drag: true,
+                    breakpoints: {
+                        900: { perPage: 1 },
+                        1520: { perPage: 2 },
+                        1900: { perPage: 3 }
+                    }
                 });
                 splideInstance.mount();
                 sliderElem._splideInstance = splideInstance;
