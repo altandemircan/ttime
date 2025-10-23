@@ -6904,9 +6904,9 @@ width: 341px;
   display: flex;
   justify-content: flex-start; /* Sola yaslı */
   gap: 0;                     /* Hiç boşluk olmasın */
-  margin: 0;
+  margin: 0 !important;
 }
 .splide__slide {
   /* Gerekirse: */
-  margin: 0;
+  margin: 0 !important;
 }
