@@ -473,22 +473,6 @@ li .highlight {
 }
 
 
-
-
-/*.cats1 img,
-.cats2 img,
-.cats3 img,
-.cats4 img,
-.cats5 img,
-.cats-note img,
-.cats-other img,
-.cats-place img {
-    width: 14px !important;
-    margin-right: 6px;
-}*/
-
-
-
 /* Bot Mesajı */
 .bot-message {
     color: #333;
@@ -499,9 +483,6 @@ li .highlight {
     color: #555;
 }
 
-.bot-message ul {
-    gap: 20px;
-}
 
 /* User Mesajı */
 .user-message {
