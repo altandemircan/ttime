@@ -7966,28 +7966,40 @@ function ensureCanvasRenderer(map) {
 function wrapRouteControls(day) {
   const tm = document.getElementById(`tt-travel-mode-set-day${day}`);
   const controls = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
-  if (!controls) return;
+  const mapDiv = document.getElementById(`route-map-day${day}`); // <-- harita div'i
+
+  if (!controls || !mapDiv) return;
 
   const dayContainer = document.getElementById(`day-container-${day}`);
-  const parent = (tm && tm.parentNode === controls.parentNode) ? controls.parentNode : (dayContainer || controls.parentNode);
+  const parent = dayContainer || controls.parentNode;
 
+  // Eski bar'ı kaldır
   const existing = document.getElementById(`route-controls-bar-day${day}`);
   if (existing) existing.remove();
 
+  // Yeni bar'ı oluştur
   const bar = document.createElement('div');
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
 
-  // PATCH:
+  // İstenilen DOM sırası:
+  // <div class="route-controls-bar">
+  //   <div id="route-map-dayX"></div>
+  //   (travel mode set)
+  //   (controls)
+  // </div>
+  bar.appendChild(mapDiv); // <-- harita önce!
+  if (tm) bar.appendChild(tm);
+  bar.appendChild(controls);
+
+  // DOM'a yerleştir
   if (controls && controls.parentNode === parent) {
     parent.insertBefore(bar, controls);
   } else {
     parent.appendChild(bar);
   }
 
-  if (tm) bar.appendChild(tm);
-  bar.appendChild(controls);
-
+  // Küçük scale bar'ı kaldır
   const smallScaleBar = parent.querySelector(`#route-scale-bar-day${day}`);
   if (smallScaleBar) smallScaleBar.remove();
 }
