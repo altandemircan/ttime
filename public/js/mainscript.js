@@ -1687,6 +1687,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     const radius = Math.round(radiusKm * 1000);
 
     // Arama yap
+    //Kategori sonuç limiti
     const places = await getPlacesForCategory(city, category, 4, radius, realCode);
 
     if (!places.length) {
