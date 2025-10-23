@@ -1061,6 +1061,7 @@ li .highlight {
     grid-area: text;
     font-size: 0.95rem;
     position: relative;
+    height: 150px;
 }
 
 .ac_map {
