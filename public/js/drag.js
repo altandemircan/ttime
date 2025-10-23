@@ -141,14 +141,6 @@ function dragEnd(event) {
 
 // ========== CHAT DRAG & DROP FUNCTIONS ==========
 
-function makeChatStepsDraggable() {
-    document.querySelectorAll('.steps').forEach(el => {
-        el.setAttribute('draggable', 'true');
-        el.removeEventListener('dragstart', handleStepDragStart);
-        el.addEventListener('dragstart', handleStepDragStart);
-    });
-}
-
 function chatDragOverHandler(e) {
     e.preventDefault();
     this.classList.add('drop-hover');
@@ -592,17 +584,23 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
   }
 }
 
-// ========== CHAT TO CART DRAG & DROP ==========
 function makeChatStepsDraggable() {
-  // Sadece drag-handle'ı draggable yap
-  document.querySelectorAll('.drag-handle').forEach(handle => {
-    handle.setAttribute('draggable', 'true');
-    handle.removeEventListener('dragstart', handleStepDragStart);
-    handle.addEventListener('dragstart', handleStepDragStart);
-    handle.removeEventListener('dragend', handleStepDragEnd);
-    handle.addEventListener('dragend', handleStepDragEnd);
-  });
+    // .steps'lerde draggable varsa kaldır
+    document.querySelectorAll('.steps[draggable]').forEach(el => {
+        el.removeAttribute('draggable');
+        el.removeEventListener('dragstart', handleStepDragStart);
+        el.removeEventListener('dragend', handleStepDragEnd);
+    });
+    // Sadece .drag-handle için ekle!
+    document.querySelectorAll('.drag-handle').forEach(handle => {
+        handle.setAttribute('draggable', 'true');
+        handle.removeEventListener('dragstart', handleStepDragStart);
+        handle.addEventListener('dragstart', handleStepDragStart);
+        handle.removeEventListener('dragend', handleStepDragEnd);
+        handle.addEventListener('dragend', handleStepDragEnd);
+    });
 }
+
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.removeEventListener('dragstart', dragStart);
