@@ -209,7 +209,7 @@ function generateStepHtml(step, day, category, idx = 0) {
             <div class="title">${name}</div>
             ${localName ? `<div class="local-name">${localName}</div>` : ""}
             <div class="address">
-                <img src="img/address_icon.svg"> ${address && address.trim().length > 2 ? address : "Address information not found"}
+                <img src="img/address_icon.svg"><span>${address && address.trim().length > 2 ? address : "Address information not found"}</span>
             </div>
             <div class="opening_hours">
                 <img src="img/hours_icon.svg"><span>${opening ? opening : "Working hours not found."}</span>
