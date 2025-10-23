@@ -641,37 +641,28 @@ function attachChatDropListeners() {
 }
 
 function handleStepDragStart(e) {
-    // Sürüklenen drag-handle'ın en yakın .steps container'ını bul
-    const stepsDiv = e.currentTarget.closest('.steps');
-    if (!stepsDiv) return;
-
-    // Diğer dragging'leri temizle, sadece bu kart aktif olsun
-    document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
-    stepsDiv.classList.add('dragging');
-
-    // Kartın bilgilerini topla
+    const stepsDiv = e.currentTarget;
     const data = {
         name: stepsDiv.querySelector('.title')?.textContent?.trim() || '',
         image: stepsDiv.querySelector('img.check')?.src || '',
         category: stepsDiv.getAttribute('data-category') || '',
-        address: stepsDiv.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '',
-        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '',
+        address: stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
+        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
         lat: stepsDiv.getAttribute('data-lat'),
         lon: stepsDiv.getAttribute('data-lon'),
         website: (stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick')?.match(/'([^']+)'/) || [])[1] || ''
     };
 
-    // Lat/Lon sayısal olsun
     if (data.lat && data.lon) {
         data.lat = Number(data.lat);
         data.lon = Number(data.lon);
     }
 
-    // Drag & drop için gerekli dataları ekle
     e.dataTransfer.setData('application/json', JSON.stringify(data));
     e.dataTransfer.setData('text/plain', 'chat');
     e.dataTransfer.setData('source', 'chat');
     e.dataTransfer.effectAllowed = 'copyMove';
+    stepsDiv.classList.add('dragging');
 }
 function handleStepDragEnd(e) {
   const stepsDiv = e.currentTarget.closest('.steps');
