@@ -990,7 +990,7 @@ li .highlight {
 .visual {
     position: relative;
     /* width: fit-content; ESKİ SABİT GENİŞLİK */ 
-    width: 100%;
+    width: -webkit-fill-available;
     float: left;
 }
 
