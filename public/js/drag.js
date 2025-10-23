@@ -140,19 +140,22 @@ function dragEnd(event) {
 }
 
 function makeChatStepsDraggable() {
+    // Eski draggable ve eventleri kaldır
     document.querySelectorAll('.steps[draggable]').forEach(el => {
         el.removeAttribute('draggable');
         el.removeEventListener('dragstart', handleStepDragStart);
         el.removeEventListener('dragend', handleStepDragEnd);
     });
-    document.querySelectorAll('.drag-handle').forEach(handle => {
-        handle.setAttribute('draggable', 'true');
-        handle.removeEventListener('dragstart', handleStepDragStart);
-        handle.addEventListener('dragstart', handleStepDragStart);
-        handle.removeEventListener('dragend', handleStepDragEnd);
-        handle.addEventListener('dragend', handleStepDragEnd);
 
-        // Slider drag'ını engelle!
+    // Sadece drag-handle için hem draggable hem event ekle!
+    document.querySelectorAll('.drag-handle').forEach(handle => {
+        handle.setAttribute('draggable', 'true'); // <-- BUNU EKLE!
+        handle.removeEventListener('dragstart', handleStepDragStart); // <-- BUNU EKLE!
+        handle.addEventListener('dragstart', handleStepDragStart);    // <-- BUNU EKLE!
+        handle.removeEventListener('dragend', handleStepDragEnd);     // <-- BUNU EKLE!
+        handle.addEventListener('dragend', handleStepDragEnd);        // <-- BUNU EKLE!
+
+        // Slider drag'ını capture aşamasında engelle
         ['mousedown', 'touchstart', 'pointerdown', 'dragstart'].forEach(evName => {
             handle.addEventListener(evName, function(e) {
                 e.stopPropagation();
@@ -162,7 +165,6 @@ function makeChatStepsDraggable() {
         });
     });
 }
-
 
 
 function chatDragOverHandler(e) {
