@@ -500,11 +500,6 @@ li .highlight {
 }
 
 .bot-message ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: inline-block;
-    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
 }
 
@@ -552,15 +547,6 @@ li .highlight {
     font-size: 0.95rem !important;
     color: #555 !important;
     margin: 10px 0 !important;
-}
-
-.survey-results ul {
-    list-style: none;
-    padding: 0;
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    gap: 6px;
 }
 
 
