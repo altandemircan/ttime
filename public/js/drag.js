@@ -140,7 +140,6 @@ function dragEnd(event) {
 }
 
 // ========== CHAT DRAG & DROP FUNCTIONS ==========
-
 function makeChatStepsDraggable() {
     // .steps'lerin draggable özelliğini KALDIR!
     document.querySelectorAll('.steps[draggable]').forEach(el => {
@@ -156,6 +155,14 @@ function makeChatStepsDraggable() {
         handle.addEventListener('dragstart', handleStepDragStart);
         handle.removeEventListener('dragend', handleStepDragEnd);
         handle.addEventListener('dragend', handleStepDragEnd);
+
+        // --- BURADA SLIDER KAYMASINI ENGELLE ---
+        handle.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+        });
+        handle.addEventListener('touchstart', function(e) {
+            e.stopPropagation();
+        });
     });
 }
 
