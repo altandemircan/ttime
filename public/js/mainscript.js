@@ -1485,6 +1485,7 @@ async function generateAITags(name, category) {
 }
 
 let hasAutoAddedToCart = false;
+
 async function showResults() {
 
     // Eski chat balonlarında kalmış route-map-day* kalıntılarını temizle (opsiyonel güvenlik)
@@ -1515,7 +1516,6 @@ async function showResults() {
             return { ...item, location: loc };
         });
         if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-
     }
 
     const chatBox = document.getElementById("chat-box");
@@ -1526,7 +1526,6 @@ async function showResults() {
     let html = `
         <div class="survey-results bot-message message">
             <h3 class="trip-title" id="trip_title">${tripTitle}</h3>
-
             <p>Here are some suggestions for your trip:</p>
             <div class="sect">
                 <ul class="accordion-list">`;
@@ -1534,44 +1533,34 @@ async function showResults() {
     const daysCount = Math.max(...latestTripPlan.map(item => item.day));
     for (let day = 1; day <= daysCount; day++) {
         let stepsHtml = '';
-        const daySteps = [];
-
-        // Aynı sırayı (Coffee → Attraction → Restaurant → Accommodation) koru
-                                for (const cat of dailyCategories) {
-                                  // O gün ve o kategorideki tüm mekanları bul
-                                  let categorySteps = latestTripPlan.filter(item =>
-                                    item.day == day && (item.category === cat.en || item.category === cat.tr)
-                                  );
-
-                                  if (categorySteps.length > 1) {
-                                    // SLIDER İLE GÖSTER
-                                    stepsHtml += `
-                                      <div class="splide" id="splide-slider-day${day}-${cat.en}">
-                                        <div class="splide__track">
-                                          <ul class="splide__list">
-                                            ${categorySteps.map((step, idx) => `
-                                              <li class="splide__slide">
-                                                ${generateStepHtml(step, day, cat.en, idx)}
-                                              </li>
-                                            `).join('')}
-                                          </ul>
-                                        </div>
-                                      </div>
-                                    `;
-                                  } else {
-                                    // Sadece 1 mekan varsa slider olmadan göster
-                                    stepsHtml += generateStepHtml(categorySteps[0] || {_noPlace: true}, day, cat.en, 0);
-                                  }
-                                }
-
-        const dayId = `day-${day}`;
-
-        // 1 item için uyarıyı chat’te de göstermek istersen:
-        if (daySteps.length === 1) {
-            stepsHtml += `<p class="one-item-message">Add one more item to optimize the route (shown in sidebar)!</p>`;
+        // Her kategori için Splide slider ile göster
+        for (const cat of dailyCategories) {
+            // O gün ve o kategorideki tüm mekanları bul
+            let categorySteps = latestTripPlan.filter(item =>
+                item.day == day && (item.category === cat.en || item.category === cat.tr)
+            );
+            if (categorySteps.length > 1) {
+                // SLIDER İLE GÖSTER
+                stepsHtml += `
+                  <div class="splide" id="splide-slider-day${day}-${cat.en}">
+                    <div class="splide__track">
+                      <ul class="splide__list">
+                        ${categorySteps.map((step, idx) => `
+                          <li class="splide__slide">
+                            ${generateStepHtml(step, day, cat.en, idx)}
+                          </li>
+                        `).join('')}
+                      </ul>
+                    </div>
+                  </div>
+                `;
+            } else {
+                // Sadece 1 mekan varsa slider olmadan göster
+                stepsHtml += generateStepHtml(categorySteps[0] || {_noPlace: true}, day, cat.en, 0);
+            }
         }
 
-        // ÖNEMLİ: mapControlsHtml TAMAMEN KALDIRILDI (chat içinde harita yok)
+        const dayId = `day-${day}`;
         html += `
             <li class="day-item">
                 <div class="accordion-container">
@@ -1593,24 +1582,24 @@ async function showResults() {
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
 
+    // Splide sliderları mount et
     setTimeout(() => {
-  document.querySelectorAll('.splide').forEach(sliderElem => {
-    if (!sliderElem._splideInstance) {
-      const splideInstance = new Splide(sliderElem, {
-        type: 'slide',
-        perPage: 1,
-        gap: '18px',
-        arrows: true,
-        pagination: false
-      });
-      splideInstance.mount();
-      sliderElem._splideInstance = splideInstance;
-    }
-  });
-}, 1);
+        document.querySelectorAll('.splide').forEach(sliderElem => {
+            if (!sliderElem._splideInstance) {
+                const splideInstance = new Splide(sliderElem, {
+                    type: 'slide',
+                    perPage: 1,
+                    gap: '18px',
+                    arrows: true,
+                    pagination: false
+                });
+                splideInstance.mount();
+                sliderElem._splideInstance = splideInstance;
+            }
+        });
+    }, 1);
 
-
-attachFavEvents(); // <-- BURAYA EKLE
+    attachFavEvents();
 
     // Sepeti (sidebar) doldur
     if (typeof addChatResultsToCart === "function" && !window.hasAutoAddedToCart) {
@@ -1627,7 +1616,6 @@ attachFavEvents(); // <-- BURAYA EKLE
         if (typeof getDayPoints === 'function') {
             const pts = getDayPoints(1);
             if (Array.isArray(pts) && pts.length >= 2) {
-                // Sadece sidebar day-container içinde route-map-day1 varsa çizilecek
                 renderRouteForDay(1);
             }
         }
@@ -1636,15 +1624,13 @@ attachFavEvents(); // <-- BURAYA EKLE
     updateCart();
 
     // --- YENİ EKLE ---
-const days = [...new Set(window.cart.map(i => i.day))];
-await Promise.all(days.map(day => renderRouteForDay(day)));
-await saveTripAfterRoutes();
-renderMyTripsPanel();
-fillGeoapifyTagsOnly();
-attachImLuckyEvents();
-
+    const days = [...new Set(window.cart.map(i => i.day))];
+    await Promise.all(days.map(day => renderRouteForDay(day)));
+    await saveTripAfterRoutes();
+    renderMyTripsPanel();
+    fillGeoapifyTagsOnly();
+    attachImLuckyEvents();
 }
-
 
 
 
