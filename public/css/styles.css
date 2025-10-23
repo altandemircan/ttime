@@ -7014,7 +7014,11 @@ ease;
   margin-bottom: 6px;
   border: 1.5px solid #bbb;
   box-shadow: 0 2px 8px #ddd;
+      z-index: 12312334234;
+    position: absolute;
+    top: 100px;
 }
 .drag-handle:active {
-  cursor: grabbing;
-  b
+    cursor: grabbing;
+    background: #e0e0e0;
+}
