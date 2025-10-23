@@ -4106,6 +4106,11 @@ cartDiv.appendChild(dayContainer);
     });
   }, 150);
 
+ document.querySelectorAll('.day-list').forEach(list => {
+        list.addEventListener('drop', chatDropHandler);
+        list.addEventListener('dragover', chatDragOverHandler);
+        list.addEventListener('dragleave', chatDragLeaveHandler);
+    });
 }
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
