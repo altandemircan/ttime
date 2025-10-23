@@ -142,10 +142,20 @@ function dragEnd(event) {
 // ========== CHAT DRAG & DROP FUNCTIONS ==========
 
 function makeChatStepsDraggable() {
-    document.querySelectorAll('.steps').forEach(el => {
-        el.setAttribute('draggable', 'true');
+    // .steps'lerin draggable özelliğini KALDIR!
+    document.querySelectorAll('.steps[draggable]').forEach(el => {
+        el.removeAttribute('draggable');
         el.removeEventListener('dragstart', handleStepDragStart);
-        el.addEventListener('dragstart', handleStepDragStart);
+        el.removeEventListener('dragend', handleStepDragEnd);
+    });
+
+    // Sadece .drag-handle'lara draggable ve event ekle
+    document.querySelectorAll('.drag-handle').forEach(handle => {
+        handle.setAttribute('draggable', 'true');
+        handle.removeEventListener('dragstart', handleStepDragStart);
+        handle.addEventListener('dragstart', handleStepDragStart);
+        handle.removeEventListener('dragend', handleStepDragEnd);
+        handle.addEventListener('dragend', handleStepDragEnd);
     });
 }
 

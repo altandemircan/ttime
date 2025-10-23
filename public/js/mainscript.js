@@ -1585,7 +1585,7 @@ for (const cat of dailyCategories) {
 
 
 attachFavEvents(); // <-- BURAYA EKLE
-
+makeChatStepsDraggable(); // YENİ – burada çağır!
     // Sepeti (sidebar) doldur
     if (typeof addChatResultsToCart === "function" && !window.hasAutoAddedToCart) {
         try {
