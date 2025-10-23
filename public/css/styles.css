@@ -4546,34 +4546,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-content {
 input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-arrow {
     transform: rotate(180deg);
 }
-.day-steps {
-    width: calc(100vw - 485px);
-    position: relative;
-  
-    border-radius: 10px;
-    display: flex;
-    gap: 20px;
-    grid-template-areas:
-        "image"
-        "text"
-        "stats";
-    border-radius: 18px;
-    background: white;
-
-    transition: 0.5s ease;
-}
 
 
-
-@media (max-width:768px) {
-    .day-steps {
-   width: -webkit-fill-available;
-    }
-}
-.steps:hover {
-    box-shadow: rgb(149 157 165 / 60%) 0px 8px 24px;
-     border: 3px solid #8a4af3;
-}
 
 .city-option-btn {
   margin: 0 7px 7px 0;
@@ -6953,4 +6927,9 @@ width: 335px;
     opacity: 1 !important;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px !important;
     transform: scale(1) !important;
+}
+
+.steps:hover {
+    box-shadow: rgb(149 157 165 / 60%) 0px 8px 24px;
+     border: 3px solid #8a4af3;
 }
