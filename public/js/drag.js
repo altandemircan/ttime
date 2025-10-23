@@ -140,7 +140,29 @@ function dragEnd(event) {
 }
 
 // ========== CHAT DRAG & DROP FUNCTIONS ==========
+<<<<<<< HEAD
 
+=======
+function makeChatStepsDraggable() {
+    // .steps'lerin draggable özelliğini kaldır
+    document.querySelectorAll('.steps[draggable]').forEach(el => {
+        el.removeAttribute('draggable');
+        el.removeEventListener('dragstart', handleStepDragStart);
+        el.removeEventListener('dragend', handleStepDragEnd);
+    });
+
+    // Sadece .drag-handle için drag-drop eventlerini ekle
+    document.querySelectorAll('.drag-handle').forEach(handle => {
+    ['mousedown', 'touchstart', 'pointerdown', 'dragstart'].forEach(evName => {
+        handle.addEventListener(evName, function(e) {
+            e.stopPropagation();
+            e.stopImmediatePropagation && e.stopImmediatePropagation();
+            console.log('drag-handle', evName, 'STOPPED');
+        }, true); // <-- capture aşamasında da dinle!
+    });
+});
+}
+>>>>>>> parent of 9226b3b (Update drag.js)
 function chatDragOverHandler(e) {
     e.preventDefault();
     this.classList.add('drop-hover');
@@ -557,7 +579,7 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
                     if (seen === toIndex) {
                         insertAt = i;
                         break;
-                    }
+                    } 
                     seen++;
                 }
             }
@@ -584,6 +606,7 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
   }
 }
 
+<<<<<<< HEAD
 function makeChatStepsDraggable() {
     // .steps'lerde draggable varsa kaldır
     document.querySelectorAll('.steps[draggable]').forEach(el => {
@@ -600,6 +623,8 @@ function makeChatStepsDraggable() {
         handle.addEventListener('dragend', handleStepDragEnd);
     });
 }
+=======
+>>>>>>> parent of 9226b3b (Update drag.js)
 
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
