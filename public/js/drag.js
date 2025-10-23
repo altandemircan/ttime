@@ -594,13 +594,15 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
 // ========== CHAT TO CART DRAG & DROP ==========
 function makeChatStepsDraggable() {
-    document.querySelectorAll('.steps').forEach(el => {
-        el.setAttribute('draggable', 'true');
-        el.removeEventListener('dragstart', handleStepDragStart);
-        el.addEventListener('dragstart', handleStepDragStart);
-    });
+  // Sadece drag-handle'ı draggable yap
+  document.querySelectorAll('.drag-handle').forEach(handle => {
+    handle.setAttribute('draggable', 'true');
+    handle.removeEventListener('dragstart', handleStepDragStart);
+    handle.addEventListener('dragstart', handleStepDragStart);
+    handle.removeEventListener('dragend', handleStepDragEnd);
+    handle.addEventListener('dragend', handleStepDragEnd);
+  });
 }
-
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.removeEventListener('dragstart', dragStart);
@@ -639,30 +641,42 @@ function attachChatDropListeners() {
 }
 
 function handleStepDragStart(e) {
-    const stepsDiv = e.currentTarget;
+    // Sürüklenen drag-handle'ın en yakın .steps container'ını bul
+    const stepsDiv = e.currentTarget.closest('.steps');
+    if (!stepsDiv) return;
+
+    // Diğer dragging'leri temizle, sadece bu kart aktif olsun
+    document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
+    stepsDiv.classList.add('dragging');
+
+    // Kartın bilgilerini topla
     const data = {
         name: stepsDiv.querySelector('.title')?.textContent?.trim() || '',
         image: stepsDiv.querySelector('img.check')?.src || '',
         category: stepsDiv.getAttribute('data-category') || '',
-        address: stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
-        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
+        address: stepsDiv.querySelector('.address')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '',
+        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent?.replace(/^[^:]*:\s*/, '').trim() || '',
         lat: stepsDiv.getAttribute('data-lat'),
         lon: stepsDiv.getAttribute('data-lon'),
         website: (stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick')?.match(/'([^']+)'/) || [])[1] || ''
     };
 
+    // Lat/Lon sayısal olsun
     if (data.lat && data.lon) {
         data.lat = Number(data.lat);
         data.lon = Number(data.lon);
     }
 
+    // Drag & drop için gerekli dataları ekle
     e.dataTransfer.setData('application/json', JSON.stringify(data));
     e.dataTransfer.setData('text/plain', 'chat');
     e.dataTransfer.setData('source', 'chat');
     e.dataTransfer.effectAllowed = 'copyMove';
-    stepsDiv.classList.add('dragging');
 }
-
+function handleStepDragEnd(e) {
+  const stepsDiv = e.currentTarget.closest('.steps');
+  if (stepsDiv) stepsDiv.classList.remove('dragging');
+}
 // ========== EVENT LISTENERS ==========
 document.addEventListener('DOMContentLoaded', function() {
     initDragDropSystem();

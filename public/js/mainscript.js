@@ -190,6 +190,15 @@ function generateStepHtml(step, day, category, idx = 0) {
         ${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}
         data-step='${JSON.stringify(step)}'>
         <div class="visual">
+
+
+        <!-- DRAG HANDLE EKLE -->
+            <div class="drag-handle" draggable="true" title="Drag to add to trip" style="width:50px;height:50px;display:flex;align-items:center;justify-content:center;border:1.5px solid #bbb;background:#f5f5f5;border-radius:10px;cursor:grab;margin-bottom:6px;">
+                <span style="font-size:34px;">☰</span>
+            </div>
+
+
+        
             <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             <div class="geoapify-tags-section">
                 <div class="geoapify-tags">${tagsHtml}</div>
