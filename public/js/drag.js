@@ -589,9 +589,6 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     }
 }
 
-// ========== CHAT TO CART DRAG & DROP ==========
-
-
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.removeEventListener('dragstart', dragStart);
