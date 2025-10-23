@@ -602,17 +602,7 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
   }
 }
 
-// ========== CHAT TO CART DRAG & DROP ==========
-function makeChatStepsDraggable() {
-  // Sadece drag-handle'ı draggable yap
-  document.querySelectorAll('.drag-handle').forEach(handle => {
-    handle.setAttribute('draggable', 'true');
-    handle.removeEventListener('dragstart', handleStepDragStart);
-    handle.addEventListener('dragstart', handleStepDragStart);
-    handle.removeEventListener('dragend', handleStepDragEnd);
-    handle.addEventListener('dragend', handleStepDragEnd);
-  });
-}
+
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.removeEventListener('dragstart', dragStart);
