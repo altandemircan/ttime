@@ -190,15 +190,6 @@ function generateStepHtml(step, day, category, idx = 0) {
         ${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}
         data-step='${JSON.stringify(step)}'>
         <div class="visual">
-
-
-        <!-- DRAG HANDLE EKLE -->
-            <div class="drag-handle" draggable="true" title="Drag to add to trip">
-                <span style="font-size:34px;">☰</span>
-            </div>
-
-
-
             <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             <div class="geoapify-tags-section">
                 <div class="geoapify-tags">${tagsHtml}</div>
@@ -1585,7 +1576,7 @@ for (const cat of dailyCategories) {
 
 
 attachFavEvents(); // <-- BURAYA EKLE
-makeChatStepsDraggable(); // YENİ – burada çağır!
+
     // Sepeti (sidebar) doldur
     if (typeof addChatResultsToCart === "function" && !window.hasAutoAddedToCart) {
         try {
@@ -2372,7 +2363,6 @@ function displayPlacesInChat(places, category, day) {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     attachFavEvents();
-    makeChatStepsDraggable(); // YENİ – burada çağır!
 
     function getPerPage() {
         if (window.innerWidth >= 1900) return 4;
@@ -2382,26 +2372,27 @@ function displayPlacesInChat(places, category, day) {
     }
 
     setTimeout(() => {
-    document.querySelectorAll('.splide').forEach(sliderElem => {
-        if (!sliderElem._splideInstance) {
-            const splideInstance = new Splide(sliderElem, {
-                type: 'slide',
-                perPage: getPerPage(),
-                gap: '18px',
-                arrows: true,
-                pagination: false,
-                drag: 'free', // ← Burada ayarı ver!
-                breakpoints: {
-                    900: { perPage: 1 },
-                    1520: { perPage: 2 },
-                    1900: { perPage: 3 }
-                }
-            });
-            splideInstance.mount(); // ← Burada başlat!
-            sliderElem._splideInstance = splideInstance;
-        }
-    });
-}, 1);
+        // Tüm .splide sliderları için instance mount et
+        document.querySelectorAll('.splide').forEach(sliderElem => {
+            if (!sliderElem._splideInstance) {
+                const splideInstance = new Splide(sliderElem, {
+                    type: 'slide',
+                    perPage: getPerPage(),
+                    gap: '18px',
+                    arrows: true,
+                    pagination: false,
+                    drag: true,
+                    breakpoints: {
+                        900: { perPage: 1 },
+                        1520: { perPage: 2 },
+                        1900: { perPage: 3 }
+                    }
+                });
+                splideInstance.mount();
+                sliderElem._splideInstance = splideInstance;
+            }
+        });
+    }, 1);
 
     if (!window._splideResizeListenerAdded) {
         window.addEventListener('resize', function() {
