@@ -7998,7 +7998,6 @@ function wrapRouteControls(day) {
   const smallScaleBar = parent.querySelector(`#route-scale-bar-day${day}`);
   if (smallScaleBar) smallScaleBar.remove();
 }
-
 function wrapRouteControlsForAllDays() {
   document.querySelectorAll('.day-container').forEach(dc => {
     const day = parseInt(dc.dataset.day || '0', 10);
