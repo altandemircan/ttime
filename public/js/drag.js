@@ -147,16 +147,24 @@ function makeChatStepsDraggable() {
         el.removeEventListener('dragstart', handleStepDragStart);
         el.removeEventListener('dragend', handleStepDragEnd);
     });
-    // Sadece .drag-handle için ekle!
-   document.querySelectorAll('.drag-handle').forEach(handle => {
-    ['mousedown', 'touchstart', 'pointerdown', 'dragstart'].forEach(evName => {
-        handle.addEventListener(evName, function(e) {
-            e.stopPropagation();
-            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-            e.preventDefault();
-        }, true);
+
+    // Sadece .drag-handle için hem draggable hem event ekle!
+    document.querySelectorAll('.drag-handle').forEach(handle => {
+        handle.setAttribute('draggable', 'true');
+        handle.removeEventListener('dragstart', handleStepDragStart);
+        handle.addEventListener('dragstart', handleStepDragStart);
+        handle.removeEventListener('dragend', handleStepDragEnd);
+        handle.addEventListener('dragend', handleStepDragEnd);
+
+        // Slider drag'ını engelle (capture!)
+        ['mousedown', 'touchstart', 'pointerdown', 'dragstart'].forEach(evName => {
+            handle.addEventListener(evName, function(e) {
+                e.stopPropagation();
+                if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                e.preventDefault();
+            }, true);
+        });
     });
-});
 }
 function chatDragOverHandler(e) {
     e.preventDefault();
