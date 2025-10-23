@@ -6958,7 +6958,7 @@ width: 335px;
   transition: 0.5s ease;
   align-content: space-between;
   border: 3px solid #f3ecff;
-  margin: 0 10px;
+   margin: 0; /* <-- BURADA! */
   box-sizing: border-box;
 }
 .steps.dragging {
@@ -6966,6 +6966,7 @@ width: 335px;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px !important;
     transform: scale(1) !important;
 }
-
-
-
+.splide {
+  padding: 0 20px;
+  box-sizing: border-box;
+}
