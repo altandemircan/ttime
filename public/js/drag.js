@@ -141,25 +141,21 @@ function dragEnd(event) {
 
 
 function makeChatStepsDraggable() {
-    // .steps'lerin draggable özelliğini kaldır
+    // .steps'lerde draggable varsa kaldır
     document.querySelectorAll('.steps[draggable]').forEach(el => {
         el.removeAttribute('draggable');
         el.removeEventListener('dragstart', handleStepDragStart);
         el.removeEventListener('dragend', handleStepDragEnd);
     });
-
-    // Sadece .drag-handle için drag-drop eventlerini ekle
+    // Sadece .drag-handle için ekle!
     document.querySelectorAll('.drag-handle').forEach(handle => {
-    ['mousedown', 'touchstart', 'pointerdown', 'dragstart'].forEach(evName => {
-        handle.addEventListener(evName, function(e) {
-            e.stopPropagation();
-            e.stopImmediatePropagation && e.stopImmediatePropagation();
-            console.log('drag-handle', evName, 'STOPPED');
-        }, true); // <-- capture aşamasında da dinle!
+        handle.setAttribute('draggable', 'true');
+        handle.removeEventListener('dragstart', handleStepDragStart);
+        handle.addEventListener('dragstart', handleStepDragStart);
+        handle.removeEventListener('dragend', handleStepDragEnd);
+        handle.addEventListener('dragend', handleStepDragEnd);
     });
-});
 }
-
 function chatDragOverHandler(e) {
     e.preventDefault();
     this.classList.add('drop-hover');
