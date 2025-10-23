@@ -193,12 +193,12 @@ function generateStepHtml(step, day, category, idx = 0) {
 
 
         <!-- DRAG HANDLE EKLE -->
-            <div class="drag-handle" draggable="true" title="Drag to add to trip" style="width:50px;height:50px;display:flex;align-items:center;justify-content:center;border:1.5px solid #bbb;background:#f5f5f5;border-radius:10px;cursor:grab;margin-bottom:6px;">
+            <div class="drag-handle" draggable="true" title="Drag to add to trip">
                 <span style="font-size:34px;">☰</span>
             </div>
 
 
-        
+
             <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             <div class="geoapify-tags-section">
                 <div class="geoapify-tags">${tagsHtml}</div>
@@ -2372,6 +2372,7 @@ function displayPlacesInChat(places, category, day) {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     attachFavEvents();
+    makeChatStepsDraggable(); // YENİ – burada çağır!
 
     function getPerPage() {
         if (window.innerWidth >= 1900) return 4;
