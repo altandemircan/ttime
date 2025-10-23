@@ -6944,7 +6944,7 @@ ease;
 
 /* steps tasarımını koru, sadece margin ekle */
 .steps {
-
+width: 335px;
   position: relative;  
   flex-direction: column;
   display: grid;
@@ -6969,24 +6969,3 @@ ease;
 
 
 
-.drag-handle {
-  width: 50px;
-  height: 50px;
-  background: #f5f5f5;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: grab;
-  font-size: 34px;
-  margin-bottom: 6px;
-  border: 1.5px solid #bbb;
-  box-shadow: 0 2px 8px #ddd;
-      z-index: 12312334234;
-    position: absolute;
-    top: 100px;
-}
-.drag-handle:active {
-    cursor: grabbing;
-    background: #e0e0e0;
-}
