@@ -6906,7 +6906,7 @@ ease;
 
 /* steps tasarımını koru, sadece margin ekle */
 .steps {
-width: 335px;
+width: 341px;
   position: relative;  
   flex-direction: column;
   display: grid;
