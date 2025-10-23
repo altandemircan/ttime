@@ -989,10 +989,7 @@ li .highlight {
 
 .visual {
     position: relative;
-    width: fit-content;
-    float: left;
-}
-
+    /* width: fit-content; ESKİ SABİT GENİŞLİK */
 .visual a {
     position: absolute;
     right: 12px;
@@ -6873,7 +6870,8 @@ ease;
 
 /* steps tasarımını koru, sadece margin ekle */
 .steps {
-width: 341px;
+/* width: 341px; ESKİ SABİT GENİŞLİK */
+width: 100%;
   position: relative;  
   flex-direction: column;
   display: grid;
