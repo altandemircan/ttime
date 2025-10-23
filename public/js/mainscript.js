@@ -1945,16 +1945,6 @@ function addChatResultsToCart() {
     displayQuestion();
 });
 
-// 2. Şehir koordinatlarını almak için fonksiyon (Geoapify geocode API)
-async function getCityCoordinates(city) {
-  const resp = await fetch(`/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`);
-  const data = await resp.json();
-  if (data.features && data.features.length > 0) {
-    const f = data.features[0];
-    return { lat: f.properties.lat, lon: f.properties.lon };
-  }
-  return null;
-}
 
 // 2) Yerleri Geoapify'dan çeken fonksiyon
 async function getPlacesForCategory(city, category, limit = 4, radius = 3000, code = null) {
@@ -2054,15 +2044,6 @@ const categoryIcons = {
     "Restaurant": "img/restaurant_icon.svg",
     "Accommodation": "img/accommodation_icon.svg"
 };
-function safeCoords(obj) {
-  // Hem lat/lon hem location nesnesi destekle
-  const lat = Number(obj.lat ?? (obj.location && obj.location.lat));
-  const lng = Number(obj.lon ?? obj.lng ?? (obj.location && (obj.location.lng ?? obj.location.lon)));
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return { lat, lng };
-  }
-  return null;
-}
 
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
@@ -2285,43 +2266,56 @@ function removeFromCart(index) {
   if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 }
 
-function addItem(element, day, category, name, image, extra) {
-    const stepsDiv = element.closest('.steps');
-    const address = stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-    const opening_hours = stepsDiv.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-    const lat = stepsDiv.getAttribute('data-lat');
-    const lon = stepsDiv.getAttribute('data-lon');
-    const place = typeof extra === 'string' ? JSON.parse(extra.replace(/&quot;/g, '"')) : extra || {};
+// function addItem(element, day, category, name, image, extra) {
+//     const stepsDiv = element.closest('.steps');
+//     const address = stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+//     const opening_hours = stepsDiv.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+//     const lat = stepsDiv.getAttribute('data-lat');
+//     const lon = stepsDiv.getAttribute('data-lon');
+//     const place = typeof extra === 'string' ? JSON.parse(extra.replace(/&quot;/g, '"')) : extra || {};
 
-    // GÜVENLİ location oluştur
-    let location = null;
-    if (place.location && typeof place.location.lat !== "undefined" && typeof place.location.lng !== "undefined") {
-        location = {
-            lat: Number(place.location.lat),
-            lng: Number(place.location.lng)
-        };
-    } else if (lat && lon && !isNaN(Number(lat)) && !isNaN(Number(lon))) {
-        location = {
-            lat: Number(lat),
-            lng: Number(lon)
-        };
-    }
+//     // GÜVENLİ location oluştur
+//     let location = null;
+//     if (place.location && typeof place.location.lat !== "undefined" && typeof place.location.lng !== "undefined") {
+//         location = {
+//             lat: Number(place.location.lat),
+//             lng: Number(place.location.lng)
+//         };
+//     } else if (lat && lon && !isNaN(Number(lat)) && !isNaN(Number(lon))) {
+//         location = {
+//             lat: Number(lat),
+//             lng: Number(lon)
+//         };
+//     }
 
-    addToCart(
-        name,
-        image,
-        day,
-        category,
-        place.address || address,
-        place.rating,
-        place.user_ratings_total,
-        place.opening_hours || opening_hours,
-        place.place_id,
-        location,
-        place.website
-    );
-    if (typeof restoreSidebar === "function") restoreSidebar();
+//     addToCart(
+//         name,
+//         image,
+//         day,
+//         category,
+//         place.address || address,
+//         place.rating,
+//         place.user_ratings_total,
+//         place.opening_hours || opening_hours,
+//         place.place_id,
+//         location,
+//         place.website
+//     );
+//     if (typeof restoreSidebar === "function") restoreSidebar();
+// }
+
+
+function safeCoords(obj) {
+  // Hem lat/lon hem location nesnesi destekle
+  const lat = Number(obj.lat ?? (obj.location && obj.location.lat));
+  const lng = Number(obj.lon ?? obj.lng ?? (obj.location && (obj.location.lng ?? obj.location.lon)));
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    return { lat, lng };
+  }
+  return null;
 }
+
+
 
 function safeCoords(lat, lon) {
   if (
@@ -4144,9 +4138,9 @@ function searchPlaceOnGoogle(place, city) {
 }
 
 // XSS koruması için (örn. "Villa Medici" gibi isimlerde sorun olmasın)
-function escapeHtml(text) {
-  return String(text || '').replace(/["'\\]/g, '');
-}
+// function escapeHtml(text) {
+//   return String(text || '').replace(/["'\\]/g, '');
+// }
 
 
 // Stil bir kez eklensin
@@ -4285,22 +4279,23 @@ function createDayActionMenu(day) {
   return container;
 }
 
-function setCityFromAddress(address) {
-  if (!address) return;
-  // Türkiye için örnek: "Döşemealtı, Antalya, Turkey"
-  // veya "DC118, 407151 Dângău Mic, Romania"
-  let city = "";
-  const parts = address.split(",");
-  if (parts.length >= 2) {
-    // Şehir genellikle sondan ikinci
-    city = parts[parts.length - 2].trim();
-  }
-  if (city) {
-    window.selectedCity = city;
-    window.selectedLocation = city;
-  }
-}
+// function setCityFromAddress(address) {
+//   if (!address) return;
+//   // Türkiye için örnek: "Döşemealtı, Antalya, Turkey"
+//   // veya "DC118, 407151 Dângău Mic, Romania"
+//   let city = "";
+//   const parts = address.split(",");
+//   if (parts.length >= 2) {
+//     // Şehir genellikle sondan ikinci
+//     city = parts[parts.length - 2].trim();
+//   }
+//   if (city) {
+//     window.selectedCity = city;
+//     window.selectedLocation = city;
+//   }
+// }
 // PATCH: refresh expanded scale bar after route updates
+
 function updateExpandedMap(expandedMap, day) {
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
