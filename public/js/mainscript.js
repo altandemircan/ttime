@@ -2382,27 +2382,26 @@ function displayPlacesInChat(places, category, day) {
     }
 
     setTimeout(() => {
-        // Tüm .splide sliderları için instance mount et
-        document.querySelectorAll('.splide').forEach(sliderElem => {
-            if (!sliderElem._splideInstance) {
-                const splideInstance = new Splide(sliderElem, {
-                    type: 'slide',
-                    perPage: getPerPage(),
-                    gap: '18px',
-                    arrows: true,
-                    pagination: false,
-                       drag: 'free', // ← EKLE
-                    breakpoints: {
-                        900: { perPage: 1 },
-                        1520: { perPage: 2 },
-                        1900: { perPage: 3 }
-                    }
-                });
-                splideInstance.mount();
-                sliderElem._splideInstance = splideInstance;
-            }
-        });
-    }, 1);
+    document.querySelectorAll('.splide').forEach(sliderElem => {
+        if (!sliderElem._splideInstance) {
+            const splideInstance = new Splide(sliderElem, {
+                type: 'slide',
+                perPage: getPerPage(),
+                gap: '18px',
+                arrows: true,
+                pagination: false,
+                drag: 'free', // ← Burada ayarı ver!
+                breakpoints: {
+                    900: { perPage: 1 },
+                    1520: { perPage: 2 },
+                    1900: { perPage: 3 }
+                }
+            });
+            splideInstance.mount(); // ← Burada başlat!
+            sliderElem._splideInstance = splideInstance;
+        }
+    });
+}, 1);
 
     if (!window._splideResizeListenerAdded) {
         window.addEventListener('resize', function() {
