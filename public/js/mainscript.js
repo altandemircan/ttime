@@ -1493,7 +1493,6 @@ async function showResults() {
         const chatBox = document.getElementById("chat-box");
         if (!chatBox) return;
         chatBox.querySelectorAll('[id^="route-map-day"]').forEach(el => {
-            // Sadece chat balonlarının içindeyse sil (sidebar’daki day-container değilse)
             if (!el.closest('.day-container')) el.remove();
         });
         chatBox.querySelectorAll('[id^="map-bottom-controls-wrapper-day"]').forEach(el => {
@@ -1505,7 +1504,6 @@ async function showResults() {
     })();
 
     if (window.latestTripPlan && Array.isArray(window.latestTripPlan) && window.latestTripPlan.length > 0) {
-        // window.cart senkronize
         window.cart = window.latestTripPlan.map(item => {
             let loc = null;
             if (item.location && typeof item.location.lat !== "undefined" && typeof item.location.lng !== "undefined") {
@@ -1531,28 +1529,27 @@ async function showResults() {
                 <ul class="accordion-list">`;
 
     const daysCount = Math.max(...latestTripPlan.map(item => item.day));
-   for (let day = 1; day <= daysCount; day++) {
-  let stepsHtml = '';
-  let sliderItems = [];
-  for (const cat of dailyCategories) {
-    let step = latestTripPlan.find(item =>
-      item.day == day && (item.category === cat.en || item.category === cat.tr)
-    );
-    if (step) {
-      sliderItems.push(generateStepHtml(step, day, cat.en));
-    }
-  }
-
-  stepsHtml += `
-    <div class="splide" id="splide-slider-day${day}">
-      <div class="splide__track">
-        <ul class="splide__list">
-          ${sliderItems.map(itemHtml => `<li class="splide__slide">${itemHtml}</li>`).join('')}
-        </ul>
-      </div>
-    </div>
-  `;
+    for (let day = 1; day <= daysCount; day++) {
+        let stepsHtml = '';
+        // FARKLI KATEGORİLERDEN TEK SLIDER
+        let sliderItems = [];
+        for (const cat of dailyCategories) {
+            let step = latestTripPlan.find(item =>
+                item.day == day && (item.category === cat.en || item.category === cat.tr)
+            );
+            if (step) {
+                sliderItems.push(generateStepHtml(step, day, cat.en));
+            }
         }
+        stepsHtml += `
+          <div class="splide" id="splide-slider-day${day}">
+            <div class="splide__track">
+              <ul class="splide__list">
+                ${sliderItems.map(itemHtml => `<li class="splide__slide">${itemHtml}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
 
         const dayId = `day-${day}`;
         html += `
@@ -1605,7 +1602,6 @@ async function showResults() {
 
     if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
 
-    // Rotayı sadece sidebar tarafı için asenkron çiz (gün 1 örneği)
     setTimeout(() => {
         if (typeof getDayPoints === 'function') {
             const pts = getDayPoints(1);
@@ -1625,7 +1621,6 @@ async function showResults() {
     fillGeoapifyTagsOnly();
     attachImLuckyEvents();
 }
-
 
 
 function toggleAccordion(accordionHeader) {
