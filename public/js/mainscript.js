@@ -367,7 +367,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   // Tooltip çizgisinin X pozisyonunu DOM'dan bul (örnek selector)
 // Bunu bir defa, profil yüklenince bulmalısın!
 const tooltipLine = track.querySelector('.scale-bar-vertical-line'); // örnek: tooltip çizgisi
-const PROFILE_START_X = ELEV_LEFT;
+const PROFILE_START_X = 38;
 
 // Son nokta: PROFILE_END_X = ELEV_LEFT + ELEV_WIDTH;
 const PROFILE_END_X = ELEV_LEFT + ELEV_WIDTH;
