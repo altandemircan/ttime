@@ -8766,22 +8766,25 @@ tooltip.style.left = '0px';
 track.appendChild(tooltip);
 
 // Mouse ile çizgiyi hareket ettir (her zaman görünür!)
+const ELEV_LABEL_COL_WIDTH = 48; // Sol sütun genişliği
+
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
-  // Mouse’un barın solundan olan X’i
+  // Mouse’un scale bar içindeki X pozisyonu
   let x = e.clientX - rect.left;
-  // Sol sütun kadar offsetle!
+
+  // Sütun kadar kaydır (barın gerçek başı)
   x = Math.max(ELEV_LABEL_COL_WIDTH, x);
-  // Şimdi km hesaplaması ve tooltip pozisyonu için bu x kullan!
-  
-  // Oran: x - ELEV_LABEL_COL_WIDTH / bar genişliği (grafik alanı)
-  const percent = (x - ELEV_LABEL_COL_WIDTH) / (rect.width - ELEV_LABEL_COL_WIDTH);
+  // Grafik alanının genişliği (barın kendisi - sol sütun)
+  const barWidth = rect.width - ELEV_LABEL_COL_WIDTH;
+
+  // Oran: (x - sol sütun) / bar genişliği
+  const percent = (x - ELEV_LABEL_COL_WIDTH) / barWidth;
   const km = percent * spanKm;
-  // Tooltip’i grafiğin başladığı noktaya göre göster
+
   tooltip.style.left = `${x}px`;
   tooltip.textContent = `${km.toFixed(2)} km`;
-});
-track.addEventListener('touchmove', function(e) {
+});track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
   const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
   verticalLine.style.left = `${x}px`;
