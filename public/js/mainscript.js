@@ -393,20 +393,20 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   // Marker badge'ler
-  if (Array.isArray(markers)) {
+if (Array.isArray(markers)) {
   const BADGE_W = 18;
+  const style = getComputedStyle(track);
+  const padLeft = parseFloat(style.paddingLeft) || 0;
+  const padRight = parseFloat(style.paddingRight) || 0;
   markers.forEach((m, idx) => {
     if (typeof m.distance !== 'number') return;
     if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
     const relKm = m.distance - startKmDom;
     let x = X(relKm);
-
-    // Tüm markerlar için clamp (badge'in ortası dışarı taşmasın)
     x = Math.max(
-      LABEL_WIDTH + BADGE_W/2,
-      Math.min(LABEL_WIDTH + w - BADGE_W/2, x)
+      LABEL_WIDTH + padLeft + BADGE_W/2,
+      Math.min(LABEL_WIDTH + w - padRight - BADGE_W/2, x)
     );
-
     const wrap = document.createElement('div');
     wrap.className = 'marker-badge';
     wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
