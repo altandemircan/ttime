@@ -4379,22 +4379,22 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
 
     // === SCALE BAR ARKASINDA KALMASIN DİYE MAPİ YUKARI KAYDIR + ZOOMU AZALT ===
     setTimeout(() => {
-        try {
-            const center = expandedMap.getCenter();
-            const zoom   = expandedMap.getZoom();
-            // Ölçü: scale bar px yüksekliğine göre dinamik veya sabit bir değer kullanabilirsin
-            const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-            let offsetLat = 0.012; // ~1.2 km yukarı (dikey rotalarda daha çok gerekebilir)
-            if (scaleBar) {
-                const mapDiv = expandedMap.getContainer();
-                const mapHeightPx = mapDiv.offsetHeight || 400;
-                const barHeightPx = scaleBar.offsetHeight || 50;
-                offsetLat = (barHeightPx / mapHeightPx) * 0.07; // 0.07 derece ~ 7.7km
-            }
-            const newCenter = L.latLng(center.lat + offsetLat, center.lng);
-            expandedMap.setView(newCenter, Math.max(zoom - 1, 2), { animate: true });
-        } catch(e) {}
-    }, 350);
+  try {
+    const center = expandedMap.getCenter();
+    const zoom   = expandedMap.getZoom();
+    const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    let offsetLat = 0.012; // ~1.2 km yukarı (dikey rotalarda daha çok gerekebilir)
+    if (scaleBar) {
+      const mapDiv = expandedMap.getContainer();
+      const mapHeightPx = mapDiv.offsetHeight || 400;
+      const barHeightPx = scaleBar.offsetHeight || 50;
+      offsetLat = (barHeightPx / mapHeightPx) * 0.07;
+    }
+    // YUKARI KAYDIRMAK İÇİN LATITUDE'U AZALT!
+    const newCenter = L.latLng(center.lat + offsetLat, center.lng); // <-- yanlışsa, - offsetLat ile değiştir
+    expandedMap.setView(newCenter, Math.max(zoom - 1, 2), { animate: true });
+  } catch(e) {}
+}, 350);
 
     // EKSIK NOKTALAR İÇİN KIRMIZI KESİK ÇİZGİ
     points.forEach((mp) => {
@@ -5532,21 +5532,22 @@ async function expandMap(containerId, day) {
     };
 
     setTimeout(() => {
-      try {
-        const center = expandedMap.getCenter();
-        const zoom   = expandedMap.getZoom();
-        const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-        let offsetLat = 0.012; // ~1.2 km yukarı (dikey rotalarda daha çok gerekebilir)
-        if (scaleBar) {
-          const mapDiv = expandedMap.getContainer();
-          const mapHeightPx = mapDiv.offsetHeight || 400;
-          const barHeightPx = scaleBar.offsetHeight || 50;
-          offsetLat = (barHeightPx / mapHeightPx) * 0.07; // 0.07 derece ~ 7.7km
-        }
-        const newCenter = L.latLng(center.lat + offsetLat, center.lng);
-        expandedMap.setView(newCenter, Math.max(zoom - 1, 2), { animate: true });
-      } catch(e) {}
-    }, 350);
+  try {
+    const center = expandedMap.getCenter();
+    const zoom   = expandedMap.getZoom();
+    const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    let offsetLat = 0.012; // ~1.2 km yukarı (dikey rotalarda daha çok gerekebilir)
+    if (scaleBar) {
+      const mapDiv = expandedMap.getContainer();
+      const mapHeightPx = mapDiv.offsetHeight || 400;
+      const barHeightPx = scaleBar.offsetHeight || 50;
+      offsetLat = (barHeightPx / mapHeightPx) * 0.07;
+    }
+    // YUKARI KAYDIRMAK İÇİN LATITUDE'U AZALT!
+    const newCenter = L.latLng(center.lat + offsetLat, center.lng); // <-- yanlışsa, - offsetLat ile değiştir
+    expandedMap.setView(newCenter, Math.max(zoom - 1, 2), { animate: true });
+  } catch(e) {}
+}, 350);
 
     
   } else if (!expandedMap._initialView) {
