@@ -369,32 +369,35 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // === EŞİT ARALIKLI BAREMLER ===
 
-  // Yükseklik SVG'sinden maksimumu bul
-  let tmax = null;
+ // --- YÜKSEKLİK BAREMLERİ ---
+  // SVG'den tüm grid label'larını oku
+  let gridLabels = [];
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
-    const gridLabels = Array.from(svg.querySelectorAll('text'))
+    gridLabels = Array.from(svg.querySelectorAll('text'))
       .map(t => Number(t.textContent.trim().replace(' m', '')))
       .filter(num => !isNaN(num));
-    tmax = Math.max(...gridLabels, 0);
   }
-  if (!tmax || isNaN(tmax)) tmax = 0;
+  // Eğer veriler yoksa, fallback: [0, 50, 100]
+  if (!gridLabels.length) gridLabels = [0, 50, 100];
+  const min = Math.min(...gridLabels);
+  const max = Math.max(...gridLabels);
 
-  // 4 barem: max, 2/3 max, 1/3 max, 0
+  // 4 seviyeyi eşit aralıklı dağıt (görseldeki gibi)
   const barems = [
-    tmax,
-    tmax * 2 / 3,
-    tmax * 1 / 3,
-    0
+    max,
+    max - (max - min) / 3,
+    max - 2 * (max - min) / 3,
+    min
   ];
 
   // SVG yüksekliği
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  // Her baremin Y koordinatı (svg mantığıyla)
+  // Her baremin Y koordinatı (mantıklı ve görsel uyumlu)
   function getY(val) {
-    if (tmax === 0) return svgH;
-    return (svgH - 1) - ((val - 0) / (tmax - 0)) * (svgH - 2);
+    if (max === min) return svgH / 2;
+    return ((max - val) / (max - min)) * svgH;
   }
 
   const elevationLabels = document.createElement('div');
@@ -441,8 +444,39 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     elevationLabels.appendChild(label);
   });
 
+  // Eğer min değer 0'a çok yakınsa (ör: 0-2 m arası), en alta ayrıca "0 m" etiketi koyabilirsin:
+  if (min > 0 && min < 4) {
+    const label = document.createElement('div');
+    label.className = 'elevation-label';
+    label.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: ${svgH - 12}px;
+      text-align: right;
+      padding-right: 5px;
+      border-right: 1px solid #cfd8dc;
+      font-size: 11px;
+      color: #607d8b;
+      background: none;
+      line-height: 1.2;
+    `;
+    label.textContent = `0 m`;
+
+    const hr = document.createElement('div');
+    hr.style.cssText = `
+      margin: 2px 0 0 0;
+      border-bottom: 1px solid #b0bec5;
+      width: 75%;
+      float: right;
+    `;
+    label.appendChild(hr);
+
+    elevationLabels.appendChild(label);
+  }
+
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
+
 }
 
         // Aktif harita planlama modu için
