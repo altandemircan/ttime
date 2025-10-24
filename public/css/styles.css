@@ -5247,7 +5247,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     position: relative;
 }
 .map-bottom-controls {
-       padding: 6px 0 0 0;
+       padding: 12px 0 0 0;
 }
 
 .map-bottom-controls select {
