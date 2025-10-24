@@ -463,7 +463,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], s
       track.appendChild(wrap);
     });
   }
-}
 
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
