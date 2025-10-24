@@ -7951,6 +7951,14 @@ function wrapRouteControls(day) {
   const bar = document.createElement('div');
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
+  bar.style.display = 'flex';
+  bar.style.flexDirection = 'column';
+  bar.style.margin = '10px 0 20px 0';
+  bar.style.padding = '10px';
+  bar.style.borderRadius = '6px';
+  bar.style.background = '#fafafa';
+  bar.style.border = '1px solid #ddd';
+  bar.style.gap = '10px'; // Başlangıçta açık
 
   // --- MAP BAŞLIK + MAP-FUNCTIONS (buton + arrow) ---
   const mapBarHeader = document.createElement('div');
@@ -7988,7 +7996,6 @@ function wrapRouteControls(day) {
   expandBtn.style.padding = '5px 10px';
   expandBtn.style.fontWeight = 'bold';
   expandBtn.style.color = '#8a4af3';
-
   expandBtn.innerHTML = `
     <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
     <span class="tm-label">Expand map</span>
@@ -8005,7 +8012,7 @@ function wrapRouteControls(day) {
   arrowSpan.style.cursor = 'pointer';
   arrowSpan.style.padding = '0px';
   arrowSpan.style.marginTop = '6px';
-  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" style="transform: rotate(90deg);">`;
+  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" style="transform: rotate(90deg); transition:transform 0.18s;">`;
 
   mapFunctionsDiv.appendChild(expandBtn);
   mapFunctionsDiv.appendChild(arrowSpan);
@@ -8026,7 +8033,7 @@ function wrapRouteControls(day) {
   if (tm) mapContentWrap.appendChild(tm);
   mapContentWrap.appendChild(controls);
 
-  // Başlangıçta açık olsun (istersen kapalı başlat)
+  // Başlangıçta açık olsun
   let open = true;
 
   // --- Arrow click ile aç/kapa ---
@@ -8036,10 +8043,12 @@ function wrapRouteControls(day) {
       mapContentWrap.style.maxHeight = '700px';
       mapContentWrap.style.opacity = '1';
       arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
+      bar.style.gap = '10px'; // AÇIKKEN
     } else {
       mapContentWrap.style.maxHeight = '0px';
       mapContentWrap.style.opacity = '0.2';
       arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
+      bar.style.gap = '0px'; // KAPALIYKEN
     }
   };
 
