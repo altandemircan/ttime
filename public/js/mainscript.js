@@ -4378,8 +4378,12 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
     expandedMap.fitBounds(polyline.getBounds());
 
     // === SCALE BAR ARKASINDA KALMASIN DİYE MAPİ YUKARI KAYDIR + ZOOMU AZALT ===
-    setTimeout(() => {
-  expandedMap.panBy([0, 150], { animate: true }); // X:0, Y:-150 px yukarı!
+ setTimeout(() => {
+  // 150px yukarı kaydır
+  expandedMap.panBy([0, 150], { animate: true });
+  // Zoom'u 0.5 kademe küçült
+  const newZoom = Math.max(expandedMap.getZoom() - 1, 2);
+  expandedMap.setZoom(newZoom, { animate: true });
 }, 350);
 
     // EKSIK NOKTALAR İÇİN KIRMIZI KESİK ÇİZGİ
@@ -5518,9 +5522,12 @@ async function expandMap(containerId, day) {
     };
 
 setTimeout(() => {
-  expandedMap.panBy([0, 150], { animate: true }); // X:0, Y:-150 px yukarı!
+  // 150px yukarı kaydır
+  expandedMap.panBy([0, 150], { animate: true });
+  // Zoom'u 0.5 kademe küçült
+  const newZoom = Math.max(expandedMap.getZoom() - 1, 2);
+  expandedMap.setZoom(newZoom, { animate: true });
 }, 350);
-
 
   } else if (!expandedMap._initialView) {
     expandedMap._initialView = {
