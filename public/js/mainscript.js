@@ -7962,9 +7962,9 @@ function wrapRouteControls(day) {
 
   // MAP başlığı
   const mapTitleDiv = document.createElement('div');
-  mapTitleDiv.textContent = "MAP";
+  mapTitleDiv.textContent = "Route";
   mapTitleDiv.style.fontWeight = 'bold';
-  mapTitleDiv.style.fontSize = '17px';
+  mapTitleDiv.style.fontSize = '14px';
 
   // MAP-FUNCTIONS içine buton + arrow
   const mapFunctionsDiv = document.createElement('div');
