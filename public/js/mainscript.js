@@ -400,15 +400,16 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
     const relKm = m.distance - startKmDom;
     let x = X(relKm);
-    // !!! PATCH: Son marker için, badge'in tamamı içeride kalacak şekilde konumlandır
-    if (idx === markers.length - 1) {
-      x = LABEL_WIDTH + w - BADGE_W; // Ortası değil, SAĞ kenarı en sağda!
-    } else {
-      x = Math.max(LABEL_WIDTH + BADGE_W/2, Math.min(LABEL_WIDTH + w - BADGE_W/2, x));
-    }
+
+    // Tüm markerlar için clamp (badge'in ortası dışarı taşmasın)
+    x = Math.max(
+      LABEL_WIDTH + BADGE_W/2,
+      Math.min(LABEL_WIDTH + w - BADGE_W/2, x)
+    );
+
     const wrap = document.createElement('div');
     wrap.className = 'marker-badge';
-    wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(0);`;
+    wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
     wrap.title = m.name || '';
     wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
     track.appendChild(wrap);
