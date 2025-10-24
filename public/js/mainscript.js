@@ -316,8 +316,8 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
-  // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
+
 
   // TICK/KM/MARKER kodu (değiştirmiyoruz, aynı)
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
@@ -369,77 +369,93 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // --- SVG Gridlabel Okuma ---
 let gridLabels = [];
-const svg = track.querySelector('svg.tt-elev-svg');
-if (svg) {
-  gridLabels = Array.from(svg.querySelectorAll('text'))
-    .map(t => ({
-      value: t.textContent.trim(),
-      y: Number(t.getAttribute('y'))
-    }))
-    .filter(obj => /-?\d+\s*m$/.test(obj.value));
-}
+  const svg = track.querySelector('svg.tt-elev-svg');
+  if (svg) {
+    gridLabels = Array.from(svg.querySelectorAll('text'))
+      .map(t => ({
+        value: t.textContent.trim(),
+        y: Number(t.getAttribute('y')),
+        num: Number(t.textContent.trim().replace(' m', ''))
+      }))
+      .filter(obj => /-?\d+\s*m$/.test(obj.value));
+  }
+  gridLabels.sort((a, b) => b.y - a.y); // Alttan üste
 
-// Alttan üste sıralama (y arttıkça aşağı)
-gridLabels.sort((a, b) => b.y - a.y);
+  // Sadece 0 ve üstü olan seviyeler
+  const positiveLabels = gridLabels.filter(l => l.num >= 0);
+  let gridLabels3 = [];
 
-// 3 seviye: en üst, orta, en alt (yani: gridLabels[0], gridLabels[mid], gridLabels[last])
-let gridLabels3 = [];
-if (gridLabels.length >= 3) {
-  gridLabels3 = [
-    gridLabels[0], // En üst (en büyük y)
-    gridLabels[Math.floor(gridLabels.length / 2)], // Orta
-    gridLabels[gridLabels.length - 1] // En alt (en küçük y)
-  ];
-} else {
-  gridLabels3 = gridLabels.slice(0, 3);
-}
+  if (positiveLabels.length >= 3) {
+    // En üst, orta, 0'ı bul
+    let zeroIdx = positiveLabels.findIndex(l => l.num === 0);
+    if (zeroIdx === -1) zeroIdx = positiveLabels.length - 1; // En alta en yakın olanı
+    gridLabels3 = [
+      positiveLabels[0], // en üst
+      positiveLabels[Math.floor(positiveLabels.length / 2)], // orta
+      positiveLabels[zeroIdx] // 0'a en yakın (alt)
+    ];
+  } else if (positiveLabels.length === 2) {
+    gridLabels3 = [positiveLabels[0], positiveLabels[1]];
+  } else if (positiveLabels.length === 1) {
+    gridLabels3 = [positiveLabels[0]];
+  }
 
-const elevationLabels = document.createElement('div');
-elevationLabels.className = 'elevation-labels-container';
-elevationLabels.style.cssText = `
-  position: absolute;
-  left: -50px;
-  top: 0;
-  bottom: 0;
-  width: 45px;
-  height: 100%;
-  pointer-events: none;
-  z-index: 5;
-  display: block;
-`;
+  // Eğer profilin en düşük noktası 0'ın altındaysa, en düşük label'ı ekle
+  const minLabel = gridLabels[gridLabels.length - 1];
+  if (minLabel && minLabel.num < 0) {
+    gridLabels3.push(minLabel);
+  }
 
-gridLabels3.forEach(obj => {
-  const label = document.createElement('div');
-  label.className = 'elevation-label';
-  label.style.cssText = `
+  // Tekrar unique olsun
+  gridLabels3 = gridLabels3.filter((obj, i, arr) => arr.findIndex(o => o.num === obj.num) === i);
+
+  const elevationLabels = document.createElement('div');
+  elevationLabels.className = 'elevation-labels-container';
+  elevationLabels.style.cssText = `
     position: absolute;
-    right: 0;
-    top: ${obj.y - 8}px;
-    text-align: right;
-    padding-right: 5px;
-    border-right: 1px solid #cfd8dc;
-    font-size: 11px;
-    color: #607d8b;
-    background: none;
-    line-height: 1.2;
+    left: -50px;
+    top: 0;
+    bottom: 0;
+    width: 45px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    display: block;
   `;
-  label.textContent = obj.value;
 
-  // Altına yatay çizgi ekle
-  const hr = document.createElement('div');
-  hr.style.cssText = `
-    margin: 2px 0 0 0;
-    border-bottom: 1px solid #b0bec5;
-    width: 75%;
-    float: right;
-  `;
-  label.appendChild(hr);
+  gridLabels3.forEach(obj => {
+    const label = document.createElement('div');
+    label.className = 'elevation-label';
+    label.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: ${obj.y - 8}px;
+      text-align: right;
+      padding-right: 5px;
+      border-right: 1px solid #cfd8dc;
+      font-size: 11px;
+      color: #607d8b;
+      background: none;
+      line-height: 1.2;
+    `;
+    label.textContent = obj.value;
 
-  elevationLabels.appendChild(label);
-});
+    // Altına yatay çizgi ekle
+    const hr = document.createElement('div');
+    hr.style.cssText = `
+      margin: 2px 0 0 0;
+      border-bottom: 1px solid #b0bec5;
+      width: 75%;
+      float: right;
+    `;
+    label.appendChild(hr);
 
-track.style.position = 'relative';
-track.appendChild(elevationLabels);
+    elevationLabels.appendChild(label);
+  });
+
+  track.style.position = 'relative';
+  track.appendChild(elevationLabels);
+}
 }
 
         // Aktif harita planlama modu için
