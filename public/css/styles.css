@@ -6942,3 +6942,32 @@ display: flex
     margin-bottom: 10px; 
 }
 /* TRIP LOADING */
+
+
+.elevation-labels-container {
+  position: absolute;
+  left: -50px;
+  top: 0;
+  bottom: 0;
+  width: 45px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #607d8b;
+  pointer-events: none;
+}
+
+.elevation-label {
+  text-align: right;
+  padding-right: 5px;
+  border-right: 1px solid #cfd8dc;
+  height: 20px;
+  line-height: 20px;
+}
+
+/* Ana konteyner için padding ekleyerek sol tarafta yer açın */
+.track-container {
+  position: relative;
+  padding-left: 50px; /* Yükseklik etiketleri için yer */
+}
