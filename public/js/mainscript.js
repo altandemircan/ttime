@@ -8792,7 +8792,7 @@ if (svgReady) {
 }
 
 track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.remove());
-const svgNS = 'http://www.w3.org/2000/svg';
+
 const SVG_TOP = 48;
 const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 let SVG_H = isMobile
@@ -8901,7 +8901,7 @@ container._elevKmSpan = totalKm;
 
 // (Devam eden kodlar...)
   // BASE SVG (data-role="elev-base")
-  const svgNS = 'http://www.w3.org/2000/svg';
+  
   const SVG_TOP = 48;
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   let SVG_H = isMobile
@@ -9732,7 +9732,7 @@ if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
 }
 
   // --------------------- SVG Overlay Kısmı ---------------------
-  const svgNS = 'http://www.w3.org/2000/svg';
+
   const widthNow = widthPx || 400;
   const heightNow = 220;
 
