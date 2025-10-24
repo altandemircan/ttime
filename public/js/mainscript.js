@@ -3951,76 +3951,90 @@ cartDiv.appendChild(dayContainer);
     };
   })();
 
-  (function ensureNewChatInsideCart(){
-    const oldOutside = document.querySelector('#newchat');
-    if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
-    const cartRoot = document.getElementById('cart');
-    if (!cartRoot) return;
-    let newChat = cartRoot.querySelector('#newchat');
-    if (!newChat){
-      newChat = document.createElement('div');
-      newChat.id = 'newchat';
-      newChat.textContent = 'New Trip Plan';
-      newChat.style.cursor = 'pointer';
-newChat.onclick = function() {
-  const chatBox = document.getElementById('chat-box');
-  if (chatBox) chatBox.innerHTML = '';
-  const userInput = document.getElementById('user-input');
-  if (userInput) userInput.value = '';
+(function ensureNewChatInsideCart(){
+  const oldOutside = document.querySelector('#newchat');
+  if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
+  const cartRoot = document.getElementById('cart');
+  if (!cartRoot) return;
+  let newChat = cartRoot.querySelector('#newchat');
+  if (!newChat){
+    newChat = document.createElement('div');
+    newChat.id = 'newchat';
+    newChat.textContent = 'New Trip Plan';
+    newChat.style.cursor = 'pointer';
 
-  // ... eski kodlar ...
-  window.selectedCity = null;
-  window.selectedLocation = null;
-  window.selectedLocationLocked = false;
-  window.__locationPickedFromSuggestions = false;
-  window.lastUserQuery = '';
-  window.latestTripPlan = [];
-  window.cart = [];
-  
-  // --- EKLE ---
-  if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-  // Ekstra: elevation, segment, cache temizliği
-  window.routeElevStatsByDay = {};
-  window.__ttElevDayCache = {};
-  window._segmentHighlight = {};
-  window._lastSegmentDay = undefined;
-  window._lastSegmentStartKm = undefined;
-  window._lastSegmentEndKm = undefined;
+    newChat.onclick = function() {
+      const chatBox = document.getElementById('chat-box');
+      if (chatBox) chatBox.innerHTML = '';
+      const userInput = document.getElementById('user-input');
+      if (userInput) userInput.value = '';
 
-  // Tüm scale bar, popup ve overlayleri DOM'dan sil
-  document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
+      // Temizlik - global değişkenler
+      window.selectedCity = null;
+      window.selectedLocation = null;
+      window.selectedLocationLocked = false;
+      window.__locationPickedFromSuggestions = false;
+      window.lastUserQuery = '';
+      window.latestTripPlan = [];
+      window.cart = [];
 
-  if (typeof updateCart === "function") updateCart();
-  document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
-  const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
-  if (sidebar) sidebar.classList.add('open');
-  if (chatBox) {
-    const welcome = document.createElement('div');
-    welcome.className = 'message bot-message';
-    welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
-    chatBox.appendChild(welcome);
+      // Tüm harita ve overlay temizliği
+      if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+      window.routeElevStatsByDay = {};
+      window.__ttElevDayCache = {};
+      window._segmentHighlight = {};
+      window._lastSegmentDay = undefined;
+      window._lastSegmentStartKm = undefined;
+      window._lastSegmentEndKm = undefined;
+
+      document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
+
+      if (typeof updateCart === "function") updateCart();
+      document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+      const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+      if (sidebar) sidebar.classList.add('open');
+
+      // Welcome mesajı ekle
+      if (chatBox) {
+        const welcome = document.createElement('div');
+        welcome.className = 'message bot-message';
+        welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
+        chatBox.appendChild(welcome);
+
+        // Typing indicator ekle (animasyonlu span'lı)
+        let indicator = document.getElementById('typing-indicator');
+        if (!indicator) {
+          indicator = document.createElement('div');
+          indicator.id = 'typing-indicator';
+          indicator.className = 'typing-indicator';
+          indicator.innerHTML = '<span></span><span></span><span></span>';
+          chatBox.appendChild(indicator);
+        } else {
+          indicator.style.display = 'block';
+          indicator.innerHTML = '<span></span><span></span><span></span>';
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      // input-wrapper tekrar görünür olsun
+      var iw = document.querySelector('.input-wrapper');
+      if (iw) iw.style.display = '';
+
+      // Tüm seçili suggestionları temizle
+      document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function(el) {
+        el.classList.remove('selected-suggestion');
+      });
+    };
   }
-
-  // --- BURAYI EKLE ---
-  var iw = document.querySelector('.input-wrapper');
-  if (iw) iw.style.display = '';
-
-  // --- SEÇİMLİ SUGGESTION'ları TEMİZLE ---
-  document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function(el) {
-    el.classList.remove('selected-suggestion');
-  });
-  
-};
-    }
-    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-    if (datesBtn && datesBtn.nextSibling !== newChat){
-      datesBtn.insertAdjacentElement('afterend', newChat);
-    } else if (!datesBtn && newChat.parentNode !== cartRoot){
-      cartRoot.appendChild(newChat);
-    }
-    const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-    newChat.style.display = itemCount > 0 ? 'block' : 'none';
-  })();
+  const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+  if (datesBtn && datesBtn.nextSibling !== newChat){
+    datesBtn.insertAdjacentElement('afterend', newChat);
+  } else if (!datesBtn && newChat.parentNode !== cartRoot){
+    cartRoot.appendChild(newChat);
+  }
+  const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+  newChat.style.display = itemCount > 0 ? 'block' : 'none';
+})();
 
   (function ensurePostDateSections() {
     if (!window.cart.startDate) return;
