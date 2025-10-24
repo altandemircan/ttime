@@ -4382,7 +4382,7 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
   // 150px yukarı kaydır
   expandedMap.panBy([0, 150], { animate: true });
   // Zoom'u 0.5 kademe küçült
-  const newZoom = Math.max(expandedMap.getZoom() - 0.5, 2);
+  const newZoom = Math.max(expandedMap.getZoom() - 0.2, 2);
   expandedMap.setZoom(newZoom, { animate: true });
 }, 350);
 
@@ -5525,7 +5525,7 @@ setTimeout(() => {
   // 150px yukarı kaydır
   expandedMap.panBy([0, 150], { animate: true });
   // Zoom'u 0.5 kademe küçült
-  const newZoom = Math.max(expandedMap.getZoom() - 0.5, 2);
+  const newZoom = Math.max(expandedMap.getZoom() - 0.2, 2);
   expandedMap.setZoom(newZoom, { animate: true });
 }, 350);
 
