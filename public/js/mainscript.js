@@ -316,10 +316,10 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
+  // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-
-  // TICK/KM/MARKER kodu (değiştirmiyoruz, aynı)
+  // TICK/KM/MARKER kodu (değiştirmiyoruz)
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -367,47 +367,35 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     });
   }
 
-  // --- SVG Gridlabel Okuma ---
-let gridLabels = [];
+  // === EŞİT ARALIKLI BAREMLER ===
+
+  // Yükseklik SVG'sinden maksimumu bul
+  let tmax = null;
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
-    gridLabels = Array.from(svg.querySelectorAll('text'))
-      .map(t => ({
-        value: t.textContent.trim(),
-        y: Number(t.getAttribute('y')),
-        num: Number(t.textContent.trim().replace(' m', ''))
-      }))
-      .filter(obj => /-?\d+\s*m$/.test(obj.value));
+    const gridLabels = Array.from(svg.querySelectorAll('text'))
+      .map(t => Number(t.textContent.trim().replace(' m', '')))
+      .filter(num => !isNaN(num));
+    tmax = Math.max(...gridLabels, 0);
   }
-  gridLabels.sort((a, b) => b.y - a.y); // Alttan üste
+  if (!tmax || isNaN(tmax)) tmax = 0;
 
-  // Sadece 0 ve üstü olan seviyeler
-  const positiveLabels = gridLabels.filter(l => l.num >= 0);
-  let gridLabels3 = [];
+  // 4 barem: max, 2/3 max, 1/3 max, 0
+  const barems = [
+    tmax,
+    tmax * 2 / 3,
+    tmax * 1 / 3,
+    0
+  ];
 
-  if (positiveLabels.length >= 3) {
-    // En üst, orta, 0'ı bul
-    let zeroIdx = positiveLabels.findIndex(l => l.num === 0);
-    if (zeroIdx === -1) zeroIdx = positiveLabels.length - 1; // En alta en yakın olanı
-    gridLabels3 = [
-      positiveLabels[0], // en üst
-      positiveLabels[Math.floor(positiveLabels.length / 2)], // orta
-      positiveLabels[zeroIdx] // 0'a en yakın (alt)
-    ];
-  } else if (positiveLabels.length === 2) {
-    gridLabels3 = [positiveLabels[0], positiveLabels[1]];
-  } else if (positiveLabels.length === 1) {
-    gridLabels3 = [positiveLabels[0]];
+  // SVG yüksekliği
+  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+
+  // Her baremin Y koordinatı (svg mantığıyla)
+  function getY(val) {
+    if (tmax === 0) return svgH;
+    return (svgH - 1) - ((val - 0) / (tmax - 0)) * (svgH - 2);
   }
-
-  // Eğer profilin en düşük noktası 0'ın altındaysa, en düşük label'ı ekle
-  const minLabel = gridLabels[gridLabels.length - 1];
-  if (minLabel && minLabel.num < 0) {
-    gridLabels3.push(minLabel);
-  }
-
-  // Tekrar unique olsun
-  gridLabels3 = gridLabels3.filter((obj, i, arr) => arr.findIndex(o => o.num === obj.num) === i);
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
@@ -423,13 +411,13 @@ let gridLabels = [];
     display: block;
   `;
 
-  gridLabels3.forEach(obj => {
+  barems.forEach(val => {
     const label = document.createElement('div');
     label.className = 'elevation-label';
     label.style.cssText = `
       position: absolute;
       right: 0;
-      top: ${obj.y - 8}px;
+      top: ${getY(val) - 8}px;
       text-align: right;
       padding-right: 5px;
       border-right: 1px solid #cfd8dc;
@@ -438,7 +426,7 @@ let gridLabels = [];
       background: none;
       line-height: 1.2;
     `;
-    label.textContent = obj.value;
+    label.textContent = `${Math.round(val)} m`;
 
     // Altına yatay çizgi ekle
     const hr = document.createElement('div');
@@ -455,7 +443,6 @@ let gridLabels = [];
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
-
 }
 
         // Aktif harita planlama modu için
