@@ -345,7 +345,6 @@ function fitExpandedMapToRoute(day) {
   }
 
 
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
@@ -405,12 +404,13 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const svg = track.querySelector('svg.tt-elev-svg');
   let gridLabels = [];
   if (svg) {
-    // Tüm <text> elemanlarını bul ve içeriği al
     gridLabels = Array.from(svg.querySelectorAll('text'))
       .map(t => t.textContent.trim())
-      // Sadece "m" ile biten, rakam içerenler
       .filter(txt => /-?\d+\s*m$/.test(txt));
   }
+
+  // **BURASI KRİTİK:** Alttan üste sıralamak için gridLabels dizisini ters çevir!
+  gridLabels = gridLabels.slice().reverse();
 
   // Sol barem DIV'i oluştur
   const elevationLabels = document.createElement('div');
@@ -430,7 +430,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     z-index: 5;
   `;
 
-  // SVG grid değerlerini yukarıdan aşağıya sırala ve ekle
+  // SVG grid değerlerini alttan üste sırala ve ekle
   gridLabels.forEach(elevation => {
     const label = document.createElement('div');
     label.className = 'elevation-label';
