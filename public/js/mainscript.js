@@ -8736,13 +8736,7 @@ track.addEventListener('touchstart', function(e) {
   selDiv.style.display = 'block';
 });
 
-// renderRouteScaleBar içinde, scale bar track ve selDiv OLUŞTURULDUKTAN SONRA:
-window.__scaleBarDragTrack = track;
-window.__scaleBarDragSelDiv = selDiv;
-window.removeEventListener('mousemove', window.__sb_onMouseMove);
-window.removeEventListener('mouseup', window.__sb_onMouseUp);
-window.addEventListener('mousemove', window.__sb_onMouseMove);
-window.addEventListener('mouseup', window.__sb_onMouseUp);
+
 
   // Görünüm
   const MARKER_PAD_PX = 10;
