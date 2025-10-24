@@ -6944,18 +6944,20 @@ display: flex
 /* TRIP LOADING */
 
 
-.elevation-label {
+.elevation-range-label {
   position: absolute;
-  right: calc(100% + 5px);
-  width: 40px;
-  text-align: right;
-  font-size: 10px;
+  left: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: 11px;
   color: #607d8b;
-  pointer-events: none;
+  line-height: 1.3;
+  width: 50px;
 }
 
 /* Track container için sol padding */
 .track-container {
   position: relative;
-  padding-left: 50px;
+  padding-left: 60px;
 }
