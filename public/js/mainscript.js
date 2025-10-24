@@ -8771,6 +8771,8 @@ svgElem.setAttribute('preserveAspectRatio', 'none');
 svgElem.setAttribute('width', '100%');
 svgElem.setAttribute('height', SVG_H);
 track.appendChild(svgElem);
+createScaleElements(track, width, totalKm, 0, markers);
+
 
 const gridG = document.createElementNS(svgNS, 'g');
 gridG.setAttribute('class', 'tt-elev-grid');
@@ -8784,8 +8786,6 @@ const segG = document.createElementNS(svgNS, 'g');
 segG.setAttribute('class', 'tt-elev-segments');
 svgElem.appendChild(segG);
 
-// SOL BAREM/SCALE/MARKER EKLEMEK İÇİN EN SONA KOY:
-createScaleElements(track, width, totalKm, 0, markers);
 // Dikey çizgi + tooltip
 const verticalLine = document.createElement('div');
 verticalLine.className = 'scale-bar-vertical-line';
@@ -9048,7 +9048,7 @@ track.addEventListener('touchmove', track.__onMove);
       const spanKm = container._elevKmSpan || 1;
       const startKmDom = container._elevStartKm || 0;
       const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-      createScaleElements(track, newW, spanKm, startKmDom, markers);
+       createScaleElements(track, newW, spanKm, startKmDom, markers);
     }
 
   if (container._elevResizeObserver) {
