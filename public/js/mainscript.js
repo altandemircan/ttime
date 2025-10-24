@@ -1134,11 +1134,10 @@ function addMessage(text, className) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-   function hideTypingIndicator() {
+function hideTypingIndicator() {
   const typingIndicator = document.getElementById("typing-indicator");
   if (typingIndicator) typingIndicator.style.display = "none";
 }
-
 
 document.addEventListener("DOMContentLoaded", function() {
     const sendBtn = document.getElementById("send-button");
