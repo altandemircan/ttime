@@ -345,7 +345,7 @@ function fitExpandedMapToRoute(day) {
   }
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-  if (!track) return;
+ if (!track) return;
 
   // PATCH: Expanded scalebar için solda boşluk bırak
   const isExpanded = track.closest('.route-scale-bar')?.id?.startsWith('expanded-route-scale-bar-day');
@@ -354,14 +354,17 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   // Genişliği DOM'dan canlı oku
   const w = widthPx || track.getBoundingClientRect().width;
 
-  // Track'in paddingleri
   const style = getComputedStyle(track);
   const padLeft = parseFloat(style.paddingLeft) || 0;
   const padRight = parseFloat(style.paddingRight) || 0;
-  const effectiveW = w - padLeft - padRight;
 
-  // X fonksiyonu: km'nin bar üzerindeki tam pozisyonu
-  const X = kmRel => LABEL_WIDTH + padLeft + (kmRel / spanKm) * effectiveW;
+  // === ELEVATION PROFILI ALANI ===
+  const profileBox = track.querySelector('.tt-elev-svg');
+  const ELEV_LEFT = profileBox ? profileBox.offsetLeft : LABEL_WIDTH + padLeft;
+  const ELEV_WIDTH = profileBox ? profileBox.getBoundingClientRect().width : w - padLeft - padRight;
+
+  // X fonksiyonu: profilin solundan başlat!
+  const X = kmRel => ELEV_LEFT + (kmRel / spanKm) * ELEV_WIDTH;
 
   // Eski tick, label, marker'ları temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
