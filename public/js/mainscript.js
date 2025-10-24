@@ -8787,10 +8787,20 @@ container._elevKmSpan = totalKm;
   function redrawElevation(elevationData) {
     if (!elevationData) return;
     const { smooth, min, max } = elevationData;
-
     const s = container._elevSamples || [];
     const startKmDom = Number(container._elevStartKm || 0);
     const spanKm = Number(container._elevKmSpan || totalKm) || 1;
+
+    // --- PATCH: Solda Y etiketi alanı sadece expanded bar için ---
+    const isExpanded = container.id && container.id.startsWith('expanded-route-scale-bar-day');
+    const LABEL_WIDTH = isExpanded ? 38 : 0;
+
+    // X ve SVG genişliği patch
+    const X = kmRel => LABEL_WIDTH + (kmRel / spanKm) * width;
+
+    // SVG ve grupları patch'le (SVG oluşturulurken):
+    svg.setAttribute('viewBox', `0 0 ${width + LABEL_WIDTH} ${SVG_H}`);
+    svg.setAttribute('width', width + LABEL_WIDTH);
 
     // Görsel min/max
     let vizMin = min, vizMax = max;
@@ -8798,51 +8808,53 @@ container._elevKmSpan = totalKm;
     if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
     else { vizMin = min - 1; vizMax = max + 1; }
 
-    const X = kmRel => (kmRel / spanKm) * width;
     const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
 
     while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
-    // Grid
-const levels = 3;
-for (let i = 0; i <= levels; i++) {
-  const ev = vizMin + (i / levels) * (vizMax - vizMin);
-  const y = Y(ev);
-  if (isNaN(y)) continue;
-  const ln = document.createElementNS(svgNS, 'line');
-  ln.setAttribute('x1', LABEL_WIDTH);
-  ln.setAttribute('x2', String(width + LABEL_WIDTH));
-  ln.setAttribute('y1', String(y));
-  ln.setAttribute('y2', String(y));
-  ln.setAttribute('stroke', '#d7dde2');
-  ln.setAttribute('stroke-dasharray', '4 4');
-  ln.setAttribute('opacity', '.8');
-  gridG.appendChild(ln);
+    // --- GRID ve LABEL'lar (solda, sadece expanded için) ---
+    const levels = 3;
+    for (let i = 0; i <= levels; i++) {
+      const ev = vizMin + (i / levels) * (vizMax - vizMin);
+      const y = Y(ev);
+      if (isNaN(y)) continue;
+      const ln = document.createElementNS(svgNS, 'line');
+      ln.setAttribute('x1', LABEL_WIDTH);
+      ln.setAttribute('x2', String(width + LABEL_WIDTH));
+      ln.setAttribute('y1', String(y));
+      ln.setAttribute('y2', String(y));
+      ln.setAttribute('stroke', '#d7dde2');
+      ln.setAttribute('stroke-dasharray', '4 4');
+      ln.setAttribute('opacity', '.8');
+      gridG.appendChild(ln);
 
-  const tx = document.createElementNS(svgNS, 'text');
-  tx.setAttribute('x', LABEL_WIDTH - 6);
-  tx.setAttribute('y', String(y + 3));
-  tx.setAttribute('fill', '#90a4ae');
-  tx.setAttribute('font-size', '13');
-  tx.setAttribute('text-anchor', 'end');
-  tx.setAttribute('dominant-baseline', 'middle');
-  tx.textContent = `${Math.round(ev)} m`;
-  gridG.appendChild(tx);
-}
+      // Sadece expanded'da label solda, mini barda aynen kalsın
+      if (isExpanded) {
+        const tx = document.createElementNS(svgNS, 'text');
+        tx.setAttribute('x', LABEL_WIDTH - 6);
+        tx.setAttribute('y', String(y + 3));
+        tx.setAttribute('fill', '#90a4ae');
+        tx.setAttribute('font-size', '13');
+        tx.setAttribute('text-anchor', 'end');
+        tx.setAttribute('dominant-baseline', 'middle');
+        tx.textContent = `${Math.round(ev)} m`;
+        gridG.appendChild(tx);
+      }
+    }
 
-    // Alan
+    // Alan (grafik)
     let topD = '';
     const n = Math.min(smooth.length, s.length);
     for (let i = 0; i < n; i++) {
       const kmAbs = s[i].distM / 1000;
-      const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
+      const x = Math.max(0, Math.min(width + LABEL_WIDTH, X(kmAbs - startKmDom)));
       const y = Y(smooth[i]);
       if (isNaN(x) || isNaN(y)) continue;
       topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
     }
     if (topD) {
-      const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
+      const areaD = `${topD} L ${width + LABEL_WIDTH} ${SVG_H} L ${LABEL_WIDTH} ${SVG_H} Z`;
       areaPath.setAttribute('d', areaD);
       areaPath.setAttribute('fill', '#263445');
     }
@@ -8851,9 +8863,9 @@ for (let i = 0; i <= levels; i++) {
     for (let i = 1; i < n; i++) {
       const kmAbs1 = s[i - 1].distM / 1000;
       const kmAbs2 = s[i].distM / 1000;
-      const x1 = Math.max(0, Math.min(width, X(kmAbs1 - startKmDom)));
+      const x1 = Math.max(0, Math.min(width + LABEL_WIDTH, X(kmAbs1 - startKmDom)));
       const y1 = Y(smooth[i - 1]);
-      const x2 = Math.max(0, Math.min(width, X(kmAbs2 - startKmDom)));
+      const x2 = Math.max(0, Math.min(width + LABEL_WIDTH, X(kmAbs2 - startKmDom)));
       const y2 = Y(smooth[i]);
 
       const dx = s[i].distM - s[i - 1].distM;
@@ -8875,7 +8887,7 @@ for (let i = 0; i <= levels; i++) {
       seg.setAttribute('fill', 'none');
       segG.appendChild(seg);
     }
-  }
+}
   container._redrawElevation = redrawElevation;
 
 // Tooltip ve vertical line hareket ettirme (her zaman görünür!)
