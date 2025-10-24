@@ -10033,7 +10033,6 @@ document.addEventListener('click', function(e) {
 });
 
 
-// Loading paneli göster, welcome (.cw) bloğunu gizle
 function showLoadingPanel() {
   var loadingPanel = document.getElementById("loading-panel");
   if (loadingPanel) loadingPanel.style.display = "flex";
@@ -10041,8 +10040,9 @@ function showLoadingPanel() {
   if (cw) cw.style.display = "none";
 }
 
-// Loading paneli gizle
 function hideLoadingPanel() {
   var loadingPanel = document.getElementById("loading-panel");
   if (loadingPanel) loadingPanel.style.display = "none";
+  var cw = document.querySelector('.cw');
+  if (cw) cw.style.display = "";
 }
