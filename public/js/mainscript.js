@@ -1034,6 +1034,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function addCanonicalMessage(canonicalStr) {
+  const chatBox = document.getElementById("chat-box");
+  if (!chatBox) return;
+  const msg = document.createElement("div");
+  msg.className = "message canonical-message";
+  msg.innerHTML = `<img src="https://dev.triptime.ai/img/profile-icon.svg" alt="Profile" class="profile-img">
+  <span>${canonicalStr}</span>`;
+  // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
+  const typingIndicator = chatBox.querySelector('#typing-indicator');
+  if (typingIndicator && typingIndicator.nextSibling) {
+    chatBox.insertBefore(msg, typingIndicator.nextSibling);
+  } else {
+    chatBox.appendChild(msg);
+  }
+}
+
 function sendMessage() {
   if (window.isProcessing) return;
   const input = document.getElementById("user-input");
@@ -1048,6 +1064,11 @@ function sendMessage() {
   }
 
   const formatted = formatCanonicalPlan(val);
+
+  // --- CANONICAL MESAJI GÖSTER ---
+  if (formatted.canonical) {
+    addCanonicalMessage(formatted.canonical);
+  }
 
   // Diff sadece seçim yapılmışsa
   if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
@@ -1085,8 +1106,8 @@ function sendMessage() {
 
   handleAnswer(val);
 }
-document.getElementById('send-button').addEventListener('click', sendMessage);
 
+document.getElementById('send-button').addEventListener('click', sendMessage);
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
