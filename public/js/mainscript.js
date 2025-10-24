@@ -8946,6 +8946,8 @@ container._elevKmSpan = totalKm;
       seg.setAttribute('fill', 'none');
       segG.appendChild(seg);
     }
+      createScaleElements(track, width, totalKm, 0, markers);
+
   }
   container._redrawElevation = redrawElevation;
 
