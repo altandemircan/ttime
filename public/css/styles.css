@@ -6960,4 +6960,7 @@ display: flex
 .track-container {
   position: relative;
   padding-left: 60px;
+}.route-scale-bar {
+    position: relative;
+    margin-left: 70px; /* Yükseklik etiketleri için yer aç */
 }
