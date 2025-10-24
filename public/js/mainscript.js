@@ -10046,12 +10046,11 @@ function showLoadingPanel() {
 }
 
 function hideLoadingPanel() {
-  var loadingPanel = document.getElementById("loading-panel");
-  if (loadingPanel) loadingPanel.style.display = "none";
-  // Eğer welcome paneli artık hiç görünmesin istiyorsak:
-  if (!window.__welcomeHiddenForever) {
-    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-  } else {
-    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-  }
+    var loadingPanel = document.getElementById("loading-panel");
+    if (loadingPanel) loadingPanel.style.display = "none";
+    if (!window.__welcomeHiddenForever) {
+        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
+    } else {
+        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+    }
 }
