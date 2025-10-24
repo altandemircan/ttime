@@ -393,23 +393,23 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   // Marker badge'ler
-  const BADGE_W = 18; // badge boyu
-if (Array.isArray(markers)) {
-  markers.forEach((m, idx) => {
-    if (typeof m.distance !== 'number') return;
-    if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
-    const relKm = m.distance - startKmDom;
-    let x = X(relKm);
-    // Clamp: marker badge barın ortasını, barın dışına çıkarmasın!
-    x = Math.max(LABEL_WIDTH + BADGE_W/2, Math.min(LABEL_WIDTH + w - BADGE_W/2, x));
-    const wrap = document.createElement('div');
-    wrap.className = 'marker-badge';
-    wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
-    wrap.title = m.name || '';
-    wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-    track.appendChild(wrap);
-  });
-}
+  if (Array.isArray(markers)) {
+    const BADGE_W = 18;
+    markers.forEach((m, idx) => {
+      if (typeof m.distance !== 'number') return;
+      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
+      const relKm = m.distance - startKmDom;
+      let x = X(relKm);
+      // Clamp: marker badge scale bar'ın sağına taşmasın (ortası tam barın sağına denk gelir)
+      x = Math.max(LABEL_WIDTH + BADGE_W/2, Math.min(LABEL_WIDTH + w - BADGE_W/2, x));
+      const wrap = document.createElement('div');
+      wrap.className = 'marker-badge';
+      wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
+      wrap.title = m.name || '';
+      wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      track.appendChild(wrap);
+    });
+  }
 }
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
@@ -8704,22 +8704,18 @@ tooltip.className = 'tt-elev-tooltip';
 tooltip.style.left = '0px';
 track.appendChild(tooltip);
 
+// Mouse ile çizgiyi hareket ettir (her zaman görünür!)
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  // Barın LABEL_WIDTH sonrası başlar!
-  x = Math.max(LABEL_WIDTH, Math.min(LABEL_WIDTH + width, x));
+  const x = e.clientX - rect.left;
   verticalLine.style.left = `${x}px`;
-  tooltip.style.left = `${x}px`;
 });
-
 track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
-  let x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (LABEL_WIDTH + width / 2);
-  x = Math.max(LABEL_WIDTH, Math.min(LABEL_WIDTH + width, x));
+  const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
   verticalLine.style.left = `${x}px`;
-  tooltip.style.left = `${x}px`;
 });
+// Mouseleave, touchend gibi eventlerde ÇİZGİYİ GİZLEME! Kodun başka yerinde verticalLine.style.display = 'none' geçiyorsa SİL.
 
 // Mesafe (Haversine)
 function hv(lat1, lon1, lat2, lon2) {
@@ -8808,7 +8804,7 @@ container._elevKmSpan = totalKm;
 
     // --- PATCH: Solda Y etiketi alanı sadece expanded bar için ---
     const isExpanded = container.id && container.id.startsWith('expanded-route-scale-bar-day');
-const LABEL_WIDTH = isExpanded ? 38 : 0;
+    const LABEL_WIDTH = isExpanded ? 38 : 0;
 
     // X ve SVG genişliği patch
     const X = kmRel => LABEL_WIDTH + (kmRel / spanKm) * width;
@@ -8946,9 +8942,8 @@ track.__onMove = function(e) {
   }
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  verticalLine.style.left = (LABEL_WIDTH + width / 2) + 'px';
-
-  verticalLine.style.left = (LABEL_WIDTH + width / 2) + 'px'
+  tooltip.style.left = `${x}px`;
+  verticalLine.style.left = `${x}px`;
   verticalLine.style.display = 'block';
 };
 // Bağla!
