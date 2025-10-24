@@ -344,12 +344,10 @@ function fitExpandedMapToRoute(day) {
     return f * p10;
   }
 
-
-
-        function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
+function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], elevationData = []) {
   if (!track) return;
 
-  // Temizle
+  // Temizle - elevation-label da eklendi
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-label').forEach(el => el.remove());
 
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
@@ -385,41 +383,49 @@ function fitExpandedMapToRoute(day) {
   }
 
   // Yükseklik değerleri için sol tarafta etiketler
-  const elevationLabels = document.createElement('div');
-  elevationLabels.className = 'elevation-labels-container';
-  elevationLabels.style.cssText = `
-    position: absolute;
-    left: -50px; /* Barın solunda */
-    top: 0;
-    bottom: 0;
-    width: 45px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #607d8b;
-    pointer-events: none;
-  `;
+  if (elevationData && elevationData.length > 0) {
+    const minElevation = Math.min(...elevationData);
+    const maxElevation = Math.max(...elevationData);
+    const elevationRange = maxElevation - minElevation;
+    
+    // Yükseklik etiketleri için uygun aralıkları belirle
+    const elevationStep = niceStep(elevationRange, 5); // 4-6 etiket için
+    const elevationValues = [];
+    
+    for (let e = Math.floor(minElevation / elevationStep) * elevationStep; e <= maxElevation; e += elevationStep) {
+      if (e >= minElevation) {
+        elevationValues.push(e);
+      }
+    }
 
-  // Örnek yükseklik değerleri (bu kısmı gerçek yükseklik verilerinize göre değiştirin)
-  const elevationValues = [0, 500, 1000, 1500, 2000]; // Örnek değerler
-  
-  elevationValues.forEach(elevation => {
-    const label = document.createElement('div');
-    label.className = 'elevation-label';
-    label.style.cssText = `
-      text-align: right;
-      padding-right: 5px;
-      border-right: 1px solid #cfd8dc;
-      height: 20px;
-      line-height: 20px;
-    `;
-    label.textContent = `${elevation}m`;
-    elevationLabels.appendChild(label);
-  });
+    // Eğer çok az etiket varsa, min ve max ekle
+    if (elevationValues.length < 3) {
+      elevationValues.unshift(minElevation);
+      elevationValues.push(maxElevation);
+    }
 
-  track.style.position = 'relative';
-  track.appendChild(elevationLabels);
+    elevationValues.forEach(elevation => {
+      const label = document.createElement('div');
+      label.className = 'elevation-label';
+      label.style.cssText = `
+        position: absolute;
+        right: calc(100% + 5px);
+        width: 40px;
+        text-align: right;
+        font-size: 10px;
+        color: #607d8b;
+        pointer-events: none;
+      `;
+      
+      // Yüksekliği track yüksekliğine göre konumlandır
+      const elevationPercent = ((elevation - minElevation) / elevationRange) * 100;
+      label.style.bottom = `${elevationPercent}%`;
+      label.style.transform = 'translateY(50%)';
+      
+      label.textContent = `${Math.round(elevation)}m`;
+      track.appendChild(label);
+    });
+  }
 
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
@@ -435,6 +441,82 @@ function fitExpandedMapToRoute(day) {
       track.appendChild(wrap);
     });
   }
+}
+function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], heights = []) {
+  // HATALI: track yoksa hiçbir şey çizilmez!
+  if (!track) return;
+
+  // Temizle
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .height-label').forEach(el => el.remove());
+
+  const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
+  let stepKm = niceStep(spanKm, targetCount);
+  let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
+  if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
+  if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
+
+  // Yükseklik değerlerini scale bar'ın soluna ekleme
+  if (Array.isArray(heights)) {
+    heights.forEach((height, idx) => {
+      const heightLabel = document.createElement('div');
+      heightLabel.className = 'height-label';
+      heightLabel.style.position = 'absolute';
+      heightLabel.style.left = '-40px'; // Sol tarafa yerleştirme
+      heightLabel.style.top = `${10 + idx * 20}px`; // Yüksekliği sırayla yerleştiriyoruz
+      heightLabel.style.fontSize = '11px';
+      heightLabel.style.color = '#607d8b';
+      heightLabel.textContent = `${height} m`; // Metre cinsinden yükseklik
+      track.appendChild(heightLabel);
+    });
+  }
+
+  for (let i = 0; i <= majors; i++) {
+    const curKm = Math.min(spanKm, i * stepKm);
+    const leftPct = (curKm / spanKm) * 100;
+
+    const tick = document.createElement('div');
+    tick.className = 'scale-bar-tick';
+    tick.style.left = `${leftPct}%`;
+    tick.style.position = 'absolute';
+    tick.style.top = '10px';
+    tick.style.width = '1px';
+    tick.style.height = '16px';
+    tick.style.background = '#cfd8dc';
+    track.appendChild(tick);
+
+    const label = document.createElement('div');
+    label.className = 'scale-bar-label';
+    label.style.left = `${leftPct}%`;
+    label.style.position = 'absolute';
+    label.style.top = '30px';
+    label.style.transform = 'translateX(-50%)';
+    label.style.fontSize = '11px';
+    label.style.color = '#607d8b';
+    label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+    track.appendChild(label);
+  }
+
+  if (Array.isArray(markers)) {
+    markers.forEach((m, idx) => {
+      if (typeof m.distance !== 'number') return;
+      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
+      const relKm = m.distance - startKmDom;
+      const left = (relKm / spanKm) * 100;
+      const wrap = document.createElement('div');
+      wrap.className = 'marker-badge';
+      wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+      wrap.title = m.name || '';
+      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      track.appendChild(wrap);
+    });
+  }
+}
+// Yardımcı fonksiyon - yükseklik adımları için
+function niceStep(range, targetCount) {
+  const roughStep = range / (targetCount - 1);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const candidates = [1, 2, 5, 10].map(x => x * magnitude);
+  return candidates.find(c => roughStep <= c) || candidates[candidates.length - 1];
 }
 
         // Aktif harita planlama modu için
