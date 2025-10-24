@@ -348,14 +348,18 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
-  // PATCH: Expanded scalebar için solda boşluk bırak
+  // Expanded scalebar için solda boşluk bırak
   const isExpanded = track.closest('.route-scale-bar')?.id?.startsWith('expanded-route-scale-bar-day');
   const LABEL_WIDTH = isExpanded ? 38 : 0;
-  const w = widthPx;
+
+  // Genişliği DOM'dan canlı oku (her zaman doğru clamp için)
+  const w = widthPx || track.getBoundingClientRect().width;
   const X = kmRel => LABEL_WIDTH + (kmRel / spanKm) * w;
 
+  // Eski tick, label, marker'ları temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
+  // KM çizelgesi (tick ve label)
   const targetCount = Math.max(6, Math.min(14, Math.round(w / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -388,13 +392,14 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
+  // Marker badge'ler
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
       if (typeof m.distance !== 'number') return;
       if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
       const relKm = m.distance - startKmDom;
       let x = X(relKm);
-      // Clamp: marker badge scale bar'ın sağına taşmasın
+      // Clamp: marker badge scale bar'ın sağına taşmasın (ortası tam barın sağına denk gelir)
       x = Math.max(LABEL_WIDTH, Math.min(LABEL_WIDTH + w, x));
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
@@ -405,7 +410,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     });
   }
 }
-
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
 window.mapPlanningActive = false;
