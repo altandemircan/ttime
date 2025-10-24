@@ -8076,7 +8076,7 @@ function wrapRouteControls(day) {
   expandBtn.style.color = '#ffffff;';
   expandBtn.innerHTML = `
     <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
-    <span class="tm-label">Expand map</span>
+    <span class="tm-label" style="color: #ffffff">Expand map</span>
   `;
   expandBtn.onclick = function() {
     const containerId = `route-map-day${day}`;
