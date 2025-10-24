@@ -8064,7 +8064,7 @@ function wrapRouteControls(day) {
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
-  expandBtn.style.background = '#ffffff';
+  expandBtn.style.background = '#277ed3';
   expandBtn.style.border = '1px solid #ddd';
   expandBtn.style.borderRadius = '16px';
   expandBtn.style.display = 'flex';
@@ -8073,7 +8073,7 @@ function wrapRouteControls(day) {
   expandBtn.style.gap = '6px';
   expandBtn.style.padding = '5px 10px';
   expandBtn.style.fontWeight = 'bold';
-  expandBtn.style.color = '#8a4af3';
+  expandBtn.style.color = '#ffffff;';
   expandBtn.innerHTML = `
     <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
     <span class="tm-label">Expand map</span>
