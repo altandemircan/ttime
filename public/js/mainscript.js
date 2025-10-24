@@ -367,22 +367,44 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     });
   }
 
-    let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
+let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
 
+const svg = track.querySelector('svg.tt-elev-svg');
+if (svg) {
+  // <text> elemanlarını bul, y koordinatı ve içeriğini al
+  gridLabels = Array.from(svg.querySelectorAll('text'))
+    .map(t => ({
+      value: t.textContent.trim(),
+      y: Number(t.getAttribute('y'))
+    }))
+    .filter(obj => /-?\d+\s*m$/.test(obj.value));
+}
 
-  const svg = track.querySelector('svg.tt-elev-svg');
-  if (svg) {
-    // <text> elemanlarını bul, y koordinatı ve içeriğini al
-    gridLabels = Array.from(svg.querySelectorAll('text'))
-      .map(t => ({
-        value: t.textContent.trim(),
-        y: Number(t.getAttribute('y'))
-      }))
-      .filter(obj => /-?\d+\s*m$/.test(obj.value));
-  }
+// Alttan üste sıralama (SVG'de y arttıkça aşağı iner)
+gridLabels.sort((a, b) => b.y - a.y);
 
-  // Sadece ilk 3 grid labeli kullan
+// Sadece ilk 3 seviye göster
 const gridLabels3 = gridLabels.slice(0, 3);
+
+// Sol barem DIV'i oluştur
+const elevationLabels = document.createElement('div');
+elevationLabels.className = 'elevation-labels-container';
+elevationLabels.style.cssText = `
+  position: absolute;
+  left: -50px;
+  top: 0;
+  bottom: 0;
+  width: 45px;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+`;
+elevationLabels.style.display = 'block'; 
+
+// SVG'nin yüksekliği
+const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+
+// Grid label'larını SVG y koordinatına göre hizala
 gridLabels3.forEach(obj => {
   const label = document.createElement('div');
   label.className = 'elevation-label';
@@ -393,7 +415,7 @@ gridLabels3.forEach(obj => {
     text-align: right;
     padding-right: 5px;
     border-right: 1px solid #cfd8dc;
-    font-size: 10px;
+    font-size: 11px;
     color: #607d8b;
     background: none;
     line-height: 1.1;
