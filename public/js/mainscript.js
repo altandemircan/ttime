@@ -406,8 +406,8 @@ if (Array.isArray(markers)) {
 
   // Son marker ise, profile'ın tam sonuna ortala
   if (idx === markers.length - 1) {
-    x = X(spanKm); // profile'ın tam sonu
-  }
+    x = Math.min(X(spanKm), LABEL_WIDTH + w - padRight - BADGE_W/2);
+}
 
   // Clamp sadece ilk ve ortadakiler için
   if (idx !== markers.length - 1) {
