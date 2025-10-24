@@ -343,33 +343,31 @@ function fitExpandedMapToRoute(day) {
     const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
     return f * p10;
   }
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
- if (!track) return;
+  if (!track) return;
 
-  // PATCH: Expanded scalebar için solda boşluk bırak
   const isExpanded = track.closest('.route-scale-bar')?.id?.startsWith('expanded-route-scale-bar-day');
   const LABEL_WIDTH = isExpanded ? 38 : 0;
 
-  // Genişliği DOM'dan canlı oku
   const w = widthPx || track.getBoundingClientRect().width;
-
   const style = getComputedStyle(track);
   const padLeft = parseFloat(style.paddingLeft) || 0;
   const padRight = parseFloat(style.paddingRight) || 0;
 
-  // === ELEVATION PROFILI ALANI ===
+  // Elevation profilinin solunu doğru bul!
   const profileBox = track.querySelector('.tt-elev-svg');
-  const ELEV_LEFT = profileBox ? profileBox.offsetLeft : LABEL_WIDTH + padLeft;
-  const ELEV_WIDTH = profileBox ? profileBox.getBoundingClientRect().width : w - padLeft - padRight;
-
-  // X fonksiyonu: profilin solundan başlat!
+  let ELEV_LEFT = LABEL_WIDTH + padLeft;
+  let ELEV_WIDTH = w - padLeft - padRight;
+  if (profileBox) {
+    const profileRect = profileBox.getBoundingClientRect();
+    const trackRect = track.getBoundingClientRect();
+    ELEV_LEFT = profileRect.left - trackRect.left;
+    ELEV_WIDTH = profileRect.width;
+  }
   const X = kmRel => ELEV_LEFT + (kmRel / spanKm) * ELEV_WIDTH;
 
-  // Eski tick, label, marker'ları temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
-  // KM çizelgesi
   const targetCount = Math.max(6, Math.min(14, Math.round(w / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -402,7 +400,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-  // Marker badge'ler
   if (Array.isArray(markers)) {
     const BADGE_W = 18;
     markers.forEach((m, idx) => {
@@ -411,8 +408,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
       let relKm = m.distance - startKmDom;
       let x = X(relKm);
-
-      // İlk marker tam başa, son marker tam sona ortalansın:
       if (idx === 0) x = X(0);
       if (idx === markers.length - 1) x = X(spanKm);
 
