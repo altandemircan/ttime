@@ -490,6 +490,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
 }
+}
 
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
