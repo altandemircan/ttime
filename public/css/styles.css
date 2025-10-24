@@ -4398,14 +4398,13 @@ ease;
 
 /* ORTA EKRAN LOADING */
 .loading-panel {
-  position: absolute;
-  left: 0; right: 0; top: 0; bottom: 0;
-  z-index: 1200;
-  background: rgba(248,250,255,0.95);
-  display: none; /* JS ile display:flex/block yapılacak */
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+ width: 100%;
+    display: grid
+;
+    max-width: 860px;
+    gap: 30px;
+    padding: 60px 10px;
+    margin: 0 auto;
   transition: opacity 0.3s;
 }
 .loading-spinner img {
