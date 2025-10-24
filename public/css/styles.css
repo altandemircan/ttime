@@ -4895,7 +4895,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-info {
-    margin-bottom:20px;
+    margin-bottom:0px;
 }
 .ai-tags {
     display: flex;
