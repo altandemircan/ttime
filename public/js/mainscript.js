@@ -9,6 +9,8 @@ function attachDragDropEvents() {
   });
 });
 }
+
+
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
 attachDragDropEvents();
 window.__welcomeHiddenForever = false;
@@ -9620,6 +9622,8 @@ if (typeof startKm !== 'number' || typeof endKm !== 'number') {
   });
 }
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
+      const svgNS = 'http://www.w3.org/2000/svg'; // <-- EKLE
+
   // Segment state’i kaydet
   window._lastSegmentDay = day;
   window._lastSegmentStartKm = startKm;
