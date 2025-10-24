@@ -1660,8 +1660,9 @@ async function showResults() {
 // LOADING PANELİ GİZLE
       console.log("hideLoadingPanel çağrıldı!");
 
-  hideLoadingPanel();
-    window.__welcomeHiddenForever = true;
+ window.__welcomeHiddenForever = true;
+document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+hideLoadingPanel();
 }
 
 
