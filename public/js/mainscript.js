@@ -375,23 +375,24 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const elevMin = 60;   // Dinamik istiyorsan profile'dan oku
   const elevMax = 280;
   const levels = 4;
-  const labelCol = document.createElement('div');
-  labelCol.className = 'elev-label-col';
-  labelCol.style.cssText = `
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    width: ${ELEV_LABEL_COL_WIDTH}px;
-    height: ${svgHeight}px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    pointer-events: none;
-    z-index: 2;
-    background: none;
-  `;
-  for (let i = levels; i >= 0; i--) {
-    const val = Math.round(elevMin + (i / levels) * (elevMax - elevMin));
+ const labelCol = document.createElement('div');
+labelCol.className = 'elev-label-col';
+labelCol.style.cssText = `
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: ${ELEV_LABEL_COL_WIDTH}px;
+  height: ${svgHeight}px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  pointer-events: none;
+  z-index: 2;
+`;
+
+samples.forEach((s, i) => {
+  // Sadece belli aralıklarda (ör: ilk, son, veya tooltip noktası gibi) göstermek için filtre ekleyebilirsin
+  if (i === 0 || i === samples.length - 1 || i === Math.floor(samples.length / 2)) {
     const label = document.createElement('div');
     label.className = 'elev-label';
     label.style.cssText = `
@@ -399,13 +400,14 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       color: #90a4ae;
       text-align: right;
       padding-right: 7px;
-      flex: 1 1 auto;
-      background: none;
+      position: absolute;
+      top: ${Y(s.elev)}px; // Y fonksiyonu ile SVG'de yükseklik pozisyonu
     `;
-    label.textContent = `${val} m`;
+    label.textContent = `${Math.round(s.elev)} m`;
     labelCol.appendChild(label);
   }
-  track.appendChild(labelCol);
+});
+track.appendChild(labelCol);
 
   // 2. SVG grafiğini sütunun hemen sağından başlat (marginLeft veya x offset ile)
   if (svg) {
