@@ -6901,4 +6901,7 @@ width: 100%;
   text-align: center;
   margin-top: 18px;
 }
+.loading-text h2 {
+    margin-bottom: 0px; 
+}
 /* TRIP LOADING */
