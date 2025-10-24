@@ -4397,22 +4397,8 @@ ease;
 
 
 
-.loading-panel {
-  position: absolute;
-  left: 0; right: 0; top: 0; bottom: 0;
-  z-index: 1200;
-  background: rgba(248,250,255,0.95);
-  display: none;
-  width: 100%; height: 100%; box-sizing: border-box;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 30px;
-  padding: 60px 10px;
-  margin: 0 auto;
-}
-
-.loading-spinner {
+/* TRIP LOADING */
+.trip-loading {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4461,12 +4447,7 @@ ease;
     opacity: 0.65;
   }
 }
-
-.loading-text {
-  text-align: center;
-  margin-top: 18px;
-}
-
+/* TRIP LOADING */
 
 
 
