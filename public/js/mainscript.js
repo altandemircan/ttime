@@ -345,134 +345,60 @@ function fitExpandedMapToRoute(day) {
   }
 
 
-
-
-
-
-
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-  if (!track) return;
+          // HATALI: track yoksa hiçbir şey çizilmez!
+          if (!track) return;
 
-  // TEMİZLE
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elev-label-col').forEach(el => el.remove());
+          // Temizle
+          track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
-  // SOLDA YÜKSEKLİK ETİKET SÜTUNU
-  const ELEV_LABEL_COL_WIDTH = 48; // px
+          const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
+          let stepKm = niceStep(spanKm, targetCount);
+          let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
+          if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
+          if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
 
-  // Bar ve marker/tick/label için: barın başladığı yer sütunun hemen sağı
-  const PROFILE_START_X = ELEV_LABEL_COL_WIDTH;
-  const PROFILE_END_X = widthPx; // veya widthPx - sağ padding varsa
+          for (let i = 0; i <= majors; i++) {
+            const curKm = Math.min(spanKm, i * stepKm);
+            const leftPct = (curKm / spanKm) * 100;
 
-  // Barın içindeki marker/tick/label için X pozisyonu
-  const X = kmRel => PROFILE_START_X + (kmRel / spanKm) * (PROFILE_END_X - PROFILE_START_X);
+            const tick = document.createElement('div');
+            tick.className = 'scale-bar-tick';
+            tick.style.left = `${leftPct}%`;
+            tick.style.position = 'absolute';
+            tick.style.top = '10px';
+            tick.style.width = '1px';
+            tick.style.height = '16px';
+            tick.style.background = '#cfd8dc';
+            track.appendChild(tick);
 
-  // 1. Yükseklik etiketi sütunu
-  const svg = track.querySelector('.tt-elev-svg');
-  let svgHeight = svg ? (svg.getAttribute('height') || 180) : 180;
-  if (typeof svgHeight === 'string') svgHeight = parseInt(svgHeight, 10);
+            const label = document.createElement('div');
+            label.className = 'scale-bar-label';
+            label.style.left = `${leftPct}%`;
+            label.style.position = 'absolute';
+            label.style.top = '30px';
+            label.style.transform = 'translateX(-50%)';
+            label.style.fontSize = '11px';
+            label.style.color = '#607d8b';
+            label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+            track.appendChild(label);
+          }
 
-  const elevMin = 60;   // Dinamik istiyorsan profile'dan oku
-  const elevMax = 280;
-  const levels = 4;
- const labelCol = document.createElement('div');
-labelCol.className = 'elev-label-col';
-labelCol.style.cssText = `
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: ${ELEV_LABEL_COL_WIDTH}px;
-  height: ${svgHeight}px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  pointer-events: none;
-  z-index: 2;
-`;
-
-samples.forEach((s, i) => {
-  // Sadece belli aralıklarda (ör: ilk, son, veya tooltip noktası gibi) göstermek için filtre ekleyebilirsin
-  if (i === 0 || i === samples.length - 1 || i === Math.floor(samples.length / 2)) {
-    const label = document.createElement('div');
-    label.className = 'elev-label';
-    label.style.cssText = `
-      font-size: 11px;
-      color: #90a4ae;
-      text-align: right;
-      padding-right: 7px;
-      position: absolute;
-      top: ${Y(s.elev)}px; // Y fonksiyonu ile SVG'de yükseklik pozisyonu
-    `;
-    label.textContent = `${Math.round(s.elev)} m`;
-    labelCol.appendChild(label);
-  }
-});
-track.appendChild(labelCol);
-
-  // 2. SVG grafiğini sütunun hemen sağından başlat (marginLeft veya x offset ile)
-  if (svg) {
-    svg.style.position = "absolute";
-    svg.style.left = `${ELEV_LABEL_COL_WIDTH}px`;
-    svg.style.top = "0px";
-    // SVG'nin viewBox'ını da uygun şekilde ayarla!
-    // svg.setAttribute('viewBox', `0 0 ${widthPx - ELEV_LABEL_COL_WIDTH} ${svgHeight}`);
-    // svg.setAttribute('width', widthPx - ELEV_LABEL_COL_WIDTH);
-    // Eğer viewBox veya x offset kullanıyorsan, grafiğin path'lerini de offsetle!
-  }
-
-  // 3. TICK/ETİKET/MARKER: Her şey sütunun hemen sağından başlasın
-  const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
-  let stepKm = niceStep(spanKm, targetCount);
-  let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
-  if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
-  if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
-
-  for (let i = 0; i <= majors; i++) {
-    const curKm = Math.min(spanKm, i * stepKm);
-    const x = X(curKm);
-
-    const tick = document.createElement('div');
-    tick.className = 'scale-bar-tick';
-    tick.style.left = `${x}px`;
-    tick.style.position = 'absolute';
-    tick.style.top = '10px';
-    tick.style.width = '1px';
-    tick.style.height = '16px';
-    tick.style.background = '#cfd8dc';
-    track.appendChild(tick);
-
-    const label = document.createElement('div');
-    label.className = 'scale-bar-label';
-    label.style.left = `${x}px`;
-    label.style.position = 'absolute';
-    label.style.top = '30px';
-    label.style.transform = 'translateX(-50%)';
-    label.style.fontSize = '11px';
-    label.style.color = '#607d8b';
-    label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
-    track.appendChild(label);
-  }
-
-  if (Array.isArray(markers)) {
-    const BADGE_W = 18;
-    markers.forEach((m, idx) => {
-      if (typeof m.distance !== 'number') return;
-      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
-
-      let relKm = m.distance - startKmDom;
-      let x = X(relKm);
-      if (idx === 0) x = X(0);
-      if (idx === markers.length - 1) x = X(spanKm);
-
-      const wrap = document.createElement('div');
-      wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
-      wrap.title = m.name || '';
-      wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-      track.appendChild(wrap);
-    });
-  }
-}
+          if (Array.isArray(markers)) {
+            markers.forEach((m, idx) => {
+              if (typeof m.distance !== 'number') return;
+              if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
+              const relKm = m.distance - startKmDom;
+              const left = (relKm / spanKm) * 100;
+              const wrap = document.createElement('div');
+              wrap.className = 'marker-badge';
+              wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+              wrap.title = m.name || '';
+              wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+              track.appendChild(wrap);
+            });
+          }
+        }
 
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
@@ -8768,22 +8694,11 @@ tooltip.style.left = '0px';
 track.appendChild(tooltip);
 
 // Mouse ile çizgiyi hareket ettir (her zaman görünür!)
-const ELEV_LABEL_COL_WIDTH = 48; // Sol sütun genişliği
-
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  // Sütun kadar offsetle!
-  x = Math.max(ELEV_LABEL_COL_WIDTH, x);
-  const barWidth = rect.width - ELEV_LABEL_COL_WIDTH;
-  const percent = (x - ELEV_LABEL_COL_WIDTH) / barWidth;
-  // spanKm fonksiyonun parametresi olmalı!
-  const km = percent * spanKm;
-
-  tooltip.style.left = `${x}px`;
-  tooltip.textContent = `${km.toFixed(2)} km`;
+  const x = e.clientX - rect.left;
+  verticalLine.style.left = `${x}px`;
 });
-
 track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
   const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
