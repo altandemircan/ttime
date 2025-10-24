@@ -9966,3 +9966,14 @@ document.addEventListener('click', function(e) {
     if (iw) iw.style.display = 'none';
   }
 });
+// "trip-main-box" veya "trip-info-box" tıklanınca input-wrapper'ı gizle
+document.addEventListener('click', function(e) {
+  if (
+    e.target.closest('.trip-main-box') ||
+    e.target.closest('.trip-info-box') ||
+    e.target.closest('.trip-title')
+  ) {
+    var iw = document.querySelector('.input-wrapper');
+    if (iw) iw.style.display = 'none';
+  }
+});
