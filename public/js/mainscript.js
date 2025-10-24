@@ -399,10 +399,10 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     });
   }
 
-  // --- SVG içindeki grid yükseklik değerlerini oku ---
-  const svg = track.querySelector('svg.tt-elev-svg');
-  let gridLabels = [];
+    let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
 
+
+  const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
     // <text> elemanlarını bul, y koordinatı ve içeriğini al
     gridLabels = Array.from(svg.querySelectorAll('text'))
@@ -8756,9 +8756,7 @@ let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
 if (isNaN(width)) width = 400;
 createScaleElements(track, width, totalKm, 0, markers);
 // SVG güncellendikten hemen sonra, sol baremi tekrar ekle!
-if (svg) {
-  createScaleElements(track, width, totalKm, 0, markers);
-}
+
 
 // Dikey çizgi + tooltip
 const verticalLine = document.createElement('div');
