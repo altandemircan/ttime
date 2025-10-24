@@ -371,6 +371,12 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
  // --- YÜKSEKLİK BAREMLERİ ---
   // SVG'den tüm grid label'larını oku
+ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
+  if (!track) return;
+
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
+
+  // YÜKSEKLİK baremleri
   let gridLabels = [];
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
@@ -378,27 +384,31 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       .map(t => Number(t.textContent.trim().replace(' m', '')))
       .filter(num => !isNaN(num));
   }
-  // Eğer veriler yoksa, fallback: [0, 50, 100]
+  // Fallback
   if (!gridLabels.length) gridLabels = [0, 50, 100];
+
   const min = Math.min(...gridLabels);
   const max = Math.max(...gridLabels);
-
-  // 4 seviyeyi eşit aralıklı dağıt (görseldeki gibi)
-  const barems = [
-    max,
-    max - (max - min) / 3,
-    max - 2 * (max - min) / 3,
-    min
-  ];
 
   // SVG yüksekliği
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  // Her baremin Y koordinatı (mantıklı ve görsel uyumlu)
+  // Y konumu fonksiyonu
   function getY(val) {
     if (max === min) return svgH / 2;
     return ((max - val) / (max - min)) * svgH;
   }
+
+  // Baremler: max, 2/3 aralık, 1/3 aralık, 0 m
+  const barems = [
+    max,
+    max - (max - min) / 3,
+    max - 2 * (max - min) / 3,
+    0
+  ];
+
+  // Eğer min < 0 ise ayrıca min baremini ekle (en dipte!)
+  let showMinLabel = min < 0;
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
@@ -414,7 +424,11 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     display: block;
   `;
 
+  // Baremler (max, aralıklar, 0)
   barems.forEach(val => {
+    // -17 gibi min barem hariç!
+    if (val < min) return;
+
     const label = document.createElement('div');
     label.className = 'elevation-label';
     label.style.cssText = `
@@ -431,7 +445,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     `;
     label.textContent = `${Math.round(val)} m`;
 
-    // Altına yatay çizgi ekle
     const hr = document.createElement('div');
     hr.style.cssText = `
       margin: 2px 0 0 0;
@@ -444,14 +457,14 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     elevationLabels.appendChild(label);
   });
 
-  // Eğer min değer 0'a çok yakınsa (ör: 0-2 m arası), en alta ayrıca "0 m" etiketi koyabilirsin:
-  if (min > 0 && min < 4) {
+  // Eğer min < 0 ise en dipte min baremini de ekle
+  if (showMinLabel) {
     const label = document.createElement('div');
     label.className = 'elevation-label';
     label.style.cssText = `
       position: absolute;
       right: 0;
-      top: ${svgH - 12}px;
+      top: ${getY(min) - 8}px;
       text-align: right;
       padding-right: 5px;
       border-right: 1px solid #cfd8dc;
@@ -460,7 +473,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       background: none;
       line-height: 1.2;
     `;
-    label.textContent = `0 m`;
+    label.textContent = `${Math.round(min)} m`;
 
     const hr = document.createElement('div');
     hr.style.cssText = `
@@ -476,7 +489,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
-
 }
 
         // Aktif harita planlama modu için
