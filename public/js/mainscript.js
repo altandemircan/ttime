@@ -254,41 +254,7 @@ function attachFavEvents() {
     });
 }
 
-// Kartları ekledikten sonra çağır: attachFavEvents();
 
-window.__sb_onMouseMove = function(e) {
-  if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
-  const rect = window.__scaleBarDragTrack.getBoundingClientRect();
-  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, (e.touches && e.touches.length ? e.touches[0].clientX : e.clientX) - rect.left));
-  const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  window.__scaleBarDragSelDiv.style.left = `${left}px`;
-  window.__scaleBarDragSelDiv.style.width = `${right - left}px`;
-};
-
-window.__sb_onMouseUp = function() {
-  if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
-  const rect = window.__scaleBarDragTrack.getBoundingClientRect();
-  const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  if (rightPx - leftPx < 8) { window.__scaleBarDragSelDiv.style.display = 'none'; window.__scaleBarDrag = null; return; }
-
-  // Segment logic burada (aynısını bırakabilirsin)
-  const container = window.__scaleBarDragTrack.closest('.route-scale-bar');
-  if (!container) { window.__scaleBarDrag = null; return; }
-  const dayMatch = container.id && container.id.match(/day(\d+)/);
-  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-  const totalKmToUse = Number(container.dataset.totalKm);
-  const startKm = (leftPx / rect.width) * totalKmToUse;
-  const endKm   = (rightPx / rect.width) * totalKmToUse;
-
-  window.__scaleBarDrag = null;
-
-  if (day != null) {
-    fetchAndRenderSegmentElevation(container, day, startKm, endKm);
-    if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
-  }
-};
 
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
@@ -9055,6 +9021,44 @@ track.addEventListener('touchmove', track.__onMove);
   ro.observe(track);
   container._elevResizeObserver = ro;
 }
+
+// Kartları ekledikten sonra çağır: attachFavEvents();
+
+window.__sb_onMouseMove = function(e) {
+  if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
+  const rect = window.__scaleBarDragTrack.getBoundingClientRect();
+  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, (e.touches && e.touches.length ? e.touches[0].clientX : e.clientX) - rect.left));
+  const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  window.__scaleBarDragSelDiv.style.left = `${left}px`;
+  window.__scaleBarDragSelDiv.style.width = `${right - left}px`;
+};
+
+window.__sb_onMouseUp = function() {
+  if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
+  const rect = window.__scaleBarDragTrack.getBoundingClientRect();
+  const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  if (rightPx - leftPx < 8) { window.__scaleBarDragSelDiv.style.display = 'none'; window.__scaleBarDrag = null; return; }
+
+  // Segment logic burada (aynısını bırakabilirsin)
+  const container = window.__scaleBarDragTrack.closest('.route-scale-bar');
+  if (!container) { window.__scaleBarDrag = null; return; }
+  const dayMatch = container.id && container.id.match(/day(\d+)/);
+  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+  const totalKmToUse = Number(container.dataset.totalKm);
+  const startKm = (leftPx / rect.width) * totalKmToUse;
+  const endKm   = (rightPx / rect.width) * totalKmToUse;
+
+  window.__scaleBarDrag = null;
+
+  if (day != null) {
+    fetchAndRenderSegmentElevation(container, day, startKm, endKm);
+    if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
+  }
+};
+
+
 async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   // Duplike container’ları temizle
   const containerId = container.id;
