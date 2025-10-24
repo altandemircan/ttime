@@ -6853,7 +6853,7 @@ display: flex
 ;
     place-items: center;
     width: 100%;
-    gap: 35px;
+    gap: 30px;
     flex-direction: column
 }
 
@@ -6862,7 +6862,7 @@ display: flex
   align-items: center;
   justify-content: center;
   gap: 12px;
-  height: 60px;
+  height: 40px;
 }
 
 .avg-loader span {
@@ -6897,7 +6897,7 @@ display: flex
   align-items: center;
   justify-content: center;
   gap: 0px;
-  padding: 60px 10px;
+  padding: 0px 10px 60px 10px;
   margin: 0 auto;
 }
 .loading-text {
