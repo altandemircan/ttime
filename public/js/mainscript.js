@@ -348,7 +348,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], e
   if (!track) return;
 
   // Temizle - elevation-label da eklendi
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-label, .elevation-range-label').forEach(el => el.remove());
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-label').forEach(el => el.remove());
 
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
@@ -382,32 +382,31 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], e
     track.appendChild(label);
   }
 
-  // Yükseklik range bilgisi için SOL TARAFA etiket - GÜNCELLENDİ
- if (elevationRange && typeof elevationRange.min === 'number' && typeof elevationRange.max === 'number') {
+  // Yükseklik range bilgisi için sol tarafta etiket
+  if (elevationRange && typeof elevationRange.min === 'number' && typeof elevationRange.max === 'number') {
     const elevationContainer = document.createElement('div');
     elevationContainer.className = 'elevation-range-label';
     elevationContainer.style.cssText = `
-        position: absolute;
-        left: 8px;  /* Scale bar'ın sol iç kısmı */
-        top: 50%;
-        transform: translateY(-50%);
-        text-align: center;
-        font-size: 11px;
-        color: #607d8b;
-        line-height: 1.3;
-        width: 40px;
-        z-index: 10;
+      position: absolute;
+      left: -60px;
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: center;
+      font-size: 11px;
+      color: #607d8b;
+      line-height: 1.3;
+      width: 50px;
     `;
     
     elevationContainer.innerHTML = `
-        <div style="font-weight: bold;">${Math.round(elevationRange.max)}m</div>
-        <div style="margin: 5px 0; border-left: 1px solid #cfd8dc; height: 40px; margin-left: 50%;"></div>
-        <div style="font-weight: bold;">${Math.round(elevationRange.min)}m</div>
+      <div style="font-weight: bold;">${Math.round(elevationRange.max)}m</div>
+      <div style="margin: 5px 0; border-left: 1px solid #cfd8dc; height: 40px; margin-left: 50%;"></div>
+      <div style="font-weight: bold;">${Math.round(elevationRange.min)}m</div>
     `;
     
     track.appendChild(elevationContainer);
-}
-  // Marker'lar (değişmedi)
+  }
+
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
       if (typeof m.distance !== 'number') return;
@@ -8829,24 +8828,23 @@ container._elevKmSpan = totalKm;
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
     // Grid
-   const levels = 4;
-for (let i = 0; i <= levels; i++) {
-  const ev = vizMin + (i / levels) * (vizMax - vizMin);
-  const y = Y(ev);
-  if (isNaN(y)) continue;
-  const ln = document.createElementNS(svgNS, 'line');
-  ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
-  ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-  ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-  gridG.appendChild(ln);
+    const levels = 4;
+    for (let i = 0; i <= levels; i++) {
+      const ev = vizMin + (i / levels) * (vizMax - vizMin);
+      const y = Y(ev);
+      if (isNaN(y)) continue;
+      const ln = document.createElementNS(svgNS, 'line');
+      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+      gridG.appendChild(ln);
 
-  const tx = document.createElementNS(svgNS, 'text');
-  tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4)); // SOL TARAF (6px)
-  tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-  tx.setAttribute('text-anchor', 'start'); // SOLA HİZALI
-  tx.textContent = `${Math.round(ev)} m`;
-  gridG.appendChild(tx);
-}
+      const tx = document.createElementNS(svgNS, 'text');
+      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+      tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
+    }
 
     // Alan
     let topD = '';
