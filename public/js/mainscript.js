@@ -383,35 +383,29 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], e
   }
 
   // Yükseklik range bilgisi için SOL TARAFA etiket - GÜNCELLENDİ
- // Yükseklik range bilgisi için TAMAMEN DIŞTA SOL TARAFA etiket
-if (elevationRange && typeof elevationRange.min === 'number' && typeof elevationRange.max === 'number') {
+ if (elevationRange && typeof elevationRange.min === 'number' && typeof elevationRange.max === 'number') {
     const elevationContainer = document.createElement('div');
     elevationContainer.className = 'elevation-range-label';
     elevationContainer.style.cssText = `
         position: absolute;
-        left: -70px;  /* Scale bar'ın TAM DIŞINA */
-        top: 0;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
+        left: 8px;  /* Scale bar'ın sol iç kısmı */
+        top: 50%;
+        transform: translateY(-50%);
+        text-align: center;
         font-size: 11px;
         color: #607d8b;
-        width: 50px;
+        line-height: 1.3;
+        width: 40px;
+        z-index: 10;
     `;
     
     elevationContainer.innerHTML = `
         <div style="font-weight: bold;">${Math.round(elevationRange.max)}m</div>
-        <div style="flex-grow: 1; display: flex; align-items: center;">
-            <div style="border-left: 2px solid #cfd8dc; height: 100%;"></div>
-        </div>
+        <div style="margin: 5px 0; border-left: 1px solid #cfd8dc; height: 40px; margin-left: 50%;"></div>
         <div style="font-weight: bold;">${Math.round(elevationRange.min)}m</div>
     `;
     
-    // Scale bar container'ına ekle ki pozisyon doğru çalışsın
-    track.parentNode.style.position = 'relative';
-    track.parentNode.appendChild(elevationContainer);
+    track.appendChild(elevationContainer);
 }
   // Marker'lar (değişmedi)
   if (Array.isArray(markers)) {
