@@ -383,30 +383,36 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], e
   }
 
   // Yükseklik range bilgisi için SOL TARAFA etiket - GÜNCELLENDİ
-  if (elevationRange && typeof elevationRange.min === 'number' && typeof elevationRange.max === 'number') {
+ // Yükseklik range bilgisi için TAMAMEN DIŞTA SOL TARAFA etiket
+if (elevationRange && typeof elevationRange.min === 'number' && typeof elevationRange.max === 'number') {
     const elevationContainer = document.createElement('div');
     elevationContainer.className = 'elevation-range-label';
     elevationContainer.style.cssText = `
-      position: absolute;
-      left: -60px;  /* SOL TARAF */
-      top: 50%;
-      transform: translateY(-50%);
-      text-align: center;
-      font-size: 11px;
-      color: #607d8b;
-      line-height: 1.3;
-      width: 50px;
+        position: absolute;
+        left: -70px;  /* Scale bar'ın TAM DIŞINA */
+        top: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: #607d8b;
+        width: 50px;
     `;
     
     elevationContainer.innerHTML = `
-      <div style="font-weight: bold;">${Math.round(elevationRange.max)}m</div>
-      <div style="margin: 5px 0; border-left: 1px solid #cfd8dc; height: 40px; margin-left: 50%;"></div>
-      <div style="font-weight: bold;">${Math.round(elevationRange.min)}m</div>
+        <div style="font-weight: bold;">${Math.round(elevationRange.max)}m</div>
+        <div style="flex-grow: 1; display: flex; align-items: center;">
+            <div style="border-left: 2px solid #cfd8dc; height: 100%;"></div>
+        </div>
+        <div style="font-weight: bold;">${Math.round(elevationRange.min)}m</div>
     `;
     
-    track.appendChild(elevationContainer);
-  }
-
+    // Scale bar container'ına ekle ki pozisyon doğru çalışsın
+    track.parentNode.style.position = 'relative';
+    track.parentNode.appendChild(elevationContainer);
+}
   // Marker'lar (değişmedi)
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
