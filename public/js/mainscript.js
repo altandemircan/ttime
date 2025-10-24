@@ -11,6 +11,7 @@ function attachDragDropEvents() {
 }
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
 attachDragDropEvents();
+window.__welcomeHiddenForever = false;
 
 window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
@@ -1660,6 +1661,7 @@ async function showResults() {
       console.log("hideLoadingPanel çağrıldı!");
 
   hideLoadingPanel();
+    window.__welcomeHiddenForever = true;
 }
 
 
@@ -10046,5 +10048,10 @@ function showLoadingPanel() {
 function hideLoadingPanel() {
   var loadingPanel = document.getElementById("loading-panel");
   if (loadingPanel) loadingPanel.style.display = "none";
-  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
+  // Eğer welcome paneli artık hiç görünmesin istiyorsak:
+  if (!window.__welcomeHiddenForever) {
+    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
+  } else {
+    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+  }
 }
