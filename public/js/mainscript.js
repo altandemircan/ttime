@@ -9959,14 +9959,10 @@ function attachImLuckyEvents() {
 }
 
 
-// TRIP SEÇİLİNCE VEYA ÜZERİNE GELİNCE CHAT PANELİNİ GİZLE
-document.querySelectorAll('.trip-item').forEach(function(item) {
-  item.addEventListener('click', function() {
-    var chat = document.getElementById('chat-container');
-    if (chat) chat.style.display = 'none';
-  });
-  item.addEventListener('mouseenter', function() {
-    var chat = document.getElementById('chat-container');
-    if (chat) chat.style.display = 'none';
-  });
+// Trip seçilince input-wrapper gizlensin
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.trip-item')) {
+    var iw = document.querySelector('.input-wrapper');
+    if (iw) iw.style.display = 'none';
+  }
 });
