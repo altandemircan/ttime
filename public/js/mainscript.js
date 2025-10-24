@@ -8768,8 +8768,18 @@ track.appendChild(tooltip);
 // Mouse ile çizgiyi hareket ettir (her zaman görünür!)
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  verticalLine.style.left = `${x}px`;
+  // Mouse’un barın solundan olan X’i
+  let x = e.clientX - rect.left;
+  // Sol sütun kadar offsetle!
+  x = Math.max(ELEV_LABEL_COL_WIDTH, x);
+  // Şimdi km hesaplaması ve tooltip pozisyonu için bu x kullan!
+  
+  // Oran: x - ELEV_LABEL_COL_WIDTH / bar genişliği (grafik alanı)
+  const percent = (x - ELEV_LABEL_COL_WIDTH) / (rect.width - ELEV_LABEL_COL_WIDTH);
+  const km = percent * spanKm;
+  // Tooltip’i grafiğin başladığı noktaya göre göster
+  tooltip.style.left = `${x}px`;
+  tooltip.textContent = `${km.toFixed(2)} km`;
 });
 track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
