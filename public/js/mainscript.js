@@ -10032,7 +10032,6 @@ document.addEventListener('click', function(e) {
   }
 });
 
-
 function showLoadingPanel() {
   var loadingPanel = document.getElementById("loading-panel");
   if (loadingPanel) loadingPanel.style.display = "flex";
@@ -10044,5 +10043,5 @@ function hideLoadingPanel() {
   var loadingPanel = document.getElementById("loading-panel");
   if (loadingPanel) loadingPanel.style.display = "none";
   var cw = document.querySelector('.cw');
-  if (cw) cw.style.display = "";
+  if (cw) cw.style.display = "grid";
 }
