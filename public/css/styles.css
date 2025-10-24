@@ -4395,17 +4395,15 @@ ease;
         opacity: 1;
     }
 
-
-/* ORTA EKRAN LOADING */
 .loading-panel {
- width: 100%;
-    display: grid
-;
-    max-width: 860px;
-    gap: 30px;
-    padding: 60px 10px;
-    margin: 0 auto;
-  transition: opacity 0.3s;
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 1200;
+  background: rgba(248,250,255,0.95);
+  display: none; /* JS ile display:flex yapılacak */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .loading-spinner img {
   animation: spin 2s linear infinite;
@@ -4414,8 +4412,10 @@ ease;
   0% { transform: rotate(0);}
   100% { transform: rotate(360deg);}
 }
-.loading-text { text-align: center; margin-top: 18px; }
-
+.loading-text {
+  text-align: center;
+  margin-top: 18px;
+}
 
 
 
