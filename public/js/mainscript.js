@@ -8707,11 +8707,12 @@ track.appendChild(tooltip);
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
   let x = e.clientX - rect.left;
-  // Clamp: bar sınırında kal, barın içine LABEL_WIDTH'u ekle
+  // Barın LABEL_WIDTH sonrası başlar!
   x = Math.max(LABEL_WIDTH, Math.min(LABEL_WIDTH + width, x));
   verticalLine.style.left = `${x}px`;
   tooltip.style.left = `${x}px`;
 });
+
 track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
   let x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (LABEL_WIDTH + width / 2);
