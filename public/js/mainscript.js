@@ -8756,7 +8756,11 @@ let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
 if (isNaN(width)) width = 400;
 createScaleElements(track, width, totalKm, 0, markers);
 // SVG güncellendikten hemen sonra, sol baremi tekrar ekle!
-
+const svg = track.querySelector('svg.tt-elev-svg');
+if (svg) {
+  const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
+  createScaleElements(track, widthPx, totalKm, 0, markers);
+}
 
 // Dikey çizgi + tooltip
 const verticalLine = document.createElement('div');
