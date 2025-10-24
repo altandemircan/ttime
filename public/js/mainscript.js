@@ -9719,21 +9719,21 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const Y = (e) => (isNaN(e) || vizMax === vizMin) ? (heightNow/2) : ((heightNow - 1) - ((e - vizMin) / (vizMax - vizMin)) * (heightNow - 2));
 
   // Grid çizgileri ve label’ları (sol barem için de referans)
-  for (let i = 0; i <= 4; i++) {
-    const ev = vizMin + (i / 4) * (vizMax - vizMin);
-    const y = Y(ev);
-    const ln = document.createElementNS(svgNS, 'line');
-    ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(widthNow));
-    ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-    ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-    gridG.appendChild(ln);
+for (let i = 0; i <= 2; i++) {
+  const ev = vizMin + (i / 2) * (vizMax - vizMin);
+  const y = Y(ev);
+  const ln = document.createElementNS(svgNS, 'line');
+  ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(widthNow));
+  ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+  ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+  gridG.appendChild(ln);
 
-    const tx = document.createElementNS(svgNS, 'text');
-    tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-    tx.textContent = `${Math.round(ev)} m`;
-    gridG.appendChild(tx);
-  }
+  const tx = document.createElementNS(svgNS, 'text');
+  tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+  tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+  tx.textContent = `${Math.round(ev)} m`;
+  gridG.appendChild(tx);
+}
   // Alan (profile area)
   let topD = '';
   for (let i = 0; i < elevSmooth.length; i++) {
