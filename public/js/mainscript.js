@@ -367,73 +367,66 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     });
   }
 
-let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
+  // --- SVG Gridlabel Okuma ---
+  let gridLabels = [];
+  const svg = track.querySelector('svg.tt-elev-svg');
+  if (svg) {
+    gridLabels = Array.from(svg.querySelectorAll('text'))
+      .map(t => ({
+        value: t.textContent.trim(),
+        y: Number(t.getAttribute('y'))
+      }))
+      .filter(obj => /-?\d+\s*m$/.test(obj.value));
+  }
 
-const svg = track.querySelector('svg.tt-elev-svg');
-if (svg) {
-  // <text> elemanlarını bul, y koordinatı ve içeriğini al
-  gridLabels = Array.from(svg.querySelectorAll('text'))
-    .map(t => ({
-      value: t.textContent.trim(),
-      y: Number(t.getAttribute('y'))
-    }))
-    .filter(obj => /-?\d+\s*m$/.test(obj.value));
-}
+  gridLabels.sort((a, b) => b.y - a.y); // Alttan üste
 
-// Alttan üste sıralama (SVG'de y arttıkça aşağı iner)
-gridLabels.sort((a, b) => b.y - a.y);
+  // Sadece 3 seviye göster
+  const gridLabels3 = gridLabels.slice(0, 3);
 
-// Sadece ilk 3 seviye göster
-const gridLabels3 = gridLabels.slice(0, 3);
-
-// Sol barem DIV'i oluştur
-const elevationLabels = document.createElement('div');
-elevationLabels.className = 'elevation-labels-container';
-elevationLabels.style.cssText = `
-  position: absolute;
-  left: -50px;
-  top: 0;
-  bottom: 0;
-  width: 45px;
-  height: 100%;
-  pointer-events: none;
-  z-index: 5;
-`;
-elevationLabels.style.display = 'block'; 
-
-// SVG'nin yüksekliği
-const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
-
-// Grid label'larını SVG y koordinatına göre hizala
-gridLabels3.forEach(obj => {
-  const label = document.createElement('div');
-  label.className = 'elevation-label';
-  label.style.cssText = `
+  const elevationLabels = document.createElement('div');
+  elevationLabels.className = 'elevation-labels-container';
+  elevationLabels.style.cssText = `
     position: absolute;
-    right: 0;
-    top: ${obj.y}px;
-    text-align: right;
-    padding-right: 5px;
-    border-right: 1px solid #cfd8dc;
-    font-size: 11px;
-    color: #607d8b;
-    background: none;
-    line-height: 1.1;
+    left: -50px;
+    top: 0;
+    bottom: 0;
+    width: 45px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    display: block;
   `;
-  label.textContent = obj.value;
 
-  // Altına yatay çizgi ekle
-  const hr = document.createElement('div');
-  hr.style.cssText = `
-    margin: 2px 0 0 0;
-    border-bottom: 1px solid #b0bec5;
-    width: 75%;
-    float: right;
-  `;
-  label.appendChild(hr);
+  gridLabels3.forEach(obj => {
+    const label = document.createElement('div');
+    label.className = 'elevation-label';
+    label.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: ${obj.y - 8}px;
+      text-align: right;
+      padding-right: 5px;
+      border-right: 1px solid #cfd8dc;
+      font-size: 11px;
+      color: #607d8b;
+      background: none;
+      line-height: 1.2;
+    `;
+    label.textContent = obj.value;
 
-  elevationLabels.appendChild(label);
-});
+    // Altına yatay çizgi ekle
+    const hr = document.createElement('div');
+    hr.style.cssText = `
+      margin: 2px 0 0 0;
+      border-bottom: 1px solid #b0bec5;
+      width: 75%;
+      float: right;
+    `;
+    label.appendChild(hr);
+
+    elevationLabels.appendChild(label);
+  });
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
