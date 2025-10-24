@@ -10,8 +10,6 @@ function attachDragDropEvents() {
 });
 }
 
-const svgNS = 'http://www.w3.org/2000/svg';
-
 
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
 attachDragDropEvents();
