@@ -6963,4 +6963,7 @@ display: flex
 }.route-scale-bar {
     position: relative;
     margin-left: 70px; /* Yükseklik etiketleri için yer aç */
-}
+}.scale-bar-container { display: flex; }
+.elev-label-col { width: 48px; position: relative; }
+.elev-label { position: absolute; right: 0; font-size: 12px; padding-right: 7px; color: #607d8b; }
+.scale-bar-track { position: relative; flex: 1; }
