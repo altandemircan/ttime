@@ -1053,6 +1053,9 @@ function addCanonicalMessage(canonicalStr) {
 
 
 function sendMessage() {
+      console.log("showLoadingPanel çağrıldı!");
+
+    showLoadingPanel()
   if (window.isProcessing) return;
   const input = document.getElementById("user-input");
   if (!input) return;
@@ -1654,6 +1657,8 @@ async function showResults() {
     fillGeoapifyTagsOnly();
     attachImLuckyEvents();
 // LOADING PANELİ GİZLE
+      console.log("hideLoadingPanel çağrıldı!");
+
   hideLoadingPanel();
 }
 
@@ -10035,13 +10040,11 @@ document.addEventListener('click', function(e) {
 function showLoadingPanel() {
   var loadingPanel = document.getElementById("loading-panel");
   if (loadingPanel) loadingPanel.style.display = "flex";
-  var cw = document.querySelector('.cw');
-  if (cw) cw.style.display = "none";
+  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
 }
 
 function hideLoadingPanel() {
   var loadingPanel = document.getElementById("loading-panel");
   if (loadingPanel) loadingPanel.style.display = "none";
-  var cw = document.querySelector('.cw');
-  if (cw) cw.style.display = "grid";
+  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
 }
