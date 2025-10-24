@@ -5516,26 +5516,12 @@ async function expandMap(containerId, day) {
       center: expandedMap.getCenter(),
       zoom: expandedMap.getZoom()
     };
-
-    setTimeout(() => {
-  try {
-    const center = expandedMap.getCenter();
-    const zoom   = expandedMap.getZoom();
-    const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    let offsetLat = 0.012; // ~1.2 km yukarı (dikey rotalarda daha çok gerekebilir)
-    if (scaleBar) {
-      const mapDiv = expandedMap.getContainer();
-      const mapHeightPx = mapDiv.offsetHeight || 400;
-      const barHeightPx = scaleBar.offsetHeight || 50;
-      offsetLat = (barHeightPx / mapHeightPx) * 0.07;
-    }
-    // YUKARI KAYDIRMAK İÇİN LATITUDE'U AZALT!
-    const newCenter = L.latLng(center.lat + offsetLat, center.lng); // <-- yanlışsa, - offsetLat ile değiştir
-    expandedMap.setView(newCenter, Math.max(zoom - 1, 2), { animate: true });
-  } catch(e) {}
+    
+setTimeout(() => {
+  expandedMap.panBy([0, -150], { animate: true }); // X:0, Y:-150 px yukarı!
 }, 350);
 
-    
+
   } else if (!expandedMap._initialView) {
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
