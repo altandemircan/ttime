@@ -348,16 +348,13 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
-  // Temizle
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
-
-  // PATCH: Expanded mı kontrol et
+  // PATCH: Expanded scalebar için solda boşluk bırak
   const isExpanded = track.closest('.route-scale-bar')?.id?.startsWith('expanded-route-scale-bar-day');
   const LABEL_WIDTH = isExpanded ? 38 : 0;
   const w = widthPx;
-
-  // X fonksiyonu
   const X = kmRel => LABEL_WIDTH + (kmRel / spanKm) * w;
+
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
   const targetCount = Math.max(6, Math.min(14, Math.round(w / 100)));
   let stepKm = niceStep(spanKm, targetCount);
@@ -369,7 +366,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     const curKm = Math.min(spanKm, i * stepKm);
     const x = X(curKm);
 
-    // Tick çizgisi
     const tick = document.createElement('div');
     tick.className = 'scale-bar-tick';
     tick.style.left = `${x}px`;
@@ -380,7 +376,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     tick.style.background = '#cfd8dc';
     track.appendChild(tick);
 
-    // Label
     const label = document.createElement('div');
     label.className = 'scale-bar-label';
     label.style.left = `${x}px`;
@@ -398,7 +393,9 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       if (typeof m.distance !== 'number') return;
       if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
       const relKm = m.distance - startKmDom;
-      const x = X(relKm);
+      let x = X(relKm);
+      // Clamp: marker badge scale bar'ın sağına taşmasın
+      x = Math.max(LABEL_WIDTH, Math.min(LABEL_WIDTH + w, x));
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
       wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
