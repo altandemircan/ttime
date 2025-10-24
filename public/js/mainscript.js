@@ -344,7 +344,6 @@ function fitExpandedMapToRoute(day) {
     return f * p10;
   }
 
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
@@ -354,7 +353,15 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // Genişliği DOM'dan canlı oku
   const w = widthPx || track.getBoundingClientRect().width;
-  const X = kmRel => LABEL_WIDTH + (kmRel / spanKm) * w;
+
+  // Track'in paddingleri
+  const style = getComputedStyle(track);
+  const padLeft = parseFloat(style.paddingLeft) || 0;
+  const padRight = parseFloat(style.paddingRight) || 0;
+  const effectiveW = w - padLeft - padRight;
+
+  // X fonksiyonu: km'nin bar üzerindeki tam pozisyonu
+  const X = kmRel => LABEL_WIDTH + padLeft + (kmRel / spanKm) * effectiveW;
 
   // Eski tick, label, marker'ları temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
@@ -393,56 +400,27 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   // Marker badge'ler
-// Marker badge'ler
-if (Array.isArray(markers)) {
-  const BADGE_W = 18;
-const style = getComputedStyle(track);
-const padLeft = parseFloat(style.paddingLeft) || 0;
-const padRight = parseFloat(style.paddingRight) || 0;
-const effectiveW = w - padLeft - padRight;
+  if (Array.isArray(markers)) {
+    const BADGE_W = 18;
+    markers.forEach((m, idx) => {
+      if (typeof m.distance !== 'number') return;
+      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
 
-const X = kmRel => LABEL_WIDTH + padLeft + (kmRel / spanKm) * effectiveW;
+      let relKm = m.distance - startKmDom;
+      let x = X(relKm);
 
-  // Marker badge'leri için ayrı bir wrapper kullan
-  let markerRow = track.querySelector('.scale-bar-marker-row');
-  if (!markerRow) {
-    markerRow = document.createElement('div');
-    markerRow.className = 'scale-bar-marker-row';
-    markerRow.style.position = 'absolute';
-    markerRow.style.left = `${LABEL_WIDTH + padLeft}px`; // Sola kaydır
-    markerRow.style.top = '0';
-    markerRow.style.width = `${w - LABEL_WIDTH - padLeft - padRight}px`; // Tam genişlik
-    markerRow.style.height = '100%';
-    markerRow.style.pointerEvents = 'none';
-    track.appendChild(markerRow);
-  } else {
-    markerRow.innerHTML = '';
+      // İlk marker tam başa, son marker tam sona ortalansın:
+      if (idx === 0) x = X(0);
+      if (idx === markers.length - 1) x = X(spanKm);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'marker-badge';
+      wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
+      wrap.title = m.name || '';
+      wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      track.appendChild(wrap);
+    });
   }
-
-  // X fonksiyonu artık markerRow'un genişliğine göre:
-  const markerW = w - LABEL_WIDTH - padLeft - padRight;
-  const X2 = kmRel => (kmRel / spanKm) * markerW;
-
-  markers.forEach((m, idx) => {
-  if (typeof m.distance !== 'number') return;
-  if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
-
-  let relKm = m.distance - startKmDom;
-  let x = X(relKm);
-
-  // -- Clamp'e gerek yok! --
-  // İlk marker: x = X(0)
-  // Son marker: x = X(spanKm)
-  // Ortadakiler: x = X(relKm)
-
-  const wrap = document.createElement('div');
-  wrap.className = 'marker-badge';
-  wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
-  wrap.title = m.name || '';
-  wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-  track.appendChild(wrap);
-});
-}
 }
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
