@@ -428,6 +428,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     pointer-events: none;
     z-index: 5;
   `;
+  elevationLabels.style.display = 'block'; 
 
   // SVG'nin yüksekliği
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
@@ -4514,6 +4515,13 @@ if (scaleBarDiv) {
         scaleBarDiv.style.display = '';
         try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+        // Scale bar render edildikten hemen sonra sol baremi tekrar ekle!
+const track = scaleBarDiv.querySelector('.scale-bar-track');
+const svg = track && track.querySelector('svg.tt-elev-svg');
+if (track && svg) {
+  const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+  createScaleElements(track, width, totalKm, 0, markerPositions);
+}
       } else {
         scaleBarDiv.innerHTML = '';
         scaleBarDiv.style.display = 'none';
@@ -5633,6 +5641,13 @@ setTimeout(() => {
   if (totalKm > 0 && markerPositions.length > 0 && typeof renderRouteScaleBar === 'function') {
     scaleBarDiv.style.display = '';
     renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+    // Scale bar render edildikten hemen sonra sol baremi tekrar ekle!
+const track = scaleBarDiv.querySelector('.scale-bar-track');
+const svg = track && track.querySelector('svg.tt-elev-svg');
+if (track && svg) {
+  const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+  createScaleElements(track, width, totalKm, 0, markerPositions);
+}
   } else {
     scaleBarDiv.innerHTML = '';
     scaleBarDiv.style.display = 'none';
@@ -6882,6 +6897,13 @@ if (scaleBarDiv && totalKm > 0 && markerPositions.length > 0) {
   try { delete scaleBarDiv.dataset.elevLoadedKey; } catch(_) {}
   window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
   renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+  // Scale bar render edildikten hemen sonra sol baremi tekrar ekle!
+const track = scaleBarDiv.querySelector('.scale-bar-track');
+const svg = track && track.querySelector('svg.tt-elev-svg');
+if (track && svg) {
+  const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+  createScaleElements(track, width, totalKm, 0, markerPositions);
+}
 } else if (scaleBarDiv) {
   scaleBarDiv.innerHTML = '';
 }
@@ -8732,6 +8754,11 @@ window.addEventListener('mouseup', window.__sb_onMouseUp);
 let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
 if (isNaN(width)) width = 400;
 createScaleElements(track, width, totalKm, 0, markers);
+// SVG güncellendikten hemen sonra, sol baremi tekrar ekle!
+const svg = track.querySelector('svg.tt-elev-svg');
+if (svg) {
+  createScaleElements(track, width, totalKm, 0, markers);
+}
 
 // Dikey çizgi + tooltip
 const verticalLine = document.createElement('div');
