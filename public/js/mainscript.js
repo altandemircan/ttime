@@ -4004,6 +4004,12 @@ newChat.onclick = function() {
   // --- BURAYI EKLE ---
   var iw = document.querySelector('.input-wrapper');
   if (iw) iw.style.display = '';
+
+  // --- SEÇİMLİ SUGGESTION'ları TEMİZLE ---
+  document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function(el) {
+    el.classList.remove('selected-suggestion');
+  });
+  
 };
     }
     const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
