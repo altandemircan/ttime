@@ -3962,13 +3962,13 @@ cartDiv.appendChild(dayContainer);
       newChat.id = 'newchat';
       newChat.textContent = 'New Trip Plan';
       newChat.style.cursor = 'pointer';
-      newChat.onclick = function() {
-        const chatBox = document.getElementById('chat-box');
-        if (chatBox) chatBox.innerHTML = '';
-        const userInput = document.getElementById('user-input');
-        if (userInput) userInput.value = '';
+newChat.onclick = function() {
+  const chatBox = document.getElementById('chat-box');
+  if (chatBox) chatBox.innerHTML = '';
+  const userInput = document.getElementById('user-input');
+  if (userInput) userInput.value = '';
 
-         // ... eski kodlar ...
+  // ... eski kodlar ...
   window.selectedCity = null;
   window.selectedLocation = null;
   window.selectedLocationLocked = false;
@@ -3990,18 +3990,21 @@ cartDiv.appendChild(dayContainer);
   // Tüm scale bar, popup ve overlayleri DOM'dan sil
   document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
 
-        
-        if (typeof updateCart === "function") updateCart();
-        document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
-        const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
-        if (sidebar) sidebar.classList.add('open');
-        if (chatBox) {
-          const welcome = document.createElement('div');
-          welcome.className = 'message bot-message';
-          welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
-          chatBox.appendChild(welcome);
-        }
-      };
+  if (typeof updateCart === "function") updateCart();
+  document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+  const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+  if (sidebar) sidebar.classList.add('open');
+  if (chatBox) {
+    const welcome = document.createElement('div');
+    welcome.className = 'message bot-message';
+    welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
+    chatBox.appendChild(welcome);
+  }
+
+  // --- BURAYI EKLE ---
+  var iw = document.querySelector('.input-wrapper');
+  if (iw) iw.style.display = '';
+};
     }
     const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
     if (datesBtn && datesBtn.nextSibling !== newChat){
