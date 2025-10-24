@@ -350,29 +350,33 @@ function fitExpandedMapToRoute(day) {
 
 
 
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
-  // --- BURADA: scale bar'ın içindeki yolun başladığı ve bittiği pixel'i bul ---
-  // 1. SVG varsa, yolun başladığı ve bittiği pixel'i bul
-  let PROFILE_START_X = 0, PROFILE_END_X = widthPx;
+  // Scale bar'ın solundaki alanı/etiketi/padding'i bul (örnek: sol etiket veya sol padding varsa)
+  const LABEL_WIDTH = 38; // Solunda "Yükseklik" gibi bir yazı veya görsel alanı varsa, pixel cinsinden
+  const style = getComputedStyle(track);
+  const padLeft = parseFloat(style.paddingLeft) || 0;
+  const totalLeft = LABEL_WIDTH + padLeft; // Toplam sola kaydırma
+
+  // SVG varsa, yolun başladığı ve bittiği pixel'i bul
+  let PROFILE_START_X = totalLeft, PROFILE_END_X = widthPx;
   const svg = track.querySelector('.tt-elev-svg');
   if (svg) {
-    // Profil path'i genellikle ilk <path> veya .tt-elev-area
     const path = svg.querySelector('path') || svg.querySelector('.tt-elev-area');
     if (path && path.getBBox) {
       const bbox = path.getBBox();
-      PROFILE_START_X = Math.max(0, bbox.x);
-      PROFILE_END_X = Math.max(PROFILE_START_X, bbox.x + bbox.width);
+      PROFILE_START_X = totalLeft + Math.max(0, bbox.x); // SVG içindeki path'in solundan itibaren
+      PROFILE_END_X = totalLeft + Math.max(PROFILE_START_X, bbox.x + bbox.width);
     } else {
-      // Fallback: SVG'nin tamamı
-      PROFILE_START_X = 0;
+      PROFILE_START_X = totalLeft;
       PROFILE_END_X = widthPx;
     }
+    // SVG'yi scale bar'ın solundaki alana göre sola kaydır
+    svg.style.marginLeft = `${totalLeft}px`;
   }
 
   // Yolun başladığı ve bittiği pixel aralığına oransal olarak yay
@@ -417,7 +421,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
 
       let relKm = m.distance - startKmDom;
-      // İlk ve son marker tam uçta olsun
       let x = X(relKm);
       if (idx === 0) x = X(0);
       if (idx === markers.length - 1) x = X(spanKm);
@@ -430,6 +433,13 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       track.appendChild(wrap);
     });
   }
+
+  // --- YÜKSEKLİK TOOLTIP ve VERTICAL LINE'ı da sola kaydır ---
+  const tooltip = track.querySelector('.tt-elev-tooltip');
+  if (tooltip) tooltip.style.marginLeft = `${totalLeft}px`;
+
+  const verticalLine = track.querySelector('.scale-bar-vertical-line');
+  if (verticalLine) verticalLine.style.marginLeft = `${totalLeft}px`;
 }
 
         // Aktif harita planlama modu için
