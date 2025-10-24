@@ -399,21 +399,31 @@ if (Array.isArray(markers)) {
   const padLeft = parseFloat(style.paddingLeft) || 0;
   const padRight = parseFloat(style.paddingRight) || 0;
   markers.forEach((m, idx) => {
-    if (typeof m.distance !== 'number') return;
-    if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
-    const relKm = m.distance - startKmDom;
-    let x = X(relKm);
+  if (typeof m.distance !== 'number') return;
+  if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
+  const relKm = m.distance - startKmDom;
+  let x = X(relKm);
+
+  // Son marker ise, profile'ın tam sonuna ortala
+  if (idx === markers.length - 1) {
+    x = X(spanKm); // profile'ın tam sonu
+  }
+
+  // Clamp sadece ilk ve ortadakiler için
+  if (idx !== markers.length - 1) {
     x = Math.max(
       LABEL_WIDTH + padLeft + BADGE_W/2,
       Math.min(LABEL_WIDTH + w - padRight - BADGE_W/2, x)
     );
-    const wrap = document.createElement('div');
-    wrap.className = 'marker-badge';
-    wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
-    wrap.title = m.name || '';
-    wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-    track.appendChild(wrap);
-  });
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'marker-badge';
+  wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
+  wrap.title = m.name || '';
+  wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+  track.appendChild(wrap);
+});
 }
 }
         // Aktif harita planlama modu için
