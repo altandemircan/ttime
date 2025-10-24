@@ -354,30 +354,69 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
-  // Temizle
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
+  // TEMİZLE
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elev-label-col').forEach(el => el.remove());
 
-  // --- BURADA: scale bar'ın içindeki yolun başladığı ve bittiği pixel'i bul ---
-  // 1. SVG varsa, yolun başladığı ve bittiği pixel'i bul
-  let PROFILE_START_X = 0, PROFILE_END_X = widthPx;
+  // GRAFİĞİN SOLUNDA ETİKET SÜTUNU İÇİN SABİT GENİŞLİK
+  const ELEV_LABEL_COL_WIDTH = 48; // px (isteğe göre 36-52 arası ayarla)
+
+  // SVG varsa, yolun başladığı ve bittiği pixel'i bul
+  let PROFILE_START_X = ELEV_LABEL_COL_WIDTH, PROFILE_END_X = widthPx;
   const svg = track.querySelector('.tt-elev-svg');
   if (svg) {
-    // Profil path'i genellikle ilk <path> veya .tt-elev-area
     const path = svg.querySelector('path') || svg.querySelector('.tt-elev-area');
     if (path && path.getBBox) {
       const bbox = path.getBBox();
-      PROFILE_START_X = Math.max(0, bbox.x);
-      PROFILE_END_X = Math.max(PROFILE_START_X, bbox.x + bbox.width);
+      PROFILE_START_X = ELEV_LABEL_COL_WIDTH + Math.max(0, bbox.x);
+      PROFILE_END_X = ELEV_LABEL_COL_WIDTH + Math.max(PROFILE_START_X, bbox.x + bbox.width);
     } else {
-      // Fallback: SVG'nin tamamı
-      PROFILE_START_X = 0;
+      PROFILE_START_X = ELEV_LABEL_COL_WIDTH;
       PROFILE_END_X = widthPx;
     }
+    // SVG'yi sola sütun kadar kaydır
+    svg.style.marginLeft = `${ELEV_LABEL_COL_WIDTH}px`;
   }
 
-  // Yolun başladığı ve bittiği pixel aralığına oransal olarak yay
+  // Oransal pozisyon
   const X = kmRel => PROFILE_START_X + (kmRel / spanKm) * (PROFILE_END_X - PROFILE_START_X);
 
+  // Yükseklik grid değerleri (SVG ile aynı mantık)
+  const elevMin = 60; // Minimum yükseklik (örnek, dinamik istiyorsan profile'dan oku)
+  const elevMax = 280; // Maksimum yükseklik (örnek, dinamik istiyorsan profile'dan oku)
+  const levels = 4;
+  const labelCol = document.createElement('div');
+  labelCol.className = 'elev-label-col';
+  labelCol.style.cssText = `
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: ${ELEV_LABEL_COL_WIDTH}px;
+    height: ${svg ? svg.getAttribute('height') + 'px' : '180px'};
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 2;
+  `;
+  // Yükseklik seviyelerini ekle
+  for (let i = levels; i >= 0; i--) {
+    const val = Math.round(elevMin + (i / levels) * (elevMax - elevMin));
+    const label = document.createElement('div');
+    label.className = 'elev-label';
+    label.style.cssText = `
+      font-size: 11px;
+      color: #90a4ae;
+      text-align: right;
+      padding-right: 7px;
+      height: 1px;
+      flex: 1 1 auto;
+    `;
+    label.textContent = `${val} m`;
+    labelCol.appendChild(label);
+  }
+  track.appendChild(labelCol);
+
+  // ESKİ marker/tick/label kodun aynen devam
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -417,7 +456,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
 
       let relKm = m.distance - startKmDom;
-      // İlk ve son marker tam uçta olsun
       let x = X(relKm);
       if (idx === 0) x = X(0);
       if (idx === markers.length - 1) x = X(spanKm);
