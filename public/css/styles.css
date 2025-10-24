@@ -6901,8 +6901,8 @@ display: flex
   margin: 0 auto;
 }
 .loading-text {
-  text-align: center;
-
+    text-align: center;
+    margin-bottom: 20px;
 }
 .loading-text h2 {
     margin-bottom: 10px; 
