@@ -4404,6 +4404,12 @@ ease;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 100%;
+   
+  
+    gap: 30px;
+    padding: 60px 10px;
+    margin: 0 auto;
 }
 .loading-spinner img {
   animation: spin 2s linear infinite;
