@@ -8066,12 +8066,12 @@ function wrapRouteControls(day) {
   expandBtn.setAttribute('aria-label', 'Expand Map');
   expandBtn.style.background = '#277ed3';
   expandBtn.style.border = '1px solid #ddd';
-  expandBtn.style.borderRadius = '16px';
+  expandBtn.style.borderRadius = '10px';
   expandBtn.style.display = 'flex';
   expandBtn.style.flexDirection = 'row';
   expandBtn.style.alignItems = 'center';
   expandBtn.style.gap = '6px';
-  expandBtn.style.padding = '5px 10px';
+  expandBtn.style.padding = '6px 8px';
   expandBtn.style.fontWeight = 'bold';
   expandBtn.style.color = '#ffffff;';
   expandBtn.innerHTML = `
