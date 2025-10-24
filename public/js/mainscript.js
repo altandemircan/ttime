@@ -455,7 +455,7 @@ let gridLabels = [];
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
-}
+
 }
 
         // Aktif harita planlama modu için
