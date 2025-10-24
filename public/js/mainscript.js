@@ -4380,7 +4380,7 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
     // === SCALE BAR ARKASINDA KALMASIN DİYE MAPİ YUKARI KAYDIR + ZOOMU AZALT ===
  setTimeout(() => {
   // 150px yukarı kaydır
-  expandedMap.panBy([0, 150], { animate: true });
+  expandedMap.panBy([0, 180], { animate: true });
   // Zoom'u 0.5 kademe küçült
   const newZoom = Math.max(expandedMap.getZoom() - 0.2, 2);
   expandedMap.setZoom(newZoom, { animate: true });
@@ -5523,7 +5523,7 @@ async function expandMap(containerId, day) {
 
 setTimeout(() => {
   // 150px yukarı kaydır
-  expandedMap.panBy([0, 150], { animate: true });
+  expandedMap.panBy([0, 180], { animate: true });
   // Zoom'u 0.5 kademe küçült
   const newZoom = Math.max(expandedMap.getZoom() - 0.2, 2);
   expandedMap.setZoom(newZoom, { animate: true });
