@@ -8770,21 +8770,19 @@ const ELEV_LABEL_COL_WIDTH = 48; // Sol sütun genişliği
 
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
-  // Mouse’un scale bar içindeki X pozisyonu
   let x = e.clientX - rect.left;
-
-  // Sütun kadar kaydır (barın gerçek başı)
+  // Sütun kadar offsetle!
   x = Math.max(ELEV_LABEL_COL_WIDTH, x);
-  // Grafik alanının genişliği (barın kendisi - sol sütun)
   const barWidth = rect.width - ELEV_LABEL_COL_WIDTH;
-
-  // Oran: (x - sol sütun) / bar genişliği
   const percent = (x - ELEV_LABEL_COL_WIDTH) / barWidth;
+  // spanKm fonksiyonun parametresi olmalı!
   const km = percent * spanKm;
 
   tooltip.style.left = `${x}px`;
   tooltip.textContent = `${km.toFixed(2)} km`;
-});track.addEventListener('touchmove', function(e) {
+});
+
+track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
   const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
   verticalLine.style.left = `${x}px`;
