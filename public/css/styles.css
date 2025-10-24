@@ -426,7 +426,7 @@ li .highlight {
 .message {
     display: flex;
     align-items: center;
-    padding: 3px 9px;
+    padding: 3px 0px;
     border-radius: 20px;
     margin: 10px 0;
     line-height: 1.4;
@@ -434,7 +434,7 @@ li .highlight {
 
     position: relative;
     width: max-content;
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 .message img, .address img, .description img, .opening_hours img {

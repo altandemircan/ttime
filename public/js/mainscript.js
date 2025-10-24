@@ -1050,6 +1050,7 @@ function addCanonicalMessage(canonicalStr) {
   }
 }
 
+
 function sendMessage() {
   if (window.isProcessing) return;
   const input = document.getElementById("user-input");
@@ -1108,6 +1109,8 @@ function sendMessage() {
 }
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
+
+
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
