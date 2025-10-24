@@ -348,7 +348,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], e
   if (!track) return;
 
   // Temizle - elevation-label da eklendi
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-label').forEach(el => el.remove());
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-label, .elevation-range-label').forEach(el => el.remove());
 
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
@@ -382,13 +382,13 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], e
     track.appendChild(label);
   }
 
-  // Yükseklik range bilgisi için sol tarafta etiket
+  // Yükseklik range bilgisi için SOL TARAFA etiket - GÜNCELLENDİ
   if (elevationRange && typeof elevationRange.min === 'number' && typeof elevationRange.max === 'number') {
     const elevationContainer = document.createElement('div');
     elevationContainer.className = 'elevation-range-label';
     elevationContainer.style.cssText = `
       position: absolute;
-      left: -60px;
+      left: -60px;  /* SOL TARAF */
       top: 50%;
       transform: translateY(-50%);
       text-align: center;
@@ -407,6 +407,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], e
     track.appendChild(elevationContainer);
   }
 
+  // Marker'lar (değişmedi)
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
       if (typeof m.distance !== 'number') return;
