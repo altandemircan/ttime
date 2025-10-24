@@ -1118,26 +1118,27 @@ function addMessage(text, className) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
- function showTypingIndicator() {
-    const chatBox = document.getElementById("chat-box"); // <-- EKLE!
-    let indicator = document.getElementById("typing-indicator");
-    if (!indicator) {
-        indicator = document.createElement("div");
-        indicator.id = "typing-indicator";
-        indicator.textContent = "Typing...";
-
-        indicator.style = "padding:8px 0;color:#888; font-style: italic;";
-        chatBox.appendChild(indicator);
-    } else {
-        indicator.style.display = "block";
-    }
-    chatBox.scrollTop = chatBox.scrollHeight;
+function showTypingIndicator() {
+  const chatBox = document.getElementById("chat-box");
+  let indicator = document.getElementById("typing-indicator");
+  if (!indicator) {
+    indicator = document.createElement("div");
+    indicator.id = "typing-indicator";
+    indicator.className = "typing-indicator";
+    indicator.innerHTML = '<span></span><span></span><span></span>';
+    chatBox.appendChild(indicator);
+  } else {
+    indicator.style.display = "block";
+    indicator.innerHTML = '<span></span><span></span><span></span>'; // DAİMA animasyonlu format!
+  }
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function hideTypingIndicator() {
   const typingIndicator = document.getElementById("typing-indicator");
   if (typingIndicator) typingIndicator.style.display = "none";
 }
+
 
 document.addEventListener("DOMContentLoaded", function() {
     const sendBtn = document.getElementById("send-button");
