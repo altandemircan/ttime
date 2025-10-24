@@ -357,32 +357,23 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   // TEMİZLE
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elev-label-col').forEach(el => el.remove());
 
-  // GRAFİĞİN SOLUNDA ETİKET SÜTUNU İÇİN SABİT GENİŞLİK
-  const ELEV_LABEL_COL_WIDTH = 48; // px (isteğe göre 36-52 arası ayarla)
+  // SOLDA YÜKSEKLİK ETİKET SÜTUNU
+  const ELEV_LABEL_COL_WIDTH = 48; // px
 
-  // SVG varsa, yolun başladığı ve bittiği pixel'i bul
-  let PROFILE_START_X = ELEV_LABEL_COL_WIDTH, PROFILE_END_X = widthPx;
-  const svg = track.querySelector('.tt-elev-svg');
-  if (svg) {
-    const path = svg.querySelector('path') || svg.querySelector('.tt-elev-area');
-    if (path && path.getBBox) {
-      const bbox = path.getBBox();
-      PROFILE_START_X = ELEV_LABEL_COL_WIDTH + Math.max(0, bbox.x);
-      PROFILE_END_X = ELEV_LABEL_COL_WIDTH + Math.max(PROFILE_START_X, bbox.x + bbox.width);
-    } else {
-      PROFILE_START_X = ELEV_LABEL_COL_WIDTH;
-      PROFILE_END_X = widthPx;
-    }
-    // SVG'yi sola sütun kadar kaydır
-    svg.style.marginLeft = `${ELEV_LABEL_COL_WIDTH}px`;
-  }
+  // Bar ve marker/tick/label için: barın başladığı yer sütunun hemen sağı
+  const PROFILE_START_X = ELEV_LABEL_COL_WIDTH;
+  const PROFILE_END_X = widthPx; // veya widthPx - sağ padding varsa
 
-  // Oransal pozisyon
+  // Barın içindeki marker/tick/label için X pozisyonu
   const X = kmRel => PROFILE_START_X + (kmRel / spanKm) * (PROFILE_END_X - PROFILE_START_X);
 
-  // Yükseklik grid değerleri (SVG ile aynı mantık)
-  const elevMin = 60; // Minimum yükseklik (örnek, dinamik istiyorsan profile'dan oku)
-  const elevMax = 280; // Maksimum yükseklik (örnek, dinamik istiyorsan profile'dan oku)
+  // 1. Yükseklik etiketi sütunu
+  const svg = track.querySelector('.tt-elev-svg');
+  let svgHeight = svg ? (svg.getAttribute('height') || 180) : 180;
+  if (typeof svgHeight === 'string') svgHeight = parseInt(svgHeight, 10);
+
+  const elevMin = 60;   // Dinamik istiyorsan profile'dan oku
+  const elevMax = 280;
   const levels = 4;
   const labelCol = document.createElement('div');
   labelCol.className = 'elev-label-col';
@@ -391,14 +382,14 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     left: 0px;
     top: 0px;
     width: ${ELEV_LABEL_COL_WIDTH}px;
-    height: ${svg ? svg.getAttribute('height') + 'px' : '180px'};
+    height: ${svgHeight}px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     pointer-events: none;
     z-index: 2;
+    background: none;
   `;
-  // Yükseklik seviyelerini ekle
   for (let i = levels; i >= 0; i--) {
     const val = Math.round(elevMin + (i / levels) * (elevMax - elevMin));
     const label = document.createElement('div');
@@ -408,15 +399,26 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       color: #90a4ae;
       text-align: right;
       padding-right: 7px;
-      height: 1px;
       flex: 1 1 auto;
+      background: none;
     `;
     label.textContent = `${val} m`;
     labelCol.appendChild(label);
   }
   track.appendChild(labelCol);
 
-  // ESKİ marker/tick/label kodun aynen devam
+  // 2. SVG grafiğini sütunun hemen sağından başlat (marginLeft veya x offset ile)
+  if (svg) {
+    svg.style.position = "absolute";
+    svg.style.left = `${ELEV_LABEL_COL_WIDTH}px`;
+    svg.style.top = "0px";
+    // SVG'nin viewBox'ını da uygun şekilde ayarla!
+    // svg.setAttribute('viewBox', `0 0 ${widthPx - ELEV_LABEL_COL_WIDTH} ${svgHeight}`);
+    // svg.setAttribute('width', widthPx - ELEV_LABEL_COL_WIDTH);
+    // Eğer viewBox veya x offset kullanıyorsan, grafiğin path'lerini de offsetle!
+  }
+
+  // 3. TICK/ETİKET/MARKER: Her şey sütunun hemen sağından başlasın
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
