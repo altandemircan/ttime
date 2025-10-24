@@ -348,18 +348,18 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
-  // Expanded scalebar için solda boşluk bırak
+  // PATCH: Expanded scalebar için solda boşluk bırak
   const isExpanded = track.closest('.route-scale-bar')?.id?.startsWith('expanded-route-scale-bar-day');
   const LABEL_WIDTH = isExpanded ? 38 : 0;
 
-  // Genişliği DOM'dan canlı oku (her zaman doğru clamp için)
+  // Genişliği DOM'dan canlı oku
   const w = widthPx || track.getBoundingClientRect().width;
   const X = kmRel => LABEL_WIDTH + (kmRel / spanKm) * w;
 
   // Eski tick, label, marker'ları temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
-  // KM çizelgesi (tick ve label)
+  // KM çizelgesi
   const targetCount = Math.max(6, Math.min(14, Math.round(w / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -394,18 +394,19 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // Marker badge'ler
   if (Array.isArray(markers)) {
+    const BADGE_W = 18;
     markers.forEach((m, idx) => {
       if (typeof m.distance !== 'number') return;
       if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
       const relKm = m.distance - startKmDom;
       let x = X(relKm);
       // Clamp: marker badge scale bar'ın sağına taşmasın (ortası tam barın sağına denk gelir)
-      x = Math.max(LABEL_WIDTH, Math.min(LABEL_WIDTH + w, x));
+      x = Math.max(LABEL_WIDTH + BADGE_W/2, Math.min(LABEL_WIDTH + w - BADGE_W/2, x));
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+      wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
       wrap.title = m.name || '';
-      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
     });
   }
