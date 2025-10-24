@@ -7952,19 +7952,25 @@ function wrapRouteControls(day) {
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
 
-  // --- MAP BAŞLIK + BUTON + ARROW ---
-  const mapButtonWrap = document.createElement('div');
-  mapButtonWrap.className = 'map-bar-header';
-  mapButtonWrap.style.display = 'flex';
-  mapButtonWrap.style.alignItems = 'center';
-  mapButtonWrap.style.gap = '12px';
+  // --- MAP BAŞLIK + MAP-FUNCTIONS (buton + arrow) ---
+  const mapBarHeader = document.createElement('div');
+  mapBarHeader.className = 'map-bar-header';
+  mapBarHeader.style.display = 'flex';
+  mapBarHeader.style.alignItems = 'center';
+  mapBarHeader.style.gap = '12px';
 
   // MAP başlığı
   const mapTitleDiv = document.createElement('div');
   mapTitleDiv.textContent = "MAP";
   mapTitleDiv.style.fontWeight = 'bold';
   mapTitleDiv.style.fontSize = '17px';
-  mapButtonWrap.appendChild(mapTitleDiv);
+
+  // MAP-FUNCTIONS içine buton + arrow
+  const mapFunctionsDiv = document.createElement('div');
+  mapFunctionsDiv.className = 'map-functions';
+  mapFunctionsDiv.style.display = 'flex';
+  mapFunctionsDiv.style.alignItems = 'center';
+  mapFunctionsDiv.style.gap = '8px';
 
   // MAP butonu
   const expandBtn = document.createElement('button');
@@ -7979,15 +7985,19 @@ function wrapRouteControls(day) {
     const containerId = `route-map-day${day}`;
     if (typeof expandMap === "function") expandMap(containerId, day);
   };
-  mapButtonWrap.appendChild(expandBtn);
 
-  // --- Arrow (Açılır/Kapanır) ---
+  // Arrow (Açılır/Kapanır)
   const arrowSpan = document.createElement('span');
   arrowSpan.className = 'arrow';
-  arrowSpan.style.position = 'initial'; // <-- senin istediğin!
-  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon">`;
+  arrowSpan.style.position = 'initial';
   arrowSpan.style.cursor = 'pointer';
-  mapButtonWrap.appendChild(arrowSpan);
+  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon">`;
+
+  mapFunctionsDiv.appendChild(expandBtn);
+  mapFunctionsDiv.appendChild(arrowSpan);
+
+  mapBarHeader.appendChild(mapTitleDiv);
+  mapBarHeader.appendChild(mapFunctionsDiv);
 
   // --- Map içeriğini bir wrapper'a al ---
   const mapContentWrap = document.createElement('div');
@@ -8007,19 +8017,19 @@ function wrapRouteControls(day) {
 
   // --- Arrow click ile aç/kapa ---
   arrowSpan.onclick = function() {
-      open = !open;
-      if (open) {
-        mapContentWrap.style.maxHeight = '700px';
-        mapContentWrap.style.opacity = '1';
-        arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
-      } else {
-        mapContentWrap.style.maxHeight = '0px';
-        mapContentWrap.style.opacity = '0.2';
-        arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
-      }
-    };
+    open = !open;
+    if (open) {
+      mapContentWrap.style.maxHeight = '700px';
+      mapContentWrap.style.opacity = '1';
+      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
+    } else {
+      mapContentWrap.style.maxHeight = '0px';
+      mapContentWrap.style.opacity = '0.2';
+      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
+    }
+  };
 
-  bar.appendChild(mapButtonWrap);
+  bar.appendChild(mapBarHeader);
   bar.appendChild(mapContentWrap);
 
   // Bar'ı DOM'a yerleştir
