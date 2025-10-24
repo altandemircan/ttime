@@ -4396,66 +4396,26 @@ ease;
     }
 
 
-
-
-
-    .loading-panel {
-       width: 100%;
-    display: grid;
-    max-width: 860px;
-    gap: 30px;
-    padding: 60px 10px;
-    margin: 0 auto;
-    }
-    .loading-spinner {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-        align-items: center;
-        justify-content: center;
-        height: 60px;
-    }
-    .spinner-dot {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #0074D9 60%, #2ECC40 100%);
-        opacity: 0.8;
-        animation: spinner-bounce 1.2s infinite;
-    }
-    .spinner-dot:nth-child(2) { animation-delay: 0.2s; }
-    .spinner-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes spinner-bounce {
-        0%, 100% { transform: translateY(0); opacity:0.8;}
-        50% { transform: translateY(-21px); opacity:1;}
-    }
-    .loading-steps {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        font-size: 1.18rem;
-        font-weight: 500;
-    }
-    .loading-step { color: #222; opacity: 0.2; transform: translateY(12px);}
-    .loading-step.anim { animation: stepFadeInUp 0.8s cubic-bezier(.62,-0.09,.43,1.11) forwards;}
-    .loading-step.anim:nth-child(1) { animation-delay: 0s; }
-    .loading-step.anim:nth-child(2) { animation-delay: 1s; }
-    .loading-step.anim:nth-child(3) { animation-delay: 2s; }
-    @keyframes stepFadeInUp {
-        0% { opacity: 0.2; transform: translateY(12px);}
-        60% { opacity: 0.7; }
-        100% { opacity: 1; transform: translateY(0);}
-    }
-    .loading-step.static {
-        color: #2ECC40;
-        font-weight: 700;
-        opacity: 1;
-        margin-top: 24px;
-        letter-spacing: 0.02em;
-    }
-
-
+/* ORTA EKRAN LOADING */
+.loading-panel {
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 1200;
+  background: rgba(248,250,255,0.95);
+  display: none; /* JS ile display:flex/block yapılacak */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s;
+}
+.loading-spinner img {
+  animation: spin 2s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0);}
+  100% { transform: rotate(360deg);}
+}
+.loading-text { text-align: center; margin-top: 18px; }
 
 
 

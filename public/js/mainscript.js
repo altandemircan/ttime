@@ -928,6 +928,7 @@ chatInput.addEventListener("input", function() {
 });
 
 async function handleAnswer(answer) {
+
   // Concurrency guard: aynı anda ikinci isteği engelle
   if (window.isProcessing) return;
   window.isProcessing = true;
@@ -1105,6 +1106,8 @@ function sendMessage() {
     return;
   }
 
+   // LOADING PANELİ GÖSTER
+  showLoadingPanel();
   handleAnswer(val);
 }
 
@@ -1650,6 +1653,8 @@ async function showResults() {
     renderMyTripsPanel();
     fillGeoapifyTagsOnly();
     attachImLuckyEvents();
+// LOADING PANELİ GİZLE
+  hideLoadingPanel();
 }
 
 
@@ -10026,3 +10031,18 @@ document.addEventListener('click', function(e) {
     if (iw) iw.style.display = 'none';
   }
 });
+
+
+// Loading paneli göster, welcome (.cw) bloğunu gizle
+function showLoadingPanel() {
+  var loadingPanel = document.getElementById("loading-panel");
+  if (loadingPanel) loadingPanel.style.display = "flex";
+  var cw = document.querySelector('.cw');
+  if (cw) cw.style.display = "none";
+}
+
+// Loading paneli gizle
+function hideLoadingPanel() {
+  var loadingPanel = document.getElementById("loading-panel");
+  if (loadingPanel) loadingPanel.style.display = "none";
+}
