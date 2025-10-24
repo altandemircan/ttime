@@ -4685,7 +4685,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     left: 100px;
     background: rgb(255 255 255);
     gap: 4px;
-    padding: 6px;
+        padding: 30px;
     width: 900px;
     z-index: 1231231231231;
     border-radius: 10px;
@@ -4696,7 +4696,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 
-    
+
     }
 
     @media (max-width:768px) {
