@@ -319,7 +319,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-  // TICK/KM/MARKER kodu (değiştirmiyoruz)
+  // TICK/KM/MARKER kodu (değiştirmiyoruz, aynı)
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -367,129 +367,76 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     });
   }
 
-  // === EŞİT ARALIKLI BAREMLER ===
+let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
 
- // --- YÜKSEKLİK BAREMLERİ ---
-  // SVG'den tüm grid label'larını oku
- function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-  if (!track) return;
+const svg = track.querySelector('svg.tt-elev-svg');
+if (svg) {
+  // <text> elemanlarını bul, y koordinatı ve içeriğini al
+  gridLabels = Array.from(svg.querySelectorAll('text'))
+    .map(t => ({
+      value: t.textContent.trim(),
+      y: Number(t.getAttribute('y'))
+    }))
+    .filter(obj => /-?\d+\s*m$/.test(obj.value));
+}
 
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
+// Alttan üste sıralama (SVG'de y arttıkça aşağı iner)
+gridLabels.sort((a, b) => b.y - a.y);
 
-  // YÜKSEKLİK baremleri
-  let gridLabels = [];
-  const svg = track.querySelector('svg.tt-elev-svg');
-  if (svg) {
-    gridLabels = Array.from(svg.querySelectorAll('text'))
-      .map(t => Number(t.textContent.trim().replace(' m', '')))
-      .filter(num => !isNaN(num));
-  }
-  // Fallback
-  if (!gridLabels.length) gridLabels = [0, 50, 100];
+// Sadece ilk 3 seviye göster
+const gridLabels3 = gridLabels.slice(0, 3);
 
-  const min = Math.min(...gridLabels);
-  const max = Math.max(...gridLabels);
+// Sol barem DIV'i oluştur
+const elevationLabels = document.createElement('div');
+elevationLabels.className = 'elevation-labels-container';
+elevationLabels.style.cssText = `
+  position: absolute;
+  left: -50px;
+  top: 0;
+  bottom: 0;
+  width: 45px;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+`;
+elevationLabels.style.display = 'block'; 
 
-  // SVG yüksekliği
-  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+// SVG'nin yüksekliği
+const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  // Y konumu fonksiyonu
-  function getY(val) {
-    if (max === min) return svgH / 2;
-    return ((max - val) / (max - min)) * svgH;
-  }
-
-  // Baremler: max, 2/3 aralık, 1/3 aralık, 0 m
-  const barems = [
-    max,
-    max - (max - min) / 3,
-    max - 2 * (max - min) / 3,
-    0
-  ];
-
-  // Eğer min < 0 ise ayrıca min baremini ekle (en dipte!)
-  let showMinLabel = min < 0;
-
-  const elevationLabels = document.createElement('div');
-  elevationLabels.className = 'elevation-labels-container';
-  elevationLabels.style.cssText = `
+// Grid label'larını SVG y koordinatına göre hizala
+gridLabels3.forEach(obj => {
+  const label = document.createElement('div');
+  label.className = 'elevation-label';
+  label.style.cssText = `
     position: absolute;
-    left: -50px;
-    top: 0;
-    bottom: 0;
-    width: 45px;
-    height: 100%;
-    pointer-events: none;
-    z-index: 5;
-    display: block;
+    right: 0;
+    top: ${obj.y}px;
+    text-align: right;
+    padding-right: 5px;
+    border-right: 1px solid #cfd8dc;
+    font-size: 11px;
+    color: #607d8b;
+    background: none;
+    line-height: 1.1;
   `;
+  label.textContent = obj.value;
 
-  // Baremler (max, aralıklar, 0)
-  barems.forEach(val => {
-    // -17 gibi min barem hariç!
-    if (val < min) return;
+  // Altına yatay çizgi ekle
+  const hr = document.createElement('div');
+  hr.style.cssText = `
+    margin: 2px 0 0 0;
+    border-bottom: 1px solid #b0bec5;
+    width: 75%;
+    float: right;
+  `;
+  label.appendChild(hr);
 
-    const label = document.createElement('div');
-    label.className = 'elevation-label';
-    label.style.cssText = `
-      position: absolute;
-      right: 0;
-      top: ${getY(val) - 8}px;
-      text-align: right;
-      padding-right: 5px;
-      border-right: 1px solid #cfd8dc;
-      font-size: 11px;
-      color: #607d8b;
-      background: none;
-      line-height: 1.2;
-    `;
-    label.textContent = `${Math.round(val)} m`;
-
-    const hr = document.createElement('div');
-    hr.style.cssText = `
-      margin: 2px 0 0 0;
-      border-bottom: 1px solid #b0bec5;
-      width: 75%;
-      float: right;
-    `;
-    label.appendChild(hr);
-
-    elevationLabels.appendChild(label);
-  });
-
-  // Eğer min < 0 ise en dipte min baremini de ekle
-  if (showMinLabel) {
-    const label = document.createElement('div');
-    label.className = 'elevation-label';
-    label.style.cssText = `
-      position: absolute;
-      right: 0;
-      top: ${getY(min) - 8}px;
-      text-align: right;
-      padding-right: 5px;
-      border-right: 1px solid #cfd8dc;
-      font-size: 11px;
-      color: #607d8b;
-      background: none;
-      line-height: 1.2;
-    `;
-    label.textContent = `${Math.round(min)} m`;
-
-    const hr = document.createElement('div');
-    hr.style.cssText = `
-      margin: 2px 0 0 0;
-      border-bottom: 1px solid #b0bec5;
-      width: 75%;
-      float: right;
-    `;
-    label.appendChild(hr);
-
-    elevationLabels.appendChild(label);
-  }
+  elevationLabels.appendChild(label);
+});
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
-}
 }
 
         // Aktif harita planlama modu için
