@@ -5522,7 +5522,7 @@ setTimeout(() => {
   // fitBounds sonrası merkez
   const center = expandedMap.getCenter();
   // 0.012 derece yukarı: yaklaşık 1.2km (zoom'a göre değişebilir)
-  expandedMap.setView([center.lat - 0.02, center.lng], Math.max(expandedMap.getZoom() - 0.2, 2), { animate: true });
+  expandedMap.setView([center.lat - 0.002, center.lng], Math.max(expandedMap.getZoom() - 0.2, 2), { animate: true });
 }, 350);
 
   } else if (!expandedMap._initialView) {
