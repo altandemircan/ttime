@@ -7958,25 +7958,37 @@ function wrapRouteControls(day) {
   mapBarHeader.style.display = 'flex';
   mapBarHeader.style.alignItems = 'center';
   mapBarHeader.style.gap = '12px';
+  mapBarHeader.style.justifyContent = 'space-between';
 
-  // MAP başlığı
+  // Başlık
   const mapTitleDiv = document.createElement('div');
-  mapTitleDiv.textContent = "MAP";
+  mapTitleDiv.textContent = "Route Information";
   mapTitleDiv.style.fontWeight = 'bold';
-  mapTitleDiv.style.fontSize = '17px';
+  mapTitleDiv.style.fontSize = '15px';
 
   // MAP-FUNCTIONS içine buton + arrow
   const mapFunctionsDiv = document.createElement('div');
   mapFunctionsDiv.className = 'map-functions';
   mapFunctionsDiv.style.display = 'flex';
   mapFunctionsDiv.style.alignItems = 'center';
-  mapFunctionsDiv.style.gap = '8px';
+  mapFunctionsDiv.style.gap = '24px';
 
   // MAP butonu
   const expandBtn = document.createElement('button');
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
+  expandBtn.style.background = '#ffffff';
+  expandBtn.style.border = '1px solid #ddd';
+  expandBtn.style.borderRadius = '16px';
+  expandBtn.style.display = 'flex';
+  expandBtn.style.flexDirection = 'row';
+  expandBtn.style.alignItems = 'center';
+  expandBtn.style.gap = '6px';
+  expandBtn.style.padding = '5px 10px';
+  expandBtn.style.fontWeight = 'bold';
+  expandBtn.style.color = '#8a4af3';
+
   expandBtn.innerHTML = `
     <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
     <span class="tm-label">Expand map</span>
@@ -7991,7 +8003,9 @@ function wrapRouteControls(day) {
   arrowSpan.className = 'arrow';
   arrowSpan.style.position = 'initial';
   arrowSpan.style.cursor = 'pointer';
-  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon">`;
+  arrowSpan.style.padding = '0px';
+  arrowSpan.style.marginTop = '6px';
+  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" style="transform: rotate(90deg);">`;
 
   mapFunctionsDiv.appendChild(expandBtn);
   mapFunctionsDiv.appendChild(arrowSpan);
