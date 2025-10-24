@@ -8753,7 +8753,6 @@ window.addEventListener('mouseup', window.__sb_onMouseUp);
 
 let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
 if (isNaN(width)) width = 400;
-createScaleElements(track, width, totalKm, 0, markers);
 
 track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.remove());
 const svgNS = 'http://www.w3.org/2000/svg';
