@@ -343,87 +343,63 @@ function fitExpandedMapToRoute(day) {
     const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
     return f * p10;
   }
+
+
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-  if (!track) return;
+          // HATALI: track yoksa hiçbir şey çizilmez!
+          if (!track) return;
 
-  const isExpanded = track.closest('.route-scale-bar')?.id?.startsWith('expanded-route-scale-bar-day');
-  const LABEL_WIDTH = isExpanded ? 38 : 0;
+          // Temizle
+          track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
-  const w = widthPx || track.getBoundingClientRect().width;
-  const style = getComputedStyle(track);
-  const padLeft = parseFloat(style.paddingLeft) || 0;
-  const padRight = parseFloat(style.paddingRight) || 0;
+          const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
+          let stepKm = niceStep(spanKm, targetCount);
+          let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
+          if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
+          if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
 
-  // Elevation profilinin solunu doğru bul!
-  const profileBox = track.querySelector('.tt-elev-svg');
-  let ELEV_LEFT = LABEL_WIDTH + padLeft;
-  let ELEV_WIDTH = w - padLeft - padRight;
-  if (profileBox) {
-    const profileRect = profileBox.getBoundingClientRect();
-    const trackRect = track.getBoundingClientRect();
-    ELEV_LEFT = profileRect.left - trackRect.left;
-    ELEV_WIDTH = profileRect.width;
-  }
-  // Tooltip çizgisinin X pozisyonunu DOM'dan bul (örnek selector)
-// Bunu bir defa, profil yüklenince bulmalısın!
-const tooltipLine = track.querySelector('.scale-bar-vertical-line'); // örnek: tooltip çizgisi
-const PROFILE_START_X = 38;
-const PROFILE_END_X = 1671; // SVG path'ten bak
-const X = kmRel => PROFILE_START_X + (kmRel / spanKm) * (PROFILE_END_X - PROFILE_START_X);
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
+          for (let i = 0; i <= majors; i++) {
+            const curKm = Math.min(spanKm, i * stepKm);
+            const leftPct = (curKm / spanKm) * 100;
 
-  const targetCount = Math.max(6, Math.min(14, Math.round(w / 100)));
-  let stepKm = niceStep(spanKm, targetCount);
-  let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
-  if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
-  if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
+            const tick = document.createElement('div');
+            tick.className = 'scale-bar-tick';
+            tick.style.left = `${leftPct}%`;
+            tick.style.position = 'absolute';
+            tick.style.top = '10px';
+            tick.style.width = '1px';
+            tick.style.height = '16px';
+            tick.style.background = '#cfd8dc';
+            track.appendChild(tick);
 
-  for (let i = 0; i <= majors; i++) {
-    const curKm = Math.min(spanKm, i * stepKm);
-    const x = X(curKm);
+            const label = document.createElement('div');
+            label.className = 'scale-bar-label';
+            label.style.left = `${leftPct}%`;
+            label.style.position = 'absolute';
+            label.style.top = '30px';
+            label.style.transform = 'translateX(-50%)';
+            label.style.fontSize = '11px';
+            label.style.color = '#607d8b';
+            label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+            track.appendChild(label);
+          }
 
-    const tick = document.createElement('div');
-    tick.className = 'scale-bar-tick';
-    tick.style.left = `${x}px`;
-    tick.style.position = 'absolute';
-    tick.style.top = '10px';
-    tick.style.width = '1px';
-    tick.style.height = '16px';
-    tick.style.background = '#cfd8dc';
-    track.appendChild(tick);
+          if (Array.isArray(markers)) {
+            markers.forEach((m, idx) => {
+              if (typeof m.distance !== 'number') return;
+              if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
+              const relKm = m.distance - startKmDom;
+              const left = (relKm / spanKm) * 100;
+              const wrap = document.createElement('div');
+              wrap.className = 'marker-badge';
+              wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+              wrap.title = m.name || '';
+              wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+              track.appendChild(wrap);
+            });
+          }
+        }
 
-    const label = document.createElement('div');
-    label.className = 'scale-bar-label';
-    label.style.left = `${x}px`;
-    label.style.position = 'absolute';
-    label.style.top = '30px';
-    label.style.transform = 'translateX(-50%)';
-    label.style.fontSize = '11px';
-    label.style.color = '#607d8b';
-    label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
-    track.appendChild(label);
-  }
-
-  if (Array.isArray(markers)) {
-    const BADGE_W = 18;
-    markers.forEach((m, idx) => {
-      if (typeof m.distance !== 'number') return;
-      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
-
-      let relKm = m.distance - startKmDom;
-      let x = X(relKm);
-      if (idx === 0) x = X(0);
-      if (idx === markers.length - 1) x = X(spanKm);
-
-      const wrap = document.createElement('div');
-      wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
-      wrap.title = m.name || '';
-      wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-      track.appendChild(wrap);
-    });
-  }
-}
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
 window.mapPlanningActive = false;
@@ -8811,20 +8787,10 @@ container._elevKmSpan = totalKm;
   function redrawElevation(elevationData) {
     if (!elevationData) return;
     const { smooth, min, max } = elevationData;
+
     const s = container._elevSamples || [];
     const startKmDom = Number(container._elevStartKm || 0);
     const spanKm = Number(container._elevKmSpan || totalKm) || 1;
-
-    // --- PATCH: Solda Y etiketi alanı sadece expanded bar için ---
-    const isExpanded = container.id && container.id.startsWith('expanded-route-scale-bar-day');
-    const LABEL_WIDTH = isExpanded ? 38 : 0;
-
-    // X ve SVG genişliği patch
-    const X = kmRel => LABEL_WIDTH + (kmRel / spanKm) * width;
-
-    // SVG ve grupları patch'le (SVG oluşturulurken):
-    svg.setAttribute('viewBox', `0 0 ${width + LABEL_WIDTH} ${SVG_H}`);
-    svg.setAttribute('width', width + LABEL_WIDTH);
 
     // Görsel min/max
     let vizMin = min, vizMax = max;
@@ -8832,53 +8798,43 @@ container._elevKmSpan = totalKm;
     if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
     else { vizMin = min - 1; vizMax = max + 1; }
 
+    const X = kmRel => (kmRel / spanKm) * width;
     const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
 
     while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
-    // --- GRID ve LABEL'lar (solda, sadece expanded için) ---
-    const levels = 3;
+    // Grid
+    const levels = 4;
     for (let i = 0; i <= levels; i++) {
       const ev = vizMin + (i / levels) * (vizMax - vizMin);
       const y = Y(ev);
       if (isNaN(y)) continue;
       const ln = document.createElementNS(svgNS, 'line');
-      ln.setAttribute('x1', LABEL_WIDTH);
-      ln.setAttribute('x2', String(width + LABEL_WIDTH));
-      ln.setAttribute('y1', String(y));
-      ln.setAttribute('y2', String(y));
-      ln.setAttribute('stroke', '#d7dde2');
-      ln.setAttribute('stroke-dasharray', '4 4');
-      ln.setAttribute('opacity', '.8');
+      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
       gridG.appendChild(ln);
 
-      // Sadece expanded'da label solda, mini barda aynen kalsın
-      if (isExpanded) {
-        const tx = document.createElementNS(svgNS, 'text');
-        tx.setAttribute('x', LABEL_WIDTH - 6);
-        tx.setAttribute('y', String(y + 3));
-        tx.setAttribute('fill', '#90a4ae');
-        tx.setAttribute('font-size', '13');
-        tx.setAttribute('text-anchor', 'end');
-        tx.setAttribute('dominant-baseline', 'middle');
-        tx.textContent = `${Math.round(ev)} m`;
-        gridG.appendChild(tx);
-      }
+      const tx = document.createElementNS(svgNS, 'text');
+      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+      tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
     }
 
-    // Alan (grafik)
+    // Alan
     let topD = '';
     const n = Math.min(smooth.length, s.length);
     for (let i = 0; i < n; i++) {
       const kmAbs = s[i].distM / 1000;
-      const x = Math.max(0, Math.min(width + LABEL_WIDTH, X(kmAbs - startKmDom)));
+      const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
       const y = Y(smooth[i]);
       if (isNaN(x) || isNaN(y)) continue;
       topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
     }
     if (topD) {
-      const areaD = `${topD} L ${width + LABEL_WIDTH} ${SVG_H} L ${LABEL_WIDTH} ${SVG_H} Z`;
+      const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
       areaPath.setAttribute('d', areaD);
       areaPath.setAttribute('fill', '#263445');
     }
@@ -8887,9 +8843,9 @@ container._elevKmSpan = totalKm;
     for (let i = 1; i < n; i++) {
       const kmAbs1 = s[i - 1].distM / 1000;
       const kmAbs2 = s[i].distM / 1000;
-      const x1 = Math.max(0, Math.min(width + LABEL_WIDTH, X(kmAbs1 - startKmDom)));
+      const x1 = Math.max(0, Math.min(width, X(kmAbs1 - startKmDom)));
       const y1 = Y(smooth[i - 1]);
-      const x2 = Math.max(0, Math.min(width + LABEL_WIDTH, X(kmAbs2 - startKmDom)));
+      const x2 = Math.max(0, Math.min(width, X(kmAbs2 - startKmDom)));
       const y2 = Y(smooth[i]);
 
       const dx = s[i].distM - s[i - 1].distM;
@@ -8911,7 +8867,7 @@ container._elevKmSpan = totalKm;
       seg.setAttribute('fill', 'none');
       segG.appendChild(seg);
     }
-}
+  }
   container._redrawElevation = redrawElevation;
 
 // Tooltip ve vertical line hareket ettirme (her zaman görünür!)
