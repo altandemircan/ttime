@@ -349,69 +349,74 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], s
   if (!track) return;
 
   // Temizle
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elev-label-col').forEach(el => el.remove());
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
-  // SOLDA GERÇEK YÜKSEKLİK ETİKETİ SÜTUNU
+  // === Barın soluna YÜKSEKLİK ETİKET SÜTUNU ekle (track'ın dışına!) ===
   const ELEV_LABEL_COL_WIDTH = 48;
 
-  // Sadece gerçek yükseklik noktalarını ekle (ör: baş, son, mouse)
+  // Eğer track'ın parent'ı scale-bar-container değilse, sar
+  let container = track.parentNode;
+  if (!container.classList.contains('scale-bar-container')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'scale-bar-container';
+    wrap.style.position = 'relative';
+    // track'ı yeni container'a sar
+    container.insertBefore(wrap, track);
+    wrap.appendChild(track);
+    container = wrap;
+  }
+
+  // Eğer eski etiket sütunu varsa sil
+  const oldLabelCol = container.querySelector('.elev-label-col');
+  if (oldLabelCol) oldLabelCol.remove();
+
+  // Yükseklik etiket sütunu
   const labelCol = document.createElement('div');
   labelCol.className = 'elev-label-col';
   labelCol.style.cssText = `
     position: absolute;
-    left: 0px;
-    top: 0px;
+    left: 0;
+    top: 0;
     width: ${ELEV_LABEL_COL_WIDTH}px;
     height: ${track.getBoundingClientRect().height}px;
     pointer-events: none;
     z-index: 2;
-    display: block;
     background: none;
   `;
 
-  // Sadece baş, son veya mouse noktası gibi önemli noktaları ekle
-  // Burada örnek olarak baş ve son:
-  const pointsToShow = [];
+  // Sadece baş ve son yükseklikleri ekle (örnekte: 28m, 42m gibi)
   if (samples?.length) {
-    pointsToShow.push(samples[0]);
-    if (samples.length > 1) pointsToShow.push(samples[samples.length - 1]);
-  }
-
-  pointsToShow.forEach(pt => {
-    // SVG içindeki yükseklik pozisyonu için Y fonksiyonu:
-    // SVG_H ve min/max değerlerini uygun şekilde al
-    const SVG_H = Math.max(180, track.getBoundingClientRect().height);
     const min = Math.min(...samples.map(s => s.elev));
     const max = Math.max(...samples.map(s => s.elev));
+    const SVG_H = track.getBoundingClientRect().height || 220;
     const Y = elev => ((SVG_H - 1) - ((elev - min) / (max - min)) * (SVG_H - 2));
-    const y = Y(pt.elev);
 
-    const label = document.createElement('div');
-    label.className = 'elev-label';
-    label.style.cssText = `
-      position: absolute;
-      left: 0;
-      top: ${y}px;
-      font-size: 12px;
-      color: #607d8b;
-      text-align: right;
-      padding-right: 7px;
-      pointer-events: none;
-      background: none;
-    `;
-    label.textContent = `${Math.round(pt.elev)} m`;
-    labelCol.appendChild(label);
-  });
+    [samples[0], samples[samples.length-1]].forEach(pt => {
+      const label = document.createElement('div');
+      label.className = 'elev-label';
+      label.style.cssText = `
+        position: absolute;
+        right: 0;
+        top: ${Y(pt.elev)}px;
+        font-size: 12px;
+        color: #607d8b;
+        text-align: right;
+        padding-right: 7px;
+        pointer-events: none;
+        background: none;
+      `;
+      label.textContent = `${Math.round(pt.elev)} m`;
+      labelCol.appendChild(label);
+    });
+  }
+  container.insertBefore(labelCol, track);
 
-  track.appendChild(labelCol);
-
-  // Barın başladığı yer: sol sütun genişliği kadar sağdan
+  // Barın X pozisyonu: sütun kadar sağdan başla
   const PROFILE_START_X = ELEV_LABEL_COL_WIDTH;
   const PROFILE_END_X = widthPx;
-
   const X = kmRel => PROFILE_START_X + (kmRel / spanKm) * (PROFILE_END_X - PROFILE_START_X);
 
-  // Marker/tick/km etiketleri
+  // Marker/tick/km etiketleri (grafiğin içinde, sütunun sağında yayılır)
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
