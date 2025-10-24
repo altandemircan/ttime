@@ -7972,7 +7972,8 @@ function wrapRouteControls(day) {
   const mapTitleDiv = document.createElement('div');
   mapTitleDiv.textContent = "Route Information";
   mapTitleDiv.style.fontWeight = 'bold';
-  mapTitleDiv.style.fontSize = '15px';
+  mapTitleDiv.style.fontSize = '0.95rem';
+  mapTitleDiv.style.color = '#333333';
 
   // MAP-FUNCTIONS içine buton + arrow
   const mapFunctionsDiv = document.createElement('div');
