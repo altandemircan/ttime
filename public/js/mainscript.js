@@ -364,8 +364,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     ELEV_LEFT = profileRect.left - trackRect.left;
     ELEV_WIDTH = profileRect.width;
   }
-  const X = kmRel => ELEV_LEFT + (kmRel / spanKm) * ELEV_WIDTH;
-
+  const PROFILE_START_X = // tooltip çizgisinin X koordinatı (bunu DOM'dan bulacaksın)
+const X = kmRel => PROFILE_START_X + (kmRel / spanKm) * ELEV_WIDTH;
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge').forEach(el => el.remove());
 
   const targetCount = Math.max(6, Math.min(14, Math.round(w / 100)));
