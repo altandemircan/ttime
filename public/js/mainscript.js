@@ -8031,17 +8031,23 @@ function wrapRouteControls(day) {
 
   // --- Arrow click ile aç/kapa ---
   arrowSpan.onclick = function() {
-    open = !open;
-    if (open) {
-      mapContentWrap.style.maxHeight = '700px';
-      mapContentWrap.style.opacity = '1';
-      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
-    } else {
-      mapContentWrap.style.maxHeight = '0px';
-      mapContentWrap.style.opacity = '0.2';
-      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
-    }
-  };
+  open = !open;
+  if (open) {
+    mapContentWrap.style.maxHeight = '700px';
+    mapContentWrap.style.opacity = '1';
+    arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
+
+    // Açıkken gap normal olsun
+    bar.style.gap = '12px';  // veya bar.style.removeProperty('gap');
+  } else {
+    mapContentWrap.style.maxHeight = '0px';
+    mapContentWrap.style.opacity = '0.2';
+    arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
+
+    // Kapalıyken gap sıfır olsun
+    bar.style.gap = '0px';
+  }
+};
 
   bar.appendChild(mapBarHeader);
   bar.appendChild(mapContentWrap);
