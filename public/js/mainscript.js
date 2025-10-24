@@ -8785,12 +8785,8 @@ const segG = document.createElementNS(svgNS, 'g');
 segG.setAttribute('class', 'tt-elev-segments');
 svgElem.appendChild(segG);
 
-const svgReady = track.querySelector('svg.tt-elev-svg');
-if (svgReady) {
-  const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  createScaleElements(track, widthPx, totalKm, 0, markers);
-}
-
+// SOL BAREM/SCALE/MARKER EKLEMEK İÇİN EN SONA KOY:
+createScaleElements(track, width, totalKm, 0, markers);
 // Dikey çizgi + tooltip
 const verticalLine = document.createElement('div');
 verticalLine.className = 'scale-bar-vertical-line';
