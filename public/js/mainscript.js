@@ -7958,7 +7958,7 @@ function wrapRouteControls(day) {
   mapBarHeader.style.display = 'flex';
   mapBarHeader.style.alignItems = 'center';
   mapBarHeader.style.gap = '12px';
-  mapBarHeader.style.justify-content = 'space-between';
+  mapBarHeader.style.justifyContent = 'space-between';
 
   // MAP başlığı
   const mapTitleDiv = document.createElement('div');
