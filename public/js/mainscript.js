@@ -4378,14 +4378,10 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
     expandedMap.fitBounds(polyline.getBounds());
 
     // === SCALE BAR ARKASINDA KALMASIN DİYE MAPİ YUKARI KAYDIR + ZOOMU AZALT ===
- setTimeout(() => {
-  // 150px yukarı kaydır
-  expandedMap.panBy([0, 400], { animate: true });
-  // Zoom'u 0.5 kademe küçült
-  const newZoom = Math.max(expandedMap.getZoom() - 0.3, 2);
-  expandedMap.setZoom(newZoom, { animate: true });
+setTimeout(() => {
+  expandedMap.panBy([0, 150], { animate: true });
+  expandedMap.setZoom(Math.max(expandedMap.getZoom() - 0.5, 2), { animate: true });
 }, 350);
-
     // EKSIK NOKTALAR İÇİN KIRMIZI KESİK ÇİZGİ
     points.forEach((mp) => {
         if (isPointReallyMissing(mp, geojson.features[0].geometry.coordinates, 50)) {
@@ -5522,11 +5518,8 @@ async function expandMap(containerId, day) {
     };
 
 setTimeout(() => {
-  // 150px yukarı kaydır
-  expandedMap.panBy([0, 400], { animate: true });
-  // Zoom'u 0.5 kademe küçült
-  const newZoom = Math.max(expandedMap.getZoom() - 0.2, 2);
-  expandedMap.setZoom(newZoom, { animate: true });
+  expandedMap.panBy([0, 150], { animate: true });
+  expandedMap.setZoom(Math.max(expandedMap.getZoom() - 0.5, 2), { animate: true });
 }, 350);
 
   } else if (!expandedMap._initialView) {
