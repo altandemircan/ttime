@@ -434,7 +434,7 @@ li .highlight {
 
     position: relative;
     width: max-content;
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
 .message img, .address img, .description img, .opening_hours img {
@@ -495,10 +495,9 @@ li .highlight {
 }
 
 .profile-img {
-    width: 45px;
-    height: 45px;
+    width: 24px !important;
+    height: 24px !important;
     border-radius: 50%;
-    margin-right: 15px;
 }
 .survey-options {
     display: flex;
