@@ -4379,7 +4379,7 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
 
     // === SCALE BAR ARKASINDA KALMASIN DİYE MAPİ YUKARI KAYDIR + ZOOMU AZALT ===
     setTimeout(() => {
-  expandedMap.panBy([0, -150], { animate: true }); // X:0, Y:-150 px yukarı!
+  expandedMap.panBy([0, 150], { animate: true }); // X:0, Y:-150 px yukarı!
 }, 350);
 
     // EKSIK NOKTALAR İÇİN KIRMIZI KESİK ÇİZGİ
@@ -5516,9 +5516,9 @@ async function expandMap(containerId, day) {
       center: expandedMap.getCenter(),
       zoom: expandedMap.getZoom()
     };
-    
+
 setTimeout(() => {
-  expandedMap.panBy([0, -150], { animate: true }); // X:0, Y:-150 px yukarı!
+  expandedMap.panBy([0, 150], { animate: true }); // X:0, Y:-150 px yukarı!
 }, 350);
 
 
