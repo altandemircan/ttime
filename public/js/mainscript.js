@@ -1604,16 +1604,22 @@ async function showResults() {
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // Splide sliderları mount et
+    // === HEMEN LOADING PANELİ GİZLE ===
+    window.__welcomeHiddenForever = true;
+    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+    hideLoadingPanel();
+    console.log("hideLoadingPanel çağrıldı!");
+
+    // Splide sliderları mount et (DOM güncellemesi sonrası)
     setTimeout(() => {
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (!sliderElem._splideInstance) {
                 const splideInstance = new Splide(sliderElem, {
-  type: 'slide',
-  perPage: 4, // veya perPage: 1 (her seferinde bir item gözüksün)
-  gap: '18px',
-  arrows: true,
-  pagination: false,
+                    type: 'slide',
+                    perPage: 4,
+                    gap: '18px',
+                    arrows: true,
+                    pagination: false,
                     drag: true,
                     breakpoints: {
                         900: { perPage: 1 },
@@ -1657,12 +1663,7 @@ async function showResults() {
     renderMyTripsPanel();
     fillGeoapifyTagsOnly();
     attachImLuckyEvents();
-// LOADING PANELİ GİZLE
-      console.log("hideLoadingPanel çağrıldı!");
 
- window.__welcomeHiddenForever = true;
-document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-hideLoadingPanel();
 }
 
 
