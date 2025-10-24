@@ -9957,3 +9957,16 @@ function attachImLuckyEvents() {
     }, 100);
   });
 }
+
+
+// TRIP SEÇİLİNCE VEYA ÜZERİNE GELİNCE CHAT PANELİNİ GİZLE
+document.querySelectorAll('.trip-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    var chat = document.getElementById('chat-container');
+    if (chat) chat.style.display = 'none';
+  });
+  item.addEventListener('mouseenter', function() {
+    var chat = document.getElementById('chat-container');
+    if (chat) chat.style.display = 'none';
+  });
+});
