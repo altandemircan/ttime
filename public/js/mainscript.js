@@ -343,13 +343,60 @@ function fitExpandedMapToRoute(day) {
     const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
     return f * p10;
   }
-
-function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], elevationRange = {}) {
+function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], heights = []) {
   if (!track) return;
 
-  // Temizle - elevation-label da eklendi
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-label').forEach(el => el.remove());
+  // Temizle (eski ikonları ve sütunu sil)
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .height-label-col').forEach(el => el.remove());
 
+  // === Yükseklik sütunu oluştur ===
+  const HEIGHT_COL_WIDTH = 48;
+  // Parent container'ı flex'e çevir
+  if (!track.parentNode.classList.contains('scale-bar-flex')) {
+    const flexWrap = document.createElement('div');
+    flexWrap.className = 'scale-bar-flex';
+    flexWrap.style.display = 'flex';
+    track.parentNode.insertBefore(flexWrap, track);
+    flexWrap.appendChild(track);
+    // track artık flexWrap'ın içinde
+  }
+
+  // Yükseklik etiket sütunu
+  const heightCol = document.createElement('div');
+  heightCol.className = 'height-label-col';
+  heightCol.style.cssText = `
+    width: ${HEIGHT_COL_WIDTH}px;
+    position: relative;
+    flex-shrink: 0;
+    background: none;
+  `;
+
+  // Dikeyde yükseklik değerlerini sırayla ekle
+  if (Array.isArray(heights)) {
+    heights.forEach((heightObj, idx) => {
+      const label = document.createElement('div');
+      label.className = 'height-label';
+      label.style.cssText = `
+        position: absolute;
+        right: 0;
+        top: ${heightObj.top}px;
+        font-size: 12px;
+        color: #607d8b;
+        text-align: right;
+        padding-right: 7px;
+        background: none;
+      `;
+      label.textContent = `${Math.round(heightObj.value)} m`;
+      heightCol.appendChild(label);
+    });
+  }
+
+  // Yükseklik sütununu track'ın soluna ekle
+  if (track.parentNode.classList.contains('scale-bar-flex')) {
+    track.parentNode.insertBefore(heightCol, track);
+  }
+
+  // SCALE BAR TICK/KM/MARKER
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -380,31 +427,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], e
     label.style.color = '#607d8b';
     label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
     track.appendChild(label);
-  }
-
-  // Yükseklik range bilgisi için sol tarafta etiket
-  if (elevationRange && typeof elevationRange.min === 'number' && typeof elevationRange.max === 'number') {
-    const elevationContainer = document.createElement('div');
-    elevationContainer.className = 'elevation-range-label';
-    elevationContainer.style.cssText = `
-      position: absolute;
-      left: -60px;
-      top: 50%;
-      transform: translateY(-50%);
-      text-align: center;
-      font-size: 11px;
-      color: #607d8b;
-      line-height: 1.3;
-      width: 50px;
-    `;
-    
-    elevationContainer.innerHTML = `
-      <div style="font-weight: bold;">${Math.round(elevationRange.max)}m</div>
-      <div style="margin: 5px 0; border-left: 1px solid #cfd8dc; height: 40px; margin-left: 50%;"></div>
-      <div style="font-weight: bold;">${Math.round(elevationRange.min)}m</div>
-    `;
-    
-    track.appendChild(elevationContainer);
   }
 
   if (Array.isArray(markers)) {
