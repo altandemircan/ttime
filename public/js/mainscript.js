@@ -351,7 +351,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-  // TICK ve MARKER kodu (değiştirmiyorum)
+  // TICK/KM/MARKER kodu (değiştirmiyoruz, aynı)
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -400,17 +400,20 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   // --- SVG içindeki grid yükseklik değerlerini oku ---
-  // SVG, track içinde .tt-elev-svg class'lı bir <svg> olarak duruyor
   const svg = track.querySelector('svg.tt-elev-svg');
   let gridLabels = [];
   if (svg) {
+    // <text> elemanlarını bul, y koordinatı ve içeriğini al
     gridLabels = Array.from(svg.querySelectorAll('text'))
-      .map(t => t.textContent.trim())
-      .filter(txt => /-?\d+\s*m$/.test(txt));
+      .map(t => ({
+        value: t.textContent.trim(),
+        y: Number(t.getAttribute('y'))
+      }))
+      .filter(obj => /-?\d+\s*m$/.test(obj.value));
   }
 
-  // **BURASI KRİTİK:** Alttan üste sıralamak için gridLabels dizisini ters çevir!
-  gridLabels = gridLabels.slice().reverse();
+  // Alttan üste sıralama (SVG'de y arttıkça aşağı iner)
+  gridLabels.sort((a, b) => b.y - a.y);
 
   // Sol barem DIV'i oluştur
   const elevationLabels = document.createElement('div');
@@ -421,27 +424,31 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     top: 0;
     bottom: 0;
     width: 45px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #607d8b;
+    height: 100%;
     pointer-events: none;
     z-index: 5;
   `;
 
-  // SVG grid değerlerini alttan üste sırala ve ekle
-  gridLabels.forEach(elevation => {
+  // SVG'nin yüksekliği
+  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+
+  // Grid label'larını SVG y koordinatına göre hizala
+  gridLabels.forEach(obj => {
     const label = document.createElement('div');
     label.className = 'elevation-label';
     label.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: ${obj.y}px;
       text-align: right;
       padding-right: 5px;
       border-right: 1px solid #cfd8dc;
-      height: 20px;
-      line-height: 20px;
+      font-size: 10px;
+      color: #607d8b;
+      background: none;
+      line-height: 1;
     `;
-    label.textContent = elevation;
+    label.textContent = obj.value;
     elevationLabels.appendChild(label);
   });
 
