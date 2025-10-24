@@ -8791,42 +8791,6 @@ if (svgReady) {
   createScaleElements(track, widthPx, totalKm, 0, markers);
 }
 
-track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.remove());
-
-const SVG_TOP = 48;
-const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-let SVG_H = isMobile
-  ? Math.max(180, Math.min(240, Math.round(track.getBoundingClientRect().height - SVG_TOP - 12)))
-  : Math.max(180, Math.min(320, Math.round(track.getBoundingClientRect().height - SVG_TOP - 16)));
-if (isNaN(SVG_H)) SVG_H = isMobile ? 160 : 220;
-
-const svgElem = document.createElementNS(svgNS, 'svg');
-svgElem.setAttribute('class', 'tt-elev-svg');
-svgElem.setAttribute('data-role', 'elev-base');
-svgElem.setAttribute('viewBox', `0 0 ${width} ${SVG_H}`);
-svgElem.setAttribute('preserveAspectRatio', 'none');
-svgElem.setAttribute('width', '100%');
-svgElem.setAttribute('height', SVG_H);
-track.appendChild(svgElem);
-
-const gridG = document.createElementNS(svgNS, 'g');
-gridG.setAttribute('class', 'tt-elev-grid');
-svgElem.appendChild(gridG);
-
-const areaPath = document.createElementNS(svgNS, 'path');
-areaPath.setAttribute('class', 'tt-elev-area');
-svgElem.appendChild(areaPath);
-
-const segG = document.createElementNS(svgNS, 'g');
-segG.setAttribute('class', 'tt-elev-segments');
-svgElem.appendChild(segG);
-
-const svgReady = track.querySelector('svg.tt-elev-svg');
-if (svgReady) {
-  const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  createScaleElements(track, widthPx, totalKm, 0, markers);
-}
-
 // Dikey çizgi + tooltip
 const verticalLine = document.createElement('div');
 verticalLine.className = 'scale-bar-vertical-line';
@@ -8902,37 +8866,7 @@ container._elevKmSpan = totalKm;
 // (Devam eden kodlar...)
   // BASE SVG (data-role="elev-base")
   
-  const SVG_TOP = 48;
-  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  let SVG_H = isMobile
-    ? Math.max(180, Math.min(240, Math.round(track.getBoundingClientRect().height - SVG_TOP - 12)))
-    : Math.max(180, Math.min(320, Math.round(track.getBoundingClientRect().height - SVG_TOP - 16)));
-  if (isNaN(SVG_H)) SVG_H = isMobile ? 160 : 220;
-
-  // Önceki base svg’yi kaldır
-  track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.remove());
-
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('class', 'tt-elev-svg');
-  svg.setAttribute('data-role', 'elev-base');
-  svg.setAttribute('viewBox', `0 0 ${width} ${SVG_H}`);
-  svg.setAttribute('preserveAspectRatio', 'none');
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', SVG_H);
-  track.appendChild(svg);
-
-  const gridG = document.createElementNS(svgNS, 'g');
-  gridG.setAttribute('class', 'tt-elev-grid');
-  svg.appendChild(gridG);
-
-  const areaPath = document.createElementNS(svgNS, 'path');
-  areaPath.setAttribute('class', 'tt-elev-area');
-  svg.appendChild(areaPath);
-
-  const segG = document.createElementNS(svgNS, 'g');
-  segG.setAttribute('class', 'tt-elev-segments');
-  svg.appendChild(segG);
-
+  
   // Redraw (aktif domain + örneklerle)
   function redrawElevation(elevationData) {
     if (!elevationData) return;
