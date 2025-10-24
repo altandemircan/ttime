@@ -8704,18 +8704,21 @@ tooltip.className = 'tt-elev-tooltip';
 tooltip.style.left = '0px';
 track.appendChild(tooltip);
 
-// Mouse ile çizgiyi hareket ettir (her zaman görünür!)
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
-  const x = e.clientX - rect.left;
+  let x = e.clientX - rect.left;
+  // Clamp: bar sınırında kal, barın içine LABEL_WIDTH'u ekle
+  x = Math.max(LABEL_WIDTH, Math.min(LABEL_WIDTH + width, x));
   verticalLine.style.left = `${x}px`;
+  tooltip.style.left = `${x}px`;
 });
 track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
-  const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
+  let x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (LABEL_WIDTH + width / 2);
+  x = Math.max(LABEL_WIDTH, Math.min(LABEL_WIDTH + width, x));
   verticalLine.style.left = `${x}px`;
+  tooltip.style.left = `${x}px`;
 });
-// Mouseleave, touchend gibi eventlerde ÇİZGİYİ GİZLEME! Kodun başka yerinde verticalLine.style.display = 'none' geçiyorsa SİL.
 
 // Mesafe (Haversine)
 function hv(lat1, lon1, lat2, lon2) {
@@ -8804,7 +8807,7 @@ container._elevKmSpan = totalKm;
 
     // --- PATCH: Solda Y etiketi alanı sadece expanded bar için ---
     const isExpanded = container.id && container.id.startsWith('expanded-route-scale-bar-day');
-    const LABEL_WIDTH = isExpanded ? 38 : 0;
+const LABEL_WIDTH = isExpanded ? 38 : 0;
 
     // X ve SVG genişliği patch
     const X = kmRel => LABEL_WIDTH + (kmRel / spanKm) * width;
@@ -8942,8 +8945,9 @@ track.__onMove = function(e) {
   }
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  tooltip.style.left = `${x}px`;
-  verticalLine.style.left = `${x}px`;
+  verticalLine.style.left = (LABEL_WIDTH + width / 2) + 'px';
+
+  verticalLine.style.left = (LABEL_WIDTH + width / 2) + 'px'
   verticalLine.style.display = 'block';
 };
 // Bağla!
