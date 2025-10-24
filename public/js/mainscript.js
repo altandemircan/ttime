@@ -396,9 +396,13 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 // Marker badge'ler
 if (Array.isArray(markers)) {
   const BADGE_W = 18;
-  const style = getComputedStyle(track);
-  const padLeft = parseFloat(style.paddingLeft) || 0;
-  const padRight = parseFloat(style.paddingRight) || 0;
+const style = getComputedStyle(track);
+const padLeft = parseFloat(style.paddingLeft) || 0;
+const padRight = parseFloat(style.paddingRight) || 0;
+const effectiveW = w - padLeft - padRight;
+
+const X = kmRel => LABEL_WIDTH + padLeft + (kmRel / spanKm) * effectiveW;
+
   // Marker badge'leri için ayrı bir wrapper kullan
   let markerRow = track.querySelector('.scale-bar-marker-row');
   if (!markerRow) {
@@ -420,31 +424,24 @@ if (Array.isArray(markers)) {
   const X2 = kmRel => (kmRel / spanKm) * markerW;
 
   markers.forEach((m, idx) => {
-    if (typeof m.distance !== 'number') return;
-    if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
-    const relKm = m.distance - startKmDom;
-    let x = X2(relKm);
+  if (typeof m.distance !== 'number') return;
+  if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
 
-    // Son marker için clamp profile'ın en sonuna
-    if (idx === markers.length - 1) {
-      x = Math.min(X2(spanKm), markerW - BADGE_W/2);
-    }
-    // İlk marker için clamp profile'ın en başına
-    if (idx === 0) {
-      x = Math.max(0 + BADGE_W/2, x);
-    }
-    // Diğerleri için normal clamp
-    if (idx !== 0 && idx !== markers.length - 1) {
-      x = Math.max(BADGE_W/2, Math.min(markerW - BADGE_W/2, x));
-    }
+  let relKm = m.distance - startKmDom;
+  let x = X(relKm);
 
-    const wrap = document.createElement('div');
-    wrap.className = 'marker-badge';
-    wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
-    wrap.title = m.name || '';
-    wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-    markerRow.appendChild(wrap);
-  });
+  // -- Clamp'e gerek yok! --
+  // İlk marker: x = X(0)
+  // Son marker: x = X(spanKm)
+  // Ortadakiler: x = X(relKm)
+
+  const wrap = document.createElement('div');
+  wrap.className = 'marker-badge';
+  wrap.style.cssText = `position:absolute;left:${x}px;top:2px;width:${BADGE_W}px;height:${BADGE_W}px;transform:translateX(-50%);`;
+  wrap.title = m.name || '';
+  wrap.innerHTML = `<div style="width:${BADGE_W}px;height:${BADGE_W}px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+  track.appendChild(wrap);
+});
 }
 }
         // Aktif harita planlama modu için
