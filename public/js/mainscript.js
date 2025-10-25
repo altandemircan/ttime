@@ -3951,35 +3951,22 @@ if (anyDayHasRealItem && !hideAddCat) {
   dayList.appendChild(addMoreButton);
 }
 
- const startMapDiv = document.createElement("div");
-const startMapBtn = document.createElement("button");
-startMapBtn.id = `start-map-btn-day${day}`;
-startMapBtn.type = "button";
-startMapBtn.style.width = "inherit";
-startMapBtn.textContent = "Start with map";
-startMapBtn.onclick = function () {
-  // Her gün için özel başlatıcı fonksiyon çağır (gün parametresi ile):
-  if (typeof startMapPlanningForDay === "function") startMapPlanningForDay(day);
-};
-startMapDiv.appendChild(startMapBtn);
-dayContainer.appendChild(startMapDiv);
+  // Her günün altına ekle:
+  const addNewDayHr = document.createElement('hr');
+  addNewDayHr.className = 'add-new-day-separator';
+  dayContainer.appendChild(addNewDayHr);
 
+  const addNewDayButton = document.createElement("button");
+  addNewDayButton.className = "add-new-day-btn";
+  addNewDayButton.id = `add-new-day-button-day${day}`;
+  addNewDayButton.textContent = "+ Add New Day";
+  addNewDayButton.onclick = function () { addNewDay(this); };
+  dayContainer.appendChild(addNewDayButton);
 
-
-cartDiv.appendChild(dayContainer);
+  cartDiv.appendChild(dayContainer);
   }
 // Her gün için AI info ekle
-// Günün altına "Add New Day" butonunu ekle
-const addNewDayHr = document.createElement('hr');
-addNewDayHr.className = 'add-new-day-separator';
-dayContainer.appendChild(addNewDayHr);
 
-const addNewDayButton = document.createElement("button");
-addNewDayButton.className = "add-new-day-btn";
-addNewDayButton.id = `add-new-day-button-day${day}`;
-addNewDayButton.textContent = "+ Add New Day";
-addNewDayButton.onclick = function () { addNewDay(this); };
-dayContainer.appendChild(addNewDayButton);
 
 
   // --- Diğer kalan işlemler ---
