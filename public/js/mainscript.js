@@ -2464,9 +2464,9 @@ function displayPlacesInChat(places, category, day) {
   pagination: false,
                     drag: true,
                     breakpoints: {
-                        900: { perPage: 2 },
-                        1520: { perPage: 3 },
-                        1900: { perPage: 4 }
+                        900: { perPage: 3 },
+                        1520: { perPage: 4 },
+                        1900: { perPage: 5 }
                     }
                 });
                 splideInstance.mount();
