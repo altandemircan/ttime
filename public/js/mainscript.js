@@ -2097,18 +2097,20 @@ const dailyCategories = [
     { en: "Coffee" },
     { en: "Touristic attraction" },
     { en: "Restaurant" },
-    { en: "Accommodation" }
+    { en: "Accommodation" },
+    { en: "Museum" }
 ];
-const chatCategories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation"];
+const chatCategories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation", "Museum"];
+
 
 
 const categoryIcons = {
     "Coffee": "img/coffee_icon.svg",
-    "Touristic attraction": "img/touristic_icon.svg",   
+    "Touristic attraction": "img/touristic_icon.svg",
     "Restaurant": "img/restaurant_icon.svg",
-    "Accommodation": "img/accommodation_icon.svg"
+    "Accommodation": "img/accommodation_icon.svg",
+    "Museum": "img/museum_icon.svg" // ikon ekle!
 };
-
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
@@ -2518,6 +2520,7 @@ const geoapifyCategoryMap = {
   "Touristic attraction": "tourism.sights",
   "Restaurant": "catering.restaurant",
   "Accommodation": "accommodation.hotel",
+   "Museum": "tourism.museum",
 
   // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
   "Bar": "catering.bar",
