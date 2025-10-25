@@ -3726,22 +3726,37 @@ function updateCart() {
     dayList.dataset.day = day;
 
     if (isEmptyDay) {
-      const emptyWrap = document.createElement("div");
-      emptyWrap.className = "empty-day-block";
-      emptyWrap.innerHTML = `
-        <p class="empty-day-message">No item has been added for this day yet.</p>
-        <div class="empty-day-actions" style="display:block;text-align:center;">
-          <button type="button"
-                  class="import-btn gps-import"
-                  data-import-type="multi"
-                  data-global="1"
-                  title="Supports GPX, TCX, FIT, KML">
-            Import GPS File
-          </button>
-        </div>
-      `;
-      dayList.appendChild(emptyWrap);
-    } else {
+  const emptyWrap = document.createElement("div");
+  emptyWrap.className = "empty-day-block";
+  emptyWrap.innerHTML = `
+    <p class="empty-day-message">No item has been added for this day yet.</p>
+    <div style="text-align:center;">
+      <button id="start-map-btn-day${day}" type="button" style="width: inherit; margin-bottom: 10px;">Start with map</button>
+    </div>
+    <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
+    <div class="empty-day-actions" style="display:block;text-align:center;">
+      <button type="button"
+              class="import-btn gps-import"
+              data-import-type="multi"
+              data-global="1"
+              title="Supports GPX, TCX, FIT, KML">
+        Import GPS File
+      </button>
+    </div>
+  `;
+  dayList.appendChild(emptyWrap);
+
+  // Event eklemek için:
+  const startMapBtn = emptyWrap.querySelector(`#start-map-btn-day${day}`);
+  if (startMapBtn) {
+    startMapBtn.onclick = function () {
+      // Her güne özel fonksiyon, gün parametresiyle:
+      if (typeof startMapPlanningForDay === "function") startMapPlanningForDay(day);
+    };
+  }
+}
+
+else {
       let lastCoordItem = null;
       let lastCoordIdx = null;
       for (let idx = 0; idx < dayItemsArr.length; idx++) {
