@@ -456,7 +456,7 @@ li .highlight {
 
 .info .description, .info .address, .info .opening_hours {
     display: -webkit-box;
-    max-width: 335px;
+    /*max-width: 335px;*/
     
     -webkit-box-orient: vertical;
     overflow: hidden;   
