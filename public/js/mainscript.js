@@ -2446,10 +2446,10 @@ function displayPlacesInChat(places, category, day) {
     attachFavEvents();
 
     function getPerPage() {
-        if (window.innerWidth >= 1900) return 4;
-        if (window.innerWidth >= 1520) return 3;
-        if (window.innerWidth >= 900) return 2;
-        return 4;
+        if (window.innerWidth >= 1900) return 5;
+        if (window.innerWidth >= 1520) return 4;
+        if (window.innerWidth >= 900) return 3;
+        return 5;
     }
 
     setTimeout(() => {
