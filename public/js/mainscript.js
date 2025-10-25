@@ -1728,11 +1728,12 @@ function toggleAccordion(accordionHeader) {
 
 
 const placeCategories = {
-    "Coffee": "catering.cafe",           
+    "Coffee": "catering.cafe",     
+    "Museum": "entertainment.museum",      
     "Touristic attraction": "tourism.sights",         
     "Restaurant": "catering.restaurant",
     "Accommodation": "accommodation.hotel",
-    "Museum": "entertainment.museum"
+    
 };
 
 // 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
@@ -1820,7 +1821,7 @@ const MAX_ROUTE_KM = 30; // En fazla bu kadar genişlet
 const STEP_KM = 3;
 
 async function buildPlan(city, days) {
-  const categories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation", "Museum"];
+  const categories = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
   let plan = [];
   let categoryResults = {};
   const cityCoords = await getCityCoordinates(city);
@@ -2096,22 +2097,24 @@ const maxItems = Infinity;
 /* let itemRemoved = false; */
 const dailyCategories = [
     { en: "Coffee" },
+    { en: "Museum" },
     { en: "Touristic attraction" },
     { en: "Restaurant" },
-    { en: "Accommodation" },
-    { en: "Museum" }
+    { en: "Accommodation" }
+    
 ];
-const chatCategories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation", "Museum"];
+const chatCategories = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
 
 
 
 const categoryIcons = {
     "Coffee": "img/coffee_icon.svg",
+    "Museum": "img/museum_icon.svg",
     "Touristic attraction": "img/touristic_icon.svg",
     "Restaurant": "img/restaurant_icon.svg",
-    "Accommodation": "img/accommodation_icon.svg",
-    "Museum": "img/museum_icon.svg" // ikon ekle!
+    "Accommodation": "img/accommodation_icon.svg" 
 };
+
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
@@ -2518,10 +2521,11 @@ document.addEventListener("DOMContentLoaded", function() {
 const geoapifyCategoryMap = {
   // Basic Plan
   "Coffee": "catering.cafe",
+  "Museum": "entertainment.museum",
   "Touristic attraction": "tourism.sights",
   "Restaurant": "catering.restaurant",
   "Accommodation": "accommodation.hotel",
-   "Museum": "entertainment.museum",
+   
 
   // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
   "Bar": "catering.bar",
