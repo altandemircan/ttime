@@ -1648,8 +1648,8 @@ async function showResults() {
                       pagination: false,
                     drag: true,
                     breakpoints: {
-                        900: { perPage: 3 },
-                        1400: { perPage: 4 },
+                        1200: { perPage: 3 },
+                        1700: { perPage: 4 },
                         1900: { perPage: 5 }
                     }
                 });
@@ -2464,8 +2464,8 @@ function displayPlacesInChat(places, category, day) {
   pagination: false,
                     drag: true,
                       breakpoints: {
-                        900: { perPage: 3 },
-                        1400: { perPage: 4 },
+                        1200: { perPage: 3 },
+                        1700: { perPage: 4 },
                         1900: { perPage: 5 }
                     }
                 });
