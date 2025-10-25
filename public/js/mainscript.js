@@ -2458,15 +2458,15 @@ function displayPlacesInChat(places, category, day) {
             if (!sliderElem._splideInstance) {
                 const splideInstance = new Splide(sliderElem, {
   type: 'slide',
-  perPage: 4, // veya perPage: 1 (her seferinde bir item gözüksün)
+  perPage: 5, // veya perPage: 1 (her seferinde bir item gözüksün)
   gap: '18px',
   arrows: true,
   pagination: false,
                     drag: true,
                     breakpoints: {
-                        900: { perPage: 1 },
-                        1520: { perPage: 2 },
-                        1900: { perPage: 3 }
+                        900: { perPage: 2 },
+                        1520: { perPage: 3 },
+                        1900: { perPage: 4 }
                     }
                 });
                 splideInstance.mount();
