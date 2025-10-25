@@ -1649,8 +1649,8 @@ async function showResults() {
                     drag: true,
                     breakpoints: {
                         900: { perPage: 3 },
-                        1220: { perPage: 4 },
-                        1600: { perPage: 5 }
+                        1400: { perPage: 4 },
+                        1900: { perPage: 5 }
                     }
                 });
                 splideInstance.mount();
@@ -2463,10 +2463,10 @@ function displayPlacesInChat(places, category, day) {
   arrows: true,
   pagination: false,
                     drag: true,
-                    breakpoints: {
+                      breakpoints: {
                         900: { perPage: 3 },
-                        1220: { perPage: 4 },
-                        1600: { perPage: 5 }
+                        1400: { perPage: 4 },
+                        1900: { perPage: 5 }
                     }
                 });
                 splideInstance.mount();
