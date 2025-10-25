@@ -1731,7 +1731,8 @@ const placeCategories = {
     "Coffee": "catering.cafe",           
     "Touristic attraction": "tourism.sights",         
     "Restaurant": "catering.restaurant",
-    "Accommodation": "accommodation.hotel"
+    "Accommodation": "accommodation.hotel",
+    "Museum": "tourism.museum"
 };
 
 // 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
@@ -1819,7 +1820,7 @@ const MAX_ROUTE_KM = 30; // En fazla bu kadar genişlet
 const STEP_KM = 3;
 
 async function buildPlan(city, days) {
-  const categories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation"];
+  const categories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation", "Museum"];
   let plan = [];
   let categoryResults = {};
   const cityCoords = await getCityCoordinates(city);
