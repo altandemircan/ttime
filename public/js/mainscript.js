@@ -3951,10 +3951,6 @@ if (anyDayHasRealItem && !hideAddCat) {
   dayList.appendChild(addMoreButton);
 }
 
-cartDiv.appendChild(dayContainer);
-  }
-// Her gün için AI info ekle
-
   // Her günün altına ekle:
   const addNewDayHr = document.createElement('hr');
   addNewDayHr.className = 'add-new-day-separator';
@@ -3968,6 +3964,10 @@ cartDiv.appendChild(dayContainer);
   dayContainer.appendChild(addNewDayButton);
 
   cartDiv.appendChild(dayContainer);
+  }
+// Her gün için AI info ekle
+
+
 
   // --- Diğer kalan işlemler ---
   const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
