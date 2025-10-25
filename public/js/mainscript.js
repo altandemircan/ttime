@@ -3955,17 +3955,19 @@ cartDiv.appendChild(dayContainer);
   }
 // Her gün için AI info ekle
 
-  // --- Add New Day butonu döngü SONRASINDA, sadece 1 defa ---
+  // Her günün altına ekle:
   const addNewDayHr = document.createElement('hr');
   addNewDayHr.className = 'add-new-day-separator';
-  cartDiv.appendChild(addNewDayHr);
+  dayContainer.appendChild(addNewDayHr);
 
   const addNewDayButton = document.createElement("button");
   addNewDayButton.className = "add-new-day-btn";
-  addNewDayButton.id = "add-new-day-button";
+  addNewDayButton.id = `add-new-day-button-day${day}`;
   addNewDayButton.textContent = "+ Add New Day";
   addNewDayButton.onclick = function () { addNewDay(this); };
-  cartDiv.appendChild(addNewDayButton);
+  dayContainer.appendChild(addNewDayButton);
+
+  cartDiv.appendChild(dayContainer);
 
   // --- Diğer kalan işlemler ---
   const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
