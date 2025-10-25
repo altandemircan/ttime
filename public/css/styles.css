@@ -4651,52 +4651,21 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
 
 .expanded-map-panel {
-  display: flex;
-    position: fixed;
-    bottom: 10px;
-    right: 10px;
+right: 10px;
     left: 10px;
-    background: rgb(255 255 255);
-    gap: 4px;
-    padding: 6px;
-    width: calc(100% - 445px);
+    width: calc(100% - 485px);
     z-index: 1231231231231;
-    border-radius: 10px;
-    align-items: center;
-    box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
-    flex-direction: column;
-
-
-
-
-
-
-
-
-
-
-
-
     display: flex
 ;
     position: fixed;
     bottom: 10px;
-    right: 100px;
-    left: 100px;
     background: rgb(255 255 255);
     gap: 4px;
-        padding: 30px;
-    width: 900px;
-    z-index: 1231231231231;
+    padding: 10px 10px 10px 40px;
     border-radius: 10px;
     align-items: center;
     box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
     flex-direction: column;
-
-
-
-
-
     }
 
     @media (max-width:768px) {
