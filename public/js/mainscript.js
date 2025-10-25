@@ -2446,7 +2446,7 @@ function displayPlacesInChat(places, category, day) {
     attachFavEvents();
 
     function getPerPage() {
-        if (window.innerWidth >= 1900) return 5;
+        if (window.innerWidth >= 1700) return 5;
         if (window.innerWidth >= 1520) return 4;
         if (window.innerWidth >= 900) return 3;
         return 5;
@@ -2466,7 +2466,7 @@ function displayPlacesInChat(places, category, day) {
                     breakpoints: {
                         900: { perPage: 3 },
                         1520: { perPage: 4 },
-                        1900: { perPage: 5 }
+                        1600: { perPage: 5 }
                     }
                 });
                 splideInstance.mount();
