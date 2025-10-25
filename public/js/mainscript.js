@@ -1732,7 +1732,7 @@ const placeCategories = {
     "Touristic attraction": "tourism.sights",         
     "Restaurant": "catering.restaurant",
     "Accommodation": "accommodation.hotel",
-    "Museum": "accommodation.hostel"
+    "Museum": "entertainment.museum"
 };
 
 // 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
@@ -1820,7 +1820,7 @@ const MAX_ROUTE_KM = 30; // En fazla bu kadar genişlet
 const STEP_KM = 3;
 
 async function buildPlan(city, days) {
-  const categories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation", "Hostel"];
+  const categories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation", "Museum"];
   let plan = [];
   let categoryResults = {};
   const cityCoords = await getCityCoordinates(city);
@@ -2099,9 +2099,9 @@ const dailyCategories = [
     { en: "Touristic attraction" },
     { en: "Restaurant" },
     { en: "Accommodation" },
-    { en: "Hostel" }
+    { en: "Museum" }
 ];
-const chatCategories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation", "Hostel"];
+const chatCategories = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation", "Museum"];
 
 
 
@@ -2110,7 +2110,7 @@ const categoryIcons = {
     "Touristic attraction": "img/touristic_icon.svg",
     "Restaurant": "img/restaurant_icon.svg",
     "Accommodation": "img/accommodation_icon.svg",
-    "Hostel": "img/museum_icon.svg" // ikon ekle!
+    "Museum": "img/museum_icon.svg" // ikon ekle!
 };
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
@@ -2521,7 +2521,7 @@ const geoapifyCategoryMap = {
   "Touristic attraction": "tourism.sights",
   "Restaurant": "catering.restaurant",
   "Accommodation": "accommodation.hotel",
-   "Museum": "accommodation.hostel",
+   "Museum": "entertainment.museum",
 
   // Traveler Needs (20 ana kategori) — DÜZELTİLDİ!
   "Bar": "catering.bar",
