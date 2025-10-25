@@ -3643,6 +3643,9 @@ function updateCart() {
               No item has been added for this day yet.<br>
               Select a point on the map to start the trip!
             </p>
+        <div>
+  <button id="start-map-btn" type="button" style="width: inherit;">Start with map</button>
+</div>
             <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
             <div class="empty-day-actions" style="display:block;text-align:center;">
               <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
