@@ -2446,8 +2446,8 @@ function displayPlacesInChat(places, category, day) {
     attachFavEvents();
 
     function getPerPage() {
-        if (window.innerWidth >= 1700) return 5;
-        if (window.innerWidth >= 1520) return 4;
+        if (window.innerWidth >= 1500) return 5;
+        if (window.innerWidth >= 1320) return 4;
         if (window.innerWidth >= 900) return 3;
         return 5;
     }
@@ -2465,7 +2465,7 @@ function displayPlacesInChat(places, category, day) {
                     drag: true,
                     breakpoints: {
                         900: { perPage: 3 },
-                        1520: { perPage: 4 },
+                        1220: { perPage: 4 },
                         1600: { perPage: 5 }
                     }
                 });
