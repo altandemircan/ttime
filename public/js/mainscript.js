@@ -1641,16 +1641,16 @@ async function showResults() {
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (!sliderElem._splideInstance) {
                 const splideInstance = new Splide(sliderElem, {
-                    type: 'slide',
-                    perPage: 4,
-                    gap: '18px',
-                    arrows: true,
-                    pagination: false,
+                   type: 'slide',
+                      perPage: 5, // veya perPage: 1 (her seferinde bir item gözüksün)
+                      gap: '18px',
+                      arrows: true,
+                      pagination: false,
                     drag: true,
                     breakpoints: {
-                        900: { perPage: 1 },
-                        1520: { perPage: 2 },
-                        1900: { perPage: 3 }
+                        900: { perPage: 3 },
+                        1220: { perPage: 4 },
+                        1600: { perPage: 5 }
                     }
                 });
                 splideInstance.mount();
@@ -2445,12 +2445,12 @@ function displayPlacesInChat(places, category, day) {
 
     attachFavEvents();
 
-    function getPerPage() {
-        if (window.innerWidth >= 1500) return 5;
-        if (window.innerWidth >= 1320) return 4;
-        if (window.innerWidth >= 900) return 3;
-        return 5;
-    }
+    // function getPerPage() {
+    //     if (window.innerWidth >= 1500) return 5;
+    //     if (window.innerWidth >= 1320) return 4;
+    //     if (window.innerWidth >= 900) return 3;
+    //     return 5;
+    // }
 
     setTimeout(() => {
         // Tüm .splide sliderları için instance mount et
