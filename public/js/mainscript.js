@@ -3966,21 +3966,22 @@ if (anyDayHasRealItem && !hideAddCat) {
   dayList.appendChild(addMoreButton);
 }
 
-  // Her günün altına ekle:
-  const addNewDayHr = document.createElement('hr');
-  addNewDayHr.className = 'add-new-day-separator';
-  dayContainer.appendChild(addNewDayHr);
-
-  const addNewDayButton = document.createElement("button");
-  addNewDayButton.className = "add-new-day-btn";
-  addNewDayButton.id = `add-new-day-button-day${day}`;
-  addNewDayButton.textContent = "+ Add New Day";
-  addNewDayButton.onclick = function () { addNewDay(this); };
-  dayContainer.appendChild(addNewDayButton);
 
   cartDiv.appendChild(dayContainer);
   }
-// Her gün için AI info ekle
+
+
+  // Tüm günler eklendikten sonra, EN ALTA ekle:
+const addNewDayHr = document.createElement('hr');
+addNewDayHr.className = 'add-new-day-separator';
+cartDiv.appendChild(addNewDayHr);
+
+const addNewDayButton = document.createElement("button");
+addNewDayButton.className = "add-new-day-btn";
+addNewDayButton.id = "add-new-day-button";
+addNewDayButton.textContent = "+ Add New Day";
+addNewDayButton.onclick = function () { addNewDay(this); };
+cartDiv.appendChild(addNewDayButton);
 
 
 
