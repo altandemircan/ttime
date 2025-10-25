@@ -3964,6 +3964,11 @@ startMapBtn.onclick = function () {
 startMapDiv.appendChild(startMapBtn);
 dayContainer.appendChild(startMapDiv);
 
+
+
+cartDiv.appendChild(dayContainer);
+  }
+// Her gün için AI info ekle
 // Günün altına "Add New Day" butonunu ekle
 const addNewDayHr = document.createElement('hr');
 addNewDayHr.className = 'add-new-day-separator';
@@ -3975,11 +3980,6 @@ addNewDayButton.id = `add-new-day-button-day${day}`;
 addNewDayButton.textContent = "+ Add New Day";
 addNewDayButton.onclick = function () { addNewDay(this); };
 dayContainer.appendChild(addNewDayButton);
-
-cartDiv.appendChild(dayContainer);
-  }
-// Her gün için AI info ekle
-
 
 
   // --- Diğer kalan işlemler ---
