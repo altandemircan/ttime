@@ -4941,26 +4941,66 @@ li.appendChild(container);
 ul.appendChild(li);
 }
 tripDetailsSection.appendChild(sect);
-const shareDiv = document.createElement('div');
-shareDiv.id = 'mobile-share-buttons';
-shareDiv.className = 'share-buttons-container';
-shareDiv.innerHTML = `
-    <div class="share-buttons">
+
+
+
+// Triptime AI logo ve başlık ile paylaşım butonlarını ekle
+const shareSection = document.createElement("div");
+shareSection.className = "share-plan-section";
+
+// LOGO
+const logo = document.createElement("img");
+logo.src = "img/og_image.png"; // Görsel dosya yolu
+logo.alt = "Triptime AI Logo";
+logo.className = "triptime-logo";
+logo.style.width = "120px";
+logo.style.marginBottom = "16px";
+logo.style.display = "block";
+logo.style.marginLeft = "auto";
+logo.style.marginRight = "auto";
+shareSection.appendChild(logo);
+
+// BAŞLIK
+const title = document.createElement("div");
+title.className = "share-buttons-title";
+title.innerHTML = `
+    Ready to inspire your friends?<br>
+    Share your Triptime AI travel plan and help others discover amazing journeys.<br>
+    Let Triptime AI turn every trip into a story worth sharing!
+`;
+title.style.textAlign = "center";
+title.style.fontSize = "1.1rem";
+title.style.fontWeight = "700";
+title.style.color = "#1a2433";
+title.style.marginBottom = "15px";
+title.style.marginTop = "4px";
+title.style.letterSpacing = "0.03em";
+shareSection.appendChild(title);
+
+// BUTONLAR
+const shareButtons = document.createElement("div");
+shareButtons.className = "share-buttons";
+shareButtons.innerHTML = `
     <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
-        <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
+        <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> WhatsApp
     </button>
     <button class="share-btn instagram" onclick="shareOnInstagram()">
-        <img src="img/share_instagram.svg" alt="Instagram"> Instagram
+        <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Instagram
     </button>
     <button class="share-btn facebook" onclick="shareOnFacebook()">
-        <img src="img/share_facebook.svg" alt="Facebook"> Facebook
+        <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook"> Facebook
     </button>
     <button class="share-btn twitter" onclick="shareOnTwitter()">
-        <img src="img/share_x.svg" alt="Twitter"> Twitter
+        <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
     </button>
-</div>
 `;
-tripDetailsSection.appendChild(shareDiv);
+shareSection.appendChild(shareButtons);
+
+// Gezi planı detaylarının sonuna ekle!
+tripDetailsSection.appendChild(shareSection);
+
+
+
 return;
 }
 
@@ -5114,25 +5154,65 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
         ul.appendChild(li);
     }
     tripDetailsSection.appendChild(sect);
-    const shareButtonsContainer = document.createElement("div");
-    shareButtonsContainer.classList.add("share-buttons-container");
-    shareButtonsContainer.innerHTML = `
- <div class="share-buttons">
+    
+
+
+    // Triptime AI logo ve başlık ile paylaşım butonlarını ekle
+const shareSection = document.createElement("div");
+shareSection.className = "share-plan-section";
+
+// LOGO
+const logo = document.createElement("img");
+logo.src = "img/og_image.png"; // Görsel dosya yolu
+logo.alt = "Triptime AI Logo";
+logo.className = "triptime-logo";
+logo.style.width = "120px";
+logo.style.marginBottom = "16px";
+logo.style.display = "block";
+logo.style.marginLeft = "auto";
+logo.style.marginRight = "auto";
+shareSection.appendChild(logo);
+
+// BAŞLIK
+const title = document.createElement("div");
+title.className = "share-buttons-title";
+title.innerHTML = `
+    Ready to inspire your friends?<br>
+    Share your Triptime AI travel plan and help others discover amazing journeys.<br>
+    Let Triptime AI turn every trip into a story worth sharing!
+`;
+title.style.textAlign = "center";
+title.style.fontSize = "1.1rem";
+title.style.fontWeight = "700";
+title.style.color = "#1a2433";
+title.style.marginBottom = "15px";
+title.style.marginTop = "4px";
+title.style.letterSpacing = "0.03em";
+shareSection.appendChild(title);
+
+// BUTONLAR
+const shareButtons = document.createElement("div");
+shareButtons.className = "share-buttons";
+shareButtons.innerHTML = `
     <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
-        <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
+        <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> WhatsApp
     </button>
     <button class="share-btn instagram" onclick="shareOnInstagram()">
-        <img src="img/share_instagram.svg" alt="Instagram"> Instagram
+        <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Instagram
     </button>
     <button class="share-btn facebook" onclick="shareOnFacebook()">
-        <img src="img/share_facebook.svg" alt="Facebook"> Facebook
+        <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook"> Facebook
     </button>
     <button class="share-btn twitter" onclick="shareOnTwitter()">
-        <img src="img/share_x.svg" alt="Twitter"> Twitter
+        <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
     </button>
-</div>
-    `;
-    tripDetailsSection.appendChild(shareButtonsContainer);
+`;
+shareSection.appendChild(shareButtons);
+
+// Gezi planı detaylarının sonuna ekle!
+tripDetailsSection.appendChild(shareSection);
+
+
 }
 
 function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
