@@ -4930,43 +4930,37 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
                 });
                 daySteps.innerHTML = stepsHtml;
             } else {
-                const emptyP = document.createElement("p");
-                emptyP.className = "empty-day-message";
-                emptyP.textContent = "No item has been added for this day yet.";
-                daySteps.appendChild(emptyP);
-            }
-            content.appendChild(daySteps);
-            container.appendChild(content);
-            li.appendChild(container);
-            ul.appendChild(li);
-        }
-        tripDetailsSection.appendChild(sect);
-        const shareDiv = document.createElement('div');
-        shareDiv.id = 'mobile-share-buttons';
-        shareDiv.className = 'share-buttons-container';
-        shareDiv.innerHTML = `
-            <div class="share-buttons-container">
+    const emptyP = document.createElement("p");
+    emptyP.className = "empty-day-message";
+    emptyP.textContent = "No items have been added for this day yet."; // DEĞİŞTİ
+    daySteps.appendChild(emptyP);
+}
+content.appendChild(daySteps);
+container.appendChild(content);
+li.appendChild(container);
+ul.appendChild(li);
+}
+tripDetailsSection.appendChild(sect);
+const shareDiv = document.createElement('div');
+shareDiv.id = 'mobile-share-buttons';
+shareDiv.className = 'share-buttons-container';
+shareDiv.innerHTML = `
     <button class="share-button whatsapp-button" onclick="shareOnWhatsApp()">
-        <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp">
-        <span>WhatsApp</span>
+        <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> WhatsApp
     </button>
     <button class="share-button instagram-button" onclick="shareOnInstagram()">
-        <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram">
-        <span>Instagram</span>
+        <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Instagram
     </button>
     <button class="share-button facebook-button" onclick="shareOnFacebook()">
-        <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook">
-        <span>Facebook</span>
+        <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook"> Facebook
     </button>
     <button class="share-button twitter-button" onclick="shareOnTwitter()">
-        <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter">
-        <span>Twitter</span>
+        <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
     </button>
-</div>
-        `;
-        tripDetailsSection.appendChild(shareDiv);
-        return;
-    }
+`;
+tripDetailsSection.appendChild(shareDiv);
+return;
+}
 
     let chatScreen = document.getElementById("chat-screen");
     if (!chatScreen) {
