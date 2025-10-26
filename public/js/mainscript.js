@@ -1981,7 +1981,7 @@ function addChatResultsToCart() {
 }
 
 // ESKİ OSM MAP
-   window.showMap = function(element) {
+window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
@@ -1989,6 +1989,15 @@ function addChatResultsToCart() {
     // DOM'daki gerçek koordinatı oku:
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
+
+    // --- TAG ve FAV kalplerini GİZLE ---
+    // Sadece bu kartta!
+    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
+        el.style.display = 'none';
+    });
+    stepsElement.querySelectorAll('.fav-heart').forEach(el => {
+        el.style.display = 'none';
+    });
 
     if (!isNaN(lat) && !isNaN(lon)) {
         const delta = 0.001;
@@ -2000,6 +2009,7 @@ function addChatResultsToCart() {
     } else {
         alert("Location not found.");
     }
+}; }
 };
 
 // window.showMap = function(element) {
