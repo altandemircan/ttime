@@ -3778,84 +3778,63 @@ ease;
 
 /* --- Paylaşım Butonları İçin Düzeltilmiş Stiller --- */
 
-/* --- Paylaşım Butonları İçin Modern Stiller --- */
-.share-buttons-container {
+/* --- Sade, Modern Paylaşım Butonları --- */
+.share-buttons {
     display: flex;
-    flex-wrap: wrap;
-    gap: 18px;
-    margin-bottom: 26px;
+    gap: 12px;
+    margin-bottom: 22px;
     justify-content: center;
-    align-items: center;
+    flex-wrap: wrap;
 }
 
-.share-button {
+.share-btn {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 12px 24px;
-    font-weight: 600;
-    border-radius: 14px;
-    border: none;
-    background: #f6f8fa;
+    gap: 7px;
+    padding: 10px 18px;
     font-size: 1rem;
-    color: #333;
-    transition: box-shadow 0.25s, transform 0.15s, background 0.2s;
-    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+    border: none;
+    border-radius: 7px;
+    background: #f2f2f2;
+    color: #222;
+    font-weight: 600;
     cursor: pointer;
-    outline: none;
-    position: relative;
-    min-width: 160px;
-}
-.share-button span {
-    letter-spacing: 0.1px;
-}
-.share-button img {
-    width: 24px;
-    height: 24px;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.09));
+    transition: background 0.2s, box-shadow 0.2s, transform 0.12s;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.07);
+    min-width: 120px;
+    justify-content: center;
 }
 
-/* Button özel renkler */
-.whatsapp-button {
-    background: linear-gradient(90deg,#25D366 0%, #128c7e 100%);
-    color: #fff;
-}
-.instagram-button {
-    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%);
-    color: #fff;
-}
-.facebook-button {
-    background: linear-gradient(90deg,#1877f2 0%, #3b5998 100%);
-    color: #fff;
-}
-.twitter-button {
-    background: linear-gradient(90deg,#1da1f2 0%, #0a85d9 100%);
-    color: #fff;
+.share-btn img {
+    width: 22px;
+    height: 22px;
+    vertical-align: middle;
 }
 
-.share-button:hover, .share-button:focus {
-    transform: translateY(-2px) scale(1.04);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-    filter: brightness(1.1);
-    opacity: 0.95;
+.share-btn.whatsapp    { background: #e1f8ea; }
+.share-btn.instagram   { background: #fbeff6; }
+.share-btn.facebook    { background: #eaf1fb; }
+.share-btn.twitter     { background: #eaf7fb; }
+
+/* Hoverda sadece biraz koyulaşsın */
+.share-btn:hover, .share-btn:focus {
+    background: #e5e5e5;
+    transform: scale(1.04);
 }
 
+/* Responsive */
 @media (max-width: 600px) {
-    .share-buttons-container {
+    .share-buttons {
         flex-direction: column;
-        gap: 14px;
+        gap: 10px;
         align-items: stretch;
     }
-    .share-button {
-        min-width: unset;
+    .share-btn {
         width: 100%;
+        min-width: 0;
         justify-content: center;
-        font-size: 0.98rem;
-        padding: 13px 0;
     }
 }
-
-
 
 
 /* Gün adı düzenleme butonu (kalem ikonu) */
