@@ -2069,7 +2069,7 @@ window.showImage = function(element) {
 
 
 // 2) Yerleri Geoapify'dan çeken fonksiyon
-async function getPlacesForCategory(city, category, limit = 50, radius = 5000, code = null) {
+async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
   if (!geoCategory) {
     return [];
