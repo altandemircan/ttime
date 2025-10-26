@@ -6666,6 +6666,7 @@ border-bottom:1px solid #ddd;
     bottom: 180px;
     width: calc(100% - 455px);
     position: absolute;
+    height: calc(100vh - 90px);
 }
 @media (max-width: 768px) {
     #tt-trip-details {
