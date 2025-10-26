@@ -4760,9 +4760,22 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         }
     ).addTo(map);
 
-    // Marker
+    // Sade, şık, pointer/gri çizgi olmayan marker:
     const icon = L.divIcon({
-        html: getPurpleRestaurantMarkerHtml(),
+        html: `<div style="
+            width:24px;
+            height:24px;
+            border-radius:50%;
+            background:#8a4af3;
+            border:2px solid #fff;
+            box-shadow:0 2px 6px #888;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:14px;
+            color:#fff;
+            font-weight:700;
+            ">${number || ""}</div>`,
         className: "",
         iconSize: [32, 32],
         iconAnchor: [16, 16]
