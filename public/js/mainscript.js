@@ -1754,7 +1754,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
 
     // Arama yap
     //Kategori sonuç limiti
-    const places = await getPlacesForCategory(city, category, 4, radius, realCode);
+    const places = await getPlacesForCategory(city, category, 5, radius, realCode);
 
     if (!places.length) {
         // Sonuç yoksa slider barı göster
