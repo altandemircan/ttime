@@ -2016,7 +2016,7 @@ window.showMap = function(element) {
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
 
-    // TAG, FAV ve CATS bölümlerini GİZLE
+    // Diğer bölümleri gizle
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
@@ -2036,9 +2036,8 @@ window.showMap = function(element) {
         mapDiv.style.height = '235px';
         visualDiv.appendChild(mapDiv);
 
-        // Sadece kaydırma olayını slider için engelle!
+        // Sadece slider kaymasını engellemek için:
         mapDiv.addEventListener('touchmove', function(e) {
-            // Eğer harita üzerinde dokunma ise, slider kaymasını engelle
             e.stopPropagation();
         }, { passive: false });
         mapDiv.addEventListener('mousedown', function(e) {
@@ -2057,7 +2056,6 @@ window.showMap = function(element) {
                 attribution: '© Mapbox © OpenStreetMap',
                 crossOrigin: true
             }).addTo(map);
-            // Sade ve pointer/gölge olmayan marker:
             L.circleMarker([lat, lon], {
                 radius: 12,
                 color: '#8a4af3',
