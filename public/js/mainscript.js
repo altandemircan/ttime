@@ -2018,11 +2018,11 @@ window.showMap = function(element) {
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
-     stepsElement.querySelectorAll('.visual.img').forEach(el => { el.style.display = 'none'; });  
+    stepsElement.querySelectorAll('.visual.img').forEach(el => { el.style.display = 'none'; });  
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
-        // Eski iframe'i kaldır
+        // Eski iframe'i kaldır (DÜZELTME: class ismi aynı olmalı!)
         const oldIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
         if (oldIframe) oldIframe.remove();
         if (image) image.style.display = "none";
@@ -2045,7 +2045,8 @@ window.showImage = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
-    const iframe = visualDiv.querySelector('iframe.gmap-chat');
+    // DÜZELTME: Doğru class ile iframe'i kaldır!
+    const iframe = visualDiv.querySelector('iframe.leaflet-mini-map');
     if (iframe) iframe.remove();
     if (image) image.style.display = '';
 
@@ -2060,7 +2061,6 @@ window.showImage = function(element) {
         el.style.display = '';
     });
 };
-
     document.getElementById("send-button").addEventListener("click", sendMessage);
     userInput.addEventListener("keypress", handleKeyPress);
 
