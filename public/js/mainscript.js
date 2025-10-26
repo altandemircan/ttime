@@ -1990,12 +1990,14 @@ window.showMap = function(element) {
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
 
-    // --- TAG ve FAV kalplerini GİZLE ---
-    // Sadece bu kartta!
+    // --- TAG, FAVORİ ve CATS bölümlerini GİZLE ---
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
         el.style.display = 'none';
     });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => {
+        el.style.display = 'none';
+    });
+    stepsElement.querySelectorAll('.cats').forEach(el => {
         el.style.display = 'none';
     });
 
@@ -2009,7 +2011,7 @@ window.showMap = function(element) {
     } else {
         alert("Location not found.");
     }
-}; 
+};
 
 // window.showMap = function(element) {
 //     const stepsElement = element.closest('.steps');
