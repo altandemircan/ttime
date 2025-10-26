@@ -1875,8 +1875,7 @@ async function buildPlan(city, days) {
       const places = categoryResults[cat];
       if (places.length > 0) {
         // Her gün için farklı mekan gelsin!
-        const idx = (day - 1) % places.length;
-        dailyPlaces.push({ day, category: cat, ...places[idx] });
+        dailyPlaces.push({ day, category: cat, ...places[0] });
       } else {
         dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
       }
