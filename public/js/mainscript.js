@@ -2017,6 +2017,7 @@ window.showMap = function(element) {
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
 
+    // TAG, FAV ve CATS bölümlerini GİZLE
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
         el.style.display = 'none';
     });
@@ -2027,13 +2028,18 @@ window.showMap = function(element) {
         el.style.display = 'none';
     });
 
+    // Harita göster (Leaflet)
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
+        // Daha önce eklenmiş harita varsa kaldır
         const oldMap = visualDiv.querySelector('.leaflet-map');
         if (oldMap) oldMap.remove();
+
+        // Görseli gizle
         if (image) image.style.display = "none";
 
+        // Harita container ekle
         const mapId = "leaflet-map-" + Date.now() + Math.floor(Math.random()*10000);
         const mapDiv = document.createElement('div');
         mapDiv.className = 'leaflet-map';
@@ -2042,6 +2048,7 @@ window.showMap = function(element) {
         mapDiv.style.height = '235px';
         visualDiv.appendChild(mapDiv);
 
+        // Leaflet haritası başlat
         setTimeout(function() {
             const map = L.map(mapId, {
                 center: [lat, lon],
@@ -2054,14 +2061,7 @@ window.showMap = function(element) {
                 attribution: '© Mapbox © OpenStreetMap',
                 crossOrigin: true
             }).addTo(map);
-            // Sade ve pointer/gölge olmayan marker:
-            L.circleMarker([lat, lon], {
-                radius: 12,
-                color: '#8a4af3',
-                fillColor: '#8a4af3',
-                fillOpacity: 0.95,
-                weight: 3
-            }).addTo(map);
+            L.marker([lat, lon]).addTo(map);
         }, 30);
     } else {
         alert("Location not found.");
