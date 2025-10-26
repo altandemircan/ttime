@@ -1986,11 +1986,7 @@ window.showMap = function(element) {
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
 
-    // DOM'daki gerçek koordinatı oku:
-    const lat = parseFloat(stepsElement.getAttribute('data-lat'));
-    const lon = parseFloat(stepsElement.getAttribute('data-lon'));
-
-    // --- TAG, FAVORİ ve CATS bölümlerini GİZLE ---
+    // TAG, FAV ve CATS bölümlerini GİZLE
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
         el.style.display = 'none';
     });
@@ -2001,6 +1997,9 @@ window.showMap = function(element) {
         el.style.display = 'none';
     });
 
+    // Harita göster
+    const lat = parseFloat(stepsElement.getAttribute('data-lat'));
+    const lon = parseFloat(stepsElement.getAttribute('data-lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
         const delta = 0.001;
         const iframeHTML = `<iframe class="gmap-chat" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-delta},${lat-delta},${lon+delta},${lat+delta}&layer=mapnik&marker=${lat},${lon}" width="100%" height="235" frameborder="0" style="border:0"></iframe>`;
@@ -2013,40 +2012,25 @@ window.showMap = function(element) {
     }
 };
 
-// window.showMap = function(element) {
-//     const stepsElement = element.closest('.steps');
-//     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
-//     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
-//     const mapId = "leaflet-map-" + Date.now();
+window.showImage = function(element) {
+    const stepsElement = element.closest('.steps');
+    const visualDiv = stepsElement.querySelector('.visual');
+    const image = visualDiv.querySelector('img.check');
+    const iframe = visualDiv.querySelector('iframe.gmap-chat');
+    if (iframe) iframe.remove();
+    if (image) image.style.display = '';
 
-//     // Eğer harita zaten varsa tekrar ekleme
-//     if (stepsElement.querySelector('.leaflet-map')) return;
-
-//     // Harita container ekle
-//     const mapDiv = document.createElement('div');
-//     mapDiv.className = 'leaflet-map';
-//     mapDiv.id = mapId;
-//     mapDiv.style.width = '100%';
-//     mapDiv.style.height = '250px';
-//     stepsElement.querySelector('.visual').appendChild(mapDiv);
-
-//     // Leaflet haritası başlat
-//     const map = L.map(mapId).setView([lat, lon], 15);
-//     L.tileLayer('/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png', {
-//         tileSize: 256,
-//         attribution: '© Mapbox © OpenStreetMap',
-//         crossOrigin: true
-//     }).addTo(map);
-//     L.marker([lat, lon]).addTo(map);
-// };
-
-    window.showImage = function (element) {
-        const visualDiv = element.closest('.steps').querySelector('.visual');
-        const image = visualDiv.querySelector('img.check');
-        const iframe = visualDiv.querySelector('iframe.gmap-chat');
-        if (iframe) iframe.remove();
-        if (image) image.style.display = '';
-    };
+    // TAG, FAV ve CATS bölümlerini GERİ GETİR
+    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.fav-heart').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.cats').forEach(el => {
+        el.style.display = '';
+    });
+};
 
     document.getElementById("send-button").addEventListener("click", sendMessage);
     userInput.addEventListener("keypress", handleKeyPress);
