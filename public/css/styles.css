@@ -3778,18 +3778,21 @@ ease;
 
 /* --- Paylaşım Butonları İçin Düzeltilmiş Stiller --- */
 .share-buttons-title {
-    padding-top: 20px;
+      padding: 40px;
     border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+    background: aliceblue;
 }
 
 /* --- Sade, Modern Paylaşım Butonları --- */
 .share-buttons {
     display: flex;
     gap: 12px;
-    margin-bottom: 22px;
+    padding: 40px;
     justify-content: center;
     flex-wrap: wrap;
-    margin-top: 20px;
+;
 }
 
 .share-btn {
