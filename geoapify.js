@@ -15,7 +15,7 @@ async function geoapifyGet(endpoint, params = {}) {
 }
 
 // Autocomplete endpoint’i
-async function autocomplete(query, limit = 7) {
+async function autocomplete(query, limit = 6) {
   return geoapifyGet("/v1/geocode/autocomplete", {
     text: query,
     limit
@@ -23,7 +23,7 @@ async function autocomplete(query, limit = 7) {
 }
 
 // Places search endpoint’i
-async function places({ categories, lon, lat, radius = 3000, limit = 10 }) {
+async function places({ categories, lon, lat, radius = 6000, limit = 10 }) {
   return geoapifyGet("/v2/places", {
     categories,
     filter: `circle:${lon},${lat},${radius}`,
