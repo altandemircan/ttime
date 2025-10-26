@@ -2017,16 +2017,12 @@ window.showMap = function(element) {
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
 
-    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
-        el.style.display = 'none';
-    });
-    stepsElement.querySelectorAll('.fav-heart').forEach(el => {
-        el.style.display = 'none';
-    });
-    stepsElement.querySelectorAll('.cats').forEach(el => {
-        el.style.display = 'none';
-    });
+    // TAG, FAV ve CATS bölümlerini GİZLE
+    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
+    stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
+    stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
 
+    // Harita göster (Leaflet)
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
@@ -2042,7 +2038,7 @@ window.showMap = function(element) {
         mapDiv.style.height = '235px';
         visualDiv.appendChild(mapDiv);
 
-        // --- Slider kaymasını engelle ---
+        // Slider kaymasını engellemek için eventleri ekle
         ["touchstart", "touchmove", "touchend", "mousedown", "mousemove", "mouseup"].forEach(ev => {
             mapDiv.addEventListener(ev, function(e) {
                 e.stopPropagation();
@@ -2061,6 +2057,7 @@ window.showMap = function(element) {
                 attribution: '© Mapbox © OpenStreetMap',
                 crossOrigin: true
             }).addTo(map);
+            // Sade ve pointer/gölge olmayan marker:
             L.circleMarker([lat, lon], {
                 radius: 12,
                 color: '#8a4af3',
@@ -2074,24 +2071,6 @@ window.showMap = function(element) {
     }
 };
 
-mapDiv.addEventListener("touchstart", function(e) {
-    e.stopPropagation();
-}, { passive: false });
-mapDiv.addEventListener("touchmove", function(e) {
-    e.stopPropagation();
-}, { passive: false });
-mapDiv.addEventListener("touchend", function(e) {
-    e.stopPropagation();
-}, { passive: false });
-mapDiv.addEventListener("mousedown", function(e) {
-    e.stopPropagation();
-});
-mapDiv.addEventListener("mousemove", function(e) {
-    e.stopPropagation();
-});
-mapDiv.addEventListener("mouseup", function(e) {
-    e.stopPropagation();
-});
 
 
 
