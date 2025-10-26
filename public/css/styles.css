@@ -3819,6 +3819,7 @@ ease;
     box-shadow: 0 1px 5px rgba(0,0,0,0.07);
     min-width: 120px;
     justify-content: center;
+    font-size: 0.9rem;
 }
 
 .share-btn img {
@@ -3834,8 +3835,8 @@ ease;
 
 /* Hoverda sadece biraz koyulaşsın */
 .share-btn:hover, .share-btn:focus {
-    background: #e5e5e5;
-    transform: scale(1.04);
+    background: #ffffff;
+    transform: scale(1.02);
 }
 
 /* Responsive */
