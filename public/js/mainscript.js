@@ -166,6 +166,8 @@ function generateStepHtml(step, day, category, idx = 0) {
     let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
     if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
         catIcon = "/img/coffee_icon.svg";
+    else if (category === "Museum")
+        catIcon = "/img/museum_icon.svg";
     else if (category === "Touristic attraction")
         catIcon = "/img/touristic_icon.svg";
     else if (category === "Restaurant" || category === "Restaurants")
@@ -1718,6 +1720,7 @@ function toggleAccordion(accordionHeader) {
     function categoryIcon(category) {
         switch (category) {
             case "Coffee": return "img/coffee_icon.svg";
+            case "Museum": return "img/museum_icon.svg";
             case "Touristic attraction": return "img/touristic_icon.svg";
             case "Restaurant": return "img/restaurant_icon.svg";
             case "Accommodation": return "img/accommodation_icon.svg";
@@ -1928,7 +1931,7 @@ function addChatResultsToCart() {
         if (dayA !== dayB) return dayA - dayB;
         const catA = a.getAttribute('data-category') || '';
         const catB = b.getAttribute('data-category') || '';
-        const catOrder = ["Coffee", "Touristic attraction", "Restaurant", "Accommodation"];
+        const catOrder = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
         return catOrder.indexOf(catA) - catOrder.indexOf(catB);
     });
 
@@ -2600,6 +2603,7 @@ cartDiv.appendChild(addFavBtn);
 
 const basicPlanCategories = [
         { name: "Coffee", icon: "☕" },
+        { name: "Museum", icon: "🏛️" },
         { name: "Touristic attraction", icon: "🏞️" },
         { name: "Restaurant", icon: "🍽️" },
         { name: "Accommodation", icon: "🏨" }
@@ -4813,6 +4817,8 @@ function showTripDetails(startDate) {
                     let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
                     if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
                         catIcon = "img/coffee_icon.svg";
+                    else if (step.category === "Museum")
+                        catIcon = "img/museum_icon.svg";
                     else if (step.category === "Touristic attraction")
                         catIcon = "img/touristic_icon.svg";
                     else if (step.category === "Restaurant" || step.category === "Restaurants")
@@ -4976,6 +4982,8 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
                 let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
                 if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
                     catIcon = "img/coffee_icon.svg";
+                else if (step.category === "Museum")
+                    catIcon = "img/museum_icon.svg"
                 else if (step.category === "Touristic attraction")
                     catIcon = "img/touristic_icon.svg";
                 else if (step.category === "Restaurant" || step.category === "Restaurants")
