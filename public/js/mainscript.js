@@ -4945,18 +4945,20 @@ const shareDiv = document.createElement('div');
 shareDiv.id = 'mobile-share-buttons';
 shareDiv.className = 'share-buttons-container';
 shareDiv.innerHTML = `
-    <button class="share-button whatsapp-button" onclick="shareOnWhatsApp()">
+    <div class="share-buttons">
+    <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
         <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> WhatsApp
     </button>
-    <button class="share-button instagram-button" onclick="shareOnInstagram()">
+    <button class="share-btn instagram" onclick="shareOnInstagram()">
         <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Instagram
     </button>
-    <button class="share-button facebook-button" onclick="shareOnFacebook()">
+    <button class="share-btn facebook" onclick="shareOnFacebook()">
         <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook"> Facebook
     </button>
-    <button class="share-button twitter-button" onclick="shareOnTwitter()">
+    <button class="share-btn twitter" onclick="shareOnTwitter()">
         <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
-    </button> 
+    </button>
+</div>
 `;
 tripDetailsSection.appendChild(shareDiv);
 return;
@@ -5115,18 +5117,20 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
     const shareButtonsContainer = document.createElement("div");
     shareButtonsContainer.classList.add("share-buttons-container");
     shareButtonsContainer.innerHTML = `
-       <button class="share-button whatsapp-button" onclick="shareOnWhatsApp()">
-          <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> Share on WhatsApp
-       </button>
-       <button class="share-button instagram-button" onclick="shareOnInstagram()">
-          <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Copy for Instagram
-       </button>
-        <button class="share-button facebook-button" onclick="shareOnFacebook()">
+       <div class="share-buttons">
+    <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
+        <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> WhatsApp
+    </button>
+    <button class="share-btn instagram" onclick="shareOnInstagram()">
+        <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Instagram
+    </button>
+    <button class="share-btn facebook" onclick="shareOnFacebook()">
         <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook"> Facebook
     </button>
-    <button class="share-button twitter-button" onclick="shareOnTwitter()">
+    <button class="share-btn twitter" onclick="shareOnTwitter()">
         <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
-    </button> 
+    </button>
+</div>
     `;
     tripDetailsSection.appendChild(shareButtonsContainer);
 }
