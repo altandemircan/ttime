@@ -6690,11 +6690,21 @@ border-bottom:1px solid #ddd;
 }
 
 #tt-trip-details .steps {
-    max-width: 285px !important;
+   max-width: 285px !important;
+    height: -webkit-fill-available;
+    float: left;
+    /* display: flex
+; */
+    flex-wrap: nowrap;
+    flex-direction: column;
+
 }
 #tt-trip-details .visual img {
     width: 285px !important;
 
+}
+#tt-trip-details .info {
+    height: -webkit-fill-available
 }
 #tt-trip-details .info .title {
 
@@ -6706,7 +6716,7 @@ border-bottom:1px solid #ddd;
         position: absolute;
     right: 10px;
     top: 10px;
-    margin-right: 0;
+    margin-right: 0 !important;
 }
 
 .add-favorite-place-btn {
