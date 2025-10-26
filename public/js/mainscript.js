@@ -2015,68 +2015,30 @@ window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
-
-    // Diğer bölümleri gizle
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
-
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
-        const oldMap = visualDiv.querySelector('.leaflet-map');
-        if (oldMap) oldMap.remove();
+        // Eski iframe'i kaldır
+        const oldIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
+        if (oldIframe) oldIframe.remove();
         if (image) image.style.display = "none";
-
-        const mapId = "leaflet-map-" + Date.now() + Math.floor(Math.random()*10000);
-        const mapDiv = document.createElement('div');
-        mapDiv.className = 'leaflet-map';
-        mapDiv.id = mapId;
-        mapDiv.style.width = '100%';
-        mapDiv.style.height = '235px';
-
-        // --- CSS'yi JS ile ekle ---
-        mapDiv.style.touchAction = "none"; // Mobil swipe'ı engelle
-        mapDiv.style.overscrollBehavior = "contain"; // Parent scroll'u engelle
-
-        visualDiv.appendChild(mapDiv);
-
-        // --- Slider kaymasını kesin engellemek için pointer eventleri ekle ---
-        ['pointerdown', 'pointermove', 'pointerup'].forEach(ev => {
-            mapDiv.addEventListener(ev, function(e) {
-                e.stopPropagation();
-            }, { passive: false });
-        });
-
-        // (Ekstra güvenlik için touchmove ve mousedown da eklenebilir)
-        mapDiv.addEventListener('touchmove', function(e) { e.stopPropagation(); }, { passive: false });
-        mapDiv.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-
-        setTimeout(function() {
-            const map = L.map(mapId, {
-                center: [lat, lon],
-                zoom: 15,
-                scrollWheelZoom: false,
-                attributionControl: false
-            });
-            L.tileLayer('/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png', {
-                tileSize: 256,
-                attribution: '© Mapbox © OpenStreetMap',
-                crossOrigin: true
-            }).addTo(map);
-            L.circleMarker([lat, lon], {
-                radius: 12,
-                color: '#8a4af3',
-                fillColor: '#8a4af3',
-                fillOpacity: 0.95,
-                weight: 3
-            }).addTo(map);
-        }, 30);
+        // Yeni iframe oluştur
+        const iframe = document.createElement('iframe');
+        iframe.className = 'leaflet-mini-map';
+        iframe.src = `/mini-map.html?lat=${lat}&lon=${lon}`;
+        iframe.width = "100%";
+        iframe.height = "235";
+        iframe.frameBorder = "0";
+        iframe.style.border = "0";
+        iframe.sandbox = "allow-scripts allow-same-origin";
+        visualDiv.appendChild(iframe);
     } else {
         alert("Location not found.");
     }
 };
-
 
 window.showImage = function(element) {
     const stepsElement = element.closest('.steps');
