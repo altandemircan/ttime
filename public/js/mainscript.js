@@ -2490,9 +2490,6 @@ function displayPlacesInChat(places, category, day) {
 
 
 
-
-
-
 // Website açma fonksiyonu
 window.openWebsite = function(element, url) {
     if (url) window.open(url, '_blank');
@@ -2592,7 +2589,7 @@ const manualAddSection = document.createElement("div");
 
     const addFavBtn = document.createElement("button");
 addFavBtn.className = "add-favorite-place-btn";
-addFavBtn.textContent = "❤️ Add favorite place";
+addFavBtn.textContent = "❤️ Add to My Places";
 
 addFavBtn.onclick = function() {
     window.toggleSidebarFavoritePlaces();
