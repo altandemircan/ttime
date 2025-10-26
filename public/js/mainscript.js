@@ -4945,12 +4945,24 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
         shareDiv.id = 'mobile-share-buttons';
         shareDiv.className = 'share-buttons-container';
         shareDiv.innerHTML = `
-            <button class="share-button whatsapp-button" onclick="shareOnWhatsApp()">
-                <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> Share on WhatsApp
-            </button>
-            <button class="share-button instagram-button" onclick="shareOnInstagram()">
-                <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Copy for Instagram
-            </button>
+            <div class="share-buttons-container">
+    <button class="share-button whatsapp-button" onclick="shareOnWhatsApp()">
+        <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp">
+        <span>WhatsApp</span>
+    </button>
+    <button class="share-button instagram-button" onclick="shareOnInstagram()">
+        <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram">
+        <span>Instagram</span>
+    </button>
+    <button class="share-button facebook-button" onclick="shareOnFacebook()">
+        <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook">
+        <span>Facebook</span>
+    </button>
+    <button class="share-button twitter-button" onclick="shareOnTwitter()">
+        <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter">
+        <span>Twitter</span>
+    </button>
+</div>
         `;
         tripDetailsSection.appendChild(shareDiv);
         return;
