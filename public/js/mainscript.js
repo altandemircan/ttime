@@ -2086,7 +2086,7 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
   } catch (e) {
     return [];
   }
-  if (data.features && data.features.length > 0) {
+ if (data.features && data.features.length > 0) {
     const filtered = data.features.filter(f =>
       !!f.properties.name && f.properties.name.trim().length > 2
     );
@@ -2106,8 +2106,8 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
       if (!Number.isFinite(lon)) lon = null;
       return {
         name: props.name,
-          name_en: props.name_en,
-          name_latin: props.name_latin,
+        name_en: props.name_en,
+        name_latin: props.name_latin,
         address: props.formatted || "",
         lat,
         lon,
@@ -2119,10 +2119,22 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
         properties: props
       };
     });
-    if (!result.some(item => item.lat !== null && item.lon !== null)) {
-      return [];
-    }
-    return result;
+
+    // ---- BURAYA EKLE ----
+    // Sıralamayı şehir merkezine en yakın olanı öne alacak şekilde yap!
+    const sorted = result.sort((a, b) => {
+      const da = haversine(a.lat, a.lon, coords.lat, coords.lon);
+      const db = haversine(b.lat, b.lon, coords.lat, coords.lon);
+      return da - db;
+    });
+    return sorted;
+    // ---- BURAYA KADAR ----
+
+    // Geriye kalan kodu kaldırabilirsin (result ile return edilen satır artık gereksiz)
+    // if (!result.some(item => item.lat !== null && item.lon !== null)) {
+    //   return [];
+    // }
+    // return result;
   }
   return [];
 }
