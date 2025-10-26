@@ -2066,7 +2066,7 @@ window.showMap = function(element) {
 //     } else {
 //         alert("Location not found.");
 //     }
-};
+//  };
 
 
 window.showImage = function(element) {
