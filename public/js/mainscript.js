@@ -2475,17 +2475,17 @@ function displayPlacesInChat(places, category, day) {
         });
     }, 1);
 
-    if (!window._splideResizeListenerAdded) {
-        window.addEventListener('resize', function() {
-            document.querySelectorAll('.splide').forEach(sliderElem => {
-                if (sliderElem._splideInstance) {
-                    sliderElem._splideInstance.options = { perPage: getPerPage() };
-                    sliderElem._splideInstance.refresh();
-                }
-            });
-        });
-        window._splideResizeListenerAdded = true;
-    }
+    // if (!window._splideResizeListenerAdded) {
+    //     window.addEventListener('resize', function() {
+    //         document.querySelectorAll('.splide').forEach(sliderElem => {
+    //             if (sliderElem._splideInstance) {
+    //                 sliderElem._splideInstance.options = { perPage: getPerPage() };
+    //                 sliderElem._splideInstance.refresh();
+    //             }
+    //         });
+    //     });
+    //     window._splideResizeListenerAdded = true;
+    // }
 }
 
 
