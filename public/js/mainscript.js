@@ -7664,7 +7664,7 @@ function changeContent(option) {
             aboutUsSection.style.display = 'block';
             aboutUsSection.classList.add('active');
         }
-        const ttIcon = document.getElementById("tt-icon");
+        const ttIcon = document.getElementById("about-icon");
         if (ttIcon) ttIcon.classList.add('active');
     }
 }
@@ -7675,7 +7675,7 @@ document.addEventListener('click', function(event) {
 
 
    // homeIcon ile ilgili satırları tamamen kaldır
-const ttIcon = document.querySelector('img[src="img/tt-icon.svg"]');
+const ttIcon = document.querySelector('img[src="img/about-icon.svg"]');
 const welcomeSection = document.getElementById('tt-welcome');
 const aboutUsSection = document.getElementById('tt-about-us');
 const userMessageDiv = document.querySelector('.message.user-message');
