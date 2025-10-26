@@ -4947,16 +4947,16 @@ shareDiv.className = 'share-buttons-container';
 shareDiv.innerHTML = `
     <div class="share-buttons">
     <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
-        <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> WhatsApp
+        <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
     </button>
     <button class="share-btn instagram" onclick="shareOnInstagram()">
-        <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Instagram
+        <img src="img/share_instagram.svg" alt="Instagram"> Instagram
     </button>
     <button class="share-btn facebook" onclick="shareOnFacebook()">
-        <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook"> Facebook
+        <img src="img/share_facebook.svg" alt="Facebook"> Facebook
     </button>
     <button class="share-btn twitter" onclick="shareOnTwitter()">
-        <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
+        <img src="img/share_x.svg" alt="Twitter"> Twitter
     </button>
 </div>
 `;
@@ -5117,18 +5117,18 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
     const shareButtonsContainer = document.createElement("div");
     shareButtonsContainer.classList.add("share-buttons-container");
     shareButtonsContainer.innerHTML = `
-       <div class="share-buttons">
+ <div class="share-buttons">
     <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
-        <img src="https://www.svgrepo.com/show/452133/whatsapp.svg" alt="WhatsApp"> WhatsApp
+        <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
     </button>
     <button class="share-btn instagram" onclick="shareOnInstagram()">
-        <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Instagram
+        <img src="img/share_instagram.svg" alt="Instagram"> Instagram
     </button>
     <button class="share-btn facebook" onclick="shareOnFacebook()">
-        <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook"> Facebook
+        <img src="img/share_facebook.svg" alt="Facebook"> Facebook
     </button>
     <button class="share-btn twitter" onclick="shareOnTwitter()">
-        <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
+        <img src="img/share_x.svg" alt="Twitter"> Twitter
     </button>
 </div>
     `;
