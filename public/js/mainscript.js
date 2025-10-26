@@ -2009,8 +2009,7 @@ window.showMap = function(element) {
     } else {
         alert("Location not found.");
     }
-}; }
-};
+}; 
 
 // window.showMap = function(element) {
 //     const stepsElement = element.closest('.steps');
