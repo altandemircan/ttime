@@ -4956,7 +4956,7 @@ shareDiv.innerHTML = `
     </button>
     <button class="share-button twitter-button" onclick="shareOnTwitter()">
         <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
-    </button>
+    </button> 
 `;
 tripDetailsSection.appendChild(shareDiv);
 return;
