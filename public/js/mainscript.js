@@ -1979,25 +1979,31 @@ function addChatResultsToCart() {
         }
     });
 }
-   window.showMap = function(element) {
+window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
-    const visualDiv = stepsElement.querySelector('.visual');
-    const image = visualDiv.querySelector('img.check');
-
-    // DOM'daki gerçek koordinatı oku:
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
+    const mapId = "leaflet-map-" + Date.now();
 
-    if (!isNaN(lat) && !isNaN(lon)) {
-        const delta = 0.001;
-        const iframeHTML = `<iframe class="gmap-chat" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-delta},${lat-delta},${lon+delta},${lat+delta}&layer=mapnik&marker=${lat},${lon}" width="100%" height="250" frameborder="0" style="border:0"></iframe>`;
-        const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
-        if (oldIframe) oldIframe.remove();
-        image.style.display = "none";
-        visualDiv.insertAdjacentHTML('beforeend', iframeHTML);
-    } else {
-        alert("Location not found.");
-    }
+    // Eğer harita zaten varsa tekrar ekleme
+    if (stepsElement.querySelector('.leaflet-map')) return;
+
+    // Harita container ekle
+    const mapDiv = document.createElement('div');
+    mapDiv.className = 'leaflet-map';
+    mapDiv.id = mapId;
+    mapDiv.style.width = '100%';
+    mapDiv.style.height = '250px';
+    stepsElement.querySelector('.visual').appendChild(mapDiv);
+
+    // Leaflet haritası başlat
+    const map = L.map(mapId).setView([lat, lon], 15);
+    L.tileLayer('/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png', {
+        tileSize: 256,
+        attribution: '© Mapbox © OpenStreetMap',
+        crossOrigin: true
+    }).addTo(map);
+    L.marker([lat, lon]).addTo(map);
 };
 
     window.showImage = function (element) {
