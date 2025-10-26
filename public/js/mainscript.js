@@ -2034,15 +2034,23 @@ window.showMap = function(element) {
         mapDiv.id = mapId;
         mapDiv.style.width = '100%';
         mapDiv.style.height = '235px';
+
+        // --- CSS'yi JS ile ekle ---
+        mapDiv.style.touchAction = "none"; // Mobil swipe'ı engelle
+        mapDiv.style.overscrollBehavior = "contain"; // Parent scroll'u engelle
+
         visualDiv.appendChild(mapDiv);
 
-        // Sadece slider kaymasını engellemek için:
-        mapDiv.addEventListener('touchmove', function(e) {
-            e.stopPropagation();
-        }, { passive: false });
-        mapDiv.addEventListener('mousedown', function(e) {
-            e.stopPropagation();
+        // --- Slider kaymasını kesin engellemek için pointer eventleri ekle ---
+        ['pointerdown', 'pointermove', 'pointerup'].forEach(ev => {
+            mapDiv.addEventListener(ev, function(e) {
+                e.stopPropagation();
+            }, { passive: false });
         });
+
+        // (Ekstra güvenlik için touchmove ve mousedown da eklenebilir)
+        mapDiv.addEventListener('touchmove', function(e) { e.stopPropagation(); }, { passive: false });
+        mapDiv.addEventListener('mousedown', function(e) { e.stopPropagation(); });
 
         setTimeout(function() {
             const map = L.map(mapId, {
@@ -2068,7 +2076,6 @@ window.showMap = function(element) {
         alert("Location not found.");
     }
 };
-
 
 
 window.showImage = function(element) {
