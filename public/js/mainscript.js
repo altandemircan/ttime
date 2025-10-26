@@ -1866,6 +1866,14 @@ async function buildPlan(city, days) {
         luckyAttempts++;
       }
     }
+  console.log(`buildPlan - category: ${cat}, radius: ${radius}, found places:`);
+    console.log(places.map(p => ({
+      name: p.name,
+      lat: p.lat,
+      lon: p.lon,
+      address: p.address,
+      categories: p.categories
+    })));
     categoryResults[cat] = places;
   }
 
@@ -1875,7 +1883,10 @@ async function buildPlan(city, days) {
       const places = categoryResults[cat];
       if (places.length > 0) {
         // Her gün için farklı mekan gelsin!
-        dailyPlaces.push({ day, category: cat, ...places[0] });
+        const idx = (day - 1) % places.length;
+         console.log(`buildPlan - Day ${day}, Category: ${cat}, Selected place:`, places[idx]);
+      // --- LOG SONU ---
+        dailyPlaces.push({ day, category: cat, ...places[idx] });
       } else {
         dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
       }
@@ -2082,10 +2093,14 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
   try {
     resp = await fetch(url);
     data = await resp.json();
+
+    // API response'u doğrudan logla
+    console.log('Geoapify API response:', data);
+
   } catch (e) {
     return [];
   }
- if (data.features && data.features.length > 0) {
+  if (data.features && data.features.length > 0) {
     const filtered = data.features.filter(f =>
       !!f.properties.name && f.properties.name.trim().length > 2
     );
@@ -2119,21 +2134,28 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
       };
     });
 
-    // ---- BURAYA EKLE ----
-    // Sıralamayı şehir merkezine en yakın olanı öne alacak şekilde yap!
+    // İşlenmiş mekanları logla
+    console.log('getPlacesForCategory:', {
+      city,
+      category,
+      radius,
+      limit,
+      places: result.map(p => ({
+        name: p.name,
+        lat: p.lat,
+        lon: p.lon,
+        address: p.address,
+        categories: p.categories
+      }))
+    });
+
+    // Şehir merkezine en yakın sıralama
     const sorted = result.sort((a, b) => {
       const da = haversine(a.lat, a.lon, coords.lat, coords.lon);
       const db = haversine(b.lat, b.lon, coords.lat, coords.lon);
       return da - db;
     });
     return sorted;
-    // ---- BURAYA KADAR ----
-
-    // Geriye kalan kodu kaldırabilirsin (result ile return edilen satır artık gereksiz)
-    // if (!result.some(item => item.lat !== null && item.lon !== null)) {
-    //   return [];
-    // }
-    // return result;
   }
   return [];
 }
