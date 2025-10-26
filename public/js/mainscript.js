@@ -1796,7 +1796,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     }
 };
 
-
+ 
 // 2. Butonla şehir seçildiğinde de güncelle
 window.handleCitySelection = async function(city, days) {
     if (window.isProcessing) return;
@@ -2485,7 +2485,7 @@ function displayPlacesInChat(places, category, day) {
     //         });
     //     });
     //     window._splideResizeListenerAdded = true;
-    // }
+    // } 
 }
 
 
