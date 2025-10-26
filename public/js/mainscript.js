@@ -1992,7 +1992,7 @@ function addChatResultsToCart() {
 
     if (!isNaN(lat) && !isNaN(lon)) {
         const delta = 0.001;
-        const iframeHTML = `<iframe class="gmap-chat" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-delta},${lat-delta},${lon+delta},${lat+delta}&layer=mapnik&marker=${lat},${lon}" width="100%" height="250" frameborder="0" style="border:0"></iframe>`;
+        const iframeHTML = `<iframe class="gmap-chat" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-delta},${lat-delta},${lon+delta},${lat+delta}&layer=mapnik&marker=${lat},${lon}" width="100%" height="235" frameborder="0" style="border:0"></iframe>`;
         const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
         if (oldIframe) oldIframe.remove();
         image.style.display = "none";
