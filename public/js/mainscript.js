@@ -2021,17 +2021,25 @@ window.showMap = function(element) {
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
+        // Eski iframe'i kaldır
         const oldIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
         if (oldIframe) oldIframe.remove();
         if (image) image.style.display = "none";
-        const iframeHTML = `<iframe class="leaflet-mini-map"
-            src="/mini-map.html?lat=${lat}&lon=${lon}"
-            width="100%" height="235" frameborder="0" style="border:0"></iframe>`;
-        visualDiv.insertAdjacentHTML('beforeend', iframeHTML);
+        // Yeni iframe oluştur
+        const iframe = document.createElement('iframe');
+        iframe.className = 'leaflet-mini-map';
+        iframe.src = `/mini-map.html?lat=${lat}&lon=${lon}`;
+        iframe.width = "100%";
+        iframe.height = "235";
+        iframe.frameBorder = "0";
+        iframe.style.border = "0";
+        iframe.sandbox = "allow-scripts allow-same-origin";
+        visualDiv.appendChild(iframe);
     } else {
         alert("Location not found.");
     }
 };
+
 window.showImage = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
