@@ -2015,7 +2015,8 @@ window.showMap = function(element) {
     const mapDiv = document.createElement('div');
     mapDiv.className = 'leaflet-map';
     mapDiv.id = mapId;
-  
+    mapDiv.style.width = '100%';
+    mapDiv.style.height = '250px';
     stepsElement.querySelector('.visual').appendChild(mapDiv);
 
     // Leaflet haritası başlat
