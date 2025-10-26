@@ -1718,6 +1718,7 @@ function toggleAccordion(accordionHeader) {
     function categoryIcon(category) {
         switch (category) {
             case "Coffee": return "img/coffee_icon.svg";
+            case "Museum": return "img/museum_icon.svg";
             case "Touristic attraction": return "img/touristic_icon.svg";
             case "Restaurant": return "img/restaurant_icon.svg";
             case "Accommodation": return "img/accommodation_icon.svg";
@@ -4813,6 +4814,8 @@ function showTripDetails(startDate) {
                     let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
                     if (step.category === "Coffee" || step.category === "Breakfast" || step.category === "Cafes")
                         catIcon = "img/coffee_icon.svg";
+                    else if (step.category === "Museum")
+                        catIcon = "img/museum_icon.svg";
                     else if (step.category === "Touristic attraction")
                         catIcon = "img/touristic_icon.svg";
                     else if (step.category === "Restaurant" || step.category === "Restaurants")
