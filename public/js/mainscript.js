@@ -1796,7 +1796,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     }
 };
 
-
+ 
 // 2. Butonla şehir seçildiğinde de güncelle
 window.handleCitySelection = async function(city, days) {
     if (window.isProcessing) return;
@@ -2475,17 +2475,17 @@ function displayPlacesInChat(places, category, day) {
         });
     }, 1);
 
-    if (!window._splideResizeListenerAdded) {
-        window.addEventListener('resize', function() {
-            document.querySelectorAll('.splide').forEach(sliderElem => {
-                if (sliderElem._splideInstance) {
-                    sliderElem._splideInstance.options = { perPage: getPerPage() };
-                    sliderElem._splideInstance.refresh();
-                }
-            });
-        });
-        window._splideResizeListenerAdded = true;
-    }
+    // if (!window._splideResizeListenerAdded) {
+    //     window.addEventListener('resize', function() {
+    //         document.querySelectorAll('.splide').forEach(sliderElem => {
+    //             if (sliderElem._splideInstance) {
+    //                 sliderElem._splideInstance.options = { perPage: getPerPage() };
+    //                 sliderElem._splideInstance.refresh();
+    //             }
+    //         });
+    //     });
+    //     window._splideResizeListenerAdded = true;
+    // } 
 }
 
 
