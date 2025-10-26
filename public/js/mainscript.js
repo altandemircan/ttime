@@ -4941,24 +4941,36 @@ li.appendChild(container);
 ul.appendChild(li);
 }
 tripDetailsSection.appendChild(sect);
+
+// PAYLAŞIM BAŞLIĞI EKLE
+const shareTitle = document.createElement("div");
+shareTitle.className = "share-buttons-title";
+shareTitle.innerHTML = `
+    Ready to inspire your friends?<br>
+    Share your Triptime AI travel plan and help others discover amazing journeys.<br>
+    Let Triptime AI turn every trip into a story worth sharing!
+`;
+tripDetailsSection.appendChild(shareTitle);
+
+// PAYLAŞIM BUTONLARI EKLE
 const shareDiv = document.createElement('div');
 shareDiv.id = 'mobile-share-buttons';
 shareDiv.className = 'share-buttons-container';
 shareDiv.innerHTML = `
     <div class="share-buttons">
-    <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
-        <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
-    </button>
-    <button class="share-btn instagram" onclick="shareOnInstagram()">
-        <img src="img/share_instagram.svg" alt="Instagram"> Instagram
-    </button>
-    <button class="share-btn facebook" onclick="shareOnFacebook()">
-        <img src="img/share_facebook.svg" alt="Facebook"> Facebook
-    </button>
-    <button class="share-btn twitter" onclick="shareOnTwitter()">
-        <img src="img/share_x.svg" alt="Twitter"> Twitter
-    </button>
-</div>
+        <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
+            <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
+        </button>
+        <button class="share-btn instagram" onclick="shareOnInstagram()">
+            <img src="img/share_instagram.svg" alt="Instagram"> Instagram
+        </button>
+        <button class="share-btn facebook" onclick="shareOnFacebook()">
+            <img src="img/share_facebook.svg" alt="Facebook"> Facebook
+        </button>
+        <button class="share-btn twitter" onclick="shareOnTwitter()">
+            <img src="img/share_x.svg" alt="Twitter"> Twitter
+        </button>
+    </div>
 `;
 tripDetailsSection.appendChild(shareDiv);
 return;
@@ -5113,10 +5125,22 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
         li.appendChild(container);
         ul.appendChild(li);
     }
-    tripDetailsSection.appendChild(sect);
-    const shareButtonsContainer = document.createElement("div");
-    shareButtonsContainer.classList.add("share-buttons-container");
-    shareButtonsContainer.innerHTML = `
+tripDetailsSection.appendChild(sect);
+
+// PAYLAŞIM BAŞLIĞI
+const shareTitle = document.createElement("div");
+shareTitle.className = "share-buttons-title";
+shareTitle.innerHTML = `
+    Ready to inspire your friends?<br>
+    Share your Triptime AI travel plan and help others discover amazing journeys.<br>
+    Let Triptime AI turn every trip into a story worth sharing!
+`;
+tripDetailsSection.appendChild(shareTitle);
+
+// PAYLAŞIM BUTONLARI
+const shareButtonsContainer = document.createElement("div");
+shareButtonsContainer.classList.add("share-buttons-container");
+shareButtonsContainer.innerHTML = `
  <div class="share-buttons">
     <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
         <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
@@ -5131,8 +5155,8 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
         <img src="img/share_x.svg" alt="Twitter"> Twitter
     </button>
 </div>
-    `;
-    tripDetailsSection.appendChild(shareButtonsContainer);
+`;
+tripDetailsSection.appendChild(shareButtonsContainer);
 }
 
 function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
