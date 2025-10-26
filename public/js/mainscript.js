@@ -5130,15 +5130,15 @@ tripDetailsSection.appendChild(sect);
 // PAYLAŞIM BAŞLIĞI
 const shareTitle = document.createElement("div");
 shareTitle.className = "share-buttons-title";
-shareTitle.innerHTML = `
-    Ready to inspire your friends?<br>
-    Share your Triptime AI travel plan and help others discover amazing journeys.<br>
-    Let Triptime AI turn every trip into a story worth sharing!
-`;
+
 tripDetailsSection.appendChild(shareTitle);
 
 // PAYLAŞIM BUTONLARI
 const shareButtonsContainer = document.createElement("div");
+shareTitle.innerHTML = `
+      Share your travel plan and help others discover amazing places.<br>
+With <strong>Triptime AI</strong>, every journey becomes a story worth sharing!
+`;
 shareButtonsContainer.classList.add("share-buttons-container");
 shareButtonsContainer.innerHTML = `
  <div class="share-buttons">
