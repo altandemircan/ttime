@@ -2011,7 +2011,6 @@ function addChatResultsToCart() {
 //         alert("Location not found.");
 //     }
 // };
-
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
@@ -2022,7 +2021,6 @@ window.showMap = function(element) {
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
 
-    // Harita göster (Leaflet)
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
@@ -2038,11 +2036,13 @@ window.showMap = function(element) {
         mapDiv.style.height = '235px';
         visualDiv.appendChild(mapDiv);
 
-        // Slider kaymasını engellemek için eventleri ekle
-        ["touchstart", "touchmove", "touchend", "mousedown", "mousemove", "mouseup"].forEach(ev => {
-            mapDiv.addEventListener(ev, function(e) {
-                e.stopPropagation();
-            }, { passive: false });
+        // Sadece kaydırma olayını slider için engelle!
+        mapDiv.addEventListener('touchmove', function(e) {
+            // Eğer harita üzerinde dokunma ise, slider kaymasını engelle
+            e.stopPropagation();
+        }, { passive: false });
+        mapDiv.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
         });
 
         setTimeout(function() {
@@ -2070,7 +2070,6 @@ window.showMap = function(element) {
         alert("Location not found.");
     }
 };
-
 
 
 
