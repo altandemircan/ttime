@@ -2018,6 +2018,7 @@ window.showMap = function(element) {
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
+     stepsElement.querySelectorAll('.visual.img').forEach(el => { el.style.display = 'none'; });  
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
