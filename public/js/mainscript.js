@@ -5121,6 +5121,12 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
        <button class="share-button instagram-button" onclick="shareOnInstagram()">
           <img src="https://www.svgrepo.com/show/452229/instagram-1.svg" alt="Instagram"> Copy for Instagram
        </button>
+        <button class="share-button facebook-button" onclick="shareOnFacebook()">
+        <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" alt="Facebook"> Facebook
+    </button>
+    <button class="share-button twitter-button" onclick="shareOnTwitter()">
+        <img src="https://www.svgrepo.com/show/452237/twitter-1.svg" alt="Twitter"> Twitter
+    </button> 
     `;
     tripDetailsSection.appendChild(shareButtonsContainer);
 }
