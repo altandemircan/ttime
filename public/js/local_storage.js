@@ -861,14 +861,7 @@ window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
 function saveFavTrips() {
     localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
 }
-function isTripFav(item) {
-    return window.favTrips && window.favTrips.some(f =>
-        f.name === item.name &&
-        f.category === item.category &&
-        String(f.lat) === String(item.lat) &&
-        String(f.lon) === String(item.lon)
-    );
-}
+
 async function toggleFavTrip(item, heartEl) {
      // Şehir/ülke eksikse, doldur
     if (!item.city || !item.country) {
@@ -926,7 +919,7 @@ function groupFavoritesByCountryCity(favList) {
 async function renderFavoritePlacesPanel() {
     const favPanel = document.getElementById("favorite-places-panel");
     if (!favPanel) return;
-    favPanel.innerHTML = ""; // Temizle
+    favPanel.innerHTML = "";
 
     const favList = window.favTrips || [];
     if (favList.length === 0) {
@@ -934,9 +927,8 @@ async function renderFavoritePlacesPanel() {
         return;
     }
 
-    // === ŞEHİR/ÜLKE OTOMATİK TAMAMLAMA BLOĞU ===
+    // ŞEHİR/ÜLKE/GÖRSEL tamamlama -- hepsi tek döngüde!
     for (let place of favList) {
-        // Şehir bilgisini otomatik bul
         if (!place.city || place.city === "Unknown City") {
             if (place.address) {
                 const addrParts = place.address.split(",");
@@ -947,7 +939,6 @@ async function renderFavoritePlacesPanel() {
                 place.city = window.selectedCity || "Unknown City";
             }
         }
-        // Ülke bilgisini otomatik bul
         if (!place.country || place.country === "Unknown Country") {
             if (place.address) {
                 const addrParts = place.address.split(",");
@@ -958,8 +949,6 @@ async function renderFavoritePlacesPanel() {
                 place.country = "Unknown Country";
             }
         }
-    }
-    
         if (!place.image || place.image === "img/placeholder.png") {
             if (typeof getImageForPlace === "function") {
                 try {
@@ -972,7 +961,7 @@ async function renderFavoritePlacesPanel() {
             }
         }
     }
-
+    // --- DEVAMI GRUPLAMA VE RENDER ---
     // Şehir + ülke başlığına göre gruplama
     function groupFavoritesByCountryCity(list) {
         const grouped = {};
@@ -988,7 +977,6 @@ async function renderFavoritePlacesPanel() {
 
     const grouped = groupFavoritesByCountryCity(favList);
 
-    // Her başlık altında listele
     Object.entries(grouped).forEach(([locationKey, places]) => {
         const section = document.createElement("div");
         section.className = "fav-place-group";
