@@ -5011,7 +5011,7 @@ setTimeout(() => {
     if (!sliderElem._splideInstance) {
       const splideInstance = new Splide(sliderElem, {
         type: 'slide',
-        perPage: 1, // Mobilde 1, desktopta 2-3
+        perPage: 1,
         gap: '18px',
         arrows: true,
         pagination: true,
