@@ -4215,6 +4215,15 @@ cartDiv.appendChild(addNewDayButton);
       document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function(el) {
         el.classList.remove('selected-suggestion');
       });
+
+      // Trip Details ekranını tamamen kaldır (mobil ve desktop için)
+  const tripDetailsSection = document.getElementById("tt-trip-details");
+  if (tripDetailsSection) tripDetailsSection.remove();
+
+  // Eğer chat-screen içinde de bir şey varsa (mobilde), onu da temizle:
+  const chatScreen = document.getElementById("chat-screen");
+  if (chatScreen) chatScreen.innerHTML = "";
+  
     };
   }
   const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
