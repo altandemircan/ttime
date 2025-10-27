@@ -4187,27 +4187,25 @@ cartDiv.appendChild(addNewDayButton);
 
       // Welcome mesajı ekle
      if (chatBox) {
-  // Typing indicator önce ekle
-  let indicator = document.getElementById('typing-indicator');
-  if (!indicator) {
-    indicator = document.createElement('div');
-    indicator.id = 'typing-indicator';
-    indicator.className = 'typing-indicator';
-    indicator.innerHTML = '<span></span><span></span><span></span>';
-    chatBox.appendChild(indicator);
-  } else {
-    indicator.style.display = 'block';
-    indicator.innerHTML = '<span></span><span></span><span></span>';
-  }
+        let indicator = document.getElementById('typing-indicator');
+        if (!indicator) {
+          indicator = document.createElement('div');
+          indicator.id = 'typing-indicator';
+          indicator.className = 'typing-indicator';
+          indicator.innerHTML = '<span></span><span></span><span></span>';
+          chatBox.appendChild(indicator);
+        } else {
+          indicator.style.display = 'block';
+          indicator.innerHTML = '<span></span><span></span><span></span>';
+        }
 
-  // Sonra welcome mesajı ekle
-  const welcome = document.createElement('div');
-  welcome.className = 'message bot-message';
-  welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
-  chatBox.appendChild(welcome);
+        const welcome = document.createElement('div');
+        welcome.className = 'message bot-message';
+        welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
+        chatBox.appendChild(welcome);
 
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
 
       // input-wrapper tekrar görünür olsun
       var iw = document.querySelector('.input-wrapper');
