@@ -8254,6 +8254,7 @@ function wrapRouteControls(day) {
   mapBarHeader.style.alignItems = 'center';
   mapBarHeader.style.gap = '12px';
   mapBarHeader.style.justifyContent = 'space-between';
+  mapBarHeader.style.cursor = 'pointer'; // Başlığa el imleci
 
   // Başlık
   const mapTitleDiv = document.createElement('div');
@@ -8288,7 +8289,8 @@ function wrapRouteControls(day) {
     <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
     <span class="tm-label" style="color: #ffffff">Expand map</span>
   `;
-  expandBtn.onclick = function() {
+  expandBtn.onclick = function(e) {
+    e.stopPropagation(); // Başlığın aç/kapa eventini tetiklemesin
     const containerId = `route-map-day${day}`;
     if (typeof expandMap === "function") expandMap(containerId, day);
   };
@@ -8324,8 +8326,10 @@ function wrapRouteControls(day) {
   // Başlangıçta açık olsun
   let open = true;
 
-  // --- Arrow click ile aç/kapa ---
-  arrowSpan.onclick = function() {
+  // --- BAŞLIK TIKLANINCA AÇ/KAPA ---
+  mapBarHeader.onclick = function(e) {
+    // Eğer expandBtn'e tıklanırsa aç/kapa olmasın
+    if (e.target.closest('.expand-map-btn')) return;
     open = !open;
     if (open) {
       mapContentWrap.style.maxHeight = '700px';
