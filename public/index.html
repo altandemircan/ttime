@@ -1041,7 +1041,22 @@ Your browser does not support the video tag.                  </video>
     }
 }
 </script>
+<script>
+  const messages = [
+    "Analyzing your request...",
+    "Finding places...",
+    "Exploring route options...",
+    "Compiling your travel plan..."
+  ];
 
+  let current = 0;
+  const loadingMessage = document.getElementById('loading-message');
+
+  setInterval(() => {
+    current = (current + 1) % messages.length;
+    loadingMessage.textContent = messages[current];
+  }, 2000);
+</script>
 <script src="/js/route-importer.js" defer></script>
 <script src="/js/type_writer_ai.js" defer></script>
 <script src="/js/restaurant_module.js" defer></script>
