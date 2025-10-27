@@ -1658,7 +1658,7 @@ async function showResults() {
                       pagination: false,
                     drag: true,
                     breakpoints: {
-                       575: { perPage: 1 },
+                        575: { perPage: 1 },
                         768: { perPage: 2 },
                         1000: { perPage: 1 },
                         1350: { perPage: 2 },
@@ -4985,7 +4985,15 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
                     </div>
                     `;
                 });
-                daySteps.innerHTML = stepsHtml;
+              daySteps.innerHTML = `
+  <div class="splide" id="splide-trip-details-day${day}">
+    <div class="splide__track">
+      <ul class="splide__list">
+        ${dayItems.map((step, idx) => `<li class="splide__slide">${generateStepHtml(step, day, step.category, idx)}</li>`).join('')}
+      </ul>
+    </div>
+  </div>
+`;
             } else {
     const emptyP = document.createElement("p");
     emptyP.className = "empty-day-message";
@@ -4997,6 +5005,28 @@ container.appendChild(content);
 li.appendChild(container);
 ul.appendChild(li);
 }
+
+setTimeout(() => {
+  document.querySelectorAll('.splide').forEach(sliderElem => {
+    if (!sliderElem._splideInstance) {
+      const splideInstance = new Splide(sliderElem, {
+        type: 'slide',
+        perPage: 1, // Mobilde 1, desktopta 2-3
+        gap: '18px',
+        arrows: true,
+        pagination: true,
+        drag: true,
+        breakpoints: {
+          900: { perPage: 1 },
+          1200: { perPage: 2 }
+        }
+      });
+      splideInstance.mount();
+      sliderElem._splideInstance = splideInstance;
+    }
+  });
+}, 1);
+
 tripDetailsSection.appendChild(sect);
 
 // PAYLAŞIM BAŞLIĞI EKLE
@@ -5170,7 +5200,15 @@ tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label
                 </div>
                 `;
             });
-            daySteps.innerHTML = stepsHtml;
+           daySteps.innerHTML = `
+  <div class="splide" id="splide-trip-details-day${day}">
+    <div class="splide__track">
+      <ul class="splide__list">
+        ${dayItems.map((step, idx) => `<li class="splide__slide">${generateStepHtml(step, day, step.category, idx)}</li>`).join('')}
+      </ul>
+    </div>
+  </div>
+`;
         } else {
             const emptyP = document.createElement("p");
             emptyP.className = "empty-day-message";
