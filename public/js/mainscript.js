@@ -2093,14 +2093,10 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
   try {
     resp = await fetch(url);
     data = await resp.json();
-
-    // API response'u doğrudan logla
-    console.log('Geoapify API response:', data);
-
   } catch (e) {
     return [];
   }
-  if (data.features && data.features.length > 0) {
+ if (data.features && data.features.length > 0) {
     const filtered = data.features.filter(f =>
       !!f.properties.name && f.properties.name.trim().length > 2
     );
@@ -2134,8 +2130,7 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
       };
     });
 
-    // İşlenmiş mekanları logla
-    console.log('getPlacesForCategory:', {
+       console.log('getPlacesForCategory:', {
       city,
       category,
       radius,
@@ -2149,13 +2144,21 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
       }))
     });
 
-    // Şehir merkezine en yakın sıralama
+    // ---- BURAYA EKLE ----
+    // Sıralamayı şehir merkezine en yakın olanı öne alacak şekilde yap!
     const sorted = result.sort((a, b) => {
       const da = haversine(a.lat, a.lon, coords.lat, coords.lon);
       const db = haversine(b.lat, b.lon, coords.lat, coords.lon);
       return da - db;
     });
     return sorted;
+    // ---- BURAYA KADAR ----
+
+    // Geriye kalan kodu kaldırabilirsin (result ile return edilen satır artık gereksiz)
+    // if (!result.some(item => item.lat !== null && item.lon !== null)) {
+    //   return [];
+    // }
+    // return result;
   }
   return [];
 }
@@ -2623,7 +2626,7 @@ const geoapifyCategoryMap = {
   "Bookstore": "commercial.books",
   "Post Office": "service.post",
   "Library": "education.library",
-  "Hostel": "accommodation",
+  "Hostel": "accommodation.hostel",
   "Cinema": "entertainment.cinema",  
   "Jewelry Shop": "commercial.jewelry", 
   "University": "education.university",
@@ -2705,7 +2708,7 @@ const travelMainCategories = [
   { name: "Bookstore", code: "commercial.books", icon: "📚" },
   { name: "Post Office", code: "service.post", icon: "📮" },
   { name: "Library", code: "education.library", icon: "📖" },
-  { name: "Hostel", code: "accommodation", icon: "🛏️" },
+  { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
   { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
   { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" }, 
   { name: "University", code: "education.university", icon: "🎓" },
