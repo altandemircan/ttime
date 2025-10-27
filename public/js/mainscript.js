@@ -4327,6 +4327,7 @@ cartDiv.appendChild(addNewDayButton);
       }
     });
   }, 150);
+  if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
 }
 document.addEventListener('DOMContentLoaded', updateCart);
@@ -7012,6 +7013,9 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       if (typeof updateCart === "function") updateCart();
       if (marker.dragging && marker.dragging.disable) marker.dragging.disable();
       window.__tt_markerDragActive = false;
+
+        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
 
       L.popup().setLatLng(finalLatLng).setContent('Location updated').addTo(expandedMap);
 
