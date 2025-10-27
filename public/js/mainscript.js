@@ -8245,32 +8245,44 @@ function wrapRouteControls(day) {
   bar.style.borderRadius = '6px';
   bar.style.background = '#fafafa';
   bar.style.border = '1px solid #ddd';
-  bar.style.gap = '10px'; // Başlangıçta açık
+  bar.style.gap = '10px';
 
-  // --- MAP BAŞLIK + MAP-FUNCTIONS (buton + arrow) ---
+  // --- MAP BAŞLIK + MAP-FUNCTIONS + EXPAND BUTTON ---
   const mapBarHeader = document.createElement('div');
   mapBarHeader.className = 'map-bar-header';
   mapBarHeader.style.display = 'flex';
   mapBarHeader.style.alignItems = 'center';
   mapBarHeader.style.gap = '12px';
   mapBarHeader.style.justifyContent = 'space-between';
-  mapBarHeader.style.cursor = 'pointer'; // Başlığa el imleci
+  mapBarHeader.style.cursor = 'pointer';
 
-  // Başlık
-  const mapTitleDiv = document.createElement('div');
-  mapTitleDiv.textContent = "Route Information";
-  mapTitleDiv.style.fontWeight = 'bold';
-  mapTitleDiv.style.fontSize = '0.95rem';
-  mapTitleDiv.style.color = '#333333';
-
-  // MAP-FUNCTIONS içine buton + arrow
+  // .map-functions
   const mapFunctionsDiv = document.createElement('div');
   mapFunctionsDiv.className = 'map-functions';
   mapFunctionsDiv.style.display = 'flex';
   mapFunctionsDiv.style.alignItems = 'center';
   mapFunctionsDiv.style.gap = '24px';
 
-  // MAP butonu
+  // Route Information (başlık)
+  const mapTitleDiv = document.createElement('div');
+  mapTitleDiv.textContent = "Route Information";
+  mapTitleDiv.style.fontWeight = 'bold';
+  mapTitleDiv.style.fontSize = '0.95rem';
+  mapTitleDiv.style.color = '#333333';
+
+  // Arrow (Açılır/Kapanır)
+  const arrowSpan = document.createElement('span');
+  arrowSpan.className = 'arrow';
+  arrowSpan.style.position = 'initial';
+  arrowSpan.style.cursor = 'pointer';
+  arrowSpan.style.padding = '0px';
+  arrowSpan.style.marginTop = '6px';
+  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" style="transform: rotate(0deg); transition: transform 0.18s;">`;
+
+  mapFunctionsDiv.appendChild(mapTitleDiv);
+  mapFunctionsDiv.appendChild(arrowSpan);
+
+  // Expand Map button (sağda)
   const expandBtn = document.createElement('button');
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
@@ -8290,32 +8302,21 @@ function wrapRouteControls(day) {
     <span class="tm-label" style="color: #ffffff">Expand map</span>
   `;
   expandBtn.onclick = function(e) {
-    e.stopPropagation(); // Başlığın aç/kapa eventini tetiklemesin
+    e.stopPropagation(); // Bar'ın aç/kapa eventini tetiklemesin
     const containerId = `route-map-day${day}`;
     if (typeof expandMap === "function") expandMap(containerId, day);
   };
 
-  // Arrow (Açılır/Kapanır)
-  const arrowSpan = document.createElement('span');
-  arrowSpan.className = 'arrow';
-  arrowSpan.style.position = 'initial';
-  arrowSpan.style.cursor = 'pointer';
-  arrowSpan.style.padding = '0px';
-  arrowSpan.style.marginTop = '6px';
-  arrowSpan.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" style="transform: rotate(90deg); transition:transform 0.18s;">`;
-
-  mapFunctionsDiv.appendChild(expandBtn);
-  mapFunctionsDiv.appendChild(arrowSpan);
-
-  mapBarHeader.appendChild(mapTitleDiv);
+  // Header'ı birleştir
   mapBarHeader.appendChild(mapFunctionsDiv);
+  mapBarHeader.appendChild(expandBtn);
 
   // --- Map içeriğini bir wrapper'a al ---
   const mapContentWrap = document.createElement('div');
   mapContentWrap.className = 'map-content-wrap';
   mapContentWrap.style.transition = 'max-height 0.3s, opacity 0.3s';
   mapContentWrap.style.overflow = 'hidden';
-  mapContentWrap.style.maxHeight = '700px'; // açıkken
+  mapContentWrap.style.maxHeight = '700px';
   mapContentWrap.style.opacity = '1';
 
   // --- İçeriği ekle ---
@@ -8323,24 +8324,24 @@ function wrapRouteControls(day) {
   if (tm) mapContentWrap.appendChild(tm);
   mapContentWrap.appendChild(controls);
 
-  // Başlangıçta açık olsun
+  // Açık/Kapalı durumu
   let open = true;
 
   // --- BAŞLIK TIKLANINCA AÇ/KAPA ---
   mapBarHeader.onclick = function(e) {
-    // Eğer expandBtn'e tıklanırsa aç/kapa olmasın
+    // Sadece expandBtn'e tıklanırsa aç/kapa olmasın
     if (e.target.closest('.expand-map-btn')) return;
     open = !open;
     if (open) {
       mapContentWrap.style.maxHeight = '700px';
       mapContentWrap.style.opacity = '1';
-      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
-      bar.style.gap = '10px'; // AÇIKKEN
+      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
+      bar.style.gap = '10px';
     } else {
       mapContentWrap.style.maxHeight = '0px';
       mapContentWrap.style.opacity = '0.2';
-      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
-      bar.style.gap = '0px'; // KAPALIYKEN
+      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(-90deg)';
+      bar.style.gap = '0px';
     }
   };
 
