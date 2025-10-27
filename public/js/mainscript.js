@@ -8289,7 +8289,7 @@ function wrapRouteControls(day) {
   expandBtn.setAttribute('aria-label', 'Expand Map');
   expandBtn.style.background = '#ffffff';
   expandBtn.onmouseover = function() {
-  expandBtn.style.background = "#f0f4fa";
+  expandBtn.style.background = "#fafafa";
 };
 expandBtn.onmouseout = function() {
   expandBtn.style.background = "#ffffff";
