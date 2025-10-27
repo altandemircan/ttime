@@ -966,17 +966,20 @@ async function renderFavoritePlacesPanel() {
 
     // Gruplama ve render - senin kodun ile aynı
     function groupFavoritesByCountryCity(list) {
-        const grouped = {};
-        list.forEach(place => {
-            const country = place.country || place.properties?.country || "Unknown Country";
-            const city = place.city || place.properties?.city || place.properties?.name || "Unknown City";
-            const key = `${city}, ${country}`;
-            if (!grouped[key]) grouped[key] = [];
-            grouped[key].push(place);
-        });
-        return grouped;
-    }
-
+    const grouped = {};
+    list.forEach(place => {
+        const city = place.city && place.city !== "Unknown City" ? place.city : "";
+        const country = place.country && place.country !== "Unknown Country" ? place.country : "";
+        let key = "";
+        if (city && country) key = `${city}, ${country}`;
+        else if (city) key = city;
+        else if (country) key = country;
+        else key = "Unknown";
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(place);
+    });
+    return grouped;
+}
     const grouped = groupFavoritesByCountryCity(favList);
 
     Object.entries(grouped).forEach(([locationKey, places]) => {
