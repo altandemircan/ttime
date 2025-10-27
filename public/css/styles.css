@@ -1176,9 +1176,7 @@ li .highlight {
 
 @media (max-width: 768px) {
 
-  .info {
-    width: 303px;
-  }
+
   .visual {
     width: inherit !important;
   }
