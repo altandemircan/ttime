@@ -1576,6 +1576,7 @@ li .highlight {
     .sidebar-favorite-places,
     .sidebar-feedback {
         width: calc(0px);
+        padding-bottom: 40px;
     }
 
     .sidebar-gallery.open,
@@ -1588,6 +1589,7 @@ li .highlight {
     .sidebar-feedback.open {
         width: calc(100% - 40px);
         right: 0;
+        padding-bottom: 40px;
     }
 }
 
