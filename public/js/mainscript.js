@@ -5006,6 +5006,10 @@ li.appendChild(container);
 ul.appendChild(li);
 }
 
+
+
+tripDetailsSection.appendChild(sect);
+
 setTimeout(() => {
   document.querySelectorAll('.splide').forEach(sliderElem => {
     if (!sliderElem._splideInstance) {
@@ -5026,8 +5030,6 @@ setTimeout(() => {
     }
   });
 }, 1);
-
-tripDetailsSection.appendChild(sect);
 
 // PAYLAŞIM BAŞLIĞI EKLE
 const shareTitle = document.createElement("div");
