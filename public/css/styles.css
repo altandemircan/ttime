@@ -6723,7 +6723,7 @@ border-bottom:1px solid #ddd;
     flex-wrap: wrap;
 }
 #tt-trip-details .steps {
-   max-width: 285px !important;
+   /*max-width: 285px !important;*/
     height: -webkit-fill-available;
     float: left;
     /* display: flex
