@@ -6904,13 +6904,13 @@ display: flex
   align-items: center;
   justify-content: center;
   gap: 12px;
-  height: 40px;
+  height: 30px;
 }
 
 .avg-loader span {
   display: block;
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: #8a4af3;
   opacity: 0.65;
