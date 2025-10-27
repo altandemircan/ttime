@@ -4923,14 +4923,56 @@ function showTripDetails(startDate) {
         if (dayItems.length > 0) {
             // ===>>> Burası chat/kategori ile aynı render!
             daySteps.innerHTML = `
-                <div class="splide" id="splide-trip-details-day${day}">
-                  <div class="splide__track">
-                    <ul class="splide__list">
-                      ${dayItems.map((step, idx) => `<li class="splide__slide">${generateStepHtml(step, day, step.category, idx)}</li>`).join('')}
-                    </ul>
-                  </div>
+  <div class="splide" id="splide-trip-details-day${day}">
+    <div class="splide__track">
+      <ul class="splide__list">
+        ${dayItems.map((step, idx) => `<li class="splide__slide">
+          <div class="steps" data-day="${day}" data-category="${step.category}"${step.lat && step.lon ? ` data-lat="${step.lat}" data-lon="${step.lon}"` : ""}>
+            <div class="visual" style="opacity: 1;">
+              <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx + 1}</div>
+              <img class="check" src="${step.image || "https://www.svgrepo.com/show/522166/location.svg"}" alt="${step.name || step.category}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+            </div>
+            <div class="info day_cats item-info-view">
+              <div class="title">${step.name || step.category}</div>
+              <div class="address">
+                <img src="img/address_icon.svg"> ${step.address || ""}
+              </div>
+              <div class="geoapify-tags-section">
+                <div class="geoapify-tags">${getTagsHtml(step)}</div>
+              </div>
+              <div class="opening_hours">
+                <img src="img/hours_icon.svg"> ${step.opening_hours ? step.opening_hours : "Working hours not found."}
+              </div>
+            </div>
+            <div class="item_action">
+              <div class="change">
+                <span onclick="window.showImage && window.showImage(this)">
+                  <img src="img/camera_icon.svg">
+                </span>
+                <span onclick="window.showMap && window.showMap(this)">
+                  <img src="img/map_icon.svg">
+                </span>
+                ${step.website ? `
+                <span onclick="window.openWebsite && window.openWebsite(this, '${step.website}')">
+                  <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+                </span>
+                ` : ""}
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <div class="cats cats${idx % 5 + 1}">
+                  <img src="${getCatIcon(step.category)}" alt="${step.category}"> ${step.category}
                 </div>
-            `;
+                <a class="addtotrip">
+                  <img src="img/addtotrip-icon.svg">
+                </a>
+              </div>
+            </div>
+          </div>
+        </li>`).join('')}
+      </ul>
+    </div>
+  </div>
+`;
         } else {
             const emptyP = document.createElement("p");
             emptyP.className = "empty-day-message";
