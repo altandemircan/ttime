@@ -6984,3 +6984,13 @@ display: flex
   position: relative;
   padding-left: 50px; /* Yükseklik etiketleri için yer */
 }
+
+.splide {
+  min-height: 300px;
+  width: 100%;
+}
+.splide__slide {
+  display: flex;
+  align-items: stretch;
+}
+.day-steps { min-height: 300px; }
