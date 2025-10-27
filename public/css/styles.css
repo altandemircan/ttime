@@ -773,6 +773,7 @@ li .highlight {
 .logo img {
     height: 24px;
     cursor: pointer;
+    margin-top: 2px;
    
 }
 
