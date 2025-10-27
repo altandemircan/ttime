@@ -8296,8 +8296,8 @@ function wrapRouteControls(day) {
   expandBtn.style.gap = '4px';
   expandBtn.style.padding = '4px 6px';
   expandBtn.style.fontWeight = 'bold';
-  expandBtn.style.color = '#ffffff;';
-  expandBtn.style.cursor = 'pointer;';
+  expandBtn.style.color = '#ffffff';
+  expandBtn.style.cursor = 'pointer';
 
   expandBtn.innerHTML = `
     <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
