@@ -1590,7 +1590,10 @@ li .highlight {
         right: 0;
     }
 }
-#sidebar-trip, #sidebar-gallery {
+#sidebar-trip {
+    padding-bottom: 40px;
+} 
+#sidebar-gallery {
     padding-bottom: 60px;
 } 
 /* Sidebar Toggle Button */
@@ -6901,13 +6904,13 @@ display: flex
   align-items: center;
   justify-content: center;
   gap: 12px;
-  height: 60px;
+  height: 640px;
 }
 
 .avg-loader span {
   display: block;
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: #8a4af3;
   opacity: 0.65;
