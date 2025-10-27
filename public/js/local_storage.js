@@ -869,7 +869,16 @@ function isTripFav(item) {
         String(f.lon) === String(item.lon)
     );
 }
-function toggleFavTrip(item, heartEl) {
+async function toggleFavTrip(item, heartEl) {
+    // Eğer item.image yoksa, otomatik olarak doldur
+    if (!item.image || item.image === "" || item.image === "img/placeholder.png") {
+        // Fotoğrafı AI veya API'dan çek
+        if (typeof getImageForPlace === "function") {
+            item.image = await getImageForPlace(item.name, item.category, window.selectedCity || "");
+        } else {
+            item.image = "img/placeholder.png";
+        }
+    }
     const idx = window.favTrips.findIndex(f =>
         f.name === item.name &&
         f.category === item.category &&
