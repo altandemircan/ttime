@@ -1048,14 +1048,19 @@ Your browser does not support the video tag.                  </video>
     "Exploring route options...",
     "Compiling your travel plan..."
   ];
-
   let current = 0;
   const loadingMessage = document.getElementById('loading-message');
 
   setInterval(() => {
-    current = (current + 1) % messages.length;
-    loadingMessage.textContent = messages[current];
-  }, 2000);
+    // Opaklığı sıfırla (fade out)
+    loadingMessage.style.opacity = 0;
+    // 500ms sonra mesaj değişsin ve tekrar görünür olsun (fade in)
+    setTimeout(() => {
+      current = (current + 1) % messages.length;
+      loadingMessage.textContent = messages[current];
+      loadingMessage.style.opacity = 1;
+    }, 500);
+  }, 5000); // 5 saniye
 </script>
 <script src="/js/route-importer.js" defer></script>
 <script src="/js/type_writer_ai.js" defer></script>
