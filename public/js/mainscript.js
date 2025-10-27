@@ -4938,7 +4938,7 @@ function showTripDetails(startDate) {
                 <img src="img/address_icon.svg"> ${step.address || ""}
               </div>
               <div class="geoapify-tags-section">
-                <div class="geoapify-tags">${getTagsHtml(step)}</div>
+                <div class="geoapify-tags"></div>
               </div>
               <div class="opening_hours">
                 <img src="img/hours_icon.svg"> ${step.opening_hours ? step.opening_hours : "Working hours not found."}
@@ -4960,7 +4960,7 @@ function showTripDetails(startDate) {
               </div>
               <div style="display: flex; gap: 12px;">
                 <div class="cats cats${idx % 5 + 1}">
-                  <img src="${getCatIcon(step.category)}" alt="${step.category}"> ${step.category}
+                  <img src="" alt="${step.category}"> ${step.category}
                 </div>
                 <a class="addtotrip">
                   <img src="img/addtotrip-icon.svg">
