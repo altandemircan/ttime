@@ -8261,7 +8261,7 @@ function wrapRouteControls(day) {
   mapFunctionsDiv.className = 'map-functions';
   mapFunctionsDiv.style.display = 'flex';
   mapFunctionsDiv.style.alignItems = 'center';
-  mapFunctionsDiv.style.gap = '24px';
+  mapFunctionsDiv.style.gap = '2x';
 
   // Route Information (başlık)
   const mapTitleDiv = document.createElement('div');
