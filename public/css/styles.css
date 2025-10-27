@@ -6946,6 +6946,10 @@ display: flex
 .loading-text h2 {
     margin-bottom: 10px; 
 }
+#loading-message {
+  transition: opacity 0.5s;
+  opacity: 1;
+}
 /* TRIP LOADING */
 
 

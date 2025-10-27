@@ -1050,17 +1050,26 @@ Your browser does not support the video tag.                  </video>
   ];
   let current = 0;
   const loadingMessage = document.getElementById('loading-message');
+  let isTransitioning = false;
 
   setInterval(() => {
-    // Opaklığı sıfırla (fade out)
+    if (isTransitioning) return;
+    isTransitioning = true;
+
+    // Fade out
     loadingMessage.style.opacity = 0;
-    // 500ms sonra mesaj değişsin ve tekrar görünür olsun (fade in)
+
+    // Mesaj değiştikten sonra fade in
     setTimeout(() => {
       current = (current + 1) % messages.length;
       loadingMessage.textContent = messages[current];
       loadingMessage.style.opacity = 1;
-    }, 500);
-  }, 5000); // 5 saniye
+      // Fade-in animasyonu bittiğinde tekrar hazır hale getir
+      setTimeout(() => {
+        isTransitioning = false;
+      }, 500); // transition süresini burada da belirt: 0.5s
+    }, 500); // Fade out süresiyle aynı olmalı
+  }, 5000); // 5 saniyede bir dönecek
 </script>
 <script src="/js/route-importer.js" defer></script>
 <script src="/js/type_writer_ai.js" defer></script>
