@@ -1008,7 +1008,7 @@ async function renderFavoritePlacesPanel() {
             infoDiv.innerHTML = `
                 <span style="font-weight:500;font-size:15px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.name}</span>
                 <span style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.address || ""}</span>
-                <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;max-width:90px;text-overflow:ellipsis;overflow:hidden;">${place.category || ""}</span>
+                <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;text-overflow:ellipsis;overflow:hidden;">${place.category || ""}</span>
             `;
 
             const btnDiv = document.createElement("div");
