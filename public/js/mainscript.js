@@ -2564,8 +2564,9 @@ function displayPlacesInChat(places, category, day) {
   pagination: false,
                     drag: true,
                       breakpoints: {
+                        1000: { perPage: 1 },
                         1350: { perPage: 2 },
-                        1600: { perPage: 3 },
+                        1650: { perPage: 3 },
                         2000: { perPage: 4 }
                     }
                 });
