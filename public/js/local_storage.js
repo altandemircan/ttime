@@ -870,6 +870,18 @@ function isTripFav(item) {
     );
 }
 async function toggleFavTrip(item, heartEl) {
+     // Şehir/ülke eksikse, doldur
+    if (!item.city || !item.country) {
+        if (item.address) {
+            // Adresten şehir ve ülkeyi tahmin et
+            const addrParts = item.address.split(",");
+            item.city = addrParts.length >= 2 ? addrParts[addrParts.length-2].trim() : window.selectedCity || "Unknown City";
+            item.country = addrParts.length >= 1 ? addrParts[addrParts.length-1].trim() : "Unknown Country";
+        } else {
+            item.city = window.selectedCity || "Unknown City";
+            item.country = "Unknown Country";
+        }
+    }
     // Eğer item.image yoksa, otomatik olarak doldur
     if (!item.image || item.image === "" || item.image === "img/placeholder.png") {
         // Fotoğrafı AI veya API'dan çek
@@ -924,6 +936,17 @@ async function renderFavoritePlacesPanel() {
 
     // Görselleri eksik olanları tamamla
     for (let place of favList) {
+            if (!place.city || !place.country) {
+        if (place.address) {
+            const addrParts = place.address.split(",");
+            place.city = addrParts.length >= 2 ? addrParts[addrParts.length-2].trim() : window.selectedCity || "Unknown City";
+            place.country = addrParts.length >= 1 ? addrParts[addrParts.length-1].trim() : "Unknown Country";
+        } else {
+            place.city = window.selectedCity || "Unknown City";
+            place.country = "Unknown Country";
+        }
+    }
+    
         if (!place.image || place.image === "img/placeholder.png") {
             if (typeof getImageForPlace === "function") {
                 try {
