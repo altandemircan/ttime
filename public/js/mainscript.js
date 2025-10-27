@@ -9,7 +9,14 @@ function attachDragDropEvents() {
   });
 });
 }
-
+function isTripFav(item) {
+    return window.favTrips && window.favTrips.some(f =>
+        f.name === item.name &&
+        f.category === item.category &&
+        String(f.lat) === String(item.lat) &&
+        String(f.lon) === String(item.lon)
+    );
+}
 
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
 attachDragDropEvents();
@@ -246,15 +253,16 @@ function generateStepHtml(step, day, category, idx = 0) {
 // DOM'a ekledikten sonra, kalplere event ekle:
 function attachFavEvents() {
     document.querySelectorAll('.fav-heart').forEach(function(el){
-        el.onclick = function(){
-            const item = {
-                name: el.getAttribute('data-name'),
-                category: el.getAttribute('data-category'),
-                lat: el.getAttribute('data-lat'),
-                lon: el.getAttribute('data-lon')
-            };
-            toggleFavTrip(item, el);
-        };
+        el.onclick = async function(){
+    const item = {
+        name: el.getAttribute('data-name'),
+        category: el.getAttribute('data-category'),
+        lat: el.getAttribute('data-lat'),
+        lon: el.getAttribute('data-lon'),
+        image: el.getAttribute('data-image') || ""
+    };
+    await toggleFavTrip(item, el);
+};
     });
 }
 
