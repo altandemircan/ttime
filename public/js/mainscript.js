@@ -8288,6 +8288,12 @@ function wrapRouteControls(day) {
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
   expandBtn.style.background = '#ffffff';
+  expandBtn.onmouseover = function() {
+  expandBtn.style.background = "#f0f4fa";
+};
+expandBtn.onmouseout = function() {
+  expandBtn.style.background = "#ffffff";
+};
   expandBtn.style.border = 'none';
   expandBtn.style.borderRadius = '10px';
   expandBtn.style.display = 'flex';
