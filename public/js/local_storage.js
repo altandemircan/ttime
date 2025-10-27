@@ -862,7 +862,7 @@ function saveFavTrips() {
     localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
 }
 function isTripFav(item) {
-    return window.favTrips.some(f =>
+    return window.favTrips && window.favTrips.some(f =>
         f.name === item.name &&
         f.category === item.category &&
         String(f.lat) === String(item.lat) &&
@@ -934,23 +934,31 @@ async function renderFavoritePlacesPanel() {
         return;
     }
 
-    // Görselleri eksik olanları tamamla
+    // === ŞEHİR/ÜLKE OTOMATİK TAMAMLAMA BLOĞU ===
     for (let place of favList) {
-    // City zaten var, country eksikse tahmin et
-    if (!place.country || place.country === "Unknown Country") {
-        // Adres varsa sondan al
-        if (place.address) {
-            const addrParts = place.address.split(",");
-            place.country = addrParts.length >= 1 ? addrParts[addrParts.length-1].trim() : "Unknown Country";
-        } else if (place.properties?.country) {
-            place.country = place.properties.country;
-        } else if (place.city === "Osaka") {
-            place.country = "Japan";
-        } else {
-            place.country = "Unknown Country";
+        // Şehir bilgisini otomatik bul
+        if (!place.city || place.city === "Unknown City") {
+            if (place.address) {
+                const addrParts = place.address.split(",");
+                place.city = addrParts.length >= 2 ? addrParts[addrParts.length - 2].trim() : window.selectedCity || "Unknown City";
+            } else if (place.properties?.city) {
+                place.city = place.properties.city;
+            } else {
+                place.city = window.selectedCity || "Unknown City";
+            }
+        }
+        // Ülke bilgisini otomatik bul
+        if (!place.country || place.country === "Unknown Country") {
+            if (place.address) {
+                const addrParts = place.address.split(",");
+                place.country = addrParts.length >= 1 ? addrParts[addrParts.length - 1].trim() : "Unknown Country";
+            } else if (place.properties?.country) {
+                place.country = place.properties.country;
+            } else {
+                place.country = "Unknown Country";
+            }
         }
     }
-}
     
         if (!place.image || place.image === "img/placeholder.png") {
             if (typeof getImageForPlace === "function") {
