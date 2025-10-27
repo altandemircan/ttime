@@ -8287,19 +8287,19 @@ function wrapRouteControls(day) {
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
-  expandBtn.style.background = '#277ed3';
+  expandBtn.style.background = '#ffffff';
   expandBtn.style.border = 'none';
   expandBtn.style.borderRadius = '10px';
   expandBtn.style.display = 'flex';
   expandBtn.style.flexDirection = 'row';
   expandBtn.style.alignItems = 'center';
-  expandBtn.style.gap = '6px';
-  expandBtn.style.padding = '6px 8px';
+  expandBtn.style.gap = '4px';
+  expandBtn.style.padding = '4px 6px';
   expandBtn.style.fontWeight = 'bold';
   expandBtn.style.color = '#ffffff;';
   expandBtn.innerHTML = `
     <img class="tm-icon" src="img/see_route.gif" alt="MAP" loading="lazy" decoding="async">
-    <span class="tm-label" style="color: #ffffff">Expand map</span>
+    <span class="tm-label" style="color: #297fd4">Expand map</span>
   `;
   expandBtn.onclick = function(e) {
     e.stopPropagation(); // Bar'ın aç/kapa eventini tetiklemesin
