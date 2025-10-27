@@ -99,14 +99,40 @@ app.get('/api/geoapify/places', async (req, res) => {
 
 app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
-  const url = `https://api.open-elevation.com/api/v1/lookup?locations=${locations}`;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return res.status(response.status).send('Elevation API error');
+  // 1. Open-Elevation
+  const openElevationUrl = `https://api.open-elevation.com/api/v1/lookup?locations=${locations}`;
+  // 2. OpenTopoData
+  const openTopoUrl = `https://api.opentopodata.org/v1/srtm30m?locations=${locations}`;
+  // 3. Geoapify Elevation (örnek, gerçek endpointi kontrol et)
+  const geoapifyKey = process.env.GEOAPIFY_KEY;
+  const geoapifyUrl = `https://api.geoapify.com/v1/elevation?locations=${locations}&apiKey=${geoapifyKey}`;
+
+  // Helper: fetch + try/catch + hata mesajı
+  async function fetchElevation(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 1. Öncelikli API
+  let result = await fetchElevation(openElevationUrl);
+
+  // 2. Yedek API
+  if (!result) result = await fetchElevation(openTopoUrl);
+
+  // 3. Son yedek
+  if (!result && geoapifyKey) result = await fetchElevation(geoapifyUrl);
+
+  // Sonuç varsa dön, yoksa hata
+  if (result) {
     res.set('Access-Control-Allow-Origin', '*');
-    res.json(await response.json());
-  } catch (e) {
-    res.status(500).send('Proxy error');
+    res.json(result);
+  } else {
+    res.status(502).json({ error: 'All elevation APIs failed.' });
   }
 });
 
