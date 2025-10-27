@@ -934,16 +934,29 @@ async function renderFavoritePlacesPanel() {
         return;
     }
 
-    // Görselleri eksik olanları tamamla
+    // === ŞEHİR/ÜLKE OTOMATİK TAMAMLAMA BLOĞU ===
     for (let place of favList) {
-            if (!place.city || !place.country) {
-        if (place.address) {
-            const addrParts = place.address.split(",");
-            place.city = addrParts.length >= 2 ? addrParts[addrParts.length-2].trim() : window.selectedCity || "Unknown City";
-            place.country = addrParts.length >= 1 ? addrParts[addrParts.length-1].trim() : "Unknown Country";
-        } else {
-            place.city = window.selectedCity || "Unknown City";
-            place.country = "Unknown Country";
+        // Şehir bilgisini otomatik bul
+        if (!place.city || place.city === "Unknown City") {
+            if (place.address) {
+                const addrParts = place.address.split(",");
+                place.city = addrParts.length >= 2 ? addrParts[addrParts.length - 2].trim() : window.selectedCity || "Unknown City";
+            } else if (place.properties?.city) {
+                place.city = place.properties.city;
+            } else {
+                place.city = window.selectedCity || "Unknown City";
+            }
+        }
+        // Ülke bilgisini otomatik bul
+        if (!place.country || place.country === "Unknown Country") {
+            if (place.address) {
+                const addrParts = place.address.split(",");
+                place.country = addrParts.length >= 1 ? addrParts[addrParts.length - 1].trim() : "Unknown Country";
+            } else if (place.properties?.country) {
+                place.country = place.properties.country;
+            } else {
+                place.country = "Unknown Country";
+            }
         }
     }
     
