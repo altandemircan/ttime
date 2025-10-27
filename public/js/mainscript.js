@@ -7014,6 +7014,9 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       if (marker.dragging && marker.dragging.disable) marker.dragging.disable();
       window.__tt_markerDragActive = false;
 
+        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
+
       L.popup().setLatLng(finalLatLng).setContent('Location updated').addTo(expandedMap);
 
       const containerId = `expanded-route-scale-bar-day${day}`;
