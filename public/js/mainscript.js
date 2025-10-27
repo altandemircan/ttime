@@ -2564,9 +2564,9 @@ function displayPlacesInChat(places, category, day) {
   pagination: false,
                     drag: true,
                       breakpoints: {
-                        1200: { perPage: 3 },
-                        1700: { perPage: 4 },
-                        1900: { perPage: 5 }
+                        1200: { perPage: 2 },
+                        1600: { perPage: 3 },
+                        2000: { perPage: 4 }
                     }
                 });
                 splideInstance.mount();
@@ -4223,7 +4223,7 @@ cartDiv.appendChild(addNewDayButton);
   // Eğer chat-screen içinde de bir şey varsa (mobilde), onu da temizle:
   const chatScreen = document.getElementById("chat-screen");
   if (chatScreen) chatScreen.innerHTML = "";
-  
+
     };
   }
   const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
