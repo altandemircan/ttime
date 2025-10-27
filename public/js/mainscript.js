@@ -4327,6 +4327,7 @@ cartDiv.appendChild(addNewDayButton);
       }
     });
   }, 150);
+  if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
 }
 document.addEventListener('DOMContentLoaded', updateCart);
