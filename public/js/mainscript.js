@@ -8294,7 +8294,7 @@ function wrapRouteControls(day) {
 expandBtn.onmouseout = function() {
   expandBtn.style.background = "#ffffff";
 };
-  expandBtn.style.border = 'none';
+  expandBtn.style.border = '1px dashed rgb(43 129 213)';
   expandBtn.style.borderRadius = '10px';
   expandBtn.style.display = 'flex';
   expandBtn.style.flexDirection = 'row';
