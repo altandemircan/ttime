@@ -6891,12 +6891,11 @@ width: 100%;
 
 /* TRIP LOADING */
 .trip-loading {
-display: flex
-;
-    place-items: center;
-    width: 100%;
-    gap: 30px;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
+  align-items: center;  /* flex ile ortala */
+  width: 100%;
+  gap: 30px;
 }
 
 .avg-loader {
@@ -6943,11 +6942,11 @@ display: flex
   margin: 0 auto;
 }
 .loading-text {
-    text-align: center;
-    margin-bottom: 20px;
+  text-align: center;
+  margin-bottom: 20px;
 }
 .loading-text h2 {
-    margin-bottom: 10px; 
+  margin-bottom: 10px; 
 }
 #loading-message {
   transition: opacity 0.5s;
