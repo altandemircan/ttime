@@ -927,28 +927,30 @@ async function renderFavoritePlacesPanel() {
         return;
     }
 
-    // ŞEHİR/ÜLKE/GÖRSEL tamamlama -- hepsi tek döngüde!
     for (let place of favList) {
+        // Şehir
         if (!place.city || place.city === "Unknown City") {
             if (place.address) {
                 const addrParts = place.address.split(",");
-                place.city = addrParts.length >= 2 ? addrParts[addrParts.length - 2].trim() : window.selectedCity || "Unknown City";
+                place.city = addrParts.length >= 2 ? addrParts[addrParts.length - 2].trim() : place.address.trim();
             } else if (place.properties?.city) {
                 place.city = place.properties.city;
             } else {
                 place.city = window.selectedCity || "Unknown City";
             }
         }
+        // Ülke
         if (!place.country || place.country === "Unknown Country") {
             if (place.address) {
                 const addrParts = place.address.split(",");
-                place.country = addrParts.length >= 1 ? addrParts[addrParts.length - 1].trim() : "Unknown Country";
+                place.country = addrParts.length > 1 ? addrParts[addrParts.length - 1].trim() : "Unknown Country";
             } else if (place.properties?.country) {
                 place.country = place.properties.country;
             } else {
                 place.country = "Unknown Country";
             }
         }
+        // Görsel
         if (!place.image || place.image === "img/placeholder.png") {
             if (typeof getImageForPlace === "function") {
                 try {
@@ -961,8 +963,8 @@ async function renderFavoritePlacesPanel() {
             }
         }
     }
-    // --- DEVAMI GRUPLAMA VE RENDER ---
-    // Şehir + ülke başlığına göre gruplama
+
+    // Gruplama ve render - senin kodun ile aynı
     function groupFavoritesByCountryCity(list) {
         const grouped = {};
         list.forEach(place => {
@@ -990,7 +992,6 @@ async function renderFavoritePlacesPanel() {
             li.className = "fav-item";
             li.style = "margin-bottom:12px;background:#f8f9fa;border-radius:12px;box-shadow:0 1px 6px #e3e3e3;padding:9px 12px;display:flex;align-items:center;gap:16px;min-width:0;";
 
-            // Görsel alanı
             const imgDiv = document.createElement("div");
             imgDiv.style = "width:42px;height:42px;";
             const img = document.createElement("img");
@@ -999,7 +1000,6 @@ async function renderFavoritePlacesPanel() {
             img.style = "width:100%;height:100%;object-fit:cover;border-radius:8px;";
             imgDiv.appendChild(img);
 
-            // Bilgi alanı
             const infoDiv = document.createElement("div");
             infoDiv.style = "flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;";
             infoDiv.innerHTML = `
@@ -1008,11 +1008,9 @@ async function renderFavoritePlacesPanel() {
                 <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;max-width:90px;text-overflow:ellipsis;overflow:hidden;">${place.category || ""}</span>
             `;
 
-            // Butonlar
             const btnDiv = document.createElement("div");
             btnDiv.style = "display:flex;flex-direction:row;align-items:center;gap:7px;";
 
-            // Sepete ekle
             const addBtn = document.createElement("button");
             addBtn.className = "add-fav-to-trip-btn";
             addBtn.setAttribute("data-index", i);
@@ -1037,7 +1035,6 @@ async function renderFavoritePlacesPanel() {
                 window.toggleSidebar && window.toggleSidebar('sidebar-overlay-trip');
             };
 
-            // Favoriden çıkar
             const removeBtn = document.createElement("button");
             removeBtn.className = "remove-fav-btn";
             removeBtn.setAttribute("data-name", place.name);
