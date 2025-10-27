@@ -1658,9 +1658,12 @@ async function showResults() {
                       pagination: false,
                     drag: true,
                     breakpoints: {
-                        1200: { perPage: 3 },
-                        1700: { perPage: 4 },
-                        1900: { perPage: 5 }
+                       575: { perPage: 1 },
+                        768: { perPage: 2 },
+                        1000: { perPage: 1 },
+                        1350: { perPage: 2 },
+                        1650: { perPage: 3 },
+                        2000: { perPage: 4 }
                     }
                 });
                 splideInstance.mount();
