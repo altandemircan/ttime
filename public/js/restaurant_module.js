@@ -142,7 +142,6 @@ function addRoutePolylineWithClick(map, coords) {
     return polyline;
 }
 function showRouteInfoBanner(day) {
-  console.log("Banner fonksiyonu", Date.now());
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
   if (!expandedContainer) return;
 
@@ -159,12 +158,20 @@ function showRouteInfoBanner(day) {
   }
   banner.style.display = 'flex';
 
-  document.getElementById('close-route-info').onclick = function() {
-    banner.style.display = 'none';
-  };
-  // Sadece 1 dakika sonra kapat
+  // Kapatma butonunda sadece display:none yapıyoruz
+  const closeBtn = banner.querySelector('#close-route-info');
+  if (closeBtn) {
+    closeBtn.onclick = function() {
+      banner.style.display = 'none';
+    };
+  }
+
+  // 1 dakika sonra otomatik kapansın
   setTimeout(function() {
-    banner.style.display = 'none';
+    // Banner hâlâ açıksa (kullanıcı kapatmadıysa)
+    if (banner.style.display !== 'none') {
+      banner.style.display = 'none';
+    }
   }, 60000);
 }
 async function getRestaurantPopupHTML(f, day) {
