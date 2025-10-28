@@ -8228,6 +8228,13 @@ function wrapRouteControls(day) {
   // Açık/Kapalı durumu
   let open = true;
 
+  // İlk renderda doğru ok yönünü ata!
+setTimeout(() => {
+  if (arrowSpan.querySelector('.arrow-icon')) {
+    arrowSpan.querySelector('.arrow-icon').style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+  }
+}, 0);
+
   // BAŞLIK TIKLANINCA AÇ/KAPA
   mapBarHeader.onclick = function(e) {
     if (e.target.closest('.expand-map-btn')) return;
