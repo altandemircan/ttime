@@ -141,16 +141,6 @@ function addRoutePolylineWithClick(map, coords) {
 
     return polyline;
 }
-function showRouteInfoBanner() {
-  ensureRouteInfoBanner();
-  const banner = document.getElementById('route-info-banner');
-  if (!banner) return;
-  banner.style.display = 'flex';
-  document.getElementById('close-route-info').onclick = () => {
-    banner.style.display = 'none';
-  };
-  setTimeout(() => { banner.style.display = 'none'; }, 8000); // 8 saniye sonra otomatik kaybolsun
-}
 function ensureRouteInfoBanner() {
   if (!document.getElementById('route-info-banner')) {
     const banner = document.createElement('div');
@@ -163,6 +153,20 @@ function ensureRouteInfoBanner() {
     `;
     document.body.appendChild(banner);
   }
+}
+
+function showRouteInfoBanner() {
+  ensureRouteInfoBanner();
+  const banner = document.getElementById('route-info-banner');
+  if (!banner) return;
+  banner.style.display = 'flex';
+  const closeBtn = document.getElementById('close-route-info');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      banner.style.display = 'none';
+    };
+  }
+  setTimeout(() => { banner.style.display = 'none'; }, 8000);
 }
 async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
