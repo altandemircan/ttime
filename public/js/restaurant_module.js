@@ -68,16 +68,9 @@ function addRoutePolylineWithClick(map, coords) {
         opacity: 0.93
     }).addTo(map);
 
-    // --- When polyline is clicked, open a popup ---
+    // --- Polyline'a tıklanınca sadece restoranları listele ---
     polyline.on('click', async function(e) {
         if (e.originalEvent) e.originalEvent.stopPropagation();
-
-        // Show popup info to the user
-        polyline.bindPopup(
-            `<b>Nearby restaurants will be listed</b><br>
-             <span style="font-size:13px;color:#333;">The closest restaurant/cafe/bar locations will be displayed below.</span>`, 
-            { maxWidth: 320 }
-        ).openPopup(e.latlng);
 
         const lat = e.latlng.lat, lng = e.latlng.lng;
         const bufferMeters = 1000;
@@ -147,6 +140,29 @@ function addRoutePolylineWithClick(map, coords) {
     });
 
     return polyline;
+}
+function showRouteInfoBanner() {
+  ensureRouteInfoBanner();
+  const banner = document.getElementById('route-info-banner');
+  if (!banner) return;
+  banner.style.display = 'flex';
+  document.getElementById('close-route-info').onclick = () => {
+    banner.style.display = 'none';
+  };
+  setTimeout(() => { banner.style.display = 'none'; }, 8000); // 8 saniye sonra otomatik kaybolsun
+}
+function ensureRouteInfoBanner() {
+  if (!document.getElementById('route-info-banner')) {
+    const banner = document.createElement('div');
+    banner.id = 'route-info-banner';
+    banner.className = 'route-info-banner';
+    banner.style.display = 'none';
+    banner.innerHTML = `
+      <span>Click the route to list nearby restaurants, cafes and bars.</span>
+      <button id="close-route-info" class="route-info-close">✕</button>
+    `;
+    document.body.appendChild(banner);
+  }
 }
 async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
