@@ -3955,6 +3955,9 @@ dayList.appendChild(distanceSeparator);
               <button class="remove-btn" onclick="removeFromCart(${currIdx})">
                 <img src="img/remove-icon.svg" alt="Close">
               </button>
+            <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;">
+    <!-- İçerik JS ile doldurulacak -->
+</div>
               <span class="arrow">
                 <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
               </span>
@@ -4362,6 +4365,30 @@ cartDiv.appendChild(addNewDayButton);
   }, 150);
 
 }
+
+function showRemoveConfirmation(index, btn) {
+    const confirmationContainer = document.getElementById(`confirmation-container-${index}`);
+    if (!confirmationContainer) return;
+
+    const item = window.cart[index];
+    confirmationContainer.innerHTML = `
+        <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+        <div class="modal-actions">
+            <button class="confirm-remove-btn" onclick="confirmRemovePlace(${index})">OK</button>
+            <button class="cancel-action-btn" onclick="hideConfirmation('confirmation-container-${index}')">Cancel</button>
+        </div>
+    `;
+    confirmationContainer.style.display = "block";
+    btn.style.display = "none";
+}
+function confirmRemovePlace(index) {
+    removeFromCart(index);
+    hideConfirmation(`confirmation-container-${index}`);
+}
+
+
+
+
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
