@@ -141,7 +141,8 @@ function addRoutePolylineWithClick(map, coords) {
 
     return polyline;
 }
-function ensureRouteInfoBanner() {
+function showRouteInfoBanner() {
+  // Banner yoksa ekle!
   if (!document.getElementById('route-info-banner')) {
     const banner = document.createElement('div');
     banner.id = 'route-info-banner';
@@ -153,11 +154,8 @@ function ensureRouteInfoBanner() {
     `;
     document.body.appendChild(banner);
   }
-}
-
-function showRouteInfoBanner() {
+  // Bannerı görünür yap ve kapatma/otomatik kapama ayarla
   const banner = document.getElementById('route-info-banner');
-  if (!banner) return;
   banner.style.display = 'flex';
   document.getElementById('close-route-info').onclick = () => {
     banner.style.display = 'none';
