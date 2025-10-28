@@ -4367,7 +4367,13 @@ function showRemoveConfirmation(index, btn) {
   const id = `confirmation-container-${index}`;
   const confirmation = document.getElementById(id);
   btn.style.display = "none";
-  if (confirmation) confirmation.style.display = "block";
+  if (confirmation) {
+    confirmation.style.display = "block";
+  } else {
+    // Hata var, id yanlış ya da silinmiş
+    console.error('Confirmation container bulunamadı:', id);
+    btn.style.display = ""; // Butonu geri göster
+  }
 }
 function hideConfirmation(id) {
   const confirmation = document.getElementById(id);
@@ -5101,7 +5107,7 @@ function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
         </div>
     `;
     confirmationContainer.style.display = "block";
-}
+}    
 function showResetConfirmation(day, confirmationContainerId) {
     const dayItems = window.cart.filter(item => item.day == day && item.name !== undefined);
     const itemCount = dayItems.length;
