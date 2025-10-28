@@ -7048,7 +7048,8 @@ display: flex
 }
 
 .travel-item {
-  margin-bottom: 50px; /* Alt boşluk arttı, separator için alan açıyor! */
+  margin-bottom: 50px !important; /* Alt boşluk arttı, separator için alan açıyor! */
+
 }
 
 .distance-separator {
