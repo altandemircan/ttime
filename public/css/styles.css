@@ -7037,7 +7037,7 @@ display: flex
 }
 
 .fadein-list {
-  opacity: 0;
+  opacity: 1;
   transform: scale(0.92);
   transition: opacity 0.45s, transform 0.45s;
 }
