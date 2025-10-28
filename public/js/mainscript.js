@@ -4366,29 +4366,28 @@ cartDiv.appendChild(addNewDayButton);
 
 }
 
-function showRemoveConfirmation(index, btn) {
-  // Benzersiz id ile container'ı bul
-  const confirmationContainerId = `confirmation-container-${index}`;
-  const confirmationContainer = document.getElementById(confirmationContainerId);
-  if (!confirmationContainer) {
-    console.error('Confirmation container not found:', confirmationContainerId);
+function showRemoveItemConfirmation(index, btn) {
+  const id = `confirmation-item-${index}`;
+  const container = document.getElementById(id);
+  if (!container) {
+    console.error('Confirmation container not found:', id);
     return;
   }
-  confirmationContainer.style.display = "block";
+  container.style.display = "block";
   btn.style.display = "none";
 }
 
-function confirmRemovePlace(index) {
-  // Item'ı sepetten sil
-  removeFromCart(index); // Senin item silme fonksiyonun!
-  hideConfirmation(`confirmation-container-${index}`);
+function confirmRemoveItem(index) {
+  // Silme işlemi (window.cart'tan çıkar vs.)
+  removeFromCart(index); // Senin silme fonksiyonun!
+  hideItemConfirmation(`confirmation-item-${index}`);
 }
 
-function hideConfirmation(confirmationContainerId) {
-  const confirmationContainer = document.getElementById(confirmationContainerId);
-  if (confirmationContainer) confirmationContainer.style.display = "none";
+function hideItemConfirmation(id) {
+  const container = document.getElementById(id);
+  if (container) container.style.display = "none";
   // Silme butonunu geri göster
-  const parentItem = confirmationContainer.closest('.travel-item');
+  const parentItem = container.closest('.travel-item');
   if (parentItem) {
     const removeBtn = parentItem.querySelector('.remove-btn');
     if (removeBtn) removeBtn.style.display = "";
