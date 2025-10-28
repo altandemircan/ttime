@@ -33,7 +33,7 @@ function initDragDropSystem() {
     }
     
     setupDropZones();
-    makeChatStepsDraggable();
+   
 }
 
 function initTouchDragDrop() {
