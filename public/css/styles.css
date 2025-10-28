@@ -7046,3 +7046,43 @@ display: flex
   opacity: 1;
   transform: scale(1);
 }
+
+.travel-item {
+  position: relative;
+  /* item kartı tasarımın neyse aynen bırak */
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 14px 0 #0001;
+  margin-bottom: 32px; /* Alt boşluk arttı, separator için alan açıyor! */
+  /* diğer stiller... */
+}
+
+.distance-separator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -24px; /* item'ın altına “taşı” */
+  z-index: 2;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.distance-separator .separator-line {
+  width: 80%;
+  height: 1px;
+  background: #e2e2e2;
+  margin: 0 auto 2px auto;
+}
+
+.distance-separator .distance-label {
+  font-size: 14px;
+  color: #666;
+  background: #fff;
+  padding: 2px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px #0001;
+  margin: 2px 0;
+}
