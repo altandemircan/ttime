@@ -2529,10 +2529,8 @@ hr {
 }
 .arrow {
         border: none;
-    cursor: pointer;
-    position: absolute;
-    right: 30px;
-    top: 10px;
+    cursor: pointer;  
+  
 }
 .arrow img {
     width: 24px;

@@ -3986,14 +3986,14 @@ dayList.appendChild(distanceSeparator);
               : '<div class="map-error">Location not available</div>';
           li.innerHTML = `
   <div class="cart-item">
-   <div>
-        <div>       
-            <img src="${item.image}" alt="${item.name}" class="cart-image">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">       
+             <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+             <img src="${item.image}" alt="${item.name}" class="cart-image">
             <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
             <div class="item-info">
               <p class="toggle-title">${item.name}</p>
-            </div>
-             <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+            </div>            
         </div>
         <span class="arrow">
           <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
