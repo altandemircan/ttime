@@ -5400,6 +5400,8 @@ function updateRouteStatsUI(day) {
 
  
 async function expandMap(containerId, day) {
+      window.currentDay = day; // ← DÜZELTME!
+
   console.log('[expandMap] start →', containerId, 'day=', day);
 
   // Daha önce açılmış expanded map varsa kapat
