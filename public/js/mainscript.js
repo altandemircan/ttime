@@ -3883,14 +3883,15 @@ else {
     // === travel-item'ın ALTINA, separatorı ekle ===
     let distanceStr = '', durationStr = '';
     if (
-        idx > 0 && // Sadece ikinci ve sonrası için ayırıcı ekle (ilk itemdan sonra)
-        lastCoordItem &&
-        lastCoordItem.location && item.location &&
-        typeof lastCoordItem.location.lat === "number" &&
-        typeof lastCoordItem.location.lng === "number" &&
-        typeof item.location.lat === "number" &&
-        typeof item.location.lng === "number"
-    ) {
+  idx > 0 && // İlk itemdan sonra başla
+  idx < dayItemsArr.length // Son itemdan önce bitir (son itemda eklenmesin)
+  && lastCoordItem &&
+  lastCoordItem.location && item.location &&
+  typeof lastCoordItem.location.lat === "number" &&
+  typeof lastCoordItem.location.lng === "number" &&
+  typeof item.location.lat === "number" &&
+  typeof item.location.lng === "number"
+) {
         const key = `route-map-day${day}`;
         const summary = window.pairwiseRouteSummaries?.[key]?.[lastCoordIdx];
         if (summary) {
@@ -3942,7 +3943,7 @@ else {
         distanceSeparator.appendChild(labelDiv);
         distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
 
-        li.appendChild(distanceSeparator); // Ayırıcıyı li'nin altına ekle!
+  li.appendChild(distanceSeparator); // AYIRICIYI li'nin ALTINA ekle!
     }
 
     dayList.appendChild(li);
