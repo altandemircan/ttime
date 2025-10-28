@@ -4035,7 +4035,7 @@ cartDiv.appendChild(addNewDayButton);
   initDragDropSystem();
   if (typeof interact !== 'undefined') setupMobileDragDrop();
   setupSidebarAccordion();
-  setupStepsDragHighlight();
+
   renderTravelModeControlsForAllDays();
 
   (function ensureSelectDatesButton() {
@@ -7821,18 +7821,6 @@ function setAllDayListBorders(active) {
         }
     });
 }
-function setupStepsDragHighlight() {
-    document.querySelectorAll('.steps[draggable="true"]').forEach(item => {
-        item.addEventListener('dragstart', function(e) {
-            setAllDayListBorders(true);  // Tüm day-list'lere mor border ekle
-        });
-        item.addEventListener('dragend', function(e) {
-            setAllDayListBorders(false); // Border'ı kaldır
-        });
-    });
-}
-
-document.addEventListener('DOMContentLoaded', setupStepsDragHighlight);
 
 
 const TT_TRAVEL_MODE_BY_DAY_KEY = 'tt_travel_mode_by_day';
