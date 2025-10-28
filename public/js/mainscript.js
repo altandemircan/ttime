@@ -1682,7 +1682,7 @@ async function showResults() {
         } catch (e) {}
     }
 
-    if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
+  
 
     setTimeout(() => {
         if (typeof getDayPoints === 'function') {
@@ -1803,7 +1803,6 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
 
     await enrichCategoryResults(places, city);
     displayPlacesInChat(places, category, day);
-    if (typeof makeChatStepsDraggable === "function") makeChatStepsDraggable();
     if (window.innerWidth <= 768) {
         var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
         if (sidebar) sidebar.classList.remove('open');
