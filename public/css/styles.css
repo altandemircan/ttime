@@ -6993,24 +6993,24 @@ display: flex
 .day-steps { min-height: 300px; }
 
 .route-info-banner {
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #222;
-  color: #fff;
-  font-size: 15px;
-  padding: 11px 22px 11px 18px;
-  border-radius: 22px;
-  box-shadow: 0 4px 24px #0006;
-      z-index: 1008;
-
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  opacity: 0.97;
-  max-width: 90vw;
-  min-width: 210px;
+      position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2980d5;
+    color: #fff;
+    font-size: 15px;
+    padding: 10px 20px;
+    border-radius: 22px;
+    box-shadow: 0 4px 24px #0006;
+    z-index: 1008;
+    display: flex
+;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.97;
+    max-width: 90vw;
+    min-width: 210px;
 }
 .route-info-close {
   background: none;
@@ -7034,4 +7034,14 @@ display: flex
     min-width: 170px;
     max-width: 96vw;
   }
+}
+
+.fadein-list {
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.45s, transform 0.45s;
+}
+.fadein-list.visible {
+  opacity: 1;
+  transform: scale(1);
 }
