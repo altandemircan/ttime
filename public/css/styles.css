@@ -7048,26 +7048,20 @@ display: flex
 }
 
 .travel-item {
-  position: relative;
-  /* item kartı tasarımın neyse aynen bırak */
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 14px 0 #0001;
-  margin-bottom: 32px; /* Alt boşluk arttı, separator için alan açıyor! */
-  /* diğer stiller... */
+  margin-bottom: 50px; /* Alt boşluk arttı, separator için alan açıyor! */
 }
 
 .distance-separator {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -24px; /* item'ın altına “taşı” */
-  z-index: 2;
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
+     position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -50px;
+    z-index: 2;
+    background: transparent;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    pointer-events: none;
 }
 
 .distance-separator .separator-line {
