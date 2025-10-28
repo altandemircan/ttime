@@ -142,7 +142,7 @@ function addRoutePolylineWithClick(map, coords) {
     return polyline;
 }
 function showRouteInfoBanner() {
-  // Eğer banner yoksa DOM'a ekle
+  // Banner yoksa DOM'a ekle
   let banner = document.getElementById('route-info-banner');
   if (!banner) {
     banner = document.createElement('div');
