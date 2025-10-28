@@ -4540,7 +4540,7 @@ function createDayActionMenu(day) {
         }
       } else if (action === 'remove') {
         if (typeof showRemoveConfirmation === 'function') {
-          showRemoveConfirmation(day, dayContainerId, confirmationContainerId);
+showRemoveConfirmation(day, `day-container-${day}`, `confirmation-container-${day}`);
         }
       }
     } finally {
