@@ -59,6 +59,42 @@ async function searchRestaurantsAt(lat, lng, map) {
     });
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 }
+// Tooltip eklemek için sadece bir tane tooltip kutusu oluştur.
+function ensureRouteTooltip() {
+  let tooltip = document.getElementById('route-tooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'route-tooltip';
+    tooltip.className = 'custom-route-tooltip';
+    document.body.appendChild(tooltip);
+  }
+  return tooltip;
+}
+
+// Polyline oluşturduktan sonra:
+const tooltipText = 'Rotaya tıklayarak yakındaki restoranları görebilirsin!';
+
+polyline.on('mouseover', function(e) {
+  const tooltip = ensureRouteTooltip();
+  tooltip.textContent = tooltipText;
+  tooltip.classList.add('show');
+  if (e.originalEvent) {
+    tooltip.style.left = (e.originalEvent.pageX + 18) + 'px';
+    tooltip.style.top = (e.originalEvent.pageY - 18) + 'px';
+  }
+});
+polyline.on('mousemove', function(e) {
+  const tooltip = document.getElementById('route-tooltip');
+  if (tooltip && e.originalEvent) {
+    tooltip.style.left = (e.originalEvent.pageX + 18) + 'px';
+    tooltip.style.top = (e.originalEvent.pageY - 18) + 'px';
+  }
+});
+polyline.on('mouseout', function(e) {
+  const tooltip = document.getElementById('route-tooltip');
+  if (tooltip) tooltip.classList.remove('show');
+});
+
 
 // Ana fonksiyon — ÇİZGİ, MARKER, POPUP, SPINNER, FOTO HER ŞEY DAHİL!
 function addRoutePolylineWithClick(map, coords) {
