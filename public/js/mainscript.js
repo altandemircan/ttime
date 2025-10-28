@@ -2648,6 +2648,7 @@ const geoapifyCategoryMap = {
 };
 
 function showCategoryList(day) {
+    window.currentDay = day;
     console.log("showCategoryList ÇAĞRILDI, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
