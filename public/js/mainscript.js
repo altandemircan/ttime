@@ -4362,12 +4362,6 @@ cartDiv.appendChild(addNewDayButton);
   }, 150);
 
 }
-document.addEventListener('DOMContentLoaded', updateCart);
-document.querySelectorAll('.accordion-label').forEach(label => {
-    label.addEventListener('click', function() {
-    });
-setTimeout(bindAddNewDayButton, 10);
-});
 
 function showRemoveConfirmation(index, btn) {
   // Butonu gizle, onay kutusunu göster
@@ -4391,6 +4385,16 @@ function confirmRemovePlace(index) {
   // Kaldırma işlemini yap (mevcut fonksiyonunu çağır)
   removeFromCart(index);
 }
+
+
+
+document.addEventListener('DOMContentLoaded', updateCart);
+document.querySelectorAll('.accordion-label').forEach(label => {
+    label.addEventListener('click', function() {
+    });
+setTimeout(bindAddNewDayButton, 10);
+});
+
 
 function searchPlaceOnGoogle(place, city) {
   // Boşlukları + ile değiştir, çift tırnak ve özel karakterlerden koru
