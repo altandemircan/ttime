@@ -4368,7 +4368,10 @@ cartDiv.appendChild(addNewDayButton);
 
 function showRemoveConfirmation(index, btn) {
     const confirmationContainer = document.getElementById(`confirmation-container-${index}`);
-    if (!confirmationContainer) return;
+    if (!confirmationContainer) {
+        console.error('Confirmation container bulunamadı:', `confirmation-container-${index}`);
+        return; // Element yoksa hata verme, fonksiyondan çık.
+    }
 
     const item = window.cart[index];
     confirmationContainer.innerHTML = `
