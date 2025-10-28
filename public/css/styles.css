@@ -3896,13 +3896,6 @@ ease;
 
 /* --- GÜN ADI DÜZENLEME İÇİN GÜNCELLENMİŞ STİLLER --- */
 
-/* Ana başlık kapsayıcısı */
-.day-header {
-    display: flex;
-    justify-content: space-between; /* Elemanları iki uca yaslar */
-    align-items: center;
-    gap: 10px; 
-}
 
 /* Başlık ve düzenle butonunu gruplayan yeni kapsayıcı */
 .title-container {
