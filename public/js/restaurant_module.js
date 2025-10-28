@@ -177,7 +177,7 @@ function showRouteInfoBanner(day) {
     if (banner.style.display !== 'none') {
       banner.style.display = 'none';
     }
-  }, 60000);
+  }, 5000);
 }
 async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
