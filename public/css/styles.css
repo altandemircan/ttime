@@ -7013,3 +7013,18 @@ display: flex
   opacity: 1;
   transform: translateY(0) scale(1);
 }
+
+.mobile-route-info-banner {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  color: #fff;
+  font-size: 15px;
+  padding: 11px 20px;
+  border-radius: 22px;
+  box-shadow: 0 4px 24px #0007;
+  z-index: 9999;
+  opacity: 0.93;
+}
