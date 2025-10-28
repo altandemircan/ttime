@@ -6993,7 +6993,7 @@ display: flex
 .day-steps { min-height: 300px; }
 
 .route-info-banner {
-  position: fixed;
+  position: absolute;
   top: 24px;
   left: 50%;
   transform: translateX(-50%);
@@ -7003,7 +7003,7 @@ display: flex
   padding: 11px 22px 11px 18px;
   border-radius: 22px;
   box-shadow: 0 4px 24px #0006;
-  z-index: 9999;
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -7024,6 +7024,7 @@ display: flex
   transition: opacity 0.2s;
 }
 .route-info-close:hover { opacity: 1; }
+
 @media (max-width: 600px) {
   .route-info-banner {
     font-size: 14px;
@@ -7032,11 +7033,4 @@ display: flex
     min-width: 170px;
     max-width: 96vw;
   }
-}
-.route-info-banner {
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
 }
