@@ -4364,12 +4364,12 @@ cartDiv.appendChild(addNewDayButton);
 }
 
 function showRemoveConfirmation(index, btn) {
-  // Butonu gizle, onay kutusunu göster
-  btn.style.display = "none";
+  console.log("showRemoveConfirmation", index);
   const confirmation = document.getElementById(`confirmation-container-${index}`);
+  console.log("Confirmation container:", confirmation);
+  btn.style.display = "none";
   if (confirmation) confirmation.style.display = "block";
 }
-
 function hideConfirmation(id) {
   const confirmation = document.getElementById(id);
   if (confirmation) {
