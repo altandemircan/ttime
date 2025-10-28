@@ -154,13 +154,9 @@ function showRouteInfoBanner(day) {
       <span>Click the route to list nearby restaurants, cafes and bars.</span>
       <button id="close-route-info" class="route-info-close">✕</button>
     `;
-    expandedContainer.prepend(banner); // expanded harita container'ının en başına ekle
+    expandedContainer.prepend(banner);
   }
   banner.style.display = 'flex';
-  banner.style.position = 'absolute'; // veya relative, tasarıma göre
-  banner.style.top = '24px';
-  banner.style.left = '50%';
-  banner.style.transform = 'translateX(-50%)';
 
   document.getElementById('close-route-info').onclick = function() {
     banner.style.display = 'none';
