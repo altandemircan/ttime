@@ -3797,13 +3797,13 @@ ease;
 .share-buttons {
     display: flex;
     gap: 12px;
-    padding: 40px;
+
     justify-content: center;
     flex-wrap: wrap;
     text-align: left;
     display: flex;
     justify-content: left;
-    padding-left: 20px;
+        padding: 40px 20px 40px 20px;
 
 }
 
