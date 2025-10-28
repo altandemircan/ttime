@@ -3836,7 +3836,7 @@ function updateCart() {
   emptyWrap.innerHTML = `
     <p class="empty-day-message">No item has been added for this day yet.</p>
     <div style="text-align:center;">
-      <button id="start-map-btn-day${day}" type="button" style="width: inherit; margin-bottom: 10px;">Start with map</button>
+      <button id="start-map-btn-day${day}" type="button" class="start-map-btn">Start with map</button>
     </div>
     <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
     <div class="empty-day-actions" style="display:block;text-align:center;">
