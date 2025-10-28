@@ -4034,16 +4034,16 @@ dayList.appendChild(distanceSeparator);
         }
       </div>
       <!-- EN ALTA KALDIRMA BUTONUNU EKLE -->
-      <button class="remove-btn" onclick="showRemoveConfirmation(${li.dataset.index}, this)">
+     <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
     - Remove place
-      </button>
-      <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;">
-        <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
-        <div class="modal-actions">
-          <button class="confirm-remove-btn" onclick="confirmRemovePlace(${li.dataset.index})">OK</button>
-          <button class="cancel-action-btn" onclick="hideConfirmation('confirmation-container-${li.dataset.index}')">Cancel</button>
-        </div>
-      </div>
+  </button>
+  <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
+    <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+    <div class="modal-actions">
+      <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
+      <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
+    </div>
+  </div>
     </div>
   </div>
 `;
