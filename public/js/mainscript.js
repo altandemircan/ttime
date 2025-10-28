@@ -4214,7 +4214,28 @@ cartDiv.appendChild(addNewDayButton);
       }
     });
   }, 150);
-
+// updateCart fonksiyonunun en sonunda (her gün için UL'ler hazırlandıktan sonra):
+document.querySelectorAll('.day-list').forEach(dayList => {
+    if (!dayList._sortableSetup) { // Sadece bir kere kurulsun
+        Sortable.create(dayList, {
+            animation: 150,
+            handle: '.drag-icon', // ikon üzerinden sürükleme
+            onEnd: function (evt) {
+                // Sıra değiştiğinde window.cart'ı güncelle
+                const day = dayList.dataset.day;
+                const newOrder = Array.from(dayList.querySelectorAll('.travel-item')).map(li => Number(li.dataset.index));
+                // window.cart içindeki itemları yeni sıraya göre diz
+                const items = window.cart.filter(i => Number(i.day) === Number(day) && !i._starter && !i._placeholder && (i.name || i.category === "Note"));
+                newOrder.forEach((cartIdx, newPos) => {
+                    const moved = window.cart.findIndex(it => window.cart.indexOf(it) === cartIdx);
+                    if (moved > -1) window.cart.splice(moved, 1, items[newPos]);
+                });
+                updateCart();
+            }
+        });
+        dayList._sortableSetup = true;
+    }
+});
 }
 
 function showRemoveItemConfirmation(index, btn) {
