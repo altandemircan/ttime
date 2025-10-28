@@ -3933,7 +3933,7 @@ if (anyDayHasRealItem && !hideAddCat) {
   addMoreButton.textContent = "+ Add Category";
   addMoreButton.dataset.day = day;
   addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-  dayList.appendChild(addMoreButton);
+dayContainer.appendChild(addMoreButton);
 }
 
 
