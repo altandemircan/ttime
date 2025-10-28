@@ -5759,7 +5759,7 @@ function attachClickNearbySearch(map, day, options = {}) {
       // Tek tık: yakındaki mekanları aç
       const { lat, lng } = e.latlng;
       closeNearbyPopup(); // önceki varsa kapat
-      showNearbyPlacesPopup(lat, lng, map, day, radius);
+    showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
     }, __nearbySingleDelay);
   });
 
