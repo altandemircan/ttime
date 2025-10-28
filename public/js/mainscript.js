@@ -4006,7 +4006,7 @@ dayList.appendChild(distanceSeparator);
       <div class="info-section">
         <div class="place-rating">${mapHtml}</div>
         <div class="contact">
-          <p>📌 Address: ${item.address || 'Address not available'}</p>s
+          <p>📌 Address: ${item.address || 'Address not available'}</p>
         </div>
         <p class="working-hours-title">
           🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
