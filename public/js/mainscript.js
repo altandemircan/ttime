@@ -4035,7 +4035,7 @@ dayList.appendChild(distanceSeparator);
       </div>
       <!-- EN ALTA KALDIRMA BUTONUNU EKLE -->
       <button class="remove-btn" onclick="showRemoveConfirmation(${li.dataset.index}, this)">
-        - Remove place
+    - Remove place
       </button>
       <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;">
         <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
@@ -4366,38 +4366,34 @@ cartDiv.appendChild(addNewDayButton);
 
 }
 
-function showRemoveItemConfirmation(index, btn) {
-  const id = `confirmation-item-${index}`;
-  const container = document.getElementById(id);
-  if (!container) return;
-  container.innerHTML = `
-    <p>Are you sure you want to remove this place from your trip?</p>
-    <button onclick="confirmRemoveItem(${index})">Yes</button>
-    <button onclick="hideItemConfirmation('${id}', this)">No</button>
-  `;
-  container.style.display = "block";
+function showRemoveConfirmation(index, btn) {
+  // Benzersiz id ile container'ı bul
+  const confirmationContainerId = `confirmation-container-${index}`;
+  const confirmationContainer = document.getElementById(confirmationContainerId);
+  if (!confirmationContainer) {
+    console.error('Confirmation container not found:', confirmationContainerId);
+    return;
+  }
+  confirmationContainer.style.display = "block";
   btn.style.display = "none";
 }
 
-function confirmRemoveItem(index) {
-  // Remove the item from your data (e.g., window.cart.splice(index, 1))
-  removeFromCart(index); // Use your actual remove function
-  hideItemConfirmation(`confirmation-item-${index}`);
+function confirmRemovePlace(index) {
+  // Item'ı sepetten sil
+  removeFromCart(index); // Senin item silme fonksiyonun!
+  hideConfirmation(`confirmation-container-${index}`);
 }
 
-function hideItemConfirmation(id, btn) {
-  const container = document.getElementById(id);
-  if (container) container.style.display = "none";
-  // Show the remove button again
-  if (btn) {
-    const parent = container.closest('.travel-item');
-    if (parent) {
-      const removeBtn = parent.querySelector('.remove-btn');
-      if (removeBtn) removeBtn.style.display = "";
-    }
+function hideConfirmation(confirmationContainerId) {
+  const confirmationContainer = document.getElementById(confirmationContainerId);
+  if (confirmationContainer) confirmationContainer.style.display = "none";
+  // Silme butonunu geri göster
+  const parentItem = confirmationContainer.closest('.travel-item');
+  if (parentItem) {
+    const removeBtn = parentItem.querySelector('.remove-btn');
+    if (removeBtn) removeBtn.style.display = "";
   }
 }
-
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
