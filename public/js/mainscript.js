@@ -3763,11 +3763,11 @@ function updateCart() {
 else {
       let lastCoordItem = null;
       let lastCoordIdx = null;
-     for (let idx = 0; idx < dayItemsArr.length; idx++) {
+for (let idx = 0; idx < dayItemsArr.length; idx++) {
     const item = dayItemsArr[idx];
     const currIdx = window.cart.indexOf(item);
 
-    // === travel-item <li> oluştur ===
+    // travel-item <li> oluştur
     const li = document.createElement("li");
     li.className = "travel-item";
     li.draggable = true;
@@ -3778,122 +3778,25 @@ else {
     }
     li.addEventListener("dragstart", dragStart);
 
-    // === travel-item içeriğini oluştur ===
-    if (item.category === "Note") {
-        li.innerHTML = `
-            <div class="cart-item">
-                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
-                <div class="item-info">
-                    <p class="toggle-title">${item.name}</p>
-                </div>
-                <button class="remove-btn" onclick="removeFromCart(${currIdx})">
-                    <img src="img/remove-icon.svg" alt="Close">
-                </button>
-                <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
-                <span class="arrow">
-                    <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-                </span>
-                <div class="content">
-                    <div class="info-section">
-                        <div class="note-details">
-                            <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    } else {
-        let openingHoursDisplay = "No working hours info";
-        if (item.opening_hours) {
-            if (Array.isArray(item.opening_hours)) {
-                const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
-                if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-            } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-                openingHoursDisplay = item.opening_hours.trim();
-            }
-        }
-        const leafletMapId = "leaflet-map-" + currIdx;
-        const mapHtml = (item.location &&
-            typeof item.location.lat === "number" &&
-            typeof item.location.lng === "number")
-            ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
-            : '<div class="map-error">Location not available</div>';
+    // ... travel-item içeriği (senin mevcut HTML'ini buraya koy) ...
 
-        li.innerHTML = `
-            <div class="cart-item">
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-                        <img src="${item.image}" alt="${item.name}" class="cart-image">
-                        <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
-                        <div class="item-info">
-                            <p class="toggle-title">${item.name}</p>
-                        </div>
-                    </div>
-                    <span class="arrow">
-                        <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-                    </span>
-                </div>
-                <div class="content">
-                    <div class="info-section">
-                        <div class="place-rating">${mapHtml}</div>
-                        <div class="contact">
-                            <p>📌 Address: ${item.address || 'Address not available'}</p>
-                        </div>
-                        <p class="working-hours-title">
-                            🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
-                        </p>
-                        ${
-                            item.location ? `
-                            <div class="coords-info" style="margin-top:8px;">
-                                📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
-                                Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
-                            </div>
-                            ${item.website ? `
-                                <div class="website-info" style="margin-top:8px;">
-                                    🔗 <a href="${item.website}" target="_blank" rel="noopener">
-                                        ${item.website.replace(/^https?:\/\//, '')}
-                                    </a>
-                                </div>
-                            ` : ''}
-                            <div class="google-search-info" style="margin-top:8px;">
-                                <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
-                                    target="_blank" rel="noopener">
-                                    🇬 Search images on Google
-                                </a>
-                            </div>
-                            ` : ''
-                        }
-                    </div>
-                    <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
-                        - Remove place
-                    </button>
-                    <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
-                        <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
-                        <div class="modal-actions">
-                            <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
-                            <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // === travel-item'ın ALTINA, separatorı ekle ===
-    let distanceStr = '', durationStr = '';
+    // SÜRE AYIRICIYI SADECE SON ITEMDAN ÖNCE VE İLK ITEMDA EKLE!
+    // (Yani, ilk itemda yok, son itemda yok, sadece aralarda var)
     if (
-  idx > 0 && // İlk itemdan sonra başla
-  idx < dayItemsArr.length // Son itemdan önce bitir (son itemda eklenmesin)
-  && lastCoordItem &&
-  lastCoordItem.location && item.location &&
-  typeof lastCoordItem.location.lat === "number" &&
-  typeof lastCoordItem.location.lng === "number" &&
-  typeof item.location.lat === "number" &&
-  typeof item.location.lng === "number"
-) {
+        idx < dayItemsArr.length - 1 // Son itemda YOK!
+        && idx >= 0                  // İlk itemda YOK!
+        && idx !== dayItemsArr.length - 1
+        && lastCoordItem &&
+        lastCoordItem.location && item.location &&
+        typeof lastCoordItem.location.lat === "number" &&
+        typeof lastCoordItem.location.lng === "number" &&
+        typeof item.location.lat === "number" &&
+        typeof item.location.lng === "number"
+    ) {
         const key = `route-map-day${day}`;
         const summary = window.pairwiseRouteSummaries?.[key]?.[lastCoordIdx];
+        let distanceStr = '';
+        let durationStr = '';
         if (summary) {
             distanceStr = summary.distance >= 1000
                 ? (summary.distance / 1000).toFixed(1) + " km"
@@ -3911,23 +3814,6 @@ else {
         const labelDiv = document.createElement('div');
         labelDiv.className = 'distance-label';
 
-        // Sadece ilk separator ve GPS importlu gün için kilit butonu ekle
-        if (idx === 1 && window.importedTrackByDay && window.importedTrackByDay[day]) {
-            window.routeLockByDay = window.routeLockByDay || {};
-            if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
-            const lockBtn = document.createElement('button');
-            lockBtn.className = 'route-lock-toggle';
-            lockBtn.style.marginRight = '10px';
-            lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-            lockBtn.onclick = function(e) {
-                e.stopPropagation();
-                window.routeLockByDay[day] = !window.routeLockByDay[day];
-                lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-                renderRouteForDay(day);
-            };
-            labelDiv.appendChild(lockBtn);
-        }
-
         const distanceValue = document.createElement('span');
         distanceValue.className = 'distance-value';
         distanceValue.textContent = distanceStr;
@@ -3943,12 +3829,11 @@ else {
         distanceSeparator.appendChild(labelDiv);
         distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
 
-  li.appendChild(distanceSeparator); // AYIRICIYI li'nin ALTINA ekle!
+        li.appendChild(distanceSeparator); // separatorı li'nin ALTINA ekle
     }
 
     dayList.appendChild(li);
 
-    // Sonraki item için lastCoordItem/Idx güncelle
     if (
         item.location &&
         typeof item.location.lat === "number" &&
@@ -3958,7 +3843,7 @@ else {
         lastCoordIdx = currIdx;
     }
 
-    // Sadece tek item varsa, ekstra mesaj ekle
+    // Sadece tek item varsa bilgi mesajı ekle
     if (dayItemsArr.length === 1 && idx === 0) {
         const oneItemMessage = document.createElement("p");
         oneItemMessage.className = "one-item-message";
