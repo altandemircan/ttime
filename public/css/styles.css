@@ -6992,21 +6992,44 @@ display: flex
 }
 .day-steps { min-height: 300px; }
 
-.custom-route-tooltip {
-  position: absolute;
-  pointer-events: none;
-  z-index: 999999999999;
+.route-info-banner {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   background: #222;
   color: #fff;
-  border-radius: 8px;
-  padding: 7px 15px;
   font-size: 15px;
-  box-shadow: 0 2px 18px #0003;
-  opacity: 0;
-  transition: opacity 0.34s cubic-bezier(.6,.2,.3,1), transform 0.34s cubic-bezier(.6,.2,.3,1);
-  transform: translateY(8px) scale(0.98);
+  padding: 11px 22px 11px 18px;
+  border-radius: 22px;
+  box-shadow: 0 4px 24px #0006;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  opacity: 0.97;
+  max-width: 90vw;
+  min-width: 210px;
 }
-.custom-route-tooltip.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+.route-info-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 23px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 3px;
+  margin-left: 8px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.route-info-close:hover { opacity: 1; }
+@media (max-width: 600px) {
+  .route-info-banner {
+    font-size: 14px;
+    padding: 10px 14px 10px 12px;
+    top: 12px;
+    min-width: 170px;
+    max-width: 96vw;
+  }
 }
