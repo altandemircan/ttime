@@ -4031,9 +4031,16 @@ dayList.appendChild(distanceSeparator);
         }
       </div>
       <!-- EN ALTA KALDIRMA BUTONUNU EKLE -->
-      <button class="remove-btn" onclick="removeFromCart(${li.dataset.index})">
-       - Remove place
+      <button class="remove-btn" onclick="showRemoveConfirmation(${li.dataset.index}, this)">
+        - Remove place
       </button>
+      <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;">
+        <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+        <div class="modal-actions">
+          <button class="confirm-remove-btn" onclick="confirmRemovePlace(${li.dataset.index})">OK</button>
+          <button class="cancel-action-btn" onclick="hideConfirmation('confirmation-container-${li.dataset.index}')">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 `;
@@ -4362,7 +4369,28 @@ document.querySelectorAll('.accordion-label').forEach(label => {
 setTimeout(bindAddNewDayButton, 10);
 });
 
+function showRemoveConfirmation(index, btn) {
+  // Butonu gizle, onay kutusunu göster
+  btn.style.display = "none";
+  const confirmation = document.getElementById(`confirmation-container-${index}`);
+  if (confirmation) confirmation.style.display = "block";
+}
 
+function hideConfirmation(id) {
+  const confirmation = document.getElementById(id);
+  if (confirmation) {
+    confirmation.style.display = "none";
+    // Eski butonu tekrar göster (aynı parentta bul)
+    const parent = confirmation.parentNode;
+    const btn = parent.querySelector('.remove-btn');
+    if (btn) btn.style.display = "";
+  }
+}
+
+function confirmRemovePlace(index) {
+  // Kaldırma işlemini yap (mevcut fonksiyonunu çağır)
+  removeFromCart(index);
+}
 
 function searchPlaceOnGoogle(place, city) {
   // Boşlukları + ile değiştir, çift tırnak ve özel karakterlerden koru
