@@ -69,6 +69,33 @@ function addRoutePolylineWithClick(map, coords) {
         opacity: 0.93
     }).addTo(map);
 
+
+const tooltipText = 'Rotaya tıklayarak yakındaki restoranları görebilirsin!';
+
+polyline.on('mouseover', function(e) {
+  const tooltip = ensureRouteTooltip();
+  tooltip.textContent = tooltipText;
+  tooltip.classList.add('show');
+  if (e.originalEvent) {
+    tooltip.style.left = (e.originalEvent.pageX + 18) + 'px';
+    tooltip.style.top = (e.originalEvent.pageY - 18) + 'px';
+  }
+});
+
+polyline.on('mousemove', function(e) {
+  const tooltip = document.getElementById('route-tooltip');
+  if (tooltip && e.originalEvent) {
+    tooltip.style.left = (e.originalEvent.pageX + 18) + 'px';
+    tooltip.style.top = (e.originalEvent.pageY - 18) + 'px';
+  }
+});
+
+polyline.on('mouseout', function(e) {
+  const tooltip = document.getElementById('route-tooltip');
+  if (tooltip) tooltip.classList.remove('show');
+});
+
+
     polyline.on('click', async function(e) {
         // Nearby açılmasın!
         if (e.originalEvent) e.originalEvent.stopPropagation();
@@ -156,30 +183,6 @@ function ensureRouteTooltip() {
   return tooltip;
 }
 
-const tooltipText = 'Rotaya tıklayarak yakındaki restoranları görebilirsin!';
-
-polyline.on('mouseover', function(e) {
-  const tooltip = ensureRouteTooltip();
-  tooltip.textContent = tooltipText;
-  tooltip.classList.add('show');
-  if (e.originalEvent) {
-    tooltip.style.left = (e.originalEvent.pageX + 18) + 'px';
-    tooltip.style.top = (e.originalEvent.pageY - 18) + 'px';
-  }
-});
-
-polyline.on('mousemove', function(e) {
-  const tooltip = document.getElementById('route-tooltip');
-  if (tooltip && e.originalEvent) {
-    tooltip.style.left = (e.originalEvent.pageX + 18) + 'px';
-    tooltip.style.top = (e.originalEvent.pageY - 18) + 'px';
-  }
-});
-
-polyline.on('mouseout', function(e) {
-  const tooltip = document.getElementById('route-tooltip');
-  if (tooltip) tooltip.classList.remove('show');
-});
 
 
 async function getRestaurantPopupHTML(f, day) {
