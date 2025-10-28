@@ -141,9 +141,11 @@ function addRoutePolylineWithClick(map, coords) {
 
     return polyline;
 }
-function showRouteInfoBanner() {
-  console.log("Banner fonksiyonu ÇALIŞTI!");
-  let banner = document.getElementById('route-info-banner');
+function showRouteInfoBanner(day) {
+  const expandedContainer = document.getElementById(`expanded-map-${day}`);
+  if (!expandedContainer) return;
+
+  let banner = expandedContainer.querySelector('#route-info-banner');
   if (!banner) {
     banner = document.createElement('div');
     banner.id = 'route-info-banner';
@@ -152,9 +154,14 @@ function showRouteInfoBanner() {
       <span>Click the route to list nearby restaurants, cafes and bars.</span>
       <button id="close-route-info" class="route-info-close">✕</button>
     `;
-    document.body.appendChild(banner);
+    expandedContainer.prepend(banner); // expanded harita container'ının en başına ekle
   }
   banner.style.display = 'flex';
+  banner.style.position = 'absolute'; // veya relative, tasarıma göre
+  banner.style.top = '24px';
+  banner.style.left = '50%';
+  banner.style.transform = 'translateX(-50%)';
+
   document.getElementById('close-route-info').onclick = function() {
     banner.style.display = 'none';
   };
