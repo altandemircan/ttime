@@ -5400,7 +5400,7 @@ function updateRouteStatsUI(day) {
 
  
 async function expandMap(containerId, day) {
-    showRouteInfoBanner();
+     showRouteInfoBanner();
 
 
 

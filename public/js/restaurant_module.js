@@ -142,7 +142,6 @@ function addRoutePolylineWithClick(map, coords) {
     return polyline;
 }
 function showRouteInfoBanner() {
-  // Banner yoksa DOM'a ekle
   console.log("Banner fonksiyonu ÇALIŞTI!");
   let banner = document.getElementById('route-info-banner');
   if (!banner) {
@@ -155,16 +154,13 @@ function showRouteInfoBanner() {
     `;
     document.body.appendChild(banner);
   }
-  // Banner'ı görünür yap
   banner.style.display = 'flex';
-  // Kapatma fonksiyonu
   document.getElementById('close-route-info').onclick = function() {
     banner.style.display = 'none';
   };
-  // Otomatik kapanma
   setTimeout(function() {
     banner.style.display = 'none';
-  }, 18000);
+  }, 8000);
 }
 async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
