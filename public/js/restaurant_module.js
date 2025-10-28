@@ -94,7 +94,7 @@ function addRoutePolylineWithClick(map, coords) {
         // Sort the 10 nearest places
         const haversine = (lat1, lon1, lat2, lon2) => {
             const R = 6371000, toRad = x => x * Math.PI / 180;
-            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+            const dLat = toRad(lat2 - lat1), dLon = toRad(lat2 - lon1);
             const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
             return 2 * R * Math.asin(Math.sqrt(a));
         };
@@ -106,36 +106,40 @@ function addRoutePolylineWithClick(map, coords) {
             .sort((a, b) => a.distance - b.distance)
             .slice(0, 10);
 
+        // SIRAYLA animasyonlu marker ekle
         nearest10.forEach((f, idx) => {
-            // --- Green line ---
-            L.polyline([
-                [lat, lng],
-                [f.properties.lat, f.properties.lon]
-            ], {
-                color: "#22bb33", // GREEN
-                weight: 4,
-                opacity: 0.95,
-                dashArray: "8,8"
-            }).addTo(map);
+            setTimeout(() => {
+                // --- Green line ---
+                L.polyline([
+                    [lat, lng],
+                    [f.properties.lat, f.properties.lon]
+                ], {
+                    color: "#22bb33",
+                    weight: 4,
+                    opacity: 0.95,
+                    dashArray: "8,8"
+                }).addTo(map);
 
-            // --- Purple marker ---
-            const icon = L.divIcon({
-                html: getPurpleRestaurantMarkerHtml(),
-                className: "",
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-            const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
+                // --- Purple marker ---
+                const icon = L.divIcon({
+                    html: getPurpleRestaurantMarkerHtml(),
+                    className: "",
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+                const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
 
-            // Popup
-            const imgId = `rest-img-${f.properties.place_id || idx}`;
-const html = `<div class="fadein-list">${getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1)}</div>`;
-            marker.bindPopup(html, { maxWidth: 320 });
-            marker.on("popupopen", function() {
-  const popupEl = document.querySelector(".fadein-list");
-  if (popupEl) setTimeout(() => popupEl.classList.add("visible"), 10);
-  handlePopupImageLoading(f, imgId);
-});        });
+                // Popup
+                const imgId = `rest-img-${f.properties.place_id || idx}`;
+                const html = `<div class="fadein-list">${getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1)}</div>`;
+                marker.bindPopup(html, { maxWidth: 320 });
+                marker.on("popupopen", function() {
+                    const popupEl = document.querySelector(".fadein-list");
+                    if (popupEl) setTimeout(() => popupEl.classList.add("visible"), 10);
+                    handlePopupImageLoading(f, imgId);
+                });
+            }, idx * 120); // Her marker 120ms gecikmeli eklenir
+        });
 
         alert(`The ${nearest10.length} closest restaurant/cafe/bar locations have been displayed.`);
     });
