@@ -5739,31 +5739,33 @@ if (track && svg) {
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; // metres
 
-  // Uzun basma varsa temizle
   if (map.__ttLongPressCleanup) {
     try { map.__ttLongPressCleanup(); } catch(_){}
     map.__ttLongPressCleanup = null;
   }
 
-  // Tek bağla
   if (map.__ttNearbyClickBound) return;
   map.__ttNearbyClickBound = true;
 
-  // TEK TIK ayıracı: timer + gecikme
   let __nearbySingleTimer = null;
   const __nearbySingleDelay = (options && options.singleDelay) || 300; // ms
 
   map.on('click', function(e) {
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
     __nearbySingleTimer = setTimeout(async () => {
-      // Tek tık: yakındaki mekanları aç
-      const { lat, lng } = e.latlng;
-      closeNearbyPopup(); // önceki varsa kapat
-    showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
+      // YENİDEN: Polyline veya marker tıklamasında nearby açma!
+      if (
+        e.originalEvent &&
+        e.originalEvent.target &&
+        e.originalEvent.target.classList.contains('leaflet-interactive')
+      ) {
+        return;
+      }
+      closeNearbyPopup();
+      showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
     }, __nearbySingleDelay);
   });
 
-  // Çift tık (zoom) gelirse tek-tıkı iptal et
   map.on('dblclick', function() {
     if (__nearbySingleTimer) {
       clearTimeout(__nearbySingleTimer);
@@ -5771,7 +5773,6 @@ function attachClickNearbySearch(map, day, options = {}) {
     }
   });
 
-  // Zoom başlarsa (ör. çift tık, pinch), tek-tıkı iptal et
   map.on('zoomstart', function() {
     if (__nearbySingleTimer) {
       clearTimeout(__nearbySingleTimer);
