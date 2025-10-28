@@ -68,46 +68,16 @@ function addRoutePolylineWithClick(map, coords) {
         opacity: 0.93
     }).addTo(map);
 
-    // === TOOLTIP EVENTLERİ ===
-    function ensureRouteTooltip() {
-      let tooltip = document.getElementById('route-tooltip');
-      if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'route-tooltip';
-        tooltip.className = 'custom-route-tooltip';
-        document.body.appendChild(tooltip);
-      }
-      return tooltip;
-    }
-
-    const tooltipText = 'Rotaya tıklayarak yakındaki restoranları görebilirsin!';
-
-    polyline.on('mouseover', function(e) {
-      const tooltip = ensureRouteTooltip();
-      tooltip.textContent = tooltipText;
-      tooltip.classList.add('show');
-      if (e.originalEvent) {
-        tooltip.style.left = (e.originalEvent.pageX + 18) + 'px';
-        tooltip.style.top = (e.originalEvent.pageY - 18) + 'px';
-      }
-    });
-
-    polyline.on('mousemove', function(e) {
-      const tooltip = document.getElementById('route-tooltip');
-      if (tooltip && e.originalEvent) {
-        tooltip.style.left = (e.originalEvent.pageX + 18) + 'px';
-        tooltip.style.top = (e.originalEvent.pageY - 18) + 'px';
-      }
-    });
-
-    polyline.on('mouseout', function(e) {
-      const tooltip = document.getElementById('route-tooltip');
-      if (tooltip) tooltip.classList.remove('show');
-    });
-
+    // --- When polyline is clicked, open a popup ---
     polyline.on('click', async function(e) {
-        // Nearby açılmasın!
         if (e.originalEvent) e.originalEvent.stopPropagation();
+
+        // Show popup info to the user
+        polyline.bindPopup(
+            `<b>Nearby restaurants will be listed</b><br>
+             <span style="font-size:13px;color:#333;">The closest restaurant/cafe/bar locations will be displayed below.</span>`, 
+            { maxWidth: 320 }
+        ).openPopup(e.latlng);
 
         const lat = e.latlng.lat, lng = e.latlng.lng;
         const bufferMeters = 1000;
@@ -124,11 +94,11 @@ function addRoutePolylineWithClick(map, coords) {
         const data = await resp.json();
 
         if (!data.features || data.features.length === 0) {
-            alert("Bu alanda restoran/cafe/bar bulunamadı!");
+            alert("No restaurant/cafe/bar found in this area!");
             return;
         }
 
-        // En yakın 10 noktayı sırala
+        // Sort the 10 nearest places
         const haversine = (lat1, lon1, lat2, lon2) => {
             const R = 6371000, toRad = x => x * Math.PI / 180;
             const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
@@ -144,18 +114,18 @@ function addRoutePolylineWithClick(map, coords) {
             .slice(0, 10);
 
         nearest10.forEach((f, idx) => {
-            // --- YEŞİL ÇİZGİ ---
+            // --- Green line ---
             L.polyline([
                 [lat, lng],
                 [f.properties.lat, f.properties.lon]
             ], {
-                color: "#22bb33", // YEŞİL
+                color: "#22bb33", // GREEN
                 weight: 4,
                 opacity: 0.95,
                 dashArray: "8,8"
             }).addTo(map);
 
-            // --- MOR MARKER ---
+            // --- Purple marker ---
             const icon = L.divIcon({
                 html: getPurpleRestaurantMarkerHtml(),
                 className: "",
@@ -173,7 +143,7 @@ function addRoutePolylineWithClick(map, coords) {
             });
         });
 
-        alert(`Bu alanda en yakın ${nearest10.length} restoran/cafe/bar gösterildi.`);
+        alert(`The ${nearest10.length} closest restaurant/cafe/bar locations have been displayed.`);
     });
 
     return polyline;
