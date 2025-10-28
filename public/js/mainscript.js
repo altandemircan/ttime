@@ -1990,37 +1990,7 @@ function addChatResultsToCart() {
     });
 }
 
-// //ESKİ OSM MAP
-// window.showMap = function(element) {
-//     const stepsElement = element.closest('.steps');
-//     const visualDiv = stepsElement.querySelector('.visual');
-//     const image = visualDiv.querySelector('img.check');
 
-//     // TAG, FAV ve CATS bölümlerini GİZLE
-//     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
-//         el.style.display = 'none';
-//     });
-//     stepsElement.querySelectorAll('.fav-heart').forEach(el => {
-//         el.style.display = 'none';
-//     });
-//     stepsElement.querySelectorAll('.cats').forEach(el => {
-//         el.style.display = 'none';
-//     });
-
-//     // Harita göster
-//     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
-//     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
-//     if (!isNaN(lat) && !isNaN(lon)) {
-//         const delta = 0.001;
-//         const iframeHTML = `<iframe class="gmap-chat" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-delta},${lat-delta},${lon+delta},${lat+delta}&layer=mapnik&marker=${lat},${lon}" width="100%" height="235" frameborder="0" style="border:0"></iframe>`;
-//         const oldIframe = visualDiv.querySelector('iframe.gmap-chat');
-//         if (oldIframe) oldIframe.remove();
-//         image.style.display = "none";
-//         visualDiv.insertAdjacentHTML('beforeend', iframeHTML);
-//     } else {
-//         alert("Location not found.");
-//     }
-// };
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
@@ -2428,44 +2398,6 @@ function removeFromCart(index) {
   if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 }
 
-// function addItem(element, day, category, name, image, extra) {
-//     const stepsDiv = element.closest('.steps');
-//     const address = stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-//     const opening_hours = stepsDiv.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-//     const lat = stepsDiv.getAttribute('data-lat');
-//     const lon = stepsDiv.getAttribute('data-lon');
-//     const place = typeof extra === 'string' ? JSON.parse(extra.replace(/&quot;/g, '"')) : extra || {};
-
-//     // GÜVENLİ location oluştur
-//     let location = null;
-//     if (place.location && typeof place.location.lat !== "undefined" && typeof place.location.lng !== "undefined") {
-//         location = {
-//             lat: Number(place.location.lat),
-//             lng: Number(place.location.lng)
-//         };
-//     } else if (lat && lon && !isNaN(Number(lat)) && !isNaN(Number(lon))) {
-//         location = {
-//             lat: Number(lat),
-//             lng: Number(lon)
-//         };
-//     }
-
-//     addToCart(
-//         name,
-//         image,
-//         day,
-//         category,
-//         place.address || address,
-//         place.rating,
-//         place.user_ratings_total,
-//         place.opening_hours || opening_hours,
-//         place.place_id,
-//         location,
-//         place.website
-//     );
-//     if (typeof restoreSidebar === "function") restoreSidebar();
-// }
-
 
 function safeCoords(obj) {
   // Hem lat/lon hem location nesnesi destekle
@@ -2478,7 +2410,6 @@ function safeCoords(obj) {
 }
 
 
-
 function safeCoords(lat, lon) {
   if (
     lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
@@ -2488,9 +2419,6 @@ function safeCoords(lat, lon) {
   }
   return null;
 }
-
-
-
 
 
 function displayPlacesInChat(places, category, day) {
@@ -2537,13 +2465,6 @@ function displayPlacesInChat(places, category, day) {
 
     attachFavEvents();
 
-    // function getPerPage() {
-    //     if (window.innerWidth >= 1500) return 5;
-    //     if (window.innerWidth >= 1320) return 4;
-    //     if (window.innerWidth >= 900) return 3;
-    //     return 5;
-    // }
-
     setTimeout(() => {
         // Tüm .splide sliderları için instance mount et
         document.querySelectorAll('.splide').forEach(sliderElem => {
@@ -2570,17 +2491,6 @@ function displayPlacesInChat(places, category, day) {
         });
     }, 1);
 
-    // if (!window._splideResizeListenerAdded) {
-    //     window.addEventListener('resize', function() {
-    //         document.querySelectorAll('.splide').forEach(sliderElem => {
-    //             if (sliderElem._splideInstance) {
-    //                 sliderElem._splideInstance.options = { perPage: getPerPage() };
-    //                 sliderElem._splideInstance.refresh();
-    //             }
-    //         });
-    //     });
-    //     window._splideResizeListenerAdded = true;
-    // } 
 }
 
 
