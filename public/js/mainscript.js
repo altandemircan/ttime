@@ -4364,11 +4364,11 @@ cartDiv.appendChild(addNewDayButton);
 }
 
 function showRemoveConfirmation(index, btn) {
-  console.log("showRemoveConfirmation", index);
   const confirmation = document.getElementById(`confirmation-container-${index}`);
-console.log("Confirmation container:", confirmation);
-btn.style.display = "none";
-if (confirmation) confirmation.style.display = "block";
+  console.log("index:", index, "confirmation:", confirmation);
+  btn.style.display = "none";
+  if (confirmation) confirmation.style.display = "block";
+  else alert("CONFIRMATION CONTAINER BULUNAMADI: " + index);
 }
 function hideConfirmation(id) {
   const confirmation = document.getElementById(id);
