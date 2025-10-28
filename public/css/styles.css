@@ -7073,11 +7073,10 @@ display: flex
 }
 
 .distance-separator .distance-label {
-  font-size: 14px;
   color: #666;
-  background: #fff;
-  padding: 2px 12px;
-  border-radius: 8px;
-  box-shadow: 0 1px 6px #0001;
-  margin: 2px 0;
+    padding: 2px 0px;
+    border-radius: 8px;
+    margin: 2px 0;
+    width: -webkit-fill-available;
+    text-align: center;
 }
