@@ -4362,37 +4362,6 @@ cartDiv.appendChild(addNewDayButton);
   }, 150);
 
 }
-
-function showRemoveConfirmation(index, btn) {
-  const id = `confirmation-container-${index}`;
-  const confirmation = document.getElementById(id);
-  btn.style.display = "none";
-  if (confirmation) {
-    confirmation.style.display = "block";
-  } else {
-    // Hata var, id yanlış ya da silinmiş
-    console.error('Confirmation container bulunamadı:', id);
-    btn.style.display = ""; // Butonu geri göster
-  }
-}
-function hideConfirmation(id) {
-  const confirmation = document.getElementById(id);
-  if (confirmation) {
-    confirmation.style.display = "none";
-    // Eski butonu tekrar göster (aynı parentta bul)
-    const parent = confirmation.parentNode;
-    const btn = parent.querySelector('.remove-btn');
-    if (btn) btn.style.display = "";
-  }
-}
-
-function confirmRemovePlace(index) {
-  // Kaldırma işlemini yap (mevcut fonksiyonunu çağır)
-  removeFromCart(index);
-}
-
-
-
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
@@ -4540,7 +4509,7 @@ function createDayActionMenu(day) {
         }
       } else if (action === 'remove') {
         if (typeof showRemoveConfirmation === 'function') {
-showRemoveConfirmation(day, `day-container-${day}`, `confirmation-container-${day}`);
+          showRemoveConfirmation(day, dayContainerId, confirmationContainerId);
         }
       }
     } finally {
@@ -5088,19 +5057,22 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(shareDiv);
 }
-function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
-    const confirmationContainer = document.getElementById(confirmationContainerId);
-    if (!confirmationContainer) return;
 
+function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
+    const dayItems = window.cart.filter(item => item.day == day && item.name !== undefined);
+    const itemCount = dayItems.length;
+
+    const confirmationContainer = document.getElementById(confirmationContainerId);
     confirmationContainer.innerHTML = `
-        <p>Are you sure you want to remove Day ${day}?</p>
+        <p>Day ${day} contains ${itemCount} items. Are you sure you want to remove the day?</p>
         <div class="modal-actions">
             <button class="confirm-remove-btn" onclick="removeDayAction(${day}, '${dayContainerId}', '${confirmationContainerId}')">OK</button>
             <button class="cancel-action-btn" onclick="hideConfirmation('${confirmationContainerId}')">Cancel</button>
         </div>
     `;
     confirmationContainer.style.display = "block";
-}  
+}
+
 function showResetConfirmation(day, confirmationContainerId) {
     const dayItems = window.cart.filter(item => item.day == day && item.name !== undefined);
     const itemCount = dayItems.length;
