@@ -141,14 +141,6 @@ function dragEnd(event) {
 
 // ========== CHAT DRAG & DROP FUNCTIONS ==========
 
-function makeChatStepsDraggable() {
-    document.querySelectorAll('.steps').forEach(el => {
-        el.setAttribute('draggable', 'true');
-        el.removeEventListener('dragstart', handleStepDragStart);
-        el.addEventListener('dragstart', handleStepDragStart);
-    });
-}
-
 function chatDragOverHandler(e) {
     e.preventDefault();
     this.classList.add('drop-hover');
