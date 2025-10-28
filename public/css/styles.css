@@ -206,7 +206,9 @@ li .highlight {
     color: #f35252;
     margin-top: 8px;
 }
-
+.confirmation-container {
+    padding: 20px;
+}
 .cw {
     width: 100%;
     display: grid;
