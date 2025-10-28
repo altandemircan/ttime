@@ -3763,208 +3763,208 @@ function updateCart() {
 else {
       let lastCoordItem = null;
       let lastCoordIdx = null;
-      for (let idx = 0; idx < dayItemsArr.length; idx++) {
-        const item = dayItemsArr[idx];
-        const currIdx = window.cart.indexOf(item);
-        if (
-          lastCoordItem &&
-          lastCoordItem.location && item.location &&
-          typeof lastCoordItem.location.lat === "number" &&
-          typeof lastCoordItem.location.lng === "number" &&
-          typeof item.location.lat === "number" &&
-          typeof item.location.lng === "number"
-        ) {
-          const key = `route-map-day${day}`;
-          const summary = window.pairwiseRouteSummaries?.[key]?.[lastCoordIdx];
-          let distanceStr = '';
-          let durationStr = '';
-          if (summary) {
-            distanceStr = summary.distance >= 1000
-              ? (summary.distance / 1000).toFixed(1) + " km"
-              : Math.round(summary.distance) + " m";
-            durationStr = summary.duration >= 60
-              ? Math.round(summary.duration / 60) + " dk"
-              : Math.round(summary.duration) + " sn";
-          }
-    console.log('SEPARATOR BLOCK', { idx, day, imported: !!(window.importedTrackByDay && window.importedTrackByDay[day]), lastCoordItem, item });
+     for (let idx = 0; idx < dayItemsArr.length; idx++) {
+    const item = dayItemsArr[idx];
+    const currIdx = window.cart.indexOf(item);
 
+    // === travel-item <li> oluştur ===
+    const li = document.createElement("li");
+    li.className = "travel-item";
+    li.draggable = true;
+    li.dataset.index = currIdx;
+    if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+        li.setAttribute("data-lat", item.location.lat);
+        li.setAttribute("data-lon", item.location.lng);
+    }
+    li.addEventListener("dragstart", dragStart);
 
-const distanceSeparator = document.createElement('div');
-distanceSeparator.className = 'distance-separator';
-
-distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
-
-const labelDiv = document.createElement('div');
-labelDiv.className = 'distance-label';
-
-// --- KİLİT BUTONU SADECE İLK SEPARATOR VE GPS IMPORTLU GÜNDE EKLENECEK ---
-if (idx === 1 && window.importedTrackByDay && window.importedTrackByDay[day]) {
-  window.routeLockByDay = window.routeLockByDay || {};
-  if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
-  const lockBtn = document.createElement('button');
-  lockBtn.className = 'route-lock-toggle';
-  lockBtn.style.marginRight = '10px';
-  lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-  lockBtn.onclick = function(e) {
-    e.stopPropagation();
-    window.routeLockByDay[day] = !window.routeLockByDay[day];
-    lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
-    renderRouteForDay(day);
-  };
-  labelDiv.appendChild(lockBtn);
-}
-  
-
-const distanceValue = document.createElement('span');
-distanceValue.className = 'distance-value';
-distanceValue.textContent = distanceStr;
-const bullet = document.createTextNode(' • ');
-const durationValue = document.createElement('span');
-durationValue.className = 'duration-value';
-durationValue.textContent = durationStr;
-
-labelDiv.appendChild(distanceValue);
-labelDiv.appendChild(bullet);
-labelDiv.appendChild(durationValue);
-
-distanceSeparator.appendChild(labelDiv);
-distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
-
-dayList.appendChild(distanceSeparator);
-
-        }
-        const li = document.createElement("li");
-        li.className = "travel-item";
-        li.draggable = true;
-        li.dataset.index = currIdx;
-        if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
-          li.setAttribute("data-lat", item.location.lat);
-          li.setAttribute("data-lon", item.location.lng);
+    // === travel-item içeriğini oluştur ===
+    if (item.category === "Note") {
+        li.innerHTML = `
+            <div class="cart-item">
+                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                <div class="item-info">
+                    <p class="toggle-title">${item.name}</p>
+                </div>
+                <button class="remove-btn" onclick="removeFromCart(${currIdx})">
+                    <img src="img/remove-icon.svg" alt="Close">
+                </button>
+                <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
+                <span class="arrow">
+                    <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                </span>
+                <div class="content">
+                    <div class="info-section">
+                        <div class="note-details">
+                            <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        let openingHoursDisplay = "No working hours info";
+        if (item.opening_hours) {
+            if (Array.isArray(item.opening_hours)) {
+                const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+                if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+            } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+                openingHoursDisplay = item.opening_hours.trim();
+            }
         }
         const leafletMapId = "leaflet-map-" + currIdx;
-        if (item.category === "Note") li.classList.add("custom-note");
-        li.addEventListener("dragstart", dragStart);
+        const mapHtml = (item.location &&
+            typeof item.location.lat === "number" &&
+            typeof item.location.lng === "number")
+            ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
+            : '<div class="map-error">Location not available</div>';
 
-        if (item.category === "Note") {
-          li.innerHTML = `
+        li.innerHTML = `
             <div class="cart-item">
-              <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
-              <div class="item-info">
-                <p class="toggle-title">${item.name}</p>
-              </div>
-              <button class="remove-btn" onclick="removeFromCart(${currIdx})">
-                <img src="img/remove-icon.svg" alt="Close">
-              </button>
-            <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;">
-    <!-- İçerik JS ile doldurulacak -->
-</div>
-              <span class="arrow">
-                <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-              </span>
-              <div class="content">
-                <div class="info-section">
-                  <div class="note-details">
-                    <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
-                  </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+                        <img src="${item.image}" alt="${item.name}" class="cart-image">
+                        <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+                        <div class="item-info">
+                            <p class="toggle-title">${item.name}</p>
+                        </div>
+                    </div>
+                    <span class="arrow">
+                        <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                    </span>
                 </div>
-              </div>
+                <div class="content">
+                    <div class="info-section">
+                        <div class="place-rating">${mapHtml}</div>
+                        <div class="contact">
+                            <p>📌 Address: ${item.address || 'Address not available'}</p>
+                        </div>
+                        <p class="working-hours-title">
+                            🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+                        </p>
+                        ${
+                            item.location ? `
+                            <div class="coords-info" style="margin-top:8px;">
+                                📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+                                Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+                            </div>
+                            ${item.website ? `
+                                <div class="website-info" style="margin-top:8px;">
+                                    🔗 <a href="${item.website}" target="_blank" rel="noopener">
+                                        ${item.website.replace(/^https?:\/\//, '')}
+                                    </a>
+                                </div>
+                            ` : ''}
+                            <div class="google-search-info" style="margin-top:8px;">
+                                <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
+                                    target="_blank" rel="noopener">
+                                    🇬 Search images on Google
+                                </a>
+                            </div>
+                            ` : ''
+                        }
+                    </div>
+                    <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
+                        - Remove place
+                    </button>
+                    <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
+                        <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+                        <div class="modal-actions">
+                            <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
+                            <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-          `;
-          dayList.appendChild(li);
-          continue;
-        } else {
-          let openingHoursDisplay = "No working hours info";
-          if (item.opening_hours) {
-            if (Array.isArray(item.opening_hours)) {
-              const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
-              if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-            } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-              openingHoursDisplay = item.opening_hours.trim();
-            }
-          }
-          const mapHtml = (item.location &&
-              typeof item.location.lat === "number" &&
-              typeof item.location.lng === "number")
-              ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
-              : '<div class="map-error">Location not available</div>';
-          li.innerHTML = `
-  <div class="cart-item">
-    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
-        <div style="display: flex; align-items: center; gap: 10px;">       
-             <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-             <img src="${item.image}" alt="${item.name}" class="cart-image">
-            <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
-            <div class="item-info">
-              <p class="toggle-title">${item.name}</p>
-            </div>            
-        </div>
-        <span class="arrow">
-          <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-        </span>
-    </div>
-    <div class="content">
-      <div class="info-section">
-        <div class="place-rating">${mapHtml}</div>
-        <div class="contact">
-          <p>📌 Address: ${item.address || 'Address not available'}</p>
-        </div>
-        <p class="working-hours-title">
-          🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
-        </p>
-        ${
-          item.location ? `
-            <div class="coords-info" style="margin-top:8px;">
-              📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
-              Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
-            </div>
-            ${item.website ? `
-              <div class="website-info" style="margin-top:8px;">
-                🔗 <a href="${item.website}" target="_blank" rel="noopener">
-                  ${item.website.replace(/^https?:\/\//, '')}
-                </a>
-              </div>
-            ` : ''}
-            <div class="google-search-info" style="margin-top:8px;">
-              <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}"
-                 target="_blank" rel="noopener">
-                🇬 Search images on Google
-              </a>
-            </div>
-          ` : ''
-        }
-      </div>
-      <!-- EN ALTA KALDIRMA BUTONUNU EKLE -->
-     <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
-    - Remove place
-  </button>
-  <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
-    <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
-    <div class="modal-actions">
-      <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
-      <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
-    </div>
-  </div>
-    </div>
-  </div>
-`;
-        }
-        dayList.appendChild(li);
+        `;
+    }
 
-        if (
-          item.location &&
-          typeof item.location.lat === "number" &&
-          typeof item.location.lng === "number"
-        ) {
-          lastCoordItem = item;
-          lastCoordIdx = currIdx;
+    // === travel-item'ın ALTINA, separatorı ekle ===
+    let distanceStr = '', durationStr = '';
+    if (
+        idx > 0 && // Sadece ikinci ve sonrası için ayırıcı ekle (ilk itemdan sonra)
+        lastCoordItem &&
+        lastCoordItem.location && item.location &&
+        typeof lastCoordItem.location.lat === "number" &&
+        typeof lastCoordItem.location.lng === "number" &&
+        typeof item.location.lat === "number" &&
+        typeof item.location.lng === "number"
+    ) {
+        const key = `route-map-day${day}`;
+        const summary = window.pairwiseRouteSummaries?.[key]?.[lastCoordIdx];
+        if (summary) {
+            distanceStr = summary.distance >= 1000
+                ? (summary.distance / 1000).toFixed(1) + " km"
+                : Math.round(summary.distance) + " m";
+            durationStr = summary.duration >= 60
+                ? Math.round(summary.duration / 60) + " dk"
+                : Math.round(summary.duration) + " sn";
         }
-        if (dayItemsArr.length === 1 && idx === 0) {
-          const oneItemMessage = document.createElement("p");
-          oneItemMessage.className = "one-item-message";
-          oneItemMessage.textContent = "Add one more item to see the route!";
-          dayList.appendChild(oneItemMessage);
+
+        const distanceSeparator = document.createElement('div');
+        distanceSeparator.className = 'distance-separator';
+
+        distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
+
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'distance-label';
+
+        // Sadece ilk separator ve GPS importlu gün için kilit butonu ekle
+        if (idx === 1 && window.importedTrackByDay && window.importedTrackByDay[day]) {
+            window.routeLockByDay = window.routeLockByDay || {};
+            if (typeof window.routeLockByDay[day] === "undefined") window.routeLockByDay[day] = true;
+            const lockBtn = document.createElement('button');
+            lockBtn.className = 'route-lock-toggle';
+            lockBtn.style.marginRight = '10px';
+            lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+            lockBtn.onclick = function(e) {
+                e.stopPropagation();
+                window.routeLockByDay[day] = !window.routeLockByDay[day];
+                lockBtn.textContent = window.routeLockByDay[day] ? '🔒 GPS Route Locked' : '🔓 Route Editable';
+                renderRouteForDay(day);
+            };
+            labelDiv.appendChild(lockBtn);
         }
-      }
+
+        const distanceValue = document.createElement('span');
+        distanceValue.className = 'distance-value';
+        distanceValue.textContent = distanceStr;
+        const bullet = document.createTextNode(' • ');
+        const durationValue = document.createElement('span');
+        durationValue.className = 'duration-value';
+        durationValue.textContent = durationStr;
+
+        labelDiv.appendChild(distanceValue);
+        labelDiv.appendChild(bullet);
+        labelDiv.appendChild(durationValue);
+
+        distanceSeparator.appendChild(labelDiv);
+        distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
+
+        li.appendChild(distanceSeparator); // Ayırıcıyı li'nin altına ekle!
+    }
+
+    dayList.appendChild(li);
+
+    // Sonraki item için lastCoordItem/Idx güncelle
+    if (
+        item.location &&
+        typeof item.location.lat === "number" &&
+        typeof item.location.lng === "number"
+    ) {
+        lastCoordItem = item;
+        lastCoordIdx = currIdx;
+    }
+
+    // Sadece tek item varsa, ekstra mesaj ekle
+    if (dayItemsArr.length === 1 && idx === 0) {
+        const oneItemMessage = document.createElement("p");
+        oneItemMessage.className = "one-item-message";
+        oneItemMessage.textContent = "Add one more item to see the route!";
+        dayList.appendChild(oneItemMessage);
+    }
+}
     }
 dayContainer.appendChild(dayList);
 
