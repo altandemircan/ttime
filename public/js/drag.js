@@ -139,57 +139,6 @@ function dragEnd(event) {
     }
 }
 
-// ========== CHAT DRAG & DROP FUNCTIONS ==========
-
-function chatDragOverHandler(e) {
-    e.preventDefault();
-    this.classList.add('drop-hover');
-}
-
-function chatDragLeaveHandler(e) {
-    this.classList.remove('drop-hover');
-}
-
-function chatDropHandler(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    this.classList.remove('drop-hover');
-    
-    const source = e.dataTransfer.getData('source') || e.dataTransfer.getData('text/plain');
-    if (source !== 'chat') return;
-
-    const dataStr = e.dataTransfer.getData('application/json');
-    if (!dataStr) return;
-    
-    try {
-        const data = JSON.parse(dataStr);
-        const toDay = this.dataset?.day ? parseInt(this.dataset.day, 10) : 1;
-        const location = (data.lat && data.lon) ? { 
-            lat: Number(data.lat), 
-            lng: Number(data.lon) 
-        } : null;
-
-        window._forceAddToCart = true;
-        addToCart(
-            data.name,
-            data.image,
-            toDay,
-            data.category,
-            data.address,
-            null,
-            null,
-            data.opening_hours,
-            null,
-            location,
-            data.website
-        );
-        window._forceAddToCart = false;
-        
-        if (typeof restoreSidebar === "function") restoreSidebar();
-    } catch (error) {
-        console.error('Drop error:', error);
-    }
-}
 
 // ========== DESKTOP HANDLERS ==========
 function desktopDragStart(event) {
@@ -606,15 +555,15 @@ function attachDragListeners() {
 
 function attachChatDropListeners() {
     document.querySelectorAll('.day-list').forEach(list => {
-        list.removeEventListener('dragover', chatDragOverHandler);
-        list.removeEventListener('dragleave', chatDragLeaveHandler);
-        list.removeEventListener('drop', chatDropHandler);
+
+     
+   
     });
 
     document.querySelectorAll('.day-list').forEach(list => {
-        list.addEventListener('dragover', chatDragOverHandler);
-        list.addEventListener('dragleave', chatDragLeaveHandler);
-        list.addEventListener('drop', chatDropHandler);
+   
+      
+       
     });
 }
 
