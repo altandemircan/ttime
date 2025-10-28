@@ -332,18 +332,3 @@ function getPurpleRestaurantMarkerHtml() {
     `;
 }
 
-function showRouteInfoBanner() {
-  const banner = document.getElementById('route-info-banner');
-  if (!banner) return;
-  banner.style.display = 'flex';
-
-  // Kapatınca gizle
-  document.getElementById('close-route-info').onclick = () => {
-    banner.style.display = 'none';
-  };
-
-  // İstersen otomatik gizle (ör. 8 saniye sonra)
-  // setTimeout(() => banner.style.display = "none", 8000);
-}
-
-// Haritayı açtığında çağır:
