@@ -4441,9 +4441,11 @@ function searchPlaceOnGoogle(place, city) {
   s.textContent = `
     .day-header {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-block-start: 0em;
+    margin-block-end: 1em;
     }
     .day-header .title-container {
       display: flex;
