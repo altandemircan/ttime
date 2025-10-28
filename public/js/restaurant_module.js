@@ -160,7 +160,7 @@ function showRouteInfoBanner() {
   };
   setTimeout(function() {
     banner.style.display = 'none';
-  }, 20000);
+  }, 60000);
 }
 async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
