@@ -3767,7 +3767,6 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
     const item = dayItemsArr[idx];
     const currIdx = window.cart.indexOf(item);
 
-    // travel-item <li> oluştur
     const li = document.createElement("li");
     li.className = "travel-item";
     li.draggable = true;
@@ -3880,9 +3879,7 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
         `;
     }
 
-    dayList.appendChild(li);
-
-    // SON ITEM HARİÇ HER ITEMDAN SONRA SEPARATOR EKLE
+    // --- SEPARATOR BLOCKU: sadece son item hariç her itemın SONUNDA olacak ---
     if (idx < dayItemsArr.length - 1) {
         let distanceStr = '', durationStr = '';
         if (
@@ -3929,8 +3926,10 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
         distanceSeparator.appendChild(labelDiv);
         distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
 
-        dayList.appendChild(distanceSeparator);
+        li.appendChild(distanceSeparator); // DİKKAT: separator li'nin İÇİNDE ve SONUNDA!
     }
+
+    dayList.appendChild(li);
 }
     }
 dayContainer.appendChild(dayList);
