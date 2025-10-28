@@ -2706,8 +2706,6 @@ ease;
 /* Item info container */
 .item-info {
     flex: 1;
-
-    max-width: 168px;
     margin-top: 1px;
 }
 
