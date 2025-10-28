@@ -129,8 +129,12 @@ function addRoutePolylineWithClick(map, coords) {
 
             // Popup
             const imgId = `rest-img-${f.properties.place_id || idx}`;
-            const html = getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1);
+const html = `<div class="fadein-list">${getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1)}</div>`;
             marker.bindPopup(html, { maxWidth: 320 });
+            marker.on("popupopen", function() {
+  const popupEl = document.querySelector(".fadein-list");
+  if (popupEl) setTimeout(() => popupEl.classList.add("visible"), 10);
+});
             marker.on("popupopen", function() {
                 handlePopupImageLoading(f, imgId);
             });
