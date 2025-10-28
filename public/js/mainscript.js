@@ -5088,6 +5088,11 @@ function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
     const itemCount = dayItems.length;
 
     const confirmationContainer = document.getElementById(confirmationContainerId);
+    if (!confirmationContainer) {
+        console.error('Confirmation container bulunamadı:', confirmationContainerId);
+        return;
+    }
+
     confirmationContainer.innerHTML = `
         <p>Day ${day} contains ${itemCount} items. Are you sure you want to remove the day?</p>
         <div class="modal-actions">
@@ -5097,7 +5102,6 @@ function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
     `;
     confirmationContainer.style.display = "block";
 }
-
 function showResetConfirmation(day, confirmationContainerId) {
     const dayItems = window.cart.filter(item => item.day == day && item.name !== undefined);
     const itemCount = dayItems.length;
