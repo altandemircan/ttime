@@ -2695,7 +2695,7 @@ const manualAddSection = document.createElement("div");
 
     const addFavBtn = document.createElement("button");
 addFavBtn.className = "add-favorite-place-btn";
-addFavBtn.textContent = "❤️ Add to My Places";
+addFavBtn.textContent = "❤️ Add from My Places";
 
 addFavBtn.onclick = function() {
     window.toggleSidebarFavoritePlaces();
