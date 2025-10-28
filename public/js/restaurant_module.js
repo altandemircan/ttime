@@ -73,7 +73,7 @@ function addRoutePolylineWithClick(map, coords) {
         if (e.originalEvent) e.originalEvent.stopPropagation();
 
         const lat = e.latlng.lat, lng = e.latlng.lng;
-        const bufferMeters = 400;
+        const bufferMeters = 1000;
         const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
         const categories = [
             "catering.restaurant",
