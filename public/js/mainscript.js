@@ -3986,7 +3986,7 @@ dayList.appendChild(distanceSeparator);
               : '<div class="map-error">Location not available</div>';
           li.innerHTML = `
   <div class="cart-item">
-    <div>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 10px;">       
              <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
              <img src="${item.image}" alt="${item.name}" class="cart-image">
