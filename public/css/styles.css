@@ -7033,3 +7033,10 @@ display: flex
     max-width: 96vw;
   }
 }
+.route-info-banner {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+}
