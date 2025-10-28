@@ -4366,9 +4366,9 @@ cartDiv.appendChild(addNewDayButton);
 function showRemoveConfirmation(index, btn) {
   console.log("showRemoveConfirmation", index);
   const confirmation = document.getElementById(`confirmation-container-${index}`);
-  console.log("Confirmation container:", confirmation);
-  btn.style.display = "none";
-  if (confirmation) confirmation.style.display = "block";
+console.log("Confirmation container:", confirmation);
+btn.style.display = "none";
+if (confirmation) confirmation.style.display = "block";
 }
 function hideConfirmation(id) {
   const confirmation = document.getElementById(id);
