@@ -143,6 +143,7 @@ function addRoutePolylineWithClick(map, coords) {
 }
 function showRouteInfoBanner() {
   // Banner yoksa DOM'a ekle
+        console.log("Banner fonksiyonu ÇALIŞTI!");
   let banner = document.getElementById('route-info-banner');
   if (!banner) {
     banner = document.createElement('div');
