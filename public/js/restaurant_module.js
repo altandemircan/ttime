@@ -134,11 +134,8 @@ const html = `<div class="fadein-list">${getFastRestaurantPopupHTML(f, imgId, wi
             marker.on("popupopen", function() {
   const popupEl = document.querySelector(".fadein-list");
   if (popupEl) setTimeout(() => popupEl.classList.add("visible"), 10);
-});
-            marker.on("popupopen", function() {
-                handlePopupImageLoading(f, imgId);
-            });
-        });
+  handlePopupImageLoading(f, imgId);
+});        });
 
         alert(`The ${nearest10.length} closest restaurant/cafe/bar locations have been displayed.`);
     });
