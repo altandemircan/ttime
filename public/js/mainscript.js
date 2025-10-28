@@ -5400,9 +5400,6 @@ function updateRouteStatsUI(day) {
 
  
 async function expandMap(containerId, day) {
-  showRouteInfoBanner(day); // <-- parametreyi unutma!
-
-
 
 
       window.currentDay = day; // ← DÜZELTME!
@@ -5549,7 +5546,7 @@ async function expandMap(containerId, day) {
   expandedContainer.appendChild(mapDiv);
 
   document.body.appendChild(expandedContainer);
-
+showRouteInfoBanner(day); // hemen ardından çağır
   // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
   let center = [42, 12];
