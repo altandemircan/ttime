@@ -4032,7 +4032,7 @@ dayList.appendChild(distanceSeparator);
       </div>
       <!-- EN ALTA KALDIRMA BUTONUNU EKLE -->
       <button class="remove-btn" onclick="removeFromCart(${li.dataset.index})">
-        <img src="img/remove-icon.svg" alt="Close">
+       - Remove place
       </button>
     </div>
   </div>
