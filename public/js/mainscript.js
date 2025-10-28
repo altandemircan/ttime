@@ -4366,31 +4366,37 @@ cartDiv.appendChild(addNewDayButton);
 
 }
 
-function showRemoveConfirmation(index, btn) {
-    const confirmationContainer = document.getElementById(`confirmation-container-${index}`);
-    if (!confirmationContainer) {
-        console.error('Confirmation container bulunamadı:', `confirmation-container-${index}`);
-        return; // Element yoksa hata verme, fonksiyondan çık.
+function showRemoveItemConfirmation(index, btn) {
+  const id = `confirmation-item-${index}`;
+  const container = document.getElementById(id);
+  if (!container) return;
+  container.innerHTML = `
+    <p>Are you sure you want to remove this place from your trip?</p>
+    <button onclick="confirmRemoveItem(${index})">Yes</button>
+    <button onclick="hideItemConfirmation('${id}', this)">No</button>
+  `;
+  container.style.display = "block";
+  btn.style.display = "none";
+}
+
+function confirmRemoveItem(index) {
+  // Remove the item from your data (e.g., window.cart.splice(index, 1))
+  removeFromCart(index); // Use your actual remove function
+  hideItemConfirmation(`confirmation-item-${index}`);
+}
+
+function hideItemConfirmation(id, btn) {
+  const container = document.getElementById(id);
+  if (container) container.style.display = "none";
+  // Show the remove button again
+  if (btn) {
+    const parent = container.closest('.travel-item');
+    if (parent) {
+      const removeBtn = parent.querySelector('.remove-btn');
+      if (removeBtn) removeBtn.style.display = "";
     }
-
-    const item = window.cart[index];
-    confirmationContainer.innerHTML = `
-        <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
-        <div class="modal-actions">
-            <button class="confirm-remove-btn" onclick="confirmRemovePlace(${index})">OK</button>
-            <button class="cancel-action-btn" onclick="hideConfirmation('confirmation-container-${index}')">Cancel</button>
-        </div>
-    `;
-    confirmationContainer.style.display = "block";
-    btn.style.display = "none";
+  }
 }
-function confirmRemovePlace(index) {
-    removeFromCart(index);
-    hideConfirmation(`confirmation-container-${index}`);
-}
-
-
-
 
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
