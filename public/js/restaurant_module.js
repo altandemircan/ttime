@@ -142,6 +142,7 @@ function addRoutePolylineWithClick(map, coords) {
     return polyline;
 }
 function showRouteInfoBanner(day) {
+  console.log("Banner fonksiyonu", Date.now());
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
   if (!expandedContainer) return;
 
@@ -161,6 +162,7 @@ function showRouteInfoBanner(day) {
   document.getElementById('close-route-info').onclick = function() {
     banner.style.display = 'none';
   };
+  // Sadece 1 dakika sonra kapat
   setTimeout(function() {
     banner.style.display = 'none';
   }, 60000);
