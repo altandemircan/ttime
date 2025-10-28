@@ -142,25 +142,28 @@ function addRoutePolylineWithClick(map, coords) {
     return polyline;
 }
 function showRouteInfoBanner() {
-  // Banner yoksa ekle!
-  if (!document.getElementById('route-info-banner')) {
-    const banner = document.createElement('div');
+  // Eğer banner yoksa DOM'a ekle
+  let banner = document.getElementById('route-info-banner');
+  if (!banner) {
+    banner = document.createElement('div');
     banner.id = 'route-info-banner';
     banner.className = 'route-info-banner';
-    banner.style.display = 'none';
     banner.innerHTML = `
       <span>Click the route to list nearby restaurants, cafes and bars.</span>
       <button id="close-route-info" class="route-info-close">✕</button>
     `;
     document.body.appendChild(banner);
   }
-  // Bannerı görünür yap ve kapatma/otomatik kapama ayarla
-  const banner = document.getElementById('route-info-banner');
+  // Banner'ı görünür yap
   banner.style.display = 'flex';
-  document.getElementById('close-route-info').onclick = () => {
+  // Kapatma fonksiyonu
+  document.getElementById('close-route-info').onclick = function() {
     banner.style.display = 'none';
   };
-  setTimeout(() => { banner.style.display = 'none'; }, 8000);
+  // Otomatik kapanma
+  setTimeout(function() {
+    banner.style.display = 'none';
+  }, 18000);
 }
 async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
