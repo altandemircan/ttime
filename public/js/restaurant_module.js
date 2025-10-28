@@ -156,16 +156,12 @@ function ensureRouteInfoBanner() {
 }
 
 function showRouteInfoBanner() {
-  ensureRouteInfoBanner();
   const banner = document.getElementById('route-info-banner');
   if (!banner) return;
   banner.style.display = 'flex';
-  const closeBtn = document.getElementById('close-route-info');
-  if (closeBtn) {
-    closeBtn.onclick = () => {
-      banner.style.display = 'none';
-    };
-  }
+  document.getElementById('close-route-info').onclick = () => {
+    banner.style.display = 'none';
+  };
   setTimeout(() => { banner.style.display = 'none'; }, 8000);
 }
 async function getRestaurantPopupHTML(f, day) {
