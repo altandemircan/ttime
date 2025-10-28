@@ -3879,7 +3879,7 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
         `;
     }
 
-    // --- SEPARATOR BLOCKU: sadece son item hariç her itemın SONUNDA olacak ---
+    // --- SEPARATOR BLOCKU: SON ITEM HARİÇ HER ITEMIN SONUNDA ---
     if (idx < dayItemsArr.length - 1) {
         let distanceStr = '', durationStr = '';
         if (
@@ -3902,31 +3902,16 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
             }
         }
 
+        // SEPARATORI OLUŞTUR
         const distanceSeparator = document.createElement('div');
         distanceSeparator.className = 'distance-separator';
 
-        distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
-
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'distance-label';
-
-        const distanceValue = document.createElement('span');
-        distanceValue.className = 'distance-value';
-        distanceValue.textContent = distanceStr;
-
-        const bullet = document.createTextNode(' • ');
-        const durationValue = document.createElement('span');
-        durationValue.className = 'duration-value';
-        durationValue.textContent = durationStr;
-
-        labelDiv.appendChild(distanceValue);
-        labelDiv.appendChild(bullet);
-        labelDiv.appendChild(durationValue);
-
-        distanceSeparator.appendChild(labelDiv);
-        distanceSeparator.appendChild(document.createElement('div')).className = 'separator-line';
-
-        li.appendChild(distanceSeparator); // DİKKAT: separator li'nin İÇİNDE ve SONUNDA!
+        distanceSeparator.innerHTML = `
+            <div class="separator-line"></div>
+            <div class="distance-label">${distanceStr} • ${durationStr}</div>
+            <div class="separator-line"></div>
+        `;
+        li.appendChild(distanceSeparator); // DİKKAT: separator li'nin İÇİNDE ve SONDA!
     }
 
     dayList.appendChild(li);
