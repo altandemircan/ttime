@@ -5088,26 +5088,19 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(shareDiv);
 }
-
 function showRemoveConfirmation(day, dayContainerId, confirmationContainerId) {
-    const dayItems = window.cart.filter(item => item.day == day && item.name !== undefined);
-    const itemCount = dayItems.length;
-
     const confirmationContainer = document.getElementById(confirmationContainerId);
-    if (!confirmationContainer) {
-        console.error('Confirmation container bulunamadı:', confirmationContainerId);
-        return;
-    }
+    if (!confirmationContainer) return;
 
     confirmationContainer.innerHTML = `
-        <p>Day ${day} contains ${itemCount} items. Are you sure you want to remove the day?</p>
+        <p>Are you sure you want to remove Day ${day}?</p>
         <div class="modal-actions">
             <button class="confirm-remove-btn" onclick="removeDayAction(${day}, '${dayContainerId}', '${confirmationContainerId}')">OK</button>
             <button class="cancel-action-btn" onclick="hideConfirmation('${confirmationContainerId}')">Cancel</button>
         </div>
     `;
     confirmationContainer.style.display = "block";
-}    
+}  
 function showResetConfirmation(day, confirmationContainerId) {
     const dayItems = window.cart.filter(item => item.day == day && item.name !== undefined);
     const itemCount = dayItems.length;
