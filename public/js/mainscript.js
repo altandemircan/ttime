@@ -6685,22 +6685,48 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       </div>
       <div class="custom-marker-place-name" id="marker-name-${idx}" style="opacity:0;position:relative;">
         ${currentName}
-        <button class="marker-remove-x-btn" data-marker-idx="${idx}" style="
-          position: relative; right: -10px; width: 22px; height: 22px;
-          background: #fff; color: #d32f2f; border-radius: 50%;
-          border: 1.5px solid #d32f2f; font-size: 16px; font-weight: bold;
-          cursor: pointer; z-index: 2; box-shadow: #888 0 2px 6px;
-          line-height: 22px; padding: 0; top:-1px;">&times;</button>
+        <button class="marker-remove-x-btn" data-marker-idx="${idx}" style="...">&times;</button>
       </div>
     `;
     const icon = L.divIcon({ html: markerHtml, className: "", iconSize: [32, 48], iconAnchor: [16, 16] });
     const marker = L.marker([p.lat, p.lng], { draggable: false, icon }).addTo(expandedMap);
 
-    marker.bindPopup(`<div><b>${p.name || "Point"}</b></div>`, {
+    // PATCH: bindPopup ile Remove place butonu ekle
+    marker.bindPopup(`
+      <div style="min-width:120px;">
+        <b>${p.name || "Point"}</b><br>
+        <button class="remove-marker-btn" data-day="${day}" data-idx="${idx}" style="margin-top:4px;padding:6px 16px;background:#d32f2f;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Remove place</button>
+      </div>
+    `, {
       autoClose: false,
       closeButton: true
     });
 
+    // PATCH: popup açıldığında butonun click eventini ekle
+    marker.on('popupopen', function(e) {
+      setTimeout(() => {
+        const btn = document.querySelector('.remove-marker-btn[data-day="' + day + '"][data-idx="' + idx + '"]');
+        if (btn) {
+          btn.onclick = function() {
+            // window.cart'tan day ve idx ile itemı bulup sil
+            let n = 0;
+            for (let i = 0; i < window.cart.length; i++) {
+              const it = window.cart[i];
+              if (it.day == day && it.location && !isNaN(it.location.lat) && !isNaN(it.location.lng)) {
+                if (n === idx) {
+                  window.cart.splice(i, 1);
+                  if (typeof updateCart === "function") updateCart();
+                  if (typeof renderRouteForDay === "function") renderRouteForDay(day);
+                  marker.closePopup();
+                  break;
+                }
+                n++;
+              }
+            }
+          }
+        }
+      }, 10); // DOM renderı için küçük delay
+    });
     marker.once('add', () => {
       const nameBox = marker.getElement()?.querySelector('.custom-marker-place-name');
       const xBtn = nameBox?.querySelector('.marker-remove-x-btn');
