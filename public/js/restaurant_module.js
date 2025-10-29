@@ -82,7 +82,8 @@ function addRoutePolylineWithClick(map, coords) {
         ].join(",");
 const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radiusMeters}&limit=200&apiKey=${apiKey}`;
 
-        const response = await fetch(url);
+const locations = points.map(pt => `${pt.lat},${pt.lng}`).join('|');
+const response = await fetch(`/api/elevation?locations=${encodeURIComponent(locations)}`);
 const data = await response.json();
 
 if (!data.features || data.features.length === 0) {
@@ -135,7 +136,7 @@ nearest10.forEach((f, idx) => {
                 const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
                 const address = f.properties.formatted || "";
                 const name = f.properties.name || "Restaurant";
-                const imgId = `rest-img-${f.properties.place_id || idx}`;
+const imgId = `rest-img-${f.properties.place_id || idx}`;
 marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
 marker.on("popupopen", function() {
     handlePopupImageLoading(f, imgId);
