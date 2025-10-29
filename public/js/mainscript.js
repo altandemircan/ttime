@@ -5471,6 +5471,11 @@ showRouteInfoBanner(day); // hemen ardından çağır
 
   setExpandedMapTile(currentLayer);
 
+  
+  // Expanded harita ilk açılış için flag
+  window.__expandedMapCentered = window.__expandedMapCentered || {};
+  let isFirstExpand = !window.__expandedMapCentered[day];
+
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
   if (geojson?.features?.[0]?.geometry?.coordinates) {
