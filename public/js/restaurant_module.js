@@ -209,20 +209,7 @@ async function getRestaurantPopupHTML(f, day) {
     `;
 }
 
-window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
-    addToCart(
-        name,
-        image,
-        day,
-        "Restaurant",
-        address,
-        null, null, null, null,
-        { lat: Number(lat), lng: Number(lon) },
-        ""
-    );
-    if (typeof updateCart === "function") updateCart();
-    alert(`${name} gezi planına eklendi!`);
-};
+
 function handlePopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
         .then(src => {
@@ -327,6 +314,7 @@ function getRedRestaurantMarkerHtml() {
     `;
 }
 
+// Returns custom purple restaurant marker HTML
 function getPurpleRestaurantMarkerHtml() {
     return `
       <div class="custom-marker-outer" style="
@@ -346,3 +334,18 @@ function getPurpleRestaurantMarkerHtml() {
     `;
 }
 
+// Add restaurant to trip/cart (called from popup button)
+window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
+    addToCart(
+        name,
+        image || 'img/restaurant_icon.svg',
+        day,
+        "Restaurant",
+        address,
+        null, null, null, null,
+        { lat: Number(lat), lng: Number(lon) },
+        ""
+    );
+    if (typeof updateCart === "function") updateCart();
+    alert(`${name} added to your trip!`);
+};
