@@ -62,14 +62,12 @@ async function searchRestaurantsAt(lat, lng, map) {
 
 // Shows nearest restaurants/cafes/bars when the route polyline is clicked
 function addRoutePolylineWithClick(map, coords) {
-    // Add polyline (route line)
     const routeLine = L.polyline(coords, {
         color: '#1976d2',
         weight: 7,
         opacity: 0.93
     }).addTo(map);
 
-    // On polyline click
     routeLine.on('click', async function(e) {
         const lat = e.latlng.lat, lng = e.latlng.lng;
         const radiusMeters = 1000;
@@ -85,12 +83,21 @@ function addRoutePolylineWithClick(map, coords) {
 
         const response = await fetch(url);
         const data = await response.json();
+
         if (!data.features || data.features.length === 0) {
             alert("No restaurant/cafe/bar found in this area!");
             return;
         }
 
-        // Sort the 10 nearest places by haversine distance
+        // Filter valid results
+        const validFeatures = data.features.filter(f => 
+            typeof f.properties.lat === 'number' &&
+            typeof f.properties.lon === 'number' &&
+            !isNaN(f.properties.lat) &&
+            !isNaN(f.properties.lon)
+        );
+
+        // Haversine distance
         function haversine(lat1, lon1, lat2, lon2) {
             const R = 6371000, toRad = x => x * Math.PI / 180;
             const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
@@ -98,7 +105,8 @@ function addRoutePolylineWithClick(map, coords) {
             return 2 * R * Math.asin(Math.sqrt(a));
         }
 
-        const nearest10 = data.features
+        // Sort by closest
+        const nearest10 = validFeatures
             .map(f => ({
                 ...f,
                 distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
@@ -106,10 +114,9 @@ function addRoutePolylineWithClick(map, coords) {
             .sort((a, b) => a.distance - b.distance)
             .slice(0, 10);
 
-        // Add animated markers with popup (each with a delay)
         nearest10.forEach((f, idx) => {
             setTimeout(() => {
-                // Connection line
+                // Draw line from clicked point to restaurant
                 L.polyline([
                     [lat, lng],
                     [f.properties.lat, f.properties.lon]
@@ -120,7 +127,7 @@ function addRoutePolylineWithClick(map, coords) {
                     dashArray: "8,8"
                 }).addTo(map);
 
-                // Marker
+                // Purple marker
                 const icon = L.divIcon({
                     html: getPurpleRestaurantMarkerHtml(),
                     className: "",
