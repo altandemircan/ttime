@@ -4257,13 +4257,16 @@ function confirmRemoveItem(index) {
 
 function hideItemConfirmation(id) {
   const container = document.getElementById(id);
-  if (container) container.style.display = "none";
-  // Silme butonunu geri göster
-  const parentItem = container.closest('.travel-item');
-  if (parentItem) {
-    const removeBtn = parentItem.querySelector('.remove-btn');
-    if (removeBtn) removeBtn.style.display = "";
+  if (container) {
+    container.style.display = "none";
+    // Silme butonunu geri göster
+    const parentItem = container.closest('.travel-item');
+    if (parentItem) {
+      const removeBtn = parentItem.querySelector('.remove-btn');
+      if (removeBtn) removeBtn.style.display = "";
+    }
   }
+  // container yoksa hiçbir şey yapma!
 }
 document.addEventListener('DOMContentLoaded', updateCart);
 document.querySelectorAll('.accordion-label').forEach(label => {
@@ -5471,7 +5474,7 @@ showRouteInfoBanner(day); // hemen ardından çağır
 
   setExpandedMapTile(currentLayer);
 
-  
+
   // // Expanded harita ilk açılış için flag
   // window.__expandedMapCentered = window.__expandedMapCentered || {};
   // let isFirstExpand = !window.__expandedMapCentered[day];
@@ -9337,7 +9340,7 @@ document.addEventListener('mousedown', (e) => {
     }
     if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
     return res;
-}
+}   
 async function viaOpenElevation(samples) {
     const CHUNK = 100;
     const res = [];
