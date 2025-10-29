@@ -5488,14 +5488,15 @@ showRouteInfoBanner(day); // hemen ardından çağır
       zoom: expandedMap.getZoom()
     };
 
-expandedMap.fitBounds(polyline.getBounds());
-setTimeout(() => {
-  // fitBounds sonrası merkez
-  const center = expandedMap.getCenter();
-  // 0.012 derece yukarı: yaklaşık 1.2km (zoom'a göre değişebilir)
-  expandedMap.setView([center.lat - 0.002, center.lng], Math.max(expandedMap.getZoom() - 0.2, 2), { animate: true });
-}, 350);
-
+    // SADECE ilk açılışta yukarı kaydır!
+    if (isFirstExpand) {
+      setTimeout(() => {
+        // fitBounds sonrası merkez
+        const center = expandedMap.getCenter();
+        expandedMap.setView([center.lat - 0.002, center.lng], Math.max(expandedMap.getZoom() - 0.2, 2), { animate: true });
+        window.__expandedMapCentered[day] = true;
+      }, 350);
+    }
   } else if (!expandedMap._initialView) {
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
