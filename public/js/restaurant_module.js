@@ -60,20 +60,17 @@ async function searchRestaurantsAt(lat, lng, map) {
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 }
 
-// Ana fonksiyon — ÇİZGİ, MARKER, POPUP, SPINNER, FOTO HER ŞEY DAHİL!
+// Shows nearest restaurants/cafes/bars when the route polyline is clicked
 function addRoutePolylineWithClick(map, coords) {
-    const polyline = L.polyline(coords, {
+    const routeLine = L.polyline(coords, {
         color: '#1976d2',
         weight: 7,
         opacity: 0.93
     }).addTo(map);
 
-    // --- Polyline'a tıklanınca sadece restoranları listele ---
-    polyline.on('click', async function(e) {
-        if (e.originalEvent) e.originalEvent.stopPropagation();
-
+    routeLine.on('click', async function(e) {
         const lat = e.latlng.lat, lng = e.latlng.lng;
-        const bufferMeters = 1000;
+        const radiusMeters = 1000;
         const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
         const categories = [
             "catering.restaurant",
@@ -82,23 +79,34 @@ function addRoutePolylineWithClick(map, coords) {
             "catering.fast_food",
             "catering.pub"
         ].join(",");
-        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
-        const resp = await fetch(url);
-        const data = await resp.json();
+        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radiusMeters}&limit=50&apiKey=${apiKey}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
 
         if (!data.features || data.features.length === 0) {
             alert("No restaurant/cafe/bar found in this area!");
             return;
         }
 
-        // Sort the 10 nearest places
-        const haversine = (lat1, lon1, lat2, lon2) => {
+        // Filter valid results
+        const validFeatures = data.features.filter(f => 
+            typeof f.properties.lat === 'number' &&
+            typeof f.properties.lon === 'number' &&
+            !isNaN(f.properties.lat) &&
+            !isNaN(f.properties.lon)
+        );
+
+        // Haversine distance
+        function haversine(lat1, lon1, lat2, lon2) {
             const R = 6371000, toRad = x => x * Math.PI / 180;
-            const dLat = toRad(lat2 - lat1), dLon = toRad(lat2 - lon1);
+            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
             const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
             return 2 * R * Math.asin(Math.sqrt(a));
-        };
-        const nearest10 = data.features
+        }
+
+        // Sort by closest
+        const nearest10 = validFeatures
             .map(f => ({
                 ...f,
                 distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
@@ -106,10 +114,9 @@ function addRoutePolylineWithClick(map, coords) {
             .sort((a, b) => a.distance - b.distance)
             .slice(0, 10);
 
-        // SIRAYLA animasyonlu marker ekle
         nearest10.forEach((f, idx) => {
             setTimeout(() => {
-                // --- Green line ---
+                // Draw line from clicked point to restaurant
                 L.polyline([
                     [lat, lng],
                     [f.properties.lat, f.properties.lon]
@@ -120,7 +127,7 @@ function addRoutePolylineWithClick(map, coords) {
                     dashArray: "8,8"
                 }).addTo(map);
 
-                // --- Purple marker ---
+                // Purple marker
                 const icon = L.divIcon({
                     html: getPurpleRestaurantMarkerHtml(),
                     className: "",
@@ -128,23 +135,20 @@ function addRoutePolylineWithClick(map, coords) {
                     iconAnchor: [16, 16]
                 });
                 const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
-
-                // Popup
-                const imgId = `rest-img-${f.properties.place_id || idx}`;
-                const html = `<div class="fadein-list">${getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1)}</div>`;
-                marker.bindPopup(html, { maxWidth: 320 });
-                marker.on("popupopen", function() {
-                    const popupEl = document.querySelector(".fadein-list");
-                    if (popupEl) setTimeout(() => popupEl.classList.add("visible"), 10);
-                    handlePopupImageLoading(f, imgId);
-                });
-            }, idx * 120); // Her marker 120ms gecikmeli eklenir
+                const address = f.properties.formatted || "";
+                const name = f.properties.name || "Restaurant";
+                marker.bindPopup(
+                    `<b>${name}</b><br>${address}<br>
+                    <button onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', '', '${address.replace(/'/g,"")}', ${window.currentDay || 1}, ${f.properties.lat}, ${f.properties.lon})">
+                    Add to trip</button>`
+                );
+            }, idx * 120);
         });
 
         alert(`The ${nearest10.length} closest restaurant/cafe/bar locations have been displayed.`);
     });
 
-    return polyline;
+    return routeLine;
 }
 function showRouteInfoBanner(day) {
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
@@ -212,20 +216,7 @@ async function getRestaurantPopupHTML(f, day) {
     `;
 }
 
-window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
-    addToCart(
-        name,
-        image,
-        day,
-        "Restaurant",
-        address,
-        null, null, null, null,
-        { lat: Number(lat), lng: Number(lon) },
-        ""
-    );
-    if (typeof updateCart === "function") updateCart();
-    alert(`${name} gezi planına eklendi!`);
-};
+
 function handlePopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
         .then(src => {
@@ -330,6 +321,7 @@ function getRedRestaurantMarkerHtml() {
     `;
 }
 
+// Returns custom purple restaurant marker HTML
 function getPurpleRestaurantMarkerHtml() {
     return `
       <div class="custom-marker-outer" style="
@@ -349,3 +341,18 @@ function getPurpleRestaurantMarkerHtml() {
     `;
 }
 
+// Add restaurant to trip/cart (called from popup button)
+window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
+    addToCart(
+        name,
+        image || 'img/restaurant_icon.svg',
+        day,
+        "Restaurant",
+        address,
+        null, null, null, null,
+        { lat: Number(lat), lng: Number(lon) },
+        ""
+    );
+    if (typeof updateCart === "function") updateCart();
+    alert(`${name} added to your trip!`);
+};
