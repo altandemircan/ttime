@@ -9309,30 +9309,35 @@ document.addEventListener('mousedown', (e) => {
   }
 
   async function viaOpenTopoData(samples) {
-    // Dataset: SRTM 90m — Türkiye’yi kapsar
-const DATASET = 'srtm30m';
-    const CHUNK = 80; // max 100 önerilir
+    const CHUNK = 80;
     const res = [];
     for (let i=0;i<samples.length;i+=CHUNK){
-      const chunk = samples.slice(i,i+CHUNK);
-      const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-      const url = `https://api.opentopodata.org/v1/${DATASET}?locations=${encodeURIComponent(loc)}&interpolation=bilinear`;
-      await throttle('openTopoData', 200);
-      const resp = await fetch(url);
-      if (resp.status === 429) {
-        cooldownUntil.openTopoData = Date.now() + 10*60*1000;
-        throw new Error('429');
-      }
-      if (!resp.ok) throw new Error('HTTP '+resp.status);
-      const j = await resp.json();
-      if (!j.results || j.results.length !== chunk.length) throw new Error('bad response');
-      res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
-      if (samples.length > CHUNK) await sleep(800);
+        const chunk = samples.slice(i,i+CHUNK);
+        const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
+        // Sadece backend proxy!
+        const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
+        const resp = await fetch(url);
+        if (resp.status === 429) {
+            cooldownUntil.openTopoData = Date.now() + 10*60*1000;
+            throw new Error('429');
+        }
+        if (!resp.ok) throw new Error('HTTP '+resp.status);
+        const j = await resp.json();
+        // Backend cevabına göre parse:
+        if (j.results && j.results.length === chunk.length) {
+            res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
+        } else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
+            res.push(...j.elevations);
+        } else if (j.data && Array.isArray(j.data)) {
+            res.push(...j.data);
+        } else {
+            throw new Error('bad response');
+        }
+        if (samples.length > CHUNK) await sleep(800);
     }
-    // null varsa başarısız say
     if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
     return res;
-  }
+}
 async function viaOpenElevation(samples) {
     const CHUNK = 100;
     const res = [];
