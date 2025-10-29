@@ -3865,7 +3865,7 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
                         }
                     </div>
                     <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
-                        - Remove place
+                        Remove place
                     </button>
                     <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
                         <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
