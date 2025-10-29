@@ -2638,32 +2638,30 @@ cartDiv.appendChild(addFavBtn);
     basicList.classList.add("subcategory-list");
 
     basicPlanCategories.forEach(cat => {
-        const subCategoryItem = document.createElement("li");
-        subCategoryItem.classList.add("subcategory-item");
-        const iconSpan = document.createElement("span");
-        iconSpan.classList.add("subcategory-icon");
-        iconSpan.textContent = cat.icon;
-        const nameSpan = document.createElement("span");
-        nameSpan.classList.add("subcategory-name");
-        nameSpan.textContent = cat.name;
+    const subCategoryItem = document.createElement("li");
+    subCategoryItem.classList.add("subcategory-item");
+    const iconSpan = document.createElement("span");
+    iconSpan.classList.add("subcategory-icon");
+    iconSpan.textContent = cat.icon;
+    const nameSpan = document.createElement("span");
+    nameSpan.classList.add("subcategory-name");
+    nameSpan.textContent = cat.name;
 
-        // Sadece List badge (Hide/Show yok, tıklama yok!)
-        const listBadge = document.createElement("span");
-        listBadge.className = "category-list-badge";
-        listBadge.textContent = "List";
+    // Buton class'ı toggle-subcategory-btn, yazısı List, event yok!
+    const toggleBtn = document.createElement("button");
+    toggleBtn.classList.add("toggle-subcategory-btn");
+    toggleBtn.textContent = "List";
+    subCategoryItem.appendChild(iconSpan);
+    subCategoryItem.appendChild(nameSpan);
+    subCategoryItem.appendChild(toggleBtn);
+    basicList.appendChild(subCategoryItem);
 
-        subCategoryItem.appendChild(iconSpan);
-        subCategoryItem.appendChild(nameSpan);
-        subCategoryItem.appendChild(listBadge);
-        basicList.appendChild(subCategoryItem);
-
-        // Sadece kategoriye tıklama eventini bırak
-        subCategoryItem.addEventListener("click", (e) => {
-            if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-            showSuggestionsInChat(cat.name, day, cat.code);
-        });
+    // Sadece kategoriye tıklama eventini bırak
+    subCategoryItem.addEventListener("click", (e) => {
+        if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+        showSuggestionsInChat(cat.name, day, cat.code);
     });
-
+});
     basicPlanItem.appendChild(basicList);
     cartDiv.appendChild(basicPlanItem);
 
@@ -2678,30 +2676,29 @@ cartDiv.appendChild(addFavBtn);
     travelerList.classList.add("subcategory-list");
 
     travelMainCategories.forEach(cat => {
-        const subCategoryItem = document.createElement("li");
-        subCategoryItem.classList.add("subcategory-item", "premium-category-bg");
-        const iconSpan = document.createElement("span");
-        iconSpan.classList.add("subcategory-icon");
-        iconSpan.textContent = cat.icon;
-        const nameSpan = document.createElement("span");
-        nameSpan.classList.add("subcategory-name");
-        nameSpan.textContent = cat.name;
+    const subCategoryItem = document.createElement("li");
+    subCategoryItem.classList.add("subcategory-item", "premium-category-bg");
+    const iconSpan = document.createElement("span");
+    iconSpan.classList.add("subcategory-icon");
+    iconSpan.textContent = cat.icon;
+    const nameSpan = document.createElement("span");
+    nameSpan.classList.add("subcategory-name");
+    nameSpan.textContent = cat.name;
 
-        // Sadece List badge (Hide/Show yok, tıklama yok!)
-        const listBadge = document.createElement("span");
-        listBadge.className = "category-list-badge";
-        listBadge.textContent = "List";
+    // Buton class'ı toggle-subcategory-btn, yazısı List, event yok!
+    const toggleBtn = document.createElement("button");
+    toggleBtn.classList.add("toggle-subcategory-btn");
+    toggleBtn.textContent = "List";
+    subCategoryItem.appendChild(iconSpan);
+    subCategoryItem.appendChild(nameSpan);
+    subCategoryItem.appendChild(toggleBtn);
+    travelerList.appendChild(subCategoryItem);
 
-        subCategoryItem.appendChild(iconSpan);
-        subCategoryItem.appendChild(nameSpan);
-        subCategoryItem.appendChild(listBadge);
-        travelerList.appendChild(subCategoryItem);
-
-        // Sadece kategoriye tıklama eventini bırak
-        subCategoryItem.addEventListener("click", async (e) => {
-            showSuggestionsInChat(cat.name, day, cat.code);
-        });
+    // Sadece kategoriye tıklama eventini bırak
+    subCategoryItem.addEventListener("click", async (e) => {
+        showSuggestionsInChat(cat.name, day, cat.code);
     });
+});
 
     travelerItem.appendChild(travelerList);
     cartDiv.appendChild(travelerItem);
