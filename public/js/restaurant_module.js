@@ -135,11 +135,11 @@ nearest10.forEach((f, idx) => {
                 const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
                 const address = f.properties.formatted || "";
                 const name = f.properties.name || "Restaurant";
-                marker.bindPopup(
-                    `<b>${name}</b><br>${address}<br>
-                    <button onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', '', '${address.replace(/'/g,"")}', ${window.currentDay || 1}, ${f.properties.lat}, ${f.properties.lon})">
-                    Add to trip</button>`
-                );
+                const imgId = `rest-img-${f.properties.place_id || idx}`;
+marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
+marker.on("popupopen", function() {
+    handlePopupImageLoading(f, imgId);
+});
             }, idx * 120);
         });
 
