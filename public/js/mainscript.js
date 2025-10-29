@@ -2602,9 +2602,7 @@ addFavBtn.onclick = function() {
 };
 cartDiv.appendChild(addFavBtn);
 
-
-
-const basicPlanCategories = [
+ const basicPlanCategories = [
         { name: "Coffee", icon: "☕" },
         { name: "Museum", icon: "🏛️" },
         { name: "Touristic attraction", icon: "🏞️" },
@@ -2612,22 +2610,23 @@ const basicPlanCategories = [
         { name: "Accommodation", icon: "🏨" }
     ];
 
-const travelMainCategories = [
-  { name: "Bar", code: "catering.bar", icon: "🍹" },
-  { name: "Pub", code: "catering.pub", icon: "🍻" },
-  { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
-  { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
-  { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
-  { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
-  { name: "Bookstore", code: "commercial.books", icon: "📚" },
-  { name: "Post Office", code: "service.post", icon: "📮" },
-  { name: "Library", code: "education.library", icon: "📖" },
-  { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
-  { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-  { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" }, 
-  { name: "University", code: "education.university", icon: "🎓" },
-  { name: "Religion", code: "religion", icon: "⛪" }
-];
+    const travelMainCategories = [
+      { name: "Bar", code: "catering.bar", icon: "🍹" },
+      { name: "Pub", code: "catering.pub", icon: "🍻" },
+      { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
+      { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
+      { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
+      { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
+      { name: "Bookstore", code: "commercial.books", icon: "📚" },
+      { name: "Post Office", code: "service.post", icon: "📮" },
+      { name: "Library", code: "education.library", icon: "📖" },
+      { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
+      { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
+      { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" }, 
+      { name: "University", code: "education.university", icon: "🎓" },
+      { name: "Religion", code: "religion", icon: "⛪" }
+    ];
+
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
     basicPlanItem.classList.add("category-item");
@@ -2639,31 +2638,32 @@ const travelMainCategories = [
     basicList.classList.add("subcategory-list");
 
     basicPlanCategories.forEach(cat => {
-    const subCategoryItem = document.createElement("li");
-    subCategoryItem.classList.add("subcategory-item");
-    const iconSpan = document.createElement("span");
-    iconSpan.classList.add("subcategory-icon");
-    iconSpan.textContent = cat.icon;
-    const nameSpan = document.createElement("span");
-    nameSpan.classList.add("subcategory-name");
-    nameSpan.textContent = cat.name;
+        const subCategoryItem = document.createElement("li");
+        subCategoryItem.classList.add("subcategory-item");
+        const iconSpan = document.createElement("span");
+        iconSpan.classList.add("subcategory-icon");
+        iconSpan.textContent = cat.icon;
+        const nameSpan = document.createElement("span");
+        nameSpan.classList.add("subcategory-name");
+        nameSpan.textContent = cat.name;
 
-    // Hide/Show butonu kaldırıldı, yerine dekoratif List Badge!
-    const listBadge = document.createElement("span");
-    listBadge.className = "category-list-badge";
-    listBadge.textContent = "List";
+        // Sadece List badge (Hide/Show yok, tıklama yok!)
+        const listBadge = document.createElement("span");
+        listBadge.className = "category-list-badge";
+        listBadge.textContent = "List";
 
-    subCategoryItem.appendChild(iconSpan);
-    subCategoryItem.appendChild(nameSpan);
-    subCategoryItem.appendChild(listBadge);
-    basicList.appendChild(subCategoryItem);
+        subCategoryItem.appendChild(iconSpan);
+        subCategoryItem.appendChild(nameSpan);
+        subCategoryItem.appendChild(listBadge);
+        basicList.appendChild(subCategoryItem);
 
-    // Sadece kategoriye tıklama eventini bırak
-    subCategoryItem.addEventListener("click", (e) => {
-        if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-        showSuggestionsInChat(cat.name, day, cat.code);
+        // Sadece kategoriye tıklama eventini bırak
+        subCategoryItem.addEventListener("click", (e) => {
+            if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+            showSuggestionsInChat(cat.name, day, cat.code);
+        });
     });
-});
+
     basicPlanItem.appendChild(basicList);
     cartDiv.appendChild(basicPlanItem);
 
@@ -2686,90 +2686,44 @@ const travelMainCategories = [
         const nameSpan = document.createElement("span");
         nameSpan.classList.add("subcategory-name");
         nameSpan.textContent = cat.name;
-        const toggleBtn = document.createElement("button");
-        toggleBtn.classList.add("toggle-subcategory-btn");
-        toggleBtn.textContent = "Hide";
+
+        // Sadece List badge (Hide/Show yok, tıklama yok!)
+        const listBadge = document.createElement("span");
+        listBadge.className = "category-list-badge";
+        listBadge.textContent = "List";
+
         subCategoryItem.appendChild(iconSpan);
         subCategoryItem.appendChild(nameSpan);
-        subCategoryItem.appendChild(toggleBtn);
+        subCategoryItem.appendChild(listBadge);
         travelerList.appendChild(subCategoryItem);
 
-        // Kategoriye tıklama
+        // Sadece kategoriye tıklama eventini bırak
         subCategoryItem.addEventListener("click", async (e) => {
-    if (!e.target.classList.contains('toggle-subcategory-btn')) {
-        await showSuggestionsInChat(cat.name, day, cat.code);
-    }
-});
-        toggleBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            subCategoryItem.classList.toggle("hidden");
-            toggleBtn.textContent = subCategoryItem.classList.contains("hidden") ? "Show" : "Hide";
+            showSuggestionsInChat(cat.name, day, cat.code);
         });
     });
+
     travelerItem.appendChild(travelerList);
     cartDiv.appendChild(travelerItem);
 
-    // -------- Kategori gizleme/gösterme & kapatma butonları --------
-    let hiddenCategoriesCount = 0;
-    const toggleAllButton = document.createElement("button"); 
-    toggleAllButton.classList.add("toggle-all-btn");
-    toggleAllButton.textContent = "Hide Hidden Categories";
-    let hideHiddenMode = false;
+    // -------- Kategori hide/show ve ilgili fonksiyonlar TAMAMEN KALDIRILDI --------
+    // toggleBtn, toggleAllButton, updateAllHiddenCategories, updateToggleAllButton vb. yok!
 
-    toggleAllButton.addEventListener("click", () => {
-        hideHiddenMode = !hideHiddenMode;
-        toggleAllButton.textContent = hideHiddenMode 
-            ? "Show All Categories" 
-            : "Hide Hidden Categories";
-        updateAllHiddenCategories();
-    });
-
-    function updateAllHiddenCategories() {
-        const allSubItems = document.querySelectorAll(".subcategory-item");
-        allSubItems.forEach(item => {
-            if (item.classList.contains("hidden")) {
-                if (hideHiddenMode) {
-                    item.style.display = "none";
-                    item.closest(".category-item").querySelector(".subcategory-list").style.display = "none";
-                } else {
-                    item.style.display = "flex";
-                    item.closest(".category-item").querySelector(".subcategory-list").style.display = "block";
-                }
-            }
-        });
-    }
-
-    function updateToggleAllButton() {
-        const allSubItems = document.querySelectorAll(".subcategory-item");
-        hiddenCategoriesCount = Array.from(allSubItems).filter(x => x.classList.contains("hidden")).length;
-        if (hiddenCategoriesCount > 0) {
-            toggleAllButton.style.display = "block";
-        } else {
-            toggleAllButton.style.display = "none";
-            hideHiddenMode = false;
-            updateAllHiddenCategories();
-        }
-    }
-
-    updateToggleAllButton();
-
+    // Kapatma butonu aynı:
     const closeButton = document.createElement("button");
     closeButton.classList.add("close-btn");
     closeButton.textContent = "Close";
     closeButton.addEventListener("click", restoreSidebar);
 
+    cartDiv.appendChild(closeButton);
 
-   cartDiv.appendChild(toggleAllButton);
-cartDiv.appendChild(closeButton);
+    initPlaceSearch(day);
 
-
-
-initPlaceSearch(day);
-// Kategori eklenirken AI Info butonunu ve kutusunu kaldır
-const aiInfoSection = document.querySelector('.ai-info-section');
-if (aiInfoSection) aiInfoSection.remove();
-const aiBtn = document.getElementById('generate-ai-info-btn');
-if (aiBtn) aiBtn.remove();
+    // AI Info butonunu ve kutusunu kaldır
+    const aiInfoSection = document.querySelector('.ai-info-section');
+    if (aiInfoSection) aiInfoSection.remove();
+    const aiBtn = document.getElementById('generate-ai-info-btn');
+    if (aiBtn) aiBtn.remove();
 }
 
 function closeCustomNoteInput() {
