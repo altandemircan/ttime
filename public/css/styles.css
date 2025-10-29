@@ -188,8 +188,8 @@ li .highlight {
     float: left;
 }
 
-.remove-btn {
-        border: none;
+.remove-btn, .remove-marker-btn {
+    border: none;
     right: 0px;
     top: 8px;
     padding-inline: 0;
@@ -199,13 +199,13 @@ li .highlight {
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    background: #ffffff;
+    background: #f8f9fa;
     cursor: pointer;
     transition: all 0.3s 
 ease;
     font-size: 0.9rem;
-    color: #e37f7f;
-    margin-top: 8px
+    color: #ff4444;
+    margin-top: 8px;
 }
 .confirmation-container {
     padding: 20px;
@@ -7079,7 +7079,4 @@ display: flex
     margin: 2px 0;
     width: -webkit-fill-available;
     text-align: center;
-}
-.day-list li:last-child {
-  margin-bottom: 0 !important;
 }
