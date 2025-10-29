@@ -80,40 +80,40 @@ function addRoutePolylineWithClick(map, coords) {
             "catering.fast_food",
             "catering.pub"
         ].join(",");
-const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radiusMeters}&limit=200&apiKey=${apiKey}`;
+        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radiusMeters}&limit=200&apiKey=${apiKey}`;
 
-const locations = points.map(pt => `${pt.lat},${pt.lng}`).join('|');
-const response = await fetch(`/api/elevation?locations=${encodeURIComponent(locations)}`);
-const data = await response.json();
+        // DOĞRU: RESTORANLARI ÇEK
+        const response = await fetch(url);
+        const data = await response.json();
 
-if (!data.features || data.features.length === 0) {
-    alert("No restaurant/cafe/bar found in this area!");
-    return;
-}
+        if (!data.features || data.features.length === 0) {
+            alert("No restaurant/cafe/bar found in this area!");
+            return;
+        }
 
-// Filter valid results, sort by distance
-const haversine = (lat1, lon1, lat2, lon2) => {
-    const R = 6371000, toRad = x => x * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-    return 2 * R * Math.asin(Math.sqrt(a));
-};
+        // Filter valid results, sort by distance
+        const haversine = (lat1, lon1, lat2, lon2) => {
+            const R = 6371000, toRad = x => x * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+            return 2 * R * Math.asin(Math.sqrt(a));
+        };
 
-const nearest10 = data.features
-    .filter(f => Number.isFinite(f.properties.lat) && Number.isFinite(f.properties.lon))
-    .map(f => ({
-        ...f,
-        distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
-    }))
-    .sort((a, b) => a.distance - b.distance)
-    .slice(0, 10);
+        const nearest10 = data.features
+            .filter(f => Number.isFinite(f.properties.lat) && Number.isFinite(f.properties.lon))
+            .map(f => ({
+                ...f,
+                distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
+            }))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 10);
 
-if (nearest10.length === 0) {
-    alert("No nearby restaurant/cafe/bar found!");
-    return;
-}
+        if (nearest10.length === 0) {
+            alert("No nearby restaurant/cafe/bar found!");
+            return;
+        }
 
-nearest10.forEach((f, idx) => {
+        nearest10.forEach((f, idx) => {
             setTimeout(() => {
                 // Draw line from clicked point to restaurant
                 L.polyline([
@@ -136,11 +136,11 @@ nearest10.forEach((f, idx) => {
                 const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
                 const address = f.properties.formatted || "";
                 const name = f.properties.name || "Restaurant";
-const imgId = `rest-img-${f.properties.place_id || idx}`;
-marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
-marker.on("popupopen", function() {
-    handlePopupImageLoading(f, imgId);
-});
+                const imgId = `rest-img-${f.properties.place_id || idx}`;
+                marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
+                marker.on("popupopen", function() {
+                    handlePopupImageLoading(f, imgId);
+                });
             }, idx * 120);
         });
 
