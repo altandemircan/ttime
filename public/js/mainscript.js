@@ -2688,7 +2688,7 @@ cartDiv.appendChild(addFavBtn);
     // Buton class'ı toggle-subcategory-btn, yazısı List, event yok!
     const toggleBtn = document.createElement("button");
     toggleBtn.classList.add("toggle-subcategory-btn");
-    toggleBtn.textContent = "List";
+    toggleBtn.textContent = "View";
     subCategoryItem.appendChild(iconSpan);
     subCategoryItem.appendChild(nameSpan);
     subCategoryItem.appendChild(toggleBtn);
