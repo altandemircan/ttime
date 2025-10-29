@@ -60,7 +60,7 @@ async function searchRestaurantsAt(lat, lng, map) {
     alert(`Bu alanda ${data.features.length} restoran bulundu.`);
 }
 
-// Ana fonksiyon — ÇİZGİ, MARKER, POPUP, SPINNER, FOTO HER ŞEY DAHİL!
+// Shows nearest restaurants/cafes/bars when the route polyline is clicked
 function addRoutePolylineWithClick(map, coords) {
     const polyline = L.polyline(coords, {
         color: '#1976d2',
@@ -69,8 +69,11 @@ function addRoutePolylineWithClick(map, coords) {
     }).addTo(map);
 
     polyline.on('click', async function(e) {
+        // Nearby açılmasın!
+        if (e.originalEvent) e.originalEvent.stopPropagation();
+
         const lat = e.latlng.lat, lng = e.latlng.lng;
-        const bufferMeters = 400;
+        const bufferMeters = 1000;
         const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
         const categories = [
             "catering.restaurant",
@@ -138,6 +141,39 @@ function addRoutePolylineWithClick(map, coords) {
 
     return polyline;
 }
+function showRouteInfoBanner(day) {
+  const expandedContainer = document.getElementById(`expanded-map-${day}`);
+  if (!expandedContainer) return;
+
+  let banner = expandedContainer.querySelector('#route-info-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'route-info-banner';
+    banner.className = 'route-info-banner';
+    banner.innerHTML = `
+      <span>Click the route to list nearby restaurants, cafes and bars.</span>
+      <button id="close-route-info" class="route-info-close">✕</button>
+    `;
+    expandedContainer.prepend(banner);
+  }
+  banner.style.display = 'flex';
+
+  // Kapatma butonunda sadece display:none yapıyoruz
+  const closeBtn = banner.querySelector('#close-route-info');
+  if (closeBtn) {
+    closeBtn.onclick = function() {
+      banner.style.display = 'none';
+    };
+  }
+
+  // 1 dakika sonra otomatik kapansın
+  setTimeout(function() {
+    // Banner hâlâ açıksa (kullanıcı kapatmadıysa)
+    if (banner.style.display !== 'none') {
+      banner.style.display = 'none';
+    }
+  }, 5000);
+}
 async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
     const address = f.properties.formatted || "";
@@ -171,20 +207,7 @@ async function getRestaurantPopupHTML(f, day) {
     `;
 }
 
-window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
-    addToCart(
-        name,
-        image,
-        day,
-        "Restaurant",
-        address,
-        null, null, null, null,
-        { lat: Number(lat), lng: Number(lon) },
-        ""
-    );
-    if (typeof updateCart === "function") updateCart();
-    alert(`${name} gezi planına eklendi!`);
-};
+
 function handlePopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
         .then(src => {
@@ -289,6 +312,7 @@ function getRedRestaurantMarkerHtml() {
     `;
 }
 
+// Returns custom purple restaurant marker HTML
 function getPurpleRestaurantMarkerHtml() {
     return `
       <div class="custom-marker-outer" style="
@@ -307,3 +331,19 @@ function getPurpleRestaurantMarkerHtml() {
       </div>
     `;
 }
+
+// Add restaurant to trip/cart (called from popup button)
+window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
+    addToCart(
+        name,
+        image || 'img/restaurant_icon.svg',
+        day,
+        "Restaurant",
+        address,
+        null, null, null, null,
+        { lat: Number(lat), lng: Number(lon) },
+        ""
+    );
+    if (typeof updateCart === "function") updateCart();
+    alert(`${name} added to your trip!`);
+};
