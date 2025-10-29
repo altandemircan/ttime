@@ -91,11 +91,9 @@ function addRoutePolylineWithClick(map, coords) {
 
         // Filter valid results
         const validFeatures = data.features.filter(f => 
-            typeof f.properties.lat === 'number' &&
-            typeof f.properties.lon === 'number' &&
-            !isNaN(f.properties.lat) &&
-            !isNaN(f.properties.lon)
-        );
+    Number.isFinite(f.properties.lat) &&
+    Number.isFinite(f.properties.lon)
+);
 
         // Haversine distance
         function haversine(lat1, lon1, lat2, lon2) {
