@@ -7080,3 +7080,7 @@ display: flex
     width: -webkit-fill-available;
     text-align: center;
 }
+
+.splide__arrow {
+    background: #67ccd1;
+}
