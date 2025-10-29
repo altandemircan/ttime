@@ -6695,7 +6695,7 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
     marker.bindPopup(`
       <div style="min-width:120px;">
         <b>${p.name || "Point"}</b><br>
-        <button class="remove-marker-btn" data-day="${day}" data-idx="${idx}" style="margin-top:4px;padding:6px 16px;background:#d32f2f;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Remove place</button>
+        <button class="remove-marker-btn" data-day="${day}" data-idx="${idx}" >Remove place</button>
       </div>
     `, {
       autoClose: false,
