@@ -2631,7 +2631,7 @@ cartDiv.appendChild(addFavBtn);
     const basicPlanItem = document.createElement("div");
     basicPlanItem.classList.add("category-item");
     const basicHeader = document.createElement("h4");
-    basicHeader.textContent = "Basic Plan";
+    basicHeader.textContent = "Trip Basics";
     basicPlanItem.appendChild(basicHeader);
 
     const basicList = document.createElement("ul");
