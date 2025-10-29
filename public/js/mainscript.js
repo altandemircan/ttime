@@ -2639,36 +2639,31 @@ const travelMainCategories = [
     basicList.classList.add("subcategory-list");
 
     basicPlanCategories.forEach(cat => {
-        const subCategoryItem = document.createElement("li");
-        subCategoryItem.classList.add("subcategory-item");
-        const iconSpan = document.createElement("span");
-        iconSpan.classList.add("subcategory-icon");
-        iconSpan.textContent = cat.icon;
-        const nameSpan = document.createElement("span");
-        nameSpan.classList.add("subcategory-name");
-        nameSpan.textContent = cat.name;
-        const toggleBtn = document.createElement("button");
-        toggleBtn.classList.add("toggle-subcategory-btn");
-        toggleBtn.textContent = "Hide";
-        subCategoryItem.appendChild(iconSpan);
-        subCategoryItem.appendChild(nameSpan);
-        subCategoryItem.appendChild(toggleBtn);
-        basicList.appendChild(subCategoryItem);
+    const subCategoryItem = document.createElement("li");
+    subCategoryItem.classList.add("subcategory-item");
+    const iconSpan = document.createElement("span");
+    iconSpan.classList.add("subcategory-icon");
+    iconSpan.textContent = cat.icon;
+    const nameSpan = document.createElement("span");
+    nameSpan.classList.add("subcategory-name");
+    nameSpan.textContent = cat.name;
 
-        // Kategoriye tıklama ve harita kapatıp chat ekranını gösterme
-            subCategoryItem.addEventListener("click", (e) => {
-              if (!e.target.classList.contains('toggle-subcategory-btn')) {
-                if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-                showSuggestionsInChat(cat.name, day, cat.code);
-              }
-            });
+    // Hide/Show butonu kaldırıldı, yerine dekoratif List Badge!
+    const listBadge = document.createElement("span");
+    listBadge.className = "category-list-badge";
+    listBadge.textContent = "List";
 
-        toggleBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            subCategoryItem.classList.toggle("hidden");
-            toggleBtn.textContent = subCategoryItem.classList.contains("hidden") ? "Show" : "Hide";
-        });
+    subCategoryItem.appendChild(iconSpan);
+    subCategoryItem.appendChild(nameSpan);
+    subCategoryItem.appendChild(listBadge);
+    basicList.appendChild(subCategoryItem);
+
+    // Sadece kategoriye tıklama eventini bırak
+    subCategoryItem.addEventListener("click", (e) => {
+        if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+        showSuggestionsInChat(cat.name, day, cat.code);
     });
+});
     basicPlanItem.appendChild(basicList);
     cartDiv.appendChild(basicPlanItem);
 
