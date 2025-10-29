@@ -9328,28 +9328,44 @@ const DATASET = 'srtm30m';
     if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
     return res;
   }
-  async function viaOpenElevation(samples) {
+async function viaOpenElevation(samples) {
     const CHUNK = 100;
     const res = [];
-    for (let i=0;i<samples.length;i+=CHUNK){
-      const chunk = samples.slice(i,i+CHUNK);
-      const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-      const url = `https://api.open-elevation.com/api/v1/lookup?locations=${encodeURIComponent(loc)}`;
-      await throttle('openElevation', 2000);
-      const resp = await fetch(url);
-      if (resp.status === 429) {
-        cooldownUntil.openElevation = Date.now() + 10*60*1000;
-        throw new Error('429');
-      }
-      if (!resp.ok) throw new Error('HTTP '+resp.status);
-      const j = await resp.json();
-      if (!j.results || j.results.length !== chunk.length) throw new Error('bad response');
-      res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
-      if (samples.length > CHUNK) await sleep(1000);
+    for (let i = 0; i < samples.length; i += CHUNK) {
+        const chunk = samples.slice(i, i + CHUNK);
+        const loc = chunk.map(p => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
+        // Dış API yerine kendi backend proxy endpointini kullan!
+        const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
+        await throttle('openElevation', 2000);
+        const resp = await fetch(url);
+        if (resp.status === 429) {
+            cooldownUntil.openElevation = Date.now() + 10 * 60 * 1000;
+            throw new Error('429');
+        }
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const j = await resp.json();
+        // API proxy'nin JSON cevabında "results" olmayabilir, kendi backendinin cevabını kontrol et!
+        // Eğer /api/elevation cevabında results varsa
+        if (j.results && j.results.length === chunk.length) {
+            res.push(...j.results.map(r => r && typeof r.elevation === 'number' ? r.elevation : null));
+        }
+        // Eğer /api/elevation cevabında doğrudan elevation array varsa (ör: j.elevations)
+        else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
+            res.push(...j.elevations);
+        }
+        // Eğer geoapify veya başka bir fallback varsa, ona göre parse et!
+        else if (j.data && Array.isArray(j.data)) {
+            res.push(...j.data);
+        }
+        else {
+            throw new Error('bad response');
+        }
+
+        if (samples.length > CHUNK) await sleep(1000);
     }
     if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
     return res;
-  }
+}
 
   // Ana giriş: sırayla dene, başarılı olunca cache’le
   window.getElevationsForRoute = async function(samples, container, routeKey) {
