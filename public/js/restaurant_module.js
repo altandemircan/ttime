@@ -105,7 +105,7 @@ const nearest10 = data.features
         distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
     }))
     .sort((a, b) => a.distance - b.distance)
-    .slice(0, 20);
+    .slice(0, 10);
 
 if (nearest10.length === 0) {
     alert("No nearby restaurant/cafe/bar found!");
