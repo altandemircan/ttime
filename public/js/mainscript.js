@@ -10110,7 +10110,7 @@ document.addEventListener("DOMContentLoaded", function() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: "llama3:70b",
+          model: "llama3:8b",
           messages: [
             { role: "system", content: "You are a helpful assistant for travel and general questions." },
             { role: "user", content: userMessage }
