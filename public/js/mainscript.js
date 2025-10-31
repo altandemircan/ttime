@@ -10077,8 +10077,23 @@ function hideLoadingPanel() {
         document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
     }
 }
+document.addEventListener("DOMContentLoaded", function() {
+  // Typewriter efekti: her harf için delay uygular
+  function typeWriterEffect(element, text, speed = 18, callback) {
+    let i = 0;
+    element.innerHTML = ""; // Önce kutuyu temizle
+    function type() {
+      if (i < text.length) {
+        element.innerHTML += text.charAt(i);
+        i++;
+        setTimeout(type, speed);
+      } else if (callback) {
+        callback();
+      }
+    }
+    type();
+  }
 
- document.addEventListener("DOMContentLoaded", function() {
   // 1. Butona tıklayınca chat ekranı aç/kapa
   var openBtn = document.getElementById('open-ai-chat-btn');
   var chatBox = document.getElementById('ai-chat-box');
@@ -10089,7 +10104,7 @@ function hideLoadingPanel() {
   }
 
   // 2. Mesaj gönderme fonksiyonu
- async function sendAIChatMessage(userMessage) {
+  async function sendAIChatMessage(userMessage) {
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
 
@@ -10101,10 +10116,11 @@ function hideLoadingPanel() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // AI yanıtı için yeni div
+    // AI yanıtı için yeni div: önce "🤖 ..." ile loading göster
     var aiDiv = document.createElement('div');
     aiDiv.style.margin = '6px 0';
     aiDiv.style.textAlign = 'left';
+    aiDiv.textContent = '🤖 ...'; // loading anında göster
     messagesDiv.appendChild(aiDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
@@ -10121,13 +10137,15 @@ function hideLoadingPanel() {
         })
       });
       const data = await resp.json();
-      // Sadece burada typeWriterEffect fonksiyonunu kullan!
-      typeWriterEffect(aiDiv, '🤖 ' + (data.message?.content || "AI yanıtı alınamadı."), 18);
+      // Harf harf efekt ile yaz: önce kutuyu temizle, sonra animasyon başlat
+      typeWriterEffect(aiDiv, '🤖 ' + (data.message?.content || "AI yanıtı alınamadı."), 18, function() {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
     } catch (e) {
       aiDiv.textContent = '🤖 Yanıt alınamadı!';
     }
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
+  }
 
   // 3. Enter veya buton ile mesaj gönder
   var chatInput = document.getElementById('ai-chat-input');
@@ -10146,4 +10164,4 @@ function hideLoadingPanel() {
       }
     });
   }
-}); 
+});
