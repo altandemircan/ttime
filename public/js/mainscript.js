@@ -1457,15 +1457,6 @@ let selectedDays = null;
 let isProcessing = false;
 
 
-async function getLLMResponse(aiData) {
-    const response = await fetch('http://tripplan.online:3001/llm-proxy/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(aiData)
-    });
-    return response.json();
-}
-
 function updateTripTitle() {
     const tripTitleDiv = document.getElementById("trip_title");
     const userQuery = window.lastUserQuery ? window.lastUserQuery.trim() : "";
@@ -1527,19 +1518,6 @@ async function generateAINotes(name, city, category) {
     }
 }
 
-async function generateAITags(name, category) {
-    try {
-        const response = await fetch('/llm-proxy/generate-tags', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, category })
-        });
-        const data = await response.json();
-        return data.tags;
-    } catch (error) {
-        return [];
-    }
-}
 
 let hasAutoAddedToCart = false;
 
