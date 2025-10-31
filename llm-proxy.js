@@ -39,16 +39,15 @@ ONLY output pure JSON. No markdown, no explanation, no code block.
     }
 });
 
-// === Basit AI Chat endpointi ===
+// --- Chat endpointi kesinlikle burada olmalı! ---
 router.post('/chat', async (req, res) => {
     const { model, messages } = req.body;
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
         return res.status(400).json({ error: 'messages array required' });
     }
     try {
-        // Ollama chat API ile konuş
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: model || 'llama3:8b',
+            model: model || 'llama3:70b',
             messages: messages
         });
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -59,4 +58,5 @@ router.post('/chat', async (req, res) => {
         res.status(500).json({ error: 'AI yanıtı alınamadı.' });
     }
 });
+
 module.exports = router; 
