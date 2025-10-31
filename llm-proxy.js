@@ -24,11 +24,11 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 
     try {
         // Sadece aktif OLLAMA portunu kullan!
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "gemma:7b",
-            prompt,
-            stream: false
-        });
+        const response = await axios.post('http://127.0.0.1:11434/api/generate', {
+    model: "gemma:7b",
+    prompt,
+    stream: false
+});
         console.log("Ollama response:", response.data);
 
         res.setHeader('Access-Control-Allow-Origin', '*');
