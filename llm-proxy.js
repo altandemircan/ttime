@@ -18,14 +18,23 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
+        // Ollama'ya stream: false ile POST atıyoruz
         const response = await axios.post('http://localhost:11434/api/generate', {
             model: "llama2:13b",
             prompt,
             stream: false
         });
+
+        // Debug için cevabı logla
+        console.log("Ollama response:", response.data);
+
+        // CORS desteği (gerekirse)
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(response.data);
     } catch (error) {
-        console.error('LLM Proxy Error:', error);  // Hata logla!
+        // Hataları detaylı logla
+        console.error('LLM Proxy Error:', error?.response?.data || error?.message || error);
         res.status(500).send('AI bilgi alınamadı.');
     }
 });
