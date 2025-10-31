@@ -10100,31 +10100,29 @@ async function sendAIChatMessage(userMessage) {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // AI yanıtı için loading...
-    var aiDiv = document.createElement('div');
-    aiDiv.textContent = '🤖 ...';
-    aiDiv.style.margin = '6px 0';
-    aiDiv.style.textAlign = 'left';
-    messagesDiv.appendChild(aiDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+   var aiDiv = document.createElement('div');
+aiDiv.style.margin = '6px 0';
+aiDiv.style.textAlign = 'left';
+messagesDiv.appendChild(aiDiv);
+messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    try {
-      const resp = await fetch('/llm-proxy/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: "llama3:8b",
-          messages: [
-            { role: "system", content: "You are a helpful assistant for travel and general questions." },
-            { role: "user", content: userMessage }
-          ]
-        })
-      });
-      const data = await resp.json();
-      // === Typewriter efekti ile yaz ===
-      typeWriterEffect(aiDiv, '🤖 ' + (data.message?.content || "AI yanıtı alınamadı."), 18);
-    } catch (e) {
-      aiDiv.textContent = '🤖 Yanıt alınamadı!';
-    }
+try {
+  const resp = await fetch('/llm-proxy/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: "llama3:8b",
+      messages: [
+        { role: "system", content: "You are a helpful assistant for travel and general questions." },
+        { role: "user", content: userMessage }
+      ]
+    })
+  });
+  const data = await resp.json();
+  // Typewriter efekti ile göster
+  typeWriterEffect(aiDiv, '🤖 ' + (data.message?.content || "AI yanıtı alınamadı."), 18);
+} catch (e) {
+  aiDiv.textContent = '🤖 Yanıt alınamadı!';
+}
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
