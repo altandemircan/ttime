@@ -3,7 +3,12 @@ const axios = require('axios');
 const router = express.Router();
 
 router.post('/plan-summary', async (req, res) => {
+    console.log("Plan-summary body:", req.body);
     const { city, country } = req.body;
+    if (!city) {
+        res.status(400).send('City is required');
+        return;
+    }
     const aiReqCity = country ? `${city}, ${country}` : city;
 
     const prompt = `
@@ -18,14 +23,12 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
-        // DOĞRU OLLAMA PORTUNU KULLAN!
+        // Sadece aktif OLLAMA portunu kullan!
         const response = await axios.post('http://localhost:11434/api/generate', {
-    model: "gemma:7b",
-    prompt,
-    stream: false
-});
-
-        // Debug için cevabı logla
+            model: "gemma:7b",
+            prompt,
+            stream: false
+        });
         console.log("Ollama response:", response.data);
 
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,4 +40,4 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     }
 });
 
-module.exports = router;
+module.exports = router; 
