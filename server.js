@@ -1,3 +1,4 @@
+app.use(express.json());
 // --- dotenv safe load ---
 try {
   require('dotenv').config({ /* quiet: true */ });
