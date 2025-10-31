@@ -40,8 +40,6 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     }
 });
 
-
-// --- Chat endpointi kesinlikle burada olmalı! ---
 router.post('/chat', async (req, res) => {
     const { model, messages } = req.body;
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -49,10 +47,10 @@ router.post('/chat', async (req, res) => {
     }
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-    model: model || 'llama3:8b',
-    messages: messages,
-    stream: false // <--- Bunu ekle!
-});
+            model: model || 'llama3:8b',
+            messages: messages,
+            stream: false // <-- Bunu ekle!
+        });
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(response.data);
@@ -61,6 +59,5 @@ router.post('/chat', async (req, res) => {
         res.status(500).json({ error: 'AI yanıtı alınamadı.' });
     }
 });
-
 
 module.exports = router; 
