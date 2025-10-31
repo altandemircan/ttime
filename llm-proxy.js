@@ -18,8 +18,8 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
-        // Ollama'ya stream: false ile POST atıyoruz
-        const response = await axios.post('http://localhost:11434/api/generate', {
+        // DOĞRU OLLAMA PORTUNU KULLAN!
+        const response = await axios.post('http://localhost:42425/api/generate', {
             model: "gemma:7b",
             prompt,
             stream: false
@@ -28,12 +28,10 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         // Debug için cevabı logla
         console.log("Ollama response:", response.data);
 
-        // CORS desteği (gerekirse)
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(response.data);
     } catch (error) {
-        // Hataları detaylı logla
         console.error('LLM Proxy Error:', error?.response?.data || error?.message || error);
         res.status(500).send('AI bilgi alınamadı.');
     }
