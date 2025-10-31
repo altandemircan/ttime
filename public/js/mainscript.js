@@ -10078,7 +10078,8 @@ function hideLoadingPanel() {
     }
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+ document.addEventListener("DOMContentLoaded", function() {
+  // 1. Butona tıklayınca chat ekranı aç/kapa
   var openBtn = document.getElementById('open-ai-chat-btn');
   var chatBox = document.getElementById('ai-chat-box');
   if (openBtn && chatBox) {
@@ -10087,10 +10088,12 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
+  // 2. Mesaj gönderme fonksiyonu
   async function sendAIChatMessage(userMessage) {
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
 
+    // Kullanıcı mesajını ekle
     var userDiv = document.createElement('div');
     userDiv.textContent = '🧑 ' + userMessage;
     userDiv.style.margin = '6px 0';
@@ -10098,6 +10101,7 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+    // AI yanıtı için loading...
     var aiDiv = document.createElement('div');
     aiDiv.textContent = '🤖 ...';
     aiDiv.style.margin = '6px 0';
@@ -10105,12 +10109,13 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(aiDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+    // Basit API: ollama chat endpoint (örnek)
     try {
-      const resp = await fetch('/llm-proxy/chat', {
+      const resp = await fetch('/llm-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: "llama3:8b",
+          model: "llama3:8b", // Backend modelini burada ayarla!
           messages: [
             { role: "system", content: "You are a helpful assistant for travel and general questions." },
             { role: "user", content: userMessage }
@@ -10125,6 +10130,7 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
+  // 3. Enter veya buton ile mesaj gönder
   var chatInput = document.getElementById('ai-chat-input');
   var sendBtn = document.getElementById('ai-chat-send-btn');
   if (sendBtn && chatInput) {
@@ -10141,4 +10147,4 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
   }
-});
+}); 

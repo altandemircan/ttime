@@ -11,20 +11,21 @@ router.post('/plan-summary', async (req, res) => {
     }
     const aiReqCity = country ? `${city}, ${country}` : city;
 
-   const prompt = `
-ONLY output pure JSON. No markdown, no explanation, no code block.
-
+    const prompt = `
+You are an expert travel assistant.
+Provide the following information about the city "${aiReqCity}":
 {
-  "summary": "A 2-3 sentence inspiring and informative summary about the city "${aiReqCity}" for travelers.",
+  "summary": "A 2-3 sentence inspiring and informative summary about the city for travelers.",
   "tip": "A creative travel tip specific to this city.",
   "highlight": "A unique highlight or must-see point for a visitor."
 }
+Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
         // Sadece aktif OLLAMA portunu kullan!
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-    model: "llama3:70b",
+    model: "gemma:7b",
     prompt,
     stream: false
 });
@@ -38,6 +39,7 @@ ONLY output pure JSON. No markdown, no explanation, no code block.
         res.status(500).send('AI bilgi alınamadı.');
     }
 });
+
 
 // --- Chat endpointi kesinlikle burada olmalı! ---
 router.post('/chat', async (req, res) => {
@@ -58,5 +60,6 @@ router.post('/chat', async (req, res) => {
         res.status(500).json({ error: 'AI yanıtı alınamadı.' });
     }
 });
+
 
 module.exports = router; 
