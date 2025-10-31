@@ -24,7 +24,7 @@ ONLY output pure JSON. No markdown, no explanation, no code block.
     try {
         // Sadece aktif OLLAMA portunu kullan!
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-    model: "gemma:7b",
+    model: "llama3:70b",
     prompt,
     stream: false
 });
