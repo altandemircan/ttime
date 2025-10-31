@@ -10111,7 +10111,7 @@ function hideLoadingPanel() {
 
     // Basit API: ollama chat endpoint (örnek)
     try {
-      const resp = await fetch('/llm-proxy/chat', {
+      const resp = await fetch('/llm-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -10147,4 +10147,4 @@ function hideLoadingPanel() {
       }
     });
   }
-});
+}); 
