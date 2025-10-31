@@ -117,7 +117,7 @@ if (!city && !aiStaticInfo) return;
     let jsonText = "";
     let firstChunkWritten = false;
     try {
-        const resp = await fetch('http://localhost:3004/llm-proxy/plan-summary', {
+        const resp = await fetch('/llm-proxy/plan-summary', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ city, country })
