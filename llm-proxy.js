@@ -5,6 +5,7 @@ const router = express.Router();
 router.post('/plan-summary', async (req, res) => {
     const { city, country } = req.body;
     const aiReqCity = country ? `${city}, ${country}` : city;
+
     const prompt = `
 You are an expert travel assistant.
 Provide the following information about the city "${aiReqCity}":
@@ -17,15 +18,14 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
-        // STREAM DEĞİL, NORMAL JSON
         const response = await axios.post('http://localhost:11434/api/generate', {
             model: "llama2:13b",
             prompt,
             stream: false
         });
-
         res.json(response.data);
     } catch (error) {
+        console.error('LLM Proxy Error:', error);  // Hata logla!
         res.status(500).send('AI bilgi alınamadı.');
     }
 });
