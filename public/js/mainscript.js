@@ -10115,7 +10115,7 @@ function hideLoadingPanel() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: "llama3:8b", // Backend modelini burada ayarla!
+          model: "llama3:70b", // Backend modelini burada ayarla!
           messages: [
             { role: "system", content: "You are a helpful assistant for travel and general questions." },
             { role: "user", content: userMessage }
