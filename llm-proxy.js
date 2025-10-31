@@ -11,15 +11,14 @@ router.post('/plan-summary', async (req, res) => {
     }
     const aiReqCity = country ? `${city}, ${country}` : city;
 
-    const prompt = `
-You are an expert travel assistant.
-Provide the following information about the city "${aiReqCity}":
+   const prompt = `
+ONLY output pure JSON. No markdown, no explanation, no code block.
+
 {
-  "summary": "A 2-3 sentence inspiring and informative summary about the city for travelers.",
+  "summary": "A 2-3 sentence inspiring and informative summary about the city "${aiReqCity}" for travelers.",
   "tip": "A creative travel tip specific to this city.",
   "highlight": "A unique highlight or must-see point for a visitor."
 }
-Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
