@@ -19,11 +19,11 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 
     try {
         // DOĞRU OLLAMA PORTUNU KULLAN!
-        const response = await axios.post('http://localhost:42425/api/generate', {
-            model: "gemma:7b",
-            prompt,
-            stream: false
-        });
+        const response = await axios.post('http://localhost:11434/api/generate', {
+    model: "gemma:7b",
+    prompt,
+    stream: false
+});
 
         // Debug için cevabı logla
         console.log("Ollama response:", response.data);
