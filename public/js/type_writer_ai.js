@@ -184,8 +184,7 @@ if (!city && !aiStaticInfo) return;
             jsonStr = jsonStr.trim() + '}';
         }
         try {
-            const ollamaData = await resp.json();
-const aiObj = JSON.parse(ollamaData.response);
+            const aiObj = JSON.parse(jsonStr);
             window.lastTripAIInfo = {
                 summary: aiObj.summary || "",
                 tip: aiObj.tip || "",
