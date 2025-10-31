@@ -10088,7 +10088,8 @@ function hideLoadingPanel() {
     });
   }
 
-async function sendAIChatMessage(userMessage) {
+  // 2. Mesaj gönderme fonksiyonu
+ async function sendAIChatMessage(userMessage) {
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
 
@@ -10100,29 +10101,49 @@ async function sendAIChatMessage(userMessage) {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-   var aiDiv = document.createElement('div');
-aiDiv.style.margin = '6px 0';
-aiDiv.style.textAlign = 'left';
-messagesDiv.appendChild(aiDiv);
-messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // AI yanıtı için yeni div
+    var aiDiv = document.createElement('div');
+    aiDiv.style.margin = '6px 0';
+    aiDiv.style.textAlign = 'left';
+    messagesDiv.appendChild(aiDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-try {
-  const resp = await fetch('/llm-proxy/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: "llama3:8b",
-      messages: [
-        { role: "system", content: "You are a helpful assistant for travel and general questions." },
-        { role: "user", content: userMessage }
-      ]
-    })
-  });
-  const data = await resp.json();
-  // Typewriter efekti ile göster
-  typeWriterEffect(aiDiv, '🤖 ' + (data.message?.content || "AI yanıtı alınamadı."), 18);
-} catch (e) {
-  aiDiv.textContent = '🤖 Yanıt alınamadı!';
-}
+    try {
+      const resp = await fetch('/llm-proxy/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: "llama3:8b",
+          messages: [
+            { role: "system", content: "You are a helpful assistant for travel and general questions." },
+            { role: "user", content: userMessage }
+          ]
+        })
+      });
+      const data = await resp.json();
+      // Sadece burada typeWriterEffect fonksiyonunu kullan!
+      typeWriterEffect(aiDiv, '🤖 ' + (data.message?.content || "AI yanıtı alınamadı."), 18);
+    } catch (e) {
+      aiDiv.textContent = '🤖 Yanıt alınamadı!';
+    }
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
+
+  // 3. Enter veya buton ile mesaj gönder
+  var chatInput = document.getElementById('ai-chat-input');
+  var sendBtn = document.getElementById('ai-chat-send-btn');
+  if (sendBtn && chatInput) {
+    sendBtn.addEventListener('click', function () {
+      var val = chatInput.value.trim();
+      if (val) {
+        sendAIChatMessage(val);
+        chatInput.value = '';
+      }
+    });
+    chatInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        sendBtn.click();
+      }
+    });
+  }
+}); 
