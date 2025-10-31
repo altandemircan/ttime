@@ -21,7 +21,7 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 
     try {
         const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "gemma:2b",
+            model: "llama2:13b",
             prompt,
             stream: true
         }, { responseType: 'stream' });
