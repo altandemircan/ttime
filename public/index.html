@@ -885,16 +885,7 @@ Your browser does not support the video tag.                  </video>
 
   <div class="loading-text">
     <h2 id="loading-message">Analyzing your request...</h2>
-    <p>Mira is preparing your trip plan, please wait!</p> <button id="open-ai-chat-btn" style="margin:12px 0;padding:10px 18px;font-size:16px;border-radius:8px;border:1px solid #8a4af3;background:#fff;color:#8a4af3;cursor:pointer;">
-    🤖 AI Chat
-  </button>
-  <div id="ai-chat-box" style="display:none;flex-direction:column;gap:8px;padding:10px 0;">
-    <div id="ai-chat-messages" style="max-height:240px;overflow-y:auto;background:#f4f4fa;border-radius:8px;padding:10px;"></div>
-    <div style="display:flex;gap:6px;">
-      <input id="ai-chat-input" type="text" placeholder="Mesaj yaz..." style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid #ddd;">
-      <button id="ai-chat-send-btn" style="padding:6px 12px;font-size:15px;border-radius:6px;background:#8a4af3;color:#fff;border:none;">Gönder</button>
-    </div>
-  </div>
+    <p>Mira is preparing your trip plan, please wait!</p> 
   </div>
 
   <div class="trip-loading">
@@ -921,7 +912,17 @@ Your browser does not support the video tag.                  </video>
                     ..............
                     <img src="https://cdn-icons-gif.flaticon.com/17270/17270663.gif" style="width: 40px; height: 40px;">
                 </div>
-                
+                <!-- Sidebar'a eklenecek kısım (HTML, örnek) -->
+<button id="open-ai-chat-btn" style="margin:12px 0;padding:10px 18px;font-size:16px;border-radius:8px;border:1px solid #8a4af3;background:#fff;color:#8a4af3;cursor:pointer;">
+  🤖 AI Chat
+</button>
+<div id="ai-chat-box" style="display:none;flex-direction:column;gap:8px;padding:10px 0;">
+  <div id="ai-chat-messages" style="max-height:240px;overflow-y:auto;background:#f4f4fa;border-radius:8px;padding:10px;"></div>
+  <div style="display:flex;gap:6px;">
+    <input id="ai-chat-input" type="text" placeholder="Mesaj yaz..." style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid #ddd;">
+    <button id="ai-chat-send-btn" style="padding:6px 12px;font-size:15px;border-radius:6px;background:#8a4af3;color:#fff;border:none;">Gönder</button>
+  </div>
+</div>
             </div>
         </div>
     </div>
