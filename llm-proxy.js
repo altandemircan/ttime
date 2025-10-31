@@ -49,9 +49,10 @@ router.post('/chat', async (req, res) => {
     }
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: model || 'llama3:8b',
-            messages: messages
-        });
+    model: model || 'llama3:8b',
+    messages: messages,
+    stream: false // <--- Bunu ekle!
+});
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(response.data);
