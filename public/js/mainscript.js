@@ -10077,6 +10077,7 @@ function hideLoadingPanel() {
         document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
     }
 }
+
 // 1. Butona tıklayınca chat ekranı aç/kapa
 document.getElementById('open-ai-chat-btn').addEventListener('click', function () {
   const box = document.getElementById('ai-chat-box');
