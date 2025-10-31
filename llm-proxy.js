@@ -20,7 +20,7 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     try {
         // Ollama'ya stream: false ile POST atıyoruz
         const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama2:13b",
+            model: "gemma:7b",
             prompt,
             stream: false
         });
