@@ -1469,7 +1469,7 @@ async function clarifyLocation(query) {
     }
     
     try {
-        const response = await fetch('http://localhost:3004/llm-proxy/clarify-location', {
+        const response = await fetch('/llm-proxy/clarify-location', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query })
@@ -1493,7 +1493,7 @@ async function clarifyLocation(query) {
 
 async function getAICategories(city, days) {
     try {
-        const response = await fetch('http://localhost:3004/llm-proxy/suggest-categories', {
+        const response = await fetch('/llm-proxy/suggest-categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city, days })
@@ -1506,7 +1506,7 @@ async function getAICategories(city, days) {
 
 async function generateAINotes(name, city, category) {
     try {
-        const response = await fetch('http://localhost:3004/llm-proxy/generate-notes', {
+        const response = await fetch('/llm-proxy/generate-notes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, city, category })
