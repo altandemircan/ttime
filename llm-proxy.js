@@ -25,7 +25,7 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     try {
         // Sadece aktif OLLAMA portunu kullan!
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-    model: "gemma:7b",
+    model: "llama3:8b",
     prompt,
     stream: false
 });
@@ -47,10 +47,10 @@ router.post('/chat', async (req, res) => {
     }
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: model || 'llama3:8b',
-            messages: messages,
-            stream: false // <-- Bunu ekle!
-        });
+    model: model || 'llama3:8b',
+    messages: messages,
+    stream: true
+}, { responseType: 'stream' });
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(response.data);
