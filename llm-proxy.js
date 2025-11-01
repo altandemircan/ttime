@@ -2,10 +2,6 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-const express = require('express');
-const axios = require('axios');
-const router = express.Router();
-
 // Plan summary endpoint
 router.post('/plan-summary', async (req, res) => {
     const { city, country } = req.body;
