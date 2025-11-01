@@ -10092,6 +10092,26 @@ function typeWriterEffect(element, text, speed = 18, callback) {
   type();
 }
 
+
+function startStreamingTypewriterEffect(element, queue, speed = 18) {
+  if (!queue.length) return;
+  let i = 0;
+  function type() {
+    if (queue.length === 0) return;
+    const chunk = queue[0];
+    if (i < chunk.length) {
+      element.innerHTML += chunk.charAt(i);
+      i++;
+      setTimeout(type, speed);
+    } else {
+      queue.shift();
+      i = 0;
+      type();
+    }
+  }
+  type();
+}
+
 document.addEventListener("DOMContentLoaded", function() {
   // 1. Butona tıklayınca chat ekranı aç/kapa
   var openBtn = document.getElementById('open-ai-chat-btn');
@@ -10115,44 +10135,41 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // AI yanıtı için loading div
-    var aiDiv = document.createElement('div');
-    aiDiv.innerHTML = '🤖 ...';
-    aiDiv.style.margin = '6px 0';
-    aiDiv.style.textAlign = 'left';
-    messagesDiv.appendChild(aiDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+     var aiDiv = document.createElement('div');
+  aiDiv.innerHTML = '🤖 ';
+  aiDiv.style.margin = '6px 0';
+  aiDiv.style.textAlign = 'left';
+  messagesDiv.appendChild(aiDiv);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Streaming başlat
-    const messages = JSON.stringify([
-      { role: "system", content: "You are a helpful assistant for travel and general questions." },
-      { role: "user", content: userMessage }
-    ]);
-    const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
+  const messages = JSON.stringify([
+    { role: "system", content: "You are a helpful assistant for travel and general questions." },
+    { role: "user", content: userMessage }
+  ]);
+  const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
 
-    let buffer = '';
-    let lastWrittenLength = 0;
+  let chunkQueue = [];
 
-    eventSource.onmessage = function(event) {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.message && data.message.content) {
-          buffer += data.message.content;
-          // Sadece yeni gelen kısmı harf harf ekle (öncekiler zaten yazıldı)
-          const newText = buffer.slice(lastWrittenLength);
-          lastWrittenLength = buffer.length;
-          typeWriterEffect(aiDiv, aiDiv.innerHTML.replace('🤖 ', '') + newText, 10);
-          aiDiv.innerHTML = '🤖 ' + aiDiv.innerHTML.replace('🤖 ', '');
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  eventSource.onmessage = function(event) {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.message && data.message.content) {
+        chunkQueue.push(data.message.content);
+        // Eğer yazıcı çalışmıyorsa başlat!
+        if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
+          startStreamingTypewriterEffect(aiDiv, chunkQueue, 10);
         }
-      } catch (e) {}
-    };
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+    } catch (e) {}
+  };
 
-    eventSource.addEventListener('end', function() {
-      eventSource.close();
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
-  }
+  eventSource.addEventListener('end', function() {
+    eventSource.close();
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+}
+
 
   // 3. Enter veya buton ile mesaj gönder
   var chatInput = document.getElementById('ai-chat-input');
