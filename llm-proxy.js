@@ -26,7 +26,7 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     try {
         // Doğru messages formatı!
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: "llama3:8b",
+            model: "gemma:2b",
             messages: [{ role: "user", content: prompt }],
             stream: false,
             max_tokens: 200
@@ -83,7 +83,7 @@ router.get('/chat-stream', async (req, res) => {
             messages[lastIdx].content += "\nYour answer MUST NOT exceed 600 characters.";
         }
     }
-    const model = 'llama3:8b';
+    const model = 'gemma:2b';
 
     try {
         const ollama = await axios({
