@@ -6988,7 +6988,7 @@ display: flex
 #ai-chat-box {
       display: flex;
     flex-direction: column;
-    padding: 10px;
+    gap: 10px;
 }
 #ai-chat-input {
    padding: 10px;
@@ -7011,13 +7011,10 @@ display: flex
     height: 16px;
     }
 
-.ai-chat-messages {
-   max-height: 240px;
+#ai-chat-messages {
+  max-height: 240px;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px 0; 
+    padding: 10px 0;
 }
 
 
