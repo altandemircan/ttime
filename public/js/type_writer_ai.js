@@ -41,9 +41,10 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
+
     let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
-let country = (window.selectedLocation && window.selectedLocation.country) || "";
-if (!city && !aiStaticInfo) return;
+    let country = (window.selectedLocation && window.selectedLocation.country) || "";
+    if (!city && !aiStaticInfo) return;
 
     // --- 1) İlk başta sadece spinner ve başlık var, ok YOK ---
     const aiDiv = document.createElement('div');
@@ -124,35 +125,32 @@ if (!city && !aiStaticInfo) return;
 
         // Streaming yok, direkt JSON oku:
         const ollamaData = await resp.json();
-        // Ollama cevabında .response alanı JSON string; parse et!
-        let aiObj = {};
-        try {
-            aiObj = JSON.parse(ollamaData.response);
-        } catch (e) {
-            aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
-            return;
-        }
+
+        // DOĞRU: JSON alanlarını doğrudan kullan!
+        let aiObj = ollamaData; // Artık JSON.parse gerek yok!
 
         window.lastTripAIInfo = {
-            summary: aiObj.summary || "",
-            tip: aiObj.tip || "",
-            highlight: aiObj.highlight || ""
+            summary: aiObj.summary || "Bilgi yok.",
+            tip: aiObj.tip || "Bilgi yok.",
+            highlight: aiObj.highlight || "Bilgi yok."
         };
-        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
         // Spinnerı gizle, kutuya yaz!
         if (aiSpinner) aiSpinner.style.display = "none";
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
+
         typeWriterEffect(aiSummary, aiObj.summary || "Bilgi yok.", 18, function() {
-  typeWriterEffect(aiTip, aiObj.tip || "Bilgi yok.", 18, function() {
-    typeWriterEffect(aiHighlight, aiObj.highlight || "Bilgi yok.", 18);
-  });
-});
+            typeWriterEffect(aiTip, aiObj.tip || "Bilgi yok.", 18, function() {
+                typeWriterEffect(aiHighlight, aiObj.highlight || "Bilgi yok.", 18);
+            });
+        });
 
         let elapsed = Math.round(performance.now() - t0);
         if (aiTime) aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
     } catch (e) {
         if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
+        // Kutuda hata göster
+        aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
     }
 }
