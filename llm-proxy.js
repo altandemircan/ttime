@@ -41,9 +41,6 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 });
 
 
-
-
-
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -53,21 +50,20 @@ router.get('/chat-stream', async (req, res) => {
 
     let finished = false;
 
-    // Frontendden gelen tüm mesaj geçmişi (array olarak geliyor)
+    // Tüm mesaj geçmişini frontendden al
     let messages = [];
     try {
         messages = JSON.parse(req.query.messages || "[]");
     } catch (e) {
         messages = [];
     }
-    // Son user mesajına karakter limiti ekle (son user mesajı genelde array'in son elemanı olur)
+    // Son user mesajına karakter limiti ekle
     if (messages.length > 0) {
         const lastIdx = messages.length - 1;
         if (messages[lastIdx].role === "user") {
             messages[lastIdx].content += "\nYour answer MUST NOT exceed 600 characters.";
         }
     }
-
     const model = 'llama3:8b';
 
     try {
