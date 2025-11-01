@@ -7028,7 +7028,7 @@ display: flex
     padding: 10px;
     background: #f9f9f9;
     border-radius: 20px;
-    height: calc(100vh - 184px);
+   height: calc(100vh - 160px);
     display: flex;
     flex-direction: column-reverse;
     justify-content: flex-start;
