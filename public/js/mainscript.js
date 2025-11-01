@@ -7588,20 +7588,7 @@ function switchToSignup() {
     document.getElementById("login-form").classList.add("hidden");
 }
 
-function hideLoadingPanel() {
-    // Ekranda loading paneli gizle
-    const panel = document.getElementById("loading-panel");
-    if (panel) {
-        panel.style.display = "none";
-    }
-}
-   function showLoadingPanel() {
-    // Ekranda loading paneli görünür yap
-    const panel = document.getElementById("loading-panel");
-    if (panel) {
-        panel.style.display = "grid"; // veya "block" da kullanılabilir ama "grid" ile tam ortalanır!
-    }
-}
+
 
     // Butonlara click eventi ekle
     document.querySelectorAll('.suggest-btn').forEach(btn => {
