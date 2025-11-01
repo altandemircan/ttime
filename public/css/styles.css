@@ -7107,3 +7107,7 @@ display: flex
     cursor: pointer;
     background: #faf8ff;
 }
+#ai-chat-send-btn img {
+    width: 16px;
+    height: 16px;
+    }
