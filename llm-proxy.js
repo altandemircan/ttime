@@ -39,6 +39,7 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         res.status(500).send('AI bilgi alınamadı.');
     }
 });
+
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -48,26 +49,26 @@ router.get('/chat-stream', async (req, res) => {
 
     let finished = false;
 
-    // 1. Mesajı başta oluştur!
-    const messages = JSON.stringify([
+    // Frontendden gelen tek parametre: userMessage
+    const userMessage = req.query.userMessage || "";
+
+    // Promptu ve model adını burada oluştur!
+    const prompt = userMessage + "\nYour answer MUST NOT exceed 600 characters.";
+    const messages = [
       { role: "system", content: "You are a helpful assistant for travel and general questions." },
-      { role: "user", content: `
-Write a travel guide about Gaziantep in Turkey.
-Your answer MUST NOT exceed 600 characters.
-Include history, cuisine, and top places.
-` }
-    ]);
+      { role: "user", content: prompt }
+    ];
+    const model = 'llama3:8b'; // Burada set ediyorsun, frontendden model gelmiyor
 
     try {
-        // 2. Ollama API'ya gönderirken max_tokens ile sınır koy!
         const ollama = await axios({
             method: 'post',
             url: 'http://127.0.0.1:11434/api/chat',
             data: {
-                model: req.query.model || 'llama3:8b',
-                messages: JSON.parse(messages),
+                model,
+                messages,
                 stream: true,
-                max_tokens: 100 // 600 karakter civarı için
+                max_tokens: 100 // yaklaşık 600 karakter
             },
             responseType: 'stream',
             timeout: 120000
@@ -109,6 +110,5 @@ Include history, cuisine, and top places.
         res.end();
     }
 });
-
 
 module.exports = router; 
