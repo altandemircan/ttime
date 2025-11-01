@@ -40,24 +40,41 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     }
 });
 
-router.post('/chat', async (req, res) => {
-    const { model, messages } = req.body;
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        return res.status(400).json({ error: 'messages array required' });
-    }
-    try {
-        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-    model: model || 'llama3:8b',
-    messages: messages,
-    stream: true
-}, { responseType: 'stream' });
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.json(response.data);
-    } catch (error) {
-        console.error('Chat LLM Error:', error?.response?.data || error?.message || error);
-        res.status(500).json({ error: 'AI yanıtı alınamadı.' });
-    }
+// Streaming chat endpoint (SSE response)
+router.get('/chat-stream', async (req, res) => {
+    // Mesajlar ve model query string ile gönderilecek
+    const { model = 'llama3:8b', messages } = req.query;
+    if (!messages) return res.status(400).send('messages required');
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const ollama = await axios({
+        method: 'post',
+        url: 'http://127.0.0.1:11434/api/chat',
+        data: {
+            model,
+            messages: JSON.parse(messages),
+            stream: true
+        },
+        responseType: 'stream'
+    });
+
+    ollama.data.on('data', chunk => {
+        // Her gelen chunk bir satır JSON!
+        const str = chunk.toString().trim();
+        if (str) {
+            // Her satırı SSE ile frontende gönder
+            res.write(`data: ${str}\n\n`);
+        }
+    });
+
+    ollama.data.on('end', () => {
+        res.write('event: end\ndata: [DONE]\n\n');
+        res.end();
+    });
 });
+
 
 module.exports = router; 
