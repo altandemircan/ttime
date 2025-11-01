@@ -7033,6 +7033,15 @@ display: flex
     border-radius: 16px;
     width: fit-content;
 }
+.chat-info {
+    text-align: center;
+    margin-bottom: 0;
+    color: #333333;
+    font-weight: 500;
+    background: aliceblue;
+    padding: 10px;
+    border-radius: 10px;
+}
 .ai-message {
     background: #f6f4ff;
   color: #1e293b;
