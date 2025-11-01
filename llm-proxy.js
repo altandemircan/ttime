@@ -24,23 +24,31 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
-        // Doğru messages formatı!
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
             model: "gemma:2b",
             messages: [{ role: "user", content: prompt }],
             stream: false,
             max_tokens: 200
         });
+
+        // Yanıtı debug et!
         console.log("Ollama response:", response.data);
 
-        // Yanıtı JSON olarak döndür
+        let jsonText = '';
+        if (typeof response.data === 'string') {
+            // Sadece ilk { ... } bloğunu çek!
+            const match = response.data.match(/\{[\s\S]*?\}/);
+            if (match) {
+                jsonText = match[0];
+            }
+        } else if (typeof response.data === 'object') {
+            jsonText = JSON.stringify(response.data);
+        }
+
         let jsonResponse;
         try {
-            jsonResponse = typeof response.data === 'string'
-                ? JSON.parse(response.data)
-                : response.data;
+            jsonResponse = JSON.parse(jsonText);
         } catch (e) {
-            // Yanıt JSON değilse, hata logla!
             console.error('Yanıt JSON değil:', response.data);
             res.status(500).send('AI geçersiz yanıt verdi.');
             return;
@@ -55,6 +63,11 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
     }
 });
+
+
+
+
+
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
