@@ -10068,54 +10068,8 @@ function attachImLuckyEvents() {
     }, 100);
   });
 }
-
-
-// Trip seçilince input-wrapper gizlensin
-document.addEventListener('click', function(e) {
-  if (e.target.closest('.trip-item')) {
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = 'none';
-  }
-});
-// "trip-main-box" veya "trip-info-box" tıklanınca input-wrapper'ı gizle
-document.addEventListener('click', function(e) {
-  if (
-    e.target.closest('.trip-main-box') ||
-    e.target.closest('.trip-info-box') ||
-    e.target.closest('.trip-title')
-  ) {
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = 'none';
-  }
-});
-
-function showLoadingPanel() {
-  var loadingPanel = document.getElementById("loading-panel");
-  if (loadingPanel) loadingPanel.style.display = "flex";
-  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-}
-
-function hideLoadingPanel() {
-    var loadingPanel = document.getElementById("loading-panel");
-    if (loadingPanel) loadingPanel.style.display = "none";
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
-}
-
-
 document.addEventListener("DOMContentLoaded", function() {
   // 1. CHAT BOX HER ZAMAN AÇIK! Aç/kapa olayı yok!
-  // (Aşağıdaki kod tamamen kaldırıldı)
-  // var openBtn = document.getElementById('open-ai-chat-btn');
-  // var chatBox = document.getElementById('ai-chat-box');
-  // if (openBtn && chatBox) {
-  //   openBtn.addEventListener('click', function () {
-  //     chatBox.style.display = (chatBox.style.display === 'none' || !chatBox.style.display) ? 'flex' : 'none';
-  //   });
-  // }
 
   // 2. Mesaj gönderme fonksiyonu (streaming ile)
   async function sendAIChatMessage(userMessage) {
@@ -10155,7 +10109,7 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         }
         if (data.done === true) {
-          console.log('SSE done:true, AI cevabı tamamlandı.');
+          console.log('SSE done:true, AI response completed.');
         }
       } catch (e) {
         console.error('SSE message parse error:', e);
@@ -10167,7 +10121,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error('SSE error:', event);
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
-        aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
+        aiDiv.innerHTML += "<br><span style='color:red'>AI connection error!</span>";
         sseEndedOrErrored = true;
       }
     };
@@ -10177,7 +10131,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log('SSE end event');
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
-        aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
+        // AI cevabı tamamlandı mesajı kaldırıldı!
         sseEndedOrErrored = true;
       }
     });
