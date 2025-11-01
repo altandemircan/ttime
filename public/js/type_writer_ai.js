@@ -42,8 +42,8 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
     let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
-    let country = (window.selectedLocation && window.selectedLocation.country) || "";
-    if (!city && !aiStaticInfo) return;
+let country = (window.selectedLocation && window.selectedLocation.country) || "";
+if (!city && !aiStaticInfo) return;
 
     // --- 1) İlk başta sadece spinner ve başlık var, ok YOK ---
     const aiDiv = document.createElement('div');
@@ -113,7 +113,9 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
     }
 
     // === 3) API'dan veri çekiliyor: loading anında sadece spinner var ===
-    try {
+    let jsonText = "";
+    let firstChunkWritten = false;
+   try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -122,9 +124,14 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
 
         // Streaming yok, direkt JSON oku:
         const ollamaData = await resp.json();
-
-        // Backend doğrudan JSON döndürüyorsa:
-        let aiObj = ollamaData; // Doğrudan kullan!
+        // Ollama cevabında .response alanı JSON string; parse et!
+        let aiObj = {};
+        try {
+            aiObj = JSON.parse(ollamaData.response);
+        } catch (e) {
+            aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
+            return;
+        }
 
         window.lastTripAIInfo = {
             summary: aiObj.summary || "",
