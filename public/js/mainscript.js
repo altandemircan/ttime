@@ -10159,37 +10159,45 @@ document.addEventListener("DOMContentLoaded", function() {
   const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
 
   let chunkQueue = [];
+let sseEndedOrErrored = false;
 
-  eventSource.onmessage = function(event) {
-      console.log('SSE message:', event.data); // BURAYA
-    try {
-      const data = JSON.parse(event.data);
-      if (data.message && data.message.content) {
-        chunkQueue.push(data.message.content);
-        // Eğer yazıcı çalışmıyorsa başlat!
-        if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
-          startStreamingTypewriterEffect(aiDiv, chunkQueue, 10);
-        }
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+eventSource.onmessage = function(event) {
+  if (sseEndedOrErrored) return;
+  console.log('SSE message:', event.data);
+  try {
+    const data = JSON.parse(event.data);
+    if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
+      chunkQueue.push(data.message.content);
+      if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
+        startStreamingTypewriterEffect(aiDiv, chunkQueue, 5);
       }
-    } catch (e) {}
-  };
+    }
+    if (data.done === true) {
+      console.log('SSE done:true, AI cevabı tamamlandı.');
+    }
+  } catch (e) {
+    console.error('SSE message parse error:', e);
+  }
+};
+
 eventSource.onerror = function(event) {
-  console.error('SSE error:', event);
-  // Typewriter ve queue'yu durdur
-  if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-  chunkQueue.length = 0;
-  // İstersen ekrana hata mesajı yaz:
-  aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
+  if (!sseEndedOrErrored) {
+    console.error('SSE error:', event);
+    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+    chunkQueue.length = 0;
+    aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
+    sseEndedOrErrored = true;
+  }
 };
 
 eventSource.addEventListener('end', function() {
-  console.log('SSE end event');
-  // Typewriter ve queue'yu durdur
-  if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-  chunkQueue.length = 0;
-  // Ekrana "cevap tamamlandı" yazabilirsin:
-  aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
+  if (!sseEndedOrErrored) {
+    console.log('SSE end event');
+    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+    chunkQueue.length = 0;
+    aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
+    sseEndedOrErrored = true;
+  }
 });
 }
 
