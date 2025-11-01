@@ -7028,7 +7028,27 @@ display: flex
     padding: 16px;
     border-radius: 16px;
 }
-
+.ai-input-wrapper {
+        width: -webkit-fill-available;
+    position: relative;
+    gap: 10px;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    position: relative;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 10px;
+    padding-inline: 0;
+    gap: 10px;
+    border: 1px solid #ddd;
+    transition: all 0.2s 
+ease-in-out;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
 /* Form Konteyner */
 .form-container {
  text-align: center;
