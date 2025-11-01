@@ -7021,7 +7021,13 @@ display: flex
     line-height: 1.6;
     margin-bottom: 10px;
 }
-
+.ai-chat-messages div {
+    margin: 10px 0px;
+    text-align: left;
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 16px;
+}
 
 /* Form Konteyner */
 .form-container {
