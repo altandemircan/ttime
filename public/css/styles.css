@@ -6986,8 +6986,9 @@ display: flex
 
 
 #ai-chat-box {
-    display: flex;
+      display: flex;
     flex-direction: column;
+    padding: 10px;
 }
 #ai-chat-input {
    padding: 10px;
@@ -7022,23 +7023,26 @@ display: flex
 
 /* Form Konteyner */
 .form-container {
-    text-align: center;
-    padding: 20px;
+ text-align: center;
+    padding: 10px;
     background: #f9f9f9;
     border-radius: 20px;
     height: calc(100vh - 184px);
     display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-        height: auto;
-
+    flex-direction: column-reverse;
+    justify-content: flex-start;
+    max-height: -webkit-fill-available;
 }
 
 /* Form İçeriği */
 .form-content {
-    display: block;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+   display: block;
+    transition: opacity 0.3s 
+ease, transform 0.3s 
+ease;
     font-size: 0.9rem;
+    /* max-height: 100vh; */
+    overflow-y: scroll;
 }
 
 .hidden {
