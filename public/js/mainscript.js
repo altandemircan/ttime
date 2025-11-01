@@ -10137,7 +10137,7 @@ document.addEventListener("DOMContentLoaded", function() {
       { role: "system", content: "You are a helpful assistant for travel and general questions." },
       { role: "user", content: userMessage }
     ]);
-    const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
+    const eventSource = new EventSource(`/llm-proxy/chat-stream?model=gemma:7bb&messages=${encodeURIComponent(messages)}`);
 
     let chunkQueue = [];
     let sseEndedOrErrored = false;
