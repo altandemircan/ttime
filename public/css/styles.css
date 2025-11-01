@@ -6986,10 +6986,10 @@ display: flex
 
 
 #ai-chat-box {
-      display: flex;
+    display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 10px;
+    padding: 10px 10px 10px 0px;
 }
 #ai-chat-input {
    padding: 10px;
@@ -7023,7 +7023,7 @@ display: flex
     line-height: 1.6;
     margin-bottom: 10px;
 }
-.ai-chat-messages div {
+#ai-chat-messages div {
     margin: 10px 0px;
     text-align: left;
     background: #f9f9f9;
