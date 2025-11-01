@@ -7087,11 +7087,11 @@ display: flex
 
 
 
-.ai-chat-box {
+#ai-chat-box {
     display: flex;
     flex-direction: column;
 }
-.ai-chat-input {
+#ai-chat-input {
         flex: 1;
     width: -webkit-fill-available;
     display: flex;
@@ -7110,7 +7110,7 @@ display: flex
 ease-in-out;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }
-.ai-chat-send-btn {
+#ai-chat-send-btn {
         border: none;
     height: 24px;
     width: 24px;
