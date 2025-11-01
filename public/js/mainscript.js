@@ -10077,44 +10077,23 @@ function hideLoadingPanel() {
         document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
     }
 }
-// Typewriter efekti: her harf için delay uygular
-function typeWriterEffect(element, text, speed = 18, callback) {
-  let i = 0;
-  function type() {
-    if (i < text.length) {
-      element.innerHTML += text.charAt(i);
-      i++;
-      setTimeout(type, speed);
-    } else if (callback) {
-      callback();
-    }
-  }
-  type();
-}
 
-// AI chat streaming için: chunk kuyruğu ile harf harf yazdırır
-// AI chat streaming için: chunk kuyruğu ile harf harf yazdırır (console loglu)
-function startStreamingTypewriterEffect(element, queue, speed = 18) {
-  if (!queue.length) return;
+
+// Typewriter fonksiyonu (dosyanın başına ekle)
+function startStreamingTypewriterEffect(element, queue, speed = 5) {
   let chunkIndex = 0;
   let charIndex = 0;
+  let stopped = false;
+  element._typewriterStop = () => { stopped = true; };
   function type() {
-    if (chunkIndex >= queue.length) {
-      console.log('Typewriter: Bitti, tüm chunklar yazıldı.');
-      return;
-    }
+    if (stopped) return;
+    if (chunkIndex >= queue.length) return;
     const chunk = queue[chunkIndex];
-    if (charIndex === 0) {
-      // Yeni chunk başlarken log bas
-      console.log('Typewriter: Yeni chunk başlıyor:', chunk);
-    }
     if (charIndex < chunk.length) {
       element.innerHTML += chunk.charAt(charIndex);
-      console.log(`Typewriter: chunk[${chunkIndex}] char[${charIndex}]:`, chunk.charAt(charIndex));
       charIndex++;
       setTimeout(type, speed);
     } else {
-      // Bir sonraki chunk'a geç
       chunkIndex++;
       charIndex = 0;
       type();
@@ -10122,6 +10101,9 @@ function startStreamingTypewriterEffect(element, queue, speed = 18) {
   }
   type();
 }
+
+
+
 document.addEventListener("DOMContentLoaded", function() {
   // 1. Butona tıklayınca chat ekranı aç/kapa
   var openBtn = document.getElementById('open-ai-chat-btn');
@@ -10133,11 +10115,10 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // 2. Mesaj gönderme fonksiyonu (streaming ile)
-  async function sendAIChatMessage(userMessage) {
+ async function sendAIChatMessage(userMessage) {
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
 
-    // Kullanıcı mesajını ekle
     var userDiv = document.createElement('div');
     userDiv.textContent = '🧑 ' + userMessage;
     userDiv.style.margin = '6px 0';
@@ -10145,61 +10126,55 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-     var aiDiv = document.createElement('div');
-  aiDiv.innerHTML = '🤖 ';
-  aiDiv.style.margin = '6px 0';
-  aiDiv.style.textAlign = 'left';
-  messagesDiv.appendChild(aiDiv);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    var aiDiv = document.createElement('div');
+    aiDiv.innerHTML = '🤖 ';
+    aiDiv.style.margin = '6px 0';
+    aiDiv.style.textAlign = 'left';
+    messagesDiv.appendChild(aiDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-  const messages = JSON.stringify([
-    { role: "system", content: "You are a helpful assistant for travel and general questions." },
-    { role: "user", content: userMessage }
-  ]);
-  const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
+    const messages = JSON.stringify([
+      { role: "system", content: "You are a helpful assistant for travel and general questions." },
+      { role: "user", content: userMessage }
+    ]);
+    const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
 
-  let chunkQueue = [];
-let sseEndedOrErrored = false;
+    let chunkQueue = [];
+    let sseEndedOrErrored = false;
 
-eventSource.onmessage = function(event) {
-  if (sseEndedOrErrored) return;
-  console.log('SSE message:', event.data);
-  try {
-    const data = JSON.parse(event.data);
-    if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
-      chunkQueue.push(data.message.content);
-      if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
-        startStreamingTypewriterEffect(aiDiv, chunkQueue, 5);
+    eventSource.onmessage = function(event) {
+      if (sseEndedOrErrored) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
+          chunkQueue.push(data.message.content);
+          if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
+            startStreamingTypewriterEffect(aiDiv, chunkQueue, 5);
+          }
+        }
+      } catch (e) {
+        console.error('SSE message parse error:', e);
       }
-    }
-    if (data.done === true) {
-      console.log('SSE done:true, AI cevabı tamamlandı.');
-    }
-  } catch (e) {
-    console.error('SSE message parse error:', e);
-  }
-};
+    };
 
-eventSource.onerror = function(event) {
-  if (!sseEndedOrErrored) {
-    console.error('SSE error:', event);
-    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-    chunkQueue.length = 0;
-    aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
-    sseEndedOrErrored = true;
-  }
-};
+    eventSource.onerror = function(event) {
+      if (!sseEndedOrErrored) {
+        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+        chunkQueue.length = 0;
+        aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
+        sseEndedOrErrored = true;
+      }
+    };
 
-eventSource.addEventListener('end', function() {
-  if (!sseEndedOrErrored) {
-    console.log('SSE end event');
-    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-    chunkQueue.length = 0;
-    aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
-    sseEndedOrErrored = true;
+    eventSource.addEventListener('end', function() {
+      if (!sseEndedOrErrored) {
+        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+        chunkQueue.length = 0;
+        aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
+        sseEndedOrErrored = true;
+      }
+    });
   }
-});
-}
 
 
   // 3. Enter veya buton ile mesaj gönder
