@@ -14,14 +14,14 @@ router.post('/plan-summary', async (req, res) => {
     // DEBUG: Her sorguda şehir ne gidiyor görün
     console.log("AIReqCity:", aiReqCity);
 
-    const prompt = `
+const prompt = `
 You are an expert travel assistant.
-For the city "${aiReqCity}", respond ONLY with a valid JSON object in this format (no code block, no explanation):
+For the city "${aiReqCity}", respond ONLY with a valid JSON object with these fields (no code block, no explanation):
 
 {
-  "summary": "Antalya, a vibrant city on Turkey's Mediterranean coast, offers stunning beaches, rich history, and vibrant nightlife.",
-  "tip": "Visit Kaleiçi for authentic local experiences and try the traditional Turkish breakfast.",
-  "highlight": "Don't miss the Düden Waterfalls and the ancient city of Termessos."
+  "summary": "...",
+  "tip": "...",
+  "highlight": "..."
 }
 
 If you don't know the answer, put "Bilgi yok." for that field.
