@@ -44,6 +44,7 @@ router.get('/chat-stream', async (req, res) => {
     if (!messages) return res.status(400).send('messages required');
 
     res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
@@ -60,14 +61,13 @@ router.get('/chat-stream', async (req, res) => {
                 stream: true
             },
             responseType: 'stream',
-            timeout: 120000 // 2 dakika timeout
+            timeout: 120000
         });
 
         ollama.data.on('data', chunk => {
             if (finished) return;
             const str = chunk.toString().trim();
             if (str) {
-                // Her satırı SSE ile frontende gönder
                 res.write(`data: ${str}\n\n`);
             }
         });
@@ -88,7 +88,6 @@ router.get('/chat-stream', async (req, res) => {
             }
         });
 
-        // Client disconnect olursa streami kapat!
         req.on('close', () => {
             if (!finished) {
                 finished = true;
