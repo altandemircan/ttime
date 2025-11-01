@@ -7024,13 +7024,21 @@ display: flex
     margin-bottom: 10px;
 }
 #ai-chat-messages div {
+
     margin: 10px 0px;
-    text-align: left;
+    
     background: #f9f9f9;
     padding: 10px;
     border-radius: 16px;
     width: fit-content;
 }
+.chat-message .ai-message {
+    text-align: left;
+}
+.chat-message .user-message {
+    text-align: right;
+}
+
 .ai-input-wrapper {
         width: -webkit-fill-available;
     position: relative;
