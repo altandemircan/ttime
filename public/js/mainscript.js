@@ -10131,24 +10131,19 @@ You are powered by Triptime.ai, and your primary goal is to help users discover 
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
 
-    // Kullanıcı mesajını ekle
-    var userDiv = document.createElement('div');
-    userDiv.textContent = '🧑 ' + userMessage;
-    userDiv.style.margin = '6px 0';
-    userDiv.style.textAlign = 'right';
-    messagesDiv.appendChild(userDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+   // Kullanıcı mesajı eklerken
+var userDiv = document.createElement('div');
+userDiv.className = "chat-message user-message";
+userDiv.id = "msg-" + messageId;
+userDiv.textContent = '🧑 ' + userMessage;
+messagesDiv.appendChild(userDiv);
 
-    // Chat geçmişine user mesajı ekle
-    chatHistory.push({ role: "user", content: userMessage });
-
-    // AI cevabı için div
-    var aiDiv = document.createElement('div');
-    aiDiv.innerHTML = '🤖 ';
-    aiDiv.style.margin = '6px 0';
-    aiDiv.style.textAlign = 'left';
-    messagesDiv.appendChild(aiDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+// AI mesajı eklerken
+var aiDiv = document.createElement('div');
+aiDiv.className = "chat-message ai-message";
+aiDiv.id = "msg-" + (messageId + 1);
+aiDiv.innerHTML = '🤖 ';
+messagesDiv.appendChild(aiDiv);
 
     // Tüm chat geçmişini backend'e gönder
     const eventSource = new EventSource(
