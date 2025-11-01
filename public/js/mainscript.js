@@ -10106,9 +10106,9 @@ function hideLoadingPanel() {
 }
 
 
-
 document.addEventListener("DOMContentLoaded", function() {
-  // // 1. Butona tıklayınca chat ekranı aç/kapa
+  // 1. CHAT BOX HER ZAMAN AÇIK! Aç/kapa olayı yok!
+  // (Aşağıdaki kod tamamen kaldırıldı)
   // var openBtn = document.getElementById('open-ai-chat-btn');
   // var chatBox = document.getElementById('ai-chat-box');
   // if (openBtn && chatBox) {
@@ -10138,7 +10138,7 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(aiDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Artık sadece userMessage gönderiyoruz!
+    // Sadece userMessage gönderiyoruz!
     const eventSource = new EventSource(`/llm-proxy/chat-stream?userMessage=${encodeURIComponent(userMessage)}`);
 
     let chunkQueue = [];
