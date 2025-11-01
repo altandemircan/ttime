@@ -10077,8 +10077,22 @@ function hideLoadingPanel() {
         document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
     }
 }
+// Typewriter efekti: her harf için delay uygular
+function typeWriterEffect(element, text, speed = 18, callback) {
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      element.innerHTML += text.charAt(i);
+      i++;
+      setTimeout(type, speed);
+    } else if (callback) {
+      callback();
+    }
+  }
+  type();
+}
 
- document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function() {
   // 1. Butona tıklayınca chat ekranı aç/kapa
   var openBtn = document.getElementById('open-ai-chat-btn');
   var chatBox = document.getElementById('ai-chat-box');
@@ -10088,7 +10102,7 @@ function hideLoadingPanel() {
     });
   }
 
-  // 2. Mesaj gönderme fonksiyonu
+  // 2. Mesaj gönderme fonksiyonu (streaming ile)
   async function sendAIChatMessage(userMessage) {
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
@@ -10101,33 +10115,43 @@ function hideLoadingPanel() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // AI yanıtı için loading...
+    // AI yanıtı için loading div
     var aiDiv = document.createElement('div');
-    aiDiv.textContent = '🤖 ...';
+    aiDiv.innerHTML = '🤖 ...';
     aiDiv.style.margin = '6px 0';
     aiDiv.style.textAlign = 'left';
     messagesDiv.appendChild(aiDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Basit API: ollama chat endpoint (örnek)
-    try {
-      const resp = await fetch('/llm-proxy/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: "llama3:8b", // Backend modelini burada ayarla!
-          messages: [
-            { role: "system", content: "You are a helpful assistant for travel and general questions." },
-            { role: "user", content: userMessage }
-          ]
-        })
-      });
-      const data = await resp.json();
-      aiDiv.textContent = '🤖 ' + (data.message?.content || "AI yanıtı alınamadı.");
-    } catch (e) {
-      aiDiv.textContent = '🤖 Yanıt alınamadı!';
-    }
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // Streaming başlat
+    const messages = JSON.stringify([
+      { role: "system", content: "You are a helpful assistant for travel and general questions." },
+      { role: "user", content: userMessage }
+    ]);
+    const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
+
+    let buffer = '';
+    let lastWrittenLength = 0;
+
+    eventSource.onmessage = function(event) {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.message && data.message.content) {
+          buffer += data.message.content;
+          // Sadece yeni gelen kısmı harf harf ekle (öncekiler zaten yazıldı)
+          const newText = buffer.slice(lastWrittenLength);
+          lastWrittenLength = buffer.length;
+          typeWriterEffect(aiDiv, aiDiv.innerHTML.replace('🤖 ', '') + newText, 10);
+          aiDiv.innerHTML = '🤖 ' + aiDiv.innerHTML.replace('🤖 ', '');
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+      } catch (e) {}
+    };
+
+    eventSource.addEventListener('end', function() {
+      eventSource.close();
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
   }
 
   // 3. Enter veya buton ile mesaj gönder
@@ -10147,4 +10171,4 @@ function hideLoadingPanel() {
       }
     });
   }
-}); 
+});
