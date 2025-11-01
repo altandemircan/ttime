@@ -39,28 +39,11 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         res.status(500).send('AI bilgi alınamadı.');
     }
 });
-
-
 router.get('/chat-stream', async (req, res) => {
-    // İLGİLİ YERE YAZIYORSUN:
-    const messages = JSON.stringify([
-        { role: "system", content: "You are a helpful assistant for travel and general questions." },
-        { role: "user", content: `
-Write a VERY LONG, detailed and exhaustive travel guide about Gaziantep in Turkey.
-Include ALL of the following:
-- History and culture (minimum 5 sentences)
-- Food and cuisine (especially baklava/kebabs for Gaziantep)
-- Must-see places and hidden gems (minimum 5 spots)
-- Practical tips for travelers
-- Fun facts and local secrets
-Do NOT stop early. Use at least 400 words. If you reach a limit, continue the answer from where you left off.
-` }
-    ]);
-
-    const { model = 'llama2:7b' } = req.query;
+    const { model = 'llama2:7b', messages } = req.query;
+    if (!messages) return res.status(400).send('messages required');
 
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
@@ -69,19 +52,20 @@ Do NOT stop early. Use at least 400 words. If you reach a limit, continue the an
 
     try {
         const ollama = await axios({
-    method: 'post',
-    url: 'http://127.0.0.1:11434/api/chat',
-    data: {
-        model,
-        messages: JSON.parse(messages),
-        stream: true,
-        max_tokens: 2048 // <-- EKLE!
-    },
-    responseType: 'stream',
-    timeout: 120000
-});
+            method: 'post',
+            url: 'http://127.0.0.1:11434/api/chat',
+            data: {
+                model,
+                messages: JSON.parse(messages),
+                stream: true
+            },
+            responseType: 'stream',
+            timeout: 120000
+        });
 
+        // CHUNK LOG!
         ollama.data.on('data', chunk => {
+            console.log('CHUNK:', chunk.toString()); // BURAYA
             if (finished) return;
             const str = chunk.toString().trim();
             if (str) {
@@ -89,7 +73,9 @@ Do NOT stop early. Use at least 400 words. If you reach a limit, continue the an
             }
         });
 
+        // END LOG!
         ollama.data.on('end', () => {
+            console.log('STREAM END'); // BURAYA
             if (!finished) {
                 finished = true;
                 res.write('event: end\ndata: [DONE]\n\n');
@@ -97,7 +83,9 @@ Do NOT stop early. Use at least 400 words. If you reach a limit, continue the an
             }
         });
 
+        // ERROR LOG!
         ollama.data.on('error', (err) => {
+            console.error('STREAM ERROR', err); // BURAYA
             if (!finished) {
                 finished = true;
                 res.write(`event: error\ndata: ${err.message}\n\n`);
@@ -112,6 +100,7 @@ Do NOT stop early. Use at least 400 words. If you reach a limit, continue the an
             }
         });
     } catch (error) {
+        console.error('STREAM ERROR (catch)', error); // BURAYA
         finished = true;
         res.write(`event: error\ndata: ${error.message}\n\n`);
         res.end();
