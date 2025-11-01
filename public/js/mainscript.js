@@ -10071,11 +10071,11 @@ function attachImLuckyEvents() {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-  // Chat geçmişini globalde tut
+  // Chat geçmişini tut, sistem prompt sade!
   let chatHistory = [
     {
       role: "system",
-      content: "You are a helpful assistant for travel and general questions. Give direct, concise answers without repeating instructions or asking what to ask."
+      content: "You are a helpful assistant for travel and general questions. Answer directly and concisely. If the user specifies a location, give a brief travel summary for that place."
     }
   ];
 
@@ -10102,7 +10102,7 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(aiDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Tüm chat geçmişini backend'e gönderiyoruz!
+    // Tüm chat geçmişini backend'e gönder
     const eventSource = new EventSource(
       `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
     );
