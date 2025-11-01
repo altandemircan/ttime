@@ -10109,6 +10109,7 @@ document.addEventListener("DOMContentLoaded", function() {
     userDiv.textContent = '🧑 ' + userMessage;
     userDiv.style.margin = '6px 0';
     userDiv.style.textAlign = 'right';
+    userDiv.style.backgroundColor = '#ff9900';
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
