@@ -40,7 +40,7 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     }
 });
 router.get('/chat-stream', async (req, res) => {
-    const { model = 'gemma:7b', messages } = req.query;
+    const { model = 'llama3:8b', messages } = req.query;
     if (!messages) return res.status(400).send('messages required');
 
     res.setHeader('Content-Type', 'text/event-stream');
