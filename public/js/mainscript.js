@@ -10092,26 +10092,36 @@ function typeWriterEffect(element, text, speed = 18, callback) {
   type();
 }
 
-
+// AI chat streaming için: chunk kuyruğu ile harf harf yazdırır
+// AI chat streaming için: chunk kuyruğu ile harf harf yazdırır (console loglu)
 function startStreamingTypewriterEffect(element, queue, speed = 18) {
   if (!queue.length) return;
-  let i = 0;
+  let chunkIndex = 0;
+  let charIndex = 0;
   function type() {
-    if (queue.length === 0) return;
-    const chunk = queue[0];
-    if (i < chunk.length) {
-      element.innerHTML += chunk.charAt(i);
-      i++;
+    if (chunkIndex >= queue.length) {
+      console.log('Typewriter: Bitti, tüm chunklar yazıldı.');
+      return;
+    }
+    const chunk = queue[chunkIndex];
+    if (charIndex === 0) {
+      // Yeni chunk başlarken log bas
+      console.log('Typewriter: Yeni chunk başlıyor:', chunk);
+    }
+    if (charIndex < chunk.length) {
+      element.innerHTML += chunk.charAt(charIndex);
+      console.log(`Typewriter: chunk[${chunkIndex}] char[${charIndex}]:`, chunk.charAt(charIndex));
+      charIndex++;
       setTimeout(type, speed);
     } else {
-      queue.shift();
-      i = 0;
+      // Bir sonraki chunk'a geç
+      chunkIndex++;
+      charIndex = 0;
       type();
     }
   }
   type();
 }
-
 document.addEventListener("DOMContentLoaded", function() {
   // 1. Butona tıklayınca chat ekranı aç/kapa
   var openBtn = document.getElementById('open-ai-chat-btn');
@@ -10151,6 +10161,7 @@ document.addEventListener("DOMContentLoaded", function() {
   let chunkQueue = [];
 
   eventSource.onmessage = function(event) {
+      console.log('SSE message:', event.data); // BURAYA
     try {
       const data = JSON.parse(event.data);
       if (data.message && data.message.content) {
@@ -10165,6 +10176,8 @@ document.addEventListener("DOMContentLoaded", function() {
   };
 
   eventSource.addEventListener('end', function() {
+      console.log('SSE end event'); // BURAYA
+
     eventSource.close();
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
