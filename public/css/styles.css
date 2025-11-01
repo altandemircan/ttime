@@ -1705,108 +1705,6 @@ ease;
     padding: 4px 6px;
 }
 
-/* Form Konteyner */
-.form-container {
-    text-align: center;
-    padding: 20px;
-    background: #f9f9f9;
-
-    border-radius: 20px;
-}
-
-/* Form İçeriği */
-.form-content {
-    display: block;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    font-size: 0.9rem;
-}
-
-.hidden {
-    display: none;
-}
-
-#login-form h2,
-#signup-form h2 {
-    text-align: left;
-}
-
-/* Input Grupları */
-.input-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-.input-group label {
-    font-size: 14px;
-    margin-bottom: 5px;
-}
-
-.input-group input {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    width: -webkit-fill-available;
-}
-
-/* Buton */
-.form-btn {
-    width: 100%;
-    padding: 10px;
-    background: #8a4af3;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-.form-btn:hover {
-    background: #0056b3;
-}
-
-/* Sosyal Medya Giriş */
-.social-login {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.social-btn {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.social-btn img {
-    width: 18px;
-    height: 18px;
-}
-
-/* Geçiş Linkleri */
-.switch-form {
-    margin-top: 15px;
-    font-size: 14px;
-}
-
-.switch-form a {
-    color: #007bff;
-    text-decoration: none;
-}
-
-.switch-form a:hover {
-    text-decoration: underline;
-}
 
 
 .addtotrip {
@@ -7111,3 +7009,107 @@ display: flex
     width: 16px;
     height: 16px;
     }
+
+
+/* Form Konteyner */
+.form-container {
+    text-align: center;
+    padding: 20px;
+    background: #f9f9f9;
+        height: calc(100vh - 184px);
+    border-radius: 20px;
+}
+
+/* Form İçeriği */
+.form-content {
+    display: block;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.hidden {
+    display: none;
+}
+
+#login-form h2,
+#signup-form h2 {
+    text-align: left;
+}
+
+/* Input Grupları */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.input-group label {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.input-group input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    width: -webkit-fill-available;
+}
+
+/* Buton */
+.form-btn {
+    width: 100%;
+    padding: 10px;
+    background: #8a4af3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.form-btn:hover {
+    background: #0056b3;
+}
+
+/* Sosyal Medya Giriş */
+.social-login {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.social-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.social-btn img {
+    width: 18px;
+    height: 18px;
+}
+
+/* Geçiş Linkleri */
+.switch-form {
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.switch-form a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.switch-form a:hover {
+    text-decoration: underline;
+}
