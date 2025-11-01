@@ -10096,10 +10096,10 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-let chatHistory = [
-  {
-    role: "system",
-    content: `
+  let chatHistory = [
+    {
+      role: "system",
+      content: `
 You are Triptime.ai’s intelligent travel assistant. 
 You ONLY answer questions about travel, trip planning, tourism, city/country information, hotels, routes, food/restaurants, transportation, local activities, and places to visit.
 
@@ -10123,40 +10123,84 @@ Your expertise is strictly limited to:
 
 If the user's question is not about travel, reply: "Sorry, I am designed to answer only travel-related questions such as trip planning, places to visit, food, transportation, and hotels."
 You are powered by Triptime.ai, and your primary goal is to help users discover and plan amazing trips.
+
+**IMPORTANT:** Each user has a daily limit of 10 questions. If the user reaches the daily limit, do NOT answer further questions and politely inform them to come back tomorrow.
 `
+    }
+  ];
+
+  // Günlük soru limiti için yardımcı fonksiyonlar (localStorage ile)
+  function getDailyQuestionCount() {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = "questionCount_" + today;
+    return parseInt(localStorage.getItem(key) || "0", 10);
   }
-];
+  function incrementQuestionCount() {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = "questionCount_" + today;
+    let count = getDailyQuestionCount();
+    localStorage.setItem(key, count + 1);
+  }
+  function canAskQuestion() {
+    return getDailyQuestionCount() < 10;
+  }
 
-async function sendAIChatMessage(userMessage) {
+  // Bilgilendirme mesajı (ilk açılışta)
   var messagesDiv = document.getElementById('ai-chat-messages');
-  if (!messagesDiv) return;
+  if (messagesDiv) {
+    var infoDiv = document.createElement("div");
+    infoDiv.className = "chat-info";
+    infoDiv.textContent = "Triptime.ai: You have a daily limit of 10 questions. Use them wisely!";
+    infoDiv.style.background = "#fffde6";
+    infoDiv.style.padding = "10px";
+    infoDiv.style.margin = "6px 0";
+    infoDiv.style.borderRadius = "12px";
+    infoDiv.style.textAlign = "center";
+    infoDiv.style.fontWeight = "bold";
+    messagesDiv.appendChild(infoDiv);
+  }
 
-  // Kullanıcı mesajını ekle
-  var userDiv = document.createElement('div');
-  userDiv.textContent = '🧑 ' + userMessage;
+  async function sendAIChatMessage(userMessage) {
+    var messagesDiv = document.getElementById('ai-chat-messages');
+    if (!messagesDiv) return;
 
-  userDiv.className = 'chat-message user-message'; // <-- class ekledik
-  messagesDiv.appendChild(userDiv);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // Günlük soru hakkı kontrolü
+    if (!canAskQuestion()) {
+      var limitDiv = document.createElement('div');
+      limitDiv.className = 'chat-message ai-message';
+      limitDiv.style.background = "#ffeaea";
+      limitDiv.style.textAlign = "center";
+      limitDiv.style.fontWeight = "bold";
+      limitDiv.textContent = "🤖 You have reached your daily question limit (10). Please come back tomorrow!";
+      messagesDiv.appendChild(limitDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      return;
+    }
 
-  // Chat geçmişine user mesajı ekle
-  chatHistory.push({ role: "user", content: userMessage });
+    // Kullanıcı mesajını ekle
+    var userDiv = document.createElement('div');
+    userDiv.textContent = '🧑 ' + userMessage;
+    userDiv.className = 'chat-message user-message';
+    messagesDiv.appendChild(userDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-  // AI cevabı için div
-  var aiDiv = document.createElement('div');
-  aiDiv.innerHTML = '🤖 ';
+    // Chat geçmişine user mesajı ekle
+    chatHistory.push({ role: "user", content: userMessage });
 
-  aiDiv.className = 'chat-message ai-message'; // <-- class ekledik
-  messagesDiv.appendChild(aiDiv);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // AI cevabı için div
+    var aiDiv = document.createElement('div');
+    aiDiv.innerHTML = '🤖 ';
+    aiDiv.className = 'chat-message ai-message';
+    messagesDiv.appendChild(aiDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-  // Tüm chat geçmişini backend'e gönder
-  const eventSource = new EventSource(
-    `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
-  );
+    // Tüm chat geçmişini backend'e gönder
+    const eventSource = new EventSource(
+      `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+    );
 
-  let chunkQueue = [];
-  let sseEndedOrErrored = false;
+    let chunkQueue = [];
+    let sseEndedOrErrored = false;
     eventSource.onmessage = function(event) {
       if (sseEndedOrErrored) return;
       try {
@@ -10187,6 +10231,7 @@ async function sendAIChatMessage(userMessage) {
         // Tüm chunkları birleştirip assistant mesajı olarak ekle!
         const aiText = chunkQueue.join('');
         chatHistory.push({ role: "assistant", content: aiText });
+        incrementQuestionCount(); // Soru limiti artışı (AI cevaplandıktan sonra)
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
         sseEndedOrErrored = true;
