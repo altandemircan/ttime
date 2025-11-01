@@ -7012,9 +7012,13 @@ display: flex
     }
 
 #ai-chat-messages {
-  max-height: 240px;
+     max-height: 240px;
     overflow-y: auto;
     padding: 10px 0;
+    font-size: 1em;
+    color: #1e293b;
+    line-height: 1.6;
+    margin-bottom: 10px;
 }
 
 

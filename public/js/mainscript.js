@@ -10151,7 +10151,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
           chunkQueue.push(data.message.content);
           if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
-            startStreamingTypewriterEffect(aiDiv, chunkQueue, 5);
+            startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
           }
         }
         if (data.done === true) {
