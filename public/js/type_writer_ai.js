@@ -1,7 +1,7 @@
 // Typewriter efekti, her harf için delay uygular
 function typeWriterEffect(element, text, speed = 18, callback) {
     let i = 0;
-    element.innerHTML = ""; // Hatalı üst üste birikmeyi engelle!
+    element.innerHTML = "🤖 "; // Emoji sabit başta!
     function type() {
         if (i < text.length) {
             element.innerHTML += text.charAt(i);
@@ -13,7 +13,6 @@ function typeWriterEffect(element, text, speed = 18, callback) {
     }
     type();
 }
-
 // Şehir seçince çağrılır: AI başlasın, ilk karakter gelince plan aktifleşsin
 function onCitySelected(city) {
     let planAktif = false;
@@ -116,90 +115,41 @@ if (!city && !aiStaticInfo) return;
     // === 3) API'dan veri çekiliyor: loading anında sadece spinner var ===
     let jsonText = "";
     let firstChunkWritten = false;
-    try {
+   try {
         const resp = await fetch('/llm-proxy/plan-summary', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ city, country })
-});
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city, country })
+        });
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            let lines = buffer.split('\n');
-            buffer = lines.pop();
-            for (const line of lines) {
-                if (!line.trim()) continue;
-                try {
-                    const obj = JSON.parse(line);
-                    if (obj.response) {
-                        jsonText += obj.response;
-                        // === İLK CHUNK GELİNCE SPINNERI GİZLE, OKU EKLE, İÇERİĞİ AÇ ===
-                        if (!firstChunkWritten && obj.response.trim()) {
-                            firstChunkWritten = true;
-                            if (aiSpinner) aiSpinner.style.display = "none";
-                            // OK'u ekle
-                            const header = aiDiv.querySelector('#ai-toggle-header');
-                            const btn = document.createElement('button');
-                            btn.id = "ai-toggle-btn";
-                            btn.className = "arrow-btn";
-                            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
-                            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
-                            header.appendChild(btn);
-
-                            // COLLAPSE LOGIC
-                            const aiIcon = btn.querySelector('.arrow-icon');
-                            let expanded = true;
-                            btn.addEventListener('click', function(e) {
-                                e.stopPropagation();
-                                expanded = !expanded;
-                                if (expanded) {
-                                    aiContent.style.maxHeight = "1200px";
-                                    aiContent.style.opacity = "1";
-                                    aiIcon.classList.add('open');
-                                } else {
-                                    aiContent.style.maxHeight = "0";
-                                    aiContent.style.opacity = "0";
-                                    aiIcon.classList.remove('open');
-                                }
-                            });
-
-                            aiContent.style.maxHeight = "1200px";
-                            aiContent.style.opacity = "1";
-                            if (aiIcon) aiIcon.classList.add('open');
-                            if (typeof onFirstToken === "function") onFirstToken();
-                        }
-                    }
-                } catch {}
-            }
-        }
-
-        // JSON stringi al, kapanış } yoksa ekle
-        let jsonStr = extractFirstJson(jsonText);
-        if (jsonStr && jsonStr.trim().length > 0 && !jsonStr.trim().endsWith('}')) {
-            jsonStr = jsonStr.trim() + '}';
-        }
+        // Streaming yok, direkt JSON oku:
+        const ollamaData = await resp.json();
+        // Ollama cevabında .response alanı JSON string; parse et!
+        let aiObj = {};
         try {
-            const aiObj = JSON.parse(jsonStr);
-            window.lastTripAIInfo = {
-                summary: aiObj.summary || "",
-                tip: aiObj.tip || "",
-                highlight: aiObj.highlight || ""
-            };
-            if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-
-            typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
-                typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
-                    typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
-                });
-            });
+            aiObj = JSON.parse(ollamaData.response);
         } catch (e) {
             aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
+            return;
         }
+
+        window.lastTripAIInfo = {
+            summary: aiObj.summary || "",
+            tip: aiObj.tip || "",
+            highlight: aiObj.highlight || ""
+        };
+        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
+        // Spinnerı gizle, kutuya yaz!
+        if (aiSpinner) aiSpinner.style.display = "none";
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity = "1";
+        typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
+            typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
+                typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
+            });
+        });
+
         let elapsed = Math.round(performance.now() - t0);
         if (aiTime) aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
     } catch (e) {
