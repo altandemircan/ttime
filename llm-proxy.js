@@ -39,7 +39,7 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         res.status(500).send('AI bilgi alınamadı.');
     }
 });
-
+router.get('/test', (req, res) => res.send('llm-proxy test OK'));
 
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -64,7 +64,7 @@ router.get('/chat-stream', async (req, res) => {
             messages[lastIdx].content += "\nYour answer MUST NOT exceed 600 characters.";
         }
     }
-    const model = 'llama2:7b';
+    const model = 'llama3:8b';
 
     try {
         const ollama = await axios({
