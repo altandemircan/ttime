@@ -7589,7 +7589,6 @@ function switchToSignup() {
 }
 
 
-
     // Butonlara click eventi ekle
     document.querySelectorAll('.suggest-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -10105,7 +10104,12 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // 2. Mesaj gönderme fonksiyonu (streaming ile)
+
+document.addEventListener("DOMContentLoaded", function() {
+  let chatHistory = [
+    { role: "system", content: "You are a helpful assistant for travel and general questions. Answer directly and concisely. If the user specifies a location, give a brief travel summary for that place." }
+  ];
+
   async function sendAIChatMessage(userMessage) {
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
@@ -10118,6 +10122,9 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+    // Chat geçmişine user mesajı ekle
+    chatHistory.push({ role: "user", content: userMessage });
+
     // AI cevabı için div
     var aiDiv = document.createElement('div');
     aiDiv.innerHTML = '🤖 ';
@@ -10126,8 +10133,10 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(aiDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Artık sadece userMessage gönderiyoruz!
-    const eventSource = new EventSource(`/llm-proxy/chat-stream?userMessage=${encodeURIComponent(userMessage)}`);
+    // Tüm chat geçmişini backend'e gönder
+    const eventSource = new EventSource(
+      `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+    );
 
     let chunkQueue = [];
     let sseEndedOrErrored = false;
@@ -10139,11 +10148,8 @@ document.addEventListener("DOMContentLoaded", function() {
         if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
           chunkQueue.push(data.message.content);
           if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
-            startStreamingTypewriterEffect(aiDiv, chunkQueue, 5);
+            startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
           }
-        }
-        if (data.done === true) {
-          console.log('SSE done:true, AI cevabı tamamlandı.');
         }
       } catch (e) {
         console.error('SSE message parse error:', e);
@@ -10155,23 +10161,23 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error('SSE error:', event);
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
-        aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
+        aiDiv.innerHTML += "<br><span style='color:red'>AI connection error!</span>";
         sseEndedOrErrored = true;
       }
     };
 
     eventSource.addEventListener('end', function() {
       if (!sseEndedOrErrored) {
-        console.log('SSE end event');
+        // Tüm chunkları birleştirip assistant mesajı olarak ekle!
+        const aiText = chunkQueue.join('');
+        chatHistory.push({ role: "assistant", content: aiText });
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
-        aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
         sseEndedOrErrored = true;
       }
     });
   }
 
-  // 3. Enter veya buton ile mesaj gönder
   var chatInput = document.getElementById('ai-chat-input');
   var sendBtn = document.getElementById('ai-chat-send-btn');
   if (sendBtn && chatInput) {
