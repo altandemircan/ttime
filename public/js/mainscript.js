@@ -10094,38 +10094,11 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
   type();
 }
 
-
+// Sadece user mesajı ve assistant mesajı gönder, system prompt'u frontend'de tutmaya gerek yok
 document.addEventListener("DOMContentLoaded", function() {
-  let chatHistory = [
-    {
-      role: "system",
-      content: `
-You are Triptime.ai’s intelligent travel assistant. 
-You ONLY answer questions about travel, trip planning, tourism, city/country information, hotels, routes, food/restaurants, transportation, local activities, and places to visit.
+  let chatHistory = []; // Sadece user ve assistant mesajları olacak!
 
-If the user's question is not about travel, reply: "Sorry, I am designed to answer only travel-related questions such as trip planning, places to visit, food, transportation, and hotels."
-You are powered by Triptime.ai, and your primary goal is to help users discover and plan amazing trips.
-
-**IMPORTANT:** Each user has a daily limit of 10 questions. If the user reaches the daily limit, do NOT answer further questions and politely inform them to come back tomorrow.
-`
-    }
-  ];
-
-  // Günlük soru limiti için yardımcı fonksiyonlar (localStorage ile)
-  function getDailyQuestionCount() {
-    const today = new Date().toISOString().slice(0, 10);
-    const key = "questionCount_" + today;
-    return parseInt(localStorage.getItem(key) || "0", 10);
-  }
-  function incrementQuestionCount() {
-    const today = new Date().toISOString().slice(0, 10);
-    const key = "questionCount_" + today;
-    let count = getDailyQuestionCount();
-    localStorage.setItem(key, count + 1);
-  }
-  function canAskQuestion() {
-    return getDailyQuestionCount() < 10;
-  }
+  // Günlük soru limiti fonksiyonları aynı kalabilir...
 
   // Bilgilendirme mesajı (ilk açılışta)
   var messagesDiv = document.getElementById('ai-chat-messages');
@@ -10133,7 +10106,6 @@ You are powered by Triptime.ai, and your primary goal is to help users discover 
     var infoDiv = document.createElement("div");
     infoDiv.className = "chat-info";
     infoDiv.textContent = "Mira: You have a daily limit of 10 questions. Use them wisely!";
-   
     messagesDiv.appendChild(infoDiv);
   }
 
@@ -10171,7 +10143,7 @@ You are powered by Triptime.ai, and your primary goal is to help users discover 
     messagesDiv.appendChild(aiDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Tüm chat geçmişini backend'e gönder
+    // Sadece user/assistant mesajlarını backend'e gönder
     const eventSource = new EventSource(
       `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
     );
@@ -10205,10 +10177,9 @@ You are powered by Triptime.ai, and your primary goal is to help users discover 
 
     eventSource.addEventListener('end', function() {
       if (!sseEndedOrErrored) {
-        // Tüm chunkları birleştirip assistant mesajı olarak ekle!
         const aiText = chunkQueue.join('');
         chatHistory.push({ role: "assistant", content: aiText });
-        incrementQuestionCount(); // Soru limiti artışı (AI cevaplandıktan sonra)
+        incrementQuestionCount();
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
         sseEndedOrErrored = true;
