@@ -40,6 +40,10 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     }
 });
 
+
+
+
+
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -49,16 +53,22 @@ router.get('/chat-stream', async (req, res) => {
 
     let finished = false;
 
-    // Frontendden gelen tek parametre: userMessage
-    const userMessage = req.query.userMessage || "";
+    // Frontendden gelen tüm mesaj geçmişi (array olarak geliyor)
+    let messages = [];
+    try {
+        messages = JSON.parse(req.query.messages || "[]");
+    } catch (e) {
+        messages = [];
+    }
+    // Son user mesajına karakter limiti ekle (son user mesajı genelde array'in son elemanı olur)
+    if (messages.length > 0) {
+        const lastIdx = messages.length - 1;
+        if (messages[lastIdx].role === "user") {
+            messages[lastIdx].content += "\nYour answer MUST NOT exceed 600 characters.";
+        }
+    }
 
-    // Promptu ve model adını burada oluştur!
-    const prompt = userMessage + "\nYour answer MUST NOT exceed 600 characters.";
-    const messages = [
-      { role: "system", content: "You are a helpful assistant for travel and general questions." },
-      { role: "user", content: prompt }
-    ];
-    const model = 'llama3:8b'; // Burada set ediyorsun, frontendden model gelmiyor
+    const model = 'llama3:8b';
 
     try {
         const ollama = await axios({
@@ -68,7 +78,7 @@ router.get('/chat-stream', async (req, res) => {
                 model,
                 messages,
                 stream: true,
-                max_tokens: 100 // yaklaşık 600 karakter
+                max_tokens: 100
             },
             responseType: 'stream',
             timeout: 120000
