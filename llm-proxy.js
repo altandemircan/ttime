@@ -4,7 +4,6 @@ const router = express.Router();
 
 // Plan summary endpoint
 router.post('/plan-summary', async (req, res) => {
-    console.log("Plan-summary body:", req.body);
     const { city, country } = req.body;
     if (!city) {
         res.status(400).send('City is required');
@@ -21,6 +20,7 @@ Provide the following information about the city "${aiReqCity}":
   "highlight": "A unique highlight or must-see point for a visitor."
 }
 Respond only as JSON. Do not include any extra text, explanation, or code block.
+If you don't know the answer, put "Bilgi yok."
 `.trim();
 
     try {
@@ -34,9 +34,9 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         // Yanıtı debug et!
         console.log("Ollama response:", response.data);
 
+        // Yanıttan sadece ilk { ... } JSON bloğunu çek
         let jsonText = '';
         if (typeof response.data === 'string') {
-            // Sadece ilk { ... } bloğunu çek!
             const match = response.data.match(/\{[\s\S]*?\}/);
             if (match) {
                 jsonText = match[0];
@@ -63,7 +63,6 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
     }
 });
-
 
 
 
