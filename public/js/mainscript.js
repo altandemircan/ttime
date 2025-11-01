@@ -7589,7 +7589,6 @@ function switchToSignup() {
 }
 
 
-
     // Butonlara click eventi ekle
     document.querySelectorAll('.suggest-btn').forEach(btn => {
         btn.addEventListener('click', function() {
