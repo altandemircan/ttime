@@ -5377,23 +5377,25 @@ showRouteInfoBanner(day); // hemen ardından çağır
   }
 
   // Layer değişim fonksiyonu
-  function setExpandedMapTile(styleKey) {
-    if (expandedTileLayer) {
-      try { expandedMap.removeLayer(expandedTileLayer); } catch (_){}
-      expandedTileLayer = null;
+  function setExpandedMapTile(expandedMap, styleKey) {
+  // OSM tile server kullan!
+  const url = `http://72.61.83.101:8080/tile/{z}/{x}/{y}.png`;
+
+  let foundTile = null;
+  expandedMap.eachLayer(layer => {
+    if (layer instanceof L.TileLayer) {
+      foundTile = layer;
     }
-    expandedTileLayer = L.tileLayer(
-      `/api/mapbox/tiles/${styleKey}/{z}/{x}/{y}.png`,
-      {
-        tileSize: 256,
-        zoomOffset: 0,
-        attribution: '© Mapbox © OpenStreetMap',
-        crossOrigin: true
-      }
-    );
-    expandedTileLayer.addTo(expandedMap);
-    currentLayer = styleKey;
-  }
+  });
+  if (foundTile) expandedMap.removeLayer(foundTile);
+
+  L.tileLayer(url, {
+    tileSize: 256,
+    zoomOffset: 0,
+    attribution: '© OpenStreetMap contributors',
+    crossOrigin: true
+  }).addTo(expandedMap);
+}
 
   setExpandedMapTile(currentLayer);
 
