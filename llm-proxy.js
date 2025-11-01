@@ -39,41 +39,67 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         res.status(500).send('AI bilgi alınamadı.');
     }
 });
-
-// Streaming chat endpoint (SSE response)
 router.get('/chat-stream', async (req, res) => {
-    // Mesajlar ve model query string ile gönderilecek
     const { model = 'llama3:8b', messages } = req.query;
     if (!messages) return res.status(400).send('messages required');
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
 
-    const ollama = await axios({
-        method: 'post',
-        url: 'http://127.0.0.1:11434/api/chat',
-        data: {
-            model,
-            messages: JSON.parse(messages),
-            stream: true
-        },
-        responseType: 'stream'
-    });
+    let finished = false;
 
-    ollama.data.on('data', chunk => {
-        // Her gelen chunk bir satır JSON!
-        const str = chunk.toString().trim();
-        if (str) {
-            // Her satırı SSE ile frontende gönder
-            res.write(`data: ${str}\n\n`);
-        }
-    });
+    try {
+        const ollama = await axios({
+            method: 'post',
+            url: 'http://127.0.0.1:11434/api/chat',
+            data: {
+                model,
+                messages: JSON.parse(messages),
+                stream: true
+            },
+            responseType: 'stream',
+            timeout: 120000 // 2 dakika timeout
+        });
 
-    ollama.data.on('end', () => {
-        res.write('event: end\ndata: [DONE]\n\n');
+        ollama.data.on('data', chunk => {
+            if (finished) return;
+            const str = chunk.toString().trim();
+            if (str) {
+                // Her satırı SSE ile frontende gönder
+                res.write(`data: ${str}\n\n`);
+            }
+        });
+
+        ollama.data.on('end', () => {
+            if (!finished) {
+                finished = true;
+                res.write('event: end\ndata: [DONE]\n\n');
+                res.end();
+            }
+        });
+
+        ollama.data.on('error', (err) => {
+            if (!finished) {
+                finished = true;
+                res.write(`event: error\ndata: ${err.message}\n\n`);
+                res.end();
+            }
+        });
+
+        // Client disconnect olursa streami kapat!
+        req.on('close', () => {
+            if (!finished) {
+                finished = true;
+                res.end();
+            }
+        });
+    } catch (error) {
+        finished = true;
+        res.write(`event: error\ndata: ${error.message}\n\n`);
         res.end();
-    });
+    }
 });
 
 
