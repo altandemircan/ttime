@@ -77,9 +77,9 @@ router.get('/chat-stream', async (req, res) => {
 const systemPrompt = `
 You are a friendly and knowledgeable travel assistant.
 Help users discover and plan trips by providing clear, concise, and useful information about destinations, activities, food, transportation, hotels, and local tips.
-Give brief answers (maximum 300 characters) unless more detail is requested.
+Give brief answers (maximum 150 characters) unless more detail is requested.
 If asked about something unrelated to travel, politely say you only answer travel-related questions.
-`;
+`;  
 
     // Mesajları birleştir: system + diğer geçmiş
     const messages = [
@@ -97,7 +97,7 @@ If asked about something unrelated to travel, politely say you only answer trave
                 model,
                 messages,
                 stream: true,
-                max_tokens: 400 // Yanıtın 300 karakteri geçmemesi için yeterli
+                max_tokens: 200 // Yanıtın 300 karakteri geçmemesi için yeterli
             },
             responseType: 'stream',
             timeout: 180000 // 3 dakika
