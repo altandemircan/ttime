@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
+// Plan summary endpoint
 router.post('/plan-summary', async (req, res) => {
     console.log("Plan-summary body:", req.body);
     const { city, country } = req.body;
@@ -23,25 +24,42 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 `.trim();
 
     try {
-        // Sadece aktif OLLAMA portunu kullan!
+        // Doğru messages formatı!
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-    model: "zephyr:7b",
-    messages,
-    stream: true,
-    max_tokens: 200 // burada!
-});
+            model: "llama3:8b",
+            messages: [{ role: "user", content: prompt }],
+            stream: false,
+            max_tokens: 200
+        });
         console.log("Ollama response:", response.data);
+
+        // Yanıtı JSON olarak döndür
+        let jsonResponse;
+        try {
+            jsonResponse = typeof response.data === 'string'
+                ? JSON.parse(response.data)
+                : response.data;
+        } catch (e) {
+            // Yanıt JSON değilse, hata logla!
+            console.error('Yanıt JSON değil:', response.data);
+            res.status(500).send('AI geçersiz yanıt verdi.');
+            return;
+        }
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.json(response.data);
+        res.json(jsonResponse);
     } catch (error) {
-        console.error('LLM Proxy Error:', error?.response?.data || error?.message || error);
-        res.status(500).send('AI bilgi alınamadı.');
+        const errMsg = error?.response?.data || error?.message || String(error);
+        console.error('LLM Proxy Error:', errMsg);
+        res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
     }
 });
+
+// Test endpoint
 router.get('/test', (req, res) => res.send('llm-proxy test OK'));
 
+// Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -65,21 +83,21 @@ router.get('/chat-stream', async (req, res) => {
             messages[lastIdx].content += "\nYour answer MUST NOT exceed 600 characters.";
         }
     }
-    const model = 'zephyr:7b';
+    const model = 'llama3:8b';
 
     try {
         const ollama = await axios({
-    method: 'post',
-    url: 'http://127.0.0.1:11434/api/chat',
-    data: {
-        model,
-        messages,
-        stream: true,
-        max_tokens: 800 // <-- Bunu artır!
-    },
-    responseType: 'stream',
-    timeout: 180000 // istersen artır, ama asıl max_tokens!
-})
+            method: 'post',
+            url: 'http://127.0.0.1:11434/api/chat',
+            data: {
+                model,
+                messages,
+                stream: true,
+                max_tokens: 800 // <-- Uzun yanıt için artırabilirsin, CPU'da yavaş olur!
+            },
+            responseType: 'stream',
+            timeout: 180000 // 3 dakika
+        });
 
         ollama.data.on('data', chunk => {
             if (finished) return;
@@ -118,4 +136,4 @@ router.get('/chat-stream', async (req, res) => {
     }
 });
 
-module.exports = router; 
+module.exports = router;
