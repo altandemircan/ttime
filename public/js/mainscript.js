@@ -10069,15 +10069,15 @@ function hideLoadingPanel() {
 
 // Markdown'dan HTML'e çevirici fonksiyon
 function markdownToHtml(text) {
-  // Kalın yazı (**text**)
+  // Kalın yazı
   text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  // İtalik yazı (*text*)
+  // İtalik yazı
   text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  // Madde işareti ile liste başı
+  // Madde işaretiyle liste
   text = text.replace(/(?:^|\n)[*-] (.*?)(?=\n|$)/g, function(match, p1) {
     return `<li>${p1}</li>`;
   });
-  // <ul> ile sar (en az bir <li> varsa)
+  // Listeyi <ul> ile sarmala
   if (text.includes('<li>')) {
     text = text.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
   }
@@ -10213,18 +10213,18 @@ document.addEventListener("DOMContentLoaded", function() {
     };
 
     eventSource.addEventListener('end', function() {
-      if (!sseEndedOrErrored) {
-        const aiText = chunkQueue.join('');
-        chatHistory.push({ role: "assistant", content: aiText });
-        incrementQuestionCount();
-        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-        chunkQueue.length = 0;
-        sseEndedOrErrored = true;
+  if (!sseEndedOrErrored) {
+    const aiText = chunkQueue.join('');
+    chatHistory.push({ role: "assistant", content: aiText });
+    incrementQuestionCount();
+    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+    chunkQueue.length = 0;
+    sseEndedOrErrored = true;
 
-        // AI cevabını düzenli ve şık göster!
-        aiDiv.innerHTML = '🤖 ' + markdownToHtml(aiText);
-      }
-    });
+    // AI cevabını şık ve düzenli ekle!
+    aiDiv.innerHTML = '🤖 ' + markdownToHtml(aiText);
+  }
+});
   }
 
   var chatInput = document.getElementById('ai-chat-input');
