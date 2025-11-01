@@ -571,24 +571,22 @@ Your browser does not support the video tag.                  </video>
             <div class="sidebar_title">Start Chat with Mira!</div>
 
             <div class="form-container">
+                            
+                <div id="login-form" class="form-content">
+                    <form>
+                        <div class="input-group">
                             <!-- Sidebar'a eklenecek kısım (HTML, örnek) -->
 <div id="ai-chat-box">
   <div id="ai-chat-messages" style="max-height:240px;overflow-y:auto;"></div>
   <div style="display:flex;gap:6px;">
+    <label for="email">E-mail Address</label>
     <input id="ai-chat-input" type="text" placeholder="You can ask me anything about travel..." style="flex:1;">
     <button id="ai-chat-send-btn"><img src="/img/sendchat-icon.svg" alt="Send"></button>
   </div>
 </div>
-                <div id="login-form" class="form-content">
-                    <form>
-                        <div class="input-group">
-                            <label for="email">E-mail Address</label>
-                            <input type="email" id="email" placeholder="Enter your email address" required>
+                        
                         </div>
-                        <div class="input-group">
-                            <label for="password">Password</label>
-                            <input type="password" id="password" placeholder="Enter your password" required>
-                        </div>
+                       
                         <button type="submit" class="form-btn">Login</button>
                     </form>
                     <p class="or-divider">or</p>
