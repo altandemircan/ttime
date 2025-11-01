@@ -10095,6 +10095,7 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
 }
 
 
+document.addEventListener("DOMContentLoaded", function() {
 let chatHistory = [
   {
     role: "system",
