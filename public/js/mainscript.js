@@ -10134,8 +10134,7 @@ async function sendAIChatMessage(userMessage) {
   // Kullanıcı mesajını ekle
   var userDiv = document.createElement('div');
   userDiv.textContent = '🧑 ' + userMessage;
-  userDiv.style.margin = '6px 0';
-  userDiv.style.textAlign = 'right';
+
   userDiv.className = 'chat-message user-message'; // <-- class ekledik
   messagesDiv.appendChild(userDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -10146,8 +10145,7 @@ async function sendAIChatMessage(userMessage) {
   // AI cevabı için div
   var aiDiv = document.createElement('div');
   aiDiv.innerHTML = '🤖 ';
-  aiDiv.style.margin = '6px 0';
-  aiDiv.style.textAlign = 'left';
+
   aiDiv.className = 'chat-message ai-message'; // <-- class ekledik
   messagesDiv.appendChild(aiDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
