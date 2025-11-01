@@ -10161,32 +10161,36 @@ document.addEventListener("DOMContentLoaded", function() {
   let chunkQueue = [];
 
   eventSource.onmessage = function(event) {
-  console.log('SSE message:', event.data);
-  try {
-    const data = JSON.parse(event.data);
-    if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
-      chunkQueue.push(data.message.content);
-      if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
-        startStreamingTypewriterEffect(aiDiv, chunkQueue, 10);
+      console.log('SSE message:', event.data); // BURAYA
+    try {
+      const data = JSON.parse(event.data);
+      if (data.message && data.message.content) {
+        chunkQueue.push(data.message.content);
+        // Eğer yazıcı çalışmıyorsa başlat!
+        if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
+          startStreamingTypewriterEffect(aiDiv, chunkQueue, 10);
+        }
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
       }
-    }
-    if (data.done) {
-      console.log('SSE done:true, AI cevabı tamamlandı.');
-      // Burada chunkQueue'yu finalize edebilirsin.
-    }
-  } catch (e) {}
-};
+    } catch (e) {}
+  };
 eventSource.onerror = function(event) {
   console.error('SSE error:', event);
+  // Typewriter ve queue'yu durdur
+  if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+  chunkQueue.length = 0;
+  // İstersen ekrana hata mesajı yaz:
+  aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
 };
+
 eventSource.addEventListener('end', function() {
   console.log('SSE end event');
-  // Burada yazıyı finalize edebilirsin.
+  // Typewriter ve queue'yu durdur
+  if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+  chunkQueue.length = 0;
+  // Ekrana "cevap tamamlandı" yazabilirsin:
+  aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
 });
-
-
-
-
 }
 
 
