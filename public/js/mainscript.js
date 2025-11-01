@@ -10108,7 +10108,14 @@ function hideLoadingPanel() {
 
 
 document.addEventListener("DOMContentLoaded", function() {
- 
+  // // 1. Butona tıklayınca chat ekranı aç/kapa
+  // var openBtn = document.getElementById('open-ai-chat-btn');
+  // var chatBox = document.getElementById('ai-chat-box');
+  // if (openBtn && chatBox) {
+  //   openBtn.addEventListener('click', function () {
+  //     chatBox.style.display = (chatBox.style.display === 'none' || !chatBox.style.display) ? 'flex' : 'none';
+  //   });
+  // }
 
   // 2. Mesaj gönderme fonksiyonu (streaming ile)
   async function sendAIChatMessage(userMessage) {
