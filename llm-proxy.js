@@ -2,6 +2,10 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
+const express = require('express');
+const axios = require('axios');
+const router = express.Router();
+
 // Plan summary endpoint
 router.post('/plan-summary', async (req, res) => {
     const { city, country } = req.body;
@@ -11,7 +15,10 @@ router.post('/plan-summary', async (req, res) => {
     }
     const aiReqCity = country ? `${city}, ${country}` : city;
 
-const prompt = `
+    // DEBUG: Her sorguda şehir ne gidiyor görün
+    console.log("AIReqCity:", aiReqCity);
+
+    const prompt = `
 You are an expert travel assistant.
 For the city "${aiReqCity}", respond ONLY with a valid JSON object in this format (no code block, no explanation):
 
@@ -35,15 +42,16 @@ If you don't know the answer, put "Bilgi yok." for that field.
         // Yanıtı debug et!
         console.log("Ollama response:", response.data);
 
-        // Yanıttan sadece ilk { ... } JSON bloğunu çek
+        // Gemma yanıtı şu formatta gelir:
+        // { model: ..., message: { role: 'assistant', content: '{...}' }, ... }
         let jsonText = '';
-        if (typeof response.data === 'string') {
+        if (typeof response.data === 'object' && response.data.message && response.data.message.content) {
+            jsonText = response.data.message.content;
+        } else if (typeof response.data === 'string') {
             const match = response.data.match(/\{[\s\S]*?\}/);
             if (match) {
                 jsonText = match[0];
             }
-        } else if (typeof response.data === 'object') {
-            jsonText = JSON.stringify(response.data);
         }
 
         let jsonResponse;
@@ -64,6 +72,7 @@ If you don't know the answer, put "Bilgi yok." for that field.
         res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
     }
 });
+
 
 
 
