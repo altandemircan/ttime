@@ -69,16 +69,17 @@ Do NOT stop early. Use at least 400 words. If you reach a limit, continue the an
 
     try {
         const ollama = await axios({
-            method: 'post',
-            url: 'http://127.0.0.1:11434/api/chat',
-            data: {
-                model,
-                messages: JSON.parse(messages),
-                stream: true
-            },
-            responseType: 'stream',
-            timeout: 120000
-        });
+    method: 'post',
+    url: 'http://127.0.0.1:11434/api/chat',
+    data: {
+        model,
+        messages: JSON.parse(messages),
+        stream: true,
+        max_tokens: 2048 // <-- EKLE!
+    },
+    responseType: 'stream',
+    timeout: 120000
+});
 
         ollama.data.on('data', chunk => {
             if (finished) return;
