@@ -40,32 +40,40 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     }
 });
 router.get('/chat-stream', async (req, res) => {
-    const { model = 'llama2:7b', messages } = req.query;
-    if (!messages) return res.status(400).send('messages required');
-
     res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
     let finished = false;
 
+    // 1. Mesajı başta oluştur!
+    const messages = JSON.stringify([
+      { role: "system", content: "You are a helpful assistant for travel and general questions." },
+      { role: "user", content: `
+Write a travel guide about Gaziantep in Turkey.
+Your answer MUST NOT exceed 600 characters.
+Include history, cuisine, and top places.
+` }
+    ]);
+
     try {
+        // 2. Ollama API'ya gönderirken max_tokens ile sınır koy!
         const ollama = await axios({
             method: 'post',
             url: 'http://127.0.0.1:11434/api/chat',
             data: {
-                model,
+                model: req.query.model || 'llama3:8b',
                 messages: JSON.parse(messages),
-                stream: true
+                stream: true,
+                max_tokens: 100 // 600 karakter civarı için
             },
             responseType: 'stream',
             timeout: 120000
         });
 
-        // CHUNK LOG!
         ollama.data.on('data', chunk => {
-            console.log('CHUNK:', chunk.toString()); // BURAYA
             if (finished) return;
             const str = chunk.toString().trim();
             if (str) {
@@ -73,9 +81,7 @@ router.get('/chat-stream', async (req, res) => {
             }
         });
 
-        // END LOG!
         ollama.data.on('end', () => {
-            console.log('STREAM END'); // BURAYA
             if (!finished) {
                 finished = true;
                 res.write('event: end\ndata: [DONE]\n\n');
@@ -83,9 +89,7 @@ router.get('/chat-stream', async (req, res) => {
             }
         });
 
-        // ERROR LOG!
         ollama.data.on('error', (err) => {
-            console.error('STREAM ERROR', err); // BURAYA
             if (!finished) {
                 finished = true;
                 res.write(`event: error\ndata: ${err.message}\n\n`);
@@ -100,7 +104,6 @@ router.get('/chat-stream', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('STREAM ERROR (catch)', error); // BURAYA
         finished = true;
         res.write(`event: error\ndata: ${error.message}\n\n`);
         res.end();
