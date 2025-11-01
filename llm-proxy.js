@@ -68,17 +68,17 @@ router.get('/chat-stream', async (req, res) => {
 
     try {
         const ollama = await axios({
-            method: 'post',
-            url: 'http://127.0.0.1:11434/api/chat',
-            data: {
-                model,
-                messages,
-                stream: true,
-                max_tokens: 100
-            },
-            responseType: 'stream',
-            timeout: 120000
-        });
+    method: 'post',
+    url: 'http://127.0.0.1:11434/api/chat',
+    data: {
+        model,
+        messages,
+        stream: true,
+        max_tokens: 800 // <-- Bunu artır!
+    },
+    responseType: 'stream',
+    timeout: 180000 // istersen artır, ama asıl max_tokens!
+})
 
         ollama.data.on('data', chunk => {
             if (finished) return;
