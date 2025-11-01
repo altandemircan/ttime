@@ -10066,6 +10066,29 @@ function hideLoadingPanel() {
 
 
 
+
+// Markdown'dan HTML'e çevirici fonksiyon
+function markdownToHtml(text) {
+  // Kalın yazı (**text**)
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // İtalik yazı (*text*)
+  text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  // Madde işareti ile liste başı
+  text = text.replace(/(?:^|\n)[*-] (.*?)(?=\n|$)/g, function(match, p1) {
+    return `<li>${p1}</li>`;
+  });
+  // <ul> ile sar (en az bir <li> varsa)
+  if (text.includes('<li>')) {
+    text = text.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+  }
+  // Paragraflar ve satır başı
+  text = text.replace(/\n{2,}/g, '<br><br>');
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+
+
 function startStreamingTypewriterEffect(element, queue, speed = 5) {
   let chunkIndex = 0;
   let charIndex = 0;
@@ -10094,25 +10117,6 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
   type();
 }
 
-// Markdown'dan HTML'e çevirici fonksiyon
-function markdownToHtml(text) {
-  // Kalın yazı (**text**)
-  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  // İtalik yazı (*text*)
-  text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  // Madde işareti ile liste başı
-  text = text.replace(/(?:^|\n)[*-] (.*?)(?=\n|$)/g, function(match, p1) {
-    return `<li>${p1}</li>`;
-  });
-  // <ul> ile sar (en az bir <li> varsa)
-  if (text.includes('<li>')) {
-    text = text.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
-  }
-  // Paragraflar ve satır başı
-  text = text.replace(/\n{2,}/g, '<br><br>');
-  text = text.replace(/\n/g, '<br>');
-  return text;
-}
 
 document.addEventListener("DOMContentLoaded", function() {
   let chatHistory = []; // Sadece user ve assistant mesajları olacak!
