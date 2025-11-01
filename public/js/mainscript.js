@@ -10150,7 +10150,7 @@ You are powered by Triptime.ai, and your primary goal is to help users discover 
   if (messagesDiv) {
     var infoDiv = document.createElement("div");
     infoDiv.className = "chat-info";
-    infoDiv.textContent = "Triptime.ai: You have a daily limit of 10 questions. Use them wisely!";
+    infoDiv.textContent = "Mira: You have a daily limit of 10 questions. Use them wisely!";
     infoDiv.style.background = "#fffde6";
     infoDiv.style.padding = "10px";
     infoDiv.style.margin = "6px 0";
