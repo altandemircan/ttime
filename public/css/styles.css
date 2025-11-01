@@ -7032,10 +7032,10 @@ display: flex
     border-radius: 16px;
     width: fit-content;
 }
-.chat-message .ai-message {
+.ai-message {
     text-align: left;
 }
-.chat-message .user-message {
+.user-message {
     text-align: right;
 }
 
