@@ -10071,9 +10071,12 @@ function attachImLuckyEvents() {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-  // Chat geçmişini globalde tutuyoruz
+  // Chat geçmişini globalde tut
   let chatHistory = [
-    { role: "system", content: "You are a helpful assistant for travel and general questions." }
+    {
+      role: "system",
+      content: "You are a helpful assistant for travel and general questions. Give direct, concise answers without repeating instructions or asking what to ask."
+    }
   ];
 
   async function sendAIChatMessage(userMessage) {
@@ -10100,7 +10103,9 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
     // Tüm chat geçmişini backend'e gönderiyoruz!
-    const eventSource = new EventSource(`/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`);
+    const eventSource = new EventSource(
+      `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+    );
 
     let chunkQueue = [];
     let sseEndedOrErrored = false;
@@ -10119,9 +10124,6 @@ document.addEventListener("DOMContentLoaded", function() {
           // AI cevabını chat geçmişine ekle
           chatHistory.push({ role: "assistant", content: data.message.content });
         }
-        if (data.done === true) {
-          console.log('SSE done:true, AI response completed.');
-        }
       } catch (e) {
         console.error('SSE message parse error:', e);
       }
@@ -10139,10 +10141,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     eventSource.addEventListener('end', function() {
       if (!sseEndedOrErrored) {
-        console.log('SSE end event');
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
-        // "AI response completed." mesajı ekrana yazılmıyor!
         sseEndedOrErrored = true;
       }
     });
