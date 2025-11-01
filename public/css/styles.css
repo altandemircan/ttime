@@ -6993,6 +6993,7 @@ display: flex
 }
 #ai-chat-input {
    padding: 10px;
+   border-radius: none;
    
     border-radius: 6px;
     font-size: 14px;
