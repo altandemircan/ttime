@@ -7069,11 +7069,10 @@ ease-in-out;
 }
 /* Form Konteyner */
 .form-container {
- text-align: center;
-    padding: 10px;
-
-    border-radius: 20px;
-   height: calc(100vh - 160px);
+text-align: center;
+    /* padding: 10px; */
+    /* border-radius: 20px; */
+    height: calc(100vh - 160px);
     display: flex;
     flex-direction: column-reverse;
     justify-content: flex-start;
@@ -7087,7 +7086,7 @@ ease-in-out;
 ease, transform 0.3s 
 ease;
     font-size: 0.9rem;
-    /* max-height: 100vh; */
+scrollbar-width: thin;
     overflow-y: scroll;
 }
 
