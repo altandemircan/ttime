@@ -55,10 +55,6 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
     }
 });
-
-// Test endpoint
-router.get('/test', (req, res) => res.send('llm-proxy test OK'));
-
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -80,7 +76,7 @@ router.get('/chat-stream', async (req, res) => {
     if (messages.length > 0) {
         const lastIdx = messages.length - 1;
         if (messages[lastIdx].role === "user") {
-            messages[lastIdx].content += "\nYour answer MUST NOT exceed 600 characters.";
+            messages[lastIdx].content += "\nYour answer MUST NOT exceed 300 characters.";
         }
     }
     const model = 'gemma:2b';
@@ -93,7 +89,7 @@ router.get('/chat-stream', async (req, res) => {
                 model,
                 messages,
                 stream: true,
-                max_tokens: 800 // <-- Uzun yanıt için artırabilirsin, CPU'da yavaş olur!
+                max_tokens: 400 // Yanıtın 300 karakteri geçmemesi için yeterli
             },
             responseType: 'stream',
             timeout: 180000 // 3 dakika
