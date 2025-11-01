@@ -10071,12 +10071,8 @@ function attachImLuckyEvents() {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-  // Chat geçmişini tut, sistem prompt sade!
   let chatHistory = [
-    {
-      role: "system",
-      content: "You are a helpful assistant for travel and general questions. Answer directly and concisely. If the user specifies a location, give a brief travel summary for that place."
-    }
+    { role: "system", content: "You are a helpful assistant for travel and general questions. Answer directly and concisely. If the user specifies a location, give a brief travel summary for that place." }
   ];
 
   async function sendAIChatMessage(userMessage) {
@@ -10091,7 +10087,7 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Mesajı chat geçmişine ekle
+    // Chat geçmişine user mesajı ekle
     chatHistory.push({ role: "user", content: userMessage });
 
     // AI cevabı için div
@@ -10120,10 +10116,6 @@ document.addEventListener("DOMContentLoaded", function() {
             startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
           }
         }
-        if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
-          // AI cevabını chat geçmişine ekle
-          chatHistory.push({ role: "assistant", content: data.message.content });
-        }
       } catch (e) {
         console.error('SSE message parse error:', e);
       }
@@ -10141,6 +10133,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
     eventSource.addEventListener('end', function() {
       if (!sseEndedOrErrored) {
+        // Tüm chunkları birleştirip assistant mesajı olarak ekle!
+        const aiText = chunkQueue.join('');
+        chatHistory.push({ role: "assistant", content: aiText });
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
         sseEndedOrErrored = true;
