@@ -3134,14 +3134,14 @@ function initEmptyDayMap(day) {
 }
 
   L.tileLayer(
-    '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
-    {
-      tileSize: 256,
-      zoomOffset: 0,
-      attribution: '© Mapbox © OpenStreetMap',
-      crossOrigin: true
-    }
-  ).addTo(map);
+  'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png',
+  {
+    tileSize: 256,
+    zoomOffset: 0,
+    attribution: '© OpenStreetMap contributors',
+    crossOrigin: true
+  }
+).addTo(map);
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
@@ -4623,14 +4623,14 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         attributionControl: false
     });
     L.tileLayer(
-        '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
-        {
-            tileSize: 256,
-            zoomOffset: 0,
-            attribution: '© Mapbox © OpenStreetMap',
-            crossOrigin: true
-        }
-    ).addTo(map);
+  'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png',
+  {
+    tileSize: 256,
+    zoomOffset: 0,
+    attribution: '© OpenStreetMap contributors',
+    crossOrigin: true
+  }
+).addTo(map);
 
     // Marker
     const icon = L.divIcon({
@@ -5051,16 +5051,15 @@ const map = L.map(containerId, {
 });
 
 // Tile layer (default streets - Mapbox Street proxy ile)
-let tileLayer = L.tileLayer(
-  '/api/mapbox/tiles/streets-v12/{z}/{x}/{y}.png',
+L.tileLayer(
+  'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
-    attribution: '© Mapbox © OpenStreetMap',
+    attribution: '© OpenStreetMap contributors',
     crossOrigin: true
   }
-);
-tileLayer.addTo(map);
+).addTo(map);
 
 // ROTAYI EKLE
 const polyline = L.polyline(coords, {
