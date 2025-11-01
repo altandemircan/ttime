@@ -24,10 +24,11 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
 
     try {
         // Sadece aktif OLLAMA portunu kullan!
-        const response = await axios.post('http://127.0.0.1:11434/api/generate', {
+        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
     model: "zephyr:7b",
-    prompt,
-    stream: false
+    messages,
+    stream: true,
+    max_tokens: 200 // burada!
 });
         console.log("Ollama response:", response.data);
 
