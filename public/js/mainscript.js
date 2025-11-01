@@ -10079,6 +10079,7 @@ function hideLoadingPanel() {
 }
 
 
+
 function startStreamingTypewriterEffect(element, queue, speed = 5) {
   let chunkIndex = 0;
   let charIndex = 0;
@@ -10106,7 +10107,6 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
   }
   type();
 }
-
 
 document.addEventListener("DOMContentLoaded", function() {
   // 1. Butona tıklayınca chat ekranı aç/kapa
