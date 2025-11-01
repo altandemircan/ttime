@@ -10094,6 +10094,21 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
   type();
 }
 
+function getDailyQuestionCount() {
+  const today = new Date().toISOString().slice(0, 10);
+  const key = "questionCount_" + today;
+  return parseInt(localStorage.getItem(key) || "0", 10);
+}
+function incrementQuestionCount() {
+  const today = new Date().toISOString().slice(0, 10);
+  const key = "questionCount_" + today;
+  let count = getDailyQuestionCount();
+  localStorage.setItem(key, count + 1);
+}
+function canAskQuestion() {
+  return getDailyQuestionCount() < 10;
+}
+
 // Sadece user mesajı ve assistant mesajı gönder, system prompt'u frontend'de tutmaya gerek yok
 document.addEventListener("DOMContentLoaded", function() {
   let chatHistory = []; // Sadece user ve assistant mesajları olacak!
