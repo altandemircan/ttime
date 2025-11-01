@@ -39,9 +39,25 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
         res.status(500).send('AI bilgi alınamadı.');
     }
 });
+
+
 router.get('/chat-stream', async (req, res) => {
-    const { model = 'llama3:8b', messages } = req.query;
-    if (!messages) return res.status(400).send('messages required');
+    // İLGİLİ YERE YAZIYORSUN:
+    const messages = JSON.stringify([
+        { role: "system", content: "You are a helpful assistant for travel and general questions." },
+        { role: "user", content: `
+Write a VERY LONG, detailed and exhaustive travel guide about Gaziantep in Turkey.
+Include ALL of the following:
+- History and culture (minimum 5 sentences)
+- Food and cuisine (especially baklava/kebabs for Gaziantep)
+- Must-see places and hidden gems (minimum 5 spots)
+- Practical tips for travelers
+- Fun facts and local secrets
+Do NOT stop early. Use at least 400 words. If you reach a limit, continue the answer from where you left off.
+` }
+    ]);
+
+    const { model = 'llama3:8b' } = req.query;
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
