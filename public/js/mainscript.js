@@ -1,30 +1,3 @@
-function startStreamingTypewriterEffect(element, queue, speed = 5) {
-  let chunkIndex = 0;
-  let charIndex = 0;
-  let stopped = false;
-  element._typewriterStop = () => { stopped = true; };
-
-  function type() {
-    if (stopped) return;
-    // Chunk queue güncellendikçe devam et
-    if (chunkIndex < queue.length) {
-      const chunk = queue[chunkIndex];
-      if (charIndex < chunk.length) {
-        element.innerHTML += chunk.charAt(charIndex);
-        charIndex++;
-        setTimeout(type, speed);
-      } else {
-        chunkIndex++;
-        charIndex = 0;
-        setTimeout(type, speed); // bir sonraki chunkı da hemen yaz
-      }
-    } else {
-      // Chunk queue'ya yeni veri gelirse devam et
-      setTimeout(type, speed);
-    }
-  }
-  type();
-}
 
 function isTripFav(item) {
     return window.favTrips && window.favTrips.some(f =>
@@ -10070,56 +10043,11 @@ function attachImLuckyEvents() {
 }
 
 
-// Trip seçilince input-wrapper gizlensin
-document.addEventListener('click', function(e) {
-  if (e.target.closest('.trip-item')) {
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = 'none';
-  }
-});
-// "trip-main-box" veya "trip-info-box" tıklanınca input-wrapper'ı gizle
-document.addEventListener('click', function(e) {
-  if (
-    e.target.closest('.trip-main-box') ||
-    e.target.closest('.trip-info-box') ||
-    e.target.closest('.trip-title')
-  ) {
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = 'none';
-  }
-});
-
-function showLoadingPanel() {
-  var loadingPanel = document.getElementById("loading-panel");
-  if (loadingPanel) loadingPanel.style.display = "flex";
-  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-}
-
-function hideLoadingPanel() {
-    var loadingPanel = document.getElementById("loading-panel");
-    if (loadingPanel) loadingPanel.style.display = "none";
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
-}
-
-
-
-
-
 document.addEventListener("DOMContentLoaded", function() {
-  // 1. Butona tıklayınca chat ekranı aç/kapa
-  var openBtn = document.getElementById('open-ai-chat-btn');
-  var chatBox = document.getElementById('ai-chat-box');
-  if (openBtn && chatBox) {
-    openBtn.addEventListener('click', function () {
-      chatBox.style.display = (chatBox.style.display === 'none' || !chatBox.style.display) ? 'flex' : 'none';
-    });
-  }
+  let chatHistory = [
+    { role: "system", content: "You are a helpful assistant for travel and general questions. Answer directly and concisely. If the user specifies a location, give a brief travel summary for that place." }
+  ];
 
-  // 2. Mesaj gönderme fonksiyonu (streaming ile)
   async function sendAIChatMessage(userMessage) {
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
@@ -10132,64 +10060,62 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-     var aiDiv = document.createElement('div');
-  aiDiv.innerHTML = '🤖 ';
-  aiDiv.style.margin = '6px 0';
-  aiDiv.style.textAlign = 'left';
-  messagesDiv.appendChild(aiDiv);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // Chat geçmişine user mesajı ekle
+    chatHistory.push({ role: "user", content: userMessage });
 
-  const messages = JSON.stringify([
-    { role: "system", content: "You are a helpful assistant for travel and general questions." },
-    { role: "user", content: userMessage }
-  ]);
-  const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
+    // AI cevabı için div
+    var aiDiv = document.createElement('div');
+    aiDiv.innerHTML = '🤖 ';
+    aiDiv.style.margin = '6px 0';
+    aiDiv.style.textAlign = 'left';
+    messagesDiv.appendChild(aiDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-  let chunkQueue = [];
-let sseEndedOrErrored = false;
+    // Tüm chat geçmişini backend'e gönder
+    const eventSource = new EventSource(
+      `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+    );
 
-eventSource.onmessage = function(event) {
-  if (sseEndedOrErrored) return;
-  console.log('SSE message:', event.data);
-  try {
-    const data = JSON.parse(event.data);
-    if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
-      chunkQueue.push(data.message.content);
-      if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
-        startStreamingTypewriterEffect(aiDiv, chunkQueue, 5);
+    let chunkQueue = [];
+    let sseEndedOrErrored = false;
+
+    eventSource.onmessage = function(event) {
+      if (sseEndedOrErrored) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
+          chunkQueue.push(data.message.content);
+          if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
+            startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
+          }
+        }
+      } catch (e) {
+        console.error('SSE message parse error:', e);
       }
-    }
-    if (data.done === true) {
-      console.log('SSE done:true, AI cevabı tamamlandı.');
-    }
-  } catch (e) {
-    console.error('SSE message parse error:', e);
+    };
+
+    eventSource.onerror = function(event) {
+      if (!sseEndedOrErrored) {
+        console.error('SSE error:', event);
+        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+        chunkQueue.length = 0;
+        aiDiv.innerHTML += "<br><span style='color:red'>AI connection error!</span>";
+        sseEndedOrErrored = true;
+      }
+    };
+
+    eventSource.addEventListener('end', function() {
+      if (!sseEndedOrErrored) {
+        // Tüm chunkları birleştirip assistant mesajı olarak ekle!
+        const aiText = chunkQueue.join('');
+        chatHistory.push({ role: "assistant", content: aiText });
+        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+        chunkQueue.length = 0;
+        sseEndedOrErrored = true;
+      }
+    });
   }
-};
 
-eventSource.onerror = function(event) {
-  if (!sseEndedOrErrored) {
-    console.error('SSE error:', event);
-    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-    chunkQueue.length = 0;
-    aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
-    sseEndedOrErrored = true;
-  }
-};
-
-eventSource.addEventListener('end', function() {
-  if (!sseEndedOrErrored) {
-    console.log('SSE end event');
-    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-    chunkQueue.length = 0;
-    aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
-    sseEndedOrErrored = true;
-  }
-});
-}
-
-
-  // 3. Enter veya buton ile mesaj gönder
   var chatInput = document.getElementById('ai-chat-input');
   var sendBtn = document.getElementById('ai-chat-send-btn');
   if (sendBtn && chatInput) {
@@ -10207,3 +10133,31 @@ eventSource.addEventListener('end', function() {
     });
   }
 });
+
+function startStreamingTypewriterEffect(element, queue, speed = 5) {
+  let chunkIndex = 0;
+  let charIndex = 0;
+  let stopped = false;
+  element._typewriterStop = () => { stopped = true; };
+
+  function type() {
+    if (stopped) return;
+    // Chunk queue güncellendikçe devam et
+    if (chunkIndex < queue.length) {
+      const chunk = queue[chunkIndex];
+      if (charIndex < chunk.length) {
+        element.innerHTML += chunk.charAt(charIndex);
+        charIndex++;
+        setTimeout(type, speed);
+      } else {
+        chunkIndex++;
+        charIndex = 0;
+        setTimeout(type, speed); // bir sonraki chunkı da hemen yaz
+      }
+    } else {
+      // Chunk queue'ya yeni veri gelirse devam et
+      setTimeout(type, speed);
+    }
+  }
+  type();
+}
