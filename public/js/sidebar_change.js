@@ -30,7 +30,7 @@ window.toggleSidebarGallery = function() {
 
 window.toggleSidebarLogin = function() {
     window.toggleSidebar('sidebar-overlay-login');
-};
+};  
 
 window.toggleSidebarFeedback = function() {
     window.toggleSidebar('sidebar-overlay-feedback');
