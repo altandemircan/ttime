@@ -25,7 +25,7 @@ Respond only as JSON. Do not include any extra text, explanation, or code block.
     try {
         // Sadece aktif OLLAMA portunu kullan!
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-    model: "llama3:8b",
+    model: "zephyr:7b",
     prompt,
     stream: false
 });
@@ -64,7 +64,7 @@ router.get('/chat-stream', async (req, res) => {
             messages[lastIdx].content += "\nYour answer MUST NOT exceed 600 characters.";
         }
     }
-    const model = 'llama3:8b';
+    const model = 'zephyr:7b';
 
     try {
         const ollama = await axios({
