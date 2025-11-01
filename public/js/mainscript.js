@@ -10070,9 +10070,54 @@ function attachImLuckyEvents() {
 }
 
 
+// Trip seçilince input-wrapper gizlensin
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.trip-item')) {
+    var iw = document.querySelector('.input-wrapper');
+    if (iw) iw.style.display = 'none';
+  }
+});
+// "trip-main-box" veya "trip-info-box" tıklanınca input-wrapper'ı gizle
+document.addEventListener('click', function(e) {
+  if (
+    e.target.closest('.trip-main-box') ||
+    e.target.closest('.trip-info-box') ||
+    e.target.closest('.trip-title')
+  ) {
+    var iw = document.querySelector('.input-wrapper');
+    if (iw) iw.style.display = 'none';
+  }
+});
+
+function showLoadingPanel() {
+  var loadingPanel = document.getElementById("loading-panel");
+  if (loadingPanel) loadingPanel.style.display = "flex";
+  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+}
+
+function hideLoadingPanel() {
+    var loadingPanel = document.getElementById("loading-panel");
+    if (loadingPanel) loadingPanel.style.display = "none";
+    if (!window.__welcomeHiddenForever) {
+        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
+    } else {
+        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+    }
+}
+
+
+
+
 
 document.addEventListener("DOMContentLoaded", function() {
-  // 1. CHAT BOX HER ZAMAN AÇIK! Aç/kapa olayı yok!
+  // 1. Butona tıklayınca chat ekranı aç/kapa
+  var openBtn = document.getElementById('open-ai-chat-btn');
+  var chatBox = document.getElementById('ai-chat-box');
+  if (openBtn && chatBox) {
+    openBtn.addEventListener('click', function () {
+      chatBox.style.display = (chatBox.style.display === 'none' || !chatBox.style.display) ? 'flex' : 'none';
+    });
+  }
 
   // 2. Mesaj gönderme fonksiyonu (streaming ile)
   async function sendAIChatMessage(userMessage) {
@@ -10087,58 +10132,62 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // AI cevabı için div
-    var aiDiv = document.createElement('div');
-    aiDiv.innerHTML = '🤖 ';
-    aiDiv.style.margin = '6px 0';
-    aiDiv.style.textAlign = 'left';
-    messagesDiv.appendChild(aiDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+     var aiDiv = document.createElement('div');
+  aiDiv.innerHTML = '🤖 ';
+  aiDiv.style.margin = '6px 0';
+  aiDiv.style.textAlign = 'left';
+  messagesDiv.appendChild(aiDiv);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Sadece userMessage gönderiyoruz!
-    const eventSource = new EventSource(`/llm-proxy/chat-stream?userMessage=${encodeURIComponent(userMessage)}`);
+  const messages = JSON.stringify([
+    { role: "system", content: "You are a helpful assistant for travel and general questions." },
+    { role: "user", content: userMessage }
+  ]);
+  const eventSource = new EventSource(`/llm-proxy/chat-stream?model=llama3:8b&messages=${encodeURIComponent(messages)}`);
 
-    let chunkQueue = [];
-    let sseEndedOrErrored = false;
+  let chunkQueue = [];
+let sseEndedOrErrored = false;
 
-    eventSource.onmessage = function(event) {
-      if (sseEndedOrErrored) return;
-      try {
-        const data = JSON.parse(event.data);
-        if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
-          chunkQueue.push(data.message.content);
-          if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
-            startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
-          }
-        }
-        if (data.done === true) {
-          console.log('SSE done:true, AI response completed.');
-        }
-      } catch (e) {
-        console.error('SSE message parse error:', e);
+eventSource.onmessage = function(event) {
+  if (sseEndedOrErrored) return;
+  console.log('SSE message:', event.data);
+  try {
+    const data = JSON.parse(event.data);
+    if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
+      chunkQueue.push(data.message.content);
+      if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
+        startStreamingTypewriterEffect(aiDiv, chunkQueue, 5);
       }
-    };
-
-    eventSource.onerror = function(event) {
-      if (!sseEndedOrErrored) {
-        console.error('SSE error:', event);
-        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-        chunkQueue.length = 0;
-        aiDiv.innerHTML += "<br><span style='color:red'>AI connection error!</span>";
-        sseEndedOrErrored = true;
-      }
-    };
-
-    eventSource.addEventListener('end', function() {
-      if (!sseEndedOrErrored) {
-        console.log('SSE end event');
-        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-        chunkQueue.length = 0;
-        // AI cevabı tamamlandı mesajı kaldırıldı!
-        sseEndedOrErrored = true;
-      }
-    });
+    }
+    if (data.done === true) {
+      console.log('SSE done:true, AI cevabı tamamlandı.');
+    }
+  } catch (e) {
+    console.error('SSE message parse error:', e);
   }
+};
+
+eventSource.onerror = function(event) {
+  if (!sseEndedOrErrored) {
+    console.error('SSE error:', event);
+    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+    chunkQueue.length = 0;
+    aiDiv.innerHTML += "<br><span style='color:red'>AI bağlantı hatası!</span>";
+    sseEndedOrErrored = true;
+  }
+};
+
+eventSource.addEventListener('end', function() {
+  if (!sseEndedOrErrored) {
+    console.log('SSE end event');
+    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+    chunkQueue.length = 0;
+    aiDiv.innerHTML += "<br><span style='color:green'>AI cevabı tamamlandı.</span>";
+    sseEndedOrErrored = true;
+  }
+});
+}
+
 
   // 3. Enter veya buton ile mesaj gönder
   var chatInput = document.getElementById('ai-chat-input');
