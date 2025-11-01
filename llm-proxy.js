@@ -64,7 +64,7 @@ router.get('/chat-stream', async (req, res) => {
             messages[lastIdx].content += "\nYour answer MUST NOT exceed 600 characters.";
         }
     }
-    const model = 'llama3:8b';
+    const model = 'llama2:7b';
 
     try {
         const ollama = await axios({
