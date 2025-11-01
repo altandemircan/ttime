@@ -144,11 +144,11 @@ if (!city && !aiStaticInfo) return;
         if (aiSpinner) aiSpinner.style.display = "none";
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
-        typeWriterEffect(aiSummary, aiObj.summary || "", 18, function() {
-            typeWriterEffect(aiTip, aiObj.tip || "", 18, function() {
-                typeWriterEffect(aiHighlight, aiObj.highlight || "", 18);
-            });
-        });
+        typeWriterEffect(aiSummary, aiObj.summary || "Bilgi yok.", 18, function() {
+  typeWriterEffect(aiTip, aiObj.tip || "Bilgi yok.", 18, function() {
+    typeWriterEffect(aiHighlight, aiObj.highlight || "Bilgi yok.", 18);
+  });
+});
 
         let elapsed = Math.round(performance.now() - t0);
         if (aiTime) aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
