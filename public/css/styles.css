@@ -7022,21 +7022,28 @@ display: flex
     color: #1e293b;
     line-height: 1.6;
     margin-bottom: 10px;
+      display: flex;
+  flex-direction: column;
 }
 #ai-chat-messages div {
 
-    margin: 10px 0px;
+    margin: 10px 0px;    
     
-    background: #f9f9f9;
     padding: 10px;
     border-radius: 16px;
     width: fit-content;
 }
 .ai-message {
-    text-align: left;
+    background: #f6f4ff;
+  color: #1e293b;
+  align-self: flex-start;
+  text-align: left;;
 }
 .user-message {
-    text-align: right;
+   background: #e6f5ff;
+  color: #1e293b;
+  align-self: flex-end;
+  text-align: right;
 }
 
 .ai-input-wrapper {
