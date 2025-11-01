@@ -57,7 +57,7 @@ Do NOT stop early. Use at least 400 words. If you reach a limit, continue the an
 ` }
     ]);
 
-    const { model = 'llama3:8b' } = req.query;
+    const { model = 'llama2:7b' } = req.query;
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
