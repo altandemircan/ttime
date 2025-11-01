@@ -11,16 +11,17 @@ router.post('/plan-summary', async (req, res) => {
     }
     const aiReqCity = country ? `${city}, ${country}` : city;
 
-    const prompt = `
+const prompt = `
 You are an expert travel assistant.
-Provide the following information about the city "${aiReqCity}":
+For the city "${aiReqCity}", respond ONLY with a valid JSON object in this format (no code block, no explanation):
+
 {
-  "summary": "A 2-3 sentence inspiring and informative summary about the city for travelers.",
-  "tip": "A creative travel tip specific to this city.",
-  "highlight": "A unique highlight or must-see point for a visitor."
+  "summary": "Antalya, a vibrant city on Turkey's Mediterranean coast, offers stunning beaches, rich history, and vibrant nightlife.",
+  "tip": "Visit Kaleiçi for authentic local experiences and try the traditional Turkish breakfast.",
+  "highlight": "Don't miss the Düden Waterfalls and the ancient city of Termessos."
 }
-Respond only as JSON. Do not include any extra text, explanation, or code block.
-If you don't know the answer, put "Bilgi yok."
+
+If you don't know the answer, put "Bilgi yok." for that field.
 `.trim();
 
     try {
