@@ -10068,10 +10068,14 @@ function attachImLuckyEvents() {
     }, 100);
   });
 }
-document.addEventListener("DOMContentLoaded", function() {
-  // 1. CHAT BOX HER ZAMAN AÇIK! Aç/kapa olayı yok!
 
-  // 2. Mesaj gönderme fonksiyonu (streaming ile)
+
+document.addEventListener("DOMContentLoaded", function() {
+  // Chat geçmişini globalde tutuyoruz
+  let chatHistory = [
+    { role: "system", content: "You are a helpful assistant for travel and general questions." }
+  ];
+
   async function sendAIChatMessage(userMessage) {
     var messagesDiv = document.getElementById('ai-chat-messages');
     if (!messagesDiv) return;
@@ -10084,6 +10088,9 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(userDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+    // Mesajı chat geçmişine ekle
+    chatHistory.push({ role: "user", content: userMessage });
+
     // AI cevabı için div
     var aiDiv = document.createElement('div');
     aiDiv.innerHTML = '🤖 ';
@@ -10092,8 +10099,8 @@ document.addEventListener("DOMContentLoaded", function() {
     messagesDiv.appendChild(aiDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Sadece userMessage gönderiyoruz!
-    const eventSource = new EventSource(`/llm-proxy/chat-stream?userMessage=${encodeURIComponent(userMessage)}`);
+    // Tüm chat geçmişini backend'e gönderiyoruz!
+    const eventSource = new EventSource(`/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`);
 
     let chunkQueue = [];
     let sseEndedOrErrored = false;
@@ -10107,6 +10114,10 @@ document.addEventListener("DOMContentLoaded", function() {
           if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
             startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
           }
+        }
+        if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
+          // AI cevabını chat geçmişine ekle
+          chatHistory.push({ role: "assistant", content: data.message.content });
         }
         if (data.done === true) {
           console.log('SSE done:true, AI response completed.');
@@ -10131,13 +10142,12 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log('SSE end event');
         if (aiDiv._typewriterStop) aiDiv._typewriterStop();
         chunkQueue.length = 0;
-        // AI cevabı tamamlandı mesajı kaldırıldı!
+        // "AI response completed." mesajı ekrana yazılmıyor!
         sseEndedOrErrored = true;
       }
     });
   }
 
-  // 3. Enter veya buton ile mesaj gönder
   var chatInput = document.getElementById('ai-chat-input');
   var sendBtn = document.getElementById('ai-chat-send-btn');
   if (sendBtn && chatInput) {
@@ -10154,4 +10164,5 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
   }
+});
 });
