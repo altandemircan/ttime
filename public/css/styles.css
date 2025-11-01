@@ -7034,7 +7034,7 @@ display: flex
     width: fit-content;
 }
 .chat-info {
-    text-align: center;
+    text-align: left;
     margin-bottom: 0;
     color: #333333;
     font-weight: 500;
