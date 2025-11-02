@@ -716,7 +716,7 @@ async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
     const coords = limitedPlaces.map(p => [p.lon, p.lat]);
     try {
       const coordParam = coords.map(c => `${c[0]},${c[1]}`).join(';');
-      const url = buildMapboxDirectionsUrl(coordParam, day); // <-- day eklendi
+      const url = buildDirectionsUrl(coordParam, day); // <-- day eklendi
       const response = await fetch(url);
       if (!response.ok) break;
       const data = await response.json();
@@ -3113,7 +3113,7 @@ function initEmptyDayMap(day) {
 
   if (!el.style.height) el.style.height = '285px';
 
-  // KÜÇÜK HARİTA: MAPBOX STREET TILE (proxy ile)
+  // KÜÇÜK HARİTA
   const map = L.map(containerId, {
     scrollWheelZoom: true,
     fadeAnimation: true,
@@ -5050,7 +5050,7 @@ const map = L.map(containerId, {
     preferCanvas: true
 });
 
-// Tile layer (default streets - Mapbox Street proxy ile)
+// Tile layer 
   L.tileLayer(
   'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
   {
@@ -6927,7 +6927,7 @@ async function renderRouteForDay(day) {
     let prev = points[1];
     for (let i = 2; i < points.length; i++) {
       const next = points[i];
-      const url = buildMapboxDirectionsUrl(`${prev.lng},${prev.lat};${next.lng},${next.lat}`, day);
+      const url = buildDirectionsUrl(`${prev.lng},${prev.lat};${next.lng},${next.lat}`, day);
       try {
         const resp = await fetch(url);
         const data = await resp.json();
@@ -7225,9 +7225,9 @@ async function renderRouteForDay(day) {
   }
   const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
 
-  async function fetchRoute() {
+ async function fetchRoute() {
     const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
-    const url = buildMapboxDirectionsUrl(coordParam, day);
+    const url = buildDirectionsUrl(coordParam, day);
     const response = await fetch(url);
     if (!response.ok) {
       alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
@@ -7245,7 +7245,7 @@ async function renderRouteForDay(day) {
             summary: {
               distance: data.routes[0].distance,
               duration: data.routes[0].duration,
-              source: 'Mapbox'
+              source: 'OSRM' // BURADA GÜNCELLEDİK
             }
           }
         }]
@@ -7315,9 +7315,9 @@ async function renderRouteForDay(day) {
         [points[i + 1].lng, points[i + 1].lat]
       ];
       const coordParam = pairCoords.map(c => `${c[0]},${c[1]}`).join(';');
-      const url = buildMapboxDirectionsUrl(coordParam, day);
+      const url = buildDirectionsUrl(coordParam, day);
       const response = await fetch(url);
-      if (!response.ok) throw new Error('Mapbox error');
+      if (!response.ok) throw new Error('routing error'); // BURADA GÜNCELLEDİK
       const data = await response.json();
       if (!data.routes || !data.routes[0]) throw new Error('No route found');
       pairwiseSummaries.push({
@@ -7328,6 +7328,7 @@ async function renderRouteForDay(day) {
       pairwiseSummaries.push({ distance: null, duration: null });
     }
   }
+
   window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
   window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
   if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
@@ -7573,11 +7574,6 @@ window.leafletMaps = window.leafletMaps || {};
 
 
 const PLACEHOLDER_IMG = "img/placeholder.png";
-const MAPBOX_STYLES = [
-    {name: "Streets modes", key: "streets-v12"},        
-    {name: "Navigation", key: "dark-v11"},       
-    {name: "Satellite", key: "satellite-streets-v12"}
-];
 
 function setupSidebarAccordion() {
   document.querySelectorAll('.day-header').forEach(header => {
@@ -7734,13 +7730,9 @@ function saveTravelModeForDay(day, mode) {
   localStorage.setItem(TT_TRAVEL_MODE_BY_DAY_KEY, JSON.stringify(window.travelModeByDay));
 }
 
-// Back-compat profile getter (without day) — uses currentDay as best-effort
-/* function getMapboxProfile() {
-  return getTravelModeForDay(window.currentDay || 1);
-} */
 
 // Day-aware profile getter
-function getMapboxProfileForDay(day) {
+function getProfileForDay(day) {
   return getTravelModeForDay(day);
 }
 
@@ -7770,9 +7762,9 @@ window.setTravelMode = function(mode, day) {
 
 // Build Directions URL; day is optional (defaults to currentDay)
 // Directions URL builder — self-hosted OSRM + debug log
-window.buildMapboxDirectionsUrl = function(coordsStr, day) {
+window.buildDirectionsUrl = function(coordsStr, day) {
   const d = day || window.currentDay || 1;
-  const profile = getMapboxProfileForDay(d); // 'driving' | 'cycling' | 'walking'
+  const profile = getProfileForDay(d); // 'driving' | 'cycling' | 'walking'
   const url = `/route/v1/${profile}/${coordsStr}?geometries=geojson&overview=full&steps=true`;
 
   // İlk seferde bir kez bilgi mesajı
