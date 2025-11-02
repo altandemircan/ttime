@@ -5127,26 +5127,6 @@ window.expandedMaps = {};
 // Güncellenmiş expandMap fonksiyonu: YÜKSEKLİK/ELEVATION ile ilgili her şey kaldırıldı!
 
 
-// Üstte tanımlı helper: setExpandedMapTile — crossOrigin ekleyin
-function setExpandedMapTile(expandedMap, styleKey) {
-
-  let foundTile = null;
-  expandedMap.eachLayer(layer => {
-    if (layer instanceof L.TileLayer) {
-      foundTile = layer;
-    }
-  });
-  if (foundTile) expandedMap.removeLayer(foundTile);
-
-  L.tileLayer(
-  'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
-  {
-    tileSize: 256,
-    zoomOffset: 0,
-    attribution: '© OpenStreetMap contributors',
-    crossOrigin: true
-  }
-).addTo(map);
 
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
