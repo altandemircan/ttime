@@ -4622,7 +4622,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         zoomControl: true,
         attributionControl: false
     });
-    L.tileLayer(
+  L.tileLayer(
   'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
@@ -5051,7 +5051,7 @@ const map = L.map(containerId, {
 });
 
 // Tile layer (default streets - Mapbox Street proxy ile)
-L.tileLayer(
+  L.tileLayer(
   'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
@@ -5129,8 +5129,6 @@ window.expandedMaps = {};
 
 // Üstte tanımlı helper: setExpandedMapTile — crossOrigin ekleyin
 function setExpandedMapTile(expandedMap, styleKey) {
-  // Artık styleKey gerekmiyor! Tüm stiller OSM tile ile aynı.
-  const url = 'https://dev.triptime.ai/tile/{z}/{x}/{y}.png';
 
   let foundTile = null;
   expandedMap.eachLayer(layer => {
@@ -5140,13 +5138,15 @@ function setExpandedMapTile(expandedMap, styleKey) {
   });
   if (foundTile) expandedMap.removeLayer(foundTile);
 
-  L.tileLayer(url, {
+  L.tileLayer(
+  'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
+  {
     tileSize: 256,
     zoomOffset: 0,
     attribution: '© OpenStreetMap contributors',
     crossOrigin: true
-  }).addTo(expandedMap);
-}
+  }
+).addTo(map);
 
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
