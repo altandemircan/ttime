@@ -5346,9 +5346,9 @@ showRouteInfoBanner(day); // hemen ardından çağır
   }
 
   // Layer değişim fonksiyonu
-  function setExpandedMapTile(expandedMap, styleKey) {
-  // OSM tile server kullan!
-  const url = `https://dev.triptime.ai/tile/{z}/{x}/{y}.png`;
+function setExpandedMapTile(styleKey) {
+  // Reverse proxy üzerinden aynı domainden çağır: mixed content yok
+  const url = '/tile/{z}/{x}/{y}.png';
 
   let foundTile = null;
   expandedMap.eachLayer(layer => {
@@ -5361,11 +5361,11 @@ showRouteInfoBanner(day); // hemen ardından çağır
   L.tileLayer(url, {
     tileSize: 256,
     zoomOffset: 0,
-    attribution: '© OpenStreetMap contributors',
+    maxZoom: 14,
+    attribution: '© OpenMapTiles © OpenStreetMap contributors',
     crossOrigin: true
   }).addTo(expandedMap);
 }
-
   setExpandedMapTile(currentLayer);
 
 
