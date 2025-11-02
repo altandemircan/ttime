@@ -5129,20 +5129,9 @@ window.expandedMaps = {};
 
 // Üstte tanımlı helper: setExpandedMapTile — crossOrigin ekleyin
 function setExpandedMapTile(expandedMap, styleKey) {
-  const url = `/api/mapbox/tiles/${styleKey}/{z}/{x}/{y}.png`;
+  // Artık styleKey gerekmiyor! Tüm stiller OSM tile ile aynı.
+  const url = 'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png';
 
-// Programatik input set helper (manuel yazımı ayırt etmek için)
-if (typeof setChatInputValue !== 'function') {
-  window.__programmaticInput = false;
-  function setChatInputValue(str) {
-    const inp = document.getElementById('user-input');
-    if (!inp) return;
-    window.__programmaticInput = true;
-    inp.value = str;
-    // microtask sonunda flag’i geri al
-    setTimeout(() => { window.__programmaticInput = false; }, 0);
-  }
-}
   let foundTile = null;
   expandedMap.eachLayer(layer => {
     if (layer instanceof L.TileLayer) {
@@ -5154,7 +5143,7 @@ if (typeof setChatInputValue !== 'function') {
   L.tileLayer(url, {
     tileSize: 256,
     zoomOffset: 0,
-    attribution: '© Mapbox © OpenStreetMap',
+    attribution: '© OpenStreetMap contributors',
     crossOrigin: true
   }).addTo(expandedMap);
 }
