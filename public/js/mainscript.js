@@ -7769,11 +7769,21 @@ window.setTravelMode = function(mode, day) {
 };
 
 // Build Directions URL; day is optional (defaults to currentDay)
+// Directions URL builder — self-hosted OSRM + debug log
 window.buildMapboxDirectionsUrl = function(coordsStr, day) {
-  const profile = getMapboxProfileForDay(day || window.currentDay || 1); // 'driving' | 'cycling' | 'walking'
-  // Mapbox yerine OSRM native endpoint
-  // Örnek URL: /route/v1/driving/30.7,36.88;30.73,36.88?geometries=geojson&overview=full&steps=true
-  return `/route/v1/${profile}/${coordsStr}?geometries=geojson&overview=full&steps=true`;
+  const d = day || window.currentDay || 1;
+  const profile = getMapboxProfileForDay(d); // 'driving' | 'cycling' | 'walking'
+  const url = `/route/v1/${profile}/${coordsStr}?geometries=geojson&overview=full&steps=true`;
+
+  // İlk seferde bir kez bilgi mesajı
+  if (!window.__TT_ROUTING_LOG_ONCE) {
+    console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
+    window.__TT_ROUTING_LOG_ONCE = true;
+  }
+  // Her çağrıda ayrıntı logu
+  console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
+
+  return url;
 };
 // Minimal snap; keep single definition
 if (!window.snapPointToRoad) {
