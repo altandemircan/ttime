@@ -8,8 +8,6 @@ var cacheBusterDate = +new Date();
 // leaflet-image
 module.exports = function leafletImage(map, callback) {
 
-    // Mapbox bağımlılığı kaldırıldı
-
     var dimensions = map.getSize(),
         layerQueue = new queue(1);
 
@@ -255,7 +253,7 @@ module.exports = function leafletImage(map, callback) {
         // If it's a data URL we don't want to touch this.
         if (typeof url !== "string") return url; // undefined/null ise dokunma
         if (isDataURL(url)) return url;
-        // Mapbox özel istisnası kaldırıldı
+
         return url + ((url.match(/\?/)) ? '&' : '?') + 'cache=' + cacheBusterDate;
     }
 
