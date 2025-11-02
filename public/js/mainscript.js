@@ -3134,7 +3134,7 @@ function initEmptyDayMap(day) {
 }
 
   L.tileLayer(
-  'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png',
+  'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -4623,7 +4623,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         attributionControl: false
     });
     L.tileLayer(
-  'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png',
+  'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -5052,7 +5052,7 @@ const map = L.map(containerId, {
 
 // Tile layer (default streets - Mapbox Street proxy ile)
 L.tileLayer(
-  'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png',
+  'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -5130,7 +5130,7 @@ window.expandedMaps = {};
 // Üstte tanımlı helper: setExpandedMapTile — crossOrigin ekleyin
 function setExpandedMapTile(expandedMap, styleKey) {
   // Artık styleKey gerekmiyor! Tüm stiller OSM tile ile aynı.
-  const url = 'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png';
+  const url = 'https://dev.triptime.ai/tile/{z}/{x}/{y}.png';
 
   let foundTile = null;
   expandedMap.eachLayer(layer => {
@@ -5368,7 +5368,7 @@ showRouteInfoBanner(day); // hemen ardından çağır
   // Layer değişim fonksiyonu
   function setExpandedMapTile(expandedMap, styleKey) {
   // OSM tile server kullan!
-  const url = `http://72.61.83.101:8080/tile/{z}/{x}/{y}.png`;
+  const url = `https://dev.triptime.ai/tile/{z}/{x}/{y}.png`;
 
   let foundTile = null;
   expandedMap.eachLayer(layer => {
