@@ -22,7 +22,7 @@ app.use('/api', feedbackRoute);
 // 3. Diğer API Routerları
 const llmProxy = require('./llm-proxy');
 const photogetProxy = require('./photoget-proxy');
-const mapBox = require("./mapBox");
+
 
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
@@ -147,55 +147,6 @@ app.get('/api/geoapify/reverse', async (req, res) => {
     res.json(await response.json());
   } catch (e) {
     res.status(500).send('Proxy error');
-  }
-});
-
-// 3.b MAPBOX ENDPOINTLERİ
-// Directions endpoint
-app.get("/api/mapbox/directions", async (req, res) => {
-  const { coordinates, profile, alternatives, overview, geometries } = req.query;
-  try {
-    const data = await mapBox.directions({
-      coordinates,
-      profile: profile || "walking",
-      alternatives: alternatives || false,
-      overview: overview || "full",
-      geometries: geometries || "geojson"
-    });
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Geocoding endpoint (isteğe bağlı)
-app.get("/api/mapbox/geocode", async (req, res) => {
-  const { query, limit } = req.query;
-  try {
-    const data = await mapBox.geocode({ query, limit: limit ? parseInt(limit) : 5 });
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// MAPBOX TILE PROXY ENDPOINT (asıl önemli kısım)
-app.get('/api/mapbox/tiles/:style/:z/:x/:y.png', async (req, res) => {
-  const { style, z, x, y } = req.params;
-  const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN;
-  if (!MAPBOX_TOKEN) {
-    return res.status(500).send('Mapbox token not configured');
-  }
-  const tileUrl = `https://api.mapbox.com/styles/v1/mapbox/${style}/tiles/256/${z}/${x}/${y}@2x?access_token=${MAPBOX_TOKEN}`;
-  try {
-    const response = await fetch(tileUrl);
-    if (!response.ok) {
-      return res.status(response.status).send('Mapbox tile error');
-    }
-    res.set('Content-Type', 'image/png');
-    response.body.pipe(res);
-  } catch (e) {
-    res.status(500).send('Tile proxy error');
   }
 });
 
