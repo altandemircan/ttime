@@ -7770,8 +7770,10 @@ window.setTravelMode = function(mode, day) {
 
 // Build Directions URL; day is optional (defaults to currentDay)
 window.buildMapboxDirectionsUrl = function(coordsStr, day) {
-  const profile = getMapboxProfileForDay(day || window.currentDay || 1);
-  return `/api/mapbox/directions?profile=${profile}&coordinates=${coordsStr}`;
+  const profile = getMapboxProfileForDay(day || window.currentDay || 1); // 'driving' | 'cycling' | 'walking'
+  // Mapbox yerine OSRM native endpoint
+  // Örnek URL: /route/v1/driving/30.7,36.88;30.73,36.88?geometries=geojson&overview=full&steps=true
+  return `/route/v1/${profile}/${coordsStr}?geometries=geojson&overview=full&steps=true`;
 };
 // Minimal snap; keep single definition
 if (!window.snapPointToRoad) {
