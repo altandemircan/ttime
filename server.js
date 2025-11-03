@@ -1,4 +1,3 @@
-// --- dotenv safe load ---
 try {
   require('dotenv').config({ /* quiet: true */ });
   console.log('[startup] dotenv loaded');
@@ -23,12 +22,10 @@ app.use('/api', feedbackRoute);
 const llmProxy = require('./llm-proxy');
 const photogetProxy = require('./photoget-proxy');
 
-
 app.use('/llm-proxy', llmProxy);
 app.use('/photoget-proxy', photogetProxy);
 
 const geoapify = require('./geoapify.js');
-
 
 // --- YENİ: /api/geoapify/nearby-cities endpoint’i ---
 app.get('/api/geoapify/nearby-cities', async (req, res) => {
@@ -46,7 +43,6 @@ app.get('/api/geoapify/nearby-cities', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-
 
 // --- EKLENEN ENDPOINT --- //
 app.get('/api/geoapify/geocode', async (req, res) => {
