@@ -8830,10 +8830,23 @@ track.addEventListener('touchmove', track.__onMove);
   (async () => {
     try {
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
+      
+
+
       if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
-        container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div></div>`;
-        return;
-      }
+  console.error('Elevation unavailable:', {
+    elevations,
+    samplesLength: samples.length,
+    elevationsLength: elevations ? elevations.length : 'none',
+    hasNaN: elevations ? elevations.some(Number.isNaN) : 'n/a'
+  });
+  container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div></div>`;
+  return;
+}
+
+
+
+
       const smooth = movingAverage(elevations, 3);
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
