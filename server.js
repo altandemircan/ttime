@@ -99,33 +99,51 @@ app.get('/api/geoapify/places', async (req, res) => {
 
 app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
-  let batchSize = 5; // Çok küçük başlat, sonra arttır.
 
+  const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:9000';
+  const ELEVATION_DATASET = process.env.ELEVATION_DATASET || 'srtm30m';
+
+  let batchSize = 5; // önce küçük
   try {
-    const coords = (locations || "").split('|');
+    const coords = (locations || "").split('|').filter(Boolean);
     const resultsAll = [];
 
     for (let i = 0; i < coords.length; i += batchSize) {
       const batch = coords.slice(i, i + batchSize).join('|');
-      const openTopoUrl = `http://127.0.0.1:9000/v1/srtm30m?locations=${batch}`;
-      console.log(`[Elevation BACKEND] Calling: ${openTopoUrl} with ${batch.split('|').length} coords`);
-      const response = await fetch(openTopoUrl, { timeout: 9000 });
+      const url = `${ELEVATION_BASE}/v1/${ELEVATION_DATASET}?locations=${batch}`;
+      console.log(`[Elevation BACKEND] Calling: ${url} with ${batch.split('|').length} coords`);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15s
+      let response;
+      try {
+        response = await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
+
       if (!response.ok) {
         console.warn(`[Elevation] OpenTopoData failed: ${response.status} batch ${batch}`);
-        // Her koordinat için null elevation push et (elevation profili bozulmasın)
         for (let j = i; j < i + batchSize && j < coords.length; j++) {
           resultsAll.push({ elevation: null });
         }
-        continue; // Devam et!
+        continue;
       }
+
       const result = await response.json();
-      if (result.results) {
+      if (result && Array.isArray(result.results)) {
         resultsAll.push(...result.results);
+      } else {
+        for (let j = i; j < i + batchSize && j < coords.length; j++) {
+          resultsAll.push({ elevation: null });
+        }
       }
     }
+
     res.set('Access-Control-Allow-Origin', '*');
     res.json({ results: resultsAll, source: 'opentopodata' });
   } catch (e) {
+    console.error('[Elevation] Error:', e);
     res.status(502).json({ error: 'Elevation API failed.', detail: e.message });
   }
 });
