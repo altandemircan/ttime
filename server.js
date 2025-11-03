@@ -99,7 +99,7 @@ app.get('/api/geoapify/places', async (req, res) => {
 
 app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
-  const batchSize = 20; // SRTM30M için en güvenli değer!
+  let batchSize = 5; // Çok küçük başlat, sonra arttır.
 
   try {
     const coords = (locations || "").split('|');
@@ -111,8 +111,12 @@ app.get('/api/elevation', async (req, res) => {
       console.log(`[Elevation BACKEND] Calling: ${openTopoUrl} with ${batch.split('|').length} coords`);
       const response = await fetch(openTopoUrl, { timeout: 9000 });
       if (!response.ok) {
-        console.warn(`[Elevation] OpenTopoData failed: ${response.status}`);
-        throw new Error(`OpenTopoData HTTP ${response.status}`);
+        console.warn(`[Elevation] OpenTopoData failed: ${response.status} batch ${batch}`);
+        // Her koordinat için null elevation push et (elevation profili bozulmasın)
+        for (let j = i; j < i + batchSize && j < coords.length; j++) {
+          resultsAll.push({ elevation: null });
+        }
+        continue; // Devam et!
       }
       const result = await response.json();
       if (result.results) {
