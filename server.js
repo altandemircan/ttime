@@ -147,6 +147,7 @@ app.get('/api/elevation', async (req, res) => {
     res.status(502).json({ error: 'Elevation API failed.', detail: e.message });
   }
 });
+
 app.get('/api/geoapify/reverse', async (req, res) => {
   const { lat, lon } = req.query;
   const apiKey = process.env.GEOAPIFY_KEY;
