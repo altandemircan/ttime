@@ -9156,7 +9156,6 @@ document.addEventListener('mousedown', (e) => {
     { key: 'openTopoData', fn: viaOpenTopoData, chunk: 80, minInterval: 1200 },
   ];
 
-  // Yalnızca OpenTopoData cooldown/lastTs kullanılır!
   const cooldownUntil = { openTopoData: 0 };
   const lastTs        = { openTopoData: 0 };
 
@@ -9192,46 +9191,45 @@ document.addEventListener('mousedown', (e) => {
     const CHUNK = 80;
     const res = [];
     for (let i=0;i<samples.length;i+=CHUNK){
-        const chunk = samples.slice(i,i+CHUNK);
-        const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-        // Sadece backend proxy!
-        const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
-        const resp = await fetch(url);
-        if (resp.status === 429) {
-            cooldownUntil.openTopoData = Date.now() + 10*60*1000;
-            throw new Error('429');
-        }
-        if (!resp.ok) throw new Error('HTTP '+resp.status);
-        const j = await resp.json();
-        // Backend cevabına göre parse:
-        if (j.results && j.results.length === chunk.length) {
-            res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
-        } else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
-            res.push(...j.elevations);
-        } else if (j.data && Array.isArray(j.data)) {
-            res.push(...j.data);
-        } else {
-            throw new Error('bad response');
-        }
-        if (samples.length > CHUNK) await sleep(800);
+      const chunk = samples.slice(i,i+CHUNK);
+      const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
+      const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
+      const resp = await fetch(url);
+      if (resp.status === 429) {
+        cooldownUntil.openTopoData = Date.now() + 10*60*1000;
+        throw new Error('429');
+      }
+      if (!resp.ok) throw new Error('HTTP '+resp.status);
+      const j = await resp.json();
+      // OpenTopoData backend response
+      if (j.results && j.results.length === chunk.length) {
+        res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
+      } else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
+        res.push(...j.elevations);
+      } else if (j.data && Array.isArray(j.data)) {
+        res.push(...j.data);
+      } else {
+        console.error('[Elevation] Bad response:', j);
+        throw new Error('bad response');
+      }
+      if (samples.length > CHUNK) await sleep(800);
     }
     if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
     return res;
-  }   
+  }
 
-  // Ana giriş: sırayla dene, başarılı olunca cache’le
+  // Main multiplexer function
   window.getElevationsForRoute = async function(samples, container, routeKey) {
-    // 1) Cache
     const cached = loadCache(routeKey, samples.length);
     if (cached && cached.length === samples.length) {
       try { if (typeof hideScaleBarLoading === 'function') hideScaleBarLoading(container); } catch(_){}
       return cached;
     }
 
-    // 2) Sağlayıcıları sırayla dene (tek provider: OpenTopoData)
+    // Only OpenTopoData provider
     for (const p of providers) {
       try {
-        if (Date.now() < cooldownUntil[p.key]) continue; // cooldown’da ise atla
+        if (Date.now() < cooldownUntil[p.key]) continue;
         if (typeof updateScaleBarLoadingText === 'function') {
           updateScaleBarLoadingText(container, `Loading elevation… (${p.key})`);
         }
@@ -9242,11 +9240,10 @@ document.addEventListener('mousedown', (e) => {
           return elev;
         }
       } catch (e) {
-        // sıradakine geç (tek provider olduğunda sadece burada hata olur)
         continue;
       }
     }
-    // 3) Başaramadı
+    // No successful elevation
     return null;
   };
 
