@@ -9145,30 +9145,21 @@ document.addEventListener('mousedown', (e) => {
   window.__tt_elev429PlannerReady = true;
 })();
 
-
 (function ensureElevationMux(){
   if (window.__tt_elevMuxReady) return;
 
   const TTL_MS = 48 * 60 * 60 * 1000;
   const LS_PREFIX = 'tt_elev_cache_v1:';
 
-  // SIRALAMA: Önce OpenTopoData, sonra Open‑Elevation. Open‑Meteo KAPALI.
+  // Sadece VPS/OpenTopoData provider!
   const providers = [
-    { key: 'openElevation', fn: viaOpenElevation, chunk: 50, minInterval: 2000 },
     { key: 'openTopoData', fn: viaOpenTopoData, chunk: 80, minInterval: 1200 },
-    
   ];
 
-  const cooldownUntil = { openMeteo: 0, openTopoData: 0, openElevation: 0 };
-  const lastTs        = { openMeteo: 0, openTopoData: 0, openElevation: 0 };
+  // Yalnızca OpenTopoData cooldown/lastTs kullanılır!
+  const cooldownUntil = { openTopoData: 0 };
+  const lastTs        = { openTopoData: 0 };
 
-  cooldownUntil.openMeteo = Date.now() + 7 * 24 * 60 * 60 * 1000;
-  window.disableOpenMeteoElevation = function(days = 365) {
-    cooldownUntil.openMeteo = Date.now() + days * 24 * 60 * 60 * 1000;
-  };
-  window.enableOpenMeteoElevation = function() {
-    cooldownUntil.openMeteo = 0;
-  };
   function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
   function loadCache(routeKey, n) {
@@ -9195,30 +9186,6 @@ document.addEventListener('mousedown', (e) => {
     const wait = Math.max(0, minInterval - (now - (lastTs[key] || 0)));
     if (wait) await sleep(wait);
     lastTs[key] = Date.now();
-  }
-
-  async function viaOpenMeteo(samples) {
-    const CHUNK = 100;
-    const res = [];
-    for (let i=0;i<samples.length;i+=CHUNK){
-      const chunk = samples.slice(i,i+CHUNK);
-      const lats = chunk.map(p=>p.lat.toFixed(6)).join(',');
-      const lons = chunk.map(p=>p.lng.toFixed(6)).join(',');
-      const url  = `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`;
-      await throttle('openMeteo', 1800);
-      const resp = await fetch(url);
-      if (resp.status === 429) {
-        const ra = parseInt(resp.headers.get('retry-after')||'0',10);
-        cooldownUntil.openMeteo = Date.now() + (ra>0? ra*1000 : 10*60*1000); // 10 dk
-        throw new Error('429');
-      }
-      if (!resp.ok) throw new Error('HTTP '+resp.status);
-      const j = await resp.json();
-      if (!j.elevation || j.elevation.length !== chunk.length) throw new Error('bad response');
-      res.push(...j.elevation);
-      if (samples.length > CHUNK) await sleep(1000);
-    }
-    return res;
   }
 
   async function viaOpenTopoData(samples) {
@@ -9250,45 +9217,7 @@ document.addEventListener('mousedown', (e) => {
     }
     if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
     return res;
-}   
-async function viaOpenElevation(samples) {
-    const CHUNK = 100;
-    const res = [];
-    for (let i = 0; i < samples.length; i += CHUNK) {
-        const chunk = samples.slice(i, i + CHUNK);
-        const loc = chunk.map(p => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-        // Dış API yerine kendi backend proxy endpointini kullan!
-        const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
-        await throttle('openElevation', 2000);
-        const resp = await fetch(url);
-        if (resp.status === 429) {
-            cooldownUntil.openElevation = Date.now() + 10 * 60 * 1000;
-            throw new Error('429');
-        }
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const j = await resp.json();
-        // API proxy'nin JSON cevabında "results" olmayabilir, kendi backendinin cevabını kontrol et!
-        // Eğer /api/elevation cevabında results varsa
-        if (j.results && j.results.length === chunk.length) {
-            res.push(...j.results.map(r => r && typeof r.elevation === 'number' ? r.elevation : null));
-        }
-        // Eğer /api/elevation cevabında doğrudan elevation array varsa (ör: j.elevations)
-        else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
-            res.push(...j.elevations);
-        }
-        // Eğer geoapify veya başka bir fallback varsa, ona göre parse et!
-        else if (j.data && Array.isArray(j.data)) {
-            res.push(...j.data);
-        }
-        else {
-            throw new Error('bad response');
-        }
-
-        if (samples.length > CHUNK) await sleep(1000);
-    }
-    if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
-    return res;
-}
+  }   
 
   // Ana giriş: sırayla dene, başarılı olunca cache’le
   window.getElevationsForRoute = async function(samples, container, routeKey) {
@@ -9299,7 +9228,7 @@ async function viaOpenElevation(samples) {
       return cached;
     }
 
-    // 2) Sağlayıcıları sırayla dene
+    // 2) Sağlayıcıları sırayla dene (tek provider: OpenTopoData)
     for (const p of providers) {
       try {
         if (Date.now() < cooldownUntil[p.key]) continue; // cooldown’da ise atla
@@ -9313,7 +9242,7 @@ async function viaOpenElevation(samples) {
           return elev;
         }
       } catch (e) {
-        // sıradakine geç
+        // sıradakine geç (tek provider olduğunda sadece burada hata olur)
         continue;
       }
     }
