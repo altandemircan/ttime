@@ -100,15 +100,17 @@ app.get('/api/geoapify/places', async (req, res) => {
 app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
 
-  // Daima kendi OpenTopoData sunucun!
+  // SADECE kendi OpenTopoData sunucun!
   const openTopoUrl = `http://127.0.0.1:9000/v1/srtm30m?locations=${locations}`;
+  // Eğer NGINX ile proxy yapıyorsan:
+  // const openTopoUrl = `https://dev.triptime.ai/v1/srtm30m?locations=${locations}`;
 
   try {
     const response = await fetch(openTopoUrl);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const result = await response.json();
     res.set('Access-Control-Allow-Origin', '*');
-    res.json({ ...result, source: 'opentopodata' });
+    res.json({ ...result, source: 'opentopodata' }); // <<<<<< ÖNEMLİ! Bu alan sayesinde senin sunucundan gelmiş oluyor!
   } catch (e) {
     res.status(502).json({ error: 'Elevation API failed.', detail: e.message });
   }
