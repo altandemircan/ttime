@@ -5145,36 +5145,43 @@ function updateRouteStatsUI(day) {
 
  
 
-window._maplibre3DInstance.on('load', function () {
-  // ROTA KOORDİNATLARINI AL (2+ nokta varsa)
-  const day = window.currentDay || 1;
-  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-  if (points.length >= 2) {
-    // GeoJSON LineString formatına çevir
-    const coordinates = points.map(p => [p.lng, p.lat]);
-    window._maplibre3DInstance.addSource('route', {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: coordinates
+function openMapLibre3D(expandedMap) {
+  // ... mevcut kodun ...
+  window._maplibre3DInstance = new maplibregl.Map({
+    container: 'maplibre-3d-view',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: expandedMap.getCenter(),
+    zoom: expandedMap.getZoom(),
+    pitch: 60,
+    bearing: 30
+  });
+
+  // BURAYA EKLE!
+  window._maplibre3DInstance.on('load', function () {
+    const day = window.currentDay || 1;
+    const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+    if (points.length >= 2) {
+      const coordinates = points.map(p => [p.lng, p.lat]);
+      window._maplibre3DInstance.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: coordinates }
         }
-      }
-    });
-    window._maplibre3DInstance.addLayer({
-      id: 'route-line',
-      type: 'line',
-      source: 'route',
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#d32f2f', 'line-width': 5 }
-    });
-    // Markers eklemek istersen
-    points.forEach((p, idx) => {
-      new maplibregl.Marker({ color: '#d32f2f' }).setLngLat([p.lng, p.lat]).addTo(window._maplibre3DInstance);
-    });
-  }
-});
+      });
+      window._maplibre3DInstance.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: 'route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': '#d32f2f', 'line-width': 5 }
+      });
+      points.forEach((p, idx) => {
+        new maplibregl.Marker({ color: '#d32f2f' }).setLngLat([p.lng, p.lat]).addTo(window._maplibre3DInstance);
+      });
+    }
+  });
+}
 
 async function expandMap(containerId, day) {
 
