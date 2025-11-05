@@ -22,12 +22,12 @@
       scrollWheelZoom: false,
       attributionControl: false
     });
-    L.tileLayer('https://dev.triptime.ai/tile/{z}/{x}/{y}.png', {
-  tileSize: 256,
-  zoomOffset: 0,
-  attribution: '© OpenStreetMap contributors',
-  crossOrigin: true
-}).addTo(map);
+    L.tileLayer('http://72.61.83.101:8080/tile/{z}/{x}/{y}.png', {
+      tileSize: 256,
+      zoomOffset: 0,
+      attribution: '© OpenStreetMap contributors',
+      crossOrigin: true
+    }).addTo(map);
     L.circleMarker([lat, lon], {
       radius: 12,
       color: '#8a4af3',
