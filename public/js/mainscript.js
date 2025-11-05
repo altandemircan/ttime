@@ -5187,12 +5187,16 @@ function openMapLibre3D(expandedMap) {
         }
       });
       window._maplibre3DInstance.addLayer({
-        id: 'route-line',
-        type: 'line',
-        source: 'route',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#d32f2f', 'line-width': 5 }
-      });
+          id: 'route-line',
+          type: 'line',
+          source: 'route',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#1976d2',    // BİREBİR MAVİ
+            'line-width': 8,            // Leaflet polyline ile aynı
+            'line-opacity': 0.92        // Aynı şeffaflık!
+          }
+        });
     }
 
     // İstersen markerları da ekle (sıra numaralı):
