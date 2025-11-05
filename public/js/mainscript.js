@@ -5341,21 +5341,13 @@ L.maplibreGL({
 
   // Layer değişim fonksiyonu
 function setExpandedMapTile(styleKey) {
-  // Eski raster layer yerine OpenFreeMap vektör tile ekle (MapLibreGL + Leaflet)
-  let foundLayer = null;
-  expandedMap.eachLayer(layer => {
-    // Hem eski raster tile, hem vektör maplibre layer'ı temizle!
-    if (layer instanceof L.TileLayer || layer._isMaplibreGLLayer) {
-      foundLayer = layer;
-    }
-  });
-  if (foundLayer) expandedMap.removeLayer(foundLayer);
-
-  // Seçilen stili uygula: liberty, positivon, bright, 3d vs.
+  const validStyles = ['liberty', 'dark', 'bright', 'positron'];
+  const styleToUse = validStyles.includes(styleKey) ? styleKey : 'liberty';
   L.maplibreGL({
-    style: `https://tiles.openfreemap.org/styles/${styleKey || 'liberty'}`,
+    style: `https://tiles.openfreemap.org/styles/${styleToUse}`,
   }).addTo(expandedMap);
 }
+
   setExpandedMapTile(currentLayer);
 
 
