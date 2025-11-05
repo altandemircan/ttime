@@ -3113,37 +3113,51 @@ function initEmptyDayMap(day) {
 
   if (!el.style.height) el.style.height = '285px';
 
-  // KÜÇÜK HARİTA
-  const map = L.map(containerId, {
-    scrollWheelZoom: true,
-    fadeAnimation: true,
-    zoomAnimation: true,
-    zoomAnimationThreshold: 8,
-    zoomSnap: 0.25,
-    zoomDelta: 0.25,
-    wheelDebounceTime: 35,
-    wheelPxPerZoomLevel: 120,
-    inertia: true,
-    easeLinearity: 0.2
-  }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
-  if (!map._initialView) {
-  map._initialView = {
-    center: map.getCenter(),
-    zoom: map.getZoom()
-  };
-}
+// HEAD'de MapLibre CSS/JS ekli olduğuna göre sadece JS kodu lazım
 
-  L.tileLayer(
-  // 'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
-     // '/tile/{z}/{x}/{y}.png',
-     'https://openfreemap.org/tiles/{z}/{x}/{y}.png',
-  {
-    tileSize: 256,
-    zoomOffset: 0,
-    attribution: '© OpenStreetMap contributors',
-    crossOrigin: true
-  }
-).addTo(map);
+const map = new maplibregl.Map({
+  container: 'mapId',  // Harita açılacak div id!
+  style: 'https://tiles.openfreemap.org/styles/liberty', // Openfreemap vector tile
+  center: [lon, lat],
+  zoom: 13
+});
+
+// Marker ekle
+map.on('load', function() {
+  const markerEl = document.createElement('div');
+  markerEl.style.width = '24px';
+  markerEl.style.height = '24px';
+  markerEl.style.background = '#8a4af3';
+  markerEl.style.border = '3px solid white';
+  markerEl.style.borderRadius = '50%';
+  markerEl.style.boxShadow = '0 0 8px #8a4af3';
+  markerEl.style.opacity = '0.95';
+
+  new maplibregl.Marker({ element: markerEl })
+    .setLngLat([lon, lat])
+    .addTo(map);
+
+  // Rota/Polyline
+  map.addSource('route', {
+    type: 'geojson',
+    data: {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [lon1, lat1], [lon2, lat2], ...
+        ]
+      }
+    }
+  });
+
+  map.addLayer({
+    id: 'route-line',
+    type: 'line',
+    source: 'route',
+    paint: { 'line-color': '#1976d2', 'line-width': 6 }
+  });
+});
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
