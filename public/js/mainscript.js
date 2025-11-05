@@ -5265,16 +5265,27 @@ let currentLayer = 'liberty';
   layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
   div.classList.add('selected');
   if (opt.value === '3d') {
-    // 3D haritayı açınca leaflet expanded'ı gizle
-    expandedMap.getContainer().style.display = "none";
-    openMapLibre3D(expandedMap);
+  // Leaflet expanded haritayı GİZLE
+  expandedMap.getContainer().style.display = "none";
+  
+  // MapLibreGL 3D harita div'ini GÖRÜNÜR yap:
+  let map3d = document.getElementById('maplibre-3d-view');
+  if (map3d) {
+    map3d.style.display = "block";
   } else {
-    // 2D (leaflet harita) görünür, 3D gizli
-    expandedMap.getContainer().style.display = "";
-    let map3d = document.getElementById('maplibre-3d-view');
-    if (map3d) map3d.style.display = "none";
-    setExpandedMapTile(opt.value);
+    openMapLibre3D(expandedMap); // Div yoksa oluştur ve aç
   }
+} else {
+  // Leaflet expanded haritayı göster
+  expandedMap.getContainer().style.display = "";
+
+  // 3D harita div'ini GİZLE
+  let map3d = document.getElementById('maplibre-3d-view');
+  if (map3d) {
+    map3d.style.display = "none";
+  }
+  setExpandedMapTile(opt.value);
+}
 };
     layersBar.appendChild(div);
   });
