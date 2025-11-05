@@ -5459,9 +5459,9 @@ function setExpandedMapTile(styleKey) {
   setExpandedMapTile(currentLayer);
 
 
-  // // Expanded harita ilk açılış için flag
-  // window.__expandedMapCentered = window.__expandedMapCentered || {};
-  // let isFirstExpand = !window.__expandedMapCentered[day];
+  // Expanded harita ilk açılış için flag
+  window.__expandedMapCentered = window.__expandedMapCentered || {};
+  let isFirstExpand = !window.__expandedMapCentered[day];
 
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
