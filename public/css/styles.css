@@ -7194,3 +7194,7 @@ scrollbar-width: thin;
 .chat-message.ai-message ul { margin: 8px 0 8px 16px; padding-left: 18px; }
 .chat-message.ai-message li { margin-bottom: 6px; }
 .chat-message.ai-message strong { color: #1976d2; }
+
+#maplibre-3d-view {
+    height: 100%;
+}
