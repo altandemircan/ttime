@@ -5358,31 +5358,18 @@ setExpandedMapTile(currentLayer);
 
   // Layer değişim fonksiyonu
 function setExpandedMapTile(styleKey) {
-  const validStyles = ['liberty', 'bright', 'dark', 'positron'];
-  const styleToUse = validStyles.includes(styleKey) ? styleKey : 'liberty';
+    const validStyles = ['liberty', 'bright', 'dark', 'positron'];
+    const styleToUse = validStyles.includes(styleKey) ? styleKey : 'liberty';
+    const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
 
-  // Yeni layer eklemeden önce varsa kaldır!
-  if (expandedMap._maplibreLayer) {
-    expandedMap.removeLayer(expandedMap._maplibreLayer);
-    expandedMap._maplibreLayer = null;
-  }
+    // Eski layer'ı kaldır
+    if (expandedMap._maplibreLayer) {
+        expandedMap.removeLayer(expandedMap._maplibreLayer);
+        expandedMap._maplibreLayer = null;
+    }
 
-  let url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
-  fetch(url)
-    .then(r => {
-      if (r.ok) {
-        expandedMap._maplibreLayer = L.maplibreGL({ style: url }).addTo(expandedMap);
-      } else {
-        expandedMap._maplibreLayer = L.maplibreGL({
-          style: 'https://tiles.openfreemap.org/styles/liberty'
-        }).addTo(expandedMap);
-      }
-    })
-    .catch(() => {
-      expandedMap._maplibreLayer = L.maplibreGL({
-        style: 'https://tiles.openfreemap.org/styles/liberty'
-      }).addTo(expandedMap);
-    });
+    // Yeni layer'ı ekle (yalnızca buradan!)
+    expandedMap._maplibreLayer = L.maplibreGL({ style: url }).addTo(expandedMap);
 }
   setExpandedMapTile(currentLayer);
 
