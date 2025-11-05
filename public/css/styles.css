@@ -5053,7 +5053,7 @@ right: 10px;
     border: none;
     padding: 6px 4px;
     border-radius: 4px;
-    top: 120px;
+    top: 140px;
     left: 10px;
     border: 2px solid rgba(0, 0, 0, 0.2);
     background-clip: padding-box;
@@ -5388,7 +5388,7 @@ right: 10px;
 
 .use-my-location-btn {
     position: absolute;
-    top: 80px;
+    top: 100px;
     left: 10px;
     z-index: 10001;
     background: rgb(255 255 255);
