@@ -5323,9 +5323,11 @@ showRouteInfoBanner(day); // hemen ardından çağır
     easeLinearity: 0.2
   });
 
-    L.maplibreGL({
-    style: `https://tiles.openfreemap.org/styles/${styleKey || 'liberty'}`,
-  }).addTo(expandedMap);
+  // Layer ilk eklenirken default style
+L.maplibreGL({
+  style: `https://tiles.openfreemap.org/styles/${currentLayer || 'liberty'}`,
+}).addTo(expandedMap);
+
     
   if (!expandedMap._initialView) {
     expandedMap._initialView = {
