@@ -7196,5 +7196,5 @@ scrollbar-width: thin;
 .chat-message.ai-message strong { color: #1976d2; }
 
 #maplibre-3d-view {
-    height: 100%;
+    height: 100% !important;
 }
