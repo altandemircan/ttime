@@ -5209,12 +5209,13 @@ async function expandMap(containerId, day) {
   layersBar.className = 'map-layers-row'; // CSS'i dosyaya ekleyeceksin
 
   const layerOptions = [
-    { value: 'streets-v12', img: '/img/preview_streets.png', label: 'Default' },   
-    { value: 'dark-v11', img: '/img/preview_navigation.png', label: 'Navigation' },
-    { value: 'satellite-streets-v12', img: '/img/preview_satellite.png', label: 'Satellite' }
-  ];
+  { value: 'liberty', img: '/img/preview_liberty.png', label: 'Liberty' },
+  { value: 'bright', img: '/img/preview_bright.png', label: 'Bright' },
+  { value: 'dark', img: '/img/preview_dark.png', label: 'Dark' },
+  { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' }
+];
 
-  let currentLayer = 'streets-v12';
+let currentLayer = 'liberty';
   let expandedTileLayer = null;
 
   layerOptions.forEach(opt => {
