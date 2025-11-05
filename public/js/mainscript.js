@@ -3103,15 +3103,17 @@ function initEmptyDayMap(day) {
   const hasInner = el.querySelector('.leaflet-container');
 
   if (existingMap && hasInner) {
+    // Sağlam durumda, sadece view’i güncelleyebilirsin (opsiyonel)
     return;
   } else if (existingMap && !hasInner) {
+    // Detached
     try { existingMap.remove(); } catch(_){}
     delete window.leafletMaps[containerId];
   }
 
   if (!el.style.height) el.style.height = '285px';
 
-  // Leaflet Harita nesnesi
+  // KÜÇÜK HARİTA
   const map = L.map(containerId, {
     scrollWheelZoom: true,
     fadeAnimation: true,
@@ -3124,21 +3126,17 @@ function initEmptyDayMap(day) {
     inertia: true,
     easeLinearity: 0.2
   }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
-
   if (!map._initialView) {
-    map._initialView = {
-      center: map.getCenter(),
-      zoom: map.getZoom()
-    };
-  }
+  map._initialView = {
+    center: map.getCenter(),
+    zoom: map.getZoom()
+  };
+}
 
-  // 🟣 Önemli: Vektör tabanlı OpenFreeMap tile için MapLibreGL Leaflet binding kullan!
-  // GEREKLİ: https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js (index.html'de yüklü olmalı)
-  L.maplibreGL({
-    style: 'https://tiles.openfreemap.org/styles/liberty',
-  }).addTo(map);
-
-  // (Eski L.tileLayer(...) kodunu kaldırıyorsun!)
+    // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
+    L.maplibreGL({
+        style: 'https://tiles.openfreemap.org/styles/liberty',
+    }).addTo(map);
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
@@ -4619,21 +4617,10 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         zoomControl: true,
         attributionControl: false
     });
-  L.tileLayer(
-  // '/tile/{z}/{x}/{y}.png',
-  'https://openfreemap.org/tiles/{z}/{x}/{y}.png',
-  {
-    tileSize: 256,
-    zoomOffset: 0,
-    attribution: '© OpenStreetMap contributors',
-    crossOrigin: true
-  }
-  // Değiştirilen kısım: OpenFreeMap vektör tile'ı MapLibreGL üzerinden ekle
-  // (GEREKLİ: https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js yüklü olmalı)
-  L.maplibreGL({
-    style: 'https://tiles.openfreemap.org/styles/liberty',
-  }).addTo(map);
-;
+    // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
+    L.maplibreGL({
+        style: 'https://tiles.openfreemap.org/styles/liberty',
+    }).addTo(map);
 
     // Marker
     const icon = L.divIcon({
@@ -5053,21 +5040,10 @@ const map = L.map(containerId, {
     preferCanvas: true
 });
 
-// Tile layer 
-  L.tileLayer(
-  // '/tile/{z}/{x}/{y}.png',
-  'https://openfreemap.org/tiles/{z}/{x}/{y}.png',
-  {
-    tileSize: 256,
-    zoomOffset: 0,
-    attribution: '© OpenStreetMap contributors',
-    crossOrigin: true
-  }
-  // Değiştirilen kısım: OpenFreeMap vektör tile'ı MapLibreGL üzerinden ekle
-  // (GEREKLİ: https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js yüklü olmalı)
-  L.maplibreGL({
-    style: 'https://tiles.openfreemap.org/styles/liberty',
-  }).addTo(map);
+    // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
+    L.maplibreGL({
+        style: 'https://tiles.openfreemap.org/styles/liberty',
+    }).addTo(map);
 
 // ROTAYI EKLE
 const polyline = L.polyline(coords, {
@@ -5355,17 +5331,17 @@ showRouteInfoBanner(day); // hemen ardından çağır
 
   // Layer değişim fonksiyonu
 function setExpandedMapTile(styleKey) {
-  // OpenFreeMap vektör stili kullanalım!
+  // Eski raster layer yerine OpenFreeMap vektör tile ekle (MapLibreGL + Leaflet)
   let foundLayer = null;
   expandedMap.eachLayer(layer => {
-    // Mevcut olan MaplibreGL layer'ı da kaldırabiliriz
+    // Hem eski raster tile, hem vektör maplibre layer'ı temizle!
     if (layer instanceof L.TileLayer || layer._isMaplibreGLLayer) {
       foundLayer = layer;
     }
   });
   if (foundLayer) expandedMap.removeLayer(foundLayer);
 
-  // Vektör harita zemini ekle:
+  // Seçilen stili uygula: liberty, positivon, bright, 3d vs.
   L.maplibreGL({
     style: `https://tiles.openfreemap.org/styles/${styleKey || 'liberty'}`,
   }).addTo(expandedMap);
