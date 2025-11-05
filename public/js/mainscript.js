@@ -5143,7 +5143,47 @@ function updateRouteStatsUI(day) {
   }
 }
 
- 
+ function openMapLibre3D(expandedMap) {
+  // Eski vektör layerı kaldır
+  if (expandedMap._maplibreLayer) {
+    expandedMap.removeLayer(expandedMap._maplibreLayer);
+    expandedMap._maplibreLayer = null;
+  }
+  // MapLibreGL JS ile 3D harita ekle
+  // Not: expandedMap Leaflet haritası! 3D için doğrudan MapLibreGL ile yeni bir div göstermek daha iyi
+  // Kısayol: Expanded harita içine yeni bir div ekle ve oraya MapLibreGL JS ile harita aç!
+  let mapDiv = expandedMap.getContainer();
+  // Altına bir 3D harita div'i oluştur
+  let maplibre3d = document.getElementById('maplibre-3d-view');
+  if (!maplibre3d) {
+    maplibre3d = document.createElement('div');
+    maplibre3d.id = 'maplibre-3d-view';
+    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;';
+    mapDiv.appendChild(maplibre3d);
+  } else {
+    maplibre3d.innerHTML = '';
+    maplibre3d.style.display = 'block';
+  }
+  // 3D harita aç (kitaplık import ediyor mu? check!)
+  if (!window._maplibre3DInstance) {
+    window._maplibre3DInstance = new maplibregl.Map({
+      container: 'maplibre-3d-view',
+      style: 'https://tiles.openfreemap.org/styles/liberty', // veya kendi 3d stillin
+      center: expandedMap.getCenter(), // Leaflet center'ı aynen kullan
+      zoom: expandedMap.getZoom(),
+      pitch: 60,     // 3D eğim
+      bearing: 30    // Yön açı
+    });
+    // Mevcut rotayı geojson layer olarak eklemek istiyorsan (örnek):
+    // window._maplibre3DInstance.on('load', () => {
+    //   window._maplibre3DInstance.addSource('route', {...});
+    //   window._maplibre3DInstance.addLayer({...});
+    // });
+  }
+  // Diğer harita divleri ister gizle
+  mapDiv.querySelectorAll('.leaflet-container').forEach(el => el.style.display = 'none');
+}
+
 async function expandMap(containerId, day) {
 
 
@@ -5208,6 +5248,8 @@ async function expandMap(containerId, day) {
   { value: 'bright', img: '/img/preview_bright.png', label: 'Bright' },
   { value: 'dark', img: '/img/preview_dark.png', label: 'Dark' },
   { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' }
+  { value: '3d', img: '/img/preview_3d.png', label: '3D' }
+
 ];
 
 let currentLayer = 'liberty';
@@ -5220,10 +5262,15 @@ let currentLayer = 'liberty';
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     if (opt.value === currentLayer) div.classList.add('selected');
     div.onclick = function() {
-      layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
-      div.classList.add('selected');
-      setExpandedMapTile(opt.value); // Harita layer değişimi
-    };
+  layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+  div.classList.add('selected');
+  if (opt.value === '3d') {
+    // 3D MapLibreGL ile aç
+    openMapLibre3D(expandedMap); // aşağıda EKLE!
+  } else {
+    setExpandedMapTile(opt.value); // eski 2D stiller
+  }
+};
     layersBar.appendChild(div);
   });
 
