@@ -5346,9 +5346,7 @@ expandedMap.on('styleimagemissing', function(e) {
 });
 
   // Layer ilk eklenirken default style
-L.maplibreGL({
-  style: `https://tiles.openfreemap.org/styles/${currentLayer || 'liberty'}`,
-}).addTo(expandedMap);
+setExpandedMapTile(currentLayer);
 
 
   if (!expandedMap._initialView) {
@@ -5360,13 +5358,38 @@ L.maplibreGL({
 
   // Layer değişim fonksiyonu
 function setExpandedMapTile(styleKey) {
-  const validStyles = ['liberty', 'dark', 'bright', 'positron'];
+  // 1. Stil listesi
+  const validStyles = ['liberty', 'bright', 'dark', 'positron'];
+  // 2. Kullanılacak style belirleme
   const styleToUse = validStyles.includes(styleKey) ? styleKey : 'liberty';
-  L.maplibreGL({
-    style: `https://tiles.openfreemap.org/styles/${styleToUse}`,
-  }).addTo(expandedMap);
-}
 
+  // 3. Layer kaldır (sürekli üst üste binmesin):
+  if (expandedMap._maplibreLayer) {
+    expandedMap.removeLayer(expandedMap._maplibreLayer);
+    expandedMap._maplibreLayer = null;
+  }
+
+  // 4. Yeni layerı stil linkiyle ekle (ÇALIŞANA kadar deneyerek):
+  let url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
+  fetch(url)
+    .then(r => {
+      if (r.ok) {
+        // Style linki çalışıyorsa Ekle
+        expandedMap._maplibreLayer = L.maplibreGL({ style: url }).addTo(expandedMap);
+      } else {
+        // HATA: Fallback olarak 'liberty' kullan
+        expandedMap._maplibreLayer = L.maplibreGL({
+          style: 'https://tiles.openfreemap.org/styles/liberty'
+        }).addTo(expandedMap);
+      }
+    })
+    .catch(() => {
+      // HATA: Fallback olarak 'liberty' kullan
+      expandedMap._maplibreLayer = L.maplibreGL({
+        style: 'https://tiles.openfreemap.org/styles/liberty'
+      }).addTo(expandedMap);
+    });
+}
   setExpandedMapTile(currentLayer);
 
 
