@@ -10,7 +10,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/js/leaflet-image.js"></script>
 
-    <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
 
     <!-- Leaflet Routing Machine -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
@@ -1115,6 +1115,19 @@ Your browser does not support the video tag.                  </video>
     }, 500); // Fade out süresiyle aynı olmalı
   }, 5000); // 5 saniyede bir dönecek
 </script>
+
+
+<script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+<script>
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://openfreemap.org/styles/positron/style.json',
+    center: [28.96, 41.01], // İstanbul - [lon, lat]
+    zoom: 13,
+    attributionControl: true
+  });
+</script>
+
 
 <script src="/js/route-importer.js" defer></script>
 <script src="/js/type_writer_ai.js" defer></script>
