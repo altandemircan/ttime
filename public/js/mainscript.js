@@ -5322,6 +5322,11 @@ showRouteInfoBanner(day); // hemen ardından çağır
     inertia: true,
     easeLinearity: 0.2
   });
+
+    L.maplibreGL({
+    style: `https://tiles.openfreemap.org/styles/${styleKey || 'liberty'}`,
+  }).addTo(expandedMap);
+    
   if (!expandedMap._initialView) {
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
