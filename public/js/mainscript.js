@@ -5159,14 +5159,22 @@ function openMapLibre3D(expandedMap) {
   maplibre3d.innerHTML = '';
 
   // MapLibreGL başlat
-  window._maplibre3DInstance = new maplibregl.Map({
-    container: 'maplibre-3d-view',
-    style: 'https://tiles.openfreemap.org/styles/liberty',
-    center: expandedMap.getCenter(),
-    zoom: expandedMap.getZoom(),
-    pitch: 60,
-    bearing: 30
-  });
+ window._maplibre3DInstance = new maplibregl.Map({
+  container: 'maplibre-3d-view',
+  style: 'https://tiles.openfreemap.org/styles/liberty',
+  center: expandedMap.getCenter(),
+  zoom: expandedMap.getZoom(),
+  pitch: 60,
+  bearing: 30,
+  interactive: true // zaten vardır
+});
+
+ window._maplibre3DInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-left');
+// Sağa döndür
+window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() + 20, { animate: true });
+// Sola döndür
+window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() - 20, { animate: true });
+
 
   // ROTAYI GERÇEK YOL (OSRM POLYLINE) ile çiz!
   window._maplibre3DInstance.on('load', function () {
@@ -5287,7 +5295,7 @@ let currentLayer = 'liberty';
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     if (opt.value === currentLayer) div.classList.add('selected');
 
-    
+
  div.onclick = function() {
   layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
   div.classList.add('selected');
