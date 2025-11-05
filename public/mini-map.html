@@ -2,44 +2,41 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Mini Map - OpenFreeMap & MapLibre</title>
+  <title>Mini Map</title>
   <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
   <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }
-    #map { width:100%; height:100%; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    #map { width: 100%; height: 100%; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
   <script>
-    // URL'den lat/lon parametresini oku
     const url = new URL(window.location.href);
-    const lat = parseFloat(url.searchParams.get('lat')) || 41.015; // default: İstanbul
-    const lon = parseFloat(url.searchParams.get('lon')) || 28.98;
+    const lat = parseFloat(url.searchParams.get('lat'));
+    const lon = parseFloat(url.searchParams.get('lon'));
 
-    // MapLibre ile haritayı başlat
     const map = new maplibregl.Map({
       container: 'map',
-      style: 'https://tiles.openfreemap.org/styles/liberty', // OpenFreeMap style
-      center: [lon, lat],   // [lon, lat]
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: [lon, lat],
       zoom: 15,
       attributionControl: false
     });
 
-    // Marker ekle (düz renkli)
+    // Marker ekle
     map.on('load', function() {
-      // Marker için bir html elementini kullanıyoruz (renkli işaret)
-      const marker = document.createElement('div');
-      marker.style.background = '#8a4af3';
-      marker.style.width = '22px';
-      marker.style.height = '22px';
-      marker.style.borderRadius = '50%';
-      marker.style.border = '3px solid white';
-      marker.style.boxShadow = '0 0 8px #8a4af3';
-      marker.style.opacity = '0.95';
-      // MapLibre markerı ekle
-      new maplibregl.Marker(marker)
+      const markerEl = document.createElement('div');
+      markerEl.style.width = '24px';
+      markerEl.style.height = '24px';
+      markerEl.style.background = '#8a4af3';
+      markerEl.style.border = '3px solid white';
+      markerEl.style.borderRadius = '50%';
+      markerEl.style.boxShadow = '0 0 8px #8a4af3';
+      markerEl.style.opacity = '0.95';
+
+      new maplibregl.Marker(markerEl)
         .setLngLat([lon, lat])
         .addTo(map);
     });
