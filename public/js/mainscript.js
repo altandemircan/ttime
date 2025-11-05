@@ -3135,7 +3135,8 @@ function initEmptyDayMap(day) {
 
   L.tileLayer(
   // 'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
-     '/tile/{z}/{x}/{y}.png',
+     // '/tile/{z}/{x}/{y}.png',
+     'https://openfreemap.org/tiles/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -4624,7 +4625,8 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         attributionControl: false
     });
   L.tileLayer(
-  '/tile/{z}/{x}/{y}.png',
+  // '/tile/{z}/{x}/{y}.png',
+  'https://openfreemap.org/tiles/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -5053,7 +5055,8 @@ const map = L.map(containerId, {
 
 // Tile layer 
   L.tileLayer(
-  '/tile/{z}/{x}/{y}.png',
+  // '/tile/{z}/{x}/{y}.png',
+  'https://openfreemap.org/tiles/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -5349,7 +5352,8 @@ showRouteInfoBanner(day); // hemen ardından çağır
   // Layer değişim fonksiyonu
 function setExpandedMapTile(styleKey) {
   // Reverse proxy üzerinden aynı domainden çağır: mixed content yok
-  const url = '/tile/{z}/{x}/{y}.png';
+//  const url = '/tile/{z}/{x}/{y}.png';
+    const url = 'https://openfreemap.org/tiles/{z}/{x}/{y}.png';
 
   let foundTile = null;
   expandedMap.eachLayer(layer => {
