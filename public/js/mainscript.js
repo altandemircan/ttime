@@ -5327,12 +5327,24 @@ showRouteInfoBanner(day); // hemen ardından çağır
     easeLinearity: 0.2
   });
 
+
+
  // SARI IMAGE UYARILARINI ENGELLE!
 expandedMap.on('styleimagemissing', function(e) {
   try {
     expandedMap.addImage(e.id, new window.Image());
   } catch (_) {}
 });
+
+  expandedMap.on('error', function(e) {
+  if (e.error && e.error.name === 'AbortError') {
+    // Ignore ediyoruz
+    return;
+  }
+  // Diğer hataları konsola yaz
+  console.warn("[Harita hatası]", e);
+});
+
   // Layer ilk eklenirken default style
 L.maplibreGL({
   style: `https://tiles.openfreemap.org/styles/${currentLayer || 'liberty'}`,
