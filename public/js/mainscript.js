@@ -5362,7 +5362,7 @@ function setExpandedMapTile(styleKey) {
   L.tileLayer(url, {
     tileSize: 256,
     zoomOffset: 0,
-    maxZoom: 14,
+    // maxZoom: 14,
     attribution: '© OpenMapTiles © OpenStreetMap contributors',
     crossOrigin: true
   }).addTo(expandedMap);
