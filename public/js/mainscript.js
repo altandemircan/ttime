@@ -5209,7 +5209,6 @@ async function expandMap(containerId, day) {
   { value: 'dark', img: '/img/preview_dark.png', label: 'Dark' },
   { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
   { value: '3d', img: '/img/preview_3d.png', label: '3D' }
-
 ];
 
 let currentLayer = 'liberty';
@@ -5230,6 +5229,8 @@ let currentLayer = 'liberty';
     setExpandedMapTile(opt.value);
   }
 };
+    layersBar.appendChild(div);
+  });
 
   headerDiv.appendChild(layersBar);
 
