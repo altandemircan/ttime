@@ -5146,7 +5146,19 @@ function updateRouteStatsUI(day) {
  
 
 function openMapLibre3D(expandedMap) {
-  // ... mevcut kodun ...
+  // 1. Div yoksa oluştur!
+  let mapDiv = expandedMap.getContainer();
+  let maplibre3d = document.getElementById('maplibre-3d-view');
+  if (!maplibre3d) {
+    maplibre3d = document.createElement('div');
+    maplibre3d.id = 'maplibre-3d-view';
+    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;';
+    mapDiv.parentNode.appendChild(maplibre3d);
+  }
+  maplibre3d.style.display = 'block';
+  maplibre3d.innerHTML = ''; // Önce boşalt!
+
+  // 2. MapLibreGL harita başlat
   window._maplibre3DInstance = new maplibregl.Map({
     container: 'maplibre-3d-view',
     style: 'https://tiles.openfreemap.org/styles/liberty',
@@ -5156,7 +5168,7 @@ function openMapLibre3D(expandedMap) {
     bearing: 30
   });
 
-  // BURAYA EKLE!
+  // 3. Rota ve marker ekle
   window._maplibre3DInstance.on('load', function () {
     const day = window.currentDay || 1;
     const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
