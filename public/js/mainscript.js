@@ -5209,12 +5209,13 @@ async function expandMap(containerId, day) {
   layersBar.className = 'map-layers-row'; // CSS'i dosyaya ekleyeceksin
 
   const layerOptions = [
-    { value: 'streets-v12', img: '/img/preview_streets.png', label: 'Default' },   
-    { value: 'dark-v11', img: '/img/preview_navigation.png', label: 'Navigation' },
-    { value: 'satellite-streets-v12', img: '/img/preview_satellite.png', label: 'Satellite' }
-  ];
+  { value: 'liberty', img: '/img/preview_liberty.png', label: 'Liberty' },
+  { value: 'bright', img: '/img/preview_bright.png', label: 'Bright' },
+  { value: 'dark', img: '/img/preview_dark.png', label: 'Dark' },
+  { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' }
+];
 
-  let currentLayer = 'streets-v12';
+let currentLayer = 'liberty';
   let expandedTileLayer = null;
 
   layerOptions.forEach(opt => {
@@ -5341,21 +5342,13 @@ L.maplibreGL({
 
   // Layer değişim fonksiyonu
 function setExpandedMapTile(styleKey) {
-  // Eski raster layer yerine OpenFreeMap vektör tile ekle (MapLibreGL + Leaflet)
-  let foundLayer = null;
-  expandedMap.eachLayer(layer => {
-    // Hem eski raster tile, hem vektör maplibre layer'ı temizle!
-    if (layer instanceof L.TileLayer || layer._isMaplibreGLLayer) {
-      foundLayer = layer;
-    }
-  });
-  if (foundLayer) expandedMap.removeLayer(foundLayer);
-
-  // Seçilen stili uygula: liberty, positivon, bright, 3d vs.
+  const validStyles = ['liberty', 'dark', 'bright', 'positron'];
+  const styleToUse = validStyles.includes(styleKey) ? styleKey : 'liberty';
   L.maplibreGL({
-    style: `https://tiles.openfreemap.org/styles/${styleKey || 'liberty'}`,
+    style: `https://tiles.openfreemap.org/styles/${styleToUse}`,
   }).addTo(expandedMap);
 }
+
   setExpandedMapTile(currentLayer);
 
 
