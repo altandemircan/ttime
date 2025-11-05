@@ -5295,6 +5295,9 @@ async function expandMap(containerId, day) {
   mapDiv.className = 'expanded-map';
   expandedContainer.appendChild(mapDiv);
 
+  mapDiv.style.width = "100%";
+mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
+
   document.body.appendChild(expandedContainer);
 showRouteInfoBanner(day); // hemen ardından çağır
   // Leaflet harita kur
@@ -5328,7 +5331,7 @@ L.maplibreGL({
   style: `https://tiles.openfreemap.org/styles/${currentLayer || 'liberty'}`,
 }).addTo(expandedMap);
 
-    
+
   if (!expandedMap._initialView) {
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
