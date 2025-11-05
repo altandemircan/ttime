@@ -3135,7 +3135,7 @@ function initEmptyDayMap(day) {
 
   L.tileLayer(
   // 'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
-     'http://72.61.83.101:8080/tile/{z}/{x}/{y}.png',
+     '/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -4624,7 +4624,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         attributionControl: false
     });
   L.tileLayer(
-  'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
+  '/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -5053,7 +5053,7 @@ const map = L.map(containerId, {
 
 // Tile layer 
   L.tileLayer(
-  'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
+  '/tile/{z}/{x}/{y}.png',
   {
     tileSize: 256,
     zoomOffset: 0,
@@ -5362,7 +5362,7 @@ function setExpandedMapTile(styleKey) {
   L.tileLayer(url, {
     tileSize: 256,
     zoomOffset: 0,
-    maxZoom: 14,
+    // maxZoom: 14,
     attribution: '© OpenMapTiles © OpenStreetMap contributors',
     crossOrigin: true
   }).addTo(expandedMap);
