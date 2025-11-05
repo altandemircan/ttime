@@ -3103,17 +3103,15 @@ function initEmptyDayMap(day) {
   const hasInner = el.querySelector('.leaflet-container');
 
   if (existingMap && hasInner) {
-    // Sağlam durumda, sadece view’i güncelleyebilirsin (opsiyonel)
     return;
   } else if (existingMap && !hasInner) {
-    // Detached
     try { existingMap.remove(); } catch(_){}
     delete window.leafletMaps[containerId];
   }
 
   if (!el.style.height) el.style.height = '285px';
 
-  // KÜÇÜK HARİTA
+  // Leaflet Harita nesnesi
   const map = L.map(containerId, {
     scrollWheelZoom: true,
     fadeAnimation: true,
@@ -3126,29 +3124,21 @@ function initEmptyDayMap(day) {
     inertia: true,
     easeLinearity: 0.2
   }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
-  if (!map._initialView) {
-  map._initialView = {
-    center: map.getCenter(),
-    zoom: map.getZoom()
-  };
-}
 
-  L.tileLayer(
-  // 'https://dev.triptime.ai/tile/{z}/{x}/{y}.png',
-     // '/tile/{z}/{x}/{y}.png',
-     'https://openfreemap.org/tiles/{z}/{x}/{y}.png',
-  {
-    tileSize: 256,
-    zoomOffset: 0,
-    attribution: '© OpenStreetMap contributors',
-    crossOrigin: true
+  if (!map._initialView) {
+    map._initialView = {
+      center: map.getCenter(),
+      zoom: map.getZoom()
+    };
   }
-  // Değiştirilen kısım: OpenFreeMap vektör tile'ı MapLibreGL üzerinden ekle
-  // (GEREKLİ: https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js yüklü olmalı)
+
+  // 🟣 Önemli: Vektör tabanlı OpenFreeMap tile için MapLibreGL Leaflet binding kullan!
+  // GEREKLİ: https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js (index.html'de yüklü olmalı)
   L.maplibreGL({
     style: 'https://tiles.openfreemap.org/styles/liberty',
   }).addTo(map);
 
+  // (Eski L.tileLayer(...) kodunu kaldırıyorsun!)
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
