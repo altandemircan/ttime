@@ -3133,11 +3133,6 @@ function initEmptyDayMap(day) {
   };
 }
 
-    // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
-    L.maplibreGL({
-        style: 'https://tiles.openfreemap.org/styles/liberty',
-    }).addTo(map);
-
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 }
