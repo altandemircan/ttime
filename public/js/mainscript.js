@@ -4375,8 +4375,8 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
 
     addNumberedMarkers(expandedMap, points);
     expandedMap.fitBounds(polyline.getBounds());
-setTimeout(() => {
-  // fitBounds sonrası merkez
+// setTimeout(() => {
+//   // fitBounds sonrası merkez
 //   const center = expandedMap.getCenter();
 //   // 0.012 derece yukarı: yaklaşık 1.2km (zoom'a göre değişebilir)
 //   expandedMap.setView([center.lat - 0.002, center.lng], Math.max(expandedMap.getZoom() - 0.2, 2), { animate: true });
