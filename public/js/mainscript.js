@@ -3045,8 +3045,10 @@ function saveDayName(day, newName) {
                 }
             }
 
-const INITIAL_EMPTY_MAP_CENTER = [42.0, 12.3];  // (lat, lon)
-const INITIAL_EMPTY_MAP_ZOOM   = 6;             // Önceki 4'ten 2 kademe yakın
+const INITIAL_EMPTY_MAP_CENTER = [0, 0];
+const INITIAL_EMPTY_MAP_ZOOM   = 2;
+
+
 /* ---------- Helpers: Ensure Map Container ---------- */
 function ensureDayMapContainer(day) {
   const dayContainer = document.getElementById(`day-container-${day}`);
@@ -4422,7 +4424,7 @@ if (routeCoords.length > 1) {
                                                                     expandedMap.setView([0, 0], 2, { animate: true });
                                                                 }
 
-                                                                
+
         setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
 
         addDraggableMarkersToExpandedMap(expandedMap, day);
