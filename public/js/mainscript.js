@@ -4424,13 +4424,13 @@ function updateExpandedMap(expandedMap, day) {
 
         // Sadece noktaları fitBounds ile göster
         const pts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-        if (pts.length > 1) {
-            expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-        } else if (pts.length === 1) {
-            expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-        } else {
-            expandedMap.setView([42, 12], 6, { animate: true });
-        }
+if (pts.length > 1) {
+    expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+} else if (pts.length === 1) {
+    expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+} else {
+    expandedMap.setView([42, 12], 6, { animate: true });
+}
     } else {
         // Fallback: 0 veya 1 nokta
         const pts = getDayPoints(day);
