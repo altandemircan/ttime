@@ -5487,7 +5487,9 @@ if (points.length > 1) {
     inertia: true,
     easeLinearity: 0.2
   });
-
+expandedMap._maplibreLayer = L.maplibreGL({ 
+  style: 'https://tiles.openfreemap.org/styles/liberty' // veya ilk açılışta istediğin layer
+}).addTo(expandedMap);
 
 try {
   expandedMap.dragging.enable?.();
