@@ -494,8 +494,8 @@ function showSuggestions() {
 
     const options = [
         { text: "Plan a 1-day tour for Rome", flag: countryFlag("IT") },
-        { text: "Do a 2 days city tour in Helsinki", flag: countryFlag("FI") },
-        { text: "3-day city tour in Osaka", flag: countryFlag("JP") }
+        { text: "Do a 1 day city tour in Antalya", flag: countryFlag("TR") },
+        { text: "1-day city tour in Giresun", flag: countryFlag("TR") }
     ];
 
     options.forEach(option => {
