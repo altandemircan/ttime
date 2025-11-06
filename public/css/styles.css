@@ -4410,9 +4410,11 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     height: 285px;
 }
 .leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 285px;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 285px;
+    height: calc(100% - 200px) !important;
+    bottom: 200px;
 }
 #elevation-canvas-day1 {
     position: relative !important;
