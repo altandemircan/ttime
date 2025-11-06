@@ -4408,7 +4408,10 @@ function updateExpandedMap(expandedMap, day) {
             }).addTo(expandedMap);
         }
 
-        addNumberedMarkers(expandedMap, points);
+        addNumberedMarkers(expandedMap, points.filter(
+    p => typeof p.lat === "number" && isFinite(p.lat) &&
+         typeof p.lng === "number" && isFinite(p.lng)
+));
 
         // Eksik noktalar sadece bir arada çizgiyle bağlanır:
         if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
