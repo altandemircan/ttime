@@ -5746,6 +5746,14 @@ function restoreMap(containerId, day) {
             } catch (e) {
                 console.warn("restoreMap: fitBounds after restore failed", e);
             }
+
+
+        // --- YENİ EKLE ---
+        if (typeof renderRouteForDay === "function") {
+            setTimeout(() => { renderRouteForDay(day); }, 160);
+        }
+
+
         }
 
     } catch (e) {
