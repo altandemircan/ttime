@@ -4339,26 +4339,25 @@ function createDayActionMenu(day) {
 
 
 function updateExpandedMap(expandedMap, day) {
-    console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
+console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
 console.log("GÜN:", day);
+
+const containerId = `route-map-day${day}`;
+const geojson = window.lastRouteGeojsons?.[containerId];
+const rawPoints = getDayPoints(day);
+const pts = rawPoints.filter(
+  p => typeof p.lat === "number" && isFinite(p.lat) &&
+       typeof p.lng === "number" && isFinite(p.lng)
+);
+
 console.log("getDayPoints:", JSON.stringify(pts));
 console.log("geojson:", geojson);
 
-
-
-    expandedMap.eachLayer(layer => {
+       expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
             expandedMap.removeLayer(layer);
         }
     });
-
-    const containerId = `route-map-day${day}`;
-    const geojson = window.lastRouteGeojsons?.[containerId];
-    const rawPoints = getDayPoints(day);
-    const pts = rawPoints.filter(
-        p => typeof p.lat === "number" && isFinite(p.lat) &&
-             typeof p.lng === "number" && isFinite(p.lng)
-    );
 
     let routeCoords = [];
     let isGeo = false;
