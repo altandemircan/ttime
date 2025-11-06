@@ -5487,7 +5487,17 @@ if (points.length > 1) {
     inertia: true,
     easeLinearity: 0.2
   });
-
+try {
+  expandedMap.dragging.enable?.();
+  expandedMap.scrollWheelZoom.enable?.();
+  expandedMap.touchZoom.enable?.();
+  expandedMap.doubleClickZoom.enable?.();
+  expandedMap.boxZoom.enable?.();
+  expandedMap.keyboard.enable?.();
+  expandedMap.getContainer().style.pointerEvents = 'auto';
+} catch (e) {}
+  // Layer ilk eklenirken default style
+setExpandedMapTile(currentLayer);
 
  // SARI IMAGE UYARILARINI ENGELLE!
 expandedMap.on('styleimagemissing', function(e) {
@@ -5505,8 +5515,7 @@ expandedMap.on('styleimagemissing', function(e) {
   console.warn("[Harita hatası]", e);
 });
 
-  // Layer ilk eklenirken default style
-setExpandedMapTile(currentLayer);
+
 
 
   if (!expandedMap._initialView) {
