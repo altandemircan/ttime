@@ -5109,27 +5109,40 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
             return 2 * R * Math.asin(Math.sqrt(a));
         }
-        missingPoints.forEach((mp) => {
-            let minIdx = 0, minDist = Infinity;
-            for (let i = 0; i < routeCoordsOriginal.length; i++) {
-                const [lng, lat] = routeCoordsOriginal[i];
-                const d = haversine(lat, lng, mp.lat, mp.lng);
-                if (d < minDist) {
-                    minDist = d;
-                    minIdx = i;
-                }
-            }
-            const start = [mp.lat, mp.lng];
-            const end = [routeCoordsOriginal[minIdx][1], routeCoordsOriginal[minIdx][0]];
-            L.polyline([start, end], {
-                dashArray: '8, 12',
-                color: '#d32f2f',
-                weight: 4,
-                opacity: 0.8,
-                interactive: false,
-                renderer: ensureCanvasRenderer(map)
-            }).addTo(map);
-        });
+        // missingPoints.forEach((mp) => {
+        //     let minIdx = 0, minDist = Infinity;
+        //     for (let i = 0; i < routeCoordsOriginal.length; i++) {
+        //         const [lng, lat] = routeCoordsOriginal[i];
+        //         const d = haversine(lat, lng, mp.lat, mp.lng);
+        //         if (d < minDist) {
+        //             minDist = d;
+        //             minIdx = i;
+        //         }
+        //     }
+        //     const start = [mp.lat, mp.lng];
+        //     const end = [routeCoordsOriginal[minIdx][1], routeCoordsOriginal[minIdx][0]];
+        //     L.polyline([start, end], {
+        //         dashArray: '8, 12',
+        //         color: '#d32f2f',
+        //         weight: 4,
+        //         opacity: 0.8,
+        //         interactive: false,
+        //         renderer: ensureCanvasRenderer(map)
+        //     }).addTo(map);
+        // });
+
+        if (Array.isArray(missingPoints) && missingPoints.length > 1) {
+    L.polyline(missingPoints.map(p => [p.lat, p.lng]), {
+        dashArray: '8, 12',
+        color: '#d32f2f',
+        weight: 4,
+        opacity: 0.8,
+        interactive: false,
+        renderer: ensureCanvasRenderer(map)
+    }).addTo(map);
+}
+
+
     }
 
     addNumberedMarkers(map, points);
