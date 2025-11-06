@@ -292,26 +292,8 @@ function fitExpandedMapToRoute(day) {
       expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
-    } else if (expObj.expandedMap._initialView) {
-      // ek güvenlik: _initialView kontrolü!
-      if (
-        Array.isArray(expObj.expandedMap._initialView.center) &&
-        expObj.expandedMap._initialView.center.length === 2 &&
-        isFinite(expObj.expandedMap._initialView.center[0]) &&
-        isFinite(expObj.expandedMap._initialView.center[1])
-      ) {
-        expObj.expandedMap.setView(
-          expObj.expandedMap._initialView.center,
-          expObj.expandedMap._initialView.zoom,
-          { animate: true }
-        );
-      } else {
-        // fallback: world center
-        expObj.expandedMap.setView([42, 12], 6);
-      }
     } else {
-      // Hiçbir nokta/merkez yoksa fallback
-      expObj.expandedMap.setView([42, 12], 6);
+      expObj.expandedMap.setView([0, 0], 2);
     }
   }
 }
@@ -5474,8 +5456,8 @@ if (points.length > 1) {
 
 
  const expandedMap = L.map(mapDivId, {
-    center,
-    zoom,
+   center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
+  zoom: 2,         // Veya 3 yaz (önemi yok)
     scrollWheelZoom: true,
     fadeAnimation: true,
     zoomAnimation: true,
@@ -5565,16 +5547,6 @@ function setExpandedMapTile(styleKey) {
 
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
-
-if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-  const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-  expandedMap.fitBounds(coords, { padding: [20,20] });
-} else if (points.length > 1) {
-  expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
-} else if (points.length === 1) {
-  expandedMap.setView([points[0].lat, points[0].lng], 14, { animate: true });
-}
-
 
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
