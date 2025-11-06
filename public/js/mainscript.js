@@ -5585,7 +5585,6 @@ expandedMap.fitBounds(polyline.getBounds());
     });
   }
 
-  const points = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
   if (!geojson && points.length === 1) {
     expandedMap.flyTo([points[0].lat, points[0].lng], 15, { duration: 0.6, easeLinearity: 0.2 });
     L.circleMarker([points[0].lat, points[0].lng], {
