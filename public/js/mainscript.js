@@ -4355,35 +4355,12 @@ function createDayActionMenu(day) {
                  typeof p.lng === "number" && isFinite(p.lng)
         );
 
-        let routeCoords = [];
-
-        if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-            const geo = geojson.features[0];
-            if (geo.geometry && Array.isArray(geo.geometry.coordinates) && geo.geometry.coordinates.length > 1) {
-                routeCoords = geo.geometry.coordinates.map(c => [c[1], c[0]]);
-            }
-        } 
-        
-        // Eğer rota yoksa fallback çizgi hazırla
-        if (routeCoords.length <= 1 && pts.length > 1) {
-            routeCoords = pts.map(p => [p.lat, p.lng]);
-        }
-
-       // GeoJSON yolu varsa mavi, yoksa gri/kesikli çizgi çek
-if (routeCoords.length > 1) {
-    const isGeo = (
-        geojson && geojson.features
-        && geojson.features[0]
-        && geojson.features[0].geometry
-        && Array.isArray(geojson.features[0].geometry.coordinates)
-        && geojson.features[0].geometry.coordinates.length === routeCoords.length
-        && geojson.features[0].geometry.coordinates.every((c, i) => c[1] === routeCoords[i][0] && c[0] === routeCoords[i][1])
-    );
-    L.polyline(routeCoords, {
-        color: isGeo ? '#1976d2' : '#bdbdbd',
-        weight: isGeo ? 8 : 5,
-        opacity: isGeo ? 0.92 : 0.7,
-        dashArray: isGeo ? null : '8, 6'
+// HANGİ ÜLKEDE OLURSAN OL: DAİMA MARKERLAR ARASI ÇİZGİ
+if (pts.length > 1) {
+    L.polyline(pts.map(p => [p.lat, p.lng]), {
+        color: '#1976d2',
+        weight: 7,
+        opacity: 0.93
     }).addTo(expandedMap);
 }
 
