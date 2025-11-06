@@ -5566,28 +5566,14 @@ function setExpandedMapTile(styleKey) {
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
 
-setTimeout(() => {
-  try { expandedMap.invalidateSize(false); } catch(e){}
-  setTimeout(() => {
-    try { expandedMap.invalidateSize(false); } catch(e){}
-    if (geojson?.features?.[0]?.geometry?.coordinates) {
-      try {
-        const coords = geojson.features[0].geometry.coordinates
-  .map(c => [c[1], c[0]])
-  .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));        expandedMap.fitBounds(coords, { padding: [20,20] });
-      } catch(_){}
-    } else if (points.length > 1) {
-      try {
-        expandedMap.fitBounds(
-          points
-            .filter(p => isFinite(p.lat) && isFinite(p.lng))
-            .map(p => [p.lat, p.lng]),
-          { padding: [20,20] }
-        );
-      } catch(_){}
-    }
-  }, 240);
-}, 140);
+if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
+  const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+  expandedMap.fitBounds(coords, { padding: [20,20] });
+} else if (points.length > 1) {
+  expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
+} else if (points.length === 1) {
+  expandedMap.setView([points[0].lat, points[0].lng], 14, { animate: true });
+}
 
 
   if (baseMap) {
@@ -5686,28 +5672,14 @@ if (track && svg) {
   });
 
 
-  // HARİTA BOYUTLARINI DOĞRU HESAPLAMAsı için 2 kez çağır:
-setTimeout(() => {
-  try { expandedMap.invalidateSize(false); } catch(e){}
-  setTimeout(() => {
-    try { expandedMap.invalidateSize(false); } catch(e){}
-    if (geojson?.features?.[0]?.geometry?.coordinates) {
-      try {
-        const coords = geojson.features[0].geometry.coordinates
-  .map(c => [c[1], c[0]])
-  .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));        expandedMap.fitBounds(coords, { padding: [20,20] });
-      } catch(_){}
-    } else if (points.length > 1) {
-      try {
-        expandedMap.fitBounds(
-  points
-    .filter(p => isFinite(p.lat) && isFinite(p.lng))
-    .map(p => [p.lat, p.lng]),
-  { padding: [20,20] }
-);      } catch(_){}
-    }
-  }, 240);
-}, 140);
+if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
+  const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+  expandedMap.fitBounds(coords, { padding: [20,20] });
+} else if (points.length > 1) {
+  expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
+} else if (points.length === 1) {
+  expandedMap.setView([points[0].lat, points[0].lng], 14, { animate: true });
+}
 
 console.log('[expandMap] done for day', day);
 console.log("Expanded Map Points:", points);
