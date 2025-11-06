@@ -4366,12 +4366,13 @@ function updateExpandedMap(expandedMap, day) {
         isGeo = false;
     }
     if (routeCoords.length > 1) {
-        L.polyline(routeCoords, {
-            color: isGeo ? "#1976d2" : "#bdbdbd",
-            weight: isGeo ? 8 : 5,
-            opacity: isGeo ? 0.92 : 0.7,
-            dashArray: isGeo ? null : "8, 6"
-        }).addTo(expandedMap);
+       // YENİ/SAĞLAM
+                                            L.polyline(routeCoords, {
+                                                color: "#d32f2f", // veya "#1976d2" (gözle net görünüyor mu diye)
+                                                weight: 6,
+                                                opacity: 1,
+                                                dashArray: null // Düz çizgi
+                                            }).addTo(expandedMap);
     }
 
     pts.forEach((item, idx) => {
