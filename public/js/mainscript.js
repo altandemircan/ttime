@@ -4403,7 +4403,7 @@ function updateExpandedMap(expandedMap, day) {
 
     if (routeCoords.length > 1) {
         L.polyline(routeCoords, {
-            color: "#d32f2f",
+            color: "#1976d2",
             weight: 6,
             opacity: 1,
             dashArray: null
