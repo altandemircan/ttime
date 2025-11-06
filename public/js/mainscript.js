@@ -2126,14 +2126,17 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 
 // Şehir koordinatı bulma fonksiyonu
 async function getCityCoordinates(city) {
-const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data.features && data.features.length > 0) {
-        const f = data.features[0];
-        return { lat: f.properties.lat, lon: f.properties.lon };
-    }
-    return null;
+  const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (data.features && data.features.length > 0) {
+    const f = data.features[0];
+    // ---- BURAYA EKLE ----
+    console.log("[getCityCoordinates]", city, "→", f.properties.lat, f.properties.lon, f.properties);
+    return { lat: f.properties.lat, lon: f.properties.lon };
+  }
+  console.log("[getCityCoordinates] NO RESULT:", city, data);
+  return null;
 }
 
 
@@ -4353,22 +4356,22 @@ function createDayActionMenu(day) {
   return container;
 }
 
-// function setCityFromAddress(address) {
-//   if (!address) return;
-//   // Türkiye için örnek: "Döşemealtı, Antalya, Turkey"
-//   // veya "DC118, 407151 Dângău Mic, Romania"
-//   let city = "";
-//   const parts = address.split(",");
-//   if (parts.length >= 2) {
-//     // Şehir genellikle sondan ikinci
-//     city = parts[parts.length - 2].trim();
-//   }
-//   if (city) {
-//     window.selectedCity = city;
-//     window.selectedLocation = city;
-//   }
-// }
-// PATCH: refresh expanded scale bar after route updates
+function setCityFromAddress(address) {
+  if (!address) return;
+  // Türkiye için örnek: "Döşemealtı, Antalya, Turkey"
+  // veya "DC118, 407151 Dângău Mic, Romania"
+  let city = "";
+  const parts = address.split(",");
+  if (parts.length >= 2) {
+    // Şehir genellikle sondan ikinci
+    city = parts[parts.length - 2].trim();
+  }
+  if (city) {
+    window.selectedCity = city;
+    window.selectedLocation = city;
+  }
+}
+PATCH: refresh expanded scale bar after route updates
 
 function updateExpandedMap(expandedMap, day) {
     expandedMap.eachLayer(layer => {
