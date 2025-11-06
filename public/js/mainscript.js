@@ -5037,18 +5037,18 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     controlRow.className = "map-bottom-controls";
 
     // Route summary
-   const infoDiv = document.createElement("span");
+    const infoDiv = document.createElement("span");
     infoDiv.className = "route-summary-control";
     if (summary) {
-      infoDiv.innerHTML =
-    `<span class="stat stat-distance">
-      <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
-      <span class="badge">${(summary.distance / 1000).toFixed(1)} km</span>
-    </span>
-    <span class="stat stat-duration">
-      <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
-      <span class="badge">${Math.round(summary.duration / 60)} dk</span>
-    </span>`;
+        infoDiv.innerHTML =
+            `<span class="stat stat-distance">
+                <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">
+                <span class="badge">${(summary.distance / 1000).toFixed(1)} km</span>
+            </span>
+            <span class="stat stat-duration">
+                <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
+                <span class="badge">${Math.round(summary.duration / 60)} dk</span>
+            </span>`;
     }
     controlRow.appendChild(infoDiv);
 
@@ -5058,36 +5058,49 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // ADD RIGHT AFTER IT:
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-const map = L.map(containerId, { 
-    scrollWheelZoom: true,
-    fadeAnimation: false,
-    zoomAnimation: false,
-    preferCanvas: true
-});
+    // --- Rota çizgisini belirle (ya OSRM/GeoJSON rotası, ya da fallback: noktalar arası çizgi) ---
+    let routeCoords = [];
+    let hasValidGeo = (
+        geojson && geojson.features && geojson.features[0] &&
+        geojson.features[0].geometry &&
+        Array.isArray(geojson.features[0].geometry.coordinates) &&
+        geojson.features[0].geometry.coordinates.length > 1
+    );
+    if (hasValidGeo) {
+        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    } else if (points.length > 1) {
+        // Eğer rota üretilemedi ise noktalar sırasıyla gezilecek
+        routeCoords = points
+            .filter(p => isFinite(p.lat) && isFinite(p.lng))
+            .map(p => [p.lat, p.lng]);
+    }
+
+    const map = L.map(containerId, { 
+        scrollWheelZoom: true,
+        fadeAnimation: false,
+        zoomAnimation: false,
+        preferCanvas: true
+    });
 
     // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
     L.maplibreGL({
         style: 'https://tiles.openfreemap.org/styles/liberty',
     }).addTo(map);
 
-// ROTAYI EKLE
-const polyline = L.polyline(coords, {
-    color: '#1976d2',
-    weight: 8,
-    opacity: 0.92,
-    interactive: true
-}).addTo(map);
+    // --- En önemli: çizgi eklemesi ---
+    if (routeCoords.length > 1) {
+        L.polyline(routeCoords, {
+            color: hasValidGeo ? '#1976d2' : '#bdbdbd',
+            weight: hasValidGeo ? 8 : 5,
+            opacity: hasValidGeo ? 0.92 : 0.7,
+            interactive: true,
+            dashArray: hasValidGeo ? null : '8, 6'
+        }).addTo(map);
+    }
 
-
-
-
-
-
-
-
-    if (Array.isArray(missingPoints) && missingPoints.length > 0) {
-        const routeCoords = geojson.features[0].geometry.coordinates;
+    // --- Missing points için ek çizgiler ---
+    if (Array.isArray(missingPoints) && missingPoints.length > 0 && hasValidGeo) {
+        const routeCoordsOriginal = geojson.features[0].geometry.coordinates;
         function haversine(lat1, lon1, lat2, lon2) {
             const R = 6371000, toRad = x => x * Math.PI / 180;
             const dLat = toRad(lat2 - lat1);
@@ -5098,8 +5111,8 @@ const polyline = L.polyline(coords, {
         }
         missingPoints.forEach((mp) => {
             let minIdx = 0, minDist = Infinity;
-            for (let i = 0; i < routeCoords.length; i++) {
-                const [lng, lat] = routeCoords[i];
+            for (let i = 0; i < routeCoordsOriginal.length; i++) {
+                const [lng, lat] = routeCoordsOriginal[i];
                 const d = haversine(lat, lng, mp.lat, mp.lng);
                 if (d < minDist) {
                     minDist = d;
@@ -5107,33 +5120,35 @@ const polyline = L.polyline(coords, {
                 }
             }
             const start = [mp.lat, mp.lng];
-            const end = [routeCoords[minIdx][1], routeCoords[minIdx][0]];
-           L.polyline([start, end], {
-  dashArray: '8, 12',
-  color: '#d32f2f',
-  weight: 4,
-  opacity: 0.8,
-  interactive: false,
-  renderer: ensureCanvasRenderer(map)
-}).addTo(map);
+            const end = [routeCoordsOriginal[minIdx][1], routeCoordsOriginal[minIdx][0]];
+            L.polyline([start, end], {
+                dashArray: '8, 12',
+                color: '#d32f2f',
+                weight: 4,
+                opacity: 0.8,
+                interactive: false,
+                renderer: ensureCanvasRenderer(map)
+            }).addTo(map);
         });
     }
 
-   addNumberedMarkers(map, points);
-if (geojson.features[0].properties && geojson.features[0].properties.names) {
-    addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
-}
+    addNumberedMarkers(map, points);
 
-points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-if (points.length > 1) {
-  map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-} else if (points.length === 1) {
-  map.setView([points[0].lat, points[0].lng], 14, { animate: true });
-} else {
-  map.setView([42, 12], 6, { animate: true });
-}
-map.zoomControl.setPosition('topright');
-window.leafletMaps[containerId] = map;
+    if (geojson.features[0].properties && geojson.features[0].properties.names) {
+        addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
+    }
+
+    // --- Harita görünümünü ayarla ---
+    points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+    if (points.length > 1) {
+        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+    } else if (points.length === 1) {
+        map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+    } else {
+        map.setView([42, 12], 6, { animate: true });
+    }
+    map.zoomControl.setPosition('topright');
+    window.leafletMaps[containerId] = map;
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
