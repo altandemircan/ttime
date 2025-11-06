@@ -4353,145 +4353,137 @@ function createDayActionMenu(day) {
   return container;
 }
 
-function setCityFromAddress(address) {
-  if (!address) return;
-  // Türkiye için örnek: "Döşemealtı, Antalya, Turkey"
-  // veya "DC118, 407151 Dângău Mic, Romania"
-  let city = "";
-  const parts = address.split(",");
-  if (parts.length >= 2) {
-    // Şehir genellikle sondan ikinci
-    city = parts[parts.length - 2].trim();
-  }
-  if (city) {
-    window.selectedCity = city;
-    window.selectedLocation = city;
-  }
+
+    function updateExpandedMap(expandedMap, day) {
+        expandedMap.eachLayer(layer => {
+            if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                expandedMap.removeLayer(layer);
+            }
+        });
+
+        const containerId = `route-map-day${day}`;
+        const geojson = window.lastRouteGeojsons?.[containerId];
+        const rawPoints = getDayPoints(day);
+
+        // HER YERDE FİLTRELENMİŞ PTS
+        const pts = rawPoints.filter(
+            p => typeof p.lat === "number" && isFinite(p.lat) &&
+                 typeof p.lng === "number" && isFinite(p.lng)
+        );
+
+        let routeCoords = [];
+
+        if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+            const geo = geojson.features[0];
+            if (geo.geometry && Array.isArray(geo.geometry.coordinates) && geo.geometry.coordinates.length > 1) {
+                routeCoords = geo.geometry.coordinates.map(c => [c[1], c[0]]);
+            }
+        } 
+        
+        // Eğer rota yoksa fallback çizgi hazırla
+        if (routeCoords.length <= 1 && pts.length > 1) {
+            routeCoords = pts.map(p => [p.lat, p.lng]);
+        }
+
+       // GeoJSON yolu varsa mavi, yoksa gri/kesikli çizgi çek
+if (routeCoords.length > 1) {
+    const isGeo = (
+        geojson && geojson.features
+        && geojson.features[0]
+        && geojson.features[0].geometry
+        && Array.isArray(geojson.features[0].geometry.coordinates)
+        && geojson.features[0].geometry.coordinates.length === routeCoords.length
+        && geojson.features[0].geometry.coordinates.every((c, i) => c[1] === routeCoords[i][0] && c[0] === routeCoords[i][1])
+    );
+    L.polyline(routeCoords, {
+        color: isGeo ? '#1976d2' : '#bdbdbd',
+        weight: isGeo ? 8 : 5,
+        opacity: isGeo ? 0.92 : 0.7,
+        dashArray: isGeo ? null : '8, 6'
+    }).addTo(expandedMap);
 }
 
-
-function updateExpandedMap(expandedMap, day) {
-    expandedMap.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-            expandedMap.removeLayer(layer);
-        }
-    });
-
-    const containerId = `route-map-day${day}`;
-    const geojson = window.lastRouteGeojsons?.[containerId];
-    const rawPoints = getDayPoints(day);
-
-    // HER YERDE FİLTRELENMİŞ PTS
-    const pts = rawPoints.filter(
-        p => typeof p.lat === "number" && isFinite(p.lat) &&
-             typeof p.lng === "number" && isFinite(p.lng)
-    );
-
-    let routeCoords = [];
-
-    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-        const geo = geojson.features[0];
-        if (geo.geometry && Array.isArray(geo.geometry.coordinates) && geo.geometry.coordinates.length > 1) {
-            routeCoords = geo.geometry.coordinates.map(c => [c[1], c[0]]);
-        }
-    } 
-    
-    // Eğer rota yoksa fallback çizgi hazırla
-    if (routeCoords.length <= 1 && pts.length > 1) {
-        routeCoords = pts.map(p => [p.lat, p.lng]);
-    }
-
-    // Çizgi varsa çiz
-    if (routeCoords.length > 1) {
-        L.polyline(routeCoords, {
-            color: (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates && routeCoords !== pts.map(p => [p.lat, p.lng])) ? '#1976d2' : '#bdbdbd',
-            weight: (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates && routeCoords !== pts.map(p => [p.lat, p.lng])) ? 8 : 5,
-            opacity: (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates && routeCoords !== pts.map(p => [p.lat, p.lng])) ? 0.92 : 0.7,
-            dashArray: (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates && routeCoords !== pts.map(p => [p.lat, p.lng])) ? null : '8, 6'
-        }).addTo(expandedMap);
-    }
-
-    // Markerları sırayla ekle
-    pts.forEach((item, idx) => {
-        const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;
-            width:24px;height:24px;display:flex;align-items:center;justify-content:center;
-            font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">
-            ${idx + 1}</div>`;
-        const icon = L.divIcon({
-            html: markerHtml,
-            className: "",
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
+        // Markerları sırayla ekle
+        pts.forEach((item, idx) => {
+            const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;
+                width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+                font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">
+                ${idx + 1}</div>`;
+            const icon = L.divIcon({
+                html: markerHtml,
+                className: "",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+            L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
+                .bindPopup(`<b>${item.name || "Point"}</b>`);
         });
-        L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
-            .bindPopup(`<b>${item.name || "Point"}</b>`);
-    });
 
-    // Eksik noktalar için çizgi (varsa, opsiyonel)
-    if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
-        L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
-            dashArray: '8, 12',
-            color: '#d32f2f',
-            weight: 4,
-            opacity: 0.8,
-            interactive: false,
-            renderer: ensureCanvasRenderer(expandedMap)
-        }).addTo(expandedMap);
-    }
+        // Eksik noktalar için çizgi (varsa, opsiyonel)
+        if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
+            L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
+                dashArray: '8, 12',
+                color: '#d32f2f',
+                weight: 4,
+                opacity: 0.8,
+                interactive: false,
+                renderer: ensureCanvasRenderer(expandedMap)
+            }).addTo(expandedMap);
+        }
 
-    // Harita görünümü ayarı
-    if (pts.length > 1) {
-        
-        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-    } else if (pts.length === 1) {
-        expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-    } else {
-        expandedMap.setView([42, 12], 6, { animate: true });
-    }
-    setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
+        // Harita görünümü ayarı
+        if (pts.length > 1) {
 
-    addDraggableMarkersToExpandedMap(expandedMap, day);
+            expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+        } else if (pts.length === 1) {
+            expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+        } else {
+            expandedMap.setView([42, 12], 6, { animate: true });
+        }
+        setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
 
-    const sumKey = `route-map-day${day}`;
-    const sum = window.lastRouteSummaries?.[sumKey];
-    if (sum && typeof updateDistanceDurationUI === 'function') {
-        updateDistanceDurationUI(sum.distance, sum.duration);
-    }
+        addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // NEW: re-render expanded scale bar with fresh route
-    const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (scaleBarDiv) {
-        try {
-            if (!pts || pts.length < 2) {
-                scaleBarDiv.innerHTML = '';
-                scaleBarDiv.style.display = 'none';
-            } else {
-                const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
-                const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
-                    ? getRouteMarkerPositionsOrdered(day)
-                    : [];
-                if (totalKm > 0 && markerPositions.length > 0) {
-                    scaleBarDiv.style.display = '';
-                    try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
-                    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-                    const track = scaleBarDiv.querySelector('.scale-bar-track');
-                    const svg = track && track.querySelector('svg.tt-elev-svg');
-                    if (track && svg) {
-                        const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                        createScaleElements(track, width, totalKm, 0, markerPositions);
-                    }
-                } else {
+        const sumKey = `route-map-day${day}`;
+        const sum = window.lastRouteSummaries?.[sumKey];
+        if (sum && typeof updateDistanceDurationUI === 'function') {
+            updateDistanceDurationUI(sum.distance, sum.duration);
+        }
+
+        // NEW: re-render expanded scale bar with fresh route
+        const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        if (scaleBarDiv) {
+            try {
+                if (!pts || pts.length < 2) {
                     scaleBarDiv.innerHTML = '';
                     scaleBarDiv.style.display = 'none';
+                } else {
+                    const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
+                    const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
+                        ? getRouteMarkerPositionsOrdered(day)
+                        : [];
+                    if (totalKm > 0 && markerPositions.length > 0) {
+                        scaleBarDiv.style.display = '';
+                        try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
+                        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+                        const track = scaleBarDiv.querySelector('.scale-bar-track');
+                        const svg = track && track.querySelector('svg.tt-elev-svg');
+                        if (track && svg) {
+                            const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+                            createScaleElements(track, width, totalKm, 0, markerPositions);
+                        }
+                    } else {
+                        scaleBarDiv.innerHTML = '';
+                        scaleBarDiv.style.display = 'none';
+                    }
                 }
+            } catch (_) {
+                scaleBarDiv.innerHTML = '';
+                scaleBarDiv.style.display = 'none';
             }
-        } catch (_) {
-            scaleBarDiv.innerHTML = '';
-            scaleBarDiv.style.display = 'none';
         }
+        adjustExpandedHeader(day);
     }
-    adjustExpandedHeader(day);
-}
 /* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
 function clearRouteCachesForDay(day){
   if(!day) return;
