@@ -4434,8 +4434,13 @@ if (pts.length > 1) {
 setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
 
     } else {
-    // --- Fallback: eğer rota çizilemiyorsa, elindeki noktaları sırayla tekrar birleştir ---
-    const pts = getDayPoints(day).filter(p => isFinite(p.lat) && isFinite(p.lng));
+    // --- Fallback: 0, 1 ya da N nokta durumları ---
+    // 1. EN TEMİZİ: Her yer .filter(p => isFinite(p.lat) && isFinite(p.lng)) ile çalışmalı!
+    const pts = getDayPoints(day).filter(p =>
+        typeof p.lat === "number" && isFinite(p.lat) &&
+        typeof p.lng === "number" && isFinite(p.lng)
+    );
+
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
             if (!(layer instanceof L.TileLayer)) expandedMap.removeLayer(layer);
@@ -4443,20 +4448,14 @@ setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     });
 
     if (pts.length > 1) {
-        // Sıralı polyline çiz
         L.polyline(pts.map(p => [p.lat, p.lng]), {
             color: '#aaaaaa',
             weight: 5,
             opacity: 0.82,
             dashArray: '8 6'
         }).addTo(expandedMap);
-        // Markerlar 1-2-3-4-5 sırayla eklenir
         pts.forEach((item, idx) => {
-            const markerHtml = `<div style="
-                background:#d32f2f;color:#fff;border-radius:50%;
-                width:24px;height:24px;display:flex;align-items:center;justify-content:center;
-                font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;
-            ">${idx + 1}</div>`;
+            const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">${idx + 1}</div>`;
             const icon = L.divIcon({
                 html: markerHtml,
                 className: "",
