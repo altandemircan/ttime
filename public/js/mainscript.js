@@ -4371,7 +4371,7 @@ function setCityFromAddress(address) {
     window.selectedLocation = city;
   }
 }
-PATCH: refresh expanded scale bar after route updates
+
 
 function updateExpandedMap(expandedMap, day) {
     expandedMap.eachLayer(layer => {
