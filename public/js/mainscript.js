@@ -5592,7 +5592,7 @@ function setExpandedMapTile(styleKey) {
                             opacity: 0.93
                           }).addTo(expandedMap);
 
-                          routePolyline.on('click', async function(e) {
+routePolyline.on('click', async function(e) {
   const lat = e.latlng.lat, lng = e.latlng.lng;
   const bufferMeters = 1000;
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
@@ -5605,13 +5605,20 @@ function setExpandedMapTile(styleKey) {
     return;
   }
 
-  // Önce eski marker ve çizgileri temizle
-  expandedMap.eachLayer(l => {
-    if (l._isRestaurantMarker || l._isRestaurantLine) try { expandedMap.removeLayer(l); } catch {};
+  // --- ESKİ MARKER ve KESİK ÇİZGİLERİ TEMİZLE 
+  expandedMap.eachLayer(layer => {
+    // Sadece bizim çizdiklerimiz!
+    if (
+      layer._isRestaurantMarker ||
+      layer._isRestaurantLine
+    ) {
+      expandedMap.removeLayer(layer);
+    }
   });
 
+  // --- YENİLERİ ÇİZ
   data.features.forEach((f, idx) => {
-    // 1. KESİK ÇİZGİ (interactive: false veriyoruz!)
+    // KESİK ÇİZGİ (interactive:false)
     const guideLine = L.polyline(
       [
         [lat, lng],
@@ -5622,23 +5629,24 @@ function setExpandedMapTile(styleKey) {
         weight: 4,
         opacity: 0.95,
         dashArray: "8,8",
-        interactive: false  // <-- ANAHTAR NOKTA!
+        interactive: false
       }
     ).addTo(expandedMap);
     guideLine._isRestaurantLine = true;
 
-    // 2. MARKER (interactive: false)
+    // MARKER (interactive:true)
     const icon = L.divIcon({
       html: getPurpleRestaurantMarkerHtml(),
       className: "",
       iconSize: [32, 32],
       iconAnchor: [16, 16]
     });
-const marker = L.marker([f.properties.lat, f.properties.lon], {
-  icon,
-  interactive: true      // <-- tıklanabilir popup için true olmalı!
-}).addTo(expandedMap);
+    const marker = L.marker([f.properties.lat, f.properties.lon], {
+      icon,
+      interactive: true
+    }).addTo(expandedMap);
     marker._isRestaurantMarker = true;
+
     const address = f.properties.formatted || "";
     const name = f.properties.name || "Restaurant";
     const imgId = `rest-img-${f.properties.place_id || idx}`;
