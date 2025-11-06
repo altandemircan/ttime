@@ -4339,7 +4339,6 @@ function createDayActionMenu(day) {
 
 
 function updateExpandedMap(expandedMap, day) {
-    // Önce eski marker ve polyline'ları temizle
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
             expandedMap.removeLayer(layer);
@@ -4350,35 +4349,28 @@ function updateExpandedMap(expandedMap, day) {
     const geojson = window.lastRouteGeojsons?.[containerId];
     const rawPoints = getDayPoints(day);
 
-    // Geçerli nokta filtresi
+    // Filtrelenmiş geçerli noktalar
     const pts = rawPoints.filter(
         p => typeof p.lat === "number" && isFinite(p.lat) &&
              typeof p.lng === "number" && isFinite(p.lng)
     );
 
-    // LOG şu anlık
-    // console.log("geojson", geojson);
-    // console.log("geojson.features[0]?.geometry?.coordinates", geojson?.features?.[0]?.geometry?.coordinates);
-    // console.log("pts", pts);
-
-    // --- ROTA ve MARKER BİRLEŞTİRME ---
+    // --- ROTADA, TÜRKİYE'DE OSRM route VARKEN, EĞER YOKSA fallback OLARAK marker çizgisi ---
     let routeCoords = [];
     let isGeo = false;
     const geoCoords = geojson?.features?.[0]?.geometry?.coordinates;
 
     if (Array.isArray(geoCoords) && geoCoords.length > 1) {
-        // Gerçek GeoJSON rotası (Türkiye'de çalışır)
         routeCoords = geoCoords.map(c => [c[1], c[0]]);
         isGeo = true;
     }
 
-    // Fallback: geojson yok veya tek nokta ise → markerlar arası çizgi
+    // Eğer geojson yok/HATALI/tek nokta varsa veya routeCoords length 1'den azsa, fallback çizgi!
     if ((!isGeo || routeCoords.length < 2) && pts.length > 1) {
         routeCoords = pts.map(p => [p.lat, p.lng]);
         isGeo = false;
     }
 
-    // Çizgi ekle
     if (routeCoords.length > 1) {
         L.polyline(routeCoords, {
             color: isGeo ? "#1976d2" : "#bdbdbd",
@@ -4388,7 +4380,7 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
     }
 
-    // Markerları sırayla ekle
+    // Markerları sırayla ekle (değişmedi)
     pts.forEach((item, idx) => {
         const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;
             width:24px;height:24px;display:flex;align-items:center;justify-content:center;
@@ -4404,7 +4396,7 @@ function updateExpandedMap(expandedMap, day) {
             .bindPopup(`<b>${item.name || "Point"}</b>`);
     });
 
-    // Eksik noktalar için ek çizgi (varsa, opsiyonel)
+    // Eksik noktalar için çizgi (varsa, opsiyonel)
     if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
         L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
             dashArray: '8, 12',
@@ -4416,7 +4408,7 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
     }
 
-    // Harita görünümünü ayarla
+    // Harita görünümü ayarı
     if (pts.length > 1) {
         expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (pts.length === 1) {
@@ -4429,14 +4421,13 @@ function updateExpandedMap(expandedMap, day) {
 
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // Küçük bilgi kutusu güncelle
     const sumKey = `route-map-day${day}`;
     const sum = window.lastRouteSummaries?.[sumKey];
     if (sum && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
 
-    // Ölçek bar güncelle
+    // NEW: re-render expanded scale bar with fresh route
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBarDiv) {
         try {
