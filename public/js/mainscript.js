@@ -5687,8 +5687,12 @@ setTimeout(() => {
       } catch(_){}
     } else if (points.length > 1) {
       try {
-        expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
-      } catch(_){}
+        expandedMap.fitBounds(
+  points
+    .filter(p => isFinite(p.lat) && isFinite(p.lng))
+    .map(p => [p.lat, p.lng]),
+  { padding: [20,20] }
+);      } catch(_){}
     }
   }, 240);
 }, 140);
