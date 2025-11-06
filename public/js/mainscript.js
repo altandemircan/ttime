@@ -4339,46 +4339,32 @@ function createDayActionMenu(day) {
 
 
 function updateExpandedMap(expandedMap, day) {
-console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
-console.log("GÜN:", day);
+    console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
+    console.log("GÜN:", day);
 
-const containerId = `route-map-day${day}`;
-const geojson = window.lastRouteGeojsons?.[containerId];
-const rawPoints = getDayPoints(day);
-const pts = rawPoints.filter(
-  p => typeof p.lat === "number" && isFinite(p.lat) &&
-       typeof p.lng === "number" && isFinite(p.lng)
-);
+    const containerId = `route-map-day${day}`;
+    const rawPoints = getDayPoints(day);
+    const pts = rawPoints.filter(
+        p => typeof p.lat === "number" && isFinite(p.lat) &&
+             typeof p.lng === "number" && isFinite(p.lng)
+    );
 
-console.log("getDayPoints:", JSON.stringify(pts));
-console.log("geojson:", geojson);
+    console.log("getDayPoints:", JSON.stringify(pts));
 
-       expandedMap.eachLayer(layer => {
+    expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
             expandedMap.removeLayer(layer);
         }
     });
 
-    let routeCoords = [];
-    let isGeo = false;
-    const geoCoords = geojson?.features?.[0]?.geometry?.coordinates;
-
-    if (Array.isArray(geoCoords) && geoCoords.length > 1) {
-        routeCoords = geoCoords.map(c => [c[1], c[0]]);
-        isGeo = true;
-    }
-    if (routeCoords.length < 2 && pts.length > 1) {
-        routeCoords = pts.map(p => [p.lat, p.lng]);
-        isGeo = false;
-    }
-    if (routeCoords.length > 1) {
-       // YENİ/SAĞLAM
-                                            L.polyline(routeCoords, {
-                                                color: "#d32f2f", // veya "#1976d2" (gözle net görünüyor mu diye)
-                                                weight: 6,
-                                                opacity: 1,
-                                                dashArray: null // Düz çizgi
-                                            }).addTo(expandedMap);
+    if (pts.length > 1) {
+        const routeCoords = pts.map(p => [p.lat, p.lng]);
+        L.polyline(routeCoords, {
+            color: "#d32f2f",
+            weight: 6,
+            opacity: 1,
+            dashArray: null
+        }).addTo(expandedMap);
     }
 
     pts.forEach((item, idx) => {
