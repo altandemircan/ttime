@@ -4959,6 +4959,12 @@ function addNumberedMarkers(map, points) {
 
     points.forEach((item, idx) => {
         const label = `${idx + 1}. ${item.name || "Point"}`; // fallback eklendi
+
+        if (!isFinite(item.lat) || !isFinite(item.lng)) {
+    console.warn("Skipping invalid marker:", item);
+    return;
+  }
+  
         const markerHtml = `
             <div style="
                 background:#d32f2f;
@@ -7008,6 +7014,8 @@ async function renderRouteForDay(day) {
   if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
     const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
     const points = getDayPoints(day);
+    console.log("Harita marker points:", points);
+
     if (gpsRaw.length < 2 || points.length < 2) return;
     const containerId = `route-map-day${day}`;
     ensureDayMapContainer(day);
