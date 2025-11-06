@@ -5558,15 +5558,16 @@ function setExpandedMapTile(styleKey) {
 
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
-  
+
 setTimeout(() => {
   try { expandedMap.invalidateSize(false); } catch(e){}
   setTimeout(() => {
     try { expandedMap.invalidateSize(false); } catch(e){}
     if (geojson?.features?.[0]?.geometry?.coordinates) {
       try {
-        const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        expandedMap.fitBounds(coords, { padding: [20,20] });
+        const coords = geojson.features[0].geometry.coordinates
+  .map(c => [c[1], c[0]])
+  .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));        expandedMap.fitBounds(coords, { padding: [20,20] });
       } catch(_){}
     } else if (points.length > 1) {
       try {
@@ -5581,12 +5582,6 @@ setTimeout(() => {
   }, 240);
 }, 140);
 
-else if (!expandedMap._initialView) {
-    expandedMap._initialView = {
-      center: expandedMap.getCenter(),
-      zoom: expandedMap.getZoom()
-    };
-  }
 
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
@@ -5691,8 +5686,9 @@ setTimeout(() => {
     try { expandedMap.invalidateSize(false); } catch(e){}
     if (geojson?.features?.[0]?.geometry?.coordinates) {
       try {
-        const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        expandedMap.fitBounds(coords, { padding: [20,20] });
+        const coords = geojson.features[0].geometry.coordinates
+  .map(c => [c[1], c[0]])
+  .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));        expandedMap.fitBounds(coords, { padding: [20,20] });
       } catch(_){}
     } else if (points.length > 1) {
       try {
