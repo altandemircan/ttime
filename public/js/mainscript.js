@@ -5466,22 +5466,14 @@ mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
 showRouteInfoBanner(day); // hemen ardından çağır
   // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
- const points = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-let center, zoom;
-if (points.length > 1) {
-  const lats = points.map(p => p.lat);
-  const lngs = points.map(p => p.lng);
-  const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-  const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-  center = [avgLat, avgLng];
-  zoom = 13;
-} else if (points.length === 1) {
-  center = [points[0].lat, points[0].lng];
-  zoom = 14;
-} else {
-  center = [42, 12];
-  zoom = 6;
-}
+  let center = [42, 12];
+  let zoom = 6;
+  try {
+    if (baseMap) {
+      center = baseMap.getCenter();
+      zoom = baseMap.getZoom();
+    }
+  } catch (_) {}
 
   const expandedMap = L.map(mapDivId, {
     center,
@@ -5585,6 +5577,7 @@ expandedMap.fitBounds(polyline.getBounds());
     });
   }
 
+  const points = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
   if (!geojson && points.length === 1) {
     expandedMap.flyTo([points[0].lat, points[0].lng], 15, { duration: 0.6, easeLinearity: 0.2 });
     L.circleMarker([points[0].lat, points[0].lng], {
@@ -5670,7 +5663,6 @@ if (track && svg) {
       locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
     }
   });
-
 
   console.log('[expandMap] done for day', day);
 
