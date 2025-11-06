@@ -286,23 +286,35 @@ function fitExpandedMapToRoute(day) {
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
 
-    // === BURAYA YERLEŞTİR — BAŞLA ===
+    // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
       expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else if (expObj.expandedMap._initialView) {
-      expObj.expandedMap.setView(
-        expObj.expandedMap._initialView.center,
-        expObj.expandedMap._initialView.zoom,
-        { animate: true }
-      );
+      // ek güvenlik: _initialView kontrolü!
+      if (
+        Array.isArray(expObj.expandedMap._initialView.center) &&
+        expObj.expandedMap._initialView.center.length === 2 &&
+        isFinite(expObj.expandedMap._initialView.center[0]) &&
+        isFinite(expObj.expandedMap._initialView.center[1])
+      ) {
+        expObj.expandedMap.setView(
+          expObj.expandedMap._initialView.center,
+          expObj.expandedMap._initialView.zoom,
+          { animate: true }
+        );
+      } else {
+        // fallback: world center
+        expObj.expandedMap.setView([42, 12], 6);
+      }
+    } else {
+      // Hiçbir nokta/merkez yoksa fallback
+      expObj.expandedMap.setView([42, 12], 6);
     }
-    // === BURAYA YERLEŞTİR — BİTİR ===
   }
 }
-
         // Nice tick helpers
   function niceStep(total, target) {
     const raw = total / Math.max(1, target);
