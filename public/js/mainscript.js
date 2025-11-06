@@ -5544,34 +5544,34 @@ function setExpandedMapTile(styleKey) {
     });
   }
 
-                                                                        if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-                                                                          const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-                                                                          function arrayCenter(arr) {
-                                                                            const lats = arr.map(([lat, lng]) => lat), lngs = arr.map(([lat, lng]) => lng);
-                                                                            return [lats.reduce((a,b)=>a+b)/lats.length, lngs.reduce((a,b)=>a+b)/lngs.length];
-                                                                          }
-                                                                          if (points.length > 1) {
-                                                                            const centerGeojson = arrayCenter(coords);
-                                                                            const centerMarkers = arrayCenter(points.map(p=>[p.lat,p.lng]));
-                                                                            // yaklaşık 1.5 derece üzeri fark için marker’a zorla
-                                                                            const geodist = Math.sqrt(Math.pow(centerGeojson[0]-centerMarkers[0],2) + Math.pow(centerGeojson[1]-centerMarkers[1],2));
-                                                                            if (geodist > 1.5) {
-                                                                              expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
-                                                                              // LOG
-                                                                              console.log("fitBounds(points), merkez farkı çok yüksek:", centerGeojson, centerMarkers);
-                                                                            } else {
-                                                                              expandedMap.fitBounds(coords, { padding: [20,20] });
-                                                                            }
-                                                                          } else {
-                                                                            expandedMap.fitBounds(coords, { padding: [20,20] });
-                                                                          }
-                                                                        } else if (points.length > 1) {
-                                                                          expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
-                                                                        } else if (points.length === 1) {
-                                                                          expandedMap.setView([points[0].lat, points[0].lng], 14, { animate:true });
-                                                                        } else {
-                                                                          expandedMap.setView([0,0], 2);
-                                                                        }
+if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
+  const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+  function arrayCenter(arr) {
+    const lats = arr.map(([lat, lng]) => lat), lngs = arr.map(([lat, lng]) => lng);
+    return [lats.reduce((a,b)=>a+b)/lats.length, lngs.reduce((a,b)=>a+b)/lngs.length];
+  }
+  if (points.length > 1) {
+    const centerGeojson = arrayCenter(coords);
+    const centerMarkers = arrayCenter(points.map(p=>[p.lat,p.lng]));
+    // yaklaşık 1.5 derece üzeri fark için marker’a zorla
+    const geodist = Math.sqrt(Math.pow(centerGeojson[0]-centerMarkers[0],2) + Math.pow(centerGeojson[1]-centerMarkers[1],2));
+    if (geodist > 1.5) {
+      expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
+      // LOG
+      console.log("fitBounds(points), merkez farkı çok yüksek:", centerGeojson, centerMarkers);
+    } else {
+      expandedMap.fitBounds(coords, { padding: [20,20] });
+    }
+  } else {
+    expandedMap.fitBounds(coords, { padding: [20,20] });
+  }
+} else if (points.length > 1) {
+  expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
+} else if (points.length === 1) {
+  expandedMap.setView([points[0].lat, points[0].lng], 14, { animate:true });
+} else {
+  expandedMap.setView([0,0], 2);
+}
 
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
@@ -7188,7 +7188,7 @@ async function renderRouteForDay(day) {
   }
 
   const containerId = `route-map-day${day}`;
- 
+  const points = getDayPoints(day);
 
   if (
     window.importedTrackByDay &&
