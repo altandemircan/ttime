@@ -4339,6 +4339,13 @@ function createDayActionMenu(day) {
 
 
 function updateExpandedMap(expandedMap, day) {
+    console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
+console.log("GÜN:", day);
+console.log("getDayPoints:", JSON.stringify(pts));
+console.log("geojson:", geojson);
+
+
+
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
             expandedMap.removeLayer(layer);
@@ -6911,7 +6918,6 @@ function getDayPoints(day) {
     }));
 }
 
-
 function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     // Polyline'ın başı ve sonu
     const start = polylineCoords[0];
@@ -7044,6 +7050,14 @@ if (imported) {
 
 // GÜNCELLENMİŞ renderRouteForDay
 async function renderRouteForDay(day) {
+
+    console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
+console.log("GÜN:", day);
+const pts = getDayPoints(day);
+console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
+
+
+
   if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
     const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
     const points = getDayPoints(day);
