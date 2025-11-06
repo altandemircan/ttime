@@ -5605,13 +5605,13 @@ function setExpandedMapTile(styleKey) {
     return;
   }
 
-  // ÖNCE eski marker ve çizgileri temizle (opsiyonel, tekrar tekrar tıklanırsa üst üste binecekse):
+  // Önce eski marker ve çizgileri temizle
   expandedMap.eachLayer(l => {
     if (l._isRestaurantMarker || l._isRestaurantLine) try { expandedMap.removeLayer(l); } catch {};
   });
 
   data.features.forEach((f, idx) => {
-    // 1. KESİK ÇİZGİ ÇEK!
+    // 1. KESİK ÇİZGİ (interactive: false veriyoruz!)
     const guideLine = L.polyline(
       [
         [lat, lng],
@@ -5621,19 +5621,20 @@ function setExpandedMapTile(styleKey) {
         color: "#22bb33",
         weight: 4,
         opacity: 0.95,
-        dashArray: "8,8"
+        dashArray: "8,8",
+        interactive: false  // <-- ANAHTAR NOKTA!
       }
     ).addTo(expandedMap);
     guideLine._isRestaurantLine = true;
 
-    // 2. MARKER EKLE
+    // 2. MARKER (interactive: false)
     const icon = L.divIcon({
       html: getPurpleRestaurantMarkerHtml(),
       className: "",
       iconSize: [32, 32],
       iconAnchor: [16, 16]
     });
-    const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(expandedMap);
+    const marker = L.marker([f.properties.lat, f.properties.lon], { icon, interactive: false }).addTo(expandedMap);
     marker._isRestaurantMarker = true;
     const address = f.properties.formatted || "";
     const name = f.properties.name || "Restaurant";
