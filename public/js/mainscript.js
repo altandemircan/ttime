@@ -5558,7 +5558,7 @@ function setExpandedMapTile(styleKey) {
 
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
-  
+
 setTimeout(() => {
   try { expandedMap.invalidateSize(false); } catch(e){}
   setTimeout(() => {
@@ -5582,12 +5582,6 @@ setTimeout(() => {
   }, 240);
 }, 140);
 
-else if (!expandedMap._initialView) {
-    expandedMap._initialView = {
-      center: expandedMap.getCenter(),
-      zoom: expandedMap.getZoom()
-    };
-  }
 
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
