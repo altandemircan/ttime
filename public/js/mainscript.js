@@ -5438,21 +5438,6 @@ const points = allPoints.filter(
   p => p && typeof p.lat === "number" && !isNaN(p.lat) && typeof p.lng === "number" && !isNaN(p.lng)
 );
 
-let center, zoom;
-if (points.length > 1) {
-  const lats = points.map(p => p.lat);
-  const lngs = points.map(p => p.lng);
-  const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-  const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-  center = [avgLat, avgLng];
-  zoom = 13;
-} else if (points.length === 1) {
-  center = [points[0].lat, points[0].lng];
-  zoom = 14;
-} else {
-  center = [42, 12];
-  zoom = 6;
-}
 
 
  const expandedMap = L.map(mapDivId, {
@@ -5557,18 +5542,17 @@ function setExpandedMapTile(styleKey) {
     });
   }
 
-  if (!geojson && points.length === 1) {
-    expandedMap.flyTo([points[0].lat, points[0].lng], 15, { duration: 0.6, easeLinearity: 0.2 });
-    L.circleMarker([points[0].lat, points[0].lng], {
-      radius: 11,
-      color: '#8a4af3',
-      fillColor: '#8a4af3',
-      fillOpacity: 0.92,
-      weight: 3
-    }).addTo(expandedMap).bindPopup(`<b>${points[0].name || 'Point'}</b>`).openPopup();
-  } else if (!geojson && points.length === 0) {
-    expandedMap.setView([42, 12], 5);
-  }
+  
+if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
+  const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+  expandedMap.fitBounds(coords, { padding: [20,20] });
+} else if (points.length > 1) {
+  expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
+} else if (points.length === 1) {
+  expandedMap.setView([points[0].lat, points[0].lng], 14, { animate:true });
+} else {
+  expandedMap.setView([0,0], 2);
+}
 
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
@@ -5643,15 +5627,6 @@ if (track && svg) {
     }
   });
 
-
-if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-  const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-  expandedMap.fitBounds(coords, { padding: [20,20] });
-} else if (points.length > 1) {
-  expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
-} else if (points.length === 1) {
-  expandedMap.setView([points[0].lat, points[0].lng], 14, { animate: true });
-}
 
 console.log('[expandMap] done for day', day);
 console.log("Expanded Map Points:", points);
