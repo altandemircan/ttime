@@ -4387,12 +4387,15 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
 
     addNumberedMarkers(expandedMap, points);
 
-    const pts = getDayPoints(day).filter(p => isFinite(p.lat) && isFinite(p.lng));
-if (pts.length === 1) expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-if (pts.length === 0) expandedMap.setView([42, 12], 6, { animate: true });
+const pts = getDayPoints(day).filter(p => isFinite(p.lat) && isFinite(p.lng));
+if (pts.length > 1) {
+  expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+} else if (pts.length === 1) {
+  expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+} else {
+  expandedMap.setView([42, 12], 6, { animate: true });
+}
 
-
-    expandedMap.fitBounds(polyline.getBounds());
 // setTimeout(() => {
 //   // fitBounds sonrası merkez
 //   const center = expandedMap.getCenter();
@@ -5116,19 +5119,21 @@ const polyline = L.polyline(coords, {
         });
     }
 
-    addNumberedMarkers(map, points);
+   addNumberedMarkers(map, points);
+if (geojson.features[0].properties && geojson.features[0].properties.names) {
+    addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
+}
 
-    if (geojson.features[0].properties && geojson.features[0].properties.names) {
-        addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
-    }
-
-    points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-if (points.length === 1) map.setView([points[0].lat, points[0].lng], 14, { animate: true });
-if (points.length === 0) map.setView([42, 12], 6, { animate: true });
-
-    map.fitBounds(polyline.getBounds());
-    map.zoomControl.setPosition('topright');
-    window.leafletMaps[containerId] = map;
+points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+if (points.length > 1) {
+  map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+} else if (points.length === 1) {
+  map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+} else {
+  map.setView([42, 12], 6, { animate: true });
+}
+map.zoomControl.setPosition('topright');
+window.leafletMaps[containerId] = map;
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
