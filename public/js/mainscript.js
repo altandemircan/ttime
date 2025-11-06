@@ -4338,7 +4338,8 @@ function createDayActionMenu(day) {
 }
 
 
-    function updateExpandedMap(expandedMap, day) {
+function updateExpandedMap(expandedMap, day) {
+    // Önce eski marker ve polyline'ları temizle
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
             expandedMap.removeLayer(layer);
@@ -4349,48 +4350,43 @@ function createDayActionMenu(day) {
     const geojson = window.lastRouteGeojsons?.[containerId];
     const rawPoints = getDayPoints(day);
 
-    // Filtrelenmiş geçerli noktalar
+    // Geçerli nokta filtresi
     const pts = rawPoints.filter(
         p => typeof p.lat === "number" && isFinite(p.lat) &&
              typeof p.lng === "number" && isFinite(p.lng)
     );
 
-    
-    // DEBUG LOG EKLE:
-    console.log("geojson", geojson);
-    console.log("geojson.features[0]?.geometry?.coordinates", geojson?.features?.[0]?.geometry?.coordinates);
-    console.log("pts", pts);
+    // LOG şu anlık
+    // console.log("geojson", geojson);
+    // console.log("geojson.features[0]?.geometry?.coordinates", geojson?.features?.[0]?.geometry?.coordinates);
+    // console.log("pts", pts);
 
-    // Türkiye'de gerçek OSRM/gezi route varsa onu çiz, yoksa düz marker çizgisi
-  let routeCoords = [];
-let isGeo = false;
+    // --- ROTA ve MARKER BİRLEŞTİRME ---
+    let routeCoords = [];
+    let isGeo = false;
+    const geoCoords = geojson?.features?.[0]?.geometry?.coordinates;
 
-if (
-    geojson &&
-    geojson.features &&
-    geojson.features[0] &&
-    geojson.features[0].geometry &&
-    Array.isArray(geojson.features[0].geometry.coordinates) &&
-    geojson.features[0].geometry.coordinates.length > 1
-) {
-    routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    isGeo = true;
-}
+    if (Array.isArray(geoCoords) && geoCoords.length > 1) {
+        // Gerçek GeoJSON rotası (Türkiye'de çalışır)
+        routeCoords = geoCoords.map(c => [c[1], c[0]]);
+        isGeo = true;
+    }
 
-// Fallback: geojson başarısızsa veya yanlışlıkla tek nokta geldiyse
-if ((!isGeo || routeCoords.length < 2) && pts.length > 1) {
-    routeCoords = pts.map(p => [p.lat, p.lng]);
-    isGeo = false;
-}
+    // Fallback: geojson yok veya tek nokta ise → markerlar arası çizgi
+    if ((!isGeo || routeCoords.length < 2) && pts.length > 1) {
+        routeCoords = pts.map(p => [p.lat, p.lng]);
+        isGeo = false;
+    }
 
-if (routeCoords.length > 1) {
-    L.polyline(routeCoords, {
-        color: isGeo ? "#1976d2" : "#bdbdbd",
-        weight: isGeo ? 8 : 5,
-        opacity: isGeo ? 0.92 : 0.7,
-        dashArray: isGeo ? null : "8, 6"
-    }).addTo(expandedMap);
-}
+    // Çizgi ekle
+    if (routeCoords.length > 1) {
+        L.polyline(routeCoords, {
+            color: isGeo ? "#1976d2" : "#bdbdbd",
+            weight: isGeo ? 8 : 5,
+            opacity: isGeo ? 0.92 : 0.7,
+            dashArray: isGeo ? null : "8, 6"
+        }).addTo(expandedMap);
+    }
 
     // Markerları sırayla ekle
     pts.forEach((item, idx) => {
@@ -4408,7 +4404,7 @@ if (routeCoords.length > 1) {
             .bindPopup(`<b>${item.name || "Point"}</b>`);
     });
 
-    // Eksik noktalar için çizgi (varsa, opsiyonel)
+    // Eksik noktalar için ek çizgi (varsa, opsiyonel)
     if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
         L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
             dashArray: '8, 12',
@@ -4420,7 +4416,7 @@ if (routeCoords.length > 1) {
         }).addTo(expandedMap);
     }
 
-    // Harita görünümü ayarı
+    // Harita görünümünü ayarla
     if (pts.length > 1) {
         expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (pts.length === 1) {
@@ -4433,13 +4429,14 @@ if (routeCoords.length > 1) {
 
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
+    // Küçük bilgi kutusu güncelle
     const sumKey = `route-map-day${day}`;
     const sum = window.lastRouteSummaries?.[sumKey];
     if (sum && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
 
-    // NEW: re-render expanded scale bar with fresh route
+    // Ölçek bar güncelle
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBarDiv) {
         try {
