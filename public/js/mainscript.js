@@ -5469,7 +5469,10 @@ showRouteInfoBanner(day); // hemen ardından çağır
   // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
- const points = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+const allPoints = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+const points = allPoints.filter(
+  p => p && typeof p.lat === "number" && !isNaN(p.lat) && typeof p.lng === "number" && !isNaN(p.lng)
+);
 
 let center, zoom;
 if (points.length > 1) {
