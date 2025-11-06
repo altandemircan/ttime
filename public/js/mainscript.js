@@ -5458,11 +5458,26 @@ let currentLayer = 'liberty';
   mapDiv.id = mapDivId;
   mapDiv.className = 'expanded-map';
   expandedContainer.appendChild(mapDiv);
+   document.body.appendChild(expandedContainer);
+ const expandedMap = L.map(mapDivId, {
+    center,
+    zoom,
+    scrollWheelZoom: true,
+    fadeAnimation: true,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 8,
+    zoomSnap: 0.25,
+    zoomDelta: 0.25,
+    wheelDebounceTime: 35,
+    wheelPxPerZoomLevel: 120,
+    inertia: true,
+    easeLinearity: 0.2
+  });
 
   mapDiv.style.width = "100%";
 mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
 
-  document.body.appendChild(expandedContainer);
+ 
 showRouteInfoBanner(day); // hemen ardından çağır
   // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
@@ -5483,21 +5498,7 @@ if (points.length > 1) {
   zoom = 6;
 }
 
-  const expandedMap = L.map(mapDivId, {
-    center,
-    zoom,
-    scrollWheelZoom: true,
-    fadeAnimation: true,
-    zoomAnimation: true,
-    zoomAnimationThreshold: 8,
-    zoomSnap: 0.25,
-    zoomDelta: 0.25,
-    wheelDebounceTime: 35,
-    wheelPxPerZoomLevel: 120,
-    inertia: true,
-    easeLinearity: 0.2
-  });
-
+ 
 
 
  // SARI IMAGE UYARILARINI ENGELLE!
