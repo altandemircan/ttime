@@ -5122,14 +5122,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }
 
     // --- Harita görünümünü ayarla ---
-    points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-    if (points.length > 1) {
-        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-    } else if (points.length === 1) {
-        map.setView([points[0].lat, points[0].lng], 14, { animate: true });
-    } else {
-        map.setView([42, 12], 6, { animate: true });
-    }
+                                                              points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+                                                            if (points.length > 1) {
+                                                                map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+                                                            } else if (points.length === 1) {
+                                                                map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+                                                            } else {
+                                                                map.setView([0, 0], 2, { animate: true });
+                                                            }
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
