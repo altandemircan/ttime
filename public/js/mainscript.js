@@ -5574,7 +5574,8 @@ setTimeout(() => {
   const safeCoords = coords.filter(x => 
   Array.isArray(x) && isFinite(x[0]) && isFinite(x[1])
 );
-  expandedMap.fitBounds(coords, { padding: [20,20] });
+const safeCoords = coords.filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));
+expandedMap.fitBounds(safeCoords, { padding: [20,20] });
       } catch(_){}
     } else if (points.length > 1) {
       try {
