@@ -5495,7 +5495,12 @@ try {
   expandedMap.boxZoom.enable?.();
   expandedMap.keyboard.enable?.();
   expandedMap.getContainer().style.pointerEvents = 'auto';
-} catch (e) {}
+  // PATCH: Zoom kontrol düğmelerini de force enable et:
+  const ctrlIn = expandedMap._controlContainer?.querySelector('.leaflet-control-zoom-in');
+  const ctrlOut = expandedMap._controlContainer?.querySelector('.leaflet-control-zoom-out');
+  if (ctrlIn) ctrlIn.setAttribute('aria-disabled', 'false'), ctrlIn.classList.remove('leaflet-disabled');
+  if (ctrlOut) ctrlOut.setAttribute('aria-disabled', 'false'), ctrlOut.classList.remove('leaflet-disabled');
+} catch(e){}
   // Layer ilk eklenirken default style
 setExpandedMapTile(currentLayer);
 
