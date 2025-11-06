@@ -5593,35 +5593,58 @@ function setExpandedMapTile(styleKey) {
                           }).addTo(expandedMap);
 
                           routePolyline.on('click', async function(e) {
-                            const lat = e.latlng.lat, lng = e.latlng.lng;
-                            const bufferMeters = 1000;
-                            const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-                            const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
-                            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
-                            const resp = await fetch(url);
-                            const data = await resp.json();
-                            if (!data.features || data.features.length === 0) {
-                              alert("Bu bölgede restoran/kafe/bar bulunamadı!");
-                              return;
-                            }
-                            data.features.forEach(f => {
-                              const icon = L.divIcon({
-                                html: getPurpleRestaurantMarkerHtml(),
-                                className: "",
-                                iconSize: [32, 32],
-                                iconAnchor: [16, 16]
-                              });
-                              const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(expandedMap);
-                              const address = f.properties.formatted || "";
-                              const name = f.properties.name || "Restaurant";
-                              const imgId = `rest-img-${f.properties.place_id}`;
-                              marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, day), { maxWidth: 340 });
-                              marker.on("popupopen", function() {
-                                handlePopupImageLoading(f, imgId);
-                              });
-                            });
-                            alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
-                          });
+  const lat = e.latlng.lat, lng = e.latlng.lng;
+  const bufferMeters = 1000;
+  const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+  const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
+  const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (!data.features || data.features.length === 0) {
+    alert("Bu bölgede restoran/kafe/bar bulunamadı!");
+    return;
+  }
+
+  // ÖNCE eski marker ve çizgileri temizle (opsiyonel, tekrar tekrar tıklanırsa üst üste binecekse):
+  expandedMap.eachLayer(l => {
+    if (l._isRestaurantMarker || l._isRestaurantLine) try { expandedMap.removeLayer(l); } catch {};
+  });
+
+  data.features.forEach((f, idx) => {
+    // 1. KESİK ÇİZGİ ÇEK!
+    const guideLine = L.polyline(
+      [
+        [lat, lng],
+        [f.properties.lat, f.properties.lon]
+      ],
+      {
+        color: "#22bb33",
+        weight: 4,
+        opacity: 0.95,
+        dashArray: "8,8"
+      }
+    ).addTo(expandedMap);
+    guideLine._isRestaurantLine = true;
+
+    // 2. MARKER EKLE
+    const icon = L.divIcon({
+      html: getPurpleRestaurantMarkerHtml(),
+      className: "",
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+    const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(expandedMap);
+    marker._isRestaurantMarker = true;
+    const address = f.properties.formatted || "";
+    const name = f.properties.name || "Restaurant";
+    const imgId = `rest-img-${f.properties.place_id || idx}`;
+    marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, day), { maxWidth: 340 });
+    marker.on("popupopen", function() {
+      handlePopupImageLoading(f, imgId);
+    });
+  });
+  alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
+});
                           // === YAMA SONU ===
 }
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
