@@ -5558,25 +5558,21 @@ function setExpandedMapTile(styleKey) {
 
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
-  if (geojson?.features?.[0]?.geometry?.coordinates) {
-    const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+if (geojson?.features?.[0]?.geometry?.coordinates) {
+  // 1) Bozuk noktaları filtrele:
+  const coords = geojson.features[0].geometry.coordinates
+    .map(c => [c[1], c[0]])
+    .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));
+  if (coords.length > 1) {
     const polyline = addRoutePolylineWithClick(expandedMap, coords);
-    try { expandedMap.fitBounds(polyline.getBounds()); } catch (_){}
+    try { expandedMap.fitBounds(coords, {padding: [20,20]}); } catch(_){}
     expandedMap._initialBounds = polyline.getBounds();
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
       zoom: expandedMap.getZoom()
     };
-
-expandedMap.fitBounds(polyline.getBounds());
-// setTimeout(() => {
-//   // fitBounds sonrası merkez
-//   const center = expandedMap.getCenter();
-//   // 0.012 derece yukarı: yaklaşık 1.2km (zoom'a göre değişebilir)
-//   expandedMap.setView([center.lat - 0.002, center.lng], Math.max(expandedMap.getZoom() - 0.2, 2), { animate: true });
-// }, 350);
-
-  } else if (!expandedMap._initialView) {
+  }
+}else if (!expandedMap._initialView) {
     expandedMap._initialView = {
       center: expandedMap.getCenter(),
       zoom: expandedMap.getZoom()
@@ -5691,8 +5687,12 @@ setTimeout(() => {
       } catch(_){}
     } else if (points.length > 1) {
       try {
-        expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
-      } catch(_){}
+        expandedMap.fitBounds(
+  points
+    .filter(p => isFinite(p.lat) && isFinite(p.lng))
+    .map(p => [p.lat, p.lng]),
+  { padding: [20,20] }
+);      } catch(_){}
     }
   }, 240);
 }, 140);
