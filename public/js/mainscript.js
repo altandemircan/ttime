@@ -4431,6 +4431,8 @@ if (pts.length > 1) {
 } else {
     expandedMap.setView([42, 12], 6, { animate: true });
 }
+setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
+
     } else {
         // Fallback: 0 veya 1 nokta
         const pts = getDayPoints(day);
