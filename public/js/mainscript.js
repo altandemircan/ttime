@@ -4434,6 +4434,42 @@ if (pts.length > 1) {
 setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
 
     } else {
+
+         const pts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+    if (pts.length > 1) {
+        L.polyline(pts.map(p => [p.lat, p.lng]), {
+            color: '#aaaaaa',
+            weight: 5,
+            opacity: 0.82,
+            dashArray: '8 6'
+        }).addTo(expandedMap);
+        // Markerlar 1-2-3-4-5
+        pts.forEach((item, idx) => {
+            const markerHtml = `<div style="
+                background:#d32f2f;color:#fff;border-radius:50%;
+                width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+                font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;
+            ">${idx + 1}</div>`;
+            const icon = L.divIcon({
+                html: markerHtml,
+                className: "",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+            L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
+                .bindPopup(`<b>${item.name || "Point"}</b>`);
+        });
+        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+    } else if (pts.length === 1) {
+        L.marker([pts[0].lat, pts[0].lng]).addTo(expandedMap);
+        expandedMap.setView([pts[0].lat, pts[0].lng], 13);
+    } else if (expandedMap._initialView) {
+        expandedMap.setView(expandedMap._initialView.center, expandedMap._initialView.zoom, { animate: true });
+    } else {
+        expandedMap.setView([42.0, 12.0], 6);
+    }
+
+    
         // Fallback: 0 veya 1 nokta
         const pts = getDayPoints(day);
         expandedMap.eachLayer(layer => {
