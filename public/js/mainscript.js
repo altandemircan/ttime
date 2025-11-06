@@ -5605,36 +5605,26 @@ routePolyline.on('click', async function(e) {
     return;
   }
 
-  // --- ESKİ MARKER ve KESİK ÇİZGİLERİ TEMİZLE 
+  // --- SADECE DAHA ÖNCEKİ RESTORAN MARKER VE LİNELARI TEMİZLE ---
   expandedMap.eachLayer(layer => {
-    // Sadece bizim çizdiklerimiz!
-    if (
-      layer._isRestaurantMarker ||
-      layer._isRestaurantLine
-    ) {
+    if (layer._isRestaurantMarker || layer._isRestaurantLine) {
       expandedMap.removeLayer(layer);
     }
   });
 
-  // --- YENİLERİ ÇİZ
+  // --- YENİ MARKER + ÇİZGİLERİ EKLE ---
   data.features.forEach((f, idx) => {
-    // KESİK ÇİZGİ (interactive:false)
-    const guideLine = L.polyline(
-      [
-        [lat, lng],
-        [f.properties.lat, f.properties.lon]
-      ],
-      {
-        color: "#22bb33",
-        weight: 4,
-        opacity: 0.95,
-        dashArray: "8,8",
-        interactive: false
-      }
-    ).addTo(expandedMap);
+    // Çizgi
+    const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
+      color: "#22bb33",
+      weight: 4,
+      opacity: 0.95,
+      dashArray: "8,8",
+      interactive: false
+    }).addTo(expandedMap);
     guideLine._isRestaurantLine = true;
 
-    // MARKER (interactive:true)
+    // Marker
     const icon = L.divIcon({
       html: getPurpleRestaurantMarkerHtml(),
       className: "",
