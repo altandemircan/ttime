@@ -5634,7 +5634,10 @@ function setExpandedMapTile(styleKey) {
       iconSize: [32, 32],
       iconAnchor: [16, 16]
     });
-    const marker = L.marker([f.properties.lat, f.properties.lon], { icon, interactive: false }).addTo(expandedMap);
+const marker = L.marker([f.properties.lat, f.properties.lon], {
+  icon,
+  interactive: true      // <-- tıklanabilir popup için true olmalı!
+}).addTo(expandedMap);
     marker._isRestaurantMarker = true;
     const address = f.properties.formatted || "";
     const name = f.properties.name || "Restaurant";
