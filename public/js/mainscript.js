@@ -4353,22 +4353,22 @@ function createDayActionMenu(day) {
   return container;
 }
 
-// function setCityFromAddress(address) {
-//   if (!address) return;
-//   // Türkiye için örnek: "Döşemealtı, Antalya, Turkey"
-//   // veya "DC118, 407151 Dângău Mic, Romania"
-//   let city = "";
-//   const parts = address.split(",");
-//   if (parts.length >= 2) {
-//     // Şehir genellikle sondan ikinci
-//     city = parts[parts.length - 2].trim();
-//   }
-//   if (city) {
-//     window.selectedCity = city;
-//     window.selectedLocation = city;
-//   }
-// }
-// PATCH: refresh expanded scale bar after route updates
+function setCityFromAddress(address) {
+  if (!address) return;
+  // Türkiye için örnek: "Döşemealtı, Antalya, Turkey"
+  // veya "DC118, 407151 Dângău Mic, Romania"
+  let city = "";
+  const parts = address.split(",");
+  if (parts.length >= 2) {
+    // Şehir genellikle sondan ikinci
+    city = parts[parts.length - 2].trim();
+  }
+  if (city) {
+    window.selectedCity = city;
+    window.selectedLocation = city;
+  }
+}
+PATCH: refresh expanded scale bar after route updates
 
 function updateExpandedMap(expandedMap, day) {
     expandedMap.eachLayer(layer => {
