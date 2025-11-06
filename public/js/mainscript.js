@@ -5682,7 +5682,87 @@ if (
 }
 
 }
+function restoreMap(containerId, day) {
+    const expandedData = window.expandedMaps?.[containerId];
+    if (!expandedData) return;
 
+    const { originalContainer, originalMap, expandedMap, expandButton } = expandedData;
+
+    try {
+        if (expandedMap && expandedMap.remove) {
+            expandedMap.remove();
+        }
+
+        const expandedContainer = document.getElementById(`expanded-map-${day}`);
+        if (expandedContainer) {
+            expandedContainer.remove();
+        }
+
+        const expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        if (expandedScaleBar && expandedScaleBar.parentNode) {
+            expandedScaleBar.parentNode.removeChild(expandedScaleBar);
+        }
+
+        const originalScaleBar = document.getElementById(`route-scale-bar-day${day}`);
+        if (originalScaleBar) {
+            originalScaleBar.style.display = "none";
+        }
+
+        if (originalContainer) {
+            originalContainer.style.display = '';
+        }
+
+        // Restore expand button in travel mode set
+        const travelModeSet = document.getElementById(`tt-travel-mode-set-day${day}`);
+        const expandBtn = travelModeSet?.querySelector('.expand-map-btn');
+        if (expandBtn) {
+            expandBtn.style.visibility = 'visible';
+        }
+
+        document.querySelectorAll('.day-container').forEach(dc => {
+            const smallMap = dc.querySelector('.route-map');
+            const otherDay = parseInt(dc.dataset.day, 10);
+            const controls = document.getElementById(`map-bottom-controls-wrapper-day${otherDay}`);
+            if (smallMap && !smallMap.classList.contains('collapsed')) {
+                 smallMap.style.display = '';
+            }
+            if (controls && !controls.classList.contains('collapsed')) {
+                controls.style.display = '';
+            }
+        });
+
+        // --- EKLENDİ: Küçük haritadaki markerlar/focus düzelt ---
+        if (originalMap && typeof getDayPoints === "function") {
+            try {
+                const pts = getDayPoints(day).filter(p => isFinite(p.lat) && isFinite(p.lng));
+                setTimeout(() => {
+                    originalMap.invalidateSize({ pan: false });
+                    if (pts.length > 1) {
+                        originalMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+                    } else if (pts.length === 1) {
+                        originalMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+                    }
+                }, 120);
+            } catch (e) {
+                console.warn("restoreMap: fitBounds after restore failed", e);
+            }
+        }
+
+    } catch (e) {
+        console.error('Error while closing the map:', e);
+    } finally {
+        delete window.expandedMaps[containerId];
+    }
+    // Segment seçim & event cleanup:
+    window._lastSegmentDay = undefined;
+    window._lastSegmentStartKm = undefined;
+    window._lastSegmentEndKm = undefined;
+    window.__scaleBarDrag = null;
+    window.__scaleBarDragTrack = null;
+    window.__scaleBarDragSelDiv = null;
+    window.removeEventListener('mousemove', window.__sb_onMouseMove);
+    window.removeEventListener('mouseup', window.__sb_onMouseUp);
+}
 /* ==== NEW: Click-based nearby search (replaces long-press) ==== */
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; // metres
@@ -6386,75 +6466,7 @@ function setupScaleBarInteraction(day, map) {
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
-function restoreMap(containerId, day) {
-    const expandedData = window.expandedMaps?.[containerId];
-    if (!expandedData) return;
 
-    const { originalContainer, originalMap, expandedMap, expandButton } = expandedData;
-
-    try {
-        if (expandedMap && expandedMap.remove) {
-            expandedMap.remove();
-        }
-
-        const expandedContainer = document.getElementById(`expanded-map-${day}`);
-        if (expandedContainer) {
-            expandedContainer.remove();
-        }
-
-        const expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-        if (expandedScaleBar && expandedScaleBar.parentNode) {
-            expandedScaleBar.parentNode.removeChild(expandedScaleBar);
-        }
-
-        const originalScaleBar = document.getElementById(`route-scale-bar-day${day}`);
-        if (originalScaleBar) {
-            originalScaleBar.style.display = "none";
-        }
-
-        if (originalContainer) {
-            originalContainer.style.display = '';
-        }
-
-        // Restore expand button in travel mode set
-        const travelModeSet = document.getElementById(`tt-travel-mode-set-day${day}`);
-        const expandBtn = travelModeSet?.querySelector('.expand-map-btn');
-        if (expandBtn) {
-            expandBtn.style.visibility = 'visible';
-        }
-
-        document.querySelectorAll('.day-container').forEach(dc => {
-            const smallMap = dc.querySelector('.route-map');
-            const otherDay = parseInt(dc.dataset.day, 10);
-            const controls = document.getElementById(`map-bottom-controls-wrapper-day${otherDay}`);
-            if (smallMap && !smallMap.classList.contains('collapsed')) {
-                 smallMap.style.display = '';
-            }
-            if (controls && !controls.classList.contains('collapsed')) {
-                controls.style.display = '';
-            }
-        });
-
-        if (originalMap && originalMap.invalidateSize) {
-            setTimeout(() => {
-                originalMap.invalidateSize({ pan: false });
-            }, 100);
-        }
-    } catch (e) {
-console.error('Error while closing the map:', e);
-    } finally {
-        delete window.expandedMaps[containerId];
-    }
-// Segment seçim & event cleanup:
-window._lastSegmentDay = undefined;
-window._lastSegmentStartKm = undefined;
-window._lastSegmentEndKm = undefined;
-window.__scaleBarDrag = null;
-window.__scaleBarDragTrack = null;
-window.__scaleBarDragSelDiv = null;
-window.removeEventListener('mousemove', window.__sb_onMouseMove);
-window.removeEventListener('mouseup', window.__sb_onMouseUp);
-}
 
 
 window.addNearbyPlaceToTrip = function(idx) {
