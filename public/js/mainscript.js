@@ -4444,24 +4444,22 @@ const pts = getDayPoints(day).filter(
     p => typeof p.lat === "number" && isFinite(p.lat) &&
          typeof p.lng === "number" && isFinite(p.lng)
 );
-
-// 2. Temizle
 expandedMap.eachLayer(layer => {
     if (layer instanceof L.Marker || layer instanceof L.Polyline) {
         if (!(layer instanceof L.TileLayer)) expandedMap.removeLayer(layer);
     }
 });
-
-// 3. Polyline çiz, marker ekle, fitBounds uygula
 if (pts.length > 1) {
     L.polyline(pts.map(p => [p.lat, p.lng]), {
         color: '#1976d2',
         weight: 8,
         opacity: 0.92
     }).addTo(expandedMap);
-
     pts.forEach((item, idx) => {
-        const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">${idx + 1}</div>`;
+        const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;
+            width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+            font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">
+            ${idx + 1}</div>`;
         const icon = L.divIcon({
             html: markerHtml,
             className: "",
@@ -4471,7 +4469,6 @@ if (pts.length > 1) {
         L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
             .bindPopup(`<b>${item.name || "Point"}</b>`);
     });
-
     expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
 } else if (pts.length === 1) {
     const p = pts[0];
