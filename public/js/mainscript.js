@@ -5468,7 +5468,9 @@ mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
 showRouteInfoBanner(day); // hemen ardından çağır
   // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
+
  const points = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+
 let center, zoom;
 if (points.length > 1) {
   const lats = points.map(p => p.lat);
@@ -5484,6 +5486,7 @@ if (points.length > 1) {
   center = [42, 12];
   zoom = 6;
 }
+
 
  const expandedMap = L.map(mapDivId, {
     center,
