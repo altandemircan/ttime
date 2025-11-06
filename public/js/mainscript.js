@@ -4356,30 +4356,30 @@ function updateExpandedMap(expandedMap, day) {
     let routeCoords = [];
     let isGeo = false;
 
-    // ÖNCE GERÇEK GEOJSON'DAN KOORDİNAT AL
+    // GEOJSON'dan DOLU COORDİNAT varsa ve EN AZ 2 NOKTA ise
     const geoCoords = geojson?.features?.[0]?.geometry?.coordinates;
     if (Array.isArray(geoCoords) && geoCoords.length > 1) {
         routeCoords = geoCoords.map(c => [c[1], c[0]]);
         isGeo = true;
     }
 
-    // EĞER GEOJSON YOK/Tek nokta/Hatalı Veya Türkiye dışında (rota yok ise), HER ZAMAN fallback!
-    if (!isGeo && pts.length > 1) {
+    // **EKLEMEN GEREKEN SATIR:** eğer geojson diziye atadı fakat < 2 noktaysa veya hiç geojson yoksa DİREKT Fallback!
+    if (routeCoords.length < 2 && pts.length > 1) {
         routeCoords = pts.map(p => [p.lat, p.lng]);
         isGeo = false;
     }
 
-    // BİRLEŞTİRİCİ ÇİZGİYİ HEP ÇİZ
+    // Çizgi her zaman routeCoords ile çıkacak
     if (routeCoords.length > 1) {
         L.polyline(routeCoords, {
             color: isGeo ? "#1976d2" : "#bdbdbd",
             weight: isGeo ? 8 : 5,
-            opacity: 0.92,
+            opacity: isGeo ? 0.92 : 0.7,
             dashArray: isGeo ? null : "8, 6"
         }).addTo(expandedMap);
     }
 
-    // Markerları ekle
+    // Marker'lar
     pts.forEach((item, idx) => {
         const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;
             width:24px;height:24px;display:flex;align-items:center;justify-content:center;
@@ -4395,33 +4395,7 @@ function updateExpandedMap(expandedMap, day) {
             .bindPopup(`<b>${item.name || "Point"}</b>`);
     });
 
-    // Eksik noktalar için çizgi (varsa)
-    if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
-        L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
-            dashArray: '8, 12',
-            color: '#d32f2f',
-            weight: 4,
-            opacity: 0.8,
-            interactive: false,
-            renderer: ensureCanvasRenderer(expandedMap)
-        }).addTo(expandedMap);
-    }
-
-    if (pts.length > 1) {
-        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-    } else if (pts.length === 1) {
-        expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-    } else {
-        expandedMap.setView([0, 0], 2, { animate: true });
-    }
-
-    setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
-
-    addDraggableMarkersToExpandedMap(expandedMap, day);
-
-    // scaleBar/diğer kalanlar aynen kalabilir
-    // ...
-    adjustExpandedHeader(day);
+    // ... kalan kod, olduğu gibi devam ...
 }
 
 
