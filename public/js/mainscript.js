@@ -5671,18 +5671,37 @@ if (track && svg) {
     }
   });
 
-  console.log('[expandMap] done for day', day);
 
-  // --- GÜNCEL: GPS import sonrası expanded harita yeni açıldıysa veya tekrar açılıyorsa, barı her durumda çiz ---
-  if (
-    window.importedTrackByDay &&
-    window.importedTrackByDay[day] &&
-    window.importedTrackByDay[day].drawRaw &&
-    window.importedTrackByDay[day].rawPoints &&
-    window.importedTrackByDay[day].rawPoints.length > 1
-  ) {
-    ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
-  }
+  // HARİTA BOYUTLARINI DOĞRU HESAPLAMAsı için 2 kez çağır:
+setTimeout(() => {
+  try { expandedMap.invalidateSize(false); } catch(e){}
+  setTimeout(() => {
+    try { expandedMap.invalidateSize(false); } catch(e){}
+    if (geojson?.features?.[0]?.geometry?.coordinates) {
+      try {
+        const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        expandedMap.fitBounds(coords, { padding: [20,20] });
+      } catch(_){}
+    } else if (points.length > 1) {
+      try {
+        expandedMap.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20,20] });
+      } catch(_){}
+    }
+  }, 240);
+}, 140);
+
+console.log('[expandMap] done for day', day);
+
+if (
+  window.importedTrackByDay &&
+  window.importedTrackByDay[day] &&
+  window.importedTrackByDay[day].drawRaw &&
+  window.importedTrackByDay[day].rawPoints &&
+  window.importedTrackByDay[day].rawPoints.length > 1
+) {
+  ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
+}
+
 }
 
 /* ==== NEW: Click-based nearby search (replaces long-press) ==== */
