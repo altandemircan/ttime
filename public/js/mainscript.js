@@ -4441,6 +4441,12 @@ function updateExpandedMap(expandedMap, day) {
 
     // Harita görünümü ayarı
     if (pts.length > 1) {
+        L.polyline(pts.map(p => [p.lat, p.lng]), {
+    color: '#1976d2',
+    weight: 8,
+    opacity: 0.92
+}).addTo(expandedMap);
+        
         expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
