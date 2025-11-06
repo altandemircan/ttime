@@ -1437,6 +1437,8 @@ function initializeAddToTripListener() {
         setTimeout(() => btn.classList.remove('added'), 1000);
 
         if (typeof restoreSidebar === "function") restoreSidebar();
+        if (typeof updateCart === "function") updateCart();
+
     };
 
     document.addEventListener('click', listener);
@@ -6208,6 +6210,8 @@ window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeL
     
     // Popup'ı kapat ve başarı mesajı göster
     closeNearbyPopup();
+    if (typeof updateCart === "function") updateCart();
+
     
     // Expanded map varsa ona da marker ekle
     const expandedMapData = Object.values(window.expandedMaps || {}).find(m => m.day === day);
