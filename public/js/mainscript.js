@@ -5558,8 +5558,9 @@ function setExpandedMapTile(styleKey) {
 
   // Route çiz/güncelle
   const geojson = window.lastRouteGeojsons?.[containerId];
-
-
+  
+setTimeout(() => {
+  try { expandedMap.invalidateSize(false); } catch(e){}
   setTimeout(() => {
     try { expandedMap.invalidateSize(false); } catch(e){}
     if (geojson?.features?.[0]?.geometry?.coordinates) {
