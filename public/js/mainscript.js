@@ -5710,7 +5710,9 @@ setTimeout(() => {
 }, 140);
 
 console.log('[expandMap] done for day', day);
-
+console.log("Expanded Map Points:", points);
+// Ayrıca marker ve rota datalarını da yazdır:
+console.log("Geojson for expanded:", geojson);
 if (
   window.importedTrackByDay &&
   window.importedTrackByDay[day] &&
