@@ -4337,19 +4337,50 @@ function createDayActionMenu(day) {
   return container;
 }
 
+function areAllPointsInTurkey(pts) {
+  // Geofabrik Türkiye bounding box (2024 için güncel, kaynağı yukarıda)
+  return pts.every(p =>
+    p.lat >= 35.81 && p.lat <= 42.11 &&
+    p.lng >= 25.87 && p.lng <= 44.57
+  );
+}
 
+function isSupportedTravelMode(mode) {
+  // Sadece car, bike, foot rota çizebilir
+  return ['car', 'bike', 'foot'].includes(mode);
+}
+function areAllPointsInTurkey(pts) {
+  // Geofabrik Türkiye bounding box (2024 için)
+  return pts.every(p =>
+    p.lat >= 35.81 && p.lat <= 42.11 &&
+    p.lng >= 25.87 && p.lng <= 44.57
+  );
+}
+
+function isSupportedTravelMode(mode) {
+  // Sadece car, bike, foot rota çizebilir
+  return ['car', 'bike', 'foot'].includes(mode);
+}
+
+// Not: travelModeByDay değişkeni global olarak tutuluyor olmalı!
+// Eğer tutulmuyorsa, 'car' olarak fallback alıyoruz.
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
 
     const containerId = `route-map-day${day}`;
+    const geojson = window.lastRouteGeojsons?.[containerId];
+
     const rawPoints = getDayPoints(day);
     const pts = rawPoints.filter(
         p => typeof p.lat === "number" && isFinite(p.lat) &&
              typeof p.lng === "number" && isFinite(p.lng)
     );
-
     console.log("getDayPoints:", JSON.stringify(pts));
+
+    // travelModeByDay globalinden bugünkü seçili mode'u çek
+    // (Varsa kullan, yoksa fallback: 'car')
+    const mode = (window.travelModeByDay?.[day] || 'car').toLowerCase();
 
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
@@ -4357,8 +4388,22 @@ function updateExpandedMap(expandedMap, day) {
         }
     });
 
-    if (pts.length > 1) {
-        const routeCoords = pts.map(p => [p.lat, p.lng]);
+    let routeCoords = [];
+    // Koşul: sadece car/bike/foot + Türkiye içi + geojson varsa OSRM route çiz
+    if (
+      isSupportedTravelMode(mode) &&
+      areAllPointsInTurkey(pts) &&
+      geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
+    ) {
+        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        console.log("Polyline: GERÇEK ROTA çiziliyor (mod: " + mode + ")");
+    } else if (pts.length > 1) {
+        // Diğer tüm durumlarda sadece marker-to-marker düz çizgi (rota yok)
+        routeCoords = pts.map(p => [p.lat, p.lng]);
+        console.log("Polyline: MARKER BİRLEŞTİRME (mode:", mode, ", TR?", areAllPointsInTurkey(pts), ")");
+    }
+
+    if (routeCoords.length > 1) {
         L.polyline(routeCoords, {
             color: "#d32f2f",
             weight: 6,
