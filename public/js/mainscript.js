@@ -2392,26 +2392,26 @@ function removeFromCart(index) {
 }
 
 
-function safeCoords(obj) {
-  // Hem lat/lon hem location nesnesi destekle
-  const lat = Number(obj.lat ?? (obj.location && obj.location.lat));
-  const lng = Number(obj.lon ?? obj.lng ?? (obj.location && (obj.location.lng ?? obj.location.lon)));
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return { lat, lng };
-  }
-  return null;
-}
-
-
-// function safeCoords(lat, lon) {
-//   if (
-//     lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
-//     !isNaN(Number(lat)) && !isNaN(Number(lon))
-//   ) {
-//     return { lat: Number(lat), lng: Number(lon) };
+// function safeCoords(obj) {
+//   // Hem lat/lon hem location nesnesi destekle
+//   const lat = Number(obj.lat ?? (obj.location && obj.location.lat));
+//   const lng = Number(obj.lon ?? obj.lng ?? (obj.location && (obj.location.lng ?? obj.location.lon)));
+//   if (Number.isFinite(lat) && Number.isFinite(lng)) {
+//     return { lat, lng };
 //   }
 //   return null;
 // }
+
+
+function safeCoords(lat, lon) {
+  if (
+    lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
+    !isNaN(Number(lat)) && !isNaN(Number(lon))
+  ) {
+    return { lat: Number(lat), lng: Number(lon) };
+  }
+  return null;
+}
 
 
 function displayPlacesInChat(places, category, day) {
