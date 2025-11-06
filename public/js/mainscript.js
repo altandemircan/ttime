@@ -5466,17 +5466,15 @@ mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
 showRouteInfoBanner(day); // hemen ardından çağır
   // Leaflet harita kur
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
-  // DAİMA noktaları bul ve harita açılışını ona göre ayarla!
-const points = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+ const points = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
 let center, zoom;
 if (points.length > 1) {
-  // Çoklu nokta varsa, bounds ortalama ve zoom ile başlat
   const lats = points.map(p => p.lat);
   const lngs = points.map(p => p.lng);
   const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
   const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
   center = [avgLat, avgLng];
-  zoom = 13; // veya 12-14 arası, test ederek ideal zoom seç
+  zoom = 13;
 } else if (points.length === 1) {
   center = [points[0].lat, points[0].lng];
   zoom = 14;
