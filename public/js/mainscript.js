@@ -4355,6 +4355,12 @@ function createDayActionMenu(day) {
              typeof p.lng === "number" && isFinite(p.lng)
     );
 
+    
+    // DEBUG LOG EKLE:
+    console.log("geojson", geojson);
+    console.log("geojson.features[0]?.geometry?.coordinates", geojson?.features?.[0]?.geometry?.coordinates);
+    console.log("pts", pts);
+
     // Türkiye'de gerçek OSRM/gezi route varsa onu çiz, yoksa düz marker çizgisi
   let routeCoords = [];
 let isGeo = false;
