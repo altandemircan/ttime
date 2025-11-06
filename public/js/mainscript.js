@@ -4413,15 +4413,16 @@ if (routeCoords.length > 1) {
             }).addTo(expandedMap);
         }
 
-        // Harita görünümü ayarı
-        if (pts.length > 1) {
+                                                                        // Harita görünümü ayarı
+                                                                        if (pts.length > 1) {
+                                                                    expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+                                                                } else if (pts.length === 1) {
+                                                                    expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+                                                                } else {
+                                                                    expandedMap.setView([0, 0], 2, { animate: true });
+                                                                }
 
-            expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-        } else if (pts.length === 1) {
-            expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-        } else {
-            expandedMap.setView([42, 12], 6, { animate: true });
-        }
+                                                                
         setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
 
         addDraggableMarkersToExpandedMap(expandedMap, day);
@@ -5525,7 +5526,6 @@ function setExpandedMapTile(styleKey) {
 }
   setExpandedMapTile(currentLayer);
 
-
   // Expanded harita ilk açılış için flag
   window.__expandedMapCentered = window.__expandedMapCentered || {};
   let isFirstExpand = !window.__expandedMapCentered[day];
@@ -5542,7 +5542,6 @@ function setExpandedMapTile(styleKey) {
     });
   }
 
-  
 if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
   const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
   expandedMap.fitBounds(coords, { padding: [20,20] });
