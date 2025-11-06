@@ -4386,6 +4386,12 @@ if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
     const polyline = addRoutePolylineWithClick(expandedMap, coords);
 
     addNumberedMarkers(expandedMap, points);
+
+    const pts = getDayPoints(day).filter(p => isFinite(p.lat) && isFinite(p.lng));
+if (pts.length === 1) expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+if (pts.length === 0) expandedMap.setView([42, 12], 6, { animate: true });
+
+
     expandedMap.fitBounds(polyline.getBounds());
 // setTimeout(() => {
 //   // fitBounds sonrası merkez
@@ -5115,6 +5121,10 @@ const polyline = L.polyline(coords, {
     if (geojson.features[0].properties && geojson.features[0].properties.names) {
         addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
     }
+
+    points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+if (points.length === 1) map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+if (points.length === 0) map.setView([42, 12], 6, { animate: true });
 
     map.fitBounds(polyline.getBounds());
     map.zoomControl.setPosition('topright');
