@@ -274,7 +274,7 @@ function clearRouteSegmentHighlight(day) {
   const bar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (bar) {
     bar.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
-    bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+    bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());f
     const sel = bar.querySelector('.scale-bar-selection');
     if (sel) sel.style.display = 'none';
   }
@@ -4954,14 +4954,18 @@ function addCoordinatesToContent() {
 function addNumberedMarkers(map, points) {
     if (!map || !points || !Array.isArray(points)) return;
 
-    points.forEach((item, idx) => {
-        const label = `${idx + 1}. ${item.name || "Point"}`; // fallback eklendi
+    // Bu satırı EKLE!
+    points = points.filter(item => isFinite(item.lat) && isFinite(item.lng));
 
-        if (!isFinite(item.lat) || !isFinite(item.lng)) {
-    console.warn("Skipping invalid marker:", item);
-    return;
-  }
-  
+    points.forEach((item, idx) => {
+        const label = `${idx + 1}. ${item.name || "Point"}`;
+
+        // BURADAKİ if (!isFinite...) kontrolünü ARTIK KALDIRABİLİRSİN! (çünkü yukarıda zaten filtreledik)
+        // if (!isFinite(item.lat) || !isFinite(item.lng)) {
+        //     console.warn("Skipping invalid marker:", item);
+        //     return;
+        // }
+
         const markerHtml = `
             <div style="
                 background:#d32f2f;
@@ -6858,17 +6862,13 @@ if (track && svg) {
 }
 
 
-// (İstersen) buildPlan içerisine eklediğin item'lara _generated:true koyup burada hariç tutabilirsin:
 function getDayPoints(day) {
   return window.cart
     .filter(item =>
       item.day == day &&
       item.location &&
-      !item._starter &&
-      !item._placeholder &&
-      !item._generated && // opsiyonel
-      !isNaN(Number(item.location.lat)) &&
-      !isNaN(Number(item.location.lng))
+      isFinite(Number(item.location.lat)) &&
+      isFinite(Number(item.location.lng))
     )
     .map(item => ({
       lat: Number(item.location.lat),
@@ -6876,6 +6876,8 @@ function getDayPoints(day) {
       name: item.name
     }));
 }
+
+
 function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     // Polyline'ın başı ve sonu
     const start = polylineCoords[0];
