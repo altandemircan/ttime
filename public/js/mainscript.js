@@ -4356,31 +4356,35 @@ function createDayActionMenu(day) {
     );
 
     // Türkiye'de gerçek OSRM/gezi route varsa onu çiz, yoksa düz marker çizgisi
-    let routeCoords = [];
-    let isGeo = false;
+  let routeCoords = [];
+let isGeo = false;
 
-    if (
-        geojson &&
-        geojson.features &&
-        geojson.features[0]?.geometry?.coordinates &&
-        geojson.features[0].geometry.coordinates.length > 1
-    ) {
-        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        isGeo = true;
-    }
+if (
+    geojson &&
+    geojson.features &&
+    geojson.features[0] &&
+    geojson.features[0].geometry &&
+    Array.isArray(geojson.features[0].geometry.coordinates) &&
+    geojson.features[0].geometry.coordinates.length > 1
+) {
+    routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    isGeo = true;
+}
 
-    if (!isGeo && pts.length > 1) {
-        routeCoords = pts.map(p => [p.lat, p.lng]);
-    }
+// Fallback: geojson başarısızsa veya yanlışlıkla tek nokta geldiyse
+if ((!isGeo || routeCoords.length < 2) && pts.length > 1) {
+    routeCoords = pts.map(p => [p.lat, p.lng]);
+    isGeo = false;
+}
 
-    if (routeCoords.length > 1) {
-        L.polyline(routeCoords, {
-            color: isGeo ? "#1976d2" : "#bdbdbd",
-            weight: isGeo ? 8 : 5,
-            opacity: 0.92,
-            dashArray: isGeo ? null : "8, 6"
-        }).addTo(expandedMap);
-    }
+if (routeCoords.length > 1) {
+    L.polyline(routeCoords, {
+        color: isGeo ? "#1976d2" : "#bdbdbd",
+        weight: isGeo ? 8 : 5,
+        opacity: isGeo ? 0.92 : 0.7,
+        dashArray: isGeo ? null : "8, 6"
+    }).addTo(expandedMap);
+}
 
     // Markerları sırayla ekle
     pts.forEach((item, idx) => {
