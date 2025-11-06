@@ -274,7 +274,7 @@ function clearRouteSegmentHighlight(day) {
   const bar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (bar) {
     bar.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
-    bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());f
+bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
     const sel = bar.querySelector('.scale-bar-selection');
     if (sel) sel.style.display = 'none';
   }
