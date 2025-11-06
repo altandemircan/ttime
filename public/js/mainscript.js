@@ -2126,14 +2126,17 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 
 // Şehir koordinatı bulma fonksiyonu
 async function getCityCoordinates(city) {
-const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data.features && data.features.length > 0) {
-        const f = data.features[0];
-        return { lat: f.properties.lat, lon: f.properties.lon };
-    }
-    return null;
+  const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (data.features && data.features.length > 0) {
+    const f = data.features[0];
+    // ---- BURAYA EKLE ----
+    console.log("[getCityCoordinates]", city, "→", f.properties.lat, f.properties.lon, f.properties);
+    return { lat: f.properties.lat, lon: f.properties.lon };
+  }
+  console.log("[getCityCoordinates] NO RESULT:", city, data);
+  return null;
 }
 
 
