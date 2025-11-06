@@ -4427,62 +4427,66 @@ function updateExpandedMap(expandedMap, day) {
 
         // Sadece noktaları fitBounds ile göster
         const pts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-if (pts.length > 1) {
-    expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-} else if (pts.length === 1) {
-    expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-} else {
-    expandedMap.setView([42, 12], 6, { animate: true });
-}
-setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
+    if (pts.length > 1) {
+        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+    } else if (pts.length === 1) {
+        expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+    } else {
+        expandedMap.setView([42, 12], 6, { animate: true });
+    }
+    setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
 
     } else {
     // --- Fallback: 0, 1 ya da N nokta durumları ---
     // 1. EN TEMİZİ: Her yer .filter(p => isFinite(p.lat) && isFinite(p.lng)) ile çalışmalı!
-    const pts = getDayPoints(day).filter(p =>
-        typeof p.lat === "number" && isFinite(p.lat) &&
-        typeof p.lng === "number" && isFinite(p.lng)
-    );
+   // 1. Nokta dizisi
+const pts = getDayPoints(day).filter(
+    p => typeof p.lat === "number" && isFinite(p.lat) &&
+         typeof p.lng === "number" && isFinite(p.lng)
+);
 
-    expandedMap.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-            if (!(layer instanceof L.TileLayer)) expandedMap.removeLayer(layer);
-        }
+// 2. Temizle
+expandedMap.eachLayer(layer => {
+    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+        if (!(layer instanceof L.TileLayer)) expandedMap.removeLayer(layer);
+    }
+});
+
+// 3. Polyline çiz, marker ekle, fitBounds uygula
+if (pts.length > 1) {
+    L.polyline(pts.map(p => [p.lat, p.lng]), {
+        color: '#1976d2',
+        weight: 8,
+        opacity: 0.92
+    }).addTo(expandedMap);
+
+    pts.forEach((item, idx) => {
+        const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">${idx + 1}</div>`;
+        const icon = L.divIcon({
+            html: markerHtml,
+            className: "",
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+        L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
+            .bindPopup(`<b>${item.name || "Point"}</b>`);
     });
 
-    if (pts.length > 1) {
-        L.polyline(pts.map(p => [p.lat, p.lng]), {
-            color: '#aaaaaa',
-            weight: 5,
-            opacity: 0.82,
-            dashArray: '8 6'
-        }).addTo(expandedMap);
-        pts.forEach((item, idx) => {
-            const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">${idx + 1}</div>`;
-            const icon = L.divIcon({
-                html: markerHtml,
-                className: "",
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-            L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
-                .bindPopup(`<b>${item.name || "Point"}</b>`);
-        });
-        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-    } else if (pts.length === 1) {
-        const p = pts[0];
-        const m = L.circleMarker([p.lat, p.lng], {
-            radius: 10,
-            color: '#8a4af3',
-            fillColor: '#8a4af3',
-            fillOpacity: 0.92,
-            weight: 3
-        }).addTo(expandedMap);
-        m.bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
-        expandedMap.setView([p.lat, p.lng], 15);
-    } else {
-        expandedMap.setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
-    }
+    expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+} else if (pts.length === 1) {
+    const p = pts[0];
+    L.circleMarker([p.lat, p.lng], {
+        radius: 10,
+        color: '#8a4af3',
+        fillColor: '#8a4af3',
+        fillOpacity: 0.92,
+        weight: 3
+    }).addTo(expandedMap)
+        .bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
+    expandedMap.setView([p.lat, p.lng], 15);
+} else {
+    expandedMap.setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+}
 }
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
