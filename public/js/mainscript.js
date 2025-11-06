@@ -2403,15 +2403,15 @@ function safeCoords(obj) {
 }
 
 
-function safeCoords(lat, lon) {
-  if (
-    lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
-    !isNaN(Number(lat)) && !isNaN(Number(lon))
-  ) {
-    return { lat: Number(lat), lng: Number(lon) };
-  }
-  return null;
-}
+// function safeCoords(lat, lon) {
+//   if (
+//     lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
+//     !isNaN(Number(lat)) && !isNaN(Number(lon))
+//   ) {
+//     return { lat: Number(lat), lng: Number(lon) };
+//   }
+//   return null;
+// }
 
 
 function displayPlacesInChat(places, category, day) {
