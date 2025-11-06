@@ -285,11 +285,13 @@ function fitExpandedMapToRoute(day) {
   const expObj = window.expandedMaps && window.expandedMaps[cid];
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
-    if (points && points.length > 1) {
-      const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
-      expObj.expandedMap.fitBounds(bounds, { padding: [20, 20] });
-    } else if (points && points.length === 1) {
-      expObj.expandedMap.setView([points[0].lat, points[0].lng], 14);
+
+    // === BURAYA YERLEŞTİR — BAŞLA ===
+    const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+    if (validPts.length > 1) {
+      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+    } else if (validPts.length === 1) {
+      expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else if (expObj.expandedMap._initialView) {
       expObj.expandedMap.setView(
         expObj.expandedMap._initialView.center,
@@ -297,6 +299,7 @@ function fitExpandedMapToRoute(day) {
         { animate: true }
       );
     }
+    // === BURAYA YERLEŞTİR — BİTİR ===
   }
 }
 
