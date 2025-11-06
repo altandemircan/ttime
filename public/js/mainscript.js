@@ -284,16 +284,13 @@ function fitExpandedMapToRoute(day) {
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
   if (expObj && expObj.expandedMap) {
-    let fitted = false;
-    expObj.expandedMap.eachLayer(layer => {
-      if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-        try {
-          expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
-          fitted = true;
-        } catch(_) {}
-      }
-    });
-    if (!fitted && expObj.expandedMap._initialView) {
+    const points = getDayPoints(day);
+    if (points && points.length > 1) {
+      const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
+      expObj.expandedMap.fitBounds(bounds, { padding: [20, 20] });
+    } else if (points && points.length === 1) {
+      expObj.expandedMap.setView([points[0].lat, points[0].lng], 14);
+    } else if (expObj.expandedMap._initialView) {
       expObj.expandedMap.setView(
         expObj.expandedMap._initialView.center,
         expObj.expandedMap._initialView.zoom,
