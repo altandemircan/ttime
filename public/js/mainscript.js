@@ -2126,17 +2126,14 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 
 // Şehir koordinatı bulma fonksiyonu
 async function getCityCoordinates(city) {
-  const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
-  const resp = await fetch(url);
-  const data = await resp.json();
-  if (data.features && data.features.length > 0) {
-    const f = data.features[0];
-    // ---- BURAYA EKLE ----
-    console.log("[getCityCoordinates]", city, "→", f.properties.lat, f.properties.lon, f.properties);
-    return { lat: f.properties.lat, lon: f.properties.lon };
-  }
-  console.log("[getCityCoordinates] NO RESULT:", city, data);
-  return null;
+const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.features && data.features.length > 0) {
+        const f = data.features[0];
+        return { lat: f.properties.lat, lon: f.properties.lon };
+    }
+    return null;
 }
 
 
@@ -2403,15 +2400,15 @@ function removeFromCart(index) {
 // }
 
 
-// function safeCoords(lat, lon) {
-//   if (
-//     lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
-//     !isNaN(Number(lat)) && !isNaN(Number(lon))
-//   ) {
-//     return { lat: Number(lat), lng: Number(lon) };
-//   }
-//   return null;
-// }
+function safeCoords(lat, lon) {
+  if (
+    lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
+    !isNaN(Number(lat)) && !isNaN(Number(lon))
+  ) {
+    return { lat: Number(lat), lng: Number(lon) };
+  }
+  return null;
+}
 
 
 function displayPlacesInChat(places, category, day) {
@@ -5570,12 +5567,7 @@ setTimeout(() => {
       try {
         const coords = geojson.features[0].geometry.coordinates
   .map(c => [c[1], c[0]])
-  .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));        
-  const safeCoords = coords.filter(x => 
-  Array.isArray(x) && isFinite(x[0]) && isFinite(x[1])
-);
-const safeCoords = coords.filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));
-expandedMap.fitBounds(safeCoords, { padding: [20,20] });
+  .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));        expandedMap.fitBounds(coords, { padding: [20,20] });
       } catch(_){}
     } else if (points.length > 1) {
       try {
@@ -5696,11 +5688,7 @@ setTimeout(() => {
       try {
         const coords = geojson.features[0].geometry.coordinates
   .map(c => [c[1], c[0]])
-  .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));       
-  const safeCoords = coords.filter(x => 
-  Array.isArray(x) && isFinite(x[0]) && isFinite(x[1])
-);
- expandedMap.fitBounds(coords, { padding: [20,20] });
+  .filter(x => Array.isArray(x) && isFinite(x[0]) && isFinite(x[1]));        expandedMap.fitBounds(coords, { padding: [20,20] });
       } catch(_){}
     } else if (points.length > 1) {
       try {
