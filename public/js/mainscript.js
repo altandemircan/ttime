@@ -4336,7 +4336,6 @@ function createDayActionMenu(day) {
 
   return container;
 }
-
 function areAllPointsInTurkey(pts) {
   // Geofabrik Türkiye bounding box (2024 için)
   return pts.every(p =>
@@ -4345,13 +4344,23 @@ function areAllPointsInTurkey(pts) {
   );
 }
 
+function toOSRMMode(mode) {
+  // Normalize all possible synonyms
+  if (!mode) return 'car'; // fallback
+  mode = mode.toLowerCase();
+  if (mode === 'walking') return 'foot';
+  if (mode === 'cycling') return 'bike';
+  if (mode === 'pedestrian') return 'foot';
+  if (mode === 'bicycle') return 'bike';
+  return mode;
+}
+
 function isSupportedTravelMode(mode) {
   // Sadece car, bike, foot rota çizebilir
+  mode = toOSRMMode(mode);
   return ['car', 'bike', 'foot'].includes(mode);
 }
 
-// Not: travelModeByDay değişkeni global olarak tutuluyor olmalı!
-// Eğer tutulmuyorsa, 'car' olarak fallback alıyoruz.
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
@@ -4368,7 +4377,8 @@ function updateExpandedMap(expandedMap, day) {
 
     // travelModeByDay globalinden bugünkü seçili mode'u çek
     // (Varsa kullan, yoksa fallback: 'car')
-    const mode = (window.travelModeByDay?.[day] || 'car').toLowerCase();
+    let modeRaw = (window.travelModeByDay?.[day] || 'car');
+    let mode = toOSRMMode(modeRaw);
 
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
