@@ -4441,6 +4441,7 @@ function updateExpandedMap(expandedMap, day) {
 
     // Harita görünümü ayarı
     if (pts.length > 1) {
+        
         expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
