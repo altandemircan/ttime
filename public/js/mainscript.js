@@ -696,9 +696,9 @@ chatInput.addEventListener("input", debounce(async function () {
         {
             question: "Let's get started.",
             options: [
-                { name: "Plan a 2-day tour for Rome" },
-                { name: "Do a 3-day city tour in Helsinki" },
-                { name: "Do a 1-day city tour in Osaka" },
+                { name: "Plan a 1-day tour for Rome" },
+                { name: "Do a 2-day city tour in Helsinki" },
+                { name: "Do a 4-day city tour in Osaka" },
             ]
         },
     ];
