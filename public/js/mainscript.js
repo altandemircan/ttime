@@ -5289,7 +5289,16 @@ window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() - 20
 }
 
 async function expandMap(containerId, day) {
+// (expandedMapId ve mapDivId ile önceki expanded'ı kaldır!)
+const expandedMapId = `expanded-map-${day}`;
+const mapDivId = `${containerId}-expanded`;
 
+document.getElementById(expandedMapId)?.remove();
+// Aynı harita ID'si olan Leaflet instance'ı tamamen temizle (güvenlik için!)
+if (window.leafletMaps && window.leafletMaps[mapDivId]) {
+    try { window.leafletMaps[mapDivId].remove(); } catch(_) {}
+    delete window.leafletMaps[mapDivId];
+}
 
       window.currentDay = day; // ← DÜZELTME!
 
@@ -5459,7 +5468,8 @@ let currentLayer = 'liberty';
   mapDiv.className = 'expanded-map';
   expandedContainer.appendChild(mapDiv);
    document.body.appendChild(expandedContainer);
- 
+ setTimeout(() => expandedMap.invalidateSize(), 40);
+
 
   mapDiv.style.width = "100%";
 mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
@@ -5489,7 +5499,16 @@ if (points.length > 1) {
   center = [42, 12];
   zoom = 6;
 }
-
+const existingMapDiv = document.getElementById(mapDivId);
+// Eğer Div zaten varsa, içini boşalt (eski Leaflet kalıntılarını temizle)
+if (existingMapDiv) {
+    existingMapDiv.innerHTML = '';
+    // Eski harita instance'ı varsa sil
+    if (window.leafletMaps && window.leafletMaps[mapDivId]) {
+        try { window.leafletMaps[mapDivId].remove(); } catch(e) {}
+        delete window.leafletMaps[mapDivId];
+    }
+}
 
  const expandedMap = L.map(mapDivId, {
     center,
