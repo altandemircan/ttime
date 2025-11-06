@@ -4338,18 +4338,6 @@ function createDayActionMenu(day) {
 }
 
 function areAllPointsInTurkey(pts) {
-  // Geofabrik Türkiye bounding box (2024 için güncel, kaynağı yukarıda)
-  return pts.every(p =>
-    p.lat >= 35.81 && p.lat <= 42.11 &&
-    p.lng >= 25.87 && p.lng <= 44.57
-  );
-}
-
-function isSupportedTravelMode(mode) {
-  // Sadece car, bike, foot rota çizebilir
-  return ['car', 'bike', 'foot'].includes(mode);
-}
-function areAllPointsInTurkey(pts) {
   // Geofabrik Türkiye bounding box (2024 için)
   return pts.every(p =>
     p.lat >= 35.81 && p.lat <= 42.11 &&
@@ -4488,7 +4476,6 @@ function updateExpandedMap(expandedMap, day) {
     }
     adjustExpandedHeader(day);
 }
-
 
 /* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
 function clearRouteCachesForDay(day){
