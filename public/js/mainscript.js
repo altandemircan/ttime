@@ -4355,21 +4355,16 @@ function updateExpandedMap(expandedMap, day) {
 
     let routeCoords = [];
     let isGeo = false;
-
-    // GEOJSON'dan DOLU COORDİNAT varsa ve EN AZ 2 NOKTA ise
     const geoCoords = geojson?.features?.[0]?.geometry?.coordinates;
+
     if (Array.isArray(geoCoords) && geoCoords.length > 1) {
         routeCoords = geoCoords.map(c => [c[1], c[0]]);
         isGeo = true;
     }
-
-    // **EKLEMEN GEREKEN SATIR:** eğer geojson diziye atadı fakat < 2 noktaysa veya hiç geojson yoksa DİREKT Fallback!
     if (routeCoords.length < 2 && pts.length > 1) {
         routeCoords = pts.map(p => [p.lat, p.lng]);
         isGeo = false;
     }
-
-    // Çizgi her zaman routeCoords ile çıkacak
     if (routeCoords.length > 1) {
         L.polyline(routeCoords, {
             color: isGeo ? "#1976d2" : "#bdbdbd",
@@ -4379,7 +4374,6 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
     }
 
-    // Marker'lar
     pts.forEach((item, idx) => {
         const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;
             width:24px;height:24px;display:flex;align-items:center;justify-content:center;
@@ -4395,7 +4389,66 @@ function updateExpandedMap(expandedMap, day) {
             .bindPopup(`<b>${item.name || "Point"}</b>`);
     });
 
-    // ... kalan kod, olduğu gibi devam ...
+    if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
+        L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
+            dashArray: '8, 12',
+            color: '#d32f2f',
+            weight: 4,
+            opacity: 0.8,
+            interactive: false,
+            renderer: ensureCanvasRenderer(expandedMap)
+        }).addTo(expandedMap);
+    }
+
+    if (pts.length > 1) {
+        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+    } else if (pts.length === 1) {
+        expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+    } else {
+        expandedMap.setView([0, 0], 2, { animate: true });
+    }
+
+    setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
+    addDraggableMarkersToExpandedMap(expandedMap, day);
+
+    const sumKey = `route-map-day${day}`;
+    const sum = window.lastRouteSummaries?.[sumKey];
+    if (sum && typeof updateDistanceDurationUI === 'function') {
+        updateDistanceDurationUI(sum.distance, sum.duration);
+    }
+
+    const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (scaleBarDiv) {
+        try {
+            if (!pts || pts.length < 2) {
+                scaleBarDiv.innerHTML = '';
+                scaleBarDiv.style.display = 'none';
+            } else {
+                const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
+                const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
+                    ? getRouteMarkerPositionsOrdered(day)
+                    : [];
+                if (totalKm > 0 && markerPositions.length > 0) {
+                    scaleBarDiv.style.display = '';
+                    try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
+                    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+                    const track = scaleBarDiv.querySelector('.scale-bar-track');
+                    const svg = track && track.querySelector('svg.tt-elev-svg');
+                    if (track && svg) {
+                        const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+                        createScaleElements(track, width, totalKm, 0, markerPositions);
+                    }
+                } else {
+                    scaleBarDiv.innerHTML = '';
+                    scaleBarDiv.style.display = 'none';
+                }
+            }
+        } catch (_) {
+            scaleBarDiv.innerHTML = '';
+            scaleBarDiv.style.display = 'none';
+        }
+    }
+    adjustExpandedHeader(day);
 }
 
 
