@@ -7591,6 +7591,8 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
 }
 
 function updatePairwiseDistanceLabels(day) {
+    console.log('--- updatePairwiseDistanceLabels çağrıldı --- day=', day);
+
     // Her .distance-separator için, komşu travel-item'lardan haversine hesapla
     const separators = document.querySelectorAll(`#day-container-${day} .distance-separator`);
     separators.forEach(separator => {
