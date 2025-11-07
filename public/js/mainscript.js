@@ -5568,19 +5568,23 @@ function setExpandedMapTile(styleKey) {
 
 
 if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-    // Maplibre Layer'ı geçici olarak kaldır
-    let currentMaplibreLayer = expandedMap._maplibreLayer;
-    if (currentMaplibreLayer) expandedMap.removeLayer(currentMaplibreLayer);
-
-    // Önce eski marker ve polylineleri temizle
+    // 1. Haritadaki SADECE ROUTE POLYLINE ve markerları sil
     expandedMap.eachLayer(l => {
-        if (l instanceof L.Polyline || l instanceof L.Marker) {
+        // MapLibre layerını silme!
+        if (
+            (l instanceof L.Polyline || l instanceof L.Marker)
+            && !(l._maplibreLayer === true)
+        ) {
             try { expandedMap.removeLayer(l); } catch(_) {}
         }
     });
     expandedMap.__restaurantLayers = [];
 
-    // Route polyline ile tıklama event'i (her tıklamada çalışır!)
+    // 2. Maplibre'yi GEÇİCİ OLARAK SİL
+    let currentMaplibreLayer = expandedMap._maplibreLayer;
+    if (currentMaplibreLayer) expandedMap.removeLayer(currentMaplibreLayer);
+
+    // 3. Polyline'ı çiz; event handler ata!
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const routePolyline = L.polyline(coords, {
         color: "#1976d2",
@@ -5589,15 +5593,14 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
         interactive: true
     }).addTo(expandedMap);
 
-    // Çift tıkta zoom'u globalde/ve polyline'da KAPAT
+    // 4. Çift tık zoom'u kapat
     expandedMap.doubleClickZoom.disable();
     routePolyline.on('dblclick', function(e){ L.DomEvent.stop(e); });
 
-    // Tek tıklama: restoran gösterimi
+    // 5. Tıkla → restoranları getir
     routePolyline.on('click', async function(e) {
         expandedMap.__restaurantLayers.forEach(l => { if (l && l.remove) try { l.remove(); } catch{} });
         expandedMap.__restaurantLayers = [];
-
         const lat = e.latlng.lat, lng = e.latlng.lng;
         const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
         const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
@@ -5630,10 +5633,9 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
         }
     });
 
-    // Polyline ve eventler eklenince tekrar MapLibre tile'ı alta ekle (Zemin olarak)
+    // 6. MaplibreLayer'ı GERİ EKLE (ÇİZGİ/MARKER ÜSTTE KALIR)
     if (currentMaplibreLayer) currentMaplibreLayer.addTo(expandedMap);
 }
-
 
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
