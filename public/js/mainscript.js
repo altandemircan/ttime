@@ -7600,7 +7600,12 @@ function updatePairwiseDistanceLabels(day) {
         while (prev && !prev.classList.contains('travel-item')) prev = prev.previousElementSibling;
         let next = separator.nextElementSibling;
         while (next && !next.classList.contains('travel-item')) next = next.nextElementSibling;
-
+  // <-- BURADA kullan:
+        console.log(
+            'Separator:', separator,
+            'Prev:', prev ? prev.getAttribute('data-lat')+','+prev.getAttribute('data-lon') : '',
+            'Next:', next ? next.getAttribute('data-lat')+','+next.getAttribute('data-lon') : ''
+        );
         let distanceStr = '—', durationStr = '—';
         if (prev && next) {
             const lat1 = Number(prev.getAttribute('data-lat'));
