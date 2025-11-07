@@ -3800,25 +3800,41 @@ else {
         dayList.appendChild(li);
 
   if (idx < dayItemsArr.length - 1) {
-   let distanceStr = '', durationStr = '';
-if (
-    item.location &&
-    typeof item.location.lat === "number" &&
-    typeof item.location.lng === "number" &&
-    dayItemsArr[idx + 1].location &&
-    typeof dayItemsArr[idx + 1].location.lat === "number" &&
-    typeof dayItemsArr[idx + 1].location.lng === "number"
-) {
-    // Türkiye mi kontrol:
-    function isPointInTurkey(lat, lon) {
-      return lat >= 35.81 && lat <= 42.11 && lon >= 25.87 && lon <= 44.57;
-    }
-    const lat1 = item.location.lat, lon1 = item.location.lng;
-    const lat2 = dayItemsArr[idx + 1].location.lat, lon2 = dayItemsArr[idx + 1].location.lng;
-    const turkiyeIcinde = isPointInTurkey(lat1, lon1) && isPointInTurkey(lat2, lon2);
+    let distanceStr = '', durationStr = '';
+    if (
+      item.location &&
+      typeof item.location.lat === "number" &&
+      typeof item.location.lng === "number" &&
+      dayItemsArr[idx + 1].location &&
+      typeof dayItemsArr[idx + 1].location.lat === "number" &&
+      typeof dayItemsArr[idx + 1].location.lng === "number"
+    ) {
+      function isPointInTurkey(lat, lon) {
+        return lat >= 35.81 && lat <= 42.11 && lon >= 25.87 && lon <= 44.57;
+      }
+      const lat1 = item.location.lat, lon1 = item.location.lng;
+      const lat2 = dayItemsArr[idx + 1].location.lat, lon2 = dayItemsArr[idx + 1].location.lng;
+      const turkiyeIcinde = isPointInTurkey(lat1, lon1) && isPointInTurkey(lat2, lon2);
 
-    if (!turkiyeIcinde) {
-        // Sadece haversine ile
+      if (turkiyeIcinde) {
+        // --- TÜRKİYE İÇİNDE: summary verisini kullan ---
+        const containerId = `route-map-day${day}`;
+        const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
+        // Şu separator'ın index'ini bul:
+        const siblings = Array.from(dayList.children);
+        const sepList = siblings.filter(el => el.classList && el.classList.contains('distance-separator'));
+        const sepIdx = sepList.length;
+        const summary = pairwiseSummaries[sepIdx];
+        if (summary && summary.distance != null && summary.duration != null) {
+          distanceStr = summary.distance >= 1000
+            ? (summary.distance / 1000).toFixed(1) + " km"
+            : Math.round(summary.distance) + " m";
+          durationStr = summary.duration >= 60
+            ? Math.round(summary.duration / 60) + " dk"
+            : Math.round(summary.duration) + " sn";
+        }
+      } else {
+        // --- YURTDIŞI: haversine ile hesapla ---
         const dist = haversine(lat1, lon1, lat2, lon2);
         let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
         let speed = 1.3;
@@ -3831,22 +3847,19 @@ if (
         durationStr = dura >= 60
             ? Math.round(dura / 60) + " dk"
             : Math.round(dura) + " sn";
-    } else {
-        // Burada senin summary, API, vs. işle veya haversine fallback'ına izin ver
-        // (varsa summary vs. eski kodun olur)
+      }
     }
-}
     const distanceSeparator = document.createElement('div');
     distanceSeparator.className = 'distance-separator';
     distanceSeparator.innerHTML = `
-        <div class="separator-line"></div>
-        <div class="distance-label">
-            <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
-        </div>
-        <div class="separator-line"></div>
+      <div class="separator-line"></div>
+      <div class="distance-label">
+        <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+      </div>
+      <div class="separator-line"></div>
     `;
     dayList.appendChild(distanceSeparator);
-}
+  }
     }
 }
 dayContainer.appendChild(dayList);
