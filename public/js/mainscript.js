@@ -3794,39 +3794,39 @@ else {
         dayList.appendChild(li);
 
         if (idx < dayItemsArr.length - 1) {
-            let distanceStr = '', durationStr = '';
-            if (
-                item.location &&
-                typeof item.location.lat === "number" &&
-                typeof item.location.lng === "number" &&
-                dayItemsArr[idx + 1].location &&
-                typeof dayItemsArr[idx + 1].location.lat === "number" &&
-                typeof dayItemsArr[idx + 1].location.lng === "number"
-            ) {
-                const key = `route-map-day${day}`;
-                const pairwiseSummaries = window.pairwiseRouteSummaries?.[key] || [];
-const summary = pairwiseSummaries[idx];
-if (summary && summary.distance != null && summary.duration != null) {
-    distanceStr = summary.distance >= 1000
-        ? (summary.distance / 1000).toFixed(1) + " km"
-        : Math.round(summary.distance) + " m";
-    durationStr = summary.duration >= 60
-        ? Math.round(summary.duration / 60) + " dk"
-        : Math.round(summary.duration) + " sn";
-}
-            }
-
-            const distanceSeparator = document.createElement('div');
-            distanceSeparator.className = 'distance-separator';
-            distanceSeparator.innerHTML = `
-                <div class="separator-line"></div>
-                <div class="distance-label">
-                    <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
-                </div>
-                <div class="separator-line"></div>
-            `;
-            dayList.appendChild(distanceSeparator);
+    let distanceStr = '', durationStr = '';
+    if (
+        item.location &&
+        typeof item.location.lat === "number" &&
+        typeof item.location.lng === "number" &&
+        dayItemsArr[idx + 1].location &&
+        typeof dayItemsArr[idx + 1].location.lat === "number" &&
+        typeof dayItemsArr[idx + 1].location.lng === "number"
+    ) {
+        const key = `route-map-day${day}`;
+        const pairwiseSummaries = window.pairwiseRouteSummaries?.[key] || [];
+        const summary = pairwiseSummaries[idx];
+        if (summary && summary.distance != null && summary.duration != null) {
+            distanceStr = summary.distance >= 1000
+                ? (summary.distance / 1000).toFixed(1) + " km"
+                : Math.round(summary.distance) + " m";
+            durationStr = summary.duration >= 60
+                ? Math.round(summary.duration / 60) + " dk"
+                : Math.round(summary.duration) + " sn";
         }
+    }
+
+    const distanceSeparator = document.createElement('div');
+    distanceSeparator.className = 'distance-separator';
+    distanceSeparator.innerHTML = `
+        <div class="separator-line"></div>
+        <div class="distance-label">
+            <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+        </div>
+        <div class="separator-line"></div>
+    `;
+    dayList.appendChild(distanceSeparator);
+}
     }
 }
 dayContainer.appendChild(dayList);
