@@ -3804,15 +3804,16 @@ else {
                 typeof dayItemsArr[idx + 1].location.lng === "number"
             ) {
                 const key = `route-map-day${day}`;
-                const summary = window.pairwiseRouteSummaries?.[key]?.[currIdx];
-                if (summary) {
-                    distanceStr = summary.distance >= 1000
-                        ? (summary.distance / 1000).toFixed(1) + " km"
-                        : Math.round(summary.distance) + " m";
-                    durationStr = summary.duration >= 60
-                        ? Math.round(summary.duration / 60) + " dk"
-                        : Math.round(summary.duration) + " sn";
-                }
+                const pairwiseSummaries = window.pairwiseRouteSummaries?.[key] || [];
+const summary = pairwiseSummaries[idx];
+if (summary && summary.distance != null && summary.duration != null) {
+    distanceStr = summary.distance >= 1000
+        ? (summary.distance / 1000).toFixed(1) + " km"
+        : Math.round(summary.distance) + " m";
+    durationStr = summary.duration >= 60
+        ? Math.round(summary.duration / 60) + " dk"
+        : Math.round(summary.duration) + " sn";
+}
             }
 
             const distanceSeparator = document.createElement('div');
