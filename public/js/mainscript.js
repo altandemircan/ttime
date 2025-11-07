@@ -4436,7 +4436,7 @@ function updateExpandedMap(expandedMap, day) {
             dashArray: '8, 12',
             color: '#d32f2f',
             weight: 4,
-            opacity: 0.2,
+            opacity: 0.8,
             interactive: false,
             renderer: ensureCanvasRenderer(expandedMap)
         }).addTo(expandedMap);
@@ -5084,26 +5084,26 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }).addTo(map);
 
     // --- En önemli: çizgi eklemesi ---
-if (hasValidGeo && routeCoords.length > 1) {
-    // GERÇEK rota varsa, klasik çizgi
-    L.polyline(routeCoords, {
-        color: '#1976d2',
-        weight: 8,
-        opacity: 0.92,
-        interactive: true,
-        dashArray: null
-    }).addTo(map);
-} else if (!hasValidGeo && points.length > 1) {
-    // --- Kavisli/Yaylı çizgi çek ---
-    for (let i = 0; i < points.length - 1; i++) {
-    drawCurvedLine(map, points[i], points[i + 1], {
-        color: "#1976d2", // MAVİ (küçük harita için)
-        weight: 5,
-        opacity: 0.85,
-        dashArray: "6,8"
-    });
-}
-}
+    if (hasValidGeo && routeCoords.length > 1) {
+        // GERÇEK rota varsa, klasik çizgi
+        L.polyline(routeCoords, {
+            color: '#1976d2',
+            weight: 8,
+            opacity: 0.92,
+            interactive: true,
+            dashArray: null
+        }).addTo(map);
+    } else if (!hasValidGeo && points.length > 1) {
+        // --- Kavisli/Yaylı çizgi çek ---
+        for (let i = 0; i < points.length - 1; i++) {
+        drawCurvedLine(map, points[i], points[i + 1], {
+            color: "#1976d2", // MAVİ (küçük harita için)
+            weight: 5,
+            opacity: 0.85,
+            dashArray: "6,8"
+        });
+    }
+    }
 
     // --- Missing points için ek çizgiler ---
     if (Array.isArray(missingPoints) && missingPoints.length > 0 && hasValidGeo) {
@@ -5120,7 +5120,7 @@ if (hasValidGeo && routeCoords.length > 1) {
         if (Array.isArray(missingPoints) && missingPoints.length > 1) {
     L.polyline(missingPoints.map(p => [p.lat, p.lng]), {
         dashArray: '8, 12',
-        color: '#d32f2f',
+        color: '#1976d2',
         weight: 4,
         opacity: 0.8,
         interactive: false,
