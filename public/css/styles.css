@@ -6961,7 +6961,6 @@ display: flex
 }
 
 .travel-item {
-  margin-bottom: 50px !important; /* Alt boşluk arttı, separator için alan açıyor! */
 
 }
 
@@ -6986,12 +6985,14 @@ display: flex
 }
 
 .distance-separator .distance-label {
-  color: #666;
+     color: #666;
     padding: 2px 0px;
     border-radius: 8px;
     margin: 2px 0;
     width: -webkit-fill-available;
     text-align: center;
+    font-size: 0.75rem;
+    font-weight: 400;
 }
 
 .splide__arrow {
