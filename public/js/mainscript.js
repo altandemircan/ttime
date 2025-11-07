@@ -5567,9 +5567,12 @@ function setExpandedMapTile(styleKey) {
 
 
 
-  
 if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-    // Önce tüm eski rotaları ve restoran markerlarını sil
+    // Maplibre Layer'ı geçici olarak kaldır
+    let currentMaplibreLayer = expandedMap._maplibreLayer;
+    if (currentMaplibreLayer) expandedMap.removeLayer(currentMaplibreLayer);
+
+    // Önce eski marker ve polylineleri temizle
     expandedMap.eachLayer(l => {
         if (l instanceof L.Polyline || l instanceof L.Marker) {
             try { expandedMap.removeLayer(l); } catch(_) {}
@@ -5577,7 +5580,7 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
     });
     expandedMap.__restaurantLayers = [];
 
-    // Yeni route polyline ekle (interactive TRUE olmalı!)
+    // Route polyline ile tıklama event'i (her tıklamada çalışır!)
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const routePolyline = L.polyline(coords, {
         color: "#1976d2",
@@ -5586,13 +5589,11 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
         interactive: true
     }).addTo(expandedMap);
 
-    // Çift tık ile zoom'u engelle!
+    // Çift tıkta zoom'u globalde/ve polyline'da KAPAT
     expandedMap.doubleClickZoom.disable();
-    routePolyline.on('dblclick', function(e){
-        L.DomEvent.stop(e); // Zoom yok!
-    });
+    routePolyline.on('dblclick', function(e){ L.DomEvent.stop(e); });
 
-    // Tek tık ile restoran göster
+    // Tek tıklama: restoran gösterimi
     routePolyline.on('click', async function(e) {
         expandedMap.__restaurantLayers.forEach(l => { if (l && l.remove) try { l.remove(); } catch{} });
         expandedMap.__restaurantLayers = [];
@@ -5612,7 +5613,7 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
                 }).addTo(expandedMap);
                 expandedMap.__restaurantLayers.push(guideLine);
 
-                const marker = L.marker([f.properties.lat, f.properties.lon], { 
+                const marker = L.marker([f.properties.lat, f.properties.lon], {
                     icon: L.divIcon({
                         html: getPurpleRestaurantMarkerHtml(), className: "", iconSize: [32, 32], iconAnchor: [16, 16]
                     })
@@ -5621,17 +5622,17 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
 
                 const imgId = `rest-img-${f.properties.place_id || idx}`;
                 marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
-                marker.on("popupopen", function() {
-                    handlePopupImageLoading(f, imgId);
-                });
+                marker.on("popupopen", function() { handlePopupImageLoading(f, imgId); });
             });
             alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
         } catch (err) {
             alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
         }
     });
-}
 
+    // Polyline ve eventler eklenince tekrar MapLibre tile'ı alta ekle (Zemin olarak)
+    if (currentMaplibreLayer) currentMaplibreLayer.addTo(expandedMap);
+}
 
 
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);

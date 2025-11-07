@@ -355,3 +355,90 @@ window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
     if (typeof updateCart === "function") updateCart();
     alert(`${name} added to your trip!`);
 };
+
+function addRouteWithRestaurantClick(expandedMap, geojson) {
+    // Polyline ve varsa eski markerların hepsini temizle
+    expandedMap.eachLayer(l => {
+        // MaplibreGL layer'ı hariç sil! Zemin kaybolmasın diye
+        if (
+            (l instanceof L.Polyline || l instanceof L.Marker) &&
+            !(l.options && l.options.pane === "tilePane") && // Maplibre default tilePane'de duruyor olabilir
+            !(l._maplibreLayer === true)
+        ) {
+            try { expandedMap.removeLayer(l); } catch (_) {}
+        }
+    });
+    // Temizle
+    expandedMap.__restaurantLayers = [];
+
+    // Çift tıkla zoom'u bu expandedMap'te EVRENSEL KAPAT
+    expandedMap.doubleClickZoom.disable?.();
+
+    if (!geojson?.features?.[0]?.geometry?.coordinates?.length) return;
+
+    const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    const routePolyline = L.polyline(coords, {
+        color: "#1976d2",
+        weight: 7,
+        opacity: 0.93,
+        interactive: true
+    }).addTo(expandedMap);
+
+    // Çift tıkla zoomu polyline üzerinde de tamamen blokla
+    routePolyline.on('dblclick', function(e) {
+        if (e) {
+            if (e.originalEvent) e.originalEvent.preventDefault();
+            L.DomEvent.stop(e);
+        }
+        return false;
+    });
+
+    routePolyline.on('click', async function(e) {
+        // Eski restoran marker ve çizgileri temizle (sadece bunlar!)
+        expandedMap.__restaurantLayers.forEach(l => {
+            if (l && l.remove) { try { l.remove(); } catch(_) {} }
+        });
+        expandedMap.__restaurantLayers = [];
+
+        const lat = e.latlng.lat, lng = e.latlng.lng;
+        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+        const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
+        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (!data.features || data.features.length === 0) {
+                alert("Bu bölgede restoran/kafe/bar bulunamadı!");
+                return;
+            }
+            data.features.forEach((f, idx) => {
+                const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
+                    color: "#22bb33",
+                    weight: 4,
+                    opacity: 0.95,
+                    dashArray: "8,8",
+                    interactive: true
+                }).addTo(expandedMap);
+                expandedMap.__restaurantLayers.push(guideLine);
+
+                const icon = L.divIcon({
+                    html: getPurpleRestaurantMarkerHtml(),
+                    className: "",
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+                const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(expandedMap);
+                expandedMap.__restaurantLayers.push(marker);
+
+                const imgId = `rest-img-${f.properties.place_id || idx}`;
+                marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
+                marker.on("popupopen", function() {
+                    handlePopupImageLoading(f, imgId);
+                });
+            });
+            alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
+        } catch (err) {
+            alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
+        }
+    });
+}
