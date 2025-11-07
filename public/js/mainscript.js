@@ -4379,7 +4379,6 @@ function updateExpandedMap(expandedMap, day) {
     console.log("getDayPoints:", JSON.stringify(pts));
 
     // travelModeByDay globalinden bugünkü seçili mode'u çek
-    // (Varsa kullan, yoksa fallback: 'car')
     let modeRaw = (window.travelModeByDay?.[day] || 'car');
     let mode = toOSRMMode(modeRaw);
 
@@ -4389,30 +4388,34 @@ function updateExpandedMap(expandedMap, day) {
         }
     });
 
-    let routeCoords = [];
-    // Koşul: sadece car/bike/foot + Türkiye içi + geojson varsa OSRM route çiz
-    if (
+    let hasValidRoute = (
       isSupportedTravelMode(mode) &&
       areAllPointsInTurkey(pts) &&
       geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
-    ) {
-        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        console.log("Polyline: GERÇEK ROTA çiziliyor (mod: " + mode + ")");
-    } else if (pts.length > 1) {
-        // Diğer tüm durumlarda sadece marker-to-marker düz çizgi (rota yok)
-        routeCoords = pts.map(p => [p.lat, p.lng]);
-        console.log("Polyline: MARKER BİRLEŞTİRME (mode:", mode, ", TR?", areAllPointsInTurkey(pts), ")");
-    }
+    );
 
-    if (routeCoords.length > 1) {
+    if (hasValidRoute) {
+        // GERÇEK ROTA (OSRM/GeoJSON)
+        const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
             color: "#1976d2",
             weight: 6,
             opacity: 1,
             dashArray: null
         }).addTo(expandedMap);
+    } else if (pts.length > 1) {
+        // Rota YOKSA: YAY (kavisli çizgi)
+        for (let i = 0; i < pts.length - 1; i++) {
+            drawCurvedLine(expandedMap, pts[i], pts[i + 1], {
+                color: "#bdbdbd",
+                weight: 6,
+                opacity: 0.93,
+                dashArray: "6,8" // İstediğine göre noktali/düz yap
+            });
+        }
     }
 
+    // Marker ekleme kısmı aynı:
     pts.forEach((item, idx) => {
         const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;
             width:24px;height:24px;display:flex;align-items:center;justify-content:center;
