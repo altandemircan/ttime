@@ -5596,54 +5596,72 @@ routePolyline.on('click', async function(e) {
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
   const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
   const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
-  const resp = await fetch(url);
-  const data = await resp.json();
-  if (!data.features || data.features.length === 0) {
-    alert("Bu bölgede restoran/kafe/bar bulunamadı!");
-    return;
-  }
 
-  // --- SADECE DAHA ÖNCEKİ RESTORAN MARKER VE LİNELARI TEMİZLE ---
-  expandedMap.eachLayer(layer => {
-    if (layer._isRestaurantMarker || layer._isRestaurantLine) {
-      expandedMap.removeLayer(layer);
+  // Loading (isteğe bağlı)
+  // ... (opsiyonel loading gösterebilirsin)
+
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (!data.features || data.features.length === 0) {
+      alert("Bu bölgede restoran/kafe/bar bulunamadı!");
+      return;
     }
-  });
 
-  // --- YENİ MARKER + ÇİZGİLERİ EKLE ---
-  data.features.forEach((f, idx) => {
-    // Çizgi
-    const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
-      color: "#22bb33",
-      weight: 4,
-      opacity: 0.95,
-      dashArray: "8,8",
-      interactive: false
-    }).addTo(expandedMap);
-    guideLine._isRestaurantLine = true;
-
-    // Marker
-    const icon = L.divIcon({
-      html: getPurpleRestaurantMarkerHtml(),
-      className: "",
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
+    // --- ESKİ RESTORAN MARKER/LİNE'LARINI KALDIR ---
+    let cleanupCount = 0;
+    expandedMap.eachLayer(layer => {
+      // console.log(layer); // DEBUG
+      if (layer._isRestaurantMarker || layer._isRestaurantLine) {
+        expandedMap.removeLayer(layer);
+        cleanupCount++;
+      }
     });
-    const marker = L.marker([f.properties.lat, f.properties.lon], {
-      icon,
-      interactive: true
-    }).addTo(expandedMap);
-    marker._isRestaurantMarker = true;
+    console.log(`[DEBUG] Temizlenen eski restaurant marker/line adedi: ${cleanupCount}`);
 
-    const address = f.properties.formatted || "";
-    const name = f.properties.name || "Restaurant";
-    const imgId = `rest-img-${f.properties.place_id || idx}`;
-    marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, day), { maxWidth: 340 });
-    marker.on("popupopen", function() {
-      handlePopupImageLoading(f, imgId);
+    // --- YENİ MARKER + ÇİZGİLERİ EKLE ---
+    let addedCount = 0;
+    data.features.forEach((f, idx) => {
+      // Çizgi (yeşil, tık noktasından restauranta)
+      const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
+        color: "#22bb33",
+        weight: 4,
+        opacity: 0.95,
+        dashArray: "8,8",
+        interactive: false
+      }).addTo(expandedMap);
+      guideLine._isRestaurantLine = true;
+      addedCount++;
+
+      // Marker (mor restoran markerı)
+      const icon = L.divIcon({
+        html: getPurpleRestaurantMarkerHtml(),
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+      const marker = L.marker([f.properties.lat, f.properties.lon], {
+        icon,
+        interactive: true
+      }).addTo(expandedMap);
+      marker._isRestaurantMarker = true;
+      addedCount++;
+
+      const address = f.properties.formatted || "";
+      const name = f.properties.name || "Restaurant";
+      const imgId = `rest-img-${f.properties.place_id || idx}`;
+      marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, day), { maxWidth: 340 });
+      marker.on("popupopen", function() {
+        handlePopupImageLoading(f, imgId);
+      });
     });
-  });
-  alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
+    console.log(`[DEBUG] Eklenen yeni restaurant marker/line adedi: ${addedCount}`);
+
+    alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
+  } catch (err) {
+    alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
+    console.error("Restoran fetch error:", err);
+  }
 });
                           // === YAMA SONU ===
 }
