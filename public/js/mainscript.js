@@ -5081,15 +5081,26 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }).addTo(map);
 
     // --- En önemli: çizgi eklemesi ---
-    if (routeCoords.length > 1) {
-        L.polyline(routeCoords, {
-            color: hasValidGeo ? '#1976d2' : '#bdbdbd',
-            weight: hasValidGeo ? 8 : 5,
-            opacity: hasValidGeo ? 0.92 : 0.7,
-            interactive: true,
-            dashArray: hasValidGeo ? null : '8, 6'
-        }).addTo(map);
+if (hasValidGeo && routeCoords.length > 1) {
+    // GERÇEK rota varsa, klasik çizgi
+    L.polyline(routeCoords, {
+        color: '#1976d2',
+        weight: 8,
+        opacity: 0.92,
+        interactive: true,
+        dashArray: null
+    }).addTo(map);
+} else if (!hasValidGeo && points.length > 1) {
+    // --- Kavisli/Yaylı çizgi çek ---
+    for (let i = 0; i < points.length - 1; i++) {
+        drawCurvedLine(map, points[i], points[i + 1], {
+            color: '#bdbdbd',
+            weight: 5,
+            opacity: 0.78,
+            dashArray: '6,8'
+        });
     }
+}
 
     // --- Missing points için ek çizgiler ---
     if (Array.isArray(missingPoints) && missingPoints.length > 0 && hasValidGeo) {
@@ -5102,27 +5113,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
             return 2 * R * Math.asin(Math.sqrt(a));
         }
-        // missingPoints.forEach((mp) => {
-        //     let minIdx = 0, minDist = Infinity;
-        //     for (let i = 0; i < routeCoordsOriginal.length; i++) {
-        //         const [lng, lat] = routeCoordsOriginal[i];
-        //         const d = haversine(lat, lng, mp.lat, mp.lng);
-        //         if (d < minDist) {
-        //             minDist = d;
-        //             minIdx = i;
-        //         }
-        //     }
-        //     const start = [mp.lat, mp.lng];
-        //     const end = [routeCoordsOriginal[minIdx][1], routeCoordsOriginal[minIdx][0]];
-        //     L.polyline([start, end], {
-        //         dashArray: '8, 12',
-        //         color: '#d32f2f',
-        //         weight: 4,
-        //         opacity: 0.8,
-        //         interactive: false,
-        //         renderer: ensureCanvasRenderer(map)
-        //     }).addTo(map);
-        // });
 
         if (Array.isArray(missingPoints) && missingPoints.length > 1) {
     L.polyline(missingPoints.map(p => [p.lat, p.lng]), {
@@ -5564,69 +5554,6 @@ function setExpandedMapTile(styleKey) {
       }
     });
   }
-
-
-if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-    // 1. Tüm eski polyline ve markerları SİL — MapLibre tileLayer kalsın!
-    expandedMap.eachLayer(l => {
-        // MapLibre tileLayerı l.options.pane === "tilePane" olanı asla silme
-        if ((l instanceof L.Polyline || l instanceof L.Marker) && (!l.options || l.options.pane !== "tilePane")) {
-            try { expandedMap.removeLayer(l); } catch(_) {}
-        }
-    });
-    expandedMap.__restaurantLayers = [];
-
-    // 2. Harita zaten maplibre ile tilePane'e basılmış olmalı
-    // expandedMap._maplibreLayer = L.maplibreGL({ style: url, pane: "tilePane" }).addTo(expandedMap);
-
-    // 3. Route polyline'i EN SON EKLE (böylece ÜSTTE olur!)
-    const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    const routePolyline = L.polyline(coords, {
-        color: "#1976d2",
-        weight: 7,
-        opacity: 0.93,
-        interactive: true
-    }).addTo(expandedMap);
-
-    // Çift tık zoom global ve polyline üzerinde KAPALI
-    expandedMap.doubleClickZoom.disable();
-    routePolyline.on('dblclick', function(e){ L.DomEvent.stop(e); });
-
-    routePolyline.on('click', async function(e) {
-        expandedMap.__restaurantLayers.forEach(l => { if (l && l.remove) try { l.remove(); } catch{} });
-        expandedMap.__restaurantLayers = [];
-        const lat = e.latlng.lat, lng = e.latlng.lng;
-        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-        const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
-        try {
-            const resp = await fetch(url);
-            const data = await resp.json();
-            if (!data.features || data.features.length === 0) {
-                alert("Bu bölgede restoran/kafe/bar bulunamadı!"); return;
-            }
-            data.features.forEach((f, idx) => {
-                const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
-                    color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8", interactive: true
-                }).addTo(expandedMap);
-                expandedMap.__restaurantLayers.push(guideLine);
-
-                const marker = L.marker([f.properties.lat, f.properties.lon], {
-                    icon: L.divIcon({
-                        html: getPurpleRestaurantMarkerHtml(), className: "", iconSize: [32, 32], iconAnchor: [16, 16]
-                    })
-                }).addTo(expandedMap);
-                expandedMap.__restaurantLayers.push(marker);
-
-                const imgId = `rest-img-${f.properties.place_id || idx}`;
-                marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
-                marker.on("popupopen", function() { handlePopupImageLoading(f, imgId); });
-            });
-            alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
-        } catch (err) {
-            alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
-        }
-    });
-}
 
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
 
@@ -10462,3 +10389,34 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 });
+
+// iki nokta arasında yay çizen fonksiyon
+function drawCurvedLine(map, pointA, pointB, options = {}) {
+    // Orta nokta bul, biraz yukarıya (lat daha büyük bir değer) kay
+    const latlngA = L.latLng(pointA.lat, pointA.lng);
+    const latlngB = L.latLng(pointB.lat, pointB.lng);
+
+    // Ortanca noktayı hesapla, araya "dikey bir ofset" verelim (estetik olsun diye)
+    const offsetX = latlngB.lng - latlngA.lng;
+    const offsetY = latlngB.lat - latlngA.lat;
+    const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
+    const theta = Math.atan2(offsetY, offsetX);
+    const thetaOffset = (Math.PI / 10); // YATAY İÇİN; yukarıya daha büyük bir değer girilebilir
+
+    const r2 = (r / 2.0) / Math.cos(thetaOffset);
+    const theta2 = theta + thetaOffset;
+
+    // Control point (quadratic bezier)
+    const controlX = (r2 * Math.cos(theta2)) + latlngA.lng;
+    const controlY = (r2 * Math.sin(theta2)) + latlngA.lat;
+
+    // Kavisli polyline noktalarını üret
+    const latlngs = [];
+    for (let t = 0; t < 1.01; t += 0.025) {
+        const x = (1 - t) * (1 - t) * latlngA.lng + 2 * (1 - t) * t * controlX + t * t * latlngB.lng;
+        const y = (1 - t) * (1 - t) * latlngA.lat + 2 * (1 - t) * t * controlY + t * t * latlngB.lat;
+        latlngs.push([y, x]);
+    }
+
+    return L.polyline(latlngs, options).addTo(map);
+}
