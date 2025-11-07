@@ -7194,7 +7194,6 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
       infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
     }
     if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-    if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
     if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
     let expandedMapObj = window.expandedMaps?.[containerId];
@@ -7414,7 +7413,6 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
       };
 
       if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-      if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
       if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
       let expandedMapObj = window.expandedMaps?.[containerId];
@@ -7552,7 +7550,6 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
 
   window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
   window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
-  if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
 
 
 
@@ -7581,70 +7578,6 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
   }
 }
 
-function updatePairwiseDistanceLabels(day) {
-    console.log('--- updatePairwiseDistanceLabels çağrıldı --- day=', day);
-
-    // Her .distance-separator için, komşu travel-item'lardan haversine hesapla
-    const separators = document.querySelectorAll(`#day-container-${day} .distance-separator`);
-    separators.forEach(separator => {
-        let prev = separator.previousElementSibling;
-        while (prev && !prev.classList.contains('travel-item')) prev = prev.previousElementSibling;
-        let next = separator.nextElementSibling;
-        while (next && !next.classList.contains('travel-item')) next = next.nextElementSibling;
-  // <-- BURADA kullan:
-        console.log(
-            'Separator:', separator,
-            'Prev:', prev ? prev.getAttribute('data-lat')+','+prev.getAttribute('data-lon') : '',
-            'Next:', next ? next.getAttribute('data-lat')+','+next.getAttribute('data-lon') : ''
-        );
-        let distanceStr = '—', durationStr = '—';
-        if (prev && next) {
-            const lat1 = Number(prev.getAttribute('data-lat'));
-            const lon1 = Number(prev.getAttribute('data-lon'));
-            const lat2 = Number(next.getAttribute('data-lat'));
-            const lon2 = Number(next.getAttribute('data-lon'));
-            if (isFinite(lat1) && isFinite(lon1) && isFinite(lat2) && isFinite(lon2)) {
-                // İlgili index ile summary var mı diye de deneyelim
-                const containerId = `route-map-day${day}`;
-                const siblings = [...separator.parentNode.children];
-                const sepList = siblings.filter(el => el.classList && el.classList.contains('distance-separator'));
-                const idx = sepList.indexOf(separator);
-                const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
-                let summary = pairwiseSummaries[idx];
-                if (summary && summary.distance != null && summary.duration != null) {
-                    distanceStr = summary.distance >= 1000 ? (summary.distance / 1000).toFixed(1) + " km" : Math.round(summary.distance) + " m";
-                    durationStr = summary.duration >= 60 ? Math.round(summary.duration / 60) + " dk" : Math.round(summary.duration) + " sn";
-                } else {
-                    // Kendi hesapla
-                    const dist = haversine(lat1, lon1, lat2, lon2);
-                    let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
-                    let speed = 1.3;
-                    if (mode === 'driving') speed = 16;
-                    else if (mode === 'cycling') speed = 5;
-                    const dura = dist / speed;
-                    distanceStr = dist >= 1000 ? (dist / 1000).toFixed(1) + " km" : Math.round(dist) + " m";
-                    durationStr = dura >= 60 ? Math.round(dura / 60) + " dk" : Math.round(dura) + " sn";
-                }
-            }
-        }
-        // DOM güncelle
-        const label = separator.querySelector('.distance-label');
-        if (label) {
-            const lockBtn = label.querySelector('.route-lock-toggle');
-            label.innerHTML = '';
-            if (lockBtn) label.appendChild(lockBtn);
-            const distanceValue = document.createElement('span');
-            distanceValue.className = 'distance-value';
-            distanceValue.textContent = distanceStr;
-            label.appendChild(distanceValue);
-            label.appendChild(document.createTextNode(' • '));
-            const durationValue = document.createElement('span');
-            durationValue.className = 'duration-value';
-            durationValue.textContent = durationStr;
-            label.appendChild(durationValue);
-        }
-    });
-}
 
 function clearDistanceLabels(day) {
     document.querySelectorAll(`#route-map-day${day} .distance-label, #route-info-day${day} .distance-label`).forEach(label => {
