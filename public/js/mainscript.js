@@ -10395,25 +10395,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // iki nokta arasında yay çizen fonksiyon
 function drawCurvedLine(map, pointA, pointB, options = {}) {
-    // Orta nokta bul, biraz yukarıya (lat daha büyük bir değer) kay
     const latlngA = L.latLng(pointA.lat, pointA.lng);
     const latlngB = L.latLng(pointB.lat, pointB.lng);
 
-    // Ortanca noktayı hesapla, araya "dikey bir ofset" verelim (estetik olsun diye)
     const offsetX = latlngB.lng - latlngA.lng;
     const offsetY = latlngB.lat - latlngA.lat;
-    const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
+    const r = Math.sqrt(offsetX ** 2 + offsetY ** 2);
     const theta = Math.atan2(offsetY, offsetX);
-    const thetaOffset = (Math.PI / 10); // YATAY İÇİN; yukarıya daha büyük bir değer girilebilir
+    const thetaOffset = (Math.PI / 10);
 
     const r2 = (r / 2.0) / Math.cos(thetaOffset);
     const theta2 = theta + thetaOffset;
 
-    // Control point (quadratic bezier)
     const controlX = (r2 * Math.cos(theta2)) + latlngA.lng;
     const controlY = (r2 * Math.sin(theta2)) + latlngA.lat;
 
-    // Kavisli polyline noktalarını üret
     const latlngs = [];
     for (let t = 0; t < 1.01; t += 0.025) {
         const x = (1 - t) * (1 - t) * latlngA.lng + 2 * (1 - t) * t * controlX + t * t * latlngB.lng;
