@@ -3854,7 +3854,7 @@ else {
     distanceSeparator.innerHTML = `
       <div class="separator-line"></div>
       <div class="distance-label">
-        <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+        <span class="auto-generated-label">Auto-generated:</span> <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
       </div>
       <div class="separator-line"></div>
     `;
