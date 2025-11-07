@@ -5573,6 +5573,8 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
     }).addTo(expandedMap);
 
     routePolyline.on('click', async function(e) {
+            console.log("Polyline EVENT tetiklendi!"); // ← BU ÇIKIYOR MU?
+
         // 1. Daha önceki restoran marker ve çizgilerini sadece expandedMap'e bağlı olarak temizle
         expandedMap.__restaurantLayers = expandedMap.__restaurantLayers || [];
         expandedMap.__restaurantLayers.forEach(l => {
