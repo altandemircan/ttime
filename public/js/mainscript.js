@@ -5569,7 +5569,7 @@ function setExpandedMapTile(styleKey) {
 
   
 if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-    // Tüm eski çizgi ve restaurant markerlarını temizle
+    // Önce tüm eski rotaları ve restoran markerlarını sil
     expandedMap.eachLayer(l => {
         if (l instanceof L.Polyline || l instanceof L.Marker) {
             try { expandedMap.removeLayer(l); } catch(_) {}
@@ -5577,7 +5577,7 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
     });
     expandedMap.__restaurantLayers = [];
 
-    // Route çizgisi (VEYA yeni çizgi her expanded’da her zaman sıfırdan yaratılır)
+    // Yeni route polyline ekle (interactive TRUE olmalı!)
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const routePolyline = L.polyline(coords, {
         color: "#1976d2",
@@ -5586,16 +5586,15 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
         interactive: true
     }).addTo(expandedMap);
 
+    // Çift tık ile zoom'u engelle!
     expandedMap.doubleClickZoom.disable();
-
     routePolyline.on('dblclick', function(e){
-        L.DomEvent.stop(e); // Çift tık zoom yapmasın
+        L.DomEvent.stop(e); // Zoom yok!
     });
 
+    // Tek tık ile restoran göster
     routePolyline.on('click', async function(e) {
-        expandedMap.__restaurantLayers.forEach(l => {
-            if (l && l.remove) { try { l.remove(); } catch(_) {} }
-        });
+        expandedMap.__restaurantLayers.forEach(l => { if (l && l.remove) try { l.remove(); } catch{} });
         expandedMap.__restaurantLayers = [];
 
         const lat = e.latlng.lat, lng = e.latlng.lng;
@@ -5605,26 +5604,19 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
             const resp = await fetch(url);
             const data = await resp.json();
             if (!data.features || data.features.length === 0) {
-                alert("Bu bölgede restoran/kafe/bar bulunamadı!");
-                return;
+                alert("Bu bölgede restoran/kafe/bar bulunamadı!"); return;
             }
             data.features.forEach((f, idx) => {
                 const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
-                    color: "#22bb33",
-                    weight: 4,
-                    opacity: 0.95,
-                    dashArray: "8,8",
-                    interactive: true
+                    color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8", interactive: true
                 }).addTo(expandedMap);
                 expandedMap.__restaurantLayers.push(guideLine);
 
-                const icon = L.divIcon({
-                    html: getPurpleRestaurantMarkerHtml(),
-                    className: "",
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
-                });
-                const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(expandedMap);
+                const marker = L.marker([f.properties.lat, f.properties.lon], { 
+                    icon: L.divIcon({
+                        html: getPurpleRestaurantMarkerHtml(), className: "", iconSize: [32, 32], iconAnchor: [16, 16]
+                    })
+                }).addTo(expandedMap);
                 expandedMap.__restaurantLayers.push(marker);
 
                 const imgId = `rest-img-${f.properties.place_id || idx}`;
