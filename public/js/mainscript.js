@@ -3504,6 +3504,7 @@ if (typeof updateCart === "function") updateCart();
 }
 
 
+
 async function updateCart() {
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
@@ -4161,7 +4162,6 @@ document.querySelectorAll('.day-list').forEach(dayList => {function updateCart()
 
 
   if (window.expandedMaps) {
-    const days = [...new Set((window.cart || []).map(i => i.day))];
     days.forEach(day => {
       clearRouteSegmentHighlight(day);
     });
@@ -4170,7 +4170,6 @@ document.querySelectorAll('.day-list').forEach(dayList => {function updateCart()
     window._lastSegmentEndKm = undefined;
   }
 
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   days.forEach(day => {
     const hasRealItem = window.cart.some(i =>
       Number(i.day) === Number(day) &&
