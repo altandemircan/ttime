@@ -3825,10 +3825,12 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
         distanceSeparator.className = 'distance-separator';
 
         distanceSeparator.innerHTML = `
-            <div class="separator-line"></div>
-            <div class="distance-label">${distanceStr} • ${durationStr}</div>
-            <div class="separator-line"></div>
-        `;
+    <div class="separator-line"></div>
+    <div class="distance-label">
+        <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+`;
         li.appendChild(distanceSeparator); // DİKKAT: separator li'nin İÇİNDE ve SONDA!
     }
 
