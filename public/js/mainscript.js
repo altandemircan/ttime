@@ -6056,16 +6056,42 @@ if (currentZoom < 14) {
       </div>
     `;
 
+
+
+// YER: YENİ restaurantBtnHtml EK:
+  const restaurantBtnHtml = `
+    <div style="text-align:center; margin: 20px 0 4px 0;">
+      <button id="show-restaurants-btn" style="padding:10px 18px;border-radius:9px;background:#8a4af3;color:#fff;font-size:15px;font-weight:bold;cursor:pointer;">
+        🍽️ Show Restaurants
+      </button>
+    </div>
+  `;
+
+
+
     const html = `
       <div class="nearby-popup-title">
         📍 Nearby Places
       </div>
       ${addPointSection}
       <ul class="nearby-places-list">${placesHtml}</ul>
+            ${restaurantBtnHtml}
     `;
 
     showCustomPopup(lat, lng, map, html, true);
-
+// --- ŞU SETTIMEOUT kodunu DA aynen ekle ---
+  setTimeout(() => {
+    const btn = document.getElementById("show-restaurants-btn");
+    if (btn) {
+      btn.onclick = async function() {
+        btn.disabled = true;
+        btn.textContent = "Loading restaurants...";
+        await showNearbyRestaurants(lat, lng, map, day);
+        btn.disabled = false;
+        btn.textContent = "🍽️ Show Restaurants";
+      };
+    }
+  }, 250);
     window._lastNearbyPlaces = results;
     window._lastNearbyPhotos = photos;
     window._lastNearbyDay = day;
@@ -6077,6 +6103,45 @@ if (currentZoom < 14) {
     showCustomPopup(lat, lng, map, errorContent, true);
   }
 }
+
+
+async function showNearbyRestaurants(lat, lng, map, day) {
+    map.__restaurantLayers = map.__restaurantLayers || [];
+    map.__restaurantLayers.forEach(l => { if (l && l.remove) try { l.remove(); } catch{} });
+    map.__restaurantLayers = [];
+    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (!data.features || data.features.length === 0) {
+            alert("Bu bölgede restoran/kafe/bar bulunamadı!");
+            return;
+        }
+        data.features.forEach((f, idx) => {
+            const guideLine = L.polyline(
+              [[lat, lng], [f.properties.lat, f.properties.lon]],
+              { color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8", interactive: true }
+            ).addTo(map);
+            map.__restaurantLayers.push(guideLine);
+
+            const marker = L.marker([f.properties.lat, f.properties.lon], {
+                icon: L.divIcon({
+                    html: getPurpleRestaurantMarkerHtml(), className: "", iconSize: [32,32], iconAnchor: [16, 16]
+                })
+            }).addTo(map);
+            map.__restaurantLayers.push(marker);
+
+            const imgId = `rest-img-${f.properties.place_id || idx}`;
+            marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, day), { maxWidth: 340 });
+            marker.on("popupopen", function() { handlePopupImageLoading(f, imgId); });
+        });
+        alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
+    } catch (err) {
+        alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
+    }
+}
+
 
 // Seçilen nokta için fotoğraf yükleme fonksiyonu
 async function loadClickedPointImage(pointName) {
