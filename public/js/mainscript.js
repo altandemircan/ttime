@@ -7586,12 +7586,12 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
 function updatePairwiseDistanceLabels(day) {
     const separators = document.querySelectorAll(`#day-container-${day} .distance-separator`);
     separators.forEach(separator => {
-        // Separator'dan ÖNCEKİ travel-item'ı bul
+        // Önceki travel-item (li) bul
         let prevItem = separator.previousElementSibling;
         while (prevItem && !prevItem.classList.contains('travel-item')) {
             prevItem = prevItem.previousElementSibling;
         }
-        // Separator'dan SONRAKİ travel-item'ı bul
+        // Sonraki travel-item (li) bul
         let nextItem = separator.nextElementSibling;
         while (nextItem && !nextItem.classList.contains('travel-item')) {
             nextItem = nextItem.nextElementSibling;
@@ -7604,18 +7604,24 @@ function updatePairwiseDistanceLabels(day) {
             const lat2 = Number(nextItem.getAttribute('data-lat'));
             const lon2 = Number(nextItem.getAttribute('data-lon'));
             if (isFinite(lat1) && isFinite(lon1) && isFinite(lat2) && isFinite(lon2)) {
-                // Pairwise route summary (varsa) önce kullan
-                const idx = Array.prototype.indexOf.call(separator.parentNode.children, separator) / 2; // Tahmini
+                // Gerçek route summary varsa önce onu kullan
+                let useSummary = false, summary;
                 const containerId = `route-map-day${day}`;
                 const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
-                let summary = pairwiseSummaries[idx] || null;
-                if (summary && summary.distance != null && summary.duration != null) {
+                // index'i hesapla: kaçıncı separator olduğunu bul
+                const siblings = [...separator.parentNode.children];
+                const myIndex = siblings.filter(el => el.classList && el.classList.contains('distance-separator')).indexOf(separator);
+                if (pairwiseSummaries[myIndex] && pairwiseSummaries[myIndex].distance != null && pairwiseSummaries[myIndex].duration != null) {
+                    summary = pairwiseSummaries[myIndex];
+                    useSummary = true;
+                }
+                if (useSummary) {
                     distanceStr = summary.distance >= 1000 ? (summary.distance / 1000).toFixed(1) + " km"
                                 : Math.round(summary.distance) + " m";
                     durationStr = summary.duration >= 60 ? Math.round(summary.duration / 60) + " dk"
                                 : Math.round(summary.duration) + " sn";
                 } else {
-                    // Haversine
+                    // Haversine hesapla
                     const dist = haversine(lat1, lon1, lat2, lon2);
                     let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
                     let speed = 1.3;
