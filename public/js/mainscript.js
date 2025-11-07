@@ -3504,7 +3504,661 @@ if (typeof updateCart === "function") updateCart();
 }
 
 
-function updateCart() {
+async function updateCart() {
+  // 1) EN BAŞTA GÜNCEL GÜNLERİ OLUŞTUR
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+
+  // 2) SONRA SIRAYLA summary'leri üret ve logla!
+  for (const d of days) {
+    await renderRouteForDay(d); // summary'yi dolduracak
+    console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+  }
+  console.log("updateCart başlatıldı");
+  document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
+
+
+  if (window.expandedMaps) {
+    const days = [...new Set((window.cart || []).map(i => i.day))];
+    days.forEach(day => {
+      clearRouteSegmentHighlight(day);
+    });
+    window._lastSegmentDay = undefined;
+    window._lastSegmentStartKm = undefined;
+    window._lastSegmentEndKm = undefined;
+  }
+
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+  days.forEach(day => {
+    const hasRealItem = window.cart.some(i =>
+      Number(i.day) === Number(day) &&
+      !i._starter &&
+      !i._placeholder &&
+      (i.name || i.category === "Note")
+    );
+    if (hasRealItem && window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day]) {
+      window.__hideAddCatBtnByDay[day] = false;
+    }
+  });
+
+  const oldStartDate = window.cart.startDate;
+  const oldEndDates  = window.cart.endDates;
+  window.cart = window.cart.filter(it =>
+    it && typeof it === "object" &&
+    (
+      (typeof it.day !== "undefined" && Object.keys(it).length === 1) ||
+      (it.name || it.location || it.category)
+    )
+  );
+  if (oldStartDate) window.cart.startDate = oldStartDate;
+  if (oldEndDates)  window.cart.endDates  = oldEndDates;
+
+  const cartDiv = document.getElementById("cart-items");
+
+  const menuCount = document.getElementById("menu-count");
+  if (!cartDiv) return;
+
+  if (!window.cart || window.cart.length === 0) {
+    cartDiv.innerHTML = `
+
+
+
+      <div class="day-container" id="day-container-1" data-day="1">
+        <h4 class="day-header">
+          <div class="title-container"><span class="day-title">Day 1</span></div>
+        </h4>
+        <div class="confirmation-container" id="confirmation-container-1" style="display:none"></div>
+        <ul class="day-list" data-day="1">
+          <div class="empty-day-block">
+            <p class="empty-day-message">
+              No item has been added for this day yet.<br>
+              Select a point on the map to start the trip!
+            </p>
+        <div>
+  <button id="start-map-btn" type="button">Start with map</button>
+</div>
+            <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
+            <div class="empty-day-actions" style="display:block;text-align:center;">
+              <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
+                Import GPS File
+              </button>
+            </div>
+          </div>
+        </ul>
+      </div>
+      <hr class="add-new-day-separator">
+      <button class="add-new-day-btn" id="add-new-day-button">+ Add New Day</button>
+    `;
+    if (menuCount) {
+      menuCount.textContent = 0;
+      menuCount.style.display = "none";
+    }
+    // buton eventleri
+    const addNewDayButton = document.getElementById("add-new-day-button");
+    if (addNewDayButton) addNewDayButton.onclick = function () { addNewDay(this); };
+    const gpsBtn = document.querySelector(".gps-import");
+    if (gpsBtn) gpsBtn.onclick = function () { /* GPS import fonksiyonun */ };
+
+    return;
+  }
+
+  const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
+  cartDiv.innerHTML = "";
+
+
+
+  for (let day = 1; day <= totalDays; day++) {
+    const dayItemsArr = window.cart.filter(i =>
+      Number(i.day) === Number(day) &&
+      !i._starter &&
+      !i._placeholder &&
+      (i.name || i.category === "Note")
+    );
+    const isEmptyDay = dayItemsArr.length === 0;
+
+    let dayContainer = document.getElementById(`day-container-${day}`);
+
+    if (!dayContainer) {
+      dayContainer = document.createElement("div");
+      dayContainer.className = "day-container";
+      dayContainer.id = `day-container-${day}`;
+      dayContainer.dataset.day = day;
+    } else {
+      const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
+      const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
+      dayContainer.innerHTML = "";
+      if (!isEmptyDay) {
+        if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
+        if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
+      }
+    }
+
+    const dayHeader = document.createElement("h4");
+    dayHeader.className = "day-header";
+    const titleContainer = document.createElement("div");
+    titleContainer.className = "title-container";
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "day-title";
+    if (!window.customDayNames) window.customDayNames = {};
+    titleSpan.textContent = window.customDayNames[day] || `Day ${day}`;
+    titleContainer.appendChild(titleSpan);
+    dayHeader.appendChild(titleContainer);
+    dayHeader.appendChild(createDayActionMenu(day));
+    dayContainer.appendChild(dayHeader);
+
+    const confirmationContainer = document.createElement("div");
+    confirmationContainer.className = "confirmation-container";
+    confirmationContainer.id = `confirmation-container-${day}`;
+    confirmationContainer.style.display = "none";
+    dayContainer.appendChild(confirmationContainer);
+
+    const dayList = document.createElement("ul");
+    dayList.className = "day-list";
+    dayList.dataset.day = day;
+
+    if (isEmptyDay) {
+  const emptyWrap = document.createElement("div");
+  emptyWrap.className = "empty-day-block";
+  emptyWrap.innerHTML = `
+    <p class="empty-day-message">No item has been added for this day yet.</p>
+    <div style="text-align:center;">
+      <button id="start-map-btn-day${day}" type="button" class="start-map-btn">Start with map</button>
+    </div>
+    <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
+    <div class="empty-day-actions" style="display:block;text-align:center;">
+      <button type="button"
+              class="import-btn gps-import"
+              data-import-type="multi"
+              data-global="1"
+              title="Supports GPX, TCX, FIT, KML">
+        Import GPS File
+      </button>
+    </div>
+  `;
+  dayList.appendChild(emptyWrap);
+
+  // Event eklemek için:
+  const startMapBtn = emptyWrap.querySelector(`#start-map-btn-day${day}`);
+  if (startMapBtn) {
+    startMapBtn.onclick = function () {
+      // Her güne özel fonksiyon, gün parametresiyle:
+      if (typeof startMapPlanningForDay === "function") startMapPlanningForDay(day);
+    };
+  }
+}
+
+else {
+    for (let idx = 0; idx < dayItemsArr.length; idx++) {
+        const item = dayItemsArr[idx];
+        const currIdx = window.cart.indexOf(item);
+
+        const li = document.createElement("li");
+        li.className = "travel-item";
+        li.draggable = true;
+        li.dataset.index = currIdx;
+        if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+            li.setAttribute("data-lat", item.location.lat);
+            li.setAttribute("data-lon", item.location.lng);
+        }
+        li.addEventListener("dragstart", dragStart);
+
+        if (item.category === "Note") {
+            li.innerHTML = `
+                <div class="cart-item">
+                    <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                    <div class="item-info">
+                        <p class="toggle-title">${item.name}</p>
+                    </div>
+                    <button class="remove-btn" onclick="removeFromCart(${currIdx})">
+                        <img src="img/remove-icon.svg" alt="Close">
+                    </button>
+                    <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
+                    <span class="arrow">
+                        <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                    </span>
+                    <div class="content">
+                        <div class="info-section">
+                            <div class="note-details">
+                                <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            let openingHoursDisplay = "No working hours info";
+            if (item.opening_hours) {
+                if (Array.isArray(item.opening_hours)) {
+                    const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+                    if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+                } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+                    openingHoursDisplay = item.opening_hours.trim();
+                }
+            }
+            const leafletMapId = "leaflet-map-" + currIdx;
+            const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
+                ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
+                : '<div class="map-error">Location not available</div>';
+
+            li.innerHTML = `
+                <div class="cart-item">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+                            <img src="${item.image}" alt="${item.name}" class="cart-image">
+                            <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+                            <div class="item-info">
+                                <p class="toggle-title">${item.name}</p>
+                            </div>
+                        </div>
+                        <span class="arrow">
+                            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                        </span>
+                    </div>
+                    <div class="content">
+                        <div class="info-section">
+                            <div class="place-rating">${mapHtml}</div>
+                            <div class="contact">
+                                <p>📌 Address: ${item.address || 'Address not available'}</p>
+                            </div>
+                            <p class="working-hours-title">
+                                🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+                            </p>
+                            ${
+                                item.location ? `
+                                <div class="coords-info" style="margin-top:8px;">
+                                    📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+                                    Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+                                </div>
+                                ${item.website ? `
+                                    <div class="website-info" style="margin-top:8px;">
+                                        🔗 <a href="${item.website}" target="_blank" rel="noopener">
+                                            ${item.website.replace(/^https?:\/\//, '')}
+                                        </a>
+                                    </div>
+                                ` : ''}
+                                <div class="google-search-info" style="margin-top:8px;">
+                                    <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank" rel="noopener">
+                                        🇬 Search images on Google
+                                    </a>
+                                </div>
+                                ` : ''
+                            }
+                        </div>
+                        <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
+                            Remove place
+                        </button>
+                        <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
+                            <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+                            <div class="modal-actions">
+                                <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
+                                <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        dayList.appendChild(li);
+
+  if (idx < dayItemsArr.length - 1) {
+    let distanceStr = '', durationStr = '';
+    if (
+        item.location &&
+        typeof item.location.lat === "number" &&
+        typeof item.location.lng === "number" &&
+        dayItemsArr[idx + 1].location &&
+        typeof dayItemsArr[idx + 1].location.lat === "number" &&
+        typeof dayItemsArr[idx + 1].location.lng === "number"
+    ) {
+        const key = `route-map-day${day}`;
+        // İLK ÖNCE HANGİ SUMMARY DOLU ONA BAK!
+        let summary = null;
+        if (window.pairwiseRouteSummaries?.[key]) {
+            summary = window.pairwiseRouteSummaries[key][idx];
+            // fallback: currIdx ile de dene
+            if ((!summary || summary.distance == null) && window.pairwiseRouteSummaries[key][currIdx]) {
+                summary = window.pairwiseRouteSummaries[key][currIdx];
+            }
+        }
+        console.log('PAIRWISE DEBUG', { idx, currIdx, summary, arr: window.pairwiseRouteSummaries?.[key] });
+        if (summary && summary.distance != null && summary.duration != null) {
+            distanceStr = summary.distance >= 1000
+                ? (summary.distance / 1000).toFixed(1) + " km"
+                : Math.round(summary.distance) + " m";
+            durationStr = summary.duration >= 60
+                ? Math.round(summary.duration / 60) + " dk"
+                : Math.round(summary.duration) + " sn";
+        } else {
+            // Fallback: haversine ile kendin hesapla
+            const lat1 = item.location.lat, lon1 = item.location.lng;
+            const lat2 = dayItemsArr[idx + 1].location.lat, lon2 = dayItemsArr[idx + 1].location.lng;
+            const dist = haversine(lat1, lon1, lat2, lon2);
+            distanceStr = dist >= 1000
+                ? (dist / 1000).toFixed(1) + " km"
+                : Math.round(dist) + " m";
+            let speed = 1.3; // walking
+            let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
+            if (mode === 'driving') speed = 16;
+            else if (mode === 'cycling') speed = 5;
+            const dura = dist / speed;
+            durationStr = dura >= 60
+                ? Math.round(dura / 60) + " dk"
+                : Math.round(dura) + " sn";
+        }
+    }
+    const distanceSeparator = document.createElement('div');
+    distanceSeparator.className = 'distance-separator';
+    distanceSeparator.innerHTML = `
+        <div class="separator-line"></div>
+        <div class="distance-label">
+            <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+        </div>
+        <div class="separator-line"></div>
+    `;
+    dayList.appendChild(distanceSeparator);
+}
+    }
+}
+dayContainer.appendChild(dayList);
+
+// --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
+const anyDayHasRealItem = window.cart.some(i =>
+  !i._starter && !i._placeholder && i.category !== "Note" && i.name
+);
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+
+
+if (anyDayHasRealItem && !hideAddCat) {
+  // 2. ADD CATEGORY BUTONU
+  const addMoreButton = document.createElement("button");
+  addMoreButton.className = "add-more-btn";
+  addMoreButton.textContent = "+ Add Category";
+  addMoreButton.dataset.day = day;
+  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+dayContainer.appendChild(addMoreButton);
+}
+
+
+  cartDiv.appendChild(dayContainer);
+  }
+
+
+  // Tüm günler eklendikten sonra, EN ALTA ekle:
+const addNewDayHr = document.createElement('hr');
+addNewDayHr.className = 'add-new-day-separator';
+cartDiv.appendChild(addNewDayHr);
+
+const addNewDayButton = document.createElement("button");
+addNewDayButton.className = "add-new-day-btn";
+addNewDayButton.id = "add-new-day-button";
+addNewDayButton.textContent = "+ Add New Day";
+addNewDayButton.onclick = function () { addNewDay(this); };
+cartDiv.appendChild(addNewDayButton);
+
+
+
+  // --- Diğer kalan işlemler ---
+  const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+  if (menuCount) {
+    menuCount.textContent = itemCount;
+    menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
+  }
+
+  attachDragListeners();
+  days.forEach(d => initPlaceSearch(d));
+  addCoordinatesToContent();
+  days.forEach(d => {
+    const suppressing = window.__suppressMiniUntilFirstPoint &&
+                        window.__suppressMiniUntilFirstPoint[d];
+    const realPoints = getDayPoints ? getDayPoints(d) : [];
+    if (suppressing && realPoints.length === 0) {
+      return;
+    }
+    renderRouteForDay(d);
+  });
+  setTimeout(wrapRouteControlsForAllDays, 0);
+  attachChatDropListeners();
+
+  if (window.expandedMaps) {
+    Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
+      if (expandedMap) updateExpandedMap(expandedMap, day);
+    });
+  }
+
+  initDragDropSystem();
+  if (typeof interact !== 'undefined') setupMobileDragDrop();
+  setupSidebarAccordion();
+
+  renderTravelModeControlsForAllDays();
+
+  (function ensureSelectDatesButton() {
+    const hasRealItem = Array.isArray(window.cart) && window.cart.some(i =>
+      !i._starter && !i._placeholder && i.name && i.name.trim() !== ''
+    );
+    if (!hasRealItem) {
+      let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+      if (btn) btn.remove();
+      return;
+    }
+    let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.className = 'add-to-calendar-btn';
+      btn.setAttribute('data-role', 'trip-dates');
+      cartDiv.appendChild(btn);
+    }
+    btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
+    btn.onclick = () => {
+      if (typeof openCalendar === 'function') {
+        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
+        openCalendar(maxDay);
+      }
+    };
+  })();
+
+(function ensureNewChatInsideCart(){
+  const oldOutside = document.querySelector('#newchat');
+  if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
+  const cartRoot = document.getElementById('cart');
+  if (!cartRoot) return;
+  let newChat = cartRoot.querySelector('#newchat');
+  if (!newChat){
+    newChat = document.createElement('div');
+    newChat.id = 'newchat';
+    newChat.textContent = 'New Trip Plan';
+    newChat.style.cursor = 'pointer';
+
+    newChat.onclick = function() {
+      const chatBox = document.getElementById('chat-box');
+      if (chatBox) chatBox.innerHTML = '';
+      const userInput = document.getElementById('user-input');
+      if (userInput) userInput.value = '';
+
+      // Temizlik - global değişkenler
+      window.selectedCity = null;
+      window.selectedLocation = null;
+      window.selectedLocationLocked = false;
+      window.__locationPickedFromSuggestions = false;
+      window.lastUserQuery = '';
+      window.latestTripPlan = [];
+      window.cart = [];
+
+      // Tüm harita ve overlay temizliği
+      if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+      window.routeElevStatsByDay = {};
+      window.__ttElevDayCache = {};
+      window._segmentHighlight = {};
+      window._lastSegmentDay = undefined;
+      window._lastSegmentStartKm = undefined;
+      window._lastSegmentEndKm = undefined;
+
+      document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
+
+      if (typeof updateCart === "function") updateCart();
+      document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+      const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+      if (sidebar) sidebar.classList.add('open');
+
+      // Welcome mesajı ekle
+     if (chatBox) {
+        let indicator = document.getElementById('typing-indicator');
+        if (!indicator) {
+          indicator = document.createElement('div');
+          indicator.id = 'typing-indicator';
+          indicator.className = 'typing-indicator';
+          indicator.innerHTML = '<span></span><span></span><span></span>';
+          chatBox.appendChild(indicator);
+        } else {
+          indicator.style.display = 'block';
+          indicator.innerHTML = '<span></span><span></span><span></span>';
+        }
+
+        const welcome = document.createElement('div');
+        welcome.className = 'message bot-message';
+        welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
+        chatBox.appendChild(welcome);
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      // input-wrapper tekrar görünür olsun
+      var iw = document.querySelector('.input-wrapper');
+      if (iw) iw.style.display = '';
+
+      // Tüm seçili suggestionları temizle
+      document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function(el) {
+        el.classList.remove('selected-suggestion');
+      });
+
+      // Trip Details ekranını tamamen kaldır (mobil ve desktop için)
+  const tripDetailsSection = document.getElementById("tt-trip-details");
+  if (tripDetailsSection) tripDetailsSection.remove();
+
+  // Eğer chat-screen içinde de bir şey varsa (mobilde), onu da temizle:
+  const chatScreen = document.getElementById("chat-screen");
+  if (chatScreen) chatScreen.innerHTML = "";
+
+    };
+  }
+  const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+  if (datesBtn && datesBtn.nextSibling !== newChat){
+    datesBtn.insertAdjacentElement('afterend', newChat);
+  } else if (!datesBtn && newChat.parentNode !== cartRoot){
+    cartRoot.appendChild(newChat);
+  }
+  const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+  newChat.style.display = itemCount > 0 ? 'block' : 'none';
+})();
+
+  (function ensurePostDateSections() {
+    if (!window.cart.startDate) return;
+    let share = document.getElementById('trip-share-section');
+    if (!share) {
+      share = document.createElement('div');
+      share.id = 'trip-share-section';
+      share.className = 'trip-share-section';
+      cartDiv.appendChild(share);
+    }
+    if (typeof buildShareSection === 'function') buildShareSection();
+    const oldAI = document.getElementById('ai-info-section');
+    if (oldAI) oldAI.remove();
+  })();
+
+  (function ensureTripDetailsBlock() {
+    if (!window.cart.startDate) {
+      const existing = cartDiv.querySelector('.date-range');
+      if (existing) existing.remove();
+      return;
+    }
+    let dateRangeDiv = cartDiv.querySelector('.date-range');
+    if (!dateRangeDiv) {
+      dateRangeDiv = document.createElement('div');
+      dateRangeDiv.className = 'date-range';
+      cartDiv.appendChild(dateRangeDiv);
+    }
+    const endDate = (window.cart.endDates && window.cart.endDates.length)
+      ? window.cart.endDates[window.cart.endDates.length - 1]
+      : window.cart.startDate;
+    dateRangeDiv.innerHTML = `
+      <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
+      <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
+    `;
+    const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
+    if (detailsBtn) {
+      detailsBtn.onclick = () => {
+        if (typeof showTripDetails === 'function') {
+          showTripDetails(window.cart.startDate);
+        }
+      };
+    }
+  })();
+
+  // === AI Info yerine Generate AI Info butonu ekle ===
+(function(){
+  // AI kutusu veya buton zaten varsa tekrar ekleme
+  if (document.querySelector('.ai-info-section') || document.getElementById('generate-ai-info-btn')) return;
+  // Sepette en az 1 gerçek item olmalı
+  if (!window.cart || window.cart.length === 0) return;
+  // İlk gerçek noktanın şehir bilgisini çek
+  let city = null;
+  const first = window.cart.find(it =>
+    it.location &&
+    typeof it.location.lat === "number" &&
+    typeof it.location.lng === "number"
+  );
+  if (first && first.address) {
+    const parts = first.address.split(",");
+    if (parts.length >= 2) {
+      city = parts[parts.length - 2].trim();
+    }
+  }
+  if (!city) return;
+
+  // AI bilgi kutusunun geleceği yere (trip_title'dan sonra) butonu koy
+  const tripTitleDiv = document.getElementById('trip_title');
+  if (!tripTitleDiv) return;
+
+  // AI kutusu yerine buton
+  const btnDiv = document.createElement('div');
+  btnDiv.className = 'ai-info-section';
+  btnDiv.style = "text-align:center;margin:18px 0 18px 0;";
+  const btn = document.createElement('button');
+  btn.id = 'generate-ai-info-btn';
+  btn.textContent = 'Generate AI Info';
+  btn.style = "padding:10px 24px;font-size:17px;font-weight:600;border-radius:8px;border:1px solid #8a4af3;background:#fff;color:#8a4af3;cursor:pointer;box-shadow:0 1px 8px #e9e1fa;";
+  btn.onclick = async function() {
+    btn.disabled = true;
+    btn.textContent = 'Yükleniyor...';
+    // Butonun yerine AI info kutusunu ekle!
+    await insertTripAiInfo(null, null, city);
+    btnDiv.remove();
+  };
+  btnDiv.appendChild(btn);
+  tripTitleDiv.insertAdjacentElement('afterend', btnDiv);
+})();
+
+  setTimeout(() => {
+    document.querySelectorAll('.leaflet-map').forEach(div => {
+      if (div.classList.contains('leaflet-container')) return;
+      if (!window._leafletMaps) window._leafletMaps = {};
+      if (window._leafletMaps[div.id]) {
+        try { window._leafletMaps[div.id].remove(); } catch(e){}
+        delete window._leafletMaps[div.id];
+      }
+      const item = div.closest('.travel-item');
+      if (!item) return;
+      const lat = parseFloat(item.getAttribute('data-lat'));
+      const lon = parseFloat(item.getAttribute('data-lon'));
+      const name = item.querySelector('.toggle-title')?.textContent || '';
+      const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+      if (!isNaN(lat) && !isNaN(lon)) {
+        createLeafletMapForItem(div.id, lat, lon, name, number);
+      }
+    });
+  }, 150);
+// updateCart fonksiyonunun en sonunda (her gün için UL'ler hazırlandıktan sonra):
+document.querySelectorAll('.day-list').forEach(dayList => {function updateCart() {
   console.log("updateCart başlatıldı");
   document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
 
@@ -4151,6 +4805,27 @@ cartDiv.appendChild(addNewDayButton);
   }, 150);
 // updateCart fonksiyonunun en sonunda (her gün için UL'ler hazırlandıktan sonra):
 document.querySelectorAll('.day-list').forEach(dayList => {
+    if (!dayList._sortableSetup) { // Sadece bir kere kurulsun
+        Sortable.create(dayList, {
+            animation: 150,
+            handle: '.drag-icon', // ikon üzerinden sürükleme
+            onEnd: function (evt) {
+                // Sıra değiştiğinde window.cart'ı güncelle
+                const day = dayList.dataset.day;
+                const newOrder = Array.from(dayList.querySelectorAll('.travel-item')).map(li => Number(li.dataset.index));
+                // window.cart içindeki itemları yeni sıraya göre diz
+                const items = window.cart.filter(i => Number(i.day) === Number(day) && !i._starter && !i._placeholder && (i.name || i.category === "Note"));
+                newOrder.forEach((cartIdx, newPos) => {
+                    const moved = window.cart.findIndex(it => window.cart.indexOf(it) === cartIdx);
+                    if (moved > -1) window.cart.splice(moved, 1, items[newPos]);
+                });
+                updateCart();
+            }
+        });
+        dayList._sortableSetup = true;
+    }
+});
+}
     if (!dayList._sortableSetup) { // Sadece bir kere kurulsun
         Sortable.create(dayList, {
             animation: 150,
