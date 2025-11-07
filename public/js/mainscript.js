@@ -5569,7 +5569,7 @@ function setExpandedMapTile(styleKey) {
 
   
 if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-    // Önce varolan tüm eski polyline ve restoran marker/polyline layerlarını SİL
+    // 1. Eski bütün polyline ve markerları sil (harita saflaştır)
     expandedMap.eachLayer(l => {
         if (l instanceof L.Polyline || l instanceof L.Marker) {
             try { expandedMap.removeLayer(l); } catch(_) {}
@@ -5577,7 +5577,7 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
     });
     expandedMap.__restaurantLayers = [];
 
-    // Yeni POLYLINE OLUŞTUR
+    // 2. Yeni route polyline çiz
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const routePolyline = L.polyline(coords, {
         color: "#1976d2",
@@ -5585,20 +5585,19 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
         opacity: 0.93
     }).addTo(expandedMap);
 
-    // Polyline’a EVENT’i EKLE
+    // 3. Polyline'a tıklandığında restoran göster
     routePolyline.on('click', async function(e) {
-        // YİNE varsa eski restoran marker ve polyline’ları temizle
-        expandedMap.__restaurantLayers = expandedMap.__restaurantLayers || [];
+        // Önce eski restoran markerlarını/çizgileri sil
         expandedMap.__restaurantLayers.forEach(l => {
             if (l && l.remove) { try { l.remove(); } catch(_) {} }
         });
         expandedMap.__restaurantLayers = [];
-
+        
         const lat = e.latlng.lat, lng = e.latlng.lng;
-        const bufferMeters = 1000;
         const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
         const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
-        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
+        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
+        
         try {
             const resp = await fetch(url);
             const data = await resp.json();
@@ -5606,6 +5605,7 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
                 alert("Bu bölgede restoran/kafe/bar bulunamadı!");
                 return;
             }
+
             data.features.forEach((f, idx) => {
                 const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
                     color: "#22bb33",
@@ -5625,8 +5625,6 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
                 const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(expandedMap);
                 expandedMap.__restaurantLayers.push(marker);
 
-                const address = f.properties.formatted || "";
-                const name = f.properties.name || "Restaurant";
                 const imgId = `rest-img-${f.properties.place_id || idx}`;
                 marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
                 marker.on("popupopen", function() {
@@ -5637,11 +5635,9 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
             alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
         } catch (err) {
             alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
-            console.error("Restoran fetch error:", err);
         }
     });
 }
-
 
 
 
