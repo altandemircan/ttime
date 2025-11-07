@@ -3526,7 +3526,6 @@ async function updateCart() {
     window._lastSegmentEndKm = undefined;
   }
 
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   days.forEach(day => {
     const hasRealItem = window.cart.some(i =>
       Number(i.day) === Number(day) &&
