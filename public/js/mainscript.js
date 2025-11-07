@@ -3800,51 +3800,42 @@ else {
         dayList.appendChild(li);
 
   if (idx < dayItemsArr.length - 1) {
-    let distanceStr = '', durationStr = '';
-    if (
-        item.location &&
-        typeof item.location.lat === "number" &&
-        typeof item.location.lng === "number" &&
-        dayItemsArr[idx + 1].location &&
-        typeof dayItemsArr[idx + 1].location.lat === "number" &&
-        typeof dayItemsArr[idx + 1].location.lng === "number"
-    ) {
-        const key = `route-map-day${day}`;
-        // İLK ÖNCE HANGİ SUMMARY DOLU ONA BAK!
-        let summary = null;
-        if (window.pairwiseRouteSummaries?.[key]) {
-            summary = window.pairwiseRouteSummaries[key][idx];
-            // fallback: currIdx ile de dene
-            if ((!summary || summary.distance == null) && window.pairwiseRouteSummaries[key][currIdx]) {
-                summary = window.pairwiseRouteSummaries[key][currIdx];
-            }
-        }
-        console.log('PAIRWISE DEBUG', { idx, currIdx, summary, arr: window.pairwiseRouteSummaries?.[key] });
-        if (summary && summary.distance != null && summary.duration != null) {
-            distanceStr = summary.distance >= 1000
-                ? (summary.distance / 1000).toFixed(1) + " km"
-                : Math.round(summary.distance) + " m";
-            durationStr = summary.duration >= 60
-                ? Math.round(summary.duration / 60) + " dk"
-                : Math.round(summary.duration) + " sn";
-        } else {
-            // Fallback: haversine ile kendin hesapla
-            const lat1 = item.location.lat, lon1 = item.location.lng;
-            const lat2 = dayItemsArr[idx + 1].location.lat, lon2 = dayItemsArr[idx + 1].location.lng;
-            const dist = haversine(lat1, lon1, lat2, lon2);
-            distanceStr = dist >= 1000
-                ? (dist / 1000).toFixed(1) + " km"
-                : Math.round(dist) + " m";
-            let speed = 1.3; // walking
-            let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
-            if (mode === 'driving') speed = 16;
-            else if (mode === 'cycling') speed = 5;
-            const dura = dist / speed;
-            durationStr = dura >= 60
-                ? Math.round(dura / 60) + " dk"
-                : Math.round(dura) + " sn";
-        }
+   let distanceStr = '', durationStr = '';
+if (
+    item.location &&
+    typeof item.location.lat === "number" &&
+    typeof item.location.lng === "number" &&
+    dayItemsArr[idx + 1].location &&
+    typeof dayItemsArr[idx + 1].location.lat === "number" &&
+    typeof dayItemsArr[idx + 1].location.lng === "number"
+) {
+    // Türkiye mi kontrol:
+    function isPointInTurkey(lat, lon) {
+      return lat >= 35.81 && lat <= 42.11 && lon >= 25.87 && lon <= 44.57;
     }
+    const lat1 = item.location.lat, lon1 = item.location.lng;
+    const lat2 = dayItemsArr[idx + 1].location.lat, lon2 = dayItemsArr[idx + 1].location.lng;
+    const turkiyeIcinde = isPointInTurkey(lat1, lon1) && isPointInTurkey(lat2, lon2);
+
+    if (!turkiyeIcinde) {
+        // Sadece haversine ile
+        const dist = haversine(lat1, lon1, lat2, lon2);
+        let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
+        let speed = 1.3;
+        if (mode === 'driving') speed = 16;
+        else if (mode === 'cycling') speed = 5;
+        const dura = dist / speed;
+        distanceStr = dist >= 1000
+            ? (dist / 1000).toFixed(1) + " km"
+            : Math.round(dist) + " m";
+        durationStr = dura >= 60
+            ? Math.round(dura / 60) + " dk"
+            : Math.round(dura) + " sn";
+    } else {
+        // Burada senin summary, API, vs. işle veya haversine fallback'ına izin ver
+        // (varsa summary vs. eski kodun olur)
+    }
+}
     const distanceSeparator = document.createElement('div');
     distanceSeparator.className = 'distance-separator';
     distanceSeparator.innerHTML = `
