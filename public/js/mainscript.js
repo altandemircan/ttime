@@ -3505,8 +3505,13 @@ if (typeof updateCart === "function") updateCart();
 
 
 async function updateCart() {
-     for (const d of days) {
-    await renderRouteForDay(d); // her gün için pairwise summary dolacak
+  // 1) EN BAŞTA GÜNCEL GÜNLERİ OLUŞTUR
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+
+  // 2) SONRA SIRAYLA summary'leri üret ve logla!
+  for (const d of days) {
+    await renderRouteForDay(d); // summary'yi dolduracak
+    console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
   }
   console.log("updateCart başlatıldı");
   document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
