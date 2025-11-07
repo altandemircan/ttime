@@ -3793,40 +3793,63 @@ else {
 
         dayList.appendChild(li);
 
-        if (idx < dayItemsArr.length - 1) {
-            let distanceStr = '', durationStr = '';
-            if (
-                item.location &&
-                typeof item.location.lat === "number" &&
-                typeof item.location.lng === "number" &&
-                dayItemsArr[idx + 1].location &&
-                typeof dayItemsArr[idx + 1].location.lat === "number" &&
-                typeof dayItemsArr[idx + 1].location.lng === "number"
-            ) {
-                const key = `route-map-day${day}`;
-                const pairwiseSummaries = window.pairwiseRouteSummaries?.[key] || [];
-const summary = pairwiseSummaries[idx];
-if (summary && summary.distance != null && summary.duration != null) {
-    distanceStr = summary.distance >= 1000
-        ? (summary.distance / 1000).toFixed(1) + " km"
-        : Math.round(summary.distance) + " m";
-    durationStr = summary.duration >= 60
-        ? Math.round(summary.duration / 60) + " dk"
-        : Math.round(summary.duration) + " sn";
-}
+  if (idx < dayItemsArr.length - 1) {
+    let distanceStr = '', durationStr = '';
+    if (
+        item.location &&
+        typeof item.location.lat === "number" &&
+        typeof item.location.lng === "number" &&
+        dayItemsArr[idx + 1].location &&
+        typeof dayItemsArr[idx + 1].location.lat === "number" &&
+        typeof dayItemsArr[idx + 1].location.lng === "number"
+    ) {
+        const key = `route-map-day${day}`;
+        // İLK ÖNCE HANGİ SUMMARY DOLU ONA BAK!
+        let summary = null;
+        if (window.pairwiseRouteSummaries?.[key]) {
+            summary = window.pairwiseRouteSummaries[key][idx];
+            // fallback: currIdx ile de dene
+            if ((!summary || summary.distance == null) && window.pairwiseRouteSummaries[key][currIdx]) {
+                summary = window.pairwiseRouteSummaries[key][currIdx];
             }
-
-            const distanceSeparator = document.createElement('div');
-            distanceSeparator.className = 'distance-separator';
-            distanceSeparator.innerHTML = `
-                <div class="separator-line"></div>
-                <div class="distance-label">
-                    <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
-                </div>
-                <div class="separator-line"></div>
-            `;
-            dayList.appendChild(distanceSeparator);
         }
+        console.log('PAIRWISE DEBUG', { idx, currIdx, summary, arr: window.pairwiseRouteSummaries?.[key] });
+        if (summary && summary.distance != null && summary.duration != null) {
+            distanceStr = summary.distance >= 1000
+                ? (summary.distance / 1000).toFixed(1) + " km"
+                : Math.round(summary.distance) + " m";
+            durationStr = summary.duration >= 60
+                ? Math.round(summary.duration / 60) + " dk"
+                : Math.round(summary.duration) + " sn";
+        } else {
+            // Fallback: haversine ile kendin hesapla
+            const lat1 = item.location.lat, lon1 = item.location.lng;
+            const lat2 = dayItemsArr[idx + 1].location.lat, lon2 = dayItemsArr[idx + 1].location.lng;
+            const dist = haversine(lat1, lon1, lat2, lon2);
+            distanceStr = dist >= 1000
+                ? (dist / 1000).toFixed(1) + " km"
+                : Math.round(dist) + " m";
+            let speed = 1.3; // walking
+            let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
+            if (mode === 'driving') speed = 16;
+            else if (mode === 'cycling') speed = 5;
+            const dura = dist / speed;
+            durationStr = dura >= 60
+                ? Math.round(dura / 60) + " dk"
+                : Math.round(dura) + " sn";
+        }
+    }
+    const distanceSeparator = document.createElement('div');
+    distanceSeparator.className = 'distance-separator';
+    distanceSeparator.innerHTML = `
+        <div class="separator-line"></div>
+        <div class="distance-label">
+            <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+        </div>
+        <div class="separator-line"></div>
+    `;
+    dayList.appendChild(distanceSeparator);
+}
     }
 }
 dayContainer.appendChild(dayList);
