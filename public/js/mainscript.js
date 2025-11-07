@@ -7586,12 +7586,11 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
 function updatePairwiseDistanceLabels(day) {
     const separators = document.querySelectorAll(`#day-container-${day} .distance-separator`);
     separators.forEach(separator => {
-        // Önceki travel-item (li) bul
+        // İki travel-item arasında olduğuna EMİN OL
         let prevItem = separator.previousElementSibling;
         while (prevItem && !prevItem.classList.contains('travel-item')) {
             prevItem = prevItem.previousElementSibling;
         }
-        // Sonraki travel-item (li) bul
         let nextItem = separator.nextElementSibling;
         while (nextItem && !nextItem.classList.contains('travel-item')) {
             nextItem = nextItem.nextElementSibling;
@@ -7603,25 +7602,25 @@ function updatePairwiseDistanceLabels(day) {
             const lon1 = Number(prevItem.getAttribute('data-lon'));
             const lat2 = Number(nextItem.getAttribute('data-lat'));
             const lon2 = Number(nextItem.getAttribute('data-lon'));
+
             if (isFinite(lat1) && isFinite(lon1) && isFinite(lat2) && isFinite(lon2)) {
-                // Gerçek route summary varsa önce onu kullan
-                let useSummary = false, summary;
-                const containerId = `route-map-day${day}`;
-                const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
-                // index'i hesapla: kaçıncı separator olduğunu bul
-                const siblings = [...separator.parentNode.children];
-                const myIndex = siblings.filter(el => el.classList && el.classList.contains('distance-separator')).indexOf(separator);
-                if (pairwiseSummaries[myIndex] && pairwiseSummaries[myIndex].distance != null && pairwiseSummaries[myIndex].duration != null) {
-                    summary = pairwiseSummaries[myIndex];
-                    useSummary = true;
+                // Route summary dene
+                let idx = 0, ptr = separator.parentNode.firstElementChild;
+                while(ptr && ptr !== separator) {
+                    if (ptr.classList && ptr.classList.contains('distance-separator')) idx++;
+                    ptr = ptr.nextElementSibling;
                 }
-                if (useSummary) {
+                let summary = (
+                    window.pairwiseRouteSummaries
+                    && window.pairwiseRouteSummaries[`route-map-day${day}`]
+                    && window.pairwiseRouteSummaries[`route-map-day${day}`][idx]
+                ) || null;
+                if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
                     distanceStr = summary.distance >= 1000 ? (summary.distance / 1000).toFixed(1) + " km"
                                 : Math.round(summary.distance) + " m";
                     durationStr = summary.duration >= 60 ? Math.round(summary.duration / 60) + " dk"
                                 : Math.round(summary.duration) + " sn";
                 } else {
-                    // Haversine hesapla
                     const dist = haversine(lat1, lon1, lat2, lon2);
                     let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
                     let speed = 1.3;
@@ -7633,7 +7632,6 @@ function updatePairwiseDistanceLabels(day) {
                 }
             }
         }
-        // DOM'a yaz
         const label = separator.querySelector('.distance-label');
         if (label) {
             const lockBtn = label.querySelector('.route-lock-toggle');
