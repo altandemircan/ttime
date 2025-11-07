@@ -5096,39 +5096,27 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     } else if (!hasValidGeo && points.length > 1) {
         // --- Kavisli/Yaylı çizgi çek ---
         for (let i = 0; i < points.length - 1; i++) {
-        drawCurvedLine(map, points[i], points[i + 1], {
-            color: "#1976d2", // MAVİ (küçük harita için)
-            weight: 5,
-            opacity: 0.85,
-            dashArray: "6,8"
-        });
-    }
+            drawCurvedLine(map, points[i], points[i + 1], {
+                color: "#1976d2", // MAVİ (küçük harita için)
+                weight: 5,
+                opacity: 0.85,
+                dashArray: "6,8"
+            });
+        }
     }
 
     // --- Missing points için ek çizgiler ---
-    if (Array.isArray(missingPoints) && missingPoints.length > 0 && hasValidGeo) {
-        const routeCoordsOriginal = geojson.features[0].geometry.coordinates;
-        function haversine(lat1, lon1, lat2, lon2) {
-            const R = 6371000, toRad = x => x * Math.PI / 180;
-            const dLat = toRad(lat2 - lat1);
-            const dLon = toRad(lon2 - lon1);
-            const a = Math.sin(dLat / 2) ** 2 +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-            return 2 * R * Math.asin(Math.sqrt(a));
+    if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
+        for (let i = 0; i < missingPoints.length - 1; i++) {
+            drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
+                color: "#1976d2",
+                weight: 4,
+                opacity: 0.8,
+                dashArray: "8,12",
+                interactive: false,
+                renderer: ensureCanvasRenderer(map)
+            });
         }
-
-        if (Array.isArray(missingPoints) && missingPoints.length > 1) {
-    L.polyline(missingPoints.map(p => [p.lat, p.lng]), {
-        dashArray: '8, 12',
-        color: '#1976d2',
-        weight: 4,
-        opacity: 0.8,
-        interactive: false,
-        renderer: ensureCanvasRenderer(map)
-    }).addTo(map);
-}
-
-
     }
 
     addNumberedMarkers(map, points);
@@ -5138,14 +5126,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }
 
     // --- Harita görünümünü ayarla ---
-                                                              points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-                                                            if (points.length > 1) {
-                                                                map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-                                                            } else if (points.length === 1) {
-                                                                map.setView([points[0].lat, points[0].lng], 14, { animate: true });
-                                                            } else {
-                                                                map.setView([0, 0], 2, { animate: true });
-                                                            }
+    points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+    if (points.length > 1) {
+        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+    } else if (points.length === 1) {
+        map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+    } else {
+        map.setView([0, 0], 2, { animate: true });
+    }
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
