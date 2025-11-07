@@ -11,6 +11,7 @@ function isTripFav(item) {
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
 
 window.__welcomeHiddenForever = false;
+window.__restaurantLayers = window.__restaurantLayers || [];
 
 window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
@@ -5590,6 +5591,9 @@ function setExpandedMapTile(styleKey) {
                             opacity: 0.93
                           }).addTo(expandedMap);
 
+
+
+// Polyline tıklama fonksiyonu:
 routePolyline.on('click', async function(e) {
   const lat = e.latlng.lat, lng = e.latlng.lng;
   const bufferMeters = 1000;
@@ -5597,32 +5601,27 @@ routePolyline.on('click', async function(e) {
   const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
   const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=20&apiKey=${apiKey}`;
 
-  // Loading (isteğe bağlı)
-  // ... (opsiyonel loading gösterebilirsin)
-
   try {
     const resp = await fetch(url);
     const data = await resp.json();
+
     if (!data.features || data.features.length === 0) {
       alert("Bu bölgede restoran/kafe/bar bulunamadı!");
       return;
     }
 
-    // --- ESKİ RESTORAN MARKER/LİNE'LARINI KALDIR ---
-    let cleanupCount = 0;
-    expandedMap.eachLayer(layer => {
-      // console.log(layer); // DEBUG
-      if (layer._isRestaurantMarker || layer._isRestaurantLine) {
-        expandedMap.removeLayer(layer);
-        cleanupCount++;
-      }
-    });
-    console.log(`[DEBUG] Temizlenen eski restaurant marker/line adedi: ${cleanupCount}`);
+    // ==> **Önceki marker ve çizgileri temizle**
+    if (window.__restaurantLayers.length > 0) {
+      window.__restaurantLayers.forEach(l => {
+        if (l && l.remove) { try { l.remove(); } catch(_){} }
+        else if (expandedMap.hasLayer(l)) { try { expandedMap.removeLayer(l); } catch(_){} }
+      });
+      window.__restaurantLayers = [];
+    }
 
-    // --- YENİ MARKER + ÇİZGİLERİ EKLE ---
     let addedCount = 0;
     data.features.forEach((f, idx) => {
-      // Çizgi (yeşil, tık noktasından restauranta)
+      // Çizgi
       const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
         color: "#22bb33",
         weight: 4,
@@ -5630,10 +5629,10 @@ routePolyline.on('click', async function(e) {
         dashArray: "8,8",
         interactive: false
       }).addTo(expandedMap);
-      guideLine._isRestaurantLine = true;
+      window.__restaurantLayers.push(guideLine);
       addedCount++;
 
-      // Marker (mor restoran markerı)
+      // Marker
       const icon = L.divIcon({
         html: getPurpleRestaurantMarkerHtml(),
         className: "",
@@ -5644,9 +5643,10 @@ routePolyline.on('click', async function(e) {
         icon,
         interactive: true
       }).addTo(expandedMap);
-      marker._isRestaurantMarker = true;
+      window.__restaurantLayers.push(marker);
       addedCount++;
 
+      // Popup
       const address = f.properties.formatted || "";
       const name = f.properties.name || "Restaurant";
       const imgId = `rest-img-${f.properties.place_id || idx}`;
@@ -5655,8 +5655,8 @@ routePolyline.on('click', async function(e) {
         handlePopupImageLoading(f, imgId);
       });
     });
-    console.log(`[DEBUG] Eklenen yeni restaurant marker/line adedi: ${addedCount}`);
 
+    console.log(`[DEBUG] Eklenen yeni restaurant marker/line adedi: ${addedCount}`);
     alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
   } catch (err) {
     alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
