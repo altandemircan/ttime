@@ -5095,14 +5095,14 @@ if (hasValidGeo && routeCoords.length > 1) {
     }).addTo(map);
 } else if (!hasValidGeo && points.length > 1) {
     // --- Kavisli/Yaylı çizgi çek ---
-        for (let i = 0; i < points.length - 1; i++) {
-        drawCurvedLine(map, points[i], points[i + 1], {
-            color: "#1976d2", // MAVİ (küçük harita için)
-            weight: 5,
-            opacity: 0.85,
-            dashArray: "6,8"
-        });
-    }
+    for (let i = 0; i < points.length - 1; i++) {
+    drawCurvedLine(map, points[i], points[i + 1], {
+        color: "#1976d2", // MAVİ (küçük harita için)
+        weight: 5,
+        opacity: 0.85,
+        dashArray: "6,8"
+    });
+}
 }
 
     // --- Missing points için ek çizgiler ---
