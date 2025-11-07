@@ -5569,7 +5569,7 @@ function setExpandedMapTile(styleKey) {
 
   
 if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-    // 1. Eski bütün polyline ve markerları sil (harita saflaştır)
+    // Önce eskileri sil
     expandedMap.eachLayer(l => {
         if (l instanceof L.Polyline || l instanceof L.Marker) {
             try { expandedMap.removeLayer(l); } catch(_) {}
@@ -5577,27 +5577,23 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
     });
     expandedMap.__restaurantLayers = [];
 
-    // 2. Yeni route polyline çiz
+    // Polyline INTERACTIVE OLSUN, eventler tutulsun
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const routePolyline = L.polyline(coords, {
         color: "#1976d2",
         weight: 7,
-        opacity: 0.93
+        opacity: 0.93,
+        interactive: true // ← bu önemli!
     }).addTo(expandedMap);
 
-    // 3. Polyline'a tıklandığında restoran göster
+    // Tek tık için
     routePolyline.on('click', async function(e) {
-        // Önce eski restoran markerlarını/çizgileri sil
-        expandedMap.__restaurantLayers.forEach(l => {
-            if (l && l.remove) { try { l.remove(); } catch(_) {} }
-        });
+        expandedMap.__restaurantLayers.forEach(l => { if (l?.remove) try { l.remove(); } catch{} });
         expandedMap.__restaurantLayers = [];
-        
+
         const lat = e.latlng.lat, lng = e.latlng.lng;
         const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-        const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
-        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
-        
+        const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
         try {
             const resp = await fetch(url);
             const data = await resp.json();
@@ -5605,31 +5601,19 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
                 alert("Bu bölgede restoran/kafe/bar bulunamadı!");
                 return;
             }
-
             data.features.forEach((f, idx) => {
                 const guideLine = L.polyline([[lat, lng], [f.properties.lat, f.properties.lon]], {
-                    color: "#22bb33",
-                    weight: 4,
-                    opacity: 0.95,
-                    dashArray: "8,8",
-                    interactive: false
+                    color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8", interactive: true
                 }).addTo(expandedMap);
                 expandedMap.__restaurantLayers.push(guideLine);
 
-                const icon = L.divIcon({
-                    html: getPurpleRestaurantMarkerHtml(),
-                    className: "",
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
-                });
+                const icon = L.divIcon({ html: getPurpleRestaurantMarkerHtml(), className: "", iconSize: [32, 32], iconAnchor: [16, 16] });
                 const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(expandedMap);
                 expandedMap.__restaurantLayers.push(marker);
 
                 const imgId = `rest-img-${f.properties.place_id || idx}`;
                 marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
-                marker.on("popupopen", function() {
-                    handlePopupImageLoading(f, imgId);
-                });
+                marker.on("popupopen", function() { handlePopupImageLoading(f, imgId); });
             });
 
             alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
@@ -5637,6 +5621,16 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
             alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
         }
     });
+
+    // Çift tık için varsayılan zoom'u engelle
+    routePolyline.on('dblclick', function(e){
+        L.DomEvent.stop(e); // olay zincirini KAPAT
+        // İstersen tekrar restoranları getir:
+        // routePolyline.fire('click', { latlng: e.latlng });
+    });
+
+    // Ayrıca haritanın kendisinde zoom'u kapatabilirsin:
+    expandedMap.doubleClickZoom.disable?.();
 }
 
 
