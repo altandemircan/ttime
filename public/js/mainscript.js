@@ -5595,6 +5595,8 @@ function setExpandedMapTile(styleKey) {
 
 // Polyline tıklama fonksiyonu:
 routePolyline.on('click', async function(e) {
+    console.log("RESTORAN FONKSİYONU ÇALIŞTI");
+
   console.log("Polyline clicked!"); // ← Tıklama her seferinde çalışıyor mu kontrolü
 
   const lat = e.latlng.lat, lng = e.latlng.lng;
