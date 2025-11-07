@@ -7585,63 +7585,50 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
 
 function updatePairwiseDistanceLabels(day) {
     const containerId = `route-map-day${day}`;
-    const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
-    // Günün itemlarını bul (cart'tan, sadece measured noktalar)
+    // window.cart'ın sırası/sepet sırası UI ile tutarlı olmalı!
     const dayItemsArr = (typeof window.cart === "object" && window.cart.filter)
         ? window.cart.filter(i => Number(i.day) === Number(day) && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
         : [];
-    // Sıralı separator'lara sırayla yaz
+    const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
     const separators = document.querySelectorAll(`#day-container-${day} .distance-separator`);
     separators.forEach((separator, idx) => {
-        const summary = pairwiseSummaries[idx];
+        let summary = pairwiseSummaries[idx];
         let distanceStr = '', durationStr = '';
-        if (summary && summary.distance != null) {
-            distanceStr = summary.distance >= 1000
-                ? (summary.distance / 1000).toFixed(1) + " km"
-                : Math.round(summary.distance) + " m";
-            durationStr = summary.duration >= 60
-                ? Math.round(summary.duration / 60) + " dk"
-                : Math.round(summary.duration) + " sn";
+        if (summary && summary.distance != null && summary.duration != null) {
+            distanceStr = summary.distance >= 1000 ? (summary.distance / 1000).toFixed(1) + " km"
+                        : Math.round(summary.distance) + " m";
+            durationStr = summary.duration >= 60 ? Math.round(summary.duration / 60) + " dk"
+                        : Math.round(summary.duration) + " sn";
         } else if (
             dayItemsArr[idx] && dayItemsArr[idx + 1] &&
             dayItemsArr[idx].location && dayItemsArr[idx + 1].location
         ) {
-            // Rota yoksa haversine ile hesapla
+            // Haversine hesapla
             const a = dayItemsArr[idx].location;
             const b = dayItemsArr[idx + 1].location;
             const dist = haversine(a.lat, a.lng, b.lat, b.lng); // metre
-            // Seyahat moduna göre hız
-            let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'driving';
-            let speed = 1.3; // yaya (m/s) varsayılan
-            if (mode === 'driving') speed = 16;       // yaklaşık 58 km/h
-            else if (mode === 'cycling') speed = 5;   // yaklaşık 18 km/h
-            const dura = dist / speed; // saniye
-
-            distanceStr = dist >= 1000 
-                ? (dist / 1000).toFixed(1) + " km" 
-                : Math.round(dist) + " m";
-            durationStr = dura >= 60 
-                ? Math.round(dura / 60) + " dk" 
-                : Math.round(dura) + " sn";
+            // Seyahat modu çek (default walking)
+            let mode = (typeof getTravelModeForDay === "function") ? getTravelModeForDay(day) : 'walking';
+            let speed = 1.3; // m/s
+            if (mode === 'driving') speed = 16;
+            else if (mode === 'cycling') speed = 5;
+            const dura = dist / speed;
+            distanceStr = dist >= 1000 ? (dist / 1000).toFixed(1) + " km": Math.round(dist) + " m";
+            durationStr = dura >= 60 ? Math.round(dura / 60) + " dk" : Math.round(dura) + " sn";
         } else {
             distanceStr = "—";
             durationStr = "—";
         }
         const label = separator.querySelector('.distance-label');
         if (label) {
-            // BUTON VARSA KORU
             const lockBtn = label.querySelector('.route-lock-toggle');
             label.innerHTML = '';
             if (lockBtn) label.appendChild(lockBtn);
-
-            // Sonra mesafe/süreyi ekle
             const distanceValue = document.createElement('span');
             distanceValue.className = 'distance-value';
             distanceValue.textContent = distanceStr;
             label.appendChild(distanceValue);
-
             label.appendChild(document.createTextNode(' • '));
-
             const durationValue = document.createElement('span');
             durationValue.className = 'duration-value';
             durationValue.textContent = durationStr;
