@@ -4156,7 +4156,7 @@ cartDiv.appendChild(addNewDayButton);
         dayList._sortableSetup = true;
       }
     });
-  }, 0);
+  }, 0);} 
 
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
