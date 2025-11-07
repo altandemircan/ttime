@@ -7584,41 +7584,50 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
 }
 
 function updatePairwiseDistanceLabels(day) {
-    const containerId = `route-map-day${day}`;
-    // window.cart'ın sırası/sepet sırası UI ile tutarlı olmalı!
-    const dayItemsArr = (typeof window.cart === "object" && window.cart.filter)
-        ? window.cart.filter(i => Number(i.day) === Number(day) && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
-        : [];
-    const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
     const separators = document.querySelectorAll(`#day-container-${day} .distance-separator`);
-    separators.forEach((separator, idx) => {
-        let summary = pairwiseSummaries[idx];
-        let distanceStr = '', durationStr = '';
-        if (summary && summary.distance != null && summary.duration != null) {
-            distanceStr = summary.distance >= 1000 ? (summary.distance / 1000).toFixed(1) + " km"
-                        : Math.round(summary.distance) + " m";
-            durationStr = summary.duration >= 60 ? Math.round(summary.duration / 60) + " dk"
-                        : Math.round(summary.duration) + " sn";
-        } else if (
-            dayItemsArr[idx] && dayItemsArr[idx + 1] &&
-            dayItemsArr[idx].location && dayItemsArr[idx + 1].location
-        ) {
-            // Haversine hesapla
-            const a = dayItemsArr[idx].location;
-            const b = dayItemsArr[idx + 1].location;
-            const dist = haversine(a.lat, a.lng, b.lat, b.lng); // metre
-            // Seyahat modu çek (default walking)
-            let mode = (typeof getTravelModeForDay === "function") ? getTravelModeForDay(day) : 'walking';
-            let speed = 1.3; // m/s
-            if (mode === 'driving') speed = 16;
-            else if (mode === 'cycling') speed = 5;
-            const dura = dist / speed;
-            distanceStr = dist >= 1000 ? (dist / 1000).toFixed(1) + " km": Math.round(dist) + " m";
-            durationStr = dura >= 60 ? Math.round(dura / 60) + " dk" : Math.round(dura) + " sn";
-        } else {
-            distanceStr = "—";
-            durationStr = "—";
+    separators.forEach(separator => {
+        // Separator'dan ÖNCEKİ travel-item'ı bul
+        let prevItem = separator.previousElementSibling;
+        while (prevItem && !prevItem.classList.contains('travel-item')) {
+            prevItem = prevItem.previousElementSibling;
         }
+        // Separator'dan SONRAKİ travel-item'ı bul
+        let nextItem = separator.nextElementSibling;
+        while (nextItem && !nextItem.classList.contains('travel-item')) {
+            nextItem = nextItem.nextElementSibling;
+        }
+
+        let distanceStr = "—", durationStr = "—";
+        if (prevItem && nextItem) {
+            const lat1 = Number(prevItem.getAttribute('data-lat'));
+            const lon1 = Number(prevItem.getAttribute('data-lon'));
+            const lat2 = Number(nextItem.getAttribute('data-lat'));
+            const lon2 = Number(nextItem.getAttribute('data-lon'));
+            if (isFinite(lat1) && isFinite(lon1) && isFinite(lat2) && isFinite(lon2)) {
+                // Pairwise route summary (varsa) önce kullan
+                const idx = Array.prototype.indexOf.call(separator.parentNode.children, separator) / 2; // Tahmini
+                const containerId = `route-map-day${day}`;
+                const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
+                let summary = pairwiseSummaries[idx] || null;
+                if (summary && summary.distance != null && summary.duration != null) {
+                    distanceStr = summary.distance >= 1000 ? (summary.distance / 1000).toFixed(1) + " km"
+                                : Math.round(summary.distance) + " m";
+                    durationStr = summary.duration >= 60 ? Math.round(summary.duration / 60) + " dk"
+                                : Math.round(summary.duration) + " sn";
+                } else {
+                    // Haversine
+                    const dist = haversine(lat1, lon1, lat2, lon2);
+                    let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
+                    let speed = 1.3;
+                    if (mode === 'driving') speed = 16;
+                    else if (mode === 'cycling') speed = 5;
+                    const dura = dist / speed;
+                    distanceStr = dist >= 1000 ? (dist / 1000).toFixed(1) + " km" : Math.round(dist) + " m";
+                    durationStr = dura >= 60 ? Math.round(dura / 60) + " dk" : Math.round(dura) + " sn";
+                }
+            }
+        }
+        // DOM'a yaz
         const label = separator.querySelector('.distance-label');
         if (label) {
             const lockBtn = label.querySelector('.route-lock-toggle');
