@@ -3517,7 +3517,6 @@ async function updateCart() {
 
 
   if (window.expandedMaps) {
-    const days = [...new Set((window.cart || []).map(i => i.day))];
     days.forEach(day => {
       clearRouteSegmentHighlight(day);
     });
