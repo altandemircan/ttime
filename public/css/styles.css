@@ -4420,13 +4420,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 
-.expanded-map {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 285px;
-    height: calc(100% - 200px) !important;
-    bottom: 200px;
-}
+
 
 
 
@@ -5059,7 +5053,7 @@ right: 10px;
     border: none;
     padding: 6px 4px;
     border-radius: 4px;
-    top: 140px;
+    top: 10px;
     left: 10px;
     border: 2px solid rgba(0, 0, 0, 0.2);
     background-clip: padding-box;
