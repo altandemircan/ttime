@@ -5566,25 +5566,20 @@ function setExpandedMapTile(styleKey) {
   }
 
 
-
 if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
-    // 1. Haritadaki SADECE ROUTE POLYLINE ve markerları sil
+    // 1. Tüm eski polyline ve markerları SİL — MapLibre tileLayer kalsın!
     expandedMap.eachLayer(l => {
-        // MapLibre layerını silme!
-        if (
-            (l instanceof L.Polyline || l instanceof L.Marker)
-            && !(l._maplibreLayer === true)
-        ) {
+        // MapLibre tileLayerı l.options.pane === "tilePane" olanı asla silme
+        if ((l instanceof L.Polyline || l instanceof L.Marker) && (!l.options || l.options.pane !== "tilePane")) {
             try { expandedMap.removeLayer(l); } catch(_) {}
         }
     });
     expandedMap.__restaurantLayers = [];
 
-    // 2. Maplibre'yi GEÇİCİ OLARAK SİL
-    let currentMaplibreLayer = expandedMap._maplibreLayer;
-    if (currentMaplibreLayer) expandedMap.removeLayer(currentMaplibreLayer);
+    // 2. Harita zaten maplibre ile tilePane'e basılmış olmalı
+    // expandedMap._maplibreLayer = L.maplibreGL({ style: url, pane: "tilePane" }).addTo(expandedMap);
 
-    // 3. Polyline'ı çiz; event handler ata!
+    // 3. Route polyline'i EN SON EKLE (böylece ÜSTTE olur!)
     const coords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     const routePolyline = L.polyline(coords, {
         color: "#1976d2",
@@ -5593,11 +5588,10 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
         interactive: true
     }).addTo(expandedMap);
 
-    // 4. Çift tık zoom'u kapat
+    // Çift tık zoom global ve polyline üzerinde KAPALI
     expandedMap.doubleClickZoom.disable();
     routePolyline.on('dblclick', function(e){ L.DomEvent.stop(e); });
 
-    // 5. Tıkla → restoranları getir
     routePolyline.on('click', async function(e) {
         expandedMap.__restaurantLayers.forEach(l => { if (l && l.remove) try { l.remove(); } catch{} });
         expandedMap.__restaurantLayers = [];
@@ -5632,9 +5626,6 @@ if (geojson?.features?.[0]?.geometry?.coordinates?.length > 1) {
             alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
         }
     });
-
-    // 6. MaplibreLayer'ı GERİ EKLE (ÇİZGİ/MARKER ÜSTTE KALIR)
-    if (currentMaplibreLayer) currentMaplibreLayer.addTo(expandedMap);
 }
 
   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
