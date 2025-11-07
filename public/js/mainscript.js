@@ -4436,7 +4436,7 @@ function updateExpandedMap(expandedMap, day) {
             dashArray: '8, 12',
             color: '#d32f2f',
             weight: 4,
-            opacity: 0.8,
+            opacity: 0.2,
             interactive: false,
             renderer: ensureCanvasRenderer(expandedMap)
         }).addTo(expandedMap);
