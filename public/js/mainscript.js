@@ -4407,7 +4407,7 @@ function updateExpandedMap(expandedMap, day) {
         // Rota YOKSA: YAY (kavisli çizgi)
         for (let i = 0; i < pts.length - 1; i++) {
             drawCurvedLine(expandedMap, pts[i], pts[i + 1], {
-                color: "#bdbdbd",
+                color: "#1976d2",
                 weight: 6,
                 opacity: 0.93,
                 dashArray: "6,8" // İstediğine göre noktali/düz yap
