@@ -9356,13 +9356,13 @@ document.addEventListener('mousedown', (e) => {
   const TTL_MS = 48 * 60 * 60 * 1000;
   const LS_PREFIX = 'tt_elev_cache_v1:';
 
-  // Sadece VPS/OpenTopoData provider!
+  // Sadece kendi VPS/api provider!
   const providers = [
-    { key: 'openTopoData', fn: viaOpenTopoData, chunk: 80, minInterval: 1200 },
+    { key: 'myApi', fn: viaMyApi, chunk: 80, minInterval: 1200 },
   ];
 
-  const cooldownUntil = { openTopoData: 0 };
-  const lastTs        = { openTopoData: 0 };
+  const cooldownUntil = { myApi: 0 };
+  const lastTs        = { myApi: 0 };
 
   function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
@@ -9392,7 +9392,7 @@ document.addEventListener('mousedown', (e) => {
     lastTs[key] = Date.now();
   }
 
-  async function viaOpenTopoData(samples) {
+  async function viaMyApi(samples) {
     const CHUNK = 80;
     const res = [];
     for (let i=0;i<samples.length;i+=CHUNK){
@@ -9401,12 +9401,12 @@ document.addEventListener('mousedown', (e) => {
       const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
       const resp = await fetch(url);
       if (resp.status === 429) {
-        cooldownUntil.openTopoData = Date.now() + 10*60*1000;
+        cooldownUntil.myApi = Date.now() + 10*60*1000;
         throw new Error('429');
       }
       if (!resp.ok) throw new Error('HTTP '+resp.status);
       const j = await resp.json();
-      // OpenTopoData backend response
+      // API backend response
       if (j.results && j.results.length === chunk.length) {
         res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
       } else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
@@ -9431,12 +9431,12 @@ document.addEventListener('mousedown', (e) => {
       return cached;
     }
 
-    // Only OpenTopoData provider
+    // Only own provider
     for (const p of providers) {
       try {
         if (Date.now() < cooldownUntil[p.key]) continue;
         if (typeof updateScaleBarLoadingText === 'function') {
-          updateScaleBarLoadingText(container, `Loading elevation… (${p.key})`);
+          updateScaleBarLoadingText(container, `Loading elevation…`);
         }
         const elev = await p.fn(samples);
         if (Array.isArray(elev) && elev.length === samples.length) {
