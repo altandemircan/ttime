@@ -8757,10 +8757,21 @@ if (!container || isNaN(totalKm)) {
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
 
-if (!coords || coords.length < 2) {
-  container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">No route points found</div></div>`;
-  container.style.display = 'block'; // HEP GÖSTER!
-  return;
+// if (!coords || coords.length < 2) {
+//   container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">No route points found</div></div>`;
+//   container.style.display = 'block'; // HEP GÖSTER!
+//   return;
+// }
+
+  // Eğer burada geojson'dan coords yok veya kısaysa (ROMA gibi marker+yayda) OLSUN, yine de scale bar çiz!
+let hasGeoJson = coords && coords.length >= 2;
+if (!hasGeoJson) {
+  // Coord yoksa, markers bilgisinden scale bar çizilecek.
+  // Özellikle coords undefined/boşsa, markers argümanını gerçek marker dizisiyle doldurduğun için
+  // bar DOM'a yine de svg, marker badge ve elevation çıkaracak!
+  // Yani bu satırı komple SİL, return yapma!
+  // Sadece bilgilendirme için log bırakabilirsin:
+  console.warn('No route GeoJSON, drawing scale bar from markers/haversine.');
 }
 
 
