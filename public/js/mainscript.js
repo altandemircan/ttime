@@ -357,24 +357,29 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   // Marker badge ekleme: YAY MODU PATCH!
+// Marker badge ekleme: YAY MODU PATCH!
 if (Array.isArray(markers)) {
   markers.forEach((m, idx) => {
     let dist = typeof m.distance === "number" ? m.distance : 0;
     // PATCH: out of range/return YOK!
     // Bar'ın uzunluğunda markerın konumu:
     const relKm = dist - startKmDom;
-    const left = (relKm / spanKm) * 100;
+
+    // PATCH: spanKm'nin sıfır olmasına karşı koruma!
+    let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0; // bar uzunluğu hata olmasın
+    left = Math.max(0, Math.min(100, left)); // 0-100 arası tut
+
     const wrap = document.createElement('div');
     wrap.className = 'marker-badge';
     wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
     wrap.title = m.name || '';
     wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
     track.appendChild(wrap);
-    console.log('BADGE ADDED', idx, m.name, 'at', left, '%');
+    console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');
   });
 } else {
-    console.warn("[DEBUG] markers is not array", markers);
-  }
+  console.warn("[DEBUG] markers is not array", markers);
+}
 
   // (Geri kalan elevation/labels kodu – aynen kalabilir)
   let gridLabels = [];
