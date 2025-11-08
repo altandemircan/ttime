@@ -4473,13 +4473,11 @@ function updateExpandedMap(expandedMap, day) {
     }
 
     // İçerik blokları aynı, sadece bar kontrolü değişti!
- const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
 if (scaleBarDiv) {
-    // Gezi planındaki markerlar arası mesafe ve pozisyonları topla:
-    const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+    const pts = getDayPoints(day);
     let totalKm = 0;
     let markerPositions = [];
-
     for (let i = 0; i < pts.length; i++) {
         if (i > 0) {
             totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000; // km
@@ -4491,13 +4489,10 @@ if (scaleBarDiv) {
             lng: pts[i].lng
         });
     }
-
-    // Ölçek barı her zaman göster, içini doldur:
     scaleBarDiv.style.display = "block";
     scaleBarDiv.innerHTML = "";
     if (typeof renderRouteScaleBar === "function" && markerPositions.length >= 2) {
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-        // Scale bar ek işlemlerini (örn. vertical çizgi, scale tick, vb.) fonksiyonun çağırıyorsa bırak, çağırmıyorsa ekle
         const track = scaleBarDiv.querySelector('.scale-bar-track');
         const svg = track && track.querySelector('svg.tt-elev-svg');
         if (track && svg) {
