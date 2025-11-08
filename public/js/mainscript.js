@@ -4525,7 +4525,8 @@ for (let i = 0; i < pts.length; i++) {
 window.__debug_markerPositions = markerPositions;
 console.log('[DEBUG] markerPositions:', markerPositions.map(m => `${m.name}: ${m.distance}`));
 
-
+    // *** İŞTE BURADA LOG'LA! ***
+    console.log('[DEBUG] markerPositions:', markerPositions);
 
     scaleBarDiv.style.display = "block";
     scaleBarDiv.innerHTML = "";
