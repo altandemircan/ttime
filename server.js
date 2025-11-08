@@ -110,7 +110,7 @@ app.get('/api/elevation', async (req, res) => {
       console.log(`[Elevation BACKEND] Calling: ${url} with ${batch.split('|').length} coords`);
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000); // 15s
+      const timeout = setTimeout(() => controller.abort(), 30000); // 15s
       let response;
       try {
         response = await fetch(url, { signal: controller.signal });
