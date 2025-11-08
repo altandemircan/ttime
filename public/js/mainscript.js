@@ -4382,7 +4382,7 @@ function toOSRMMode(mode) {
   mode = mode.toLowerCase();
   if (mode === 'walking') return 'foot';
   if (mode === 'cycling') return 'bike';
-  if (mode === 'bicycle') return 'bike';
+
   return mode;
 }
 
@@ -4517,7 +4517,7 @@ if (scaleBarDiv) {
             createScaleElements(track, width, totalKm, 0, markerPositions);
         }
     }
-}
+}   
     adjustExpandedHeader(day);
 }
 
