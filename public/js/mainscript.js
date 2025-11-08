@@ -4500,21 +4500,18 @@ function updateExpandedMap(expandedMap, day) {
    if (scaleBarDiv) {
     // PATCH: bar çizimi için haversine ile markerPositions array üret
     let totalKm = 0;
-let markerPositions = pts.map((pt, i) => {
-    if (i > 0) totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-    return {
-        name: pt.name || "",
-        distance: totalKm,
-        lat: pt.lat, lng: pt.lng
-    };
-});
+let markerPositions = [];
+for (let i = 0; i < pts.length; i++) {
+    if (i > 0) {
+        totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
+    }
     markerPositions.push({
         name: pts[i].name || "",
         distance: totalKm,
         lat: pts[i].lat,
         lng: pts[i].lng
     });
-
+}
 // debug export
 window.__debug_markerPositions = markerPositions;
 console.log('[DEBUG] markerPositions:', markerPositions.map(m => `${m.name}: ${m.distance}`));
@@ -5193,29 +5190,17 @@ window.expandedMaps = {};
 
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
-  let summary = window.lastRouteSummaries?.[key] || null;
+  const summary = window.lastRouteSummaries?.[key] || null;
 
-  let distance = 0, duration = 0;
-  let ascent = undefined, descent = undefined;
+  // Ascent/descent verisini oku
+  const ascent = window.routeElevStatsByDay?.[day]?.ascent;
+  const descent = window.routeElevStatsByDay?.[day]?.descent;
 
-  if (!summary) {
-    // Haversine fallback!
-    const pts = typeof getDayPoints === "function" ? getDayPoints(day) : [];
-    if (Array.isArray(pts) && pts.length >= 2) {
-      for (let i = 1; i < pts.length; i++) {
-        distance += haversine(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng);
-      }
-      duration = Math.round(distance / 1.3 / 60); // yürüme hızı
-      summary = { distance, duration: duration * 60 };
-    }
-  }
-
-  ascent = window.routeElevStatsByDay?.[day]?.ascent;
-  descent = window.routeElevStatsByDay?.[day]?.descent;
-
+  // Mesafe/Süre
   const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "—";
   const durationMin = summary ? Math.round(summary.duration / 60) : "—";
 
+  // SADECE küçük harita altındaki kutunun içeriğini güncelle (başka hiçbir DOM'a dokunma)
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     routeSummarySpan.innerHTML = `
@@ -5238,6 +5223,7 @@ function updateRouteStatsUI(day) {
     `;
   }
 }
+
  
 
 function openMapLibre3D(expandedMap) {
@@ -8172,34 +8158,11 @@ function renderTravelModeControlsForAllDays() {
   markActiveTravelModeButtons();
 }
 
+// Replace this function in son9.js
 function markActiveTravelModeButtons() {
   document.querySelectorAll('.tt-travel-mode-set').forEach(set => {
     const day = parseInt(set.dataset.day || '1', 10);
-
-    // Geojson route yok mu veya Türkiye dışında mı?
-    const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`];
-    const isRoute = geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
-    const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-
-    const allInTurkey = pts && pts.length > 1
-      ? pts.every(p => p.lat >= 35.81 && p.lat <= 42.11 && p.lng >= 25.87 && p.lng <= 44.57)
-      : false;
-
-    set.querySelectorAll('button[data-mode]').forEach(b => {
-      const mode = b.getAttribute('data-mode');
-      if (!isRoute || !allInTurkey) {
-        // Sadece 'walking' butonu aktif, diğerleri pasif/gri
-        b.disabled = (mode !== 'walking');
-        b.style.opacity = (mode !== 'walking') ? '.4' : '1';
-      } else {
-        b.disabled = false;
-        b.style.opacity = '1';
-      }
-    });
-
-    // Aktif mod → Yurt dışı veya rota yoksa walking zorla aktif
-    let active = (typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : (window.travelMode || 'driving')).toLowerCase();
-    if (!isRoute || !allInTurkey) active = "walking";
+    const active = (typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : (window.travelMode || 'driving')).toLowerCase();
     set.querySelectorAll('button[data-mode]').forEach(b => {
       b.classList.toggle('active', b.getAttribute('data-mode') === active);
     });
