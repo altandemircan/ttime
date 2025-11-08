@@ -8722,8 +8722,8 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 
 function renderRouteScaleBar(container, totalKm, markers) {
-if (!container || isNaN(totalKm) || totalKm <= 0) {
-  if (container) { container.innerHTML = ""; container.style.display = 'none'; }
+if (!container || isNaN(totalKm)) {
+  if (container) { container.innerHTML = ""; container.style.display = 'block'; }
   return;
 }
 
