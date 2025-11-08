@@ -97,7 +97,7 @@ app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
 
   const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:9000';
-  const ELEVATION_DATASET = process.env.ELEVATION_DATASET || 'merit';
+  const ELEVATION_DATASET = process.env.ELEVATION_DATASET || 'merit_dem';
 
   let batchSize = 5; // önce küçük
   try {
