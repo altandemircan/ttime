@@ -4500,11 +4500,14 @@ function updateExpandedMap(expandedMap, day) {
    if (scaleBarDiv) {
     // PATCH: bar çizimi için haversine ile markerPositions array üret
     let totalKm = 0;
-let markerPositions = [];
-for (let i = 0; i < pts.length; i++) {
-    if (i > 0) {
-        totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-    }
+let markerPositions = pts.map((pt, i) => {
+    if (i > 0) totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
+    return {
+        name: pt.name || "",
+        distance: totalKm,
+        lat: pt.lat, lng: pt.lng
+    };
+});
     markerPositions.push({
         name: pts[i].name || "",
         distance: totalKm,
@@ -5190,17 +5193,34 @@ window.expandedMaps = {};
 
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
-  const summary = window.lastRouteSummaries?.[key] || null;
+  let summary = window.lastRouteSummaries?.[key] || null;
 
-  // Ascent/descent verisini oku
-  const ascent = window.routeElevStatsByDay?.[day]?.ascent;
-  const descent = window.routeElevStatsByDay?.[day]?.descent;
+  // Mesafe, süre, ascent/descent fallback
+  let distance = 0, duration = 0;
+  let ascent = undefined, descent = undefined;
 
-  // Mesafe/Süre
+  // a) Eğer summary yoksa, haversine ile hesapla:
+  if (!summary) {
+    const pts = typeof getDayPoints === "function" ? getDayPoints(day) : [];
+    if (Array.isArray(pts) && pts.length >= 2) {
+      for (let i = 1; i < pts.length; i++) {
+        distance += haversine(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng); // metre
+      }
+      // Yürüme hızı: 1.3 m/s (saatte ~4.7 km), süreyi dakikaya çevir!
+      duration = Math.round(distance / 1.3 / 60); // dakika
+      summary = { distance, duration: duration * 60 }; // duration: saniye!
+    }
+  }
+
+  // b) Ascent/descent verisini oku (yükseklik varsa)
+  ascent = window.routeElevStatsByDay?.[day]?.ascent;
+  descent = window.routeElevStatsByDay?.[day]?.descent;
+
+  // c) UI için hazırlan (null/boşsa yer tutucu ver)
   const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "—";
   const durationMin = summary ? Math.round(summary.duration / 60) : "—";
 
-  // SADECE küçük harita altındaki kutunun içeriğini güncelle (başka hiçbir DOM'a dokunma)
+  // d) Küçük harita altındaki stat bar'ı doldur
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     routeSummarySpan.innerHTML = `
@@ -5222,8 +5242,30 @@ function updateRouteStatsUI(day) {
       </span>
     `;
   }
-}
 
+  // e) Expanded map header'da da güncelle (isteğe bağlı)
+  const expandedStatsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+  if (expandedStatsDiv) {
+    expandedStatsDiv.innerHTML = `
+      <span class="stat stat-distance">
+        <img class="icon" src="/img/way_distance.svg" alt="Distance">
+        <span class="badge">${distanceKm} km</span>
+      </span>
+      <span class="stat stat-duration">
+        <img class="icon" src="/img/way_time.svg" alt="Duration">
+        <span class="badge">${durationMin} dk</span>
+      </span>
+      <span class="stat stat-ascent">
+        <img class="icon" src="/img/way_ascent.svg" alt="Ascent">
+        <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
+      </span>
+      <span class="stat stat-descent">
+        <img class="icon" src="/img/way_descent.svg" alt="Descent">
+        <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
+      </span>
+    `;
+  }
+}
  
 
 function openMapLibre3D(expandedMap) {
@@ -8760,7 +8802,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 function renderRouteScaleBar(container, totalKm, markers) {
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
-
+console.log('markerPositions:', markers.map(m => `${m.name}: ${m.distance}`));
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
 
 if (!container || isNaN(totalKm)) {
