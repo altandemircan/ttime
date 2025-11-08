@@ -4474,42 +4474,41 @@ function updateExpandedMap(expandedMap, day) {
 
     // İçerik blokları aynı, sadece bar kontrolü değişti!
                                 const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-                                if (scaleBarDiv) {
-                                    try {
-                                        // YAY (polyline) çizimi için: marker adedi >= 2 → visible!
-                                        if (!hasValidRoute && pts.length >= 2) {
-                                            scaleBarDiv.style.display = 'block';     // 👍 YALNIZCA yay/polyline modunda barı göster
-                                            // İçerik render et! (örn. renderRouteScaleBar ile doldur)
-                                            // renderRouteScaleBar(scaleBarDiv, ...)
-                                        } else if (!pts || pts.length < 2) {
-                                            scaleBarDiv.innerHTML = '';
-                                            scaleBarDiv.style.display = 'none';      // Diğer tüm durumlar için: bar gizli
-                                        } else {
-                                            // Diğer koşulları eski haliyle bırak (Türkiye OSRM rota vs için)
-                                            const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
-                                            const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
-                                                ? getRouteMarkerPositionsOrdered(day)
-                                                : [];
-                                            if (totalKm > 0 && markerPositions.length > 0) {
-                                                scaleBarDiv.style.display = '';
-                                                try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
-                                                renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-                                                const track = scaleBarDiv.querySelector('.scale-bar-track');
-                                                const svg = track && track.querySelector('svg.tt-elev-svg');
-                                                if (track && svg) {
-                                                    const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                                                    createScaleElements(track, width, totalKm, 0, markerPositions);
-                                                }
-                                            } else {
-                                                scaleBarDiv.innerHTML = '';
-                                                scaleBarDiv.style.display = 'none';
-                                            }
-                                        }
-                                    } catch (_) {
-                                        scaleBarDiv.innerHTML = '';
-                                        scaleBarDiv.style.display = 'none';
-                                    }
-                                }
+                               if (scaleBarDiv) {
+    try {
+        // Sadece YAY (polyline) modunda barı daima görünür yap!
+        if (!hasValidRoute && pts.length >= 2) {
+            scaleBarDiv.style.display = 'block';
+            // Eğer istersen: renderRouteScaleBar(scaleBarDiv, ...) burada çağrılabilir.
+        } else if (!pts || pts.length < 2) {
+            scaleBarDiv.innerHTML = '';
+            scaleBarDiv.style.display = 'none';
+        } else {
+            // Diğer koşullar eski haliyle devam
+            const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
+            const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
+                ? getRouteMarkerPositionsOrdered(day)
+                : [];
+            if (totalKm > 0 && markerPositions.length > 0) {
+                scaleBarDiv.style.display = '';
+                try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
+                renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+                const track = scaleBarDiv.querySelector('.scale-bar-track');
+                const svg = track && track.querySelector('svg.tt-elev-svg');
+                if (track && svg) {
+                    const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+                    createScaleElements(track, width, totalKm, 0, markerPositions);
+                }
+            } else {
+                scaleBarDiv.innerHTML = '';
+                scaleBarDiv.style.display = 'none';
+            }
+        }
+    } catch (_) {
+        scaleBarDiv.innerHTML = '';
+        scaleBarDiv.style.display = 'none';
+    }
+}
     adjustExpandedHeader(day);
 }
 
