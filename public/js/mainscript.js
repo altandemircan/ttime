@@ -320,6 +320,11 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     widthPx, spanKm, startKmDom, markers
   });
 
+  if (!spanKm || spanKm < 0.01) {
+  console.warn('[SCALEBAR] BAD spanKm, abort badge render (spanKm=', spanKm, ')');
+  return;
+}
+
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
@@ -5617,7 +5622,7 @@ if (typeof renderRouteScaleBar === 'function') {
         createScaleElements(track, width, totalKm, 0, markerPositions);
     }
 }
-  
+
 
 const track = scaleBarDiv.querySelector('.scale-bar-track');
 const svg = track && track.querySelector('svg.tt-elev-svg');
