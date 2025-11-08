@@ -364,7 +364,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-  // Marker badge ekleme: YAY MODU PATCH!
 // Marker badge ekleme: YAY MODU PATCH!
 if (Array.isArray(markers)) {
   markers.forEach((m, idx) => {
@@ -384,6 +383,7 @@ if (Array.isArray(markers)) {
     wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
     track.appendChild(wrap);
     console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');
+
   });
 } else {
   console.warn("[DEBUG] markers is not array", markers);
@@ -4509,21 +4509,23 @@ function updateExpandedMap(expandedMap, day) {
    if (scaleBarDiv) {
     // PATCH: bar çizimi için haversine ile markerPositions array üret
     let totalKm = 0;
-    let markerPositions = [];
-    for (let i = 0; i < pts.length; i++) {
-        if (i > 0) {
-            totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-        }
-        markerPositions.push({
-            name: pts[i].name || "",
-            distance: totalKm,
-            lat: pts[i].lat,
-            lng: pts[i].lng
-        });
+let markerPositions = [];
+for (let i = 0; i < pts.length; i++) {
+    if (i > 0) {
+        totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
     }
+    markerPositions.push({
+        name: pts[i].name || "",
+        distance: totalKm,
+        lat: pts[i].lat,
+        lng: pts[i].lng
+    });
+}
+// debug export
+window.__debug_markerPositions = markerPositions;
+console.log('[DEBUG] markerPositions:', markerPositions.map(m => `${m.name}: ${m.distance}`));
 
-    // *** İŞTE BURADA LOG'LA! ***
-    console.log('[DEBUG] markerPositions:', markerPositions);
+
 
     scaleBarDiv.style.display = "block";
     scaleBarDiv.innerHTML = "";
