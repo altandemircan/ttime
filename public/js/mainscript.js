@@ -316,12 +316,12 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
-  // Tüm eski içerikleri KESİN temizle (badge/tick/label/elevation vs.)
-  track.innerHTML = '';
+  // Sadece badge, tick, label ve elevation label divlerini temizle!
+  track.querySelectorAll('.marker-badge, .scale-bar-tick, .scale-bar-label, .elevation-labels-container').forEach(el => el.remove());
 
   if (!spanKm || spanKm < 0.01) {
-    // Sıfır veya düşük mesafe varsa, marker badge DOM'u silinsin, bar boş gelsin.
-    console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
+    // Sıfır/düşük mesafe varsa, bar sadece profil SVG ile boş gelsin (marker badge vs. DOM'dan silinir)
+    console.warn('[SCALEBAR] BAD spanKm, DOM temizlendi, markerlar ve etiketler eklenmedi!', spanKm);
     return;
   }
 
@@ -329,7 +329,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     widthPx, spanKm, startKmDom, markers
   });
 
-  // Tick + label dizisi
+  // Tick ve label çizimi
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -362,11 +362,10 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-  // Marker badge ekleme: YAY MODU PATCH!
+  // Sadece doğru KM ile marker badge ekle!
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
-      // Bar'ın yayında marker'ın konumu:
       const relKm = dist - startKmDom;
       let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
       left = Math.max(0, Math.min(100, left));
@@ -383,7 +382,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     console.warn("[DEBUG] markers is not array", markers);
   }
 
-  // Elevation labels (aynısı kalabilir)
+  // Elevation labels kısmı değişmiyor
   let gridLabels = [];
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
