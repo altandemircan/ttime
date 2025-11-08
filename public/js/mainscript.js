@@ -358,28 +358,29 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // -------------- EKLE: Marker badge debug --------------
   if (Array.isArray(markers)) {
-    markers.forEach((m, idx) => {
-      console.log(`[DEBUG] Marker #${idx+1}`, m, "distance=", m.distance);
+  markers.forEach((m, idx) => {
+    let dist = typeof m.snappedDistance === "number" && m.snappedDistance > 0
+      ? m.snappedDistance / 1000  // OSRM snap mesafesi
+      : m.distance;               // Havsersine-based mesafe
 
-      if (typeof m.distance !== 'number' || isNaN(m.distance)) {
-        console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
-        return;
-      }
-      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) {
-        console.warn(`[DEBUG] SKIP Marker #${idx+1} out of range`, m);
-        return;
-      }
-      const relKm = m.distance - startKmDom;
-      const left = (relKm / spanKm) * 100;
-      const wrap = document.createElement('div');
-      wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
-      wrap.title = m.name || '';
-      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-      track.appendChild(wrap);
-    });
-  } else {
-    console.warn("[DEBUG] markers is not array", markers);
+    if (typeof dist !== "number" || isNaN(dist)) {
+      console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
+      return;
+    }
+    if (dist < startKmDom || dist > startKmDom + spanKm) {
+      console.warn(`[DEBUG] SKIP Marker #${idx+1} out of range`, m);
+      return;
+    }
+    const relKm = dist - startKmDom;
+    const left = (relKm / spanKm) * 100;
+    const wrap = document.createElement('div');
+    wrap.className = 'marker-badge';
+    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+    wrap.title = m.name || '';
+    wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+    track.appendChild(wrap);
+  });
+} console.warn("[DEBUG] markers is not array", markers);
   }
 
     let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
