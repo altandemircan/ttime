@@ -357,11 +357,11 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   // -------------- EKLE: Marker badge debug --------------
-  if (Array.isArray(markers)) {
+if (Array.isArray(markers)) {
   markers.forEach((m, idx) => {
     let dist = typeof m.snappedDistance === "number" && m.snappedDistance > 0
-      ? m.snappedDistance / 1000  // OSRM snap mesafesi
-      : m.distance;               // Havsersine-based mesafe
+      ? m.snappedDistance / 1000
+      : m.distance;
 
     if (typeof dist !== "number" || isNaN(dist)) {
       console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
@@ -380,9 +380,9 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
     track.appendChild(wrap);
   });
-} console.warn("[DEBUG] markers is not array", markers);
-  }
-
+} else {
+  console.warn("[DEBUG] markers is not array", markers);
+}
     let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
 
 
