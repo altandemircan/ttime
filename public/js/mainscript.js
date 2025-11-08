@@ -8734,11 +8734,15 @@ if (!container || isNaN(totalKm)) {
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
- if (!coords || coords.length < 2) {
-  container.innerHTML = `<div class="scale-bar-track"></div>`;
-  container.style.display = 'none';
+
+
+if (!coords || coords.length < 2) {
+  container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">No route points found</div></div>`;
+  container.style.display = 'block'; // HEP GÖSTER!
   return;
 }
+
+
   // Cooldown / cache anahtarı
   const mid = coords[Math.floor(coords.length / 2)];
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
@@ -9188,6 +9192,8 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
   const key = `route-map-day${day}`;
   const gj = window.lastRouteGeojsons?.[key];
+ 
+
   const coords = gj?.features?.[0]?.geometry?.coordinates;
   if (!coords || coords.length < 2) return;
 
