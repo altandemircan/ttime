@@ -106,7 +106,7 @@ app.get('/api/elevation', async (req, res) => {
 
     for (let i = 0; i < coords.length; i += batchSize) {
       const batch = coords.slice(i, i + batchSize).join('|');
-      const url = `${ELEVATION_BASE}/v1/${ELEVATION_DATASET}?locations=${batch}`;
+const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
       console.log(`[Elevation BACKEND] Calling: ${url} with ${batch.split('|').length} coords`);
 
       const controller = new AbortController();
