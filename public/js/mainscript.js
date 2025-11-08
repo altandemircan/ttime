@@ -8770,17 +8770,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
 
-if (!container || isNaN(totalKm)) {
-  if (container) { container.innerHTML = ""; container.style.display = 'block'; }
-  return;
-}
-
 // *** EN KRİTİK PATCH! ***
 if (!totalKm || totalKm < 0.01 || !markers || markers.length < 2) {
   if (container) { container.innerHTML = ""; container.style.display = 'block'; }
   // BAD VERİ OLDUĞUNDA BAR, BADGE VE ELEVATION DOM'U KESİN TEMİZLE  
   return;
 }
+
 
   // Sadece expanded bar’da çalış; küçük bar’ı kapat
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
