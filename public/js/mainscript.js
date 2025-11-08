@@ -360,13 +360,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 if (Array.isArray(markers)) {
   markers.forEach((m, idx) => {
     let dist = typeof m.distance === "number" ? m.distance : 0;
-    console.log("BADGE", idx, m.name, "distance=", dist, "spanKm=", spanKm);
-
-    // TOLERANS geniş! Neredeyse her mesafe gelsin.
-    if (dist < startKmDom - 0.1 || dist > startKmDom + spanKm + 0.1) {
-      // Bunu geçici olarak kapat:
-      // return;
-    }
+    // PATCH: out of range/return YOK!
+    // Bar'ın uzunluğunda markerın konumu:
     const relKm = dist - startKmDom;
     const left = (relKm / spanKm) * 100;
     const wrap = document.createElement('div');
@@ -375,6 +370,7 @@ if (Array.isArray(markers)) {
     wrap.title = m.name || '';
     wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
     track.appendChild(wrap);
+    console.log('BADGE ADDED', idx, m.name, 'at', left, '%');
   });
 } else {
     console.warn("[DEBUG] markers is not array", markers);
