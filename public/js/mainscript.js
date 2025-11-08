@@ -358,31 +358,36 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // -------------- EKLE: Marker badge debug --------------
 if (Array.isArray(markers)) {
- markers.forEach((m, idx) => {
-  // Sadece OSRM/snapped olanlarda snappedDistance kullanılmalı, YAY modunda distance!  
-  // Eğer snappedDistance ve YAY modunda snappedDistance var ve > spanKm*1000 kadar büyükse, ignore et!
-  let dist = (typeof m.snappedDistance === "number" && m.snappedDistance > 0 && m.snappedDistance/1000 <= spanKm + 0.1)
-    ? m.snappedDistance / 1000     // Kısa rotalarda snappedDistance (km) kullan
-    : m.distance;                  // Aksi takdirde haversine mesafesi
+  markers.forEach((m, idx) => {
+    // PATCH BAŞI
+    // YAY modunda snappedDistance (genelde kilometre cinsinden çok büyük veya anlamsız) kullanma!
+    // Sadece OSRM rotasında snappedDistance olabilir:
+    let dist = (
+      typeof m.snappedDistance === "number" &&
+      m.snappedDistance > 0 &&
+      m.snappedDistance / 1000 < spanKm + 0.1
+    )
+      ? m.snappedDistance / 1000   // Geojson/route tabanlı
+      : m.distance;                // YAY/haversine tabanlı
 
-  if (typeof dist !== "number" || isNaN(dist)) {
-    console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
-    return;
-  }
-  if (dist < startKmDom - 0.01 || dist > startKmDom + spanKm + 0.01) {
-    // (cüz'i tolerans bırak, floating point için)
-    console.warn(`[DEBUG] SKIP Marker #${idx+1} out of range`, m, "dist=", dist, "spanKm=", spanKm);
-    return;
-  }
-  const relKm = dist - startKmDom;
-  const left = (relKm / spanKm) * 100;
-  const wrap = document.createElement('div');
-  wrap.className = 'marker-badge';
-  wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
-  wrap.title = m.name || '';
-  wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-  track.appendChild(wrap);
-});
+    // PATCH SONU
+    if (typeof dist !== "number" || isNaN(dist)) {
+      console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
+      return;
+    }
+    if (dist < startKmDom - 0.01 || dist > startKmDom + spanKm + 0.01) {
+      console.warn(`[DEBUG] SKIP Marker #${idx+1} out of range`, m, "dist=", dist, "spanKm=", spanKm);
+      return;
+    }
+    const relKm = dist - startKmDom;
+    const left = (relKm / spanKm) * 100;
+    const wrap = document.createElement('div');
+    wrap.className = 'marker-badge';
+    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+    wrap.title = m.name || '';
+    wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+    track.appendChild(wrap);
+  });
 } else {
   console.warn("[DEBUG] markers is not array", markers);
 }
