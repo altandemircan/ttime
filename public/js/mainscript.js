@@ -8200,11 +8200,35 @@ function renderTravelModeControlsForAllDays() {
   markActiveTravelModeButtons();
 }
 
-// Replace this function in son9.js
+
 function markActiveTravelModeButtons() {
   document.querySelectorAll('.tt-travel-mode-set').forEach(set => {
     const day = parseInt(set.dataset.day || '1', 10);
-    const active = (typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : (window.travelMode || 'driving')).toLowerCase();
+    // Geojson rota var mı?
+    const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`];
+    const isRoute = geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
+    // Günün tüm noktaları Türkiye içinde mi?
+    const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+    const allInTurkey = pts && pts.length > 1
+      ? pts.every(p => p.lat >= 35.81 && p.lat <= 42.11 && p.lng >= 25.87 && p.lng <= 44.57)
+      : false;
+
+    // Her butona uygulanan aktiflik/disable mantığı
+    set.querySelectorAll('button[data-mode]').forEach(b => {
+      const mode = b.getAttribute('data-mode');
+      // Sadece geojson+Türkiye'de car/bike aktif
+      if (!isRoute || !allInTurkey) {
+        b.disabled = (mode !== 'walking');
+        b.style.opacity = (mode !== 'walking') ? '.4' : '1';
+      } else {
+        b.disabled = false;
+        b.style.opacity = '1';
+      }
+    });
+
+    // Aktif travel mode (opsiyon: sadece walking aktif değilse, walking'i aktifle!)
+    let active = (typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : (window.travelMode || 'driving')).toLowerCase();
+    if (!isRoute || !allInTurkey) active = "walking";
     set.querySelectorAll('button[data-mode]').forEach(b => {
       b.classList.toggle('active', b.getAttribute('data-mode') === active);
     });
