@@ -314,16 +314,19 @@ function fitExpandedMapToRoute(day) {
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
+   if (!spanKm || spanKm < 0.01) {
+    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+    console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
+    return;
+  }
+
   if (!track) return;
 
   console.log("[DEBUG] createScaleElements called", {
     widthPx, spanKm, startKmDom, markers
   });
 
-  if (!spanKm || spanKm < 0.01) {
-  console.warn('[SCALEBAR] BAD spanKm, abort badge render (spanKm=', spanKm, ')');
-  return;
-}
+
 
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
