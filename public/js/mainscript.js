@@ -5393,26 +5393,21 @@ let currentLayer = 'bright';
   expandedContainer.appendChild(headerDiv);
 
   // Ölçek (scale) bar
-  const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (oldBar) oldBar.remove();
-  const scaleBarDiv = document.createElement('div');
-  scaleBarDiv.className = 'route-scale-bar';
-  scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
-  try {
-    const ptsForBar = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-    const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-    if (imported) {
-      scaleBarDiv.style.display = '';
-    } else {
-      scaleBarDiv.style.display = (Array.isArray(ptsForBar) && ptsForBar.length >= 2) ? '' : 'none';
-    }
-  } catch (_) {}
+const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+if (oldBar) oldBar.remove();
+const scaleBarDiv = document.createElement('div');
+scaleBarDiv.className = 'route-scale-bar';
+scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
+// Bar her zaman görünür!
+scaleBarDiv.style.display = "block";
 
-  // Panel wrapper: scaleBarDiv
-  const panelDiv = document.createElement('div');
-  panelDiv.className = 'expanded-map-panel';
-  panelDiv.appendChild(scaleBarDiv);
-  expandedContainer.appendChild(panelDiv);
+// Panel wrapper: scaleBarDiv
+const panelDiv = document.createElement('div');
+panelDiv.className = 'expanded-map-panel';
+panelDiv.appendChild(scaleBarDiv);
+expandedContainer.appendChild(panelDiv);
+
+
 
   // Diğer kontroller (lokasyon/kapat)
   const locBtn = document.createElement('button');
