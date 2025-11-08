@@ -357,33 +357,26 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   // Marker badge ekleme: YAY MODU PATCH!
-  if (Array.isArray(markers)) {
-    markers.forEach((m, idx) => {
-      // PATCH: Sadece distance kullan!
-      let dist = m.distance;
+if (Array.isArray(markers)) {
+  markers.forEach((m, idx) => {
+    let dist = typeof m.distance === "number" ? m.distance : 0;
+    console.log("BADGE", idx, m.name, "distance=", dist, "spanKm=", spanKm);
 
-      // Defensive patch: distance yanlışsa skipped
-      if (typeof dist !== "number" || isNaN(dist)) {
-        console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
-        return;
-      }
-      // Bar aralığında? Küçük tolerans bırak
-      if (dist < startKmDom - 0.01 || dist > startKmDom + spanKm + 0.01) {
-        console.warn(`[DEBUG] SKIP Marker #${idx+1} out of range`, m, "dist=", dist, "spanKm=", spanKm);
-        return;
-      }
-
-      // Scale bar üstünde badge pozisyonu
-      const relKm = dist - startKmDom;
-      const left = (relKm / spanKm) * 100;
-      const wrap = document.createElement('div');
-      wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
-      wrap.title = m.name || '';
-      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-      track.appendChild(wrap);
-    });
-  } else {
+    // TOLERANS geniş! Neredeyse her mesafe gelsin.
+    if (dist < startKmDom - 0.1 || dist > startKmDom + spanKm + 0.1) {
+      // Bunu geçici olarak kapat:
+      // return;
+    }
+    const relKm = dist - startKmDom;
+    const left = (relKm / spanKm) * 100;
+    const wrap = document.createElement('div');
+    wrap.className = 'marker-badge';
+    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+    wrap.title = m.name || '';
+    wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+    track.appendChild(wrap);
+  });
+} else {
     console.warn("[DEBUG] markers is not array", markers);
   }
 
