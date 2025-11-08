@@ -8200,7 +8200,6 @@ function renderTravelModeControlsForAllDays() {
   markActiveTravelModeButtons();
 }
 
-
 function markActiveTravelModeButtons() {
   document.querySelectorAll('.tt-travel-mode-set').forEach(set => {
     const day = parseInt(set.dataset.day || '1', 10);
