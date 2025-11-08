@@ -5591,7 +5591,7 @@ if (track && svg) {
 }
   } else {
     scaleBarDiv.innerHTML = '';
-    scaleBarDiv.style.display = 'none';
+    scaleBarDiv.style.display = 'block';
   }
 
   if (typeof addDraggableMarkersToExpandedMap === 'function') {
