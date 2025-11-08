@@ -4514,7 +4514,7 @@ let markerPositions = pts.map((pt, i) => {
         lat: pts[i].lat,
         lng: pts[i].lng
     });
-}
+
 // debug export
 window.__debug_markerPositions = markerPositions;
 console.log('[DEBUG] markerPositions:', markerPositions.map(m => `${m.name}: ${m.distance}`));
