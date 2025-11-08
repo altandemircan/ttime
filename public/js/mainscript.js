@@ -316,14 +316,14 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
-  // -------------- EKLE: Debug log başa --------------
   console.log("[DEBUG] createScaleElements called", {
     widthPx, spanKm, startKmDom, markers
   });
+
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-  // TICK/KM/MARKER kodu (değiştirmiyoruz, aynı)
+  // Tick + label dizisi
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -356,47 +356,42 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-  // -------------- EKLE: Marker badge debug --------------
-if (Array.isArray(markers)) {
-  markers.forEach((m, idx) => {
-    // PATCH BAŞI
-    // YAY modunda snappedDistance (genelde kilometre cinsinden çok büyük veya anlamsız) kullanma!
-    // Sadece OSRM rotasında snappedDistance olabilir:
-    let dist = (
-      typeof m.snappedDistance === "number" &&
-      m.snappedDistance > 0 &&
-      m.snappedDistance / 1000 < spanKm + 0.1
-    )
-      ? m.snappedDistance / 1000   // Geojson/route tabanlı
-      : m.distance;                // YAY/haversine tabanlı
+  // Marker badge ekleme: YAY MODU PATCH!
+  if (Array.isArray(markers)) {
+    markers.forEach((m, idx) => {
+      // PATCH: Sadece distance kullan!
+      let dist = m.distance;
 
-    // PATCH SONU
-    if (typeof dist !== "number" || isNaN(dist)) {
-      console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
-      return;
-    }
-    if (dist < startKmDom - 0.01 || dist > startKmDom + spanKm + 0.01) {
-      console.warn(`[DEBUG] SKIP Marker #${idx+1} out of range`, m, "dist=", dist, "spanKm=", spanKm);
-      return;
-    }
-    const relKm = dist - startKmDom;
-    const left = (relKm / spanKm) * 100;
-    const wrap = document.createElement('div');
-    wrap.className = 'marker-badge';
-    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
-    wrap.title = m.name || '';
-    wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-    track.appendChild(wrap);
-  });
-} else {
-  console.warn("[DEBUG] markers is not array", markers);
-}
-    let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
+      // Defensive patch: distance yanlışsa skipped
+      if (typeof dist !== "number" || isNaN(dist)) {
+        console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
+        return;
+      }
+      // Bar aralığında? Küçük tolerans bırak
+      if (dist < startKmDom - 0.01 || dist > startKmDom + spanKm + 0.01) {
+        console.warn(`[DEBUG] SKIP Marker #${idx+1} out of range`, m, "dist=", dist, "spanKm=", spanKm);
+        return;
+      }
 
+      // Scale bar üstünde badge pozisyonu
+      const relKm = dist - startKmDom;
+      const left = (relKm / spanKm) * 100;
+      const wrap = document.createElement('div');
+      wrap.className = 'marker-badge';
+      wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+      wrap.title = m.name || '';
+      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      track.appendChild(wrap);
+    });
+  } else {
+    console.warn("[DEBUG] markers is not array", markers);
+  }
+
+  // (Geri kalan elevation/labels kodu – aynen kalabilir)
+  let gridLabels = [];
 
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
-    // <text> elemanlarını bul, y koordinatı ve içeriğini al
     gridLabels = Array.from(svg.querySelectorAll('text'))
       .map(t => ({
         value: t.textContent.trim(),
@@ -405,10 +400,8 @@ if (Array.isArray(markers)) {
       .filter(obj => /-?\d+\s*m$/.test(obj.value));
   }
 
-  // Alttan üste sıralama (SVG'de y arttıkça aşağı iner)
   gridLabels.sort((a, b) => b.y - a.y);
 
-  // Sol barem DIV'i oluştur
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
   elevationLabels.style.cssText = `
@@ -423,10 +416,8 @@ if (Array.isArray(markers)) {
   `;
   elevationLabels.style.display = 'block'; 
 
-  // SVG'nin yüksekliği
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  // Grid label'larını SVG y koordinatına göre hizala
   gridLabels.forEach(obj => {
     const label = document.createElement('div');
     label.className = 'elevation-label';
@@ -4402,8 +4393,6 @@ function isSupportedTravelMode(mode) {
 }
 
 function updateExpandedMap(expandedMap, day) {
-
-
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
 
@@ -4449,17 +4438,19 @@ function updateExpandedMap(expandedMap, day) {
                 color: "#1976d2",
                 weight: 6,
                 opacity: 0.93,
-                dashArray: "6,8" // İstediğine göre noktali/düz yap
+                dashArray: "6,8"
             });
         }
     }
 
     // Marker ekleme kısmı aynı:
     pts.forEach((item, idx) => {
-        const markerHtml = `<div style="background:#d32f2f;color:#fff;border-radius:50%;
+        const markerHtml = `
+            <div style="background:#d32f2f;color:#fff;border-radius:50%;
             width:24px;height:24px;display:flex;align-items:center;justify-content:center;
             font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">
-            ${idx + 1}</div>`;
+            ${idx + 1}
+            </div>`;
         const icon = L.divIcon({
             html: markerHtml,
             className: "",
@@ -4492,41 +4483,56 @@ function updateExpandedMap(expandedMap, day) {
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
+    // PATCH: Route summary YOKSA haversine ile üret!
     const sumKey = `route-map-day${day}`;
-    const sum = window.lastRouteSummaries?.[sumKey];
+    let sum = window.lastRouteSummaries?.[sumKey];
+    if (!sum && pts.length > 1) {
+        let totalKmSum = 0;
+        for (let i = 0; i < pts.length - 1; i++) {
+            totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
+        }
+        sum = {
+            distance: Math.round(totalKmSum * 1000),            // metre
+            duration: Math.round(totalKmSum/4*60),              // walking: 4km/h = 15dk/km
+            ascent: 0,
+            descent: 0
+        };
+    }
     if (sum && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
 
-    // İçerik blokları aynı, sadece bar kontrolü değişti!
-const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-if (scaleBarDiv) {
-    const pts = getDayPoints(day);
-    let totalKm = 0;
-    let markerPositions = [];
-    for (let i = 0; i < pts.length; i++) {
-        if (i > 0) {
-            totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
+    // SCALE BAR: markerPositions dizisini haversine ile doldur
+    const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (scaleBarDiv) {
+        // PATCH: bar çizimi için haversine ile markerPositions array üret
+        let totalKm = 0;
+        let markerPositions = [];
+        for (let i = 0; i < pts.length; i++) {
+            if (i > 0) {
+                totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
+            }
+            markerPositions.push({
+                name: pts[i].name || "",
+                distance: totalKm,
+                lat: pts[i].lat,
+                lng: pts[i].lng
+            });
         }
-        markerPositions.push({
-            name: pts[i].name || "",
-            distance: totalKm,
-            lat: pts[i].lat,
-            lng: pts[i].lng
-        });
-    }
-    scaleBarDiv.style.display = "block";
-    scaleBarDiv.innerHTML = "";
-    if (markerPositions.length >= 2 && totalKm > 0) {
-        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions); // HER DURUMDA!
-        const track = scaleBarDiv.querySelector('.scale-bar-track');
-        const svg = track && track.querySelector('svg.tt-elev-svg');
-        if (track && svg) {
-            const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-            createScaleElements(track, width, totalKm, 0, markerPositions); // HER DURUMDA!
+        scaleBarDiv.style.display = "block";
+        scaleBarDiv.innerHTML = "";
+        // PATCH: badge ve km scale bar için sadece distance kullan!
+        if (markerPositions.length >= 2 && totalKm > 0) {
+            renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+            const track = scaleBarDiv.querySelector('.scale-bar-track');
+            const svg = track && track.querySelector('svg.tt-elev-svg');
+            if (track && svg) {
+                const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+                createScaleElements(track, width, totalKm, 0, markerPositions);
+            }
         }
     }
-}   
+
     adjustExpandedHeader(day);
 }
 
