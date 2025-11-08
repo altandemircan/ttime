@@ -5195,58 +5195,30 @@ function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   let summary = window.lastRouteSummaries?.[key] || null;
 
-  // Mesafe, süre, ascent/descent fallback
   let distance = 0, duration = 0;
   let ascent = undefined, descent = undefined;
 
-  // a) Eğer summary yoksa, haversine ile hesapla:
   if (!summary) {
+    // Haversine fallback!
     const pts = typeof getDayPoints === "function" ? getDayPoints(day) : [];
     if (Array.isArray(pts) && pts.length >= 2) {
       for (let i = 1; i < pts.length; i++) {
-        distance += haversine(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng); // metre
+        distance += haversine(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng);
       }
-      // Yürüme hızı: 1.3 m/s (saatte ~4.7 km), süreyi dakikaya çevir!
-      duration = Math.round(distance / 1.3 / 60); // dakika
-      summary = { distance, duration: duration * 60 }; // duration: saniye!
+      duration = Math.round(distance / 1.3 / 60); // yürüme hızı
+      summary = { distance, duration: duration * 60 };
     }
   }
 
-  // b) Ascent/descent verisini oku (yükseklik varsa)
   ascent = window.routeElevStatsByDay?.[day]?.ascent;
   descent = window.routeElevStatsByDay?.[day]?.descent;
 
-  // c) UI için hazırlan (null/boşsa yer tutucu ver)
   const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "—";
   const durationMin = summary ? Math.round(summary.duration / 60) : "—";
 
-  // d) Küçük harita altındaki stat bar'ı doldur
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     routeSummarySpan.innerHTML = `
-      <span class="stat stat-distance">
-        <img class="icon" src="/img/way_distance.svg" alt="Distance">
-        <span class="badge">${distanceKm} km</span>
-      </span>
-      <span class="stat stat-duration">
-        <img class="icon" src="/img/way_time.svg" alt="Duration">
-        <span class="badge">${durationMin} dk</span>
-      </span>
-      <span class="stat stat-ascent">
-        <img class="icon" src="/img/way_ascent.svg" alt="Ascent">
-        <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
-      </span>
-      <span class="stat stat-descent">
-        <img class="icon" src="/img/way_descent.svg" alt="Descent">
-        <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
-      </span>
-    `;
-  }
-
-  // e) Expanded map header'da da güncelle (isteğe bağlı)
-  const expandedStatsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
-  if (expandedStatsDiv) {
-    expandedStatsDiv.innerHTML = `
       <span class="stat stat-distance">
         <img class="icon" src="/img/way_distance.svg" alt="Distance">
         <span class="badge">${distanceKm} km</span>
@@ -8203,20 +8175,20 @@ function renderTravelModeControlsForAllDays() {
 function markActiveTravelModeButtons() {
   document.querySelectorAll('.tt-travel-mode-set').forEach(set => {
     const day = parseInt(set.dataset.day || '1', 10);
-    // Geojson rota var mı?
+
+    // Geojson route yok mu veya Türkiye dışında mı?
     const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`];
     const isRoute = geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
-    // Günün tüm noktaları Türkiye içinde mi?
     const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+
     const allInTurkey = pts && pts.length > 1
       ? pts.every(p => p.lat >= 35.81 && p.lat <= 42.11 && p.lng >= 25.87 && p.lng <= 44.57)
       : false;
 
-    // Her butona uygulanan aktiflik/disable mantığı
     set.querySelectorAll('button[data-mode]').forEach(b => {
       const mode = b.getAttribute('data-mode');
-      // Sadece geojson+Türkiye'de car/bike aktif
       if (!isRoute || !allInTurkey) {
+        // Sadece 'walking' butonu aktif, diğerleri pasif/gri
         b.disabled = (mode !== 'walking');
         b.style.opacity = (mode !== 'walking') ? '.4' : '1';
       } else {
@@ -8225,7 +8197,7 @@ function markActiveTravelModeButtons() {
       }
     });
 
-    // Aktif travel mode (opsiyon: sadece walking aktif değilse, walking'i aktifle!)
+    // Aktif mod → Yurt dışı veya rota yoksa walking zorla aktif
     let active = (typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : (window.travelMode || 'driving')).toLowerCase();
     if (!isRoute || !allInTurkey) active = "walking";
     set.querySelectorAll('button[data-mode]').forEach(b => {
