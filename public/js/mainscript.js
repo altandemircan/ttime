@@ -5592,20 +5592,31 @@ function setExpandedMapTile(styleKey) {
   const markerPositions = getRouteMarkerPositionsOrdered
     ? getRouteMarkerPositionsOrdered(day)
     : [];
-  if (totalKm > 0 && markerPositions.length > 0 && typeof renderRouteScaleBar === 'function') {
-    scaleBarDiv.style.display = '';
+
+
+
+ // PATCH: Scale bar her zaman render edilsin, badge/label eksik olsa bile DOM'da olsun!
+if (typeof renderRouteScaleBar === 'function') {
+    scaleBarDiv.style.display = "block";
+    scaleBarDiv.innerHTML = ""; // Temizle
+
     renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-    // Scale bar render edildikten hemen sonra sol baremi tekrar ekle!
+    const track = scaleBarDiv.querySelector('.scale-bar-track');
+    const svg = track && track.querySelector('svg.tt-elev-svg');
+    if (track && svg) {
+        const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+        createScaleElements(track, width, totalKm, 0, markerPositions);
+    }
+}
+  
+
 const track = scaleBarDiv.querySelector('.scale-bar-track');
 const svg = track && track.querySelector('svg.tt-elev-svg');
 if (track && svg) {
   const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
   createScaleElements(track, width, totalKm, 0, markerPositions);
 }
-  } else {
-    scaleBarDiv.innerHTML = '';
-    scaleBarDiv.style.display = 'block';
-  }
+  
 
   if (typeof addDraggableMarkersToExpandedMap === 'function') {
     addDraggableMarkersToExpandedMap(expandedMap, day);
