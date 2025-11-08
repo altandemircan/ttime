@@ -4394,10 +4394,6 @@ function isSupportedTravelMode(mode) {
 
 function updateExpandedMap(expandedMap, day) {
 
-    const markerPositions = getRouteMarkerPositionsOrdered(day);
-console.log("[DEBUG] getRouteMarkerPositionsOrdered", markerPositions);
-renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-
 
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
@@ -4496,6 +4492,11 @@ renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
     // İçerik blokları aynı, sadece bar kontrolü değişti!
 const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
 if (scaleBarDiv) {
+    
+    const markerPositions = getRouteMarkerPositionsOrdered(day);
+console.log("[DEBUG] getRouteMarkerPositionsOrdered", markerPositions);
+renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+
     const pts = getDayPoints(day);
     let totalKm = 0;
     let markerPositions = [];
