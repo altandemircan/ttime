@@ -316,6 +316,10 @@ function fitExpandedMapToRoute(day) {
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (!track) return;
 
+  // -------------- EKLE: Debug log başa --------------
+  console.log("[DEBUG] createScaleElements called", {
+    widthPx, spanKm, startKmDom, markers
+  });
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
@@ -352,10 +356,19 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
+  // -------------- EKLE: Marker badge debug --------------
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
-      if (typeof m.distance !== 'number') return;
-      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) return;
+      console.log(`[DEBUG] Marker #${idx+1}`, m, "distance=", m.distance);
+
+      if (typeof m.distance !== 'number' || isNaN(m.distance)) {
+        console.warn(`[DEBUG] SKIP Marker #${idx+1} invalid distance`, m);
+        return;
+      }
+      if (m.distance < startKmDom || m.distance > startKmDom + spanKm) {
+        console.warn(`[DEBUG] SKIP Marker #${idx+1} out of range`, m);
+        return;
+      }
       const relKm = m.distance - startKmDom;
       const left = (relKm / spanKm) * 100;
       const wrap = document.createElement('div');
@@ -365,6 +378,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
     });
+  } else {
+    console.warn("[DEBUG] markers is not array", markers);
   }
 
     let gridLabels = [];// --- SVG içindeki grid yükseklik değerlerini oku ---
@@ -4378,6 +4393,12 @@ function isSupportedTravelMode(mode) {
 }
 
 function updateExpandedMap(expandedMap, day) {
+
+    const markerPositions = getRouteMarkerPositionsOrdered(day);
+console.log("[DEBUG] getRouteMarkerPositionsOrdered", markerPositions);
+renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+
+
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
 
@@ -8717,6 +8738,8 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 
 function renderRouteScaleBar(container, totalKm, markers) {
+      console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
+
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
 
 if (!container || isNaN(totalKm)) {
