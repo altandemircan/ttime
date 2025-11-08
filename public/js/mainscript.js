@@ -7132,7 +7132,7 @@ if (imported) {
   }
 }
 
-// GÜNCELLENMİŞ renderRouteForDay
+
 async function renderRouteForDay(day) {
 
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
@@ -7494,48 +7494,109 @@ console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2)
   }
 
   let routeData;
-  let missingPoints = [];
-  try {
-    routeData = await fetchRoute();
-    if (!routeData) return;
-    missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
-  } catch (e) {
-    const infoPanel = document.getElementById(`route-info-day${day}`);
-    if (infoPanel) infoPanel.textContent = "Could not draw the route!";
-    scaleBar.innerHTML = "";
+let missingPoints = [];
+try {
+  routeData = await fetchRoute();
+  if (!routeData) return;
+  missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
+} catch (e) {
+  // GÜNCELLENDİ: Rota çizilemeyen yerde yay ve elevation çiz
+  const infoPanel = document.getElementById(`route-info-day${day}`);
+  if (infoPanel) infoPanel.textContent = "Could not draw the route!";
+
+  if (points.length >= 2) {
+    let samples = [], dists = [0], dist = 0, N = Math.max(38, Math.min(200, points.length * 20));
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i-1], b = points[i];
+      for (let j = 0; j < N; j++) {
+        const t = j / (N-1);
+        const lat = a.lat + (b.lat - a.lat) * t;
+        const lng = a.lng + (b.lng - a.lng) * t;
+        if (j > 0) {
+          dist += haversine(samples[samples.length-1]?.lat ?? a.lat, samples[samples.length-1]?.lng ?? a.lng, lat, lng);
+        }
+        samples.push({ lat, lng });
+        dists.push(dist);
+      }
+    }
+
+    // Yayın geojson'u
+    const geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        geometry: {
+          type: "LineString",
+          coordinates: points.map(p => [p.lng, p.lat])
+        },
+        properties: {}
+      }]
+    };
+    const summary = {
+      distance: dist,
+      duration: dist / 1300
+    };
+
+    renderLeafletRoute(containerId, geojson, points, summary, day);
+
+    let expandedMapDiv =
+      document.getElementById(`expanded-map-${day}`) ||
+      document.getElementById(`expanded-route-map-day${day}`);
+    if (expandedMapDiv) {
+      let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+      if (!expandedScaleBar) {
+        expandedScaleBar = document.createElement('div');
+        expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+        expandedScaleBar.className = 'route-scale-bar expanded';
+        expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+      }
+      renderRouteScaleBar(
+        expandedScaleBar,
+        dist / 1000,
+        samples.map((p, i) => ({
+          name: "",
+          distance: dists[i] / 1000,
+          snapped: true
+        }))
+      );
+    }
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
     return;
   }
 
-  const infoPanel = document.getElementById(`route-info-day${day}`);
-  if (missingPoints.length > 0) {
-    if (infoPanel) {
-      infoPanel.innerHTML = `<span style="color:#d32f2f;font-size:0.85rem;font-weight:500;margin-bottom:20px;">
-        <strong>Note:</strong> Some points could not be included in the route!<br>
-        <strong>Missing:</strong> ${missingPoints.map(p => p.name).join(', ')}
-      </span>`;
-    }
-  } else if (infoPanel) {
-    infoPanel.textContent = "";
+  return;
+}
+
+const infoPanel = document.getElementById(`route-info-day${day}`);
+if (missingPoints.length > 0) {
+  if (infoPanel) {
+    infoPanel.innerHTML = `<span style="color:#d32f2f;font-size:0.85rem;font-weight:500;margin-bottom:20px;">
+      <strong>Note:</strong> Some points could not be included in the route!<br>
+      <strong>Missing:</strong> ${missingPoints.map(p => p.name).join(', ')}
+    </span>`;
   }
+} else if (infoPanel) {
+  infoPanel.textContent = "";
+}
 
-  window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-  window.lastRouteGeojsons[containerId] = routeData.geojson;
-  window.lastRouteSummaries = window.lastRouteSummaries || {};
-  window.lastRouteSummaries[containerId] = routeData.summary;
+window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+window.lastRouteGeojsons[containerId] = routeData.geojson;
+window.lastRouteSummaries = window.lastRouteSummaries || {};
+window.lastRouteSummaries[containerId] = routeData.summary;
 
-  window.directionsPolylines = window.directionsPolylines || {};
-  if (routeData && Array.isArray(routeData.coords) && routeData.coords.length > 1) {
-    window.directionsPolylines[day] = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
-  } else {
-    if (!window.directionsPolylines[day]) {
-      const pts = getDayPoints(day);
-      if (pts.length >= 2) {
-        window.directionsPolylines[day] = pts;
-      }
+window.directionsPolylines = window.directionsPolylines || {};
+if (routeData && Array.isArray(routeData.coords) && routeData.coords.length > 1) {
+  window.directionsPolylines[day] = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
+} else {
+  if (!window.directionsPolylines[day]) {
+    const pts = getDayPoints(day);
+    if (pts.length >= 2) {
+      window.directionsPolylines[day] = pts;
     }
   }
+}
 
-  renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
+renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
 
   const expandedMapObj = window.expandedMaps?.[containerId];
   if (expandedMapObj?.expandedMap) {
@@ -9393,7 +9454,7 @@ document.addEventListener('mousedown', (e) => {
   }
 
   async function viaMyApi(samples) {
-    const CHUNK = 80;
+    const CHUNK = 120;
     const res = [];
     for (let i=0;i<samples.length;i+=CHUNK){
       const chunk = samples.slice(i,i+CHUNK);
@@ -9417,7 +9478,7 @@ document.addEventListener('mousedown', (e) => {
         console.error('[Elevation] Bad response:', j);
         throw new Error('bad response');
       }
-      if (samples.length > CHUNK) await sleep(800);
+      if (samples.length > CHUNK) await sleep(400);
     }
     if (res.some(v => typeof v !== 'number')) throw new Error('missing values');
     return res;
