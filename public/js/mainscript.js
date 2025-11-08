@@ -4367,7 +4367,6 @@ function toOSRMMode(mode) {
   mode = mode.toLowerCase();
   if (mode === 'walking') return 'foot';
   if (mode === 'cycling') return 'bike';
-  if (mode === 'pedestrian') return 'foot';
   if (mode === 'bicycle') return 'bike';
   return mode;
 }
@@ -4392,6 +4391,7 @@ function updateExpandedMap(expandedMap, day) {
     );
     console.log("getDayPoints:", JSON.stringify(pts));
 
+    // travelModeByDay globalinden bugünkü seçili mode'u çek
     let modeRaw = (window.travelModeByDay?.[day] || 'car');
     let mode = toOSRMMode(modeRaw);
 
@@ -4423,7 +4423,7 @@ function updateExpandedMap(expandedMap, day) {
                 color: "#1976d2",
                 weight: 6,
                 opacity: 0.93,
-                dashArray: "6,8"
+                dashArray: "6,8" // İstediğine göre noktali/düz yap
             });
         }
     }
@@ -4475,18 +4475,16 @@ function updateExpandedMap(expandedMap, day) {
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBarDiv) {
         try {
-            // DAİMA görünür olsun:
-            scaleBarDiv.style.display = 'block';
-
             if (!pts || pts.length < 2) {
                 scaleBarDiv.innerHTML = '';
-                // scaleBarDiv.style.display = 'none'; // Artık GİZLEME!
+                scaleBarDiv.style.display = 'none';
             } else {
                 const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
                 const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
                     ? getRouteMarkerPositionsOrdered(day)
                     : [];
                 if (totalKm > 0 && markerPositions.length > 0) {
+                    scaleBarDiv.style.display = '';
                     try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
                     renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
                     const track = scaleBarDiv.querySelector('.scale-bar-track');
@@ -4497,12 +4495,12 @@ function updateExpandedMap(expandedMap, day) {
                     }
                 } else {
                     scaleBarDiv.innerHTML = '';
-                    // scaleBarDiv.style.display = 'none'; // Artık GİZLEME!
+                    scaleBarDiv.style.display = 'none';
                 }
             }
         } catch (_) {
             scaleBarDiv.innerHTML = '';
-            // scaleBarDiv.style.display = 'none'; // Artık GİZLEME!
+            scaleBarDiv.style.display = 'none';
         }
     }
     adjustExpandedHeader(day);
