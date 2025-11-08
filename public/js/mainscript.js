@@ -4492,13 +4492,6 @@ function updateExpandedMap(expandedMap, day) {
     // İçerik blokları aynı, sadece bar kontrolü değişti!
 const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
 if (scaleBarDiv) {
-
-    // 1. SIRALI SNAP markerlar
-    const markerPositionsOrdered = getRouteMarkerPositionsOrdered(day);
-    console.log("[DEBUG] getRouteMarkerPositionsOrdered", markerPositionsOrdered);
-    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositionsOrdered);
-
-    // 2. Eğer haversine ile özel markerlar yapacaksan isim değiştir:
     const pts = getDayPoints(day);
     let totalKm = 0;
     let markerPositions = [];
@@ -4515,8 +4508,6 @@ if (scaleBarDiv) {
     }
     scaleBarDiv.style.display = "block";
     scaleBarDiv.innerHTML = "";
-
-    // ...kullanmak istersen markerPositionsOrdered - veya markerPositions!
     if (typeof renderRouteScaleBar === "function" && markerPositions.length >= 2) {
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
         const track = scaleBarDiv.querySelector('.scale-bar-track');
@@ -6969,7 +6960,7 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
 const scaleBarDiv = document.getElementById(containerId);
 const routeContainerId = `route-map-day${day}`;
 const totalKm = (window.lastRouteSummaries?.[routeContainerId]?.distance || 0) / 1000;
-const markerPositions = getRouteMarkerPositionsOrdered(day);
+                                            const markerPositions = getRouteMarkerPositionsOrdered(day);
 
 console.log('scaleBarDiv:', scaleBarDiv);
 console.log('totalKm:', totalKm);
