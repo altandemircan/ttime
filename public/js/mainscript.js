@@ -4382,7 +4382,7 @@ function toOSRMMode(mode) {
   mode = mode.toLowerCase();
   if (mode === 'walking') return 'foot';
   if (mode === 'cycling') return 'bike';
-  if (mode === 'bicycle') return 'bike';
+
   return mode;
 }
 
@@ -4508,16 +4508,16 @@ if (scaleBarDiv) {
     }
     scaleBarDiv.style.display = "block";
     scaleBarDiv.innerHTML = "";
-    if (typeof renderRouteScaleBar === "function" && markerPositions.length >= 2) {
-        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+    if (markerPositions.length >= 2 && totalKm > 0) {
+        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions); // HER DURUMDA!
         const track = scaleBarDiv.querySelector('.scale-bar-track');
         const svg = track && track.querySelector('svg.tt-elev-svg');
         if (track && svg) {
             const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-            createScaleElements(track, width, totalKm, 0, markerPositions);
+            createScaleElements(track, width, totalKm, 0, markerPositions); // HER DURUMDA!
         }
     }
-}
+}   
     adjustExpandedHeader(day);
 }
 
