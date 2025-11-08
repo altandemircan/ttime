@@ -4498,26 +4498,30 @@ function updateExpandedMap(expandedMap, day) {
 
     // SCALE BAR: markerPositions dizisini haversine ile doldur
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (scaleBarDiv) {
-        // PATCH: bar çizimi için haversine ile markerPositions array üret
-        let totalKm = 0;
-        let markerPositions = [];
-        for (let i = 0; i < pts.length; i++) {
-            if (i > 0) {
-                totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-            }
-            markerPositions.push({
-                name: pts[i].name || "",
-                distance: totalKm,
-                lat: pts[i].lat,
-                lng: pts[i].lng
-            });
+   if (scaleBarDiv) {
+    // PATCH: bar çizimi için haversine ile markerPositions array üret
+    let totalKm = 0;
+    let markerPositions = [];
+    for (let i = 0; i < pts.length; i++) {
+        if (i > 0) {
+            totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
         }
-        scaleBarDiv.style.display = "block";
-        scaleBarDiv.innerHTML = "";
-        // PATCH: badge ve km scale bar için sadece distance kullan!
-        if (markerPositions.length >= 2 && totalKm > 0) {
-            renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+        markerPositions.push({
+            name: pts[i].name || "",
+            distance: totalKm,
+            lat: pts[i].lat,
+            lng: pts[i].lng
+        });
+    }
+
+    // *** İŞTE BURADA LOG'LA! ***
+    console.log('[DEBUG] markerPositions:', markerPositions);
+
+    scaleBarDiv.style.display = "block";
+    scaleBarDiv.innerHTML = "";
+
+    if (markerPositions.length >= 2 && totalKm > 0) {
+        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
             const track = scaleBarDiv.querySelector('.scale-bar-track');
             const svg = track && track.querySelector('svg.tt-elev-svg');
             if (track && svg) {
