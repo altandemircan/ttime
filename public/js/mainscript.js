@@ -4473,40 +4473,37 @@ function updateExpandedMap(expandedMap, day) {
     }
 
     // İçerik blokları aynı, sadece bar kontrolü değişti!
-                                const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-                               if (scaleBarDiv) {
-    try {
-        // Sadece YAY (polyline) modunda barı daima görünür yap!
-        if (!hasValidRoute && pts.length >= 2) {
-            scaleBarDiv.style.display = 'block';
-            // Eğer istersen: renderRouteScaleBar(scaleBarDiv, ...) burada çağrılabilir.
-        } else if (!pts || pts.length < 2) {
-            scaleBarDiv.innerHTML = '';
-            scaleBarDiv.style.display = 'none';
-        } else {
-            // Diğer koşullar eski haliyle devam
-            const totalKm = (window.lastRouteSummaries?.[containerId]?.distance || 0) / 1000;
-            const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
-                ? getRouteMarkerPositionsOrdered(day)
-                : [];
-            if (totalKm > 0 && markerPositions.length > 0) {
-                scaleBarDiv.style.display = '';
-                try { delete scaleBarDiv._elevProfile; } catch (_) { scaleBarDiv._elevProfile = null; }
-                renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-                const track = scaleBarDiv.querySelector('.scale-bar-track');
-                const svg = track && track.querySelector('svg.tt-elev-svg');
-                if (track && svg) {
-                    const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                    createScaleElements(track, width, totalKm, 0, markerPositions);
-                }
-            } else {
-                scaleBarDiv.innerHTML = '';
-                scaleBarDiv.style.display = 'none';
-            }
+ const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+if (scaleBarDiv) {
+    // Gezi planındaki markerlar arası mesafe ve pozisyonları topla:
+    const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+    let totalKm = 0;
+    let markerPositions = [];
+
+    for (let i = 0; i < pts.length; i++) {
+        if (i > 0) {
+            totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000; // km
         }
-    } catch (_) {
-        scaleBarDiv.innerHTML = '';
-        scaleBarDiv.style.display = 'none';
+        markerPositions.push({
+            name: pts[i].name || "",
+            distance: totalKm,
+            lat: pts[i].lat,
+            lng: pts[i].lng
+        });
+    }
+
+    // Ölçek barı her zaman göster, içini doldur:
+    scaleBarDiv.style.display = "block";
+    scaleBarDiv.innerHTML = "";
+    if (typeof renderRouteScaleBar === "function" && markerPositions.length >= 2) {
+        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+        // Scale bar ek işlemlerini (örn. vertical çizgi, scale tick, vb.) fonksiyonun çağırıyorsa bırak, çağırmıyorsa ekle
+        const track = scaleBarDiv.querySelector('.scale-bar-track');
+        const svg = track && track.querySelector('svg.tt-elev-svg');
+        if (track && svg) {
+            const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+            createScaleElements(track, width, totalKm, 0, markerPositions);
+        }
     }
 }
     adjustExpandedHeader(day);
