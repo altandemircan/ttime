@@ -314,22 +314,20 @@ function fitExpandedMapToRoute(day) {
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
+  if (!track) return;
+
+  // Tüm eski içerikleri KESİN temizle (badge/tick/label/elevation vs.)
+  track.innerHTML = '';
+
   if (!spanKm || spanKm < 0.01) {
-    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+    // Sıfır veya düşük mesafe varsa, marker badge DOM'u silinsin, bar boş gelsin.
     console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
     return;
   }
 
-  if (!track) return;
-
   console.log("[DEBUG] createScaleElements called", {
     widthPx, spanKm, startKmDom, markers
   });
-
-
-
-  // Temizle
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
   // Tick + label dizisi
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
@@ -364,34 +362,29 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-// Marker badge ekleme: YAY MODU PATCH!
-if (Array.isArray(markers)) {
-  markers.forEach((m, idx) => {
-    let dist = typeof m.distance === "number" ? m.distance : 0;
-    // PATCH: out of range/return YOK!
-    // Bar'ın uzunluğunda markerın konumu:
-    const relKm = dist - startKmDom;
+  // Marker badge ekleme: YAY MODU PATCH!
+  if (Array.isArray(markers)) {
+    markers.forEach((m, idx) => {
+      let dist = typeof m.distance === "number" ? m.distance : 0;
+      // Bar'ın yayında marker'ın konumu:
+      const relKm = dist - startKmDom;
+      let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
+      left = Math.max(0, Math.min(100, left));
 
-    // PATCH: spanKm'nin sıfır olmasına karşı koruma!
-    let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0; // bar uzunluğu hata olmasın
-    left = Math.max(0, Math.min(100, left)); // 0-100 arası tut
+      const wrap = document.createElement('div');
+      wrap.className = 'marker-badge';
+      wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+      wrap.title = m.name || '';
+      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      track.appendChild(wrap);
+      console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');
+    });
+  } else {
+    console.warn("[DEBUG] markers is not array", markers);
+  }
 
-    const wrap = document.createElement('div');
-    wrap.className = 'marker-badge';
-    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
-    wrap.title = m.name || '';
-    wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-    track.appendChild(wrap);
-    console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');
-
-  });
-} else {
-  console.warn("[DEBUG] markers is not array", markers);
-}
-
-  // (Geri kalan elevation/labels kodu – aynen kalabilir)
+  // Elevation labels (aynısı kalabilir)
   let gridLabels = [];
-
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
     gridLabels = Array.from(svg.querySelectorAll('text'))
@@ -401,7 +394,6 @@ if (Array.isArray(markers)) {
       }))
       .filter(obj => /-?\d+\s*m$/.test(obj.value));
   }
-
   gridLabels.sort((a, b) => b.y - a.y);
 
   const elevationLabels = document.createElement('div');
@@ -416,7 +408,7 @@ if (Array.isArray(markers)) {
     pointer-events: none;
     z-index: 5;
   `;
-  elevationLabels.style.display = 'block'; 
+  elevationLabels.style.display = 'block';
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
