@@ -5197,24 +5197,24 @@ function getFallbackRouteSummary(points) {
   for (let i = 1; i < points.length; i++) {
     totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
   }
-  // Sabit yürüyüş hızı (4 km/h)
+  // Sabit yürüyüş hızı: 4 km/h (gerekirse değiştir)
   const duration = Math.round(totalKm / 4 * 3600);
   return {
-    distance: Math.round(totalKm * 1000),
-    duration: duration
+    distance: Math.round(totalKm * 1000), // metre
+    duration: duration // saniye
   };
 }
 
+// Mesafe/süre badge ve DOM'u güncelleyen fonksiyon:
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   let summary = window.lastRouteSummaries?.[key] || null;
 
-  // FLY MODE (veya summary eksikse/hatalıysa) haversine ile DOLU YAP
+  // Fallback ile summary'yi haversine ile DOLU YAP
   if (!summary ||
       typeof summary.distance !== "number" ||
       typeof summary.duration !== "number" ||
-      isNaN(summary.distance) ||
-      isNaN(summary.duration)) {
+      isNaN(summary.distance) || isNaN(summary.duration)) {
     const points = getDayPoints(day);
     summary = getFallbackRouteSummary(points);
     window.lastRouteSummaries[key] = summary;
@@ -5237,7 +5237,6 @@ function updateRouteStatsUI(day) {
     `;
   }
 }
- 
 
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
