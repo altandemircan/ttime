@@ -7185,41 +7185,7 @@ if (imported) {
 
 
 async function renderRouteForDay(day) {
-        function areAllPointsInTurkey(pts) {
-        return pts.every(p => p.lat >= 35.81 && p.lat <= 42.11 && p.lng >= 25.87 && p.lng <= 44.57);
-    }
-    const containerId = `route-map-day${day}`;
-    const points = getDayPoints(day);
     
-    if (!areAllPointsInTurkey(points)) {
-        ensureDayMapContainer(day);
-        initEmptyDayMap(day);
-        const pairwiseSummaries = [];
-        let totalDist = 0, totalDur = 0;
-        for (let i = 0; i < points.length - 1; i++) {
-            const distance = Math.round(haversine(points[i].lat, points[i].lng, points[i+1].lat, points[i+1].lng));
-            const duration = Math.round(distance / 1000 / 4 * 3600);
-            pairwiseSummaries.push({ distance, duration });
-            totalDist += distance;
-            totalDur += duration;
-        }
-        window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-        window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
-        window.lastRouteSummaries = window.lastRouteSummaries || {};
-        window.lastRouteSummaries[containerId] = { distance: totalDist, duration: totalDur };
-        const geojson = {
-            type: "FeatureCollection",
-            features: [{
-                type: "Feature",
-                geometry: { type: "LineString", coordinates: points.map(p => [p.lng, p.lat]) },
-                properties: {}
-            }]
-        };
-        renderLeafletRoute(containerId, geojson, points, { distance: totalDist, duration: totalDur }, day);
-        setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 100);
-        if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
-        return;
-    }
 
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
