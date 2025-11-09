@@ -5209,12 +5209,16 @@ function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   let summary = window.lastRouteSummaries?.[key] || null;
 
-  // FLY MODE (veya summary eksikse/hatalıysa) haversine ile DOLU YAP
+  // YENI PATCH: FLY MODE'da veya summary eksikse/hatalıysa fallback ile doldur
+  // (bu satır: profile veya travel mode mantığından bağımsız)
   if (!summary ||
       typeof summary.distance !== "number" ||
       typeof summary.duration !== "number" ||
       isNaN(summary.distance) ||
-      isNaN(summary.duration)) {
+      isNaN(summary.duration) ||
+      !areAllPointsInTurkey(getDayPoints(day))
+     ) {
+    // Sadece haversine ile km/dk ver, profil değişmiyor!
     const points = getDayPoints(day);
     summary = getFallbackRouteSummary(points);
     window.lastRouteSummaries[key] = summary;
