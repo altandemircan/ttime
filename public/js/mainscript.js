@@ -7186,88 +7186,78 @@ if (imported) {
 
 async function renderRouteForDay(day) {
 
-
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
-    const pts = getDayPoints(day);
-    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
 
-    if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
-        const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
-        
-        console.log("Harita marker points:", points);
+    // 1. SADECE BİR KERE points TANIMLA!
+    const points = getDayPoints(day);
+    const containerId = `route-map-day${day}`;
 
-        if (gpsRaw.length < 2 || points.length < 2) return;
+    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(points, null, 2));
 
-        const points = getDayPoints(day);
-        const containerId = `route-map-day${day}`;
-
-
-        // FLY MOD: Sadece haversine, API/fetch yok!
-if (!areAllPointsInTurkey(points) && points.length >= 2) {
-    console.log('[FLY MODE PATCH] points:', JSON.stringify(points));
-
-    let totalKm = 0;
-    let markerPositions = [];
-    for (let i = 0; i < points.length; i++) {
-        if (i > 0) {
-            const d = haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
-            if (isNaN(d)) continue;
-            totalKm += d;
+    // FLY MOD: Sadece haversine, API/fetch yok!
+    if (!areAllPointsInTurkey(points) && points.length >= 2) {
+        console.log('[FLY MODE PATCH] points:', JSON.stringify(points));
+        let totalKm = 0;
+        let markerPositions = [];
+        for (let i = 0; i < points.length; i++) {
+            if (i > 0) {
+                const d = haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+                if (isNaN(d)) continue;
+                totalKm += d;
+            }
+            markerPositions.push({
+                name: points[i].name || "",
+                distance: Math.round(totalKm * 1000) / 1000,
+                lat: points[i].lat,
+                lng: points[i].lng
+            });
         }
-        markerPositions.push({
-            name: points[i].name || "",
-            distance: Math.round(totalKm * 1000) / 1000,
-            lat: points[i].lat,
-            lng: points[i].lng
-        });
-    }
-    let SABIT_HIZ_KMH = 4;
-    let durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600);
+        let SABIT_HIZ_KMH = 4;
+        let durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600);
 
-    const summary = {
-        distance: Math.round(totalKm * 1000), // metre
-        duration: durationSec
-    };
+        const summary = {
+            distance: Math.round(totalKm * 1000), // metre
+            duration: durationSec
+        };
 
-    window.lastRouteSummaries = window.lastRouteSummaries || {};
-    window.lastRouteSummaries[containerId] = summary;
+        window.lastRouteSummaries = window.lastRouteSummaries || {};
+        window.lastRouteSummaries[containerId] = summary;
 
-    const geojson = {
-        type: "FeatureCollection",
-        features: [{
-            type: "Feature",
-            geometry: {
-                type: "LineString",
-                coordinates: points.map(p => [p.lng, p.lat])
-            },
-            properties: {}
-        }]
-    };
+        const geojson = {
+            type: "FeatureCollection",
+            features: [{
+                type: "Feature",
+                geometry: {
+                    type: "LineString",
+                    coordinates: points.map(p => [p.lng, p.lat])
+                },
+                properties: {}
+            }]
+        };
 
-    renderLeafletRoute(containerId, geojson, points, summary, day);
+        renderLeafletRoute(containerId, geojson, points, summary, day);
 
-    let expandedMapDiv =
-        document.getElementById(`expanded-map-${day}`) ||
-        document.getElementById(`expanded-route-map-day${day}`);
-    if (expandedMapDiv) {
-        let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-        if (!expandedScaleBar) {
-            expandedScaleBar = document.createElement('div');
-            expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
-            expandedScaleBar.className = 'route-scale-bar expanded';
-            expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+        let expandedMapDiv =
+            document.getElementById(`expanded-map-${day}`) ||
+            document.getElementById(`expanded-route-map-day${day}`);
+        if (expandedMapDiv) {
+            let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+            if (!expandedScaleBar) {
+                expandedScaleBar = document.createElement('div');
+                expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+                expandedScaleBar.className = 'route-scale-bar expanded';
+                expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+            }
+            expandedScaleBar.style.display = "block";
+            expandedScaleBar.innerHTML = "";
+            renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
         }
-        expandedScaleBar.style.display = "block";
-        expandedScaleBar.innerHTML = "";
-        renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
+
+        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+
+        return; // Patch ile OSRM'den FLY MOD'A kitlenir
     }
-
-    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-
-    return; // TÜM OSRM ve directions koduna erişimi KES!
-}
-
 
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
