@@ -8096,12 +8096,40 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
-  // 0 veya 1 gerçek nokta varsa: hiç travel mode set gösterme, sadece MAP tuşu route-controls-bar'da olacak!
   if (!Array.isArray(realPoints) || realPoints.length < 2) {
     return; // Travel mode set yok, MAP tuşu bar'da!
   }
 
-  // 2+ nokta varsa travel mode set (MAP tuşu yok!)
+  // FLY MODE aktifleştirme sadece markerlar yay ile bağlanıyorsa:
+  const containerId = `route-map-day${day}`;
+  const geojson = window.lastRouteGeojsons?.[containerId];
+  const isInTurkey = areAllPointsInTurkey(realPoints);
+  const hasRealRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
+
+  // Eğer Türkiye dışıysa veya route yoksa, sadece FLY MODE kutusu göster
+  if (!hasRealRoute) {
+    const set = document.createElement('div');
+    set.id = setId;
+    set.className = 'tt-travel-mode-set';
+    set.dataset.day = String(day);
+    set.innerHTML = `
+      <div class="travel-modes">
+        <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.97;">
+          <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
+          <span class="tm-label">FLY MODE</span>
+        </button>
+      </div>
+    `;
+    // Insert
+    if (controlsWrapperEl && controlsWrapperEl.parentNode) {
+      controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
+    } else if (routeMapEl && routeMapEl.parentNode) {
+      routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
+    }
+    return;
+  }
+
+  // --- Aşağıdaki kodun aynen kaldı ve Türkiye'de CAR/BIKE/WALK, aktif/renk-change logic aynen çalışıyor ---
   const set = document.createElement('div');
   set.id = setId;
   set.className = 'tt-travel-mode-set';
@@ -8122,23 +8150,20 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
       </button>
     </div>
   `;
-  // Insert
   if (controlsWrapperEl && controlsWrapperEl.parentNode) {
     controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
   } else if (routeMapEl && routeMapEl.parentNode) {
     routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
   }
-  // Travel mode buttons
+
   set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
   set.addEventListener('click', (e) => {
     e.stopPropagation();
-    // Travel mode buttons
     const btn = e.target.closest('button[data-mode]');
     if (!btn) return;
     window.setTravelMode(btn.getAttribute('data-mode'), day);
   });
 
-  // Actives (varsayılanı işaretle)
   if (typeof markActiveTravelModeButtons === 'function') {
     markActiveTravelModeButtons();
   }
