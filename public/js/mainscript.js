@@ -5191,7 +5191,6 @@ window.expandedMaps = {};
 // Güncellenmiş expandMap fonksiyonu: YÜKSEKLİK/ELEVATION ile ilgili her şey kaldırıldı!
 
 
-
 function getFallbackRouteSummary(points) {
   if (!points || points.length < 2) return { distance: 0, duration: 0 };
   let totalKm = 0;
@@ -5210,27 +5209,20 @@ function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   let summary = window.lastRouteSummaries?.[key] || null;
 
-  // summary eksikse veya hatalıysa haversine ile hesapla ve kaydet!
+  // FLY MODE (veya summary eksikse/hatalıysa) haversine ile DOLU YAP
   if (!summary ||
       typeof summary.distance !== "number" ||
       typeof summary.duration !== "number" ||
       isNaN(summary.distance) ||
-      isNaN(summary.duration)
-  ) {
+      isNaN(summary.duration)) {
     const points = getDayPoints(day);
     summary = getFallbackRouteSummary(points);
     window.lastRouteSummaries[key] = summary;
   }
 
-  // Ascent/descent verisini oku
-  const ascent = window.routeElevStatsByDay?.[day]?.ascent;
-  const descent = window.routeElevStatsByDay?.[day]?.descent;
+  const distanceKm = (summary.distance / 1000).toFixed(2);
+  const durationMin = Math.round(summary.duration / 60);
 
-  // Mesafe/Süre
-  const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "—";
-  const durationMin = summary ? Math.round(summary.duration / 60) : "—";
-
-  // SADECE küçük harita altındaki kutunun içeriğini güncelle (başka hiçbir DOM'a dokunma)
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     routeSummarySpan.innerHTML = `
@@ -5242,31 +5234,8 @@ function updateRouteStatsUI(day) {
         <img class="icon" src="/img/way_time.svg" alt="Duration">
         <span class="badge">${durationMin} dk</span>
       </span>
-      <span class="stat stat-ascent">
-        <img class="icon" src="/img/way_ascent.svg" alt="Ascent">
-        <span class="badge">${(typeof ascent === "number" && !isNaN(ascent)) ? Math.round(ascent) + " m" : "— m"}</span>
-      </span>
-      <span class="stat stat-descent">
-        <img class="icon" src="/img/way_descent.svg" alt="Descent">
-        <span class="badge">${(typeof descent === "number" && !isNaN(descent)) ? Math.round(descent) + " m" : "— m"}</span>
-      </span>
     `;
   }
-}
-function getFallbackRouteSummary(points) {
-  if (!points || points.length < 2) return { distance: 0, duration: 0, ascent: 0, descent: 0 };
-  let totalKm = 0;
-  for (let i = 1; i < points.length; i++) {
-    totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
-  }
-  // Sabit yürüyüş hızı (4 km/h)
-  let duration = Math.round(totalKm / 4 * 3600);
-  return {
-    distance: Math.round(totalKm * 1000),
-    duration: duration,
-    ascent: 0,
-    descent: 0,
-  };
 }
  
 
