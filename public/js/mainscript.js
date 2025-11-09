@@ -7185,11 +7185,15 @@ if (imported) {
 
 
 async function renderRouteForDay(day) {
+     const containerId = `route-map-day${day}`;
+    let points = getDayPoints(day);
+    points = points.filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+
+
         function areAllPointsInTurkey(pts) {
         return pts.every(p => p.lat >= 35.81 && p.lat <= 42.11 && p.lng >= 25.87 && p.lng <= 44.57);
     }
-    const containerId = `route-map-day${day}`;
-    const points = getDayPoints(day);
+
     console.log('[PATCH-BASLANGICI]', JSON.stringify(points));
 
     if (!areAllPointsInTurkey(points)) {
