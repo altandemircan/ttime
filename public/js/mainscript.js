@@ -7380,10 +7380,8 @@ async function renderRouteForDay(day) {
     }
 
     if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
-        const pts0 = getDayPoints(day);
-        if (!pts0 || pts0.length === 0) return;
-    }
-
+    if (!points || points.length === 0) return;
+}
 
     if (
         window.importedTrackByDay &&
