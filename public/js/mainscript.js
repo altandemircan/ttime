@@ -7226,9 +7226,14 @@ async function renderRouteForDay(day) {
                     });
                     durations.push(data.routes[0].duration);
                 }
-            } catch (e) {
-                pairwiseSummaries.push({ distance: null, duration: null });
-                durations.push(null);
+              } catch (e) {
+                // PATCH: NULL bırakma, haversine ile doldur
+                const prevPt = points[i-1];
+                const thisPt = points[i];
+                const d = haversine(prevPt.lat, prevPt.lng, thisPt.lat, thisPt.lng);
+                const dur = Math.round(d / 1000 / 4 * 3600); // Yürüyüş: 4 km/h
+                pairwiseSummaries.push({ distance: Math.round(d), duration: dur });
+                durations.push(dur);
             }
             prev = next;
         }
@@ -7667,35 +7672,29 @@ try {
     }
 
     const pairwiseSummaries = [];
-    for (let i = 0; i < points.length - 1; i++) {
+        for (let i = 0; i < points.length - 1; i++) {
         try {
-            const pairCoords = [
-                [points[i].lng, points[i].lat],
-                [points[i + 1].lng, points[i + 1].lat]
-            ];
-            const coordParam = pairCoords.map(c => `${c[0]},${c[1]}`).join(';');
-            const url = buildDirectionsUrl(coordParam, day);
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('routing error');
-            const data = await response.json();
-            if (!data.routes || !data.routes[0]) throw new Error('No route found');
+            // ...fetch route...
             pairwiseSummaries.push({
-                distance: data.routes[0].distance,
-                duration: data.routes[0].duration
+                distance: data.routes[0].distance ?? null,
+                duration: data.routes[0].duration ?? null
             });
         } 
-
-
         catch {
-    // Haversine ile mesafe/süreyi hesapla
-    const d = haversine(points[i].lat, points[i].lng, points[i+1].lat, points[i+1].lng);
-    // Sabit bir hız (örn 4 km/h ile yürüyüş)
-    const duration = Math.round(d / 1000 / 4 * 3600);
-    pairwiseSummaries.push({ distance: Math.round(d), duration });
-}
-
-
-
+            // Haversine ile mesafe/süreyi hesapla
+            const d = haversine(points[i].lat, points[i].lng, points[i+1].lat, points[i+1].lng);
+            // Sabit bir hız (örn 4 km/h ile yürüyüş)
+            const duration = Math.round(d / 1000 / 4 * 3600);
+            pairwiseSummaries.push({ distance: Math.round(d), duration });
+        }
+        // PATCH: null protection
+        const last = pairwiseSummaries[pairwiseSummaries.length - 1];
+        if (last.distance == null || isNaN(last.distance)) {
+            last.distance = Math.round(haversine(points[i].lat, points[i].lng, points[i+1].lat, points[i+1].lng));
+        }
+        if (last.duration == null || isNaN(last.duration)) {
+            last.duration = Math.round(last.distance / 1000 / 4 * 3600);
+        }
     }
 
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
