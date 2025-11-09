@@ -8092,72 +8092,55 @@ function cleanupLegacyTravelMode() {
 function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   const realPoints = typeof getDayPoints === "function" ? getDayPoints(day) : [];
   const setId = `tt-travel-mode-set-day${day}`;
-  // Önce eskiyi kaldır
+  // Önce her durumda eskiyi kaldır
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
-  if (!Array.isArray(realPoints) || realPoints.length < 2) return;
+  // 0 veya 1 gerçek nokta varsa: hiç travel mode set gösterme, sadece MAP tuşu route-controls-bar'da olacak!
+  if (!Array.isArray(realPoints) || realPoints.length < 2) {
+    return; // Travel mode set yok, MAP tuşu bar'da!
+  }
 
-  const containerId = `route-map-day${day}`;
-  const geojson = window.lastRouteGeojsons?.[containerId];
-
-  // Sadece Türkiye içi ve gerçek route varsa normal modlar aktif:
-  const isInTurkey = areAllPointsInTurkey(realPoints);
-  const hasValidRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
-
+  // 2+ nokta varsa travel mode set (MAP tuşu yok!)
   const set = document.createElement('div');
   set.id = setId;
   set.className = 'tt-travel-mode-set';
   set.dataset.day = String(day);
-
-  if (hasValidRoute) {
-    // Eski travel mode kutusu, aktif moda renk verme mantığın
-    set.innerHTML = `
-      <div class="travel-modes">
-        <button type="button" data-mode="driving" aria-label="Driving">
-          <img class="tm-icon" src="/img/way_car.svg" alt="CAR" loading="lazy" decoding="async">
-          <span class="tm-label">CAR</span>
-        </button>
-        <button type="button" data-mode="cycling" aria-label="Cycling">
-          <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE" loading="lazy" decoding="async">
-          <span class="tm-label">BIKE</span>
-        </button>
-        <button type="button" data-mode="walking" aria-label="Walking">
-          <img class="tm-icon" src="/img/way_walk.svg" alt="WALK" loading="lazy" decoding="async">
-          <span class="tm-label">WALK</span>
-        </button>
-      </div>
-    `;
-    set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
-    set.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const btn = e.target.closest('button[data-mode]');
-      if (!btn) return;
-      window.setTravelMode(btn.getAttribute('data-mode'), day);
-    });
-
-    // Kendi aktif butonunu belirleyen fonksiyonun
-    if (typeof markActiveTravelModeButtons === 'function') {
-      markActiveTravelModeButtons();
-    }
-  } else {
-    // YAY modunda sadece FLY MODE tek buton
-    set.innerHTML = `
-      <div class="travel-modes">
-        <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.97;">
-          <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
-          <span class="tm-label">FLY MODE</span>
-        </button>
-      </div>
-    `;
-    // FLY tek ve aktif, renk değişim logicine gerek yok.
-  }
-
+  set.innerHTML = `
+    <div class="travel-modes">
+      <button type="button" data-mode="driving" aria-label="Driving">
+        <img class="tm-icon" src="/img/way_car.svg" alt="CAR" loading="lazy" decoding="async">
+        <span class="tm-label">CAR</span>
+      </button>
+      <button type="button" data-mode="cycling" aria-label="Cycling">
+        <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE" loading="lazy" decoding="async">
+        <span class="tm-label">BIKE</span>
+      </button>
+      <button type="button" data-mode="walking" aria-label="Walking">
+        <img class="tm-icon" src="/img/way_walk.svg" alt="WALK" loading="lazy" decoding="async">
+        <span class="tm-label">WALK</span>
+      </button>
+    </div>
+  `;
   // Insert
   if (controlsWrapperEl && controlsWrapperEl.parentNode) {
     controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
   } else if (routeMapEl && routeMapEl.parentNode) {
     routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
+  }
+  // Travel mode buttons
+  set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
+  set.addEventListener('click', (e) => {
+    e.stopPropagation();
+    // Travel mode buttons
+    const btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    window.setTravelMode(btn.getAttribute('data-mode'), day);
+  });
+
+  // Actives (varsayılanı işaretle)
+  if (typeof markActiveTravelModeButtons === 'function') {
+    markActiveTravelModeButtons();
   }
 }
 
