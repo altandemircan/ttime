@@ -8096,14 +8096,12 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
-  // 0 veya 1 gerçek nokta: travel mode set ekleme
-  if (!Array.isArray(realPoints) || realPoints.length < 2) {
-    return;
-  }
+  if (!Array.isArray(realPoints) || realPoints.length < 2) return;
 
-  // Türkiye içi & gerçek rota var mı?
   const containerId = `route-map-day${day}`;
   const geojson = window.lastRouteGeojsons?.[containerId];
+
+  // Sadece Türkiye içi ve gerçek route varsa normal modlar aktif:
   const isInTurkey = areAllPointsInTurkey(realPoints);
   const hasValidRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
 
@@ -8113,7 +8111,7 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   set.dataset.day = String(day);
 
   if (hasValidRoute) {
-    // NORMAL travel modes (Türkiye/route aktfi)
+    // Eski travel mode kutusu, aktif moda renk verme mantığın
     set.innerHTML = `
       <div class="travel-modes">
         <button type="button" data-mode="driving" aria-label="Driving">
@@ -8138,23 +8136,24 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
       window.setTravelMode(btn.getAttribute('data-mode'), day);
     });
 
+    // Kendi aktif butonunu belirleyen fonksiyonun
     if (typeof markActiveTravelModeButtons === 'function') {
       markActiveTravelModeButtons();
     }
   } else {
-    // YAY veya Türkiye dışı: Sadece FLY MODE (veya marker-yay bağlantısı)
+    // YAY modunda sadece FLY MODE tek buton
     set.innerHTML = `
       <div class="travel-modes">
-        <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.92;">
+        <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.97;">
           <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
           <span class="tm-label">FLY MODE</span>
         </button>
       </div>
     `;
-    // Buton tıklanamaz ve değiştirilemez.
+    // FLY tek ve aktif, renk değişim logicine gerek yok.
   }
 
-  // Insert travel mode set yerine koy
+  // Insert
   if (controlsWrapperEl && controlsWrapperEl.parentNode) {
     controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
   } else if (routeMapEl && routeMapEl.parentNode) {
