@@ -7672,30 +7672,37 @@ try {
     }
 
     const pairwiseSummaries = [];
-        for (let i = 0; i < points.length - 1; i++) {
-        try {
-            // ...fetch route...
-            pairwiseSummaries.push({
-                distance: data.routes[0].distance ?? null,
-                duration: data.routes[0].duration ?? null
-            });
-        } 
-        catch {
-            // Haversine ile mesafe/süreyi hesapla
-            const d = haversine(points[i].lat, points[i].lng, points[i+1].lat, points[i+1].lng);
-            // Sabit bir hız (örn 4 km/h ile yürüyüş)
-            const duration = Math.round(d / 1000 / 4 * 3600);
-            pairwiseSummaries.push({ distance: Math.round(d), duration });
+for (let i = 0; i < points.length - 1; i++) {
+    let distance = null;
+    let duration = null;
+    try {
+        // Route API
+        const pairCoords = [
+            [points[i].lng, points[i].lat],
+            [points[i + 1].lng, points[i + 1].lat]
+        ];
+        const coordParam = pairCoords.map(c => `${c[0]},${c[1]}`).join(';');
+        const url = buildDirectionsUrl(coordParam, day);
+        const response = await fetch(url);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.routes && data.routes[0]) {
+                distance = data.routes[0].distance;
+                duration = data.routes[0].duration;
+            }
         }
-        // PATCH: null protection
-        const last = pairwiseSummaries[pairwiseSummaries.length - 1];
-        if (last.distance == null || isNaN(last.distance)) {
-            last.distance = Math.round(haversine(points[i].lat, points[i].lng, points[i+1].lat, points[i+1].lng));
-        }
-        if (last.duration == null || isNaN(last.duration)) {
-            last.duration = Math.round(last.distance / 1000 / 4 * 3600);
-        }
+    } catch (err) {
+        // ignore errors, go to fallback
     }
+    // PATCH: Fallback - haversine ile doldur!
+    if (typeof distance !== "number" || isNaN(distance)) {
+        distance = Math.round(haversine(points[i].lat, points[i].lng, points[i+1].lat, points[i+1].lng));
+    }
+    if (typeof duration !== "number" || isNaN(duration)) {
+        duration = Math.round(distance / 1000 / 4 * 3600); // 4 km/h
+    }
+    pairwiseSummaries.push({ distance, duration });
+}
 
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
     window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
