@@ -7262,7 +7262,7 @@ async function renderRouteForDay(day) {
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
-        let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
+
         let trackDistance = 0;
         for (let i = 1; i < gpsRaw.length; i++) {
             trackDistance += haversine(gpsRaw[i - 1].lat, gpsRaw[i - 1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
@@ -7392,6 +7392,7 @@ async function renderRouteForDay(day) {
         points.length > 2
     ) {
         window.importedTrackByDay[day].drawRaw = false;
+            let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
     }
 
     if (!points || points.length === 0) {
