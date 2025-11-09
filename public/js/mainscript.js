@@ -7670,9 +7670,19 @@ try {
                 distance: data.routes[0].distance,
                 duration: data.routes[0].duration
             });
-        } catch {
-            pairwiseSummaries.push({ distance: null, duration: null });
-        }
+        } 
+
+
+        catch {
+    // Haversine ile mesafe/süreyi hesapla
+    const d = haversine(points[i].lat, points[i].lng, points[i+1].lat, points[i+1].lng);
+    // Sabit bir hız (örn 4 km/h ile yürüyüş)
+    const duration = Math.round(d / 1000 / 4 * 3600);
+    pairwiseSummaries.push({ distance: Math.round(d), duration });
+}
+
+
+
     }
 
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
