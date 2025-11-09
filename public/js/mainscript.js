@@ -7549,61 +7549,32 @@ const hasValidRoute = isInTurkey
   && window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1;
 
 if (!hasValidRoute && realPoints.length >= 2) {
-  // SADECE FLY MODE’da çalışacak haversine total kodu:
+  // FLY MODE, toplam mesafe/süre haversine ile hesaplanır!
   let totalKm = 0;
-  let markerPositions = [];
-  for (let i = 0; i < realPoints.length; i++) {
-    if (i > 0) {
-      totalKm += haversine(
-        realPoints[i-1].lat, realPoints[i-1].lng,
-        realPoints[i].lat, realPoints[i].lng
-      ) / 1000;
-    }
-    markerPositions.push({
-      name: realPoints[i].name || "",
-      distance: totalKm,
-      lat: realPoints[i].lat,
-      lng: realPoints[i].lng
-    });
+  for (let i = 1; i < realPoints.length; i++) {
+    totalKm += haversine(realPoints[i-1].lat, realPoints[i-1].lng, realPoints[i].lat, realPoints[i].lng) / 1000;
   }
-  // Travel mode hız
-  let travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "walking";
-  let speed = travelMode==="cycling"?16:travelMode==="driving"?40:4;
-  let durationSec = Math.round(totalKm / speed * 3600);
+  let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "walking";
+  let speedKmh = (mode === "cycling") ? 16 : (mode === "driving") ? 40 : 4;
+  let durationMin = Math.round((totalKm / speedKmh) * 60);
 
   const summary = {
     distance: Math.round(totalKm * 1000),
-    duration: durationSec
+    duration: durationMin * 60
   };
-
   window.lastRouteSummaries = window.lastRouteSummaries || {};
-  window.lastRouteSummaries[containerId] = summary;
+  window.lastRouteSummaries[`route-map-day${day}`] = summary;
 
-  // Mini harita
-  renderLeafletRoute(containerId, {
+  renderLeafletRoute(`route-map-day${day}`, {
     type: "FeatureCollection",
     features: [{
       type: "Feature",
-      geometry: { type: "LineString", coordinates: realPoints.map(p=>[p.lng,p.lat]) },
+      geometry: { type: "LineString", coordinates: realPoints.map(p => [p.lng, p.lat]) },
       properties: {}
     }]
   }, realPoints, summary, day);
 
-  // Expanded bar
-  let expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
-  if (expandedMapDiv) {
-    let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (!expandedScaleBar) {
-      expandedScaleBar = document.createElement('div');
-      expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
-      expandedScaleBar.className = 'route-scale-bar expanded';
-      expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
-    }
-    expandedScaleBar.style.display = "block";
-    expandedScaleBar.innerHTML = "";
-    renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
-  }
-  if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+  if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
   return;
 }
 
