@@ -7542,32 +7542,33 @@ async function renderRouteForDay(day) {
   const infoPanel = document.getElementById(`route-info-day${day}`);
   if (infoPanel) infoPanel.textContent = "Could not draw the route!";
 
-if (points.length >= 2 && !hasValidRoute) {
-  // DEBUG: Marker noktalarını consola yaz!
-  console.log('[DEBUG] points:', JSON.stringify(points));
+const realPoints = getDayPoints(day); // DİKKAT: burada 'points' arrayindeki lat/lng rakamları DOĞRU
 
+const isInTurkey = areAllPointsInTurkey(realPoints);
+const hasValidRoute = isInTurkey
+  && window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1;
+
+if (!hasValidRoute && realPoints.length >= 2) {
+  // SADECE FLY MODE’da çalışacak haversine total kodu:
   let totalKm = 0;
   let markerPositions = [];
-  for (let i = 0; i < points.length; i++) {
+  for (let i = 0; i < realPoints.length; i++) {
     if (i > 0) {
-      totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+      totalKm += haversine(
+        realPoints[i-1].lat, realPoints[i-1].lng,
+        realPoints[i].lat, realPoints[i].lng
+      ) / 1000;
     }
     markerPositions.push({
-      name: points[i].name || "",
+      name: realPoints[i].name || "",
       distance: totalKm,
-      lat: points[i].lat,
-      lng: points[i].lng
+      lat: realPoints[i].lat,
+      lng: realPoints[i].lng
     });
   }
-  // DEBUG: Total Km ve marker pozisyonlarını kontrol et!
-  console.log('[DEBUG] totalKm:', totalKm);
-  console.log('[DEBUG] markerPositions:', markerPositions);
-
+  // Travel mode hız
   let travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "walking";
-  let speed = 4;
-  if (travelMode === "cycling") speed = 16;
-  else if (travelMode === "driving") speed = 40;
-
+  let speed = travelMode==="cycling"?16:travelMode==="driving"?40:4;
   let durationSec = Math.round(totalKm / speed * 3600);
 
   const summary = {
@@ -7577,26 +7578,19 @@ if (points.length >= 2 && !hasValidRoute) {
 
   window.lastRouteSummaries = window.lastRouteSummaries || {};
   window.lastRouteSummaries[containerId] = summary;
-  console.log('[DEBUG] summary:', summary);
 
-  // Geojson da markerlarla oluşturulmalı! (sıfır olmamasını garanti et)
-  const geojson = {
+  // Mini harita
+  renderLeafletRoute(containerId, {
     type: "FeatureCollection",
     features: [{
       type: "Feature",
-      geometry: {
-        type: "LineString",
-        coordinates: points.map(p => [p.lng, p.lat])
-      },
+      geometry: { type: "LineString", coordinates: realPoints.map(p=>[p.lng,p.lat]) },
       properties: {}
     }]
-  };
+  }, realPoints, summary, day);
 
-  renderLeafletRoute(containerId, geojson, points, summary, day);
-
-  let expandedMapDiv =
-    document.getElementById(`expanded-map-${day}`) ||
-    document.getElementById(`expanded-route-map-day${day}`);
+  // Expanded bar
+  let expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
   if (expandedMapDiv) {
     let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!expandedScaleBar) {
@@ -7607,18 +7601,9 @@ if (points.length >= 2 && !hasValidRoute) {
     }
     expandedScaleBar.style.display = "block";
     expandedScaleBar.innerHTML = "";
-    renderRouteScaleBar(
-      expandedScaleBar,
-      totalKm,
-      markerPositions
-    );
+    renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
   }
-
-  // summary 0 ise burada DEBUG mesajı çıkar:
   if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-  if (!summary.distance || !summary.duration) {
-    console.warn("!!! Summary (mesafe/süre) 0 geldi, markerlar mı hatalı?");
-  }
   return;
 }
 
