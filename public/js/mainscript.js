@@ -7559,17 +7559,31 @@ try {
     if (infoPanel) infoPanel.textContent = "Could not draw the route!";
 
     // === FLY MODE === (travelMode tamamen ignore edilir, sadece sabit hız + haversine)
-  if (points.length >= 2) {
-    // 1. Haversine ile toplam km
-    let totalKm = 0;
-    for (let i = 1; i < points.length; i++) {
-        totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
-    }
-    // 2. Sabit hız ile toplam süre (4 km/h)
-    let SABIT_HIZ_KMH = 4;
-    let durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600); // saniye
+    if (points.length >= 2) {
+    console.log('[FLY MODE] points:', JSON.stringify(points));
 
-    // 3. Mesafe/süre summary
+    let totalKm = 0;
+    let markerPositions = [];
+    for (let i = 0; i < points.length; i++) {
+        if (i > 0) {
+            const d = haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+            if (isNaN(d)) {
+                console.warn(`Haversine mesafesi hatalı/null: point[${i-1}] & point[${i}]`);
+                continue;
+            }
+            totalKm += d;
+        }
+        markerPositions.push({
+            name: points[i].name || "",
+            distance: Math.round(totalKm * 1000) / 1000, // km precisionı
+            lat: points[i].lat,
+            lng: points[i].lng
+        });
+    }
+
+    let SABIT_HIZ_KMH = 4;
+    let durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600);
+
     const summary = {
         distance: Math.round(totalKm * 1000), // metre
         duration: durationSec
@@ -7577,8 +7591,8 @@ try {
 
     window.lastRouteSummaries = window.lastRouteSummaries || {};
     window.lastRouteSummaries[containerId] = summary;
+    console.log('[FLY MODE] summary:', summary);
 
-    // 4. Polyline & geojson (sadece markerlar arası)
     const geojson = {
         type: "FeatureCollection",
         features: [{
@@ -7593,12 +7607,27 @@ try {
 
     renderLeafletRoute(containerId, geojson, points, summary, day);
 
-    // 5. Mesafe/süre UI
+    let expandedMapDiv =
+        document.getElementById(`expanded-map-${day}`) ||
+        document.getElementById(`expanded-route-map-day${day}`);
+    if (expandedMapDiv) {
+        let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        if (!expandedScaleBar) {
+            expandedScaleBar = document.createElement('div');
+            expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+            expandedScaleBar.className = 'route-scale-bar expanded';
+            expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+        }
+        expandedScaleBar.style.display = "block";
+        expandedScaleBar.innerHTML = "";
+        renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
+    }
+
     if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
-    // 6. Expanded bar/scale bar vs. istersen bırak
-    // (Ekstra bar/scale bar kodunu burada ister bırakabilirsin, ister kaldır)
-
+    if (!summary.distance || !summary.duration) {
+        console.warn("[FLY MODE] !! Summary (mesafe/süre) 0 veya hatalı geldi, markerlar mı eksik/hatalı?");
+    }
     return;
 }
     return;
