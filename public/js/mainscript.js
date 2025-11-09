@@ -7537,49 +7537,44 @@ async function renderRouteForDay(day) {
     } 
 
 
-
-    catch (e) {
-  const infoPanel = document.getElementById(`route-info-day${day}`);
-  if (infoPanel) infoPanel.textContent = "Could not draw the route!";
-
-const realPoints = getDayPoints(day); // DİKKAT: burada 'points' arrayindeki lat/lng rakamları DOĞRU
-
-const isInTurkey = areAllPointsInTurkey(realPoints);
-const hasValidRoute = isInTurkey
-  && window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1;
-
-if (!hasValidRoute && realPoints.length >= 2) {
-  // FLY MODE, toplam mesafe/süre haversine ile hesaplanır!
+const pts = getDayPoints(day);
+if (pts.length >= 2) {
   let totalKm = 0;
-  for (let i = 1; i < realPoints.length; i++) {
-    totalKm += haversine(realPoints[i-1].lat, realPoints[i-1].lng, realPoints[i].lat, realPoints[i].lng) / 1000;
+  for (let i = 1; i < pts.length; i++) {
+    totalKm += haversine(
+      pts[i-1].lat, pts[i-1].lng,
+      pts[i].lat, pts[i].lng
+    ) / 1000;
   }
-  let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "walking";
-  let speedKmh = (mode === "cycling") ? 16 : (mode === "driving") ? 40 : 4;
-  let durationMin = Math.round((totalKm / speedKmh) * 60);
+
+  // SABİT yürüyüş hızı (örn. 4 km/h)
+  let sabitHizKmh = 4;
+  let sureDakika = Math.round(totalKm / sabitHizKmh * 60);
 
   const summary = {
-    distance: Math.round(totalKm * 1000),
-    duration: durationMin * 60
+    distance: Math.round(totalKm * 1000), // metre
+    duration: sureDakika * 60             // saniye
   };
+
   window.lastRouteSummaries = window.lastRouteSummaries || {};
   window.lastRouteSummaries[`route-map-day${day}`] = summary;
+
+  if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
 
   renderLeafletRoute(`route-map-day${day}`, {
     type: "FeatureCollection",
     features: [{
       type: "Feature",
-      geometry: { type: "LineString", coordinates: realPoints.map(p => [p.lng, p.lat]) },
+      geometry: { type: "LineString", coordinates: pts.map(p => [p.lng, p.lat]) },
       properties: {}
     }]
-  }, realPoints, summary, day);
-
-  if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
-  return;
-}
+  }, pts, summary, day);
 
   return;
 }
+
+
+
 
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (missingPoints.length > 0) {
