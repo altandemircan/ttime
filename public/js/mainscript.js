@@ -7543,70 +7543,68 @@ async function renderRouteForDay(day) {
   if (infoPanel) infoPanel.textContent = "Could not draw the route!";
 
                 if (points.length >= 2) {
-                  let samples = [], dists = [0], dist = 0, N = Math.max(38, Math.min(200, points.length * 20));
-                  for (let i = 1; i < points.length; i++) {
-                    const a = points[i-1], b = points[i];
-                    for (let j = 0; j < N; j++) {
-                      const t = j / (N-1);
-                      const lat = a.lat + (b.lat - a.lat) * t;
-                      const lng = a.lng + (b.lng - a.lng) * t;
-                      if (j > 0) {
-                        dist += haversine(samples[samples.length-1]?.lat ?? a.lat, samples[samples.length-1]?.lng ?? a.lng, lat, lng);
-                      }
-                      samples.push({ lat, lng });
-                      dists.push(dist);
-                    }
-                  }
+  // Mesafe ve süreyi markerlar arası haversine ile topla
+  let totalKm = 0;
+  for (let i = 1; i < points.length; i++) {
+    totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000; // km
+  }
 
-                  // Fake geojson (yay/geçiş hattı)
-                  const geojson = {
-                    type: "FeatureCollection",
-                    features: [{
-                      type: "Feature",
-                      geometry: {
-                        type: "LineString",
-                        coordinates: points.map(p => [p.lng, p.lat])
-                      },
-                      properties: {}
-                    }]
-                  };
-                  const summary = {
-                    distance: dist,
-                    duration: dist / 1300
-                  };
+  // Travel mode'a göre hızı dinamik ayarlayabilirsin:
+  let travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "walking";
+  let speed = 4; // km/h yürüme (varsayılan)
+  if (travelMode === "cycling") speed = 16;
+  else if (travelMode === "driving") speed = 40;
 
-                  // **EKLE: Fly Mode summary**
-                  window.lastRouteSummaries = window.lastRouteSummaries || {};
-                  window.lastRouteSummaries[containerId] = summary;
+  // Süre dakika cinsinden
+  let durationMin = totalKm / speed * 60;
 
-                  renderLeafletRoute(containerId, geojson, points, summary, day);
+  const summary = {
+    distance: Math.round(totalKm * 1000),    // METRE
+    duration: Math.round(durationMin * 60)   // SANİYE
+  };
 
-                  let expandedMapDiv =
-                    document.getElementById(`expanded-map-${day}`) ||
-                    document.getElementById(`expanded-route-map-day${day}`);
-                  if (expandedMapDiv) {
-                    let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-                    if (!expandedScaleBar) {
-                      expandedScaleBar = document.createElement('div');
-                      expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
-                      expandedScaleBar.className = 'route-scale-bar expanded';
-                      expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
-                    }
-                    expandedScaleBar.style.display = "block";
-                    expandedScaleBar.innerHTML = ""; // Temizle
-                    renderRouteScaleBar(
-                      expandedScaleBar,
-                      dist / 1000,
-                      samples.map((p, i) => ({
-                        name: "",
-                        distance: dists[i] / 1000,
-                        snapped: true
-                      }))
-                    );
-                  }
-                  if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-                  return;
-                }
+  window.lastRouteSummaries = window.lastRouteSummaries || {};
+  window.lastRouteSummaries[containerId] = summary;
+
+  // renderLeafletRoute aynen:
+  renderLeafletRoute(containerId, geojson, points, summary, day);
+
+  let expandedMapDiv =
+    document.getElementById(`expanded-map-${day}`) ||
+    document.getElementById(`expanded-route-map-day${day}`);
+  if (expandedMapDiv) {
+    let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (!expandedScaleBar) {
+      expandedScaleBar = document.createElement('div');
+      expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+      expandedScaleBar.className = 'route-scale-bar expanded';
+      expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+    }
+    expandedScaleBar.style.display = "block";
+    expandedScaleBar.innerHTML = "";
+    // markerPosition ve mesafe için:
+    let markerPositions = [];
+    let kmSoFar = 0;
+    for (let i = 0; i < points.length; i++) {
+      if (i > 0) {
+        kmSoFar += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+      }
+      markerPositions.push({
+        name: points[i].name || "",
+        distance: kmSoFar,
+        lat: points[i].lat,
+        lng: points[i].lng
+      });
+    }
+    renderRouteScaleBar(
+      expandedScaleBar,
+      totalKm,
+      markerPositions
+    );
+  }
+  if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+  return;
+}
 
   return;
 }
