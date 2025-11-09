@@ -7615,7 +7615,7 @@ try {
         return;
     }
     return;
-}
+}   
 
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (missingPoints.length > 0) {
@@ -8034,6 +8034,9 @@ function saveTravelModeForDay(day, mode) {
 
 // Day-aware profile getter
 function getProfileForDay(day) {
+  // Eğer Fly Mode aktifse, profile 'fly' veya "" döndür
+  if (isFlyModeActive(day)) return ""; // veya "fly"
+  // Normalde eski travel mode döndür
   return getTravelModeForDay(day);
 }
 
