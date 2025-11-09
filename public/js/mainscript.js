@@ -7537,6 +7537,7 @@ async function renderRouteForDay(day) {
     } 
 
 
+// FLY MODE - rota YOK, haversine ile mesafe/süre
 const pts = getDayPoints(day);
 if (pts.length >= 2) {
   let totalKm = 0;
@@ -7572,6 +7573,7 @@ if (pts.length >= 2) {
 
   return;
 }
+
 
 
 
