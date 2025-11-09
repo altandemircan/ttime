@@ -8118,6 +8118,9 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
           <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
           <span class="tm-label">FLY MODE ACTIVE</span>
         </button>
+        <div class="fly-info-msg" style="font-size:12px;color:#607d8b;margin-top:3px;margin-left:4px;">
+        Route not available
+      </div>
       </div>
     `;
     // Insert
