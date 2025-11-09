@@ -7188,10 +7188,11 @@ async function renderRouteForDay(day) {
     function areAllPointsInTurkey(pts) {
         return pts.every(p => p.lat >= 35.81 && p.lat <= 42.11 && p.lng >= 25.87 && p.lng <= 44.57);
     }
+
     const containerId = `route-map-day${day}`;
     const points = getDayPoints(day);
 
-    // PATCH BLOĞUNDA HARİTA CONTAINER INIT VEYA CLEAR MUTLAKA OLMALI!
+    // Türkiye dışı ise harita container ve map initialize OLMALI!
     ensureDayMapContainer(day);
     initEmptyDayMap(day);
 
