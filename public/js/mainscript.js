@@ -7184,8 +7184,14 @@ if (imported) {
 }
 
 
+
+
+
 async function renderRouteForDay(day) {
 
+        ensureDayMapContainer(day);
+        initEmptyDayMap(day);
+        
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
 
@@ -7259,15 +7265,23 @@ async function renderRouteForDay(day) {
         return; // Patch ile OSRM'den FLY MOD'A kitlenir
     }
 
-        ensureDayMapContainer(day);
-        initEmptyDayMap(day);
 
+if (
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.routeLockByDay &&
+    window.routeLockByDay[day]
+) {
 
-        let trackDistance = 0;
-        for (let i = 1; i < gpsRaw.length; i++) {
-            trackDistance += haversine(gpsRaw[i - 1].lat, gpsRaw[i - 1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
-        }
-        let fullGeojsonCoords = [...gpsCoords];
+        const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
+let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
+let fullGeojsonCoords = [...gpsCoords];
+let trackDistance = 0;
+for (let i = 1; i < gpsRaw.length; i++) {
+    trackDistance += haversine(gpsRaw[i - 1].lat, gpsRaw[i - 1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
+}
+
+       
         let pairwiseSummaries = [{ distance: trackDistance, duration: trackDistance / 1.3 }];
         let durations = [trackDistance / 1.3];
 
@@ -7379,7 +7393,7 @@ async function renderRouteForDay(day) {
         return;
     }
 
-    if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
+if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
     if (!points || points.length === 0) return;
 }
 
@@ -7390,7 +7404,8 @@ async function renderRouteForDay(day) {
         points.length > 2
     ) {
         window.importedTrackByDay[day].drawRaw = false;
-            let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
+        const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
+
     }
 
     if (!points || points.length === 0) {
@@ -7707,12 +7722,7 @@ try {
     if (routeData && Array.isArray(routeData.coords) && routeData.coords.length > 1) {
         window.directionsPolylines[day] = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
     } else {
-        if (!window.directionsPolylines[day]) {
-            const pts = getDayPoints(day);
-            if (pts.length >= 2) {
-                window.directionsPolylines[day] = pts;
-            }
-        }
+        
     }
 
     renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
@@ -7757,6 +7767,8 @@ for (let i = 0; i < points.length - 1; i++) {
         }, 150);
     }
 }
+
+
 
 
 function clearDistanceLabels(day) {
