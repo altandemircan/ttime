@@ -7189,9 +7189,7 @@ async function renderRouteForDay(day) {
         return pts.every(p => p.lat >= 35.81 && p.lat <= 42.11 && p.lng >= 25.87 && p.lng <= 44.57);
     }
 
-    const containerId = `route-map-day${day}`;
-    const points = getDayPoints(day);
-
+  
     // Türkiye dışı ise harita container ve map initialize OLMALI!
     ensureDayMapContainer(day);
     initEmptyDayMap(day);
