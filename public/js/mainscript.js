@@ -7504,41 +7504,44 @@ async function renderRouteForDay(day) {
     const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
 
     async function fetchRoute() {
-        const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
-        const url = buildDirectionsUrl(coordParam, day);
-        const response = await fetch(url);
-        if (!response.ok) {
-            alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
-            return null;
-        }
-        const data = await response.json();
-        if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
-        return {
-            geojson: {
-                type: 'FeatureCollection',
-                features: [{
-                    type: 'Feature',
-                    geometry: data.routes[0].geometry,
-                    properties: {
-                        summary: {
-                            distance: data.routes[0].distance,
-                            duration: data.routes[0].duration,
-                            source: 'OSRM'
-                        }
-                    }
-                }]
-            },
-            coords: data.routes[0].geometry.coordinates,
-            summary: {
-                distance: data.routes[0].distance,
-                duration: data.routes[0].duration
-            }
-        };
+    const profile = getProfileForDay(day);
+    if (!profile) return null; // FLY, API'ye request atma!
+    const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
+    const url = buildDirectionsUrl(coordParam, day, profile);
+    const response = await fetch(url);
+    if (!response.ok) {
+        alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
+        return null;
     }
+    const data = await response.json();
+    if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
+    return {
+        geojson: {
+            type: 'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                geometry: data.routes[0].geometry,
+                properties: {
+                    summary: {
+                        distance: data.routes[0].distance,
+                        duration: data.routes[0].duration,
+                        source: profile
+                    }
+                }
+            }]
+        },
+        coords: data.routes[0].geometry.coordinates,
+        summary: {
+            distance: data.routes[0].distance,
+            duration: data.routes[0].duration
+        }
+    };
+}
 let routeData;
 let missingPoints = [];
 try {
     routeData = await fetchRoute();
+    
     if (!routeData) return;
     missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
 } catch (e) {
@@ -8052,7 +8055,7 @@ function saveTravelModeForDay(day, mode) {
 
 // Day-aware profile getter
 function getProfileForDay(day) {
-  return getTravelModeForDay(day);
+  return isFlyModeActive(day) ? null : getTravelModeForDay(day);
 }
 
 // Set mode only for the given day and re-render that day
