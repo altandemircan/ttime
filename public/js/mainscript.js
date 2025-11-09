@@ -5192,9 +5192,35 @@ window.expandedMaps = {};
 
 
 
+function getFallbackRouteSummary(points) {
+  if (!points || points.length < 2) return { distance: 0, duration: 0 };
+  let totalKm = 0;
+  for (let i = 1; i < points.length; i++) {
+    totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+  }
+  // Sabit yürüyüş hızı (4 km/h)
+  const duration = Math.round(totalKm / 4 * 3600);
+  return {
+    distance: Math.round(totalKm * 1000),
+    duration: duration
+  };
+}
+
 function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
-  const summary = window.lastRouteSummaries?.[key] || null;
+  let summary = window.lastRouteSummaries?.[key] || null;
+
+  // summary eksikse veya hatalıysa haversine ile hesapla ve kaydet!
+  if (!summary ||
+      typeof summary.distance !== "number" ||
+      typeof summary.duration !== "number" ||
+      isNaN(summary.distance) ||
+      isNaN(summary.duration)
+  ) {
+    const points = getDayPoints(day);
+    summary = getFallbackRouteSummary(points);
+    window.lastRouteSummaries[key] = summary;
+  }
 
   // Ascent/descent verisini oku
   const ascent = window.routeElevStatsByDay?.[day]?.ascent;
@@ -5227,7 +5253,21 @@ function updateRouteStatsUI(day) {
     `;
   }
 }
-
+function getFallbackRouteSummary(points) {
+  if (!points || points.length < 2) return { distance: 0, duration: 0, ascent: 0, descent: 0 };
+  let totalKm = 0;
+  for (let i = 1; i < points.length; i++) {
+    totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+  }
+  // Sabit yürüyüş hızı (4 km/h)
+  let duration = Math.round(totalKm / 4 * 3600);
+  return {
+    distance: Math.round(totalKm * 1000),
+    duration: duration,
+    ascent: 0,
+    descent: 0,
+  };
+}
  
 
 function openMapLibre3D(expandedMap) {
