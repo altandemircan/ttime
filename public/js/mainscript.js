@@ -8123,7 +8123,7 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
     margin-top: 3px;
     margin-left: 4px;
     font-weight: 400;">
-        Route not available for this area
+        *Route function inactive for this area
       </div>
       </div>
     `;
