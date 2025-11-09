@@ -7185,17 +7185,12 @@ if (imported) {
 
 
 async function renderRouteForDay(day) {
-     const containerId = `route-map-day${day}`;
-    let points = getDayPoints(day);
-    points = points.filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
-
-
         function areAllPointsInTurkey(pts) {
         return pts.every(p => p.lat >= 35.81 && p.lat <= 42.11 && p.lng >= 25.87 && p.lng <= 44.57);
     }
-
-    console.log('[PATCH-BASLANGICI]', JSON.stringify(points));
-
+    const containerId = `route-map-day${day}`;
+    const points = getDayPoints(day);
+    
     if (!areAllPointsInTurkey(points)) {
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
@@ -7238,7 +7233,8 @@ async function renderRouteForDay(day) {
 
         if (gpsRaw.length < 2 || points.length < 2) return;
 
-      
+        const points = getDayPoints(day);
+        const containerId = `route-map-day${day}`;
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
@@ -7364,6 +7360,8 @@ async function renderRouteForDay(day) {
         if (!pts0 || pts0.length === 0) return;
     }
 
+    const containerId = `route-map-day${day}`;
+    const points = getDayPoints(day);
 
     if (
         window.importedTrackByDay &&
@@ -7555,8 +7553,6 @@ async function renderRouteForDay(day) {
     async function fetchRoute() {
         const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
         const url = buildDirectionsUrl(coordParam, day);
-        console.log('***ROUTE FETCH TRY***', {url, day, points});
-
         const response = await fetch(url);
         if (!response.ok) {
             alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
