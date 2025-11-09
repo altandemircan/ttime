@@ -4408,7 +4408,7 @@ function updateExpandedMap(expandedMap, day) {
     );
     console.log("getDayPoints:", JSON.stringify(pts));
 
-    // travelModeByDay globalinden bugünkü seçili mode'u çek
+    // Mevcut mode'u çek
     let modeRaw = (window.travelModeByDay?.[day] || 'car');
     let mode = toOSRMMode(modeRaw);
 
@@ -4418,14 +4418,14 @@ function updateExpandedMap(expandedMap, day) {
         }
     });
 
+    // Sadece Türkiye içinde ve route mevcutsa polyline çiz
     let hasValidRoute = (
-      isSupportedTravelMode(mode) &&
       areAllPointsInTurkey(pts) &&
       geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
     );
 
     if (hasValidRoute) {
-        // GERÇEK ROTA (OSRM/GeoJSON)
+        // Tüm modlarda, gerçek OSRM/GeoJSON rotasını çiz!
         const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
             color: "#1976d2",
@@ -4485,7 +4485,7 @@ function updateExpandedMap(expandedMap, day) {
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // PATCH: Route summary YOKSA haversine ile üret!
+    // Route summary yoksa haversine ile üret!
     const sumKey = `route-map-day${day}`;
     let sum = window.lastRouteSummaries?.[sumKey];
     if (!sum && pts.length > 1) {
@@ -4494,8 +4494,8 @@ function updateExpandedMap(expandedMap, day) {
             totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
         }
         sum = {
-            distance: Math.round(totalKmSum * 1000),            // metre
-            duration: Math.round(totalKmSum/4*60),              // walking: 4km/h = 15dk/km
+            distance: Math.round(totalKmSum * 1000),
+            duration: Math.round(totalKmSum/4*60),
             ascent: 0,
             descent: 0
         };
@@ -4506,30 +4506,27 @@ function updateExpandedMap(expandedMap, day) {
 
     // SCALE BAR: markerPositions dizisini haversine ile doldur
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-   if (scaleBarDiv) {
-    // PATCH: bar çizimi için haversine ile markerPositions array üret
-    let totalKm = 0;
-    let markerPositions = [];
-    for (let i = 0; i < pts.length; i++) {
-        if (i > 0) {
-            totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
+    if (scaleBarDiv) {
+        let totalKm = 0;
+        let markerPositions = [];
+        for (let i = 0; i < pts.length; i++) {
+            if (i > 0) {
+                totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
+            }
+            markerPositions.push({
+                name: pts[i].name || "",
+                distance: totalKm,
+                lat: pts[i].lat,
+                lng: pts[i].lng
+            });
         }
-        markerPositions.push({
-            name: pts[i].name || "",
-            distance: totalKm,
-            lat: pts[i].lat,
-            lng: pts[i].lng
-        });
-    }
+        console.log('[DEBUG] markerPositions:', markerPositions);
 
-    // *** İŞTE BURADA LOG'LA! ***
-    console.log('[DEBUG] markerPositions:', markerPositions);
+        scaleBarDiv.style.display = "block";
+        scaleBarDiv.innerHTML = "";
 
-    scaleBarDiv.style.display = "block";
-    scaleBarDiv.innerHTML = "";
-
-    if (markerPositions.length >= 2 && totalKm > 0) {
-        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+        if (markerPositions.length >= 2 && totalKm > 0) {
+            renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
             const track = scaleBarDiv.querySelector('.scale-bar-track');
             const svg = track && track.querySelector('svg.tt-elev-svg');
             if (track && svg) {
