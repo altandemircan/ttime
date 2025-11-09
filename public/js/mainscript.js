@@ -8116,7 +8116,7 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
       <div class="travel-modes">
         <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.97;">
           <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
-          <span class="tm-label">FLY MODE ACTIVE</span>
+          <span class="tm-label">FLY MODE</span>
         </button>
         <div class="fly-info-msg" style="font-size: 12px;
     color: #607d8b;
