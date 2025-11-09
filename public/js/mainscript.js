@@ -7542,13 +7542,15 @@ async function renderRouteForDay(day) {
   const infoPanel = document.getElementById(`route-info-day${day}`);
   if (infoPanel) infoPanel.textContent = "Could not draw the route!";
 
-if (points.length >= 2) {
-  // Toplam mesafe (km)
+if (points.length >= 2 && !hasValidRoute) {
+  // DEBUG: Marker noktalarını consola yaz!
+  console.log('[DEBUG] points:', JSON.stringify(points));
+
   let totalKm = 0;
   let markerPositions = [];
   for (let i = 0; i < points.length; i++) {
     if (i > 0) {
-      totalKm += haversine(points[i - 1].lat, points[i - 1].lng, points[i].lat, points[i].lng) / 1000;
+      totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
     }
     markerPositions.push({
       name: points[i].name || "",
@@ -7557,22 +7559,27 @@ if (points.length >= 2) {
       lng: points[i].lng
     });
   }
+  // DEBUG: Total Km ve marker pozisyonlarını kontrol et!
+  console.log('[DEBUG] totalKm:', totalKm);
+  console.log('[DEBUG] markerPositions:', markerPositions);
 
-  // Travel mode'a göre hız
   let travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "walking";
-  let speed = 4; // walking
+  let speed = 4;
   if (travelMode === "cycling") speed = 16;
   else if (travelMode === "driving") speed = 40;
 
-  // Süre (saniye): totalKm / speed * 3600
   let durationSec = Math.round(totalKm / speed * 3600);
 
   const summary = {
-    distance: Math.round(totalKm * 1000),   // METRE
-    duration: durationSec                   // SANİYE
+    distance: Math.round(totalKm * 1000),
+    duration: durationSec
   };
 
-  // Geojson da garantiye al!
+  window.lastRouteSummaries = window.lastRouteSummaries || {};
+  window.lastRouteSummaries[containerId] = summary;
+  console.log('[DEBUG] summary:', summary);
+
+  // Geojson da markerlarla oluşturulmalı! (sıfır olmamasını garanti et)
   const geojson = {
     type: "FeatureCollection",
     features: [{
@@ -7585,12 +7592,8 @@ if (points.length >= 2) {
     }]
   };
 
-  window.lastRouteSummaries = window.lastRouteSummaries || {};
-  window.lastRouteSummaries[containerId] = summary;
-
   renderLeafletRoute(containerId, geojson, points, summary, day);
 
-  // Scale bar (expanded)
   let expandedMapDiv =
     document.getElementById(`expanded-map-${day}`) ||
     document.getElementById(`expanded-route-map-day${day}`);
@@ -7610,7 +7613,12 @@ if (points.length >= 2) {
       markerPositions
     );
   }
+
+  // summary 0 ise burada DEBUG mesajı çıkar:
   if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+  if (!summary.distance || !summary.duration) {
+    console.warn("!!! Summary (mesafe/süre) 0 geldi, markerlar mı hatalı?");
+  }
   return;
 }
 
