@@ -5232,16 +5232,8 @@ function updateRouteStatsUI(day) {
 
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
-    routeSummarySpan.innerHTML = `
-      <span class="stat stat-distance">
-        <img class="icon" src="/img/way_distance.svg" alt="Distance">
-        <span class="badge">${distanceKm} km</span>
-      </span>
-      <span class="stat stat-duration">
-        <img class="icon" src="/img/way_time.svg" alt="Duration">
-        <span class="badge">${durationMin} dk</span>
-      </span>
-    `;
+    routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " kms";
+routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " dk";
   }
 }
  function getTotalKmFromMarkers(markers) {
@@ -8830,7 +8822,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     totalKm = getTotalKmFromMarkers(markers);
     container.dataset.totalKm = String(totalKm);
   }
-  
+
 if (!container || isNaN(totalKm)) {
   if (container) { container.innerHTML = ""; container.style.display = 'block'; }
   return;
