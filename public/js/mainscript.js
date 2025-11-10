@@ -5133,27 +5133,31 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }).addTo(map);
 
     // --- En önemli: çizgi eklemesi ---
-    if (hasValidGeo && routeCoords.length > 1) {
-        // GERÇEK rota varsa, klasik çizgi
-        L.polyline(routeCoords, {
-            color: '#1976d2',
-            weight: 8,
-            opacity: 0.92,
-            interactive: true,
-            dashArray: null
-        }).addTo(map);
-    } else if (!hasValidGeo && points.length > 1) {
-        // --- Kavisli/Yaylı çizgi çek ---
-        for (let i = 0; i < points.length - 1; i++) {
-            drawCurvedLine(map, points[i], points[i + 1], {
-                color: "#1976d2", // MAVİ (küçük harita için)
-                weight: 5,
-                opacity: 0.85,
-                dashArray: "6,8"
-            });
-        }
-    }
+const isFlyMode = geojson.features
+    && geojson.features[0]
+    && geojson.features[0].properties
+    && geojson.features[0].properties.source === "flymode";
 
+if (hasValidGeo && routeCoords.length > 1 && !isFlyMode) {
+    // Sadece OSRM/gerçek rota için klasik çizgi
+    L.polyline(routeCoords, {
+        color: '#1976d2',
+        weight: 8,
+        opacity: 0.92,
+        interactive: true,
+        dashArray: null
+    }).addTo(map);
+} else if ((isFlyMode || !hasValidGeo) && points.length > 1) {
+    // FLY MODE/fallback için yaylı çizgi
+    for (let i = 0; i < points.length - 1; i++) {
+        drawCurvedLine(map, points[i], points[i + 1], {
+            color: "#1976d2",
+            weight: 5,
+            opacity: 0.85,
+            dashArray: "6,8"
+        });
+    }
+}
     // --- Missing points için ek çizgiler ---
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
@@ -7160,30 +7164,30 @@ function ensureExpandedScaleBar(day, raw) {
     }
     expandedScaleBar.innerHTML = "";
     // GPS import track varsa, tüm noktaları marker gibi ver
-const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-if (imported) {
-  renderRouteScaleBar(
-    expandedScaleBar,
-    dist/1000,
-    samples.map((p, i) => ({
-  name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
-  distance: dists[i]/1000,
-  snapped: true
-}))
-  );
-} else {
-  // Eski haliyle devam et
-  renderRouteScaleBar(
-    expandedScaleBar,
-    dist/1000,
-    samples.map((p,i)=>({
-      name: '',
+    const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+    if (imported) {
+      renderRouteScaleBar(
+        expandedScaleBar,
+        dist/1000,
+        samples.map((p, i) => ({
+      name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
       distance: dists[i]/1000,
       snapped: true
     }))
-  );
-}
-  }
+      );
+    } else {
+      // Eski haliyle devam et
+      renderRouteScaleBar(
+        expandedScaleBar,
+        dist/1000,
+        samples.map((p,i)=>({
+          name: '',
+          distance: dists[i]/1000,
+          snapped: true
+        }))
+      );
+    }
+      }
 }
 
 
