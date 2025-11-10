@@ -7728,13 +7728,8 @@ async function renderRouteForDay(day) {
     const containerId = `route-map-day${day}`;
     
     // --- GPS TRACK (KİLİTLİ ROTADA) BLOĞU ---
-    if (
-    window.importedTrackByDay &&
-    window.importedTrackByDay[day] &&
-    window.routeLockByDay &&
-    window.routeLockByDay[day] &&
-    ["car", "walk", "bicycle"].includes(travelMode)
-) {        const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
+    if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
+        const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         if (gpsRaw.length < 2) return;
 
         ensureDayMapContainer(day);
