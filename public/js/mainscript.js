@@ -314,12 +314,15 @@ function fitExpandedMapToRoute(day) {
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-  if (!spanKm || spanKm < 0.01) {
-    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-    console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
-    return;
-  }
-
+if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
+  // fallback: marker dizisinden haversine ile hesapla
+  spanKm = getTotalKmFromMarkers(markers);
+}
+if (!spanKm || spanKm < 0.01) {
+  track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+  console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
+  return;
+}
   if (!track) return;
 
   console.log("[DEBUG] createScaleElements called", {
@@ -5197,8 +5200,8 @@ function getFallbackRouteSummary(points) {
   for (let i = 1; i < points.length; i++) {
     totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
   }
-  // Sabit yürüyüş hızı (4 km/h)
-  const duration = Math.round(totalKm / 4 * 3600);
+  // Sabit yürüyüş hızı (örnek: 4 km/h)
+  const duration = Math.round(totalKm / 4 * 3600); // saniye
   return {
     distance: Math.round(totalKm * 1000),
     duration: duration
@@ -5241,7 +5244,15 @@ function updateRouteStatsUI(day) {
     `;
   }
 }
- 
+ function getTotalKmFromMarkers(markers) {
+  let totalKm = 0;
+  for (let i = 1; i < markers.length; i++) {
+    if (markers[i-1].lat && markers[i-1].lng && markers[i].lat && markers[i].lng) {
+      totalKm += haversine(markers[i-1].lat, markers[i-1].lng, markers[i].lat, markers[i].lng) / 1000;
+    }
+  }
+  return totalKm;
+}
 
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
@@ -8815,7 +8826,11 @@ function renderRouteScaleBar(container, totalKm, markers) {
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
-
+ if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
+    totalKm = getTotalKmFromMarkers(markers);
+    container.dataset.totalKm = String(totalKm);
+  }
+  
 if (!container || isNaN(totalKm)) {
   if (container) { container.innerHTML = ""; container.style.display = 'block'; }
   return;
@@ -8826,6 +8841,7 @@ if (!container || isNaN(totalKm)) {
     container.innerHTML = '';
     return;
   }
+
 
   // Day ve route geojson
   const dayMatch = container.id && container.id.match(/day(\d+)/);
