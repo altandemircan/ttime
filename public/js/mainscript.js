@@ -8086,8 +8086,7 @@ async function renderRouteForDay(day) {
         missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
     } 
 catch (e) {
-    const infoPanel = document.getElementById(`route-info-day${day}`);
-    if (infoPanel) infoPanel.textContent = "Could not draw the route!";
+
 
     // === FLY MODE === (travelMode tamamen ignore edilir, sadece sabit hız + haversine)
     if (points.length >= 2) {
@@ -8237,6 +8236,23 @@ for (let i = 0; i < points.length - 1; i++) {
             );
         }, 150);
     }
+
+    const infoPanel = document.getElementById(`route-info-day${day}`);
+let isFlyModeActive = false;
+if (
+    window.lastRouteGeojsons?.[containerId]?.features?.[0]?.properties?.source === "flymode"
+) {
+    isFlyModeActive = true;
+}
+let travelMode = typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : null;
+if (
+    infoPanel &&
+    !isFlyModeActive &&
+    ["car", "walk", "bicycle"].includes(travelMode)
+) {
+    infoPanel.textContent = "Could not draw the route!";
+}
+
 }
 
 
