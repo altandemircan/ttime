@@ -8249,7 +8249,6 @@ if (
 ) {
     isFlyModeActive = true;
 }
-let travelMode = typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : null;
 if (
     infoPanel &&
     !isFlyModeActive &&
