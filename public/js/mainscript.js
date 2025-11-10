@@ -7716,32 +7716,48 @@ if (imported) {
 
 
 
+
+
 async function renderRouteForDay(day) {
+    
+
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
-    const points = getDayPoints(day);
-    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(points, null, 2));
+                                                                                                    const points = getDayPoints(day);
+  console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(points, null, 2));
 
-    const containerId = `route-map-day${day}`;
-    
-    // --- GPS TRACK (KİLİTLİ ROTADA) BLOĞU ---
+
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
-        if (gpsRaw.length < 2) return;
+        
+        console.log("Harita marker points:", points);
 
+if (gpsRaw.length < 2) return;
+
+        
+        const containerId = `route-map-day${day}`;
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
         let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
+        let trackDistance = 0;
+        for (let i = 1; i < gpsRaw.length; i++) {
+            trackDistance += haversine(gpsRaw[i - 1].lat, gpsRaw[i - 1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
+        }
         let fullGeojsonCoords = [...gpsCoords];
+        
+
 
         let pairwiseSummaries = [];
-        let durations = [];
-        if (gpsRaw.length > 1) {
-            let firstDist = haversine(gpsRaw[0].lat, gpsRaw[0].lng, gpsRaw[1].lat, gpsRaw[1].lng);
-            pairwiseSummaries.push({ distance: firstDist, duration: firstDist / 1.3 });
-            durations.push(firstDist / 1.3);
-        }
+let durations = [];
+// ardından ilk pair için eklemek istiyorsan
+if (gpsRaw.length > 1) {
+    let firstDist = haversine(gpsRaw[0].lat, gpsRaw[0].lng, gpsRaw[1].lat, gpsRaw[1].lng);
+    pairwiseSummaries.push({ distance: firstDist, duration: firstDist / 1.3 });
+    durations.push(firstDist / 1.3);
+}
+
+
 
         let prev = points[1];
         for (let i = 2; i < points.length; i++) {
@@ -7759,11 +7775,12 @@ async function renderRouteForDay(day) {
                     });
                     durations.push(data.routes[0].duration);
                 }
-            } catch (e) {
-                const prevPt = points[i - 1];
+              } catch (e) {
+                // PATCH: NULL bırakma, haversine ile doldur
+                const prevPt = points[i-1];
                 const thisPt = points[i];
                 const d = haversine(prevPt.lat, prevPt.lng, thisPt.lat, thisPt.lng);
-                const dur = Math.round(d / 1000 / 4 * 3600);
+                const dur = Math.round(d / 1000 / 4 * 3600); // Yürüyüş: 4 km/h
                 pairwiseSummaries.push({ distance: Math.round(d), duration: dur });
                 durations.push(dur);
             }
@@ -7813,7 +7830,9 @@ async function renderRouteForDay(day) {
             L.circleMarker([fullGeojsonCoords[fullGeojsonCoords.length - 1][1], fullGeojsonCoords[fullGeojsonCoords.length - 1][0]], { radius: 9, color: '#c62828', fillColor: '#c62828', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
         }
 
-        let expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
+        let expandedMapDiv =
+            document.getElementById(`expanded-map-${day}`) ||
+            document.getElementById(`expanded-route-map-day${day}`);
         if (expandedMapDiv) {
             let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
             if (!expandedScaleBar) {
@@ -7838,7 +7857,7 @@ async function renderRouteForDay(day) {
                     expandedScaleBar,
                     dist / 1000,
                     samples.map((p, i) => ({
-                        name: i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : ""),
+                        name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
                         distance: dists[i] / 1000,
                         snapped: true
                     }))
