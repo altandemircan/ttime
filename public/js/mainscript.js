@@ -7794,7 +7794,6 @@ async function renderRouteForDay(day) {
 
         renderLeafletRoute(containerId, finalGeojson, points, { distance: totalDistance, duration: totalDuration }, day);
 
-        const infoPanel = document.getElementById(`route-info-day${day}`);
         if (infoPanel) {
             infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
         }
@@ -8166,7 +8165,6 @@ catch (e) {
     return;
 } 
 
-    const infoPanel = document.getElementById(`route-info-day${day}`);
     if (missingPoints.length > 0) {
         if (infoPanel) {
             infoPanel.innerHTML = `<span style="color:#d32f2f;font-size:0.85rem;font-weight:500;margin-bottom:20px;">
