@@ -7726,9 +7726,16 @@ async function renderRouteForDay(day) {
     console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(points, null, 2));
 
     const containerId = `route-map-day${day}`;
-    
+    const travelMode = typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : null;
+
     // --- GPS TRACK (KİLİTLİ ROTADA) BLOĞU ---
-    if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
+    if (
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.routeLockByDay &&
+    window.routeLockByDay[day] &&
+    ["car", "walk", "bicycle"].includes(travelMode)
+) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         if (gpsRaw.length < 2) return;
 
@@ -7794,7 +7801,7 @@ async function renderRouteForDay(day) {
 
         renderLeafletRoute(containerId, finalGeojson, points, { distance: totalDistance, duration: totalDuration }, day);
 
-        if (infoPanel) {
+            if (infoPanel) {
             infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
         }
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
