@@ -7855,6 +7855,71 @@ async function renderRouteForDay(day) {
             }
         }
         return;
+
+        if (
+    !(
+        window.importedTrackByDay &&
+        window.importedTrackByDay[day] &&
+        window.routeLockByDay &&
+        window.routeLockByDay[day]
+    ) && ["car", "walk", "bicycle"].includes(travelMode)
+) {
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+
+    const snappedPoints = [];
+    for (const pt of points) {
+        const snapped = await snapPointToRoad(pt.lat, pt.lng);
+        snappedPoints.push({ ...snapped, name: pt.name });
+    }
+    const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
+
+    async function fetchRoute() {
+        const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
+        const url = buildDirectionsUrl(coordParam, day);
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (!(data.routes && data.routes[0] && data.routes[0].geometry)) return null;
+        return {
+            geojson: {
+                type: 'FeatureCollection',
+                features: [{
+                    type: 'Feature',
+                    geometry: data.routes[0].geometry,
+                    properties: {
+                        summary: {
+                            distance: data.routes[0].distance,
+                            duration: data.routes[0].duration,
+                            source: 'OSRM'
+                        }
+                    }
+                }]
+            },
+            coords: data.routes[0].geometry.coordinates,
+            summary: {
+                distance: data.routes[0].distance,
+                duration: data.routes[0].duration
+            }
+        };
+    }
+
+    let routeData = await fetchRoute();
+    if (!routeData) {
+        // Harita/uyarı göster vs...
+        return;
+    }
+
+    window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+    window.lastRouteGeojsons[containerId] = routeData.geojson;
+    window.lastRouteSummaries = window.lastRouteSummaries || {};
+    window.lastRouteSummaries[containerId] = routeData.summary;
+
+    renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day);
+
+    // Diğer UI/updater fonksiyonlarını çağır.
+    return;
+}
     }
 
     if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
