@@ -8051,7 +8051,7 @@ function getProfileForDay(day) {
 // Set mode only for the given day and re-render that day
 window.setTravelMode = function(mode, day) {
   const m = (mode || '').toLowerCase();
-  if (!['driving','cycling','walking'].includes(m)) return;
+  if (!['driving','cycling','walking','fly'].includes(m)) return
 
   const d = parseInt(day || window.currentDay || 1, 10);
   saveTravelModeForDay(d, m);
@@ -8076,7 +8076,11 @@ window.setTravelMode = function(mode, day) {
 // Directions URL builder — self-hosted OSRM + debug log
 window.buildDirectionsUrl = function(coordsStr, day) {
   const d = day || window.currentDay || 1;
-  const profile = getProfileForDay(d); // 'driving' | 'cycling' | 'walking'
+  const profile = getProfileForDay(d); // 'driving' | 'cycling' | 'walking' | 'fly'
+  if (profile === 'fly') {
+    // Fly mode: rota URL yok, API çağrısı iptal!
+    return null;
+  }
   const url = `/route/v1/${profile}/${coordsStr}?geometries=geojson&overview=full&steps=true`;
 
   // İlk seferde bir kez bilgi mesajı
