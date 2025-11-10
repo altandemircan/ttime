@@ -7762,12 +7762,6 @@ async function renderRouteForDay(day) {
         initEmptyDayMap(day);
        
 
-           const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
-    if (gpsRaw.length < 2) return;
-
-    ensureDayMapContainer(day);
-    initEmptyDayMap(day);
-
     let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
     let fullGeojsonCoords = [...gpsCoords];
 
@@ -7874,7 +7868,7 @@ async function renderRouteForDay(day) {
         }
     }
 
-    
+
         return;
     }
 
