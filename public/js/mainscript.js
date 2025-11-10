@@ -8031,7 +8031,8 @@ const LEGACY_DEFAULT_MODE = localStorage.getItem('tt_travel_mode') || 'driving';
 function getTravelModeForDay(day) {
   const d = parseInt(day || 1, 10);
   const m = window.travelModeByDay[d] || LEGACY_DEFAULT_MODE || 'driving';
-  return (['driving', 'cycling', 'walking'].includes(m) ? m : 'driving');
+  // 👇 ARTIK 'fly' mode aktif! Geriye 'driving' dönme!
+  return (['driving', 'cycling', 'walking', 'fly'].includes(m) ? m : 'driving');
 }
 
 // Save a day's travel mode
