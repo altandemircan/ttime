@@ -5133,31 +5133,27 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }).addTo(map);
 
     // --- En önemli: çizgi eklemesi ---
-  const isFlyMode = geojson.features
-    && geojson.features[0]
-    && geojson.features[0].properties
-    && geojson.features[0].properties.source === "flymode";
-
-if (hasValidGeo && routeCoords.length > 1 && !isFlyMode) {
-    // Sadece OSRM/gerçek rota için klasik çizgi
-    L.polyline(routeCoords, {
-        color: '#1976d2',
-        weight: 8,
-        opacity: 0.92,
-        interactive: true,
-        dashArray: null
-    }).addTo(map);
-} else if ((isFlyMode || !hasValidGeo) && points.length > 1) {
-    // FLY MODE/fallback için yaylı çizgi
-    for (let i = 0; i < points.length - 1; i++) {
-        drawCurvedLine(map, points[i], points[i + 1], {
-            color: "#1976d2",
-            weight: 5,
-            opacity: 0.85,
-            dashArray: "6,8"
-        });
+    if (hasValidGeo && routeCoords.length > 1) {
+        // GERÇEK rota varsa, klasik çizgi
+        L.polyline(routeCoords, {
+            color: '#1976d2',
+            weight: 8,
+            opacity: 0.92,
+            interactive: true,
+            dashArray: null
+        }).addTo(map);
+    } else if (!hasValidGeo && points.length > 1) {
+        // --- Kavisli/Yaylı çizgi çek ---
+        for (let i = 0; i < points.length - 1; i++) {
+            drawCurvedLine(map, points[i], points[i + 1], {
+                color: "#1976d2", // MAVİ (küçük harita için)
+                weight: 5,
+                opacity: 0.85,
+                dashArray: "6,8"
+            });
+        }
     }
-}
+
     // --- Missing points için ek çizgiler ---
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
@@ -7164,30 +7160,30 @@ function ensureExpandedScaleBar(day, raw) {
     }
     expandedScaleBar.innerHTML = "";
     // GPS import track varsa, tüm noktaları marker gibi ver
-    const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-    if (imported) {
-      renderRouteScaleBar(
-        expandedScaleBar,
-        dist/1000,
-        samples.map((p, i) => ({
-      name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+if (imported) {
+  renderRouteScaleBar(
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p, i) => ({
+  name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+  distance: dists[i]/1000,
+  snapped: true
+}))
+  );
+} else {
+  // Eski haliyle devam et
+  renderRouteScaleBar(
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p,i)=>({
+      name: '',
       distance: dists[i]/1000,
       snapped: true
     }))
-      );
-    } else {
-      // Eski haliyle devam et
-      renderRouteScaleBar(
-        expandedScaleBar,
-        dist/1000,
-        samples.map((p,i)=>({
-          name: '',
-          distance: dists[i]/1000,
-          snapped: true
-        }))
-      );
-    }
-      }
+  );
+}
+  }
 }
 
 
@@ -7719,6 +7715,7 @@ function ensureExpandedScaleBar(day, raw) {
 // }
 
 
+
 async function renderRouteForDay(day) {
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
@@ -8085,7 +8082,7 @@ async function renderRouteForDay(day) {
         if (!routeData) return;
         missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
     } 
-catch (e) {
+    catch (e) {
         const infoPanel = document.getElementById(`route-info-day${day}`);
         if (infoPanel) infoPanel.textContent = "Could not draw the route!";
 
@@ -8095,38 +8092,39 @@ catch (e) {
 
             let totalKm = 0;
             let markerPositions = [];
-            let pairwiseSummaries = [];
             for (let i = 0; i < points.length; i++) {
                 if (i > 0) {
                     const d = haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+                    if (isNaN(d)) {
+                        console.warn(`Haversine mesafesi hatalı/null: point[${i-1}] & point[${i}]`);
+                        continue;
+                    }
                     totalKm += d;
-                    pairwiseSummaries.push({
-                        distance: Math.round(d * 1000), // metre
-                        duration: Math.round((d / 4) * 3600) // saniye, 4 km/h
-                    });
                 }
                 markerPositions.push({
                     name: points[i].name || "",
+                    distance: Math.round(totalKm * 1000) / 1000, // km precisionı
                     lat: points[i].lat,
-                    lng: points[i].lng,
-                    distance: Math.round(totalKm * 1000) / 1000
+                    lng: points[i].lng
                 });
             }
 
+            // Sadece sabit yürüyüş hızı (4 km/h) - değiştirmek istersen başka bir değer yaz!
             let SABIT_HIZ_KMH = 4;
-            let durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600);
+            let durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600); // saniye
 
+            // Summary number olmalı, null asla olmamalı!
             const summary = {
-                distance: Math.round(totalKm * 1000),
+                distance: Math.round(totalKm * 1000), // metre
                 duration: durationSec
             };
 
             window.lastRouteSummaries = window.lastRouteSummaries || {};
             window.lastRouteSummaries[containerId] = summary;
-            window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-            window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
-            window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-            window.lastRouteGeojsons[containerId] = {
+            console.log('[FLY MODE] summary:', summary);
+
+            // Geojson çizimi - route değil marker sıralaması
+            const geojson = {
                 type: "FeatureCollection",
                 features: [{
                     type: "Feature",
@@ -8138,8 +8136,9 @@ catch (e) {
                 }]
             };
 
-            renderLeafletRoute(containerId, window.lastRouteGeojsons[containerId], points, summary, day);
+            renderLeafletRoute(containerId, geojson, points, summary, day);
 
+            // Expanded bar
             let expandedMapDiv =
                 document.getElementById(`expanded-map-${day}`) ||
                 document.getElementById(`expanded-route-map-day${day}`);
@@ -8156,13 +8155,16 @@ catch (e) {
                 renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
             }
 
+            // Route summary UI güncelle!
             if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-            if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
+            if (!summary.distance || !summary.duration) {
+                console.warn("[FLY MODE] !! Summary (mesafe/süre) 0 veya hatalı geldi, markerlar mı eksik/hatalı?");
+            }
             return;
         }
         return;
-    }  
+    }   
 
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (missingPoints.length > 0) {
@@ -8235,7 +8237,6 @@ for (let i = 0; i < points.length - 1; i++) {
         }, 150);
     }
 }
-
 
 
 
