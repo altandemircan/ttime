@@ -7781,8 +7781,6 @@ async function renderRouteForDay(day) {
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         if (gpsRaw.length < 2 || points.length < 2) return;
-        const points2 = getDayPoints(day);
-        const containerId2 = `route-map-day${day}`;
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
         let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
@@ -7793,9 +7791,9 @@ async function renderRouteForDay(day) {
         let fullGeojsonCoords = [...gpsCoords];
         let pairwiseSummaries = [{ distance: trackDistance, duration: trackDistance / 1.3 }];
         let durations = [trackDistance / 1.3];
-        let prev = points2[1];
-        for (let i = 2; i < points2.length; i++) {
-            const next = points2[i];
+        let prev = points[1];
+        for (let i = 2; i < points.length; i++) {
+            const next = points[i];
             const url = buildDirectionsUrl(`${prev.lng},${prev.lat};${next.lng},${next.lat}`, day);
             try {
                 const resp = await fetch(url);
@@ -7810,8 +7808,8 @@ async function renderRouteForDay(day) {
                     durations.push(data.routes[0].duration);
                 }
             } catch (e) {
-                const prevPt = points2[i-1];
-                const thisPt = points2[i];
+                const prevPt = points[i-1];
+                const thisPt = points[i];
                 const d = haversine(prevPt.lat, prevPt.lng, thisPt.lat, thisPt.lng);
                 const dur = Math.round(d / 1000 / 4 * 3600);
                 pairwiseSummaries.push({ distance: Math.round(d), duration: dur });
@@ -7829,25 +7827,24 @@ async function renderRouteForDay(day) {
                 properties: {}
             }]
         };
-        window.lastRouteGeojsons = window
-                .lastRouteGeojsons || {};
-        window.lastRouteGeojsons[containerId2] = finalGeojson;
+        window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+        window.lastRouteGeojsons[containerId] = finalGeojson;
         window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-        window.pairwiseRouteSummaries[containerId2] = pairwiseSummaries;
+        window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
         window.lastRouteSummaries = window.lastRouteSummaries || {};
-        window.lastRouteSummaries[containerId2] = { distance: totalDistance, duration: totalDuration };
-        renderLeafletRoute(containerId2, finalGeojson, points2, { distance: totalDistance, duration: totalDuration }, day);
+        window.lastRouteSummaries[containerId] = { distance: totalDistance, duration: totalDuration };
+        renderLeafletRoute(containerId, finalGeojson, points, { distance: totalDistance, duration: totalDuration }, day);
         const infoPanel = document.getElementById(`route-info-day${day}`);
         if (infoPanel) {
             infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
         }
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
-        let expandedMapObj = window.expandedMaps?.[containerId2];
+        let expandedMapObj = window.expandedMaps?.[containerId];
         let eMap = expandedMapObj?.expandedMap;
         if (!eMap && typeof expandMap === "function") {
-            await expandMap(containerId2, day);
-            expandedMapObj = window.expandedMaps?.[containerId2];
+            await expandMap(containerId, day);
+            expandedMapObj = window.expandedMaps?.[containerId];
             eMap = expandedMapObj?.expandedMap;
         }
         if (eMap) {
@@ -7884,7 +7881,7 @@ async function renderRouteForDay(day) {
                     expandedScaleBar,
                     dist / 1000,
                     samples.map((p, i) => ({
-                        name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : ""),
+name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
                         distance: dists[i] / 1000,
                         snapped: true
                     }))
@@ -7948,7 +7945,8 @@ async function renderRouteForDay(day) {
         }
         return;
     }
-        if (points.length === 2 &&
+
+    if (points.length === 2 &&
         window.importedTrackByDay &&
         window.importedTrackByDay[day] &&
         window.importedTrackByDay[day].drawRaw) {
@@ -8063,7 +8061,8 @@ async function renderRouteForDay(day) {
             return;
         }
     }
-        ensureDayMapContainer(day);
+
+    ensureDayMapContainer(day);
     initEmptyDayMap(day);
 
     const snappedPoints = [];
@@ -8186,9 +8185,6 @@ async function renderRouteForDay(day) {
         }, 150);
     }
 }
-
-
-
 
 
 
