@@ -6544,80 +6544,115 @@ window.handleImageError = async function(imgElement, placeName, index) {
     if (loadingDiv) loadingDiv.style.opacity = '0';
 };
 
-function setupScaleBarInteraction(day, expandedMap) {
+
+function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (!scaleBar || !expandedMap) return;
+    if (!scaleBar || !map) return;
 
     let hoverMarker = null;
-    let fillPolygon = null;
-
-    // Tüm alan için yay ve polyline noktalarını topla!
-    // Polyline noktaları (route)
-    function getRoutePoints() {
-        const containerId = `route-map-day${day}`;
-        const geojson = window.lastRouteGeojsons?.[containerId];
-        if (!geojson?.features?.[0]?.geometry?.coordinates) return [];
-        return geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]); // [lat,lng]
-    }
-    // Yay noktaları (arc)
-    function getArcPoints() {
-        const arcPts = window._curvedArcPointsByDay?.[day];
-        if (!arcPts || arcPts.length < 2) return [];
-        return arcPts.map(([lng, lat]) => [lat, lng]);
-    }
 
     function onMove(e) {
-        // --- Mor marker ve alan dolgu arasındaki tüm yay/güzergah noktalarını topla ---
-        const arcPoints = getArcPoints();
-        const routePoints = getRoutePoints();
-        if (arcPoints.length < 2 || routePoints.length < 2) return;
-
-        // Alan poligonunun köşeleri:
-        // 1. Yayın tüm noktalarını önden diziye ekle
-        // 2. Polyline noktalarının tamamını tersten (sondan başa) ekle
-        // 3. Kapat: [yay[0], polyline[last]] arası alan
-        const areaCoords = [...arcPoints, ...routePoints.slice().reverse()];
-        // Polygon kapattığında final noktaya (arc başlangıcı) geri dönmüş olursun
-
-        // Mor marker yayda ilerlemeye devam eder (aynen önceki gibi):
         const rect = scaleBar.getBoundingClientRect();
         let x = (e.touches && e.touches.length)
             ? (e.touches[0].clientX - rect.left)
             : (e.clientX - rect.left);
-        let percent = Math.max(0, Math.min(x / rect.width, 1));
-        const idx = Math.floor(percent * (arcPoints.length - 1));
-        const [markerLat, markerLng] = arcPoints[idx];
 
-        if (hoverMarker) hoverMarker.setLatLng([markerLat, markerLng]);
-        else hoverMarker = L.circleMarker([markerLat, markerLng], {
+        let percent = Math.max(0, Math.min(x / rect.width, 1));
+
+        // ---- FLY MODE PATCH: Yay/arc üzerinde mor markerı kaydır ----
+        if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
+            const arcPts = window._curvedArcPointsByDay[day];
+            if (arcPts && arcPts.length >= 2) {
+                const idx = Math.floor(percent * (arcPts.length - 1));
+                const [lng, lat] = arcPts[idx];
+                if (hoverMarker) {
+                    hoverMarker.setLatLng([lat, lng]);
+                } else {
+                    hoverMarker = L.circleMarker([lat, lng], {
+                        radius: 10,
+                        color: "#fff",
+                        fillColor: "#8a4af3",
+                        fillOpacity: 0.9,
+                        weight: 3,
+                        zIndexOffset: 9999
+                    }).addTo(map);
+                }
+                return; // Arc modunda iş bitti, polyline/normal kodun devam etmesin!
+            }
+        }
+        // ------------------------------------------------------------
+
+        // Normal/Türkiye içi rotada polyline (lineString) üzerinden hareket:
+        const containerId = `route-map-day${day}`;
+        const geojson = window.lastRouteGeojsons?.[containerId];
+        if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
+        const coords = geojson.features[0].geometry.coordinates;
+
+        // Kümülatif mesafe
+        let cumDist = [0];
+        for (let i = 1; i < coords.length; i++) {
+            cumDist[i] = cumDist[i - 1] + haversine(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+        }
+        const totalDist = cumDist[cumDist.length - 1];
+
+        let segStartKm = 0, segEndKm = totalDist / 1000;
+        if (
+            typeof window._lastSegmentDay === "number" &&
+            window._lastSegmentDay === day &&
+            typeof window._lastSegmentStartKm === "number" &&
+            typeof window._lastSegmentEndKm === "number"
+        ) {
+            segStartKm = window._lastSegmentStartKm;
+            segEndKm = window._lastSegmentEndKm;
+        }
+        const segStartM = segStartKm * 1000;
+        const segEndM = segEndKm * 1000;
+        const segmentLength = segEndM - segStartM;
+
+        let targetDist;
+        if (
+            segmentLength > 0 &&
+            segStartM >= 0 &&
+            segEndM <= totalDist &&
+            segStartKm !== 0 || segEndKm !== (totalDist / 1000)
+        ) {
+            targetDist = segStartM + percent * segmentLength;
+        } else {
+            targetDist = percent * totalDist;
+        }
+
+        let idx = 0;
+        while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
+        let lat, lng;
+        if (idx === 0) {
+            lat = coords[0][1];
+            lng = coords[0][0];
+        } else {
+            const prevDist = cumDist[idx - 1];
+            const nextDist = cumDist[idx];
+            const ratio = (targetDist - prevDist) / (nextDist - prevDist);
+            lat = coords[idx - 1][1] + (coords[idx][1] - coords[idx - 1][1]) * ratio;
+            lng = coords[idx - 1][0] + (coords[idx][0] - coords[idx - 1][0]) * ratio;
+        }
+
+        if (hoverMarker) {
+            hoverMarker.setLatLng([lat, lng]);
+        } else {
+            hoverMarker = L.circleMarker([lat, lng], {
                 radius: 10,
                 color: "#fff",
                 fillColor: "#8a4af3",
                 fillOpacity: 0.9,
                 weight: 3,
                 zIndexOffset: 9999
-            }).addTo(expandedMap);
-
-        // Önceki poligon alanı sil, sonra yeni alanı ekle:
-        if (fillPolygon) { expandedMap.removeLayer(fillPolygon); fillPolygon = null; }
-        fillPolygon = L.polygon(areaCoords, {
-            color: "#8a4af3",           // kenar mor
-            fillColor: "#8a4af3",       // dolgu mor
-            fillOpacity: 0.13,          // transparan (0.05-0.18 arası önerilir)
-            weight: 2,
-            interactive: false,
-            pane: "shadowPane"
-        }).addTo(expandedMap);
+            }).addTo(map);
+        }
     }
 
     function onLeave() {
         if (hoverMarker) {
-            expandedMap.removeLayer(hoverMarker);
+            map.removeLayer(hoverMarker);
             hoverMarker = null;
-        }
-        if (fillPolygon) {
-            expandedMap.removeLayer(fillPolygon);
-            fillPolygon = null;
         }
     }
 
