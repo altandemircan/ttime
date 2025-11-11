@@ -5342,7 +5342,9 @@ function setupScaleBarInteraction(day, map) {
     if (!scaleBar || !map) return;
     let hoverMarker = null;
 
-        if (!arcPts || !Array.isArray(arcPts) || arcPts.length < 2) return;
+            let arcPts = (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) || [];
+
+if (!arcPts || !Array.isArray(arcPts) || arcPts.length < 2) return;
 
 function onMove(e) {
         const rect = scaleBar.getBoundingClientRect();
