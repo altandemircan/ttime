@@ -6545,7 +6545,7 @@ window.handleImageError = async function(imgElement, placeName, index) {
 };
 
 
-ffunction setupScaleBarInteraction(day, map) {
+function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
 
