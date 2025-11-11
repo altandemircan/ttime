@@ -15,8 +15,10 @@
 <!-- Maplibre-GL-Leaflet binding -->
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
-
+<script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.module.js';
+  window.THREE = THREE; // Artık window.THREE her yerde kullanılabilir!
+</script>
 
     <!-- Leaflet Routing Machine -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
