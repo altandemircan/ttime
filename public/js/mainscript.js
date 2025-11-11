@@ -4411,7 +4411,12 @@ function updateExpandedMap(expandedMap, day) {
     );
     console.log("getDayPoints:", JSON.stringify(pts));
 
-    // Mevcut mode'u çek
+    // YAY NOKTALARINI SAKLA - BURASI ÖNEMLİ!
+    if (!window._curvedArcPointsByDay) {
+        window._curvedArcPointsByDay = {};
+    }
+    window._curvedArcPointsByDay[day] = []; // Reset
+
     let modeRaw = (window.travelModeByDay?.[day] || 'car');
     let mode = toOSRMMode(modeRaw);
 
@@ -4421,14 +4426,13 @@ function updateExpandedMap(expandedMap, day) {
         }
     });
 
-    // Sadece Türkiye içinde ve route mevcutsa polyline çiz
     let hasValidRoute = (
       areAllPointsInTurkey(pts) &&
       geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
     );
 
     if (hasValidRoute) {
-        // Tüm modlarda, gerçek OSRM/GeoJSON rotasını çiz!
+        // OSRM ROTASI - tüm noktaları kaydet
         const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
             color: "#1976d2",
@@ -4436,16 +4440,47 @@ function updateExpandedMap(expandedMap, day) {
             opacity: 1,
             dashArray: null
         }).addTo(expandedMap);
+        
+        // Tüm route noktalarını kaydet
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
+        console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
+        
     } else if (pts.length > 1) {
-        // Rota YOKSA: YAY (kavisli çizgi)
+        // YAY MODU - her segmentin yay noktalarını kaydet
+        let allArcPoints = [];
+        
         for (let i = 0; i < pts.length - 1; i++) {
-            drawCurvedLine(expandedMap, pts[i], pts[i + 1], {
+            const start = [pts[i].lng, pts[i].lat];
+            const end = [pts[i + 1].lng, pts[i + 1].lat];
+            
+            // Yay noktalarını al
+            const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
+            
+            // Yayı çiz
+            const polyline = L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
                 color: "#1976d2",
                 weight: 6,
                 opacity: 0.93,
                 dashArray: "6,8"
-            });
+            }).addTo(expandedMap);
+            
+            // Yay noktalarını birleştirerek kaydet (ilk segmentte başlangıç noktasını ekle)
+            if (i === 0) {
+                allArcPoints.push([start[0], start[1]]); // İlk nokta
+            }
+            allArcPoints = allArcPoints.concat(arcPoints.slice(1)); // Kalan noktalar
         }
+        
+        // Son noktayı ekle
+        if (pts.length > 0) {
+            const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
+            allArcPoints.push(lastPoint);
+        }
+        
+        window._curvedArcPointsByDay[day] = allArcPoints;
+        console.log("[DEBUG] Arc points saved:", allArcPoints.length);
+        console.log("[DEBUG] First point:", allArcPoints[0]);
+        console.log("[DEBUG] Last point:", allArcPoints[allArcPoints.length - 1]);
     }
 
     // Marker ekleme kısmı aynı:
@@ -4507,22 +4542,22 @@ function updateExpandedMap(expandedMap, day) {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
 
-    // SCALE BAR: markerPositions dizisini haversine ile doldur
+    // SCALE BAR
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBarDiv) {
         let totalKm = 0;
-let markerPositions = [];
-for (let i = 0; i < pts.length; i++) {
-  if (i > 0) {
-    totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-  }
-  markerPositions.push({
-    name: pts[i].name || "",
-    distance: totalKm,
-    lat: pts[i].lat,
-    lng: pts[i].lng
-  });
-}
+        let markerPositions = [];
+        for (let i = 0; i < pts.length; i++) {
+            if (i > 0) {
+                totalKm += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
+            }
+            markerPositions.push({
+                name: pts[i].name || "",
+                distance: totalKm,
+                lat: pts[i].lat,
+                lng: pts[i].lng
+            });
+        }
         console.log('[DEBUG] markerPositions:', markerPositions);
 
         scaleBarDiv.style.display = "block";
@@ -4539,9 +4574,32 @@ for (let i = 0; i < pts.length; i++) {
         }
     }
 
+    // SCALE BAR INTERACTION'ı BAŞLAT - BURASI ÖNEMLİ!
+    setTimeout(() => {
+        setupScaleBarInteraction(day, expandedMap);
+        console.log("[DEBUG] Scale bar interaction initialized for day", day);
+    }, 500);
+
     adjustExpandedHeader(day);
 }
 
+// Yardımcı fonksiyon - Yay koordinatlarını al
+function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
+    // start & end: [lng, lat] formatında
+    const sx = start[0], sy = start[1];
+    const ex = end[0], ey = end[1];
+    
+    const mx = (sx + ex) / 2 + strength * (ey - sy);
+    const my = (sy + ey) / 2 - strength * (ex - sx);
+    
+    const coords = [];
+    for (let t = 0; t <= 1; t += 1/segments) {
+        const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+        const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+        coords.push([x, y]);
+    }
+    return coords;
+}
 /* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
 function clearRouteCachesForDay(day){
   if(!day) return;
@@ -5257,22 +5315,22 @@ routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMi
   return totalKm;
 }
 
-function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
-  // start & end: [lng, lat]
-  // strength: kavis (pozitif/daha büyük = daha fazla yay)
-  // segments: aradaki ara nokta sayısı (ne kadar çok, o kadar pürüzsüz)
-  const sx = start[0], sy = start[1];
-  const ex = end[0], ey = end[1];
-  const mx = (sx + ex) / 2 + strength * (ey - sy);
-  const my = (sy + ey) / 2 - strength * (ex - sx);
-  const coords = [];
-  for (let t = 0; t <= 1; t += 1/segments) {
-    // Quadratic Bezier: B(t) = (1-t)^2 * P0 + 2*(1-t)*t * P1 + t^2 * P2
-    const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
-    const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
-    coords.push([x, y]);
-  }
-  return coords;
+// Yardımcı fonksiyon - Yay koordinatlarını al
+function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
+    // start & end: [lng, lat] formatında
+    const sx = start[0], sy = start[1];
+    const ex = end[0], ey = end[1];
+    
+    const mx = (sx + ex) / 2 + strength * (ey - sy);
+    const my = (sy + ey) / 2 - strength * (ex - sx);
+    
+    const coords = [];
+    for (let t = 0; t <= 1; t += 1/segments) {
+        const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+        const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+        coords.push([x, y]);
+    }
+    return coords;
 }
 function updateHoverMarkerOnArc(day, percent, map, hoverMarker) {
   const arcPts = window._curvedArcPointsByDay[day];
