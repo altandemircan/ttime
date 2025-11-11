@@ -7256,8 +7256,7 @@ if (!isInTurkey && pts.length >= 2) {
 
         if (gpsRaw.length < 2 || points.length < 2) return;
 
-        const points = getDayPoints(day);
-        const containerId = `route-map-day${day}`;
+       
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
