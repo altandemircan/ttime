@@ -5260,27 +5260,7 @@ function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   }
   return coords;
 }
-function getCurvedArc3DFake(start, end, strength = 0.33, segments = 22, height=0.2) {
-  // start/end: [lng, lat]
-  // strength: kavis, height: sentetik yükseklik (lat/0.2 enlem eklenir)
-  const sx = start[0], sy = start[1];
-  const ex = end[0], ey = end[1];
-  const mx = (sx + ex) / 2 + strength * (ey - sy);
-  const my = (sy + ey) / 2 - strength * (ex - sx);
 
-  // midpoint'e en fazla "height" kadar yükselti efekti ekle
-  const coords = [];
-  for (let t = 0; t <= 1; t += 1 / segments) {
-    // Quadratic Bezier
-    let x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
-    let y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
-    // Fake 3d: ortada daha fazla 'yükseklik' efekti
-    let k = Math.sin(Math.PI * t); // 0 → 1 → 0
-    y += height * k;
-    coords.push([x, y]);
-  }
-  return coords;
-}
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -5343,13 +5323,11 @@ function openMapLibre3D(expandedMap) {
           'line-opacity': 0.92        // Aynı şeffaflık!
         }
       });
-    } 
-
-    else if (isFlyMode && points.length > 1) {
+    } else if (isFlyMode && points.length > 1) {
   for (let i = 0; i < points.length - 1; i++) {
     const start = [points[i].lng, points[i].lat];
     const end = [points[i + 1].lng, points[i + 1].lat];
-    const curveCoords = getCurvedArc3DFake(start, end, 0.33, 28, 0.35); // segments ve height artır
+    const curveCoords = getCurvedArcCoords(start, end, 0.33, 22); // kavis+segments istediğin kadar!
     window._maplibre3DInstance.addSource(`flyroute-${i}`, {
       type: 'geojson',
       data: {
@@ -5364,15 +5342,13 @@ function openMapLibre3D(expandedMap) {
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': '#1976d2',
-        'line-width': 15,
-        'line-opacity': 0.98,
-        'line-dasharray': [2, 3]
+        'line-width': 13,
+        'line-opacity': 0.96,
+        'line-dasharray': [1, 2]
       }
     });
   }
 }
-
-
 
     // Markerları ekle (sıra numaralı)
     points.forEach((p, idx) => {
