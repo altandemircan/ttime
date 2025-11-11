@@ -5243,7 +5243,23 @@ routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMi
   }
   return totalKm;
 }
-
+function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
+  // start & end: [lng, lat]
+  // strength: kavis (pozitif/daha büyük = daha fazla yay)
+  // segments: aradaki ara nokta sayısı (ne kadar çok, o kadar pürüzsüz)
+  const sx = start[0], sy = start[1];
+  const ex = end[0], ey = end[1];
+  const mx = (sx + ex) / 2 + strength * (ey - sy);
+  const my = (sy + ey) / 2 - strength * (ex - sx);
+  const coords = [];
+  for (let t = 0; t <= 1; t += 1/segments) {
+    // Quadratic Bezier: B(t) = (1-t)^2 * P0 + 2*(1-t)*t * P1 + t^2 * P2
+    const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+    const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+    coords.push([x, y]);
+  }
+  return coords;
+}
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -5307,37 +5323,31 @@ function openMapLibre3D(expandedMap) {
         }
       });
     } else if (isFlyMode && points.length > 1) {
-      // FLY MODE: markerlar arası kavisli/yay çizgi ile bağla
-      for (let i = 0; i < points.length - 1; i++) {
-        const start = [points[i].lng, points[i].lat];
-        const end = [points[i + 1].lng, points[i + 1].lat];
-        // Basit yay için midpoint kavis hesapla
-        const mid = [
-          (start[0] + end[0]) / 2 + 0.15 * (end[1] - start[1]),
-          (start[1] + end[1]) / 2 - 0.15 * (end[0] - start[0])
-        ];
-        const curveCoords = [start, mid, end];
-        window._maplibre3DInstance.addSource(`flyroute-${i}`, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: { type: 'LineString', coordinates: curveCoords }
-          }
-        });
-        window._maplibre3DInstance.addLayer({
-          id: `flyroute-line-${i}`,
-          type: 'line',
-          source: `flyroute-${i}`,
-          layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: {
-               'line-color': '#1976d2',
-            'line-width': 10,          // HATIRI KALIN
-            'line-opacity': 0.96,
-            'line-dasharray': [1, 2]  // SIK, kısa kesikli!
-          }
-        });
+  for (let i = 0; i < points.length - 1; i++) {
+    const start = [points[i].lng, points[i].lat];
+    const end = [points[i + 1].lng, points[i + 1].lat];
+    const curveCoords = getCurvedArcCoords(start, end, 0.33, 22); // kavis+segments istediğin kadar!
+    window._maplibre3DInstance.addSource(`flyroute-${i}`, {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: curveCoords }
       }
-    }
+    });
+    window._maplibre3DInstance.addLayer({
+      id: `flyroute-line-${i}`,
+      type: 'line',
+      source: `flyroute-${i}`,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': '#1976d2',
+        'line-width': 13,
+        'line-opacity': 0.96,
+        'line-dasharray': [2, 7]
+      }
+    });
+  }
+}
 
     // Markerları ekle (sıra numaralı)
     points.forEach((p, idx) => {
@@ -5348,6 +5358,7 @@ function openMapLibre3D(expandedMap) {
     });
   });
 }
+
 async function expandMap(containerId, day) {
 
 
