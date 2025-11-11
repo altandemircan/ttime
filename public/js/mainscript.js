@@ -8129,7 +8129,7 @@ document.getElementById(setId)?.remove();
 
 
   const realPoints = typeof getDayPoints === "function" ? getDayPoints(day) : [];
-  const setId = `tt-travel-mode-set-day${day}`;
+
   // Önce her durumda eskiyi kaldır
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
