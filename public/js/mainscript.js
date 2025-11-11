@@ -7382,9 +7382,6 @@ if (!isInTurkey && pts.length >= 2) {
         if (!pts0 || pts0.length === 0) return;
     }
 
-    const containerId = `route-map-day${day}`;
-    const points = getDayPoints(day);
-
     if (
         window.importedTrackByDay &&
         window.importedTrackByDay[day] &&
