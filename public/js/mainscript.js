@@ -5103,7 +5103,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // ADD RIGHT AFTER IT:
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // --- Rota çizgisini belirle (ya OSRM/GeoJSON rotası, ya da fallback: noktalar arası çizgi) ---
+    // --- Rota çizgisini belirle (ya OSRM/GeoJSON rotası, ya da fallback: noktalar arası kesik yay çizgi) ---
     let routeCoords = [];
     let hasValidGeo = (
         geojson && geojson.features && geojson.features[0] &&
@@ -5113,16 +5113,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     );
     if (hasValidGeo) {
         routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    } else if (!hasValidGeo && points.length > 1) {
-    for (let i = 0; i < points.length - 1; i++) {
-        drawCurvedLine(map, points[i], points[i + 1], {
-            color: "#1976d2",
-            weight: 5,
-            opacity: 0.85,
-            dashArray: "6,8"
-        });
     }
-}
 
     const map = L.map(containerId, { 
         scrollWheelZoom: true,
@@ -5146,9 +5137,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             interactive: true,
             dashArray: null
         }).addTo(map);
-        
     } else if (!hasValidGeo && points.length > 1) {
-        // --- Kavisli/Yaylı çizgi çek ---
+        // --- Sadece KAVİSLİ/KESİK YAY çizgi çek ---
         for (let i = 0; i < points.length - 1; i++) {
             drawCurvedLine(map, points[i], points[i + 1], {
                 color: "#1976d2", // MAVİ (küçük harita için)
@@ -5175,7 +5165,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     addNumberedMarkers(map, points);
 
-    if (geojson.features[0].properties && geojson.features[0].properties.names) {
+    if (geojson.features[0]?.properties?.names) {
         addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
     }
 
