@@ -292,13 +292,14 @@ function fitExpandedMapToRoute(day) {
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
 
+    // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
       expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
-      expObj.expandedMap.setView([41.9, 12.5], 6); // Avrupaya zoom!
+      expObj.expandedMap.setView([0, 0], 2);
     }
   }
 }
@@ -3137,10 +3138,6 @@ function initEmptyDayMap(day) {
   if (!el.style.height) el.style.height = '285px';
 
   // KÜÇÜK HARİTA
-  // ---- PATCH: Avrupa-İtalya merkezli açılış koordinatı ----
-  const EU_CENTER = [41.9, 12.5]; // Roma (İtalya'nın göbeği)
-  const EU_ZOOM   = 6;            // Avrupa genişliğinde uygun zoom
-
   const map = L.map(containerId, {
     scrollWheelZoom: true,
     fadeAnimation: true,
@@ -3152,13 +3149,13 @@ function initEmptyDayMap(day) {
     wheelPxPerZoomLevel: 120,
     inertia: true,
     easeLinearity: 0.2
-  }).setView(EU_CENTER, EU_ZOOM); // Patch burada!
+  }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
   if (!map._initialView) {
-    map._initialView = {
-      center: map.getCenter(),
-      zoom: map.getZoom()
-    };
-  }
+  map._initialView = {
+    center: map.getCenter(),
+    zoom: map.getZoom()
+  };
+}
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
@@ -5763,20 +5760,21 @@ const points = allPoints.filter(
 
 
 
-                                                         const expandedMap = L.map(mapDivId, {
-                                                           center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
-                                                          zoom: 2,         // Veya 3 yaz (önemi yok)
-                                                            scrollWheelZoom: true,
-                                                            fadeAnimation: true,
-                                                            zoomAnimation: true,
-                                                            zoomAnimationThreshold: 8,
-                                                            zoomSnap: 0.25,
-                                                            zoomDelta: 0.25,
-                                                            wheelDebounceTime: 35,
-                                                            wheelPxPerZoomLevel: 120,
-                                                            inertia: true,
-                                                            easeLinearity: 0.2
-                                                          });
+                                                         // — YENİ PATCH edilen hali —
+                                                        const expandedMap = L.map(mapDivId, {
+                                                          center: [41.9, 12.5],      // ROMA - Avrupa için ideal merkez
+                                                          zoom: 6,
+                                                          scrollWheelZoom: true,
+                                                          fadeAnimation: true,
+                                                          zoomAnimation: true,
+                                                          zoomAnimationThreshold: 8,
+                                                          zoomSnap: 0.25,
+                                                          zoomDelta: 0.25,
+                                                          wheelDebounceTime: 35,
+                                                          wheelPxPerZoomLevel: 120,
+                                                          inertia: true,
+                                                          easeLinearity: 0.2
+                                                        });
                                                         expandedMap._maplibreLayer = L.maplibreGL({ 
                                                           style: 'https://tiles.openfreemap.org/styles/bright' // veya ilk açılışta istediğin layer
                                                         }).addTo(expandedMap);
