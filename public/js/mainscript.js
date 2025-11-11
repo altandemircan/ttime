@@ -5285,6 +5285,81 @@ function updateHoverMarkerOnArc(day, percent, map, hoverMarker) {
     }).addTo(map);
   return hoverMarker;
 }
+function setupScaleBarInteraction(day, map) {
+    const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (!scaleBar || !map) return;
+    let hoverMarker = null;
+
+    function onMove(e) {
+        const rect = scaleBar.getBoundingClientRect();
+        let x = (e.touches && e.touches.length)
+            ? (e.touches[0].clientX - rect.left)
+            : (e.clientX - rect.left);
+        let percent = Math.max(0, Math.min(x / rect.width, 1));
+
+        // YAY üzerinde marker hareketi - TERS YÖN düzeltmesi
+        if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
+            let arcPts = window._curvedArcPointsByDay[day];
+            
+            // TERS YÖN: Yüzdeyi tersine çevir
+            let reversedPercent = 1 - percent;
+            
+            let idx = Math.round(reversedPercent * (arcPts.length - 1));
+            idx = Math.max(0, Math.min(idx, arcPts.length - 1));
+            
+            const [lng, lat] = arcPts[idx];
+            
+            if (hoverMarker) {
+                hoverMarker.setLatLng([lat, lng]);
+            } else {
+                hoverMarker = L.circleMarker([lat, lng], {
+                    radius: 10,
+                    color: "#fff",
+                    fillColor: "#8a4af3",
+                    fillOpacity: 0.9,
+                    weight: 3,
+                    zIndexOffset: 9999
+                }).addTo(map);
+            }
+        }
+    }
+    
+    function onLeave() {
+        if (hoverMarker) {
+            map.removeLayer(hoverMarker);
+            hoverMarker = null;
+        }
+    }
+    
+    scaleBar.addEventListener("mousemove", onMove);
+    scaleBar.addEventListener("mouseleave", onLeave);
+    scaleBar.addEventListener("touchmove", onMove);
+    scaleBar.addEventListener("touchend", onLeave);
+}
+
+// Aynı yay algoritmasını kullandığından emin olmak için güncellenmiş fonksiyon
+function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
+  const sx = start[0], sy = start[1];
+  const ex = end[0], ey = end[1];
+  
+  // Kontrol noktası hesaplama - Leaflet'tekiyle aynı olmalı
+  const mx = (sx + ex) / 2 + strength * (ey - sy);
+  const my = (sy + ey) / 2 - strength * (ex - sx);
+  
+  const coords = [];
+  for (let t = 0; t <= 1; t += 1/segments) {
+    const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+    const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+    coords.push([x, y]);
+  }
+  return coords;
+}
+
+// Alternatif çözüm: Yay noktalarını ters çevir
+function getReversedCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
+    const originalCoords = getCurvedArcCoords(start, end, strength, segments);
+    return originalCoords.reverse(); // Noktaları ters çevir
+}
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -6543,51 +6618,7 @@ window.handleImageError = async function(imgElement, placeName, index) {
     imgElement.src = PLACEHOLDER_IMG;
     if (loadingDiv) loadingDiv.style.opacity = '0';
 };
-function setupScaleBarInteraction(day, map) {
-    const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (!scaleBar || !map) return;
-    let hoverMarker = null;
 
-    function onMove(e) {
-        const rect = scaleBar.getBoundingClientRect();
-        let x = (e.touches && e.touches.length)
-            ? (e.touches[0].clientX - rect.left)
-            : (e.clientX - rect.left);
-        let percent = Math.max(0, Math.min(x / rect.width, 1));
-
-        // YAY MODU: ARC üzerinde marker hareketi
-        if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
-            let arcPts = window._curvedArcPointsByDay[day];
-            let idx = Math.round(percent * (arcPts.length - 1));
-            idx = Math.max(0, Math.min(idx, arcPts.length - 1));
-            // ARC noktanın formatı [lng,lat] ise aşağıdaki gibi:
-            const [lng, lat] = arcPts[idx];
-            // Eğer yay noktaların [lat, lng] ise: const [lat, lng] = arcPts[idx];
-            if (hoverMarker) {
-                hoverMarker.setLatLng([lat, lng]);
-            } else {
-                hoverMarker = L.circleMarker([lat, lng], {
-                    radius: 10,
-                    color: "#fff",
-                    fillColor: "#8a4af3",
-                    fillOpacity: 0.9,
-                    weight: 3,
-                    zIndexOffset: 9999
-                }).addTo(map);
-            }
-        }
-    }
-    function onLeave() {
-        if (hoverMarker) {
-            map.removeLayer(hoverMarker);
-            hoverMarker = null;
-        }
-    }
-    scaleBar.addEventListener("mousemove", onMove);
-    scaleBar.addEventListener("mouseleave", onLeave);
-    scaleBar.addEventListener("touchmove", onMove);
-    scaleBar.addEventListener("touchend", onLeave);
-}
 window.addNearbyPlaceToTrip = function(idx) {
     if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
     const f = window._lastNearbyPlaces[idx];
