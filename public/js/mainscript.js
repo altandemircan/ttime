@@ -5330,10 +5330,10 @@ function openMapLibre3D(expandedMap) {
           source: `flyroute-${i}`,
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: {
-            'line-color': '#1976d2',
-            'line-width': 7,
-            'line-opacity': 0.85,
-            'line-dasharray': [6, 9] // Kesik yay!
+               'line-color': '#1976d2',
+            'line-width': 13,          // HATIRI KALIN
+            'line-opacity': 0.96,
+            'line-dasharray': [2, 7]  // SIK, kısa kesikli!
           }
         });
       }
