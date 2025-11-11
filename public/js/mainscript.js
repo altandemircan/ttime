@@ -7190,7 +7190,7 @@ if (imported) {
 
 async function renderRouteForDay(day) {
 const containerId = `route-map-day${day}`;
-const points = getDayPoints(day);
+const pts = getDayPoints(day); // <--- EKLE ve ALTTA HEP BUNU KULLAN
 const isInTurkey = areAllPointsInTurkey(pts);
 // BURADAN SONRA FLY MODE KONTROLU
 
