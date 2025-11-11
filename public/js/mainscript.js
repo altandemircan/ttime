@@ -5261,10 +5261,39 @@ function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
 // --- ANİMASYONLU ARC ---
 function animateArcLine(map, lineId) {
   let dashOffset = 0;
-  setInterval(() => {
+  let animationId = null;
+
+  // Animasyonu başlat
+  function run() {
+    // Layer hâlâ var mı?
+    if (!map.getLayer(lineId)) {
+      clearInterval(animationId);
+      animationId = null;
+      return;
+    }
     dashOffset += 0.3;
     map.setPaintProperty(lineId, 'line-dasharray', [2, dashOffset]);
-  }, 70);
+  }
+
+  // Eğer zaten interval varsa başlatma!
+  if (animationId) clearInterval(animationId);
+  animationId = setInterval(run, 70);
+
+  // Harita zoom/pan/yeni layer olunca tekrar başlat
+  map.on('zoom', () => {
+    if (!animationId) {
+      animationId = setInterval(run, 70);
+    }
+  });
+  map.on('move', () => {
+    if (!animationId) {
+      animationId = setInterval(run, 70);
+    }
+  });
+  map.on('remove', () => {
+    if (animationId) clearInterval(animationId);
+    animationId = null;
+  });
 }
 // --- OPENMAPLIBRE3D FONKSİYONU ---
 function openMapLibre3D(expandedMap) {
