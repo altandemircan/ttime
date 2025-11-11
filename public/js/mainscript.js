@@ -5279,40 +5279,54 @@ function addThreeJSArcLayer(map, points) {
     type: 'custom',
     renderingMode: '3d',
     onAdd: function(map, gl) {
+      // WebGLRenderer setup - canvas ve context doğru mu?
       renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: true });
       renderer.autoClear = false;
       scene = new THREE.Scene();
       camera = new THREE.Camera();
 
+      // Mercator projeksiyonuyla 3 boyutlu koordinat -> harita zeminine bind
       const mercatorProj = (lng, lat, z = 0) => {
         const mc = maplibregl.MercatorCoordinate.fromLngLat({ lng, lat }, z);
         return new THREE.Vector3(mc.x, mc.y, mc.z);
       };
 
+      console.log("arc ekleme başlıyor");
+
       for (let i = 0; i < points.length - 1; i++) {
+        // Noktaları projekte et
         const start = mercatorProj(points[i].lng, points[i].lat, 0);
         const end = mercatorProj(points[i + 1].lng, points[i + 1].lat, 0);
         const midLNG = (points[i].lng + points[i + 1].lng) / 2;
         const midLAT = (points[i].lat + points[i + 1].lat) / 2;
-        const mid = mercatorProj(midLNG, midLAT, 0.004); // Yüksekliği cüzi tut: 0.004 iyi
+        const mid = mercatorProj(midLNG, midLAT, 0.002); // Daha düşük yükseklikle başla
 
+        // Bezier eğrisi
         const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-        const curvePts = curve.getPoints(28);
+        const curvePts = curve.getPoints(22);
+        console.log(`arc ${i} curvePts`, curvePts);
 
-        // --- ŞU SATIRI EKLEMELİSİN! ---
+        // Geometry ve material
         const geometry = new THREE.BufferGeometry().setFromPoints(curvePts);
-        const material = new THREE.LineBasicMaterial({ color: 0x1976d2, transparent: true, opacity: 0.94 });
 
-        // dashed istersen THREE.LineDashedMaterial ve .computeLineDistances() ekleyebilirsin
+        // BasicLineMaterial - WebGL'de çoğu tarayıcıda linewidth 1'dir, bu yüzden zoom ile test et!
+        const material = new THREE.LineBasicMaterial({
+          color: 0x1976d2,
+          transparent: true,
+          opacity: 1,
+        });
+
         const arcLine = new THREE.Line(geometry, material);
         scene.add(arcLine);
+        console.log("arcLine scene'e eklendi", arcLine);
       }
-
-      // Işık ve kamera yükseklikleriyle efekt verilebilir
-      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      // Işık
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
     },
 
     render: function(gl, matrix) {
+      // Debug için log eklendi
+      //console.log("Three.js custom layer render edildi");
       camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
       renderer.state.reset();
       renderer.render(scene, camera);
