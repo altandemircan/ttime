@@ -5245,22 +5245,54 @@ routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMi
 }
 
 function openMapLibre3D(expandedMap) {
-  // ... üstteki kod sabit ...
+  // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
+  let mapDiv = expandedMap.getContainer();
+  let maplibre3d = document.getElementById('maplibre-3d-view');
+  if (!maplibre3d) {
+    maplibre3d = document.createElement('div');
+    maplibre3d.id = 'maplibre-3d-view';
+    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;';
+    mapDiv.parentNode.appendChild(maplibre3d);
+  }
+  maplibre3d.style.display = 'block'; // 3D harita görünür!
+  maplibre3d.innerHTML = '';
+
+  // MapLibreGL başlat
+  window._maplibre3DInstance = new maplibregl.Map({
+    container: 'maplibre-3d-view',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: expandedMap.getCenter(),
+    zoom: expandedMap.getZoom(),
+    pitch: 60,
+    bearing: 30,
+    interactive: true // zaten vardır
+  });
+
+  window._maplibre3DInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-left');
+  // Sağa döndür
+  window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() + 20, { animate: true });
+  // Sola döndür
+  window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() - 20, { animate: true });
+
+  // ROTAYI GERÇEK YOL (OSRM POLYLINE) veya FLY MODE'da marker arası YAY ile çiz!
   window._maplibre3DInstance.on('load', function () {
     const day = window.currentDay || 1;
     const containerId = `route-map-day${day}`;
+    // Yol geometri verisi alınır (Leaflet'te olduğu gibi!)
     const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
     const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
     const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-    const isFlyMode = !areAllPointsInTurkey(points);
+    const isFlyMode = !areAllPointsInTurkey(points); // Türkiye dışında mı?
 
     if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
-      // Normal route
       window._maplibre3DInstance.addSource('route', {
         type: 'geojson',
         data: {
           type: 'Feature',
-          geometry: { type: 'LineString', coordinates: routeCoords }
+          geometry: {
+            type: 'LineString',
+            coordinates: routeCoords // OSRM rotası (Türkiye içi)
+          }
         }
       });
       window._maplibre3DInstance.addLayer({
@@ -5269,19 +5301,20 @@ function openMapLibre3D(expandedMap) {
         source: 'route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#1976d2',
-          'line-width': 8,
-          'line-opacity': 0.92
+          'line-color': '#1976d2',    // BİREBİR MAVİ
+          'line-width': 8,            // Leaflet polyline ile aynı
+          'line-opacity': 0.92        // Aynı şeffaflık!
         }
       });
     } else if (isFlyMode && points.length > 1) {
-      // FLY MODE - marker arası yayli kesik çizgi:
+      // FLY MODE: markerlar arası kavisli/yay çizgi ile bağla
       for (let i = 0; i < points.length - 1; i++) {
         const start = [points[i].lng, points[i].lat];
-        const end = [points[i+1].lng, points[i+1].lat];
+        const end = [points[i + 1].lng, points[i + 1].lat];
+        // Basit yay için midpoint kavis hesapla
         const mid = [
-          (start[0] + end[0])/2 + 0.2 * (end[1] - start[1]),
-          (start[1] + end[1])/2 - 0.2 * (end[0] - start[0])
+          (start[0] + end[0]) / 2 + 0.15 * (end[1] - start[1]),
+          (start[1] + end[1]) / 2 - 0.15 * (end[0] - start[0])
         ];
         const curveCoords = [start, mid, end];
         window._maplibre3DInstance.addSource(`flyroute-${i}`, {
@@ -5298,23 +5331,23 @@ function openMapLibre3D(expandedMap) {
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: {
             'line-color': '#1976d2',
-            'line-width': 8,
-            'line-opacity': 0.82,
-            'line-dasharray': [6, 8]
+            'line-width': 7,
+            'line-opacity': 0.85,
+            'line-dasharray': [6, 9] // Kesik yay!
           }
         });
       }
     }
 
+    // Markerları ekle (sıra numaralı)
     points.forEach((p, idx) => {
       const marker = new maplibregl.Marker({ color: '#d32f2f' })
         .setLngLat([p.lng, p.lat])
-        .setPopup(new maplibregl.Popup().setText(`${idx+1}. ${p.name || "Place"}`));
+        .setPopup(new maplibregl.Popup().setText(`${idx + 1}. ${p.name || "Place"}`));
       marker.addTo(window._maplibre3DInstance);
     });
   });
 }
-
 async function expandMap(containerId, day) {
 
 
