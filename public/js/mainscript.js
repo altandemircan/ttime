@@ -5259,40 +5259,49 @@ function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
 }
 
 // --- ANİMASYONLU ARC ---
+// Tüm layer animasyon interval'lerini global tut!
+const arcLineAnimationIntervals = {};
+
+// Animasyonlu çizgi
 function animateArcLine(map, lineId) {
   let dashOffset = 0;
-  let animationId = null;
+
+  // Önce varsa eskiyi stop et
+  if (arcLineAnimationIntervals[lineId]) {
+    clearInterval(arcLineAnimationIntervals[lineId]);
+    delete arcLineAnimationIntervals[lineId];
+  }
 
   // Animasyonu başlat
   function run() {
-    // Layer hâlâ var mı?
     if (!map.getLayer(lineId)) {
-      clearInterval(animationId);
-      animationId = null;
+      clearInterval(arcLineAnimationIntervals[lineId]);
+      delete arcLineAnimationIntervals[lineId];
       return;
     }
     dashOffset += 0.3;
     map.setPaintProperty(lineId, 'line-dasharray', [2, dashOffset]);
   }
 
-  // Eğer zaten interval varsa başlatma!
-  if (animationId) clearInterval(animationId);
-  animationId = setInterval(run, 70);
+  arcLineAnimationIntervals[lineId] = setInterval(run, 70);
 
-  // Harita zoom/pan/yeni layer olunca tekrar başlat
-  map.on('zoom', () => {
-    if (!animationId) {
-      animationId = setInterval(run, 70);
+  // Layer eventlerinde eskiyi durdurup yeniyi başlat
+  function restartAnimation() {
+    if (arcLineAnimationIntervals[lineId]) {
+      clearInterval(arcLineAnimationIntervals[lineId]);
+      delete arcLineAnimationIntervals[lineId];
     }
-  });
-  map.on('move', () => {
-    if (!animationId) {
-      animationId = setInterval(run, 70);
+    dashOffset = 0;
+    arcLineAnimationIntervals[lineId] = setInterval(run, 70);
+  }
+
+  map.on('zoom', restartAnimation);
+  map.on('move', restartAnimation);
+  map.on('remove', function() {
+    if (arcLineAnimationIntervals[lineId]) {
+      clearInterval(arcLineAnimationIntervals[lineId]);
+      delete arcLineAnimationIntervals[lineId];
     }
-  });
-  map.on('remove', () => {
-    if (animationId) clearInterval(animationId);
-    animationId = null;
   });
 }
 // --- OPENMAPLIBRE3D FONKSİYONU ---
