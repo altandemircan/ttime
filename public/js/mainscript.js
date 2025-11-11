@@ -5058,6 +5058,9 @@ function addNumberedMarkers(map, points) {
 }
 
 // Minik harita/küçük harita: markerları yay şeklinde, kesik çizgi ile birleştiren patchli fonksiyon! 
+// --- Güncelle: renderLeafletRoute'da yay arc noktalarını Flyers için kaydet ---
+// 1. Flyers modunda yay noktalarını birleştirip window'a kaydediyoruz
+// 2. ScaleBar etkileşiminde yayda markerı kaydırmak için patch'i ekliyoruz
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
@@ -5131,9 +5134,18 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // --- YAY ÇİZGİ PATCH'I ---
     const isFlyMode = !areAllPointsInTurkey(points);
 
+    // EKLE: Flyers modunda kavisli yay noktalarını kaydet
     if (isFlyMode && points.length > 1) {
-        // Sadece kavisli, kesik çizgiyle çiz!
+        // --- Flyers için kavisli yay noktaları birleştir ---
+        window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
+        let arcPoints = [];
         for (let i = 0; i < points.length - 1; i++) {
+            const start = [points[i].lng, points[i].lat];
+            const end = [points[i + 1].lng, points[i + 1].lat];
+            const curve = getCurvedArcCoords(start, end, 0.33, 32);
+            arcPoints = arcPoints.concat(curve);
+
+            // Haritada da kavisli çizgi görselini göster (bu zaten vardı)
             drawCurvedLine(map, points[i], points[i + 1], {
                 color: "#1976d2",
                 weight: 5,
@@ -5141,6 +5153,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 dashArray: "6,8"
             });
         }
+        window._curvedArcPointsByDay[day] = arcPoints;
     } else if (hasValidGeo && routeCoords.length > 1) {
         // Sadece Türkiye içi OSRM gerçek route varsa düz çizgi
         L.polyline(routeCoords, {
@@ -5243,6 +5256,7 @@ routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMi
   }
   return totalKm;
 }
+
 function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   // start & end: [lng, lat]
   // strength: kavis (pozitif/daha büyük = daha fazla yay)
@@ -5260,7 +5274,17 @@ function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   }
   return coords;
 }
-
+function updateHoverMarkerOnArc(day, percent, map, hoverMarker) {
+  const arcPts = window._curvedArcPointsByDay[day];
+  if (!arcPts || arcPts.length < 2) return;
+  const targetIdx = Math.floor(percent * (arcPts.length - 1));
+  const [lng, lat] = arcPts[targetIdx];
+  if (hoverMarker) hoverMarker.setLatLng([lat, lng]);
+  else hoverMarker = L.circleMarker([lat, lng], {
+      radius: 10, color: "#fff", fillColor: "#8a4af3", fillOpacity: 0.9, weight: 3, zIndexOffset: 9999
+    }).addTo(map);
+  return hoverMarker;
+}
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -5325,7 +5349,9 @@ function openMapLibre3D(expandedMap) {
       });
     } 
 
-    else if (isFlyMode && points.length > 1) {
+    else
+
+     if (isFlyMode && points.length > 1) {
   for (let i = 0; i < points.length - 1; i++) {
     const start = [points[i].lng, points[i].lat];
     const end = [points[i + 1].lng, points[i + 1].lat];
@@ -6519,7 +6545,7 @@ window.handleImageError = async function(imgElement, placeName, index) {
 };
 
 
-function setupScaleBarInteraction(day, map) {
+ffunction setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
 
@@ -6531,9 +6557,32 @@ function setupScaleBarInteraction(day, map) {
             ? (e.touches[0].clientX - rect.left)
             : (e.clientX - rect.left);
 
-        // Eğer segment seçiliyse, sadece segmentte ilerle
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
+        // ---- FLY MODE PATCH: Yay/arc üzerinde mor markerı kaydır ----
+        if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
+            const arcPts = window._curvedArcPointsByDay[day];
+            if (arcPts && arcPts.length >= 2) {
+                const idx = Math.floor(percent * (arcPts.length - 1));
+                const [lng, lat] = arcPts[idx];
+                if (hoverMarker) {
+                    hoverMarker.setLatLng([lat, lng]);
+                } else {
+                    hoverMarker = L.circleMarker([lat, lng], {
+                        radius: 10,
+                        color: "#fff",
+                        fillColor: "#8a4af3",
+                        fillOpacity: 0.9,
+                        weight: 3,
+                        zIndexOffset: 9999
+                    }).addTo(map);
+                }
+                return; // Arc modunda iş bitti, polyline/normal kodun devam etmesin!
+            }
+        }
+        // ------------------------------------------------------------
+
+        // Normal/Türkiye içi rotada polyline (lineString) üzerinden hareket:
         const containerId = `route-map-day${day}`;
         const geojson = window.lastRouteGeojsons?.[containerId];
         if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
@@ -6546,7 +6595,6 @@ function setupScaleBarInteraction(day, map) {
         }
         const totalDist = cumDist[cumDist.length - 1];
 
-        // SEGMENT STATE VARSA SADECE SEGMENTTE, YOKSA TÜM ROTADA
         let segStartKm = 0, segEndKm = totalDist / 1000;
         if (
             typeof window._lastSegmentDay === "number" &&
@@ -6568,14 +6616,11 @@ function setupScaleBarInteraction(day, map) {
             segEndM <= totalDist &&
             segStartKm !== 0 || segEndKm !== (totalDist / 1000)
         ) {
-            // segment seçili
             targetDist = segStartM + percent * segmentLength;
         } else {
-            // segment yok, tüm rotada gezinsin
             targetDist = percent * totalDist;
         }
 
-        // Noktayı bul
         let idx = 0;
         while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
         let lat, lng;
@@ -6590,7 +6635,6 @@ function setupScaleBarInteraction(day, map) {
             lng = coords[idx - 1][0] + (coords[idx][0] - coords[idx - 1][0]) * ratio;
         }
 
-        // Haritada göstergeyi oluştur/güncelle
         if (hoverMarker) {
             hoverMarker.setLatLng([lat, lng]);
         } else {
