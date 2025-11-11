@@ -6544,12 +6544,12 @@ window.handleImageError = async function(imgElement, placeName, index) {
     if (loadingDiv) loadingDiv.style.opacity = '0';
 };
 
-function setupScaleBarInteraction(day, expandedMap) {
+
+function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (!scaleBar || !expandedMap) return;
+    if (!scaleBar || !map) return;
 
     let hoverMarker = null;
-    let gapLine = null;
 
     function onMove(e) {
         const rect = scaleBar.getBoundingClientRect();
@@ -6559,83 +6559,100 @@ function setupScaleBarInteraction(day, expandedMap) {
 
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-        // ---- YAY/ARC ÜZERİNDEKİ NOKTAYI BUL ----
-        let arcLat = null, arcLng = null;
+        // ---- FLY MODE PATCH: Yay/arc üzerinde mor markerı kaydır ----
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
             const arcPts = window._curvedArcPointsByDay[day];
             if (arcPts && arcPts.length >= 2) {
                 const idx = Math.floor(percent * (arcPts.length - 1));
-                const [lngArc, latArc] = arcPts[idx];
-                arcLat = latArc;
-                arcLng = lngArc;
+                const [lng, lat] = arcPts[idx];
+                if (hoverMarker) {
+                    hoverMarker.setLatLng([lat, lng]);
+                } else {
+                    hoverMarker = L.circleMarker([lat, lng], {
+                        radius: 10,
+                        color: "#fff",
+                        fillColor: "#8a4af3",
+                        fillOpacity: 0.9,
+                        weight: 3,
+                        zIndexOffset: 9999
+                    }).addTo(map);
+                }
+                return; // Arc modunda iş bitti, polyline/normal kodun devam etmesin!
             }
         }
+        // ------------------------------------------------------------
 
-        // ---- GERÇEK POLYLINE/ROUTE ÜZERİNDEKİ NOKTAYI BUL ----
-        let lat = null, lng = null;
+        // Normal/Türkiye içi rotada polyline (lineString) üzerinden hareket:
         const containerId = `route-map-day${day}`;
         const geojson = window.lastRouteGeojsons?.[containerId];
-        if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-            const coords = geojson.features[0].geometry.coordinates;
-            let cumDist = [0];
-            for (let i = 1; i < coords.length; i++) {
-                cumDist[i] = cumDist[i - 1] + haversine(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
-            }
-            const totalDist = cumDist[cumDist.length - 1];
-            let targetDist = percent * totalDist;
-            let idx = 0;
-            while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
-            if (idx === 0) {
-                lat = coords[0][1];
-                lng = coords[0][0];
-            } else {
-                const prevDist = cumDist[idx - 1];
-                const nextDist = cumDist[idx];
-                const ratio = (targetDist - prevDist) / (nextDist - prevDist);
-                lat = coords[idx - 1][1] + (coords[idx][1] - coords[idx - 1][1]) * ratio;
-                lng = coords[idx - 1][0] + (coords[idx][0] - coords[idx - 1][0]) * ratio;
-            }
+        if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return;
+        const coords = geojson.features[0].geometry.coordinates;
+
+        // Kümülatif mesafe
+        let cumDist = [0];
+        for (let i = 1; i < coords.length; i++) {
+            cumDist[i] = cumDist[i - 1] + haversine(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+        }
+        const totalDist = cumDist[cumDist.length - 1];
+
+        let segStartKm = 0, segEndKm = totalDist / 1000;
+        if (
+            typeof window._lastSegmentDay === "number" &&
+            window._lastSegmentDay === day &&
+            typeof window._lastSegmentStartKm === "number" &&
+            typeof window._lastSegmentEndKm === "number"
+        ) {
+            segStartKm = window._lastSegmentStartKm;
+            segEndKm = window._lastSegmentEndKm;
+        }
+        const segStartM = segStartKm * 1000;
+        const segEndM = segEndKm * 1000;
+        const segmentLength = segEndM - segStartM;
+
+        let targetDist;
+        if (
+            segmentLength > 0 &&
+            segStartM >= 0 &&
+            segEndM <= totalDist &&
+            segStartKm !== 0 || segEndKm !== (totalDist / 1000)
+        ) {
+            targetDist = segStartM + percent * segmentLength;
+        } else {
+            targetDist = percent * totalDist;
         }
 
-        // ---- MOR MARKER ARCA ----
-        if (arcLat !== null && arcLng !== null) {
-            if (hoverMarker) hoverMarker.setLatLng([arcLat, arcLng]);
-            else hoverMarker = L.circleMarker([arcLat, arcLng], {
+        let idx = 0;
+        while (cumDist[idx] < targetDist && idx < cumDist.length - 1) idx++;
+        let lat, lng;
+        if (idx === 0) {
+            lat = coords[0][1];
+            lng = coords[0][0];
+        } else {
+            const prevDist = cumDist[idx - 1];
+            const nextDist = cumDist[idx];
+            const ratio = (targetDist - prevDist) / (nextDist - prevDist);
+            lat = coords[idx - 1][1] + (coords[idx][1] - coords[idx - 1][1]) * ratio;
+            lng = coords[idx - 1][0] + (coords[idx][0] - coords[idx - 1][0]) * ratio;
+        }
+
+        if (hoverMarker) {
+            hoverMarker.setLatLng([lat, lng]);
+        } else {
+            hoverMarker = L.circleMarker([lat, lng], {
                 radius: 10,
                 color: "#fff",
                 fillColor: "#8a4af3",
                 fillOpacity: 0.9,
                 weight: 3,
                 zIndexOffset: 9999
-            }).addTo(expandedMap);
-        }
-
-        // ---- ARADAKİ DOLGU/ÇİZGİ ----
-        // Sadece ikisi de varsa araya çizgi ekle
-        if (
-            arcLat !== null && arcLng !== null &&
-            lat !== null && lng !== null
-        ) {
-            if (gapLine) { expandedMap.removeLayer(gapLine); gapLine = null; }
-            gapLine = L.polyline([[lat, lng], [arcLat, arcLng]], {
-                color: "#8a4af3",
-                weight: 8,
-                opacity: 0.22,
-                dashArray: "10,16",
-                interactive: false,
-                zIndexOffset: 9995
-            }).addTo(expandedMap);
+            }).addTo(map);
         }
     }
 
     function onLeave() {
         if (hoverMarker) {
-            expandedMap.removeLayer(hoverMarker);
+            map.removeLayer(hoverMarker);
             hoverMarker = null;
-        }
-        if (gapLine) {
-            expandedMap.removeLayer(gapLine);
-            gapLine = null;
         }
     }
 
