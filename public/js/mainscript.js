@@ -7600,6 +7600,11 @@ try {
 
         // UI'ya verileri yansıt! — ekle!
 if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+console.log("özet güncelleme başlatıldı", day);
+setTimeout(() => {
+   if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+   console.log("özet güncelleme tamamlandı", day);
+}, 300);
 
         // Geojson çizimi - route değil marker sıralaması
         const geojson = {
