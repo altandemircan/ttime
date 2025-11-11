@@ -3634,6 +3634,9 @@ async function updateCart() {
 
   for (let day = 1; day <= totalDays; day++) {
       //------ EKLE BAŞLANGIÇ ------
+      if (!window.lastRouteSummaries) window.lastRouteSummaries = {};
+
+
   const containerId = `route-map-day${day}`;
   const summary = window.lastRouteSummaries && window.lastRouteSummaries[containerId];
   if (!summary) {
