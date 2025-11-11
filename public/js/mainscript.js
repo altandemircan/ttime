@@ -7190,15 +7190,15 @@ if (imported) {
 
 async function renderRouteForDay(day) {
 const containerId = `route-map-day${day}`;
-const pts = getDayPoints(day); // <--- EKLE ve ALTTA HEP BUNU KULLAN
-const isInTurkey = areAllPointsInTurkey(pts);
+const points = getDayPoints(day); // <--- EKLE ve ALTTA HEP BUNU KULLAN
+const isInTurkey = areAllPointsInTurkey(points);
 // BURADAN SONRA FLY MODE KONTROLU
 
-if (!isInTurkey && pts.length >= 2) {
+if (!isInTurkey && points.length >= 2) {
     // Haversine ile mesafe/süre hesapla
     let totalKm = 0;
-    for (let i = 1; i < pts.length; i++) {
-        totalKm += haversine(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng) / 1000;
+    for (let i = 1; i < points.length; i++) {
+        totalKm += haversine(points[i - 1].lat, points[i - 1].lng, points[i].lat, points[i].lng) / 1000;
     }
     const SABIT_HIZ_KMH = 4;
     const durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600);
@@ -7232,12 +7232,12 @@ if (!isInTurkey && pts.length >= 2) {
             type: 'Feature',
             geometry: {
                 type: 'LineString',
-                coordinates: pts.map(p => [p.lng, p.lat])
+                coordinates: points.map(p => [p.lng, p.lat])
             },
             properties: {}
         }]
     };
-    renderLeafletRoute(containerId, geojson, pts, summary, day);
+    renderLeafletRoute(containerId, geojson, points, summary, day);
 
     if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
@@ -7247,7 +7247,7 @@ if (!isInTurkey && pts.length >= 2) {
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
  
-    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
+    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(points, null, 2));
 
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
@@ -7379,7 +7379,7 @@ if (!isInTurkey && pts.length >= 2) {
 
     if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
 
-        if (!pts0 || pts0.length === 0) return;
+        if (!points0 || points0.length === 0) return;
     }
 
     if (
@@ -7733,8 +7733,8 @@ setTimeout(function() {
     } else {
         if (!window.directionsPolylines[day]) {
    
-            if (pts.length >= 2) {
-                window.directionsPolylines[day] = pts;
+            if (points.length >= 2) {
+                window.directionsPolylines[day] = points;
             }
         }
     }
