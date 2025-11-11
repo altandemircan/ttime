@@ -6547,7 +6547,6 @@ window.handleImageError = async function(imgElement, placeName, index) {
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
-
     let hoverMarker = null;
 
     function onMove(e) {
@@ -6556,13 +6555,18 @@ function setupScaleBarInteraction(day, map) {
             ? (e.touches[0].clientX - rect.left)
             : (e.clientX - rect.left);
 
+        // Yüzde ilerleme
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-        // Hareketli marker sadece ARC (yay) ÜZERİNDEN ilerleyecek!
+        // ARC üzerinden ilerleyen marker
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
             const arcPts = window._curvedArcPointsByDay[day];
             if (arcPts && arcPts.length >= 2) {
-                const idx = Math.floor(percent * (arcPts.length - 1));
+                // DİKKAT: ARC noktası dizisi [start → end] olmalı
+                // Eğer marker ters uçta gidiyorsa arcPts.reverse() ile ters deneyebilirsin!
+                let idx = Math.round(percent * (arcPts.length - 1));
+                if (idx < 0) idx = 0;
+                if (idx >= arcPts.length) idx = arcPts.length - 1;
                 const [lng, lat] = arcPts[idx];
                 if (hoverMarker) {
                     hoverMarker.setLatLng([lat, lng]);
@@ -6578,7 +6582,6 @@ function setupScaleBarInteraction(day, map) {
                 }
             }
         }
-        // DİĞER TÜM KODLARI/SEGMENT/POLYLINE'ı SİL!
     }
 
     function onLeave() {
@@ -6593,7 +6596,6 @@ function setupScaleBarInteraction(day, map) {
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
-
 
 window.addNearbyPlaceToTrip = function(idx) {
     if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
