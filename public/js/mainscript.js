@@ -6095,6 +6095,8 @@ function attachClickNearbySearch(map, day, options = {}) {
   });
 }
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
+    const points = (typeof getDayPoints === "function") ? getDayPoints(day) : [];
+
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
   const categories = [
     "accommodation.hotel",
