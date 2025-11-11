@@ -5263,11 +5263,9 @@ function animateArcLine(map, lineId) {
   let dashOffset = 0;
   setInterval(() => {
     dashOffset += 0.3;
-    if (dashOffset > 8) dashOffset = 0;
     map.setPaintProperty(lineId, 'line-dasharray', [2, dashOffset]);
-  }, 70); // 70ms; 15 FPS gibi
+  }, 70);
 }
-
 // --- OPENMAPLIBRE3D FONKSİYONU ---
 function openMapLibre3D(expandedMap) {
   let mapDiv = expandedMap.getContainer();
