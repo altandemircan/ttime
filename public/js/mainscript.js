@@ -5261,6 +5261,8 @@ function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   return coords;
 }
 function addThreeJSArcLayer(map, points) {
+    console.log("addThreeJSArcLayer çalıştı", points);
+
   // Sadece Fly Mode/arc için
   if (!window.THREE) {
     console.error("Three.js not loaded!");
@@ -5304,14 +5306,9 @@ function addThreeJSArcLayer(map, points) {
         const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
         const curvePts = curve.getPoints(28);
 
-        const geometry = new THREE.BufferGeometry().setFromPoints(curvePts);
-        const material = new THREE.LineDashedMaterial({
-          color: 0x1976d2,
-          linewidth: 8,
-          scale: 1,
-          dashSize: 0.013,   // Daha sık ve kısa kesikli
-          gapSize: 0.01
-        });
+        const material = new THREE.LineBasicMaterial({ color: 0x1976d2 });
+arcLine = new THREE.Line(geometry, material);
+scene.add(arcLine);
         arcLine = new THREE.Line(geometry, material);
         arcLine.computeLineDistances(); // Kesikli çizgi için!
         scene.add(arcLine);
