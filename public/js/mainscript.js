@@ -5058,6 +5058,9 @@ function addNumberedMarkers(map, points) {
 }
 
 // Minik harita/küçük harita: markerları yay şeklinde, kesik çizgi ile birleştiren patchli fonksiyon! 
+// --- Güncelle: renderLeafletRoute'da yay arc noktalarını Flyers için kaydet ---
+// 1. Flyers modunda yay noktalarını birleştirip window'a kaydediyoruz
+// 2. ScaleBar etkileşiminde yayda markerı kaydırmak için patch'i ekliyoruz
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
@@ -5131,9 +5134,18 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // --- YAY ÇİZGİ PATCH'I ---
     const isFlyMode = !areAllPointsInTurkey(points);
 
+    // EKLE: Flyers modunda kavisli yay noktalarını kaydet
     if (isFlyMode && points.length > 1) {
-        // Sadece kavisli, kesik çizgiyle çiz!
+        // --- Flyers için kavisli yay noktaları birleştir ---
+        window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
+        let arcPoints = [];
         for (let i = 0; i < points.length - 1; i++) {
+            const start = [points[i].lng, points[i].lat];
+            const end = [points[i + 1].lng, points[i + 1].lat];
+            const curve = getCurvedArcCoords(start, end, 0.33, 32);
+            arcPoints = arcPoints.concat(curve);
+
+            // Haritada da kavisli çizgi görselini göster (bu zaten vardı)
             drawCurvedLine(map, points[i], points[i + 1], {
                 color: "#1976d2",
                 weight: 5,
@@ -5141,6 +5153,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 dashArray: "6,8"
             });
         }
+        window._curvedArcPointsByDay[day] = arcPoints;
     } else if (hasValidGeo && routeCoords.length > 1) {
         // Sadece Türkiye içi OSRM gerçek route varsa düz çizgi
         L.polyline(routeCoords, {
@@ -5243,6 +5256,7 @@ routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMi
   }
   return totalKm;
 }
+
 function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   // start & end: [lng, lat]
   // strength: kavis (pozitif/daha büyük = daha fazla yay)
@@ -5325,7 +5339,9 @@ function openMapLibre3D(expandedMap) {
       });
     } 
 
-    else if (isFlyMode && points.length > 1) {
+    else
+
+     if (isFlyMode && points.length > 1) {
   for (let i = 0; i < points.length - 1; i++) {
     const start = [points[i].lng, points[i].lat];
     const end = [points[i + 1].lng, points[i + 1].lat];
