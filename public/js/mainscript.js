@@ -7598,6 +7598,9 @@ try {
         window.lastRouteSummaries[containerId] = summary;
         console.log('[FLY MODE] summary:', summary);
 
+        // UI'ya verileri yansıt! — ekle!
+if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+
         // Geojson çizimi - route değil marker sıralaması
         const geojson = {
             type: "FeatureCollection",
