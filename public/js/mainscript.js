@@ -7588,37 +7588,45 @@ try {
         let SABIT_HIZ_KMH = 4;
         let durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600); // saniye
 
-        // Summary number olmalı, null asla olmamalı!
-        const summary = {
-            distance: Math.round(totalKm * 1000), // metre
-            duration: durationSec
-        };
 
-         // >>>>>> PATCH BAŞLANGIÇ >>>>>>
-        // FLY MODE'da elevation'ı API ile çekip iniş/çıkışı hesapla
-        let ascent = 0, descent = 0;
-        try {
-            const N = Math.max(20, Math.min(40, points.length));
-            let samples = [];
-            for (let i = 0; i < N; i++) {
-                const t = i / (N - 1);
-                const idx = Math.floor(t * (points.length - 1));
-                samples.push(points[idx]);
+
+
+        // Summary number olmalı, null asla olmamalı!
+        // FLY MODE (haversine ile route)
+const summary = {
+    distance: Math.round(totalKm * 1000), // metre
+    duration: durationSec
+};
+
+// PATCH: ascent/descent ekle!
+let ascent = 0, descent = 0;
+try {
+    const N = Math.max(12, Math.min(24, points.length));
+    let samples = [];
+    for (let i = 0; i < N; i++) {
+        const t = i / (N - 1);
+        const idx = Math.floor(t * (points.length - 1));
+        samples.push(points[idx]);
+    }
+    if (window.getElevationsForRoute) {
+        const elevations = await window.getElevationsForRoute(samples);
+        if (elevations && elevations.length === samples.length) {
+            for (let i = 1; i < elevations.length; i++) {
+                const diff = elevations[i] - elevations[i - 1];
+                if (diff > 0) ascent += diff;
+                else descent -= diff;
             }
-            if (window.getElevationsForRoute) {
-                const elevations = await window.getElevationsForRoute(samples);
-                if (elevations && elevations.length === samples.length) {
-                    for (let i = 1; i < elevations.length; i++) {
-                        const diff = elevations[i] - elevations[i - 1];
-                        if (diff > 0) ascent += diff;
-                        else descent -= diff;
-                    }
-                }
-            }
-        } catch (err) { /* hata olursa 0 bırak */ }
-        summary.ascent = Math.round(ascent);
-        summary.descent = Math.round(descent);
+        }
+    }
+} catch (err) {}
+summary.ascent = Math.round(ascent);
+summary.descent = Math.round(descent);
         // <<<<<< PATCH SONU <<<<<<<
+
+
+
+
+
 
         window.lastRouteSummaries = window.lastRouteSummaries || {};
         window.lastRouteSummaries[containerId] = summary;
