@@ -5297,17 +5297,21 @@ function setupScaleBarInteraction(day, map) {
             : (e.clientX - rect.left);
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-        // YAY üzerinde marker hareketi - TERS YÖN düzeltmesi
+        // YAY üzerinde marker hareketi - HATA AYIKLAMA
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
             let arcPts = window._curvedArcPointsByDay[day];
             
-            // TERS YÖN: Yüzdeyi tersine çevir
-            let reversedPercent = 1 - percent;
+            console.log("Arc points length:", arcPts.length);
+            console.log("Percent:", percent);
             
-            let idx = Math.round(reversedPercent * (arcPts.length - 1));
+            // Doğru indeksi hesapla
+            let idx = Math.round(percent * (arcPts.length - 1));
             idx = Math.max(0, Math.min(idx, arcPts.length - 1));
             
+            console.log("Calculated index:", idx);
+            
             const [lng, lat] = arcPts[idx];
+            console.log("Marker position:", lat, lng);
             
             if (hoverMarker) {
                 hoverMarker.setLatLng([lat, lng]);
@@ -5321,6 +5325,8 @@ function setupScaleBarInteraction(day, map) {
                     zIndexOffset: 9999
                 }).addTo(map);
             }
+        } else {
+            console.log("No arc points found for day:", day);
         }
     }
     
@@ -5336,25 +5342,68 @@ function setupScaleBarInteraction(day, map) {
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
-
-// Aynı yay algoritmasını kullandığından emin olmak için güncellenmiş fonksiyon
-function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
-  const sx = start[0], sy = start[1];
-  const ex = end[0], ey = end[1];
-  
-  // Kontrol noktası hesaplama - Leaflet'tekiyle aynı olmalı
-  const mx = (sx + ex) / 2 + strength * (ey - sy);
-  const my = (sy + ey) / 2 - strength * (ex - sx);
-  
-  const coords = [];
-  for (let t = 0; t <= 1; t += 1/segments) {
-    const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
-    const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
-    coords.push([x, y]);
-  }
-  return coords;
+// Leaflet'te kullandığınız yay algoritmasıyla TAMAMEN AYNI olan fonksiyon:
+function getCurvedArcCoords(start, end, strength = 0.5, segments = 30) {
+    // start & end: [lng, lat] formatında olmalı
+    const sx = start[0], sy = start[1];
+    const ex = end[0], ey = end[1];
+    
+    // Orta nokta ve kontrol noktası
+    const midX = (sx + ex) / 2;
+    const midY = (sy + ey) / 2;
+    
+    // Kontrol noktası - yönü değiştirmek için işaretleri ayarlayın
+    const controlX = midX + strength * (ey - sy);
+    const controlY = midY - strength * (ex - sx);
+    
+    const coords = [];
+    for (let t = 0; t <= 1; t += 1/segments) {
+        // Quadratic Bezier formülü
+        const x = Math.pow(1 - t, 2) * sx + 2 * (1 - t) * t * controlX + Math.pow(t, 2) * ex;
+        const y = Math.pow(1 - t, 2) * sy + 2 * (1 - t) * t * controlY + Math.pow(t, 2) * ey;
+        coords.push([x, y]);
+    }
+    
+    // Son noktayı ekle
+    coords.push([ex, ey]);
+    
+    return coords;
 }
-
+// Yay noktalarını kaydetmek için yardımcı fonksiyon
+function saveArcPointsForDay(day, points) {
+    if (!window._curvedArcPointsByDay) {
+        window._curvedArcPointsByDay = {};
+    }
+    window._curvedArcPointsByDay[day] = points;
+}
+// TEST FONKSİYONU - Yayı görsel olarak kontrol etmek için
+function testArcVisualization(day, map) {
+    const arcPts = window._curvedArcPointsByDay[day];
+    if (!arcPts) return;
+    
+    // Yayı görsel olarak çiz
+    const polyline = L.polyline(arcPts.map(pt => [pt[1], pt[0]]), {
+        color: 'red',
+        weight: 3,
+        opacity: 0.7,
+        dashArray: '5, 5'
+    }).addTo(map);
+    
+    // Başlangıç ve bitiş noktalarını işaretle
+    L.circleMarker([arcPts[0][1], arcPts[0][0]], {
+        radius: 8,
+        color: 'green',
+        fillColor: 'green'
+    }).addTo(map).bindPopup('START');
+    
+    L.circleMarker([arcPts[arcPts.length-1][1], arcPts[arcPts.length-1][0]], {
+        radius: 8,
+        color: 'blue',
+        fillColor: 'blue'
+    }).addTo(map).bindPopup('END');
+    
+    console.log("Test arc drawn - START (green) to END (blue)");
+}
 // Alternatif çözüm: Yay noktalarını ters çevir
 function getReversedCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
     const originalCoords = getCurvedArcCoords(start, end, strength, segments);
