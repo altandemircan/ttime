@@ -5261,7 +5261,7 @@ function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   return coords;
 }
 function addThreeJSArcLayer(map, points) {
-    console.log("addThreeJSArcLayer çalıştı", points);
+  console.log("addThreeJSArcLayer çalıştı", points);
 
   // Sadece Fly Mode/arc için
   if (!window.THREE) {
@@ -5272,55 +5272,47 @@ function addThreeJSArcLayer(map, points) {
   if (!Array.isArray(points) || points.length < 2) return;
 
   // Three.js scene setup
-  let renderer, camera, scene, arcLine;
+  let renderer, camera, scene;
 
   const threeLayer = {
     id: 'threejs-fly-arc',
     type: 'custom',
     renderingMode: '3d',
     onAdd: function(map, gl) {
-      // Three.js scene and camera
       renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: true });
       renderer.autoClear = false;
       scene = new THREE.Scene();
       camera = new THREE.Camera();
 
-      // Kuş uçuşu rota: Noktaları 'mercatorProj' ile uygun şekilde projekte et
       const mercatorProj = (lng, lat, z = 0) => {
-        // maplibregl.MercatorCoordinate.
-        // Z: 0 → z*scale (ör: 500km=0.5, 1000m=0.001)
         const mc = maplibregl.MercatorCoordinate.fromLngLat({ lng, lat }, z);
         return new THREE.Vector3(mc.x, mc.y, mc.z);
       };
 
-      // ARC (her iki marker için midpoint ve yükseklik)
       for (let i = 0; i < points.length - 1; i++) {
         const start = mercatorProj(points[i].lng, points[i].lat, 0);
         const end = mercatorProj(points[i + 1].lng, points[i + 1].lat, 0);
-        // Midpoint için yükseklik: Z=0.005 → ~yüksekte arc!
         const midLNG = (points[i].lng + points[i + 1].lng) / 2;
         const midLAT = (points[i].lat + points[i + 1].lat) / 2;
-        const mid = mercatorProj(midLNG, midLAT, 0.005 + Math.random()*0.002);
+        const mid = mercatorProj(midLNG, midLAT, 0.004); // Yüksekliği cüzi tut: 0.004 iyi
 
-        // 20 noktada Quadratic Bezier interpolasyonu
         const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
         const curvePts = curve.getPoints(28);
 
-        const material = new THREE.LineBasicMaterial({ color: 0x1976d2 });
-arcLine = new THREE.Line(geometry, material);
-scene.add(arcLine);
-        arcLine = new THREE.Line(geometry, material);
-        arcLine.computeLineDistances(); // Kesikli çizgi için!
+        // --- ŞU SATIRI EKLEMELİSİN! ---
+        const geometry = new THREE.BufferGeometry().setFromPoints(curvePts);
+        const material = new THREE.LineBasicMaterial({ color: 0x1976d2, transparent: true, opacity: 0.94 });
+
+        // dashed istersen THREE.LineDashedMaterial ve .computeLineDistances() ekleyebilirsin
+        const arcLine = new THREE.Line(geometry, material);
         scene.add(arcLine);
       }
 
       // Işık ve kamera yükseklikleriyle efekt verilebilir
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-      scene.add(ambientLight);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
     },
 
     render: function(gl, matrix) {
-      // MapLibreGL kamera matrisini Three.js kameraya aktar
       camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
       renderer.state.reset();
       renderer.render(scene, camera);
