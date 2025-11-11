@@ -5113,12 +5113,16 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     );
     if (hasValidGeo) {
         routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    } else if (points.length > 1) {
-        // Eğer rota üretilemedi ise noktalar sırasıyla gezilecek
-        routeCoords = points
-            .filter(p => isFinite(p.lat) && isFinite(p.lng))
-            .map(p => [p.lat, p.lng]);
+    } else if (!hasValidGeo && points.length > 1) {
+    for (let i = 0; i < points.length - 1; i++) {
+        drawCurvedLine(map, points[i], points[i + 1], {
+            color: "#1976d2",
+            weight: 5,
+            opacity: 0.85,
+            dashArray: "6,8"
+        });
     }
+}
 
     const map = L.map(containerId, { 
         scrollWheelZoom: true,
@@ -5142,6 +5146,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             interactive: true,
             dashArray: null
         }).addTo(map);
+        
     } else if (!hasValidGeo && points.length > 1) {
         // --- Kavisli/Yaylı çizgi çek ---
         for (let i = 0; i < points.length - 1; i++) {
