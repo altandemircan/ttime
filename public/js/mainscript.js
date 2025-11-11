@@ -292,14 +292,13 @@ function fitExpandedMapToRoute(day) {
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
 
-    // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
       expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
-      expObj.expandedMap.setView([47.5, 12.5], 5); // Avrupa ve çevresi
+      expObj.expandedMap.setView([41.9, 12.5], 6); // Avrupaya zoom!
     }
   }
 }
