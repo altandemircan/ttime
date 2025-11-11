@@ -6554,43 +6554,39 @@ function setupScaleBarInteraction(day, map) {
         let x = (e.touches && e.touches.length)
             ? (e.touches[0].clientX - rect.left)
             : (e.clientX - rect.left);
-
-        // Yüzde ilerleme
         let percent = Math.max(0, Math.min(x / rect.width, 1));
-
-        // ARC üzerinden ilerleyen marker
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
-            const arcPts = window._curvedArcPointsByDay[day];
-            if (arcPts && arcPts.length >= 2) {
-                // DİKKAT: ARC noktası dizisi [start → end] olmalı
-                // Eğer marker ters uçta gidiyorsa arcPts.reverse() ile ters deneyebilirsin!
-                let idx = Math.round(percent * (arcPts.length - 1));
-                if (idx < 0) idx = 0;
-                if (idx >= arcPts.length) idx = arcPts.length - 1;
-                const [lng, lat] = arcPts[idx];
-                if (hoverMarker) {
-                    hoverMarker.setLatLng([lat, lng]);
-                } else {
-                    hoverMarker = L.circleMarker([lat, lng], {
-                        radius: 10,
-                        color: "#fff",
-                        fillColor: "#8a4af3",
-                        fillOpacity: 0.9,
-                        weight: 3,
-                        zIndexOffset: 9999
-                    }).addTo(map);
-                }
+            let arcPts = window._curvedArcPointsByDay[day];
+            // Hangi uçtan başlaması gerektiğini test et:
+            // Bar'ın başında marker ARC'nin başında; sonunda ARC'nin sonunda olmalı.
+            // Doğru değilse diziyi tersine çevir:
+            // YAY testleri için debug:
+            // console.log("ARC START:", arcPts[0], "END:", arcPts[arcPts.length-1]);
+            let idx = Math.round(percent * (arcPts.length - 1));
+            idx = Math.max(0, Math.min(idx, arcPts.length - 1));
+            // Genelde ARC noktaları [lng,lat] (yay).
+            // Leaflet için [lat, lng] formatı gerekir.
+            const [lng, lat] = arcPts[idx];
+            if (hoverMarker) {
+                hoverMarker.setLatLng([lat, lng]);
+            } else {
+                hoverMarker = L.circleMarker([lat, lng], {
+                    radius: 10,
+                    color: "#fff",
+                    fillColor: "#8a4af3",
+                    fillOpacity: 0.9,
+                    weight: 3,
+                    zIndexOffset: 9999
+                }).addTo(map);
             }
         }
     }
-
     function onLeave() {
         if (hoverMarker) {
             map.removeLayer(hoverMarker);
             hoverMarker = null;
         }
     }
-
     scaleBar.addEventListener("mousemove", onMove);
     scaleBar.addEventListener("mouseleave", onLeave);
     scaleBar.addEventListener("touchmove", onMove);
