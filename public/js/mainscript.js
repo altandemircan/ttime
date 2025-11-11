@@ -5260,6 +5260,7 @@ function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   }
   return coords;
 }
+
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -5343,7 +5344,7 @@ function openMapLibre3D(expandedMap) {
         'line-color': '#1976d2',
         'line-width': 13,
         'line-opacity': 0.96,
-        'line-dasharray': [2, 7]
+        'line-dasharray': [1, 2]
       }
     });
   }
