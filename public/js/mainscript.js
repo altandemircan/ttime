@@ -5140,20 +5140,20 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
         let arcPoints = [];
         for (let i = 0; i < points.length - 1; i++) {
-  const start = [points[i].lng, points[i].lat];
-  const end = [points[i + 1].lng, points[i + 1].lat];
-  const curve = getCurvedArcCoords(start, end, 0.33, 32);
-  // kontrol: curve[0] gerçekten start noktasına mı çok yakın?
-  const eps = 1e-5;
-  const dStart = Math.abs(curve[0][0] - start[0]) + Math.abs(curve[0][1] - start[1]);
-  const dEnd = Math.abs(curve[curve.length-1][0] - end[0]) + Math.abs(curve[curve.length-1][1] - end[1]);
-  let realCurve = curve;
-  if (dStart > dEnd) {
-    realCurve = curve.slice().reverse(); // ters çevir
-  }
-  arcPoints = arcPoints.concat(realCurve);
-}
-window._curvedArcPointsByDay[day] = arcPoints;
+            const start = [points[i].lng, points[i].lat];
+            const end = [points[i + 1].lng, points[i + 1].lat];
+            const curve = getCurvedArcCoords(start, end, 0.33, 32);
+            arcPoints = arcPoints.concat(curve);
+
+            // Haritada da kavisli çizgi görselini göster (bu zaten vardı)
+            drawCurvedLine(map, points[i], points[i + 1], {
+                color: "#1976d2",
+                weight: 5,
+                opacity: 0.85,
+                dashArray: "6,8"
+            });
+        }
+        window._curvedArcPointsByDay[day] = arcPoints;
     } else if (hasValidGeo && routeCoords.length > 1) {
         // Sadece Türkiye içi OSRM gerçek route varsa düz çizgi
         L.polyline(routeCoords, {
