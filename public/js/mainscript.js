@@ -7596,16 +7596,24 @@ try {
 
 window.lastRouteSummaries = window.lastRouteSummaries || {};
 window.lastRouteSummaries[containerId] = summary;
-console.log('[FLY MODE] summary:', summary);
 
-setTimeout(() => {
-  const statDistance = document.querySelector('#map-bottom-controls-day1 .stat-distance .badge');
-  const statDuration = document.querySelector('#map-bottom-controls-day1 .stat-duration .badge');
-  if (statDistance && summary.distance) {
-    statDistance.textContent = (summary.distance / 1000).toFixed(2) + " km";
-  }
-  if (statDuration && summary.duration) {
-    statDuration.textContent = Math.round(summary.duration / 60) + " dk";
+// FLY MODE için: badge'lara haversine ile hesaplanan mesafe ve süreyi YAZDIR!
+setTimeout(function() {
+  try {
+    const statDistance = document.querySelector(`#map-bottom-controls-day${day} .stat-distance .badge`);
+    const statDuration = document.querySelector(`#map-bottom-controls-day${day} .stat-duration .badge`);
+    if (statDistance && typeof summary.distance === 'number' && summary.distance > 0) {
+      statDistance.textContent = (summary.distance / 1000).toFixed(2) + " km";
+    }
+    if (statDuration && typeof summary.duration === 'number' && summary.duration > 0) {
+      statDuration.textContent = Math.round(summary.duration / 60) + " dk";
+    }
+    const statAscent = document.querySelector(`#map-bottom-controls-day${day} .stat-ascent .badge`);
+    const statDescent = document.querySelector(`#map-bottom-controls-day${day} .stat-descent .badge`);
+    if (statAscent) statAscent.textContent = "0 m";
+    if (statDescent) statDescent.textContent = "0 m";
+  } catch(e){
+    console.log("fly mode badge güncelleme hatası", e);
   }
 }, 300);
 
