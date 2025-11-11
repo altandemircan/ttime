@@ -7594,16 +7594,19 @@ try {
             duration: durationSec
         };
 
-        window.lastRouteSummaries = window.lastRouteSummaries || {};
-        window.lastRouteSummaries[containerId] = summary;
-        console.log('[FLY MODE] summary:', summary);
+window.lastRouteSummaries = window.lastRouteSummaries || {};
+window.lastRouteSummaries[containerId] = summary;
+console.log('[FLY MODE] summary:', summary);
 
-        // UI'ya verileri yansıt! — ekle!
-if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-console.log("özet güncelleme başlatıldı", day);
 setTimeout(() => {
-   if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-   console.log("özet güncelleme tamamlandı", day);
+  const statDistance = document.querySelector('#map-bottom-controls-day1 .stat-distance .badge');
+  const statDuration = document.querySelector('#map-bottom-controls-day1 .stat-duration .badge');
+  if (statDistance && summary.distance) {
+    statDistance.textContent = (summary.distance / 1000).toFixed(2) + " km";
+  }
+  if (statDuration && summary.duration) {
+    statDuration.textContent = Math.round(summary.duration / 60) + " dk";
+  }
 }, 300);
 
         // Geojson çizimi - route değil marker sıralaması
