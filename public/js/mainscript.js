@@ -5333,7 +5333,7 @@ function openMapLibre3D(expandedMap) {
                'line-color': '#1976d2',
             'line-width': 13,          // HATIRI KALIN
             'line-opacity': 0.96,
-            'line-dasharray': [2, 2]  // SIK, kısa kesikli!
+            'line-dasharray': [1, 1]  // SIK, kısa kesikli!
           }
         });
       }
