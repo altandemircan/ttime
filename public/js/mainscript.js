@@ -298,8 +298,8 @@ function fitExpandedMapToRoute(day) {
       expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
-    }   else {
-      expObj.expandedmap.setView([47.5, 12.5], 5); // Avrupa ve çevresi
+    } else {
+      expObj.expandedMap.setView([47.5, 12.5], 5); // Avrupa ve çevresi
     }
   }
 }
@@ -3138,6 +3138,10 @@ function initEmptyDayMap(day) {
   if (!el.style.height) el.style.height = '285px';
 
   // KÜÇÜK HARİTA
+  // ---- PATCH: Avrupa-İtalya merkezli açılış koordinatı ----
+  const EU_CENTER = [41.9, 12.5]; // Roma (İtalya'nın göbeği)
+  const EU_ZOOM   = 6;            // Avrupa genişliğinde uygun zoom
+
   const map = L.map(containerId, {
     scrollWheelZoom: true,
     fadeAnimation: true,
@@ -3149,13 +3153,13 @@ function initEmptyDayMap(day) {
     wheelPxPerZoomLevel: 120,
     inertia: true,
     easeLinearity: 0.2
-  }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+  }).setView(EU_CENTER, EU_ZOOM); // Patch burada!
   if (!map._initialView) {
-  map._initialView = {
-    center: map.getCenter(),
-    zoom: map.getZoom()
-  };
-}
+    map._initialView = {
+      center: map.getCenter(),
+      zoom: map.getZoom()
+    };
+  }
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
