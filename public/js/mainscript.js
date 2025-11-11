@@ -5325,11 +5325,14 @@ function openMapLibre3D(expandedMap) {
       });
     } 
 
-   else if (isFlyMode && points.length > 1) {
+    else if (isFlyMode && points.length > 1) {
   for (let i = 0; i < points.length - 1; i++) {
     const start = [points[i].lng, points[i].lat];
     const end = [points[i + 1].lng, points[i + 1].lat];
+    // Kavis güç ve segment ayarıyla pürüzsüz (0.33/22 önerilir)
     const curveCoords = getCurvedArcCoords(start, end, 0.33, 22);
+
+    // GeoJSON source ekle
     window._maplibre3DInstance.addSource(`flyroute-${i}`, {
       type: 'geojson',
       data: {
@@ -5337,31 +5340,26 @@ function openMapLibre3D(expandedMap) {
         geometry: { type: 'LineString', coordinates: curveCoords }
       }
     });
-    // Kavisli çizgi
+
+    // LineLayer ile çiz - dash, renk, opacity ile görsel efekt!
     window._maplibre3DInstance.addLayer({
       id: `flyroute-line-${i}`,
       type: 'line',
       source: `flyroute-${i}`,
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
       paint: {
-        'line-color': '#1976d2',
-        'line-width': 13,
-        'line-opacity': 0.96,
-        'line-dasharray': [2, 6]
+        'line-color': '#1976d2',         // Mavi
+        'line-width': 13,                // Kalınlık
+        'line-opacity': 0.96,            // Opaklık
+        'line-dasharray': [1, 2]         // Kesikli çizgi efekti
       }
     });
-    animateArcLine(window._maplibre3DInstance, `flyroute-line-${i}`);
-
-    // Ok geometry hesabı
-    const midpoint = curveCoords[Math.floor(curveCoords.length/2)];
-    const dx = curveCoords[curveCoords.length-1][0] - curveCoords[curveCoords.length-2][0];
-    const dy = curveCoords[curveCoords.length-1][1] - curveCoords[curveCoords.length-2][1];
-    const rotation = Math.atan2(dy, dx) * 180 / Math.PI;
-    // Arrow GeoJSON'a ekle
-    // (...arrowGeojson push kodu buraya)
   }
-  // Okları ekleyen geojson/source/layer kodunu buraya koy.
 }
+
 
     // Markerları ekle (sıra numaralı)
     points.forEach((p, idx) => {
