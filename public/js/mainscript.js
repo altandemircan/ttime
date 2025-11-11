@@ -4517,8 +4517,8 @@ function updateExpandedMap(expandedMap, day) {
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
-        expandedMap.setView([0, 0], 2, { animate: true });
-    }
+    expandedMap.setView([41.9, 12.5], 6, { animate: true });
+}
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
@@ -5250,8 +5250,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     } else if (points.length === 1) {
         map.setView([points[0].lat, points[0].lng], 14, { animate: true });
     } else {
-        map.setView([0, 0], 2, { animate: true });
-    }
+    map.setView([41.9, 12.5], 6, { animate: true });
+}
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
