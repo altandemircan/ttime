@@ -6595,7 +6595,6 @@ function setupScaleBarInteraction(day, map) {
 }
 
 
-
 window.addNearbyPlaceToTrip = function(idx) {
     if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
     const f = window._lastNearbyPlaces[idx];
