@@ -7190,7 +7190,7 @@ if (imported) {
 
 async function renderRouteForDay(day) {
 const containerId = `route-map-day${day}`;
-const pts = getDayPoints(day);
+const points = getDayPoints(day);
 const isInTurkey = areAllPointsInTurkey(pts);
 // BURADAN SONRA FLY MODE KONTROLU
 
@@ -7378,7 +7378,7 @@ if (!isInTurkey && pts.length >= 2) {
     }
 
     if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
-        const pts0 = getDayPoints(day);
+
         if (!pts0 || pts0.length === 0) return;
     }
 
@@ -7732,7 +7732,7 @@ setTimeout(function() {
         window.directionsPolylines[day] = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
     } else {
         if (!window.directionsPolylines[day]) {
-            const pts = getDayPoints(day);
+   
             if (pts.length >= 2) {
                 window.directionsPolylines[day] = pts;
             }
