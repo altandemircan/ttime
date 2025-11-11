@@ -6551,45 +6551,50 @@ function setupScaleBarInteraction(day, expandedMap) {
     let hoverMarker = null;
     let fillPolygon = null;
 
-    // Tüm alan için yay ve polyline noktalarını topla!
-    // Polyline noktaları (route)
-    function getRoutePoints() {
+    function getPartialArcPoints(percent) {
+        const arcPts = window._curvedArcPointsByDay?.[day];
+        if (!arcPts || arcPts.length < 2) return [];
+        const n = Math.max(1, Math.floor(percent * (arcPts.length - 1)));
+        return arcPts.slice(0, n + 1).map(([lng, lat]) => [lat, lng]);
+    }
+
+    function getPartialRoutePoints(percent) {
         const containerId = `route-map-day${day}`;
         const geojson = window.lastRouteGeojsons?.[containerId];
         if (!geojson?.features?.[0]?.geometry?.coordinates) return [];
-        return geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]); // [lat,lng]
-    }
-    // Yay noktaları (arc)
-    function getArcPoints() {
-        const arcPts = window._curvedArcPointsByDay?.[day];
-        if (!arcPts || arcPts.length < 2) return [];
-        return arcPts.map(([lng, lat]) => [lat, lng]);
+        const coords = geojson.features[0].geometry.coordinates;
+        let cumDist = [0];
+        for (let i = 1; i < coords.length; i++) {
+            cumDist[i] = cumDist[i - 1] + haversine(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+        }
+        const total = cumDist[cumDist.length - 1] || 1;
+        const target = percent * total;
+        let idx = 0;
+        while (cumDist[idx] < target && idx < cumDist.length - 1) idx++;
+        // Parçayı al: rotanın başından % kadar noktaya kadar
+        return coords.slice(0, idx + 1).map(c => [c[1], c[0]]);
     }
 
     function onMove(e) {
-        // --- Mor marker ve alan dolgu arasındaki tüm yay/güzergah noktalarını topla ---
-        const arcPoints = getArcPoints();
-        const routePoints = getRoutePoints();
-        if (arcPoints.length < 2 || routePoints.length < 2) return;
-
-        // Alan poligonunun köşeleri:
-        // 1. Yayın tüm noktalarını önden diziye ekle
-        // 2. Polyline noktalarının tamamını tersten (sondan başa) ekle
-        // 3. Kapat: [yay[0], polyline[last]] arası alan
-        const areaCoords = [...arcPoints, ...routePoints.slice().reverse()];
-        // Polygon kapattığında final noktaya (arc başlangıcı) geri dönmüş olursun
-
-        // Mor marker yayda ilerlemeye devam eder (aynen önceki gibi):
         const rect = scaleBar.getBoundingClientRect();
         let x = (e.touches && e.touches.length)
             ? (e.touches[0].clientX - rect.left)
             : (e.clientX - rect.left);
-        let percent = Math.max(0, Math.min(x / rect.width, 1));
-        const idx = Math.floor(percent * (arcPoints.length - 1));
-        const [markerLat, markerLng] = arcPoints[idx];
 
-        if (hoverMarker) hoverMarker.setLatLng([markerLat, markerLng]);
-        else hoverMarker = L.circleMarker([markerLat, markerLng], {
+        let percent = Math.max(0, Math.min(x / rect.width, 1));
+
+        // Parçalar:
+        const arcPoints = getPartialArcPoints(percent);
+        const routePoints = getPartialRoutePoints(percent);
+
+        if (arcPoints.length >= 2 && routePoints.length >= 2) {
+            // Polygon köşeleri: yay sonra polyline (ters) ile kapat
+            const areaCoords = [...arcPoints, ...routePoints.slice().reverse()];
+
+            // Mor marker yayda:
+            const [markerLat, markerLng] = arcPoints[arcPoints.length - 1];
+            if (hoverMarker) hoverMarker.setLatLng([markerLat, markerLng]);
+            else hoverMarker = L.circleMarker([markerLat, markerLng], {
                 radius: 10,
                 color: "#fff",
                 fillColor: "#8a4af3",
@@ -6598,16 +6603,18 @@ function setupScaleBarInteraction(day, expandedMap) {
                 zIndexOffset: 9999
             }).addTo(expandedMap);
 
-        // Önceki poligon alanı sil, sonra yeni alanı ekle:
-        if (fillPolygon) { expandedMap.removeLayer(fillPolygon); fillPolygon = null; }
-        fillPolygon = L.polygon(areaCoords, {
-            color: "#8a4af3",           // kenar mor
-            fillColor: "#8a4af3",       // dolgu mor
-            fillOpacity: 0.13,          // transparan (0.05-0.18 arası önerilir)
-            weight: 2,
-            interactive: false,
-            pane: "shadowPane"
-        }).addTo(expandedMap);
+            // Önceki alanı sil, yeni alanı ekle
+            if (fillPolygon) { expandedMap.removeLayer(fillPolygon); fillPolygon = null; }
+            fillPolygon = L.polygon(areaCoords, {
+                color: "#8a4af3",
+                fillColor: "#8a4af3",
+                fillOpacity: 0.14,
+                weight: 1,
+                dashArray: "8,8",
+                interactive: false,
+                pane: "shadowPane"
+            }).addTo(expandedMap);
+        }
     }
 
     function onLeave() {
