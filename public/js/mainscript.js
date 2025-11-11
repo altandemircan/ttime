@@ -5260,7 +5260,79 @@ function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   }
   return coords;
 }
+function addThreeJSArcLayer(map, points) {
+  // Sadece Fly Mode/arc için
+  if (!window.THREE) {
+    console.error("Three.js not loaded!");
+    return;
+  }
+  // Sadece 2+ marker varsa
+  if (!Array.isArray(points) || points.length < 2) return;
 
+  // Three.js scene setup
+  let renderer, camera, scene, arcLine;
+
+  const threeLayer = {
+    id: 'threejs-fly-arc',
+    type: 'custom',
+    renderingMode: '3d',
+    onAdd: function(map, gl) {
+      // Three.js scene and camera
+      renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: true });
+      renderer.autoClear = false;
+      scene = new THREE.Scene();
+      camera = new THREE.Camera();
+
+      // Kuş uçuşu rota: Noktaları 'mercatorProj' ile uygun şekilde projekte et
+      const mercatorProj = (lng, lat, z = 0) => {
+        // maplibregl.MercatorCoordinate.
+        // Z: 0 → z*scale (ör: 500km=0.5, 1000m=0.001)
+        const mc = maplibregl.MercatorCoordinate.fromLngLat({ lng, lat }, z);
+        return new THREE.Vector3(mc.x, mc.y, mc.z);
+      };
+
+      // ARC (her iki marker için midpoint ve yükseklik)
+      for (let i = 0; i < points.length - 1; i++) {
+        const start = mercatorProj(points[i].lng, points[i].lat, 0);
+        const end = mercatorProj(points[i + 1].lng, points[i + 1].lat, 0);
+        // Midpoint için yükseklik: Z=0.005 → ~yüksekte arc!
+        const midLNG = (points[i].lng + points[i + 1].lng) / 2;
+        const midLAT = (points[i].lat + points[i + 1].lat) / 2;
+        const mid = mercatorProj(midLNG, midLAT, 0.005 + Math.random()*0.002);
+
+        // 20 noktada Quadratic Bezier interpolasyonu
+        const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+        const curvePts = curve.getPoints(28);
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(curvePts);
+        const material = new THREE.LineDashedMaterial({
+          color: 0x1976d2,
+          linewidth: 8,
+          scale: 1,
+          dashSize: 0.013,   // Daha sık ve kısa kesikli
+          gapSize: 0.01
+        });
+        arcLine = new THREE.Line(geometry, material);
+        arcLine.computeLineDistances(); // Kesikli çizgi için!
+        scene.add(arcLine);
+      }
+
+      // Işık ve kamera yükseklikleriyle efekt verilebilir
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambientLight);
+    },
+
+    render: function(gl, matrix) {
+      // MapLibreGL kamera matrisini Three.js kameraya aktar
+      camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+      renderer.state.reset();
+      renderer.render(scene, camera);
+      map.triggerRepaint();
+    }
+  };
+
+  map.addLayer(threeLayer);
+}
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -5323,30 +5395,15 @@ function openMapLibre3D(expandedMap) {
           'line-opacity': 0.92        // Aynı şeffaflık!
         }
       });
-    } else if (isFlyMode && points.length > 1) {
+    } 
+
+    else if (isFlyMode && points.length > 1) {
   for (let i = 0; i < points.length - 1; i++) {
     const start = [points[i].lng, points[i].lat];
     const end = [points[i + 1].lng, points[i + 1].lat];
     const curveCoords = getCurvedArcCoords(start, end, 0.33, 22); // kavis+segments istediğin kadar!
-    window._maplibre3DInstance.addSource(`flyroute-${i}`, {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        geometry: { type: 'LineString', coordinates: curveCoords }
-      }
-    });
-    window._maplibre3DInstance.addLayer({
-      id: `flyroute-line-${i}`,
-      type: 'line',
-      source: `flyroute-${i}`,
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: {
-        'line-color': '#1976d2',
-        'line-width': 13,
-        'line-opacity': 0.96,
-        'line-dasharray': [1, 2]
-      }
-    });
+    window._maplibre3DInstance.addSource(...)
+    window._maplibre3DInstance.addLayer(...)
   }
 }
 
