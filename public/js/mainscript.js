@@ -5332,17 +5332,7 @@ function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
     }
     return coords;
 }
-function updateHoverMarkerOnArc(day, percent, map, hoverMarker) {
-  const arcPts = window._curvedArcPointsByDay[day];
-  if (!arcPts || arcPts.length < 2) return;
-  const targetIdx = Math.floor(percent * (arcPts.length - 1));
-  const [lng, lat] = arcPts[targetIdx];
-  if (hoverMarker) hoverMarker.setLatLng([lat, lng]);
-  else hoverMarker = L.circleMarker([lat, lng], {
-      radius: 10, color: "#fff", fillColor: "#8a4af3", fillOpacity: 0.9, weight: 3, zIndexOffset: 9999
-    }).addTo(map);
-  return hoverMarker;
-}
+
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
@@ -5437,7 +5427,8 @@ function saveArcPointsForDay(day, points) {
 // TEST FONKSİYONU - Yayı görsel olarak kontrol etmek için
 function testArcVisualization(day, map) {
     const arcPts = window._curvedArcPointsByDay[day];
-    if (!arcPts) return;
+    // PATCH: Null/boş/dizi check!
+    if (!arcPts || !Array.isArray(arcPts) || arcPts.length < 2) return;
     
     // Yayı görsel olarak çiz
     const polyline = L.polyline(arcPts.map(pt => [pt[1], pt[0]]), {
