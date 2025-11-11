@@ -5395,16 +5395,8 @@ function openMapLibre3D(expandedMap) {
           'line-opacity': 0.92        // Aynı şeffaflık!
         }
       });
-    } 
-
-    else if (isFlyMode && points.length > 1) {
-  for (let i = 0; i < points.length - 1; i++) {
-    const start = [points[i].lng, points[i].lat];
-    const end = [points[i + 1].lng, points[i + 1].lat];
-    const curveCoords = getCurvedArcCoords(start, end, 0.33, 22); // kavis+segments istediğin kadar!
-    window._maplibre3DInstance.addSource(...)
-    window._maplibre3DInstance.addLayer(...)
-  }
+    } else if (isFlyMode && points.length > 1) {
+  addThreeJSArcLayer(window._maplibre3DInstance, points);
 }
 
     // Markerları ekle (sıra numaralı)
