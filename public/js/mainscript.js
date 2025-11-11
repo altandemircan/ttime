@@ -6581,63 +6581,63 @@ if (typeof updateCart === "function") updateCart();
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     // Önceki popup'ı kapat
     closeNearbyPopup();
-    
+
+    // Haritanın noktalarını en başta çek!
+    const points = (typeof getDayPoints === "function") ? getDayPoints(window.currentDay || 1) : [];
+
     // Popup container oluştur
     const popupContainer = document.createElement('div');
     popupContainer.id = 'custom-nearby-popup';
-    
+
     // Close button HTML
     const closeButtonHtml = showCloseButton ? `
         <button onclick="closeNearbyPopup()" 
                 class="nearby-popup-close-btn"
                title="Close">×</button>
     ` : '';
-    
+
     popupContainer.innerHTML = `
         ${closeButtonHtml}
         <div class="nearby-popup-content">
             ${content}
         </div>
     `;
-    
+
     // Body'ye ekle
     document.body.appendChild(popupContainer);
-    
+
     // Global referansı sakla
     window._currentNearbyPopupElement = popupContainer;
-    
+
     // Marker ekle
-   // --- Pulsing marker ekle --- //
-if (window._nearbyMarker) {
-  try { map.removeLayer(window._nearbyMarker); } catch(_){}
-  window._nearbyMarker = null;
-}
-if (window._nearbyPulseMarker) {
-  try { map.removeLayer(window._nearbyPulseMarker); } catch(_){}
-  window._nearbyPulseMarker = null;
-}
+    // --- Pulsing marker ekle --- //
+    if (window._nearbyMarker) {
+      try { map.removeLayer(window._nearbyMarker); } catch(_){}
+      window._nearbyMarker = null;
+    }
+    if (window._nearbyPulseMarker) {
+      try { map.removeLayer(window._nearbyPulseMarker); } catch(_){}
+      window._nearbyPulseMarker = null;
+    }
 
-// DivIcon HTML
-const pulseHtml = `
-  <div class="nearby-pulse-marker">
-    <div class="nearby-pulse-core"></div>
-    <div class="nearby-pulse-ring"></div>
-    <div class="nearby-pulse-ring2"></div>
-  </div>
-`;
+    // DivIcon HTML
+    const pulseHtml = `
+      <div class="nearby-pulse-marker">
+        <div class="nearby-pulse-core"></div>
+        <div class="nearby-pulse-ring"></div>
+        <div class="nearby-pulse-ring2"></div>
+      </div>
+    `;
 
-const pulseIcon = L.divIcon({
-  html: pulseHtml,
-  className: 'nearby-pulse-icon-wrapper', // boş class (Leaflet default stil katmasın)
-  iconSize: [18,18],
-  iconAnchor: [9,9]
-});
+    const pulseIcon = L.divIcon({
+      html: pulseHtml,
+      className: 'nearby-pulse-icon-wrapper', // boş class (Leaflet default stil katmasın)
+      iconSize: [18,18],
+      iconAnchor: [9,9]
+    });
 
-if (!points || points.length < 2) return;
-window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
-const points = (typeof getDayPoints === "function") ? getDayPoints(window.currentDay || 1) : [];
-
-
+    if (!points || points.length < 2) return;
+    window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
 }
 
 // Popup kapatma fonksiyonu
