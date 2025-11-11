@@ -291,6 +291,8 @@ function fitExpandedMapToRoute(day) {
   const expObj = window.expandedMaps && window.expandedMaps[cid];
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
+    if (!points || points.length < 2) return;
+
 
     // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
@@ -5292,6 +5294,8 @@ function updateRouteStatsUI(day) {
      ) {
     // Sadece haversine ile km/dk ver, profil değişmiyor!
     const points = getDayPoints(day);
+if (!points || points.length < 2) return;
+
     summary = getFallbackRouteSummary(points);
     window.lastRouteSummaries[key] = summary;
   }
@@ -5338,7 +5342,9 @@ function setupScaleBarInteraction(day, map) {
     if (!scaleBar || !map) return;
     let hoverMarker = null;
 
-    function onMove(e) {
+        if (!arcPts || !Array.isArray(arcPts) || arcPts.length < 2) return;
+
+function onMove(e) {
         const rect = scaleBar.getBoundingClientRect();
         let x = (e.touches && e.touches.length)
             ? (e.touches[0].clientX - rect.left)
@@ -5427,6 +5433,7 @@ function saveArcPointsForDay(day, points) {
 // TEST FONKSİYONU - Yayı görsel olarak kontrol etmek için
 function testArcVisualization(day, map) {
     const arcPts = window._curvedArcPointsByDay[day];
+
     // PATCH: Null/boş/dizi check!
     if (!arcPts || !Array.isArray(arcPts) || arcPts.length < 2) return;
     
@@ -5453,11 +5460,7 @@ function testArcVisualization(day, map) {
     
     console.log("Test arc drawn - START (green) to END (blue)");
 }
-// Alternatif çözüm: Yay noktalarını ters çevir
-function getReversedCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
-    const originalCoords = getCurvedArcCoords(start, end, strength, segments);
-    return originalCoords.reverse(); // Noktaları ters çevir
-}
+
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -6140,7 +6143,9 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     iconAnchor: [14, 14]
   });
 
-  window._nearbyPulseMarker = L.marker([lat, lng], {
+  if (!points || points.length < 2) return;
+
+window._nearbyPulseMarker = L.marker([lat, lng], {
     icon: pulseIcon,
     interactive: false,
     keyboard: false
@@ -6626,6 +6631,7 @@ const pulseIcon = L.divIcon({
   iconAnchor: [9,9]
 });
 
+if (!points || points.length < 2) return;
 window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
 
 
@@ -7003,6 +7009,8 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
   expandedMap.eachLayer(l => { if (l instanceof L.Marker) expandedMap.removeLayer(l); });
 
   const points = getDayPoints(day);
+  if (!points || points.length < 2) return;
+
 
   points.forEach((p, idx) => {
     let currentName = p.name || '';
@@ -7346,6 +7354,8 @@ async function renderRouteForDay(day) {
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         const points = getDayPoints(day);
+        if (!points || points.length < 2) return;
+
         const containerId = `route-map-day${day}`;
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
@@ -7475,6 +7485,8 @@ async function renderRouteForDay(day) {
 
     const containerId = `route-map-day${day}`;
     const points = getDayPoints(day);
+    if (!points || points.length < 2) return;
+
 
     if (
         window.importedTrackByDay &&
@@ -8093,6 +8105,8 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return [];
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
+    if (!points || points.length < 2) return;
+
 
     // Haversine mesafe (metre)
     function haversine(lat1, lon1, lat2, lon2) {
