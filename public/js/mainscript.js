@@ -7189,42 +7189,43 @@ if (imported) {
 
 
 async function renderRouteForDay(day) {
- const pts = getDayPoints(day);
+const containerId = `route-map-day${day}`;
+const pts = getDayPoints(day);
 const isInTurkey = areAllPointsInTurkey(pts);
+// BURADAN SONRA FLY MODE KONTROLU
 
-// Eğer Türkiye dışındaysa doğrudan FLY MODE'a gir ve return ile APIdan çık!
 if (!isInTurkey && pts.length >= 2) {
+    // Haversine ile mesafe/süre hesapla
     let totalKm = 0;
     for (let i = 1; i < pts.length; i++) {
-        const d = haversine(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng);
-        totalKm += d / 1000;
+        totalKm += haversine(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng) / 1000;
     }
     const SABIT_HIZ_KMH = 4;
     const durationSec = Math.round(totalKm / SABIT_HIZ_KMH * 3600);
-
     const summary = {
-        distance: Math.round(totalKm * 1000), // metre
-        duration: durationSec // saniye
+        distance: Math.round(totalKm * 1000),
+        duration: durationSec
     };
 
     window.lastRouteSummaries = window.lastRouteSummaries || {};
-    window.lastRouteSummaries[`route-map-day${day}`] = summary;
-    setTimeout(function() {
-      try {
-        const statDistance = document.querySelector(`#map-bottom-controls-day${day} .stat-distance .badge`);
-        const statDuration = document.querySelector(`#map-bottom-controls-day${day} .stat-duration .badge`);
-        if (statDistance) statDistance.textContent = (summary.distance / 1000).toFixed(2) + " km";
-        if (statDuration) statDuration.textContent = Math.round(summary.duration / 60) + " dk";
-        const statAscent = document.querySelector(`#map-bottom-controls-day${day} .stat-ascent .badge`);
-        const statDescent = document.querySelector(`#map-bottom-controls-day${day} .stat-descent .badge`);
-        if (statAscent) statAscent.textContent = "0 m";
-        if (statDescent) statDescent.textContent = "0 m";
-      } catch(e){
-        console.log("fly mode badge güncelleme hatası", e);
-      }
+    window.lastRouteSummaries[containerId] = summary;  // DİKKAT: containerId kullan!
+
+    setTimeout(() => {
+        try {
+            const statDistance = document.querySelector(`#map-bottom-controls-day${day} .stat-distance .badge`);
+            const statDuration = document.querySelector(`#map-bottom-controls-day${day} .stat-duration .badge`);
+            if (statDistance) statDistance.textContent = (summary.distance / 1000).toFixed(2) + " km";
+            if (statDuration) statDuration.textContent = Math.round(summary.duration / 60) + " dk";
+            const statAscent = document.querySelector(`#map-bottom-controls-day${day} .stat-ascent .badge`);
+            const statDescent = document.querySelector(`#map-bottom-controls-day${day} .stat-descent .badge`);
+            if (statAscent) statAscent.textContent = "0 m";
+            if (statDescent) statDescent.textContent = "0 m";
+        } catch(e) {
+            console.log("Fly mode badge güncelleme hatası", e);
+        }
     }, 300);
 
-    // Geojson çizimi — marker sıralaması
+    // Geojson çizimi
     const geojson = {
         type: 'FeatureCollection',
         features: [{
@@ -7236,12 +7237,11 @@ if (!isInTurkey && pts.length >= 2) {
             properties: {}
         }]
     };
-
-    renderLeafletRoute(`route-map-day${day}`, geojson, pts, summary, day);
+    renderLeafletRoute(containerId, geojson, pts, summary, day);
 
     if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
-    return; // DAHA FAZLA KODU ÇALIŞTIRMA!
+    return; // DİKKAT: bundan sonrası çalışmasın!
 }   
 
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
