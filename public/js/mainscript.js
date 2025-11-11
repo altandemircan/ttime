@@ -5057,6 +5057,8 @@ function addNumberedMarkers(map, points) {
     });
 }
 
+// Minik harita/küçük harita: markerları yay şeklinde, kesik çizgi ile birleştiren patchli fonksiyon! 
+
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
@@ -5126,18 +5128,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-    // -- FIXED DRAWING LOGIC --
-    if (hasValidGeo && routeCoords.length > 1) {
-        // GERÇEK rota varsa, klasik çizgi
-        L.polyline(routeCoords, {
-            color: '#1976d2',
-            weight: 8,
-            opacity: 0.92,
-            interactive: true,
-            dashArray: null
-        }).addTo(map);
-    } else if (!hasValidGeo && points.length > 1) {
-        // --- NO L.polyline here; draw ONLY curved dashed lines! ---
+    // --- YAY ÇİZGİ PATCH'I ---
+    const isFlyMode = !areAllPointsInTurkey(points);
+
+    if (isFlyMode && points.length > 1) {
+        // Sadece kavisli, kesik çizgiyle çiz!
         for (let i = 0; i < points.length - 1; i++) {
             drawCurvedLine(map, points[i], points[i + 1], {
                 color: "#1976d2",
@@ -5146,9 +5141,18 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 dashArray: "6,8"
             });
         }
+    } else if (hasValidGeo && routeCoords.length > 1) {
+        // Sadece Türkiye içi OSRM gerçek route varsa düz çizgi
+        L.polyline(routeCoords, {
+            color: '#1976d2',
+            weight: 8,
+            opacity: 0.92,
+            interactive: true,
+            dashArray: null
+        }).addTo(map);
     }
+    // --- PATCH SONU ---
 
-    // --- Missing points için ek çizgiler ---
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
             drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
