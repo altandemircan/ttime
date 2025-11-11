@@ -3533,6 +3533,21 @@ if (typeof updateCart === "function") updateCart();
 
 
 async function updateCart() {
+    const containerId = `route-map-day${day}`;
+const summary = window.lastRouteSummaries && window.lastRouteSummaries[containerId];
+
+if (!summary) {
+  // Badge'ları sıfırla, kodu sonlandır:
+  const statDistance = document.querySelector(`#map-bottom-controls-day${day} .stat-distance .badge`);
+  const statDuration = document.querySelector(`#map-bottom-controls-day${day} .stat-duration .badge`);
+  const statAscent = document.querySelector(`#map-bottom-controls-day${day} .stat-ascent .badge`);
+  const statDescent = document.querySelector(`#map-bottom-controls-day${day} .stat-descent .badge`);
+  if (statDistance) statDistance.textContent = "0.00 km";
+  if (statDuration) statDuration.textContent = "0 dk";
+  if (statAscent) statAscent.textContent = "0 m";
+  if (statDescent) statDescent.textContent = "0 m";
+  return;
+}
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
   // ÖNCE route'ları HAZIRLA!
