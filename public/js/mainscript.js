@@ -7519,38 +7519,48 @@ async function renderRouteForDay(day) {
     }
     const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
 
-    async function fetchRoute() {
-        const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
-        const url = buildDirectionsUrl(coordParam, day);
-        const response = await fetch(url);
-        if (!response.ok) {
-            alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
-            return null;
-        }
-        const data = await response.json();
-        if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
-        return {
-            geojson: {
-                type: 'FeatureCollection',
-                features: [{
-                    type: 'Feature',
-                    geometry: data.routes[0].geometry,
-                    properties: {
-                        summary: {
-                            distance: data.routes[0].distance,
-                            duration: data.routes[0].duration,
-                            source: 'OSRM'
-                        }
-                    }
-                }]
-            },
-            coords: data.routes[0].geometry.coordinates,
-            summary: {
-                distance: data.routes[0].distance,
-                duration: data.routes[0].duration
-            }
-        };
+  async function fetchRoute() {
+    const realPoints = typeof getDayPoints === "function" ? getDayPoints(day) : [];
+    const containerId = `route-map-day${day}`;
+    const geojson = window.lastRouteGeojsons?.[containerId];
+    const isInTurkey = areAllPointsInTurkey(realPoints);
+    const hasRealRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
+
+    if (!hasRealRoute) {
+        return null;
     }
+
+    const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
+    const url = buildDirectionsUrl(coordParam, day);
+    const response = await fetch(url);
+    if (!response.ok) {
+        alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
+        return null;
+    }
+    const data = await response.json();
+    if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
+    return {
+        geojson: {
+            type: 'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                geometry: data.routes[0].geometry,
+                properties: {
+                    summary: {
+                        distance: data.routes[0].distance,
+                        duration: data.routes[0].duration,
+                        source: 'OSRM'
+                    }
+                }
+            }]
+        },
+        coords: data.routes[0].geometry.coordinates,
+        summary: {
+            distance: data.routes[0].distance,
+            duration: data.routes[0].duration
+        }
+    };
+}
 let routeData;
 let missingPoints = [];
 try {
@@ -8105,23 +8115,33 @@ window.setTravelMode = function(mode, day) {
   markActiveTravelModeButtons();
 };
 
-// Build Directions URL; day is optional (defaults to currentDay)
-// Directions URL builder — self-hosted OSRM + debug log
+
 window.buildDirectionsUrl = function(coordsStr, day) {
   const d = day || window.currentDay || 1;
   const profile = getProfileForDay(d); // 'driving' | 'cycling' | 'walking'
   const url = `/route/v1/${profile}/${coordsStr}?geometries=geojson&overview=full&steps=true`;
 
-  // İlk seferde bir kez bilgi mesajı
-  if (!window.__TT_ROUTING_LOG_ONCE) {
-    console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
-    window.__TT_ROUTING_LOG_ONCE = true;
+  // FLY MODE patch: Sadece Türkiye ve gerçek route varsa log at
+  const realPoints = typeof getDayPoints === "function" ? getDayPoints(d) : [];
+  const containerId = `route-map-day${d}`;
+  const geojson = window.lastRouteGeojsons?.[containerId];
+  const isInTurkey = areAllPointsInTurkey(realPoints);
+  const hasRealRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
+
+  if (hasRealRoute) {
+    if (!window.__TT_ROUTING_LOG_ONCE) {
+      console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
+      window.__TT_ROUTING_LOG_ONCE = true;
+    }
+    console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
   }
-  // Her çağrıda ayrıntı logu
-  console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
+  // FLY MODE’da log atma!
 
   return url;
 };
+
+
+
 // Minimal snap; keep single definition
 if (!window.snapPointToRoad) {
   window.snapPointToRoad = function(lat, lng) {
@@ -8144,6 +8164,11 @@ function cleanupLegacyTravelMode() {
 }
 // Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
 function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
+
+    const setId = `tt-travel-mode-set-day${day}`;
+document.getElementById(setId)?.remove();
+
+
   const realPoints = typeof getDayPoints === "function" ? getDayPoints(day) : [];
   const setId = `tt-travel-mode-set-day${day}`;
   // Önce her durumda eskiyi kaldır
