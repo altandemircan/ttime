@@ -5103,7 +5103,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // ADD RIGHT AFTER IT:
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // --- Rota çizgisini belirle (ya OSRM/GeoJSON rotası, ya da fallback: noktalar arası kesik yay çizgi) ---
     let routeCoords = [];
     let hasValidGeo = (
         geojson && geojson.features && geojson.features[0] &&
@@ -5127,7 +5126,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-    // --- En önemli: çizgi eklemesi ---
+    // -- FIXED DRAWING LOGIC --
     if (hasValidGeo && routeCoords.length > 1) {
         // GERÇEK rota varsa, klasik çizgi
         L.polyline(routeCoords, {
@@ -5138,10 +5137,10 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             dashArray: null
         }).addTo(map);
     } else if (!hasValidGeo && points.length > 1) {
-        // --- Sadece KAVİSLİ/KESİK YAY çizgi çek ---
+        // --- NO L.polyline here; draw ONLY curved dashed lines! ---
         for (let i = 0; i < points.length - 1; i++) {
             drawCurvedLine(map, points[i], points[i + 1], {
-                color: "#1976d2", // MAVİ (küçük harita için)
+                color: "#1976d2",
                 weight: 5,
                 opacity: 0.85,
                 dashArray: "6,8"
