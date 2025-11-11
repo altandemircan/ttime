@@ -5331,9 +5331,9 @@ function openMapLibre3D(expandedMap) {
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: {
                'line-color': '#1976d2',
-            'line-width': 13,          // HATIRI KALIN
+            'line-width': 10,          // HATIRI KALIN
             'line-opacity': 0.96,
-            'line-dasharray': [1, 1]  // SIK, kısa kesikli!
+            'line-dasharray': [1, 2]  // SIK, kısa kesikli!
           }
         });
       }
