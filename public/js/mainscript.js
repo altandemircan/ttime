@@ -6550,78 +6550,76 @@ function setupScaleBarInteraction(day, expandedMap) {
 
     let hoverMarker = null;
     let fillPolygon = null;
-    let reachedEnd = false;
 
-    function getPartialArcPoints(percent) {
-        const arcPts = window._curvedArcPointsByDay?.[day];
-        if (!arcPts || arcPts.length < 2) return [];
-        const n = Math.max(1, Math.floor(percent * (arcPts.length - 1)));
-        return arcPts.slice(0, n + 1).map(([lng, lat]) => [lat, lng]);
-    }
-
-    function getPartialRoutePoints(percent) {
-        const containerId = `route-map-day${day}`;
-        const geojson = window.lastRouteGeojsons?.[containerId];
-        if (!geojson?.features?.[0]?.geometry?.coordinates) return [];
-        const coords = geojson.features[0].geometry.coordinates;
-        let cumDist = [0];
-        for (let i = 1; i < coords.length; i++) {
-            cumDist[i] = cumDist[i - 1] + haversine(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+    // Nokta örnekleme için tüm yay ve polyline noktaları eş sayıda üret
+    function getSampledPoints(array, n) {
+        // array: [lng,lat] veya [lat,lng]
+        if (!array || array.length < 2) return [];
+        if (n <= 2) return [array[0], array[array.length - 1]];
+        const out = [];
+        for (let i = 0; i < n; i++) {
+            const idx = Math.floor(i * (array.length - 1) / (n - 1));
+            out.push(array[idx]);
         }
-        const total = cumDist[cumDist.length - 1] || 1;
-        const target = percent * total;
-        let idx = 0;
-        while (cumDist[idx] < target && idx < cumDist.length - 1) idx++;
-        return coords.slice(0, idx + 1).map(c => [c[1], c[0]]);
+        return out;
     }
 
     function onMove(e) {
-        // Scale bar’da konum
         const rect = scaleBar.getBoundingClientRect();
         let x = (e.touches && e.touches.length)
             ? (e.touches[0].clientX - rect.left)
             : (e.clientX - rect.left);
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-        // Eğer scale barda sona gelmişse, dolgu alanı silinsin
-        reachedEnd = percent >= 1.0;
-        
-        if (reachedEnd) {
+        // --- YAY ARC VE POLYLINE ROUTE NOKTALARI DİZİLERİ ---
+        // ARC/YAY
+        let arcRaw = window._curvedArcPointsByDay?.[day];
+        if (!arcRaw || arcRaw.length < 2) return;
+        arcRaw = arcRaw.map(([lng, lat]) => [lat, lng]); // düz [lat,lng]
+
+        // POLYLINE/ROUTE (geojson.features[0].geometry.coordinates -> [lng,lat])
+        const containerId = `route-map-day${day}`;
+        const geojson = window.lastRouteGeojsons?.[containerId];
+        if (!geojson?.features?.[0]?.geometry?.coordinates) return;
+        const routeRaw = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]); // [lat, lng]
+
+        // NUMARALI ÖRNEKLEM DİZİLERİ
+        const N = Math.max(12, Math.min(40, Math.round(arcRaw.length * percent)));
+        if (N < 2) return; // Minimum 2 noktayı garanti et
+
+        const arcPts = getSampledPoints(arcRaw, N);
+        const routePts = getSampledPoints(routeRaw, N);
+
+        // POLIGONUN İÇİ: ARC NOKTALARI BAŞTAN SONUNA, ROUTE NOKTALARI SON NOKtadan başa (ters) ← TAM simetrik alan!
+        const areaCoords = [...arcPts, ...routePts.slice().reverse()];
+
+        // Mor marker yayda → son örnek nokta
+        const [markerLat, markerLng] = arcPts[arcPts.length - 1];
+        if (hoverMarker) hoverMarker.setLatLng([markerLat, markerLng]);
+        else hoverMarker = L.circleMarker([markerLat, markerLng], {
+            radius: 10,
+            color: "#fff",
+            fillColor: "#8a4af3",
+            fillOpacity: 0.9,
+            weight: 3,
+            zIndexOffset: 9999
+        }).addTo(expandedMap);
+
+        // Poligon simetrik alanı
+        if (fillPolygon) { expandedMap.removeLayer(fillPolygon); fillPolygon = null; }
+        fillPolygon = L.polygon(areaCoords, {
+            color: "#8a4af3",
+            fillColor: "#8a4af3",
+            fillOpacity: 0.16,
+            weight: 1,
+            interactive: false,
+            pane: "shadowPane"
+        }).addTo(expandedMap);
+
+        // Marker son noktaya gelip scale barda sona geldiyse alanı ve markerı sil (bitir)
+        if (percent >= 0.995) {
             if (fillPolygon) { expandedMap.removeLayer(fillPolygon); fillPolygon = null; }
             if (hoverMarker) { expandedMap.removeLayer(hoverMarker); hoverMarker = null; }
-            return;
-        }
-
-        // Senin isteğine göre: yay ve polyline noktalarını aynı oranda al
-        const arcPoints = getPartialArcPoints(percent);
-        const routePoints = getPartialRoutePoints(percent);
-
-        if (arcPoints.length >= 2 && routePoints.length >= 2) {
-            // Polygon köşeleri: yay (0→k), ardından polyline (k→0, ters) — kapalı alan!
-            const areaCoords = [...arcPoints, ...routePoints.slice().reverse()];
-            // Marker yayda:
-            const [markerLat, markerLng] = arcPoints[arcPoints.length - 1];
-            if (hoverMarker) hoverMarker.setLatLng([markerLat, markerLng]);
-            else hoverMarker = L.circleMarker([markerLat, markerLng], {
-                    radius: 10,
-                    color: "#fff",
-                    fillColor: "#8a4af3",
-                    fillOpacity: 0.9,
-                    weight: 3,
-                    zIndexOffset: 9999
-                }).addTo(expandedMap);
-
-            // Eski alanı sil, yenisini ekle (her frame!)
-            if (fillPolygon) { expandedMap.removeLayer(fillPolygon); fillPolygon = null; }
-            fillPolygon = L.polygon(areaCoords, {
-                color: "#8a4af3",
-                fillColor: "#8a4af3",
-                fillOpacity: 0.16,
-                weight: 1,
-                dashArray: "8,8",
-                interactive: false,
-                pane: "shadowPane"
-            }).addTo(expandedMap);
         }
     }
 
@@ -6641,7 +6639,6 @@ function setupScaleBarInteraction(day, expandedMap) {
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
-
 
 window.addNearbyPlaceToTrip = function(idx) {
     if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
