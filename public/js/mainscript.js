@@ -6555,17 +6555,28 @@ function setupScaleBarInteraction(day, map) {
             ? (e.touches[0].clientX - rect.left)
             : (e.clientX - rect.left);
         let percent = Math.max(0, Math.min(x / rect.width, 1));
+
+        // YAY MODU: ARC üzerinde marker hareketi
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
             let arcPts = window._curvedArcPointsByDay[day];
-            // Hangi uçtan başlaması gerektiğini test et:
-            // Bar'ın başında marker ARC'nin başında; sonunda ARC'nin sonunda olmalı.
-            // Doğru değilse diziyi tersine çevir:
-            // YAY testleri için debug:
-            // console.log("ARC START:", arcPts[0], "END:", arcPts[arcPts.length-1]);
+
+            // Yön kontrolü: Bar'ın başındaki marker ile yay'ın başı (arcPts[0]) gerçekten aynı mı?
+            // Varsayım: startMarker = rota/plan'ın 1. noktası
+            const startMarker = window.cart?.find(item => item.day == day && item.location)?.location;
+            if (startMarker) {
+                const [arcLng0, arcLat0] = arcPts[0];
+                const [arcLngN, arcLatN] = arcPts[arcPts.length - 1];
+                const distToStart = haversine(startMarker.lat, startMarker.lng, arcLat0, arcLng0);
+                const distToEnd   = haversine(startMarker.lat, startMarker.lng, arcLatN, arcLngN);
+                // Eğer başlangıca en yakın nokta son nokta ise, yönü düzelt!
+                if (distToEnd < distToStart) {
+                    arcPts = arcPts.slice().reverse();
+                }
+            }
+
             let idx = Math.round(percent * (arcPts.length - 1));
             idx = Math.max(0, Math.min(idx, arcPts.length - 1));
-            // Genelde ARC noktaları [lng,lat] (yay).
-            // Leaflet için [lat, lng] formatı gerekir.
+            // Doğru format: [lng, lat] → [lat, lng]
             const [lng, lat] = arcPts[idx];
             if (hoverMarker) {
                 hoverMarker.setLatLng([lat, lng]);
