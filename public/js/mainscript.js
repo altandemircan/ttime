@@ -5243,17 +5243,14 @@ routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMi
   }
   return totalKm;
 }
-function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
-  // start & end: [lng, lat]
-  // strength: kavis (pozitif/daha büyük = daha fazla yay)
-  // segments: aradaki ara nokta sayısı (ne kadar çok, o kadar pürüzsüz)
+// Kavisli arc için fonksiyonun değişmesin!
+function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
   const sx = start[0], sy = start[1];
   const ex = end[0], ey = end[1];
   const mx = (sx + ex) / 2 + strength * (ey - sy);
   const my = (sy + ey) / 2 - strength * (ex - sx);
   const coords = [];
-  for (let t = 0; t <= 1; t += 1/segments) {
-    // Quadratic Bezier: B(t) = (1-t)^2 * P0 + 2*(1-t)*t * P1 + t^2 * P2
+  for (let t = 0; t <= 1; t += 1 / segments) {
     const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
     const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
     coords.push([x, y]);
@@ -5261,6 +5258,133 @@ function getCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
   return coords;
 }
 
+// --- ANİMASYONLU ARC ---
+function animateArcLine(map, lineId) {
+  let dashOffset = 0;
+  setInterval(() => {
+    dashOffset += 0.3;
+    if (dashOffset > 8) dashOffset = 0;
+    map.setPaintProperty(lineId, 'line-dasharray', [2, dashOffset]);
+  }, 70); // 70ms; 15 FPS gibi
+}
+
+// --- OPENMAPLIBRE3D FONKSİYONU ---
+function openMapLibre3D(expandedMap) {
+  let mapDiv = expandedMap.getContainer();
+  let maplibre3d = document.getElementById('maplibre-3d-view');
+  if (!maplibre3d) {
+    maplibre3d = document.createElement('div');
+    maplibre3d.id = 'maplibre-3d-view';
+    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;';
+    mapDiv.parentNode.appendChild(maplibre3d);
+  }
+  maplibre3d.style.display = 'block';
+  maplibre3d.innerHTML = '';
+
+  window._maplibre3DInstance = new maplibregl.Map({
+    container: 'maplibre-3d-view',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: expandedMap.getCenter(),
+    zoom: expandedMap.getZoom(),
+    pitch: 60,
+    bearing: 30,
+    interactive: true
+  });
+
+  window._maplibre3DInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-left');
+  window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() + 20, { animate: true });
+  window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() - 20, { animate: true });
+
+  window._maplibre3DInstance.on('load', function () {
+    const day = window.currentDay || 1;
+    const containerId = `route-map-day${day}`;
+    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+    const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
+    const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+    const isFlyMode = !areAllPointsInTurkey(points);
+
+    // Türkiye içi polylined route
+    if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
+      window._maplibre3DInstance.addSource('route', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: routeCoords } }
+      });
+      window._maplibre3DInstance.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: 'route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.92 }
+      });
+    } 
+    // --- FLY MODE: ANİMASYONLU KAVİSLİ ARC + OK DİREKSİYON ---
+    else if (isFlyMode && points.length > 1) {
+      let arrowGeojson = { type: 'FeatureCollection', features: [] };
+      for (let i = 0; i < points.length - 1; i++) {
+        const start = [points[i].lng, points[i].lat];
+        const end = [points[i + 1].lng, points[i + 1].lat];
+        const curveCoords = getCurvedArcCoords(start, end, 0.33, 22);
+
+        // ARC ÇİZGİ
+        const lineId = `flyroute-line-${i}`;
+        window._maplibre3DInstance.addSource(`flyroute-${i}`, {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } }
+        });
+        window._maplibre3DInstance.addLayer({
+          id: lineId,
+          type: 'line',
+          source: `flyroute-${i}`,
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#1976d2',
+            'line-width': 13,
+            'line-opacity': 0.95,
+            'line-dasharray': [2, 6]
+          }
+        });
+        animateArcLine(window._maplibre3DInstance, lineId);
+
+        // DİREKSİYON (OK) - kavis midpoint'e arrow
+        const curveMidIdx = Math.floor(curveCoords.length/2);
+        const midpoint = curveCoords[curveMidIdx];
+        const dx = curveCoords[curveMidIdx+1][0] - curveCoords[curveMidIdx][0];
+        const dy = curveCoords[curveMidIdx+1][1] - curveCoords[curveMidIdx][1];
+        const rotation = Math.atan2(dy, dx) * 180 / Math.PI;
+        arrowGeojson.features.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: midpoint },
+          properties: { rotation }
+        });
+      }
+      // Arrow kaynak ve layer ekle
+      window._maplibre3DInstance.addSource("route-arrows", {
+        type: "geojson",
+        data: arrowGeojson,
+      });
+      window._maplibre3DInstance.addLayer({
+        id: "route-arrows-layer",
+        type: "symbol",
+        source: "route-arrows",
+        layout: {
+          "icon-image": "arrow-icon",           // PNG arrow sprite'ın olmalı!
+          "icon-size": 1.3,
+          "icon-rotate": ["get", "rotation"],
+          "icon-allow-overlap": true,
+        }
+      });
+      // NOT: Haritanın sprite atlasına "arrow-icon" PNG eklemen gerekiyor!
+    }
+
+    // Markerlar
+    points.forEach((p, idx) => {
+      const marker = new maplibregl.Marker({ color: '#d32f2f' })
+        .setLngLat([p.lng, p.lat])
+        .setPopup(new maplibregl.Popup().setText(`${idx + 1}. ${p.name || "Place"}`));
+      marker.addTo(window._maplibre3DInstance);
+    });
+  });
+}
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -5325,14 +5449,11 @@ function openMapLibre3D(expandedMap) {
       });
     } 
 
-    else if (isFlyMode && points.length > 1) {
+   else if (isFlyMode && points.length > 1) {
   for (let i = 0; i < points.length - 1; i++) {
     const start = [points[i].lng, points[i].lat];
     const end = [points[i + 1].lng, points[i + 1].lat];
-    // Kavis güç ve segment ayarıyla pürüzsüz (0.33/22 önerilir)
     const curveCoords = getCurvedArcCoords(start, end, 0.33, 22);
-
-    // GeoJSON source ekle
     window._maplibre3DInstance.addSource(`flyroute-${i}`, {
       type: 'geojson',
       data: {
@@ -5340,26 +5461,31 @@ function openMapLibre3D(expandedMap) {
         geometry: { type: 'LineString', coordinates: curveCoords }
       }
     });
-
-    // LineLayer ile çiz - dash, renk, opacity ile görsel efekt!
+    // Kavisli çizgi
     window._maplibre3DInstance.addLayer({
       id: `flyroute-line-${i}`,
       type: 'line',
       source: `flyroute-${i}`,
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round'
-      },
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
-        'line-color': '#1976d2',         // Mavi
-        'line-width': 13,                // Kalınlık
-        'line-opacity': 0.96,            // Opaklık
-        'line-dasharray': [1, 2]         // Kesikli çizgi efekti
+        'line-color': '#1976d2',
+        'line-width': 13,
+        'line-opacity': 0.96,
+        'line-dasharray': [2, 6]
       }
     });
-  }
-}
+    animateArcLine(window._maplibre3DInstance, `flyroute-line-${i}`);
 
+    // Ok geometry hesabı
+    const midpoint = curveCoords[Math.floor(curveCoords.length/2)];
+    const dx = curveCoords[curveCoords.length-1][0] - curveCoords[curveCoords.length-2][0];
+    const dy = curveCoords[curveCoords.length-1][1] - curveCoords[curveCoords.length-2][1];
+    const rotation = Math.atan2(dy, dx) * 180 / Math.PI;
+    // Arrow GeoJSON'a ekle
+    // (...arrowGeojson push kodu buraya)
+  }
+  // Okları ekleyen geojson/source/layer kodunu buraya koy.
+}
 
     // Markerları ekle (sıra numaralı)
     points.forEach((p, idx) => {
