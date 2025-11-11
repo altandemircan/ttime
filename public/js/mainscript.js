@@ -6555,23 +6555,14 @@ function setupScaleBarInteraction(day, map) {
             : (e.clientX - rect.left);
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
+        // YAY MODU: ARC üzerinde marker hareketi
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
             let arcPts = window._curvedArcPointsByDay[day];
-            // Yönü test et! Marker barın başında arcPts[0], sonunda arcPts[-1] noktasında olmalı.
-            // Bar'ın başında gösterilecek marker konumu:
-            // Planın ilk marker'ı
-            const startRef = window.cart?.find(it => it.day == day && it.location)?.location;
-            if (startRef) {
-                const [arcLng0, arcLat0] = arcPts[0];
-                const [arcLngN, arcLatN] = arcPts[arcPts.length - 1];
-                // Bar başı marker yay başına daha yakın mı? Değilse reverse!
-                const dStart = haversine(startRef.lat, startRef.lng, arcLat0, arcLng0);
-                const dEnd = haversine(startRef.lat, startRef.lng, arcLatN, arcLngN);
-                if (dEnd < dStart) arcPts = arcPts.slice().reverse();
-            }
             let idx = Math.round(percent * (arcPts.length - 1));
             idx = Math.max(0, Math.min(idx, arcPts.length - 1));
-            const [lng, lat] = arcPts[idx]; // ARC noktası [lng,lat]
+            // ARC noktanın formatı [lng,lat] ise aşağıdaki gibi:
+            const [lng, lat] = arcPts[idx];
+            // Eğer yay noktaların [lat, lng] ise: const [lat, lng] = arcPts[idx];
             if (hoverMarker) {
                 hoverMarker.setLatLng([lat, lng]);
             } else {
@@ -6586,14 +6577,12 @@ function setupScaleBarInteraction(day, map) {
             }
         }
     }
-
     function onLeave() {
         if (hoverMarker) {
             map.removeLayer(hoverMarker);
             hoverMarker = null;
         }
     }
-
     scaleBar.addEventListener("mousemove", onMove);
     scaleBar.addEventListener("mouseleave", onLeave);
     scaleBar.addEventListener("touchmove", onMove);
