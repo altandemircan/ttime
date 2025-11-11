@@ -6635,6 +6635,7 @@ const pulseIcon = L.divIcon({
 
 if (!points || points.length < 2) return;
 window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
+const points = (typeof getDayPoints === "function") ? getDayPoints(window.currentDay || 1) : [];
 
 
 }
