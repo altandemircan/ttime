@@ -5323,11 +5323,16 @@ function openMapLibre3D(expandedMap) {
           'line-opacity': 0.92        // Aynı şeffaflık!
         }
       });
-    } else if (isFlyMode && points.length > 1) {
+    } 
+
+    else if (isFlyMode && points.length > 1) {
   for (let i = 0; i < points.length - 1; i++) {
     const start = [points[i].lng, points[i].lat];
     const end = [points[i + 1].lng, points[i + 1].lat];
-    const curveCoords = getCurvedArcCoords(start, end, 0.33, 22); // kavis+segments istediğin kadar!
+    // Kavis güç ve segment ayarıyla pürüzsüz (0.33/22 önerilir)
+    const curveCoords = getCurvedArcCoords(start, end, 0.33, 22);
+
+    // GeoJSON source ekle
     window._maplibre3DInstance.addSource(`flyroute-${i}`, {
       type: 'geojson',
       data: {
@@ -5335,20 +5340,26 @@ function openMapLibre3D(expandedMap) {
         geometry: { type: 'LineString', coordinates: curveCoords }
       }
     });
+
+    // LineLayer ile çiz - dash, renk, opacity ile görsel efekt!
     window._maplibre3DInstance.addLayer({
       id: `flyroute-line-${i}`,
       type: 'line',
       source: `flyroute-${i}`,
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
       paint: {
-        'line-color': '#1976d2',
-        'line-width': 13,
-        'line-opacity': 0.96,
-        'line-dasharray': [1, 2]
+        'line-color': '#1976d2',         // Mavi
+        'line-width': 13,                // Kalınlık
+        'line-opacity': 0.96,            // Opaklık
+        'line-dasharray': [1, 2]         // Kesikli çizgi efekti
       }
     });
   }
 }
+
 
     // Markerları ekle (sıra numaralı)
     points.forEach((p, idx) => {
