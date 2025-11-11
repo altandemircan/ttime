@@ -6550,6 +6550,7 @@ function setupScaleBarInteraction(day, expandedMap) {
 
     let hoverMarker = null;
     let fillPolygon = null;
+    let reachedEnd = false;
 
     function getPartialArcPoints(percent) {
         const arcPts = window._curvedArcPointsByDay?.[day];
@@ -6571,44 +6572,51 @@ function setupScaleBarInteraction(day, expandedMap) {
         const target = percent * total;
         let idx = 0;
         while (cumDist[idx] < target && idx < cumDist.length - 1) idx++;
-        // Parçayı al: rotanın başından % kadar noktaya kadar
         return coords.slice(0, idx + 1).map(c => [c[1], c[0]]);
     }
 
     function onMove(e) {
+        // Scale bar’da konum
         const rect = scaleBar.getBoundingClientRect();
         let x = (e.touches && e.touches.length)
             ? (e.touches[0].clientX - rect.left)
             : (e.clientX - rect.left);
-
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-        // Parçalar:
+        // Eğer scale barda sona gelmişse, dolgu alanı silinsin
+        reachedEnd = percent >= 1.0;
+        
+        if (reachedEnd) {
+            if (fillPolygon) { expandedMap.removeLayer(fillPolygon); fillPolygon = null; }
+            if (hoverMarker) { expandedMap.removeLayer(hoverMarker); hoverMarker = null; }
+            return;
+        }
+
+        // Senin isteğine göre: yay ve polyline noktalarını aynı oranda al
         const arcPoints = getPartialArcPoints(percent);
         const routePoints = getPartialRoutePoints(percent);
 
         if (arcPoints.length >= 2 && routePoints.length >= 2) {
-            // Polygon köşeleri: yay sonra polyline (ters) ile kapat
+            // Polygon köşeleri: yay (0→k), ardından polyline (k→0, ters) — kapalı alan!
             const areaCoords = [...arcPoints, ...routePoints.slice().reverse()];
-
-            // Mor marker yayda:
+            // Marker yayda:
             const [markerLat, markerLng] = arcPoints[arcPoints.length - 1];
             if (hoverMarker) hoverMarker.setLatLng([markerLat, markerLng]);
             else hoverMarker = L.circleMarker([markerLat, markerLng], {
-                radius: 10,
-                color: "#fff",
-                fillColor: "#8a4af3",
-                fillOpacity: 0.9,
-                weight: 3,
-                zIndexOffset: 9999
-            }).addTo(expandedMap);
+                    radius: 10,
+                    color: "#fff",
+                    fillColor: "#8a4af3",
+                    fillOpacity: 0.9,
+                    weight: 3,
+                    zIndexOffset: 9999
+                }).addTo(expandedMap);
 
-            // Önceki alanı sil, yeni alanı ekle
+            // Eski alanı sil, yenisini ekle (her frame!)
             if (fillPolygon) { expandedMap.removeLayer(fillPolygon); fillPolygon = null; }
             fillPolygon = L.polygon(areaCoords, {
                 color: "#8a4af3",
                 fillColor: "#8a4af3",
-                fillOpacity: 0.14,
+                fillOpacity: 0.16,
                 weight: 1,
                 dashArray: "8,8",
                 interactive: false,
@@ -6633,7 +6641,6 @@ function setupScaleBarInteraction(day, expandedMap) {
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
-
 
 
 window.addNearbyPlaceToTrip = function(idx) {
