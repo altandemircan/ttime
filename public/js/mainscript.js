@@ -6543,7 +6543,6 @@ window.handleImageError = async function(imgElement, placeName, index) {
     imgElement.src = PLACEHOLDER_IMG;
     if (loadingDiv) loadingDiv.style.opacity = '0';
 };
-
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
@@ -6556,28 +6555,23 @@ function setupScaleBarInteraction(day, map) {
             : (e.clientX - rect.left);
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-        // YAY MODU: ARC üzerinde marker hareketi
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
             let arcPts = window._curvedArcPointsByDay[day];
-
-            // Yön kontrolü: Bar'ın başındaki marker ile yay'ın başı (arcPts[0]) gerçekten aynı mı?
-            // Varsayım: startMarker = rota/plan'ın 1. noktası
-            const startMarker = window.cart?.find(item => item.day == day && item.location)?.location;
-            if (startMarker) {
+            // Yönü test et! Marker barın başında arcPts[0], sonunda arcPts[-1] noktasında olmalı.
+            // Bar'ın başında gösterilecek marker konumu:
+            // Planın ilk marker'ı
+            const startRef = window.cart?.find(it => it.day == day && it.location)?.location;
+            if (startRef) {
                 const [arcLng0, arcLat0] = arcPts[0];
                 const [arcLngN, arcLatN] = arcPts[arcPts.length - 1];
-                const distToStart = haversine(startMarker.lat, startMarker.lng, arcLat0, arcLng0);
-                const distToEnd   = haversine(startMarker.lat, startMarker.lng, arcLatN, arcLngN);
-                // Eğer başlangıca en yakın nokta son nokta ise, yönü düzelt!
-                if (distToEnd < distToStart) {
-                    arcPts = arcPts.slice().reverse();
-                }
+                // Bar başı marker yay başına daha yakın mı? Değilse reverse!
+                const dStart = haversine(startRef.lat, startRef.lng, arcLat0, arcLng0);
+                const dEnd = haversine(startRef.lat, startRef.lng, arcLatN, arcLngN);
+                if (dEnd < dStart) arcPts = arcPts.slice().reverse();
             }
-
             let idx = Math.round(percent * (arcPts.length - 1));
             idx = Math.max(0, Math.min(idx, arcPts.length - 1));
-            // Doğru format: [lng, lat] → [lat, lng]
-            const [lng, lat] = arcPts[idx];
+            const [lng, lat] = arcPts[idx]; // ARC noktası [lng,lat]
             if (hoverMarker) {
                 hoverMarker.setLatLng([lat, lng]);
             } else {
@@ -6592,18 +6586,19 @@ function setupScaleBarInteraction(day, map) {
             }
         }
     }
+
     function onLeave() {
         if (hoverMarker) {
             map.removeLayer(hoverMarker);
             hoverMarker = null;
         }
     }
+
     scaleBar.addEventListener("mousemove", onMove);
     scaleBar.addEventListener("mouseleave", onLeave);
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
-
 window.addNearbyPlaceToTrip = function(idx) {
     if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
     const f = window._lastNearbyPlaces[idx];
