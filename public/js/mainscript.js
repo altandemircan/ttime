@@ -299,7 +299,8 @@ function fitExpandedMapToRoute(day) {
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
-      expObj.expandedMap.setView([0, 0], 2);
+      expObj.expandedmap.setView([47.5, 12.5], 5); // Avrupa ve çevresi
+
     }
   }
 }
