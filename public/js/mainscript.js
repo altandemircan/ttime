@@ -2180,9 +2180,18 @@ const categoryIcons = {
 };
 
 function addToCart(
+
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
+
+    const containerId = `route-map-day${day}`;
+  if (!window.leafletMaps) window.leafletMaps = {};
+  if (!window.leafletMaps[containerId]) {
+      ensureDayMapContainer(day);
+      initEmptyDayMap(day);
+  }
+  
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
   // 1) Placeholder temizliği
