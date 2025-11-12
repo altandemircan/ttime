@@ -5089,16 +5089,12 @@ function addNumberedMarkers(map, points) {
     });
 }
 
-// Minik harita/küçük harita: markerları yay şeklinde, kesik çizgi ile birleştiren patchli fonksiyon! 
-// --- Güncelle: renderLeafletRoute'da yay arc noktalarını Flyers için kaydet ---
-// 1. Flyers modunda yay noktalarını birleştirip window'a kaydediyoruz
-// 2. ScaleBar etkileşiminde yayda markerı kaydırmak için patch'i ekliyoruz
-
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
-    if (window.leafletMaps[containerId]) {
+    // PATCH: Güvenli map silme
+    if (window.leafletMaps && window.leafletMaps[containerId]) {
         window.leafletMaps[containerId].remove();
         delete window.leafletMaps[containerId];
     }
@@ -5168,7 +5164,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     // EKLE: Flyers modunda kavisli yay noktalarını kaydet
     if (isFlyMode && points.length > 1) {
-        // --- Flyers için kavisli yay noktaları birleştir ---
         window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
         let arcPoints = [];
         for (let i = 0; i < points.length - 1; i++) {
@@ -5177,7 +5172,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             const curve = getCurvedArcCoords(start, end, 0.33, 32);
             arcPoints = arcPoints.concat(curve);
 
-            // Haritada da kavisli çizgi görselini göster (bu zaten vardı)
             drawCurvedLine(map, points[i], points[i + 1], {
                 color: "#1976d2",
                 weight: 5,
@@ -5187,7 +5181,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         }
         window._curvedArcPointsByDay[day] = arcPoints;
     } else if (hasValidGeo && routeCoords.length > 1) {
-        // Sadece Türkiye içi OSRM gerçek route varsa düz çizgi
         L.polyline(routeCoords, {
             color: '#1976d2',
             weight: 8,
@@ -5196,7 +5189,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             dashArray: null
         }).addTo(map);
     }
-    // --- PATCH SONU ---
 
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
@@ -5217,16 +5209,16 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
     }
 
-    // --- Harita görünümünü ayarla ---
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (points.length > 1) {
         map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (points.length === 1) {
         map.setView([points[0].lat, points[0].lng], 14, { animate: true });
     } else {
-    map.setView([41.9, 12.5], 6, { animate: true });
-}
+        map.setView([41.9, 12.5], 6, { animate: true });
+    }
     map.zoomControl.setPosition('topright');
+    window.leafletMaps = window.leafletMaps || {};
     window.leafletMaps[containerId] = map;
 }
 // Harita durumlarını yönetmek için global değişken
