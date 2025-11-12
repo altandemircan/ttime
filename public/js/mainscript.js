@@ -9027,7 +9027,9 @@ if (
   container.style.display = 'block';
 
   // PATCH: loader varsa mutlaka gizle!
-  document.querySelectorAll('.tt-scale-loader').forEach(el => el.style.setProperty('display', 'none', 'important');
+  document.querySelectorAll('.tt-scale-loader').forEach(el => {
+    el.style.setProperty('display', 'none', 'important');
+  });
   // PATCH: özel CSS ayarları!
   document.querySelectorAll('.expanded-map-panel').forEach(el => {
     el.style.padding = '0 10px';
