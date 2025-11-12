@@ -10102,8 +10102,6 @@ gridG.appendChild(ln)
 
 
 
-    ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-    gridG.appendChild(ln);
 
     const tx = document.createElementNS(svgNS, 'text');
     tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
