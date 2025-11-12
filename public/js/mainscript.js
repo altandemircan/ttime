@@ -9417,8 +9417,9 @@ track.addEventListener('touchmove', track.__onMove);
 
 
   // Loader
+  if (Array.isArray(markers) && markers.length >= 2) {
   window.showScaleBarLoading?.(container, 'Loading elevation…');
-
+}
   // Elevation verisini yükle
   (async () => {
     try {
