@@ -8968,6 +8968,25 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 
+(function ensureScaleBarLoadingHelpers(){
+  if (window.__tt_scaleBarLoaderReady) return;
+
+  function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
+  window.showScaleBarLoading = function(c,t='Loading elevation…'){
+    const tr = trackOf(c); if (!tr) return;
+    let box = tr.querySelector('.tt-scale-loader');
+    if (!box){ box=document.createElement('div'); box.className='tt-scale-loader'; box.innerHTML=`<div class="spinner"></div><div class="txt"></div>`; tr.appendChild(box); }
+    const txt = box.querySelector('.txt'); if (txt) txt.textContent = t;
+    box.style.display='flex';
+  };
+  window.updateScaleBarLoadingText = function(c,t){
+    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); const txt = box?.querySelector('.txt'); if (txt) txt.textContent = t;
+  };
+  window.hideScaleBarLoading = function(c){
+    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); if (box) box.style.display='none';
+  };
+  window.__tt_scaleBarLoaderReady = true;
+})();
 function renderRouteScaleBar(container, totalKm, markers) {
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
@@ -9696,42 +9715,7 @@ document.addEventListener('mousedown', (e) => {
 })();
 
 
-(function ensureScaleBarLoadingHelpers(){
-  if (window.__tt_scaleBarLoaderReady) return;
 
-  function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
-  window.showScaleBarLoading = function(c,t='Loading elevation…'){
-    const tr = trackOf(c); if (!tr) return;
-    let box = tr.querySelector('.tt-scale-loader');
-    if (!box){ box=document.createElement('div'); box.className='tt-scale-loader'; box.innerHTML=`<div class="spinner"></div><div class="txt"></div>`; tr.appendChild(box); }
-    const txt = box.querySelector('.txt'); if (txt) txt.textContent = t;
-    box.style.display='flex';
-  };
-  window.updateScaleBarLoadingText = function(c,t){
-    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); const txt = box?.querySelector('.txt'); if (txt) txt.textContent = t;
-  };
-  window.hideScaleBarLoading = function(c){
-    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); if (box) box.style.display='none';
-  };
-  window.__tt_scaleBarLoaderReady = true;
-})();
-(function ensureElev429Planner(){
-  if (window.__tt_elev429PlannerReady) return;
-  window.planElevationRetry = function(container, routeKey, waitMs, retryFn){
-    if (!container) return;
-    const now = Date.now(), until = now + Math.max(2000, waitMs|0);
-    if (container.__elevRetryTimer){ clearTimeout(container.__elevRetryTimer); container.__elevRetryTimer=null; }
-    const tick = ()=> {
-      const left = Math.max(0, Math.ceil((until - Date.now())/1000));
-      updateScaleBarLoadingText(container, left>0 ? `Waiting ${left}s due to rate limit…` : `Retrying…`);
-      if (left>0){ container.__elevRetryTicker = setTimeout(tick, 1000); }
-    };
-    if (container.__elevRetryTicker){ clearTimeout(container.__elevRetryTicker); }
-    tick();
-    container.__elevRetryTimer = setTimeout(()=>{ container.__elevRetryTimer=null; if (container.__elevRetryTicker) clearTimeout(container.__elevRetryTicker); retryFn && retryFn(); }, until-now);
-  };
-  window.__tt_elev429PlannerReady = true;
-})();
 
 (function ensureElevationMux(){
   if (window.__tt_elevMuxReady) return;
