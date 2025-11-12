@@ -3529,12 +3529,7 @@ if (typeof updateCart === "function") updateCart();
 
 
 async function updateCart() {
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
-if (!window.leafletMaps) window.leafletMaps = {};
-if (!window.leafletMaps[`route-map-day${day}`]) {
-    ensureDayMapContainer(day);
-    initEmptyDayMap(day);
-}
+
   // ÖNCE route'ları HAZIRLA!
   for (const d of days) {
     await renderRouteForDay(d);
