@@ -3529,6 +3529,7 @@ if (typeof updateCart === "function") updateCart();
 
 
 async function updateCart() {
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
   // ÖNCE route'ları HAZIRLA!
   for (const d of days) {
