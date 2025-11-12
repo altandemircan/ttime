@@ -9014,43 +9014,26 @@ if (
   coords.length < 2 ||
   !markers || !Array.isArray(markers) || markers.length < 2
 ) {
-  container.innerHTML = `<div class="scale-bar-track">
-    <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-      No route points found.<br>Select at least 2 points to start mapping.
+  container.innerHTML = `
+    <div class="scale-bar-track">
+      <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+        No route points found.<br>Select at least 2 points to start mapping.
+      </div>
+      <!-- Loader as DOM placeholder (never visible) -->
+      <div class="tt-scale-loader" style="display: none;">
+        <div class="spinner"></div>
+        <div class="txt">Loading elevation…</div>
+      </div>
     </div>
-    <div class="tt-scale-loader" style="display: none;">
-      <div class="spinner"></div>
-      <div class="txt">Loading elevation…</div>
-    </div>
-  </div>`;
+  `;
   container.style.display = 'block';
 
-  // PATCH: loader varsa mutlaka gizle!
-  document.querySelectorAll('.tt-scale-loader').forEach(el => {
-    el.style.setProperty('display', 'none', 'important');
-  });
-  // PATCH: özel CSS ayarları!
-  document.querySelectorAll('.expanded-map-panel').forEach(el => {
-    el.style.padding = '0 10px';
-    el.style.width = 'calc(100% - 455px)';
-    el.style.boxShadow = 'none';
-  });
-  document.querySelectorAll('.route-scale-bar').forEach(el => {
-    el.style.height = 'fit-content';
-    el.style.padding = '0';
-  });
-  document.querySelectorAll('.expanded-map-header').forEach(el => {
-    el.style.top = '150px';
-    el.style.bottom = 'unset';
-  });
-  document.querySelectorAll('.scale-bar-track').forEach(el => {
-    el.style.minHeight = 'fit-content';
-  });
-  document.querySelectorAll('.expanded-map').forEach(el => {
-    el.style.height = 'calc(100% - 80px)';
-    el.style.bottom = '80px';
-    el.style.background = '#fff';
-  });
+  // Loader'ı DOM'dan kaldır — artık ekstra CSS patch'e gerek yok!
+  container.querySelectorAll('.tt-scale-loader').forEach(el => el.remove());
+
+  // Scale bar görünümüne dair özet/opsiyonel ayarlar — ister kaldır ister bırak:
+  // container.querySelector('.scale-bar-track').style.minHeight = 'fit-content';
+  // container.parentElement?.style.height = 'calc(100% - 80px)';
 
   return;
 }
