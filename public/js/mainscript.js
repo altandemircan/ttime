@@ -9089,8 +9089,9 @@ if (
     if (showElevationLoader) {
 
       if (Array.isArray(markers) && markers.length >= 2) {
+  if (Array.isArray(markers) && markers.length >= 2) {
   window.showScaleBarLoading?.(container, 'Loading elevation…');
-}    }
+}}    }
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
