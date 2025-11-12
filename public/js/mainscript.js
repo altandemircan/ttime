@@ -9008,19 +9008,24 @@ if (!container || isNaN(totalKm)) {
 
 
   if (
-      !coords ||
-      !Array.isArray(coords) ||
-      coords.length < 2 ||
-      !markers || !Array.isArray(markers) || markers.length < 1
-    ) {
-      // Sıfırdan veya tek marker ile scale bar sadece badge ve mesajla render edilir!
-      container.innerHTML = `<div class="scale-bar-track">
-        <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-          No route points found.<br>Select at least 2 points to start mapping.
-        </div></div>`;
-      container.style.display = 'block';
-      return;
-    }
+  !coords ||
+  !Array.isArray(coords) ||
+  coords.length < 2 ||
+  !markers || !Array.isArray(markers) || markers.length < 2
+) {
+  // 0 veya 1 marker varsa scale bar sadece badge ve mesaj gösterir, loader yok!
+  container.innerHTML = `<div class="scale-bar-track">
+    <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+      No route points found.<br>Select at least 2 points to start mapping.
+    </div></div>`;
+  container.style.display = 'block';
+
+  // PATCH: loader DOM'da varsa, gizle/sil!
+  const loader = container.querySelector('.tt-scale-loader');
+  if (loader) loader.style.display = 'none';
+
+  return;
+}
 
   // Eğer burada geojson'dan coords yok veya kısaysa (ROMA gibi marker+yayda) OLSUN, yine de scale bar çiz!
 let hasGeoJson = coords && coords.length >= 2;
