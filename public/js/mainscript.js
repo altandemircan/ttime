@@ -2184,14 +2184,6 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
-
-    const containerId = `route-map-day${day}`;
-  if (!window.leafletMaps) window.leafletMaps = {};
-  if (!window.leafletMaps[containerId]) {
-      ensureDayMapContainer(day);
-      initEmptyDayMap(day);
-  }
-  
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
   // 1) Placeholder temizliği
@@ -6645,7 +6637,6 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
       iconAnchor: [9,9]
     });
 
-    if (!points || points.length < 2) return;
     window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
 }
 
