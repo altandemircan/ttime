@@ -3261,7 +3261,6 @@ function startMapPlanning() {
   updateCart();
   ensureDayMapContainer(1);
   initEmptyDayMap(1);
-  const mini = document.getElementById('route-map-day1');
   if (mini) mini.style.display = 'none';
 
   if (typeof renderTravelModeControlsForAllDays === 'function') {
