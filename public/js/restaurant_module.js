@@ -159,7 +159,7 @@ function showRouteInfoBanner(day) {
     banner.id = 'route-info-banner';
     banner.className = 'route-info-banner';
     banner.innerHTML = `
-      <span>Click the route to list nearby restaurants, cafes and bars.</span>
+      <span>Click the map to list nearby restaurants, cafes and bars.</span>
       <button id="close-route-info" class="route-info-close">✕</button>
     `;
     expandedContainer.prepend(banner);
