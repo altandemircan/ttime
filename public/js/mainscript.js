@@ -9254,8 +9254,14 @@ container._elevKmSpan = totalKm;
     else { vizMin = min - 1; vizMax = max + 1; }
 
     const X = kmRel => (kmRel / spanKm) * width;
-    const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
-
+                const TOP_PAD = 12;
+                const BOTTOM_PAD = 16;
+                const Y = e => {
+                  if (isNaN(e) || vizMax === vizMin) return SVG_H / 2;
+                  // scaleHeight = toplam alan
+                  const scaleHeight = SVG_H - TOP_PAD - BOTTOM_PAD;
+                  return (SVG_H - BOTTOM_PAD) - ((e - vizMin) / (vizMax - vizMin)) * scaleHeight;
+                };
     while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 

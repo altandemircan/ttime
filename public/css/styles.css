@@ -3005,14 +3005,17 @@ ease;
 }
 
 .place-input, #noteTitle, #noteDetails  {
-    width: -webkit-fill-available;
+       width: -webkit-fill-available;
     padding: 12px 15px;
     border: none;
     border-radius: 8px;
     font-size: 0.95rem;
-    transition: all 0.3s ease;
+    transition: all 0.3s 
+ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     font-family: 'Satoshi';
+    border: 1px solid #d9d9d9;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }
 
 .place-input:focus {
