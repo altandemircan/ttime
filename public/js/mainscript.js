@@ -4585,23 +4585,7 @@ function updateExpandedMap(expandedMap, day) {
     adjustExpandedHeader(day);
 }
 
-// Yardımcı fonksiyon - Yay koordinatlarını al
-function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
-    // start & end: [lng, lat] formatında
-    const sx = start[0], sy = start[1];
-    const ex = end[0], ey = end[1];
-    
-    const mx = (sx + ex) / 2 + strength * (ey - sy);
-    const my = (sy + ey) / 2 - strength * (ex - sx);
-    
-    const coords = [];
-    for (let t = 0; t <= 1; t += 1/segments) {
-        const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
-        const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
-        coords.push([x, y]);
-    }
-    return coords;
-}
+
 /* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
 function clearRouteCachesForDay(day){
   if(!day) return;
@@ -5390,70 +5374,7 @@ function onMove(e) {
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
-// Leaflet'te kullandığınız yay algoritmasıyla TAMAMEN AYNI olan fonksiyon:
-function getCurvedArcCoords(start, end, strength = 0.5, segments = 30) {
-    // start & end: [lng, lat] formatında olmalı
-    const sx = start[0], sy = start[1];
-    const ex = end[0], ey = end[1];
-    
-    // Orta nokta ve kontrol noktası
-    const midX = (sx + ex) / 2;
-    const midY = (sy + ey) / 2;
-    
-    // Kontrol noktası - yönü değiştirmek için işaretleri ayarlayın
-    const controlX = midX + strength * (ey - sy);
-    const controlY = midY - strength * (ex - sx);
-    
-    const coords = [];
-    for (let t = 0; t <= 1; t += 1/segments) {
-        // Quadratic Bezier formülü
-        const x = Math.pow(1 - t, 2) * sx + 2 * (1 - t) * t * controlX + Math.pow(t, 2) * ex;
-        const y = Math.pow(1 - t, 2) * sy + 2 * (1 - t) * t * controlY + Math.pow(t, 2) * ey;
-        coords.push([x, y]);
-    }
-    
-    // Son noktayı ekle
-    coords.push([ex, ey]);
-    
-    return coords;
-}
-// Yay noktalarını kaydetmek için yardımcı fonksiyon
-function saveArcPointsForDay(day, points) {
-    if (!window._curvedArcPointsByDay) {
-        window._curvedArcPointsByDay = {};
-    }
-    window._curvedArcPointsByDay[day] = points;
-}
-// TEST FONKSİYONU - Yayı görsel olarak kontrol etmek için
-function testArcVisualization(day, map) {
-    const arcPts = window._curvedArcPointsByDay[day];
 
-    // PATCH: Null/boş/dizi check!
-    if (!arcPts || !Array.isArray(arcPts) || arcPts.length < 2) return;
-    
-    // Yayı görsel olarak çiz
-    const polyline = L.polyline(arcPts.map(pt => [pt[1], pt[0]]), {
-        color: 'red',
-        weight: 3,
-        opacity: 0.7,
-        dashArray: '5, 5'
-    }).addTo(map);
-    
-    // Başlangıç ve bitiş noktalarını işaretle
-    L.circleMarker([arcPts[0][1], arcPts[0][0]], {
-        radius: 8,
-        color: 'green',
-        fillColor: 'green'
-    }).addTo(map).bindPopup('START');
-    
-    L.circleMarker([arcPts[arcPts.length-1][1], arcPts[arcPts.length-1][0]], {
-        radius: 8,
-        color: 'blue',
-        fillColor: 'blue'
-    }).addTo(map).bindPopup('END');
-    
-    console.log("Test arc drawn - START (green) to END (blue)");
-}
 
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
@@ -9927,7 +9848,7 @@ document.addEventListener('mousedown', (e) => {
     if (!window.FEEDBACK_API_ENABLED) {
       const body = encodeURIComponent(
         `Tür: ${type}\nEmail: ${userEmail || '-'}\n\nMesaj:\n${message}`
-      );
+      );drawCurvedLine
       // Kullanıcıyı mail client'a yönlendir
       window.location.href = `mailto:altandemircan@gmail.com?subject=${encodeURIComponent('Yeni Feedback')}&&body=${body}`;
       showStatus('Mail istemcisi açılıyor (dosya ekleri desteklenmez).', 'success');
