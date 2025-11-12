@@ -9010,7 +9010,7 @@ if (
   !coords || !Array.isArray(coords) || coords.length < 2 ||
   !markers || !Array.isArray(markers) || markers.length < 2
 ) {
-  let infoHtml;
+  let infoHtml = '';
   if (!markers || markers.length === 0) {
     infoHtml = `
       <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
@@ -9025,7 +9025,7 @@ if (
     `;
   }
 
-  // DEBUG LOGS
+  // DEBUG için:
   console.log('markers:', markers);
   console.log('coords:', coords);
   console.log('infoHtml:', infoHtml);
@@ -9038,7 +9038,6 @@ if (
   `;
   container.style.display = 'block';
 
-  // 0/1 marker özel CSS'leri uygula:
   document.querySelectorAll('.scale-bar-track').forEach(el =>
     el.style.setProperty('min-height', 'max-content', 'important')
   );
@@ -9057,7 +9056,6 @@ if (
 
   return;
 } else {
-  // Sadece >=2 marker olduğunda bu inline JS CSS'leri kaldır (default dosya devreye girsin)
   document.querySelectorAll('.scale-bar-track').forEach(el =>
     el.style.removeProperty('min-height')
   );
