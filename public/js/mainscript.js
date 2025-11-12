@@ -2295,6 +2295,15 @@ function addToCart(
     if (typeof saveTripAfterRoutes === "function") {
       saveTripAfterRoutes();
     }
+
+    // PATCH: Expanded Map ve Scale Bar'ı güncelle!
+    if (window.expandedMaps) {
+      Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
+        if (expandedMap) updateExpandedMap(expandedMap, day);
+      });
+    }
+
+
   }
   return true;
 }
@@ -4167,7 +4176,16 @@ cartDiv.appendChild(addNewDayButton);
         dayList._sortableSetup = true;
       }
     });
-  }, 0);} 
+  }, 0);
+
+// PATCH: Expanded Map ve Scale Bar'ı güncelle!
+  if (window.expandedMaps) {
+    Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
+      if (expandedMap) updateExpandedMap(expandedMap, day);
+    });
+  }
+  
+} 
 
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
