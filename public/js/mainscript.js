@@ -8106,7 +8106,7 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return [];
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
-    if (!points || points.length < 2) return;
+
 
 
     // Haversine mesafe (metre)
