@@ -7010,6 +7010,8 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
 
   expandedMap.eachLayer(l => { if (l instanceof L.Marker) expandedMap.removeLayer(l); });
 
+  const points = getDayPoints(day);
+
 
   points.forEach((p, idx) => {
     let currentName = p.name || '';
