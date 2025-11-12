@@ -4562,7 +4562,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-      width: calc(100% - 20px);
+      width: calc(100% - 50px);
     font-size: 0.9rem;
     height: 150px;
     text-align: left;
