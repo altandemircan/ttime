@@ -9025,27 +9025,26 @@ if (
   `;
   container.style.display = 'block';
 
-  // Loader kesin görünmez olsun:
+  // Loader kaldır!
   container.querySelectorAll('.tt-scale-loader').forEach(el => el.remove());
 
-  // SADECE GEREKEN CSS PATCHLER (0-1 marker için):
-  container.querySelectorAll('.scale-bar-track').forEach(el => {
-    el.style.minHeight = 'max-content';
+  // ---- DİKKAT: Doğru DOM elementlerini bul!   ----
+  // Eğer container'ın içinde yoksa, globalden bul:
+  document.querySelectorAll('.scale-bar-track').forEach(el => {
+    el.style.setProperty('minHeight', 'max-content', 'important');
   });
 
-  container.querySelectorAll('.route-scale-bar').forEach(el => {
-    el.style.height = 'fit-content';
+  document.querySelectorAll('.route-scale-bar').forEach(el => {
+    el.style.setProperty('height', 'fit-content', 'important');
   });
 
-  container.querySelectorAll('.expanded-map-panel').forEach(el => {
-    el.style.padding = '0';
-    el.style.width = 'calc(100% - 435px)';
-    el.style.boxShadow = 'none';
+  document.querySelectorAll('.expanded-map-panel').forEach(el => {
+    el.style.setProperty('padding', '0', 'important');
+    el.style.setProperty('width', 'calc(100% - 435px)', 'important');
+    el.style.setProperty('boxShadow', 'none', 'important');
   });
 
-  container.querySelectorAll('.expanded-map').forEach(el => {
-    el.style.height = 'calc(100% - 94px)';
-    el.style.bottom = '94px';
+  document.querySelectorAll('.expanded-map').forEach(el => {
     el.style.setProperty('height', 'calc(100% - 94px)', 'important');
     el.style.setProperty('bottom', '94px', 'important');
   });
