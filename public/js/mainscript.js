@@ -9009,9 +9009,7 @@ if (!container || isNaN(totalKm)) {
 
  
 if (
-  !coords ||
-  !Array.isArray(coords) ||
-  coords.length < 2 ||
+  !coords || !Array.isArray(coords) || coords.length < 2 ||
   !markers || !Array.isArray(markers) || markers.length < 2
 ) {
   container.innerHTML = `
@@ -9019,7 +9017,6 @@ if (
       <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
         No route points found.<br>Select at least 2 points to start mapping.
       </div>
-      <!-- Loader as DOM placeholder (never visible) -->
       <div class="tt-scale-loader" style="display: none;">
         <div class="spinner"></div>
         <div class="txt">Loading elevation…</div>
@@ -9028,12 +9025,30 @@ if (
   `;
   container.style.display = 'block';
 
-  // Loader'ı DOM'dan kaldır — artık ekstra CSS patch'e gerek yok!
+  // Loader kesin görünmez olsun:
   container.querySelectorAll('.tt-scale-loader').forEach(el => el.remove());
 
-  // Scale bar görünümüne dair özet/opsiyonel ayarlar — ister kaldır ister bırak:
-  // container.querySelector('.scale-bar-track').style.minHeight = 'fit-content';
-  // container.parentElement?.style.height = 'calc(100% - 80px)';
+  // SADECE GEREKEN CSS PATCHLER (0-1 marker için):
+  container.querySelectorAll('.scale-bar-track').forEach(el => {
+    el.style.minHeight = 'max-content';
+  });
+
+  container.querySelectorAll('.route-scale-bar').forEach(el => {
+    el.style.height = 'fit-content';
+  });
+
+  container.querySelectorAll('.expanded-map-panel').forEach(el => {
+    el.style.padding = '0';
+    el.style.width = 'calc(100% - 435px)';
+    el.style.boxShadow = 'none';
+  });
+
+  container.querySelectorAll('.expanded-map').forEach(el => {
+    el.style.height = 'calc(100% - 94px)';
+    el.style.bottom = '94px';
+    el.style.setProperty('height', 'calc(100% - 94px)', 'important');
+    el.style.setProperty('bottom', '94px', 'important');
+  });
 
   return;
 }
