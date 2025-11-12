@@ -9055,22 +9055,6 @@ if (
   });
 
   return;
-} else {
-  document.querySelectorAll('.scale-bar-track').forEach(el =>
-    el.style.removeProperty('min-height')
-  );
-  document.querySelectorAll('.route-scale-bar').forEach(el =>
-    el.style.removeProperty('height')
-  );
-  document.querySelectorAll('.expanded-map-panel').forEach(el => {
-    el.style.removeProperty('padding');
-    el.style.removeProperty('width');
-    el.style.removeProperty('box-shadow');
-  });
-  document.querySelectorAll('.expanded-map').forEach(el => {
-    el.style.removeProperty('height');
-    el.style.removeProperty('bottom');
-  });
 }
 
 
