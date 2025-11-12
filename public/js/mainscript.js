@@ -9010,11 +9010,28 @@ if (!container || isNaN(totalKm)) {
   !coords || !Array.isArray(coords) || coords.length < 2 ||
   !markers || !Array.isArray(markers) || markers.length < 2
 ) {
-  container.innerHTML = `
-    <div class="scale-bar-track">
+
+  // KONTROL: Mesajı seç
+  let infoHtml = '';
+  if (!markers || markers.length === 0) {
+    // Hiç marker yoksa:
+    infoHtml = `
       <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
         No route points found.<br>Select at least 2 points to start mapping.
       </div>
+    `;
+  } else if (markers.length === 1) {
+    // 1 marker varsa:
+    infoHtml = `
+      <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+        1 point added.<br>Add another to create a route and see elevation.
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div class="scale-bar-track">
+      ${infoHtml}
     </div>
   `;
   container.style.display = 'block';
@@ -9037,23 +9054,6 @@ if (!container || isNaN(totalKm)) {
   });
 
   return;
-} else {
-  // Sadece >=2 marker olduğunda bu inline JS CSS'leri kaldır (default dosya devreye girsin)
-  document.querySelectorAll('.scale-bar-track').forEach(el =>
-    el.style.removeProperty('min-height')
-  );
-  document.querySelectorAll('.route-scale-bar').forEach(el =>
-    el.style.removeProperty('height')
-  );
-  document.querySelectorAll('.expanded-map-panel').forEach(el => {
-    el.style.removeProperty('padding');
-    el.style.removeProperty('width');
-    el.style.removeProperty('box-shadow');
-  });
-  document.querySelectorAll('.expanded-map').forEach(el => {
-    el.style.removeProperty('height');
-    el.style.removeProperty('bottom');
-  });
 }
 
 
