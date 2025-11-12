@@ -290,6 +290,7 @@ function fitExpandedMapToRoute(day) {
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
   if (expObj && expObj.expandedMap) {
+    const points = getDayPoints(day);
 
 
 
