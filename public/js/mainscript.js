@@ -3165,33 +3165,6 @@ function initEmptyDayMap(day) {
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 }
-function restoreLostDayMaps() {
-  if (!window.leafletMaps) return;
-  Object.keys(window.leafletMaps).forEach(id => {
-    if (!/^route-map-day\d+$/.test(id)) return;
-    const container = document.getElementById(id);
-    if (!container) return; // Gün tamamen silinmiş olabilir
-    if (!container.querySelector('.leaflet-container')) {
-      const old = window.leafletMaps[id];
-      let center = null, zoom = null;
-      try {
-        center = old.getCenter();
-        zoom = old.getZoom();
-        old.remove();
-      } catch(_){}
-      delete window.leafletMaps[id];
-
-      const day = parseInt(id.replace('route-map-day',''), 10);
-      initEmptyDayMap(day);
-      if (center && window.leafletMaps[id]) {
-        try { window.leafletMaps[id].setView(center, zoom || window.leafletMaps[id].getZoom()); } catch(_){}
-      }
-      if (typeof renderRouteForDay === 'function') {
-        setTimeout(()=>renderRouteForDay(day), 0);
-      }
-    }
-  });
-}
 
 (function initDirectDayExpandedMapPatch(){
   if (window.__tt_directExpandedPatchApplied) return;
@@ -3531,19 +3504,20 @@ if (typeof updateCart === "function") updateCart();
 
 
 async function updateCart() {
-    const containerId = `route-map-day${day}`;
-if (!window.leafletMaps) window.leafletMaps = {};
-if (!window.leafletMaps[containerId]) {
-  ensureDayMapContainer(day);
-  initEmptyDayMap(day);
-}
+
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
   // ÖNCE route'ları HAZIRLA!
   for (const d of days) {
-    await renderRouteForDay(d);
-    console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+  const containerId = `route-map-day${d}`;
+  if (!window.leafletMaps) window.leafletMaps = {};
+  if (!window.leafletMaps[containerId]) {
+    ensureDayMapContainer(d);
+    initEmptyDayMap(d);
   }
+  await renderRouteForDay(d);
+  console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+}
   console.log("updateCart başlatıldı");
   document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
 
