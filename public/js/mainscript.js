@@ -9026,45 +9026,39 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-  // Eğer marker < 2 ise ya da route yoksa mesajı bas
-  if (
-    !coords || !Array.isArray(coords) || coords.length < 2 ||
-    !markers || !Array.isArray(markers) || markers.length < 2
-  ) {
-    let infoHtml = '';
-    if (!markers || markers.length === 0) {
-      infoHtml = `
-        <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-          No route points found.<br>
-          Select at least 2 points to start mapping.
-        </div>
-      `;
-    } else if (markers.length === 1) {
-      infoHtml = `
-        <div style="text-align:center;padding:12px;font-size:13px;color:#1976d2;">
-          <b>1 point added.</b><br>
-          Add another to create a route and see elevation.
-        </div>
-      `;
-    } else if (markers.length > 1 && (!coords || coords.length < 2)) {
-      infoHtml = `
-        <div style="text-align:center;padding:12px;font-size:13px;color:#1976d2;">
-          <b>${markers.length} points added but no route found.</b><br>
-          Try adjusting your points or route options.
-        </div>
-      `;
-    }
+ if (
+  !coords || !Array.isArray(coords) || coords.length < 2 ||
+  !markers || !Array.isArray(markers) || markers.length < 2
+) {
+  let infoHtml = '';
+  if (!markers || markers.length === 0) {
+    infoHtml = `
+      <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+        No route points found.<br>
+        Select at least 2 points to start mapping.
+      </div>
+    `;
+  } else if (markers.length === 1) {
+    infoHtml = `
+      <div style="text-align:center;padding:12px;font-size:13px;color:#1976d2;">
+        <b>1 point added.</b><br>
+        Add another to create a route and see elevation.
+      </div>
+    `;
+  } else if (markers.length > 1 && (!coords || coords.length < 2)) {
+    infoHtml = `
+      <div style="text-align:center;padding:12px;font-size:13px;color:#1976d2;">
+        <b>${markers.length} points added but no route found.</b><br>
+        Try adjusting your points or route options.
+      </div>
+    `;
+  }
 
-    // DEBUG için:
-    console.log('==SCALE BAR STATUS==');
-    console.log('Markers:', markers);
-    console.log('Coords:', coords);
-    console.log('InfoHtml:', infoHtml);
-    console.log('ScaleBar Container ID:', container?.id);
+  container.innerHTML = `<div class="scale-bar-track">${infoHtml}</div>`;
+  container.style.display = 'block';
 
-    container.innerHTML = `<div class="scale-bar-track">${infoHtml}</div>`;
-    container.style.display = 'block';
-
+  // SADECE 0 VEYA 1 MARKER VARSA BU STYLE'LAR KALACAK
+  if (!markers || markers.length <= 1) {
     document.querySelectorAll('.scale-bar-track').forEach(el =>
       el.style.setProperty('min-height', 'max-content', 'important')
     );
@@ -9080,9 +9074,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
       el.style.setProperty('height', 'calc(100% - 94px)', 'important');
       el.style.setProperty('bottom', '94px', 'important');
     });
-
-    return;
   }
+  // 2 veya üzeri marker varsa bu satırlar çalışmaz!
+  return;
+}
 
   // (buradan sonrası normal scale bar/elevation yükleme kodu)
   let hasGeoJson = coords && coords.length >= 2;
