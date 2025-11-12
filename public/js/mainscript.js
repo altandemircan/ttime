@@ -9309,10 +9309,10 @@ for (let i = 0; i < n; i++) {
 
 
     if (topD) {
-      const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
-      areaPath.setAttribute('d', areaD);
-      areaPath.setAttribute('fill', '#263445');
-    }
+  const areaD = `${topD} L ${width} ${SVG_H} L ${GRID_LABEL_PAD_X} ${SVG_H} Z`;
+  areaPath.setAttribute('d', areaD);
+  areaPath.setAttribute('fill', '#263445');
+}
 
     // Eğim renkli çizgiler
     for (let i = 1; i < n; i++) {
