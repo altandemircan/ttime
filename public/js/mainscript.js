@@ -9149,6 +9149,7 @@ svgElem.setAttribute('height', SVG_H);
 track.appendChild(svgElem);
 createScaleElements(track, width, totalKm, 0, markers);
 
+
 const gridG = document.createElementNS(svgNS, 'g');
 gridG.setAttribute('class', 'tt-elev-grid');
 svgElem.appendChild(gridG);
@@ -9161,33 +9162,35 @@ const segG = document.createElementNS(svgNS, 'g');
 segG.setAttribute('class', 'tt-elev-segments');
 svgElem.appendChild(segG);
 
-// ---- BURADA DİKEY ÇİZGİ ve TOOLTIP KISMINI TAMAMEN SİLİYORSUN! ----
+// Dikey çizgi + tooltip
+const verticalLine = document.createElement('div');
+verticalLine.className = 'scale-bar-vertical-line';
+verticalLine.style.cssText = `
+  position:absolute;top:0;bottom:0;width:2px;
+  background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;
+`;
+// Başlangıçta çizgi tam ortada
+verticalLine.style.left = (width / 2) + 'px';
+track.appendChild(verticalLine);
 
-// KODUN DEVAMI: Her grid label için YATAY ÇİZGİ ekle
-for (let i = 0; i <= gridN; i++) {
-  const elevVal = vizMin + (i / gridN) * (vizMax - vizMin);
-  const y = Y(elevVal);
+const tooltip = document.createElement('div');
+tooltip.className = 'tt-elev-tooltip';
+tooltip.style.left = '0px';
+track.appendChild(tooltip);
 
-  // Label
-  const label = document.createElementNS(svgNS, 'text');
-  label.setAttribute('x', 6);
-  label.setAttribute('y', y - 4);
-  label.textContent = `${Math.round(elevVal)} m`;
-  gridG.appendChild(label);
+// Mouse ile çizgiyi hareket ettir (her zaman görünür!)
+track.addEventListener('mousemove', function(e) {
+  const rect = track.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  verticalLine.style.left = `${x}px`;
+});
+track.addEventListener('touchmove', function(e) {
+  const rect = track.getBoundingClientRect();
+  const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
+  verticalLine.style.left = `${x}px`;
+});
+// Mouseleave, touchend gibi eventlerde ÇİZGİYİ GİZLEME! Kodun başka yerinde verticalLine.style.display = 'none' geçiyorsa SİL.
 
-  // YATAY grid çizgisi (label'ın yanında)
-  const hLine = document.createElementNS(svgNS, 'line');
-  hLine.setAttribute('x1', 42);   // label'dan biraz sağda başlasın (ör: 42px)
-  hLine.setAttribute('x2', width); // barın en sonuna dek uzasın
-  hLine.setAttribute('y1', y);
-  hLine.setAttribute('y2', y);
-  hLine.setAttribute('stroke', '#cfd8dc');
-  hLine.setAttribute('stroke-dasharray', '5 7'); // isteğe bağlı
-  hLine.setAttribute('opacity', '.8');
-  gridG.appendChild(hLine);
-}
-
-// Artık dikey çizgi yok, mouse ile hareket eden verticalLine yok!
 // Mesafe (Haversine)
 function hv(lat1, lon1, lat2, lon2) {
   const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -9259,23 +9262,33 @@ container._elevKmSpan = totalKm;
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
     // Grid
-    const levels = 4;
-    for (let i = 0; i <= levels; i++) {
-      const ev = vizMin + (i / levels) * (vizMax - vizMin);
-      const y = Y(ev);
-      if (isNaN(y)) continue;
-      const ln = document.createElementNS(svgNS, 'line');
-      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
-      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-      gridG.appendChild(ln);
+   // YENİ: Sadece yatay grid çizgisi ve label
+const levels = 4;
+for (let i = 0; i <= levels; i++) {
+  const ev = vizMin + (i / levels) * (vizMax - vizMin);
+  const y = Y(ev);
+  if (isNaN(y)) continue;
 
-      const tx = document.createElementNS(svgNS, 'text');
-      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-      tx.textContent = `${Math.round(ev)} m`;
-      gridG.appendChild(tx);
-    }
+  // --- label ---
+  const tx = document.createElementNS(svgNS, 'text');
+  tx.setAttribute('x', 6); // veya daha sola (0), isteğine göre
+  tx.setAttribute('y', String(y - 4));
+  tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+  tx.textContent = `${Math.round(ev)} m`;
+  gridG.appendChild(tx);
+
+  // --- YATAY çizgi ---
+  const hLine = document.createElementNS(svgNS, 'line');
+  hLine.setAttribute('x1', '42');        // label'ın hemen sağında başlasın
+  hLine.setAttribute('x2', String(width));
+  hLine.setAttribute('y1', String(y));
+  hLine.setAttribute('y2', String(y));
+  hLine.setAttribute('stroke', '#cfd8dc');
+  hLine.setAttribute('stroke-dasharray', '5 7');
+  hLine.setAttribute('opacity', '.8');
+  gridG.appendChild(hLine);
+}
+
 
     // Alan
     let topD = '';
