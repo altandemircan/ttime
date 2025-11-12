@@ -4184,7 +4184,7 @@ cartDiv.appendChild(addNewDayButton);
       if (expandedMap) updateExpandedMap(expandedMap, day);
     });
   }
-  
+
 } 
 
 function showRemoveItemConfirmation(index, btn) {
@@ -8992,6 +8992,26 @@ function renderRouteScaleBar(container, totalKm, markers) {
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
+
+     // PATCH: markers dizisi boşsa window.cart ve getDayPoints ile doldur
+  if (!Array.isArray(markers) || markers.length === 0) {
+    let day = 1;
+    const dayMatch = container?.id && container.id.match(/day(\d+)/);
+    if (dayMatch) day = parseInt(dayMatch[1], 10);
+    if (typeof getDayPoints === "function") {
+      const fixedMarkers = getDayPoints(day)
+        .map(p => ({
+          name: p.name || "",
+          distance: 0,
+          lat: p.lat,
+          lng: p.lng
+        }));
+      if (fixedMarkers?.length) {
+        markers = fixedMarkers;
+        console.log("[PATCHED MARKERS]", markers);
+      }
+    }
+  }
 
  // === PATCH: Loader ve scale bar açılış için marker ≥2 şartı ===
   const showElevationLoader = Array.isArray(markers) && markers.length >= 2;
