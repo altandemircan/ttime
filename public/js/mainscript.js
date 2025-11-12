@@ -9257,8 +9257,8 @@ for (let i = 0; i < n; i++) {
 
 
     if (topD) {
-  const areaD = `${topD} L ${width} ${SVG_H} L ${GRID_LABEL_PAD_X} ${SVG_H} Z`;
-  areaPath.setAttribute('d', areaD);
+  const lastSampleX = X(s[s.length-1].distM / 1000 - startKmDom); // Son noktanın X'i
+const areaD = `${topD} L ${lastSampleX} ${SVG_H} L ${GRID_LABEL_PAD_X} ${SVG_H} Z`;  areaPath.setAttribute('d', areaD);
   areaPath.setAttribute('fill', '#263445');
 }
 
