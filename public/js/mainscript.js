@@ -9009,8 +9009,7 @@ if (!container || isNaN(totalKm)) {
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
  
-
- if (
+if (
   !coords ||
   !Array.isArray(coords) ||
   coords.length < 2 ||
@@ -9019,11 +9018,39 @@ if (!container || isNaN(totalKm)) {
   container.innerHTML = `<div class="scale-bar-track">
     <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
       No route points found.<br>Select at least 2 points to start mapping.
-    </div></div>`;
+    </div>
+    <div class="tt-scale-loader" style="display: none;">
+      <div class="spinner"></div>
+      <div class="txt">Loading elevation…</div>
+    </div>
+  </div>`;
   container.style.display = 'block';
-  // PATCH: loader varsa kaldır!
-  const loader = container.querySelector('.tt-scale-loader');
-  if (loader) loader.remove();
+
+  // PATCH: loader varsa mutlaka gizle!
+  document.querySelectorAll('.tt-scale-loader').forEach(el => el.style.display = 'none');
+  // PATCH: özel CSS ayarları!
+  document.querySelectorAll('.expanded-map-panel').forEach(el => {
+    el.style.padding = '0 10px';
+    el.style.width = 'calc(100% - 455px)';
+    el.style.boxShadow = 'none';
+  });
+  document.querySelectorAll('.route-scale-bar').forEach(el => {
+    el.style.height = 'fit-content';
+    el.style.padding = '0';
+  });
+  document.querySelectorAll('.expanded-map-header').forEach(el => {
+    el.style.top = '150px';
+    el.style.bottom = 'unset';
+  });
+  document.querySelectorAll('.scale-bar-track').forEach(el => {
+    el.style.minHeight = 'fit-content';
+  });
+  document.querySelectorAll('.expanded-map').forEach(el => {
+    el.style.height = 'calc(100% - 80px)';
+    el.style.bottom = '80px';
+    el.style.background = '#fff';
+  });
+
   return;
 }
 
