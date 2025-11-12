@@ -3531,6 +3531,12 @@ if (typeof updateCart === "function") updateCart();
 
 
 async function updateCart() {
+    const containerId = `route-map-day${day}`;
+if (!window.leafletMaps) window.leafletMaps = {};
+if (!window.leafletMaps[containerId]) {
+  ensureDayMapContainer(day);
+  initEmptyDayMap(day);
+}
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
   // ÖNCE route'ları HAZIRLA!
