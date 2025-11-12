@@ -9270,20 +9270,20 @@ container._elevKmSpan = totalKm;
 for (let i = 0; i <= levels; i++) {
   const ev = vizMin + (i / levels) * (vizMax - vizMin);
   const y = Y(ev);
-  if (isNaN(y)) continue;
 
-  // --- label ---
+  // LABEL:
   const tx = document.createElementNS(svgNS, 'text');
-  tx.setAttribute('x', 6); // veya daha sola (0), isteğine göre
+  tx.setAttribute('x', '6'); // Sol kenar, label
   tx.setAttribute('y', String(y - 4));
-  tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+  tx.setAttribute('fill', '#90a4ae');
+  tx.setAttribute('font-size', '11');
   tx.textContent = `${Math.round(ev)} m`;
   gridG.appendChild(tx);
 
-  // --- YATAY çizgi ---
+  // YATAY GRID LİNE
   const hLine = document.createElementNS(svgNS, 'line');
-  hLine.setAttribute('x1', '42');        // label'ın hemen sağında başlasın
-  hLine.setAttribute('x2', String(width));
+  hLine.setAttribute('x1', '42'); // Label'ın sağından başlasın!
+  hLine.setAttribute('x2', String(width)); // Tüm grid'in sonuna kadar
   hLine.setAttribute('y1', String(y));
   hLine.setAttribute('y2', String(y));
   hLine.setAttribute('stroke', '#cfd8dc');
