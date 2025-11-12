@@ -2185,15 +2185,6 @@ function addToCart(
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
 
-    // PATCH BAŞI
-  const containerId = `route-map-day${day}`;
-  if (!window.leafletMaps) window.leafletMaps = {};
-  if (!window.leafletMaps[containerId]) {
-    ensureDayMapContainer(day);
-    initEmptyDayMap(day);
-  }
-  // PATCH SONU
-
 
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
@@ -3541,17 +3532,7 @@ if (typeof updateCart === "function") updateCart();
 
 async function updateCart() {
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
- // PATCH: Her gün haritasını oluştur!
-  for (const day of days) {
-    const containerId = `route-map-day${day}`;
-    if (!window.leafletMaps) window.leafletMaps = {};
-    if (!window.leafletMaps[containerId]) {
-      ensureDayMapContainer(day);
-      initEmptyDayMap(day);
-    }
-  }
 
-  
   // ÖNCE route'ları HAZIRLA!
   for (const d of days) {
     await renderRouteForDay(d);
@@ -7028,9 +7009,6 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
   }
 
   expandedMap.eachLayer(l => { if (l instanceof L.Marker) expandedMap.removeLayer(l); });
-
-  const points = getDayPoints(day);
-  if (!points || points.length < 2) return;
 
 
   points.forEach((p, idx) => {
