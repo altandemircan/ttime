@@ -3497,16 +3497,26 @@ async function updateCart() {
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
   // ÖNCE route'ları HAZIRLA!
-  for (const d of days) {
+for (const d of days) {
   const containerId = `route-map-day${d}`;
-  if (!window.leafletMaps) window.leafletMaps = {};
-  if (!window.leafletMaps[containerId]) {
-    ensureDayMapContainer(d);
-    initEmptyDayMap(d);
+ // PATCH: window.leafletMaps hem var mı hem object mi?
+    if (!window.leafletMaps || typeof window.leafletMaps !== 'object') window.leafletMaps = {};
+
+    if (!window.leafletMaps[containerId]) {
+      ensureDayMapContainer(d);
+      initEmptyDayMap(d);
+    }
+
+    await renderRouteForDay(d);
+
+    // PATCH: window.pairwiseRouteSummaries varsa güvenli eriş
+    if (window.pairwiseRouteSummaries && window.pairwiseRouteSummaries[`route-map-day${d}`]) {
+      console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+    }
   }
-  await renderRouteForDay(d);
-  console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
-}
+  // PATCH SONU
+
+
   console.log("updateCart başlatıldı");
   document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
 
