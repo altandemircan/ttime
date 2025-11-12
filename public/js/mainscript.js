@@ -8973,8 +8973,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
 
-     const showElevationLoader = Array.isArray(markers) && markers.length >= 2;
-  if (!showElevationLoader) {
+ // === PATCH: Loader ve scale bar açılış için marker ≥2 şartı ===
+  const showElevationLoader = Array.isArray(markers) && markers.length >= 2;
+
+    if (!showElevationLoader) {
     // loader varsa gizle/sil
     const loader = container && container.querySelector('.tt-scale-loader');
     if (loader) loader.style.display = 'none';
@@ -9006,8 +9008,7 @@ if (!container || isNaN(totalKm)) {
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-  // === PATCH: Loader ve scale bar açılış için marker ≥2 şartı ===
-  const showElevationLoader = Array.isArray(markers) && markers.length >= 2;
+ 
 
   if (
     !coords ||
