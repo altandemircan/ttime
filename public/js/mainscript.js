@@ -9262,33 +9262,23 @@ container._elevKmSpan = totalKm;
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
     // Grid
-   // YENİ: Sadece yatay grid çizgisi ve label
-const levels = 4;
-for (let i = 0; i <= levels; i++) {
-  const ev = vizMin + (i / levels) * (vizMax - vizMin);
-  const y = Y(ev);
-  if (isNaN(y)) continue;
+    const levels = 4;
+    for (let i = 0; i <= levels; i++) {
+      const ev = vizMin + (i / levels) * (vizMax - vizMin);
+      const y = Y(ev);
+      if (isNaN(y)) continue;
+      const ln = document.createElementNS(svgNS, 'line');
+      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+      gridG.appendChild(ln);
 
-  // --- label ---
-  const tx = document.createElementNS(svgNS, 'text');
-  tx.setAttribute('x', 6); // veya daha sola (0), isteğine göre
-  tx.setAttribute('y', String(y - 4));
-  tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-  tx.textContent = `${Math.round(ev)} m`;
-  gridG.appendChild(tx);
-
-  // --- YATAY çizgi ---
-  const hLine = document.createElementNS(svgNS, 'line');
-  hLine.setAttribute('x1', '42');        // label'ın hemen sağında başlasın
-  hLine.setAttribute('x2', String(width));
-  hLine.setAttribute('y1', String(y));
-  hLine.setAttribute('y2', String(y));
-  hLine.setAttribute('stroke', '#cfd8dc');
-  hLine.setAttribute('stroke-dasharray', '5 7');
-  hLine.setAttribute('opacity', '.8');
-  gridG.appendChild(hLine);
-}
-
+      const tx = document.createElementNS(svgNS, 'text');
+      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+      tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
+    }
 
     // Alan
     let topD = '';
