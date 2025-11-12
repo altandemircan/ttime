@@ -3128,16 +3128,18 @@ function initEmptyDayMap(day) {
   }
 
   // Mevcut instance & iç DOM kontrolü
-  const existingMap = window.leafletMaps && window.leafletMaps[containerId];
-  const hasInner = el.querySelector('.leaflet-container');
+  if (window.leafletMaps && window.leafletMaps[containerId]) {
+    const existingMap = window.leafletMaps[containerId];
+    const hasInner = el.querySelector('.leaflet-container');
 
-  if (existingMap && hasInner) {
-    // Sağlam durumda, sadece view’i güncelleyebilirsin (opsiyonel)
-    return;
-  } else if (existingMap && !hasInner) {
-    // Detached
-    try { existingMap.remove(); } catch(_){}
-    delete window.leafletMaps[containerId];
+    if (hasInner) {
+      // Sağlam durumda, sadece view’i güncelleyebilirsin (opsiyonel)
+      return;
+    } else {
+      // Detached
+      try { existingMap.remove(); } catch(_){}
+      delete window.leafletMaps[containerId];
+    }
   }
 
   if (!el.style.height) el.style.height = '285px';
@@ -3156,11 +3158,11 @@ function initEmptyDayMap(day) {
     easeLinearity: 0.2
   }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
   if (!map._initialView) {
-  map._initialView = {
-    center: map.getCenter(),
-    zoom: map.getZoom()
-  };
-}
+    map._initialView = {
+      center: map.getCenter(),
+      zoom: map.getZoom()
+    };
+  }
 
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
@@ -3269,7 +3271,8 @@ function startMapPlanning() {
   }
 
   setTimeout(() => {
-        attachMapClickAddMode(1);
+
+    attachMapClickAddMode(1);
   }, 60);
 
   attemptExpandDay(1);
@@ -3398,7 +3401,7 @@ function startMapPlanningForDay(day) {
 }
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
-  const map = window.leafletMaps[containerId];
+  const map = window.leafletMaps && window.leafletMaps[containerId];
   if (!map) return;
 
   // Aynı gün için bir kere bağla
@@ -3410,23 +3413,19 @@ function attachMapClickAddMode(day) {
   let __singleClickTimer = null;
   const SINGLE_CLICK_DELAY = 250; // ms
 
-  // Tek tık: zamanlayıcı ile çalış; bu süre içinde dblclick/zoom başlarsa iptal edilir
   map.on('click', function(e) {
     if (__singleClickTimer) clearTimeout(__singleClickTimer);
     __singleClickTimer = setTimeout(async () => {
-      // Planlama modu açık değilse veya başka günse görmezden gel
       if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
 
       const { lat, lng } = e.latlng;
 
-      // Reverse geocode (hızlı) – hata olursa default isim
       let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
         if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
 
-      // Aynı koordinatta (± çok küçük delta) duplicate engelle
       const dup = window.cart.some(it =>
         it.day === day &&
         it.location &&
@@ -3435,36 +3434,30 @@ function attachMapClickAddMode(day) {
       );
       if (dup) return;
 
-      // Görsel fallback
       let imageUrl = 'img/placeholder.png';
       try {
         imageUrl = await getImageForPlace(placeInfo.name, 'Place', window.selectedCity || '');
       } catch(_) {}
-// 1. Önce starter'ı sil
-window.cart = window.cart.filter(it => !(it.day === day && it._starter));
-addToCart(
-  placeInfo.name || 'Point',
-  imageUrl,
-  day,
-  'Place',
-  placeInfo.address || '',
-  null,
-  null,
-  placeInfo.opening_hours || '',
-  null,
-  { lat, lng },
-  '',
-  { forceDay: day }
-);
 
+      window.cart = window.cart.filter(it => !(it.day === day && it._starter));
+      addToCart(
+        placeInfo.name || 'Point',
+        imageUrl,
+        day,
+        'Place',
+        placeInfo.address || '',
+        null,
+        null,
+        placeInfo.opening_hours || '',
+        null,
+        { lat, lng },
+        '',
+        { forceDay: day }
+      );
 
-// Add Category butonunu aç
-window.__hideAddCatBtnByDay[day] = false;
+      window.__hideAddCatBtnByDay[day] = false;
+      if (typeof updateCart === "function") updateCart();
 
-// Sonra updateCart çağır
-if (typeof updateCart === "function") updateCart();
-
-      // Marker çiz
       const marker = L.circleMarker([lat, lng], {
         radius: 7,
         color: '#8a4af3',
@@ -3476,14 +3469,12 @@ if (typeof updateCart === "function") updateCart();
       window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
       window.mapPlanningMarkersByDay[day].push(marker);
 
-      // 2+ nokta olunca rota
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 100);
       }
     }, SINGLE_CLICK_DELAY);
   });
 
-  // Çift tık (yakınlaşma) gelirse tek-tık zamanlayıcısını iptal et
   map.on('dblclick', function() {
     if (__singleClickTimer) {
       clearTimeout(__singleClickTimer);
@@ -3491,7 +3482,6 @@ if (typeof updateCart === "function") updateCart();
     }
   });
 
-  // Yakınlaşma/pan gibi zoomstart sırasında da iptal et (mobil çift-tap zoom vs.)
   map.on('zoomstart', function() {
     if (__singleClickTimer) {
       clearTimeout(__singleClickTimer);
