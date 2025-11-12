@@ -9006,12 +9006,11 @@ if (!container || isNaN(totalKm)) {
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
- if (
+if (
   !coords || !Array.isArray(coords) || coords.length < 2 ||
   !markers || !Array.isArray(markers) || markers.length < 2
 ) {
-  // Mesajı seç
-  let infoHtml = '';
+  let infoHtml;
   if (!markers || markers.length === 0) {
     infoHtml = `
       <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
