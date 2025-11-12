@@ -9010,25 +9010,22 @@ if (!container || isNaN(totalKm)) {
 
  
 
-  if (
-    !coords ||
-    !Array.isArray(coords) ||
-    coords.length < 2 ||
-    !markers || !Array.isArray(markers) || markers.length < 2
-  ) {
-    // 0 veya 1 marker varsa scale bar sadece badge ve mesaj gösterir, loader yok!
-    container.innerHTML = `<div class="scale-bar-track">
-      <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-        No route points found.<br>Select at least 2 points to start mapping.
-      </div></div>`;
-    container.style.display = 'block';
-
-    // PATCH: loader DOM'da varsa, tamamen kaldır/gizle!
-    const loader = container.querySelector('.tt-scale-loader');
-    if (loader) loader.remove?.(); // veya loader.style.display = 'none';
-
-    return;
-  }
+ if (
+  !coords ||
+  !Array.isArray(coords) ||
+  coords.length < 2 ||
+  !markers || !Array.isArray(markers) || markers.length < 2
+) {
+  container.innerHTML = `<div class="scale-bar-track">
+    <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+      No route points found.<br>Select at least 2 points to start mapping.
+    </div></div>`;
+  container.style.display = 'block';
+  // PATCH: loader varsa kaldır!
+  const loader = container.querySelector('.tt-scale-loader');
+  if (loader) loader.remove();
+  return;
+}
 
   // (buradan sonrası normal scale bar/elevation yükleme kodu)
   let hasGeoJson = coords && coords.length >= 2;
@@ -9042,8 +9039,10 @@ if (!container || isNaN(totalKm)) {
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     // PATCH: Loader sadece 2 ve üzeri marker varsa!
     if (showElevationLoader) {
-      window.showScaleBarLoading?.(container, 'Loading elevation…');
-    }
+        
+      if (Array.isArray(markers) && markers.length >= 2) {
+  window.showScaleBarLoading?.(container, 'Loading elevation…');
+}    }
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
