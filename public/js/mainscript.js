@@ -6147,11 +6147,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     iconAnchor: [14, 14]
   });
 
-if (!points || points.length < 2) {
-    const infoHtml = `<div class='nearby-error-message'>Please add at least 2 points on the map to show nearby places.</div>`;
-    showCustomPopup(lat, lng, map, infoHtml, true);
-    return;
-}
+
 window._nearbyPulseMarker = L.marker([lat, lng], {
     icon: pulseIcon,
     interactive: false,
