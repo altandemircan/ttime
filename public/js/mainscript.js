@@ -10081,8 +10081,21 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     const ev = vizMin + (i / 4) * (vizMax - vizMin);
     const y = Y(ev);
     const ln = document.createElementNS(svgNS, 'line');
-    ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(widthNow));
-    ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+    
+
+
+    // YENİ: YATAY kısa çizgi, label'ın yanında
+ln.setAttribute('x1', '20');             // label'ın hemen sağında başlasın
+ln.setAttribute('x2', '50');             // kısa yatay çizgi, 30px uzunluk mesela
+ln.setAttribute('y1', String(y));        // y motunda
+ln.setAttribute('y2', String(y));
+ln.setAttribute('stroke', '#cfd8dc');
+ln.setAttribute('stroke-dasharray', '5 7');
+ln.setAttribute('opacity', '.8');
+gridG.appendChild(ln)
+
+
+
     ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
 
