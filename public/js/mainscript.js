@@ -3269,7 +3269,9 @@ function startMapPlanning() {
   }
 
   setTimeout(() => {
-    if (!window.leafletMaps['route-map-day1']) initEmptyDayMap(1);
+    if (window.leafletMaps && window.leafletMaps['route-map-day1']) {
+       window.leafletMaps['route-map-day1'].someMethod()
+    }
     attachMapClickAddMode(1);
   }, 60);
 
