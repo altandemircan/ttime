@@ -9006,8 +9006,7 @@ if (!container || isNaN(totalKm)) {
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
- 
-if (
+ if (
   !coords || !Array.isArray(coords) || coords.length < 2 ||
   !markers || !Array.isArray(markers) || markers.length < 2
 ) {
@@ -9020,33 +9019,43 @@ if (
   `;
   container.style.display = 'block';
 
-  // GEREKEN CSS PATCH — marker 0 veya 1 ise! TUM SAYFA İÇİN AKTİF OLUR:
-
-  // scale-bar-track: min-height: max-content;
+  // 0/1 marker özel CSS'leri uygula:
   document.querySelectorAll('.scale-bar-track').forEach(el =>
     el.style.setProperty('min-height', 'max-content', 'important')
   );
-
-  // route-scale-bar: height: fit-content;
   document.querySelectorAll('.route-scale-bar').forEach(el =>
     el.style.setProperty('height', 'fit-content', 'important')
   );
-
-  // expanded-map-panel: padding: 0; width: calc(100% - 435px); box-shadow: none;
   document.querySelectorAll('.expanded-map-panel').forEach(el => {
     el.style.setProperty('padding', '0', 'important');
     el.style.setProperty('width', 'calc(100% - 435px)', 'important');
     el.style.setProperty('box-shadow', 'none', 'important');
   });
-
-  // expanded-map: height: calc(100% - 94px); bottom: 94px;
   document.querySelectorAll('.expanded-map').forEach(el => {
     el.style.setProperty('height', 'calc(100% - 94px)', 'important');
     el.style.setProperty('bottom', '94px', 'important');
   });
 
   return;
+} else {
+  // Sadece >=2 marker olduğunda bu inline JS CSS'leri kaldır (default dosya devreye girsin)
+  document.querySelectorAll('.scale-bar-track').forEach(el =>
+    el.style.removeProperty('min-height')
+  );
+  document.querySelectorAll('.route-scale-bar').forEach(el =>
+    el.style.removeProperty('height')
+  );
+  document.querySelectorAll('.expanded-map-panel').forEach(el => {
+    el.style.removeProperty('padding');
+    el.style.removeProperty('width');
+    el.style.removeProperty('box-shadow');
+  });
+  document.querySelectorAll('.expanded-map').forEach(el => {
+    el.style.removeProperty('height');
+    el.style.removeProperty('bottom');
+  });
 }
+
 
   // (buradan sonrası normal scale bar/elevation yükleme kodu)
   let hasGeoJson = coords && coords.length >= 2;
