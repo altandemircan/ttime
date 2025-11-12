@@ -9057,8 +9057,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
   container.innerHTML = `<div class="scale-bar-track">${infoHtml}</div>`;
   container.style.display = 'block';
 
-  // SADECE 0 VEYA 1 MARKER VARSA BU STYLE'LAR KALACAK
+  // Stil Ekleme-Kaldırma Bloku - SADECE 0 VEYA 1 ITEMDA OVERRIDE, 2 veya fazlasında RESET
   if (!markers || markers.length <= 1) {
+    // 0 veya 1 marker ise override stilleri EKLE
     document.querySelectorAll('.scale-bar-track').forEach(el =>
       el.style.setProperty('min-height', 'max-content', 'important')
     );
@@ -9074,8 +9075,24 @@ function renderRouteScaleBar(container, totalKm, markers) {
       el.style.setProperty('height', 'calc(100% - 94px)', 'important');
       el.style.setProperty('bottom', '94px', 'important');
     });
+  } else {
+    // 2 veya daha fazla marker ise override stilleri TEMIZLE
+    document.querySelectorAll('.scale-bar-track').forEach(el =>
+      el.style.removeProperty('min-height')
+    );
+    document.querySelectorAll('.route-scale-bar').forEach(el =>
+      el.style.removeProperty('height')
+    );
+    document.querySelectorAll('.expanded-map-panel').forEach(el => {
+      el.style.removeProperty('padding');
+      el.style.removeProperty('width');
+      el.style.removeProperty('box-shadow');
+    });
+    document.querySelectorAll('.expanded-map').forEach(el => {
+      el.style.removeProperty('height');
+      el.style.removeProperty('bottom');
+    });
   }
-  // 2 veya üzeri marker varsa bu satırlar çalışmaz!
   return;
 }
 
