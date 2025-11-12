@@ -5850,10 +5850,14 @@ function setExpandedMapTile(styleKey) {
 
   // Ölçek barı render
   const totalKm = summary ? summary.distance / 1000 : 0;
-  const markerPositions = getRouteMarkerPositionsOrdered
-    ? getRouteMarkerPositionsOrdered(day)
-    : [];
-
+  const markerPositionsRaw = getDayPoints(day); // Günün gerçek marker dizisi!
+    const markerPositions = markerPositionsRaw.map((p, i) => ({
+        name: p.name || "",
+        distance: 0, // 1 marker varsa mesafe 0,
+        lat: p.lat,
+        lng: p.lng
+    }));
+    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
 
 
  // PATCH: Scale bar her zaman render edilsin, badge/label eksik olsa bile DOM'da olsun!
@@ -9018,12 +9022,12 @@ if (
       </div>
     `;
   } else if (markers.length === 1) {
-    infoHtml = `
-      <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-        1 point added.<br>Add another to create a route and see elevation.
-      </div>
-    `;
-  }
+  infoHtml = `
+    <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+      1 point added.<br>Add another to create a route and see elevation.
+    </div>
+  `;
+}
 
   // DEBUG için:
   console.log('markers:', markers);
