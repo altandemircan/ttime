@@ -8999,51 +8999,50 @@ if (!container || isNaN(totalKm)) {
   }
 
 
-  // Day ve route geojson
+    // Day ve route geojson
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
+  // === PATCH: Loader ve scale bar açılış için marker ≥2 şartı ===
+  const showElevationLoader = Array.isArray(markers) && markers.length >= 2;
 
   if (
-  !coords ||
-  !Array.isArray(coords) ||
-  coords.length < 2 ||
-  !markers || !Array.isArray(markers) || markers.length < 2
-) {
-  // 0 veya 1 marker varsa scale bar sadece badge ve mesaj gösterir, loader yok!
-  container.innerHTML = `<div class="scale-bar-track">
-    <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-      No route points found.<br>Select at least 2 points to start mapping.
-    </div></div>`;
-  container.style.display = 'block';
+    !coords ||
+    !Array.isArray(coords) ||
+    coords.length < 2 ||
+    !markers || !Array.isArray(markers) || markers.length < 2
+  ) {
+    // 0 veya 1 marker varsa scale bar sadece badge ve mesaj gösterir, loader yok!
+    container.innerHTML = `<div class="scale-bar-track">
+      <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+        No route points found.<br>Select at least 2 points to start mapping.
+      </div></div>`;
+    container.style.display = 'block';
 
-  // PATCH: loader DOM'da varsa, gizle/sil!
-  const loader = container.querySelector('.tt-scale-loader');
-  if (loader) loader.style.display = 'none';
+    // PATCH: loader DOM'da varsa, tamamen kaldır/gizle!
+    const loader = container.querySelector('.tt-scale-loader');
+    if (loader) loader.remove?.(); // veya loader.style.display = 'none';
 
-  return;
-}
+    return;
+  }
 
-  // Eğer burada geojson'dan coords yok veya kısaysa (ROMA gibi marker+yayda) OLSUN, yine de scale bar çiz!
-let hasGeoJson = coords && coords.length >= 2;
-if (!hasGeoJson) {
-
-  console.warn('No route GeoJSON, drawing scale bar from markers/haversine.');
-}
-
+  // (buradan sonrası normal scale bar/elevation yükleme kodu)
+  let hasGeoJson = coords && coords.length >= 2;
+  if (!hasGeoJson) {
+    console.warn('No route GeoJSON, drawing scale bar from markers/haversine.');
+  }
 
   // Cooldown / cache anahtarı
   const mid = coords[Math.floor(coords.length / 2)];
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
-  
+    // PATCH: Loader sadece 2 ve üzeri marker varsa!
     if (showElevationLoader) {
-    window.showScaleBarLoading?.(container, 'Loading elevation…');
-  }
-
+      window.showScaleBarLoading?.(container, 'Loading elevation…');
+    }
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
