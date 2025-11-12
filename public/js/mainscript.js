@@ -6583,10 +6583,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     // Önceki popup'ı kapat
     closeNearbyPopup();
 
-    // Haritanın noktalarını en başta çek!
-    const points = (typeof getDayPoints === "function") ? getDayPoints(window.currentDay || 1) : [];
-
-    // Popup container oluştur
+       // Popup container oluştur
     const popupContainer = document.createElement('div');
     popupContainer.id = 'custom-nearby-popup';
 
