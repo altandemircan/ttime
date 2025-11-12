@@ -9025,6 +9025,12 @@ if (
     `;
   }
 
+  // DEBUG LOGS
+  console.log('markers:', markers);
+  console.log('coords:', coords);
+  console.log('infoHtml:', infoHtml);
+  console.log('container id:', container.id);
+
   container.innerHTML = `
     <div class="scale-bar-track">
       ${infoHtml}
