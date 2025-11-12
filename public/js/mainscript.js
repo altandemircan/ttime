@@ -9038,17 +9038,17 @@ if (
     <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
       No route points found.<br>Select at least 2 points to start mapping.
     </div>
-    <div class="tt-scale-loader" style="display: none;">
+    <div class="tt-scale-loader" style="display: flex;">
       <div class="spinner"></div>
       <div class="txt">Loading elevation…</div>
     </div>
   </div>`;
   container.style.display = 'block';
 
-  // PATCH: loader varsa mutlaka gizle!
-  document.querySelectorAll('.tt-scale-loader').forEach(el => {
-    el.style.setProperty('display', 'none', 'important');
-  });
+  // LOADER’ı KESİN DOM’dan KALDIR:
+  document.querySelectorAll('.tt-scale-loader').forEach(el => el.remove());
+
+
   // PATCH: özel CSS ayarları!
   document.querySelectorAll('.expanded-map-panel').forEach(el => {
     el.style.padding = '0 10px';
