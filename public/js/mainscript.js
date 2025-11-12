@@ -421,7 +421,7 @@ if (Array.isArray(markers)) {
     pointer-events: none;
     z-index: 5;
   `;
-  elevationLabels.style.display = 'block'; 
+  elevationLabels.style.display = 'block';
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
@@ -434,7 +434,6 @@ if (Array.isArray(markers)) {
       top: ${obj.y}px;
       text-align: right;
       padding-right: 5px;
-      border-right: 1px solid #cfd8dc;
       font-size: 10px;
       color: #607d8b;
       background: none;
