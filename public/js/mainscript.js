@@ -7225,8 +7225,7 @@ function adjustExpandedHeader(day){
   const pts = (typeof getDayPoints==="function") ? getDayPoints(day) : [];
   if (pts.length < 2) {
     header.style.position = 'absolute';
-    header.style.top = 'auto';
-    header.style.bottom = '0';
+   
   } else {
     header.style.position = '';
     header.style.top = '';
