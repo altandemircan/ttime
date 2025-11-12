@@ -8972,6 +8972,16 @@ function renderRouteScaleBar(container, totalKm, markers) {
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
+
+     const showElevationLoader = Array.isArray(markers) && markers.length >= 2;
+  if (!showElevationLoader) {
+    // loader varsa gizle/sil
+    const loader = container && container.querySelector('.tt-scale-loader');
+    if (loader) loader.style.display = 'none';
+  }
+
+
+
  if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
     totalKm = getTotalKmFromMarkers(markers);
     container.dataset.totalKm = String(totalKm);
@@ -9015,11 +9025,7 @@ if (!container || isNaN(totalKm)) {
   // Eğer burada geojson'dan coords yok veya kısaysa (ROMA gibi marker+yayda) OLSUN, yine de scale bar çiz!
 let hasGeoJson = coords && coords.length >= 2;
 if (!hasGeoJson) {
-  // Coord yoksa, markers bilgisinden scale bar çizilecek.
-  // Özellikle coords undefined/boşsa, markers argümanını gerçek marker dizisiyle doldurduğun için
-  // bar DOM'a yine de svg, marker badge ve elevation çıkaracak!
-  // Yani bu satırı komple SİL, return yapma!
-  // Sadece bilgilendirme için log bırakabilirsin:
+
   console.warn('No route GeoJSON, drawing scale bar from markers/haversine.');
 }
 
@@ -9028,7 +9034,11 @@ if (!hasGeoJson) {
   const mid = coords[Math.floor(coords.length / 2)];
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
+  
+    if (showElevationLoader) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
+  }
+
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
