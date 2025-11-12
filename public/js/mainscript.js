@@ -9295,18 +9295,24 @@ for (let i = 0; i <= levels; i++) {
     // Alan
     let topD = '';
     const n = Math.min(smooth.length, s.length);
-    for (let i = 0; i < n; i++) {
-      const kmAbs = s[i].distM / 1000;
-      const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
-      const y = Y(smooth[i]);
-      if (isNaN(x) || isNaN(y)) continue;
-      topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-    }
+    
+
+    const GRID_LABEL_PAD_X = 42; // grid ve gri dolgu başlama noktası
+
+for (let i = 0; i < n; i++) {
+  const kmAbs = s[i].distM / 1000;
+  const x = Math.max(GRID_LABEL_PAD_X, Math.min(width, X(kmAbs - startKmDom)));
+  const y = Y(smooth[i]);
+  if (isNaN(x) || isNaN(y)) continue;
+  topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+}
+
+
     if (topD) {
-      const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
-      areaPath.setAttribute('d', areaD);
-      areaPath.setAttribute('fill', '#263445');
-    }
+  const areaD = `${topD} L ${width} ${SVG_H} L ${GRID_LABEL_PAD_X} ${SVG_H} Z`;
+  areaPath.setAttribute('d', areaD);
+  areaPath.setAttribute('fill', '#263445');
+}
 
     // Eğim renkli çizgiler
     for (let i = 1; i < n; i++) {
