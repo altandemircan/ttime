@@ -9017,33 +9017,30 @@ if (
       <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
         No route points found.<br>Select at least 2 points to start mapping.
       </div>
-      <div class="tt-scale-loader" style="display: none;">
-        <div class="spinner"></div>
-        <div class="txt">Loading elevation…</div>
-      </div>
     </div>
   `;
   container.style.display = 'block';
 
-  // Loader kaldır!
-  container.querySelectorAll('.tt-scale-loader').forEach(el => el.remove());
+  // GEREKEN CSS PATCH — marker 0 veya 1 ise! TUM SAYFA İÇİN AKTİF OLUR:
 
-  // ---- DİKKAT: Doğru DOM elementlerini bul!   ----
-  // Eğer container'ın içinde yoksa, globalden bul:
-  document.querySelectorAll('.scale-bar-track').forEach(el => {
-    el.style.setProperty('minHeight', 'max-content', 'important');
-  });
+  // scale-bar-track: min-height: max-content;
+  document.querySelectorAll('.scale-bar-track').forEach(el =>
+    el.style.setProperty('min-height', 'max-content', 'important')
+  );
 
-  document.querySelectorAll('.route-scale-bar').forEach(el => {
-    el.style.setProperty('height', 'fit-content', 'important');
-  });
+  // route-scale-bar: height: fit-content;
+  document.querySelectorAll('.route-scale-bar').forEach(el =>
+    el.style.setProperty('height', 'fit-content', 'important')
+  );
 
+  // expanded-map-panel: padding: 0; width: calc(100% - 435px); box-shadow: none;
   document.querySelectorAll('.expanded-map-panel').forEach(el => {
     el.style.setProperty('padding', '0', 'important');
     el.style.setProperty('width', 'calc(100% - 435px)', 'important');
-    el.style.setProperty('boxShadow', 'none', 'important');
+    el.style.setProperty('box-shadow', 'none', 'important');
   });
 
+  // expanded-map: height: calc(100% - 94px); bottom: 94px;
   document.querySelectorAll('.expanded-map').forEach(el => {
     el.style.setProperty('height', 'calc(100% - 94px)', 'important');
     el.style.setProperty('bottom', '94px', 'important');
