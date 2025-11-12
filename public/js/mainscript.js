@@ -9234,7 +9234,9 @@ container._elevSamples = samples.slice();
 container._elevStartKm = 0;
 container._elevKmSpan = totalKm;
 
-
+// (Devam eden kodlar...)
+  // BASE SVG (data-role="elev-base")
+  
   
   // Redraw (aktif domain + örneklerle)
   function redrawElevation(elevationData) {
@@ -9254,31 +9256,41 @@ container._elevKmSpan = totalKm;
     const X = kmRel => (kmRel / spanKm) * width;
                 const TOP_PAD = 12;
                 const BOTTOM_PAD = 16;
-               const Y = (e) => {
-  const scaleHeight = SVG_H - TOP_PAD - BOTTOM_PAD;
-  return (SVG_H - BOTTOM_PAD) - ((e - vizMin) / (vizMax - vizMin)) * scaleHeight;
-};
+                const Y = e => {
+                  if (isNaN(e) || vizMax === vizMin) return SVG_H / 2;
+                  // scaleHeight = toplam alan
+                  const scaleHeight = SVG_H - TOP_PAD - BOTTOM_PAD;
+                  return (SVG_H - BOTTOM_PAD) - ((e - vizMin) / (vizMax - vizMin)) * scaleHeight;
+                };
     while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
     // Grid
     const levels = 4;
-    for (let i = 0; i <= levels; i++) {
-      const ev = vizMin + (i / levels) * (vizMax - vizMin);
-      const y = Y(ev);
-      if (isNaN(y)) continue;
-      const ln = document.createElementNS(svgNS, 'line');
-      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
-      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-      gridG.appendChild(ln);
+for (let i = 0; i <= levels; i++) {
+  const ev = vizMin + (i / levels) * (vizMax - vizMin);
+  const y = Y(ev);
+  if (isNaN(y)) continue;
 
-      const tx = document.createElementNS(svgNS, 'text');
-      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-      tx.textContent = `${Math.round(ev)} m`;
-      gridG.appendChild(tx);
-    }
+  // --- label ---
+  const tx = document.createElementNS(svgNS, 'text');
+  tx.setAttribute('x', 6); // veya daha sola (0), isteğine göre
+  tx.setAttribute('y', String(y - 4));
+  tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+  tx.textContent = `${Math.round(ev)} m`;
+  gridG.appendChild(tx);
+
+  // --- YATAY çizgi ---
+  const hLine = document.createElementNS(svgNS, 'line');
+  hLine.setAttribute('x1', '42');        // label'ın hemen sağında başlasın
+  hLine.setAttribute('x2', String(width));
+  hLine.setAttribute('y1', String(y));
+  hLine.setAttribute('y2', String(y));
+  hLine.setAttribute('stroke', '#cfd8dc');
+  hLine.setAttribute('stroke-dasharray', '5 7');
+  hLine.setAttribute('opacity', '.8');
+  gridG.appendChild(hLine);
+}
 
     // Alan
     let topD = '';
