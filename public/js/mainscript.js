@@ -9018,22 +9018,33 @@ if (
   if (!markers || markers.length === 0) {
     infoHtml = `
       <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-        No route points found.<br>Select at least 2 points to start mapping.
+        No route points found.<br>
+        Select at least 2 points to start mapping.
       </div>
     `;
   } else if (markers.length === 1) {
-  infoHtml = `
-    <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-      1 point added.<br>Add another to create a route and see elevation.
-    </div>
-  `;
-}
+    infoHtml = `
+      <div style="text-align:center;padding:12px;font-size:13px;color:#1976d2;">
+        <b>1 point added.</b><br>
+        Add another to create a route and see elevation.
+      </div>
+    `;
+  } else if (Array.isArray(markers) && markers.length > 1 && (!coords || coords.length < 2)) {
+    // Birden fazla marker var ama route yok (ör: yurtdışı, haversine, FLY MODE)
+    infoHtml = `
+      <div style="text-align:center;padding:12px;font-size:13px;color:#1976d2;">
+        <b>${markers.length} points added but no route found.</b><br>
+        Try adjusting your points or route options.
+      </div>
+    `;
+  }
 
   // DEBUG için:
-  console.log('markers:', markers);
-  console.log('coords:', coords);
-  console.log('infoHtml:', infoHtml);
-  console.log('container id:', container.id);
+  console.log('==SCALE BAR STATUS==');
+  console.log('Markers:', markers);
+  console.log('Coords:', coords);
+  console.log('InfoHtml:', infoHtml);
+  console.log('ScaleBar Container ID:', container?.id);
 
   container.innerHTML = `
     <div class="scale-bar-track">
@@ -9060,7 +9071,6 @@ if (
 
   return;
 }
-
 
   // (buradan sonrası normal scale bar/elevation yükleme kodu)
   let hasGeoJson = coords && coords.length >= 2;
