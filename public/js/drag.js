@@ -523,6 +523,8 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
     updateCart();
     attachChatDropListeners();
+ if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
 
     } catch (error) {
         console.error("Reorder error:", error);
