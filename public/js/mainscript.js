@@ -394,57 +394,6 @@ if (Array.isArray(markers)) {
   console.warn("[DEBUG] markers is not array", markers);
 }
 
-  // (Geri kalan elevation/labels kodu – aynen kalabilir)
-  let gridLabels = [];
-
-  const svg = track.querySelector('svg.tt-elev-svg');
-  if (svg) {
-    gridLabels = Array.from(svg.querySelectorAll('text'))
-      .map(t => ({
-        value: t.textContent.trim(),
-        y: Number(t.getAttribute('y'))
-      }))
-      .filter(obj => /-?\d+\s*m$/.test(obj.value));
-  }
-
-  gridLabels.sort((a, b) => b.y - a.y);
-
-  const elevationLabels = document.createElement('div');
-  elevationLabels.className = 'elevation-labels-container';
-  elevationLabels.style.cssText = `
-    position: absolute;
-    left: -50px;
-    top: 0;
-    bottom: 0;
-    width: 45px;
-    height: 100%;
-    pointer-events: none;
-    z-index: 5;
-  `;
-  elevationLabels.style.display = 'block';
-
-  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
-
-  gridLabels.forEach(obj => {
-    const label = document.createElement('div');
-    label.className = 'elevation-label';
-    label.style.cssText = `
-      position: absolute;
-      right: 0;
-      top: ${obj.y}px;
-      text-align: right;
-      padding-right: 5px;
-      font-size: 10px;
-      color: #607d8b;
-      background: none;
-      line-height: 1;
-    `;
-    label.textContent = obj.value;
-    elevationLabels.appendChild(label);
-  });
-
-  track.style.position = 'relative';
-  track.appendChild(elevationLabels);
 }
 
         // Aktif harita planlama modu için
