@@ -4582,20 +4582,19 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
 
 .expanded-map-panel {
-right: 10px;
+    right: 20px;
     left: 10px;
-    width: calc(100% - 485px);
+    width: calc(100% - 455px);
     z-index: 1231231231231;
-    display: flex
-;
+    display: flex;
     position: fixed;
-    bottom: 10px;
+    bottom: 0;
     background: rgb(255 255 255);
     gap: 4px;
     padding: 10px;
     border-radius: 10px;
     align-items: center;
-    box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
+    /* box-shadow: 0 3px 14px rgb(0 0 0 / 8%); */
     flex-direction: column;
     }
 
