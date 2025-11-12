@@ -2184,6 +2184,17 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
+
+    // PATCH BAŞI
+  const containerId = `route-map-day${day}`;
+  if (!window.leafletMaps) window.leafletMaps = {};
+  if (!window.leafletMaps[containerId]) {
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+  }
+  // PATCH SONU
+
+
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
   // 1) Placeholder temizliği
@@ -3530,7 +3541,17 @@ if (typeof updateCart === "function") updateCart();
 
 async function updateCart() {
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+ // PATCH: Her gün haritasını oluştur!
+  for (const day of days) {
+    const containerId = `route-map-day${day}`;
+    if (!window.leafletMaps) window.leafletMaps = {};
+    if (!window.leafletMaps[containerId]) {
+      ensureDayMapContainer(day);
+      initEmptyDayMap(day);
+    }
+  }
 
+  
   // ÖNCE route'ları HAZIRLA!
   for (const d of days) {
     await renderRouteForDay(d);
