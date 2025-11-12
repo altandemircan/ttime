@@ -9256,12 +9256,10 @@ container._elevKmSpan = totalKm;
     const X = kmRel => (kmRel / spanKm) * width;
                 const TOP_PAD = 12;
                 const BOTTOM_PAD = 16;
-                const Y = e => {
-                  if (isNaN(e) || vizMax === vizMin) return SVG_H / 2;
-                  // scaleHeight = toplam alan
-                  const scaleHeight = SVG_H - TOP_PAD - BOTTOM_PAD;
-                  return (SVG_H - BOTTOM_PAD) - ((e - vizMin) / (vizMax - vizMin)) * scaleHeight;
-                };
+               const Y = (e) => {
+  const scaleHeight = SVG_H - TOP_PAD - BOTTOM_PAD;
+  return (SVG_H - BOTTOM_PAD) - ((e - vizMin) / (vizMax - vizMin)) * scaleHeight;
+};
     while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
