@@ -539,7 +539,7 @@ function buildTripRow(trip, isFavoriteSection) {
     thumbBox.style.width = "60px";
     thumbBox.style.height = "40px";
     thumbBox.style.cursor = "pointer";
-    thumbBox.style.borderRadius = "8px";
+
 
     const thumbImg = document.createElement("img");
     thumbImg.className = "mytrips-thumb";
@@ -547,6 +547,8 @@ function buildTripRow(trip, isFavoriteSection) {
     thumbImg.width = 60;
     thumbImg.height = 40;
     thumbImg.dataset.tripkey = trip.key;
+    thumbImg.style.borderRadius = "8px";
+
 
     const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
     const itemCount = (trip.cart || []).filter(it =>
