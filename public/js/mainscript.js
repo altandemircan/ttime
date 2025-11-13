@@ -5129,19 +5129,20 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     if (isFlyMode && points.length > 1) {
         window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
         let arcPoints = [];
-        for (let i = 0; i < points.length - 1; i++) {
-            const start = [points[i].lng, points[i].lat];
-            const end = [points[i + 1].lng, points[i + 1].lat];
-            const curve = getCurvedArcCoords(start, end, 0.33, 32);
-            arcPoints = arcPoints.concat(curve);
+                    for (let i = 0; i < points.length - 1; i++) {
+                        const start = [points[i].lng, points[i].lat];
+                        const end = [points[i + 1].lng, points[i + 1].lat];
+                        const curve = getCurvedArcCoords(start, end, 0.33, 22); // Segments büyük harita ile aynı!
 
-            drawCurvedLine(map, points[i], points[i + 1], {
-                color: "#1976d2",
-                weight: 5,
-                opacity: 0.85,
-                dashArray: "6,8"
-            });
-        }
+                        L.polyline(curve.map(pt => [pt[1], pt[0]]), {
+                            color: "#1976d2",
+                            weight: 6,
+                            opacity: 0.93,
+                            dashArray: "6,8"
+                        }).addTo(map);
+
+                        arcPoints = arcPoints.concat(curve);
+                    }
         window._curvedArcPointsByDay[day] = arcPoints;
     } else if (hasValidGeo && routeCoords.length > 1) {
         L.polyline(routeCoords, {
