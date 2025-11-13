@@ -372,10 +372,16 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], s
       track.appendChild(label);
     }
 
-    markers.forEach((m, idx) => {
+markers.forEach((m, idx) => {
+  // YATAY POZİSYON
+  const relKm = typeof m.distance === "number" ? m.distance - startKmDom : 0;
+  let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
+  left = Math.max(0, Math.min(100, left));
+  
+  // DİKEY POZİSYON
   let profileY = null;
   if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevSmooth)) {
-    let markerKm = m.distance; // marker'ın km cinsinden yeri
+    let markerKm = m.distance;
     let nearest = 0, minDiff = Infinity;
     for (let i = 0; i < samples.length; i++) {
       let diff = Math.abs(samples[i].distM / 1000 - markerKm);
