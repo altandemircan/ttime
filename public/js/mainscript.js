@@ -9995,19 +9995,15 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   // Segment/profil marker ve km çizelgesi güncelle
   if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
-    // Tam profile dön
-    container._elevStartKm = 0;
-    container._elevKmSpan  = totalKm;
-    createScaleElements(track, widthPx, totalKm, 0, markers);
-
-    // Tam profil gösteriliyorsa, segment px aralığı yok
-    track._segmentStartPx = undefined;
-    track._segmentWidthPx = undefined;
-  } else {
-    // Segment seçiliyken
-    container._elevStartKm = startKm;
-    container._elevKmSpan  = endKm - startKm;
-createScaleElements(track, widthPx, endKm - startKm, startKm, markers, samples, elevSmooth, Y);
+  container._elevStartKm = 0;
+  container._elevKmSpan  = totalKm;
+  createScaleElements(track, widthPx, totalKm, 0, markers, samples, elevSmooth, Y);
+  track._segmentStartPx = undefined;
+  track._segmentWidthPx = undefined;
+} else {
+  container._elevStartKm = startKm;
+  container._elevKmSpan  = endKm - startKm;
+  createScaleElements(track, widthPx, endKm - startKm, startKm, markers, samples, elevSmooth, Y);
 
     // Segment overlay’in px aralığını kaydet
     const rect = track.getBoundingClientRect();
