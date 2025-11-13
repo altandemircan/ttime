@@ -7234,7 +7234,6 @@ async function renderRouteForDay(day) {
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
     const pts = getDayPoints(day);
-    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
 
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
@@ -9999,7 +9998,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
   container._elevStartKm = 0;
   container._elevKmSpan  = totalKm;
-  createScaleElements(track, widthPx, totalKm, 0, markers, samples, elevSmooth, Y);
+createScaleElements(track, widthPx, totalKm, 0, markers, samples, elevations, Y); // <-- Doğru!
   track._segmentStartPx = undefined;
   track._segmentWidthPx = undefined;
 } else {
@@ -10207,7 +10206,7 @@ gridG.appendChild(ln)
 
     const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
     const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    createScaleElements(track, widthPx, totalKm, 0, markers);
+createScaleElements(track, widthPx, totalKm, 0, markers, samples, elevations, Y); // <-- Doğru!
 
     // Tam örnekleri göster
     if (Array.isArray(container._elevFullSamples)) {
