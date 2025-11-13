@@ -506,6 +506,7 @@ function buildTripRow(trip, isFavoriteSection) {
     thumbBox.style.width = "60px";
     thumbBox.style.height = "40px";
     thumbBox.style.cursor = "pointer";
+    thumbBox.style.borderRadius = "8px";
 
     const thumbImg = document.createElement("img");
     thumbImg.className = "mytrips-thumb";
@@ -537,7 +538,7 @@ thumbInfo.style.flexDirection = "column";
 thumbInfo.style.display = "flex";
 thumbInfo.style.alignItems = "center";
 thumbInfo.style.justifyContent = "center";
-thumbInfo.style.borderRadius = "7px";
+thumbInfo.style.borderRadius = "8px";
 thumbInfo.style.zIndex = "2";
 
 tripDiv.addEventListener("mouseenter", () => {
