@@ -8372,6 +8372,14 @@ function wrapRouteControls(day) {
   mapFunctionsDiv.appendChild(mapTitleDiv);
   mapFunctionsDiv.appendChild(arrowSpan);
 
+  // Expand Map button (sağda)
+  const expandBtn = document.createElement('button');
+  expandBtn.type = 'button';
+  expandBtn.className = 'expand-map-btn';
+  expandBtn.setAttribute('aria-label', 'Expand Map');
+  expandBtn.onmouseover = function() { expandBtn.style.background = "#ff9900"; };
+  expandBtn.onmouseout = function() { expandBtn.style.background = "#ff0000"; };
+ 
 
   expandBtn.innerHTML = `
     <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async">
