@@ -10007,7 +10007,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     // Segment seçiliyken
     container._elevStartKm = startKm;
     container._elevKmSpan  = endKm - startKm;
-    createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
+createScaleElements(track, widthPx, endKm - startKm, startKm, markers, samples, elevSmooth, Y);
 
     // Segment overlay’in px aralığını kaydet
     const rect = track.getBoundingClientRect();
