@@ -4582,17 +4582,17 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
 
 .expanded-map-panel {
-    right: 20px;
+ right: 29px;
     left: 10px;
     width: calc(100% - 455px);
     z-index: 1231231231231;
     display: flex;
     position: fixed;
-    bottom: 0;
+    bottom: 10px;
     background: rgb(255 255 255);
     gap: 4px;
     padding: 10px;
-    border-radius: 10px;
+    /* border-radius: 10px; */
     align-items: center;
     /* box-shadow: 0 3px 14px rgb(0 0 0 / 8%); */
     flex-direction: column;
