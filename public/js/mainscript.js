@@ -8372,24 +8372,6 @@ function wrapRouteControls(day) {
   mapFunctionsDiv.appendChild(mapTitleDiv);
   mapFunctionsDiv.appendChild(arrowSpan);
 
-  // Expand Map button (sağda)
-  const expandBtn = document.createElement('button');
-  expandBtn.type = 'button';
-  expandBtn.className = 'expand-map-btn';
-  expandBtn.setAttribute('aria-label', 'Expand Map');
-  expandBtn.style.background = 'rgb(42 128 212)';
-  expandBtn.onmouseover = function() { expandBtn.style.background = "#fafafa"; };
-  expandBtn.onmouseout = function() { expandBtn.style.background = "#ffffff"; };
-  expandBtn.style.border = 'none';
-  expandBtn.style.borderRadius = '10px';
-  expandBtn.style.display = 'flex';
-  expandBtn.style.flexDirection = 'row';
-  expandBtn.style.alignItems = 'center';
-  expandBtn.style.gap = '4px';
-  expandBtn.style.padding = '4px 6px';
-  expandBtn.style.fontWeight = 'bold';
-  expandBtn.style.color = '#ffffff';
-  expandBtn.style.cursor = 'pointer';
 
   expandBtn.innerHTML = `
     <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async">
