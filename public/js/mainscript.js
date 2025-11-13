@@ -410,7 +410,6 @@ if (profileY !== null) {
 }        wrap.title = m.name || '';
         wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
         track.appendChild(wrap);
-        console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');    
       });
     } else {
       console.warn("[DEBUG] markers is not array", markers);
