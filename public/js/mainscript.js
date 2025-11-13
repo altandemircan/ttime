@@ -8377,10 +8377,10 @@ function wrapRouteControls(day) {
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
-  expandBtn.style.background = '#ffffff';
+  expandBtn.style.background = 'rgb(42 128 212)';
   expandBtn.onmouseover = function() { expandBtn.style.background = "#fafafa"; };
   expandBtn.onmouseout = function() { expandBtn.style.background = "#ffffff"; };
-  expandBtn.style.border = '1px solid rgb(43 129 213)';
+  expandBtn.style.border = 'none';
   expandBtn.style.borderRadius = '10px';
   expandBtn.style.display = 'flex';
   expandBtn.style.flexDirection = 'row';
@@ -8393,7 +8393,7 @@ function wrapRouteControls(day) {
 
   expandBtn.innerHTML = `
     <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async">
-    <span class="tm-label" style="color: #297fd4">Expand map</span>
+    <span class="tm-label" style="color: #ffffff">Expand map</span>
   `;
   expandBtn.onclick = function(e) {
     e.stopPropagation();
