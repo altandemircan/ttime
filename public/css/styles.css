@@ -5640,7 +5640,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .expand-map-btn {
 background: rgb(90 132 173);
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     display: flex;
     flex-direction: row;
     align-items: center;
