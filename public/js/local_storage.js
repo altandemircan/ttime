@@ -66,7 +66,7 @@ function getPointsFromTrip(trip, day) {
 }
 
 // Thumbnail fonksiyonunu DÜZELT:
-async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
+async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 80) {
     const pts = getPointsFromTrip(trip, day);
     if (!pts || pts.length < 2) return null;
     const lats = pts.map(p => p.lat);
@@ -76,7 +76,6 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
     const bounds = [[minLng, minLat], [maxLng, maxLat]];
     const center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
 
-    // --- Offscreen MapLibreGL map oluştur (hidden div ile) ---
     const mapDiv = document.createElement('div');
     mapDiv.style.width = width + 'px';
     mapDiv.style.height = height + 'px';
@@ -87,9 +86,9 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
 
     const map = new maplibregl.Map({
         container: mapDiv,
-        style: 'https://demotiles.maplibre.org/style.json',
+        style: 'https://tiles.openfreemap.org/styles/bright',
         center: center,
-        zoom: 10,
+        zoom: 13,
         preserveDrawingBuffer: true,
         interactive: false,
         attributionControl: false
@@ -97,8 +96,8 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
 
     await new Promise(resolve => {
         map.on('load', () => {
-            map.fitBounds(bounds, { padding: 12, maxZoom: 15 });
-            setTimeout(resolve, 500); // render bekle
+            map.fitBounds(bounds, { padding: 18, maxZoom: 15, minZoom: 12 });
+            setTimeout(resolve, 700);
         });
     });
 
@@ -109,27 +108,20 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, width, height);
-
-    // -- ARKA PLAN MAPLIBRE HARİTA'yı koy
     ctx.drawImage(mapCanvas, 0, 0, width, height);
 
-    // ROTAYI çiz
     ctx.save();
     ctx.strokeStyle = '#1976d2';
-    ctx.lineWidth = 6;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
+    ctx.lineWidth = 4;
     ctx.beginPath();
 
     function project(lng, lat) {
         const p = map.project([lng, lat]);
         return [p.x, p.y];
     }
-
     const polyline = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
         ? trip.directionsPolylines[day]
         : pts;
-
     polyline.forEach((p, i) => {
         const [x, y] = project(p.lng, p.lat);
         if (i === 0) ctx.moveTo(x, y);
@@ -138,21 +130,19 @@ async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 1
     ctx.stroke();
     ctx.restore();
 
-    // MARKERLARI ÇİZ
     ctx.save();
     ctx.fillStyle = '#d32f2f';
     ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     pts.forEach((p) => {
         const [x, y] = project(p.lng, p.lat);
         ctx.beginPath();
-        ctx.arc(x, y, 7, 0, 2 * Math.PI);
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
     });
     ctx.restore();
 
-    // Cleanup
     map.remove();
     document.body.removeChild(mapDiv);
 
