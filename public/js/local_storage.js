@@ -123,13 +123,62 @@ function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
   ctx.lineWidth = 6;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
+    // ROTAYI ÇİZ (YAY PATCH! — Fly mode'da markerlar arası bombe/kavisli!)
+  ctx.save();
+  ctx.strokeStyle = '#1976d2';
+  ctx.lineWidth = 6;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
   ctx.beginPath();
-  polyline.forEach((p, i) => {
-    const [x, y] = project(p);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
+
+  // Türkiye içi mi, değil mi?
+  function areAllPointsInTurkey(arr) {
+    return arr.every(p =>
+      p.lat >= 35.81 && p.lat <= 42.11 &&
+      p.lng >= 25.87 && p.lng <= 44.57
+    );
+  }
+  const flyMode = !areAllPointsInTurkey(polyline);
+
+  if (flyMode) {
+    // PATCH: markerlar arasında yay çizin (mapteki gibi bombe/arc)
+    for (let i = 0; i < polyline.length - 1; i++) {
+      // Kavisli yay koordinatları (mapte nasılsa aynısı):
+      const getCurvedArcCoords = window.getCurvedArcCoords || function(start, end, strength = 0.33, segments = 22) {
+        // start,end: [lng,lat]
+        const sx = start[0], sy = start[1];
+        const ex = end[0], ey = end[1];
+        const mx = (sx + ex) / 2 + strength * (ey - sy);
+        const my = (sy + ey) / 2 - strength * (ex - sx);
+        const coords = [];
+        for (let t = 0; t <= 1; t += 1 / segments) {
+          const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+          const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+          coords.push([x, y]);
+        }
+        return coords;
+      };
+      const arc = getCurvedArcCoords(
+        [polyline[i].lng, polyline[i].lat],
+        [polyline[i + 1].lng, polyline[i + 1].lat],
+        0.33, 22
+      );
+      arc.forEach((pt, j) => {
+        const [x, y] = project({ lng: pt[0], lat: pt[1] });
+        if (i === 0 && j === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+    }
+  } else {
+    // Türkiye ise directionPolyline zaten gerçek route path — düz çizgi kalsın!
+    polyline.forEach((p, i) => {
+      const [x, y] = project(p);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+  }
   ctx.stroke();
+  ctx.restore();
   ctx.restore();
 
   // Nokta markerlar; ROTAYA yine karışmıyoruz!
