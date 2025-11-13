@@ -315,7 +315,7 @@ function fitExpandedMapToRoute(day) {
   }
 
 
-function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], samples = [], elevations = [], Y = null) {
+function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
       // fallback: marker dizisinden haversine ile hesapla
       spanKm = getTotalKmFromMarkers(markers);
@@ -403,10 +403,11 @@ if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevation
 
 // Sonra marker style'da:
 if (profileY !== null) {
-    wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY - 6}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
+    wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
 } else {
+    // Eski hali, fallback:
     wrap.style.cssText = `position:absolute;left:${left}%;bottom:-4px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
-}       wrap.title = m.name || '';
+}        wrap.title = m.name || '';
         wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
         track.appendChild(wrap);
       });
@@ -5301,16 +5302,17 @@ function onMove(e) {
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
             let arcPts = window._curvedArcPointsByDay[day];
             
-          
+            console.log("Arc points length:", arcPts.length);
+            console.log("Percent:", percent);
             
             // Doğru indeksi hesapla
             let idx = Math.round(percent * (arcPts.length - 1));
             idx = Math.max(0, Math.min(idx, arcPts.length - 1));
             
-         
+            console.log("Calculated index:", idx);
             
             const [lng, lat] = arcPts[idx];
-        
+            console.log("Marker position:", lat, lng);
             
             if (hoverMarker) {
                 hoverMarker.setLatLng([lat, lng]);
@@ -9993,15 +9995,19 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   // Segment/profil marker ve km çizelgesi güncelle
   if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
-  container._elevStartKm = 0;
-  container._elevKmSpan  = totalKm;
-  createScaleElements(track, widthPx, totalKm, 0, markers, samples, elevSmooth, Y);
-  track._segmentStartPx = undefined;
-  track._segmentWidthPx = undefined;
-} else {
-  container._elevStartKm = startKm;
-  container._elevKmSpan  = endKm - startKm;
-  createScaleElements(track, widthPx, endKm - startKm, startKm, markers, samples, elevSmooth, Y);
+    // Tam profile dön
+    container._elevStartKm = 0;
+    container._elevKmSpan  = totalKm;
+    createScaleElements(track, widthPx, totalKm, 0, markers);
+
+    // Tam profil gösteriliyorsa, segment px aralığı yok
+    track._segmentStartPx = undefined;
+    track._segmentWidthPx = undefined;
+  } else {
+    // Segment seçiliyken
+    container._elevStartKm = startKm;
+    container._elevKmSpan  = endKm - startKm;
+    createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
 
     // Segment overlay’in px aralığını kaydet
     const rect = track.getBoundingClientRect();
