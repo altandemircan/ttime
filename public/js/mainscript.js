@@ -9068,12 +9068,6 @@ track.addEventListener('touchstart', function(e) {
 
 
 
-  // Görünüm
-  const MARKER_PAD_PX = 10;
-  track.style.position = 'relative';
-  track.style.paddingLeft = `${MARKER_PAD_PX}px`;
-  track.style.paddingRight = `${MARKER_PAD_PX}px`;
-  track.style.overflow = 'visible';
 
 let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
 if (isNaN(width)) width = 400;
@@ -9258,7 +9252,7 @@ for (let i = 0; i < n; i++) {
 
     if (topD) {
   const lastSampleX = X(s[s.length-1].distM / 1000 - startKmDom); // Son noktanın X'i
-const areaD = `${topD} L ${lastSampleX} ${SVG_H} L ${GRID_LABEL_PAD_X} ${SVG_H} Z`;  areaPath.setAttribute('d', areaD);
+  const areaD = `${topD} L ${lastSampleX} ${SVG_H} L ${GRID_LABEL_PAD_X} ${SVG_H} Z`;  areaPath.setAttribute('d', areaD);
   areaPath.setAttribute('fill', '#263445');
 }
 
