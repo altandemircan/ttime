@@ -8392,7 +8392,7 @@ function wrapRouteControls(day) {
   expandBtn.style.cursor = 'pointer';
 
   expandBtn.innerHTML = `
-    <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy" decoding="async">
+    <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async">
     <span class="tm-label" style="color: #297fd4">Expand map</span>
   `;
   expandBtn.onclick = function(e) {
