@@ -66,136 +66,97 @@ function getPointsFromTrip(trip, day) {
 }
 
 // Thumbnail fonksiyonunu DÜZELT:
-function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
-    console.log("THUMB POLYLINE", trip.directionsPolylines?.[day]);
-
+async function generateTripThumbnailOffscreen(trip, day, width = 300, height = 180) {
     const pts = getPointsFromTrip(trip, day);
-    // SADECE trip.directionsPolylines kullan!
-    const polyline = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
-      ? trip.directionsPolylines[day]
-      : pts;
-    if (!polyline || polyline.length < 2) return null;;
+    if (!pts || pts.length < 2) return null;
+    const lats = pts.map(p => p.lat);
+    const lngs = pts.map(p => p.lng);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    const bounds = [[minLng, minLat], [maxLng, maxLat]];
+    const center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
 
-  const lats = polyline.map(p => p.lat);
-  const lngs = polyline.map(p => p.lng);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    // --- Offscreen MapLibreGL map oluştur (hidden div ile) ---
+    const mapDiv = document.createElement('div');
+    mapDiv.style.width = width + 'px';
+    mapDiv.style.height = height + 'px';
+    mapDiv.style.position = 'fixed';
+    mapDiv.style.left = '-10000px';
+    mapDiv.style.top = '-10000px';
+    document.body.appendChild(mapDiv);
 
-  function project(p) {
-  // Koordinatların kapsadığı alan
-  const ptsWidth = maxLng - minLng || 1;
-  const ptsHeight = maxLat - minLat || 1;
-  const pad = 12;
-
-  // Canvas ve veri oranı
-  const canvasRatio = width / height;
-  const ptsRatio = ptsWidth / ptsHeight;
-
-  let scale, offsetX, offsetY;
-  if (ptsRatio > canvasRatio) {
-    // En-boy oranı canvas'tan geniş → genişliği tam doldur, üst-alt boşluk bırak
-    scale = (width - 2 * pad) / ptsWidth;
-    const realHeight = ptsHeight * scale;
-    offsetX = pad;
-    offsetY = (height - realHeight) / 2;
-  } else {
-    // En-boy oranı canvas'tan dar → yüksekliği tam doldur, sağ-sol boşluk bırak
-    scale = (height - 2 * pad) / ptsHeight;
-    const realWidth = ptsWidth * scale;
-    offsetX = (width - realWidth) / 2;
-    offsetY = pad;
-  }
-
-  const x = offsetX + (p.lng - minLng) * scale;
-  const y = offsetY + (maxLat - p.lat) * scale;
-  return [x, y];
-}
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, width, height);
-
-  // ROTAYI ÇİZ (nasılsa polyline dizisi hazır, directions veya düz çizgi olabilir)
-  ctx.save();
-  ctx.strokeStyle = '#1976d2';
-  ctx.lineWidth = 6;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-    // ROTAYI ÇİZ (YAY PATCH! — Fly mode'da markerlar arası bombe/kavisli!)
-  ctx.save();
-  ctx.strokeStyle = '#1976d2';
-  ctx.lineWidth = 6;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.beginPath();
-
-  // Türkiye içi mi, değil mi?
-  function areAllPointsInTurkey(arr) {
-    return arr.every(p =>
-      p.lat >= 35.81 && p.lat <= 42.11 &&
-      p.lng >= 25.87 && p.lng <= 44.57
-    );
-  }
-  const flyMode = !areAllPointsInTurkey(polyline);
-
-  if (flyMode) {
-    // PATCH: markerlar arasında yay çizin (mapteki gibi bombe/arc)
-    for (let i = 0; i < polyline.length - 1; i++) {
-      // Kavisli yay koordinatları (mapte nasılsa aynısı):
-      const getCurvedArcCoords = window.getCurvedArcCoords || function(start, end, strength = 0.33, segments = 22) {
-        // start,end: [lng,lat]
-        const sx = start[0], sy = start[1];
-        const ex = end[0], ey = end[1];
-        const mx = (sx + ex) / 2 + strength * (ey - sy);
-        const my = (sy + ey) / 2 - strength * (ex - sx);
-        const coords = [];
-        for (let t = 0; t <= 1; t += 1 / segments) {
-          const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
-          const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
-          coords.push([x, y]);
-        }
-        return coords;
-      };
-      const arc = getCurvedArcCoords(
-        [polyline[i].lng, polyline[i].lat],
-        [polyline[i + 1].lng, polyline[i + 1].lat],
-        0.33, 22
-      );
-      arc.forEach((pt, j) => {
-        const [x, y] = project({ lng: pt[0], lat: pt[1] });
-        if (i === 0 && j === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-    }
-  } else {
-    // Türkiye ise directionPolyline zaten gerçek route path — düz çizgi kalsın!
-    polyline.forEach((p, i) => {
-      const [x, y] = project(p);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    const map = new maplibregl.Map({
+        container: mapDiv,
+        style: 'https://demotiles.maplibre.org/style.json',
+        center: center,
+        zoom: 10,
+        preserveDrawingBuffer: true,
+        interactive: false,
+        attributionControl: false
     });
-  }
-  ctx.stroke();
-  ctx.restore();
-  ctx.restore();
 
-  // Nokta markerlar; ROTAYA yine karışmıyoruz!
-  ctx.save();
-  ctx.fillStyle = '#d32f2f';
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 2;
-  pts.forEach((p) => {
-    const [x, y] = project(p);
+    await new Promise(resolve => {
+        map.on('load', () => {
+            map.fitBounds(bounds, { padding: 12, maxZoom: 15 });
+            setTimeout(resolve, 500); // render bekle
+        });
+    });
+
+    const mapCanvas = map.getCanvas();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
+
+    // -- ARKA PLAN MAPLIBRE HARİTA'yı koy
+    ctx.drawImage(mapCanvas, 0, 0, width, height);
+
+    // ROTAYI çiz
+    ctx.save();
+    ctx.strokeStyle = '#1976d2';
+    ctx.lineWidth = 6;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.arc(x, y, 7, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
-  });
-  ctx.restore();
 
-  return canvas.toDataURL('image/png');
+    function project(lng, lat) {
+        const p = map.project([lng, lat]);
+        return [p.x, p.y];
+    }
+
+    const polyline = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
+        ? trip.directionsPolylines[day]
+        : pts;
+
+    polyline.forEach((p, i) => {
+        const [x, y] = project(p.lng, p.lat);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    // MARKERLARI ÇİZ
+    ctx.save();
+    ctx.fillStyle = '#d32f2f';
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    pts.forEach((p) => {
+        const [x, y] = project(p.lng, p.lat);
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+    });
+    ctx.restore();
+
+    // Cleanup
+    map.remove();
+    document.body.removeChild(mapDiv);
+
+    return canvas.toDataURL('image/png');
 }
 
 function safeParse(jsonStr) {
