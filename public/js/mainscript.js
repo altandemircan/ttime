@@ -7234,7 +7234,6 @@ async function renderRouteForDay(day) {
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
     const pts = getDayPoints(day);
-    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
 
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
