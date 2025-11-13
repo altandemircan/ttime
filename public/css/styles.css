@@ -6531,12 +6531,38 @@ border-bottom:1px solid #ddd;
 
     /* Hover cursor on the chart */
     .tt-elev-cursor { position:absolute; top:48px; bottom:16px; width:2px; background:#263238; opacity:.25; pointer-events:none; }
-    .tt-elev-tooltip {
-      position:absolute; top:26px; transform:translateX(-50%);
-      padding:2px 6px; font-size:11px; line-height:1; color:#222; background:#fff;
-      border:1px solid #d0d7de; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.08);
-      white-space:nowrap; opacity:0.96; pointer-events:none; z-index:3;
-    }
+   .tt-elev-tooltip {
+  position: absolute;
+  top: 0; /* veya scale-bar'ın üstünde olsun istediğin yere göre */
+  left: 0;
+  background: rgba(255,255,255,0.95);
+  color: #222;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(80,80,80,0.16);
+  border: 1px solid #ececec;
+  z-index: 999;
+  transform: translateY(-42px); /* barın üstünde hover gibi */
+  transition: box-shadow 0.16s, background 0.16s;
+  pointer-events: none;
+  min-width: 100px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tt-elev-tooltip strong,
+.tt-elev-tooltip .highlight {
+  color: #8a4af3;
+  font-weight: 600;
+}
+
+.tt-elev-tooltip .icon {
+  vertical-align: middle;
+  margin-right: 7px;
+}
 
     /* Vertical line under the marker on the map */
     .tt-map-vert-line {
