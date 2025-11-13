@@ -402,8 +402,8 @@ if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevation
 }
 
 // LOG PATCH!
-  console.log("DEBUG MARKER", idx, m.name, "left", left, "profileY", profileY, "elev", elevations[nearest]);
-
+console.log("DEBUG MARKER", idx, m.name, "left", left, "profileY", profileY,
+  "elev", (typeof nearest !== "undefined" ? elevations[nearest] : null));
 
 // Sonra marker style'da:
 if (profileY !== null) {
