@@ -4539,7 +4539,7 @@ function updateExpandedMap(expandedMap, day) {
             const svg = track && track.querySelector('svg.tt-elev-svg');
             if (track && svg) {
                 const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                createScaleElements(track, width, totalKm, 0, markerPositions);
+                pointscreateScaleElements(track, widthPx, spanKm, startKmDom, markers, samples, elevations, Y);
             }
         }
     }
@@ -5778,7 +5778,7 @@ if (typeof renderRouteScaleBar === 'function') {
     const svg = track && track.querySelector('svg.tt-elev-svg');
     if (track && svg) {
         const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-        createScaleElements(track, width, totalKm, 0, markerPositions);
+        pointscreateScaleElements(track, widthPx, spanKm, startKmDom, markers, samples, elevations, Y);
     }
 }
 
@@ -5787,7 +5787,7 @@ const track = scaleBarDiv.querySelector('.scale-bar-track');
 const svg = track && track.querySelector('svg.tt-elev-svg');
 if (track && svg) {
   const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  createScaleElements(track, width, totalKm, 0, markerPositions);
+  pointscreateScaleElements(track, widthPx, spanKm, startKmDom, markers, samples, elevations, Y);
 }
   
 
@@ -7062,7 +7062,7 @@ const track = scaleBarDiv.querySelector('.scale-bar-track');
 const svg = track && track.querySelector('svg.tt-elev-svg');
 if (track && svg) {
   const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  createScaleElements(track, width, totalKm, 0, markerPositions);
+  pointscreateScaleElements(track, widthPx, spanKm, startKmDom, markers, samples, elevations, Y);
 }
 } else if (scaleBarDiv) {
   scaleBarDiv.innerHTML = '';
