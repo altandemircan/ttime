@@ -387,7 +387,7 @@ if (Array.isArray(markers)) {
 
     const wrap = document.createElement('div');
     wrap.className = 'marker-badge';
-    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+wrap.style.cssText = `position:absolute;left:${left}%;bottom:2px;width:18px;height:18px;transform:translateX(-50%);`;
     wrap.title = m.name || '';
     wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
     track.appendChild(wrap);
