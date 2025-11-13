@@ -315,7 +315,7 @@ function fitExpandedMapToRoute(day) {
   }
 
 
-function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
+function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], samples = [], elevations = [], Y = null) {
     if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
       // fallback: marker dizisinden haversine ile hesapla
       spanKm = getTotalKmFromMarkers(markers);
@@ -4539,7 +4539,7 @@ function updateExpandedMap(expandedMap, day) {
             const svg = track && track.querySelector('svg.tt-elev-svg');
             if (track && svg) {
                 const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                pointscreateScaleElements(track, widthPx, spanKm, startKmDom, markers, samples, elevations, Y);
+                createScaleElements(track, width, totalKm, 0, markerPositions);
             }
         }
     }
@@ -5778,7 +5778,7 @@ if (typeof renderRouteScaleBar === 'function') {
     const svg = track && track.querySelector('svg.tt-elev-svg');
     if (track && svg) {
         const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-        pointscreateScaleElements(track, widthPx, spanKm, startKmDom, markers, samples, elevations, Y);
+        createScaleElements(track, width, totalKm, 0, markerPositions);
     }
 }
 
@@ -5787,7 +5787,7 @@ const track = scaleBarDiv.querySelector('.scale-bar-track');
 const svg = track && track.querySelector('svg.tt-elev-svg');
 if (track && svg) {
   const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  pointscreateScaleElements(track, widthPx, spanKm, startKmDom, markers, samples, elevations, Y);
+  createScaleElements(track, width, totalKm, 0, markerPositions);
 }
   
 
@@ -7062,7 +7062,7 @@ const track = scaleBarDiv.querySelector('.scale-bar-track');
 const svg = track && track.querySelector('svg.tt-elev-svg');
 if (track && svg) {
   const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  pointscreateScaleElements(track, widthPx, spanKm, startKmDom, markers, samples, elevations, Y);
+  createScaleElements(track, width, totalKm, 0, markerPositions);
 }
 } else if (scaleBarDiv) {
   scaleBarDiv.innerHTML = '';
