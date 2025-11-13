@@ -387,7 +387,8 @@ if (Array.isArray(markers)) {
 
     const wrap = document.createElement('div');
     wrap.className = 'marker-badge';
-wrap.style.cssText = `position:absolute;left:${left}%;bottom:-4px;width:14px;height:14px;transform:translateX(-50%);`;
+const elevationY = ... ; // O X'teki elevation'dan Y konumu
+wrap.style.cssText = `position:absolute;left:${left}%;top:${elevationY}px;width:14px;height:14px;transform:translateX(-50%);`;
     wrap.title = m.name || '';
     wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
     track.appendChild(wrap);
