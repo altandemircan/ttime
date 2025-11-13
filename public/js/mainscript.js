@@ -9333,7 +9333,15 @@ track.__onMove = function(e) {
   }
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  tooltip.style.left = `${x}px`;
+  const tooltipWidth = tooltip.getBoundingClientRect().width || 120;
+const barWidth = rect.width;
+if (x > barWidth / 2) {
+  // Ortadan sonra: tooltip’i çizginin SOLUNDA göster
+  tooltip.style.left = `${x - tooltipWidth - 12}px`;
+} else {
+  // Ortadan önce: tooltip’i çizginin SAĞINDA göster
+  tooltip.style.left = `${x + 12}px`;
+}
   verticalLine.style.left = `${x}px`;
   verticalLine.style.display = 'block';
 };
