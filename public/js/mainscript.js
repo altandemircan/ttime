@@ -403,11 +403,10 @@ if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevation
 
 // Sonra marker style'da:
 if (profileY !== null) {
-    wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
+    wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY - 6}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
 } else {
-    // Eski hali, fallback:
     wrap.style.cssText = `position:absolute;left:${left}%;bottom:-4px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
-}        wrap.title = m.name || '';
+}       wrap.title = m.name || '';
         wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
         track.appendChild(wrap);
       });
