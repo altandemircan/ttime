@@ -372,51 +372,30 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], s
       track.appendChild(label);
     }
 
-      // Marker badge ekleme: YAY MODU PATCH!
-    // Marker badge ekleme: YAY MODU PATCH!
-    if (Array.isArray(markers)) {
-      markers.forEach((m, idx) => {
-        let dist = typeof m.distance === "number" ? m.distance : 0;
-        // PATCH: out of range/return YOK!
-        // Bar'ın uzunluğunda markerın konumu:
-        const relKm = dist - startKmDom;
-
-        // PATCH: spanKm'nin sıfır olmasına karşı koruma!
-        let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0; // bar uzunluğu hata olmasın
-        left = Math.max(0, Math.min(100, left)); // 0-100 arası tut
-
-        const wrap = document.createElement('div');
-        wrap.className = 'marker-badge';
-let profileY = null;
-if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevations)) {
-    // Marker'ın km koordinatına en yakın sample'ı bul
-    let markerKm = m.distance;
+    markers.forEach((m, idx) => {
+  let profileY = null;
+  if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevSmooth)) {
+    let markerKm = m.distance; // marker'ın km cinsinden yeri
     let nearest = 0, minDiff = Infinity;
     for (let i = 0; i < samples.length; i++) {
-        let diff = Math.abs(samples[i].distM / 1000 - markerKm);
-        if (diff < minDiff) { minDiff = diff; nearest = i; }
+      let diff = Math.abs(samples[i].distM / 1000 - markerKm);
+      if (diff < minDiff) { minDiff = diff; nearest = i; }
     }
-    if (typeof elevations[nearest] === "number") {
-        profileY = Y(elevations[nearest]);
+    if (typeof elevSmooth[nearest] === "number") {
+      profileY = Y(elevSmooth[nearest]);
     }
-}
-
-// LOG PATCH!
-console.log("DEBUG MARKER", idx, m.name, "left", left, "profileY", profileY,
-  "elev", (typeof nearest !== "undefined" ? elevations[nearest] : null));
-
-// Sonra marker style'da:
-if (profileY !== null) {
-    wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY - 6}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
-} else {
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'marker-badge';
+  if (profileY !== null) {
+    wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY - 7}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
+  } else {
     wrap.style.cssText = `position:absolute;left:${left}%;bottom:-4px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
-}       wrap.title = m.name || '';
-        wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-        track.appendChild(wrap);
-      });
-    } else {
-      console.warn("[DEBUG] markers is not array", markers);
-    }
+  }
+  wrap.title = m.name || '';
+  wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+  track.appendChild(wrap);
+});
 }
 
         // Aktif harita planlama modu için
