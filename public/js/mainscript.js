@@ -401,6 +401,10 @@ if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevation
     }
 }
 
+// LOG PATCH!
+  console.log("DEBUG MARKER", idx, m.name, "left", left, "profileY", profileY, "elev", elevations[nearest]);
+
+
 // Sonra marker style'da:
 if (profileY !== null) {
     wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY - 6}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
