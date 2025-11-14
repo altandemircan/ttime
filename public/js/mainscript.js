@@ -2189,6 +2189,19 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
+
+    // Güvenli tip ve null-check - EN BAŞTA!
+day = Number(day);
+if (!Number.isFinite(day) || day <= 0) day = 1;
+if (location) {
+  location.lat = Number(location.lat);
+  location.lng = Number(location.lng);
+  if (!Number.isFinite(location.lat) || !Number.isFinite(location.lng)) {
+    location = null;
+  }
+}
+
+
   // 1) Limit kontrolü (haversine - route optimize yoksa)
   if (location && typeof location.lat === "number" && typeof location.lng === "number") {
     let forceDay = options && options.forceDay;
