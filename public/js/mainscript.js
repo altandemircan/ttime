@@ -2191,7 +2191,23 @@ function addToCart(
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
 
-
+// --- ROTA UZUNLUĞU LIMITİ ---
+// 1 gün için MAX 500 km sınırı
+if (loc && typeof resolvedDay === "number") {
+    // Sepette o güne ait var olan noktaları al (bu eklenmeden önce!)
+    const itemsToday = window.cart.filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number");
+    const allPoints = [...itemsToday.map(i => i.location), loc]; // Yeni eklenecek nokta dahil!
+    if (allPoints.length > 1) {
+        let totalKm = 0;
+        for (let i = 1; i < allPoints.length; i++) {
+            totalKm += haversine(allPoints[i - 1].lat, allPoints[i - 1].lng, allPoints[i].lat, allPoints[i].lng) / 1000;
+        }
+        if (totalKm > 500) {
+            if (window.showToast) window.showToast('Max route length for a single day is 500 km.', 'error');
+            return false;
+        }
+    }
+}
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
   // 1) Placeholder temizliği
