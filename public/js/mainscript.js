@@ -2192,30 +2192,36 @@ function addToCart(
 ) {
 // ----- Gün içinde toplam rota km sınırı PATCH -----
 if (location && typeof location.lat === "number" && typeof location.lng === "number") {
-    let forceDay = options && options.forceDay;
-    let resolvedDay = Number(
-        forceDay != null ? forceDay :
-        (day != null ? day :
-          (window.currentDay != null ? window.currentDay :
-            (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
-    );
-    if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
+  let forceDay = options && options.forceDay;
+  let resolvedDay = Number(
+    forceDay != null ? forceDay :
+    (day != null ? day :
+      (window.currentDay != null ? window.currentDay :
+        (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
+  );
+  if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
 
-    // O günün mevcut rotası + yeni candidate
-    const itemsToday = window.cart.filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number");
-    const allPoints = [...itemsToday.map(i => i.location), {lat: Number(location.lat), lng: Number(location.lng)}];
+  const itemsToday = window.cart.filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number");
+  const allPoints = [...itemsToday.map(i => i.location), {lat: Number(location.lat), lng: Number(location.lng)}];
 
-    if (allPoints.length > 1) {
-        let totalKm = 0;
-        for (let i = 1; i < allPoints.length; i++) {
-            totalKm += haversine(allPoints[i - 1].lat, allPoints[i - 1].lng, allPoints[i].lat, allPoints[i].lng) / 1000;
-        }
-        if (totalKm > 500) {
-            if (window.showToast) window.showToast('Max route length for this day is 500 km.', 'error');
-            else alert('Max route length for this day is 500 km.');
-            return false;
-        }
+  let totalKm = 0;
+  const containerId = `route-map-day${resolvedDay}`;
+  if (
+    typeof window.lastRouteSummaries === "object" &&
+    window.lastRouteSummaries[containerId] &&
+    window.lastRouteSummaries[containerId].distance
+  ) {
+    totalKm = window.lastRouteSummaries[containerId].distance / 1000;
+  } else {
+    for (let i = 1; i < allPoints.length; i++) {
+      totalKm += haversine(allPoints[i - 1].lat, allPoints[i - 1].lng, allPoints[i].lat, allPoints[i].lng) / 1000;
     }
+  }
+  if (totalKm > 500) {
+    if (window.showToast) window.showToast('Max route length for this day is 500 km.', 'error');
+    else alert('Max route length for this day is 500 km.');
+    return false;
+  }
 }
 
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
