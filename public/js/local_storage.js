@@ -189,10 +189,26 @@ if (flyMode) {
     });
     ctx.restore();
 
+    // Önce haritanın render olduğundan %100 emin ol:
+await new Promise(resolve => {
+    setTimeout(() => {
+        map.resize(); // tiles-refresh, bereketli harita için
+        resolve();
+    }, 1800); // 1400 yetmediyse 1800+ ms tut!
+});
+
+const mapCanvas = map.getCanvas();
+ctx.clearRect(0, 0, width, height);
+ctx.drawImage(mapCanvas, 0, 0, width, height);
+
+// ... çizimler (polylines) burada ...
+// Sonra cleanup:
+setTimeout(() => {
     map.remove();
     document.body.removeChild(mapDiv);
+}, 600); // cleanup 0 ms olmasın, renderdan 600 ms sonra sil
 
-    return canvas.toDataURL('image/png');
+return canvas.toDataURL('image/png');
 }
 
 function safeParse(jsonStr) {
