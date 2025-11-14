@@ -4491,7 +4491,7 @@ function updateExpandedMap(expandedMap, day) {
       geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
     );
 
-    if (hasValidRoute) {
+      if (hasValidRoute) {
         // OSRM ROTASI - tüm noktaları kaydet
         const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
@@ -4501,28 +4501,34 @@ function updateExpandedMap(expandedMap, day) {
             dashArray: null
         }).addTo(expandedMap);
 
-   // --- EK: Marker yola uzaksa marker ile yol arasında kesik yeşil çizgi ---
-    pts.forEach((marker, idx) => {
-        let minDist = Infinity, closest = null;
-        routeCoords.forEach((c) => {
-            // c[1]=lat, c[0]=lng
-            const dist = haversine(marker.lat, marker.lng, c[1], c[0]);
-            if (dist < minDist) { minDist = dist; closest = c; }
-        });
-        if (minDist > 60 && closest) { // 60 metre threshold
-            L.polyline(
-                [[marker.lat, marker.lng], [closest[1], closest[0]]],
-                {
-                    color: '#43a047',
-                    weight: 5,
+        // Tüm route noktalarını kaydet
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
+        console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
+        
+        // PATCH BAŞLANGICI: Markerlar yoldan uzaksa, en yakın polyline noktasına kesik yeşil çizgi!
+        pts.forEach((marker, idx) => {
+            let minDist = Infinity, closest = null;
+            for (let i = 0; i < routeCoords.length; i++) {
+                const lat = routeCoords[i][0];
+                const lng = routeCoords[i][1];
+                const dist = haversine(marker.lat, marker.lng, lat, lng);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = routeCoords[i];
+                }
+            }
+            // Sadece rotaya belirli bir mesafeden uzak markerlar için (ör. 200m)
+            if (minDist > 200 && closest) {
+                L.polyline([[marker.lat, marker.lng], [closest[0], closest[1]]], {
+                    color: '#43a047', // Material Green
+                    weight: 4,
                     opacity: 0.85,
                     dashArray: '7,6',
                     interactive: false
-                }
-            ).addTo(expandedMap);
-        }
-    });
-        
+                }).addTo(expandedMap);
+            }
+        });
+        // PATCH SONU
         
         // Tüm route noktalarını kaydet
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
