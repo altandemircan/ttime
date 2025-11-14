@@ -899,10 +899,12 @@ function saveFavTrips() {
 }
 
 async function toggleFavTrip(item, heartEl) {
-     // Şehir/ülke eksikse, doldur
+    // Liste yoksa oluştur
+    window.favTrips = window.favTrips || [];
+
+    // Şehir/ülke eksikse, doldur
     if (!item.city || !item.country) {
         if (item.address) {
-            // Adresten şehir ve ülkeyi tahmin et
             const addrParts = item.address.split(",");
             item.city = addrParts.length >= 2 ? addrParts[addrParts.length-2].trim() : window.selectedCity || "Unknown City";
             item.country = addrParts.length >= 1 ? addrParts[addrParts.length-1].trim() : "Unknown Country";
@@ -911,21 +913,24 @@ async function toggleFavTrip(item, heartEl) {
             item.country = "Unknown Country";
         }
     }
-    // Eğer item.image yoksa, otomatik olarak doldur
+
+    // image yoksa otomatik doldur
     if (!item.image || item.image === "" || item.image === "img/placeholder.png") {
-        // Fotoğrafı AI veya API'dan çek
         if (typeof getImageForPlace === "function") {
             item.image = await getImageForPlace(item.name, item.category, window.selectedCity || "");
         } else {
             item.image = "img/placeholder.png";
         }
     }
+
+    // Favoride mi kontrol et
     const idx = window.favTrips.findIndex(f =>
         f.name === item.name &&
         f.category === item.category &&
         String(f.lat) === String(item.lat) &&
         String(f.lon) === String(item.lon)
     );
+
     if (idx >= 0) {
         window.favTrips.splice(idx, 1);
         heartEl.innerHTML = '<img class="fav-icon" src="img/like_off.svg" alt="notfav">';
@@ -935,7 +940,15 @@ async function toggleFavTrip(item, heartEl) {
         heartEl.innerHTML = '<img class="fav-icon" src="img/like_on.svg" alt="fav">';
         heartEl.classList.add("is-fav");
     }
-    saveFavTrips();
+
+    // LocalStorage veya API ile kaydet
+    if (typeof saveFavTrips === "function") {
+        saveFavTrips();
+    } else {
+        localStorage.setItem("favTrips", JSON.stringify(window.favTrips));
+    }
+    // Konsol debug:
+    console.log("FavTrips:", window.favTrips);
 }
 function getFavoriteTrips() {
     return window.favTrips || [];
