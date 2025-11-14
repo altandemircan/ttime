@@ -291,8 +291,6 @@ function fitExpandedMapToRoute(day) {
   const expObj = window.expandedMaps && window.expandedMaps[cid];
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
-    if (!points || points.length < 2) return;
-
 
     // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
@@ -4519,8 +4517,8 @@ function updateExpandedMap(expandedMap, day) {
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
-    expandedMap.setView([41.9, 12.5], 6, { animate: true });
-}
+        expandedMap.setView([0, 0], 2, { animate: true });
+    }
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
@@ -5252,8 +5250,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     } else if (points.length === 1) {
         map.setView([points[0].lat, points[0].lng], 14, { animate: true });
     } else {
-    map.setView([41.9, 12.5], 6, { animate: true });
-}
+        map.setView([0, 0], 2, { animate: true });
+    }
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
@@ -5294,8 +5292,6 @@ function updateRouteStatsUI(day) {
      ) {
     // Sadece haversine ile km/dk ver, profil değişmiyor!
     const points = getDayPoints(day);
-if (!points || points.length < 2) return;
-
     summary = getFallbackRouteSummary(points);
     window.lastRouteSummaries[key] = summary;
   }
@@ -5336,17 +5332,23 @@ function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
     }
     return coords;
 }
-
+function updateHoverMarkerOnArc(day, percent, map, hoverMarker) {
+  const arcPts = window._curvedArcPointsByDay[day];
+  if (!arcPts || arcPts.length < 2) return;
+  const targetIdx = Math.floor(percent * (arcPts.length - 1));
+  const [lng, lat] = arcPts[targetIdx];
+  if (hoverMarker) hoverMarker.setLatLng([lat, lng]);
+  else hoverMarker = L.circleMarker([lat, lng], {
+      radius: 10, color: "#fff", fillColor: "#8a4af3", fillOpacity: 0.9, weight: 3, zIndexOffset: 9999
+    }).addTo(map);
+  return hoverMarker;
+}
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
     let hoverMarker = null;
 
-            let arcPts = (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) || [];
-
-if (!arcPts || !Array.isArray(arcPts) || arcPts.length < 2) return;
-
-function onMove(e) {
+    function onMove(e) {
         const rect = scaleBar.getBoundingClientRect();
         let x = (e.touches && e.touches.length)
             ? (e.touches[0].clientX - rect.left)
@@ -5435,9 +5437,7 @@ function saveArcPointsForDay(day, points) {
 // TEST FONKSİYONU - Yayı görsel olarak kontrol etmek için
 function testArcVisualization(day, map) {
     const arcPts = window._curvedArcPointsByDay[day];
-
-    // PATCH: Null/boş/dizi check!
-    if (!arcPts || !Array.isArray(arcPts) || arcPts.length < 2) return;
+    if (!arcPts) return;
     
     // Yayı görsel olarak çiz
     const polyline = L.polyline(arcPts.map(pt => [pt[1], pt[0]]), {
@@ -5462,7 +5462,11 @@ function testArcVisualization(day, map) {
     
     console.log("Test arc drawn - START (green) to END (blue)");
 }
-
+// Alternatif çözüm: Yay noktalarını ters çevir
+function getReversedCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
+    const originalCoords = getCurvedArcCoords(start, end, strength, segments);
+    return originalCoords.reverse(); // Noktaları ters çevir
+}
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -5756,21 +5760,20 @@ const points = allPoints.filter(
 
 
 
-                                                         // — YENİ PATCH edilen hali —
-                                                        const expandedMap = L.map(mapDivId, {
-                                                          center: [41.9, 12.5],      // ROMA - Avrupa için ideal merkez
-                                                          zoom: 6,
-                                                          scrollWheelZoom: true,
-                                                          fadeAnimation: true,
-                                                          zoomAnimation: true,
-                                                          zoomAnimationThreshold: 8,
-                                                          zoomSnap: 0.25,
-                                                          zoomDelta: 0.25,
-                                                          wheelDebounceTime: 35,
-                                                          wheelPxPerZoomLevel: 120,
-                                                          inertia: true,
-                                                          easeLinearity: 0.2
-                                                        });
+                                                         const expandedMap = L.map(mapDivId, {
+                                                           center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
+                                                          zoom: 2,         // Veya 3 yaz (önemi yok)
+                                                            scrollWheelZoom: true,
+                                                            fadeAnimation: true,
+                                                            zoomAnimation: true,
+                                                            zoomAnimationThreshold: 8,
+                                                            zoomSnap: 0.25,
+                                                            zoomDelta: 0.25,
+                                                            wheelDebounceTime: 35,
+                                                            wheelPxPerZoomLevel: 120,
+                                                            inertia: true,
+                                                            easeLinearity: 0.2
+                                                          });
                                                         expandedMap._maplibreLayer = L.maplibreGL({ 
                                                           style: 'https://tiles.openfreemap.org/styles/bright' // veya ilk açılışta istediğin layer
                                                         }).addTo(expandedMap);
@@ -6095,7 +6098,6 @@ function attachClickNearbySearch(map, day, options = {}) {
   });
 }
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
-
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
   const categories = [
     "accommodation.hotel",
@@ -6146,8 +6148,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     iconAnchor: [14, 14]
   });
 
-
-window._nearbyPulseMarker = L.marker([lat, lng], {
+  window._nearbyPulseMarker = L.marker([lat, lng], {
     icon: pulseIcon,
     interactive: false,
     keyboard: false
@@ -6581,63 +6582,61 @@ if (typeof updateCart === "function") updateCart();
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     // Önceki popup'ı kapat
     closeNearbyPopup();
-
-    // Haritanın noktalarını en başta çek!
-    const points = (typeof getDayPoints === "function") ? getDayPoints(window.currentDay || 1) : [];
-
+    
     // Popup container oluştur
     const popupContainer = document.createElement('div');
     popupContainer.id = 'custom-nearby-popup';
-
+    
     // Close button HTML
     const closeButtonHtml = showCloseButton ? `
         <button onclick="closeNearbyPopup()" 
                 class="nearby-popup-close-btn"
                title="Close">×</button>
     ` : '';
-
+    
     popupContainer.innerHTML = `
         ${closeButtonHtml}
         <div class="nearby-popup-content">
             ${content}
         </div>
     `;
-
+    
     // Body'ye ekle
     document.body.appendChild(popupContainer);
-
+    
     // Global referansı sakla
     window._currentNearbyPopupElement = popupContainer;
-
+    
     // Marker ekle
-    // --- Pulsing marker ekle --- //
-    if (window._nearbyMarker) {
-      try { map.removeLayer(window._nearbyMarker); } catch(_){}
-      window._nearbyMarker = null;
-    }
-    if (window._nearbyPulseMarker) {
-      try { map.removeLayer(window._nearbyPulseMarker); } catch(_){}
-      window._nearbyPulseMarker = null;
-    }
+   // --- Pulsing marker ekle --- //
+if (window._nearbyMarker) {
+  try { map.removeLayer(window._nearbyMarker); } catch(_){}
+  window._nearbyMarker = null;
+}
+if (window._nearbyPulseMarker) {
+  try { map.removeLayer(window._nearbyPulseMarker); } catch(_){}
+  window._nearbyPulseMarker = null;
+}
 
-    // DivIcon HTML
-    const pulseHtml = `
-      <div class="nearby-pulse-marker">
-        <div class="nearby-pulse-core"></div>
-        <div class="nearby-pulse-ring"></div>
-        <div class="nearby-pulse-ring2"></div>
-      </div>
-    `;
+// DivIcon HTML
+const pulseHtml = `
+  <div class="nearby-pulse-marker">
+    <div class="nearby-pulse-core"></div>
+    <div class="nearby-pulse-ring"></div>
+    <div class="nearby-pulse-ring2"></div>
+  </div>
+`;
 
-    const pulseIcon = L.divIcon({
-      html: pulseHtml,
-      className: 'nearby-pulse-icon-wrapper', // boş class (Leaflet default stil katmasın)
-      iconSize: [18,18],
-      iconAnchor: [9,9]
-    });
+const pulseIcon = L.divIcon({
+  html: pulseHtml,
+  className: 'nearby-pulse-icon-wrapper', // boş class (Leaflet default stil katmasın)
+  iconSize: [18,18],
+  iconAnchor: [9,9]
+});
 
-    if (!points || points.length < 2) return;
-    window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
+window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
+
+
 }
 
 // Popup kapatma fonksiyonu
@@ -7012,8 +7011,6 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
   expandedMap.eachLayer(l => { if (l instanceof L.Marker) expandedMap.removeLayer(l); });
 
   const points = getDayPoints(day);
-  if (!points || points.length < 2) return;
-
 
   points.forEach((p, idx) => {
     let currentName = p.name || '';
@@ -7357,8 +7354,6 @@ async function renderRouteForDay(day) {
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         const points = getDayPoints(day);
-        if (!points || points.length < 2) return;
-
         const containerId = `route-map-day${day}`;
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
@@ -7488,8 +7483,6 @@ async function renderRouteForDay(day) {
 
     const containerId = `route-map-day${day}`;
     const points = getDayPoints(day);
-    if (!points || points.length < 2) return;
-
 
     if (
         window.importedTrackByDay &&
@@ -8108,8 +8101,6 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return [];
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
-    if (!points || points.length < 2) return;
-
 
     // Haversine mesafe (metre)
     function haversine(lat1, lon1, lat2, lon2) {
@@ -9028,20 +9019,11 @@ if (!container || isNaN(totalKm)) {
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
 
-  if (
-      !coords ||
-      !Array.isArray(coords) ||
-      coords.length < 2 ||
-      !markers || !Array.isArray(markers) || markers.length < 1
-    ) {
-      // Sıfırdan veya tek marker ile scale bar sadece badge ve mesajla render edilir!
-      container.innerHTML = `<div class="scale-bar-track">
-        <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-          No route points found.<br>Select at least 2 points to start mapping.
-        </div></div>`;
-      container.style.display = 'block';
-      return;
-    }
+// if (!coords || coords.length < 2) {
+//   container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">No route points found</div></div>`;
+//   container.style.display = 'block'; // HEP GÖSTER!
+//   return;
+// }
 
   // Eğer burada geojson'dan coords yok veya kısaysa (ROMA gibi marker+yayda) OLSUN, yine de scale bar çiz!
 let hasGeoJson = coords && coords.length >= 2;
