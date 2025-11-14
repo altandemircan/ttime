@@ -4256,6 +4256,17 @@ cartDiv.appendChild(addNewDayButton);
   }
    attachFavEvents(); // sidebar item'ları oluşunca buraya ekle!
 
+
+setTimeout(function() {
+  window.dispatchEvent(new Event('resize'));
+  if (window.leafletMaps) {
+    Object.values(window.leafletMaps).forEach(map => {
+      try { map.invalidateSize(); } catch(_) {}
+    });
+  }
+}, 120); // 120ms sonra trigger
+
+
 } 
 
 function showRemoveItemConfirmation(index, btn) {
@@ -6000,7 +6011,14 @@ if (
 ) {
   ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
 }
-
+setTimeout(function() {
+  window.dispatchEvent(new Event('resize'));
+  if (window.leafletMaps) {
+    Object.values(window.leafletMaps).forEach(map => {
+      try { map.invalidateSize(); } catch(_) {}
+    });
+  }
+}, 120); // 120ms sonra trigger
 }
 function restoreMap(containerId, day) {
     const expandedData = window.expandedMaps?.[containerId];
@@ -7945,6 +7963,14 @@ async function renderRouteForDay(day) {
             );
         }, 150);
     }
+    setTimeout(function() {
+  window.dispatchEvent(new Event('resize'));
+  if (window.leafletMaps) {
+    Object.values(window.leafletMaps).forEach(map => {
+      try { map.invalidateSize(); } catch(_) {}
+    });
+  }
+}, 120); // 120ms sonra trigger
 }
 
 function clearDistanceLabels(day) {
