@@ -5636,6 +5636,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 .add-favorite-btn {
         text-align: center;
+    mtext-align: center;
     margin: 0 auto;
     border: none;
     right: 0px;
@@ -5655,6 +5656,7 @@ ease;
     color: #1e293b;
     margin-top: 8px;
     display: flex;
+    gap: 6px;
 }
 .add-favorite-btn img {
     width: 16px;

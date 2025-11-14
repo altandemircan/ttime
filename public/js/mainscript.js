@@ -295,7 +295,7 @@ function updateFavoriteBtnText(favHeartEl) {
     const btnText = btn.querySelector('.fav-btn-text');
     if (btnText) {
         if (isTripFav(item)) {
-            btnText.textContent = "Remove from My Places";
+            btnText.textContent = "Dele from My Places";
         } else {
             btnText.textContent = "Add to My Places";
         }
