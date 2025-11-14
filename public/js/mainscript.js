@@ -4170,6 +4170,7 @@ cartDiv.appendChild(addNewDayButton);
       if (expandedMap) updateExpandedMap(expandedMap, day);
     });
   }
+   attachFavEvents(); // sidebar item'ları oluşunca buraya ekle!
 
 } 
 
