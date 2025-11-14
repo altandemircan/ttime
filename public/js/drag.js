@@ -15,6 +15,40 @@ let touchTargetItem = null;
 const LONG_PRESS_MS = 350;       // 300-500ms arası önerilir
 const MOVE_CANCEL_PX = 12;       // Long press başlamadan önce bu kadar hareket iptal eder
 
+function dayRouteIsValidStrict(day) {
+    const routeItems = window.cart
+        .filter(i => Number(i.day) === Number(day) && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
+        .map(i => i.location);
+
+    // Hiç nokta yoksa hep TRUE
+    if (routeItems.length < 2) return true;
+
+    // Türkiye mi? (tüm noktalar)
+    const isTurkey = routeItems.every(pt =>
+        pt.lat >= 35.81 && pt.lat <= 42.11 &&
+        pt.lng >= 25.87 && pt.lng <= 44.57
+    );
+
+    let haversineKm = 0;
+    for (let i = 1; i < routeItems.length; i++) {
+        haversineKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
+    }
+
+    if (isTurkey) {
+        // Route summary varsa onu kullan
+        const key = `route-map-day${day}`;
+        if (window.lastRouteSummaries && window.lastRouteSummaries[key] && typeof window.lastRouteSummaries[key].distance === "number") {
+            const routeKm = window.lastRouteSummaries[key].distance / 1000;
+            return routeKm <= 300;
+        }
+        // Rota özet yoksa, haversine ile fallback olarak TRUE döndür
+        return haversineKm <= 300;
+    }
+
+    // Türkiye değilse (fly mode), haversine ile kontrol
+    return haversineKm <= 300;
+}
+
 // ========== DEVICE DETECTION ==========
 function isTouchDevice() {
     return 'ontouchstart' in window || 
@@ -656,36 +690,3 @@ document.addEventListener('dragend', function(e) {
     document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
 });
 
-function dayRouteIsValidStrict(day) {
-    const routeItems = window.cart
-        .filter(i => Number(i.day) === Number(day) && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
-        .map(i => i.location);
-
-    // Hiç nokta yoksa hep TRUE
-    if (routeItems.length < 2) return true;
-
-    // Türkiye mi? (tüm noktalar)
-    const isTurkey = routeItems.every(pt =>
-        pt.lat >= 35.81 && pt.lat <= 42.11 &&
-        pt.lng >= 25.87 && pt.lng <= 44.57
-    );
-
-    let haversineKm = 0;
-    for (let i = 1; i < routeItems.length; i++) {
-        haversineKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
-    }
-
-    if (isTurkey) {
-        // Route summary varsa onu kullan
-        const key = `route-map-day${day}`;
-        if (window.lastRouteSummaries && window.lastRouteSummaries[key] && typeof window.lastRouteSummaries[key].distance === "number") {
-            const routeKm = window.lastRouteSummaries[key].distance / 1000;
-            return routeKm <= 300;
-        }
-        // Rota özet yoksa, haversine ile YALNIZCA fallback olarak TRUE döndür
-        return haversineKm <= 300;
-    }
-
-    // Türkiye değilse (fly mode), haversine ile kontrol
-    return haversineKm <= 300;
-}
