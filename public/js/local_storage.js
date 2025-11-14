@@ -103,15 +103,18 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
         attributionControl: false
     });
 
+    // Tüm harita tile'ları tamamen yüklenene kadar bekle!
     await new Promise(resolve => {
-    map.on('load', () => {
-        map.fitBounds(bounds, { padding: 18, maxZoom: 15, minZoom: 12 });
-        setTimeout(() => {
-            map.resize(); // tiles-refresh; harita ZEMİNİ garanti!
-            resolve();
-        }, 1400); // Bekleme 1400ms, gerekiyorsa artır!
+        map.on('load', () => {
+            map.fitBounds(bounds, { padding: 18, maxZoom: 15, minZoom: 12 });
+        });
+        map.on('idle', () => {
+            setTimeout(() => {
+                map.resize();
+                resolve();
+            }, 600); // idle'dan sonra da biraz beklet, garantili!
+        });
     });
-});
 
     const mapCanvas = map.getCanvas();
 
@@ -134,45 +137,44 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
     const polyline = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
         ? trip.directionsPolylines[day]
         : pts;
-  const flyMode = !window.areAllPointsInTurkey(polyline);
-// areAllPointsInTurkey fonksiyonun yukarıda olacak
+    const flyMode = !window.areAllPointsInTurkey(polyline);
 
-if (flyMode) {
-    // markerlar arasında yay (Bezier/kavis) ile çiz
-    for (let i = 0; i < polyline.length - 1; i++) {
-        const getCurvedArcCoords = window.getCurvedArcCoords || function(start, end, strength = 0.33, segments = 22) {
-            // Bezier arc generator
-            const sx = start[0], sy = start[1];
-            const ex = end[0], ey = end[1];
-            const mx = (sx + ex) / 2 + strength * (ey - sy);
-            const my = (sy + ey) / 2 - strength * (ex - sx);
-            const coords = [];
-            for (let t = 0; t <= 1; t += 1 / segments) {
-                const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
-                const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
-                coords.push([x, y]);
-            }
-            return coords;
-        };
-        const arc = getCurvedArcCoords(
-            [polyline[i].lng, polyline[i].lat],
-            [polyline[i + 1].lng, polyline[i + 1].lat],
-            0.33, 18
-        );
-        arc.forEach((pt, j) => {
-            const [x, y] = project(pt[0], pt[1]);
-            if (i === 0 && j === 0) ctx.moveTo(x, y);
+    if (flyMode) {
+        // markerlar arasında yay (Bezier/kavis) ile çiz
+        for (let i = 0; i < polyline.length - 1; i++) {
+            const getCurvedArcCoords = window.getCurvedArcCoords || function(start, end, strength = 0.33, segments = 22) {
+                // Bezier arc generator
+                const sx = start[0], sy = start[1];
+                const ex = end[0], ey = end[1];
+                const mx = (sx + ex) / 2 + strength * (ey - sy);
+                const my = (sy + ey) / 2 - strength * (ex - sx);
+                const coords = [];
+                for (let t = 0; t <= 1; t += 1 / segments) {
+                    const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+                    const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+                    coords.push([x, y]);
+                }
+                return coords;
+            };
+            const arc = getCurvedArcCoords(
+                [polyline[i].lng, polyline[i].lat],
+                [polyline[i + 1].lng, polyline[i + 1].lat],
+                0.33, 18
+            );
+            arc.forEach((pt, j) => {
+                const [x, y] = project(pt[0], pt[1]);
+                if (i === 0 && j === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+        }
+    } else {
+        // Türkiye ise, gerçek polyline (düz çizgi) kalsın
+        polyline.forEach((p, i) => {
+            const [x, y] = project(p.lng, p.lat);
+            if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
         });
     }
-} else {
-    // Türkiye ise, gerçek polyline (düz çizgi) kalsın
-    polyline.forEach((p, i) => {
-        const [x, y] = project(p.lng, p.lat);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-    });
-}
     ctx.stroke();
     ctx.restore();
 
@@ -189,27 +191,15 @@ if (flyMode) {
     });
     ctx.restore();
 
-    // Önce haritanın render olduğundan %100 emin ol:
-await new Promise(resolve => {
+    // Temizlik: harita ve div'i DOM'dan sil
     setTimeout(() => {
-        map.resize(); // tiles-refresh, bereketli harita için
-        resolve();
-    }, 1800); // 1400 yetmediyse 1800+ ms tut!
-});
+        map.remove();
+        document.body.removeChild(mapDiv);
+    }, 500);
 
-const mapCanvas = map.getCanvas();
-ctx.clearRect(0, 0, width, height);
-ctx.drawImage(mapCanvas, 0, 0, width, height);
-
-// ... çizimler (polylines) burada ...
-// Sonra cleanup:
-setTimeout(() => {
-    map.remove();
-    document.body.removeChild(mapDiv);
-}, 600); // cleanup 0 ms olmasın, renderdan 600 ms sonra sil
-
-return canvas.toDataURL('image/png');
+    return canvas.toDataURL('image/png');
 }
+
 
 function safeParse(jsonStr) {
   if (!jsonStr || jsonStr === "undefined" || jsonStr === undefined || jsonStr === null) return null;
