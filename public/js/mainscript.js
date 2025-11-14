@@ -5229,37 +5229,36 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-    // --- YAY ÇİZGİ PATCH'I ---
-    const isFlyMode = !areAllPointsInTurkey(points);
+   // --- YAY ÇİZGİ PATCH'I ---
+// Sadece geojson/geometri YOKSA fly mode çiz!
+if (!hasValidGeo && isFlyMode && points.length > 1) {
+    window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
+    let arcPoints = [];
+    for (let i = 0; i < points.length - 1; i++) {
+        const start = [points[i].lng, points[i].lat];
+        const end = [points[i + 1].lng, points[i + 1].lat];
+        const curve = getCurvedArcCoords(start, end, 0.33, 22);
 
-    // EKLE: Flyers modunda kavisli yay noktalarını kaydet
-    if (isFlyMode && points.length > 1) {
-        window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
-        let arcPoints = [];
-                    for (let i = 0; i < points.length - 1; i++) {
-                        const start = [points[i].lng, points[i].lat];
-                        const end = [points[i + 1].lng, points[i + 1].lat];
-                        const curve = getCurvedArcCoords(start, end, 0.33, 22); // Segments büyük harita ile aynı!
-
-                        L.polyline(curve.map(pt => [pt[1], pt[0]]), {
-                            color: "#1976d2",
-                            weight: 6,
-                            opacity: 0.93,
-                            dashArray: "6,8"
-                        }).addTo(map);
-
-                        arcPoints = arcPoints.concat(curve);
-                    }
-        window._curvedArcPointsByDay[day] = arcPoints;
-    } else if (hasValidGeo && routeCoords.length > 1) {
-        L.polyline(routeCoords, {
-            color: '#1976d2',
-            weight: 8,
-            opacity: 0.92,
-            interactive: true,
-            dashArray: null
+        L.polyline(curve.map(pt => [pt[1], pt[0]]), {
+            color: "#1976d2",
+            weight: 6,
+            opacity: 0.93,
+            dashArray: "6,8"
         }).addTo(map);
+
+        arcPoints = arcPoints.concat(curve);
     }
+    window._curvedArcPointsByDay[day] = arcPoints;
+}
+else if (hasValidGeo && routeCoords.length > 1) {
+    L.polyline(routeCoords, {
+        color: '#1976d2',
+        weight: 8,
+        opacity: 0.92,
+        interactive: true,
+        dashArray: null
+    }).addTo(map);
+}
 
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
