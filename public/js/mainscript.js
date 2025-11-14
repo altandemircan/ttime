@@ -248,21 +248,39 @@ function generateStepHtml(step, day, category, idx = 0) {
 
 // DOM'a ekledikten sonra, kalplere event ekle:
 function attachFavEvents() {
+    // *.fav-heart için eski handler dursun (slider için)
     document.querySelectorAll('.fav-heart').forEach(function(el){
-        el.onclick = async function(){
-    const item = {
-        name: el.getAttribute('data-name'),
-        category: el.getAttribute('data-category'),
-        lat: el.getAttribute('data-lat'),
-        lon: el.getAttribute('data-lon'),
-        image: el.getAttribute('data-image') || ""
-    };
-    await toggleFavTrip(item, el);
-};
+        el.onclick = async function(e){
+            e.stopPropagation();
+            const item = {
+                name: el.getAttribute('data-name'),
+                category: el.getAttribute('data-category'),
+                lat: el.getAttribute('data-lat'),
+                lon: el.getAttribute('data-lon'),
+                image: el.getAttribute('data-image') || ""
+            };
+            await toggleFavTrip(item, el);
+        };
+    });
+
+    // YENİ: .add-favorite-btn butonlarının tamamına tıklama ekle!
+    document.querySelectorAll('.add-favorite-btn').forEach(function(btn){
+        btn.onclick = async function(e){
+            e.stopPropagation();
+            // İçindeki .fav-heart'ı bul, onun datasını oku!
+            const el = btn.querySelector('.fav-heart');
+            if (!el) return;
+            const item = {
+                name: el.getAttribute('data-name'),
+                category: el.getAttribute('data-category'),
+                lat: el.getAttribute('data-lat'),
+                lon: el.getAttribute('data-lon'),
+                image: el.getAttribute('data-image') || ""
+            };
+            await toggleFavTrip(item, el);
+        };
     });
 }
-
-
 
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
