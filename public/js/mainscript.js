@@ -6012,29 +6012,25 @@ if (
   ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
 }
 setTimeout(function() {
-  // 1. Expanded haritanın boyutunu tekrar hesaplat
-  if (window.expandedMaps && window.expandedMaps[containerId] && window.expandedMaps[containerId].expandedMap) {
-    try { window.expandedMaps[containerId].expandedMap.invalidateSize(); } catch(_) {}
+  // 1) Haritayı zorla güncelle
+  if (window.expandedMaps && window.expandedMaps[containerId]) {
+    const map = window.expandedMaps[containerId].expandedMap;
+    if (map && typeof map.invalidateSize === "function") map.invalidateSize();
   }
-  // 2. Scale bar'da varsa tekrar handleResize tetikle
-  const expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (expandedScaleBar) {
-    expandedScaleBar.style.display = "block";
-    expandedScaleBar.style.opacity = "1";
-    const track = expandedScaleBar.querySelector('.scale-bar-track');
-    if (track && typeof track.handleResize === "function") {
-      track.handleResize();
-    }
+  // 2) Scale bar varsa track.handleResize
+  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (scaleBarDiv) {
+    scaleBarDiv.style.display = "block"; scaleBarDiv.style.opacity = "1";
+    const track = scaleBarDiv.querySelector('.scale-bar-track');
+    if (track && typeof track.handleResize === "function") track.handleResize();
   }
-  // 3. Slider view varsa refresh et
+  // 3) Slider varsa refreshle
   document.querySelectorAll('.splide').forEach(sliderElem => {
-    if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
-      sliderElem._splideInstance.refresh();
-    }
+    if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === "function") sliderElem._splideInstance.refresh();
   });
-  // 4. Bir de window 'resize' eventi tetikle (browser'a trigger)
+  // 4) Bir de window 'resize' (browser'a signal!)
   window.dispatchEvent(new Event('resize'));
-}, 430);
+}, 450); // 400-500ms arası idealdir
 // expandedMap zaten yukarıda tanımlı! Yeniden const/let ile tanımlama!
 if (window.expandedMaps?.[containerId]?.expandedMap) {
   const s = window.expandedMaps[containerId].expandedMap.getContainer();
