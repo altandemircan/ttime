@@ -2190,7 +2190,33 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
+// ----- Gün içinde toplam rota km sınırı PATCH -----
+if (location && typeof location.lat === "number" && typeof location.lng === "number") {
+    let forceDay = options && options.forceDay;
+    let resolvedDay = Number(
+        forceDay != null ? forceDay :
+        (day != null ? day :
+          (window.currentDay != null ? window.currentDay :
+            (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
+    );
+    if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
 
+    // O günün mevcut rotası + yeni candidate
+    const itemsToday = window.cart.filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number");
+    const allPoints = [...itemsToday.map(i => i.location), {lat: Number(location.lat), lng: Number(location.lng)}];
+
+    if (allPoints.length > 1) {
+        let totalKm = 0;
+        for (let i = 1; i < allPoints.length; i++) {
+            totalKm += haversine(allPoints[i - 1].lat, allPoints[i - 1].lng, allPoints[i].lat, allPoints[i].lng) / 1000;
+        }
+        if (totalKm > 500) {
+            if (window.showToast) window.showToast('Max route length for this day is 500 km.', 'error');
+            else alert('Max route length for this day is 500 km.');
+            return false;
+        }
+    }
+}
 
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
@@ -2241,24 +2267,7 @@ function addToCart(
   // 7) Duplicate kontrolü
   const isDuplicate = window.cart.some(item => {
 
-    // ---- MAX GÜN MESAFE LİMİTİ PATCH ----
-if (loc && typeof resolvedDay === "number") {
-  // O güne ait nokta dizisini hazırla (henüz eklenmemiş!)
-  const itemsToday = window.cart.filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number");
-  const allPoints = [...itemsToday.map(i => i.location), loc]; // Yeni candidate ile birlikte!
-  if (allPoints.length > 1) {
-    let totalKm = 0;
-    for (let i = 1; i < allPoints.length; i++) {
-      totalKm += haversine(allPoints[i - 1].lat, allPoints[i - 1].lng, allPoints[i].lat, allPoints[i].lng) / 1000;
-    }
-    if (totalKm > 500) {
-      if (window.showToast) window.showToast('Max route length (500 km) exceeded for this day.', 'error');
-      else alert('Max route length for a single day is 500 km.');
-      return false;
-    }
-  }
-}
-// ---- PATCH END ----
+
 
 
     if (item.day !== resolvedDay) return false;
