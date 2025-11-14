@@ -104,11 +104,14 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
     });
 
     await new Promise(resolve => {
-        map.on('load', () => {
-            map.fitBounds(bounds, { padding: 18, maxZoom: 15, minZoom: 12 });
-            setTimeout(resolve, 700);
-        });
+    map.on('load', () => {
+        map.fitBounds(bounds, { padding: 18, maxZoom: 15, minZoom: 12 });
+        setTimeout(() => {
+            map.resize(); // tiles-refresh; harita ZEMİNİ garanti!
+            resolve();
+        }, 1400); // Bekleme 1400ms, gerekiyorsa artır!
     });
+});
 
     const mapCanvas = map.getCanvas();
 
