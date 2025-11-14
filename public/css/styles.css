@@ -7274,3 +7274,11 @@ scrollbar-width: thin;
 #maplibre-3d-view {
     height: 100% !important;
 }
+
+.expanded-map, .expanded-map-container, .route-scale-bar {
+  min-width: 260px !important;
+  min-height: 220px !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  opacity: 1 !important;
+}
