@@ -2190,7 +2190,7 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
-// ----- Gün içinde toplam rota km sınırı PATCH -----
+// En başa!
 if (location && typeof location.lat === "number" && typeof location.lng === "number") {
   let forceDay = options && options.forceDay;
   let resolvedDay = Number(
@@ -2201,21 +2201,15 @@ if (location && typeof location.lat === "number" && typeof location.lng === "num
   );
   if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
 
-  const itemsToday = window.cart.filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number");
-  const allPoints = [...itemsToday.map(i => i.location), {lat: Number(location.lat), lng: Number(location.lng)}];
+  // Şu anki günün tüm noktalarını + yeni noktayı diz
+  const routeItems = window.cart
+    .filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
+    .map(i => i.location);
+  routeItems.push({ lat: Number(location.lat), lng: Number(location.lng) });
 
   let totalKm = 0;
-  const containerId = `route-map-day${resolvedDay}`;
-  if (
-    typeof window.lastRouteSummaries === "object" &&
-    window.lastRouteSummaries[containerId] &&
-    window.lastRouteSummaries[containerId].distance
-  ) {
-    totalKm = window.lastRouteSummaries[containerId].distance / 1000;
-  } else {
-    for (let i = 1; i < allPoints.length; i++) {
-      totalKm += haversine(allPoints[i - 1].lat, allPoints[i - 1].lng, allPoints[i].lat, allPoints[i].lng) / 1000;
-    }
+  for (let i = 1; i < routeItems.length; i++) {
+    totalKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
   }
   if (totalKm > 500) {
     if (window.showToast) window.showToast('Max route length for this day is 500 km.', 'error');
