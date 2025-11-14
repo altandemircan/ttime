@@ -5634,7 +5634,28 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .trip-rename-btn:hover {
     color: #8a4af3;
 }
-
+.add-favorite-btn {
+        text-align: center;
+    margin: 0 auto;
+    border: none;
+    right: 0px;
+    top: 8px;
+    padding-inline: 0;
+    padding: 10px;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s 
+ease;
+    font-size: 0.9rem;
+    color: #1e293b;
+    margin-top: 8px;
+    display: flex;
+}
 
 
 .expand-map-btn {
