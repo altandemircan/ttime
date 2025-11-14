@@ -531,24 +531,39 @@ const prevCart = JSON.parse(JSON.stringify(window.cart));
             window.cart.splice(insertAt, 0, item);
         }
 
-        // --- 300 KM limit patch ---
-        // Sıra değişince ilgili günler için km limitini kontrol et
-        const affectedDays = new Set([fromDay, toDay].map(Number));
-        let errorKm = false;
-        for (const day of affectedDays) {
-            if (!dayRouteIsValid(day)) {
-                errorKm = true;
-                break;
-            }
-        }
-        if (errorKm) {
-            // Geri al: window.cart'ı eski haline döndür
-window.cart = JSON.parse(JSON.stringify(prevCart));
+// --- 300 KM limit patch ---
+const affectedDays = new Set([fromDay, toDay].map(Number));
+let errorKm = false;
+for (const day of affectedDays) {
+    if (!dayRouteIsValidStrict(day)) {
+        errorKm = true;
+        break;
+    }
+}
+if (errorKm) {
+    window.cart = JSON.parse(JSON.stringify(prevCart));
+    window.showToast?.('Max route length for this day is 300 km.', 'error');
+    updateCart();
+    attachChatDropListeners();
+    return;
+}
+
+// Sonraki işlemler
+updateCart();
+attachChatDropListeners();
+if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
+// PATCH: updateCart'dan sonra tekrar summary ile km kontrolü!
+setTimeout(() => {
+    for (const day of affectedDays) {
+        if (!dayRouteIsValidStrict(day)) {
+            window.cart = JSON.parse(JSON.stringify(prevCart));
             window.showToast?.('Max route length for this day is 300 km.', 'error');
             updateCart();
             attachChatDropListeners();
-            return;
         }
+    }
+}, 1000);
 
         if (window.expandedMaps) {
             clearRouteSegmentHighlight(fromDay);
@@ -640,3 +655,37 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('dragend', function(e) {
     document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
 });
+
+function dayRouteIsValidStrict(day) {
+    const routeItems = window.cart
+        .filter(i => Number(i.day) === Number(day) && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
+        .map(i => i.location);
+
+    // Hiç nokta yoksa hep TRUE
+    if (routeItems.length < 2) return true;
+
+    // Türkiye mi? (tüm noktalar)
+    const isTurkey = routeItems.every(pt =>
+        pt.lat >= 35.81 && pt.lat <= 42.11 &&
+        pt.lng >= 25.87 && pt.lng <= 44.57
+    );
+
+    let haversineKm = 0;
+    for (let i = 1; i < routeItems.length; i++) {
+        haversineKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
+    }
+
+    if (isTurkey) {
+        // Route summary varsa onu kullan
+        const key = `route-map-day${day}`;
+        if (window.lastRouteSummaries && window.lastRouteSummaries[key] && typeof window.lastRouteSummaries[key].distance === "number") {
+            const routeKm = window.lastRouteSummaries[key].distance / 1000;
+            return routeKm <= 300;
+        }
+        // Rota özet yoksa, haversine ile YALNIZCA fallback olarak TRUE döndür
+        return haversineKm <= 300;
+    }
+
+    // Türkiye değilse (fly mode), haversine ile kontrol
+    return haversineKm <= 300;
+}
