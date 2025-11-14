@@ -9279,7 +9279,7 @@ const totalM = cum[cum.length - 1] || 1;
 
 // Örnekleme (tam profil)
 
-const N = Math.max(40, Math.round(totalKm *2));
+const N = Math.max(40, Math.min(80, Math.round(totalKm * 1.2)));
 
 const samples = [];
 for (let i = 0; i < N; i++) {
