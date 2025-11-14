@@ -9279,7 +9279,15 @@ const totalM = cum[cum.length - 1] || 1;
 
 // Örnekleme (tam profil)
 
-const N = Math.max(40, Math.min(80, Math.round(totalKm * 1.2)));
+let N;
+if (totalKm <= 60) {
+  N = Math.max(40, Math.round(totalKm * 2)); // kısa rotalarda 2x
+} else if (totalKm <= 300) {
+  // 60-300 km arası doğrusal azaltma: 60 km'de 120, 300 km'de 300 örnek olsun
+  N = Math.round(120 + ((totalKm - 60) * (180 / 240))); // 120 + scale
+} else {
+  N = 300; // 300 km ve üzeri için sabit 300 örnek
+}
 
 const samples = [];
 for (let i = 0; i < N; i++) {
