@@ -3787,7 +3787,7 @@ else {
                             data-category="${item.category}"
                             data-lat="${item.location?.lat ?? item.lat ?? ""}"
                             data-lon="${item.location?.lng ?? item.lon ?? ""}"
-                            style="background:none;border:none;padding:0;margin-left:12px;cursor:pointer;">
+                           >
                         <span class="fav-heart"
                             data-name="${item.name}"
                             data-category="${item.category}"
@@ -3798,7 +3798,7 @@ else {
                         Add to favorites
                     </button>
 
-                                
+
                         <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                             Remove place
                         </button>
