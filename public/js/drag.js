@@ -29,24 +29,23 @@ function dayRouteIsValidStrict(day) {
         pt.lng >= 25.87 && pt.lng <= 44.57
     );
 
-    // Haversine backup
     let haversineKm = 0;
     for (let i = 1; i < routeItems.length; i++) {
         haversineKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
     }
 
     if (isTurkey) {
-        // Route summary varsa onu kullan (gerçek mesafe)
+        // Route summary varsa onu kullan
         const key = `route-map-day${day}`;
         if (window.lastRouteSummaries && window.lastRouteSummaries[key] && typeof window.lastRouteSummaries[key].distance === "number") {
             const routeKm = window.lastRouteSummaries[key].distance / 1000;
             return routeKm <= 300;
         }
-        // Rota özet yoksa, haversine ile yedekle
+        // Rota özet yoksa, haversine ile fallback olarak TRUE döndür
         return haversineKm <= 300;
     }
 
-    // Türkiye değilse (fly mode ise) haversine ile kontrol
+    // Türkiye değilse (fly mode), haversine ile kontrol
     return haversineKm <= 300;
 }
 
@@ -517,17 +516,6 @@ function cleanupTouchDrag() {
     document.body.classList.remove('dragging-items');  // EKLE
 }
 
-// ========== CART REORDERING ==========
-function dayRouteIsValid(day) {
-    const routeItems = window.cart
-        .filter(i => Number(i.day) === Number(day) && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
-        .map(i => i.location);
-    let totalKm = 0;
-    for (let i = 1; i < routeItems.length; i++) {
-        totalKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
-    }
-    return totalKm <= 300;
-}
  
 // --- REORDER PATCH ---
 // Bu fonksiyonu doğrudan değiştir!
@@ -576,40 +564,53 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
             }
         }
         if (errorKm) {
-            window.showWarning?.("Max route length for this day is 300 km.", () => {
-                window.cart = JSON.parse(JSON.stringify(prevCart));
-                updateCart();
-                attachChatDropListeners();
-            });
+            window.showWarning?.(
+                "Max route length for this day is 300 km.",
+                () => {
+                    // Kullanıcı OK/Kapat diyince eski haline döndür!
+                    window.cart = JSON.parse(JSON.stringify(prevCart));
+                    updateCart();
+                    attachChatDropListeners();
+                }
+            );
             return;
         }
-
-        // (devam kodları)
 
         updateCart();
         attachChatDropListeners();
         if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
+        // PATCH: updateCart'dan sonra tekrar summary ile km kontrolü!
         setTimeout(() => {
             for (const day of affectedDays) {
                 if (!dayRouteIsValidStrict(day)) {
-                    window.showWarning?.("Max route length for this day is 300 km.", () => {
-                        window.cart = JSON.parse(JSON.stringify(prevCart));
-                        updateCart();
-                        attachChatDropListeners();
-                    });
+                    window.showWarning?.(
+                        "Max route length for this day is 300 km.",
+                        () => {
+                            window.cart = JSON.parse(JSON.stringify(prevCart));
+                            updateCart();
+                            attachChatDropListeners();
+                        }
+                    );
                     break;
                 }
             }
         }, 1000);
 
+        if (window.expandedMaps) {
+            clearRouteSegmentHighlight(fromDay);
+            clearRouteSegmentHighlight(toDay);
+            window._lastSegmentDay = undefined;
+            window._lastSegmentStartKm = undefined;
+            window._lastSegmentEndKm = undefined;
+        }
+
     } catch (error) {
         console.error("Reorder error:", error);
-        showWarning && showWarning("Reorder error. Please try again.");
+        window.showWarning?.("Reorder error. Please try again.");
     }
     console.log("[REORDER DEBUG] sonrası:", JSON.stringify(window.cart, null, 2));
 }
-
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.removeEventListener('dragstart', dragStart);
