@@ -13,6 +13,15 @@ function isTripFav(item) {
     );
 }
 
+function areAllPointsInTurkey(pts) {
+  // Geofabrik Türkiye bounding box (2024 için)
+  return pts.every(p =>
+    p.lat >= 35.81 && p.lat <= 42.11 &&
+    p.lng >= 25.87 && p.lng <= 44.57
+  );
+}
+
+
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
 
 window.__welcomeHiddenForever = false;
@@ -4558,13 +4567,6 @@ function createDayActionMenu(day) {
   });
 
   return container;
-}
-function areAllPointsInTurkey(pts) {
-  // Geofabrik Türkiye bounding box (2024 için)
-  return pts.every(p =>
-    p.lat >= 35.81 && p.lat <= 42.11 &&
-    p.lng >= 25.87 && p.lng <= 44.57
-  );
 }
 
 function toOSRMMode(mode) {
