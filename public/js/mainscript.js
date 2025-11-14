@@ -7274,10 +7274,10 @@ marker.on('dragend', async (e) => {
   const markerPositions = getRouteMarkerPositionsOrdered(day);
 
   // --- PATCH: km limit kontrolü ---
-  if (totalKm > 500) {
+  if (totalKm > 300) {
     // Geri al: eski konuma dön ve cart'ı eski haline döndür!
-    if (window.showToast) window.showToast('Max route length for this day is 500 km.', 'error');
-    else alert('Max route length for this day is 500 km.');
+    if (window.showToast) window.showToast('Max route length for this day is 300 km.', 'error');
+    else alert('Max route length for this day is 300 km.');
 
     if (oldLatLng && cartIdx > -1) {
       marker.setLatLng(oldLatLng);
