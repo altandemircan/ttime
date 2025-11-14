@@ -131,7 +131,8 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
     const polyline = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
         ? trip.directionsPolylines[day]
         : pts;
-    const flyMode = !areAllPointsInTurkey(polyline); // areAllPointsInTurkey fonksiyonun yukarıda olacak
+  const flyMode = !window.areAllPointsInTurkey(polyline);
+// areAllPointsInTurkey fonksiyonun yukarıda olacak
 
 if (flyMode) {
     // markerlar arasında yay (Bezier/kavis) ile çiz
