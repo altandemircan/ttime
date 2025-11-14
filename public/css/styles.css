@@ -5659,8 +5659,10 @@ ease;
     gap: 6px;
 }
 .add-favorite-btn img {
-    width: 16px;
-    height: 16px;
+    width: 16px !important;
+    height: 16px !important;
+    border-radius: 0;
+    object-fit: unset;
 }
 
 .expand-map-btn {
