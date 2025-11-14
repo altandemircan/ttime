@@ -3559,9 +3559,9 @@ for (const d of days) {
     await renderRouteForDay(d);
 
     // PATCH: window.pairwiseRouteSummaries varsa güvenli eriş
-    if (window.pairwiseRouteSummaries && window.pairwiseRouteSummaries[`route-map-day${d}`]) {
-      console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
-    }
+    // if (window.pairwiseRouteSummaries && window.pairwiseRouteSummaries[`route-map-day${d}`]) {
+    //   console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+    // }
   }
   // PATCH SONU
 
