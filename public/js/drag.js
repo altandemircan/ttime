@@ -564,8 +564,9 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
             }
         }
         if (errorKm) {
-            // Sadece popup aç; OK'e basınca eski haline geri dönsün!
+            // Sadece popup aç! Otomatik geri alma yok.
             window.showWarning?.("Max route length for this day is 300 km.", () => {
+                // Kullanıcı OK'e bastığında geri al!
                 window.cart = JSON.parse(JSON.stringify(prevCart));
                 updateCart();
                 attachChatDropListeners();
@@ -582,7 +583,6 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
         setTimeout(() => {
             for (const day of affectedDays) {
                 if (!dayRouteIsValidStrict(day)) {
-                    // Sadece popup aç; OK'e basınca geri dönsün!
                     window.showWarning?.("Max route length for this day is 300 km.", () => {
                         window.cart = JSON.parse(JSON.stringify(prevCart));
                         updateCart();
@@ -607,7 +607,6 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     }
     console.log("[REORDER DEBUG] sonrası:", JSON.stringify(window.cart, null, 2));
 }
-
 function attachDragListeners() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.removeEventListener('dragstart', dragStart);
