@@ -4500,6 +4500,29 @@ function updateExpandedMap(expandedMap, day) {
             opacity: 1,
             dashArray: null
         }).addTo(expandedMap);
+
+   // --- EK: Marker yola uzaksa marker ile yol arasında kesik yeşil çizgi ---
+    pts.forEach((marker, idx) => {
+        let minDist = Infinity, closest = null;
+        routeCoords.forEach((c) => {
+            // c[1]=lat, c[0]=lng
+            const dist = haversine(marker.lat, marker.lng, c[1], c[0]);
+            if (dist < minDist) { minDist = dist; closest = c; }
+        });
+        if (minDist > 60 && closest) { // 60 metre threshold
+            L.polyline(
+                [[marker.lat, marker.lng], [closest[1], closest[0]]],
+                {
+                    color: '#43a047',
+                    weight: 5,
+                    opacity: 0.85,
+                    dashArray: '7,6',
+                    interactive: false
+                }
+            ).addTo(expandedMap);
+        }
+    });
+        
         
         // Tüm route noktalarını kaydet
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
@@ -5131,12 +5154,7 @@ function addNumberedMarkers(map, points) {
     points.forEach((item, idx) => {
         const label = `${idx + 1}. ${item.name || "Point"}`;
 
-        // BURADAKİ if (!isFinite...) kontrolünü ARTIK KALDIRABİLİRSİN! (çünkü yukarıda zaten filtreledik)
-        // if (!isFinite(item.lat) || !isFinite(item.lng)) {
-        //     console.warn("Skipping invalid marker:", item);
-        //     return;
-        // }
-
+  
         const markerHtml = `
             <div style="
                 background:#d32f2f;
@@ -5158,6 +5176,7 @@ function addNumberedMarkers(map, points) {
             .bindPopup(`<b>${label}</b>`);
     });
 }
+
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
@@ -5235,18 +5254,20 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     if (isFlyMode && points.length > 1) {
         window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
         let arcPoints = [];
-        for (let i = 0; i < points.length - 1; i++) {
-            const start = [points[i].lng, points[i].lat];
-            const end = [points[i + 1].lng, points[i + 1].lat];
-            const curve = getCurvedArcCoords(start, end, 0.33, 22); // Segments büyük harita ile aynı!
-            L.polyline(curve.map(pt => [pt[1], pt[0]]), {
-                color: "#1976d2",
-                weight: 6,
-                opacity: 0.93,
-                dashArray: "6,8"
-            }).addTo(map);
-            arcPoints = arcPoints.concat(curve);
-        }
+                    for (let i = 0; i < points.length - 1; i++) {
+                        const start = [points[i].lng, points[i].lat];
+                        const end = [points[i + 1].lng, points[i + 1].lat];
+                        const curve = getCurvedArcCoords(start, end, 0.33, 22); // Segments büyük harita ile aynı!
+
+                        L.polyline(curve.map(pt => [pt[1], pt[0]]), {
+                            color: "#1976d2",
+                            weight: 6,
+                            opacity: 0.93,
+                            dashArray: "6,8"
+                        }).addTo(map);
+
+                        arcPoints = arcPoints.concat(curve);
+                    }
         window._curvedArcPointsByDay[day] = arcPoints;
     } else if (hasValidGeo && routeCoords.length > 1) {
         L.polyline(routeCoords, {
@@ -5256,27 +5277,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             interactive: true,
             dashArray: null
         }).addTo(map);
-
-        // PATCH: Marker yola uzaksa marker ile yol arasında kesik yeşil çizgi çiz (sadece Türkiye'de)
-        points.forEach((marker, idx) => {
-            let minDist = Infinity, closest = null;
-            routeCoords.forEach((c) => {
-                const dist = haversine(marker.lat, marker.lng, c[0], c[1]);
-                if (dist < minDist) { minDist = dist; closest = c; }
-            });
-            if (minDist > 60 && closest) { // 60 metre threshold
-                L.polyline(
-                    [[marker.lat, marker.lng], [closest[1], closest[0]]],
-                    {
-                        color: '#43a047', // Material green
-                        weight: 4,
-                        opacity: 0.85,
-                        dashArray: '7,6',
-                        interactive: false
-                    }
-                ).addTo(map);
-            }
-        });
     }
 
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
