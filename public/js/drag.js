@@ -483,11 +483,27 @@ function cleanupTouchDrag() {
 }
 
 // ========== CART REORDERING ==========
+function dayRouteIsValid(day) {
+    const routeItems = window.cart
+        .filter(i => Number(i.day) === Number(day) && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
+        .map(i => i.location);
+    let totalKm = 0;
+    for (let i = 1; i < routeItems.length; i++) {
+        totalKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
+    }
+    return totalKm <= 300;
+}
+
+// --- REORDER PATCH ---
+// Bu fonksiyonu doğrudan değiştir!
 function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     try {
         if (fromIndex < 0 || fromIndex >= window.cart.length) {
             throw new Error("Invalid fromIndex");
         }
+
+        // Geri alma için window.cart'ın eski halini sakla:
+        const prevCart = window.cart.map(item => ({ ...item }));
 
         const item = window.cart.splice(fromIndex, 1)[0];
         item.day = toDay;
@@ -513,18 +529,36 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
             window.cart.splice(insertAt, 0, item);
         }
 
-       if (window.expandedMaps) {
-      clearRouteSegmentHighlight(fromDay);
-      clearRouteSegmentHighlight(toDay);
-      window._lastSegmentDay = undefined;
-      window._lastSegmentStartKm = undefined;
-      window._lastSegmentEndKm = undefined;
-    }
+        // --- 300 KM limit patch ---
+        // Sıra değişince ilgili günler için km limitini kontrol et
+        const affectedDays = new Set([fromDay, toDay].map(Number));
+        let errorKm = false;
+        for (const day of affectedDays) {
+            if (!dayRouteIsValid(day)) {
+                errorKm = true;
+                break;
+            }
+        }
+        if (errorKm) {
+            // Geri al: window.cart'ı eski haline döndür
+            window.cart = prevCart.map(item => ({ ...item }));
+            window.showToast?.('Max route length for this day is 300 km.', 'error');
+            updateCart();
+            attachChatDropListeners();
+            return;
+        }
 
-    updateCart();
-    attachChatDropListeners();
- if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+        if (window.expandedMaps) {
+            clearRouteSegmentHighlight(fromDay);
+            clearRouteSegmentHighlight(toDay);
+            window._lastSegmentDay = undefined;
+            window._lastSegmentStartKm = undefined;
+            window._lastSegmentEndKm = undefined;
+        }
 
+        updateCart();
+        attachChatDropListeners();
+        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
     } catch (error) {
         console.error("Reorder error:", error);
