@@ -365,9 +365,9 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     }
       if (!track) return;
 
-      console.log("[DEBUG] createScaleElements called", {
-        widthPx, spanKm, startKmDom, markers
-      });
+      // console.log("[DEBUG] createScaleElements called", {
+      //   widthPx, spanKm, startKmDom, markers
+      // });
 
 
 
