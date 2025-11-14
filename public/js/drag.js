@@ -576,10 +576,13 @@ for (const day of affectedDays) {
     }
 }
 if (errorKm) {
-    window.cart = JSON.parse(JSON.stringify(prevCart));
-    window.showToast?.('Max route length for this day is 300 km.', 'error');
-    updateCart();
-    attachChatDropListeners();
+    // UYARI POPUP: showWarning fonksiyonu ile uyarı ver!
+    window.showWarning?.("Max route length for this day is 300 km.", () => {
+        // Kullanıcı uyarıyı kapatınca/eski haline geri dönülsün
+        window.cart = JSON.parse(JSON.stringify(prevCart));
+        updateCart();
+        attachChatDropListeners();
+    });
     return;
 }
 
