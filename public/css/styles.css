@@ -7282,3 +7282,21 @@ scrollbar-width: thin;
   opacity: 1 !important;
   box-sizing: border-box !important;
 }
+.expanded-map-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: white;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* ÖNEMLİ: scroll çakışmasını engeller */
+}
+
+.expanded-map {
+  flex: 1;
+  min-height: 0; /* Flexbox overflow fix */
+  width: 100%;
+}
