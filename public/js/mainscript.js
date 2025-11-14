@@ -246,9 +246,8 @@ function generateStepHtml(step, day, category, idx = 0) {
     `;
 }
 
-// DOM'a ekledikten sonra, kalplere event ekle:
 function attachFavEvents() {
-    // *.fav-heart için eski handler dursun (slider için)
+    // Kalp tıklama (slider için)
     document.querySelectorAll('.fav-heart').forEach(function(el){
         el.onclick = async function(e){
             e.stopPropagation();
@@ -260,14 +259,14 @@ function attachFavEvents() {
                 image: el.getAttribute('data-image') || ""
             };
             await toggleFavTrip(item, el);
+            updateFavoriteBtnText(el);
         };
     });
 
-    // YENİ: .add-favorite-btn butonlarının tamamına tıklama ekle!
+    // Buton tıklama (sidebar için, tamamı)
     document.querySelectorAll('.add-favorite-btn').forEach(function(btn){
         btn.onclick = async function(e){
             e.stopPropagation();
-            // İçindeki .fav-heart'ı bul, onun datasını oku!
             const el = btn.querySelector('.fav-heart');
             if (!el) return;
             const item = {
@@ -278,8 +277,29 @@ function attachFavEvents() {
                 image: el.getAttribute('data-image') || ""
             };
             await toggleFavTrip(item, el);
+            updateFavoriteBtnText(el);
         };
     });
+}
+
+// Buton textini güncelleyen fonksiyon
+function updateFavoriteBtnText(favHeartEl) {
+    const btn = favHeartEl.closest('.add-favorite-btn');
+    if (!btn) return;
+    const item = {
+        name: favHeartEl.getAttribute('data-name'),
+        category: favHeartEl.getAttribute('data-category'),
+        lat: favHeartEl.getAttribute('data-lat'),
+        lon: favHeartEl.getAttribute('data-lon'),
+    };
+    const btnText = btn.querySelector('.fav-btn-text');
+    if (btnText) {
+        if (isTripFav(item)) {
+            btnText.textContent = "Remove from My Places";
+        } else {
+            btnText.textContent = "Add to My Places";
+        }
+    }
 }
 
 function clearRouteSegmentHighlight(day) {
@@ -3782,21 +3802,20 @@ else {
                             }
                         </div>
 
-                    <button class="add-favorite-btn"
-                            data-name="${item.name}"
-                            data-category="${item.category}"
-                            data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                            data-lon="${item.location?.lng ?? item.lon ?? ""}"
-                           >
-                        <span class="fav-heart"
-                            data-name="${item.name}"
-                            data-category="${item.category}"
-                            data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                            data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                            <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
-                        </span>
-                        Add to favorites
-                    </button>
+                 <button class="add-favorite-btn"
+                    data-name="${item.name}"
+                    data-category="${item.category}"
+                    data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                    data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                  <span class="fav-heart"
+                      data-name="${item.name}"
+                      data-category="${item.category}"
+                      data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                      data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                      <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                  </span>
+                  <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
+                </button>
 
 
                         <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
