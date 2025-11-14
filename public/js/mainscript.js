@@ -4567,9 +4567,9 @@ function updateExpandedMap(expandedMap, day) {
         }
         
         window._curvedArcPointsByDay[day] = allArcPoints;
-        console.log("[DEBUG] Arc points saved:", allArcPoints.length);
-        console.log("[DEBUG] First point:", allArcPoints[0]);
-        console.log("[DEBUG] Last point:", allArcPoints[allArcPoints.length - 1]);
+        // console.log("[DEBUG] Arc points saved:", allArcPoints.length);
+        // console.log("[DEBUG] First point:", allArcPoints[0]);
+        // console.log("[DEBUG] Last point:", allArcPoints[allArcPoints.length - 1]);
     }
 
     // Marker ekleme kısmı aynı:
@@ -4666,7 +4666,7 @@ function updateExpandedMap(expandedMap, day) {
     // SCALE BAR INTERACTION'ı BAŞLAT - BURASI ÖNEMLİ!
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
-        console.log("[DEBUG] Scale bar interaction initialized for day", day);
+        // console.log("[DEBUG] Scale bar interaction initialized for day", day);
     }, 500);
 
     adjustExpandedHeader(day);
@@ -7404,8 +7404,8 @@ if (imported) {
 
 async function renderRouteForDay(day) {
 
-    console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
-    console.log("GÜN:", day);
+    // console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
+    // console.log("GÜN:", day);
     const pts = getDayPoints(day);
     // console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
 
