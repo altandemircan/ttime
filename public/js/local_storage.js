@@ -1,4 +1,13 @@
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
+if (!window.areAllPointsInTurkey) {
+  window.areAllPointsInTurkey = function(pts) {
+    return pts.every(p =>
+      p.lat >= 35.81 && p.lat <= 42.11 &&
+      p.lng >= 25.87 && p.lng <= 44.57
+    );
+  }
+}
+
 function toLatin(str) {
   if (!str) return '';
   return str
@@ -950,6 +959,7 @@ async function toggleFavTrip(item, heartEl) {
     // Konsol debug:
     console.log("FavTrips:", window.favTrips);
 }
+
 function getFavoriteTrips() {
     return window.favTrips || [];
 }
