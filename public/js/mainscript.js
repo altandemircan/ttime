@@ -5283,7 +5283,34 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             interactive: true,
             dashArray: null
         }).addTo(map);
+
+            // PATCH: Marker yoldan uzaksa, en yakın route noktasına kesik yeşil çizgi çiz!
+    points.forEach((marker, idx) => {
+        let minDist = Infinity, closest = null;
+        for (let i = 0; i < routeCoords.length; i++) {
+            const lat = routeCoords[i][0], lng = routeCoords[i][1];
+            const dist = haversine(marker.lat, marker.lng, lat, lng);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = routeCoords[i];
+            }
+        }
+        // Threshold: 200m (gerekiyorsa değiştir)
+        if (minDist > 200 && closest) {
+            L.polyline([[marker.lat, marker.lng], [closest[0], closest[1]]], {
+                color: '#43a047',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '7,6',
+                interactive: false
+            }).addTo(map);
+        }
+    });
+
+    
     }
+
+
 
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
