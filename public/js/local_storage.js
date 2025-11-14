@@ -398,6 +398,36 @@ function loadTripFromStorage(tripKey) {
     }, 0);
 
 
+    // --- EKLE: Sidebar ve harita/scale bar/sliders görünüm düzelt --- //
+    setTimeout(function() {
+        // 1. Leaflet haritalarının boyutunu güncelle
+        Object.values(window.leafletMaps || {}).forEach(map => {
+            if (map && typeof map.invalidateSize === 'function') {
+                map.invalidateSize();
+            }
+        });
+
+        // 2. Expanded haritaları güncelle
+        Object.values(window.expandedMaps || {}).forEach(ex => {
+            if (ex?.expandedMap && typeof ex.expandedMap.invalidateSize === 'function') {
+                ex.expandedMap.invalidateSize();
+            }
+        });
+
+        // 3. Tüm scale-bar'lar için "handleResize" çağır
+        document.querySelectorAll('.scale-bar-track').forEach(track => {
+            if (typeof track.handleResize === "function") track.handleResize();
+        });
+
+        // 4. Splide sliderları refresh et
+        document.querySelectorAll('.splide').forEach(sliderElem => {
+            if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
+                sliderElem._splideInstance.refresh();
+            }
+        });
+    }, 350); // Panel görünüp yerleşsin, sonra çalışsın
+
+
     return true;
 }
 
@@ -1136,3 +1166,4 @@ async function renderFavoritePlacesPanel() {
         favPanel.appendChild(section);
     });
 }
+
