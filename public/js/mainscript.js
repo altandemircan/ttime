@@ -5158,7 +5158,6 @@ function addNumberedMarkers(map, points) {
             .bindPopup(`<b>${label}</b>`);
     });
 }
-
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
@@ -5234,53 +5233,51 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     // EKLE: Flyers modunda kavisli yay noktalarını kaydet
     if (isFlyMode && points.length > 1) {
-    // FLY mode ile (kavis/yay) çiz
-    window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
-    let arcPoints = [];
-    for (let i = 0; i < points.length - 1; i++) {
-        const start = [points[i].lng, points[i].lat];
-        const end = [points[i + 1].lng, points[i + 1].lat];
-        const curve = getCurvedArcCoords(start, end, 0.33, 22);
-        L.polyline(curve.map(pt => [pt[1], pt[0]]), {
-            color: "#1976d2",
-            weight: 6,
-            opacity: 0.93,
-            dashArray: "6,8"
-        }).addTo(map);
-        arcPoints = arcPoints.concat(curve);
-    }
-    window._curvedArcPointsByDay[day] = arcPoints;
-} else if (hasValidGeo && routeCoords.length > 1) {
-    // Türkiye içi → Yalnızca gerçek route ve marker dışı için düz kesik çizgi ekle
-    L.polyline(routeCoords, {
-        color: '#1976d2',
-        weight: 8,
-        opacity: 0.92,
-        interactive: true,
-        dashArray: null
-    }).addTo(map);
-
-    // --- EKLE: Markerlardan route sonuna uzak olanlar için düz kesik çizgi! ---
-    const lastRoutePt = routeCoords[routeCoords.length-1];
-    points.forEach((marker, idx) => {
-        // En yakın route noktası bulunuyor (isteğe bağlı olarak daha hassas yapabilirsin):
-        const markerLat = marker.lat, markerLng = marker.lng;
-        const dist = haversine(markerLat, markerLng, lastRoutePt[0], lastRoutePt[1]);
-        // Eğer marker ile route son noktası arası > 60 metre ise
-        if (dist > 60) {
-            L.polyline([
-                [lastRoutePt[1], lastRoutePt[0]],
-                [markerLat, markerLng]
-            ], {
-                color: '#1976d2',
-                weight: 5,
-                opacity: 0.56,
-                dashArray: '7,6', // KESİK ÇİZGİ
-                interactive: false
+        window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
+        let arcPoints = [];
+        for (let i = 0; i < points.length - 1; i++) {
+            const start = [points[i].lng, points[i].lat];
+            const end = [points[i + 1].lng, points[i + 1].lat];
+            const curve = getCurvedArcCoords(start, end, 0.33, 22); // Segments büyük harita ile aynı!
+            L.polyline(curve.map(pt => [pt[1], pt[0]]), {
+                color: "#1976d2",
+                weight: 6,
+                opacity: 0.93,
+                dashArray: "6,8"
             }).addTo(map);
+            arcPoints = arcPoints.concat(curve);
         }
-    });
-}
+        window._curvedArcPointsByDay[day] = arcPoints;
+    } else if (hasValidGeo && routeCoords.length > 1) {
+        L.polyline(routeCoords, {
+            color: '#1976d2',
+            weight: 8,
+            opacity: 0.92,
+            interactive: true,
+            dashArray: null
+        }).addTo(map);
+
+        // PATCH: Marker yola uzaksa marker ile yol arasında kesik yeşil çizgi çiz (sadece Türkiye'de)
+        points.forEach((marker, idx) => {
+            let minDist = Infinity, closest = null;
+            routeCoords.forEach((c) => {
+                const dist = haversine(marker.lat, marker.lng, c[0], c[1]);
+                if (dist < minDist) { minDist = dist; closest = c; }
+            });
+            if (minDist > 60 && closest) { // 60 metre threshold
+                L.polyline(
+                    [[marker.lat, marker.lng], [closest[1], closest[0]]],
+                    {
+                        color: '#43a047', // Material green
+                        weight: 4,
+                        opacity: 0.85,
+                        dashArray: '7,6',
+                        interactive: false
+                    }
+                ).addTo(map);
+            }
+        });
+    }
 
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
