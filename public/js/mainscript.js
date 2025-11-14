@@ -12,7 +12,7 @@ function isTripFav(item) {
         String(f.lon) === String(item.lon)
     );
 }
-function areAllPointsInTurkey(pts) {
+window.areAllPointsInTurkey = function(pts) {
   // Geofabrik Türkiye bounding box (2024 için)
   return pts.every(p =>
     p.lat >= 35.81 && p.lat <= 42.11 &&
