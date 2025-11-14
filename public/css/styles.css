@@ -5638,14 +5638,14 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 .expand-map-btn {
-background: rgb(90 132 173);
+    background: rgb(90 132 173);
     border: none;
     border-radius: 8px;
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 4px;
-    padding: 4px 6px;
+    gap: 6px;
+    padding: 6px 8px;
     font-weight: bold;
     color: rgb(255, 255, 255);
     cursor: pointer;
@@ -5656,7 +5656,7 @@ background: rgb(90 132 173);
 
     width: 16px;
     height: 16px;
-    padding: 2px;
+
   
 }
 .leaflet-popup-pane {
