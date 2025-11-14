@@ -5625,7 +5625,10 @@ function openMapLibre3D(expandedMap) {
 }
 
 async function expandMap(containerId, day) {
-
+// PATCH: Overlay ve eski expanded/scale-bar DOM temizlik!
+document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .custom-nearby-popup').forEach(el => el.remove());
+document.body.style.overflow = '';
+document.body.style.zIndex = '';
 
       window.currentDay = day; // ← DÜZELTME!
 
@@ -6012,25 +6015,34 @@ if (
   ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
 }
 setTimeout(function() {
-  // 1) Haritayı zorla güncelle
+  // Haritayı zorla güncelle
   if (window.expandedMaps && window.expandedMaps[containerId]) {
     const map = window.expandedMaps[containerId].expandedMap;
     if (map && typeof map.invalidateSize === "function") map.invalidateSize();
+    map.getContainer().style.minWidth = "280px";
+    map.getContainer().style.minHeight = "180px";
+    map.getContainer().style.display = "block";
+    map.getContainer().style.opacity = "1";
+    map.getContainer().style.zIndex = "9999";
   }
-  // 2) Scale bar varsa track.handleResize
+  // Scale bar varsa track.handleResize
   const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (scaleBarDiv) {
-    scaleBarDiv.style.display = "block"; scaleBarDiv.style.opacity = "1";
+    scaleBarDiv.style.display = "block";
+    scaleBarDiv.style.opacity = "1";
+    scaleBarDiv.style.minWidth = "280px";
+    scaleBarDiv.style.minHeight = "48px";
+    scaleBarDiv.style.zIndex = "9999";
     const track = scaleBarDiv.querySelector('.scale-bar-track');
     if (track && typeof track.handleResize === "function") track.handleResize();
   }
-  // 3) Slider varsa refreshle
+  // Slider yenile (varsa)
   document.querySelectorAll('.splide').forEach(sliderElem => {
     if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === "function") sliderElem._splideInstance.refresh();
   });
-  // 4) Bir de window 'resize' (browser'a signal!)
+  // Browser'a window resize sinyali gönder
   window.dispatchEvent(new Event('resize'));
-}, 450); // 400-500ms arası idealdir
+}, 450);
 // expandedMap zaten yukarıda tanımlı! Yeniden const/let ile tanımlama!
 if (window.expandedMaps?.[containerId]?.expandedMap) {
   const s = window.expandedMaps[containerId].expandedMap.getContainer();
