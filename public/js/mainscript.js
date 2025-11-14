@@ -2186,38 +2186,165 @@ const categoryIcons = {
 };
 
 function addToCart(
-
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
-// En başa!
-if (location && typeof location.lat === "number" && typeof location.lng === "number") {
+  // 1) Limit kontrolü (haversine - route optimize yoksa)
+  if (location && typeof location.lat === "number" && typeof location.lng === "number") {
+    let forceDay = options && options.forceDay;
+    let resolvedDay = Number(
+      forceDay != null ? forceDay :
+        (day != null ? day :
+          (window.currentDay != null ? window.currentDay :
+            (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
+    );
+    if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
+
+    // O günün tüm noktalarını + yeni noktayı sırala
+    const routeItems = window.cart
+      .filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
+      .map(i => i.location);
+    routeItems.push({ lat: Number(location.lat), lng: Number(location.lng) });
+
+    let totalKm = 0;
+    for (let i = 1; i < routeItems.length; i++) {
+      totalKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
+    }
+    if (totalKm > 300) {
+      if (window.showToast) window.showToast('Max route length for this day is 300 km.', 'error');
+      else alert('Max route length for this day is 300 km.');
+      return false;
+    }
+  }
+
+  // 2) Placeholder temizliği
+  if (window._removeMapPlaceholderOnce) {
+    window.cart = (window.cart || []).filter(it => !it._placeholder);
+    window._removeMapPlaceholderOnce = false;
+  }
+
+  // 3) Lokasyon kontrolü
+  if (location && (
+    typeof location.lat !== "number" ||
+    typeof location.lng !== "number" ||
+    isNaN(location.lat) ||
+    isNaN(location.lng)
+  )) {
+    location = null;
+  }
+
+  // 4) Cart yapısını garanti et
+  if (!Array.isArray(window.cart)) window.cart = [];
+
+  // 5) Gün seçimi mantığı
   let forceDay = options && options.forceDay;
   let resolvedDay = Number(
     forceDay != null ? forceDay :
-    (day != null ? day :
-      (window.currentDay != null ? window.currentDay :
-        (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
+      (day != null ? day :
+        (window.currentDay != null ? window.currentDay :
+          (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
   );
   if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
 
-  // Şu anki günün tüm noktalarını + yeni noktayı diz
-  const routeItems = window.cart
-    .filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
-    .map(i => i.location);
-  routeItems.push({ lat: Number(location.lat), lng: Number(location.lng) });
-
-  let totalKm = 0;
-  for (let i = 1; i < routeItems.length; i++) {
-    totalKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
+  // 6) Lokasyon normalizasyonu
+  let loc = null;
+  if (location && typeof location.lat !== "undefined" && typeof location.lng !== "undefined") {
+    const latNum = Number(location.lat);
+    const lngNum = Number(location.lng);
+    if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+      loc = { lat: latNum, lng: lngNum };
+    }
   }
-  if (totalKm > 500) {
-    if (window.showToast) window.showToast('Max route length for this day is 500 km.', 'error');
-    else alert('Max route length for this day is 500 km.');
+
+  // 7) İsim / kategori / image fallback
+  const safeName = (name || '').toString().trim();
+  const safeCategory = (category || 'Place').trim();
+  const safeImage = image || 'img/placeholder.png';
+
+  // 8) Duplicate kontrolü
+  const isDuplicate = window.cart.some(item => {
+    if (item.day !== resolvedDay) return false;
+    if (!item.name || !safeName) return false;
+    if (item.category !== safeCategory) return false;
+    const sameName = item.name.trim().toLowerCase() === safeName.toLowerCase();
+    if (!sameName) return false;
+    if (loc && item.location) {
+      return item.location.lat === loc.lat && item.location.lng === loc.lng;
+    }
+    if (!loc && !item.location) return true;
+    return false;
+  });
+
+  if (isDuplicate) {
+    if (window.showToast) window.showToast('Item already exists for this day.', 'info');
     return false;
   }
-}
 
+  // 9) Yeni öğe ekle
+  const newItem = {
+    name: safeName,
+    image: safeImage,
+    day: resolvedDay,
+    category: safeCategory,
+    address: address ? address.trim() : null,
+    rating,
+    user_ratings_total,
+    opening_hours,
+    place_id,
+    location: loc,
+    website,
+    addedAt: new Date().toISOString()
+  };
+
+  window.cart.push(newItem);
+
+  // === skipRender fix ===
+  if (typeof skipRender === "undefined") skipRender = false;
+
+  // Sonraki kodlar aynı, silent değişkeni başta false olmalı
+  if (!silent) {
+    if (typeof updateCart === "function") updateCart();
+    if (!skipRender && typeof renderRouteForDay === "function") {
+      setTimeout(() => renderRouteForDay(resolvedDay), 0);
+    }
+    if (typeof openSidebar === 'function') {
+      openSidebar();
+      if (window.innerWidth <= 768) {
+        const sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
+        if (sidebar) sidebar.classList.add('open');
+      }
+    }
+    if (typeof attachChatDropListeners === 'function') {
+      attachChatDropListeners();
+    }
+    if (window.expandedMaps) {
+      clearRouteSegmentHighlight(resolvedDay);
+      fitExpandedMapToRoute(resolvedDay);
+    }
+    if (typeof saveTripAfterRoutes === "function") {
+      saveTripAfterRoutes();
+    }
+    // PATCH: Expanded Map ve Scale Bar'ı güncelle!
+    if (window.expandedMaps) {
+      Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
+        if (expandedMap) updateExpandedMap(expandedMap, day);
+      });
+    }
+    // PATCH: Eklemeden sonra route summary ile limit kontrolü
+    setTimeout(() => {
+      const routeContainerId = `route-map-day${resolvedDay}`;
+      const totalKm = (window.lastRouteSummaries?.[routeContainerId]?.distance || 0) / 1000;
+      if (totalKm > 300) {
+        if (window.showToast) window.showToast('Max route length for this day is 300 km.', 'error');
+        else alert('Max route length for this day is 300 km.');
+        window.cart.pop(); // Son eklemeyi geri al
+        if (typeof updateCart === "function") updateCart();
+        if (typeof renderRouteForDay === "function") renderRouteForDay(resolvedDay);
+      }
+    }, 800); // Delay: summary'nin güncellenmesi için yeterli süre
+  }
+  return true;
+}
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
   // 1) Placeholder temizliği
