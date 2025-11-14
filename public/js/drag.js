@@ -497,13 +497,15 @@ function dayRouteIsValid(day) {
 // --- REORDER PATCH ---
 // Bu fonksiyonu doğrudan değiştir!
 function reorderCart(fromIndex, toIndex, fromDay, toDay) {
+    console.log("[REORDER DEBUG] öncesi:", JSON.stringify(window.cart, null, 2));
+
     try {
         if (fromIndex < 0 || fromIndex >= window.cart.length) {
             throw new Error("Invalid fromIndex");
         }
 
         // Geri alma için window.cart'ın eski halini sakla:
-        const prevCart = window.cart.map(item => ({ ...item }));
+const prevCart = JSON.parse(JSON.stringify(window.cart));
 
         const item = window.cart.splice(fromIndex, 1)[0];
         item.day = toDay;
@@ -541,7 +543,7 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
         }
         if (errorKm) {
             // Geri al: window.cart'ı eski haline döndür
-            window.cart = prevCart.map(item => ({ ...item }));
+window.cart = JSON.parse(JSON.stringify(prevCart));
             window.showToast?.('Max route length for this day is 300 km.', 'error');
             updateCart();
             attachChatDropListeners();
@@ -564,6 +566,8 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
         console.error("Reorder error:", error);
         showWarning && showWarning("Reorder error. Please try again.");
     }
+    console.log("[REORDER DEBUG] sonrası:", JSON.stringify(window.cart, null, 2));
+
 }
 
 function attachDragListeners() {
