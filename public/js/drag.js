@@ -540,7 +540,7 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
         }
 
         // Geri alma için window.cart'ın eski halini sakla:
-const prevCart = JSON.parse(JSON.stringify(window.cart));
+        const prevCart = JSON.parse(JSON.stringify(window.cart));
 
         const item = window.cart.splice(fromIndex, 1)[0];
         item.day = toDay;
@@ -566,61 +566,48 @@ const prevCart = JSON.parse(JSON.stringify(window.cart));
             window.cart.splice(insertAt, 0, item);
         }
 
-// --- 300 KM limit patch ---
-const affectedDays = new Set([fromDay, toDay].map(Number));
-let errorKm = false;
-for (const day of affectedDays) {
-    if (!dayRouteIsValidStrict(day)) {
-        errorKm = true;
-        break;
-    }
-}
-if (errorKm) {
-    // UYARI POPUP: showWarning fonksiyonu ile uyarı ver!
-    window.showWarning?.("Max route length for this day is 300 km.", () => {
-        // Kullanıcı uyarıyı kapatınca/eski haline geri dönülsün
-        window.cart = JSON.parse(JSON.stringify(prevCart));
-        updateCart();
-        attachChatDropListeners();
-    });
-    return;
-}
-
-// Sonraki işlemler
-updateCart();
-attachChatDropListeners();
-if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-
-// PATCH: updateCart'dan sonra tekrar summary ile km kontrolü!
-setTimeout(() => {
-    for (const day of affectedDays) {
-        if (!dayRouteIsValidStrict(day)) {
-            window.cart = JSON.parse(JSON.stringify(prevCart));
-            window.showToast?.('Max route length for this day is 300 km.', 'error');
-            updateCart();
-            attachChatDropListeners();
+        // --- 300 KM limit patch ---
+        const affectedDays = new Set([fromDay, toDay].map(Number));
+        let errorKm = false;
+        for (const day of affectedDays) {
+            if (!dayRouteIsValidStrict(day)) {
+                errorKm = true;
+                break;
+            }
         }
-    }
-}, 1000);
-
-        if (window.expandedMaps) {
-            clearRouteSegmentHighlight(fromDay);
-            clearRouteSegmentHighlight(toDay);
-            window._lastSegmentDay = undefined;
-            window._lastSegmentStartKm = undefined;
-            window._lastSegmentEndKm = undefined;
+        if (errorKm) {
+            window.showWarning?.("Max route length for this day is 300 km.", () => {
+                window.cart = JSON.parse(JSON.stringify(prevCart));
+                updateCart();
+                attachChatDropListeners();
+            });
+            return;
         }
+
+        // (devam kodları)
 
         updateCart();
         attachChatDropListeners();
         if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
+        setTimeout(() => {
+            for (const day of affectedDays) {
+                if (!dayRouteIsValidStrict(day)) {
+                    window.showWarning?.("Max route length for this day is 300 km.", () => {
+                        window.cart = JSON.parse(JSON.stringify(prevCart));
+                        updateCart();
+                        attachChatDropListeners();
+                    });
+                    break;
+                }
+            }
+        }, 1000);
 
     } catch (error) {
         console.error("Reorder error:", error);
         showWarning && showWarning("Reorder error. Please try again.");
     }
     console.log("[REORDER DEBUG] sonrası:", JSON.stringify(window.cart, null, 2));
-
 }
 
 function attachDragListeners() {
