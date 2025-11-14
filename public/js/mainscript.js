@@ -6035,9 +6035,9 @@ setTimeout(function() {
   // 4. Bir de window 'resize' eventi tetikle (browser'a trigger)
   window.dispatchEvent(new Event('resize'));
 }, 430);
-const expandedMap = window.expandedMaps?.[containerId]?.expandedMap;
-if (expandedMap) {
-  const s = expandedMap.getContainer();
+// expandedMap zaten yukarıda tanımlı! Yeniden const/let ile tanımlama!
+if (window.expandedMaps?.[containerId]?.expandedMap) {
+  const s = window.expandedMaps[containerId].expandedMap.getContainer();
   console.log('Expanded map WIDTH/HEIGHT', s.offsetWidth, s.offsetHeight);
 }
 }
