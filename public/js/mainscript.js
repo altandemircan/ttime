@@ -5792,8 +5792,21 @@ expandedContainer.appendChild(panelDiv);
   expandedContainer.appendChild(mapDiv);
    document.body.appendChild(expandedContainer);
  // SON PATCH: DENE BUNU HARİTANIN ALTINA YAPISTIR!
-// TAM ÇÖZÜM PATCHİ: Sadece bunu ekle!
-window.dispatchEvent(new Event('resize'));;
+window.dispatchEvent(new Event('resize'));
+
+// KESİN PATCH
+setTimeout(() => {
+  const mapDiv = mapDivId && document.getElementById(mapDivId);
+  if (mapDiv) {
+    mapDiv.style.transform = "scale(0.99)";
+    setTimeout(() => {
+      mapDiv.style.transform = "scale(1)";
+      if (window.expandedMaps?.[containerId]?.expandedMap?.invalidateSize)
+        window.expandedMaps[containerId].expandedMap.invalidateSize();
+      window.dispatchEvent(new Event('resize'));
+    }, 32);
+  }
+}, 64);
 
   mapDiv.style.width = "100%";
 mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
