@@ -29,23 +29,24 @@ function dayRouteIsValidStrict(day) {
         pt.lng >= 25.87 && pt.lng <= 44.57
     );
 
+    // Haversine backup
     let haversineKm = 0;
     for (let i = 1; i < routeItems.length; i++) {
         haversineKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
     }
 
     if (isTurkey) {
-        // Route summary varsa onu kullan
+        // Route summary varsa onu kullan (gerçek mesafe)
         const key = `route-map-day${day}`;
         if (window.lastRouteSummaries && window.lastRouteSummaries[key] && typeof window.lastRouteSummaries[key].distance === "number") {
             const routeKm = window.lastRouteSummaries[key].distance / 1000;
             return routeKm <= 300;
         }
-        // Rota özet yoksa, haversine ile fallback olarak TRUE döndür
+        // Rota özet yoksa, haversine ile yedekle
         return haversineKm <= 300;
     }
 
-    // Türkiye değilse (fly mode), haversine ile kontrol
+    // Türkiye değilse (fly mode ise) haversine ile kontrol
     return haversineKm <= 300;
 }
 
