@@ -493,7 +493,7 @@ function dayRouteIsValid(day) {
     }
     return totalKm <= 300;
 }
-
+ 
 // --- REORDER PATCH ---
 // Bu fonksiyonu doğrudan değiştir!
 function reorderCart(fromIndex, toIndex, fromDay, toDay) {
