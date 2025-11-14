@@ -5310,7 +5310,12 @@ else if (hasValidGeo && routeCoords.length > 1) {
 }
 
 // Eksik noktalar için (missingPoints) çizgiler, burası genele dokunmaz!
-if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
+if (
+    isFlyMode &&
+    Array.isArray(missingPoints) &&
+    missingPoints.length > 1 &&
+    hasValidGeo
+) {
     for (let i = 0; i < missingPoints.length - 1; i++) {
         drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
             color: "#1976d2",
