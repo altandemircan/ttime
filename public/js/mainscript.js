@@ -2345,132 +2345,6 @@ function addToCart(
   }
   return true;
 }
-  // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
-
-  // 1) Placeholder temizliği
-  if (window._removeMapPlaceholderOnce) {
-    window.cart = (window.cart || []).filter(it => !it._placeholder);
-    window._removeMapPlaceholderOnce = false;
-  }
-
-  // 2) Lokasyon kontrolü
-  if (location && (
-    typeof location.lat !== "number" ||
-    typeof location.lng !== "number" ||
-    isNaN(location.lat) ||
-    isNaN(location.lng)
-  )) {
-    location = null;
-  }
-
-  // 3) Cart yapısını garanti et
-  if (!Array.isArray(window.cart)) window.cart = [];
-
-  // 4) Gün seçimi mantığı
-  let forceDay = options && options.forceDay;
-  let resolvedDay = Number(
-    forceDay != null ? forceDay :
-    (day != null ? day :
-      (window.currentDay != null ? window.currentDay :
-        (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
-  );
-  if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
-
-  // 5) Lokasyon normalizasyonu
-  let loc = null;
-  if (location && typeof location.lat !== "undefined" && typeof location.lng !== "undefined") {
-    const latNum = Number(location.lat);
-    const lngNum = Number(location.lng);
-    if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-      loc = { lat: latNum, lng: lngNum };
-    }
-  }
-
-  // 6) İsim / kategori / image fallback
-  const safeName = (name || '').toString().trim();
-  const safeCategory = (category || 'Place').trim();
-  const safeImage = image || 'img/placeholder.png';
-
-  // 7) Duplicate kontrolü
-  const isDuplicate = window.cart.some(item => {
-
-
-
-
-    if (item.day !== resolvedDay) return false;
-    if (!item.name || !safeName) return false;
-    if (item.category !== safeCategory) return false;
-    const sameName = item.name.trim().toLowerCase() === safeName.toLowerCase();
-    if (!sameName) return false;
-    if (loc && item.location) {
-      return item.location.lat === loc.lat && item.location.lng === loc.lng;
-    }
-    if (!loc && !item.location) return true;
-    return false;
-  });
-
-  if (isDuplicate) {
-    if (window.showToast) window.showToast('Item already exists for this day.', 'info');
-    return false;
-  }
-
-  // 8) Yeni öğe ekle
-  const newItem = {
-    name: safeName,
-    image: safeImage,
-    day: resolvedDay,
-    category: safeCategory,
-    address: address ? address.trim() : null,
-    rating,
-    user_ratings_total,
-    opening_hours,
-    place_id,
-    location: loc,
-    website,
-    addedAt: new Date().toISOString()
-  };
-
-  window.cart.push(newItem);
-
-  // === skipRender fix ===
-  if (typeof skipRender === "undefined") skipRender = false;
-
-  // Sonraki kodlar aynı, silent değişkeni başta false olmalı
-  if (!silent) {
-    if (typeof updateCart === "function") updateCart();
-    if (!skipRender && typeof renderRouteForDay === "function") {
-      setTimeout(() => renderRouteForDay(resolvedDay), 0);
-    }
-    if (typeof openSidebar === 'function') {
-      openSidebar();
-      if (window.innerWidth <= 768) {
-        const sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
-        if (sidebar) sidebar.classList.add('open');
-      }
-    }
-    if (typeof attachChatDropListeners === 'function') {
-      attachChatDropListeners();
-    }
-    if (window.expandedMaps) {
-      clearRouteSegmentHighlight(resolvedDay);
-      fitExpandedMapToRoute(resolvedDay);
-    }
-    if (typeof saveTripAfterRoutes === "function") {
-      saveTripAfterRoutes();
-    }
-
-    // PATCH: Expanded Map ve Scale Bar'ı güncelle!
-    if (window.expandedMaps) {
-      Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
-        if (expandedMap) updateExpandedMap(expandedMap, day);
-      });
-    }
-
-
-  }
-  return true;
-}
-
 
 
 function __dayIsEmpty(day){
@@ -4559,14 +4433,14 @@ function createDayActionMenu(day) {
 
   return container;
 }
-function areAllPointsInTurkey(pts) {
-  // Geofabrik Türkiye bounding box (2024 için)
-  return pts.every(p =>
-    p.lat >= 35.81 && p.lat <= 42.11 &&
-    p.lng >= 25.87 && p.lng <= 44.57
-  );
+if (!window.areAllPointsInTurkey) {
+  window.areAllPointsInTurkey = function(pts) {
+    return pts.every(p =>
+      p.lat >= 35.81 && p.lat <= 42.11 &&
+      p.lng >= 25.87 && p.lng <= 44.57
+    );
+  }
 }
-
 function toOSRMMode(mode) {
   // Normalize all possible synonyms
   if (!mode) return 'car'; // fallback
