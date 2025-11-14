@@ -6012,14 +6012,42 @@ if (
   ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
 }
 setTimeout(function() {
-  window.dispatchEvent(new Event('resize'));
-  if (window.leafletMaps) {
-    Object.values(window.leafletMaps).forEach(map => {
-      try { map.invalidateSize(); } catch(_) {}
-    });
+  // 1. Expanded haritanın boyutunu tekrar hesaplat
+  if (window.expandedMaps && window.expandedMaps[containerId] && window.expandedMaps[containerId].expandedMap) {
+    try { window.expandedMaps[containerId].expandedMap.invalidateSize(); } catch(_) {}
   }
-}, 120); // 120ms sonra trigger
+  // 2. Scale bar'da varsa tekrar handleResize tetikle
+  const expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (expandedScaleBar) {
+    expandedScaleBar.style.display = "block";
+    expandedScaleBar.style.opacity = "1";
+    const track = expandedScaleBar.querySelector('.scale-bar-track');
+    if (track && typeof track.handleResize === "function") {
+      track.handleResize();
+    }
+  }
+  // 3. Slider view varsa refresh et
+  document.querySelectorAll('.splide').forEach(sliderElem => {
+    if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
+      sliderElem._splideInstance.refresh();
+    }
+  });
+  // 4. Bir de window 'resize' eventi tetikle (browser'a trigger)
+  window.dispatchEvent(new Event('resize'));
+}, 430);
+const expandedMap = window.expandedMaps?.[containerId]?.expandedMap;
+if (expandedMap) {
+  const s = expandedMap.getContainer();
+  console.log('Expanded map WIDTH/HEIGHT', s.offsetWidth, s.offsetHeight);
 }
+}
+
+
+
+
+
+
+
 function restoreMap(containerId, day) {
     const expandedData = window.expandedMaps?.[containerId];
     if (!expandedData) return;
