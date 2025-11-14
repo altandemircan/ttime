@@ -3763,6 +3763,24 @@ else {
                                 ` : ''
                             }
                         </div>
+
+                    <button class="add-favorite-btn"
+                            data-name="${item.name}"
+                            data-category="${item.category}"
+                            data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                            data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                            style="background:none;border:none;padding:0;margin-left:12px;cursor:pointer;">
+                        <span class="fav-heart"
+                            data-name="${item.name}"
+                            data-category="${item.category}"
+                            data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                            data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                            <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                        </span>
+                        Add to favorites
+                    </button>
+
+                                
                         <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                             Remove place
                         </button>
