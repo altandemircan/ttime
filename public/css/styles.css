@@ -5656,7 +5656,10 @@ ease;
     margin-top: 8px;
     display: flex;
 }
-
+.add-favorite-btn img {
+    width: 16px;
+    height: 16px;
+}
 
 .expand-map-btn {
     background: rgb(90 132 173);
