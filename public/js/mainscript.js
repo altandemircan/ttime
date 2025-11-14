@@ -5791,7 +5791,35 @@ expandedContainer.appendChild(panelDiv);
   mapDiv.className = 'expanded-map';
   expandedContainer.appendChild(mapDiv);
    document.body.appendChild(expandedContainer);
- 
+ // SON PATCH: DENE BUNU HARİTANIN ALTINA YAPISTIR!
+setTimeout(function() {
+  const containerId = Object.keys(window.expandedMaps || {})[0];
+  const day = window.expandedMaps?.[containerId]?.day;
+  if (!containerId || !window.expandedMaps?.[containerId]?.expandedMap) return;
+  const map = window.expandedMaps[containerId].expandedMap;
+  const mapDiv = map.getContainer();
+  // minik reflow hilesi!
+  mapDiv.style.width = "98%";
+  setTimeout(() => {
+    mapDiv.style.width = "100%";
+    setTimeout(() => {
+      if (map.invalidateSize) map.invalidateSize();
+      window.dispatchEvent(new Event('resize'));
+    }, 50);
+  }, 50);
+
+  // scale bar fix
+  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  if (scaleBarDiv) {
+    scaleBarDiv.style.display = "block";
+    scaleBarDiv.style.opacity = "1";
+    scaleBarDiv.style.minWidth = "280px";
+    scaleBarDiv.style.minHeight = "48px";
+    scaleBarDiv.style.zIndex = "9999";
+    const track = scaleBarDiv.querySelector('.scale-bar-track');
+    if (track && typeof track.handleResize === "function") track.handleResize();
+  }
+}, 400);
 
   mapDiv.style.width = "100%";
 mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
@@ -6049,8 +6077,6 @@ if (window.expandedMaps?.[containerId]?.expandedMap) {
   console.log('Expanded map WIDTH/HEIGHT', s.offsetWidth, s.offsetHeight);
 }
 }
-
-
 
 
 
