@@ -7407,7 +7407,7 @@ async function renderRouteForDay(day) {
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
     const pts = getDayPoints(day);
-    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
+    // console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
 
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
@@ -9040,7 +9040,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
+  // console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
   // PATCH: markers dizisi boşsa window.cart ve getDayPoints ile doldur
   let day = 1;
