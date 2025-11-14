@@ -7773,10 +7773,7 @@ async function renderRouteForDay(day) {
         const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
         const url = buildDirectionsUrl(coordParam, day);
         const response = await fetch(url);
-        if (!response.ok) {
-            alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
-            return null;
-        }
+        
         const data = await response.json();
         if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
         return {
