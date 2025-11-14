@@ -4469,7 +4469,7 @@ function updateExpandedMap(expandedMap, day) {
         p => typeof p.lat === "number" && isFinite(p.lat) &&
              typeof p.lng === "number" && isFinite(p.lng)
     );
-    console.log("getDayPoints:", JSON.stringify(pts));
+    // console.log("getDayPoints:", JSON.stringify(pts));
 
     // YAY NOKTALARINI SAKLA - BURASI ÖNEMLİ!
     if (!window._curvedArcPointsByDay) {
@@ -4503,7 +4503,7 @@ function updateExpandedMap(expandedMap, day) {
 
         // Tüm route noktalarını kaydet
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
-        console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
+        // console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
         
         // PATCH BAŞLANGICI: Markerlar yoldan uzaksa, en yakın polyline noktasına kesik yeşil çizgi!
         pts.forEach((marker, idx) => {
@@ -4532,7 +4532,7 @@ function updateExpandedMap(expandedMap, day) {
         
         // Tüm route noktalarını kaydet
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
-        console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
+        // console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
         
     } else if (pts.length > 1) {
         // YAY MODU - her segmentin yay noktalarını kaydet
@@ -5974,10 +5974,10 @@ if (track && svg) {
   });
 
 
-console.log('[expandMap] done for day', day);
-console.log("Expanded Map Points:", points);
+// console.log('[expandMap] done for day', day);
+// console.log("Expanded Map Points:", points);
 // Ayrıca marker ve rota datalarını da yazdır:
-console.log("Geojson for expanded:", geojson);
+// console.log("Geojson for expanded:", geojson);
 if (
   window.importedTrackByDay &&
   window.importedTrackByDay[day] &&
@@ -9063,14 +9063,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
 
   // DEBUG
-  console.log("### (AFTER PATCH) renderRouteScaleBar MARKERS:", markers);
+  // console.log("### (AFTER PATCH) renderRouteScaleBar MARKERS:", markers);
 
-  // Sadece expanded bar’da çalış; küçük bar’ı kapatma LOJİĞİNİ KALDIR
-  // (Bu satırı iptal et!)
-  // if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-  //   container.innerHTML = '';
-  //   return;
-  // }
 
   // Geojson coords
   const gjKey = day ? `route-map-day${day}` : null;
