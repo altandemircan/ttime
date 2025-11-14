@@ -5256,73 +5256,72 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         // --- YAY ÇİZGİ PATCH'I ---
     const isFlyMode = !areAllPointsInTurkey(points);
 
-    // Sadece Fly mode'da yay çiz! Türkiye'de YAY/KAVİS ÇİZİMİ YOK!
-    if (isFlyMode && points.length > 1) {
-        window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
-        let arcPoints = [];
-        for (let i = 0; i < points.length - 1; i++) {
-            const start = [points[i].lng, points[i].lat];
-            const end = [points[i + 1].lng, points[i + 1].lat];
-            const curve = getCurvedArcCoords(start, end, 0.33, 22); // Segments büyük harita ile aynı!
+   // Sadece Fly mode'da yay çiz! Türkiye'de YAY/KAVİS ÇİZİMİ YOK!
+if (isFlyMode && points.length > 1) {
+    window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
+    let arcPoints = [];
+    for (let i = 0; i < points.length - 1; i++) {
+        const start = [points[i].lng, points[i].lat];
+        const end = [points[i + 1].lng, points[i + 1].lat];
+        const curve = getCurvedArcCoords(start, end, 0.33, 22);
 
-            L.polyline(curve.map(pt => [pt[1], pt[0]]), {
-                color: "#1976d2",
-                weight: 6,
-                opacity: 0.93,
-                dashArray: "6,8"
-            }).addTo(map);
-
-            arcPoints = arcPoints.concat(curve);
-        }
-        window._curvedArcPointsByDay[day] = arcPoints;
-    }
-    // Türkiye'de gerçek rota + marker-yol arası çizgi (YAY YOK)
-    else if (hasValidGeo && routeCoords.length > 1) {
-        L.polyline(routeCoords, {
-            color: '#1976d2',
-            weight: 8,
-            opacity: 0.92,
-            interactive: true,
-            dashArray: null
+        L.polyline(curve.map(pt => [pt[1], pt[0]]), {
+            color: "#1976d2",
+            weight: 6,
+            opacity: 0.93,
+            dashArray: "6,8"
         }).addTo(map);
 
-        // Marker yoldan uzaksa, en yakın route noktasına kesik yeşil çizgi!
-        points.forEach((marker, idx) => {
-            let minDist = Infinity, closest = null;
-            for (let i = 0; i < routeCoords.length; i++) {
-                const lat = routeCoords[i][0], lng = routeCoords[i][1];
-                const dist = haversine(marker.lat, marker.lng, lat, lng);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closest = routeCoords[i];
-                }
+        arcPoints = arcPoints.concat(curve);
+    }
+    window._curvedArcPointsByDay[day] = arcPoints;
+}
+// Türkiye'de yalnızca gerçek rota + marker-yol arası çizgi (YAY YOK)
+else if (hasValidGeo && routeCoords.length > 1) {
+    L.polyline(routeCoords, {
+        color: '#1976d2',
+        weight: 8,
+        opacity: 0.92,
+        interactive: true,
+        dashArray: null
+    }).addTo(map);
+
+    // Marker yoldan uzaksa, en yakın route noktasına kesik yeşil çizgi!
+    points.forEach((marker, idx) => {
+        let minDist = Infinity, closest = null;
+        for (let i = 0; i < routeCoords.length; i++) {
+            const lat = routeCoords[i][0], lng = routeCoords[i][1];
+            const dist = haversine(marker.lat, marker.lng, lat, lng);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = routeCoords[i];
             }
-            if (minDist > 200 && closest) {
-                L.polyline([[marker.lat, marker.lng], [closest[0], closest[1]]], {
-                    color: '#43a047',
-                    weight: 4,
-                    opacity: 0.85,
-                    dashArray: '7,6',
-                    interactive: false
-                }).addTo(map);
-            }
+        }
+        if (minDist > 200 && closest) {
+            L.polyline([[marker.lat, marker.lng], [closest[0], closest[1]]], {
+                color: '#43a047',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '7,6',
+                interactive: false
+            }).addTo(map);
+        }
+    });
+}
+
+// Eksik noktalar için (missingPoints) çizgiler, burası genele dokunmaz!
+if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
+    for (let i = 0; i < missingPoints.length - 1; i++) {
+        drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
+            color: "#1976d2",
+            weight: 4,
+            opacity: 0.8,
+            dashArray: "8,12",
+            interactive: false,
+            renderer: ensureCanvasRenderer(map)
         });
     }
-
-
-    if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
-        for (let i = 0; i < missingPoints.length - 1; i++) {
-            drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
-                color: "#1976d2",
-                weight: 4,
-                opacity: 0.8,
-                dashArray: "8,12",
-                interactive: false,
-                renderer: ensureCanvasRenderer(map)
-            });
-        }
-    }
-
+}
     addNumberedMarkers(map, points);
 
     if (geojson.features[0]?.properties?.names) {
