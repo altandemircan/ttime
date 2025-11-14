@@ -86,7 +86,7 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
 
     const map = new maplibregl.Map({
         container: mapDiv,
-        style: 'https://tiles.openfreemap.org/styles/positron',
+        style: 'https://tiles.openfreemap.org/styles/bright',
         center: center,
         zoom: 13,
         preserveDrawingBuffer: true,
