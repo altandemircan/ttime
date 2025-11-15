@@ -5237,6 +5237,26 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             interactive: true,
             dashArray: null
         }).addTo(map);
+
+        // --- PATCH: Türkiye'de marker rotadan uzaksa YEŞİL connector ekle ---
+        points.forEach((pt) => {
+            let minDist = Infinity, nearest = null;
+            for (let i = 0; i < routeCoords.length; i++) {
+                const [lat, lng] = routeCoords[i];
+                const dist = haversine(lat, lng, pt.lat, pt.lng);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = { lat, lng };
+                }
+            }
+            // Marker route üzerinde değilse (120m'den uzaksa) yeşil connector çiz
+            if (minDist > 120) {
+                L.polyline(
+                    [ [pt.lat, pt.lng], [nearest.lat, nearest.lng] ],
+                    { color: "#22bb33", weight: 4, opacity: 0.93, dashArray: "8,8", interactive: false }
+                ).addTo(map);
+            }
+        });
     }
 
     // Eksik pointler (connector/uyarı arc çizgileri): SADECE FlyMode'da
