@@ -5624,188 +5624,612 @@ function openMapLibre3D(expandedMap) {
   });
 }
 
+// async function expandMap(containerId, day) {
+// // PATCH: Overlay ve eski expanded/scale-bar DOM temizlik!
+// document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .custom-nearby-popup').forEach(el => el.remove());
+// document.body.style.overflow = '';
+// document.body.style.zIndex = '';
+
+//       window.currentDay = day; // ← DÜZELTME!
+
+//   console.log('[expandMap] start →', containerId, 'day=', day);
+
+//   // Daha önce açılmış expanded map varsa kapat
+//   if (window.expandedMaps && window.expandedMaps[containerId]) {
+//     console.log('[expandMap] already expanded, returning');
+//     if (
+//       window.importedTrackByDay &&
+//       window.importedTrackByDay[day] &&
+//       window.importedTrackByDay[day].drawRaw &&
+//       window.importedTrackByDay[day].rawPoints &&
+//       window.importedTrackByDay[day].rawPoints.length > 1
+//     ) {
+//       ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
+//     }
+//     return;
+//   }
+
+//   // Diğer günlerin expanded'ını kapat
+//   if (window.expandedMaps) {
+//     Object.keys(window.expandedMaps).forEach(otherId => {
+//       if (otherId !== containerId) {
+//         const ex = window.expandedMaps[otherId];
+//         if (ex) restoreMap(otherId, ex.day);
+//       }
+//     });
+//   }
+
+//   const originalContainer = document.getElementById(containerId);
+//   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
+//   const expandButton = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
+
+//   if (!originalContainer) {
+//     console.error('[expandMap] original small map container yok. İptal.');
+//     return;
+//   }
+//   if (!map) {
+//     console.warn('[expandMap] Leaflet instance yok. Yeniden initEmptyDayMap çağrılıyor…');
+//     initEmptyDayMap(day);
+//   }
+
+//   if (expandButton) {
+//     expandButton.style.visibility = 'hidden';
+//   }
+
+//   originalContainer.style.display = 'none';
+
+//   // === HEADER DIV OLUŞTUR ===
+//   const headerDiv = document.createElement('div');
+//   headerDiv.className = 'expanded-map-header';
+
+//   // --- Layer seçenekleri: doğrudan üstte yatay olarak görünür ---
+//   const layersBar = document.createElement('div');
+//   layersBar.className = 'map-layers-row'; // CSS'i dosyaya ekleyeceksin
+
+//   const layerOptions = [
+//   { value: 'bright', img: '/img/preview_bright.png', label: 'Bright' },
+//   { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
+//   { value: '3d', img: '/img/preview_3d.png', label: '3D' }
+// ];
+
+// let currentLayer = 'bright';
+//   let expandedTileLayer = null;
+
+//   layerOptions.forEach(opt => {
+//     const div = document.createElement('div');
+//     div.className = 'map-type-option';
+//     div.setAttribute('data-value', opt.value);
+//     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
+//     if (opt.value === currentLayer) div.classList.add('selected');
+
+
+//  div.onclick = function() {
+//   layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+//   div.classList.add('selected');
+//   if (opt.value === '3d') {
+//   // Leaflet expanded haritayı GİZLE
+//   expandedMap.getContainer().style.display = "none";
+  
+//   // MapLibreGL 3D harita div'ini GÖRÜNÜR yap:
+//   let map3d = document.getElementById('maplibre-3d-view');
+//   if (map3d) {
+//     map3d.style.display = "block";
+//   } else {
+//     openMapLibre3D(expandedMap); // Div yoksa oluştur ve aç
+//   }
+// } else {
+//   // Leaflet expanded haritayı göster
+//   expandedMap.getContainer().style.display = "";
+
+//   // 3D harita div'ini GİZLE
+//   let map3d = document.getElementById('maplibre-3d-view');
+//   if (map3d) {
+//     map3d.style.display = "none";
+//   }
+//   setExpandedMapTile(opt.value);
+// }
+// };
+//     layersBar.appendChild(div);
+//   });
+
+//   headerDiv.appendChild(layersBar);
+
+//   // Route stats (mesafe/süre/ascent/descent) için alan
+//   const statsDiv = document.createElement('div');
+//   statsDiv.className = 'route-stats';
+//   headerDiv.appendChild(statsDiv);
+
+//   // --- EXPANDED MAP CONTAINER ---
+//   const expandedMapId = `expanded-map-${day}`;
+//   const expandedContainer = document.createElement('div');
+//   expandedContainer.id = expandedMapId;
+//   expandedContainer.className = 'expanded-map-container';
+
+//   // --- PATCH: headerDiv'i expandedContainer'ın en başına ekle ---
+//   expandedContainer.appendChild(headerDiv);
+
+//   // Ölçek (scale) bar
+// const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+// if (oldBar) oldBar.remove();
+// const scaleBarDiv = document.createElement('div');
+// scaleBarDiv.className = 'route-scale-bar';
+// scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
+// // Bar her zaman görünür!
+// scaleBarDiv.style.display = "block";
+
+// // Panel wrapper: scaleBarDiv
+// const panelDiv = document.createElement('div');
+// panelDiv.className = 'expanded-map-panel';
+// panelDiv.appendChild(scaleBarDiv);
+// expandedContainer.appendChild(panelDiv);
+
+
+
+//   // Diğer kontroller (lokasyon/kapat)
+//   const locBtn = document.createElement('button');
+//   locBtn.type = 'button';
+//   locBtn.id = `use-my-location-btn-day${day}`;
+//   locBtn.classList.add('use-my-location-btn');
+//   locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
+//   expandedContainer.appendChild(locBtn);
+
+//   const closeBtn = document.createElement('button');
+//   closeBtn.className = 'close-expanded-map';
+//   closeBtn.textContent = '✕ Close';
+//   closeBtn.style.cssText = `
+//     position:absolute;top:16px;right:16px;z-index:10001;
+//     background:#ff4444;color:#fff;border:none;padding:8px 12px;
+//     border-radius:4px;font-weight:500;cursor:pointer;
+//   `;
+//   closeBtn.onclick = () => restoreMap(containerId, day);
+//   expandedContainer.appendChild(closeBtn);
+
+//   // Harita div
+//   const mapDivId = `${containerId}-expanded`;
+//   const mapDiv = document.createElement('div');
+//   mapDiv.id = mapDivId;
+//   mapDiv.className = 'expanded-map';
+  
+                                                        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//                                                         expandedContainer.appendChild(mapDiv);
+//                                                         document.body.appendChild(expandedContainer);
+
+
+//                                                         // 1) Container görünür olduktan sonra başlat
+//                                                         setTimeout(() => {
+//                                                           // 2) width/height pozitif mi kontrol
+//                                                           const mapDivElem = document.getElementById(mapDivId);
+//                                                           const ok = mapDivElem && mapDivElem.offsetWidth > 0 && mapDivElem.offsetHeight > 0;
+//                                                           if (!ok) {
+//                                                             // tekrar dene!
+//                                                             setTimeout(arguments.callee, 50);
+//                                                             return;
+//                                                           }
+//                                                           // 3) Haritayı şimdi başlat!
+//                                                           const expandedMap = L.map(mapDivId, { 
+//                                                             center: [41.9, 12.5],      
+//                                                             zoom: 6,
+//                                                             scrollWheelZoom: true,
+//                                                             fadeAnimation: true,
+//                                                             zoomAnimation: true,
+//                                                             zoomAnimationThreshold: 8,
+//                                                             zoomSnap: 0.25,
+//                                                             zoomDelta: 0.25,
+//                                                             wheelDebounceTime: 35,
+//                                                             wheelPxPerZoomLevel: 120,
+//                                                             inertia: true,
+//                                                             easeLinearity: 0.2
+//                                                           });
+//                                                           expandedMap._maplibreLayer = L.maplibreGL({ 
+//                                                             style: 'https://tiles.openfreemap.org/styles/bright'
+//                                                           }).addTo(expandedMap);
+
+//                                                           updateExpandedMap(expandedMap, day);
+
+//                                                           // PATCH: scale bar ve map invalidate
+//                                                           setTimeout(() => {
+//                                                             expandedMap.invalidateSize();
+//                                                             window.dispatchEvent(new Event('resize'));
+//                                                             // scale bar div için refresh, varsa
+//                                                             const scaleBarDivLocal = document.getElementById(`expanded-route-scale-bar-day${day}`);
+//                                                             if (scaleBarDivLocal && typeof scaleBarDivLocal.refresh === "function") scaleBarDivLocal.refresh();
+//                                                           }, 100);
+                                                          
+//                                                           // ... diğer mevcut kodun devamı (marker, stats, layer, vs...)
+//                                                         }, 100); // 100-200 ms genellikle yeterli oluyor
+
+
+
+
+// window.dispatchEvent(new Event('resize'));
+
+// // KESİN PATCH
+// setTimeout(() => {
+//   const mapDiv = mapDivId && document.getElementById(mapDivId);
+//   if (mapDiv) {
+//     mapDiv.style.transform = "scale(0.99)";
+//     setTimeout(() => {
+//       mapDiv.style.transform = "scale(1)";
+//       if (window.expandedMaps?.[containerId]?.expandedMap?.invalidateSize)
+//         window.expandedMaps[containerId].expandedMap.invalidateSize();
+//       window.dispatchEvent(new Event('resize'));
+//     }, 32);
+//   }
+// }, 64);
+
+//   mapDiv.style.width = "100%";
+// mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
+
+ 
+// showRouteInfoBanner(day); // hemen ardından çağır
+//   // Leaflet harita kur
+//   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
+
+// const allPoints = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+// const points = allPoints.filter(
+//   p => p && typeof p.lat === "number" && !isNaN(p.lat) && typeof p.lng === "number" && !isNaN(p.lng)
+// );
+
+
+
+                                                 
+// try {
+//   expandedMap.dragging.enable?.();
+//   expandedMap.scrollWheelZoom.enable?.();
+//   expandedMap.touchZoom.enable?.();
+//   expandedMap.doubleClickZoom.enable?.();
+//   expandedMap.boxZoom.enable?.();
+//   expandedMap.keyboard.enable?.();
+//   expandedMap.getContainer().style.pointerEvents = 'auto';
+
+//   // … ayrıca en sık yapılan hata:
+//   expandedMap.options.minZoom = 1;
+//   expandedMap.options.maxZoom = 19;
+//   expandedMap.options.maxBounds = null;
+
+//   // Control'leri force enable et
+//   const ctrlIn = expandedMap._controlContainer?.querySelector('.leaflet-control-zoom-in');
+//   const ctrlOut = expandedMap._controlContainer?.querySelector('.leaflet-control-zoom-out');
+//   if (ctrlIn) ctrlIn.setAttribute('aria-disabled', 'false'), ctrlIn.classList.remove('leaflet-disabled');
+//   if (ctrlOut) ctrlOut.setAttribute('aria-disabled', 'false'), ctrlOut.classList.remove('leaflet-disabled');
+// } catch(e){}
+
+//   // Layer ilk eklenirken default style
+// setExpandedMapTile(currentLayer);
+
+//  // SARI IMAGE UYARILARINI ENGELLE!
+// expandedMap.on('styleimagemissing', function(e) {
+//   try {
+//     expandedMap.addImage(e.id, new window.Image());
+//   } catch (_) {}
+// });
+
+//   expandedMap.on('error', function(e) {
+//   if (e.error && e.error.name === 'AbortError') {
+//     // Ignore ediyoruz
+//     return;
+//   }
+//   // Diğer hataları konsola yaz
+//   console.warn("[Harita hatası]", e);
+// });
+
+
+
+
+//   if (!expandedMap._initialView) {
+//     expandedMap._initialView = {
+//       center: expandedMap.getCenter(),
+//       zoom: expandedMap.getZoom()
+//     };
+//   }
+
+//   // Layer değişim fonksiyonu
+// function setExpandedMapTile(styleKey) {
+//     const validStyles = ['bright', 'dark', 'positron'];
+//     const styleToUse = validStyles.includes(styleKey) ? styleKey : 'bright';
+//     const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
+
+//     // Eski layer'ı kaldır
+//     if (expandedMap._maplibreLayer) {
+//         expandedMap.removeLayer(expandedMap._maplibreLayer);
+//         expandedMap._maplibreLayer = null;
+//     }
+
+//     // Yeni layer'ı ekle (yalnızca buradan!)
+//     expandedMap._maplibreLayer = L.maplibreGL({ style: url }).addTo(expandedMap);
+// }
+//   setExpandedMapTile(currentLayer);
+
+//   // Expanded harita ilk açılış için flag
+//   window.__expandedMapCentered = window.__expandedMapCentered || {};
+//   let isFirstExpand = !window.__expandedMapCentered[day];
+
+//   // Route çiz/güncelle
+//   const geojson = window.lastRouteGeojsons?.[containerId];
+
+//   if (baseMap) {
+//     Object.values(baseMap._layers).forEach(layer => {
+//       if (layer instanceof L.Marker) {
+//         const mk = L.marker(layer.getLatLng(), { icon: layer.options.icon }).addTo(expandedMap);
+//         if (layer._popup) mk.bindPopup(layer._popup._content);
+//       }
+//     });
+//   }
+
+//   setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
+
+//   const summary = window.lastRouteSummaries?.[containerId];
+//   statsDiv.innerHTML = '';
+
+//   window.expandedMaps = window.expandedMaps || {};
+//   window.expandedMaps[containerId] = {
+//     originalContainer,
+//     day,
+//     originalMap: baseMap,
+//     expandedMap,
+//     expandButton
+//   };
+
+//   // Ölçek barı render
+//   const totalKm = summary ? summary.distance / 1000 : 0;
+//   const markerPositionsRaw = getDayPoints(day); // Günün gerçek marker dizisi!
+//     const markerPositions = markerPositionsRaw.map((p, i) => ({
+//         name: p.name || "",
+//         distance: 0, // 1 marker varsa mesafe 0,
+//         lat: p.lat,
+//         lng: p.lng
+//     }));
+//     renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+
+
+//  // PATCH: Scale bar her zaman render edilsin, badge/label eksik olsa bile DOM'da olsun!
+// if (typeof renderRouteScaleBar === 'function') {
+//     scaleBarDiv.style.display = "block";
+//     scaleBarDiv.innerHTML = ""; // Temizle
+
+//     renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+//     const track = scaleBarDiv.querySelector('.scale-bar-track');
+//     const svg = track && track.querySelector('svg.tt-elev-svg');
+//     if (track && svg) {
+//         const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+//         createScaleElements(track, width, totalKm, 0, markerPositions);
+//     }
+// }
+
+
+// const track = scaleBarDiv.querySelector('.scale-bar-track');
+// const svg = track && track.querySelector('svg.tt-elev-svg');
+// if (track && svg) {
+//   const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+//   createScaleElements(track, width, totalKm, 0, markerPositions);
+// }
+  
+
+//   if (typeof addDraggableMarkersToExpandedMap === 'function') {
+//     addDraggableMarkersToExpandedMap(expandedMap, day);
+//   }
+//   if (typeof setupScaleBarInteraction === 'function') {
+//     setupScaleBarInteraction(day, expandedMap);
+//   }
+//   if (typeof attachClickNearbySearch === 'function') {
+//     attachClickNearbySearch(expandedMap, day);
+//   }
+//   if (typeof adjustExpandedHeader === 'function') {
+//     adjustExpandedHeader(day);
+//   }
+
+//   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
+//   window.userLocationMarkersByDay = window.userLocationMarkersByDay || {};
+
+//   locBtn.addEventListener('click', () => {
+//     if (!window.isLocationActiveByDay[day]) {
+//       window.isLocationActiveByDay[day] = true;
+//       locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On" class="category-icon">';
+//       if (typeof getMyLocation === 'function') {
+//         getMyLocation(day, expandedMap);
+//       }
+//       setTimeout(() => {
+//         const arr = window.userLocationMarkersByDay?.[day];
+//         if (arr && arr.length) {
+//           const last = arr[arr.length - 1];
+//           if (last?.getLatLng) expandedMap.flyTo(last.getLatLng(), Math.max(expandedMap.getZoom(), 15), { duration: 0.5, easeLinearity: 0.2 });
+//         }
+//       }, 300);
+//     } else {
+//       const arr = window.userLocationMarkersByDay?.[day] || [];
+//       arr.forEach(m => { try { expandedMap.removeLayer(m); } catch (_){ }});
+//       window.userLocationMarkersByDay[day] = [];
+//       window.isLocationActiveByDay[day] = false;
+//       locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
+//     }
+//   });
+
+
+// // console.log('[expandMap] done for day', day);
+// // console.log("Expanded Map Points:", points);
+// // Ayrıca marker ve rota datalarını da yazdır:
+// // console.log("Geojson for expanded:", geojson);
+// if (
+//   window.importedTrackByDay &&
+//   window.importedTrackByDay[day] &&
+//   window.importedTrackByDay[day].drawRaw &&
+//   window.importedTrackByDay[day].rawPoints &&
+//   window.importedTrackByDay[day].rawPoints.length > 1
+// ) {
+//   ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
+// }
+// setTimeout(function() {
+//   // Haritayı zorla güncelle
+//   if (window.expandedMaps && window.expandedMaps[containerId]) {
+//     const map = window.expandedMaps[containerId].expandedMap;
+//     if (map && typeof map.invalidateSize === "function") map.invalidateSize();
+//     map.getContainer().style.minWidth = "280px";
+//     map.getContainer().style.minHeight = "180px";
+//     map.getContainer().style.display = "block";
+//     map.getContainer().style.opacity = "1";
+//     map.getContainer().style.zIndex = "9999";
+//   }
+//   // Scale bar varsa track.handleResize
+//   const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+//   if (scaleBarDiv) {
+//     scaleBarDiv.style.display = "block";
+//     scaleBarDiv.style.opacity = "1";
+//     scaleBarDiv.style.minWidth = "280px";
+//     scaleBarDiv.style.minHeight = "48px";
+//     scaleBarDiv.style.zIndex = "9999";
+//     const track = scaleBarDiv.querySelector('.scale-bar-track');
+//     if (track && typeof track.handleResize === "function") track.handleResize();
+//   }
+//   // Slider yenile (varsa)
+//   document.querySelectorAll('.splide').forEach(sliderElem => {
+//     if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === "function") sliderElem._splideInstance.refresh();
+//   });
+//   // Browser'a window resize sinyali gönder
+//   window.dispatchEvent(new Event('resize'));
+// }, 450);
+// // expandedMap zaten yukarıda tanımlı! Yeniden const/let ile tanımlama!
+// if (window.expandedMaps?.[containerId]?.expandedMap) {
+//   const s = window.expandedMaps[containerId].expandedMap.getContainer();
+//   console.log('Expanded map WIDTH/HEIGHT', s.offsetWidth, s.offsetHeight);
+// }
+// }
+
+
+
+
 async function expandMap(containerId, day) {
-// PATCH: Overlay ve eski expanded/scale-bar DOM temizlik!
 document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .custom-nearby-popup').forEach(el => el.remove());
 document.body.style.overflow = '';
 document.body.style.zIndex = '';
+window.currentDay = day;
 
-      window.currentDay = day; // ← DÜZELTME!
+if (window.expandedMaps && window.expandedMaps[containerId]) {
+  if (
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.importedTrackByDay[day].drawRaw &&
+    window.importedTrackByDay[day].rawPoints &&
+    window.importedTrackByDay[day].rawPoints.length > 1
+  ) {
+    ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
+  }
+  return;
+}
 
-  console.log('[expandMap] start →', containerId, 'day=', day);
-
-  // Daha önce açılmış expanded map varsa kapat
-  if (window.expandedMaps && window.expandedMaps[containerId]) {
-    console.log('[expandMap] already expanded, returning');
-    if (
-      window.importedTrackByDay &&
-      window.importedTrackByDay[day] &&
-      window.importedTrackByDay[day].drawRaw &&
-      window.importedTrackByDay[day].rawPoints &&
-      window.importedTrackByDay[day].rawPoints.length > 1
-    ) {
-      ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
+if (window.expandedMaps) {
+  Object.keys(window.expandedMaps).forEach(otherId => {
+    if (otherId !== containerId) {
+      const ex = window.expandedMaps[otherId];
+      if (ex) restoreMap(otherId, ex.day);
     }
-    return;
-  }
+  });
+}
 
-  // Diğer günlerin expanded'ını kapat
-  if (window.expandedMaps) {
-    Object.keys(window.expandedMaps).forEach(otherId => {
-      if (otherId !== containerId) {
-        const ex = window.expandedMaps[otherId];
-        if (ex) restoreMap(otherId, ex.day);
-      }
-    });
-  }
+const originalContainer = document.getElementById(containerId);
+const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
+const expandButton = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
+if (!originalContainer) return;
+if (!map) initEmptyDayMap(day);
+if (expandButton) expandButton.style.visibility = 'hidden';
+originalContainer.style.display = 'none';
 
-  const originalContainer = document.getElementById(containerId);
-  const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
-  const expandButton = document.querySelector(`#tt-travel-mode-set-day${day} .expand-map-btn`);
+const headerDiv = document.createElement('div');
+headerDiv.className = 'expanded-map-header';
 
-  if (!originalContainer) {
-    console.error('[expandMap] original small map container yok. İptal.');
-    return;
-  }
-  if (!map) {
-    console.warn('[expandMap] Leaflet instance yok. Yeniden initEmptyDayMap çağrılıyor…');
-    initEmptyDayMap(day);
-  }
-
-  if (expandButton) {
-    expandButton.style.visibility = 'hidden';
-  }
-
-  originalContainer.style.display = 'none';
-
-  // === HEADER DIV OLUŞTUR ===
-  const headerDiv = document.createElement('div');
-  headerDiv.className = 'expanded-map-header';
-
-  // --- Layer seçenekleri: doğrudan üstte yatay olarak görünür ---
-  const layersBar = document.createElement('div');
-  layersBar.className = 'map-layers-row'; // CSS'i dosyaya ekleyeceksin
-
-  const layerOptions = [
+const layersBar = document.createElement('div');
+layersBar.className = 'map-layers-row';
+const layerOptions = [
   { value: 'bright', img: '/img/preview_bright.png', label: 'Bright' },
   { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
   { value: '3d', img: '/img/preview_3d.png', label: '3D' }
 ];
-
 let currentLayer = 'bright';
-  let expandedTileLayer = null;
+let expandedTileLayer = null;
 
-  layerOptions.forEach(opt => {
-    const div = document.createElement('div');
-    div.className = 'map-type-option';
-    div.setAttribute('data-value', opt.value);
-    div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
-    if (opt.value === currentLayer) div.classList.add('selected');
+layerOptions.forEach(opt => {
+  const div = document.createElement('div');
+  div.className = 'map-type-option';
+  div.setAttribute('data-value', opt.value);
+  div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
+  if (opt.value === currentLayer) div.classList.add('selected');
+  layersBar.appendChild(div);
+});
+headerDiv.appendChild(layersBar);
 
+const statsDiv = document.createElement('div');
+statsDiv.className = 'route-stats';
+headerDiv.appendChild(statsDiv);
 
- div.onclick = function() {
-  layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
-  div.classList.add('selected');
-  if (opt.value === '3d') {
-  // Leaflet expanded haritayı GİZLE
-  expandedMap.getContainer().style.display = "none";
-  
-  // MapLibreGL 3D harita div'ini GÖRÜNÜR yap:
-  let map3d = document.getElementById('maplibre-3d-view');
-  if (map3d) {
-    map3d.style.display = "block";
-  } else {
-    openMapLibre3D(expandedMap); // Div yoksa oluştur ve aç
-  }
-} else {
-  // Leaflet expanded haritayı göster
-  expandedMap.getContainer().style.display = "";
+const expandedMapId = `expanded-map-${day}`;
+const expandedContainer = document.createElement('div');
+expandedContainer.id = expandedMapId;
+expandedContainer.className = 'expanded-map-container';
+expandedContainer.appendChild(headerDiv);
 
-  // 3D harita div'ini GİZLE
-  let map3d = document.getElementById('maplibre-3d-view');
-  if (map3d) {
-    map3d.style.display = "none";
-  }
-  setExpandedMapTile(opt.value);
-}
-};
-    layersBar.appendChild(div);
-  });
-
-  headerDiv.appendChild(layersBar);
-
-  // Route stats (mesafe/süre/ascent/descent) için alan
-  const statsDiv = document.createElement('div');
-  statsDiv.className = 'route-stats';
-  headerDiv.appendChild(statsDiv);
-
-  // --- EXPANDED MAP CONTAINER ---
-  const expandedMapId = `expanded-map-${day}`;
-  const expandedContainer = document.createElement('div');
-  expandedContainer.id = expandedMapId;
-  expandedContainer.className = 'expanded-map-container';
-
-  // --- PATCH: headerDiv'i expandedContainer'ın en başına ekle ---
-  expandedContainer.appendChild(headerDiv);
-
-  // Ölçek (scale) bar
 const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
 if (oldBar) oldBar.remove();
 const scaleBarDiv = document.createElement('div');
 scaleBarDiv.className = 'route-scale-bar';
 scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
-// Bar her zaman görünür!
 scaleBarDiv.style.display = "block";
 
-// Panel wrapper: scaleBarDiv
 const panelDiv = document.createElement('div');
 panelDiv.className = 'expanded-map-panel';
 panelDiv.appendChild(scaleBarDiv);
 expandedContainer.appendChild(panelDiv);
 
+const locBtn = document.createElement('button');
+locBtn.type = 'button';
+locBtn.id = `use-my-location-btn-day${day}`;
+locBtn.classList.add('use-my-location-btn');
+locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
+expandedContainer.appendChild(locBtn);
 
+const closeBtn = document.createElement('button');
+closeBtn.className = 'close-expanded-map';
+closeBtn.textContent = '✕ Close';
+closeBtn.style.cssText = 'position:absolute;top:16px;right:16px;z-index:10001;background:#ff4444;color:#fff;border:none;padding:8px 12px;border-radius:4px;font-weight:500;cursor:pointer;';
+closeBtn.onclick = () => restoreMap(containerId, day);
+expandedContainer.appendChild(closeBtn);
 
-  // Diğer kontroller (lokasyon/kapat)
-  const locBtn = document.createElement('button');
-  locBtn.type = 'button';
-  locBtn.id = `use-my-location-btn-day${day}`;
-  locBtn.classList.add('use-my-location-btn');
-  locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate" class="category-icon">';
-  expandedContainer.appendChild(locBtn);
+const mapDivId = `${containerId}-expanded`;
+const mapDiv = document.createElement('div');
+mapDiv.id = mapDivId;
+mapDiv.className = 'expanded-map';
 
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'close-expanded-map';
-  closeBtn.textContent = '✕ Close';
-  closeBtn.style.cssText = `
-    position:absolute;top:16px;right:16px;z-index:10001;
-    background:#ff4444;color:#fff;border:none;padding:8px 12px;
-    border-radius:4px;font-weight:500;cursor:pointer;
-  `;
-  closeBtn.onclick = () => restoreMap(containerId, day);
-  expandedContainer.appendChild(closeBtn);
-
-  // Harita div
-  const mapDivId = `${containerId}-expanded`;
-  const mapDiv = document.createElement('div');
-  mapDiv.id = mapDivId;
-  mapDiv.className = 'expanded-map';
-  
 expandedContainer.appendChild(mapDiv);
 document.body.appendChild(expandedContainer);
 
-// 1) Container görünür olduktan sonra başlat
 setTimeout(() => {
-  // 2) width/height pozitif mi kontrol
   const mapDivElem = document.getElementById(mapDivId);
-  const ok = mapDivElem && mapDivElem.offsetWidth > 0 && mapDivElem.offsetHeight > 0;
-  if (!ok) {
-    // tekrar dene!
+  if (!mapDivElem || mapDivElem.offsetWidth < 50 || mapDivElem.offsetHeight < 50) {
     setTimeout(arguments.callee, 50);
     return;
   }
-  // 3) Haritayı şimdi başlat!
-  const expandedMap = L.map(mapDivId, { 
-    center: [41.9, 12.5],      
+
+  const expandedMap = L.map(mapDivId, {
+    center: [41.9, 12.5],
     zoom: 6,
     scrollWheelZoom: true,
     fadeAnimation: true,
@@ -5818,60 +6242,11 @@ setTimeout(() => {
     inertia: true,
     easeLinearity: 0.2
   });
-  expandedMap._maplibreLayer = L.maplibreGL({ 
+
+  expandedMap._maplibreLayer = L.maplibreGL({
     style: 'https://tiles.openfreemap.org/styles/bright'
   }).addTo(expandedMap);
 
-  updateExpandedMap(expandedMap, day);
-
-  // PATCH: scale bar ve map invalidate
-  setTimeout(() => {
-    expandedMap.invalidateSize();
-    window.dispatchEvent(new Event('resize'));
-    // scale bar div için refresh, varsa
-    const scaleBarDivLocal = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (scaleBarDivLocal && typeof scaleBarDivLocal.refresh === "function") scaleBarDivLocal.refresh();
-  }, 100);
-  
-  // ... diğer mevcut kodun devamı (marker, stats, layer, vs...)
-}, 100); // 100-200 ms genellikle yeterli oluyor
-
-
-
-
-window.dispatchEvent(new Event('resize'));
-
-// KESİN PATCH
-setTimeout(() => {
-  const mapDiv = mapDivId && document.getElementById(mapDivId);
-  if (mapDiv) {
-    mapDiv.style.transform = "scale(0.99)";
-    setTimeout(() => {
-      mapDiv.style.transform = "scale(1)";
-      if (window.expandedMaps?.[containerId]?.expandedMap?.invalidateSize)
-        window.expandedMaps[containerId].expandedMap.invalidateSize();
-      window.dispatchEvent(new Event('resize'));
-    }, 32);
-  }
-}, 64);
-
-  mapDiv.style.width = "100%";
-mapDiv.style.height = "480px"; // ve gerekirse expandedContainer'a da height
-
- 
-showRouteInfoBanner(day); // hemen ardından çağır
-  // Leaflet harita kur
-  const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
-
-const allPoints = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-const points = allPoints.filter(
-  p => p && typeof p.lat === "number" && !isNaN(p.lat) && typeof p.lng === "number" && !isNaN(p.lng)
-);
-
-
-
-                                                 
-try {
   expandedMap.dragging.enable?.();
   expandedMap.scrollWheelZoom.enable?.();
   expandedMap.touchZoom.enable?.();
@@ -5879,40 +6254,34 @@ try {
   expandedMap.boxZoom.enable?.();
   expandedMap.keyboard.enable?.();
   expandedMap.getContainer().style.pointerEvents = 'auto';
-
-  // … ayrıca en sık yapılan hata:
   expandedMap.options.minZoom = 1;
   expandedMap.options.maxZoom = 19;
   expandedMap.options.maxBounds = null;
-
-  // Control'leri force enable et
   const ctrlIn = expandedMap._controlContainer?.querySelector('.leaflet-control-zoom-in');
   const ctrlOut = expandedMap._controlContainer?.querySelector('.leaflet-control-zoom-out');
   if (ctrlIn) ctrlIn.setAttribute('aria-disabled', 'false'), ctrlIn.classList.remove('leaflet-disabled');
   if (ctrlOut) ctrlOut.setAttribute('aria-disabled', 'false'), ctrlOut.classList.remove('leaflet-disabled');
-} catch(e){}
 
-  // Layer ilk eklenirken default style
-setExpandedMapTile(currentLayer);
+  function setExpandedMapTile(styleKey) {
+    const validStyles = ['bright', 'dark', 'positron'];
+    const styleToUse = validStyles.includes(styleKey) ? styleKey : 'bright';
+    const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
+    if (expandedMap._maplibreLayer) {
+      expandedMap.removeLayer(expandedMap._maplibreLayer);
+      expandedMap._maplibreLayer = null;
+    }
+    expandedMap._maplibreLayer = L.maplibreGL({ style: url }).addTo(expandedMap);
+  }
+  setExpandedMapTile(currentLayer);
 
- // SARI IMAGE UYARILARINI ENGELLE!
-expandedMap.on('styleimagemissing', function(e) {
-  try {
-    expandedMap.addImage(e.id, new window.Image());
-  } catch (_) {}
-});
+  expandedMap.on('styleimagemissing', function(e) {
+    try { expandedMap.addImage(e.id, new window.Image()); } catch (_) {}
+  });
 
   expandedMap.on('error', function(e) {
-  if (e.error && e.error.name === 'AbortError') {
-    // Ignore ediyoruz
-    return;
-  }
-  // Diğer hataları konsola yaz
-  console.warn("[Harita hatası]", e);
-});
-
-
-
+    if (e.error && e.error.name === 'AbortError') return;
+    console.warn("[Harita hatası]", e);
+  });
 
   if (!expandedMap._initialView) {
     expandedMap._initialView = {
@@ -5921,30 +6290,7 @@ expandedMap.on('styleimagemissing', function(e) {
     };
   }
 
-  // Layer değişim fonksiyonu
-function setExpandedMapTile(styleKey) {
-    const validStyles = ['bright', 'dark', 'positron'];
-    const styleToUse = validStyles.includes(styleKey) ? styleKey : 'bright';
-    const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
-
-    // Eski layer'ı kaldır
-    if (expandedMap._maplibreLayer) {
-        expandedMap.removeLayer(expandedMap._maplibreLayer);
-        expandedMap._maplibreLayer = null;
-    }
-
-    // Yeni layer'ı ekle (yalnızca buradan!)
-    expandedMap._maplibreLayer = L.maplibreGL({ style: url }).addTo(expandedMap);
-}
-  setExpandedMapTile(currentLayer);
-
-  // Expanded harita ilk açılış için flag
-  window.__expandedMapCentered = window.__expandedMapCentered || {};
-  let isFirstExpand = !window.__expandedMapCentered[day];
-
-  // Route çiz/güncelle
-  const geojson = window.lastRouteGeojsons?.[containerId];
-
+    const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
       if (layer instanceof L.Marker) {
@@ -5953,11 +6299,6 @@ function setExpandedMapTile(styleKey) {
       }
     });
   }
-
-  setTimeout(() => expandedMap.invalidateSize({ pan: false }), 400);
-
-  const summary = window.lastRouteSummaries?.[containerId];
-  statsDiv.innerHTML = '';
 
   window.expandedMaps = window.expandedMaps || {};
   window.expandedMaps[containerId] = {
@@ -5968,56 +6309,88 @@ function setExpandedMapTile(styleKey) {
     expandButton
   };
 
-  // Ölçek barı render
+  const summary = window.lastRouteSummaries?.[containerId];
+  statsDiv.innerHTML = '';
   const totalKm = summary ? summary.distance / 1000 : 0;
-  const markerPositionsRaw = getDayPoints(day); // Günün gerçek marker dizisi!
-    const markerPositions = markerPositionsRaw.map((p, i) => ({
-        name: p.name || "",
-        distance: 0, // 1 marker varsa mesafe 0,
-        lat: p.lat,
-        lng: p.lng
-    }));
-    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+  const markerPositionsRaw = typeof getDayPoints === "function" ? getDayPoints(day) : [];
+  const markerPositions = markerPositionsRaw.map((p, i) => ({
+    name: p.name || "",
+    distance: 0,
+    lat: p.lat,
+    lng: p.lng
+  }));
 
-
- // PATCH: Scale bar her zaman render edilsin, badge/label eksik olsa bile DOM'da olsun!
-if (typeof renderRouteScaleBar === 'function') {
-    scaleBarDiv.style.display = "block";
-    scaleBarDiv.innerHTML = ""; // Temizle
-
+  scaleBarDiv.style.display = "block";
+  scaleBarDiv.innerHTML = "";
+  if (typeof renderRouteScaleBar === "function") {
     renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
     const track = scaleBarDiv.querySelector('.scale-bar-track');
     const svg = track && track.querySelector('svg.tt-elev-svg');
     if (track && svg) {
-        const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+      const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+      if (typeof createScaleElements === "function") {
         createScaleElements(track, width, totalKm, 0, markerPositions);
+      }
     }
-}
+  }
 
+  const geojson = window.lastRouteGeojsons?.[containerId];
+  if (geojson && typeof L.geoJSON === "function") {
+    L.geoJSON(geojson).addTo(expandedMap);
+  }
 
-const track = scaleBarDiv.querySelector('.scale-bar-track');
-const svg = track && track.querySelector('svg.tt-elev-svg');
-if (track && svg) {
-  const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-  createScaleElements(track, width, totalKm, 0, markerPositions);
-}
-  
+  setTimeout(() => {
+    expandedMap.invalidateSize({ pan: false });
+    window.dispatchEvent(new Event('resize'));
+    scaleBarDiv.style.display = "block";
+    scaleBarDiv.style.opacity = "1";
+    scaleBarDiv.style.minWidth = "280px";
+    scaleBarDiv.style.minHeight = "48px";
+    scaleBarDiv.style.zIndex = "9999";
+    const track = scaleBarDiv.querySelector('.scale-bar-track');
+    if (track && typeof track.handleResize === "function") track.handleResize();
+  }, 100);
 
-  if (typeof addDraggableMarkersToExpandedMap === 'function') {
+  showRouteInfoBanner(day);
+
+  if (typeof addDraggableMarkersToExpandedMap === "function") {
     addDraggableMarkersToExpandedMap(expandedMap, day);
   }
-  if (typeof setupScaleBarInteraction === 'function') {
+  if (typeof setupScaleBarInteraction === "function") {
     setupScaleBarInteraction(day, expandedMap);
   }
-  if (typeof attachClickNearbySearch === 'function') {
+  if (typeof attachClickNearbySearch === "function") {
     attachClickNearbySearch(expandedMap, day);
   }
-  if (typeof adjustExpandedHeader === 'function') {
+  if (typeof adjustExpandedHeader === "function") {
     adjustExpandedHeader(day);
   }
 
   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
   window.userLocationMarkersByDay = window.userLocationMarkersByDay || {};
+    layersBar.querySelectorAll('.map-type-option').forEach(option => {
+    option.onclick = function() {
+      layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+      option.classList.add('selected');
+      const style = option.getAttribute('data-value');
+      if (style === '3d') {
+        expandedMap.getContainer().style.display = "none";
+        let map3d = document.getElementById('maplibre-3d-view');
+        if (map3d) {
+          map3d.style.display = "block";
+        } else {
+          openMapLibre3D(expandedMap);
+        }
+      } else {
+        expandedMap.getContainer().style.display = "";
+        let map3d = document.getElementById('maplibre-3d-view');
+        if (map3d) {
+          map3d.style.display = "none";
+        }
+        setExpandedMapTile(style);
+      }
+    };
+  });
 
   locBtn.addEventListener('click', () => {
     if (!window.isLocationActiveByDay[day]) {
@@ -6042,55 +6415,55 @@ if (track && svg) {
     }
   });
 
+  closeBtn.onclick = () => restoreMap(containerId, day);
 
-// console.log('[expandMap] done for day', day);
-// console.log("Expanded Map Points:", points);
-// Ayrıca marker ve rota datalarını da yazdır:
-// console.log("Geojson for expanded:", geojson);
-if (
-  window.importedTrackByDay &&
-  window.importedTrackByDay[day] &&
-  window.importedTrackByDay[day].drawRaw &&
-  window.importedTrackByDay[day].rawPoints &&
-  window.importedTrackByDay[day].rawPoints.length > 1
-) {
-  ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
-}
-setTimeout(function() {
-  // Haritayı zorla güncelle
-  if (window.expandedMaps && window.expandedMaps[containerId]) {
-    const map = window.expandedMaps[containerId].expandedMap;
-    if (map && typeof map.invalidateSize === "function") map.invalidateSize();
-    map.getContainer().style.minWidth = "280px";
-    map.getContainer().style.minHeight = "180px";
-    map.getContainer().style.display = "block";
-    map.getContainer().style.opacity = "1";
-    map.getContainer().style.zIndex = "9999";
+  if (
+    window.importedTrackByDay &&
+    window.importedTrackByDay[day] &&
+    window.importedTrackByDay[day].drawRaw &&
+    window.importedTrackByDay[day].rawPoints &&
+    window.importedTrackByDay[day].rawPoints.length > 1
+  ) {
+    ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
-  // Scale bar varsa track.handleResize
-  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (scaleBarDiv) {
-    scaleBarDiv.style.display = "block";
-    scaleBarDiv.style.opacity = "1";
-    scaleBarDiv.style.minWidth = "280px";
-    scaleBarDiv.style.minHeight = "48px";
-    scaleBarDiv.style.zIndex = "9999";
-    const track = scaleBarDiv.querySelector('.scale-bar-track');
-    if (track && typeof track.handleResize === "function") track.handleResize();
+
+  setTimeout(function() {
+    if (window.expandedMaps && window.expandedMaps[containerId]) {
+      const map = window.expandedMaps[containerId].expandedMap;
+      if (map && typeof map.invalidateSize === "function") map.invalidateSize();
+      map.getContainer().style.minWidth = "280px";
+      map.getContainer().style.minHeight = "180px";
+      map.getContainer().style.display = "block";
+      map.getContainer().style.opacity = "1";
+      map.getContainer().style.zIndex = "9999";
+    }
+    const scaleBarDiv2 = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (scaleBarDiv2) {
+      scaleBarDiv2.style.display = "block";
+      scaleBarDiv2.style.opacity = "1";
+      scaleBarDiv2.style.minWidth = "280px";
+      scaleBarDiv2.style.minHeight = "48px";
+      scaleBarDiv2.style.zIndex = "9999";
+      const track = scaleBarDiv2.querySelector('.scale-bar-track');
+      if (track && typeof track.handleResize === "function") track.handleResize();
+    }
+    document.querySelectorAll('.splide').forEach(sliderElem => {
+      if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === "function") sliderElem._splideInstance.refresh();
+    });
+    window.dispatchEvent(new Event('resize'));
+  }, 450);
+
+  if (window.expandedMaps?.[containerId]?.expandedMap) {
+    const s = window.expandedMaps[containerId].expandedMap.getContainer();
+    console.log('Expanded map WIDTH/HEIGHT', s.offsetWidth, s.offsetHeight);
   }
-  // Slider yenile (varsa)
-  document.querySelectorAll('.splide').forEach(sliderElem => {
-    if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === "function") sliderElem._splideInstance.refresh();
-  });
-  // Browser'a window resize sinyali gönder
-  window.dispatchEvent(new Event('resize'));
-}, 450);
-// expandedMap zaten yukarıda tanımlı! Yeniden const/let ile tanımlama!
-if (window.expandedMaps?.[containerId]?.expandedMap) {
-  const s = window.expandedMaps[containerId].expandedMap.getContainer();
-  console.log('Expanded map WIDTH/HEIGHT', s.offsetWidth, s.offsetHeight);
+}, 100);
 }
-}
+
+
+
+
+
 
 
 
