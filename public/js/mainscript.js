@@ -1689,6 +1689,8 @@ async function showResults() {
     renderMyTripsPanel();
     fillGeoapifyTagsOnly();
     attachImLuckyEvents();
+      attachFavEvents(); // <-- render sonunda çağır!
+
 
 }
 
@@ -3799,7 +3801,7 @@ else {
                                   <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
                                 </button>
 
-                                
+
                         <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                             Remove place
                         </button>
@@ -8007,6 +8009,8 @@ if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
 // Show tt-welcome on page load
 document.addEventListener('DOMContentLoaded', function() {
     changeContent(1);
+      setTimeout(attachFavEvents, 500);
+
 });
 
   function toggleMenu() {
