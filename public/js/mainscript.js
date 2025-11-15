@@ -1830,14 +1830,14 @@ async function buildPlan(city, days) {
 
   for (const cat of categories) {
     let radius = 3;
-    let places = await getPlacesForCategory(city, cat, 30, radius * 1000);
+    let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
     let attempt = 0;
     const maxAttempts = 5;
     const triedNames = new Set();
     while (places.length <= 1 && attempt < maxAttempts) {
       if (places.length === 1) triedNames.add(places[0].name);
       radius += 5;
-      let newPlaces = await getPlacesForCategory(city, cat, 30, radius * 1000);
+      let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000);
       newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
       if (newPlaces.length > 0) {
         places = places.concat(newPlaces);
