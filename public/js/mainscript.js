@@ -3287,6 +3287,25 @@ function startMapPlanning() {
   }, 60);
 
   attemptExpandDay(1);
+
+  // Globe Map başlatmak istiyorsan burada ekleyebilirsin:
+const globeDivId = 'globe-map-day1';
+let globeDiv = document.getElementById(globeDivId);
+if (!globeDiv) {
+  globeDiv = document.createElement('div');
+  globeDiv.id = globeDivId;
+  globeDiv.style.width = "100%";
+  globeDiv.style.height = "500px";
+  document.body.appendChild(globeDiv);
+}
+
+const globeMap = new maplibregl.Map({
+  container: globeDivId,
+  style: 'https://tiles.openfreemap.org/styles/bright',
+  center: [0, 0],
+  zoom: 1.3,
+  projection: 'globe'
+});
 }
 function removeDayMap(day) {
   // Eski yanlış çağrılar boşa gitmesin
