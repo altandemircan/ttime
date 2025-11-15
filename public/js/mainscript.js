@@ -4555,8 +4555,8 @@ function updateExpandedMap(expandedMap, day) {
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
-        expandedMap.setView([0, 0], 2, { animate: true });
-    }
+    expandedMap.setView([42.5, 12.5], 5, { animate: true });
+}
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
