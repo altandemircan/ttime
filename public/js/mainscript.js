@@ -3244,8 +3244,9 @@ function startMapPlanning() {
 
 // --- fonksiyonun parametreli yeni hali ---
 function initEmptyDayMap(day, opts = {}) {
-  if (!opts.center) opts.center = [42.5, 12.5];
-  if (!opts.zoom) opts.zoom = 5;
+  // SADE PATCH: Her çağrıda Italyadan ve zoom 5 ile açılır!
+  opts.center = opts.center || [42.5, 12.5];
+  opts.zoom = opts.zoom || 5;
 
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
@@ -3266,7 +3267,7 @@ function initEmptyDayMap(day, opts = {}) {
   }
   if (!el.style.height) el.style.height = '285px';
 
-  // Harita her zaman Italyadan ve zoom=5
+  // ALWAYS Italy merkezli ve Avrupa zoomda açılıyor!
   const map = L.map(containerId, {
     scrollWheelZoom: true,
     fadeAnimation: true,
