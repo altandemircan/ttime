@@ -3102,55 +3102,7 @@ function ensureDayMapContainer(day) {
   return mapDiv;
 }
  
-function initEmptyDayMap(day) {
-  const containerId = `route-map-day${day}`;
-  let el = document.getElementById(containerId);
-  if (!el) el = ensureDayMapContainer(day);
-  if (!el) return;
 
-  if (typeof L === 'undefined') {
-    setTimeout(() => initEmptyDayMap(day), 60);
-    return;
-  }
-
-  // Mevcut instance & iç DOM kontrolü
-  const existingMap = window.leafletMaps && window.leafletMaps[containerId];
-  const hasInner = el.querySelector('.leaflet-container');
-
-  if (existingMap && hasInner) {
-    // Sağlam durumda, sadece view’i güncelleyebilirsin (opsiyonel)
-    return;
-  } else if (existingMap && !hasInner) {
-    // Detached
-    try { existingMap.remove(); } catch(_){}
-    delete window.leafletMaps[containerId];
-  }
-
-  if (!el.style.height) el.style.height = '285px';
-
-  // KÜÇÜK HARİTA
-  const map = L.map(containerId, {
-    scrollWheelZoom: true,
-    fadeAnimation: true,
-    zoomAnimation: true,
-    zoomAnimationThreshold: 8,
-    zoomSnap: 0.25,
-    zoomDelta: 0.25,
-    wheelDebounceTime: 35,
-    wheelPxPerZoomLevel: 120,
-    inertia: true,
-    easeLinearity: 0.2
-  }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
-  if (!map._initialView) {
-  map._initialView = {
-    center: map.getCenter(),
-    zoom: map.getZoom()
-  };
-}
-
-  window.leafletMaps = window.leafletMaps || {};
-  window.leafletMaps[containerId] = map;
-}
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
   Object.keys(window.leafletMaps).forEach(id => {
@@ -3254,7 +3206,7 @@ function restoreLostDayMaps() {
 function startMapPlanning() {
   window.cart = [];
   window.__startedWithMapFlag = true;
-  window.activeTripKey = null; // <-- En kritik satır: yeni map planlamada key sıfırlanır.
+  window.activeTripKey = null;
 
   window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
   window.__hideStartMapButtonByDay[1] = true;
@@ -3265,15 +3217,16 @@ function startMapPlanning() {
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[1] = true;
 
-
-
   window.currentDay = 1;
   window.mapPlanningDay = 1;
   window.mapPlanningActive = true;
 
   updateCart();
   ensureDayMapContainer(1);
-  initEmptyDayMap(1);
+
+  // Değişiklik: Italyaya odaklanacak şekilde harita başlat
+  initEmptyDayMap(1, { center: [42.5, 12.5], zoom: 5 });
+
   const mini = document.getElementById('route-map-day1');
   if (mini) mini.style.display = 'none';
 
@@ -3282,12 +3235,58 @@ function startMapPlanning() {
   }
 
   setTimeout(() => {
-    if (!window.leafletMaps['route-map-day1']) initEmptyDayMap(1);
+    if (!window.leafletMaps['route-map-day1']) initEmptyDayMap(1, { center: [42.5, 12.5], zoom: 5 });
     attachMapClickAddMode(1);
   }, 60);
 
   attemptExpandDay(1);
 }
+
+// --- fonksiyonun parametreli yeni hali ---
+function initEmptyDayMap(day, opts = {}) {
+  const containerId = `route-map-day${day}`;
+  let el = document.getElementById(containerId);
+  if (!el) el = ensureDayMapContainer(day);
+  if (!el) return;
+  if (typeof L === 'undefined') {
+    setTimeout(() => initEmptyDayMap(day, opts), 60);
+    return;
+  }
+  const existingMap = window.leafletMaps && window.leafletMaps[containerId];
+  const hasInner = el.querySelector('.leaflet-container');
+
+  if (existingMap && hasInner) {
+    return;
+  } else if (existingMap && !hasInner) {
+    try { existingMap.remove(); } catch(_) {}
+    delete window.leafletMaps[containerId];
+  }
+  if (!el.style.height) el.style.height = '285px';
+
+  // DEFAULT: Italy merkezli ve Avrupa zoomda açılıyor!
+  const map = L.map(containerId, {
+    scrollWheelZoom: true,
+    fadeAnimation: true,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 8,
+    zoomSnap: 0.25,
+    zoomDelta: 0.25,
+    wheelDebounceTime: 35,
+    wheelPxPerZoomLevel: 120,
+    inertia: true,
+    easeLinearity: 0.2
+  }).setView(opts.center || [42.5, 12.5], opts.zoom || 5);
+  if (!map._initialView) {
+    map._initialView = {
+      center: map.getCenter(),
+      zoom: map.getZoom()
+    };
+  }
+  window.leafletMaps = window.leafletMaps || {};
+  window.leafletMaps[containerId] = map;
+}
+
+
 function removeDayMap(day) {
   // Eski yanlış çağrılar boşa gitmesin
   return removeDayMapCompletely(day);
