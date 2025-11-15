@@ -5214,59 +5214,71 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }).addTo(map);
 
     // --- PATCH: Kesik mavi yay sadece Flymode'da ---
-    const isFlyMode = !areAllPointsInTurkey(points);
+const isFlyMode = !areAllPointsInTurkey(points);
 
-    if (isFlyMode && points.length > 1) {
-        window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
-        let arcPoints = [];
-        for (let i = 0; i < points.length - 1; i++) {
-            const start = [points[i].lng, points[i].lat];
-            const end = [points[i + 1].lng, points[i + 1].lat];
-            const curveDirection = 0.33; // veya büyük haritadaki ile eşleşen değer
-            const curve = getCurvedArcCoords(start, end, curveDirection, 32);
-            arcPoints = arcPoints.concat(curve);
+if (isFlyMode && points.length > 1) {
+    window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
+    let arcPoints = [];
+    // Yön parametresi büyük harita ile tamamen aynı olmalı (0.33)
+    const arcDirection = 0.33; // Büyük haritada ne ise küçükte de o!
 
-            drawCurvedLine(map, points[i], points[i + 1], {
-                color: "#1976d2",
-                weight: 5,
-                opacity: 0.85,
-                dashArray: "6,8"
-            });
+    for (let i = 0; i < points.length - 1; i++) {
+        const start = [points[i].lng, points[i].lat];
+        const end = [points[i + 1].lng, points[i + 1].lat];
+        // Büyük haritayla aynı eksen ve yön! (arcDirection)
+        const curve = getCurvedArcCoords(start, end, arcDirection, 32);
+
+        // curve arrayinin başını sadece ilk noktada ekle, diğerlerinde slice(1)
+        if (i === 0) {
+            arcPoints.push([start[0], start[1]]);
         }
-        window._curvedArcPointsByDay[day] = arcPoints;
-    }
+        arcPoints = arcPoints.concat(curve.slice(1));
 
-    // Türkiye'de route varsa sadece gerçek route polyline.
-    if (!isFlyMode && hasValidGeo && routeCoords.length > 1) {
-        L.polyline(routeCoords, {
-            color: '#1976d2',
-            weight: 8,
-            opacity: 0.92,
-            interactive: true,
-            dashArray: null
+        // Çizimi de eksenle birebir tut
+        const polylineCoords = curve.map(pt => [pt[1], pt[0]]);
+        L.polyline(polylineCoords, {
+            color: "#1976d2",
+            weight: 5,
+            opacity: 0.85,
+            dashArray: "6,8"
         }).addTo(map);
-
-        // --- PATCH: Türkiye'de marker rotadan uzaksa YEŞİL connector ekle ---
-        points.forEach((pt) => {
-            let minDist = Infinity, nearest = null;
-            for (let i = 0; i < routeCoords.length; i++) {
-                const [lat, lng] = routeCoords[i];
-                const dist = haversine(lat, lng, pt.lat, pt.lng);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearest = { lat, lng };
-                }
-            }
-            // Marker route üzerinde değilse (120m'den uzaksa) yeşil connector çiz
-            if (minDist > 120) {
-                L.polyline(
-                    [ [pt.lat, pt.lng], [nearest.lat, nearest.lng] ],
-                    { color: "#22bb33", weight: 4, opacity: 0.93, dashArray: "8,8", interactive: false }
-                ).addTo(map);
-            }
-        });
     }
+    if (points.length > 0) {
+        arcPoints.push([points[points.length - 1].lng, points[points.length - 1].lat]);
+    }
+    window._curvedArcPointsByDay[day] = arcPoints;
+}
 
+// Türkiye'de route varsa sadece gerçek route polyline.
+if (!isFlyMode && hasValidGeo && routeCoords.length > 1) {
+    L.polyline(routeCoords, {
+        color: '#1976d2',
+        weight: 8,
+        opacity: 0.92,
+        interactive: true,
+        dashArray: null
+    }).addTo(map);
+
+    // --- PATCH: Türkiye'de marker rotadan uzaksa YEŞİL connector ekle ---
+    points.forEach((pt) => {
+        let minDist = Infinity, nearest = null;
+        for (let i = 0; i < routeCoords.length; i++) {
+            const [lat, lng] = routeCoords[i];
+            const dist = haversine(lat, lng, pt.lat, pt.lng);
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = { lat, lng };
+            }
+        }
+        // Marker route üzerinde değilse (120m'den uzaksa) yeşil connector çiz
+        if (minDist > 120) {
+            L.polyline(
+                [ [pt.lat, pt.lng], [nearest.lat, nearest.lng] ],
+                { color: "#22bb33", weight: 4, opacity: 0.93, dashArray: "8,8", interactive: false }
+            ).addTo(map);
+        }
+    });
+}
     // Eksik pointler (connector/uyarı arc çizgileri): SADECE FlyMode'da
     if (Array.isArray(missingPoints) && missingPoints.length > 1 && isFlyMode) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
