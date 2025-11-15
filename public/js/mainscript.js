@@ -9286,7 +9286,19 @@ track.appendChild(verticalLine);
 const tooltip = document.createElement('div');
 tooltip.className = 'tt-elev-tooltip';
 tooltip.style.left = '0px';
+tooltip.style.opacity = '0'; // BAŞLANGIÇTA GÖRÜNMEZ
 track.appendChild(tooltip);
+
+// Scalebar'a mouse gelince/gidince göster/gizle:
+track.addEventListener('mousemove', function(e) {
+  tooltip.style.opacity = '1';
+});
+track.addEventListener('mouseleave', function(e) {
+  tooltip.style.opacity = '0';
+});
+track.addEventListener('touchend', function(e) {
+  tooltip.style.opacity = '0';
+});
 
 // Mouse ile çizgiyi hareket ettir (her zaman görünür!)
 track.addEventListener('mousemove', function(e) {
