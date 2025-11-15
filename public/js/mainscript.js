@@ -5821,24 +5821,43 @@ const points = allPoints.filter(
 
 
 
-                                                         const expandedMap = L.map(mapDivId, {
-                                                           center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
-                                                          zoom: 2,         // Veya 3 yaz (önemi yok)
-                                                            scrollWheelZoom: true,
-                                                            fadeAnimation: true,
-                                                            zoomAnimation: true,
-                                                            zoomAnimationThreshold: 8,
-                                                            zoomSnap: 0.25,
-                                                            zoomDelta: 0.25,
-                                                            wheelDebounceTime: 35,
-                                                            wheelPxPerZoomLevel: 120,
-                                                            inertia: true,
-                                                            easeLinearity: 0.2
-                                                          });
-                                                        expandedMap._maplibreLayer = L.maplibreGL({ 
-                                                          style: 'https://tiles.openfreemap.org/styles/bright' // veya ilk açılışta istediğin layer
-                                                        }).addTo(expandedMap);
-                                                        updateExpandedMap(expandedMap, day);
+                                                        //  const expandedMap = L.map(mapDivId, {
+                                                        //    center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
+                                                        //   zoom: 2,         // Veya 3 yaz (önemi yok)
+                                                        //     scrollWheelZoom: true,
+                                                        //     fadeAnimation: true,
+                                                        //     zoomAnimation: true,
+                                                        //     zoomAnimationThreshold: 8,
+                                                        //     zoomSnap: 0.25,
+                                                        //     zoomDelta: 0.25,
+                                                        //     wheelDebounceTime: 35,
+                                                        //     wheelPxPerZoomLevel: 120,
+                                                        //     inertia: true,
+                                                        //     easeLinearity: 0.2
+                                                        //   });
+                                                        // expandedMap._maplibreLayer = L.maplibreGL({ 
+                                                        //   style: 'https://tiles.openfreemap.org/styles/bright' // veya ilk açılışta istediğin layer
+                                                        // }).addTo(expandedMap);
+                                                        // updateExpandedMap(expandedMap, day);
+
+const globeDivId = `globe-map-day${day}`;
+let globeDiv = document.getElementById(globeDivId);
+if (!globeDiv) {
+  globeDiv = document.createElement('div');
+  globeDiv.id = globeDivId;
+  globeDiv.style.width = "100%";
+  globeDiv.style.height = "500px";
+  document.body.appendChild(globeDiv); // Expanded harita modalına, uygun yere ekle
+}
+
+// Globe haritayı başlat:
+const globeMap = new maplibregl.Map({
+  container: globeDivId,
+  style: 'https://tiles.openfreemap.org/styles/bright',
+  center: [0, 0],
+  zoom: 1.3,
+  projection: 'globe'
+});
 
 
 try {
