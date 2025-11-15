@@ -3254,7 +3254,7 @@ function restoreLostDayMaps() {
 function startMapPlanning() {
   window.cart = [];
   window.__startedWithMapFlag = true;
-  window.activeTripKey = null; // <-- En kritik satır: yeni map planlamada key sıfırlanır.
+  window.activeTripKey = null;
 
   window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
   window.__hideStartMapButtonByDay[1] = true;
@@ -3265,47 +3265,39 @@ function startMapPlanning() {
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[1] = true;
 
-
-
   window.currentDay = 1;
   window.mapPlanningDay = 1;
   window.mapPlanningActive = true;
 
   updateCart();
-  ensureDayMapContainer(1);
-  initEmptyDayMap(1);
+
+  // --- Leaflet küçük haritayı, expanded haritaları ve bunlara ait panel/scale barları GİZLE ---
   const mini = document.getElementById('route-map-day1');
   if (mini) mini.style.display = 'none';
+  document.querySelectorAll('.expanded-map-container').forEach(el => el.style.display = 'none');
 
-  if (typeof renderTravelModeControlsForAllDays === 'function') {
-    renderTravelModeControlsForAllDays();
+  // --- Sadece Globe Map Aç ---
+  const globeDivId = 'globe-map-day1';
+  let globeDiv = document.getElementById(globeDivId);
+  if (!globeDiv) {
+    globeDiv = document.createElement('div');
+    globeDiv.id = globeDivId;
+    globeDiv.style.width = "100%";
+    globeDiv.style.height = "500px";
+    document.body.appendChild(globeDiv);
+  } else {
+    globeDiv.style.display = "block";
   }
 
-  setTimeout(() => {
-    if (!window.leafletMaps['route-map-day1']) initEmptyDayMap(1);
-    attachMapClickAddMode(1);
-  }, 60);
-
-  attemptExpandDay(1);
-
-  // Globe Map başlatmak istiyorsan burada ekleyebilirsin:
-const globeDivId = 'globe-map-day1';
-let globeDiv = document.getElementById(globeDivId);
-if (!globeDiv) {
-  globeDiv = document.createElement('div');
-  globeDiv.id = globeDivId;
-  globeDiv.style.width = "100%";
-  globeDiv.style.height = "500px";
-  document.body.appendChild(globeDiv);
-}
-
-const globeMap = new maplibregl.Map({
-  container: globeDivId,
-  style: 'https://tiles.openfreemap.org/styles/bright',
-  center: [0, 0],
-  zoom: 1.3,
-  projection: 'globe'
-});
+  // MapLibreGL globe map başlat
+  if (!window._globeMaps) window._globeMaps = {};
+  window._globeMaps[globeDivId] = new maplibregl.Map({
+    container: globeDivId,
+    style: 'https://tiles.openfreemap.org/styles/bright',
+    center: [0, 0],
+    zoom: 1.3,
+    projection: 'globe'
+  });
 }
 function removeDayMap(day) {
   // Eski yanlış çağrılar boşa gitmesin
@@ -3370,6 +3362,7 @@ ensureDayMapContainer(day);
   }
 }
 // Belirli bir gün için başlatıcıda da bayrağı set edin
+// Belirli bir gün için başlatıcıda da bayrağı set edin
 function startMapPlanningForDay(day) {
   day = Number(day) || 1;
 
@@ -3381,6 +3374,7 @@ function startMapPlanningForDay(day) {
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[day] = true;
 
+  // Starter item mantığı aynen kalsın
   if (!window.cart.some(it => it.day === day)) {
     window.cart.push({
       day,
@@ -3412,22 +3406,34 @@ function startMapPlanningForDay(day) {
   window.mapPlanningActive = true;
 
   updateCart();
-  ensureDayMapContainer(day);
-  initEmptyDayMap(day);
-  const mini = document.getElementById(`route-map-day${day}`);
-  if (mini) mini.classList.add('mini-suppressed');
 
-  if (typeof renderTravelModeControlsForAllDays === 'function') {
-    renderTravelModeControlsForAllDays();
+  // --- Küçük ve expanded harita DIV'lerini GİZLE ---
+  const leafletMini = document.getElementById(`route-map-day${day}`);
+  if (leafletMini) leafletMini.style.display = "none";
+  document.querySelectorAll('.expanded-map-container').forEach(el => el.style.display = 'none');
+
+  // --- Sadece Globe Map Aç ---
+  const globeDivId = `globe-map-day${day}`;
+  let globeDiv = document.getElementById(globeDivId);
+  if (!globeDiv) {
+    globeDiv = document.createElement('div');
+    globeDiv.id = globeDivId;
+    globeDiv.style.width = "100%";
+    globeDiv.style.height = "500px";
+    document.body.appendChild(globeDiv);
+  } else {
+    globeDiv.style.display = "block";
   }
 
-  setTimeout(() => {
-    const cid = `route-map-day${day}`;
-    if (!window.leafletMaps[cid]) initEmptyDayMap(day);
-    attachMapClickAddMode(day);
-  }, 60);
-
-  attemptExpandDay(day);
+  // MapLibreGL globe map başlat
+  if (!window._globeMaps) window._globeMaps = {};
+  window._globeMaps[globeDivId] = new maplibregl.Map({
+    container: globeDivId,
+    style: 'https://tiles.openfreemap.org/styles/bright',
+    center: [0, 0],
+    zoom: 1.3,
+    projection: 'globe'
+  });
 }
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
