@@ -4766,6 +4766,9 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
     // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
     L.maplibreGL({
         style: 'https://tiles.openfreemap.org/styles/bright',
+        maplibreOptions: {
+        projection: 'globe'
+    }
     }).addTo(map);
 
     // Marker
