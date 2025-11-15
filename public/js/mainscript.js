@@ -341,7 +341,7 @@ function fitExpandedMapToRoute(day) {
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
-      expObj.expandedMap.setView([0, 0], 2);
+  expObj.expandedMap.setView([42.5, 12.5], 5);
     }
   }
 }
@@ -5829,8 +5829,9 @@ const points = allPoints.filter(
 
 
                                                          const expandedMap = L.map(mapDivId, {
-                                                           center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
-                                                          zoom: 2,         // Veya 3 yaz (önemi yok)
+                                                           center: [42.5, 12.5],
+  zoom: 5,
+  scrollWheelZoom: true,
                                                             scrollWheelZoom: true,
                                                             fadeAnimation: true,
                                                             zoomAnimation: true,
