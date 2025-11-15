@@ -8371,7 +8371,7 @@ document.getElementById(setId)?.remove();
     set.innerHTML = `
       <div class="travel-modes">
         <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.97;">
-          <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
+          <img class="tm-icon" src="/img/way_fly_mode.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
           <span class="tm-label">FLY MODE</span>
         </button>
         <div class="fly-info-msg" style="font-size: 13px;
