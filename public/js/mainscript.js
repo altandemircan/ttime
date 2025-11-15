@@ -246,61 +246,23 @@ function generateStepHtml(step, day, category, idx = 0) {
     `;
 }
 
+// DOM'a ekledikten sonra, kalplere event ekle:
 function attachFavEvents() {
-    // Kalp tıklama (slider için)
     document.querySelectorAll('.fav-heart').forEach(function(el){
-        el.onclick = async function(e){
-            e.stopPropagation();
-            const item = {
-                name: el.getAttribute('data-name'),
-                category: el.getAttribute('data-category'),
-                lat: el.getAttribute('data-lat'),
-                lon: el.getAttribute('data-lon'),
-                image: el.getAttribute('data-image') || ""
-            };
-            await toggleFavTrip(item, el);
-            updateFavoriteBtnText(el);
-        };
-    });
-
-    // Buton tıklama (sidebar için, tamamı)
-    document.querySelectorAll('.add-favorite-btn').forEach(function(btn){
-        btn.onclick = async function(e){
-            e.stopPropagation();
-            const el = btn.querySelector('.fav-heart');
-            if (!el) return;
-            const item = {
-                name: el.getAttribute('data-name'),
-                category: el.getAttribute('data-category'),
-                lat: el.getAttribute('data-lat'),
-                lon: el.getAttribute('data-lon'),
-                image: el.getAttribute('data-image') || ""
-            };
-            await toggleFavTrip(item, el);
-            updateFavoriteBtnText(el);
-        };
-    });
-}
-
-// Buton textini güncelleyen fonksiyon
-function updateFavoriteBtnText(favHeartEl) {
-    const btn = favHeartEl.closest('.add-favorite-btn');
-    if (!btn) return;
+        el.onclick = async function(){
     const item = {
-        name: favHeartEl.getAttribute('data-name'),
-        category: favHeartEl.getAttribute('data-category'),
-        lat: favHeartEl.getAttribute('data-lat'),
-        lon: favHeartEl.getAttribute('data-lon'),
+        name: el.getAttribute('data-name'),
+        category: el.getAttribute('data-category'),
+        lat: el.getAttribute('data-lat'),
+        lon: el.getAttribute('data-lon'),
+        image: el.getAttribute('data-image') || ""
     };
-    const btnText = btn.querySelector('.fav-btn-text');
-    if (btnText) {
-        if (isTripFav(item)) {
-            btnText.textContent = "Delete from My Places";
-        } else {
-            btnText.textContent = "Add to My Places";
-        }
-    }
+    await toggleFavTrip(item, el);
+};
+    });
 }
+
+
 
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
@@ -354,104 +316,86 @@ function fitExpandedMapToRoute(day) {
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-    if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
-      // fallback: marker dizisinden haversine ile hesapla
-      spanKm = getTotalKmFromMarkers(markers);
-    }
-    if (!spanKm || spanKm < 0.01) {
-      track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-      console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
-      return;
-    }
-      if (!track) return;
+if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
+  // fallback: marker dizisinden haversine ile hesapla
+  spanKm = getTotalKmFromMarkers(markers);
+}
+if (!spanKm || spanKm < 0.01) {
+  track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+  console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
+  return;
+}
+  if (!track) return;
 
-      console.log("[DEBUG] createScaleElements called", {
-        widthPx, spanKm, startKmDom, markers
-      });
+  console.log("[DEBUG] createScaleElements called", {
+    widthPx, spanKm, startKmDom, markers
+  });
 
 
 
-      // Temizle
-      track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
+  // Temizle
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-      // Tick + label dizisi
-      const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
-      let stepKm = niceStep(spanKm, targetCount);
-      let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
-      if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
-      if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
+  // Tick + label dizisi
+  const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
+  let stepKm = niceStep(spanKm, targetCount);
+  let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
+  if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
+  if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
 
-    for (let i = 0; i <= majors; i++) {
-      const curKm = Math.min(spanKm, i * stepKm);
-      const leftPct = (curKm / spanKm) * 100;
+for (let i = 0; i <= majors; i++) {
+  const curKm = Math.min(spanKm, i * stepKm);
+  const leftPct = (curKm / spanKm) * 100;
 
-      const tick = document.createElement('div');
-      tick.className = 'scale-bar-tick';
-      tick.style.left = `${leftPct}%`;
-      tick.style.position = 'absolute';
-      tick.style.top = '10px';
-      tick.style.width = '1px';
-      tick.style.height = '16px';
-      tick.style.background = '#cfd8dc';
-      track.appendChild(tick);
+  const tick = document.createElement('div');
+  tick.className = 'scale-bar-tick';
+  tick.style.left = `${leftPct}%`;
+  tick.style.position = 'absolute';
+  tick.style.top = '10px';
+  tick.style.width = '1px';
+  tick.style.height = '16px';
+  tick.style.background = '#cfd8dc';
+  track.appendChild(tick);
 
-      // 0. markerda label ekleme!
-      if (i === 0) continue;
+  // 0. markerda label ekleme!
+  if (i === 0) continue;
 
-      const label = document.createElement('div');
-      label.className = 'scale-bar-label';
-      label.style.left = `${leftPct}%`;
-      label.style.position = 'absolute';
-      label.style.top = '30px';
-      label.style.transform = 'translateX(-50%)';
-      label.style.fontSize = '11px';
-      label.style.color = '#607d8b';
-      label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
-      track.appendChild(label);
-    }
-
-      // Marker badge ekleme: YAY MODU PATCH!
-    // Marker badge ekleme: YAY MODU PATCH!
-    if (Array.isArray(markers)) {
-      markers.forEach((m, idx) => {
-        let dist = typeof m.distance === "number" ? m.distance : 0;
-        // PATCH: out of range/return YOK!
-        // Bar'ın uzunluğunda markerın konumu:
-        const relKm = dist - startKmDom;
-
-        // PATCH: spanKm'nin sıfır olmasına karşı koruma!
-        let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0; // bar uzunluğu hata olmasın
-        left = Math.max(0, Math.min(100, left)); // 0-100 arası tut
-
-        const wrap = document.createElement('div');
-        wrap.className = 'marker-badge';
-let profileY = null;
-if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevations)) {
-    // Marker'ın km koordinatına en yakın sample'ı bul
-    let markerKm = m.distance;
-    let nearest = 0, minDiff = Infinity;
-    for (let i = 0; i < samples.length; i++) {
-        let diff = Math.abs(samples[i].distM / 1000 - markerKm);
-        if (diff < minDiff) { minDiff = diff; nearest = i; }
-    }
-    if (typeof elevations[nearest] === "number") {
-        profileY = Y(elevations[nearest]);
-    }
+  const label = document.createElement('div');
+  label.className = 'scale-bar-label';
+  label.style.left = `${leftPct}%`;
+  label.style.position = 'absolute';
+  label.style.top = '30px';
+  label.style.transform = 'translateX(-50%)';
+  label.style.fontSize = '11px';
+  label.style.color = '#607d8b';
+  label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+  track.appendChild(label);
 }
 
-// Sonra marker style'da:
-if (profileY !== null) {
-    wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
+  // Marker badge ekleme: YAY MODU PATCH!
+// Marker badge ekleme: YAY MODU PATCH!
+if (Array.isArray(markers)) {
+  markers.forEach((m, idx) => {
+    let dist = typeof m.distance === "number" ? m.distance : 0;
+    // PATCH: out of range/return YOK!
+    // Bar'ın uzunluğunda markerın konumu:
+    const relKm = dist - startKmDom;
+
+    // PATCH: spanKm'nin sıfır olmasına karşı koruma!
+    let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0; // bar uzunluğu hata olmasın
+    left = Math.max(0, Math.min(100, left)); // 0-100 arası tut
+
+    const wrap = document.createElement('div');
+    wrap.className = 'marker-badge';
+wrap.style.cssText = `position:absolute;left:${left}%;bottom:-4px;width:14px;height:14px;transform:translateX(-50%);`;
+    wrap.title = m.name || '';
+    wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+    track.appendChild(wrap);
+    console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');    
+  });
 } else {
-    // Eski hali, fallback:
-    wrap.style.cssText = `position:absolute;left:${left}%;bottom:-4px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
-}        wrap.title = m.name || '';
-        wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-        track.appendChild(wrap);
-      });
-    } else {
-      console.warn("[DEBUG] markers is not array", markers);
-    }
+  console.warn("[DEBUG] markers is not array", markers);
+}
 }
 
         // Aktif harita planlama modu için
@@ -2190,33 +2134,7 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
-// En başa!
-if (location && typeof location.lat === "number" && typeof location.lng === "number") {
-  let forceDay = options && options.forceDay;
-  let resolvedDay = Number(
-    forceDay != null ? forceDay :
-    (day != null ? day :
-      (window.currentDay != null ? window.currentDay :
-        (window.cart.length ? window.cart[window.cart.length - 1].day : 1)))
-  );
-  if (!Number.isFinite(resolvedDay) || resolvedDay <= 0) resolvedDay = 1;
 
-  // Şu anki günün tüm noktalarını + yeni noktayı diz
-  const routeItems = window.cart
-    .filter(i => Number(i.day) === resolvedDay && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
-    .map(i => i.location);
-  routeItems.push({ lat: Number(location.lat), lng: Number(location.lng) });
-
-  let totalKm = 0;
-  for (let i = 1; i < routeItems.length; i++) {
-    totalKm += haversine(routeItems[i - 1].lat, routeItems[i - 1].lng, routeItems[i].lat, routeItems[i].lng) / 1000;
-  }
-  if (totalKm > 500) {
-    if (window.showToast) window.showToast('Max route length for this day is 500 km.', 'error');
-    else alert('Max route length for this day is 500 km.');
-    return false;
-  }
-}
 
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
@@ -2266,10 +2184,6 @@ if (location && typeof location.lat === "number" && typeof location.lng === "num
 
   // 7) Duplicate kontrolü
   const isDuplicate = window.cart.some(item => {
-
-
-
-
     if (item.day !== resolvedDay) return false;
     if (!item.name || !safeName) return false;
     if (item.category !== safeCategory) return false;
@@ -2343,25 +2257,6 @@ if (location && typeof location.lat === "number" && typeof location.lng === "num
   }
   return true;
 }
-
-function checkDayRouteLimit(day) {
-  const containerId = `route-map-day${day}`;
-  if (
-    typeof window.lastRouteSummaries === "object" &&
-    window.lastRouteSummaries[containerId] &&
-    typeof window.lastRouteSummaries[containerId].distance === "number"
-  ) {
-    const totalKm = window.lastRouteSummaries[containerId].distance / 1000;
-    if (totalKm > 500) {
-      if (window.showToast) window.showToast('Max route length for this day is 500 km.', 'error');
-      else alert('Max route length for this day is 500 km.');
-      return false;
-    }
-  }
-  return true;
-}
-
-
 function __dayIsEmpty(day){
   day = Number(day);
   if (!day) return false;
@@ -3850,23 +3745,6 @@ else {
                                 ` : ''
                             }
                         </div>
-
-                 <button class="add-favorite-btn"
-                    data-name="${item.name}"
-                    data-category="${item.category}"
-                    data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                    data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                  <span class="fav-heart"
-                      data-name="${item.name}"
-                      data-category="${item.category}"
-                      data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                      data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                      <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
-                  </span>
-                  <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
-                </button>
-
-
                         <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                             Remove place
                         </button>
@@ -4256,7 +4134,6 @@ cartDiv.appendChild(addNewDayButton);
       if (expandedMap) updateExpandedMap(expandedMap, day);
     });
   }
-   attachFavEvents(); // sidebar item'ları oluşunca buraya ekle!
 
 } 
 
@@ -8482,12 +8359,23 @@ function wrapRouteControls(day) {
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
-
- 
+  expandBtn.style.background = '#ffffff';
+  expandBtn.onmouseover = function() { expandBtn.style.background = "#fafafa"; };
+  expandBtn.onmouseout = function() { expandBtn.style.background = "#ffffff"; };
+  expandBtn.style.border = '1px solid rgb(43 129 213)';
+  expandBtn.style.borderRadius = '10px';
+  expandBtn.style.display = 'flex';
+  expandBtn.style.flexDirection = 'row';
+  expandBtn.style.alignItems = 'center';
+  expandBtn.style.gap = '4px';
+  expandBtn.style.padding = '4px 6px';
+  expandBtn.style.fontWeight = 'bold';
+  expandBtn.style.color = '#ffffff';
+  expandBtn.style.cursor = 'pointer';
 
   expandBtn.innerHTML = `
-    <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async">
-    <span class="tm-label" style="color: #ffffff">Expand map</span>
+    <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy" decoding="async">
+    <span class="tm-label" style="color: #297fd4">Expand map</span>
   `;
   expandBtn.onclick = function(e) {
     e.stopPropagation();
