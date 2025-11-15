@@ -5222,7 +5222,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         for (let i = 0; i < points.length - 1; i++) {
             const start = [points[i].lng, points[i].lat];
             const end = [points[i + 1].lng, points[i + 1].lat];
-            const curve = getCurvedArcCoords(start, end, 0.33, 32);
+            const curveDirection = 0.33; // veya büyük haritadaki ile eşleşen değer
+            const curve = getCurvedArcCoords(start, end, curveDirection, 32);
             arcPoints = arcPoints.concat(curve);
 
             drawCurvedLine(map, points[i], points[i + 1], {
