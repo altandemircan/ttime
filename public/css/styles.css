@@ -6573,7 +6573,7 @@ border-bottom:1px solid #ddd;
     .tt-elev-cursor { position:absolute; top:48px; bottom:16px; width:2px; background:#263238; opacity:.25; pointer-events:none; }
    .tt-elev-tooltip {
   position: absolute;
-  top: 0; /* veya scale-bar'ın üstünde olsun istediğin yere göre */
+  top: 40px; /* veya scale-bar'ın üstünde olsun istediğin yere göre */
   left: 0;
   background: rgba(255,255,255,0.95);
   color: #222;
@@ -7275,3 +7275,4 @@ scrollbar-width: thin;
     height: 100% !important;
 }
 
+    
