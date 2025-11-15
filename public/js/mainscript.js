@@ -4435,9 +4435,10 @@ function updateExpandedMap(expandedMap, day) {
       geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
     );
 
+    let routeCoords = [];
     if (hasValidRoute) {
         // OSRM ROTASI - tüm noktaları kaydet
-        const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
             color: "#1976d2",
             weight: 6,
@@ -4446,7 +4447,7 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
         
         // Tüm route noktalarını kaydet
-        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
         
     } else if (pts.length > 1) {
@@ -4468,26 +4469,22 @@ function updateExpandedMap(expandedMap, day) {
                 dashArray: "6,8"
             }).addTo(expandedMap);
             
-            // Yay noktalarını birleştirerek kaydet (ilk segmentte başlangıç noktasını ekle)
             if (i === 0) {
-                allArcPoints.push([start[0], start[1]]); // İlk nokta
+                allArcPoints.push([start[0], start[1]]);
             }
-            allArcPoints = allArcPoints.concat(arcPoints.slice(1)); // Kalan noktalar
+            allArcPoints = allArcPoints.concat(arcPoints.slice(1));
         }
-        
-        // Son noktayı ekle
         if (pts.length > 0) {
             const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
             allArcPoints.push(lastPoint);
         }
-        
         window._curvedArcPointsByDay[day] = allArcPoints;
         console.log("[DEBUG] Arc points saved:", allArcPoints.length);
         console.log("[DEBUG] First point:", allArcPoints[0]);
         console.log("[DEBUG] Last point:", allArcPoints[allArcPoints.length - 1]);
     }
 
-    // Marker ekleme kısmı aynı:
+    // PATCH: Marker ve connector ekleme kısmı
     pts.forEach((item, idx) => {
         const markerHtml = `
             <div style="background:#d32f2f;color:#fff;border-radius:50%;
@@ -4503,6 +4500,26 @@ function updateExpandedMap(expandedMap, day) {
         });
         L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
             .bindPopup(`<b>${item.name || "Point"}</b>`);
+        
+        // --- KESİK YEŞİL CONNECTOR PATCH ---
+        if (hasValidRoute && routeCoords.length > 1) {
+            let minDist = Infinity, nearest = null;
+            for (let i = 0; i < routeCoords.length; i++) {
+                const [lat, lng] = routeCoords[i];
+                const dist = haversine(lat, lng, item.lat, item.lng);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = { lat, lng };
+                }
+            }
+            // connector threshold: 120m'den uzaksa çiz
+            if (minDist > 120) {
+                L.polyline(
+                    [[item.lat, item.lng], [nearest.lat, nearest.lng]],
+                    { color: "#22bb33", weight: 4, opacity: 0.93, dashArray: "8,8", interactive: false }
+                ).addTo(expandedMap);
+            }
+        }
     });
 
     if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
@@ -4578,7 +4595,6 @@ function updateExpandedMap(expandedMap, day) {
         }
     }
 
-    // SCALE BAR INTERACTION'ı BAŞLAT - BURASI ÖNEMLİ!
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
         console.log("[DEBUG] Scale bar interaction initialized for day", day);
