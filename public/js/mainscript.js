@@ -5900,8 +5900,22 @@ try {
   if (ctrlOut) ctrlOut.setAttribute('aria-disabled', 'false'), ctrlOut.classList.remove('leaflet-disabled');
 } catch(e){}
 
+const expandedMap = L.map(mapDivId, {
+  center: [0, 0], // veya uygun bir center
+  zoom: 3, // veya uygun bir zoom
+  scrollWheelZoom: true,
+  fadeAnimation: true,
+  zoomAnimation: true,
+  zoomAnimationThreshold: 8,
+  zoomSnap: 0.25,
+  zoomDelta: 0.25,
+  wheelDebounceTime: 35,
+  wheelPxPerZoomLevel: 120,
+  inertia: true,
+  easeLinearity: 0.2
+});
   // Layer ilk eklenirken default style
-setExpandedMapTile(currentLayer);
+setExpandedMapTile(expandedMap, currentLayer);
 
  // SARI IMAGE UYARILARINI ENGELLE!
 expandedMap.on('styleimagemissing', function(e) {
@@ -5930,7 +5944,7 @@ expandedMap.on('styleimagemissing', function(e) {
   }
 
   // Layer değişim fonksiyonu
-function setExpandedMapTile(styleKey) {
+function setExpandedMapTile(expandedMap, styleKey) {
     const validStyles = ['bright', 'dark', 'positron'];
     const styleToUse = validStyles.includes(styleKey) ? styleKey : 'bright';
     const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
@@ -5944,7 +5958,7 @@ function setExpandedMapTile(styleKey) {
     // Yeni layer'ı ekle (yalnızca buradan!)
     expandedMap._maplibreLayer = L.maplibreGL({ style: url }).addTo(expandedMap);
 }
-  setExpandedMapTile(currentLayer);
+  setExpandedMapTile(expandedMap, currentLayer);
 
   // Expanded harita ilk açılış için flag
   window.__expandedMapCentered = window.__expandedMapCentered || {};
