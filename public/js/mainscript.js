@@ -343,34 +343,31 @@ if (!spanKm || spanKm < 0.01) {
   if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
   if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
 
-for (let i = 0; i <= majors; i++) {
-  const curKm = Math.min(spanKm, i * stepKm);
-  const leftPct = (curKm / spanKm) * 100;
+  for (let i = 0; i <= majors; i++) {
+    const curKm = Math.min(spanKm, i * stepKm);
+    const leftPct = (curKm / spanKm) * 100;
 
-  const tick = document.createElement('div');
-  tick.className = 'scale-bar-tick';
-  tick.style.left = `${leftPct}%`;
-  tick.style.position = 'absolute';
-  tick.style.top = '10px';
-  tick.style.width = '1px';
-  tick.style.height = '16px';
-  tick.style.background = '#cfd8dc';
-  track.appendChild(tick);
+    const tick = document.createElement('div');
+    tick.className = 'scale-bar-tick';
+    tick.style.left = `${leftPct}%`;
+    tick.style.position = 'absolute';
+    tick.style.top = '10px';
+    tick.style.width = '1px';
+    tick.style.height = '16px';
+    tick.style.background = '#cfd8dc';
+    track.appendChild(tick);
 
-  // 0. markerda label ekleme!
-  if (i === 0) continue;
-
-  const label = document.createElement('div');
-  label.className = 'scale-bar-label';
-  label.style.left = `${leftPct}%`;
-  label.style.position = 'absolute';
-  label.style.top = '30px';
-  label.style.transform = 'translateX(-50%)';
-  label.style.fontSize = '11px';
-  label.style.color = '#607d8b';
-  label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
-  track.appendChild(label);
-}
+    const label = document.createElement('div');
+    label.className = 'scale-bar-label';
+    label.style.left = `${leftPct}%`;
+    label.style.position = 'absolute';
+    label.style.top = '30px';
+    label.style.transform = 'translateX(-50%)';
+    label.style.fontSize = '11px';
+    label.style.color = '#607d8b';
+    label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+    track.appendChild(label);
+  }
 
   // Marker badge ekleme: YAY MODU PATCH!
 // Marker badge ekleme: YAY MODU PATCH!
@@ -387,15 +384,68 @@ if (Array.isArray(markers)) {
 
     const wrap = document.createElement('div');
     wrap.className = 'marker-badge';
-wrap.style.cssText = `position:absolute;left:${left}%;bottom:-4px;width:14px;height:14px;transform:translateX(-50%);`;
+    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
     wrap.title = m.name || '';
-    wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+    wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
     track.appendChild(wrap);
     console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');    
   });
 } else {
   console.warn("[DEBUG] markers is not array", markers);
 }
+
+  // (Geri kalan elevation/labels kodu – aynen kalabilir)
+  let gridLabels = [];
+
+  const svg = track.querySelector('svg.tt-elev-svg');
+  if (svg) {
+    gridLabels = Array.from(svg.querySelectorAll('text'))
+      .map(t => ({
+        value: t.textContent.trim(),
+        y: Number(t.getAttribute('y'))
+      }))
+      .filter(obj => /-?\d+\s*m$/.test(obj.value));
+  }
+
+  gridLabels.sort((a, b) => b.y - a.y);
+
+  const elevationLabels = document.createElement('div');
+  elevationLabels.className = 'elevation-labels-container';
+  elevationLabels.style.cssText = `
+    position: absolute;
+    left: -50px;
+    top: 0;
+    bottom: 0;
+    width: 45px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+  `;
+  elevationLabels.style.display = 'block'; 
+
+  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+
+  gridLabels.forEach(obj => {
+    const label = document.createElement('div');
+    label.className = 'elevation-label';
+    label.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: ${obj.y}px;
+      text-align: right;
+      padding-right: 5px;
+      border-right: 1px solid #cfd8dc;
+      font-size: 10px;
+      color: #607d8b;
+      background: none;
+      line-height: 1;
+    `;
+    label.textContent = obj.value;
+    elevationLabels.appendChild(label);
+  });
+
+  track.style.position = 'relative';
+  track.appendChild(elevationLabels);
 }
 
         // Aktif harita planlama modu için
@@ -3844,7 +3894,7 @@ if (anyDayHasRealItem && !hideAddCat) {
   addMoreButton.textContent = "+ Add Category";
   addMoreButton.dataset.day = day;
   addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-  dayList.appendChild(addMoreButton);
+dayContainer.appendChild(addMoreButton);
 }
 
 
@@ -4535,7 +4585,23 @@ function updateExpandedMap(expandedMap, day) {
     adjustExpandedHeader(day);
 }
 
-
+// Yardımcı fonksiyon - Yay koordinatlarını al
+function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
+    // start & end: [lng, lat] formatında
+    const sx = start[0], sy = start[1];
+    const ex = end[0], ey = end[1];
+    
+    const mx = (sx + ex) / 2 + strength * (ey - sy);
+    const my = (sy + ey) / 2 - strength * (ex - sx);
+    
+    const coords = [];
+    for (let t = 0; t <= 1; t += 1/segments) {
+        const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+        const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+        coords.push([x, y]);
+    }
+    return coords;
+}
 /* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
 function clearRouteCachesForDay(day){
   if(!day) return;
@@ -5128,20 +5194,19 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     if (isFlyMode && points.length > 1) {
         window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
         let arcPoints = [];
-                    for (let i = 0; i < points.length - 1; i++) {
-                        const start = [points[i].lng, points[i].lat];
-                        const end = [points[i + 1].lng, points[i + 1].lat];
-                        const curve = getCurvedArcCoords(start, end, 0.33, 22); // Segments büyük harita ile aynı!
+        for (let i = 0; i < points.length - 1; i++) {
+            const start = [points[i].lng, points[i].lat];
+            const end = [points[i + 1].lng, points[i + 1].lat];
+            const curve = getCurvedArcCoords(start, end, 0.33, 32);
+            arcPoints = arcPoints.concat(curve);
 
-                        L.polyline(curve.map(pt => [pt[1], pt[0]]), {
-                            color: "#1976d2",
-                            weight: 6,
-                            opacity: 0.93,
-                            dashArray: "6,8"
-                        }).addTo(map);
-
-                        arcPoints = arcPoints.concat(curve);
-                    }
+            drawCurvedLine(map, points[i], points[i + 1], {
+                color: "#1976d2",
+                weight: 5,
+                opacity: 0.85,
+                dashArray: "6,8"
+            });
+        }
         window._curvedArcPointsByDay[day] = arcPoints;
     } else if (hasValidGeo && routeCoords.length > 1) {
         L.polyline(routeCoords, {
@@ -5324,6 +5389,33 @@ function onMove(e) {
     scaleBar.addEventListener("mouseleave", onLeave);
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
+}
+// Leaflet'te kullandığınız yay algoritmasıyla TAMAMEN AYNI olan fonksiyon:
+function getCurvedArcCoords(start, end, strength = 0.5, segments = 30) {
+    // start & end: [lng, lat] formatında olmalı
+    const sx = start[0], sy = start[1];
+    const ex = end[0], ey = end[1];
+    
+    // Orta nokta ve kontrol noktası
+    const midX = (sx + ex) / 2;
+    const midY = (sy + ey) / 2;
+    
+    // Kontrol noktası - yönü değiştirmek için işaretleri ayarlayın
+    const controlX = midX + strength * (ey - sy);
+    const controlY = midY - strength * (ex - sx);
+    
+    const coords = [];
+    for (let t = 0; t <= 1; t += 1/segments) {
+        // Quadratic Bezier formülü
+        const x = Math.pow(1 - t, 2) * sx + 2 * (1 - t) * t * controlX + Math.pow(t, 2) * ex;
+        const y = Math.pow(1 - t, 2) * sy + 2 * (1 - t) * t * controlY + Math.pow(t, 2) * ey;
+        coords.push([x, y]);
+    }
+    
+    // Son noktayı ekle
+    coords.push([ex, ey]);
+    
+    return coords;
 }
 
 
@@ -9071,6 +9163,12 @@ track.addEventListener('touchstart', function(e) {
 
 
 
+  // Görünüm
+  const MARKER_PAD_PX = 10;
+  track.style.position = 'relative';
+  track.style.paddingLeft = `${MARKER_PAD_PX}px`;
+  track.style.paddingRight = `${MARKER_PAD_PX}px`;
+  track.style.overflow = 'visible';
 
 let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
 if (isNaN(width)) width = 400;
@@ -9199,65 +9297,45 @@ container._elevKmSpan = totalKm;
     else { vizMin = min - 1; vizMax = max + 1; }
 
     const X = kmRel => (kmRel / spanKm) * width;
-                const TOP_PAD = 12;
-                const BOTTOM_PAD = 16;
-                const Y = e => {
-                  if (isNaN(e) || vizMax === vizMin) return SVG_H / 2;
-                  // scaleHeight = toplam alan
-                  const scaleHeight = SVG_H - TOP_PAD - BOTTOM_PAD;
-                  return (SVG_H - BOTTOM_PAD) - ((e - vizMin) / (vizMax - vizMin)) * scaleHeight;
-                };
+    const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
+
     while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
     // Grid
     const levels = 4;
-for (let i = 0; i <= levels; i++) {
-  const ev = vizMin + (i / levels) * (vizMax - vizMin);
-  const y = Y(ev);
+    for (let i = 0; i <= levels; i++) {
+      const ev = vizMin + (i / levels) * (vizMax - vizMin);
+      const y = Y(ev);
+      if (isNaN(y)) continue;
+      const ln = document.createElementNS(svgNS, 'line');
+      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+      gridG.appendChild(ln);
 
-  // LABEL:
-  const tx = document.createElementNS(svgNS, 'text');
-  tx.setAttribute('x', '6'); // Sol kenar, label
-  tx.setAttribute('y', String(y - 4));
-  tx.setAttribute('fill', '#90a4ae');
-  tx.setAttribute('font-size', '11');
-  tx.textContent = `${Math.round(ev)} m`;
-  gridG.appendChild(tx);
-
-  // YATAY GRID LİNE
-  const hLine = document.createElementNS(svgNS, 'line');
-  hLine.setAttribute('x1', '42'); // Label'ın sağından başlasın!
-  hLine.setAttribute('x2', String(width)); // Tüm grid'in sonuna kadar
-  hLine.setAttribute('y1', String(y));
-  hLine.setAttribute('y2', String(y));
-  hLine.setAttribute('stroke', '#cfd8dc');
-  hLine.setAttribute('stroke-dasharray', '5 7');
-  hLine.setAttribute('opacity', '.8');
-  gridG.appendChild(hLine);
-}
+      const tx = document.createElementNS(svgNS, 'text');
+      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+      tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
+    }
 
     // Alan
     let topD = '';
     const n = Math.min(smooth.length, s.length);
-    
-
-    const GRID_LABEL_PAD_X = 42; // grid ve gri dolgu başlama noktası
-
-for (let i = 0; i < n; i++) {
-  const kmAbs = s[i].distM / 1000;
-  const x = Math.max(GRID_LABEL_PAD_X, Math.min(width, X(kmAbs - startKmDom)));
-  const y = Y(smooth[i]);
-  if (isNaN(x) || isNaN(y)) continue;
-  topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-}
-
-
+    for (let i = 0; i < n; i++) {
+      const kmAbs = s[i].distM / 1000;
+      const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
+      const y = Y(smooth[i]);
+      if (isNaN(x) || isNaN(y)) continue;
+      topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+    }
     if (topD) {
-  const lastSampleX = X(s[s.length-1].distM / 1000 - startKmDom); // Son noktanın X'i
-  const areaD = `${topD} L ${lastSampleX} ${SVG_H} L ${GRID_LABEL_PAD_X} ${SVG_H} Z`;  areaPath.setAttribute('d', areaD);
-  areaPath.setAttribute('fill', '#263445');
-}
+      const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
+      areaPath.setAttribute('d', areaD);
+      areaPath.setAttribute('fill', '#263445');
+    }
 
     // Eğim renkli çizgiler
     for (let i = 1; i < n; i++) {
@@ -9333,15 +9411,7 @@ track.__onMove = function(e) {
   }
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  const tooltipWidth = tooltip.getBoundingClientRect().width || 120;
-const barWidth = rect.width;
-if (x > barWidth / 2) {
-  // Ortadan sonra: tooltip’i çizginin SOLUNDA göster
-  tooltip.style.left = `${x - tooltipWidth - 12}px`;
-} else {
-  // Ortadan önce: tooltip’i çizginin SAĞINDA göster
-  tooltip.style.left = `${x + 12}px`;
-}
+  tooltip.style.left = `${x}px`;
   verticalLine.style.left = `${x}px`;
   verticalLine.style.display = 'block';
 };
@@ -9821,7 +9891,7 @@ document.addEventListener('mousedown', (e) => {
     if (!window.FEEDBACK_API_ENABLED) {
       const body = encodeURIComponent(
         `Tür: ${type}\nEmail: ${userEmail || '-'}\n\nMesaj:\n${message}`
-      );drawCurvedLine
+      );
       // Kullanıcıyı mail client'a yönlendir
       window.location.href = `mailto:altandemircan@gmail.com?subject=${encodeURIComponent('Yeni Feedback')}&&body=${body}`;
       showStatus('Mail istemcisi açılıyor (dosya ekleri desteklenmez).', 'success');
@@ -10040,21 +10110,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     const ev = vizMin + (i / 4) * (vizMax - vizMin);
     const y = Y(ev);
     const ln = document.createElementNS(svgNS, 'line');
-    
-
-
-    // YENİ: YATAY kısa çizgi, label'ın yanında
-ln.setAttribute('x1', '20');             // label'ın hemen sağında başlasın
-ln.setAttribute('x2', '50');             // kısa yatay çizgi, 30px uzunluk mesela
-ln.setAttribute('y1', String(y));        // y motunda
-ln.setAttribute('y2', String(y));
-ln.setAttribute('stroke', '#cfd8dc');
-ln.setAttribute('stroke-dasharray', '5 7');
-ln.setAttribute('opacity', '.8');
-gridG.appendChild(ln)
-
-
-
+    ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(widthNow));
+    ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+    ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+    gridG.appendChild(ln);
 
     const tx = document.createElementNS(svgNS, 'text');
     tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
