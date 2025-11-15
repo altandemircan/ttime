@@ -3066,8 +3066,6 @@ function saveDayName(day, newName) {
                 }
             }
 
-const INITIAL_EMPTY_MAP_CENTER = [0, 0];
-const INITIAL_EMPTY_MAP_ZOOM   = 2;
 
 
 /* ---------- Helpers: Ensure Map Container ---------- */
