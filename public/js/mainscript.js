@@ -5789,9 +5789,56 @@ expandedContainer.appendChild(panelDiv);
   const mapDiv = document.createElement('div');
   mapDiv.id = mapDivId;
   mapDiv.className = 'expanded-map';
-  expandedContainer.appendChild(mapDiv);
-   document.body.appendChild(expandedContainer);
- // SON PATCH: DENE BUNU HARİTANIN ALTINA YAPISTIR!
+  
+expandedContainer.appendChild(mapDiv);
+document.body.appendChild(expandedContainer);
+
+// 1) Container görünür olduktan sonra başlat
+setTimeout(() => {
+  // 2) width/height pozitif mi kontrol
+  const mapDivElem = document.getElementById(mapDivId);
+  const ok = mapDivElem && mapDivElem.offsetWidth > 0 && mapDivElem.offsetHeight > 0;
+  if (!ok) {
+    // tekrar dene!
+    setTimeout(arguments.callee, 50);
+    return;
+  }
+  // 3) Haritayı şimdi başlat!
+  const expandedMap = L.map(mapDivId, { 
+    center: [41.9, 12.5],      
+    zoom: 6,
+    scrollWheelZoom: true,
+    fadeAnimation: true,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 8,
+    zoomSnap: 0.25,
+    zoomDelta: 0.25,
+    wheelDebounceTime: 35,
+    wheelPxPerZoomLevel: 120,
+    inertia: true,
+    easeLinearity: 0.2
+  });
+  expandedMap._maplibreLayer = L.maplibreGL({ 
+    style: 'https://tiles.openfreemap.org/styles/bright'
+  }).addTo(expandedMap);
+
+  updateExpandedMap(expandedMap, day);
+
+  // PATCH: scale bar ve map invalidate
+  setTimeout(() => {
+    expandedMap.invalidateSize();
+    window.dispatchEvent(new Event('resize'));
+    // scale bar div için refresh, varsa
+    const scaleBarDivLocal = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (scaleBarDivLocal && typeof scaleBarDivLocal.refresh === "function") scaleBarDivLocal.refresh();
+  }, 100);
+  
+  // ... diğer mevcut kodun devamı (marker, stats, layer, vs...)
+}, 100); // 100-200 ms genellikle yeterli oluyor
+
+
+
+
 window.dispatchEvent(new Event('resize'));
 
 // KESİN PATCH
@@ -5823,27 +5870,7 @@ const points = allPoints.filter(
 
 
 
-                                                         // — YENİ PATCH edilen hali —
-                                                        const expandedMap = L.map(mapDivId, {
-                                                          center: [41.9, 12.5],      // ROMA - Avrupa için ideal merkez
-                                                          zoom: 6,
-                                                          scrollWheelZoom: true,
-                                                          fadeAnimation: true,
-                                                          zoomAnimation: true,
-                                                          zoomAnimationThreshold: 8,
-                                                          zoomSnap: 0.25,
-                                                          zoomDelta: 0.25,
-                                                          wheelDebounceTime: 35,
-                                                          wheelPxPerZoomLevel: 120,
-                                                          inertia: true,
-                                                          easeLinearity: 0.2
-                                                        });
-                                                        expandedMap._maplibreLayer = L.maplibreGL({ 
-                                                          style: 'https://tiles.openfreemap.org/styles/bright' // veya ilk açılışta istediğin layer
-                                                        }).addTo(expandedMap);
-                                                        updateExpandedMap(expandedMap, day);
-
-
+                                                 
 try {
   expandedMap.dragging.enable?.();
   expandedMap.scrollWheelZoom.enable?.();
