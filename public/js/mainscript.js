@@ -5206,11 +5206,10 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-    // --- PATCH: flymode dışında markerlar arası kesik mavi çizgi yok ---
+    // --- PATCH: Kesik mavi yay sadece Flymode'da ---
     const isFlyMode = !areAllPointsInTurkey(points);
 
     if (isFlyMode && points.length > 1) {
-        // Flyers modunda kavisli yay noktalarını birleştir + haritada göster
         window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
         let arcPoints = [];
         for (let i = 0; i < points.length - 1; i++) {
@@ -5219,7 +5218,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             const curve = getCurvedArcCoords(start, end, 0.33, 32);
             arcPoints = arcPoints.concat(curve);
 
-            // Haritada da kavisli çizgi (kesik mavi) göster
             drawCurvedLine(map, points[i], points[i + 1], {
                 color: "#1976d2",
                 weight: 5,
@@ -5228,8 +5226,10 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             });
         }
         window._curvedArcPointsByDay[day] = arcPoints;
-    } else if (hasValidGeo && routeCoords.length > 1) {
-        // Türkiye'de ise sadece gerçek route polyline ekle!
+    }
+
+    // Türkiye'de route varsa sadece gerçek route polyline.
+    if (!isFlyMode && hasValidGeo && routeCoords.length > 1) {
         L.polyline(routeCoords, {
             color: '#1976d2',
             weight: 8,
@@ -5238,12 +5238,10 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             dashArray: null
         }).addTo(map);
     }
-    // --- PATCH SONU ---
 
-    // Eksik pointler (connector/uyarı arc çizgileri): sadece real route varsa
-    if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
+    // Eksik pointler (connector/uyarı arc çizgileri): SADECE FlyMode'da
+    if (Array.isArray(missingPoints) && missingPoints.length > 1 && isFlyMode) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
-            // buralar (arc connector) kullanılıyorsa bırakılabilir, ama Türkiye'de markerlar arası mavi kesik çizer kod olmamalı!
             drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
                 color: "#1976d2",
                 weight: 4,
