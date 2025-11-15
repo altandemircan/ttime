@@ -3393,7 +3393,10 @@ function startMapPlanningForDay(day) {
 
   updateCart();
   ensureDayMapContainer(day);
-  initEmptyDayMap(day);
+
+  // PATCH: Haritayı Italyanın merkezinde ve Avrupa zoomunda aç
+  initEmptyDayMap(day, { center: [42.5, 12.5], zoom: 5 }); // <--- BURAYA PARAMETREYİ EKLE
+
   const mini = document.getElementById(`route-map-day${day}`);
   if (mini) mini.classList.add('mini-suppressed');
 
@@ -3403,7 +3406,10 @@ function startMapPlanningForDay(day) {
 
   setTimeout(() => {
     const cid = `route-map-day${day}`;
-    if (!window.leafletMaps[cid]) initEmptyDayMap(day);
+    if (!window.leafletMaps[cid]) {
+      // YİNE ITALYA PARAMETRESİ İLE AÇILSIN!
+      initEmptyDayMap(day, { center: [42.5, 12.5], zoom: 5 });
+    }
     attachMapClickAddMode(day);
   }, 60);
 
