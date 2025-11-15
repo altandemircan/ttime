@@ -3499,22 +3499,18 @@ async function updateCart() {
   // ÖNCE route'ları HAZIRLA!
 for (const d of days) {
   const containerId = `route-map-day${d}`;
- // PATCH: window.leafletMaps hem var mı hem object mi?
-    if (!window.leafletMaps || typeof window.leafletMaps !== 'object') window.leafletMaps = {};
-
-    if (!window.leafletMaps[containerId]) {
-      ensureDayMapContainer(d);
-      initEmptyDayMap(d);
-    }
-
-    await renderRouteForDay(d);
-
-    // PATCH: window.pairwiseRouteSummaries varsa güvenli eriş
-    if (window.pairwiseRouteSummaries && window.pairwiseRouteSummaries[`route-map-day${d}`]) {
-      console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
-    }
+  if (!window.leafletMaps || typeof window.leafletMaps !== 'object') window.leafletMaps = {};
+  if (!window.leafletMaps[containerId]) {
+    ensureDayMapContainer(d);
+    initEmptyDayMap(d);
   }
-  // PATCH SONU
+  await renderRouteForDay(d);
+
+  // PATCH: window.pairwiseRouteSummaries varsa güvenli şekilde eriş!
+  if (window.pairwiseRouteSummaries && window.pairwiseRouteSummaries[`route-map-day${d}`]) {
+    console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+  }
+}
 
 
   console.log("updateCart başlatıldı");
@@ -8972,18 +8968,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
-
- // === PATCH: Loader ve scale bar açılış için marker ≥2 şartı ===
-  const showElevationLoader = Array.isArray(markers) && markers.length >= 2;
-
-    if (!showElevationLoader) {
-    // loader varsa gizle/sil
-    const loader = container && container.querySelector('.tt-scale-loader');
-    if (loader) loader.style.display = 'none';
-  }
-
-
-
  if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
     totalKm = getTotalKmFromMarkers(markers);
     container.dataset.totalKm = String(totalKm);
@@ -9001,75 +8985,46 @@ if (!container || isNaN(totalKm)) {
   }
 
 
-    // Day ve route geojson
+  // Day ve route geojson
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
- 
-if (
-  !coords ||
-  !Array.isArray(coords) ||
-  coords.length < 2 ||
-  !markers || !Array.isArray(markers) || markers.length < 2
-) {
-  container.innerHTML = `<div class="scale-bar-track">
-    <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-      No route points found.<br>Select at least 2 points to start mapping.
-    </div>
-    <div class="tt-scale-loader" style="display: none;">
-      <div class="spinner"></div>
-      <div class="txt">Loading elevation…</div>
-    </div>
-  </div>`;
-  container.style.display = 'block';
 
-  // PATCH: loader varsa mutlaka gizle!
-  document.querySelectorAll('.tt-scale-loader').forEach(el => el.style.display = 'none !important');
-  // PATCH: özel CSS ayarları!
-  document.querySelectorAll('.expanded-map-panel').forEach(el => {
-    el.style.padding = '0 10px';
-    el.style.width = 'calc(100% - 455px)';
-    el.style.boxShadow = 'none';
-  });
-  document.querySelectorAll('.route-scale-bar').forEach(el => {
-    el.style.height = 'fit-content';
-    el.style.padding = '0';
-  });
-  document.querySelectorAll('.expanded-map-header').forEach(el => {
-    el.style.top = '150px';
-    el.style.bottom = 'unset';
-  });
-  document.querySelectorAll('.scale-bar-track').forEach(el => {
-    el.style.minHeight = 'fit-content';
-  });
-  document.querySelectorAll('.expanded-map').forEach(el => {
-    el.style.height = 'calc(100% - 80px)';
-    el.style.bottom = '80px';
-    el.style.background = '#fff';
-  });
+  if (
+      !coords ||
+      !Array.isArray(coords) ||
+      coords.length < 2 ||
+      !markers || !Array.isArray(markers) || markers.length < 1
+    ) {
+      // Sıfırdan veya tek marker ile scale bar sadece badge ve mesajla render edilir!
+      container.innerHTML = `<div class="scale-bar-track">
+        <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+          No route points found.<br>Select at least 2 points to start mapping.
+        </div></div>`;
+      container.style.display = 'block';
+      return;
+    }
 
-  return;
+  // Eğer burada geojson'dan coords yok veya kısaysa (ROMA gibi marker+yayda) OLSUN, yine de scale bar çiz!
+let hasGeoJson = coords && coords.length >= 2;
+if (!hasGeoJson) {
+  // Coord yoksa, markers bilgisinden scale bar çizilecek.
+  // Özellikle coords undefined/boşsa, markers argümanını gerçek marker dizisiyle doldurduğun için
+  // bar DOM'a yine de svg, marker badge ve elevation çıkaracak!
+  // Yani bu satırı komple SİL, return yapma!
+  // Sadece bilgilendirme için log bırakabilirsin:
+  console.warn('No route GeoJSON, drawing scale bar from markers/haversine.');
 }
 
-  // (buradan sonrası normal scale bar/elevation yükleme kodu)
-  let hasGeoJson = coords && coords.length >= 2;
-  if (!hasGeoJson) {
-    console.warn('No route GeoJSON, drawing scale bar from markers/haversine.');
-  }
 
   // Cooldown / cache anahtarı
   const mid = coords[Math.floor(coords.length / 2)];
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
-    // PATCH: Loader sadece 2 ve üzeri marker varsa!
-    if (showElevationLoader) {
-
-      if (Array.isArray(markers) && markers.length >= 2) {
-  window.showScaleBarLoading?.(container, 'Loading elevation…');
-}    }
+    window.showScaleBarLoading?.(container, 'Loading elevation…');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
