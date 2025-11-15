@@ -14,6 +14,8 @@ function isTripFav(item) {
 }
 
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
+const INITIAL_EMPTY_MAP_CENTER = [42.5, 12.5];
+const INITIAL_EMPTY_MAP_ZOOM   = 5;
 
 window.__welcomeHiddenForever = false;
 window.__restaurantLayers = window.__restaurantLayers || [];
@@ -3064,8 +3066,6 @@ function saveDayName(day, newName) {
                 }
             }
 
-const INITIAL_EMPTY_MAP_CENTER = [0, 0];
-const INITIAL_EMPTY_MAP_ZOOM   = 2;
 
 
 /* ---------- Helpers: Ensure Map Container ---------- */
@@ -3245,8 +3245,8 @@ function startMapPlanning() {
 // --- fonksiyonun parametreli yeni hali ---
 function initEmptyDayMap(day, opts = {}) {
   // SADE PATCH: Her çağrıda Italyadan ve zoom 5 ile açılır!
-  opts.center = opts.center || [42.5, 12.5];
-  opts.zoom = opts.zoom || 5;
+opts.center = opts.center || INITIAL_EMPTY_MAP_CENTER;
+opts.zoom   = opts.zoom   || INITIAL_EMPTY_MAP_ZOOM;
 
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
