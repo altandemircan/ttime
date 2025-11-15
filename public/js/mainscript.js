@@ -2700,11 +2700,18 @@ cartDiv.appendChild(addFavBtn);
 
     initPlaceSearch(day);
 
-    // AI Info butonunu ve kutusunu kaldır
+    // AI bilgi kutusu doluysa kaldırma!
     const aiInfoSection = document.querySelector('.ai-info-section');
-    if (aiInfoSection) aiInfoSection.remove();
+    if (aiInfoSection &&
+        !aiInfoSection.querySelector('#ai-summary') &&
+        !aiInfoSection.querySelector('#ai-tip') &&
+        !aiInfoSection.querySelector('#ai-highlight')) {
+        aiInfoSection.remove();
+    }
     const aiBtn = document.getElementById('generate-ai-info-btn');
-    if (aiBtn) aiBtn.remove();
+    if (aiBtn && !document.getElementById('ai-summary')) {
+        aiBtn.remove();
+    }
 }
 
 function closeCustomNoteInput() {
