@@ -6573,24 +6573,24 @@ border-bottom:1px solid #ddd;
     .tt-elev-cursor { position:absolute; top:48px; bottom:16px; width:2px; background:#263238; opacity:.25; pointer-events:none; }
    .tt-elev-tooltip {
   position: absolute;
-  top: 40px; /* veya scale-bar'ın üstünde olsun istediğin yere göre */
-  left: 0;
-  background: rgba(255,255,255,0.95);
-  color: #222;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  padding: 8px 16px;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(80,80,80,0.16);
-  border: 1px solid #ececec;
-  z-index: 999;
-  transform: translateY(-42px); /* barın üstünde hover gibi */
-  transition: box-shadow 0.16s, background 0.16s;
-  pointer-events: none;
-  min-width: 100px;
-  text-align: center;
-  white-space: nowrap;
+    top: 28px;
+    left: 0;
+    background: rgba(255, 255, 255, 0.95);
+    color: #222;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(80, 80, 80, 0.16);
+    border: 1px solid #ececec;
+    z-index: 999;
+    transform: translateY(-42px);
+    transition: box-shadow 0.16s, background 0.16s;
+    pointer-events: none;
+    min-width: 100px;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .tt-elev-tooltip strong,
