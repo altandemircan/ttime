@@ -7225,7 +7225,8 @@ function adjustExpandedHeader(day){
   const pts = (typeof getDayPoints==="function") ? getDayPoints(day) : [];
   if (pts.length < 2) {
     header.style.position = 'absolute';
-   
+    header.style.top = 'auto';
+    header.style.bottom = '0';
   } else {
     header.style.position = '';
     header.style.top = '';
@@ -8966,6 +8967,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
   }
 }
 
+
 function renderRouteScaleBar(container, totalKm, markers) {
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
@@ -9006,56 +9008,51 @@ if (!container || isNaN(totalKm)) {
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
- if (
-  !coords || !Array.isArray(coords) || coords.length < 2 ||
+ 
+if (
+  !coords ||
+  !Array.isArray(coords) ||
+  coords.length < 2 ||
   !markers || !Array.isArray(markers) || markers.length < 2
 ) {
-  container.innerHTML = `
-    <div class="scale-bar-track">
-      <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-        No route points found.<br>Select at least 2 points to start mapping.
-      </div>
+  container.innerHTML = `<div class="scale-bar-track">
+    <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
+      No route points found.<br>Select at least 2 points to start mapping.
     </div>
-  `;
+    <div class="tt-scale-loader" style="display: none;">
+      <div class="spinner"></div>
+      <div class="txt">Loading elevation…</div>
+    </div>
+  </div>`;
   container.style.display = 'block';
 
-  // 0/1 marker özel CSS'leri uygula:
-  document.querySelectorAll('.scale-bar-track').forEach(el =>
-    el.style.setProperty('min-height', 'max-content', 'important')
-  );
-  document.querySelectorAll('.route-scale-bar').forEach(el =>
-    el.style.setProperty('height', 'fit-content', 'important')
-  );
+  // PATCH: loader varsa mutlaka gizle!
+  document.querySelectorAll('.tt-scale-loader').forEach(el => el.style.display = 'none !important');
+  // PATCH: özel CSS ayarları!
   document.querySelectorAll('.expanded-map-panel').forEach(el => {
-    el.style.setProperty('padding', '0', 'important');
-    el.style.setProperty('width', 'calc(100% - 435px)', 'important');
-    el.style.setProperty('box-shadow', 'none', 'important');
+    el.style.padding = '0 10px';
+    el.style.width = 'calc(100% - 455px)';
+    el.style.boxShadow = 'none';
+  });
+  document.querySelectorAll('.route-scale-bar').forEach(el => {
+    el.style.height = 'fit-content';
+    el.style.padding = '0';
+  });
+  document.querySelectorAll('.expanded-map-header').forEach(el => {
+    el.style.top = '150px';
+    el.style.bottom = 'unset';
+  });
+  document.querySelectorAll('.scale-bar-track').forEach(el => {
+    el.style.minHeight = 'fit-content';
   });
   document.querySelectorAll('.expanded-map').forEach(el => {
-    el.style.setProperty('height', 'calc(100% - 94px)', 'important');
-    el.style.setProperty('bottom', '94px', 'important');
+    el.style.height = 'calc(100% - 80px)';
+    el.style.bottom = '80px';
+    el.style.background = '#fff';
   });
 
   return;
-} else {
-  // Sadece >=2 marker olduğunda bu inline JS CSS'leri kaldır (default dosya devreye girsin)
-  document.querySelectorAll('.scale-bar-track').forEach(el =>
-    el.style.removeProperty('min-height')
-  );
-  document.querySelectorAll('.route-scale-bar').forEach(el =>
-    el.style.removeProperty('height')
-  );
-  document.querySelectorAll('.expanded-map-panel').forEach(el => {
-    el.style.removeProperty('padding');
-    el.style.removeProperty('width');
-    el.style.removeProperty('box-shadow');
-  });
-  document.querySelectorAll('.expanded-map').forEach(el => {
-    el.style.removeProperty('height');
-    el.style.removeProperty('bottom');
-  });
 }
-
 
   // (buradan sonrası normal scale bar/elevation yükleme kodu)
   let hasGeoJson = coords && coords.length >= 2;
@@ -9070,29 +9067,9 @@ if (!container || isNaN(totalKm)) {
     // PATCH: Loader sadece 2 ve üzeri marker varsa!
     if (showElevationLoader) {
 
-if (Array.isArray(markers) && markers.length >= 2) {
-  let track = container.querySelector('.scale-bar-track');
-  if (!track) {
-    track = document.createElement('div');
-    track.className = 'scale-bar-track';
-    container.appendChild(track);
-  }
-  let loader = track.querySelector('.tt-scale-loader');
-  if (!loader) {
-    loader = document.createElement('div');
-    loader.className = 'tt-scale-loader';
-    loader.innerHTML = `<div class="spinner"></div><div class="txt">Loading elevation…</div>`;
-    track.appendChild(loader);
-  } else {
-    loader.style.display = 'flex';
-  }
-  loader.querySelector('.txt').textContent = 'Loading elevation…';
-} else {
-  // loader varsa tamamen DOM'dan kaldır!
-  container.querySelectorAll('.tt-scale-loader').forEach(el => el.remove());
-}
-
-   }
+      if (Array.isArray(markers) && markers.length >= 2) {
+  window.showScaleBarLoading?.(container, 'Loading elevation…');
+}    }
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
@@ -9717,7 +9694,25 @@ document.addEventListener('mousedown', (e) => {
 })();
 
 
+(function ensureScaleBarLoadingHelpers(){
+  if (window.__tt_scaleBarLoaderReady) return;
 
+  function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
+  window.showScaleBarLoading = function(c,t='Loading elevation…'){
+    const tr = trackOf(c); if (!tr) return;
+    let box = tr.querySelector('.tt-scale-loader');
+    if (!box){ box=document.createElement('div'); box.className='tt-scale-loader'; box.innerHTML=`<div class="spinner"></div><div class="txt"></div>`; tr.appendChild(box); }
+    const txt = box.querySelector('.txt'); if (txt) txt.textContent = t;
+    box.style.display='flex';
+  };
+  window.updateScaleBarLoadingText = function(c,t){
+    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); const txt = box?.querySelector('.txt'); if (txt) txt.textContent = t;
+  };
+  window.hideScaleBarLoading = function(c){
+    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); if (box) box.style.display='none';
+  };
+  window.__tt_scaleBarLoaderReady = true;
+})();
 (function ensureElev429Planner(){
   if (window.__tt_elev429PlannerReady) return;
   window.planElevationRetry = function(container, routeKey, waitMs, retryFn){
