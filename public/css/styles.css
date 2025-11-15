@@ -7275,10 +7275,3 @@ scrollbar-width: thin;
     height: 100% !important;
 }
 
-.expanded-map, .expanded-map-container, .route-scale-bar, .expanded-map-panel, .scale-bar-track {
-  min-width: 280px !important;
-  min-height: 180px !important;
-  display: block !important;
-  opacity: 1 !important;
-  box-sizing: border-box !important;
-}
