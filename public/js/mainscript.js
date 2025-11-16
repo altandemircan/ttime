@@ -7585,36 +7585,40 @@ async function renderRouteForDay(day) {
     }
 
     if (points.length === 1) {
-        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-        ensureDayMapContainer(day);
-        initEmptyDayMap(day);
-        const map = window.leafletMaps?.[containerId];
-        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-        if (map) {
-            map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
-            const p = points[0];
-            const marker = L.circleMarker([p.lat, p.lng], {
-                radius: 8, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
-            }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
-            if (marker._path) marker._path.classList.add('single-point-pulse');
-            else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
+    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+    const map = window.leafletMaps?.[containerId];
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+    if (map) {
+        map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
+        const p = points[0];
+        const marker = L.circleMarker([p.lat, p.lng], {
+            radius: 8, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
+        }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
+        if (marker._path) marker._path.classList.add('single-point-pulse');
+        else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
+        if (typeof p.lat === "number" && isFinite(p.lat) && typeof p.lng === "number" && isFinite(p.lng)) {
             try { map.flyTo([p.lat, p.lng], 14, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
         }
-        const expandedMapObj = window.expandedMaps?.[containerId];
-        if (expandedMapObj?.expandedMap) {
-            const eMap = expandedMapObj.expandedMap;
-            eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
-            const p = points[0];
-            const m = L.circleMarker([p.lat, p.lng], {
-                radius: 11, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.92, weight: 3
-            }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
-            if (m._path) m._path.classList.add('single-point-pulse');
+    }
+    const expandedMapObj = window.expandedMaps?.[containerId];
+    if (expandedMapObj?.expandedMap) {
+        const eMap = expandedMapObj.expandedMap;
+        eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
+        const p = points[0];
+        const m = L.circleMarker([p.lat, p.lng], {
+            radius: 11, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.92, weight: 3
+        }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
+        if (m._path) m._path.classList.add('single-point-pulse');
+        if (typeof p.lat === "number" && isFinite(p.lat) && typeof p.lng === "number" && isFinite(p.lng)) {
             try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
         }
-        return;
     }
+    return;
+}
 
     if (points.length === 2 &&
         window.importedTrackByDay &&
