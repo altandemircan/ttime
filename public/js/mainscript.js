@@ -7586,6 +7586,17 @@ async function renderRouteForDay(day) {
     }
 
     if (points.length === 1) {
+
+         // EN ÜSTE BUNU EKLE ↓↓↓↓
+    const p = points[0];
+    if (
+      !p ||
+      typeof p.lat !== "number" || !isFinite(p.lat) ||
+      typeof p.lng !== "number" || !isFinite(p.lng)
+    ) { return; }
+
+    // Devamı aynı...
+        
         if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
         if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
         ensureDayMapContainer(day);
@@ -7602,7 +7613,7 @@ async function renderRouteForDay(day) {
     
     // ... kalan kod aynı ...
 
-    
+
        if (map) {
         map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
         const p = points[0];
