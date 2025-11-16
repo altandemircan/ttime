@@ -2185,14 +2185,15 @@ function addToCart(
   }
 
   // 2) Lokasyon kontrolü
-  if (location && (
-    typeof location.lat !== "number" ||
-    typeof location.lng !== "number" ||
-    isNaN(location.lat) ||
-    isNaN(location.lng)
-  )) {
-    location = null;
-  }
+ if (
+  !location ||
+  typeof location.lat === "undefined" ||
+  typeof location.lng === "undefined" ||
+  isNaN(Number(location.lat)) ||
+  isNaN(Number(location.lng))
+) {
+  location = null;
+}
 
   // 3) Cart yapısını garanti et
   if (!Array.isArray(window.cart)) window.cart = [];
@@ -7585,22 +7586,23 @@ async function renderRouteForDay(day) {
     }
 
     if (points.length === 1) {
-    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-    ensureDayMapContainer(day);
-    initEmptyDayMap(day);
-    const map = window.leafletMaps?.[containerId];
-    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-    if (map) {
+        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+        ensureDayMapContainer(day);
+        initEmptyDayMap(day);
+        const map = window.leafletMaps?.[containerId];
+        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+       if (map) {
         map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
         const p = points[0];
-        const marker = L.circleMarker([p.lat, p.lng], {
-            radius: 8, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
-        }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
-        if (marker._path) marker._path.classList.add('single-point-pulse');
-        else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
+        // PATCH: NaN guard!
         if (typeof p.lat === "number" && isFinite(p.lat) && typeof p.lng === "number" && isFinite(p.lng)) {
+            const marker = L.circleMarker([p.lat, p.lng], {
+                radius: 8, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
+            }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
+            if (marker._path) marker._path.classList.add('single-point-pulse');
+            else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
             try { map.flyTo([p.lat, p.lng], 14, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
         }
     }
@@ -7609,11 +7611,12 @@ async function renderRouteForDay(day) {
         const eMap = expandedMapObj.expandedMap;
         eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
         const p = points[0];
-        const m = L.circleMarker([p.lat, p.lng], {
-            radius: 11, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.92, weight: 3
-        }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
-        if (m._path) m._path.classList.add('single-point-pulse');
+        // PATCH: NaN guard!
         if (typeof p.lat === "number" && isFinite(p.lat) && typeof p.lng === "number" && isFinite(p.lng)) {
+            const m = L.circleMarker([p.lat, p.lng], {
+                radius: 11, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.92, weight: 3
+            }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
+            if (m._path) m._path.classList.add('single-point-pulse');
             try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
         }
     }
