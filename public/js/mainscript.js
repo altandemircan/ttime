@@ -3909,7 +3909,11 @@ const anyDayHasRealItem = window.cart.some(i =>
   !i._starter && !i._placeholder && i.category !== "Note" && i.name
 );
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-
+// === PATCH: Map container and instance garanti! ===
+if (dayItemsArr.length > 0) {
+  ensureDayMapContainer(day); // container id garantili
+  initEmptyDayMap(day);       // her zaman harita, tile ve marker instance’ı
+}
 
 if (anyDayHasRealItem && !hideAddCat) {
   // 2. ADD CATEGORY BUTONU
