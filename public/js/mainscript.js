@@ -5125,7 +5125,6 @@ function addNumberedMarkers(map, points) {
 
     // Bu satırı EKLE!
     points = points.filter(item => isFinite(item.lat) && isFinite(item.lng));
-
     points.forEach((item, idx) => {
         const label = `${idx + 1}. ${item.name || "Point"}`;
 
@@ -6575,6 +6574,8 @@ window.addClickedPointToCart = async function(lat, lng, day) {
         }
         
         // Sepete ekle
+        const coords = safeCoords(lat, lng);
+        if (!coords) { alert("Geçersiz konum!"); return; }
         addToCart(
             placeName,
             imageUrl,
@@ -6584,7 +6585,7 @@ window.addClickedPointToCart = async function(lat, lng, day) {
             null, null,
             pointInfo.opening_hours || "",
             null,
-            { lat: lat, lng: lng },
+            coords,
             ""
         );
 
@@ -7275,17 +7276,16 @@ if (track && svg) {
 
 function getDayPoints(day) {
   return window.cart
-    .filter(item =>
-      item.day == day &&
-      item.location &&
-      isFinite(Number(item.location.lat)) &&
-      isFinite(Number(item.location.lng))
-    )
-    .map(item => ({
-      lat: Number(item.location.lat),
-      lng: Number(item.location.lng),
-      name: item.name
-    }));
+    .filter(item => {
+      let lat = item.location?.lat ?? item.lat ?? null;
+      let lng = item.location?.lng ?? item.lng ?? item.lon ?? null;
+      return isFinite(Number(lat)) && isFinite(Number(lng));
+    })
+    .map(item => {
+      let lat = item.location?.lat ?? item.lat ?? null;
+      let lng = item.location?.lng ?? item.lng ?? item.lon ?? null;
+      return { lat: Number(lat), lng: Number(lng), name: item.name };
+    });
 }
 
 function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
@@ -7593,6 +7593,16 @@ async function renderRouteForDay(day) {
         const map = window.leafletMaps?.[containerId];
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+       
+ if (
+        points[0] == null ||
+        !isFinite(Number(points[0].lat)) ||
+        !isFinite(Number(points[0].lng))
+    ) return; // HATALI, FONKSİYONU DURDUR.
+    
+    // ... kalan kod aynı ...
+
+    
        if (map) {
         map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
         const p = points[0];
@@ -9142,7 +9152,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       }
     });
   }, 350);
-  
+
   container.innerHTML = `<div class="scale-bar-track">${infoHtml}</div>`;
   container.style.display = 'block';
 
