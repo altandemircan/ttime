@@ -5315,12 +5315,12 @@ if (!isFlyMode && hasValidGeo && routeCoords.length > 1) {
 
     // --- Harita görünümünü ayarla ---
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-    if (points.length > 1) {
+       if (points.length > 1) {
         map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (points.length === 1) {
         map.setView([points[0].lat, points[0].lng], 14, { animate: true });
     } else {
-        map.setView([0, 0], 2, { animate: true });
+        map.setView([42.5, 12.5], 5, { animate: true }); // ITALY default!
     }
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
@@ -9125,7 +9125,17 @@ function renderRouteScaleBar(container, totalKm, markers) {
       </div>
     `;
   }
-
+  // PATCH: always show scale bar and attribution, never return only attribution bar!
+  container.style.display = 'block';
+  setTimeout(() => {
+    // Attribution bar PATCH → OpenFreeMap, OpenMapTiles, OSM logosu her zaman eklensin!
+    document.querySelectorAll('.leaflet-control-attribution').forEach(el => {
+      if (!el.innerHTML.includes('OpenFreeMap')) {
+        el.innerHTML += ' <span aria-hidden="true">|</span> <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank">© OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>';
+      }
+    });
+  }, 350);
+  
   container.innerHTML = `<div class="scale-bar-track">${infoHtml}</div>`;
   container.style.display = 'block';
 
