@@ -5336,7 +5336,7 @@ window.expandedMaps = {};
 
 
 function getFallbackRouteSummary(points) {
-  if (!points || points.length < 2) return { distance: 0, duration: 0 };
+if (!points || points.length === 0) return { distance: 0, duration: 0 };
   let totalKm = 0;
   for (let i = 1; i < points.length; i++) {
     totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
