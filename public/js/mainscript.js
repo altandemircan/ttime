@@ -14,8 +14,6 @@ function isTripFav(item) {
 }
 
 // Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
-const INITIAL_EMPTY_MAP_CENTER = [42.5, 12.5];
-const INITIAL_EMPTY_MAP_ZOOM   = 5;
 
 window.__welcomeHiddenForever = false;
 window.__restaurantLayers = window.__restaurantLayers || [];
@@ -248,60 +246,20 @@ function generateStepHtml(step, day, category, idx = 0) {
     `;
 }
 
+// DOM'a ekledikten sonra, kalplere event ekle:
 function attachFavEvents() {
-    // Kalp tıklama (slider için)
     document.querySelectorAll('.fav-heart').forEach(function(el){
-        el.onclick = async function(e){
-            e.stopPropagation();
-            const item = {
-                name: el.getAttribute('data-name'),
-                category: el.getAttribute('data-category'),
-                lat: el.getAttribute('data-lat'),
-                lon: el.getAttribute('data-lon'),
-                image: el.getAttribute('data-image') || ""
-            };
-            await toggleFavTrip(item, el);
-            updateFavoriteBtnText(el);
-        };
-    });
-
-    // Buton tıklama (sidebar için, tamamı)
-    document.querySelectorAll('.add-favorite-btn').forEach(function(btn){
-        btn.onclick = async function(e){
-            e.stopPropagation();
-            const el = btn.querySelector('.fav-heart');
-            if (!el) return;
-            const item = {
-                name: el.getAttribute('data-name'),
-                category: el.getAttribute('data-category'),
-                lat: el.getAttribute('data-lat'),
-                lon: el.getAttribute('data-lon'),
-                image: el.getAttribute('data-image') || ""
-            };
-            await toggleFavTrip(item, el);
-            updateFavoriteBtnText(el);
-        };
-    });
-}
-
-// Buton textini güncelleyen fonksiyon
-function updateFavoriteBtnText(favHeartEl) {
-    const btn = favHeartEl.closest('.add-favorite-btn');
-    if (!btn) return;
+        el.onclick = async function(){
     const item = {
-        name: favHeartEl.getAttribute('data-name'),
-        category: favHeartEl.getAttribute('data-category'),
-        lat: favHeartEl.getAttribute('data-lat'),
-        lon: favHeartEl.getAttribute('data-lon'),
+        name: el.getAttribute('data-name'),
+        category: el.getAttribute('data-category'),
+        lat: el.getAttribute('data-lat'),
+        lon: el.getAttribute('data-lon'),
+        image: el.getAttribute('data-image') || ""
     };
-    const btnText = btn.querySelector('.fav-btn-text');
-    if (btnText) {
-        if (isTripFav(item)) {
-            btnText.textContent = "Delete from My Places";
-        } else {
-            btnText.textContent = "Add to My Places";
-        }
-    }
+    await toggleFavTrip(item, el);
+};
+    });
 }
 
 
@@ -341,7 +299,7 @@ function fitExpandedMapToRoute(day) {
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
-  expObj.expandedMap.setView([42.5, 12.5], 5);
+      expObj.expandedMap.setView([0, 0], 2);
     }
   }
 }
@@ -356,104 +314,136 @@ function fitExpandedMapToRoute(day) {
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-    if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
-      // fallback: marker dizisinden haversine ile hesapla
-      spanKm = getTotalKmFromMarkers(markers);
-    }
-    if (!spanKm || spanKm < 0.01) {
-      track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-      console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
-      return;
-    }
-      if (!track) return;
+if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
+  // fallback: marker dizisinden haversine ile hesapla
+  spanKm = getTotalKmFromMarkers(markers);
+}
+if (!spanKm || spanKm < 0.01) {
+  track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+  console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
+  return;
+}
+  if (!track) return;
 
-      // console.log("[DEBUG] createScaleElements called", {
-      //   widthPx, spanKm, startKmDom, markers
-      // });
+  console.log("[DEBUG] createScaleElements called", {
+    widthPx, spanKm, startKmDom, markers
+  });
 
 
 
-      // Temizle
-      track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
+  // Temizle
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-      // Tick + label dizisi
-      const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
-      let stepKm = niceStep(spanKm, targetCount);
-      let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
-      if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
-      if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
+  // Tick + label dizisi
+  const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
+  let stepKm = niceStep(spanKm, targetCount);
+  let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
+  if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
+  if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
 
-    for (let i = 0; i <= majors; i++) {
-      const curKm = Math.min(spanKm, i * stepKm);
-      const leftPct = (curKm / spanKm) * 100;
+  for (let i = 0; i <= majors; i++) {
+    const curKm = Math.min(spanKm, i * stepKm);
+    const leftPct = (curKm / spanKm) * 100;
 
-      const tick = document.createElement('div');
-      tick.className = 'scale-bar-tick';
-      tick.style.left = `${leftPct}%`;
-      tick.style.position = 'absolute';
-      tick.style.top = '10px';
-      tick.style.width = '1px';
-      tick.style.height = '16px';
-      tick.style.background = '#cfd8dc';
-      track.appendChild(tick);
+    const tick = document.createElement('div');
+    tick.className = 'scale-bar-tick';
+    tick.style.left = `${leftPct}%`;
+    tick.style.position = 'absolute';
+    tick.style.top = '10px';
+    tick.style.width = '1px';
+    tick.style.height = '16px';
+    tick.style.background = '#cfd8dc';
+    track.appendChild(tick);
 
-      // 0. markerda label ekleme!
-      if (i === 0) continue;
+    const label = document.createElement('div');
+    label.className = 'scale-bar-label';
+    label.style.left = `${leftPct}%`;
+    label.style.position = 'absolute';
+    label.style.top = '30px';
+    label.style.transform = 'translateX(-50%)';
+    label.style.fontSize = '11px';
+    label.style.color = '#607d8b';
+    label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+    track.appendChild(label);
+  }
 
-      const label = document.createElement('div');
-      label.className = 'scale-bar-label';
-      label.style.left = `${leftPct}%`;
-      label.style.position = 'absolute';
-      label.style.top = '30px';
-      label.style.transform = 'translateX(-50%)';
-      label.style.fontSize = '11px';
-      label.style.color = '#607d8b';
-      label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
-      track.appendChild(label);
-    }
+  // Marker badge ekleme: YAY MODU PATCH!
+// Marker badge ekleme: YAY MODU PATCH!
+if (Array.isArray(markers)) {
+  markers.forEach((m, idx) => {
+    let dist = typeof m.distance === "number" ? m.distance : 0;
+    // PATCH: out of range/return YOK!
+    // Bar'ın uzunluğunda markerın konumu:
+    const relKm = dist - startKmDom;
 
-      // Marker badge ekleme: YAY MODU PATCH!
-    // Marker badge ekleme: YAY MODU PATCH!
-    if (Array.isArray(markers)) {
-      markers.forEach((m, idx) => {
-        let dist = typeof m.distance === "number" ? m.distance : 0;
-        // PATCH: out of range/return YOK!
-        // Bar'ın uzunluğunda markerın konumu:
-        const relKm = dist - startKmDom;
+    // PATCH: spanKm'nin sıfır olmasına karşı koruma!
+    let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0; // bar uzunluğu hata olmasın
+    left = Math.max(0, Math.min(100, left)); // 0-100 arası tut
 
-        // PATCH: spanKm'nin sıfır olmasına karşı koruma!
-        let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0; // bar uzunluğu hata olmasın
-        left = Math.max(0, Math.min(100, left)); // 0-100 arası tut
-
-        const wrap = document.createElement('div');
-        wrap.className = 'marker-badge';
-let profileY = null;
-if (typeof Y === "function" && Array.isArray(samples) && Array.isArray(elevations)) {
-    // Marker'ın km koordinatına en yakın sample'ı bul
-    let markerKm = m.distance;
-    let nearest = 0, minDiff = Infinity;
-    for (let i = 0; i < samples.length; i++) {
-        let diff = Math.abs(samples[i].distM / 1000 - markerKm);
-        if (diff < minDiff) { minDiff = diff; nearest = i; }
-    }
-    if (typeof elevations[nearest] === "number") {
-        profileY = Y(elevations[nearest]);
-    }
+    const wrap = document.createElement('div');
+    wrap.className = 'marker-badge';
+    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+    wrap.title = m.name || '';
+    wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+    track.appendChild(wrap);
+    console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');    
+  });
+} else {
+  console.warn("[DEBUG] markers is not array", markers);
 }
 
-// Sonra marker style'da:
-if (profileY !== null) {
-    wrap.style.cssText = `position:absolute;left:${left}%;top:${profileY}px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
-} else {
-    // Eski hali, fallback:
-    wrap.style.cssText = `position:absolute;left:${left}%;bottom:-4px;width:14px;height:14px;transform:translateX(-50%);z-index:8;`;
-}        wrap.title = m.name || '';
-        wrap.innerHTML = `<div style="width:14px;height:14px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-        track.appendChild(wrap);
-      });
-    } else {
-      console.warn("[DEBUG] markers is not array", markers);
-    }
+  // (Geri kalan elevation/labels kodu – aynen kalabilir)
+  let gridLabels = [];
+
+  const svg = track.querySelector('svg.tt-elev-svg');
+  if (svg) {
+    gridLabels = Array.from(svg.querySelectorAll('text'))
+      .map(t => ({
+        value: t.textContent.trim(),
+        y: Number(t.getAttribute('y'))
+      }))
+      .filter(obj => /-?\d+\s*m$/.test(obj.value));
+  }
+
+  gridLabels.sort((a, b) => b.y - a.y);
+
+  const elevationLabels = document.createElement('div');
+  elevationLabels.className = 'elevation-labels-container';
+  elevationLabels.style.cssText = `
+    position: absolute;
+    left: -50px;
+    top: 0;
+    bottom: 0;
+    width: 45px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+  `;
+  elevationLabels.style.display = 'block'; 
+
+  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+
+  gridLabels.forEach(obj => {
+    const label = document.createElement('div');
+    label.className = 'elevation-label';
+    label.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: ${obj.y}px;
+      text-align: right;
+      padding-right: 5px;
+      border-right: 1px solid #cfd8dc;
+      font-size: 10px;
+      color: #607d8b;
+      background: none;
+      line-height: 1;
+    `;
+    label.textContent = obj.value;
+    elevationLabels.appendChild(label);
+  });
+
+  track.style.position = 'relative';
+  track.appendChild(elevationLabels);
 }
 
         // Aktif harita planlama modu için
@@ -1411,6 +1401,17 @@ document.querySelectorAll('.add_theme').forEach(btn => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 // .addtotrip butonuna basıldığında day bilgisini stepsDiv'den veya window.currentDay'den al.
 // 1) Kategori/slider'dan sepete ekleme (.addtotrip handler)
 function initializeAddToTripListener() {
@@ -1691,8 +1692,6 @@ async function showResults() {
     renderMyTripsPanel();
     fillGeoapifyTagsOnly();
     attachImLuckyEvents();
-      attachFavEvents(); // <-- render sonunda çağır!
-
 
 }
 
@@ -1832,14 +1831,14 @@ async function buildPlan(city, days) {
 
   for (const cat of categories) {
     let radius = 3;
-    let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
+    let places = await getPlacesForCategory(city, cat, 30, radius * 1000);
     let attempt = 0;
     const maxAttempts = 5;
     const triedNames = new Set();
     while (places.length <= 1 && attempt < maxAttempts) {
       if (places.length === 1) triedNames.add(places[0].name);
       radius += 5;
-      let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000);
+      let newPlaces = await getPlacesForCategory(city, cat, 30, radius * 1000);
       newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
       if (newPlaces.length > 0) {
         places = places.concat(newPlaces);
@@ -2123,7 +2122,13 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
       return da - db;
     });
     return sorted;
+    // ---- BURAYA KADAR ----
 
+    // Geriye kalan kodu kaldırabilirsin (result ile return edilen satır artık gereksiz)
+    // if (!result.some(item => item.lat !== null && item.lon !== null)) {
+    //   return [];
+    // }
+    // return result;
   }
   return [];
 }
@@ -2185,15 +2190,14 @@ function addToCart(
   }
 
   // 2) Lokasyon kontrolü
- if (
-  !location ||
-  typeof location.lat === "undefined" ||
-  typeof location.lng === "undefined" ||
-  isNaN(Number(location.lat)) ||
-  isNaN(Number(location.lng))
-) {
-  location = null;
-}
+  if (location && (
+    typeof location.lat !== "number" ||
+    typeof location.lng !== "number" ||
+    isNaN(location.lat) ||
+    isNaN(location.lng)
+  )) {
+    location = null;
+  }
 
   // 3) Cart yapısını garanti et
   if (!Array.isArray(window.cart)) window.cart = [];
@@ -2395,6 +2399,15 @@ function removeFromCart(index) {
 }
 
 
+// function safeCoords(obj) {
+//   // Hem lat/lon hem location nesnesi destekle
+//   const lat = Number(obj.lat ?? (obj.location && obj.location.lat));
+//   const lng = Number(obj.lon ?? obj.lng ?? (obj.location && (obj.location.lng ?? obj.location.lon)));
+//   if (Number.isFinite(lat) && Number.isFinite(lng)) {
+//     return { lat, lng };
+//   }
+//   return null;
+// }
 
 
 function safeCoords(lat, lon) {
@@ -2703,18 +2716,11 @@ cartDiv.appendChild(addFavBtn);
 
     initPlaceSearch(day);
 
-    // AI bilgi kutusu doluysa kaldırma!
+    // AI Info butonunu ve kutusunu kaldır
     const aiInfoSection = document.querySelector('.ai-info-section');
-    if (aiInfoSection &&
-        !aiInfoSection.querySelector('#ai-summary') &&
-        !aiInfoSection.querySelector('#ai-tip') &&
-        !aiInfoSection.querySelector('#ai-highlight')) {
-        aiInfoSection.remove();
-    }
+    if (aiInfoSection) aiInfoSection.remove();
     const aiBtn = document.getElementById('generate-ai-info-btn');
-    if (aiBtn && !document.getElementById('ai-summary')) {
-        aiBtn.remove();
-    }
+    if (aiBtn) aiBtn.remove();
 }
 
 function closeCustomNoteInput() {
@@ -3067,6 +3073,8 @@ function saveDayName(day, newName) {
                 }
             }
 
+const INITIAL_EMPTY_MAP_CENTER = [0, 0];
+const INITIAL_EMPTY_MAP_ZOOM   = 2;
 
 
 /* ---------- Helpers: Ensure Map Container ---------- */
@@ -3103,7 +3111,55 @@ function ensureDayMapContainer(day) {
   return mapDiv;
 }
  
+function initEmptyDayMap(day) {
+  const containerId = `route-map-day${day}`;
+  let el = document.getElementById(containerId);
+  if (!el) el = ensureDayMapContainer(day);
+  if (!el) return;
 
+  if (typeof L === 'undefined') {
+    setTimeout(() => initEmptyDayMap(day), 60);
+    return;
+  }
+
+  // Mevcut instance & iç DOM kontrolü
+  const existingMap = window.leafletMaps && window.leafletMaps[containerId];
+  const hasInner = el.querySelector('.leaflet-container');
+
+  if (existingMap && hasInner) {
+    // Sağlam durumda, sadece view’i güncelleyebilirsin (opsiyonel)
+    return;
+  } else if (existingMap && !hasInner) {
+    // Detached
+    try { existingMap.remove(); } catch(_){}
+    delete window.leafletMaps[containerId];
+  }
+
+  if (!el.style.height) el.style.height = '285px';
+
+  // KÜÇÜK HARİTA
+  const map = L.map(containerId, {
+    scrollWheelZoom: true,
+    fadeAnimation: true,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 8,
+    zoomSnap: 0.25,
+    zoomDelta: 0.25,
+    wheelDebounceTime: 35,
+    wheelPxPerZoomLevel: 120,
+    inertia: true,
+    easeLinearity: 0.2
+  }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+  if (!map._initialView) {
+  map._initialView = {
+    center: map.getCenter(),
+    zoom: map.getZoom()
+  };
+}
+
+  window.leafletMaps = window.leafletMaps || {};
+  window.leafletMaps[containerId] = map;
+}
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
   Object.keys(window.leafletMaps).forEach(id => {
@@ -3207,7 +3263,7 @@ function restoreLostDayMaps() {
 function startMapPlanning() {
   window.cart = [];
   window.__startedWithMapFlag = true;
-  window.activeTripKey = null;
+  window.activeTripKey = null; // <-- En kritik satır: yeni map planlamada key sıfırlanır.
 
   window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
   window.__hideStartMapButtonByDay[1] = true;
@@ -3218,16 +3274,15 @@ function startMapPlanning() {
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[1] = true;
 
+
+
   window.currentDay = 1;
   window.mapPlanningDay = 1;
   window.mapPlanningActive = true;
 
   updateCart();
   ensureDayMapContainer(1);
-
-  // Değişiklik: Italyaya odaklanacak şekilde harita başlat
-  initEmptyDayMap(1, { center: [42.5, 12.5], zoom: 5 });
-
+  initEmptyDayMap(1);
   const mini = document.getElementById('route-map-day1');
   if (mini) mini.style.display = 'none';
 
@@ -3236,63 +3291,12 @@ function startMapPlanning() {
   }
 
   setTimeout(() => {
-    if (!window.leafletMaps['route-map-day1']) initEmptyDayMap(1, { center: [42.5, 12.5], zoom: 5 });
+    if (!window.leafletMaps['route-map-day1']) initEmptyDayMap(1);
     attachMapClickAddMode(1);
   }, 60);
 
   attemptExpandDay(1);
 }
-
-// --- fonksiyonun parametreli yeni hali ---
-function initEmptyDayMap(day, opts = {}) {
-  // SADE PATCH: Her çağrıda Italyadan ve zoom 5 ile açılır!
-opts.center = opts.center || INITIAL_EMPTY_MAP_CENTER;
-opts.zoom   = opts.zoom   || INITIAL_EMPTY_MAP_ZOOM;
-
-  const containerId = `route-map-day${day}`;
-  let el = document.getElementById(containerId);
-  if (!el) el = ensureDayMapContainer(day);
-  if (!el) return;
-  if (typeof L === 'undefined') {
-    setTimeout(() => initEmptyDayMap(day, opts), 60);
-    return;
-  }
-  const existingMap = window.leafletMaps && window.leafletMaps[containerId];
-  const hasInner = el.querySelector('.leaflet-container');
-
-  if (existingMap && hasInner) {
-    return;
-  } else if (existingMap && !hasInner) {
-    try { existingMap.remove(); } catch(_) {}
-    delete window.leafletMaps[containerId];
-  }
-  if (!el.style.height) el.style.height = '285px';
-
-  // ALWAYS Italy merkezli ve Avrupa zoomda açılıyor!
-  const map = L.map(containerId, {
-    scrollWheelZoom: true,
-    fadeAnimation: true,
-    zoomAnimation: true,
-    zoomAnimationThreshold: 8,
-    zoomSnap: 0.25,
-    zoomDelta: 0.25,
-    wheelDebounceTime: 35,
-    wheelPxPerZoomLevel: 120,
-    inertia: true,
-    easeLinearity: 0.2
-  }).setView(opts.center, opts.zoom);
-
-  if (!map._initialView) {
-    map._initialView = {
-      center: map.getCenter(),
-      zoom: map.getZoom()
-    };
-  }
-  window.leafletMaps = window.leafletMaps || {};
-  window.leafletMaps[containerId] = map;
-}
-
-
 function removeDayMap(day) {
   // Eski yanlış çağrılar boşa gitmesin
   return removeDayMapCompletely(day);
@@ -3399,10 +3403,7 @@ function startMapPlanningForDay(day) {
 
   updateCart();
   ensureDayMapContainer(day);
-
-  // PATCH: Haritayı Italyanın merkezinde ve Avrupa zoomunda aç
-  initEmptyDayMap(day, { center: [42.5, 12.5], zoom: 5 }); // <--- BURAYA PARAMETREYİ EKLE
-
+  initEmptyDayMap(day);
   const mini = document.getElementById(`route-map-day${day}`);
   if (mini) mini.classList.add('mini-suppressed');
 
@@ -3412,10 +3413,7 @@ function startMapPlanningForDay(day) {
 
   setTimeout(() => {
     const cid = `route-map-day${day}`;
-    if (!window.leafletMaps[cid]) {
-      // YİNE ITALYA PARAMETRESİ İLE AÇILSIN!
-      initEmptyDayMap(day, { center: [42.5, 12.5], zoom: 5 });
-    }
+    if (!window.leafletMaps[cid]) initEmptyDayMap(day);
     attachMapClickAddMode(day);
   }, 60);
 
@@ -3804,22 +3802,6 @@ else {
                                 ` : ''
                             }
                         </div>
-                                 <button class="add-favorite-btn"
-                                    data-name="${item.name}"
-                                    data-category="${item.category}"
-                                    data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                                    data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                                  <span class="fav-heart"
-                                      data-name="${item.name}"
-                                      data-category="${item.category}"
-                                      data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                                      data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                                      <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
-                                  </span>
-                                  <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
-                                </button>
-
-
                         <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                             Remove place
                         </button>
@@ -3910,11 +3892,7 @@ const anyDayHasRealItem = window.cart.some(i =>
   !i._starter && !i._placeholder && i.category !== "Note" && i.name
 );
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-// === PATCH: Map container and instance garanti! ===
-if (dayItemsArr.length > 0) {
-  ensureDayMapContainer(day); // container id garantili
-  initEmptyDayMap(day);       // her zaman harita, tile ve marker instance’ı
-}
+
 
 if (anyDayHasRealItem && !hideAddCat) {
   // 2. ADD CATEGORY BUTONU
@@ -4205,11 +4183,7 @@ cartDiv.appendChild(addNewDayButton);
         dayList._sortableSetup = true;
       }
     });
-  }, 0);
-
-  attachFavEvents();
-
-} 
+  }, 0);} 
 
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
@@ -4457,10 +4431,9 @@ function updateExpandedMap(expandedMap, day) {
       geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
     );
 
-    let routeCoords = [];
     if (hasValidRoute) {
         // OSRM ROTASI - tüm noktaları kaydet
-        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
             color: "#1976d2",
             weight: 6,
@@ -4469,7 +4442,7 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
         
         // Tüm route noktalarını kaydet
-        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
         
     } else if (pts.length > 1) {
@@ -4491,22 +4464,26 @@ function updateExpandedMap(expandedMap, day) {
                 dashArray: "6,8"
             }).addTo(expandedMap);
             
+            // Yay noktalarını birleştirerek kaydet (ilk segmentte başlangıç noktasını ekle)
             if (i === 0) {
-                allArcPoints.push([start[0], start[1]]);
+                allArcPoints.push([start[0], start[1]]); // İlk nokta
             }
-            allArcPoints = allArcPoints.concat(arcPoints.slice(1));
+            allArcPoints = allArcPoints.concat(arcPoints.slice(1)); // Kalan noktalar
         }
+        
+        // Son noktayı ekle
         if (pts.length > 0) {
             const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
             allArcPoints.push(lastPoint);
         }
+        
         window._curvedArcPointsByDay[day] = allArcPoints;
         console.log("[DEBUG] Arc points saved:", allArcPoints.length);
         console.log("[DEBUG] First point:", allArcPoints[0]);
         console.log("[DEBUG] Last point:", allArcPoints[allArcPoints.length - 1]);
     }
 
-    // PATCH: Marker ve connector ekleme kısmı
+    // Marker ekleme kısmı aynı:
     pts.forEach((item, idx) => {
         const markerHtml = `
             <div style="background:#d32f2f;color:#fff;border-radius:50%;
@@ -4522,26 +4499,6 @@ function updateExpandedMap(expandedMap, day) {
         });
         L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
             .bindPopup(`<b>${item.name || "Point"}</b>`);
-        
-        // --- KESİK YEŞİL CONNECTOR PATCH ---
-        if (hasValidRoute && routeCoords.length > 1) {
-            let minDist = Infinity, nearest = null;
-            for (let i = 0; i < routeCoords.length; i++) {
-                const [lat, lng] = routeCoords[i];
-                const dist = haversine(lat, lng, item.lat, item.lng);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearest = { lat, lng };
-                }
-            }
-            // connector threshold: 120m'den uzaksa çiz
-            if (minDist > 120) {
-                L.polyline(
-                    [[item.lat, item.lng], [nearest.lat, nearest.lng]],
-                    { color: "#22bb33", weight: 4, opacity: 0.93, dashArray: "8,8", interactive: false }
-                ).addTo(expandedMap);
-            }
-        }
     });
 
     if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
@@ -4560,8 +4517,8 @@ function updateExpandedMap(expandedMap, day) {
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
-    expandedMap.setView([42.5, 12.5], 5, { animate: true });
-}
+        expandedMap.setView([0, 0], 2, { animate: true });
+    }
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
@@ -4617,6 +4574,7 @@ function updateExpandedMap(expandedMap, day) {
         }
     }
 
+    // SCALE BAR INTERACTION'ı BAŞLAT - BURASI ÖNEMLİ!
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
         console.log("[DEBUG] Scale bar interaction initialized for day", day);
@@ -5125,6 +5083,7 @@ function addNumberedMarkers(map, points) {
 
     // Bu satırı EKLE!
     points = points.filter(item => isFinite(item.lat) && isFinite(item.lng));
+
     points.forEach((item, idx) => {
         const label = `${idx + 1}. ${item.name || "Point"}`;
 
@@ -5156,7 +5115,10 @@ function addNumberedMarkers(map, points) {
     });
 }
 
-
+// Minik harita/küçük harita: markerları yay şeklinde, kesik çizgi ile birleştiren patchli fonksiyon! 
+// --- Güncelle: renderLeafletRoute'da yay arc noktalarını Flyers için kaydet ---
+// 1. Flyers modunda yay noktalarını birleştirip window'a kaydediyoruz
+// 2. ScaleBar etkileşiminde yayda markerı kaydırmak için patch'i ekliyoruz
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
@@ -5227,74 +5189,42 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-    // --- PATCH: Kesik mavi yay sadece Flymode'da ---
-const isFlyMode = !areAllPointsInTurkey(points);
+    // --- YAY ÇİZGİ PATCH'I ---
+    const isFlyMode = !areAllPointsInTurkey(points);
 
-if (isFlyMode && points.length > 1) {
-    window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
-    let arcPoints = [];
-    // Yön parametresi büyük harita ile tamamen aynı olmalı (0.33)
-    const arcDirection = 0.33; // Büyük haritada ne ise küçükte de o!
+    // EKLE: Flyers modunda kavisli yay noktalarını kaydet
+    if (isFlyMode && points.length > 1) {
+        // --- Flyers için kavisli yay noktaları birleştir ---
+        window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
+        let arcPoints = [];
+        for (let i = 0; i < points.length - 1; i++) {
+            const start = [points[i].lng, points[i].lat];
+            const end = [points[i + 1].lng, points[i + 1].lat];
+            const curve = getCurvedArcCoords(start, end, 0.33, 32);
+            arcPoints = arcPoints.concat(curve);
 
-    for (let i = 0; i < points.length - 1; i++) {
-        const start = [points[i].lng, points[i].lat];
-        const end = [points[i + 1].lng, points[i + 1].lat];
-        // Büyük haritayla aynı eksen ve yön! (arcDirection)
-        const curve = getCurvedArcCoords(start, end, arcDirection, 32);
-
-        // curve arrayinin başını sadece ilk noktada ekle, diğerlerinde slice(1)
-        if (i === 0) {
-            arcPoints.push([start[0], start[1]]);
+            // Haritada da kavisli çizgi görselini göster (bu zaten vardı)
+            drawCurvedLine(map, points[i], points[i + 1], {
+                color: "#1976d2",
+                weight: 5,
+                opacity: 0.85,
+                dashArray: "6,8"
+            });
         }
-        arcPoints = arcPoints.concat(curve.slice(1));
-
-        // Çizimi de eksenle birebir tut
-        const polylineCoords = curve.map(pt => [pt[1], pt[0]]);
-        L.polyline(polylineCoords, {
-            color: "#1976d2",
-            weight: 5,
-            opacity: 0.85,
-            dashArray: "6,8"
+        window._curvedArcPointsByDay[day] = arcPoints;
+    } else if (hasValidGeo && routeCoords.length > 1) {
+        // Sadece Türkiye içi OSRM gerçek route varsa düz çizgi
+        L.polyline(routeCoords, {
+            color: '#1976d2',
+            weight: 8,
+            opacity: 0.92,
+            interactive: true,
+            dashArray: null
         }).addTo(map);
     }
-    if (points.length > 0) {
-        arcPoints.push([points[points.length - 1].lng, points[points.length - 1].lat]);
-    }
-    window._curvedArcPointsByDay[day] = arcPoints;
-}
+    // --- PATCH SONU ---
 
-// Türkiye'de route varsa sadece gerçek route polyline.
-if (!isFlyMode && hasValidGeo && routeCoords.length > 1) {
-    L.polyline(routeCoords, {
-        color: '#1976d2',
-        weight: 8,
-        opacity: 0.92,
-        interactive: true,
-        dashArray: null
-    }).addTo(map);
-
-    // --- PATCH: Türkiye'de marker rotadan uzaksa YEŞİL connector ekle ---
-    points.forEach((pt) => {
-        let minDist = Infinity, nearest = null;
-        for (let i = 0; i < routeCoords.length; i++) {
-            const [lat, lng] = routeCoords[i];
-            const dist = haversine(lat, lng, pt.lat, pt.lng);
-            if (dist < minDist) {
-                minDist = dist;
-                nearest = { lat, lng };
-            }
-        }
-        // Marker route üzerinde değilse (120m'den uzaksa) yeşil connector çiz
-        if (minDist > 120) {
-            L.polyline(
-                [ [pt.lat, pt.lng], [nearest.lat, nearest.lng] ],
-                { color: "#22bb33", weight: 4, opacity: 0.93, dashArray: "8,8", interactive: false }
-            ).addTo(map);
-        }
-    });
-}
-    // Eksik pointler (connector/uyarı arc çizgileri): SADECE FlyMode'da
-    if (Array.isArray(missingPoints) && missingPoints.length > 1 && isFlyMode) {
+    if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
         for (let i = 0; i < missingPoints.length - 1; i++) {
             drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
                 color: "#1976d2",
@@ -5315,18 +5245,16 @@ if (!isFlyMode && hasValidGeo && routeCoords.length > 1) {
 
     // --- Harita görünümünü ayarla ---
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-       if (points.length > 1) {
+    if (points.length > 1) {
         map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (points.length === 1) {
         map.setView([points[0].lat, points[0].lng], 14, { animate: true });
     } else {
-        map.setView([42.5, 12.5], 5, { animate: true }); // ITALY default!
+        map.setView([0, 0], 2, { animate: true });
     }
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
-
-
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
 
@@ -5833,9 +5761,8 @@ const points = allPoints.filter(
 
 
                                                          const expandedMap = L.map(mapDivId, {
-                                                           center: [42.5, 12.5],
-  zoom: 5,
-  scrollWheelZoom: true,
+                                                           center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
+                                                          zoom: 2,         // Veya 3 yaz (önemi yok)
                                                             scrollWheelZoom: true,
                                                             fadeAnimation: true,
                                                             zoomAnimation: true,
@@ -6574,8 +6501,6 @@ window.addClickedPointToCart = async function(lat, lng, day) {
         }
         
         // Sepete ekle
-        const coords = safeCoords(lat, lng);
-        if (!coords) { alert("Geçersiz konum!"); return; }
         addToCart(
             placeName,
             imageUrl,
@@ -6585,7 +6510,7 @@ window.addClickedPointToCart = async function(lat, lng, day) {
             null, null,
             pointInfo.opening_hours || "",
             null,
-            coords,
+            { lat: lat, lng: lng },
             ""
         );
 
@@ -7276,16 +7201,17 @@ if (track && svg) {
 
 function getDayPoints(day) {
   return window.cart
-    .filter(item => {
-      let lat = item.location?.lat ?? item.lat ?? null;
-      let lng = item.location?.lng ?? item.lng ?? item.lon ?? null;
-      return isFinite(Number(lat)) && isFinite(Number(lng));
-    })
-    .map(item => {
-      let lat = item.location?.lat ?? item.lat ?? null;
-      let lng = item.location?.lng ?? item.lng ?? item.lon ?? null;
-      return { lat: Number(lat), lng: Number(lng), name: item.name };
-    });
+    .filter(item =>
+      item.day == day &&
+      item.location &&
+      isFinite(Number(item.location.lat)) &&
+      isFinite(Number(item.location.lng))
+    )
+    .map(item => ({
+      lat: Number(item.location.lat),
+      lng: Number(item.location.lng),
+      name: item.name
+    }));
 }
 
 function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
@@ -7593,19 +7519,9 @@ async function renderRouteForDay(day) {
         const map = window.leafletMaps?.[containerId];
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-       
- if (
-        points[0] == null ||
-        !isFinite(Number(points[0].lat)) ||
-        !isFinite(Number(points[0].lng))
-    ) return; // HATALI, FONKSİYONU DURDUR.
-    
-    // ... kalan kod aynı ...
-       if (map) {
-        map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
-        const p = points[0];
-        // PATCH: NaN guard!
-        if (typeof p.lat === "number" && isFinite(p.lat) && typeof p.lng === "number" && isFinite(p.lng)) {
+        if (map) {
+            map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
+            const p = points[0];
             const marker = L.circleMarker([p.lat, p.lng], {
                 radius: 8, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
             }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
@@ -7613,23 +7529,19 @@ async function renderRouteForDay(day) {
             else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
             try { map.flyTo([p.lat, p.lng], 14, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
         }
-    }
-    const expandedMapObj = window.expandedMaps?.[containerId];
-    if (expandedMapObj?.expandedMap) {
-        const eMap = expandedMapObj.expandedMap;
-        eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
-        const p = points[0];
-        // PATCH: NaN guard!
-        if (typeof p.lat === "number" && isFinite(p.lat) && typeof p.lng === "number" && isFinite(p.lng)) {
+        const expandedMapObj = window.expandedMaps?.[containerId];
+        if (expandedMapObj?.expandedMap) {
+            const eMap = expandedMapObj.expandedMap;
+            eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
+            const p = points[0];
             const m = L.circleMarker([p.lat, p.lng], {
                 radius: 11, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.92, weight: 3
             }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
             if (m._path) m._path.classList.add('single-point-pulse');
             try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
         }
+        return;
     }
-    return;
-}
 
     if (points.length === 2 &&
         window.importedTrackByDay &&
@@ -8097,8 +8009,6 @@ if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
 // Show tt-welcome on page load
 document.addEventListener('DOMContentLoaded', function() {
     changeContent(1);
-      setTimeout(attachFavEvents, 500);
-
 });
 
   function toggleMenu() {
@@ -8401,7 +8311,7 @@ document.getElementById(setId)?.remove();
     set.innerHTML = `
       <div class="travel-modes">
         <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.97;">
-          <img class="tm-icon" src="/img/way_fly_mode.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
+          <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
           <span class="tm-label">FLY MODE</span>
         </button>
         <div class="fly-info-msg" style="font-size: 13px;
@@ -9080,155 +8990,58 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 
-
 function renderRouteScaleBar(container, totalKm, markers) {
-  // console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
+      console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
-  // PATCH: markers dizisi boşsa window.cart ve getDayPoints ile doldur
-  let day = 1;
-  const dayMatch = container?.id && container.id.match(/day(\d+)/);
-  if (dayMatch) day = parseInt(dayMatch[1], 10);
-  if (!Array.isArray(markers) || markers.length === 0) {
-    if (typeof getDayPoints === "function") {
-      const fixedMarkers = getDayPoints(day)
-        .map(p => ({
-          name: p.name || "",
-          distance: 0,
-          lat: p.lat,
-          lng: p.lng
-        }));
-      if (fixedMarkers?.length) {
-        markers = fixedMarkers;
-        console.log("[PATCHED MARKERS]", markers);
-      }
-    }
+    console.log("renderRouteScaleBar", container?.id, totalKm, markers);
+ if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
+    totalKm = getTotalKmFromMarkers(markers);
+    container.dataset.totalKm = String(totalKm);
   }
 
-  // DEBUG
-  // console.log("### (AFTER PATCH) renderRouteScaleBar MARKERS:", markers);
+if (!container || isNaN(totalKm)) {
+  if (container) { container.innerHTML = ""; container.style.display = 'block'; }
+  return;
+}
+
+  // Sadece expanded bar’da çalış; küçük bar’ı kapat
+  if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
+    container.innerHTML = '';
+    return;
+  }
 
 
-  // Geojson coords
+  // Day ve route geojson
+  const dayMatch = container.id && container.id.match(/day(\d+)/);
+  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
- if (
-  !coords || !Array.isArray(coords) || coords.length < 2 ||
-  !markers || !Array.isArray(markers) || markers.length < 2
-) {
-  let infoHtml = '';
-  if (!markers || markers.length === 0) {
-    infoHtml = `
-      <div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">
-        No route points found.<br>
-        Select at least 2 points to start mapping.
-      </div>
-    `;
-  } else if (markers.length === 1) {
-    infoHtml = `
-      <div style="text-align:center;padding:12px;font-size:13px;color:#1976d2;">
-        <b>1 point added.</b><br>
-        Add another to create a route and see elevation.
-      </div>
-    `;
-  } else if (markers.length > 1 && (!coords || coords.length < 2)) {
-    infoHtml = `
-      <div style="text-align:center;padding:12px;font-size:13px;color:#1976d2;">
-        <b>${markers.length} points added but no route found.</b><br>
-        Try adjusting your points or route options.
-      </div>
-    `;
-  }
-  // PATCH: always show scale bar and attribution, never return only attribution bar!
-  container.style.display = 'block';
-  setTimeout(() => {
-    // Attribution bar PATCH → OpenFreeMap, OpenMapTiles, OSM logosu her zaman eklensin!
-    document.querySelectorAll('.leaflet-control-attribution').forEach(el => {
-      if (!el.innerHTML.includes('OpenFreeMap')) {
-        el.innerHTML += ' <span aria-hidden="true">|</span> <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank">© OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>';
-      }
-    });
-  }, 350);
 
-  container.innerHTML = `<div class="scale-bar-track">${infoHtml}</div>`;
-  container.style.display = 'block';
+// if (!coords || coords.length < 2) {
+//   container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">No route points found</div></div>`;
+//   container.style.display = 'block'; // HEP GÖSTER!
+//   return;
+// }
 
-  // Stil Ekleme-Kaldırma Bloku - SADECE 0 VEYA 1 ITEMDA OVERRIDE, 2 veya fazlasında RESET
-  if (!markers || markers.length <= 1) {
-    // 0 veya 1 marker ise override stilleri EKLE
-    document.querySelectorAll('.scale-bar-track').forEach(el =>
-      el.style.setProperty('min-height', 'max-content', 'important')
-    );
-    document.querySelectorAll('.route-scale-bar').forEach(el =>
-      el.style.setProperty('height', 'fit-content', 'important')
-    );
-    document.querySelectorAll('.expanded-map-panel').forEach(el => {
-      el.style.setProperty('padding', '0', 'important');
-      el.style.setProperty('width', 'calc(100% - 435px)', 'important');
-      el.style.setProperty('box-shadow', 'none', 'important');
-    });
-    document.querySelectorAll('.expanded-map').forEach(el => {
-      el.style.setProperty('height', 'calc(100% - 94px)', 'important');
-      el.style.setProperty('bottom', '94px', 'important');
-    });
-  } else {
-    // 2 veya daha fazla marker ise override stilleri TEMIZLE
-    document.querySelectorAll('.scale-bar-track').forEach(el =>
-      el.style.removeProperty('min-height')
-    );
-    document.querySelectorAll('.route-scale-bar').forEach(el =>
-      el.style.removeProperty('height')
-    );
-    document.querySelectorAll('.expanded-map-panel').forEach(el => {
-      el.style.removeProperty('padding');
-      el.style.removeProperty('width');
-      el.style.removeProperty('box-shadow');
-    });
-    document.querySelectorAll('.expanded-map').forEach(el => {
-      el.style.removeProperty('height');
-      el.style.removeProperty('bottom');
-    });
-  }
-  return;
+  // Eğer burada geojson'dan coords yok veya kısaysa (ROMA gibi marker+yayda) OLSUN, yine de scale bar çiz!
+let hasGeoJson = coords && coords.length >= 2;
+if (!hasGeoJson) {
+  // Coord yoksa, markers bilgisinden scale bar çizilecek.
+  // Özellikle coords undefined/boşsa, markers argümanını gerçek marker dizisiyle doldurduğun için
+  // bar DOM'a yine de svg, marker badge ve elevation çıkaracak!
+  // Yani bu satırı komple SİL, return yapma!
+  // Sadece bilgilendirme için log bırakabilirsin:
+  console.warn('No route GeoJSON, drawing scale bar from markers/haversine.');
 }
 
-  // (buradan sonrası normal scale bar/elevation yükleme kodu)
-  let hasGeoJson = coords && coords.length >= 2;
-  if (!hasGeoJson) {
-    console.warn('No route GeoJSON, drawing scale bar from markers/haversine.');
-  }
 
   // Cooldown / cache anahtarı
   const mid = coords[Math.floor(coords.length / 2)];
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
-    // PATCH: Loader sadece 2 ve üzeri marker varsa!
-    if (showElevationLoader) {
-
-if (Array.isArray(markers) && markers.length >= 2) {
-  let track = container.querySelector('.scale-bar-track');
-  if (!track) {
-    track = document.createElement('div');
-    track.className = 'scale-bar-track';
-    container.appendChild(track);
-  }
-  let loader = track.querySelector('.tt-scale-loader');
-  if (!loader) {
-    loader = document.createElement('div');
-    loader.className = 'tt-scale-loader';
-    loader.innerHTML = `<div class="spinner"></div><div class="txt">Loading elevation…</div>`;
-    track.appendChild(loader);
-  } else {
-    loader.style.display = 'flex';
-  }
-  loader.querySelector('.txt').textContent = 'Loading elevation…';
-} else {
-  // loader varsa tamamen DOM'dan kaldır!
-  container.querySelectorAll('.tt-scale-loader').forEach(el => el.remove());
-}
-
-   }
+    window.showScaleBarLoading?.(container, 'Loading elevation…');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
@@ -9296,6 +9109,12 @@ track.addEventListener('touchstart', function(e) {
 
 
 
+  // Görünüm
+  const MARKER_PAD_PX = 10;
+  track.style.position = 'relative';
+  track.style.paddingLeft = `${MARKER_PAD_PX}px`;
+  track.style.paddingRight = `${MARKER_PAD_PX}px`;
+  track.style.overflow = 'visible';
 
 let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
 if (isNaN(width)) width = 400;
@@ -9346,19 +9165,7 @@ track.appendChild(verticalLine);
 const tooltip = document.createElement('div');
 tooltip.className = 'tt-elev-tooltip';
 tooltip.style.left = '0px';
-tooltip.style.opacity = '0'; // BAŞLANGIÇTA GÖRÜNMEZ
 track.appendChild(tooltip);
-
-// Scalebar'a mouse gelince/gidince göster/gizle:
-track.addEventListener('mousemove', function(e) {
-  tooltip.style.opacity = '1';
-});
-track.addEventListener('mouseleave', function(e) {
-  tooltip.style.opacity = '0';
-});
-track.addEventListener('touchend', function(e) {
-  tooltip.style.opacity = '0';
-});
 
 // Mouse ile çizgiyi hareket ettir (her zaman görünür!)
 track.addEventListener('mousemove', function(e) {
@@ -9390,15 +9197,7 @@ const totalM = cum[cum.length - 1] || 1;
 
 // Örnekleme (tam profil)
 
-let N;
-if (totalKm <= 60) {
-  N = Math.max(40, Math.round(totalKm * 2)); // kısa rotalarda 2x
-} else if (totalKm <= 300) {
-  // 60-300 km arası doğrusal azaltma: 60 km'de 120, 300 km'de 300 örnek olsun
-  N = Math.round(120 + ((totalKm - 60) * (180 / 240))); // 120 + scale
-} else {
-  N = 300; // 300 km ve üzeri için sabit 300 örnek
-}
+const N = Math.max(40, Math.round(totalKm *2));
 
 const samples = [];
 for (let i = 0; i < N; i++) {
@@ -9444,65 +9243,45 @@ container._elevKmSpan = totalKm;
     else { vizMin = min - 1; vizMax = max + 1; }
 
     const X = kmRel => (kmRel / spanKm) * width;
-                const TOP_PAD = 12;
-                const BOTTOM_PAD = 16;
-                const Y = e => {
-                  if (isNaN(e) || vizMax === vizMin) return SVG_H / 2;
-                  // scaleHeight = toplam alan
-                  const scaleHeight = SVG_H - TOP_PAD - BOTTOM_PAD;
-                  return (SVG_H - BOTTOM_PAD) - ((e - vizMin) / (vizMax - vizMin)) * scaleHeight;
-                };
+    const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
+
     while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
     while (segG.firstChild) segG.removeChild(segG.firstChild);
 
     // Grid
     const levels = 4;
-for (let i = 0; i <= levels; i++) {
-  const ev = vizMin + (i / levels) * (vizMax - vizMin);
-  const y = Y(ev);
+    for (let i = 0; i <= levels; i++) {
+      const ev = vizMin + (i / levels) * (vizMax - vizMin);
+      const y = Y(ev);
+      if (isNaN(y)) continue;
+      const ln = document.createElementNS(svgNS, 'line');
+      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+      gridG.appendChild(ln);
 
-  // LABEL:
-  const tx = document.createElementNS(svgNS, 'text');
-  tx.setAttribute('x', '6'); // Sol kenar, label
-  tx.setAttribute('y', String(y - 4));
-  tx.setAttribute('fill', '#90a4ae');
-  tx.setAttribute('font-size', '11');
-  tx.textContent = `${Math.round(ev)} m`;
-  gridG.appendChild(tx);
-
-  // YATAY GRID LİNE
-  const hLine = document.createElementNS(svgNS, 'line');
-  hLine.setAttribute('x1', '42'); // Label'ın sağından başlasın!
-  hLine.setAttribute('x2', String(width)); // Tüm grid'in sonuna kadar
-  hLine.setAttribute('y1', String(y));
-  hLine.setAttribute('y2', String(y));
-  hLine.setAttribute('stroke', '#cfd8dc');
-  hLine.setAttribute('stroke-dasharray', '5 7');
-  hLine.setAttribute('opacity', '.8');
-  gridG.appendChild(hLine);
-}
+      const tx = document.createElementNS(svgNS, 'text');
+      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+      tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
+    }
 
     // Alan
     let topD = '';
     const n = Math.min(smooth.length, s.length);
-    
-
-    const GRID_LABEL_PAD_X = 42; // grid ve gri dolgu başlama noktası
-
-for (let i = 0; i < n; i++) {
-  const kmAbs = s[i].distM / 1000;
-  const x = Math.max(GRID_LABEL_PAD_X, Math.min(width, X(kmAbs - startKmDom)));
-  const y = Y(smooth[i]);
-  if (isNaN(x) || isNaN(y)) continue;
-  topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-}
-
-
+    for (let i = 0; i < n; i++) {
+      const kmAbs = s[i].distM / 1000;
+      const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
+      const y = Y(smooth[i]);
+      if (isNaN(x) || isNaN(y)) continue;
+      topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+    }
     if (topD) {
-  const lastSampleX = X(s[s.length-1].distM / 1000 - startKmDom); // Son noktanın X'i
-  const areaD = `${topD} L ${lastSampleX} ${SVG_H} L ${GRID_LABEL_PAD_X} ${SVG_H} Z`;  areaPath.setAttribute('d', areaD);
-  areaPath.setAttribute('fill', '#263445');
-}
+      const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
+      areaPath.setAttribute('d', areaD);
+      areaPath.setAttribute('fill', '#263445');
+    }
 
     // Eğim renkli çizgiler
     for (let i = 1; i < n; i++) {
@@ -9578,15 +9357,7 @@ track.__onMove = function(e) {
   }
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  const tooltipWidth = tooltip.getBoundingClientRect().width || 120;
-const barWidth = rect.width;
-if (x > barWidth / 2) {
-  // Ortadan sonra: tooltip’i çizginin SOLUNDA göster
-  tooltip.style.left = `${x - tooltipWidth - 12}px`;
-} else {
-  // Ortadan önce: tooltip’i çizginin SAĞINDA göster
-  tooltip.style.left = `${x + 12}px`;
-}
+  tooltip.style.left = `${x}px`;
   verticalLine.style.left = `${x}px`;
   verticalLine.style.display = 'block';
 };
