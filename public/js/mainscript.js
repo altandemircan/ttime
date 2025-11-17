@@ -4673,11 +4673,16 @@ function clearRouteVisualsForDay(day){
   const expObj = window.expandedMaps && window.expandedMaps[key];
   if (expObj && expObj.expandedMap){
     const eMap = expObj.expandedMap;
-    eMap.eachLayer(l=>{
-      if(!(l instanceof L.TileLayer)){
-        try{ eMap.removeLayer(l);}catch(_){}
-      }
-    });
+                eMap.eachLayer(l=>{
+              if (
+                l instanceof L.Marker ||
+                l instanceof L.Polyline ||
+                l instanceof L.Circle ||
+                l instanceof L.CircleMarker
+              ) {
+                try { eMap.removeLayer(l); } catch(_){}
+              }
+            });
     const expScale = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (expScale){ expScale.innerHTML=''; delete expScale.dataset?.elevLoadedKey; }
     const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
@@ -4718,7 +4723,13 @@ function closeAllExpandedMapsAndReset() {
       if (obj.expandedMap) {
         try {
           obj.expandedMap.eachLayer(l => {
-            if (!(l instanceof L.TileLayer)) {
+            // SADECE marker, polyline, circle, circleMarker silinsin; tileLayer VEKTÖR zemin KALSIN!
+            if (
+              l instanceof L.Marker ||
+              l instanceof L.Polyline ||
+              l instanceof L.Circle ||
+              l instanceof L.CircleMarker
+            ) {
               try { obj.expandedMap.removeLayer(l); } catch(_){}
             }
           });
@@ -7659,7 +7670,16 @@ async function renderRouteForDay(day) {
             initEmptyDayMap(day);
             const map = window.leafletMaps?.[containerId];
             if (map) {
-                map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
+                map.eachLayer(l => {
+    if (
+      l instanceof L.Marker ||
+      l instanceof L.Polyline ||
+      l instanceof L.Circle ||
+      l instanceof L.CircleMarker
+    ) {
+      map.removeLayer(l);
+    }
+});
                 const latlngs = raw.map(pt => [pt.lat, pt.lng]);
                 const poly = addPolylineSafe(map, latlngs, { color: '#1565c0', weight: 5, opacity: 0.9 });
                 addCircleMarkerSafe(map, latlngs[0], { radius: 8, color: '#2e7d32', fillColor: '#2e7d32', fillOpacity: 0.95, weight: 2 }).bindPopup('Start');
