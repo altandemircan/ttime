@@ -5800,10 +5800,15 @@ const points = allPoints.filter(
                                                             easeLinearity: 0.2
                                                           });
                                                         expandedMap._maplibreLayer = L.maplibreGL({ 
-                                                          style: 'https://tiles.openfreemap.org/styles/bright' // veya ilk açılışta istediğin layer
-                                                        }).addTo(expandedMap);
-                                                        updateExpandedMap(expandedMap, day);
+  style: 'https://tiles.openfreemap.org/styles/bright'
+}).addTo(expandedMap);
 
+const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+if (pts.length === 1) {
+  expandedMap.setView([pts[0].lat, pts[0].lng], 14);
+}
+
+updateExpandedMap(expandedMap, day);
 
 try {
   expandedMap.dragging.enable?.();
