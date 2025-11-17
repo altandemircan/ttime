@@ -1831,14 +1831,14 @@ async function buildPlan(city, days) {
 
   for (const cat of categories) {
     let radius = 3;
-    let places = await getPlacesForCategory(city, cat, 30, radius * 1000);
+    let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
     let attempt = 0;
     const maxAttempts = 5;
     const triedNames = new Set();
     while (places.length <= 1 && attempt < maxAttempts) {
       if (places.length === 1) triedNames.add(places[0].name);
       radius += 5;
-      let newPlaces = await getPlacesForCategory(city, cat, 30, radius * 1000);
+      let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000);
       newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
       if (newPlaces.length > 0) {
         places = places.concat(newPlaces);
@@ -5302,7 +5302,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         }
 
         // Haritayı noktalar arasında ortala
-        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+        if (!points || points.length < 2) {
+  // Sadece marker ekle, haritayı ortala, rota/fitBounds/polyline yapma
+  if (points.length === 1) {
+    L.marker([points[0].lat, points[0].lng], {/*icon*/}).addTo(map);
+    map.setView([points[0].lat, points[0].lng], 14);
+  }
+  return;
+}
+map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else {
         // Hiç marker yoksa harita orijinal konumda
         map.setView([0, 0], 2, { animate: true });
