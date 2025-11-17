@@ -7281,11 +7281,16 @@ function getDayPoints(day) {
       let lng = item.location?.lng ?? item.lng ?? item.lon ?? null;
       return isFinite(Number(lat)) && isFinite(Number(lng));
     })
-    .map(item => {
-      let lat = item.location?.lat ?? item.lat ?? null;
-      let lng = item.location?.lng ?? item.lng ?? item.lon ?? null;
-      return { lat: Number(lat), lng: Number(lng), name: item.name };
-    });
+   .map(item => {
+  let lat = item.location?.lat ?? item.lat ?? null;
+  let lng = item.location?.lng ?? item.lng ?? item.lon ?? null;
+  if (!isFinite(Number(lat)) || !isFinite(Number(lng))) {
+    console.warn('Geçersiz koordinat:', lat, lng, item);
+    return null;
+  }
+  return { lat: Number(lat), lng: Number(lng), name: item.name };
+})
+.filter(Boolean);
 }
 
 function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
@@ -7567,23 +7572,25 @@ async function renderRouteForDay(day) {
         window.importedTrackByDay[day].drawRaw = false;
     }
 
-    if (!points || points.length === 0) {
-        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-        if (typeof removeDayMapCompletely === 'function') {
-            removeDayMapCompletely(day);
-        } else if (typeof removeDayMap === 'function') {
-            removeDayMap(day);
-        } else {
-            document.getElementById(`route-map-day${day}`)?.remove();
-            document.getElementById(`route-info-day${day}`)?.remove();
-            document.getElementById(`map-bottom-controls-wrapper-day${day}`)?.remove();
-            document.getElementById(`route-controls-bar-day${day}`)?.remove();
-        }
-        return;
+   if (!points || points.length === 0) {
+    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+
+    // PATCH: Harita, scale bar ve expanded map DOM'dan kaldırılmayacak!
+    // Sadece bir info/hint gösterebilirsin:
+    const mapDiv = document.getElementById(`route-map-day${day}`);
+    if (mapDiv) mapDiv.innerHTML = "<div class='empty-map-hint'>Select a point to start mapping.</div>";
+
+    // Expand edilmiş harita varsa scale bar div içeriğini güncelle:
+    let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (expandedScaleBar) {
+      expandedScaleBar.style.display = "block";
+      expandedScaleBar.innerHTML = "<div style='text-align:center;color:#c62828;padding:12px;'>No route points found.<br>Select at least 1 point to start mapping.</div>";
     }
+    return;
+}
 
     if (points.length === 1) {
 
