@@ -5302,7 +5302,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         }
 
         // Haritayı noktalar arasında ortala
-        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+        if (!points || points.length < 2) {
+  // Sadece marker ekle, haritayı ortala, rota/fitBounds/polyline yapma
+  if (points.length === 1) {
+    L.marker([points[0].lat, points[0].lng], {/*icon*/}).addTo(map);
+    map.setView([points[0].lat, points[0].lng], 14);
+  }
+  return;
+}
+map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else {
         // Hiç marker yoksa harita orijinal konumda
         map.setView([0, 0], 2, { animate: true });
