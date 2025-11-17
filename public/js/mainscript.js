@@ -3293,47 +3293,7 @@ opts.zoom   = opts.zoom   || INITIAL_EMPTY_MAP_ZOOM;
 }
 
 
-function removeDayMap(day) {
-  // Eski yanlış çağrılar boşa gitmesin
-  return removeDayMapCompletely(day);
-}
-function removeDayMapCompletely(day) {
-  const containerId = `route-map-day${day}`;
 
-  // Expanded map açıksa kapat
-  if (window.expandedMaps && window.expandedMaps[containerId]) {
-    if (typeof restoreMap === 'function') {
-      try { restoreMap(containerId, day); } catch (_) {}
-    }
-    delete window.expandedMaps[containerId];
-  }
-
-  // Leaflet instance
-  if (window.leafletMaps && window.leafletMaps[containerId]) {
-    try { window.leafletMaps[containerId].remove(); } catch (_) {}
-    delete window.leafletMaps[containerId];
-  }
-
-  // Küçük harita ve ilgili info / controls / bar
-  const mapEl = document.getElementById(containerId);
-  if (mapEl) mapEl.remove();
-
-  const infoEl = document.getElementById(`route-info-day${day}`);
-  if (infoEl) infoEl.remove();
-
-  const tmSet = document.getElementById(`tt-travel-mode-set-day${day}`);
-  if (tmSet) tmSet.remove();
-
-  const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
-  if (controlsWrapper) controlsWrapper.remove();
-
-  const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
-  if (controlsBar) controlsBar.remove();
-
-  // Küçük scale bar varsa (gün için)
-  const scaleBar = document.getElementById(`route-scale-bar-day${day}`);
-  if (scaleBar) scaleBar.remove();
-}
 function attemptExpandDay(day, tries = 0) {
   const cid = `route-map-day${day}`;
   if (window.expandedMaps && window.expandedMaps[cid]) return;
