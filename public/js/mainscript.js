@@ -4775,7 +4775,7 @@ return '<div class="map-error">Invalid location information</div>';
   </div>`;
 }
 
-function createLeafletMapForItem(mapId, lat, lon, name, number) {
+function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
     if (window._leafletMaps[mapId]) {
         try { window._leafletMaps[mapId].remove(); } catch(e){}
@@ -4795,10 +4795,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-const pts = getDayPoints(day);
-if (pts.length === 1) {
-    map.setView([pts[0].lat, pts[0].lng], 14);
-}
+    // ARTIK day VAR!
+    if (typeof getDayPoints === "function" && typeof day !== "undefined") {
+        const pts = getDayPoints(day);
+        if (pts.length === 1) {
+            map.setView([pts[0].lat, pts[0].lng], 14);
+        }
+    }
 
     // Marker
     const icon = L.divIcon({
@@ -4813,6 +4816,7 @@ if (pts.length === 1) {
     window._leafletMaps[mapId] = map;
     setTimeout(function() { map.invalidateSize(); }, 120);
 }
+
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
   const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
