@@ -3110,7 +3110,7 @@ function ensureDayMapContainer(day) {
 
   return mapDiv;
 }
- 
+
 function initEmptyDayMap(day) {
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
@@ -3150,16 +3150,29 @@ function initEmptyDayMap(day) {
     inertia: true,
     easeLinearity: 0.2
   }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
-  if (!map._initialView) {
-  map._initialView = {
-    center: map.getCenter(),
-    zoom: map.getZoom()
-  };
-}
 
+  // --- PATCH: Vektör katman ekle ---
+  L.maplibreGL({
+    style: 'https://tiles.openfreemap.org/styles/bright',
+  }).addTo(map);
+
+  // --- PATCH: Tek marker varsa ortala ---
+  // Not: getDayPoints fonksiyonun mevcut!
+  const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+  if (pts.length === 1) {
+    map.setView([pts[0].lat, pts[0].lng], 14);
+  }
+
+  if (!map._initialView) {
+    map._initialView = {
+      center: map.getCenter(),
+      zoom: map.getZoom()
+    };
+  }
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 }
+
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
   Object.keys(window.leafletMaps).forEach(id => {
@@ -3187,6 +3200,7 @@ function restoreLostDayMaps() {
     }
   });
 }
+
 
 (function initDirectDayExpandedMapPatch(){
   if (window.__tt_directExpandedPatchApplied) return;
@@ -5951,7 +5965,7 @@ if (track && svg) {
     adjustExpandedHeader(day);
   }
 
-  
+
 // ← BURADAN SONRA EKLE!
 setTimeout(() => {
   const expMapDiv = document.getElementById(`${containerId}-expanded`);
