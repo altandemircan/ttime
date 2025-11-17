@@ -7424,12 +7424,12 @@ if (imported) {
 }
 
 async function renderRouteForDay(day) {
-
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
     const pts = getDayPoints(day);
     console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
 
+    // GPS dosyası kilitli ise
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         const points = getDayPoints(day);
@@ -7437,6 +7437,7 @@ async function renderRouteForDay(day) {
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
+        // Route için en az 2 nokta şartı, haritayı/scale barı KALDIRMA. Sadece işlemi durdur!
         if (gpsRaw.length < 2 || points.length < 2) return;
 
         let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
@@ -7555,7 +7556,8 @@ async function renderRouteForDay(day) {
         return;
     }
 
-        if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
+    // Mini harita suppress ayarı varsa en az bir point lazımsa
+    if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
         const pts0 = getDayPoints(day);
         if (!pts0 || pts0.length === 0) return;
     }
@@ -7572,25 +7574,73 @@ async function renderRouteForDay(day) {
         window.importedTrackByDay[day].drawRaw = false;
     }
 
-   if (!points || points.length === 0) {
-    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+    // --- PATCH: 0 point varsa panel DOM'da kalır, sadece bilgi yazarız ---
+    if (!points || points.length === 0) {
+        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
-    // PATCH: Harita, scale bar ve expanded map DOM'dan kaldırılmayacak!
-    // Sadece bir info/hint gösterebilirsin:
-    const mapDiv = document.getElementById(`route-map-day${day}`);
-    if (mapDiv) mapDiv.innerHTML = "<div class='empty-map-hint'>Select a point to start mapping.</div>";
-
-    // Expand edilmiş harita varsa scale bar div içeriğini güncelle:
-    let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (expandedScaleBar) {
-      expandedScaleBar.style.display = "block";
-      expandedScaleBar.innerHTML = "<div style='text-align:center;color:#c62828;padding:12px;'>No route points found.<br>Select at least 1 point to start mapping.</div>";
+        // Haritayı/scale barı DOM'dan kaldırma; sadece info mesajı!
+        const mapDiv = document.getElementById(`route-map-day${day}`);
+        if (mapDiv) mapDiv.innerHTML = "<div class='empty-map-hint'>Select a point to start mapping.</div>";
+        let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        if (expandedScaleBar) {
+            expandedScaleBar.style.display = "block";
+            expandedScaleBar.innerHTML = "<div style='text-align:center;color:#c62828;padding:12px;'>No route points found.<br>Select at least 1 point to start mapping.</div>";
+        }
+        return;
     }
-    return;
-}
+
+    // --- PATCH: 1 nokta varsa, her eklemede koordinat validasyonu ---
+    if (points.length === 1) {
+        const p = points[0];
+        if (
+            !p ||
+            typeof p.lat !== "number" || !isFinite(p.lat) ||
+            typeof p.lng !== "number" || !isFinite(p.lng)
+        ) { return; }
+        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+        ensureDayMapContainer(day);
+        initEmptyDayMap(day);
+        const map = window.leafletMaps?.[containerId];
+        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+
+        if (map) {
+            map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
+            // NaN guard!
+            if (typeof p.lat === "number" && isFinite(p.lat) && typeof p.lng === "number" && isFinite(p.lng)) {
+                const marker = L.circleMarker([p.lat, p.lng], {
+                    radius: 8, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
+                }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
+                if (marker._path) marker._path.classList.add('single-point-pulse');
+                else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
+                try { map.flyTo([p.lat, p.lng], 14, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
+            }
+        }
+        const expandedMapObj = window.expandedMaps?.[containerId];
+        if (expandedMapObj?.expandedMap) {
+            const eMap = expandedMapObj.expandedMap;
+            eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
+            // NaN guard!
+            if (typeof p.lat === "number" && isFinite(p.lat) && typeof p.lng === "number" && isFinite(p.lng)) {
+                const m = L.circleMarker([p.lat, p.lng], {
+                    radius: 11, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.92, weight: 3
+                }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
+                if (m._path) m._path.classList.add('single-point-pulse');
+                try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
+            }
+        }
+        // PATCH: Scale bar her zaman DOM'da, burada istersen info/hint güncelleyebilirsin!
+        let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        if (expandedScaleBar) {
+            expandedScaleBar.style.display = "block";
+            expandedScaleBar.innerHTML = "<div style='text-align:center;color:#1976d2;padding:12px;'>Sadece 1 nokta var.<br>Daha fazla nokta ekleyin ki rota çizilsin.</div>";
+        }
+        return;
+    }
 
     if (points.length === 1) {
 
