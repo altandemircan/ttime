@@ -5853,8 +5853,8 @@ const points = allPoints.filter(
 }).addTo(expandedMap);
 
 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-if (pts.length === 1) {
-  expandedMap.setView([pts[0].lat, pts[0].lng], 14);
+if (!pts || pts.length === 0) {
+    expandedMap.setView([41.0, 12.0], 5); // İtalya odağı
 }
 
 updateExpandedMap(expandedMap, day);
