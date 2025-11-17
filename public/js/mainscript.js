@@ -5957,11 +5957,11 @@ setTimeout(() => {
       leafDom: hasLeafletContainer, 
       markerCount 
     });
-    if (!hasLeafletContainer) {
-      // Expanded map olmuyorsa DOM'u force temizleyip tekrar çağırabilirsin:
-      forceCleanExpandedMap(day); 
-      setTimeout(() => expandMap(containerId, day), 60);
-    }
+    // KESİNLİKLE BUNU AKTİF KULLANMA!
+    // if (!hasLeafletContainer) {
+    //   forceCleanExpandedMap(day); 
+    //   setTimeout(() => expandMap(containerId, day), 60);
+    // }
   }
 }, 400);
 
