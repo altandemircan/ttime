@@ -7592,23 +7592,20 @@ async function renderRouteForDay(day) {
     if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
     if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
     if (map) {
-        // Yalnızca TileLayer VEYA MaplibreGL instance'larını koru (layer silerken)
-        map.eachLayer(l => {
-    // Sadece Marker, Polyline, Circle, CircleMarker ve benzeri NON-tile-layer tiplerini sil!
-    // (Doğrudan maplibreGL tile-layerı tipini kontrol et, name'i ile de ek kontrol ekle)
-    const tileName = (l._tiles && l._tiles.constructor && l._tiles.constructor.name) || '';
-    // MaplibreGL Leaflet tile-layer, _tiles özelliği yoktur. tileName ve l._container test.
-    if (
-        l instanceof L.Marker ||
-        l instanceof L.Polyline ||
-        l instanceof L.Circle ||
-        l instanceof L.CircleMarker ||
-        (l._container && l._container.classList && l._container.classList.contains('leaflet-overlay-pane'))
-        // tile-layerı DAİMA SİLME!
-    ) {
-        map.removeLayer(l);
-    }
-});
+
+
+
+                            map.eachLayer(l => {
+                                // Sadece marker, polyline, circle ve circleMarker layerlarını sil
+                                if (
+                                    l instanceof L.Marker ||
+                                    l instanceof L.Polyline ||
+                                    l instanceof L.Circle ||
+                                    l instanceof L.CircleMarker
+                                ) {
+                                    map.removeLayer(l);
+                                }
+                            });
 
         const p = points[0];
         // DAİMA leaflet marker/divIcon kullanarak ekle (SVG/path yerine)
