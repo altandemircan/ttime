@@ -4582,7 +4582,31 @@ function updateExpandedMap(expandedMap, day) {
 
     adjustExpandedHeader(day);
 }
+function forceCleanExpandedMap(day) {
+  const containerId = `route-map-day${day}`;
+  // 1. Expanded map instance ve DOM temizliği
+  // -- Expanded JS instance varsa sil
+  if (window.expandedMaps && window.expandedMaps[containerId]) {
+    try {
+      window.expandedMaps[containerId].expandedMap.remove();
+    } catch(e){}
+    delete window.expandedMaps[containerId];
+  }
+  // -- Expanded harita DOM'unu sil
+  const expDiv = document.getElementById(`${containerId}-expanded`);
+  if (expDiv && expDiv.parentNode) expDiv.parentNode.removeChild(expDiv);
 
+  // -- Eski collapsed harita instance'ı ve DOM'u da sil (leaflet)
+  if (window.leafletMaps && window.leafletMaps[containerId]) {
+    try { window.leafletMaps[containerId].remove(); } catch(e){}
+    delete window.leafletMaps[containerId];
+  }
+  // -- Eski Leaflet container varsa DOM'dan kaldır
+  const mapDiv = document.getElementById(containerId);
+  if (mapDiv) {
+    mapDiv.querySelectorAll('.leaflet-container').forEach(el => el.remove());
+  }
+}
 // Yardımcı fonksiyon - Yay koordinatlarını al
 function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
     // start & end: [lng, lat] formatında
@@ -5580,7 +5604,8 @@ function openMapLibre3D(expandedMap) {
 }
 
 async function expandMap(containerId, day) {
-
+// En başa ekle!
+forceCleanExpandedMap(day);
 
       window.currentDay = day; // ← DÜZELTME!
 
@@ -5920,6 +5945,25 @@ if (track && svg) {
   if (typeof adjustExpandedHeader === 'function') {
     adjustExpandedHeader(day);
   }
+
+  
+// ← BURADAN SONRA EKLE!
+setTimeout(() => {
+  const expMapDiv = document.getElementById(`${containerId}-expanded`);
+  if (expMapDiv) {
+    const hasLeafletContainer = !!expMapDiv.querySelector('.leaflet-container');
+    const markerCount = expMapDiv.querySelectorAll('.leaflet-marker-pane .leaflet-marker-icon, .leaflet-overlay-pane path').length;
+    console.log('[Expanded Debug]', { 
+      leafDom: hasLeafletContainer, 
+      markerCount 
+    });
+    if (!hasLeafletContainer) {
+      // Expanded map olmuyorsa DOM'u force temizleyip tekrar çağırabilirsin:
+      forceCleanExpandedMap(day); 
+      setTimeout(() => expandMap(containerId, day), 60);
+    }
+  }
+}, 400);
 
   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
   window.userLocationMarkersByDay = window.userLocationMarkersByDay || {};
