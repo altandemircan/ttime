@@ -7584,36 +7584,53 @@ async function renderRouteForDay(day) {
 }
 
     if (points.length === 1) {
-        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-        ensureDayMapContainer(day);
-        initEmptyDayMap(day);
-        const map = window.leafletMaps?.[containerId];
-        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-        if (map) {
-            map.eachLayer(l => { if (!(l instanceof L.TileLayer)) map.removeLayer(l); });
-            const p = points[0];
-            const marker = L.circleMarker([p.lat, p.lng], {
-                radius: 8, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
-            }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
-            if (marker._path) marker._path.classList.add('single-point-pulse');
-            else setTimeout(() => marker._path && marker._path.classList.add('single-point-pulse'), 30);
-            try { map.flyTo([p.lat, p.lng], 14, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
-        }
-        const expandedMapObj = window.expandedMaps?.[containerId];
-        if (expandedMapObj?.expandedMap) {
-            const eMap = expandedMapObj.expandedMap;
-            eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
-            const p = points[0];
-            const m = L.circleMarker([p.lat, p.lng], {
-                radius: 11, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.92, weight: 3
-            }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
-            if (m._path) m._path.classList.add('single-point-pulse');
-            try { eMap.flyTo([p.lat, p.lng], 15, { duration: 0.6, easeLinearity: 0.2 }); } catch { }
-        }
-        return;
+    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+    const map = window.leafletMaps?.[containerId];
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+    if (map) {
+        // Yalnızca TileLayer VEYA MaplibreGL instance'larını koru (layer silerken)
+        map.eachLayer(l => {
+            if (!(l instanceof L.TileLayer || l?.options?.renderer === "maplibregl")) map.removeLayer(l);
+        });
+
+        const p = points[0];
+        // DAİMA leaflet marker/divIcon kullanarak ekle (SVG/path yerine)
+        L.marker([p.lat, p.lng], {
+            icon: L.divIcon({
+                html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
+                className: "",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            })
+        }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
+        map.setView([p.lat, p.lng], 14, { animate: true });
+        setTimeout(() => map.invalidateSize(), 120);
     }
+    const expandedMapObj = window.expandedMaps?.[containerId];
+    if (expandedMapObj?.expandedMap) {
+        const eMap = expandedMapObj.expandedMap;
+        // Burada da, sadece marker ve polyline'ları sil
+        eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
+
+        const p = points[0];
+        L.marker([p.lat, p.lng], {
+            icon: L.divIcon({
+                html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
+                className: "",
+                iconSize: [34, 34],
+                iconAnchor: [17, 17]
+            })
+        }).addTo(eMap).bindPopup(`<b>${p.name || 'Point'}</b>`).openPopup();
+
+        eMap.setView([p.lat, p.lng], 15, { animate: true });
+        setTimeout(() => eMap.invalidateSize(), 120);
+    }
+    return;
+}
 
     if (points.length === 2 &&
         window.importedTrackByDay &&
