@@ -4443,9 +4443,15 @@ function updateExpandedMap(expandedMap, day) {
         }
     });
 
+    // GÜVENLİ KONTROL: geojson route verisi var mı?
     let hasValidRoute = (
       areAllPointsInTurkey(pts) &&
-      geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
+      geojson &&
+      geojson.features &&
+      geojson.features[0] &&
+      geojson.features[0].geometry &&
+      Array.isArray(geojson.features[0].geometry.coordinates) &&
+      geojson.features[0].geometry.coordinates.length > 1
     );
 
     if (hasValidRoute) {
@@ -4459,7 +4465,6 @@ function updateExpandedMap(expandedMap, day) {
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
     } else if (pts.length > 1) {
-        // Yay segmentleri
         let allArcPoints = [];
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
@@ -4482,7 +4487,6 @@ function updateExpandedMap(expandedMap, day) {
         console.log("[DEBUG] Arc points saved:", allArcPoints.length);
     }
 
-    // Marker ekleme
     pts.forEach((item, idx) => {
         const markerHtml = `
             <div style="background:#d32f2f;color:#fff;border-radius:50%;
@@ -4511,13 +4515,11 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
     }
 
-    // HARITA MERKEZLEME PATCH!
     if (pts.length > 1) {
         expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
-        // PATCH: Dünyanın merkezi yerine İTALYA odağı!
         expandedMap.setView([41.0, 12.0], 5, { animate: true });
     }
 
@@ -4565,7 +4567,6 @@ function updateExpandedMap(expandedMap, day) {
         scaleBarDiv.style.display = "block";
         scaleBarDiv.innerHTML = "";
 
-        // PATCH: markers her zaman dizi!
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
         const track = scaleBarDiv.querySelector('.scale-bar-track');
         const svg = track && track.querySelector('svg.tt-elev-svg');
@@ -4575,7 +4576,6 @@ function updateExpandedMap(expandedMap, day) {
         }
     }
 
-    // SCALE BAR INTERACTION'ı BAŞLAT
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
         console.log("[DEBUG] Scale bar interaction initialized for day", day);
@@ -4583,6 +4583,7 @@ function updateExpandedMap(expandedMap, day) {
 
     adjustExpandedHeader(day);
 }
+
 function forceCleanExpandedMap(day) {
   const containerId = `route-map-day${day}`;
   // 1. Expanded map instance ve DOM temizliği
@@ -8208,7 +8209,15 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     // snapThreshold: km cinsinden (örn: 0.2 km = 200m)
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
-    if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return [];
+    // GÜVENLİ KONTROL!
+    if (
+      !geojson ||
+      !geojson.features ||
+      !geojson.features[0] ||
+      !geojson.features[0].geometry ||
+      !Array.isArray(geojson.features[0].geometry.coordinates)
+    ) return [];
+
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
 
@@ -8242,7 +8251,6 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
                 minIdx = i;
             }
         }
-        // Eğer minDist snapThreshold (örn: 200m) üstündeyse, "yakınında bitir" mantığı: yine de en yakın noktayı kullan! (uyarı istersen burada ekle)
         lastIdx = minIdx;
         return {
             name: marker.name,
