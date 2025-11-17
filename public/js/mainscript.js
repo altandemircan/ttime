@@ -5461,45 +5461,70 @@ function setupScaleBarInteraction(day, map) {
     if (!scaleBar || !map) return;
     let hoverMarker = null;
 
-    function onMove(e) {
-        const rect = scaleBar.getBoundingClientRect();
-        let x = (e.touches && e.touches.length)
-            ? (e.touches[0].clientX - rect.left)
-            : (e.clientX - rect.left);
-        let percent = Math.max(0, Math.min(x / rect.width, 1));
+   // Replace the onMove function inside setupScaleBarInteraction(...) with this safe version:
+function onMove(e) {
+    const rect = scaleBar.getBoundingClientRect();
+    let x = (e.touches && e.touches.length)
+        ? (e.touches[0].clientX - rect.left)
+        : (e.clientX - rect.left);
+    let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-        // YAY üzerinde marker hareketi - HATA AYIKLAMA
-        if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
-            let arcPts = window._curvedArcPointsByDay[day];
-            
-            console.log("Arc points length:", arcPts.length);
-            console.log("Percent:", percent);
-            
-            // Doğru indeksi hesapla
-            let idx = Math.round(percent * (arcPts.length - 1));
-            idx = Math.max(0, Math.min(idx, arcPts.length - 1));
-            
-            console.log("Calculated index:", idx);
-            
-            const [lng, lat] = arcPts[idx];
-            console.log("Marker position:", lat, lng);
-            
-            if (hoverMarker) {
-                hoverMarker.setLatLng([lat, lng]);
-            } else {
-                hoverMarker = L.circleMarker([lat, lng], {
-                    radius: 10,
-                    color: "#fff",
-                    fillColor: "#8a4af3",
-                    fillOpacity: 0.9,
-                    weight: 3,
-                    zIndexOffset: 9999
-                }).addTo(map);
-            }
-        } else {
-            console.log("No arc points found for day:", day);
+    // Eğer arc noktaları yoksa güvenli fallback
+    if (!window._curvedArcPointsByDay || !Array.isArray(window._curvedArcPointsByDay[day]) || window._curvedArcPointsByDay[day].length === 0) {
+        // varsa önce hover marker'ı temizle
+        if (hoverMarker) {
+            try { map.removeLayer(hoverMarker); } catch(_) {}
+            hoverMarker = null;
+        }
+        console.log("No arc points found for day:", day);
+        return;
+    }
+
+    const arcPts = window._curvedArcPointsByDay[day];
+    // Hesaplanan index'in gerçekten mevcut bir eleman gösterdiğinden emin ol
+    let idx = Math.round(percent * (arcPts.length - 1));
+    idx = Math.max(0, Math.min(idx, Math.max(0, arcPts.length - 1)));
+
+    const pt = arcPts[idx];
+    if (!pt || !Array.isArray(pt) || typeof pt[0] === 'undefined' || typeof pt[1] === 'undefined') {
+        // Geçersiz nokta; hover marker'ı temizle ve çık
+        if (hoverMarker) {
+            try { map.removeLayer(hoverMarker); } catch(_) {}
+            hoverMarker = null;
+        }
+        console.warn("Invalid arc point at index:", idx, pt);
+        return;
+    }
+
+    const [lng, lat] = pt;
+    if (typeof lat !== 'number' || typeof lng !== 'number' || !isFinite(lat) || !isFinite(lng)) {
+        if (hoverMarker) {
+            try { map.removeLayer(hoverMarker); } catch(_) {}
+            hoverMarker = null;
+        }
+        console.warn("Non-numeric arc point:", pt);
+        return;
+    }
+
+    // Log (mevcut kodu koru)
+    // console.log("Arc points length:", arcPts.length);
+    // console.log("Percent:", percent);
+    // console.log("Calculated index:", idx);
+    // console.log("Marker position:", lat, lng);
+
+    if (hoverMarker) {
+        try { hoverMarker.setLatLng([lat, lng]); } catch (err) { console.warn("setLatLng failed", err); }
+    } else {
+        try {
+            hoverMarker = L.circleMarker([lat, lng], {
+                radius: 10, color: "#fff", fillColor: "#8a4af3",
+                fillOpacity: 0.9, weight: 3, zIndexOffset: 9999
+            }).addTo(map);
+        } catch (err) {
+            console.warn("Could not add hoverMarker", err);
         }
     }
+}}
     
     function onLeave() {
         if (hoverMarker) {
