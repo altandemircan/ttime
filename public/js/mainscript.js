@@ -4779,6 +4779,11 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
+const pts = getDayPoints(day);
+if (pts.length === 1) {
+    map.setView([pts[0].lat, pts[0].lng], 14);
+}
+
     // Marker
     const icon = L.divIcon({
         html: getPurpleRestaurantMarkerHtml(),
@@ -5226,6 +5231,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     L.maplibreGL({
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
+
+    const pts = getDayPoints(day);
+if (pts.length === 1) {
+    map.setView([pts[0].lat, pts[0].lng], 14);
+}
 
     // --- YAY ÇİZGİ PATCH'I ---
     const isFlyMode = !areAllPointsInTurkey(points);
