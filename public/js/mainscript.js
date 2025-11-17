@@ -7494,22 +7494,16 @@ async function renderRouteForDay(day) {
     }
 
     if (!points || points.length === 0) {
-        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-        if (typeof removeDayMapCompletely === 'function') {
-            removeDayMapCompletely(day);
-        } else if (typeof removeDayMap === 'function') {
-            removeDayMap(day);
-        } else {
-            document.getElementById(`route-map-day${day}`)?.remove();
-            document.getElementById(`route-info-day${day}`)?.remove();
-            document.getElementById(`map-bottom-controls-wrapper-day${day}`)?.remove();
-            document.getElementById(`route-controls-bar-day${day}`)?.remove();
-        }
-        return;
-    }
+    // Harita DOM'u silmek yerine, hep gösterilecek şekilde:
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+    // Tüm route/stat/cache/state temizliği gene olsun
+    if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+    if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+    return;
+}
 
     if (points.length === 1) {
         if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
