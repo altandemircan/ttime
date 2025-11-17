@@ -4435,10 +4435,15 @@ function updateExpandedMap(expandedMap, day) {
     let mode = toOSRMMode(modeRaw);
 
     expandedMap.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-            expandedMap.removeLayer(layer);
-        }
-    });
+    if (
+        layer instanceof L.Marker ||
+        layer instanceof L.Polyline ||
+        layer instanceof L.Circle ||
+        layer instanceof L.CircleMarker
+    ) {
+        expandedMap.removeLayer(layer);
+    }
+});
 
     let hasValidRoute = (
       areAllPointsInTurkey(pts) &&
