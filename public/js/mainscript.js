@@ -5167,7 +5167,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
-    if (window.leafletMaps[containerId]) {
+    if (window.leafletMaps && window.leafletMaps[containerId]) {
         window.leafletMaps[containerId].remove();
         delete window.leafletMaps[containerId];
     }
@@ -5176,6 +5176,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.style.height = "285px";
     sidebarContainer.classList.remove("big-map", "full-screen-map");
 
+    // Route summary and controls
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
     document.getElementById(controlsWrapperId)?.remove();
 
@@ -5187,7 +5188,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     controlRow.id = controlRowId;
     controlRow.className = "map-bottom-controls";
 
-    // Route summary
     const infoDiv = document.createElement("span");
     infoDiv.className = "route-summary-control";
     if (summary) {
@@ -5206,7 +5206,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     controlsWrapper.appendChild(controlRow);
     sidebarContainer.parentNode.insertBefore(controlsWrapper, sidebarContainer.nextSibling);
 
-    // ADD RIGHT AFTER IT:
+    // Travel mode set
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
     let routeCoords = [];
@@ -5220,6 +5220,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     }
 
+    // Haritayı oluştur
     const map = L.map(containerId, { 
         scrollWheelZoom: true,
         fadeAnimation: false,
@@ -5227,79 +5228,83 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         preferCanvas: true
     });
 
-    // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
+    // DAİMA Vektör TileLayer ekle
     L.maplibreGL({
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-    const pts = getDayPoints(day);
-if (pts.length === 1) {
-    map.setView([pts[0].lat, pts[0].lng], 14);
-}
-
-    // --- YAY ÇİZGİ PATCH'I ---
-    const isFlyMode = !areAllPointsInTurkey(points);
-
-    // EKLE: Flyers modunda kavisli yay noktalarını kaydet
-    if (isFlyMode && points.length > 1) {
-        // --- Flyers için kavisli yay noktaları birleştir ---
-        window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
-        let arcPoints = [];
-        for (let i = 0; i < points.length - 1; i++) {
-            const start = [points[i].lng, points[i].lat];
-            const end = [points[i + 1].lng, points[i + 1].lat];
-            const curve = getCurvedArcCoords(start, end, 0.33, 32);
-            arcPoints = arcPoints.concat(curve);
-
-            // Haritada da kavisli çizgi görselini göster (bu zaten vardı)
-            drawCurvedLine(map, points[i], points[i + 1], {
-                color: "#1976d2",
-                weight: 5,
-                opacity: 0.85,
-                dashArray: "6,8"
-            });
-        }
-        window._curvedArcPointsByDay[day] = arcPoints;
-    } else if (hasValidGeo && routeCoords.length > 1) {
-        // Sadece Türkiye içi OSRM gerçek route varsa düz çizgi
-        L.polyline(routeCoords, {
-            color: '#1976d2',
-            weight: 8,
-            opacity: 0.92,
-            interactive: true,
-            dashArray: null
-        }).addTo(map);
-    }
-    // --- PATCH SONU ---
-
-    if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
-        for (let i = 0; i < missingPoints.length - 1; i++) {
-            drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
-                color: "#1976d2",
-                weight: 4,
-                opacity: 0.8,
-                dashArray: "8,12",
-                interactive: false,
-                renderer: ensureCanvasRenderer(map)
-            });
-        }
-    }
-
-    addNumberedMarkers(map, points);
-
-    if (geojson.features[0]?.properties?.names) {
-        addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
-    }
-
-    // --- Harita görünümünü ayarla ---
+    // --- PATCH: Tek marker durumunda haritayı ve markerı göster ---
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-    if (points.length > 1) {
-        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-    } else if (points.length === 1) {
+    if (points.length === 1) {
+        // Her zaman leaflet marker olarak ekle (SVG/path değil!):
+        L.marker([points[0].lat, points[0].lng], {
+            icon: L.divIcon({
+                html:
+                  `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
+                className: "",
+                iconSize: [32,32],
+                iconAnchor: [16,16]
+            })
+        }).addTo(map).bindPopup(points[0].name || points[0].category || "Point");
         map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+    } else if (points.length > 1) {
+        // Normal multiple marker, route, yay vb.
+        const isFlyMode = !areAllPointsInTurkey(points);
+
+        // FLY MODE ise yaylı çizgi
+        if (isFlyMode) {
+            window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
+            let arcPoints = [];
+            for (let i = 0; i < points.length - 1; i++) {
+                const start = [points[i].lng, points[i].lat];
+                const end = [points[i + 1].lng, points[i + 1].lat];
+                const curve = getCurvedArcCoords(start, end, 0.33, 32);
+                arcPoints = arcPoints.concat(curve);
+
+                drawCurvedLine(map, points[i], points[i + 1], {
+                    color: "#1976d2",
+                    weight: 5,
+                    opacity: 0.85,
+                    dashArray: "6,8"
+                });
+            }
+            window._curvedArcPointsByDay[day] = arcPoints;
+        } else if (hasValidGeo && routeCoords.length > 1) {
+            L.polyline(routeCoords, {
+                color: '#1976d2',
+                weight: 8,
+                opacity: 0.92,
+                interactive: true,
+                dashArray: null
+            }).addTo(map);
+        }
+        // Eksik noktalar için yaylı kırmızı çizgiler
+        if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
+            for (let i = 0; i < missingPoints.length - 1; i++) {
+                drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
+                    color: "#1976d2",
+                    weight: 4,
+                    opacity: 0.8,
+                    dashArray: "8,12",
+                    interactive: false,
+                    renderer: ensureCanvasRenderer(map)
+                });
+            }
+        }
+
+        addNumberedMarkers(map, points);
+
+        if (geojson && geojson.features[0]?.properties?.names) {
+            addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
+        }
+
+        // Haritayı noktalar arasında ortala
+        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else {
+        // Hiç marker yoksa harita orijinal konumda
         map.setView([0, 0], 2, { animate: true });
     }
+
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
