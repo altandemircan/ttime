@@ -6587,58 +6587,77 @@ window.editPointName = function() {
 };
 
 // Güncellenen tıklanan noktayı sepete ekleme fonksiyonu
+// Replace existing window.addClickedPointToCart with this cleaned, safe version
 window.addClickedPointToCart = async function(lat, lng, day) {
-    try {
-        // Düzenlenmiş nokta bilgisini al
-        const pointInfo = window._currentPointInfo || { name: "Seçilen Nokta", address: "", opening_hours: "" };
-        const placeName = pointInfo.name;
-        
-        // Görsel al
-        let imageUrl = "img/placeholder.png";
-        if (typeof getPexelsImage === "function") {
-            try {
-                imageUrl = await getPexelsImage(placeName + " " + (window.selectedCity || ""));
-                if (!imageUrl || imageUrl === PLACEHOLDER_IMG) {
-                    throw new Error("Pexels image not found");
-                }
-            } catch (e) {
-                if (typeof getPixabayImage === "function") {
-                    try {
-                        imageUrl = await getPixabayImage(placeName);
-                    } catch (e2) {
-                        imageUrl = "img/placeholder.png";
-                    }
-                }
-            }
-        }
-        
-        // Sepete ekle
-        const coords = safeCoords(lat, lng);
-        if (!coords) { alert("Geçersiz konum!"); return; }
-        addToCart(
-            placeName,
-            imageUrl,
-            day,
-            "Place",
-            pointInfo.address || "",
-            null, null,
-            pointInfo.opening_hours || "",
-            null,
-            coords,
-            ""
-        );
-
-        
-        // Popup'ı kapat
-        closeNearbyPopup();
-        
-        // Başarı mesajı
-console.log(`"${placeName}" added to cart!`);
-        
-    } catch (error) {
-    console.error('An error occurred while adding the point to the cart:', error);
-alert('An error occurred while adding the point to the cart.');
+  try {
+    // 1) Normalize & validate incoming coordinates
+    const coords = safeCoords(lat, lng);
+    if (!coords) {
+      alert("Geçersiz konum!");
+      return false;
     }
+
+    // 2) Point bilgisi (kullanıcının düzenlediği isim varsa al)
+    const pointInfo = window._currentPointInfo || {};
+    const placeName = (pointInfo.name || "Seçilen Nokta").toString();
+
+    // 3) Görsel yükleme: Pexels -> Pixabay -> placeholder
+    let imageUrl = PLACEHOLDER_IMG || "img/placeholder.png";
+    try {
+      if (typeof getPexelsImage === "function") {
+        const p = await getPexelsImage(placeName + " " + (window.selectedCity || ""));
+        if (p && p !== PLACEHOLDER_IMG) imageUrl = p;
+      }
+    } catch (_) {}
+    if ((!imageUrl || imageUrl === PLACEHOLDER_IMG) && typeof getPixabayImage === "function") {
+      try {
+        const pb = await getPixabayImage(placeName);
+        if (pb && pb !== PLACEHOLDER_IMG) imageUrl = pb;
+      } catch (_) {}
+    }
+
+    // 4) Sepete güvenli ekleme (day sayısını zorunlu sayı yap)
+    const resolvedDay = Number.isFinite(Number(day)) ? Number(day) : Number(window.currentDay || 1);
+    addToCart(
+      placeName,
+      imageUrl,
+      resolvedDay,
+      "Place",
+      pointInfo.address || "",
+      null, null,
+      pointInfo.opening_hours || "",
+      null,
+      coords,
+      ""
+    );
+
+    // 5) Popup kapat ve UI güncelle
+    try { closeNearbyPopup(); } catch (_) {}
+    try { updateCart(); } catch (e) { console.warn("updateCart hata:", e); }
+
+    // 6) Rota/harita güncellemelerini güvenli şekilde tetikle (hafif gecikme ile)
+    setTimeout(() => {
+      try {
+        if (typeof renderRouteForDay === "function") {
+          try { renderRouteForDay(resolvedDay); } catch (e) { console.warn("renderRouteForDay hata:", e); }
+        }
+        const cid = `route-map-day${resolvedDay}`;
+        const expObj = window.expandedMaps && window.expandedMaps[cid];
+        if (expObj && expObj.expandedMap && typeof updateExpandedMap === "function") {
+          try { updateExpandedMap(expObj.expandedMap, resolvedDay); } catch (e) { console.warn("updateExpandedMap hata:", e); }
+        }
+      } catch (e) {
+        console.warn("post-add update hata:", e);
+      }
+    }, 80);
+
+    console.log(`"${placeName}" added to cart!`);
+    return true;
+  } catch (err) {
+    console.error("addClickedPointToCart error:", err);
+    alert("Sepete eklerken hata oluştu.");
+    return false;
+  }
 };
 if (typeof updateCart === "function") updateCart();
 
