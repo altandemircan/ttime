@@ -5461,7 +5461,7 @@ function setupScaleBarInteraction(day, map) {
     if (!scaleBar || !map) return;
     let hoverMarker = null;
 
-   // Replace the onMove function inside setupScaleBarInteraction(...) with this safe version:
+    // Replace the onMove function inside setupScaleBarInteraction(...) with this safe version:
 function onMove(e) {
     const rect = scaleBar.getBoundingClientRect();
     let x = (e.touches && e.touches.length)
@@ -5524,7 +5524,7 @@ function onMove(e) {
             console.warn("Could not add hoverMarker", err);
         }
     }
-}}
+}
     
     function onLeave() {
         if (hoverMarker) {
