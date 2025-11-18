@@ -5835,7 +5835,7 @@ const points = allPoints.filter(
 
 
                                                          const expandedMap = L.map(mapDivId, {
-                                                           center: [41.0, 12.0], // İtalya koordinatları
+                                                           center: [41.0, 12.5674], // İtalya koordinatları
                                                             zoom: 5,
                                                             scrollWheelZoom: true,
                                                             fadeAnimation: true,
@@ -5853,8 +5853,8 @@ const points = allPoints.filter(
 }).addTo(expandedMap);
 
 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-if (!pts || pts.length === 0) {
-    expandedMap.setView([41.8719, 12.5674], 5); // İtalya odağı
+if (pts.length === 1) {
+  expandedMap.setView([pts[0].lat, pts[0].lng], 14);
 }
 
 updateExpandedMap(expandedMap, day);
