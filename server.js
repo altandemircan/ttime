@@ -72,6 +72,7 @@ app.get('/api/geoapify/geocode', async (req, res) => {
 
 app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;
+  // DOĞRU YOL - planet versiyonunu burada kullan!
   const url = `https://tiles.openfreemap.org/planet/20251112_001001_pt/${z}/${x}/${y}.pbf`;
   try {
     const r = await fetch(url, {
@@ -80,16 +81,11 @@ app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
         "Referer": "https://dev.triptime.ai/"
       }
     });
-    // DEBUG
     console.log(`[VECTOR] Proxying: ${url} → Status: ${r.status}`);
-    if (r.status === 403) return res.status(403).send("Upstream returned 403 Forbidden (rate-limit, IP block, etc)");
-    if (r.status === 404) return res.status(404).send("Upstream tile not found (404)");
-    if (!r.ok) return res.status(r.status).send(`Upstream error code: ${r.status}`);
+    if (!r.ok) return res.status(r.status).send(`Upstream error: ${r.status}`);
     res.set('Content-Type', 'application/x-protobuf');
-    res.set('Access-Control-Allow-Origin', '*');
     res.send(await r.buffer());
   } catch (err) {
-    console.error('[VECTOR TILE PROXY ERROR]', err);
     res.status(500).send('Internal proxy error');
   }
 });
