@@ -1121,45 +1121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     disableSendButton && disableSendButton();
   });
 });
-function insertTripAiInfo(infoHtml, containerId, city) {
-    // containerId ile spesifik bir yere koymak istiyorsan, default: "cart-items"
-    const targetId = containerId || "cart-items";
-    const cartDiv = document.getElementById(targetId);
-    if (!cartDiv) return;
 
-    // Eğer HTML yoksa, yapay bir mesaj ver
-    if (!infoHtml) {
-        infoHtml = `<div class="ai-trip-info-box" style="text-align:center;margin:18px 0;">
-            <strong>AI generated trip info not found.</strong>
-        </div>`;
-    }
-
-    // Eski kutuyu sil (özellikle AI kutusundan 2 tane olmasın diye)
-    const oldBox = cartDiv.querySelector('.ai-trip-info-box');
-    if (oldBox) oldBox.remove();
-
-    // Kutu tipik HTML string mi, yoksa DOM element mi? Stringse:
-    let boxDiv;
-    if (typeof infoHtml === "string") {
-        boxDiv = document.createElement("div");
-        boxDiv.innerHTML = infoHtml;
-        // Eğer HTML içinde wrapper varsa, ona eriş:
-        // <div class="ai-trip-info-box">...</div>
-        boxDiv = boxDiv.querySelector('.ai-trip-info-box') || boxDiv;
-    } else {
-        boxDiv = infoHtml; // DOM elementse direkt kullan
-    }
-
-    cartDiv.appendChild(boxDiv);
-
-    // Kutunun HTML’ini kaydet (sadece ana kutunun outerHTML’i)
-    window.latestAiInfoHtml = boxDiv.outerHTML;
-
-    // İsteğe bağlı olarak AI kutusunun başlığına şehir adını ekle:
-    if (city && boxDiv.querySelector('.ai-trip-title')) {
-        boxDiv.querySelector('.ai-trip-title').textContent = `Trip Info for ${city}`;
-    }
-}
 function addCanonicalMessage(canonicalStr) {
   const chatBox = document.getElementById("chat-box");
   if (!chatBox) return;
@@ -10982,4 +10944,43 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     }
 
     return L.polyline(latlngs, options).addTo(map);
+}
+function insertTripAiInfo(infoHtml, containerId, city) {
+    // containerId ile spesifik bir yere koymak istiyorsan, default: "cart-items"
+    const targetId = containerId || "cart-items";
+    const cartDiv = document.getElementById(targetId);
+    if (!cartDiv) return;
+
+    // Eğer HTML yoksa, yapay bir mesaj ver
+    if (!infoHtml) {
+        infoHtml = `<div class="ai-trip-info-box" style="text-align:center;margin:18px 0;">
+            <strong>AI generated trip info not found.</strong>
+        </div>`;
+    }
+
+    // Eski kutuyu sil (özellikle AI kutusundan 2 tane olmasın diye)
+    const oldBox = cartDiv.querySelector('.ai-trip-info-box');
+    if (oldBox) oldBox.remove();
+
+    // Kutu tipik HTML string mi, yoksa DOM element mi? Stringse:
+    let boxDiv;
+    if (typeof infoHtml === "string") {
+        boxDiv = document.createElement("div");
+        boxDiv.innerHTML = infoHtml;
+        // Eğer HTML içinde wrapper varsa, ona eriş:
+        // <div class="ai-trip-info-box">...</div>
+        boxDiv = boxDiv.querySelector('.ai-trip-info-box') || boxDiv;
+    } else {
+        boxDiv = infoHtml; // DOM elementse direkt kullan
+    }
+
+    cartDiv.appendChild(boxDiv);
+
+    // Kutunun HTML’ini kaydet (sadece ana kutunun outerHTML’i)
+    window.latestAiInfoHtml = boxDiv.outerHTML;
+
+    // İsteğe bağlı olarak AI kutusunun başlığına şehir adını ekle:
+    if (city && boxDiv.querySelector('.ai-trip-title')) {
+        boxDiv.querySelector('.ai-trip-title').textContent = `Trip Info for ${city}`;
+    }
 }
