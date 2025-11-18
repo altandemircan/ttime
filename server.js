@@ -115,8 +115,6 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
   }
 });
 
-app.listen(80, () => console.log('Server listening on port 80'));
-// --- BURAYA EKLE --- //
 
 // Autocomplete endpoint
 app.get('/api/geoapify/autocomplete', async (req, res) => {
