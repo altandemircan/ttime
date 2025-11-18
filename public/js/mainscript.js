@@ -4266,6 +4266,7 @@ cartDiv.appendChild(addNewDayButton);
   }, 0);
 
 
+
 } 
 
 function showRemoveItemConfirmation(index, btn) {
