@@ -1557,32 +1557,32 @@ async function clarifyLocation(query) {
     }
 }
 
-async function getAICategories(city, days) {
-    try {
-        const response = await fetch('/llm-proxy/suggest-categories', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city, days })
-        });
-        return await response.json();
-    } catch (error) {
-        return [];
-    }
-}
+// async function getAICategories(city, days) {
+//     try {
+//         const response = await fetch('/llm-proxy/suggest-categories', {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify({ city, days })
+//         });
+//         return await response.json();
+//     } catch (error) {
+//         return [];
+//     }
+// }
 
-async function generateAINotes(name, city, category) {
-    try {
-        const response = await fetch('/llm-proxy/generate-notes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, city, category })
-        });
-        const data = await response.json();
-        return data.notes;
-    } catch (error) {
-        return "";
-    }
-}
+// async function generateAINotes(name, city, category) {
+//     try {
+//         const response = await fetch('/llm-proxy/generate-notes', {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify({ name, city, category })
+//         });
+//         const data = await response.json();
+//         return data.notes;
+//     } catch (error) {
+//         return "";
+//     }
+// }
 
 
 let hasAutoAddedToCart = false;
@@ -2758,15 +2758,7 @@ cartDiv.appendChild(addFavBtn);
 
     initPlaceSearch(day);
 
-  // AI bilgi kutusu DOM'da varsa hiçbir şeyi silme!
-if (!document.querySelector('.ai-trip-info-box')) {
-    // Kutusu yoksa, ai-info-section'u ve butonu sil
-    const aiInfoSection = document.querySelector('.ai-info-section');
-    if (aiInfoSection) aiInfoSection.remove();
-    const aiBtn = document.getElementById('generate-ai-info-btn');
-    if (aiBtn) aiBtn.remove();
-}
-// AI kutusu varsa, silme.
+
 
 }
 
