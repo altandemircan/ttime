@@ -3198,9 +3198,15 @@ function initEmptyDayMap(day) {
   }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
 
   // --- PATCH: Vektör katman ekle ---
-  L.maplibreGL({
-    style: 'https://tiles.openfreemap.org/styles/bright',
-  }).addTo(map);
+ fetch('https://tiles.openfreemap.org/styles/bright')
+  .then(res => res.json())
+  .then(style => {
+    Object.keys(style.sources).forEach(src => {
+      if (style.sources[src].url)
+        style.sources[src].url = '/api/tile/{z}/{x}/{y}.pbf';
+    });
+    L.maplibreGL({ style }).addTo(map);
+  });
 
   // --- PATCH: Tek marker varsa ortala ---
   // Not: getDayPoints fonksiyonun mevcut!
@@ -4850,10 +4856,15 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         attributionControl: false
     });
     // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
-    L.maplibreGL({
-        style: 'https://tiles.openfreemap.org/styles/bright',
-    }).addTo(map);
-
+  fetch('https://tiles.openfreemap.org/styles/bright')
+  .then(res => res.json())
+  .then(style => {
+    Object.keys(style.sources).forEach(src => {
+      if (style.sources[src].url)
+        style.sources[src].url = '/api/tile/{z}/{x}/{y}.pbf';
+    });
+    L.maplibreGL({ style }).addTo(map);
+  });
     // ARTIK day VAR!
     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
         const pts = getDayPoints(day);
@@ -5308,9 +5319,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     });
 
     // DAİMA Vektör TileLayer ekle
-    L.maplibreGL({
-        style: 'https://tiles.openfreemap.org/styles/bright',
-    }).addTo(map);
+   fetch('https://tiles.openfreemap.org/styles/bright')
+  .then(res => res.json())
+  .then(style => {
+    Object.keys(style.sources).forEach(src => {
+      if (style.sources[src].url)
+        style.sources[src].url = '/api/tile/{z}/{x}/{y}.pbf';
+    });
+    L.maplibreGL({ style }).addTo(map);
+  });
 
     // --- PATCH: Tek marker durumunda haritayı ve markerı göster ---
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
