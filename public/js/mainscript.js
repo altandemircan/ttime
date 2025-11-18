@@ -8482,7 +8482,7 @@ document.getElementById(setId)?.remove();
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
-  if (!Array.isArray(realPoints) || realPoints.length === 0) {
+if (!Array.isArray(realPoints)) {
   return;
 }
 
