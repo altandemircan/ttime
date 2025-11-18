@@ -5835,8 +5835,8 @@ const points = allPoints.filter(
 
 
                                                          const expandedMap = L.map(mapDivId, {
-                                                           center: [41.0, 12.0], // İtalya koordinatları
-                                                            zoom: 5,
+                                                           center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
+                                                          zoom: 2,         // Veya 3 yaz (önemi yok)
                                                             scrollWheelZoom: true,
                                                             fadeAnimation: true,
                                                             zoomAnimation: true,
@@ -5853,8 +5853,8 @@ const points = allPoints.filter(
 }).addTo(expandedMap);
 
 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-if (!pts || pts.length === 0) {
-    expandedMap.setView([41.0, 12.0], 5); // İtalya odağı
+if (pts.length === 1) {
+  expandedMap.setView([pts[0].lat, pts[0].lng], 14);
 }
 
 updateExpandedMap(expandedMap, day);
