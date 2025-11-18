@@ -3977,17 +3977,8 @@ if (anyDayHasRealItem && !hideAddCat) {
   addMoreButton.className = "add-more-btn";
   addMoreButton.textContent = "+ Add Category";
   addMoreButton.dataset.day = day;
-
-  addMoreButton.onclick = function () {
-    // Günün containerını (veya cart-items'ı) temizle
-    const cartDiv = document.getElementById("cart-items");
-    if (cartDiv) cartDiv.innerHTML = "";
-
-    // Sadece istenen günü aç
-    showCategoryList(this.dataset.day);
-  };
-
-  dayList.appendChild(addMoreButton);
+  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
+dayContainer.appendChild(addMoreButton);
 }
 
 
