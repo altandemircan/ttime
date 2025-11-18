@@ -4673,16 +4673,16 @@ function clearRouteVisualsForDay(day){
   const expObj = window.expandedMaps && window.expandedMaps[key];
   if (expObj && expObj.expandedMap){
     const eMap = expObj.expandedMap;
-                eMap.eachLayer(l=>{
-              if (
-                l instanceof L.Marker ||
-                l instanceof L.Polyline ||
-                l instanceof L.Circle ||
-                l instanceof L.CircleMarker
-              ) {
-                try { eMap.removeLayer(l); } catch(_){}
-              }
-            });
+    eMap.eachLayer(l=>{
+  if (
+    l instanceof L.Marker ||
+    l instanceof L.Polyline ||
+    l instanceof L.Circle ||
+    l instanceof L.CircleMarker
+  ) {
+    try { eMap.removeLayer(l); } catch(_){}
+  }
+});
     const expScale = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (expScale){ expScale.innerHTML=''; delete expScale.dataset?.elevLoadedKey; }
     const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
@@ -4723,13 +4723,7 @@ function closeAllExpandedMapsAndReset() {
       if (obj.expandedMap) {
         try {
           obj.expandedMap.eachLayer(l => {
-            // SADECE marker, polyline, circle, circleMarker silinsin; tileLayer VEKTÖR zemin KALSIN!
-            if (
-              l instanceof L.Marker ||
-              l instanceof L.Polyline ||
-              l instanceof L.Circle ||
-              l instanceof L.CircleMarker
-            ) {
+            if (!(l instanceof L.TileLayer)) {
               try { obj.expandedMap.removeLayer(l); } catch(_){}
             }
           });
@@ -4775,7 +4769,7 @@ return '<div class="map-error">Invalid location information</div>';
   </div>`;
 }
 
-function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
+function createLeafletMapForItem(mapId, lat, lon, name, number) {
     window._leafletMaps = window._leafletMaps || {};
     if (window._leafletMaps[mapId]) {
         try { window._leafletMaps[mapId].remove(); } catch(e){}
@@ -4795,13 +4789,10 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-    // ARTIK day VAR!
-    if (typeof getDayPoints === "function" && typeof day !== "undefined") {
-        const pts = getDayPoints(day);
-        if (pts.length === 1) {
-            map.setView([pts[0].lat, pts[0].lng], 14);
-        }
-    }
+const pts = getDayPoints(day);
+if (pts.length === 1) {
+    map.setView([pts[0].lat, pts[0].lng], 14);
+}
 
     // Marker
     const icon = L.divIcon({
@@ -4816,7 +4807,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps[mapId] = map;
     setTimeout(function() { map.invalidateSize(); }, 120);
 }
-
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
   const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
@@ -5835,8 +5825,8 @@ const points = allPoints.filter(
 
 
                                                          const expandedMap = L.map(mapDivId, {
-                                                           center: [41.0, 12.0], // İtalya koordinatları
-                                                            zoom: 5,
+                                                           center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
+                                                          zoom: 2,         // Veya 3 yaz (önemi yok)
                                                             scrollWheelZoom: true,
                                                             fadeAnimation: true,
                                                             zoomAnimation: true,
@@ -5853,8 +5843,8 @@ const points = allPoints.filter(
 }).addTo(expandedMap);
 
 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-if (!pts || pts.length === 0) {
-    expandedMap.setView([41.8719, 12.5674], 5); // İtalya odağı
+if (pts.length === 1) {
+  expandedMap.setView([pts[0].lat, pts[0].lng], 14);
 }
 
 updateExpandedMap(expandedMap, day);
