@@ -4265,6 +4265,7 @@ cartDiv.appendChild(addNewDayButton);
     });
   }, 0);
 
+if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
 
 } 
