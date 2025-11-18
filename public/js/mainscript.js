@@ -3879,7 +3879,6 @@ else {
                   </span>
                   <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
                 </button>
-                                
                         <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                             Remove place
                         </button>
