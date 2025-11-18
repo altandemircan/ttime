@@ -18,6 +18,12 @@
 </head>
 <body>
   <div id="map"></div>
- 
+
+  <script>
+    var lat = 41.01, lon = 29;
+    var map = L.map('map').setView([lat, lon], 13);
+    L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/bright' }).addTo(map);
+    L.marker([lat, lon]).addTo(map);
+  </script>
 </body>
 </html>
