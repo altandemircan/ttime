@@ -37,16 +37,15 @@ fetch('https://tiles.openfreemap.org/styles/bright')
         Object.entries(style.sources).forEach(([src, obj]) => {
             console.log('[DEBUG][BEFORE PATCH]', src, 'url:', obj.url, 'tiles:', obj.tiles);
 
-            // --- PATCH LOGIC ---
-            // Vektör tile için "tiles" array ekle!
+            // Vektör tile için absolute tiles array:
             if (src === 'openmaptiles' || obj.type === 'vector') {
-                obj.tiles = ['/api/tile/{z}/{x}/{y}.pbf'];
+                obj.tiles = [window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'];
                 delete obj.url; // url'yi kaldır!
                 console.log('[DEBUG][PATCHED][tiles]', src, obj.tiles);
             }
-            // Raster için "tiles" array varsa proxyye çevir (istersen!):
+            // Raster için absolute tiles array:
             if (Array.isArray(obj.tiles) && obj.type === 'raster') {
-                obj.tiles = ['/api/tile/{z}/{x}/{y}.png'];
+                obj.tiles = [window.location.origin + '/api/tile/{z}/{x}/{y}.png'];
                 console.log('[DEBUG][PATCHED][raster tiles]', src, obj.tiles);
             }
         });
