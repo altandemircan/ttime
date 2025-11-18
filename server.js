@@ -65,6 +65,24 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
+// --- BURAYA EKLE --- //
+// OpenFreeMap TILE PROXY:
+app.get('/api/tile/:z/:x/:y', async (req, res) => {
+  const { z, x, y } = req.params;
+  const tileUrl = `https://tiles.openfreemap.org/tiles/${z}/${x}/${y}.pbf`;
+  try {
+    const response = await fetch(tileUrl);
+    if (!response.ok) return res.status(response.status).send('OpenFreeMap tile error');
+    res.set('Content-Type', 'application/x-protobuf');
+    res.set('Access-Control-Allow-Origin', '*');
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (e) {
+    res.status(500).send('OpenFreeMap proxy error');
+  }
+});
+// --- BURAYA EKLE --- //
+
 // Autocomplete endpoint
 app.get('/api/geoapify/autocomplete', async (req, res) => {
   const { q, limit } = req.query;
