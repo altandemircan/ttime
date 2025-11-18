@@ -3977,19 +3977,14 @@ if (anyDayHasRealItem && !hideAddCat) {
   addMoreButton.className = "add-more-btn";
   addMoreButton.textContent = "+ Add Category";
   addMoreButton.dataset.day = day;
-
   addMoreButton.onclick = function () {
-    // Günün containerını (veya cart-items'ı) temizle
+    // Önce eski içeriği temizle!
     const cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
-
-    // Sadece istenen günü aç
     showCategoryList(this.dataset.day);
   };
-
   dayList.appendChild(addMoreButton);
 }
-
 
   cartDiv.appendChild(dayContainer);
   }
