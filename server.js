@@ -68,38 +68,38 @@ app.get('/api/geoapify/geocode', async (req, res) => {
 // --- BURAYA EKLE --- //
 // OpenFreeMap TILE PROXY:
 // OpenFreeMap VECTOR TILE PROXY
+
+// Vector tile proxy (OpenFreeMap)
 app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;
-  const tileUrl = `https://tiles.openfreemap.org/tiles/${z}/${x}/${y}.pbf`;
-
+  const url = `https://tiles.openfreemap.org/tiles/${z}/${x}/${y}.pbf`;
   try {
-    const response = await fetch(tileUrl);
-    if (!response.ok) return res.status(response.status).send('OpenFreeMap tile error');
+    const r = await fetch(url);
+    if (!r.ok) return res.status(r.status).send(`Upstream tile error: ${r.status}`);
     res.set('Content-Type', 'application/x-protobuf');
     res.set('Access-Control-Allow-Origin', '*');
-    const buffer = await response.arrayBuffer();
-    res.send(Buffer.from(buffer));
-  } catch (e) {
-    res.status(500).send('OpenFreeMap proxy error');
+    res.send(await r.buffer());
+  } catch (err) {
+    res.status(500).send('Internal proxy error');
   }
 });
 
-// OpenFreeMap RASTER TILE PROXY
+// Raster tile proxy (OpenFreeMap Natural Earth)
 app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
   const { z, x, y } = req.params;
-  const tileUrl = `https://tiles.openfreemap.org/natural_earth/ne2sr/${z}/${x}/${y}.png`;
-
+  const url = `https://tiles.openfreemap.org/natural_earth/ne2sr/${z}/${x}/${y}.png`;
   try {
-    const response = await fetch(tileUrl);
-    if (!response.ok) return res.status(response.status).send('OpenFreeMap PNG error');
+    const r = await fetch(url);
+    if (!r.ok) return res.status(r.status).send(`Upstream tile error: ${r.status}`);
     res.set('Content-Type', 'image/png');
     res.set('Access-Control-Allow-Origin', '*');
-    const buffer = await response.arrayBuffer();
-    res.send(Buffer.from(buffer));
-  } catch (e) {
-    res.status(500).send('OpenFreeMap PNG proxy error');
+    res.send(await r.buffer());
+  } catch (err) {
+    res.status(500).send('Internal proxy error');
   }
 });
+
+app.listen(80, () => console.log('Server listening on port 80'));
 // --- BURAYA EKLE --- //
 
 // Autocomplete endpoint
