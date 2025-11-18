@@ -1121,7 +1121,45 @@ document.addEventListener('DOMContentLoaded', () => {
     disableSendButton && disableSendButton();
   });
 });
+function insertTripAiInfo(infoHtml, containerId, city) {
+    // containerId ile spesifik bir yere koymak istiyorsan, default: "cart-items"
+    const targetId = containerId || "cart-items";
+    const cartDiv = document.getElementById(targetId);
+    if (!cartDiv) return;
 
+    // Eğer HTML yoksa, yapay bir mesaj ver
+    if (!infoHtml) {
+        infoHtml = `<div class="ai-trip-info-box" style="text-align:center;margin:18px 0;">
+            <strong>AI generated trip info not found.</strong>
+        </div>`;
+    }
+
+    // Eski kutuyu sil (özellikle AI kutusundan 2 tane olmasın diye)
+    const oldBox = cartDiv.querySelector('.ai-trip-info-box');
+    if (oldBox) oldBox.remove();
+
+    // Kutu tipik HTML string mi, yoksa DOM element mi? Stringse:
+    let boxDiv;
+    if (typeof infoHtml === "string") {
+        boxDiv = document.createElement("div");
+        boxDiv.innerHTML = infoHtml;
+        // Eğer HTML içinde wrapper varsa, ona eriş:
+        // <div class="ai-trip-info-box">...</div>
+        boxDiv = boxDiv.querySelector('.ai-trip-info-box') || boxDiv;
+    } else {
+        boxDiv = infoHtml; // DOM elementse direkt kullan
+    }
+
+    cartDiv.appendChild(boxDiv);
+
+    // Kutunun HTML’ini kaydet (sadece ana kutunun outerHTML’i)
+    window.latestAiInfoHtml = boxDiv.outerHTML;
+
+    // İsteğe bağlı olarak AI kutusunun başlığına şehir adını ekle:
+    if (city && boxDiv.querySelector('.ai-trip-title')) {
+        boxDiv.querySelector('.ai-trip-title').textContent = `Trip Info for ${city}`;
+    }
+}
 function addCanonicalMessage(canonicalStr) {
   const chatBox = document.getElementById("chat-box");
   if (!chatBox) return;
@@ -2748,9 +2786,6 @@ cartDiv.appendChild(addFavBtn);
     travelerItem.appendChild(travelerList);
     cartDiv.appendChild(travelerItem);
 
-    // -------- Kategori hide/show ve ilgili fonksiyonlar TAMAMEN KALDIRILDI --------
-    // toggleBtn, toggleAllButton, updateAllHiddenCategories, updateToggleAllButton vb. yok!
-
     // Kapatma butonu aynı:
     const closeButton = document.createElement("button");
     closeButton.classList.add("close-btn");
@@ -2761,15 +2796,15 @@ cartDiv.appendChild(addFavBtn);
 
     initPlaceSearch(day);
 
-   // AI bilgi kutusu var mı (mesaj kutusu)?
-    const aiTripInfoBox = document.querySelector('.ai-trip-info-box'); // ör: senin AI bilgi HTML'inin ana kutu class'ı
-    if (!aiTripInfoBox) {
-        const aiInfoSection = document.querySelector('.ai-info-section');
-        if (aiInfoSection) aiInfoSection.remove();
-        const aiBtn = document.getElementById('generate-ai-info-btn');
-        if (aiBtn) aiBtn.remove();
-    }
-    // Eğer ai-trip-info-box varsa, silme!
+  // AI bilgi kutusu DOM'da varsa hiçbir şeyi silme!
+if (!document.querySelector('.ai-trip-info-box')) {
+    // Kutusu yoksa, ai-info-section'u ve butonu sil
+    const aiInfoSection = document.querySelector('.ai-info-section');
+    if (aiInfoSection) aiInfoSection.remove();
+    const aiBtn = document.getElementById('generate-ai-info-btn');
+    if (aiBtn) aiBtn.remove();
+}
+// AI kutusu varsa, silme.
 
 }
 
@@ -4274,7 +4309,17 @@ cartDiv.appendChild(addNewDayButton);
         dayList._sortableSetup = true;
       }
     });
-  }, 0);} 
+  }, 0);
+
+ // EN SON:
+    if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
+        const div = document.createElement("div");
+        div.innerHTML = window.latestAiInfoHtml;
+        cartDiv.appendChild(div.firstElementChild);
+    }
+
+
+} 
 
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
