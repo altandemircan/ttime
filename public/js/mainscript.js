@@ -8482,9 +8482,9 @@ document.getElementById(setId)?.remove();
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
-  if (!Array.isArray(realPoints) || realPoints.length < 2) {
-    return; // Travel mode set yok, MAP tuşu bar'da!
-  }
+  if (!Array.isArray(realPoints) || realPoints.length === 0) {
+  return;
+}
 
   // FLY MODE aktifleştirme sadece markerlar yay ile bağlanıyorsa:
   const containerId = `route-map-day${day}`;
