@@ -3957,16 +3957,11 @@ const anyDayHasRealItem = window.cart.some(i =>
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 
 
-if (anyDayHasRealItem && !hideAddCat) {
-  // 2. ADD CATEGORY BUTONU
-  const addMoreButton = document.createElement("button");
-  addMoreButton.className = "add-more-btn";
-  addMoreButton.textContent = "+ Add Category";
-  addMoreButton.dataset.day = day;
-  addMoreButton.onclick = function () { showCategoryList(this.dataset.day); };
-  dayList.appendChild(addMoreButton);
-}
-
+addMoreButton.onclick = function () {
+  const dayContainer = document.getElementById(`day-container-${this.dataset.day}`);
+  if (dayContainer) dayContainer.innerHTML = "";
+  showCategoryList(this.dataset.day);
+};
 
   cartDiv.appendChild(dayContainer);
   }
