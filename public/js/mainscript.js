@@ -1192,7 +1192,9 @@ function addMessage(text, className) {
     }
 
     chatBox.appendChild(messageElement);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 }
 
 function showTypingIndicator() {
@@ -1208,7 +1210,9 @@ function showTypingIndicator() {
     indicator.style.display = "block";
     indicator.innerHTML = '<span></span><span></span><span></span>'; // DAİMA animasyonlu format!
   }
+  if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
   chatBox.scrollTop = chatBox.scrollHeight;
+}
 }
 
 function hideTypingIndicator() {
@@ -1628,8 +1632,9 @@ async function showResults() {
 
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
-    chatBox.scrollTop = chatBox.scrollHeight;
-
+    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
     // === HEMEN LOADING PANELİ GİZLE ===
     window.__welcomeHiddenForever = true;
     document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
@@ -2461,8 +2466,9 @@ function displayPlacesInChat(places, category, day) {
         </div>`;
 
     chatBox.innerHTML += html;
-    chatBox.scrollTop = chatBox.scrollHeight;
-
+    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
     attachFavEvents();
 
     setTimeout(() => {
@@ -4058,8 +4064,9 @@ cartDiv.appendChild(addNewDayButton);
         welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
         chatBox.appendChild(welcome);
 
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
+        if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}      }
 
       // input-wrapper tekrar görünür olsun
       var iw = document.querySelector('.input-wrapper');
