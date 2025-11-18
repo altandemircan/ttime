@@ -4425,23 +4425,25 @@ function updateExpandedMap(expandedMap, day) {
     );
     console.log("getDayPoints:", JSON.stringify(pts));
 
-    if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
+    // YAY NOKTALARINI SAKLA - BURASI ÖNEMLİ!
+    if (!window._curvedArcPointsByDay) {
+        window._curvedArcPointsByDay = {};
+    }
     window._curvedArcPointsByDay[day] = []; // Reset
 
     let modeRaw = (window.travelModeByDay?.[day] || 'car');
     let mode = toOSRMMode(modeRaw);
 
-    // Sadece overlay layerları sil!
     expandedMap.eachLayer(layer => {
-        if (
-            layer instanceof L.Marker ||
-            layer instanceof L.Polyline ||
-            layer instanceof L.Circle ||
-            layer instanceof L.CircleMarker
-        ) {
-            expandedMap.removeLayer(layer);
-        }
-    });
+    if (
+        layer instanceof L.Marker ||
+        layer instanceof L.Polyline ||
+        layer instanceof L.Circle ||
+        layer instanceof L.CircleMarker
+    ) {
+        expandedMap.removeLayer(layer);
+    }
+});
 
     let hasValidRoute = (
       areAllPointsInTurkey(pts) &&
@@ -4449,6 +4451,7 @@ function updateExpandedMap(expandedMap, day) {
     );
 
     if (hasValidRoute) {
+        // OSRM ROTASI - tüm noktaları kaydet
         const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
             color: "#1976d2",
@@ -4456,33 +4459,50 @@ function updateExpandedMap(expandedMap, day) {
             opacity: 1,
             dashArray: null
         }).addTo(expandedMap);
-        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
+        
+        // Tüm route noktalarını kaydet
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
+        
     } else if (pts.length > 1) {
-        // Yay segmentleri
+        // YAY MODU - her segmentin yay noktalarını kaydet
         let allArcPoints = [];
+        
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
             const end = [pts[i + 1].lng, pts[i + 1].lat];
+            
+            // Yay noktalarını al
             const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
-            L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
+            
+            // Yayı çiz
+            const polyline = L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
                 color: "#1976d2",
                 weight: 6,
                 opacity: 0.93,
                 dashArray: "6,8"
             }).addTo(expandedMap);
-            if (i === 0) allArcPoints.push([start[0], start[1]]);
-            allArcPoints = allArcPoints.concat(arcPoints.slice(1));
+            
+            // Yay noktalarını birleştirerek kaydet (ilk segmentte başlangıç noktasını ekle)
+            if (i === 0) {
+                allArcPoints.push([start[0], start[1]]); // İlk nokta
+            }
+            allArcPoints = allArcPoints.concat(arcPoints.slice(1)); // Kalan noktalar
         }
+        
+        // Son noktayı ekle
         if (pts.length > 0) {
             const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
             allArcPoints.push(lastPoint);
         }
+        
         window._curvedArcPointsByDay[day] = allArcPoints;
         console.log("[DEBUG] Arc points saved:", allArcPoints.length);
+        console.log("[DEBUG] First point:", allArcPoints[0]);
+        console.log("[DEBUG] Last point:", allArcPoints[allArcPoints.length - 1]);
     }
 
-    // Marker ekleme
+    // Marker ekleme kısmı aynı:
     pts.forEach((item, idx) => {
         const markerHtml = `
             <div style="background:#d32f2f;color:#fff;border-radius:50%;
@@ -4511,18 +4531,15 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
     }
 
-    // HARITA MERKEZLEME PATCH!
     if (pts.length > 1) {
         expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
-        // PATCH: Dünyanın merkezi yerine İTALYA odağı!
-        expandedMap.setView([41.0, 12.0], 5, { animate: true });
+        expandedMap.setView([0, 0], 2, { animate: true });
     }
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
-
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
     // Route summary yoksa haversine ile üret!
@@ -4544,7 +4561,7 @@ function updateExpandedMap(expandedMap, day) {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
 
-    // SCALE BAR 
+    // SCALE BAR
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBarDiv) {
         let totalKm = 0;
@@ -4565,17 +4582,18 @@ function updateExpandedMap(expandedMap, day) {
         scaleBarDiv.style.display = "block";
         scaleBarDiv.innerHTML = "";
 
-        // PATCH: markers her zaman dizi!
-        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
-        const track = scaleBarDiv.querySelector('.scale-bar-track');
-        const svg = track && track.querySelector('svg.tt-elev-svg');
-        if (track && svg) {
-            const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-            createScaleElements(track, width, totalKm, 0, markerPositions || []);
+        if (markerPositions.length >= 2 && totalKm > 0) {
+            renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+            const track = scaleBarDiv.querySelector('.scale-bar-track');
+            const svg = track && track.querySelector('svg.tt-elev-svg');
+            if (track && svg) {
+                const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+                createScaleElements(track, width, totalKm, 0, markerPositions);
+            }
         }
     }
 
-    // SCALE BAR INTERACTION'ı BAŞLAT
+    // SCALE BAR INTERACTION'ı BAŞLAT - BURASI ÖNEMLİ!
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
         console.log("[DEBUG] Scale bar interaction initialized for day", day);
@@ -5836,7 +5854,7 @@ const points = allPoints.filter(
 
 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
 if (!pts || pts.length === 0) {
-    expandedMap.setView([41.0, 12.0], 5); // İtalya odağı
+    expandedMap.setView([41.8719, 12.5674], 5); // İtalya odağı
 }
 
 updateExpandedMap(expandedMap, day);
@@ -8208,15 +8226,7 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     // snapThreshold: km cinsinden (örn: 0.2 km = 200m)
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
-    // GÜVENLİ KONTROL!
-    if (
-      !geojson ||
-      !geojson.features ||
-      !geojson.features[0] ||
-      !geojson.features[0].geometry ||
-      !Array.isArray(geojson.features[0].geometry.coordinates)
-    ) return [];
-
+    if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return [];
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
 
@@ -8250,6 +8260,7 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
                 minIdx = i;
             }
         }
+        // Eğer minDist snapThreshold (örn: 200m) üstündeyse, "yakınında bitir" mantığı: yine de en yakın noktayı kullan! (uyarı istersen burada ekle)
         lastIdx = minIdx;
         return {
             name: marker.name,
@@ -9155,13 +9166,7 @@ if (!hasGeoJson) {
 
 
   // Cooldown / cache anahtarı
- if (!Array.isArray(coords) || coords.length < 2) {
-  container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
-  container.style.display = 'block';
-  return;
-}
-const mid = coords[Math.floor(coords.length / 2)];
-
+  const mid = coords[Math.floor(coords.length / 2)];
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
