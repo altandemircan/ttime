@@ -66,13 +66,13 @@ app.get('/api/geoapify/geocode', async (req, res) => {
 });
 
 // --- BURAYA EKLE --- //
-// OpenFreeMap TILE PROXY:
-// OpenFreeMap VECTOR TILE PROXY
 
-// Vector tile proxy (OpenFreeMap)
+// OpenFreeMap TILE PROXY:
+// OpenFreeMap VECTOR TILE PROXY (GÜNCEL "planet/20251112_001001_pt" dataset!)
+
 app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;
-  const url = `https://tiles.openfreemap.org/tiles/${z}/${x}/${y}.pbf`;
+  const url = `https://tiles.openfreemap.org/planet/20251112_001001_pt/${z}/${x}/${y}.pbf`;
   try {
     const r = await fetch(url, {
       headers: {
@@ -120,7 +120,6 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
 });
 
 app.listen(80, () => console.log('Server listening on port 80'));
-
 // --- BURAYA EKLE --- //
 
 // Autocomplete endpoint

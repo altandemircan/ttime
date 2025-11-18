@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Mini Map Test</title>
+  <title>Mini Map Testtt</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #map { width: 100%; height: 400px; min-height: 400px;}
@@ -35,13 +35,17 @@ fetch('https://tiles.openfreemap.org/styles/bright')
     })
     .then(style => {
         Object.entries(style.sources).forEach(([src, obj]) => {
-            // SADECE vektör tile kaynaklarını patchle
+            // Sadece vektör tile kaynaklarını proxy'ye patchle!
             if (src === 'openmaptiles' || obj.type === 'vector') {
-                obj.tiles = ['https://tiles.openfreemap.org/planet/20251112_001001_pt/{z}/{x}/{y}.pbf'];
+                obj.tiles = ['https://dev.triptime.ai/api/tile/{z}/{x}/{y}.pbf'];
                 delete obj.url;
                 console.log('[DEBUG][PATCHED][tiles]', src, obj.tiles);
             }
-            // Raster kaynağı varsa aynen patchleme, gerekirse ekle!
+            // Raster kaynak proxy patch gerekiyorsa ekle:
+            if (Array.isArray(obj.tiles) && obj.type === 'raster') {
+                obj.tiles = ['https://dev.triptime.ai/api/tile/{z}/{x}/{y}.png'];
+                console.log('[DEBUG][PATCHED][raster tiles]', src, obj.tiles);
+            }
         });
         console.log('[DEBUG][PATCH RESULT] All sources:', style.sources);
 
