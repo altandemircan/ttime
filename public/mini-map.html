@@ -1,45 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Mini Map</title>
-  <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
-  <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-    #map { width: 100%; height: 100%; }
-  </style>
+  <meta charset="UTF-8">
+  <title>Openfreemap Leaflet Test</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"/>
+  <style> #map { width: 100%; height: 600px; } </style>
 </head>
 <body>
   <div id="map"></div>
-  <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-<script>
-  const url = new URL(window.location.href);
-  const lat = parseFloat(url.searchParams.get('lat'));
-  const lon = parseFloat(url.searchParams.get('lon'));
-
-  const map = new maplibregl.Map({
-    container: 'map',
-    style: 'https://tiles.openfreemap.org/styles/liberty',
-    center: [lon, lat],
-    zoom: 15,
-    attributionControl: false
-  });
-
-  map.on('load', function() {
-    const markerEl = document.createElement('div');
-    markerEl.style.width = '24px';
-    markerEl.style.height = '24px';
-    markerEl.style.background = '#8a4af3';
-    markerEl.style.border = '3px solid white';
-    markerEl.style.borderRadius = '50%';
-    markerEl.style.boxShadow = '0 0 8px #8a4af3';
-    markerEl.style.opacity = '0.95';
-    markerEl.style.display = 'block'; // <-- Eklediğimiz özellik
-
-    new maplibregl.Marker({ element: markerEl })
-      .setLngLat([lon, lat])
-      .addTo(map);
-  });
-</script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/leaflet-maplibre-gl@0.2.1/dist/leaflet-maplibre-gl.js"></script>
+  <script>
+    var map = L.map('map').setView([41, 29], 10);
+    L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/bright' }).addTo(map);
+  </script>
 </body>
 </html>
