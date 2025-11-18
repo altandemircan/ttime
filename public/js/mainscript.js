@@ -1192,9 +1192,7 @@ function addMessage(text, className) {
     }
 
     chatBox.appendChild(messageElement);
-    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function showTypingIndicator() {
@@ -1210,9 +1208,7 @@ function showTypingIndicator() {
     indicator.style.display = "block";
     indicator.innerHTML = '<span></span><span></span><span></span>'; // DAİMA animasyonlu format!
   }
-  if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
   chatBox.scrollTop = chatBox.scrollHeight;
-}
 }
 
 function hideTypingIndicator() {
@@ -1632,9 +1628,8 @@ async function showResults() {
 
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
-    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+    chatBox.scrollTop = chatBox.scrollHeight;
+
     // === HEMEN LOADING PANELİ GİZLE ===
     window.__welcomeHiddenForever = true;
     document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
@@ -1836,14 +1831,14 @@ async function buildPlan(city, days) {
 
   for (const cat of categories) {
     let radius = 3;
-    let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
+    let places = await getPlacesForCategory(city, cat, 30, radius * 1000);
     let attempt = 0;
     const maxAttempts = 5;
     const triedNames = new Set();
     while (places.length <= 1 && attempt < maxAttempts) {
       if (places.length === 1) triedNames.add(places[0].name);
       radius += 5;
-      let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000);
+      let newPlaces = await getPlacesForCategory(city, cat, 30, radius * 1000);
       newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
       if (newPlaces.length > 0) {
         places = places.concat(newPlaces);
@@ -2466,9 +2461,8 @@ function displayPlacesInChat(places, category, day) {
         </div>`;
 
     chatBox.innerHTML += html;
-    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+    chatBox.scrollTop = chatBox.scrollHeight;
+
     attachFavEvents();
 
     setTimeout(() => {
@@ -4064,9 +4058,8 @@ cartDiv.appendChild(addNewDayButton);
         welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
         chatBox.appendChild(welcome);
 
-        if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}      }
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
 
       // input-wrapper tekrar görünür olsun
       var iw = document.querySelector('.input-wrapper');
@@ -4450,15 +4443,9 @@ function updateExpandedMap(expandedMap, day) {
         }
     });
 
-    // GÜVENLİ KONTROL: geojson route verisi var mı?
     let hasValidRoute = (
       areAllPointsInTurkey(pts) &&
-      geojson &&
-      geojson.features &&
-      geojson.features[0] &&
-      geojson.features[0].geometry &&
-      Array.isArray(geojson.features[0].geometry.coordinates) &&
-      geojson.features[0].geometry.coordinates.length > 1
+      geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
     );
 
     if (hasValidRoute) {
@@ -4472,6 +4459,7 @@ function updateExpandedMap(expandedMap, day) {
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
     } else if (pts.length > 1) {
+        // Yay segmentleri
         let allArcPoints = [];
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
@@ -4494,6 +4482,7 @@ function updateExpandedMap(expandedMap, day) {
         console.log("[DEBUG] Arc points saved:", allArcPoints.length);
     }
 
+    // Marker ekleme
     pts.forEach((item, idx) => {
         const markerHtml = `
             <div style="background:#d32f2f;color:#fff;border-radius:50%;
@@ -4522,11 +4511,13 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
     }
 
+    // HARITA MERKEZLEME PATCH!
     if (pts.length > 1) {
         expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
+        // PATCH: Dünyanın merkezi yerine İTALYA odağı!
         expandedMap.setView([41.0, 12.0], 5, { animate: true });
     }
 
@@ -4574,6 +4565,7 @@ function updateExpandedMap(expandedMap, day) {
         scaleBarDiv.style.display = "block";
         scaleBarDiv.innerHTML = "";
 
+        // PATCH: markers her zaman dizi!
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
         const track = scaleBarDiv.querySelector('.scale-bar-track');
         const svg = track && track.querySelector('svg.tt-elev-svg');
@@ -4583,6 +4575,7 @@ function updateExpandedMap(expandedMap, day) {
         }
     }
 
+    // SCALE BAR INTERACTION'ı BAŞLAT
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
         console.log("[DEBUG] Scale bar interaction initialized for day", day);
@@ -4590,7 +4583,6 @@ function updateExpandedMap(expandedMap, day) {
 
     adjustExpandedHeader(day);
 }
-
 function forceCleanExpandedMap(day) {
   const containerId = `route-map-day${day}`;
   // 1. Expanded map instance ve DOM temizliği
@@ -5309,15 +5301,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         }
 
         // Haritayı noktalar arasında ortala
-        if (!points || points.length < 2) {
-  // Sadece marker ekle, haritayı ortala, rota/fitBounds/polyline yapma
-  if (points.length === 1) {
-    L.marker([points[0].lat, points[0].lng], {/*icon*/}).addTo(map);
-    map.setView([points[0].lat, points[0].lng], 14);
-  }
-  return;
-}
-map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else {
         // Hiç marker yoksa harita orijinal konumda
         map.setView([0, 0], 2, { animate: true });
