@@ -74,12 +74,22 @@ app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;
   const url = `https://tiles.openfreemap.org/tiles/${z}/${x}/${y}.pbf`;
   try {
-    const r = await fetch(url);
-    if (!r.ok) return res.status(r.status).send(`Upstream tile error: ${r.status}`);
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://dev.triptime.ai/"
+      }
+    });
+    // DEBUG
+    console.log(`[VECTOR] Proxying: ${url} → Status: ${r.status}`);
+    if (r.status === 403) return res.status(403).send("Upstream returned 403 Forbidden (rate-limit, IP block, etc)");
+    if (r.status === 404) return res.status(404).send("Upstream tile not found (404)");
+    if (!r.ok) return res.status(r.status).send(`Upstream error code: ${r.status}`);
     res.set('Content-Type', 'application/x-protobuf');
     res.set('Access-Control-Allow-Origin', '*');
     res.send(await r.buffer());
   } catch (err) {
+    console.error('[VECTOR TILE PROXY ERROR]', err);
     res.status(500).send('Internal proxy error');
   }
 });
@@ -89,17 +99,28 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
   const { z, x, y } = req.params;
   const url = `https://tiles.openfreemap.org/natural_earth/ne2sr/${z}/${x}/${y}.png`;
   try {
-    const r = await fetch(url);
-    if (!r.ok) return res.status(r.status).send(`Upstream tile error: ${r.status}`);
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://dev.triptime.ai/"
+      }
+    });
+    // DEBUG
+    console.log(`[RASTER] Proxying: ${url} → Status: ${r.status}`);
+    if (r.status === 403) return res.status(403).send("Upstream returned 403 Forbidden (rate-limit, IP block, etc)");
+    if (r.status === 404) return res.status(404).send("Upstream PNG not found (404)");
+    if (!r.ok) return res.status(r.status).send(`Upstream error code: ${r.status}`);
     res.set('Content-Type', 'image/png');
     res.set('Access-Control-Allow-Origin', '*');
     res.send(await r.buffer());
   } catch (err) {
+    console.error('[RASTER TILE PROXY ERROR]', err);
     res.status(500).send('Internal proxy error');
   }
 });
 
 app.listen(80, () => console.log('Server listening on port 80'));
+
 // --- BURAYA EKLE --- //
 
 // Autocomplete endpoint
