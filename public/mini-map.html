@@ -2,19 +2,51 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Openfreemap Leaflet Test</title>
+  <title>OpenFreemap + Leaflet Vektör Tile Test</title>
+  <!-- Leaflet, Maplibre GL ve Leaflet-Maplibre-GL CDN'leri -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"/>
-  <style> #map { width: 100%; height: 600px; } </style>
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    #map { width: 100%; height: 100vh; min-height: 400px; }
+    /* Maplibre controls ayarı (görsel için) */
+    .maplibregl-ctrl { z-index: 50000 !important; }
+  </style>
 </head>
 <body>
   <div id="map"></div>
+  <!-- JS kütüphaneleri -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/leaflet-maplibre-gl@0.2.1/dist/leaflet-maplibre-gl.js"></script>
   <script>
-    var map = L.map('map').setView([41, 29], 10);
-    L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/bright' }).addTo(map);
+    // Sabit bir merkez kullan (NaN olmasın!)
+    var initialCenter = [41.0106, 28.9879]; // İstanbul
+    var initialZoom = 12;
+
+    // Harita başlat
+    var map = L.map('map', {
+      center: initialCenter,
+      zoom: initialZoom,
+      scrollWheelZoom: true,
+      zoomControl: true
+    });
+
+    // OpenFreemap vector tile layer
+    L.maplibreGL({
+      style: 'https://tiles.openfreemap.org/styles/bright' // Vektör tile style JSON
+    }).addTo(map);
+
+    // Ekrana bir marker ekle (görsel test için)
+    var istMarker = L.marker([41.0106, 28.9879])
+      .addTo(map)
+      .bindPopup('<b>İstanbul</b>')
+      .openPopup();
+
+    // Konsolda harita center/debug görebilmek için
+    map.on('moveend', function() {
+      console.log('Current center:', map.getCenter());
+    });
   </script>
 </body>
 </html>
