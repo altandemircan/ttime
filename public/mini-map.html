@@ -35,23 +35,16 @@ fetch('https://tiles.openfreemap.org/styles/bright')
     })
     .then(style => {
         Object.entries(style.sources).forEach(([src, obj]) => {
-            console.log('[DEBUG][BEFORE PATCH]', src, 'url:', obj.url, 'tiles:', obj.tiles);
-
-            // Vektör tile için absolute tiles array:
+            // SADECE vektör tile kaynaklarını patchle
             if (src === 'openmaptiles' || obj.type === 'vector') {
-                obj.tiles = [window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'];
-                delete obj.url; // url'yi kaldır!
+                obj.tiles = ['https://tiles.openfreemap.org/planet/20251112_001001_pt/{z}/{x}/{y}.pbf'];
+                delete obj.url;
                 console.log('[DEBUG][PATCHED][tiles]', src, obj.tiles);
             }
-            // Raster için absolute tiles array:
-            if (Array.isArray(obj.tiles) && obj.type === 'raster') {
-                obj.tiles = [window.location.origin + '/api/tile/{z}/{x}/{y}.png'];
-                console.log('[DEBUG][PATCHED][raster tiles]', src, obj.tiles);
-            }
+            // Raster kaynağı varsa aynen patchleme, gerekirse ekle!
         });
         console.log('[DEBUG][PATCH RESULT] All sources:', style.sources);
 
-        // Harita layer ekle
         const maplibreLayer = L.maplibreGL({ style });
         maplibreLayer.addTo(map);
     })
