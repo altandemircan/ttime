@@ -29,10 +29,9 @@
     });
 
     // Maplibre tile layer doğru eklenmeli
-    var maplibreLayer = L.maplibreGL({
-      style: 'https://tiles.openfreemap.org/styles/bright'
-    }).addTo(map);
-
+   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
     // Marker ekle
     L.marker([lat, lon]).addTo(map);
 
