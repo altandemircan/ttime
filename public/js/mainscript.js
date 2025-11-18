@@ -3162,8 +3162,12 @@ function ensureDayMapContainer(day) {
 function initEmptyDayMap(day) {
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
-  if (!el) el = ensureDayMapContainer(day);
-  if (!el) return;
+
+  // DEĞİŞTİR: Eğer container yoksa, haritayı başlatma!
+  if (!el) {
+    el = ensureDayMapContainer(day);
+    if (!el) return; // DOM yoksa hata verdirme, erken çık!
+  }
 
   if (typeof L === 'undefined') {
     setTimeout(() => initEmptyDayMap(day), 60);
@@ -3184,6 +3188,9 @@ function initEmptyDayMap(day) {
   }
 
   if (!el.style.height) el.style.height = '285px';
+
+  // DEĞİŞTİR: L.map başlatmadan önce container hala mevcut mu son kez kontrol et!
+  if (!document.getElementById(containerId)) return; // <<== EK KORUMA
 
   // KÜÇÜK HARİTA
   const map = L.map(containerId, {
