@@ -4243,7 +4243,7 @@ cartDiv.appendChild(addNewDayButton);
   tripTitleDiv.insertAdjacentElement('afterend', btnDiv);
 })();
 
-  setTimeout(() => {
+   setTimeout(() => {
     document.querySelectorAll('.day-list').forEach(dayList => {
       if (!dayList._sortableSetup) {
         Sortable.create(dayList, {
@@ -4265,8 +4265,8 @@ cartDiv.appendChild(addNewDayButton);
     });
   }, 0);
 
-if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-
+  // LOCAL STORAGE'ı güncelle!
+  if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
 } 
 
