@@ -31,37 +31,26 @@
     // Leaflet harita başlat
     const map = L.map('map').setView([lat, lon], zoom);
 
-    // PROXY PATCH: Vektör Tile Layer ekle (proxy + hata logu)
     fetch('https://tiles.openfreemap.org/styles/bright')
-      .then(res => {
-        if (!res.ok) throw new Error('Style JSON fetch failed ' + res.status);
-        return res.json();
-      })
-      .then(style => {
-        // Patch: style JSON'da tüm kaynakları proxyye çevir
-        Object.keys(style.sources).forEach(src => {
-          if (style.sources[src].url)
-            style.sources[src].url = '/api/tile/{z}/{x}/{y}.pbf'; // PROXY!
-        });
-        console.log('[Proxy PATCH] Style source:', style.sources);
-
-        // MaplibreGL Layer kur (Leaflet'te)
-        const maplibreLayer = L.maplibreGL({ style });
-
-        // Vektör tile ise tileload/tileerror eventleri çoğu zaman çalışmaz; logla dene:
-        maplibreLayer.on('tileload', function(e) {
-          console.log('[Proxy TILE LOAD]', e.tile?.src || e.tile?._src || e);
-        });
-        maplibreLayer.on('tileerror', function(e) {
-          console.error('[PROXY ERROR] Tile yüklenemedi! src:', e.tile?.src || e.tile?._src || e);
-        });
-
-        maplibreLayer.addTo(map);
-      })
-      .catch(err => {
-        // Style JSON proxy hata logu
-        console.error('[PROXY ERROR] Harita style veya tile proxy hatası:', err);
-      });
+  .then(res => {
+    if (!res.ok) throw new Error('Style JSON fetch failed ' + res.status);
+    return res.json();
+  })
+  .then(style => {
+    // Kaynak adlarını ve url'lerini göster
+    Object.entries(style.sources).forEach(([src, obj]) => {
+      console.log('[DEBUG] Kaynak adı:', src, 'tile url:', obj.url);
+      if (obj.url)
+        obj.url = '/api/tile/{z}/{x}/{y}.pbf';
+    });
+    // Sonraki tile isteklerini takip edebilmek için ek debug:
+    window._tileDebug = style.sources;
+    const maplibreLayer = L.maplibreGL({ style });
+    maplibreLayer.addTo(map);
+  })
+  .catch(err => {
+    console.error('[PROXY ERROR] Harita style veya tile proxy hatası:', err);
+  });
 
     // Marker ekle
     L.marker([lat, lon]).addTo(map);
