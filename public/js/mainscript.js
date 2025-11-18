@@ -1192,7 +1192,9 @@ function addMessage(text, className) {
     }
 
     chatBox.appendChild(messageElement);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 }
 
 function showTypingIndicator() {
@@ -1208,7 +1210,9 @@ function showTypingIndicator() {
     indicator.style.display = "block";
     indicator.innerHTML = '<span></span><span></span><span></span>'; // DAİMA animasyonlu format!
   }
+  if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
   chatBox.scrollTop = chatBox.scrollHeight;
+}
 }
 
 function hideTypingIndicator() {
@@ -1628,8 +1632,9 @@ async function showResults() {
 
     html += `</ul></div></div>`;
     chatBox.innerHTML += html;
-    chatBox.scrollTop = chatBox.scrollHeight;
-
+    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
     // === HEMEN LOADING PANELİ GİZLE ===
     window.__welcomeHiddenForever = true;
     document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
@@ -1831,14 +1836,14 @@ async function buildPlan(city, days) {
 
   for (const cat of categories) {
     let radius = 3;
-    let places = await getPlacesForCategory(city, cat, 30, radius * 1000);
+    let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
     let attempt = 0;
     const maxAttempts = 5;
     const triedNames = new Set();
     while (places.length <= 1 && attempt < maxAttempts) {
       if (places.length === 1) triedNames.add(places[0].name);
       radius += 5;
-      let newPlaces = await getPlacesForCategory(city, cat, 30, radius * 1000);
+      let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000);
       newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
       if (newPlaces.length > 0) {
         places = places.concat(newPlaces);
@@ -2461,8 +2466,9 @@ function displayPlacesInChat(places, category, day) {
         </div>`;
 
     chatBox.innerHTML += html;
-    chatBox.scrollTop = chatBox.scrollHeight;
-
+    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
     attachFavEvents();
 
     setTimeout(() => {
@@ -2551,7 +2557,9 @@ function showCategoryList(day) {
     console.log("showCategoryList ÇAĞRILDI, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
-    cartDiv.innerHTML = "";
+    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+};
 
     // --- Üstteki otomatik plan ve custom note bölümleri aynı ---
     const autoPlanContainer = document.createElement("div");
@@ -4058,8 +4066,9 @@ cartDiv.appendChild(addNewDayButton);
         welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
         chatBox.appendChild(welcome);
 
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
+        if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}      }
 
       // input-wrapper tekrar görünür olsun
       var iw = document.querySelector('.input-wrapper');
@@ -4425,33 +4434,36 @@ function updateExpandedMap(expandedMap, day) {
     );
     console.log("getDayPoints:", JSON.stringify(pts));
 
-    // YAY NOKTALARINI SAKLA - BURASI ÖNEMLİ!
-    if (!window._curvedArcPointsByDay) {
-        window._curvedArcPointsByDay = {};
-    }
+    if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
     window._curvedArcPointsByDay[day] = []; // Reset
 
     let modeRaw = (window.travelModeByDay?.[day] || 'car');
     let mode = toOSRMMode(modeRaw);
 
+    // Sadece overlay layerları sil!
     expandedMap.eachLayer(layer => {
-    if (
-        layer instanceof L.Marker ||
-        layer instanceof L.Polyline ||
-        layer instanceof L.Circle ||
-        layer instanceof L.CircleMarker
-    ) {
-        expandedMap.removeLayer(layer);
-    }
-});
+        if (
+            layer instanceof L.Marker ||
+            layer instanceof L.Polyline ||
+            layer instanceof L.Circle ||
+            layer instanceof L.CircleMarker
+        ) {
+            expandedMap.removeLayer(layer);
+        }
+    });
 
+    // GÜVENLİ KONTROL: geojson route verisi var mı?
     let hasValidRoute = (
       areAllPointsInTurkey(pts) &&
-      geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1
+      geojson &&
+      geojson.features &&
+      geojson.features[0] &&
+      geojson.features[0].geometry &&
+      Array.isArray(geojson.features[0].geometry.coordinates) &&
+      geojson.features[0].geometry.coordinates.length > 1
     );
 
     if (hasValidRoute) {
-        // OSRM ROTASI - tüm noktaları kaydet
         const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
             color: "#1976d2",
@@ -4459,50 +4471,31 @@ function updateExpandedMap(expandedMap, day) {
             opacity: 1,
             dashArray: null
         }).addTo(expandedMap);
-        
-        // Tüm route noktalarını kaydet
-        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]); // [lng, lat] formatında
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
-        
     } else if (pts.length > 1) {
-        // YAY MODU - her segmentin yay noktalarını kaydet
         let allArcPoints = [];
-        
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
             const end = [pts[i + 1].lng, pts[i + 1].lat];
-            
-            // Yay noktalarını al
             const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
-            
-            // Yayı çiz
-            const polyline = L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
+            L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
                 color: "#1976d2",
                 weight: 6,
                 opacity: 0.93,
                 dashArray: "6,8"
             }).addTo(expandedMap);
-            
-            // Yay noktalarını birleştirerek kaydet (ilk segmentte başlangıç noktasını ekle)
-            if (i === 0) {
-                allArcPoints.push([start[0], start[1]]); // İlk nokta
-            }
-            allArcPoints = allArcPoints.concat(arcPoints.slice(1)); // Kalan noktalar
+            if (i === 0) allArcPoints.push([start[0], start[1]]);
+            allArcPoints = allArcPoints.concat(arcPoints.slice(1));
         }
-        
-        // Son noktayı ekle
         if (pts.length > 0) {
             const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
             allArcPoints.push(lastPoint);
         }
-        
         window._curvedArcPointsByDay[day] = allArcPoints;
         console.log("[DEBUG] Arc points saved:", allArcPoints.length);
-        console.log("[DEBUG] First point:", allArcPoints[0]);
-        console.log("[DEBUG] Last point:", allArcPoints[allArcPoints.length - 1]);
     }
 
-    // Marker ekleme kısmı aynı:
     pts.forEach((item, idx) => {
         const markerHtml = `
             <div style="background:#d32f2f;color:#fff;border-radius:50%;
@@ -4536,10 +4529,11 @@ function updateExpandedMap(expandedMap, day) {
     } else if (pts.length === 1) {
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
-        expandedMap.setView([0, 0], 2, { animate: true });
+        expandedMap.setView([41.0, 12.0], 5, { animate: true });
     }
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
+
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
     // Route summary yoksa haversine ile üret!
@@ -4561,7 +4555,7 @@ function updateExpandedMap(expandedMap, day) {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
 
-    // SCALE BAR
+    // SCALE BAR 
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBarDiv) {
         let totalKm = 0;
@@ -4582,18 +4576,15 @@ function updateExpandedMap(expandedMap, day) {
         scaleBarDiv.style.display = "block";
         scaleBarDiv.innerHTML = "";
 
-        if (markerPositions.length >= 2 && totalKm > 0) {
-            renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-            const track = scaleBarDiv.querySelector('.scale-bar-track');
-            const svg = track && track.querySelector('svg.tt-elev-svg');
-            if (track && svg) {
-                const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                createScaleElements(track, width, totalKm, 0, markerPositions);
-            }
+        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
+        const track = scaleBarDiv.querySelector('.scale-bar-track');
+        const svg = track && track.querySelector('svg.tt-elev-svg');
+        if (track && svg) {
+            const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+            createScaleElements(track, width, totalKm, 0, markerPositions || []);
         }
     }
 
-    // SCALE BAR INTERACTION'ı BAŞLAT - BURASI ÖNEMLİ!
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
         console.log("[DEBUG] Scale bar interaction initialized for day", day);
@@ -4601,6 +4592,7 @@ function updateExpandedMap(expandedMap, day) {
 
     adjustExpandedHeader(day);
 }
+
 function forceCleanExpandedMap(day) {
   const containerId = `route-map-day${day}`;
   // 1. Expanded map instance ve DOM temizliği
@@ -5319,7 +5311,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         }
 
         // Haritayı noktalar arasında ortala
-        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+        if (!points || points.length < 2) {
+  // Sadece marker ekle, haritayı ortala, rota/fitBounds/polyline yapma
+  if (points.length === 1) {
+    L.marker([points[0].lat, points[0].lng], {/*icon*/}).addTo(map);
+    map.setView([points[0].lat, points[0].lng], 14);
+  }
+  return;
+}
+map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else {
         // Hiç marker yoksa harita orijinal konumda
         map.setView([0, 0], 2, { animate: true });
@@ -5835,8 +5835,8 @@ const points = allPoints.filter(
 
 
                                                          const expandedMap = L.map(mapDivId, {
-                                                           center: [41.8719, 12.5674], // İtalya koordinatları
-    zoom: 5,
+center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
+                                                          zoom: 2,         // Veya 3 yaz (önemi yok)                                                            zoom: 5,
                                                             scrollWheelZoom: true,
                                                             fadeAnimation: true,
                                                             zoomAnimation: true,
@@ -5853,8 +5853,8 @@ const points = allPoints.filter(
 }).addTo(expandedMap);
 
 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-if (pts.length === 1) {
-  expandedMap.setView([pts[0].lat, pts[0].lng], 14);
+if (!pts || pts.length === 0) {
+    expandedMap.setView([41.0, 12.0], 5); // İtalya odağı
 }
 
 updateExpandedMap(expandedMap, day);
@@ -8226,7 +8226,15 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     // snapThreshold: km cinsinden (örn: 0.2 km = 200m)
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
-    if (!geojson || !geojson.features || !geojson.features[0]?.geometry?.coordinates) return [];
+    // GÜVENLİ KONTROL!
+    if (
+      !geojson ||
+      !geojson.features ||
+      !geojson.features[0] ||
+      !geojson.features[0].geometry ||
+      !Array.isArray(geojson.features[0].geometry.coordinates)
+    ) return [];
+
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
 
@@ -8260,7 +8268,6 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
                 minIdx = i;
             }
         }
-        // Eğer minDist snapThreshold (örn: 200m) üstündeyse, "yakınında bitir" mantığı: yine de en yakın noktayı kullan! (uyarı istersen burada ekle)
         lastIdx = minIdx;
         return {
             name: marker.name,
@@ -9166,7 +9173,13 @@ if (!hasGeoJson) {
 
 
   // Cooldown / cache anahtarı
-  const mid = coords[Math.floor(coords.length / 2)];
+ if (!Array.isArray(coords) || coords.length < 2) {
+  container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
+  container.style.display = 'block';
+  return;
+}
+const mid = coords[Math.floor(coords.length / 2)];
+
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
