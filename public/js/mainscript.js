@@ -2597,10 +2597,7 @@ function showCategoryList(day) {
     console.log("showCategoryList ÇAĞRILDI, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
-    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-};
-
+   
     // --- Üstteki otomatik plan ve custom note bölümleri aynı ---
     const autoPlanContainer = document.createElement("div");
     autoPlanContainer.id = "auto-plan-container";
