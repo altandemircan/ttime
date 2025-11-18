@@ -2597,19 +2597,17 @@ function showCategoryList(day) {
     console.log("showCategoryList ÇAĞRILDI, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
-
-    // Hata veren satırın düzeltilmiş ve güvenli hali:
-    const chatBox = document.getElementById("chat-box");
-    if (chatBox && chatBox.scrollHeight - chatBox.clientHeight > 100) {
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
+    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+};
 
     // --- Üstteki otomatik plan ve custom note bölümleri aynı ---
     const autoPlanContainer = document.createElement("div");
     autoPlanContainer.id = "auto-plan-container";
     cartDiv.appendChild(autoPlanContainer);
 
-    const manualAddSection = document.createElement("div");
+
+const manualAddSection = document.createElement("div");
     manualAddSection.className = "manual-add-section";
     manualAddSection.innerHTML = `
         <h3>Add Custom Place to Day ${day}</h3>
@@ -2644,14 +2642,15 @@ function showCategoryList(day) {
     cartDiv.appendChild(addCustomNoteButton);
 
     const addFavBtn = document.createElement("button");
-    addFavBtn.className = "add-favorite-place-btn";
-    addFavBtn.textContent = "❤️ Add from My Places";
-    addFavBtn.onclick = function() {
-        window.toggleSidebarFavoritePlaces();
-    };
-    cartDiv.appendChild(addFavBtn);
+addFavBtn.className = "add-favorite-place-btn";
+addFavBtn.textContent = "❤️ Add from My Places";
 
-    const basicPlanCategories = [
+addFavBtn.onclick = function() {
+    window.toggleSidebarFavoritePlaces();
+};
+cartDiv.appendChild(addFavBtn);
+
+ const basicPlanCategories = [
         { name: "Coffee", icon: "☕" },
         { name: "Museum", icon: "🏛️" },
         { name: "Touristic attraction", icon: "🏞️" },
@@ -2687,28 +2686,30 @@ function showCategoryList(day) {
     basicList.classList.add("subcategory-list");
 
     basicPlanCategories.forEach(cat => {
-        const subCategoryItem = document.createElement("li");
-        subCategoryItem.classList.add("subcategory-item");
-        const iconSpan = document.createElement("span");
-        iconSpan.classList.add("subcategory-icon");
-        iconSpan.textContent = cat.icon;
-        const nameSpan = document.createElement("span");
-        nameSpan.classList.add("subcategory-name");
-        nameSpan.textContent = cat.name;
+    const subCategoryItem = document.createElement("li");
+    subCategoryItem.classList.add("subcategory-item");
+    const iconSpan = document.createElement("span");
+    iconSpan.classList.add("subcategory-icon");
+    iconSpan.textContent = cat.icon;
+    const nameSpan = document.createElement("span");
+    nameSpan.classList.add("subcategory-name");
+    nameSpan.textContent = cat.name;
 
-        const toggleBtn = document.createElement("button");
-        toggleBtn.classList.add("toggle-subcategory-btn");
-        toggleBtn.textContent = "View";
-        subCategoryItem.appendChild(iconSpan);
-        subCategoryItem.appendChild(nameSpan);
-        subCategoryItem.appendChild(toggleBtn);
-        basicList.appendChild(subCategoryItem);
+    // Buton class'ı toggle-subcategory-btn, yazısı List, event yok!
+    const toggleBtn = document.createElement("button");
+    toggleBtn.classList.add("toggle-subcategory-btn");
+    toggleBtn.textContent = "View";
+    subCategoryItem.appendChild(iconSpan);
+    subCategoryItem.appendChild(nameSpan);
+    subCategoryItem.appendChild(toggleBtn);
+    basicList.appendChild(subCategoryItem);
 
-        subCategoryItem.addEventListener("click", (e) => {
-            if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-            showSuggestionsInChat(cat.name, day, cat.code);
-        });
+    // Sadece kategoriye tıklama eventini bırak
+    subCategoryItem.addEventListener("click", (e) => {
+        if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+        showSuggestionsInChat(cat.name, day, cat.code);
     });
+});
     basicPlanItem.appendChild(basicList);
     cartDiv.appendChild(basicPlanItem);
 
@@ -2723,39 +2724,47 @@ function showCategoryList(day) {
     travelerList.classList.add("subcategory-list");
 
     travelMainCategories.forEach(cat => {
-        const subCategoryItem = document.createElement("li");
-        subCategoryItem.classList.add("subcategory-item", "premium-category-bg");
-        const iconSpan = document.createElement("span");
-        iconSpan.classList.add("subcategory-icon");
-        iconSpan.textContent = cat.icon;
-        const nameSpan = document.createElement("span");
-        nameSpan.classList.add("subcategory-name");
-        nameSpan.textContent = cat.name;
+    const subCategoryItem = document.createElement("li");
+    subCategoryItem.classList.add("subcategory-item", "premium-category-bg");
+    const iconSpan = document.createElement("span");
+    iconSpan.classList.add("subcategory-icon");
+    iconSpan.textContent = cat.icon;
+    const nameSpan = document.createElement("span");
+    nameSpan.classList.add("subcategory-name");
+    nameSpan.textContent = cat.name;
 
-        const toggleBtn = document.createElement("button");
-        toggleBtn.classList.add("toggle-subcategory-btn");
-        toggleBtn.textContent = "View";
-        subCategoryItem.appendChild(iconSpan);
-        subCategoryItem.appendChild(nameSpan);
-        subCategoryItem.appendChild(toggleBtn);
-        travelerList.appendChild(subCategoryItem);
+    // Buton class'ı toggle-subcategory-btn, yazısı List, event yok!
+    const toggleBtn = document.createElement("button");
+    toggleBtn.classList.add("toggle-subcategory-btn");
+    toggleBtn.textContent = "View";
+    subCategoryItem.appendChild(iconSpan);
+    subCategoryItem.appendChild(nameSpan);
+    subCategoryItem.appendChild(toggleBtn);
+    travelerList.appendChild(subCategoryItem);
 
-        subCategoryItem.addEventListener("click", async (e) => {
-            showSuggestionsInChat(cat.name, day, cat.code);
-        });
+    // Sadece kategoriye tıklama eventini bırak
+    subCategoryItem.addEventListener("click", async (e) => {
+        showSuggestionsInChat(cat.name, day, cat.code);
     });
+});
 
     travelerItem.appendChild(travelerList);
     cartDiv.appendChild(travelerItem);
 
+    // -------- Kategori hide/show ve ilgili fonksiyonlar TAMAMEN KALDIRILDI --------
+    // toggleBtn, toggleAllButton, updateAllHiddenCategories, updateToggleAllButton vb. yok!
+
+    // Kapatma butonu aynı:
     const closeButton = document.createElement("button");
     closeButton.classList.add("close-btn");
     closeButton.textContent = "Close";
     closeButton.addEventListener("click", restoreSidebar);
+
     cartDiv.appendChild(closeButton);
 
     initPlaceSearch(day);
 
+    // AI Info butonunu ve kutusunu kaldır
     const aiInfoSection = document.querySelector('.ai-info-section');
     if (aiInfoSection) aiInfoSection.remove();
     const aiBtn = document.getElementById('generate-ai-info-btn');
