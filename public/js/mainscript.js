@@ -3199,7 +3199,14 @@ function initEmptyDayMap(day) {
 
   // --- PATCH: Vektör katman ekle ---
 fetch('https://tiles.openfreemap.org/styles/bright')
-  .then(res => res.json())
+ .then(async res => {
+  if (!res.ok) return null;
+  try {
+    const txt = await res.text();
+    if (!txt || txt.trim().length < 8) return null;
+    return JSON.parse(txt);
+  } catch(e) { return null; }
+})
   .then(style => {
     if (!style || !style.sources) {
       console.error("MAPLIBRE style.json bozuk ya da eksik:", style);
@@ -4879,7 +4886,14 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     });
     // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
    fetch('https://tiles.openfreemap.org/styles/bright')
-  .then(res => res.json())
+  .then(async res => {
+  if (!res.ok) return null;
+  try {
+    const txt = await res.text();
+    if (!txt || txt.trim().length < 8) return null;
+    return JSON.parse(txt);
+  } catch(e) { return null; }
+})
   .then(style => {
     Object.keys(style.sources).forEach(src => {
       if (style.sources[src].url)
@@ -5345,7 +5359,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     // DAİMA Vektör TileLayer ekle
  fetch('https://tiles.openfreemap.org/styles/bright')
-  .then(res => res.json())
+ .then(async res => {
+  if (!res.ok) return null;
+  try {
+    const txt = await res.text();
+    if (!txt || txt.trim().length < 8) return null;
+    return JSON.parse(txt);
+  } catch(e) { return null; }
+})
   .then(style => {
     Object.keys(style.sources).forEach(src => {
       if (style.sources[src].url)
