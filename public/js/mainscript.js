@@ -4673,16 +4673,16 @@ function clearRouteVisualsForDay(day){
   const expObj = window.expandedMaps && window.expandedMaps[key];
   if (expObj && expObj.expandedMap){
     const eMap = expObj.expandedMap;
-    eMap.eachLayer(l=>{
-  if (
-    l instanceof L.Marker ||
-    l instanceof L.Polyline ||
-    l instanceof L.Circle ||
-    l instanceof L.CircleMarker
-  ) {
-    try { eMap.removeLayer(l); } catch(_){}
-  }
-});
+                eMap.eachLayer(l=>{
+              if (
+                l instanceof L.Marker ||
+                l instanceof L.Polyline ||
+                l instanceof L.Circle ||
+                l instanceof L.CircleMarker
+              ) {
+                try { eMap.removeLayer(l); } catch(_){}
+              }
+            });
     const expScale = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (expScale){ expScale.innerHTML=''; delete expScale.dataset?.elevLoadedKey; }
     const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
@@ -4723,7 +4723,13 @@ function closeAllExpandedMapsAndReset() {
       if (obj.expandedMap) {
         try {
           obj.expandedMap.eachLayer(l => {
-            if (!(l instanceof L.TileLayer)) {
+            // SADECE marker, polyline, circle, circleMarker silinsin; tileLayer VEKTÖR zemin KALSIN!
+            if (
+              l instanceof L.Marker ||
+              l instanceof L.Polyline ||
+              l instanceof L.Circle ||
+              l instanceof L.CircleMarker
+            ) {
               try { obj.expandedMap.removeLayer(l); } catch(_){}
             }
           });
@@ -4789,10 +4795,10 @@ function createLeafletMapForItem(mapId, lat, lon, name, number) {
         style: 'https://tiles.openfreemap.org/styles/bright',
     }).addTo(map);
 
-const pts = getDayPoints(day);
-if (pts.length === 1) {
-    map.setView([pts[0].lat, pts[0].lng], 14);
-}
+            const pts = getDayPoints(day);
+            if (pts.length === 1) {
+                map.setView([pts[0].lat, pts[0].lng], 14);
+            }
 
     // Marker
     const icon = L.divIcon({
