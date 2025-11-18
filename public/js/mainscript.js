@@ -3198,14 +3198,16 @@ function initEmptyDayMap(day) {
   }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
 
   // --- PATCH: Vektör katman ekle ---
- fetch('https://tiles.openfreemap.org/styles/bright')
+fetch('https://tiles.openfreemap.org/styles/bright')
   .then(res => res.json())
   .then(style => {
     Object.keys(style.sources).forEach(src => {
       if (style.sources[src].url)
-        style.sources[src].url = '/api/tile/{z}/{x}/{y}.pbf';
+        style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'; // DİKKAT: aynen bırak, encode etme!
+        // veya sadece: '/api/tile/{z}/{x}/{y}.pbf'
     });
     L.maplibreGL({ style }).addTo(map);
+    console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
   });
 
   // --- PATCH: Tek marker varsa ortala ---
@@ -4856,15 +4858,18 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         attributionControl: false
     });
     // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
-  fetch('https://tiles.openfreemap.org/styles/bright')
+   fetch('https://tiles.openfreemap.org/styles/bright')
   .then(res => res.json())
   .then(style => {
     Object.keys(style.sources).forEach(src => {
       if (style.sources[src].url)
-        style.sources[src].url = '/api/tile/{z}/{x}/{y}.pbf';
+        style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'; // DİKKAT: aynen bırak, encode etme!
+        // veya sadece: '/api/tile/{z}/{x}/{y}.pbf'
     });
     L.maplibreGL({ style }).addTo(map);
+    console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
   });
+
     // ARTIK day VAR!
     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
         const pts = getDayPoints(day);
@@ -5319,14 +5324,16 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     });
 
     // DAİMA Vektör TileLayer ekle
-   fetch('https://tiles.openfreemap.org/styles/bright')
+ fetch('https://tiles.openfreemap.org/styles/bright')
   .then(res => res.json())
   .then(style => {
     Object.keys(style.sources).forEach(src => {
       if (style.sources[src].url)
-        style.sources[src].url = '/api/tile/{z}/{x}/{y}.pbf';
+        style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'; // DİKKAT: aynen bırak, encode etme!
+        // veya sadece: '/api/tile/{z}/{x}/{y}.pbf'
     });
     L.maplibreGL({ style }).addTo(map);
+    console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
   });
 
     // --- PATCH: Tek marker durumunda haritayı ve markerı göster ---
