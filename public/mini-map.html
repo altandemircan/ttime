@@ -3,27 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <title>Mini Map Test</title>
-     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
-<script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-
-
-<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js"></script>
-
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"/>
   <style>
     #map { width: 100%; height: 250px; }
+    html,body { height:100%; margin:0; padding:0; }
   </style>
 </head>
 <body>
   <div id="map"></div>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
   <script>
+    // 1. Bu satırı ekleyerek patch uygula!
+    // MaplibreGL ve leaflet-maplibre-gl yükleniş sırası çok önemli!
+
     var lat = 41.01, lon = 29;
-    var map = L.map('map').setView([lat, lon], 13);
-    L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/bright' }).addTo(map);
+    var map = L.map('map', {
+      center: [lat, lon],
+      zoom: 13,
+      scrollWheelZoom: true,
+      fadeAnimation: true,
+      zoomAnimation: true
+    });
+
+    // Maplibre tile layer doğru eklenmeli
+    var maplibreLayer = L.maplibreGL({
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    }).addTo(map);
+
+    // Marker ekle
     L.marker([lat, lon]).addTo(map);
+
+    // Sonradan boyut güncelle
+    setTimeout(function() {
+      map.invalidateSize();
+    }, 100);
   </script>
 </body>
 </html>
