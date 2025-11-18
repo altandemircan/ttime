@@ -4265,12 +4265,6 @@ cartDiv.appendChild(addNewDayButton);
     });
   }, 0);
 
- // EN SON:
-    if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
-        const div = document.createElement("div");
-        div.innerHTML = window.latestAiInfoHtml;
-        cartDiv.appendChild(div.firstElementChild);
-    }
 
 
 } 
