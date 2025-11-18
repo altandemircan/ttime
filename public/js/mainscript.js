@@ -5835,8 +5835,8 @@ const points = allPoints.filter(
 
 
                                                          const expandedMap = L.map(mapDivId, {
-                                                           center: [41.0, 12.0], // İtalya koordinatları
-                                                            zoom: 5,
+center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds ile merkeze gidecek!
+                                                          zoom: 2,         // Veya 3 yaz (önemi yok)                                                            zoom: 5,
                                                             scrollWheelZoom: true,
                                                             fadeAnimation: true,
                                                             zoomAnimation: true,
