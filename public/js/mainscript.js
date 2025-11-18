@@ -3201,13 +3201,33 @@ function initEmptyDayMap(day) {
 fetch('https://tiles.openfreemap.org/styles/bright')
   .then(res => res.json())
   .then(style => {
+    if (!style || !style.sources) {
+      console.error("MAPLIBRE style.json bozuk ya da eksik:", style);
+      return;
+    }
     Object.keys(style.sources).forEach(src => {
       if (style.sources[src].url)
-        style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'; // DİKKAT: aynen bırak, encode etme!
-        // veya sadece: '/api/tile/{z}/{x}/{y}.pbf'
+        style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf';
     });
-    L.maplibreGL({ style }).addTo(map);
-    console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
+
+    // === YENİ KONTROL EKLENDİ ===
+    // Hem harita DIV'i hem Leaflet Map %100 hazırsa ekle!
+    const mapDiv = document.getElementById(containerId);
+    // map objesi hazır mı ve mapDiv var mı?
+    if (mapDiv && map && typeof map.whenReady === 'function') {
+      // Leaflet gerçekten hazırsa layer ekle
+      map.whenReady(() => {
+        L.maplibreGL({ style }).addTo(map);
+        console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
+      });
+    } else {
+      // Eğer hazır değilse, 100ms sonra tekrar dene!
+      setTimeout(() => {
+        // Retry, yukarıdaki kodu yeniden çağır
+        // (Kendi fonksiyonunun ismini ve day parametresini kullan!)
+        initEmptyDayMap(day);
+      }, 100);
+    }
   });
 
   // --- PATCH: Tek marker varsa ortala ---
