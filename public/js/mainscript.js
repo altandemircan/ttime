@@ -2761,11 +2761,16 @@ cartDiv.appendChild(addFavBtn);
 
     initPlaceSearch(day);
 
-    // AI Info butonunu ve kutusunu kaldır
-    const aiInfoSection = document.querySelector('.ai-info-section');
-    if (aiInfoSection) aiInfoSection.remove();
-    const aiBtn = document.getElementById('generate-ai-info-btn');
-    if (aiBtn) aiBtn.remove();
+   // AI bilgi kutusu var mı (mesaj kutusu)?
+    const aiTripInfoBox = document.querySelector('.ai-trip-info-box'); // ör: senin AI bilgi HTML'inin ana kutu class'ı
+    if (!aiTripInfoBox) {
+        const aiInfoSection = document.querySelector('.ai-info-section');
+        if (aiInfoSection) aiInfoSection.remove();
+        const aiBtn = document.getElementById('generate-ai-info-btn');
+        if (aiBtn) aiBtn.remove();
+    }
+    // Eğer ai-trip-info-box varsa, silme!
+
 }
 
 function closeCustomNoteInput() {
