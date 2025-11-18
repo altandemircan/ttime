@@ -13,12 +13,10 @@
   <div id="map"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
-  <!-- EN KRİTİK SATIR! -->
-  <script src="https://unpkg.com/leaflet-maplibre-gl@0.2.1/dist/leaflet-maplibre-gl.js"></script>
+  <script src="https://unpkg.com/leaflet-maplibre-gl-js@0.2.1/dist/leaflet-maplibre-gl.js"></script>
   <script>
     var lat = 41.01, lon = 29;
     var map = L.map('map').setView([lat, lon], 13);
-    // Artık hata çıkmaz:
     L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/bright' }).addTo(map);
     L.marker([lat, lon]).addTo(map);
   </script>
