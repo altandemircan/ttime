@@ -3957,11 +3957,24 @@ const anyDayHasRealItem = window.cart.some(i =>
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 
 
-addMoreButton.onclick = function () {
-  const dayContainer = document.getElementById(`day-container-${this.dataset.day}`);
-  if (dayContainer) dayContainer.innerHTML = "";
-  showCategoryList(this.dataset.day);
-};
+if (anyDayHasRealItem && !hideAddCat) {
+  // 2. ADD CATEGORY BUTONU
+  const addMoreButton = document.createElement("button");
+  addMoreButton.className = "add-more-btn";
+  addMoreButton.textContent = "+ Add Category";
+  addMoreButton.dataset.day = day;
+
+  addMoreButton.onclick = function () {
+    // Günün containerını (veya cart-items'ı) temizle
+    const cartDiv = document.getElementById("cart-items");
+    if (cartDiv) cartDiv.innerHTML = "";
+
+    // Sadece istenen günü aç
+    showCategoryList(this.dataset.day);
+  };
+
+  dayList.appendChild(addMoreButton);
+}
 
   cartDiv.appendChild(dayContainer);
   }
