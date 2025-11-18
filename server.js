@@ -67,9 +67,11 @@ app.get('/api/geoapify/geocode', async (req, res) => {
 
 // --- BURAYA EKLE --- //
 // OpenFreeMap TILE PROXY:
-app.get('/api/tile/:z/:x/:y', async (req, res) => {
+// OpenFreeMap VECTOR TILE PROXY
+app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;
   const tileUrl = `https://tiles.openfreemap.org/tiles/${z}/${x}/${y}.pbf`;
+
   try {
     const response = await fetch(tileUrl);
     if (!response.ok) return res.status(response.status).send('OpenFreeMap tile error');
@@ -79,6 +81,23 @@ app.get('/api/tile/:z/:x/:y', async (req, res) => {
     res.send(Buffer.from(buffer));
   } catch (e) {
     res.status(500).send('OpenFreeMap proxy error');
+  }
+});
+
+// OpenFreeMap RASTER TILE PROXY
+app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
+  const { z, x, y } = req.params;
+  const tileUrl = `https://tiles.openfreemap.org/natural_earth/ne2sr/${z}/${x}/${y}.png`;
+
+  try {
+    const response = await fetch(tileUrl);
+    if (!response.ok) return res.status(response.status).send('OpenFreeMap PNG error');
+    res.set('Content-Type', 'image/png');
+    res.set('Access-Control-Allow-Origin', '*');
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (e) {
+    res.status(500).send('OpenFreeMap PNG proxy error');
   }
 });
 // --- BURAYA EKLE --- //
