@@ -3763,36 +3763,48 @@ async function updateCart() {
     dayList.className = "day-list";
     dayList.dataset.day = day;
 
-    if (isEmptyDay) {
-  const emptyWrap = document.createElement("div");
-  emptyWrap.className = "empty-day-block";
-  emptyWrap.innerHTML = `
-    <p class="empty-day-message">No item has been added for this day yet.</p>
-    <div style="text-align:center;">
-      <button id="start-map-btn-day${day}" type="button" class="start-map-btn">Start with map</button>
-    </div>
-    <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
-    <div class="empty-day-actions" style="display:block;text-align:center;">
-      <button type="button"
-              class="import-btn gps-import"
-              data-import-type="multi"
-              data-global="1"
-              title="Supports GPX, TCX, FIT, KML">
-        Import GPS File
-      </button>
-    </div>
-  `;
-  dayList.appendChild(emptyWrap);
+   // PATCH: Eğer gün aslında item içeriyorsa, ama dayItemsArr boşsa (render hatası!)
+    // Özellikle "start with map" ile bir nokta eklenince!
+    if (
+      isEmptyDay &&
+      window.cart.some(item =>
+        Number(item.day) === Number(day) &&
+        item.location &&
+        isFinite(item.location.lat) &&
+        isFinite(item.location.lng)
+      )
+    ) {
+      // 1) Günün item arrayini ZORLA doldur:
+      const fallbackItems = window.cart.filter(item =>
+        Number(item.day) === Number(day) &&
+        item.location &&
+        isFinite(item.location.lat) &&
+        isFinite(item.location.lng)
+      );
+      // 2) Gezi listesi renderını yaptır:
+      fallbackItems.forEach((item, idx) => {
+        const currIdx = window.cart.indexOf(item);
+        const li = document.createElement("li");
+        li.className = "travel-item";
+        li.draggable = true;
+        li.dataset.index = currIdx;
+        li.setAttribute("data-lat", item.location.lat);
+        li.setAttribute("data-lon", item.location.lng);
+        // Her türlü mini harita/bar/expand için renderı garantile:
+        li.innerHTML = `
+          <div class="cart-item">
+            <img src="${item.image}" alt="${item.name}" class="cart-image">
+            <div class="item-info">
+              <p class="toggle-title">${item.name}</p>
+            </div>
+          </div>
+        `;
+        dayList.appendChild(li);
+      });
+      // 3) Son olarak wrapRouteControls çağır:
+      setTimeout(() => wrapRouteControls(day), 0);
+    }
 
-  // Event eklemek için:
-  const startMapBtn = emptyWrap.querySelector(`#start-map-btn-day${day}`);
-  if (startMapBtn) {
-    startMapBtn.onclick = function () {
-      // Her güne özel fonksiyon, gün parametresiyle:
-      if (typeof startMapPlanningForDay === "function") startMapPlanningForDay(day);
-    };
-  }
-}
 
 else {
     for (let idx = 0; idx < dayItemsArr.length; idx++) {
