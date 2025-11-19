@@ -3762,45 +3762,7 @@ for (let day = 1; day <= totalDays; day++) {
 console.log("[PATCH ÖNÜ] isEmptyDay:", isEmptyDay, "day:", day, "window.cart:", window.cart);
 console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nodeName, "childCount:", dayList?.childElementCount);
 
-if (
-  isEmptyDay &&
-  window.cart.some(item =>
-    Number(item.day) === Number(day) &&
-    item.location &&
-    isFinite(item.location.lat) &&
-    isFinite(item.location.lng)
-  )
-) {
-  // fallbackItems işlemi
-  const fallbackItems = window.cart.filter(item =>
-    Number(item.day) === Number(day) &&
-    item.location &&
-    isFinite(item.location.lat) &&
-    isFinite(item.location.lng)
-  );
-  fallbackItems.forEach((item, idx) => {
-  const currIdx = window.cart.indexOf(item);
-  const li = document.createElement("li");
-  li.className = "travel-item";
-  li.draggable = true;
-  li.dataset.index = currIdx;
-  li.setAttribute("data-lat", item.location.lat);
-  li.setAttribute("data-lon", item.location.lng);
-  li.innerHTML = `<div class="cart-item"><img src="${item.image}" alt="${item.name}" class="cart-image"><div class="item-info"><p class="toggle-title">${item.name}</p></div></div>`;
-  dayList.appendChild(li);
-});
-console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childCount);
 
-// PATCH BAŞI:
-ensureDayMapContainer(day);
-initEmptyDayMap(day);
-wrapRouteControls(day);
-// PATCH SONU
-setTimeout(() => wrapRouteControls(day), 0);
-console.log("[PATCH BİTTİ] DAY", day);
-}
-
-else {
     for (let idx = 0; idx < dayItemsArr.length; idx++) {
         const item = dayItemsArr[idx];
         const currIdx = window.cart.indexOf(item);
@@ -3995,7 +3957,7 @@ if (idx < dayItemsArr.length - 1) {
   dayList.appendChild(distanceSeparator);
 }
     }
-}
+
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
 ensureDayMapContainer(day);
