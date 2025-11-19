@@ -8710,18 +8710,32 @@ function ensureCanvasRenderer(map) {
 
 // KÜÇÜK HARİTA İŞLEVLERİ SIRALAMA
 function wrapRouteControls(day) {
-  const tm = document.getElementById(`tt-travel-mode-set-day${day}`); // travel mode barı (her zaman var olması gerek)
+  const tm = document.getElementById(`tt-travel-mode-set-day${day}`); // travel mode barı
   const controls = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
   const mapDiv = document.getElementById(`route-map-day${day}`);
-  if (!controls || !mapDiv) return;
-  const dayContainer = document.getElementById(`day-container-${day}`);
-  const parent = dayContainer || controls.parentNode;
 
-  // Barı Kaldır ve Yeniden Oluştur
+  // controls yoksa sorun etme, barı yine de ekle, sadece mapDiv olmalı
+  if (!mapDiv) return;
+
+  let controlsEl = controls;
+  if (!controlsEl) {
+    controlsEl = document.createElement('div');
+    controlsEl.id = `map-bottom-controls-wrapper-day${day}`;
+    controlsEl.style.display = 'none'; // Yedek wrapper, DOM olduktan sonra bar eklemek için lazım
+    // Doğru parent'a ekle!
+    const dayContainer = document.getElementById(`day-container-${day}`);
+    const parentEl = dayContainer || mapDiv.parentNode;
+    parentEl.appendChild(controlsEl);
+  }
+
+  const dayContainer = document.getElementById(`day-container-${day}`);
+  const parent = dayContainer || controlsEl.parentNode;
+
+  // Eski barı kaldır
   const existing = document.getElementById(`route-controls-bar-day${day}`);
   if (existing) existing.remove();
 
-  // Bar + Header
+  // Route controls bar oluştur
   const bar = document.createElement('div');
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
@@ -8734,7 +8748,7 @@ function wrapRouteControls(day) {
   bar.style.border = '1px solid #ddd';
   bar.style.gap = '10px';
 
-  // Header kısmı
+  // Bar header
   const mapBarHeader = document.createElement('div');
   mapBarHeader.className = 'map-bar-header';
   mapBarHeader.style.display = 'flex';
@@ -8743,7 +8757,6 @@ function wrapRouteControls(day) {
   mapBarHeader.style.justifyContent = 'space-between';
   mapBarHeader.style.cursor = 'pointer';
 
-  // Title + ok
   const mapFunctionsDiv = document.createElement('div');
   mapFunctionsDiv.className = 'map-functions';
   mapFunctionsDiv.style.display = 'flex';
@@ -8767,7 +8780,7 @@ function wrapRouteControls(day) {
   mapFunctionsDiv.appendChild(mapTitleDiv);
   mapFunctionsDiv.appendChild(arrowSpan);
 
-  // --- HER ZAMAN EXPAND MAP BUTTON EKLE! ---
+  // Expand Map butonu - HER ZAMAN
   const expandBtn = document.createElement('button');
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
@@ -8796,9 +8809,9 @@ function wrapRouteControls(day) {
   };
 
   mapBarHeader.appendChild(mapFunctionsDiv);
-  mapBarHeader.appendChild(expandBtn); // HER ZAMAN bar başına ekle
+  mapBarHeader.appendChild(expandBtn);
 
-  // İçerik
+  // İçerik wrapper
   const mapContentWrap = document.createElement('div');
   mapContentWrap.className = 'map-content-wrap';
   mapContentWrap.style.transition = 'max-height 0.3s, opacity 0.3s';
@@ -8807,12 +8820,11 @@ function wrapRouteControls(day) {
   mapContentWrap.style.opacity = '1';
 
   mapContentWrap.appendChild(mapDiv);
-  if (tm) mapContentWrap.appendChild(tm); // travel mode barı, varsa ekle!
-  mapContentWrap.appendChild(controls);
+  if (tm) mapContentWrap.appendChild(tm);
+  mapContentWrap.appendChild(controlsEl);
 
-  // Açık/Kapalı logic
+  // Aç/Kapa logic
   let open = true;
-
   setTimeout(() => {
     if (arrowSpan.querySelector('.arrow-icon')) {
       arrowSpan.querySelector('.arrow-icon').style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
@@ -8839,8 +8851,8 @@ function wrapRouteControls(day) {
   bar.appendChild(mapContentWrap);
 
   // DOM'a yerleştir
-  if (controls && controls.parentNode === parent) {
-    parent.insertBefore(bar, controls);
+  if (controlsEl && controlsEl.parentNode === parent) {
+    parent.insertBefore(bar, controlsEl);
   } else {
     parent.appendChild(bar);
   }
@@ -8851,7 +8863,7 @@ function wrapRouteControls(day) {
 
   setTimeout(() => {
     if (mapDiv) mapDiv.style.display = 'block';
-    if (controls) controls.style.display = 'block';
+    if (controlsEl) controlsEl.style.display = 'block';
     if (bar) bar.style.display = 'flex';
     if (tm) tm.style.display = 'block';
   }, 1);
