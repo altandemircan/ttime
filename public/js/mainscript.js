@@ -3844,19 +3844,9 @@ else {
                 }
             }
             const leafletMapId = "leaflet-map-" + currIdx;
-            const mapHtml =
-            (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
-              ? `<div class="map-container">
-                  <div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div>
-                  <div class="osm-attribution-bar" style="font-size:11px;color:#888;margin-top:0px;line-height:1.4;">
-                    <span>
-                      <a href="https://leafletjs.com" target="_blank" title="A JavaScript library for interactive maps">Leaflet</a>
-                      <span aria-hidden="true"> | </span>
-                      &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
-                    </span>
-                  </div>
-                </div>`
-              : '<div class="map-error">Location not available</div>';
+            const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
+                ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
+                : '<div class="map-error">Location not available</div>';
 
             li.innerHTML = `
                 <div class="cart-item">
