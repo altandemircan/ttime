@@ -8713,7 +8713,23 @@ function wrapRouteControls(day) {
   const tm = document.getElementById(`tt-travel-mode-set-day${day}`); // travel mode barı (her zaman var olması gerek)
   const controls = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
   const mapDiv = document.getElementById(`route-map-day${day}`);
-  if (!controls || !mapDiv) return;
+ 
+
+ // controls yoksa sorun etme, barı yine de ekle, sadece mapDiv olmalı
+if (!mapDiv) return;
+
+const controlsIsFake = !controls;
+let controlsEl = controls;
+if (!controlsIsFake) {
+  controlsEl = controls;
+} else {
+  // Kontrols yoksa, boş bir wrapper oluştur (appendleyeceğin bir şey olması lazım)
+  controlsEl = document.createElement('div');
+  controlsEl.id = `map-bottom-controls-wrapper-day${day}`;
+  controlsEl.style.display = 'none'; // Veya görünmez/yedek bir wrapper
+}
+
+
   const dayContainer = document.getElementById(`day-container-${day}`);
   const parent = dayContainer || controls.parentNode;
 
