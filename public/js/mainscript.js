@@ -3666,10 +3666,11 @@ if (!cartDiv) { console.warn("[updateCart] cartDiv yok!"); return; }
 
 if (!window.cart || window.cart.length === 0) {
   cartDiv.innerHTML = `
-
     <div class="day-container" id="day-container-1" data-day="1">
       <h4 class="day-header">
-        <div class="title-container"><span class="day-title">Day 1</span></div>
+        <div class="title-container">
+          <span class="day-title">Day 1</span>
+        </div>
       </h4>
       <div class="confirmation-container" id="confirmation-container-1" style="display:none"></div>
       <ul class="day-list" data-day="1">
@@ -3678,9 +3679,9 @@ if (!window.cart || window.cart.length === 0) {
             No item has been added for this day yet.<br>
             Select a point on the map to start the trip!
           </p>
-        <div>
-<button id="start-map-btn" type="button">Start with map</button>
-</div>
+          <div>
+            <button id="start-map-btn" type="button">Start with map</button>
+          </div>
           <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
           <div class="empty-day-actions" style="display:block;text-align:center;">
             <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
@@ -3693,19 +3694,21 @@ if (!window.cart || window.cart.length === 0) {
     <hr class="add-new-day-separator">
   `;
 
-  // PATCH: İlk marker varsa, hem travel-item hem harita & route bar DOM'a ekle
-  const fallbackItems = window.cart.filter(item =>
-    Number(item.day) === 1 &&
-    item.location &&
-    isFinite(item.location.lat) &&
-    isFinite(item.location.lng)
-  );
-  if (fallbackItems.length > 0) {
-    const dayList = document.querySelector('.day-list[data-day="1"]');
-    if (dayList) {
-      const emptyBlock = dayList.querySelector('.empty-day-block');
-      if (emptyBlock) emptyBlock.remove();
-      fallbackItems.forEach((item, idx) => {
+  // PATCH: window.cart içinde "gerçek" marker varsa travel-item olarak DOM'a ekle
+  const dayList = document.querySelector('.day-list[data-day="1"]');
+  if (dayList) {
+    // 1. "empty-day-block"u çıkar
+    const emptyBlock = dayList.querySelector('.empty-day-block');
+    if (emptyBlock) emptyBlock.remove();
+
+    // 2. Gerçek marker'ları ekle
+    window.cart.forEach((item, idx) => {
+      if (
+        Number(item.day) === 1 &&
+        item.location &&
+        isFinite(item.location.lat) &&
+        isFinite(item.location.lng)
+      ) {
         const li = document.createElement("li");
         li.className = "travel-item";
         li.setAttribute("data-lat", item.location.lat);
@@ -3719,21 +3722,21 @@ if (!window.cart || window.cart.length === 0) {
           </div>
         `;
         dayList.appendChild(li);
-      });
+      }
+    });
 
-      // *** PATCH EKLE: küçük harita + rota barı ekle ***
-      // Harita ve rota/component kontrollerini ZORLA DOM'a koy:
-      ensureDayMapContainer(1);
-      initEmptyDayMap(1);
-      wrapRouteControls(1);
-    }
+    // 3. Harita ve rota barını ekle
+    ensureDayMapContainer(1);
+    initEmptyDayMap(1);
+    wrapRouteControls(1);
+    setTimeout(() => wrapRouteControls(1), 0);
   }
 
   if (menuCount) {
     menuCount.textContent = 0;
     menuCount.style.display = "none";
   }
-  // buton eventleri
+  // Buton eventleri ekle
   const addNewDayButton = document.getElementById("add-new-day-button");
   if (addNewDayButton) addNewDayButton.onclick = function () { addNewDay(this); };
   const gpsBtn = document.querySelector(".gps-import");
@@ -3741,7 +3744,6 @@ if (!window.cart || window.cart.length === 0) {
 
   return;
 }
-
   const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
   cartDiv.innerHTML = "";
 
@@ -3811,6 +3813,7 @@ if (
 ) {
 fallbackItems.forEach(...);
 console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childCount);
+
 
 // BU SATIRI EKLE!
 dayContainer.appendChild(dayList);
