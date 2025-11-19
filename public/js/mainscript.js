@@ -3744,6 +3744,7 @@ if (!window.cart || window.cart.length === 0) {
 
   return;
 }
+
   const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
   cartDiv.innerHTML = "";
 
