@@ -5389,7 +5389,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             })
         }).addTo(map).bindPopup(points[0].name || points[0].category || "Point");
         map.setView([points[0].lat, points[0].lng], 14, { animate: true });
-    } else if (points.length > 1) {
+    } else if (points.length >= 1) {
         // Normal multiple marker, route, yay vb.
         const isFlyMode = !areAllPointsInTurkey(points);
 
