@@ -5962,8 +5962,15 @@ center: [0, 0], // Veya herhangi bir değeri yaz, çünkü hemen sonra fitBounds
                                                             inertia: true,
                                                             easeLinearity: 0.2
                                                           });
-                                                        expandedMap._maplibreLayer = L.maplibreGL({ 
-  style: 'https://tiles.openfreemap.org/styles/bright'
+// OPENFREEMAP ESKİ
+// expandedMap._maplibreLayer = L.maplibreGL({ 
+//   style: 'https://tiles.openfreemap.org/styles/bright'
+// }).addTo(expandedMap);
+
+                                                         // Sadece OSM tile göster:
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap contributors'
 }).addTo(expandedMap);
 
 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
@@ -6025,19 +6032,36 @@ expandedMap.on('styleimagemissing', function(e) {
 
   // Layer değişim fonksiyonu
 function setExpandedMapTile(styleKey) {
+    // --- KLASİK OSM HARİTA (sadece raster OSM tile) ---
+    // Eski tile varsa kaldır
+    if (expandedMap._osmTileLayer) {
+        expandedMap.removeLayer(expandedMap._osmTileLayer);
+        expandedMap._osmTileLayer = null;
+    }
+
+    // OSM tile ekle
+    expandedMap._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(expandedMap);
+
+    /*
+    // OpenFreeMap / MaplibreGL (vektör) kodunu ileride aktif etmek için yorumda tutuyorum:
     const validStyles = ['bright', 'dark', 'positron'];
     const styleToUse = validStyles.includes(styleKey) ? styleKey : 'bright';
     const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
 
-    // Eski layer'ı kaldır
     if (expandedMap._maplibreLayer) {
         expandedMap.removeLayer(expandedMap._maplibreLayer);
         expandedMap._maplibreLayer = null;
     }
 
-    // Yeni layer'ı ekle (yalnızca buradan!)
+    // Yeni layer'ı ekle (vektör OpenFreeMap)
     expandedMap._maplibreLayer = L.maplibreGL({ style: url }).addTo(expandedMap);
+    */
 }
+
+
   setExpandedMapTile(currentLayer);
 
   // Expanded harita ilk açılış için flag
