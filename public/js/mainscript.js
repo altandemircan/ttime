@@ -3696,6 +3696,31 @@ async function updateCart() {
       </div>
       <hr class="add-new-day-separator">
     `;
+
+    // PATCH: Eğer window.cart'ta gerçek marker varsa empty-day-block'u kaldır ve travel-item ekle
+const fallbackItems = window.cart.filter(item =>
+  Number(item.day) === Number(day) &&
+  item.location &&
+  isFinite(item.location.lat) &&
+  isFinite(item.location.lng)
+);
+if (fallbackItems.length > 0) {
+  // empty block'u kaldır
+  const emptyBlock = dayList.querySelector('.empty-day-block');
+  if (emptyBlock) emptyBlock.remove();
+  // travel-item ekle
+  fallbackItems.forEach((item, idx) => {
+    const li = document.createElement("li");
+    li.className = "travel-item";
+    li.setAttribute("data-lat", item.location.lat);
+    li.setAttribute("data-lon", item.location.lng);
+    li.innerHTML = `<div class="cart-item"><img src="${item.image}" alt="${item.name}" class="cart-image"><div class="item-info"><p class="toggle-title">${item.name}</p></div></div>`;
+    dayList.appendChild(li);
+  });
+  // Harita/bar/expand kesin gelsin
+  setTimeout(() => wrapRouteControls(day), 0);
+}
+
     if (menuCount) {
       menuCount.textContent = 0;
       menuCount.style.display = "none";
