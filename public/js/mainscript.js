@@ -3827,7 +3827,13 @@ if (
     li.innerHTML = `<div class="cart-item"><img src="${item.image}" alt="${item.name}" class="cart-image"><div class="item-info"><p class="toggle-title">${item.name}</p></div></div>`;
     dayList.appendChild(li);
   });
-  console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childElementCount);
+  console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childCount);
+
+  // **BURAYA EKLE:**
+  ensureDayMapContainer(day);
+  initEmptyDayMap(day);
+  wrapRouteControls(day);
+  // **SON**
   setTimeout(() => wrapRouteControls(day), 0);
   console.log("[PATCH BİTTİ] DAY", day);
 }
