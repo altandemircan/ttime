@@ -3780,6 +3780,8 @@ if (
     isFinite(item.location.lat) &&
     isFinite(item.location.lng)
   );
+  // LOG EKLE: Görmek için!
+  console.log("[PATCH] fallback travel-item eklendi", fallbackItems);
   // 2) Gezi listesini doldur
   fallbackItems.forEach((item, idx) => {
     const currIdx = window.cart.indexOf(item);
@@ -3789,7 +3791,6 @@ if (
     li.dataset.index = currIdx;
     li.setAttribute("data-lat", item.location.lat);
     li.setAttribute("data-lon", item.location.lng);
-    // MINI Özet kart html (isteğe göre generateStepHtml ile zenginleştir!)
     li.innerHTML = `
       <div class="cart-item">
         <img src="${item.image}" alt="${item.name}" class="cart-image">
@@ -3801,7 +3802,10 @@ if (
     dayList.appendChild(li);
   });
   // 3) Harita ve bar kesin çıkmalı:
-  setTimeout(() => wrapRouteControls(day), 0);
+  setTimeout(() => {
+    console.log("[PATCH] wrapRouteControls çağırıldı", day);
+    wrapRouteControls(day);
+  }, 0);
 }
 
 else {
