@@ -27,10 +27,28 @@
     const lat = parseFloat(getParam("lat")) || 41.01;
     const lon = parseFloat(getParam("lon")) || 29.00;
     const zoom = 14;
+
     // Leaflet haritayı başlat
     const map = L.map('map').setView([lat, lon], zoom);
-    // Vektör Tile Layer ekle
-    L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/bright' }).addTo(map);
+
+    // PROXY PATCH: Vektör Tile Layer ekle (proxy + console)
+    fetch('https://tiles.openfreemap.org/styles/bright')
+      .then(res => res.json())
+      .then(style => {
+        Object.keys(style.sources).forEach(src => {
+          if (style.sources[src].url)
+            style.sources[src].url = '/api/tile/{z}/{x}/{y}.pbf'; // Proxy endpointi!
+        });
+        console.log('[Proxy PATCH] MaplibreGL style sources now use your proxy:', style.sources);
+        L.maplibreGL({
+          style: style
+        }).addTo(map)
+          .on('tileload', function(e) {
+            // Her tile yüklenince ekrana logla
+            console.log('[Proxy TILE LOAD]', e.tile?.src || e.tile?._src || e);
+          });
+      });
+
     // Marker ekle
     L.marker([lat, lon]).addTo(map);
   </script>
