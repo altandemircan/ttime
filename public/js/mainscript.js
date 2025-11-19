@@ -4032,12 +4032,20 @@ if (idx < dayItemsArr.length - 1) {
 }
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
+// -- BU SATIRDAN HEMEN SONRA EKLE --
+const actionsDiv = document.createElement("div");
+actionsDiv.className = "day-actions-block";
+actionsDiv.innerHTML = `
+  <button id="start-map-btn" type="button">Start with map</button>
+  <button type="button" class="import-btn gps-import" data-import-type="multi"
+      data-global="1" title="Supports GPX, TCX, FIT, KML">Import GPS File</button>
+`;
+dayList.appendChild(actionsDiv);
+
+// Sonra harita/rota eklemen gerektiği gibi devam...
 ensureDayMapContainer(day);
 initEmptyDayMap(day);
 wrapRouteControls(day);
-setTimeout(() => wrapRouteControls(day), 0);
-
-
 
 // --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
 const anyDayHasRealItem = window.cart.some(i =>
