@@ -4368,7 +4368,11 @@ function hideItemConfirmation(id) {
   }
   // container yoksa hiçbir şey yapma!
 }
-document.addEventListener('DOMContentLoaded', updateCart);
+
+window.addEventListener('load', function() {
+  updateCart();
+});
+
 document.querySelectorAll('.accordion-label').forEach(label => {
     label.addEventListener('click', function() {
     });
