@@ -8572,9 +8572,8 @@ function cleanupLegacyTravelMode() {
 // Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
 function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
 
-    const setId = `tt-travel-mode-set-day${day}`;
-document.getElementById(setId)?.remove();
-
+  const setId = `tt-travel-mode-set-day${day}`;
+  document.getElementById(setId)?.remove();
 
   const realPoints = typeof getDayPoints === "function" ? getDayPoints(day) : [];
 
@@ -8582,11 +8581,12 @@ document.getElementById(setId)?.remove();
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
- // → şunu yap:
+  // --- PATCH: Artık 1 veya daha fazla point varsa MAP/EXPAND MAP barı görünmeli! ---
   if (!Array.isArray(realPoints) || realPoints.length < 1) {
-    return;
+    return; // SIFIR point için bar/expand map tuşu yok! (Ama 1 varsa var)
   }
 
+  // 1 veya daha fazla point varsa:
   // FLY MODE aktifleştirme sadece markerlar yay ile bağlanıyorsa:
   const containerId = `route-map-day${day}`;
   const geojson = window.lastRouteGeojsons?.[containerId];
