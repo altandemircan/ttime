@@ -3622,6 +3622,7 @@ async function updateCart() {
     await renderRouteForDay(d);
     console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
   }
+  console.log("updateCart başlatıldı");
   document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
 
 
@@ -3692,7 +3693,7 @@ if (!window.cart || window.cart.length === 0) {
     <hr class="add-new-day-separator">
   `;
 
-  // PATCH: Eğer window.cart'ta marker varsa boş blok sil ve travel-item ekle
+  // PATCH: İlk marker varsa, hem travel-item hem harita & route bar DOM'a ekle
   const fallbackItems = window.cart.filter(item =>
     Number(item.day) === 1 &&
     item.location &&
@@ -3719,7 +3720,12 @@ if (!window.cart || window.cart.length === 0) {
         `;
         dayList.appendChild(li);
       });
-      setTimeout(() => wrapRouteControls(1), 0);
+
+      // *** PATCH EKLE: küçük harita + rota barı ekle ***
+      // Harita ve rota/component kontrollerini ZORLA DOM'a koy:
+      ensureDayMapContainer(1);
+      initEmptyDayMap(1);
+      wrapRouteControls(1);
     }
   }
 
