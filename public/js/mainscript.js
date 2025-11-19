@@ -8581,10 +8581,6 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
-  // --- PATCH: Artık 1 veya daha fazla point varsa MAP/EXPAND MAP barı görünmeli! ---
-  if (!Array.isArray(realPoints) || realPoints.length < 1) {
-    return; // SIFIR point için bar/expand map tuşu yok! (Ama 1 varsa var)
-  }
 
   // 1 veya daha fazla point varsa:
   // FLY MODE aktifleştirme sadece markerlar yay ile bağlanıyorsa:
