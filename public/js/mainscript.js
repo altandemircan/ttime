@@ -3188,7 +3188,8 @@ function initEmptyDayMap(day) {
     easeLinearity: 0.2
   }).setView([0, 0], 2);
 
-  // --- PATCH: Style'ın BOŞ(dolmamış) olmasını açıkça ekrana bas ---
+  // --- YORUMDA: OpenFreeMap/MapLibreGL vektör tile layer ---
+  /*
   fetch('https://tiles.openfreemap.org/styles/bright')
     .then(async res => {
       if (!res.ok) {
@@ -3225,7 +3226,15 @@ function initEmptyDayMap(day) {
     .catch(e => {
       console.error('[MAPLIBRE FETCH ERROR]', e);
     });
+  */
 
+  // --- [OSM DEFAULT TILE] ---
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Tek marker varsa haritayı ortala
   const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   if (pts.length === 1 && isFinite(pts[0].lat) && isFinite(pts[0].lng)) {
     map.setView([pts[0].lat, pts[0].lng], 14);
