@@ -4880,38 +4880,27 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         zoomControl: true,
         attributionControl: false
     });
-    // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
+
+    // --- OpenFreeMap/MaplibreGL kodları YORUMDA ---
     /*
+    // OPENFREEMAP Vektör Layer Ekle (MapLibreGL Leaflet binding kullanılır)
     fetch('https://tiles.openfreemap.org/styles/bright')
       .then(res => res.json())
       .then(style => {
         Object.keys(style.sources).forEach(src => {
           if (style.sources[src].url)
-            style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf';
+            style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'; // DİKKAT: aynen bırak, encode etme!
         });
         L.maplibreGL({ style }).addTo(map);
+        console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
       });
     */
 
-    // SADECE OSM TILE
+    // --- SADECE OSM TILE ---
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
-
-    // Marker
-    const icon = L.divIcon({
-        html: getPurpleRestaurantMarkerHtml(),
-        className: "",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    });
-    L.marker([lat, lon], { icon }).addTo(map).bindPopup(name || '').openPopup();
-
-    map.zoomControl.setPosition('topright');
-    window._leafletMaps[mapId] = map;
-    setTimeout(function() { map.invalidateSize(); }, 120);
-}
 
     // ARTIK day VAR!
     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
