@@ -3809,14 +3809,7 @@ if (
     isFinite(item.location.lng)
   )
 ) {
-  // fallbackItems işlemi
-  const fallbackItems = window.cart.filter(item =>
-    Number(item.day) === Number(day) &&
-    item.location &&
-    isFinite(item.location.lat) &&
-    isFinite(item.location.lng)
-  );
-  fallbackItems.forEach((item, idx) => {
+ fallbackItems.forEach((item, idx) => {
   const currIdx = window.cart.indexOf(item);
   const li = document.createElement("li");
   li.className = "travel-item";
@@ -3836,6 +3829,7 @@ wrapRouteControls(day);
 // PATCH SONU
 setTimeout(() => wrapRouteControls(day), 0);
 console.log("[PATCH BİTTİ] DAY", day);
+
 }
 
 else {
@@ -4034,12 +4028,13 @@ if (idx < dayItemsArr.length - 1) {
 }
     }
 }
+dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
 ensureDayMapContainer(day);
 initEmptyDayMap(day);
 wrapRouteControls(day);
 setTimeout(() => wrapRouteControls(day), 0);
-dayContainer.appendChild(dayList);
+
 
 
 // --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
