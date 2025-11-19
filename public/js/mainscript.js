@@ -8710,21 +8710,18 @@ function ensureCanvasRenderer(map) {
 
 // KÜÇÜK HARİTA İŞLEVLERİ SIRALAMA
 function wrapRouteControls(day) {
-  // Gerekli elementleri çek
-  const tm = document.getElementById(`tt-travel-mode-set-day${day}`);
+  const tm = document.getElementById(`tt-travel-mode-set-day${day}`); // travel mode barı (her zaman var olması gerek)
   const controls = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
   const mapDiv = document.getElementById(`route-map-day${day}`);
-
   if (!controls || !mapDiv) return;
-
   const dayContainer = document.getElementById(`day-container-${day}`);
   const parent = dayContainer || controls.parentNode;
 
-  // Önce eski bar'ı kaldır
+  // Barı Kaldır ve Yeniden Oluştur
   const existing = document.getElementById(`route-controls-bar-day${day}`);
   if (existing) existing.remove();
 
-  // Route controls bar oluştur
+  // Bar + Header
   const bar = document.createElement('div');
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
@@ -8737,7 +8734,7 @@ function wrapRouteControls(day) {
   bar.style.border = '1px solid #ddd';
   bar.style.gap = '10px';
 
-  // MAP BAŞLIK + MAP-FUNCTIONS + EXPAND BUTTON
+  // Header kısmı
   const mapBarHeader = document.createElement('div');
   mapBarHeader.className = 'map-bar-header';
   mapBarHeader.style.display = 'flex';
@@ -8746,21 +8743,19 @@ function wrapRouteControls(day) {
   mapBarHeader.style.justifyContent = 'space-between';
   mapBarHeader.style.cursor = 'pointer';
 
-  // .map-functions
+  // Title + ok
   const mapFunctionsDiv = document.createElement('div');
   mapFunctionsDiv.className = 'map-functions';
   mapFunctionsDiv.style.display = 'flex';
   mapFunctionsDiv.style.alignItems = 'center';
   mapFunctionsDiv.style.gap = '2x';
 
-  // Route Information (başlık)
   const mapTitleDiv = document.createElement('div');
   mapTitleDiv.textContent = "Route Information";
   mapTitleDiv.style.fontWeight = 'bold';
   mapTitleDiv.style.fontSize = '0.95rem';
   mapTitleDiv.style.color = '#333333';
 
-  // Arrow Icon (kapalıyken sağa, açıkken aşağı)
   const arrowSpan = document.createElement('span');
   arrowSpan.className = 'arrow';
   arrowSpan.style.position = 'initial';
@@ -8772,7 +8767,7 @@ function wrapRouteControls(day) {
   mapFunctionsDiv.appendChild(mapTitleDiv);
   mapFunctionsDiv.appendChild(arrowSpan);
 
-  // Expand Map button (sağda)
+  // --- HER ZAMAN EXPAND MAP BUTTON EKLE! ---
   const expandBtn = document.createElement('button');
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
@@ -8790,7 +8785,6 @@ function wrapRouteControls(day) {
   expandBtn.style.fontWeight = 'bold';
   expandBtn.style.color = '#297fd4';
   expandBtn.style.cursor = 'pointer';
-
   expandBtn.innerHTML = `
     <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy" decoding="async">
     <span class="tm-label" style="color: #297fd4">Expand map</span>
@@ -8802,9 +8796,9 @@ function wrapRouteControls(day) {
   };
 
   mapBarHeader.appendChild(mapFunctionsDiv);
-  mapBarHeader.appendChild(expandBtn);
+  mapBarHeader.appendChild(expandBtn); // HER ZAMAN bar başına ekle
 
-  // İçeriği bir wrapper'a al
+  // İçerik
   const mapContentWrap = document.createElement('div');
   mapContentWrap.className = 'map-content-wrap';
   mapContentWrap.style.transition = 'max-height 0.3s, opacity 0.3s';
@@ -8813,33 +8807,29 @@ function wrapRouteControls(day) {
   mapContentWrap.style.opacity = '1';
 
   mapContentWrap.appendChild(mapDiv);
-  if (tm) mapContentWrap.appendChild(tm);
+  if (tm) mapContentWrap.appendChild(tm); // travel mode barı, varsa ekle!
   mapContentWrap.appendChild(controls);
 
-  // Açık/Kapalı durumu
+  // Açık/Kapalı logic
   let open = true;
 
-  // İlk renderda doğru ok yönünü ata!
   setTimeout(() => {
     if (arrowSpan.querySelector('.arrow-icon')) {
       arrowSpan.querySelector('.arrow-icon').style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
     }
   }, 0);
 
-  // BAŞLIK TIKLANINCA AÇ/KAPA
   mapBarHeader.onclick = function(e) {
     if (e.target.closest('.expand-map-btn')) return;
     open = !open;
     if (open) {
       mapContentWrap.style.maxHeight = '700px';
       mapContentWrap.style.opacity = '1';
-      // Açıkken aşağı ok
       arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
       bar.style.gap = '10px';
     } else {
       mapContentWrap.style.maxHeight = '0px';
       mapContentWrap.style.opacity = '0.2';
-      // Kapalıyken sağa ok
       arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
       bar.style.gap = '0px';
     }
@@ -8848,24 +8838,22 @@ function wrapRouteControls(day) {
   bar.appendChild(mapBarHeader);
   bar.appendChild(mapContentWrap);
 
-  // Bar'ı DOM'a yerleştir
+  // DOM'a yerleştir
   if (controls && controls.parentNode === parent) {
     parent.insertBefore(bar, controls);
   } else {
     parent.appendChild(bar);
   }
 
-  // Küçük scale bar varsa kaldır
+  // Küçük scale barı sil
   const smallScaleBar = parent.querySelector(`#route-scale-bar-day${day}`);
   if (smallScaleBar) smallScaleBar.remove();
 
-  // === HER ZAMAN GÖRÜNÜR PATCH ===
   setTimeout(() => {
-    // Mini harita ve barın "her zaman" görünmesini garanti et!
-    if (mapDiv) mapDiv.style.display = 'block'; // Harita DIV'ini göster
-    if (controls) controls.style.display = 'block'; // Controls wrapper
-    if (bar) bar.style.display = 'flex'; // Bar'ın kendisi
-    if (tm) tm.style.display = 'block'; // Travel mode set
+    if (mapDiv) mapDiv.style.display = 'block';
+    if (controls) controls.style.display = 'block';
+    if (bar) bar.style.display = 'flex';
+    if (tm) tm.style.display = 'block';
   }, 1);
 }
 
