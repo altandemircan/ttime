@@ -5355,18 +5355,26 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         preferCanvas: true
     });
 
-    // DAİMA Vektör TileLayer ekle
- fetch('https://tiles.openfreemap.org/styles/bright')
-  .then(res => res.json())
-  .then(style => {
-    Object.keys(style.sources).forEach(src => {
-      if (style.sources[src].url)
-        style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'; // DİKKAT: aynen bırak, encode etme!
-        // veya sadece: '/api/tile/{z}/{x}/{y}.pbf'
-    });
-    L.maplibreGL({ style }).addTo(map);
-    console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
-  });
+    // --- OpenFreeMap/MapLibreGL kodları YORUMDA ---
+    /*
+    // DAİMA Vektör TileLayer ekle (OpenFreeMap)
+    fetch('https://tiles.openfreemap.org/styles/bright')
+      .then(res => res.json())
+      .then(style => {
+        Object.keys(style.sources).forEach(src => {
+          if (style.sources[src].url)
+            style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'; // DİKKAT: aynen bırak, encode etme!
+        });
+        L.maplibreGL({ style }).addTo(map);
+        console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
+      });
+    */
+
+    // --- SADECE OSM TILE ---
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
     // --- PATCH: Tek marker durumunda haritayı ve markerı göster ---
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
@@ -5435,14 +5443,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
         // Haritayı noktalar arasında ortala
         if (!points || points.length < 2) {
-  // Sadece marker ekle, haritayı ortala, rota/fitBounds/polyline yapma
-  if (points.length === 1) {
-    L.marker([points[0].lat, points[0].lng], {/*icon*/}).addTo(map);
-    map.setView([points[0].lat, points[0].lng], 14);
-  }
-  return;
-}
-map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+            // Sadece marker ekle, haritayı ortala, rota/fitBounds/polyline yapma
+            if (points.length === 1) {
+                L.marker([points[0].lat, points[0].lng], {/*icon*/}).addTo(map);
+                map.setView([points[0].lat, points[0].lng], 14);
+            }
+            return;
+        }
+        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else {
         // Hiç marker yoksa harita orijinal konumda
         map.setView([0, 0], 2, { animate: true });
@@ -5451,6 +5459,7 @@ map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 }
+
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
 
