@@ -3365,8 +3365,6 @@ function startMapPlanning() {
   window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
   window.__suppressMiniUntilFirstPoint[1] = true;
 
-
-
   window.currentDay = 1;
   window.mapPlanningDay = 1;
   window.mapPlanningActive = true;
@@ -3374,12 +3372,25 @@ function startMapPlanning() {
   updateCart();
   ensureDayMapContainer(1);
   initEmptyDayMap(1);
+
   const mini = document.getElementById('route-map-day1');
   if (mini) mini.style.display = 'none';
 
   if (typeof renderTravelModeControlsForAllDays === 'function') {
     renderTravelModeControlsForAllDays();
   }
+
+  // [KONUM PATCH] - Kullanıcı konumuna zoomla
+  setTimeout(() => {
+    const mapObj = window.leafletMaps && window.leafletMaps['route-map-day1'];
+    if (navigator.geolocation && mapObj) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        mapObj.setView([pos.coords.latitude, pos.coords.longitude], 13);
+      }, function(err) {
+        // Konum alınamazsa varsayılan (Avrupa) kalır
+      }, {timeout:3000});
+    }
+  }, 300); // Harita oluştuktan 300ms sonra çalışsın
 
   setTimeout(() => {
     if (!window.leafletMaps['route-map-day1']) initEmptyDayMap(1);
