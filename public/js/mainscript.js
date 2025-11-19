@@ -3188,6 +3188,14 @@ function initEmptyDayMap(day) {
     easeLinearity: 0.2
   }).setView([0, 0], 2);
 
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    map.whenReady(function() {
+      map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true });
+    });
+  });
+}
+
   // --- YORUMDA: OpenFreeMap/MapLibreGL vektör tile layer ---
   /*
   fetch('https://tiles.openfreemap.org/styles/bright')
@@ -3249,14 +3257,7 @@ function initEmptyDayMap(day) {
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 
- if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    map.whenReady(function() {
-      console.log("Kullanıcı konumu:", pos.coords.latitude, pos.coords.longitude);
-      map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true });
-    });
-  });
-}
+
 }
 
 function restoreLostDayMaps() {
