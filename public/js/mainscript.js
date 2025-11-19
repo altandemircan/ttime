@@ -2293,19 +2293,19 @@ function addToCart(
 
   // 8) Yeni öğe ekle
   const newItem = {
-  name: safeName,
-  image: safeImage,
-  day: Number(resolvedDay) > 0 ? Number(resolvedDay) : 1,
-  category: safeCategory,
-  address: address ? address.trim() : null,
-  rating,
-  user_ratings_total,
-  opening_hours,
-  place_id,
-  location: loc,
-  website,
-  addedAt: new Date().toISOString()
-};
+    name: safeName,
+    image: safeImage,
+    day: resolvedDay,
+    category: safeCategory,
+    address: address ? address.trim() : null,
+    rating,
+    user_ratings_total,
+    opening_hours,
+    place_id,
+    location: loc,
+    website,
+    addedAt: new Date().toISOString()
+  };
 
   window.cart.push(newItem);
 
@@ -3615,6 +3615,8 @@ function attachMapClickAddMode(day) {
 
 
 async function updateCart() {
+    window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
   // ÖNCE route'ları HAZIRLA!
