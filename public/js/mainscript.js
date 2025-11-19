@@ -5564,31 +5564,36 @@ function setupScaleBarInteraction(day, map) {
         // YAY üzerinde marker hareketi - HATA AYIKLAMA
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
             let arcPts = window._curvedArcPointsByDay[day];
-            
-            console.log("Arc points length:", arcPts.length);
-            console.log("Percent:", percent);
-            
-            // Doğru indeksi hesapla
-            let idx = Math.round(percent * (arcPts.length - 1));
-            idx = Math.max(0, Math.min(idx, arcPts.length - 1));
-            
-            console.log("Calculated index:", idx);
-            
-            const [lng, lat] = arcPts[idx];
-            console.log("Marker position:", lat, lng);
-            
-            if (hoverMarker) {
-                hoverMarker.setLatLng([lat, lng]);
-            } else {
-                hoverMarker = L.circleMarker([lat, lng], {
-                    radius: 10,
-                    color: "#fff",
-                    fillColor: "#8a4af3",
-                    fillOpacity: 0.9,
-                    weight: 3,
-                    zIndexOffset: 9999
-                }).addTo(map);
-            }
+
+if (!Array.isArray(arcPts) || arcPts.length === 0) {
+  console.log("Arc points yok veya boş!", arcPts);
+  return;
+}
+
+console.log("Arc points length:", arcPts.length);
+console.log("Percent:", percent);
+
+// Doğru indeksi hesapla
+let idx = Math.round(percent * (arcPts.length - 1));
+idx = Math.max(0, Math.min(idx, arcPts.length - 1));
+console.log("Calculated index:", idx);
+
+const [lng, lat] = arcPts[idx];
+console.log("Marker position:", lat, lng);
+
+if (hoverMarker) {
+    hoverMarker.setLatLng([lat, lng]);
+} else {
+    hoverMarker = L.circleMarker([lat, lng], {
+        radius: 10,
+        color: "#fff",
+        fillColor: "#8a4af3",
+        fillOpacity: 0.9,
+        weight: 3,
+        zIndexOffset: 9999
+    }).addTo(map);
+}
+
         } else {
             console.log("No arc points found for day:", day);
         }
