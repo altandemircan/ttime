@@ -3249,9 +3249,10 @@ function initEmptyDayMap(day) {
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 
-  if (navigator.geolocation) {
+ if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(function(pos) {
     map.whenReady(function() {
+      console.log("Kullanıcı konumu:", pos.coords.latitude, pos.coords.longitude);
       map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true });
     });
   });
