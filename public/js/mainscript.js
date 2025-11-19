@@ -3662,7 +3662,7 @@ async function updateCart() {
   const cartDiv = document.getElementById("cart-items");
 
   const menuCount = document.getElementById("menu-count");
-  if (!cartDiv) return;
+if (!cartDiv) { console.warn("[updateCart] cartDiv yok!"); return; }
 
 if (!window.cart || window.cart.length === 0) {
   cartDiv.innerHTML = `
