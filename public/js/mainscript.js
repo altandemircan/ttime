@@ -3817,25 +3817,25 @@ if (
     isFinite(item.location.lng)
   );
   fallbackItems.forEach((item, idx) => {
-    const currIdx = window.cart.indexOf(item);
-    const li = document.createElement("li");
-    li.className = "travel-item";
-    li.draggable = true;
-    li.dataset.index = currIdx;
-    li.setAttribute("data-lat", item.location.lat);
-    li.setAttribute("data-lon", item.location.lng);
-    li.innerHTML = `<div class="cart-item"><img src="${item.image}" alt="${item.name}" class="cart-image"><div class="item-info"><p class="toggle-title">${item.name}</p></div></div>`;
-    dayList.appendChild(li);
-  });
-  console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childCount);
+  const currIdx = window.cart.indexOf(item);
+  const li = document.createElement("li");
+  li.className = "travel-item";
+  li.draggable = true;
+  li.dataset.index = currIdx;
+  li.setAttribute("data-lat", item.location.lat);
+  li.setAttribute("data-lon", item.location.lng);
+  li.innerHTML = `<div class="cart-item"><img src="${item.image}" alt="${item.name}" class="cart-image"><div class="item-info"><p class="toggle-title">${item.name}</p></div></div>`;
+  dayList.appendChild(li);
+});
+console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childCount);
 
-  // **BURAYA EKLE:**
-  ensureDayMapContainer(day);
-  initEmptyDayMap(day);
-  wrapRouteControls(day);
-  // **SON**
-  setTimeout(() => wrapRouteControls(day), 0);
-  console.log("[PATCH BİTTİ] DAY", day);
+// PATCH BAŞI:
+ensureDayMapContainer(day);
+initEmptyDayMap(day);
+wrapRouteControls(day);
+// PATCH SONU
+setTimeout(() => wrapRouteControls(day), 0);
+console.log("[PATCH BİTTİ] DAY", day);
 }
 
 else {
@@ -4035,6 +4035,11 @@ if (idx < dayItemsArr.length - 1) {
     }
 }
 dayContainer.appendChild(dayList);
+// PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
+ensureDayMapContainer(day);
+initEmptyDayMap(day);
+wrapRouteControls(day);
+setTimeout(() => wrapRouteControls(day), 0);
 
 // --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
 const anyDayHasRealItem = window.cart.some(i =>
