@@ -3693,41 +3693,6 @@ if (!window.cart || window.cart.length === 0) {
     <hr class="add-new-day-separator">
   `;
 
-  // PATCH: İlk marker varsa, hem travel-item hem harita & route bar DOM'a ekle
-  const fallbackItems = window.cart.filter(item =>
-    Number(item.day) === 1 &&
-    item.location &&
-    isFinite(item.location.lat) &&
-    isFinite(item.location.lng)
-  );
-  if (fallbackItems.length > 0) {
-    const dayList = document.querySelector('.day-list[data-day="1"]');
-    if (dayList) {
-      const emptyBlock = dayList.querySelector('.empty-day-block');
-      if (emptyBlock) emptyBlock.remove();
-      fallbackItems.forEach((item, idx) => {
-        const li = document.createElement("li");
-        li.className = "travel-item";
-        li.setAttribute("data-lat", item.location.lat);
-        li.setAttribute("data-lon", item.location.lng);
-        li.innerHTML = `
-          <div class="cart-item">
-            <img src="${item.image || ''}" alt="${item.name}" class="cart-image">
-            <div class="item-info">
-              <p class="toggle-title">${item.name}</p>
-            </div>
-          </div>
-        `;
-        dayList.appendChild(li);
-      });
-
-      // *** PATCH EKLE: küçük harita + rota barı ekle ***
-      // Harita ve rota/component kontrollerini ZORLA DOM'a koy:
-      ensureDayMapContainer(1);
-      initEmptyDayMap(1);
-      wrapRouteControls(1);
-    }
-  }
 
   if (menuCount) {
     menuCount.textContent = 0;
@@ -3743,68 +3708,327 @@ if (!window.cart || window.cart.length === 0) {
 }
 
   const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
-cartDiv.innerHTML = "";   // eski içeriği temizle
+cartDiv.innerHTML = "";
 for (let day = 1; day <= totalDays; day++) {
-  // Day container ve başlık vs.
-  const dayContainer = document.createElement("div");
-  dayContainer.className = "day-container";
-  dayContainer.id = `day-container-${day}`;
-  dayContainer.dataset.day = day;
+    const dayItemsArr = window.cart.filter(i =>
+      Number(i.day) === Number(day) &&
+      !i._starter &&
+      !i._placeholder &&
+      (i.name || i.category === "Note")
+    );
+    const isEmptyDay = dayItemsArr.length === 0;
 
-  const dayHeader = document.createElement("h4");
-  dayHeader.className = "day-header";
-  const titleContainer = document.createElement("div");
-  titleContainer.className = "title-container";
-  const titleSpan = document.createElement("span");
-  titleSpan.className = "day-title";
-  titleSpan.textContent = `Day ${day}`;
-  titleContainer.appendChild(titleSpan);
-  dayHeader.appendChild(titleContainer);
-  dayContainer.appendChild(dayHeader);
+    let dayContainer = document.getElementById(`day-container-${day}`);
 
-  const confirmationContainer = document.createElement("div");
-  confirmationContainer.className = "confirmation-container";
-  confirmationContainer.id = `confirmation-container-${day}`;
-  confirmationContainer.style.display = "none";
-  dayContainer.appendChild(confirmationContainer);
-
-  const dayList = document.createElement("ul");
-  dayList.className = "day-list";
-  dayList.dataset.day = day;
-
-  // Şimdi travel-item ekle!
-  const dayItemsArr = window.cart.filter(
-    i => Number(i.day) === Number(day) &&
-         !i._starter && !i._placeholder &&
-         (i.name || i.category === "Note")
-  );
-
-  for (let idx = 0; idx < dayItemsArr.length; idx++) {
-    const item = dayItemsArr[idx];
-    const currIdx = window.cart.indexOf(item);
-
-    const li = document.createElement("li");
-    li.className = "travel-item";
-    li.draggable = true;
-    li.dataset.index = currIdx;
-    if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
-      li.setAttribute("data-lat", item.location.lat);
-      li.setAttribute("data-lon", item.location.lng);
+    if (!dayContainer) {
+      dayContainer = document.createElement("div");
+      dayContainer.className = "day-container";
+      dayContainer.id = `day-container-${day}`;
+      dayContainer.dataset.day = day;
+    } else {
+      const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
+      const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
+      dayContainer.innerHTML = "";
+      if (!isEmptyDay) {
+        if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
+        if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
+      }
     }
-    // Mininal content:
-    li.innerHTML = `
-      <div class="cart-item">
-        <img src="${item.image || ''}" alt="${item.name}" class="cart-image">
-        <div class="item-info">
-          <p class="toggle-title">${item.name}</p>
-        </div>
-      </div>
-    `;
-    dayList.appendChild(li);
-  }
-  dayContainer.appendChild(dayList);
-  cartDiv.appendChild(dayContainer);
+
+    const dayHeader = document.createElement("h4");
+    dayHeader.className = "day-header";
+    const titleContainer = document.createElement("div");
+    titleContainer.className = "title-container";
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "day-title";
+    if (!window.customDayNames) window.customDayNames = {};
+    titleSpan.textContent = window.customDayNames[day] || `Day ${day}`;
+    titleContainer.appendChild(titleSpan);
+    dayHeader.appendChild(titleContainer);
+    dayHeader.appendChild(createDayActionMenu(day));
+    dayContainer.appendChild(dayHeader);
+
+    const confirmationContainer = document.createElement("div");
+    confirmationContainer.className = "confirmation-container";
+    confirmationContainer.id = `confirmation-container-${day}`;
+    confirmationContainer.style.display = "none";
+    dayContainer.appendChild(confirmationContainer);
+
+    const dayList = document.createElement("ul");
+    dayList.className = "day-list";
+    dayList.dataset.day = day;
+
+  // PATCH: Eğer gün hiçbir travel-item göstermiyorsa ama en az bir gerçek marker (nokta) varsa, travel-item'ı zorla ekle!
+console.log("[PATCH ÖNÜ] isEmptyDay:", isEmptyDay, "day:", day, "window.cart:", window.cart);
+console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nodeName, "childCount:", dayList?.childElementCount);
+
+if (
+  isEmptyDay &&
+  window.cart.some(item =>
+    Number(item.day) === Number(day) &&
+    item.location &&
+    isFinite(item.location.lat) &&
+    isFinite(item.location.lng)
+  )
+) {
+  // fallbackItems işlemi
+  const fallbackItems = window.cart.filter(item =>
+    Number(item.day) === Number(day) &&
+    item.location &&
+    isFinite(item.location.lat) &&
+    isFinite(item.location.lng)
+  );
+  fallbackItems.forEach((item, idx) => {
+  const currIdx = window.cart.indexOf(item);
+  const li = document.createElement("li");
+  li.className = "travel-item";
+  li.draggable = true;
+  li.dataset.index = currIdx;
+  li.setAttribute("data-lat", item.location.lat);
+  li.setAttribute("data-lon", item.location.lng);
+  li.innerHTML = `<div class="cart-item"><img src="${item.image}" alt="${item.name}" class="cart-image"><div class="item-info"><p class="toggle-title">${item.name}</p></div></div>`;
+  dayList.appendChild(li);
+});
+console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childCount);
+
+// PATCH BAŞI:
+ensureDayMapContainer(day);
+initEmptyDayMap(day);
+wrapRouteControls(day);
+// PATCH SONU
+setTimeout(() => wrapRouteControls(day), 0);
+console.log("[PATCH BİTTİ] DAY", day);
 }
+
+else {
+    for (let idx = 0; idx < dayItemsArr.length; idx++) {
+        const item = dayItemsArr[idx];
+        const currIdx = window.cart.indexOf(item);
+
+        const li = document.createElement("li");
+        li.className = "travel-item";
+        li.draggable = true;
+        li.dataset.index = currIdx;
+        if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+            li.setAttribute("data-lat", item.location.lat);
+            li.setAttribute("data-lon", item.location.lng);
+        }
+        li.addEventListener("dragstart", dragStart);
+
+        if (item.category === "Note") {
+            li.innerHTML = `
+                <div class="cart-item">
+                    <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                    <div class="item-info">
+                        <p class="toggle-title">${item.name}</p>
+                    </div>
+                    <button class="remove-btn" onclick="removeFromCart(${currIdx})">
+                        <img src="img/remove-icon.svg" alt="Close">
+                    </button>
+                    <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
+                    <span class="arrow">
+                        <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                    </span>
+                    <div class="content">
+                        <div class="info-section">
+                            <div class="note-details">
+                                <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            let openingHoursDisplay = "No working hours info";
+            if (item.opening_hours) {
+                if (Array.isArray(item.opening_hours)) {
+                    const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+                    if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+                } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+                    openingHoursDisplay = item.opening_hours.trim();
+                }
+            }
+            const leafletMapId = "leaflet-map-" + currIdx;
+            const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
+                ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
+                : '<div class="map-error">Location not available</div>';
+
+            li.innerHTML = `
+                <div class="cart-item">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+                            <img src="${item.image}" alt="${item.name}" class="cart-image">
+                            <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+                            <div class="item-info">
+                                <p class="toggle-title">${item.name}</p>
+                            </div>
+                        </div>
+                        <span class="arrow">
+                            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                        </span>
+                    </div>
+                    <div class="content">
+                        <div class="info-section">
+                            <div class="place-rating">${mapHtml}</div>
+                            <div class="contact">
+                                <p>📌 Address: ${item.address || 'Address not available'}</p>
+                            </div>
+                            <p class="working-hours-title">
+                                🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+                            </p>
+                            ${
+                                item.location ? `
+                                <div class="coords-info" style="margin-top:8px;">
+                                    📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+                                    Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+                                </div>
+                                ${item.website ? `
+                                    <div class="website-info" style="margin-top:8px;">
+                                        🔗 <a href="${item.website}" target="_blank" rel="noopener">
+                                            ${item.website.replace(/^https?:\/\//, '')}
+                                        </a>
+                                    </div>
+                                ` : ''}
+                                <div class="google-search-info" style="margin-top:8px;">
+                                    <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank" rel="noopener">
+                                        🇬 Search images on Google
+                                    </a>
+                                </div>
+                                ` : ''
+                            }
+                        </div>
+
+                                   <button class="add-favorite-btn"
+                    data-name="${item.name}"
+                    data-category="${item.category}"
+                    data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                    data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                  <span class="fav-heart"
+                      data-name="${item.name}"
+                      data-category="${item.category}"
+                      data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                      data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                      <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                  </span>
+                  <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
+                </button>
+                        <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
+                            Remove place
+                        </button>
+                        <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
+                            <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+                            <div class="modal-actions">
+                                <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
+                                <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        dayList.appendChild(li);
+
+if (idx < dayItemsArr.length - 1) {
+  let distanceStr = '', durationStr = '', autoGenerated = false;
+  if (
+    item.location &&
+    typeof item.location.lat === "number" &&
+    typeof item.location.lng === "number" &&
+    dayItemsArr[idx + 1].location &&
+    typeof dayItemsArr[idx + 1].location.lat === "number" &&
+    typeof dayItemsArr[idx + 1].location.lng === "number"
+  ) {
+    function isPointInTurkey(lat, lon) {
+      return lat >= 35.81 && lat <= 42.11 && lon >= 25.87 && lon <= 44.57;
+    }
+    const lat1 = item.location.lat, lon1 = item.location.lng;
+    const lat2 = dayItemsArr[idx + 1].location.lat, lon2 = dayItemsArr[idx + 1].location.lng;
+    const turkiyeIcinde = isPointInTurkey(lat1, lon1) && isPointInTurkey(lat2, lon2);
+
+    if (turkiyeIcinde) {
+      // --- TÜRKİYE İÇİNDE: summary verisini kullan ---
+      const containerId = `route-map-day${day}`;
+      const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
+      // Şu separator'ın index'ini bul:
+      const siblings = Array.from(dayList.children);
+      const sepList = siblings.filter(el => el.classList && el.classList.contains('distance-separator'));
+      const sepIdx = sepList.length;
+      const summary = pairwiseSummaries[sepIdx];
+      if (summary && summary.distance != null && summary.duration != null) {
+        distanceStr = summary.distance >= 1000
+          ? (summary.distance / 1000).toFixed(1) + " km"
+          : Math.round(summary.distance) + " m";
+        durationStr = summary.duration >= 60
+          ? Math.round(summary.duration / 60) + " dk"
+          : Math.round(summary.duration) + " sn";
+      }
+      autoGenerated = false;
+    } else {
+      // --- YURTDIŞI: haversine ile hesapla ---
+      const dist = haversine(lat1, lon1, lat2, lon2);
+      let mode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : 'walking';
+      let speed = 1.3;
+      if (mode === 'driving') speed = 16;
+      else if (mode === 'cycling') speed = 5;
+      const dura = dist / speed;
+      distanceStr = dist >= 1000
+        ? (dist / 1000).toFixed(1) + " km"
+        : Math.round(dist) + " m";
+      durationStr = dura >= 60
+        ? Math.round(dura / 60) + " dk"
+        : Math.round(dura) + " sn";
+      autoGenerated = true;
+    }
+  }
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      ${autoGenerated ? `<span class="auto-generated-label">Auto-generated:</span> ` : ''}
+      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
+}
+    }
+}
+dayContainer.appendChild(dayList);
+// PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
+ensureDayMapContainer(day);
+initEmptyDayMap(day);
+wrapRouteControls(day);
+setTimeout(() => wrapRouteControls(day), 0);
+
+
+
+// --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
+const anyDayHasRealItem = window.cart.some(i =>
+  !i._starter && !i._placeholder && i.category !== "Note" && i.name
+);
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+
+
+if (anyDayHasRealItem && !hideAddCat) {
+  // 2. ADD CATEGORY BUTONU
+  const addMoreButton = document.createElement("button");
+  addMoreButton.className = "add-more-btn";
+  addMoreButton.textContent = "+ Add Category";
+  addMoreButton.dataset.day = day;
+  addMoreButton.onclick = function () {
+    // Önce eski içeriği temizle!
+    const cartDiv = document.getElementById("cart-items");
+    if (cartDiv) cartDiv.innerHTML = "";
+    showCategoryList(this.dataset.day);
+  };
+  dayList.appendChild(addMoreButton);
+}
+
+  cartDiv.appendChild(dayContainer);
+  }
 
 
   // Tüm günler eklendikten sonra, EN ALTA ekle:
