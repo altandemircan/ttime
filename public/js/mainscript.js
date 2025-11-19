@@ -4034,12 +4034,13 @@ if (idx < dayItemsArr.length - 1) {
 }
     }
 }
-dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
 ensureDayMapContainer(day);
 initEmptyDayMap(day);
 wrapRouteControls(day);
 setTimeout(() => wrapRouteControls(day), 0);
+dayContainer.appendChild(dayList);
+
 
 // --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
 const anyDayHasRealItem = window.cart.some(i =>
