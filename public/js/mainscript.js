@@ -3809,27 +3809,18 @@ if (
     isFinite(item.location.lng)
   )
 ) {
- fallbackItems.forEach((item, idx) => {
-  const currIdx = window.cart.indexOf(item);
-  const li = document.createElement("li");
-  li.className = "travel-item";
-  li.draggable = true;
-  li.dataset.index = currIdx;
-  li.setAttribute("data-lat", item.location.lat);
-  li.setAttribute("data-lon", item.location.lng);
-  li.innerHTML = `<div class="cart-item"><img src="${item.image}" alt="${item.name}" class="cart-image"><div class="item-info"><p class="toggle-title">${item.name}</p></div></div>`;
-  dayList.appendChild(li);
-});
+fallbackItems.forEach(...);
 console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childCount);
 
-// PATCH BAŞI:
+// BU SATIRI EKLE!
+dayContainer.appendChild(dayList);
+
+// PATCH: Travel-item'lar dayList'e eklendikten SONRA harita ve rota barı ekle!
 ensureDayMapContainer(day);
 initEmptyDayMap(day);
 wrapRouteControls(day);
-// PATCH SONU
 setTimeout(() => wrapRouteControls(day), 0);
 console.log("[PATCH BİTTİ] DAY", day);
-
 }
 
 else {
