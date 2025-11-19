@@ -8581,6 +8581,10 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   const oldSet = document.getElementById(setId);
   if (oldSet) oldSet.remove();
 
+  // --- PATCH: Artık 1 veya daha fazla point varsa MAP/EXPAND MAP barı görünmeli! ---
+  if (!Array.isArray(realPoints) || realPoints.length < 1) {
+    return; // SIFIR point için bar/expand map tuşu yok! (Ama 1 varsa var)
+  }
 
   // 1 veya daha fazla point varsa:
   // FLY MODE aktifleştirme sadece markerlar yay ile bağlanıyorsa:
@@ -8741,6 +8745,22 @@ function wrapRouteControls(day) {
   mapBarHeader.style.gap = '12px';
   mapBarHeader.style.justifyContent = 'space-between';
   mapBarHeader.style.cursor = 'pointer';
+
+    // <<< BURAYA EKLE >>>
+  const expandBtn = document.createElement('button');
+  expandBtn.type = 'button';
+  expandBtn.className = 'expand-map-btn';
+  expandBtn.setAttribute('aria-label', 'Expand Map');
+  expandBtn.innerHTML = `
+    <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy">
+    <span class="tm-label" style="color: #297fd4">Expand map</span>
+  `;
+  expandBtn.onclick = function(e) {
+    e.stopPropagation();
+    const containerId = `route-map-day${day}`;
+    if (typeof expandMap === "function") expandMap(containerId, day);
+  };
+  mapBarHeader.appendChild(expandBtn);
 
   // .map-functions
   const mapFunctionsDiv = document.createElement('div');
