@@ -3695,7 +3695,6 @@ async function updateCart() {
         </ul>
       </div>
       <hr class="add-new-day-separator">
-      <button class="add-new-day-btn" id="add-new-day-button">+ Add New Day</button>
     `;
     if (menuCount) {
       menuCount.textContent = 0;
