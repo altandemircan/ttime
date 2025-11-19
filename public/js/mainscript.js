@@ -3154,10 +3154,10 @@ function initEmptyDayMap(day) {
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
 
-  // DEĞİŞTİR: Eğer container yoksa, haritayı başlatma!
+  // Container yoksa başlatma!
   if (!el) {
     el = ensureDayMapContainer(day);
-    if (!el) return; // DOM yoksa hata verdirme, erken çık!
+    if (!el) return;
   }
 
   if (typeof L === 'undefined') {
@@ -3170,20 +3170,18 @@ function initEmptyDayMap(day) {
   const hasInner = el.querySelector('.leaflet-container');
 
   if (existingMap && hasInner) {
-    // Sağlam durumda, sadece view’i güncelleyebilirsin (opsiyonel)
-    return;
+    return; // Sağlam durumda, sadece view’i güncelleyebilirsin
   } else if (existingMap && !hasInner) {
-    // Detached
     try { existingMap.remove(); } catch(_){}
     delete window.leafletMaps[containerId];
   }
 
   if (!el.style.height) el.style.height = '285px';
 
-  // DEĞİŞTİR: L.map başlatmadan önce container hala mevcut mu son kez kontrol et!
-  if (!document.getElementById(containerId)) return; // <<== EK KORUMA
+  // Son kez container kontrolü!
+  if (!document.getElementById(containerId)) return;
 
-  // KÜÇÜK HARİTA
+  // Küçük harita oluştur
   const map = L.map(containerId, {
     scrollWheelZoom: true,
     fadeAnimation: true,
@@ -3197,43 +3195,56 @@ function initEmptyDayMap(day) {
     easeLinearity: 0.2
   }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
 
-  // --- PATCH: Vektör katman ekle ---
-fetch('https://tiles.openfreemap.org/styles/bright')
-  .then(res => res.json())
-  .then(style => {
-    if (!style || !style.sources) {
-      console.error("MAPLIBRE style.json bozuk ya da eksik:", style);
-      return;
-    }
-    Object.keys(style.sources).forEach(src => {
-      if (style.sources[src].url)
-        style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf';
+  // --- Vektör katman ekleme ---
+  fetch('https://tiles.openfreemap.org/styles/bright')
+    .then(async res => {
+      if (!res.ok) {
+        console.error(`[MAPLIBRE] Style JSON fetch failed: ${res.status} ${res.statusText}`);
+        return null;
+      }
+      try {
+        const txt = await res.text();
+        if (!txt || txt.trim().length < 8) {
+          console.error('[MAPLIBRE] Style JSON blank or very short. Network problem? Body: "' + txt + '"');
+          return null;
+        }
+        return JSON.parse(txt);
+      } catch (e) {
+        console.error('[MAPLIBRE] Style JSON parse error:', e);
+        return null;
+      }
+    })
+    .then(style => {
+      if (!style || !style.sources) {
+        console.error('[MAPLIBRE] style.json missing or sources absent:', style);
+        return;
+      }
+      Object.keys(style.sources).forEach(src => {
+        if (style.sources[src].url)
+          style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf';
+      });
+
+      const mapDiv = document.getElementById(containerId);
+      if (mapDiv && map && typeof map.whenReady === 'function') {
+        map.whenReady(() => {
+          try {
+            L.maplibreGL({ style }).addTo(map);
+            console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
+          } catch (e) {
+            console.error('[MAPLIBRE ADD ERROR]', e);
+          }
+        });
+      } else {
+        setTimeout(() => initEmptyDayMap(day), 100);
+      }
+    })
+    .catch(e => {
+      console.error('[MAPLIBRE FETCH ERROR]', e);
     });
 
-    // === YENİ KONTROL EKLENDİ ===
-    // Hem harita DIV'i hem Leaflet Map %100 hazırsa ekle!
-    const mapDiv = document.getElementById(containerId);
-    // map objesi hazır mı ve mapDiv var mı?
-    if (mapDiv && map && typeof map.whenReady === 'function') {
-      // Leaflet gerçekten hazırsa layer ekle
-      map.whenReady(() => {
-        L.maplibreGL({ style }).addTo(map);
-        console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
-      });
-    } else {
-      // Eğer hazır değilse, 100ms sonra tekrar dene!
-      setTimeout(() => {
-        // Retry, yukarıdaki kodu yeniden çağır
-        // (Kendi fonksiyonunun ismini ve day parametresini kullan!)
-        initEmptyDayMap(day);
-      }, 100);
-    }
-  });
-
-  // --- PATCH: Tek marker varsa ortala ---
-  // Not: getDayPoints fonksiyonun mevcut!
+  // Tek marker varsa haritayı ortala
   const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-  if (pts.length === 1) {
+  if (pts.length === 1 && isFinite(pts[0].lat) && isFinite(pts[0].lng)) {
     map.setView([pts[0].lat, pts[0].lng], 14);
   }
 
