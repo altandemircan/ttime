@@ -3154,7 +3154,6 @@ function initEmptyDayMap(day) {
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
 
-  // Container yoksa başlatma!
   if (!el) {
     el = ensureDayMapContainer(day);
     if (!el) return;
@@ -3165,23 +3164,17 @@ function initEmptyDayMap(day) {
     return;
   }
 
-  // Mevcut instance & iç DOM kontrolü
   const existingMap = window.leafletMaps && window.leafletMaps[containerId];
   const hasInner = el.querySelector('.leaflet-container');
-
-  if (existingMap && hasInner) {
-    return; // Sağlam durumda, sadece view’i güncelleyebilirsin
-  } else if (existingMap && !hasInner) {
-    try { existingMap.remove(); } catch(_){}
+  if (existingMap && hasInner) return;
+  if (existingMap && !hasInner) {
+    try { existingMap.remove(); } catch(_) {}
     delete window.leafletMaps[containerId];
   }
 
   if (!el.style.height) el.style.height = '285px';
-
-  // Son kez container kontrolü!
   if (!document.getElementById(containerId)) return;
 
-  // Küçük harita oluştur
   const map = L.map(containerId, {
     scrollWheelZoom: true,
     fadeAnimation: true,
@@ -3193,61 +3186,51 @@ function initEmptyDayMap(day) {
     wheelPxPerZoomLevel: 120,
     inertia: true,
     easeLinearity: 0.2
-  }).setView(INITIAL_EMPTY_MAP_CENTER, INITIAL_EMPTY_MAP_ZOOM);
+  }).setView([0, 0], 2);
 
-  // --- Vektör katman ekleme ---
+  // --- PATCH: Style'ın BOŞ(dolmamış) olmasını açıkça ekrana bas ---
   fetch('https://tiles.openfreemap.org/styles/bright')
     .then(async res => {
       if (!res.ok) {
         console.error(`[MAPLIBRE] Style JSON fetch failed: ${res.status} ${res.statusText}`);
         return null;
       }
+      const txt = await res.text();
+      if (!txt || txt.trim().length < 10) {
+        console.error('[MAPLIBRE] Style JSON blank/short:', txt);
+        return null;
+      }
       try {
-        const txt = await res.text();
-        if (!txt || txt.trim().length < 8) {
-          console.error('[MAPLIBRE] Style JSON blank or very short. Network problem? Body: "' + txt + '"');
-          return null;
-        }
         return JSON.parse(txt);
       } catch (e) {
-        console.error('[MAPLIBRE] Style JSON parse error:', e);
+        console.error('[MAPLIBRE] Style JSON parse error:', e, txt);
         return null;
       }
     })
     .then(style => {
       if (!style || !style.sources) {
-        console.error('[MAPLIBRE] style.json missing or sources absent:', style);
+        console.error('[MAPLIBRE] style.json missing/sources absent:', style);
         return;
       }
       Object.keys(style.sources).forEach(src => {
         if (style.sources[src].url)
           style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf';
       });
-
-      const mapDiv = document.getElementById(containerId);
-      if (mapDiv && map && typeof map.whenReady === 'function') {
-        map.whenReady(() => {
-          try {
-            L.maplibreGL({ style }).addTo(map);
-            console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
-          } catch (e) {
-            console.error('[MAPLIBRE ADD ERROR]', e);
-          }
-        });
-      } else {
-        setTimeout(() => initEmptyDayMap(day), 100);
-      }
+      map.whenReady(() => {
+        try {
+          L.maplibreGL({ style }).addTo(map);
+        } catch (e) { console.error('[MAPLIBRE ADD ERROR]', e); }
+      });
     })
     .catch(e => {
       console.error('[MAPLIBRE FETCH ERROR]', e);
     });
 
-  // Tek marker varsa haritayı ortala
   const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   if (pts.length === 1 && isFinite(pts[0].lat) && isFinite(pts[0].lng)) {
     map.setView([pts[0].lat, pts[0].lng], 14);
   }
-
+  
   if (!map._initialView) {
     map._initialView = {
       center: map.getCenter(),
