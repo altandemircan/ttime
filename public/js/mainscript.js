@@ -8737,7 +8737,7 @@ function wrapRouteControls(day) {
   bar.style.border = '1px solid #ddd';
   bar.style.gap = '10px';
 
-  // --- MAP BAŞLIK + MAP-FUNCTIONS + EXPAND BUTTON ---
+  // MAP BAŞLIK + MAP-FUNCTIONS + EXPAND BUTTON
   const mapBarHeader = document.createElement('div');
   mapBarHeader.className = 'map-bar-header';
   mapBarHeader.style.display = 'flex';
@@ -8767,8 +8767,6 @@ function wrapRouteControls(day) {
   arrowSpan.style.cursor = 'pointer';
   arrowSpan.style.padding = '0px';
   arrowSpan.style.marginTop = '6px';
-  // Kapalıyken sağ ok, açıkken aşağı ok
-  // SVG ile:
   arrowSpan.innerHTML = `<img class="arrow-icon" src="https://www.svgrepo.com/show/520912/right-arrow.svg" style="transform: rotate(0deg); transition: transform 0.18s;">`;
 
   mapFunctionsDiv.appendChild(mapTitleDiv);
@@ -8790,7 +8788,7 @@ function wrapRouteControls(day) {
   expandBtn.style.gap = '4px';
   expandBtn.style.padding = '4px 6px';
   expandBtn.style.fontWeight = 'bold';
-  expandBtn.style.color = '#ffffff';
+  expandBtn.style.color = '#297fd4';
   expandBtn.style.cursor = 'pointer';
 
   expandBtn.innerHTML = `
@@ -8822,11 +8820,11 @@ function wrapRouteControls(day) {
   let open = true;
 
   // İlk renderda doğru ok yönünü ata!
-setTimeout(() => {
-  if (arrowSpan.querySelector('.arrow-icon')) {
-    arrowSpan.querySelector('.arrow-icon').style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
-  }
-}, 0);
+  setTimeout(() => {
+    if (arrowSpan.querySelector('.arrow-icon')) {
+      arrowSpan.querySelector('.arrow-icon').style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+    }
+  }, 0);
 
   // BAŞLIK TIKLANINCA AÇ/KAPA
   mapBarHeader.onclick = function(e) {
@@ -8860,6 +8858,15 @@ setTimeout(() => {
   // Küçük scale bar varsa kaldır
   const smallScaleBar = parent.querySelector(`#route-scale-bar-day${day}`);
   if (smallScaleBar) smallScaleBar.remove();
+
+  // === HER ZAMAN GÖRÜNÜR PATCH ===
+  setTimeout(() => {
+    // Mini harita ve barın "her zaman" görünmesini garanti et!
+    if (mapDiv) mapDiv.style.display = 'block'; // Harita DIV'ini göster
+    if (controls) controls.style.display = 'block'; // Controls wrapper
+    if (bar) bar.style.display = 'flex'; // Bar'ın kendisi
+    if (tm) tm.style.display = 'block'; // Travel mode set
+  }, 1);
 }
 
 function wrapRouteControlsForAllDays() {
