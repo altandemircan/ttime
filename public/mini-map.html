@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Mini Map Testtt</title>
+  <title>Mini Map Test</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #map { width: 100%; height: 400px; min-height: 400px;}
@@ -10,53 +10,29 @@
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <div id="map"></div>    <!-- BOŞ, class YOK! -->
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
-<script>
-function getParam(name) {
-    try {
+  <script>
+    function getParam(name) {
+      try {
         const url = new URL(window.location.href);
         return url.searchParams.get(name);
-    } catch {
+      } catch {
         return null;
+      }
     }
-}
-const lat = parseFloat(getParam("lat")) || 41.01;
-const lon = parseFloat(getParam("lon")) || 29.00;
-const zoom = 14;
-const map = L.map('map').setView([lat, lon], zoom);
-
-fetch('https://tiles.openfreemap.org/styles/bright')
-    .then(res => {
-        if (!res.ok) throw new Error('Style JSON fetch failed ' + res.status);
-        return res.json();
-    })
-    .then(style => {
-        Object.entries(style.sources).forEach(([src, obj]) => {
-            // Sadece vektör tile kaynaklarını proxy'ye patchle!
-            if (src === 'openmaptiles' || obj.type === 'vector') {
-                obj.tiles = ['https://dev.triptime.ai/api/tile/{z}/{x}/{y}.pbf'];
-                delete obj.url;
-                console.log('[DEBUG][PATCHED][tiles]', src, obj.tiles);
-            }
-            // Raster kaynak proxy patch gerekiyorsa ekle:
-            if (Array.isArray(obj.tiles) && obj.type === 'raster') {
-                obj.tiles = ['https://dev.triptime.ai/api/tile/{z}/{x}/{y}.png'];
-                console.log('[DEBUG][PATCHED][raster tiles]', src, obj.tiles);
-            }
-        });
-        console.log('[DEBUG][PATCH RESULT] All sources:', style.sources);
-
-        const maplibreLayer = L.maplibreGL({ style });
-        maplibreLayer.addTo(map);
-    })
-    .catch(err => {
-        console.error('[PROXY ERROR] Style veya Tile Proxy hatası:', err);
-    });
-
-L.marker([lat, lon]).addTo(map);
-</script>
+    const lat = parseFloat(getParam("lat")) || 41.01;
+    const lon = parseFloat(getParam("lon")) || 29.00;
+    const zoom = 14;
+    // Leaflet haritayı başlat
+    const map = L.map('map').setView([lat, lon], zoom);
+    // Vektör Tile Layer ekle
+    L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/bright' }).addTo(map);
+    // Marker ekle
+    L.marker([lat, lon]).addTo(map);
+  </script>
 </body>
 </html>
