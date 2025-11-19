@@ -3763,48 +3763,46 @@ async function updateCart() {
     dayList.className = "day-list";
     dayList.dataset.day = day;
 
-   // PATCH: Eğer gün aslında item içeriyorsa, ama dayItemsArr boşsa (render hatası!)
-    // Özellikle "start with map" ile bir nokta eklenince!
-    if (
-      isEmptyDay &&
-      window.cart.some(item =>
-        Number(item.day) === Number(day) &&
-        item.location &&
-        isFinite(item.location.lat) &&
-        isFinite(item.location.lng)
-      )
-    ) {
-      // 1) Günün item arrayini ZORLA doldur:
-      const fallbackItems = window.cart.filter(item =>
-        Number(item.day) === Number(day) &&
-        item.location &&
-        isFinite(item.location.lat) &&
-        isFinite(item.location.lng)
-      );
-      // 2) Gezi listesi renderını yaptır:
-      fallbackItems.forEach((item, idx) => {
-        const currIdx = window.cart.indexOf(item);
-        const li = document.createElement("li");
-        li.className = "travel-item";
-        li.draggable = true;
-        li.dataset.index = currIdx;
-        li.setAttribute("data-lat", item.location.lat);
-        li.setAttribute("data-lon", item.location.lng);
-        // Her türlü mini harita/bar/expand için renderı garantile:
-        li.innerHTML = `
-          <div class="cart-item">
-            <img src="${item.image}" alt="${item.name}" class="cart-image">
-            <div class="item-info">
-              <p class="toggle-title">${item.name}</p>
-            </div>
-          </div>
-        `;
-        dayList.appendChild(li);
-      });
-      // 3) Son olarak wrapRouteControls çağır:
-      setTimeout(() => wrapRouteControls(day), 0);
-    }
-
+  // PATCH: Eğer gün hiçbir travel-item göstermiyorsa ama en az bir gerçek marker (nokta) varsa, travel-item'ı zorla ekle!
+if (
+  isEmptyDay &&
+  window.cart.some(item =>
+    Number(item.day) === Number(day) &&
+    item.location &&
+    isFinite(item.location.lat) &&
+    isFinite(item.location.lng)
+  )
+) {
+  // 1) Tüm gerçek lokasyonlu itemleri al
+  const fallbackItems = window.cart.filter(item =>
+    Number(item.day) === Number(day) &&
+    item.location &&
+    isFinite(item.location.lat) &&
+    isFinite(item.location.lng)
+  );
+  // 2) Gezi listesini doldur
+  fallbackItems.forEach((item, idx) => {
+    const currIdx = window.cart.indexOf(item);
+    const li = document.createElement("li");
+    li.className = "travel-item";
+    li.draggable = true;
+    li.dataset.index = currIdx;
+    li.setAttribute("data-lat", item.location.lat);
+    li.setAttribute("data-lon", item.location.lng);
+    // MINI Özet kart html (isteğe göre generateStepHtml ile zenginleştir!)
+    li.innerHTML = `
+      <div class="cart-item">
+        <img src="${item.image}" alt="${item.name}" class="cart-image">
+        <div class="item-info">
+          <p class="toggle-title">${item.name}</p>
+        </div>
+      </div>
+    `;
+    dayList.appendChild(li);
+  });
+  // 3) Harita ve bar kesin çıkmalı:
+  setTimeout(() => wrapRouteControls(day), 0);
+}
 
 else {
     for (let idx = 0; idx < dayItemsArr.length; idx++) {
