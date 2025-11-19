@@ -3742,100 +3742,66 @@ if (!window.cart || window.cart.length === 0) {
   return;
 }
 
-  const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
-  cartDiv.innerHTML = "";
+ for (let day = 1; day <= totalDays; day++) {
+  // Day container ve başlık vs.
+  const dayContainer = document.createElement("div");
+  dayContainer.className = "day-container";
+  dayContainer.id = `day-container-${day}`;
+  dayContainer.dataset.day = day;
 
+  const dayHeader = document.createElement("h4");
+  dayHeader.className = "day-header";
+  const titleContainer = document.createElement("div");
+  titleContainer.className = "title-container";
+  const titleSpan = document.createElement("span");
+  titleSpan.className = "day-title";
+  titleSpan.textContent = `Day ${day}`;
+  titleContainer.appendChild(titleSpan);
+  dayHeader.appendChild(titleContainer);
+  dayContainer.appendChild(dayHeader);
 
+  const confirmationContainer = document.createElement("div");
+  confirmationContainer.className = "confirmation-container";
+  confirmationContainer.id = `confirmation-container-${day}`;
+  confirmationContainer.style.display = "none";
+  dayContainer.appendChild(confirmationContainer);
 
-  for (let day = 1; day <= totalDays; day++) {
-    const dayItemsArr = window.cart.filter(i =>
-      Number(i.day) === Number(day) &&
-      !i._starter &&
-      !i._placeholder &&
-      (i.name || i.category === "Note")
-    );
-    const isEmptyDay = dayItemsArr.length === 0;
+  const dayList = document.createElement("ul");
+  dayList.className = "day-list";
+  dayList.dataset.day = day;
 
-    let dayContainer = document.getElementById(`day-container-${day}`);
-
-    if (!dayContainer) {
-      dayContainer = document.createElement("div");
-      dayContainer.className = "day-container";
-      dayContainer.id = `day-container-${day}`;
-      dayContainer.dataset.day = day;
-    } else {
-      const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
-      const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
-      dayContainer.innerHTML = "";
-      if (!isEmptyDay) {
-        if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
-        if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
-      }
-    }
-
-    const dayHeader = document.createElement("h4");
-    dayHeader.className = "day-header";
-    const titleContainer = document.createElement("div");
-    titleContainer.className = "title-container";
-    const titleSpan = document.createElement("span");
-    titleSpan.className = "day-title";
-    if (!window.customDayNames) window.customDayNames = {};
-    titleSpan.textContent = window.customDayNames[day] || `Day ${day}`;
-    titleContainer.appendChild(titleSpan);
-    dayHeader.appendChild(titleContainer);
-    dayHeader.appendChild(createDayActionMenu(day));
-    dayContainer.appendChild(dayHeader);
-
-    const confirmationContainer = document.createElement("div");
-    confirmationContainer.className = "confirmation-container";
-    confirmationContainer.id = `confirmation-container-${day}`;
-    confirmationContainer.style.display = "none";
-    dayContainer.appendChild(confirmationContainer);
-
-    const dayList = document.createElement("ul");
-    dayList.className = "day-list";
-    dayList.dataset.day = day;
-
-  // PATCH: Eğer gün hiçbir travel-item göstermiyorsa ama en az bir gerçek marker (nokta) varsa, travel-item'ı zorla ekle!
-console.log("[PATCH ÖNÜ] isEmptyDay:", isEmptyDay, "day:", day, "window.cart:", window.cart);
-console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nodeName, "childCount:", dayList?.childElementCount);
-
-if (
-  isEmptyDay &&
-  window.cart.some(item =>
-    Number(item.day) === Number(day) &&
-    item.location &&
-    isFinite(item.location.lat) &&
-    isFinite(item.location.lng)
-  )
-) {
-  // fallbackItems işlemi
-  const fallbackItems = window.cart.filter(item =>
-    Number(item.day) === Number(day) &&
-    item.location &&
-    isFinite(item.location.lat) &&
-    isFinite(item.location.lng)
+  // Şimdi travel-item ekle!
+  const dayItemsArr = window.cart.filter(
+    i => Number(i.day) === Number(day) &&
+         !i._starter && !i._placeholder &&
+         (i.name || i.category === "Note")
   );
-  fallbackItems.forEach((item, idx) => {
-  const currIdx = window.cart.indexOf(item);
-  const li = document.createElement("li");
-  li.className = "travel-item";
-  li.draggable = true;
-  li.dataset.index = currIdx;
-  li.setAttribute("data-lat", item.location.lat);
-  li.setAttribute("data-lon", item.location.lng);
-  li.innerHTML = `<div class="cart-item"><img src="${item.image}" alt="${item.name}" class="cart-image"><div class="item-info"><p class="toggle-title">${item.name}</p></div></div>`;
-  dayList.appendChild(li);
-});
-console.log("[PATCH SONU] fallbackItems eklendi, dayList childCount:", dayList.childCount);
 
-// PATCH BAŞI:
-ensureDayMapContainer(day);
-initEmptyDayMap(day);
-wrapRouteControls(day);
-// PATCH SONU
-setTimeout(() => wrapRouteControls(day), 0);
-console.log("[PATCH BİTTİ] DAY", day);
+  for (let idx = 0; idx < dayItemsArr.length; idx++) {
+    const item = dayItemsArr[idx];
+    const currIdx = window.cart.indexOf(item);
+
+    const li = document.createElement("li");
+    li.className = "travel-item";
+    li.draggable = true;
+    li.dataset.index = currIdx;
+    if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+      li.setAttribute("data-lat", item.location.lat);
+      li.setAttribute("data-lon", item.location.lng);
+    }
+    // Mininal content:
+    li.innerHTML = `
+      <div class="cart-item">
+        <img src="${item.image || ''}" alt="${item.name}" class="cart-image">
+        <div class="item-info">
+          <p class="toggle-title">${item.name}</p>
+        </div>
+      </div>
+    `;
+    dayList.appendChild(li);
+  }
+  dayContainer.appendChild(dayList);
+  cartDiv.appendChild(dayContainer);
 }
 
 else {
