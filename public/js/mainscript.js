@@ -3942,7 +3942,7 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
     });
     // ---------------
 
-    
+
   if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
     // DOĞRU (API'den gelen) mesafe ve süre!
     distanceStr = summary.distance >= 1000
@@ -7668,6 +7668,8 @@ async function renderRouteForDay(day) {
         window.lastRouteGeojsons[containerId] = finalGeojson;
         window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
         window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+          console.log("pairwise summary", pairwiseSummaries.length, pairwiseSummaries);
+
         window.lastRouteSummaries = window.lastRouteSummaries || {};
         window.lastRouteSummaries[containerId] = { distance: totalDistance, duration: totalDuration };
 
@@ -8134,6 +8136,8 @@ window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
     }
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
     window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+      console.log("pairwise summary", pairwiseSummaries.length, pairwiseSummaries);
+
 
     if (routeData.summary && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(routeData.summary.distance, routeData.summary.duration);
