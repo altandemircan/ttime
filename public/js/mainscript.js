@@ -3717,7 +3717,6 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
 
   dayList.appendChild(li);
 
-  // ARAYA SEPARATOR/BADGE EKLE
     // SEPARATOR HER ZAMAN FLY MODDA GÖRÜNSÜN
   const hasNextLoc =
     item.location &&
@@ -3777,7 +3776,7 @@ for (let idx = 0; idx < dayItemsArr.length; idx++) {
       dayList.appendChild(distanceSeparator);
     }
   }
-
+}
 
 
 
