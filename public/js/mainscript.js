@@ -5215,11 +5215,6 @@ function saveArcPointsForDay(day, points) {
 }
 
 
-// Alternatif çözüm: Yay noktalarını ters çevir
-function getReversedCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
-    const originalCoords = getCurvedArcCoords(start, end, strength, segments);
-    return originalCoords.reverse(); // Noktaları ters çevir
-}
 function openMapLibre3D(expandedMap) {
   // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
   let mapDiv = expandedMap.getContainer();
@@ -10809,16 +10804,6 @@ function loadTripFromStorage(tripKey) {
     return true;
 }
 
-function groupTripsByDate(trips) {
-    const grouped = {};
-    Object.values(trips).forEach(trip => {
-        const date = trip.date;
-        if (!grouped[date]) grouped[date] = [];
-        grouped[date].push(trip);
-    });
-    return grouped;
-}
-
 
 function getTimeGroupLabel(updatedAt) {
     const now = Date.now();
@@ -10827,7 +10812,7 @@ function getTimeGroupLabel(updatedAt) {
     const diffHour = diffMin / 60;
     const diffDay = diffHour / 24;
 
-    if (diffMin < 15) return "Last 15 minutes";
+    if (diffMin < 15) return "Last 1500 minutes";
     if (diffHour < 1) return "Last 1 hour";
     if (diffDay < 1) return "Last 1 day";
     if (diffDay < 7) return "Last 1 week";
