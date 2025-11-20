@@ -9321,10 +9321,10 @@ if (spinner) spinner.remove();
   console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
   // Fallback sadece gerçek rota/summary YOKSA!
-  if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !hasValidRoute) {
-      totalKm = getTotalKmFromMarkers(markers);
-      container.dataset.totalKm = String(totalKm);
-  }
+  // if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !hasValidRoute) {
+  //     totalKm = getTotalKmFromMarkers(markers);
+  //     container.dataset.totalKm = String(totalKm);
+  // }
   if (!container || isNaN(totalKm)) {
     if (container) { container.innerHTML = ""; container.style.display = 'block'; }
     return;
