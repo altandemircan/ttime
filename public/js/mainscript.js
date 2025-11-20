@@ -9289,40 +9289,30 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 
 function renderRouteScaleBar(container, totalKm, markers) {
-
-      // ⬇️ EN BAŞTA: day ve geojson keyleri tanımla
+  // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-  // ⬇️ Artık coords güvenli şekilde kullanılabilir:
+  // Route ile ilgili verilerin varlığını kontrol et (TEK SEFER!)
   const hasGeoJson = coords && coords.length >= 2;
   const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
+  console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
-
-      console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
-
-    console.log("renderRouteScaleBar", container?.id, totalKm, markers);
-const hasGeoJson = coords && coords.length >= 2;
-const hasValidRoute = hasGeoJson &&
-    window.lastRouteSummaries?.[gjKey]?.distance &&
-    window.pairwiseRouteSummaries?.[gjKey] &&
-    window.pairwiseRouteSummaries[gjKey].length > 0;
-
-// Fallback sadece gerçek rota/summary YOKSA!
-if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !hasValidRoute) {
-    totalKm = getTotalKmFromMarkers(markers);
-    container.dataset.totalKm = String(totalKm);
-}
-if (!container || isNaN(totalKm)) {
-  if (container) { container.innerHTML = ""; container.style.display = 'block'; }
-  return;
-}
+  // Fallback sadece gerçek rota/summary YOKSA!
+  if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !hasValidRoute) {
+      totalKm = getTotalKmFromMarkers(markers);
+      container.dataset.totalKm = String(totalKm);
+  }
+  if (!container || isNaN(totalKm)) {
+    if (container) { container.innerHTML = ""; container.style.display = 'block'; }
+    return;
+  }
 
   // Sadece expanded bar’da çalış; küçük bar’ı kapat
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
@@ -9330,23 +9320,12 @@ if (!container || isNaN(totalKm)) {
     return;
   }
 
-
-  // Day ve route geojson
-  const dayMatch = container.id && container.id.match(/day(\d+)/);
-  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-  const gjKey = day ? `route-map-day${day}` : null;
-  const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
-  const coords = gj?.features?.[0]?.geometry?.coordinates;
-
-
-
-
-  // Cooldown / cache anahtarı
- if (!Array.isArray(coords) || coords.length < 2) {
-  container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
-  container.style.display = 'block';
-  return;
-}
+  // Eğer geojson veya rota yoksa hata döndür
+  if (!Array.isArray(coords) || coords.length < 2) {
+    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
+    container.style.display = 'block';
+    return;
+  }
 const mid = coords[Math.floor(coords.length / 2)];
 
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
