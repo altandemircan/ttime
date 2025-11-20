@@ -3918,7 +3918,7 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
     dayList.appendChild(li);
 
     // Separator ekle 
- if (
+  if (
   item.location &&
   typeof item.location.lat === "number" &&
   typeof item.location.lng === "number" &&
@@ -3947,7 +3947,6 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
     distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
     durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
   }
-}
     const distanceSeparator = document.createElement('div');
     distanceSeparator.className = 'distance-separator';
     distanceSeparator.innerHTML = `
