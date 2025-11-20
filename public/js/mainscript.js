@@ -8498,12 +8498,13 @@ window.setTravelMode = async function(mode, day) {
   const d = parseInt(day || window.currentDay || 1, 10);
   saveTravelModeForDay(d, m);
 
-  // Keep a coarse global for legacy code
   window.travelMode = m;
   localStorage.setItem('tt_travel_mode', m);
 
-  // DİKKAT: Artık async, await ile bekliyoruz!
-  try { if (typeof renderRouteForDay === 'function') await renderRouteForDay(d); } catch(_) {}
+  // KRİTİK: Artık async, await!
+  if (typeof renderRouteForDay === 'function') 
+    await renderRouteForDay(d);
+
   try {
     const containerId = `route-map-day${d}`;
     const expandedObj = window.expandedMaps?.[containerId];
@@ -8525,7 +8526,7 @@ window.setTravelMode = async function(mode, day) {
     }
   }, 200);
 
-  // Artık route summary kesin güncellendi!
+  // Burada artık veriler kesin güncel!
   if (typeof updateCart === "function") updateCart();
 };
 
