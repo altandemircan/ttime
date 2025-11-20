@@ -3741,17 +3741,14 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
 );
     // ---------------
 
-
 if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-  // OSRM segmentiyle ekle
-  distanceStr = summary.distance >= 1000
+  const distanceStr = summary.distance >= 1000
     ? (summary.distance / 1000).toFixed(2) + " km"
     : Math.round(summary.distance) + " m";
-  durationStr = summary.duration >= 60
+  const durationStr = summary.duration >= 60
     ? Math.round(summary.duration / 60) + " dk"
     : Math.round(summary.duration) + " sn";
 
-  // Separator ekle
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
   distanceSeparator.innerHTML = `
@@ -3763,9 +3760,7 @@ if (summary && typeof summary.distance === "number" && typeof summary.duration =
   `;
   dayList.appendChild(distanceSeparator);
 }
-// else bloğu kaldır! (Separator eklenmesin)
-
-
+// else yok, bu kısım bitti!
 
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
