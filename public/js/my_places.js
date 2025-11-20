@@ -1,3 +1,59 @@
+function attachFavEvents() {
+    // Kalp tıklama (slider için)
+    document.querySelectorAll('.fav-heart').forEach(function(el){
+        el.onclick = async function(e){
+            e.stopPropagation();
+            const item = {
+                name: el.getAttribute('data-name'),
+                category: el.getAttribute('data-category'),
+                lat: el.getAttribute('data-lat'),
+                lon: el.getAttribute('data-lon'),
+                image: el.getAttribute('data-image') || ""
+            };
+            await toggleFavTrip(item, el);
+            updateFavoriteBtnText(el);
+        };
+    });
+
+    // Buton tıklama (sidebar için, tamamı)
+    document.querySelectorAll('.add-favorite-btn').forEach(function(btn){
+        btn.onclick = async function(e){
+            e.stopPropagation();
+            const el = btn.querySelector('.fav-heart');
+            if (!el) return;
+            const item = {
+                name: el.getAttribute('data-name'),
+                category: el.getAttribute('data-category'),
+                lat: el.getAttribute('data-lat'),
+                lon: el.getAttribute('data-lon'),
+                image: el.getAttribute('data-image') || ""
+            };
+            await toggleFavTrip(item, el);
+            updateFavoriteBtnText(el);
+        };
+    });
+}
+
+// Buton textini güncelleyen fonksiyon
+function updateFavoriteBtnText(favHeartEl) {
+    const btn = favHeartEl.closest('.add-favorite-btn');
+    if (!btn) return;
+    const item = {
+        name: favHeartEl.getAttribute('data-name'),
+        category: favHeartEl.getAttribute('data-category'),
+        lat: favHeartEl.getAttribute('data-lat'),
+        lon: favHeartEl.getAttribute('data-lon'),
+    };
+    const btnText = btn.querySelector('.fav-btn-text');
+    if (btnText) {
+        if (isTripFav(item)) {
+            btnText.textContent = "Delete from My Places";
+        } else {
+            btnText.textContent = "Add to My Places";
+        }
+    }
+}
+
 
 // Favori listesi (localStorage ile kalıcı)
 window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');

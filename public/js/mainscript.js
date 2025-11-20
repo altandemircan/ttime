@@ -247,63 +247,6 @@ function generateStepHtml(step, day, category, idx = 0) {
 }
 
 
-function attachFavEvents() {
-    // Kalp tıklama (slider için)
-    document.querySelectorAll('.fav-heart').forEach(function(el){
-        el.onclick = async function(e){
-            e.stopPropagation();
-            const item = {
-                name: el.getAttribute('data-name'),
-                category: el.getAttribute('data-category'),
-                lat: el.getAttribute('data-lat'),
-                lon: el.getAttribute('data-lon'),
-                image: el.getAttribute('data-image') || ""
-            };
-            await toggleFavTrip(item, el);
-            updateFavoriteBtnText(el);
-        };
-    });
-
-    // Buton tıklama (sidebar için, tamamı)
-    document.querySelectorAll('.add-favorite-btn').forEach(function(btn){
-        btn.onclick = async function(e){
-            e.stopPropagation();
-            const el = btn.querySelector('.fav-heart');
-            if (!el) return;
-            const item = {
-                name: el.getAttribute('data-name'),
-                category: el.getAttribute('data-category'),
-                lat: el.getAttribute('data-lat'),
-                lon: el.getAttribute('data-lon'),
-                image: el.getAttribute('data-image') || ""
-            };
-            await toggleFavTrip(item, el);
-            updateFavoriteBtnText(el);
-        };
-    });
-}
-
-// Buton textini güncelleyen fonksiyon
-function updateFavoriteBtnText(favHeartEl) {
-    const btn = favHeartEl.closest('.add-favorite-btn');
-    if (!btn) return;
-    const item = {
-        name: favHeartEl.getAttribute('data-name'),
-        category: favHeartEl.getAttribute('data-category'),
-        lat: favHeartEl.getAttribute('data-lat'),
-        lon: favHeartEl.getAttribute('data-lon'),
-    };
-    const btnText = btn.querySelector('.fav-btn-text');
-    if (btnText) {
-        if (isTripFav(item)) {
-            btnText.textContent = "Delete from My Places";
-        } else {
-            btnText.textContent = "Add to My Places";
-        }
-    }
-}
-
-
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
     Object.values(window._segmentHighlight[day]).forEach(poly => {
@@ -1559,32 +1502,6 @@ async function clarifyLocation(query) {
     }
 }
 
-// async function getAICategories(city, days) {
-//     try {
-//         const response = await fetch('/llm-proxy/suggest-categories', {
-//             method: 'POST',
-//             headers: { 'Content-Type': 'application/json' },
-//             body: JSON.stringify({ city, days })
-//         });
-//         return await response.json();
-//     } catch (error) {
-//         return [];
-//     }
-// }
-
-// async function generateAINotes(name, city, category) {
-//     try {
-//         const response = await fetch('/llm-proxy/generate-notes', {
-//             method: 'POST',
-//             headers: { 'Content-Type': 'application/json' },
-//             body: JSON.stringify({ name, city, category })
-//         });
-//         const data = await response.json();
-//         return data.notes;
-//     } catch (error) {
-//         return "";
-//     }
-// }
 
 
 let hasAutoAddedToCart = false;
@@ -1775,7 +1692,7 @@ function toggleAccordion(accordionHeader) {
             default: return "https://www.svgrepo.com/show/522166/location.svg";
         }
     }
-// Dosyanın üstüne veya global scope'a ekle!
+
 
 
 const placeCategories = {
@@ -2169,13 +2086,7 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
       return da - db;
     });
     return sorted;
-    // ---- BURAYA KADAR ----
 
-    // Geriye kalan kodu kaldırabilirsin (result ile return edilen satır artık gereksiz)
-    // if (!result.some(item => item.lat !== null && item.lon !== null)) {
-    //   return [];
-    // }
-    // return result;
   }
   return [];
 }
@@ -2213,7 +2124,6 @@ const dailyCategories = [
     
 ];
 const chatCategories = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
-
 
 
 const categoryIcons = {
@@ -2445,18 +2355,6 @@ function removeFromCart(index) {
   if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 }
 
-
-// function safeCoords(obj) {
-//   // Hem lat/lon hem location nesnesi destekle
-//   const lat = Number(obj.lat ?? (obj.location && obj.location.lat));
-//   const lng = Number(obj.lon ?? obj.lng ?? (obj.location && (obj.location.lng ?? obj.location.lon)));
-//   if (Number.isFinite(lat) && Number.isFinite(lng)) {
-//     return { lat, lng };
-//   }
-//   return null;
-// }
-
-
 function safeCoords(lat, lon) {
   if (
     lat !== null && lat !== undefined && lon !== null && lon !== undefined &&
@@ -2540,8 +2438,6 @@ function displayPlacesInChat(places, category, day) {
     }, 1);
 
 }
-
-
 
 // Website açma fonksiyonu
 window.openWebsite = function(element, url) {
@@ -2759,8 +2655,6 @@ cartDiv.appendChild(addFavBtn);
     cartDiv.appendChild(closeButton);
 
     initPlaceSearch(day);
-
-
 
 }
 
@@ -3258,8 +3152,6 @@ if (navigator.geolocation) {
   }
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
-
-
 }
 
 function restoreLostDayMaps() {
@@ -4352,13 +4244,7 @@ function searchPlaceOnGoogle(place, city) {
   window.open(url, '_blank');
 }
 
-// XSS koruması için (örn. "Villa Medici" gibi isimlerde sorun olmasın)
-// function escapeHtml(text) {
-//   return String(text || '').replace(/["'\\]/g, '');
-// }
 
-
-// Stil bir kez eklensin
 (function ensureDayActionMenuStyles() {
   if (document.getElementById('tt-day-action-menu-styles')) return;
   const s = document.createElement('style');
@@ -5258,11 +5144,6 @@ function addNumberedMarkers(map, points) {
     points.forEach((item, idx) => {
         const label = `${idx + 1}. ${item.name || "Point"}`;
 
-        // BURADAKİ if (!isFinite...) kontrolünü ARTIK KALDIRABİLİRSİN! (çünkü yukarıda zaten filtreledik)
-        // if (!isFinite(item.lat) || !isFinite(item.lng)) {
-        //     console.warn("Skipping invalid marker:", item);
-        //     return;
-        // }
 
         const markerHtml = `
             <div style="
@@ -5286,10 +5167,6 @@ function addNumberedMarkers(map, points) {
     });
 }
 
-// Minik harita/küçük harita: markerları yay şeklinde, kesik çizgi ile birleştiren patchli fonksiyon! 
-// --- Güncelle: renderLeafletRoute'da yay arc noktalarını Flyers için kaydet ---
-// 1. Flyers modunda yay noktalarını birleştirip window'a kaydediyoruz
-// 2. ScaleBar etkileşiminde yayda markerı kaydırmak için patch'i ekliyoruz
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
@@ -5538,17 +5415,7 @@ function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
     }
     return coords;
 }
-function updateHoverMarkerOnArc(day, percent, map, hoverMarker) {
-  const arcPts = window._curvedArcPointsByDay[day];
-  if (!arcPts || arcPts.length < 2) return;
-  const targetIdx = Math.floor(percent * (arcPts.length - 1));
-  const [lng, lat] = arcPts[targetIdx];
-  if (hoverMarker) hoverMarker.setLatLng([lat, lng]);
-  else hoverMarker = L.circleMarker([lat, lng], {
-      radius: 10, color: "#fff", fillColor: "#8a4af3", fillOpacity: 0.9, weight: 3, zIndexOffset: 9999
-    }).addTo(map);
-  return hoverMarker;
-}
+
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
@@ -5611,7 +5478,7 @@ if (hoverMarker) {
     scaleBar.addEventListener("touchmove", onMove);
     scaleBar.addEventListener("touchend", onLeave);
 }
-// Leaflet'te kullandığınız yay algoritmasıyla TAMAMEN AYNI olan fonksiyon:
+
 function getCurvedArcCoords(start, end, strength = 0.5, segments = 30) {
     // start & end: [lng, lat] formatında olmalı
     const sx = start[0], sy = start[1];
@@ -5645,7 +5512,7 @@ function saveArcPointsForDay(day, points) {
     }
     window._curvedArcPointsByDay[day] = points;
 }
-// TEST FONKSİYONU - Yayı görsel olarak kontrol etmek için
+
 function testArcVisualization(day, map) {
     const arcPts = window._curvedArcPointsByDay[day];
     if (!arcPts) return;
@@ -6173,11 +6040,7 @@ setTimeout(() => {
       leafDom: hasLeafletContainer, 
       markerCount 
     });
-    // KESİNLİKLE BUNU AKTİF KULLANMA!
-    // if (!hasLeafletContainer) {
-    //   forceCleanExpandedMap(day); 
-    //   setTimeout(() => expandMap(containerId, day), 60);
-    // }
+   
   }
 }, 400);
 
@@ -7016,8 +6879,7 @@ function getDayDisplayName(day) {
   return `Day ${day}`;
 }
 
-// Yardımcı: Marker üzerinde long-press ile drag başlat
-// Marker üzerinde long-press ile drag başlat (ÇAKIŞMA ÖNLEME DAHİL)
+
 function attachLongPressDrag(marker, map, { delay = 400, moveThreshold = 12 } = {}) {
     const el = marker.getElement();
     if (!el) {
@@ -9364,11 +9226,6 @@ if (spinner) spinner.remove();
 
   console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
-  // Fallback sadece gerçek rota/summary YOKSA!
-  // if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !hasValidRoute) {
-  //     totalKm = getTotalKmFromMarkers(markers);
-  //     container.dataset.totalKm = String(totalKm);
-  // }
   if (!container || isNaN(totalKm)) {
     if (container) { container.innerHTML = ""; container.style.display = 'block'; }
     return;
@@ -9455,8 +9312,6 @@ track.addEventListener('touchstart', function(e) {
   selDiv.style.width = `0px`;
   selDiv.style.display = 'block';
 });
-
-
 
   // Görünüm
   const MARKER_PAD_PX = 10;
@@ -9735,9 +9590,6 @@ track.addEventListener('touchmove', track.__onMove);
   container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div></div>`;
   return;
 }
-
-
-
 
       const smooth = movingAverage(elevations, 3);
       const min = Math.min(...smooth);
@@ -10157,93 +10009,7 @@ document.addEventListener('mousedown', (e) => {
   window.__tt_elevMuxReady = true;
 })();
 
-// === Feedback Form ===
-(function initFeedbackSidebar(){
-  const sidebar = document.getElementById('sidebar-feedback');
-  if (!sidebar) return;
 
-  const form = sidebar.querySelector('#feedback-form');
-  const statusEl = sidebar.querySelector('#feedback-status');
-  const btnCancel = sidebar.querySelector('#feedback-cancel');
-  const btnClose = sidebar.querySelector('.close-feedback');
-
-  function showStatus(msg, cls) {
-    statusEl.textContent = msg;
-    statusEl.className = 'feedback-status ' + (cls || '');
-  }
-
-  // Basit aç/kapat tetikleyici (kendi butonun varsa oradan çağır)
-  window.openFeedback = function() {
-    sidebar.style.display = 'block';
-  };
-  window.closeFeedback = function() {
-    sidebar.style.display = 'none';
-    form.reset();
-    showStatus('');
-  };
-
-  btnCancel?.addEventListener('click', () => closeFeedback());
-  btnClose?.addEventListener('click', () => closeFeedback());
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showStatus('Gönderiliyor...', '');
-    const fd = new FormData(form);
-    const type = fd.get('type');
-    const message = (fd.get('message') || '').toString().trim();
-    const userEmail = (fd.get('userEmail') || '').toString().trim();
-    const file = fd.get('screenshot');
-
-    if (!message) {
-      showStatus('Mesaj boş olamaz.', 'error');
-      return;
-    }
-
-    // 1) Eğer backend hazır DEĞİLSE: mailto fallback
-    // (Çok uzun mesaj + ekran görüntüsü yoksa)
-    if (!window.FEEDBACK_API_ENABLED) {
-      const body = encodeURIComponent(
-        `Tür: ${type}\nEmail: ${userEmail || '-'}\n\nMesaj:\n${message}`
-      );
-      // Kullanıcıyı mail client'a yönlendir
-      window.location.href = `mailto:altandemircan@gmail.com?subject=${encodeURIComponent('Yeni Feedback')}&&body=${body}`;
-      showStatus('Mail istemcisi açılıyor (dosya ekleri desteklenmez).', 'success');
-      form.reset();
-      return;
-    }
-
-    // 2) Backend varsa (örnek API POST)
-    try {
-      let base64Image = null;
-      if (file instanceof File && file.size > 0) {
-        base64Image = await new Promise(res => {
-          const r = new FileReader();
-            r.onload = () => res(r.result);
-            r.readAsDataURL(file);
-        });
-      }
-      const payload = {
-        type,
-        message,
-        userEmail: userEmail || null,
-        screenshot: base64Image
-      };
-
-      const resp = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!resp.ok) throw new Error('Sunucu hatası');
-      showStatus('Teşekkürler! Feedback alındı.', 'success');
-      form.reset();
-    } catch(err) {
-      console.error(err);
-      showStatus('Gönderilemedi. Daha sonra tekrar dene.', 'error');
-    }
-  });
-})();
 
 (function(){
   if (!document.getElementById('suggestions-hidden-style')) {
@@ -10925,132 +10691,7 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
 }
 
 
-document.addEventListener("DOMContentLoaded", function() {
-  let chatHistory = []; // Sadece user ve assistant mesajları olacak!
 
-  // Günlük soru limiti yardımcı fonksiyonları:
-  function getDailyQuestionCount() {
-    const today = new Date().toISOString().slice(0, 10);
-    const key = "questionCount_" + today;
-    return parseInt(localStorage.getItem(key) || "0", 10);
-  }
-  function incrementQuestionCount() {
-    const today = new Date().toISOString().slice(0, 10);
-    const key = "questionCount_" + today;
-    let count = getDailyQuestionCount();
-    localStorage.setItem(key, count + 1);
-  }
-  function canAskQuestion() {
-    return getDailyQuestionCount() < 10;
-  }
-
-  // Bilgilendirme mesajı (ilk açılışta)
-  var messagesDiv = document.getElementById('ai-chat-messages');
-  if (messagesDiv) {
-    var infoDiv = document.createElement("div");
-    infoDiv.className = "chat-info";
-    infoDiv.textContent = "Mira: You have a daily limit of 10 questions. Use them wisely!";
-    messagesDiv.appendChild(infoDiv);
-  }
-
-  async function sendAIChatMessage(userMessage) {
-    var messagesDiv = document.getElementById('ai-chat-messages');
-    if (!messagesDiv) return;
-
-    // Günlük soru hakkı kontrolü
-    if (!canAskQuestion()) {
-      var limitDiv = document.createElement('div');
-      limitDiv.className = 'chat-message ai-message';
-      limitDiv.style.background = "#ffeaea";
-      limitDiv.style.textAlign = "center";
-      limitDiv.style.fontWeight = "bold";
-      limitDiv.textContent = "🤖 You have reached your daily question limit (10). Please come back tomorrow!";
-      messagesDiv.appendChild(limitDiv);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      return;
-    }
-
-    // Kullanıcı mesajını ekle
-    var userDiv = document.createElement('div');
-    userDiv.textContent = '🧑 ' + userMessage;
-    userDiv.className = 'chat-message user-message';
-    messagesDiv.appendChild(userDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-    // Chat geçmişine user mesajı ekle
-    chatHistory.push({ role: "user", content: userMessage });
-
-    // AI cevabı için div
-    var aiDiv = document.createElement('div');
-    aiDiv.innerHTML = '🤖 ';
-    aiDiv.className = 'chat-message ai-message';
-    messagesDiv.appendChild(aiDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-    // Sadece user/assistant mesajlarını backend'e gönder
-    const eventSource = new EventSource(
-      `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
-    );
-
-    let chunkQueue = [];
-    let sseEndedOrErrored = false;
-    eventSource.onmessage = function(event) {
-      if (sseEndedOrErrored) return;
-      try {
-        const data = JSON.parse(event.data);
-        if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
-          chunkQueue.push(data.message.content);
-          if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
-            startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
-          }
-        }
-      } catch (e) {
-        console.error('SSE message parse error:', e);
-      }
-    };
-
-    eventSource.onerror = function(event) {
-      if (!sseEndedOrErrored) {
-        console.error('SSE error:', event);
-        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-        chunkQueue.length = 0;
-        aiDiv.innerHTML += "<br><span style='color:red'>AI connection error!</span>";
-        sseEndedOrErrored = true;
-      }
-    };
-
-    eventSource.addEventListener('end', function() {
-  if (!sseEndedOrErrored) {
-    const aiText = chunkQueue.join('');
-    chatHistory.push({ role: "assistant", content: aiText });
-    incrementQuestionCount();
-    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
-    chunkQueue.length = 0;
-    sseEndedOrErrored = true;
-
-    // AI cevabını şık ve düzenli ekle!
-    aiDiv.innerHTML = '🤖 ' + markdownToHtml(aiText);
-  }
-});
-  }
-
-  var chatInput = document.getElementById('ai-chat-input');
-  var sendBtn = document.getElementById('ai-chat-send-btn');
-  if (sendBtn && chatInput) {
-    sendBtn.addEventListener('click', function () {
-      var val = chatInput.value.trim();
-      if (val) {
-        sendAIChatMessage(val);
-        chatInput.value = '';
-      }
-    });
-    chatInput.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        sendBtn.click();
-      }
-    });
-  }
-});
 
 // iki nokta arasında yay çizen fonksiyon
 function drawCurvedLine(map, pointA, pointB, options = {}) {
@@ -11517,9 +11158,6 @@ function groupTripsByDate(trips) {
     });
     return grouped;
 }
-
-
-
 
 
 function getTimeGroupLabel(updatedAt) {
@@ -12017,232 +11655,6 @@ function deleteTrip(tripKey) {
     if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
 
-
-// Favori listesi (localStorage ile kalıcı)
-window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
-function saveFavTrips() {
-    localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
-}
-
-async function toggleFavTrip(item, heartEl) {
-    // Liste yoksa oluştur
-    window.favTrips = window.favTrips || [];
-
-    // Şehir/ülke eksikse, doldur
-    if (!item.city || !item.country) {
-        if (item.address) {
-            const addrParts = item.address.split(",");
-            item.city = addrParts.length >= 2 ? addrParts[addrParts.length-2].trim() : window.selectedCity || "Unknown City";
-            item.country = addrParts.length >= 1 ? addrParts[addrParts.length-1].trim() : "Unknown Country";
-        } else {
-            item.city = window.selectedCity || "Unknown City";
-            item.country = "Unknown Country";
-        }
-    }
-
-    // image yoksa otomatik doldur
-    if (!item.image || item.image === "" || item.image === "img/placeholder.png") {
-        if (typeof getImageForPlace === "function") {
-            item.image = await getImageForPlace(item.name, item.category, window.selectedCity || "");
-        } else {
-            item.image = "img/placeholder.png";
-        }
-    }
-
-    // Favoride mi kontrol et
-    const idx = window.favTrips.findIndex(f =>
-        f.name === item.name &&
-        f.category === item.category &&
-        String(f.lat) === String(item.lat) &&
-        String(f.lon) === String(item.lon)
-    );
-
-    if (idx >= 0) {
-        window.favTrips.splice(idx, 1);
-        heartEl.innerHTML = '<img class="fav-icon" src="img/like_off.svg" alt="notfav">';
-        heartEl.classList.remove("is-fav");
-    } else {
-        window.favTrips.push(item);
-        heartEl.innerHTML = '<img class="fav-icon" src="img/like_on.svg" alt="fav">';
-        heartEl.classList.add("is-fav");
-    }
-
-    // LocalStorage veya API ile kaydet
-    if (typeof saveFavTrips === "function") {
-        saveFavTrips();
-    } else {
-        localStorage.setItem("favTrips", JSON.stringify(window.favTrips));
-    }
-    // Konsol debug:
-    console.log("FavTrips:", window.favTrips);
-}
-
-function getFavoriteTrips() {
-    return window.favTrips || [];
-}
-
-function groupFavoritesByCountryCity(favList) {
-    const grouped = {};
-    favList.forEach(place => {
-        const country = place.country || place.properties?.country || "Unknown Country";
-        const city = place.city || place.properties?.city || place.properties?.name || "Unknown City";
-        const key = `${city}, ${country}`;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(place);
-    });
-    return grouped;
-}
-async function renderFavoritePlacesPanel() {
-    const favPanel = document.getElementById("favorite-places-panel");
-    if (!favPanel) return;
-    favPanel.innerHTML = "";
-
-    const favList = window.favTrips || [];
-    if (favList.length === 0) {
-        favPanel.innerHTML = `<div class="mytrips-empty">No favorite places yet.<br>Add places to favorites to see them here!</div>`;
-        return;
-    }
-
-    for (let place of favList) {
-        // Şehir
-        if (!place.city || place.city === "Unknown City") {
-            if (place.address) {
-                const addrParts = place.address.split(",");
-                place.city = addrParts.length >= 2 ? addrParts[addrParts.length - 2].trim() : place.address.trim();
-            } else if (place.properties?.city) {
-                place.city = place.properties.city;
-            } else {
-                place.city = window.selectedCity || "Unknown City";
-            }
-        }
-        // Ülke
-        if (!place.country || place.country === "Unknown Country") {
-            if (place.address) {
-                const addrParts = place.address.split(",");
-                place.country = addrParts.length > 1 ? addrParts[addrParts.length - 1].trim() : "Unknown Country";
-            } else if (place.properties?.country) {
-                place.country = place.properties.country;
-            } else {
-                place.country = "Unknown Country";
-            }
-        }
-        // Görsel
-        if (!place.image || place.image === "img/placeholder.png") {
-            if (typeof getImageForPlace === "function") {
-                try {
-                    place.image = await getImageForPlace(place.name, place.category, place.city || window.selectedCity || "");
-                } catch {
-                    place.image = "img/placeholder.png";
-                }
-            } else {
-                place.image = "img/placeholder.png";
-            }
-        }
-    }
-
-    // Gruplama ve render - senin kodun ile aynı
-    function groupFavoritesByCountryCity(list) {
-    const grouped = {};
-    list.forEach(place => {
-        const city = place.city && place.city !== "Unknown City" ? place.city : "";
-        const country = place.country && place.country !== "Unknown Country" ? place.country : "";
-        let key = "";
-        if (city && country) key = `${city}, ${country}`;
-        else if (city) key = city;
-        else if (country) key = country;
-        else key = "Unknown";
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(place);
-    });
-    return grouped;
-}
-    const grouped = groupFavoritesByCountryCity(favList);
-
-    Object.entries(grouped).forEach(([locationKey, places]) => {
-        const section = document.createElement("div");
-        section.className = "fav-place-group";
-        section.innerHTML = `<h3 style="margin-bottom:10px; color:#6c3fc2;">${locationKey}</h3>`;
-
-        const ul = document.createElement("ul");
-        ul.style = "list-style:none;padding:0;margin:0;";
-
-        places.forEach((place, i) => {
-            const li = document.createElement("li");
-            li.className = "fav-item";
-            li.style = "margin-bottom:12px;background:#f8f9fa;border-radius:12px;box-shadow:0 1px 6px #e3e3e3;padding:9px 12px;display:flex;align-items:center;gap:16px;min-width:0;";
-
-            const imgDiv = document.createElement("div");
-            imgDiv.style = "width:42px;height:42px;";
-            const img = document.createElement("img");
-            img.src = place.image || "img/placeholder.png";
-            img.alt = place.name || "";
-            img.style = "width:100%;height:100%;object-fit:cover;border-radius:8px;";
-            imgDiv.appendChild(img);
-
-            const infoDiv = document.createElement("div");
-            infoDiv.style = "flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;";
-            infoDiv.innerHTML = `
-                <span style="font-weight:500;font-size:15px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.name}</span>
-                <span style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.address || ""}</span>
-                <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;text-overflow:ellipsis;overflow:hidden;">${place.category || ""}</span>
-            `;
-
-            const btnDiv = document.createElement("div");
-            btnDiv.style = "display:flex;flex-direction:row;align-items:center;gap:7px;";
-
-            const addBtn = document.createElement("button");
-            addBtn.className = "add-fav-to-trip-btn";
-            addBtn.setAttribute("data-index", i);
-            addBtn.title = "Add to trip";
-            addBtn.style = "width:32px;height:32px;background:#1976d2;color:#fff;border:none;border-radius:50%;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
-            addBtn.textContent = "+";
-            addBtn.onclick = function() {
-                addToCart(
-                    place.name,
-                    place.image,
-                    window.currentDay || 1,
-                    place.category,
-                    place.address || "",
-                    null, null, place.opening_hours || "",
-                    null,
-                    place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
-                    place.website || ""
-                );
-                if (typeof updateCart === "function") updateCart();
-                const overlay = document.getElementById('sidebar-overlay-favorite-places');
-                if (overlay) overlay.classList.remove('open');
-                window.toggleSidebar && window.toggleSidebar('sidebar-overlay-trip');
-            };
-
-            const removeBtn = document.createElement("button");
-            removeBtn.className = "remove-fav-btn";
-            removeBtn.setAttribute("data-name", place.name);
-            removeBtn.setAttribute("data-category", place.category);
-            removeBtn.setAttribute("data-lat", place.lat || "");
-            removeBtn.setAttribute("data-lon", place.lon || "");
-            removeBtn.title = "Remove from favorites";
-            removeBtn.style = "width:32px;height:32px;background:#ffecec;color:#d32f2f;border:none;border-radius:50%;font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
-            removeBtn.textContent = "–";
-            removeBtn.onclick = function() {
-                window.favTrips.splice(i, 1);
-                localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
-                renderFavoritePlacesPanel();
-            };
-
-            btnDiv.appendChild(addBtn);
-            btnDiv.appendChild(removeBtn);
-
-            li.appendChild(imgDiv);
-            li.appendChild(infoDiv);
-            li.appendChild(btnDiv);
-
-            ul.appendChild(li);
-        });
-
-        section.appendChild(ul);
-        favPanel.appendChild(section);
-    });
-}
 
 
 async function getPairwiseRouteSummary(ptA, ptB, day) {
