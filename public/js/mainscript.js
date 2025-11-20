@@ -3766,18 +3766,6 @@ if (summary && typeof summary.distance === "number" && typeof summary.duration =
 // else bloğu kaldır! (Separator eklenmesin)
 
 
-  const distanceSeparator = document.createElement('div');
-  distanceSeparator.className = 'distance-separator';
-  distanceSeparator.innerHTML = `
-    <div class="separator-line"></div>
-    <div class="distance-label">
-      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
-    </div>
-    <div class="separator-line"></div>
-  `;
-  dayList.appendChild(distanceSeparator);
-}
-
 }
 
 dayContainer.appendChild(dayList);
