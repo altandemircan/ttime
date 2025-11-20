@@ -3947,6 +3947,7 @@ if (summary && typeof summary.distance === "number" && typeof summary.duration =
     ? Math.round(summary.duration / 60) + " dk"
     : Math.round(summary.duration) + " sn";
 }
+  console.log('[DEBUG] separator:', { idx, summary });
 
           }
 
