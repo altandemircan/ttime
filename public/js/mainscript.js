@@ -8490,18 +8490,19 @@ function getProfileForDay(day) {
 }
 
 // Set mode only for the given day and re-render that day
-window.setTravelMode = function(mode, day) {
+window.setTravelMode = async function(mode, day) {
   const m = (mode || '').toLowerCase();
   if (!['driving','cycling','walking'].includes(m)) return;
 
   const d = parseInt(day || window.currentDay || 1, 10);
   saveTravelModeForDay(d, m);
 
-  // Keep a coarse global for legacy code that may read window.travelMode
+  // Keep a coarse global for legacy code
   window.travelMode = m;
   localStorage.setItem('tt_travel_mode', m);
 
-  try { if (typeof renderRouteForDay === 'function') renderRouteForDay(d); } catch(_) {}
+  // DİKKAT: Artık async, await ile bekliyoruz!
+  try { if (typeof renderRouteForDay === 'function') await renderRouteForDay(d); } catch(_) {}
   try {
     const containerId = `route-map-day${d}`;
     const expandedObj = window.expandedMaps?.[containerId];
@@ -8513,17 +8514,17 @@ window.setTravelMode = function(mode, day) {
   markActiveTravelModeButtons();
 
   setTimeout(() => {
-  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
-  const totalKm = (window.lastRouteSummaries?.[`route-map-day${d}`]?.distance || 0) / 1000;
-  const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
-    ? getRouteMarkerPositionsOrdered(d) : [];
-  if (scaleBarDiv && typeof renderRouteScaleBar === 'function') {
-    scaleBarDiv.innerHTML = '';
-    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-  }
-}, 200);
+    const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
+    const totalKm = (window.lastRouteSummaries?.[`route-map-day${d}`]?.distance || 0) / 1000;
+    const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
+      ? getRouteMarkerPositionsOrdered(d) : [];
+    if (scaleBarDiv && typeof renderRouteScaleBar === 'function') {
+      scaleBarDiv.innerHTML = '';
+      renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+    }
+  }, 200);
 
-  // EKLE!
+  // Artık route summary kesin güncellendi!
   if (typeof updateCart === "function") updateCart();
 };
 
