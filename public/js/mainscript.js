@@ -3918,36 +3918,8 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
     dayList.appendChild(li);
 
     // Separator ekle 
- if (
-  item.location &&
-  typeof item.location.lat === "number" &&
-  typeof item.location.lng === "number" &&
-  dayItemsArr[idx + 1].location &&
-  typeof dayItemsArr[idx + 1].location.lat === "number" &&
-  typeof dayItemsArr[idx + 1].location.lng === "number"
-) {
-  // Travel mode'a AİT data varsa onu kullan!
-  const containerId = `route-map-day${day}`;
-  const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
-  const summary = pairwiseSummaries[idx];
-  if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-    // DOĞRU (API'den gelen) mesafe ve süre!
-    distanceStr = summary.distance >= 1000
-      ? (summary.distance / 1000).toFixed(2) + " km"
-      : Math.round(summary.distance) + " m";
-    durationStr = summary.duration >= 60
-      ? Math.round(summary.duration / 60) + " dk"
-      : Math.round(summary.duration) + " sn";
-  } else {
-    // API datası YOKSA haversine Fallback
-    const d = haversine(
-      dayItemsArr[idx].location.lat, dayItemsArr[idx].location.lng,
-      dayItemsArr[idx+1].location.lat, dayItemsArr[idx+1].location.lng
-    );
-    distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
-    durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
-  }
-}
+  mainscript.js?v=3678:3925 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'location')
+    at updateCart (mainscript.js?v=3678:3925:24)
 }
 
 dayContainer.appendChild(dayList);
