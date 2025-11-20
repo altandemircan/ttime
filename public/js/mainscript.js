@@ -354,22 +354,34 @@ function fitExpandedMapToRoute(day) {
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
-  // fallback: marker dizisinden haversine ile hesapla
-  spanKm = getTotalKmFromMarkers(markers);
-}
-if (!spanKm || spanKm < 0.01) {
-  track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-  console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
-  return;
-}
+  // Eğer container parametren yoksa, track.parentElement/ihtiyacına göre değiştir!
+  const container = track?.parentElement;
+  // GÜN ve geojson anahtarı çek
+  const dayMatch = container?.id && container.id.match(/day(\d+)/);
+  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+  const gjKey = day ? `route-map-day${day}` : null;
+
+  // Mesafe summary ve route summary kontrolü
+  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
+  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
+  const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
+
+  // SADECE summary/geojson/pairwise YOKSA fallback haversine ile spanKm hesapla
+  if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)) {
+    spanKm = getTotalKmFromMarkers(markers);
+  }
+
+  // spanKm halen kötü ise marker badge render atlanır ve DOM temizlenir
+  if (!spanKm || spanKm < 0.01) {
+    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+    console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
+    return;
+  }
   if (!track) return;
 
   console.log("[DEBUG] createScaleElements called", {
     widthPx, spanKm, startKmDom, markers
   });
-
-
 
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
@@ -407,34 +419,29 @@ if (!spanKm || spanKm < 0.01) {
     track.appendChild(label);
   }
 
-  // Marker badge ekleme: YAY MODU PATCH!
-// Marker badge ekleme: YAY MODU PATCH!
-if (Array.isArray(markers)) {
-  markers.forEach((m, idx) => {
-    let dist = typeof m.distance === "number" ? m.distance : 0;
-    // PATCH: out of range/return YOK!
-    // Bar'ın uzunluğunda markerın konumu:
-    const relKm = dist - startKmDom;
+  // Marker badge/render
+  if (Array.isArray(markers)) {
+    markers.forEach((m, idx) => {
+      let dist = typeof m.distance === "number" ? m.distance : 0;
+      // Bar'ın uzunluğunda markerın konumu
+      const relKm = dist - startKmDom;
+      let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
+      left = Math.max(0, Math.min(100, left));
 
-    // PATCH: spanKm'nin sıfır olmasına karşı koruma!
-    let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0; // bar uzunluğu hata olmasın
-    left = Math.max(0, Math.min(100, left)); // 0-100 arası tut
+      const wrap = document.createElement('div');
+      wrap.className = 'marker-badge';
+      wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+      wrap.title = m.name || '';
+      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      track.appendChild(wrap);
+      console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');
+    });
+  } else {
+    console.warn("[DEBUG] markers is not array", markers);
+  }
 
-    const wrap = document.createElement('div');
-    wrap.className = 'marker-badge';
-    wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
-    wrap.title = m.name || '';
-    wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
-    track.appendChild(wrap);
-    console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');    
-  });
-} else {
-  console.warn("[DEBUG] markers is not array", markers);
-}
-
-  // (Geri kalan elevation/labels kodu – aynen kalabilir)
+  // Elevation label rendering
   let gridLabels = [];
-
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
     gridLabels = Array.from(svg.querySelectorAll('text'))
@@ -459,7 +466,7 @@ if (Array.isArray(markers)) {
     pointer-events: none;
     z-index: 5;
   `;
-  elevationLabels.style.display = 'block'; 
+  elevationLabels.style.display = 'block';
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
@@ -9290,11 +9297,17 @@ function renderRouteScaleBar(container, totalKm, markers) {
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
- if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1) {
+const hasGeoJson = coords && coords.length >= 2;
+const hasValidRoute = hasGeoJson &&
+    window.lastRouteSummaries?.[gjKey]?.distance &&
+    window.pairwiseRouteSummaries?.[gjKey] &&
+    window.pairwiseRouteSummaries[gjKey].length > 0;
+
+// Fallback sadece gerçek rota/summary YOKSA!
+if ((!totalKm || totalKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !hasValidRoute) {
     totalKm = getTotalKmFromMarkers(markers);
     container.dataset.totalKm = String(totalKm);
-  }
-
+}
 if (!container || isNaN(totalKm)) {
   if (container) { container.innerHTML = ""; container.style.display = 'block'; }
   return;
