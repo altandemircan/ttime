@@ -8481,7 +8481,7 @@ function getProfileForDay(day) {
   return getTravelModeForDay(day);
 }
 
-// Set mode only for the given day and re-render that day
+
 // Set mode only for the given day and re-render that day
 window.setTravelMode = async function(mode, day) {
   const m = (mode || '').toLowerCase();
@@ -8495,7 +8495,8 @@ window.setTravelMode = async function(mode, day) {
 
   // KRİTİK: Artık async, await!
   if (typeof renderRouteForDay === 'function') 
-    await renderRouteForDay(d);
+   await renderRouteForDay(d);
+
 
   try {
     const containerId = `route-map-day${d}`;
@@ -8507,21 +8508,34 @@ window.setTravelMode = async function(mode, day) {
 
   markActiveTravelModeButtons();
 
-  setTimeout(async () => {
-    const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
-    const totalKm = (window.lastRouteSummaries?.[`route-map-day${d}`]?.distance || 0) / 1000;
-    const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
-      ? await getRouteMarkerPositionsOrdered(d) : [];
-    if (scaleBarDiv && typeof renderRouteScaleBar === 'function') {
-      scaleBarDiv.innerHTML = '';
-      renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-    }
-  }, 200);
+  
 
   // Burada artık veriler kesin güncel!
   // updateCart async olmalı ki, aradaki separatorlar da yeni moda göre gelsin.
   if (typeof updateCart === "function") await updateCart();
+
+  setTimeout(() => {
+  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
+  // SAF ROUTE KONTROLÜ: Geojson ve summary var mı?
+  const geojson = window.lastRouteGeojsons?.[`route-map-day${d}`];
+  const summary = window.lastRouteSummaries?.[`route-map-day${d}`];
+  if (scaleBarDiv && geojson && summary && summary.distance > 0) {
+    const totalKm = summary.distance / 1000;
+    const markers = typeof getRouteMarkerPositionsOrdered === 'function'
+      ? getRouteMarkerPositionsOrdered(d)
+      : [];
+    scaleBarDiv.innerHTML = '';
+    renderRouteScaleBar(scaleBarDiv, totalKm, markers);
+  }
+  // Havresine fallback veya başka bir şey YOK!
+}, 300);
+
+  
 };
+
+
+
+
 
 window.buildDirectionsUrl = function(coordsStr, day) {
   const d = day || window.currentDay || 1;
