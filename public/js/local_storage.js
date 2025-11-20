@@ -452,10 +452,10 @@ function getTimeGroupLabel(updatedAt) {
     if (diffDay < 31) return "Last 1 month";
     return "Older";
 }
-function formatTime(date) {
-    const d = new Date(date);
-    return d.toLocaleTimeString('tr-TR', { hour12: false });
-}
+// function formatTime(date) {
+//     const d = new Date(date);
+//     return d.toLocaleTimeString('tr-TR', { hour12: false });
+// }
 
 // Favori toggle
 async function toggleTripFavorite(tripKey) {
@@ -862,39 +862,39 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
 }
 
 
-async function updateAllTripThumbnailsWithPolyline() {
-  const all = getAllSavedTrips();
-  for (const [tripKey, trip] of Object.entries(all)) {
-    if (!trip.directionsPolylines) trip.directionsPolylines = {};
-    let updated = false;
-    for (let day = 1; day <= (trip.days || 1); day++) {
-      // Şu an sadece düz çizgi: getPointsFromTrip(trip, day)
-      // YERİNE, GERÇEK Polyline'ı Directions API'den çekmelisin:
-      if (
-        !trip.directionsPolylines[day] &&
-        (trip.cart || []).filter(it => it.day == day && it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number").length >= 2
-      ) {
-        // DÜZELTME: Directions API'ye istek at, polyline'ı bul
-        // const polyline = await fetchDirectionsPolyline(trip, day);  // <--- Senin Directions fonksiyonun
-        // trip.directionsPolylines[day] = polyline;
-        // updated = true;
+// async function updateAllTripThumbnailsWithPolyline() {
+//   const all = getAllSavedTrips();
+//   for (const [tripKey, trip] of Object.entries(all)) {
+//     if (!trip.directionsPolylines) trip.directionsPolylines = {};
+//     let updated = false;
+//     for (let day = 1; day <= (trip.days || 1); day++) {
+//       // Şu an sadece düz çizgi: getPointsFromTrip(trip, day)
+//       // YERİNE, GERÇEK Polyline'ı Directions API'den çekmelisin:
+//       if (
+//         !trip.directionsPolylines[day] &&
+//         (trip.cart || []).filter(it => it.day == day && it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number").length >= 2
+//       ) {
+//         // DÜZELTME: Directions API'ye istek at, polyline'ı bul
+//         // const polyline = await fetchDirectionsPolyline(trip, day);  // <--- Senin Directions fonksiyonun
+//         // trip.directionsPolylines[day] = polyline;
+//         // updated = true;
 
-        // Şu anda Directions API yoksa, sadece düz çizgi çizer!
-      }
-    }
-    if (updated) {
-      // Thumbnail tekrar üret
-      trip.thumbnails = trip.thumbnails || {};
-      for (let day = 1; day <= (trip.days || 1); day++) {
-        if ((trip.directionsPolylines[day] || []).length >= 2) {
-          trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || "img/placeholder.png";
-        }
-      }
-      all[tripKey] = trip;
-    }
-  }
-  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
-}
+//         // Şu anda Directions API yoksa, sadece düz çizgi çizer!
+//       }
+//     }
+//     if (updated) {
+//       // Thumbnail tekrar üret
+//       trip.thumbnails = trip.thumbnails || {};
+//       for (let day = 1; day <= (trip.days || 1); day++) {
+//         if ((trip.directionsPolylines[day] || []).length >= 2) {
+//           trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || "img/placeholder.png";
+//         }
+//       }
+//       all[tripKey] = trip;
+//     }
+//   }
+//   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
+// }
 
 
 // Debounce fonksiyonu (her gün için ayrı)

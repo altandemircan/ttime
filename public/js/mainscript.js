@@ -9429,25 +9429,25 @@ setTimeout(function() {
 }
 
 
-// ✅ TÜM YETIM SCALE-BAR-TRACK'LERI TEMİZLE (güvenlik)
-function cleanupOrphanScaleBars() {
-  document.querySelectorAll('.scale-bar-track').forEach(track => {
-    // Eğer track bir expanded-route-scale-bar veya route-scale-bar container'ının içinde DEĞİLSE
-    const parent = track.closest('[id^="expanded-route-scale-bar-day"], [id^="route-scale-bar-day"]');
-    if (!parent) {
-      console.warn('[cleanup] Orphan scale-bar-track removed:', track);
-      track.remove();
-    }
-  });
-}
+// // ✅ TÜM YETIM SCALE-BAR-TRACK'LERI TEMİZLE (güvenlik)
+// function cleanupOrphanScaleBars() {
+//   document.querySelectorAll('.scale-bar-track').forEach(track => {
+//     // Eğer track bir expanded-route-scale-bar veya route-scale-bar container'ının içinde DEĞİLSE
+//     const parent = track.closest('[id^="expanded-route-scale-bar-day"], [id^="route-scale-bar-day"]');
+//     if (!parent) {
+//       console.warn('[cleanup] Orphan scale-bar-track removed:', track);
+//       track.remove();
+//     }
+//   });
+// }
 
-// Her segment seçiminden ÖNCE temizle
-document.addEventListener('mousedown', (e) => {
-  const scaleBar = e.target.closest('.scale-bar-track');
-  if (scaleBar) {
-    setTimeout(cleanupOrphanScaleBars, 100);
-  }
-});
+// // Her segment seçiminden ÖNCE temizle
+// document.addEventListener('mousedown', (e) => {
+//   const scaleBar = e.target.closest('.scale-bar-track');
+//   if (scaleBar) {
+//     setTimeout(cleanupOrphanScaleBars, 100);
+//   }
+// });
 
 
 (function ensureElevationThrottleHelpers(){
