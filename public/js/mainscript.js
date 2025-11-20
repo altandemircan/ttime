@@ -3743,21 +3743,27 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
 
 
 if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-  // DOĞRU (API'den gelen) mesafe ve süre!
+  // OSRM segmentiyle ekle
   distanceStr = summary.distance >= 1000
     ? (summary.distance / 1000).toFixed(2) + " km"
     : Math.round(summary.distance) + " m";
   durationStr = summary.duration >= 60
     ? Math.round(summary.duration / 60) + " dk"
     : Math.round(summary.duration) + " sn";
-} else {
-  // Sadece fly mode'da haversine fallback kullanılacak, Türkiye rotasında Fallback iptal!
-  // Türkiye içi ise haversine Fallback YOK; separator gösterilmeyecek.
-  distanceStr = '';
-  durationStr = '';
-  // İstersen separatorı hiç eklemeyebilirsin!
-  // continue; // veya dayList.appendChild(distanceSeparator) çağrısı iptal
+
+  // Separator ekle
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
 }
+// else bloğu kaldır! (Separator eklenmesin)
 
 
   const distanceSeparator = document.createElement('div');
@@ -7662,20 +7668,15 @@ async function renderRouteForDay(day) {
   const pairwiseSummaries = [];
 // Önce leg bilgisi var mı API cevabında bakıyoruz
 if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeData.legs)) {
-    for (let i = 0; i < routeData.legs.length; i++) {
-        pairwiseSummaries.push({
-            distance: routeData.legs[i].distance,
-            duration: routeData.legs[i].duration
-        });
-    }
-} else {
-    // Fallback: haversine ile hesapla
-    for (let i = 0; i < points.length - 1; i++) {
-        const distance = Math.round(haversine(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng));
-        const duration = Math.round(distance / 1000 / 4 * 3600);
-        pairwiseSummaries.push({ distance, duration });
-    }
+  for (let i = 0; i < routeData.legs.length; i++) {
+    pairwiseSummaries.push({
+      distance: routeData.legs[i].distance,
+      duration: routeData.legs[i].duration
+    });
+  }
 }
+// else bloğu SİL! Yalnızca legs[] segmentleri ile doldur
+
 window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
 console.log(
@@ -10371,24 +10372,4 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     return L.polyline(latlngs, options).addTo(map);
 }
 
-
-async function getPairwiseRouteSummary(ptA, ptB, day) {
-    const profile = typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : 'walking';
-    const url = buildDirectionsUrl(`${ptA.lng},${ptA.lat};${ptB.lng},${ptB.lat}`, day);
-    try {
-        const resp = await fetch(url);
-        const data = await resp.json();
-        if (data.routes && data.routes[0]) {
-            // Mesafe: metre, süre: saniye
-            return {
-                distance: Math.round(data.routes[0].distance), // metre
-                duration: Math.round(data.routes[0].duration)  // saniye
-            };
-        }
-    } catch (e) {}
-    // Hata olursa fallback
-    const havDist = Math.round(haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng));
-    const havDur = Math.round(havDist / 1000 / 4 * 3600);
-    return { distance: havDist, duration: havDur };
-}
 
