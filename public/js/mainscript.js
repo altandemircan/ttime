@@ -3939,7 +3939,11 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
       ? Math.round(summary.duration / 60) + " dk"
       : Math.round(summary.duration) + " sn";
   } else {
-    // API datası YOKSA haversine Fallback
+  // API datası YOKSA haversine Fallback
+  if (
+    dayItemsArr[idx] && dayItemsArr[idx].location &&
+    dayItemsArr[idx+1] && dayItemsArr[idx+1].location
+  ) {
     const d = haversine(
       dayItemsArr[idx].location.lat, dayItemsArr[idx].location.lng,
       dayItemsArr[idx+1].location.lat, dayItemsArr[idx+1].location.lng
@@ -3947,6 +3951,7 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
     distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
     durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
   }
+}
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
   distanceSeparator.innerHTML = `
