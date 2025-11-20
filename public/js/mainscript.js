@@ -3583,172 +3583,175 @@ console.log("[PATCH ÖNÜ] isEmptyDay:", isEmptyDay, "day:", day, "window.cart:"
 console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nodeName, "childCount:", dayList?.childElementCount);
 
 
-    for (let idx = 0; idx < dayItemsArr.length; idx++) {
+    
+const containerId = `route-map-day${day}`;
+const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
+
+for (let idx = 0; idx < dayItemsArr.length; idx++) {
   const item = dayItemsArr[idx];
   const currIdx = window.cart.indexOf(item);
 
-    const li = document.createElement("li");
-    li.className = "travel-item";
-    li.draggable = true;
-    li.dataset.index = currIdx;
-    if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
-        li.setAttribute("data-lat", item.location.lat);
-        li.setAttribute("data-lon", item.location.lng);
-    }
-    li.addEventListener("dragstart", dragStart);
+  const li = document.createElement("li");
+  li.className = "travel-item";
+  li.draggable = true;
+  li.dataset.index = currIdx;
+  if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+    li.setAttribute("data-lat", item.location.lat);
+    li.setAttribute("data-lon", item.location.lng);
+  }
+  li.addEventListener("dragstart", dragStart);
 
-    // --- [ Place | Note UI Block ] ---
-    if (item.category === "Note") {
-        li.innerHTML = `
-            <div class="cart-item">
-                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
-                <div class="item-info">
-                    <p class="toggle-title">${item.name}</p>
-                </div>
-                <button class="remove-btn" onclick="removeFromCart(${currIdx})">
-                    <img src="img/remove-icon.svg" alt="Close">
-                </button>
-                <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
-                <span class="arrow">
-                    <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-                </span>
-                <div class="content">
-                    <div class="info-section">
-                        <div class="note-details">
-                            <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
-                        </div>
-                    </div>
-                </div>
+  if (item.category === "Note") {
+    li.innerHTML = `
+      <div class="cart-item">
+        <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+        <div class="item-info">
+          <p class="toggle-title">${item.name}</p>
+        </div>
+        <button class="remove-btn" onclick="removeFromCart(${currIdx})">
+          <img src="img/remove-icon.svg" alt="Close">
+        </button>
+        <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
+        <span class="arrow">
+          <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+        </span>
+        <div class="content">
+          <div class="info-section">
+            <div class="note-details">
+              <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
             </div>
-        `;
-    } else {
-        let openingHoursDisplay = "No working hours info";
-        if (item.opening_hours) {
-            if (Array.isArray(item.opening_hours)) {
-                const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
-                if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-            } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-                openingHoursDisplay = item.opening_hours.trim();
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    let openingHoursDisplay = "No working hours info";
+    if (item.opening_hours) {
+      if (Array.isArray(item.opening_hours)) {
+        const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+        if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+      } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+        openingHoursDisplay = item.opening_hours.trim();
+      }
+    }
+    const leafletMapId = "leaflet-map-" + currIdx;
+    const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
+      ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
+      : '<div class="map-error">Location not available</div>';
+
+    li.innerHTML = `
+      <div class="cart-item">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+            <img src="${item.image}" alt="${item.name}" class="cart-image">
+            <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+            <div class="item-info">
+              <p class="toggle-title">${item.name}</p>
+            </div>
+          </div>
+          <span class="arrow">
+            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+          </span>
+        </div>
+        <div class="content">
+          <div class="info-section">
+            <div class="place-rating">${mapHtml}</div>
+            <div class="contact">
+              <p>📌 Address: ${item.address || 'Address not available'}</p>
+            </div>
+            <p class="working-hours-title">
+              🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+            </p>
+            ${
+              item.location ? `
+                <div class="coords-info" style="margin-top:8px;">
+                  📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+                  Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+                </div>
+                ${item.website ? `
+                  <div class="website-info" style="margin-top:8px;">
+                    🔗 <a href="${item.website}" target="_blank" rel="noopener">
+                      ${item.website.replace(/^https?:\/\//, '')}
+                    </a>
+                  </div>
+                ` : ''}
+                <div class="google-search-info" style="margin-top:8px;">
+                  <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank" rel="noopener">
+                    🇬 Search images on Google
+                  </a>
+                </div>
+              ` : ''
             }
-        }
-        const leafletMapId = "leaflet-map-" + currIdx;
-        const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
-            ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
-            : '<div class="map-error">Location not available</div>';
-
-        li.innerHTML = `
-            <div class="cart-item">
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-                        <img src="${item.image}" alt="${item.name}" class="cart-image">
-                        <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
-                        <div class="item-info">
-                            <p class="toggle-title">${item.name}</p>
-                        </div>
-                    </div>
-                    <span class="arrow">
-                        <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-                    </span>
-                </div>
-                <div class="content">
-                    <div class="info-section">
-                        <div class="place-rating">${mapHtml}</div>
-                        <div class="contact">
-                            <p>📌 Address: ${item.address || 'Address not available'}</p>
-                        </div>
-                        <p class="working-hours-title">
-                            🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
-                        </p>
-                        ${
-                            item.location ? `
-                            <div class="coords-info" style="margin-top:8px;">
-                                📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
-                                Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
-                            </div>
-                            ${item.website ? `
-                                <div class="website-info" style="margin-top:8px;">
-                                    🔗 <a href="${item.website}" target="_blank" rel="noopener">
-                                        ${item.website.replace(/^https?:\/\//, '')}
-                                    </a>
-                                </div>
-                            ` : ''}
-                            <div class="google-search-info" style="margin-top:8px;">
-                                <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank" rel="noopener">
-                                    🇬 Search images on Google
-                                </a>
-                            </div>
-                            ` : ''
-                        }
-                    </div>
-                    <button class="add-favorite-btn"
-                        data-name="${item.name}"
-                        data-category="${item.category}"
-                        data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                        data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                        <span class="fav-heart"
-                            data-name="${item.name}"
-                            data-category="${item.category}"
-                            data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                            data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                            <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
-                        </span>
-                        <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
-                    </button>
-                    <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
-                        Remove place
-                    </button>
-                    <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
-                        <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
-                        <div class="modal-actions">
-                            <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
-                            <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
-                        </div>
-                    </div>
-                </div>
+          </div>
+          <button class="add-favorite-btn"
+            data-name="${item.name}"
+            data-category="${item.category}"
+            data-lat="${item.location?.lat ?? item.lat ?? ""}"
+            data-lon="${item.location?.lng ?? item.lon ?? ""}">
+            <span class="fav-heart"
+              data-name="${item.name}"
+              data-category="${item.category}"
+              data-lat="${item.location?.lat ?? item.lat ?? ""}"
+              data-lon="${item.location?.lng ?? item.lon ?? ""}">
+              <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+            </span>
+            <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
+          </button>
+          <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
+            Remove place
+          </button>
+          <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
+            <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+            <div class="modal-actions">
+              <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
+              <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
             </div>
-        `;
-    }
-
-    dayList.appendChild(li);
-
-if (
-  item.location &&
-  typeof item.location.lat === "number" &&
-  typeof item.location.lng === "number" &&
-  dayItemsArr[idx+1] &&
-  dayItemsArr[idx+1].location &&
-  typeof dayItemsArr[idx+1].location.lat === "number" &&
-  typeof dayItemsArr[idx+1].location.lng === "number"
-) {
-  const containerId = `route-map-day${day}`;
-  const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
-  const summary = pairwiseSummaries[idx];
-
-  let distanceStr = '';
-  let durationStr = '';
-
-  if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-    distanceStr = summary.distance >= 1000
-      ? (summary.distance / 1000).toFixed(2) + " km"
-      : Math.round(summary.distance) + " m";
-    durationStr = summary.duration >= 60
-      ? Math.round(summary.duration / 60) + " dk"
-      : Math.round(summary.duration) + " sn";
+          </div>
+        </div>
+      </div>
+    `;
   }
 
-  const distanceSeparator = document.createElement('div');
-  distanceSeparator.className = 'distance-separator';
-  distanceSeparator.innerHTML = `
-    <div class="separator-line"></div>
-    <div class="distance-label">
-      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
-    </div>
-    <div class="separator-line"></div>
-  `;
-  dayList.appendChild(distanceSeparator);
-}
+  dayList.appendChild(li);
 
+  // ARAYA SEPARATOR/BADGE EKLE (gerçek leg ile)
+  if (
+    item.location &&
+    typeof item.location.lat === "number" &&
+    typeof item.location.lng === "number" &&
+    dayItemsArr[idx+1] &&
+    dayItemsArr[idx+1].location &&
+    typeof dayItemsArr[idx+1].location.lat === "number" &&
+    typeof dayItemsArr[idx+1].location.lng === "number"
+  ) {
+    const summary = pairwiseSummaries[idx];
+
+    console.log("Separator badge idx:", idx, "summary:", summary);
+
+    let distanceStr = '';
+    let durationStr = '';
+    if (summary && typeof summary.distance === "number") {
+      distanceStr = summary.distance >= 1000
+        ? (summary.distance / 1000).toFixed(2) + " km"
+        : Math.round(summary.distance) + " m";
+    }
+    if (summary && typeof summary.duration === "number") {
+      durationStr = summary.duration >= 60
+        ? Math.round(summary.duration / 60) + " dk"
+        : Math.round(summary.duration) + " sn";
+    }
+    const distanceSeparator = document.createElement('div');
+    distanceSeparator.className = 'distance-separator';
+    distanceSeparator.innerHTML = `
+      <div class="separator-line"></div>
+      <div class="distance-label">
+        <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+      </div>
+      <div class="separator-line"></div>
+    `;
+    dayList.appendChild(distanceSeparator);
+  }
 }
 
 dayContainer.appendChild(dayList);
