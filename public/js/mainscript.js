@@ -3742,28 +3742,24 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
     // ---------------
 
 
-  if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-    // DOĞRU (API'den gelen) mesafe ve süre!
-    distanceStr = summary.distance >= 1000
-      ? (summary.distance / 1000).toFixed(2) + " km"
-      : Math.round(summary.distance) + " m";
-    durationStr = summary.duration >= 60
-      ? Math.round(summary.duration / 60) + " dk"
-      : Math.round(summary.duration) + " sn";
-  } else {
-  // API datası YOKSA haversine Fallback
-  if (
-    dayItemsArr[idx] && dayItemsArr[idx].location &&
-    dayItemsArr[idx+1] && dayItemsArr[idx+1].location
-  ) {
-    const d = haversine(
-      dayItemsArr[idx].location.lat, dayItemsArr[idx].location.lng,
-      dayItemsArr[idx+1].location.lat, dayItemsArr[idx+1].location.lng
-    );
-    distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
-    durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
-  }
+if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+  // DOĞRU (API'den gelen) mesafe ve süre!
+  distanceStr = summary.distance >= 1000
+    ? (summary.distance / 1000).toFixed(2) + " km"
+    : Math.round(summary.distance) + " m";
+  durationStr = summary.duration >= 60
+    ? Math.round(summary.duration / 60) + " dk"
+    : Math.round(summary.duration) + " sn";
+} else {
+  // Sadece fly mode'da haversine fallback kullanılacak, Türkiye rotasında Fallback iptal!
+  // Türkiye içi ise haversine Fallback YOK; separator gösterilmeyecek.
+  distanceStr = '';
+  durationStr = '';
+  // İstersen separatorı hiç eklemeyebilirsin!
+  // continue; // veya dayList.appendChild(distanceSeparator) çağrısı iptal
 }
+
+
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
   distanceSeparator.innerHTML = `
@@ -9441,7 +9437,7 @@ setTimeout(function() {
 //   });
 // }
 
-// // Her segment seçiminden ÖNCE temizle
+// // Her segment seçiminden ÖNCE   temizle
 // document.addEventListener('mousedown', (e) => {
 //   const scaleBar = e.target.closest('.scale-bar-track');
 //   if (scaleBar) {
