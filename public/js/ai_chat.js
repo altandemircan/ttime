@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
   function incrementQuestionCount() {
     const today = new Date().toISOString().slice(0, 10);
-    const key = "questionCount_" + today;
+    const key = "questionCount_" + today; 
     let count = getDailyQuestionCount();
     localStorage.setItem(key, count + 1);
   }
