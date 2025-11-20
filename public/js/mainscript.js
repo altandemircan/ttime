@@ -3937,10 +3937,7 @@ if (idx < dayItemsArr.length - 1) {
     const containerId = `route-map-day${day}`;
     const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
     // Separator'ın index'ini güvenli bulmak için mevcut separator sayısını kullan
-    const siblings = Array.from(dayList.children);
-    const sepList = siblings.filter(el => el.classList && el.classList.contains('distance-separator'));
-    const sepIdx = sepList.length;
-    const summary = pairwiseSummaries[sepIdx];
+    const summary = pairwiseSummaries[idx];
 
     if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
       // --- Route summary varsa: CAR/BIKE/WALK ve FLY'da da summary'yi göster!
