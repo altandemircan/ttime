@@ -3748,7 +3748,7 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
         dayList.appendChild(distanceSeparator);
       }
       // else: separator ekleme!
-    }
+    }}
 
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
