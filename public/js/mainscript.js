@@ -7674,13 +7674,7 @@ if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeDat
             duration: routeData.legs[i].duration
         });
     }
-} else {
-  // Haversine ile hesapla
-  const d = haversine(item.location.lat, item.location.lng, dayItemsArr[idx+1].location.lat, dayItemsArr[idx+1].location.lng);
-  distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
-  durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
-}
-
+} 
 window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
 console.log(
