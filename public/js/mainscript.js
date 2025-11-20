@@ -3741,17 +3741,44 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
 );
     // ---------------
 
+
 if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-  const distanceStr = summary.distance >= 1000
+  // OSRM segmentiyle ekle
+  distanceStr = summary.distance >= 1000
     ? (summary.distance / 1000).toFixed(2) + " km"
     : Math.round(summary.distance) + " m";
-  const durationStr = summary.duration >= 60
+  durationStr = summary.duration >= 60
     ? Math.round(summary.duration / 60) + " dk"
     : Math.round(summary.duration) + " sn";
 
+  // Separator ekle
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
+}
+// else bloğu kaldır! (Separator eklenmesin)
 
+
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
 }
 
+}
 
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
@@ -7641,14 +7668,18 @@ async function renderRouteForDay(day) {
   const pairwiseSummaries = [];
 // Önce leg bilgisi var mı API cevabında bakıyoruz
 if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeData.legs)) {
-  for (let i = 0; i < routeData.legs.length; i++) {
-    pairwiseSummaries.push({
-      distance: routeData.legs[i].distance,
-      duration: routeData.legs[i].duration
-    });
-  }
+    for (let i = 0; i < routeData.legs.length; i++) {
+        pairwiseSummaries.push({
+            distance: routeData.legs[i].distance,
+            duration: routeData.legs[i].duration
+        });
+    }
+} else {
+  // Haversine ile hesapla
+  const d = haversine(item.location.lat, item.location.lng, dayItemsArr[idx+1].location.lat, dayItemsArr[idx+1].location.lng);
+  distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
+  durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
 }
-// else bloğu SİL! Yalnızca legs[] segmentleri ile doldur
 
 window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
