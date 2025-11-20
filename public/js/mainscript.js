@@ -3721,10 +3721,12 @@ if (
   typeof dayItemsArr[idx+1].location.lat === "number" &&
   typeof dayItemsArr[idx+1].location.lng === "number"
 ) {
-  // Travel mode'a AİT data varsa onu kullan!
   const containerId = `route-map-day${day}`;
   const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
   const summary = pairwiseSummaries[idx];
+
+  let distanceStr = '';
+  let durationStr = '';
 
   if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
     distanceStr = summary.distance >= 1000
@@ -3733,9 +3735,6 @@ if (
     durationStr = summary.duration >= 60
       ? Math.round(summary.duration / 60) + " dk"
       : Math.round(summary.duration) + " sn";
-  } else {
-    distanceStr = '';
-    durationStr = '';
   }
 
   const distanceSeparator = document.createElement('div');
