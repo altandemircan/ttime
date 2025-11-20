@@ -3965,7 +3965,9 @@ if (summary && typeof summary.distance === "number" && typeof summary.duration =
     <div class="separator-line"></div>
   `;
   dayList.appendChild(distanceSeparator);
-} // HAVERSINE Fallback block SİLİNECEK! Eğer pairwise yoksa separator hiç eklenmeyecek.else {
+} // HAVERSINE Fallback block SİLİNECEK! Eğer pairwise yoksa separator hiç eklenmeyecek.
+
+else {
   // API datası YOKSA haversine Fallback
   if (
     dayItemsArr[idx] && dayItemsArr[idx].location &&
