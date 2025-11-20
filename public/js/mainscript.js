@@ -8497,18 +8497,6 @@ window.setTravelMode = async function(mode, day) {
   if (typeof renderRouteForDay === 'function') 
    await renderRouteForDay(d);
 
-// --- PATCH: Scalebar sadece route-summary ve geojson geldikten sonra render! ---
-// Asla haversine fallback ile hemen render etme, summary varsa!
-const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
-const summary = window.lastRouteSummaries?.[`route-map-day${d}`];
-const totalKm = summary ? summary.distance / 1000 : 0;
-const markers = typeof getRouteMarkerPositionsOrdered === 'function'
-  ? getRouteMarkerPositionsOrdered(d)
-  : [];
-if (scaleBarDiv && typeof renderRouteScaleBar === 'function' && summary) {
-  scaleBarDiv.innerHTML = '';
-  renderRouteScaleBar(scaleBarDiv, totalKm, markers);
-}
 
   try {
     const containerId = `route-map-day${d}`;
@@ -8525,6 +8513,24 @@ if (scaleBarDiv && typeof renderRouteScaleBar === 'function' && summary) {
   // Burada artık veriler kesin güncel!
   // updateCart async olmalı ki, aradaki separatorlar da yeni moda göre gelsin.
   if (typeof updateCart === "function") await updateCart();
+
+  setTimeout(() => {
+  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
+  // SAF ROUTE KONTROLÜ: Geojson ve summary var mı?
+  const geojson = window.lastRouteGeojsons?.[`route-map-day${d}`];
+  const summary = window.lastRouteSummaries?.[`route-map-day${d}`];
+  if (scaleBarDiv && geojson && summary && summary.distance > 0) {
+    const totalKm = summary.distance / 1000;
+    const markers = typeof getRouteMarkerPositionsOrdered === 'function'
+      ? getRouteMarkerPositionsOrdered(d)
+      : [];
+    scaleBarDiv.innerHTML = '';
+    renderRouteScaleBar(scaleBarDiv, totalKm, markers);
+  }
+  // Havresine fallback veya başka bir şey YOK!
+}, 300);
+
+  
 };
 
 
