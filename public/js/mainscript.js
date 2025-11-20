@@ -7418,7 +7418,7 @@ if (track && svg) {
   createScaleElements(track, width, totalKm, 0, markerPositions);
 }
 } else if (scaleBarDiv) {
-  scaleBarDiv.innerHTML = '';
+scaleBarDiv.innerHTML = '<div class="spinner"></div>';
 }
     });
   });
@@ -8524,7 +8524,7 @@ window.setTravelMode = async function(mode, day) {
     const markers = typeof getRouteMarkerPositionsOrdered === 'function'
       ? getRouteMarkerPositionsOrdered(d)
       : [];
-scaleBarDiv.innerHTML = '<div class="spinner"></div>'; // mevcut spinner kodun neyse tam onu koy
+scaleBarDiv.innerHTML = '<div class="spinner"></div>';
     renderRouteScaleBar(scaleBarDiv, totalKm, markers);
   }
   // Havresine fallback veya başka bir şey YOK!
@@ -9303,8 +9303,8 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 
 function renderRouteScaleBar(container, totalKm, markers) {
-    const existingSpinner = scaleBarDiv.querySelector('.spinner');
-if (existingSpinner) existingSpinner.remove();
+    const spinner = scaleBarDiv.querySelector('.spinner');
+if (spinner) spinner.remove();
   // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
