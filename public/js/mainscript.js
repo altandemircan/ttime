@@ -9332,7 +9332,7 @@ if (spinner) spinner.remove();
 
   // Sadece expanded bar’da çalış; küçük bar’ı kapat
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-    container.innerHTML = '';
+container.innerHTML = '<div class="spinner"></div>';
     return;
   }
 
@@ -9360,7 +9360,7 @@ const mid = coords[Math.floor(coords.length / 2)];
   // Tek track
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    container.innerHTML = '';
+container.innerHTML = '<div class="spinner"></div>';
     track = document.createElement('div');
     track.className = 'scale-bar-track';
     container.appendChild(track);
