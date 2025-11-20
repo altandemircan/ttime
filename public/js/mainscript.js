@@ -3948,6 +3948,17 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
     durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
   }
 }
+    const distanceSeparator = document.createElement('div');
+    distanceSeparator.className = 'distance-separator';
+    distanceSeparator.innerHTML = `
+      <div class="separator-line"></div>
+      <div class="distance-label">
+        <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+      </div>
+      <div class="separator-line"></div>
+    `;
+    dayList.appendChild(distanceSeparator);
+  }
 }
 
 dayContainer.appendChild(dayList);
