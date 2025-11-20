@@ -8522,6 +8522,9 @@ window.setTravelMode = function(mode, day) {
     renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
   }
 }, 200);
+
+  // EKLE!
+  if (typeof updateCart === "function") updateCart();
 };
 
 
