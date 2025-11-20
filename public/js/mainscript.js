@@ -354,23 +354,21 @@ function fitExpandedMapToRoute(day) {
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-  // Eğer container parametren yoksa, track.parentElement/ihtiyacına göre değiştir!
+  // Eğer container parametren yoksa, track.parentElement'i kullan:
   const container = track?.parentElement;
-  // GÜN ve geojson anahtarı çek
   const dayMatch = container?.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
 
-  // Mesafe summary ve route summary kontrolü
+  // --- SADECE BİR KERE TANIMLA ---
   const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
 
-  // SADECE summary/geojson/pairwise YOKSA fallback haversine ile spanKm hesapla
+  // Fallback haversine ile spanKm Hesaplama
   if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)) {
     spanKm = getTotalKmFromMarkers(markers);
   }
-
   // spanKm halen kötü ise marker badge render atlanır ve DOM temizlenir
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
