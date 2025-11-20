@@ -9303,7 +9303,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 
 function renderRouteScaleBar(container, totalKm, markers) {
-    const spinner = scaleBarDiv.querySelector('.spinner');
+const spinner = container.querySelector('.spinner');
 if (spinner) spinner.remove();
   // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
   const dayMatch = container.id && container.id.match(/day(\d+)/);
