@@ -7677,22 +7677,18 @@ if (!hasRealRoute) {
     }
 
 const pairwiseSummaries = [];
-if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeData.legs)) {
+if (
+    typeof routeData !== "undefined" &&
+    Array.isArray(routeData.legs)
+) {
     for (let i = 0; i < routeData.legs.length; i++) {
         pairwiseSummaries.push({
             distance: routeData.legs[i].distance,
             duration: routeData.legs[i].duration
         });
     }
-} else if (!areAllPointsInTurkey(points)) {
-    // Sadece Türkiye DIŞINDA haversine ile hesapla!
-    for (let i = 0; i < points.length - 1; i++) {
-        const distance = Math.round(haversine(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng));
-        const duration = Math.round(distance / 1000 / 4 * 3600);
-        pairwiseSummaries.push({ distance, duration });
-    }
 }
-// Türkiye'de summary yoksa pairwiseSummaries boş kalacak!
+// else/fallback yok! Sadece OSRM routeData.legs varsa item arası gerçek değerler DOM’a basılır.
 window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
 
