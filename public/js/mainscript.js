@@ -3712,7 +3712,7 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
 
     dayList.appendChild(li);
 
-    if (
+ if (
   item.location &&
   typeof item.location.lat === "number" &&
   typeof item.location.lng === "number" &&
@@ -3721,31 +3721,50 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
   typeof dayItemsArr[idx+1].location.lat === "number" &&
   typeof dayItemsArr[idx+1].location.lng === "number"
 ) {
+  // Travel mode'a AİT data varsa onu kullan!
   const containerId = `route-map-day${day}`;
   const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
   const summary = pairwiseSummaries[idx];
 
-  if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-    const distanceStr = summary.distance >= 1000
-      ? (summary.distance / 1000).toFixed(2) + " km"
-      : Math.round(summary.distance) + " m";
-    const durationStr = summary.duration >= 60
-      ? Math.round(summary.duration / 60) + " dk"
-      : Math.round(summary.duration) + " sn";
-
-    const distanceSeparator = document.createElement('div');
-    distanceSeparator.className = 'distance-separator';
-    distanceSeparator.innerHTML = `
-      <div class="separator-line"></div>
-      <div class="distance-label">
-        <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
-      </div>
-      <div class="separator-line"></div>
-    `;
-    dayList.appendChild(distanceSeparator);
+   // --- BURAYA EKLE ---
+    console.log(
+  "[DISTANCE SEPARATOR]",
+  {
+    day,
+    idx,
+    travelMode: typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
+    from: item?.name,
+    to: dayItemsArr[idx + 1]?.name,
+    summary: summary, // API'den gelen ya da fallback haversine
+    pairwiseSummaries
   }
-  // Havresine yok, summary yoksa separator ekleme!
-}}
+);
+    // ---------------
+
+
+if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+  // OSRM segmentiyle ekle
+  distanceStr = summary.distance >= 1000
+    ? (summary.distance / 1000).toFixed(2) + " km"
+    : Math.round(summary.distance) + " m";
+  durationStr = summary.duration >= 60
+    ? Math.round(summary.duration / 60) + " dk"
+    : Math.round(summary.duration) + " sn";
+
+  // Separator ekle
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
+}
+
+}
 
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
