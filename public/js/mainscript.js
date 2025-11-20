@@ -3930,6 +3930,19 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
   const containerId = `route-map-day${day}`;
   const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
   const summary = pairwiseSummaries[idx];
+
+   // --- BURAYA EKLE ---
+    console.log("[Distance Separator]", {
+      day,
+      idx,
+      pairwiseSummaries,
+      summary,
+      from: item.name,
+      to: dayItemsArr[idx+1].name
+    });
+    // ---------------
+
+    
   if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
     // DOĞRU (API'den gelen) mesafe ve süre!
     distanceStr = summary.distance >= 1000
