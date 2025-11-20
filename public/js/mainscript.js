@@ -3712,7 +3712,7 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
 
     dayList.appendChild(li);
 
- if (
+if (
   item.location &&
   typeof item.location.lat === "number" &&
   typeof item.location.lng === "number" &&
@@ -3726,39 +3726,17 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
   const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
   const summary = pairwiseSummaries[idx];
 
-   // --- BURAYA EKLE ---
-    console.log(
-  "[DISTANCE SEPARATOR]",
-  {
-    day,
-    idx,
-    travelMode: typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
-    from: item?.name,
-    to: dayItemsArr[idx + 1]?.name,
-    summary: summary, // API'den gelen ya da fallback haversine
-    pairwiseSummaries
+  if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+    distanceStr = summary.distance >= 1000
+      ? (summary.distance / 1000).toFixed(2) + " km"
+      : Math.round(summary.distance) + " m";
+    durationStr = summary.duration >= 60
+      ? Math.round(summary.duration / 60) + " dk"
+      : Math.round(summary.duration) + " sn";
+  } else {
+    distanceStr = '';
+    durationStr = '';
   }
-);
-    // ---------------
-
-
-if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-  // DOĞRU (API'den gelen) mesafe ve süre!
-  distanceStr = summary.distance >= 1000
-    ? (summary.distance / 1000).toFixed(2) + " km"
-    : Math.round(summary.distance) + " m";
-  durationStr = summary.duration >= 60
-    ? Math.round(summary.duration / 60) + " dk"
-    : Math.round(summary.duration) + " sn";
-} else {
-  // Sadece fly mode'da haversine fallback kullanılacak, Türkiye rotasında Fallback iptal!
-  // Türkiye içi ise haversine Fallback YOK; separator gösterilmeyecek.
-  distanceStr = '';
-  durationStr = '';
-  // İstersen separatorı hiç eklemeyebilirsin!
-  // continue; // veya dayList.appendChild(distanceSeparator) çağrısı iptal
-}
-
 
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
