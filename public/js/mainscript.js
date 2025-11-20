@@ -7676,8 +7676,7 @@ if (!hasRealRoute) {
         updateExpandedMap(expandedMapObj.expandedMap, day);
     }
 
-  const pairwiseSummaries = [];
-// Önce leg bilgisi var mı API cevabında bakıyoruz
+const pairwiseSummaries = [];
 if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeData.legs)) {
     for (let i = 0; i < routeData.legs.length; i++) {
         pairwiseSummaries.push({
@@ -7685,16 +7684,19 @@ if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeDat
             duration: routeData.legs[i].duration
         });
     }
-} else {
-    // Fallback: haversine ile hesapla
+} else if (!areAllPointsInTurkey(points)) {
+    // Sadece Türkiye DIŞINDA haversine ile hesapla!
     for (let i = 0; i < points.length - 1; i++) {
         const distance = Math.round(haversine(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng));
         const duration = Math.round(distance / 1000 / 4 * 3600);
         pairwiseSummaries.push({ distance, duration });
     }
 }
+// Türkiye'de summary yoksa pairwiseSummaries boş kalacak!
 window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+
+
 console.log(
   "[PAIRWISE SUMMARY]",
   "GÜN:", day,
