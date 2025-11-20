@@ -7599,37 +7599,39 @@ if (!hasRealRoute) {
 }
 
         async function fetchRoute() {
-        const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
-        const url = buildDirectionsUrl(coordParam, day);
-        const response = await fetch(url);
-        if (!response.ok) {
-            alert("Rota oluşturulamıyor: Seçtiğiniz noktalar arasında yol yok veya çok uzak. Lütfen noktaları değiştirin.");
-            return null;
-        }
-        const data = await response.json();
-        if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
-        return {
-            geojson: {
-                type: 'FeatureCollection',
-                features: [{
-                    type: 'Feature',
-                    geometry: data.routes[0].geometry,
-                    properties: {
-                        summary: {
-                            distance: data.routes[0].distance,
-                            duration: data.routes[0].duration,
-                            source: 'OSRM'
-                        }
-                    }
-                }]
-            },
-            coords: data.routes[0].geometry.coordinates,
-            summary: {
-                distance: data.routes[0].distance,
-                duration: data.routes[0].duration
-            }
-        };
+    const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
+    const url = buildDirectionsUrl(coordParam, day);
+    const response = await fetch(url);
+    if (!response.ok) {
+        alert("Rota oluşturulamıyor...");
+        return null;
     }
+    const data = await response.json();
+    if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
+    // --- DÜZELTMELİ ---
+    return {
+        geojson: {
+            type: 'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                geometry: data.routes[0].geometry,
+                properties: {
+                    summary: {
+                        distance: data.routes[0].distance,
+                        duration: data.routes[0].duration,
+                        source: 'OSRM'
+                    }
+                }
+            }]
+        },
+        coords: data.routes[0].geometry.coordinates,
+        summary: {
+            distance: data.routes[0].distance,
+            duration: data.routes[0].duration
+        },
+        legs: data.routes[0].legs    // <---- BURAYI EKLE!
+    };
+}
 
     let routeData;
     let missingPoints = [];
@@ -7679,31 +7681,30 @@ if (!hasRealRoute) {
         updateExpandedMap(expandedMapObj.expandedMap, day);
     }
 
-const pairwiseSummaries = [];
-if (
-    typeof routeData !== "undefined" &&
-    Array.isArray(routeData.legs)
-) {
-    for (let i = 0; i < routeData.legs.length; i++) {
-        pairwiseSummaries.push({
-            distance: routeData.legs[i].distance,
-            duration: routeData.legs[i].duration
-        });
+    const pairwiseSummaries = [];
+    if (
+        typeof routeData !== "undefined" &&
+        Array.isArray(routeData.legs)
+    ) {
+        for (let i = 0; i < routeData.legs.length; i++) {
+            pairwiseSummaries.push({
+                distance: routeData.legs[i].distance,
+                duration: routeData.legs[i].duration
+            });
+        }
     }
-}
-// else/fallback yok! Sadece OSRM routeData.legs varsa item arası gerçek değerler DOM’a basılır.
-window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+    window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+    window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
 
+    console.log(
+      "[PAIRWISE SUMMARY]",
+      "GÜN:", day,
+      "TravelMode:", typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
+      "pairwiseRouteSummaries:",
+      window.pairwiseRouteSummaries?.[containerId]
+    );
+    console.log("pairwise summary", pairwiseSummaries.length, pairwiseSummaries);
 
-console.log(
-  "[PAIRWISE SUMMARY]",
-  "GÜN:", day,
-  "TravelMode:", typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
-  "pairwiseRouteSummaries:",
-  window.pairwiseRouteSummaries?.[containerId]
-);
-      console.log("pairwise summary", pairwiseSummaries.length, pairwiseSummaries);
 
 
     if (routeData.summary && typeof updateDistanceDurationUI === 'function') {
