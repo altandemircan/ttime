@@ -3926,17 +3926,24 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
       typeof dayItemsArr[idx + 1].location.lat === "number" &&
       typeof dayItemsArr[idx + 1].location.lng === "number"
     ) {
-      const containerId = `route-map-day${day}`;
-      const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
-      const summary = pairwiseSummaries[idx]; // BU DİKKAT! Sıra
-      if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-        distanceStr = summary.distance >= 1000
-          ? (summary.distance / 1000).toFixed(2) + " km"
-          : Math.round(summary.distance) + " m";
-        durationStr = summary.duration >= 60
-          ? Math.round(summary.duration / 60) + " dk"
-          : Math.round(summary.duration) + " sn";
-      }
+                  // separator için:
+            const containerId = `route-map-day${day}`;
+            const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
+            const summary = pairwiseSummaries[idx];
+            if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+              distanceStr = summary.distance >= 1000
+                ? (summary.distance / 1000).toFixed(2) + " km"
+                : Math.round(summary.distance) + " m";
+              durationStr = summary.duration >= 60
+                ? Math.round(summary.duration / 60) + " dk"
+                : Math.round(summary.duration) + " sn";
+            }
+            // Fallback sadece summary yoksa ve markerlar >= 2 ise
+            else if (dayItemsArr[idx].location && dayItemsArr[idx+1].location) {
+              const d = haversine(dayItemsArr[idx].location.lat, dayItemsArr[idx].location.lng, dayItemsArr[idx+1].location.lat, dayItemsArr[idx+1].location.lng);
+              distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
+              durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
+            }
     }
     const distanceSeparator = document.createElement('div');
     distanceSeparator.className = 'distance-separator';
