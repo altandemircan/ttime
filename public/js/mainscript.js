@@ -8490,6 +8490,7 @@ function getProfileForDay(day) {
 }
 
 // Set mode only for the given day and re-render that day
+// Set mode only for the given day and re-render that day
 window.setTravelMode = async function(mode, day) {
   const m = (mode || '').toLowerCase();
   if (!['driving','cycling','walking'].includes(m)) return;
@@ -8508,17 +8509,17 @@ window.setTravelMode = async function(mode, day) {
     const containerId = `route-map-day${d}`;
     const expandedObj = window.expandedMaps?.[containerId];
     if (expandedObj && expandedObj.expandedMap && typeof updateExpandedMap === 'function') {
-      updateExpandedMap(expandedObj.expandedMap, d);
+      await updateExpandedMap(expandedObj.expandedMap, d);
     }
   } catch(_) {}
 
   markActiveTravelModeButtons();
 
-  setTimeout(() => {
+  setTimeout(async () => {
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
     const totalKm = (window.lastRouteSummaries?.[`route-map-day${d}`]?.distance || 0) / 1000;
     const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
-      ? getRouteMarkerPositionsOrdered(d) : [];
+      ? await getRouteMarkerPositionsOrdered(d) : [];
     if (scaleBarDiv && typeof renderRouteScaleBar === 'function') {
       scaleBarDiv.innerHTML = '';
       renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
@@ -8526,9 +8527,9 @@ window.setTravelMode = async function(mode, day) {
   }, 200);
 
   // Burada artık veriler kesin güncel!
-  if (typeof updateCart === "function") updateCart();
+  // updateCart async olmalı ki, aradaki separatorlar da yeni moda göre gelsin.
+  if (typeof updateCart === "function") await updateCart();
 };
-
 
 window.buildDirectionsUrl = function(coordsStr, day) {
   const d = day || window.currentDay || 1;
