@@ -7672,6 +7672,13 @@ async function renderRouteForDay(day) {
         window.lastRouteGeojsons[containerId] = finalGeojson;
         window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
         window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+        console.log(
+  "[PAIRWISE SUMMARY]",
+  "GÜN:", day,
+  "TravelMode:", typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
+  "pairwiseRouteSummaries:",
+  window.pairwiseRouteSummaries?.[containerId]
+);
           console.log("pairwise summary", pairwiseSummaries.length, pairwiseSummaries);
 
         window.lastRouteSummaries = window.lastRouteSummaries || {};
@@ -8032,7 +8039,13 @@ for (let i = 0; i < points.length - 1; i++) {
 }
 window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
-
+console.log(
+  "[PAIRWISE SUMMARY]",
+  "GÜN:", day,
+  "TravelMode:", typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
+  "pairwiseRouteSummaries:",
+  window.pairwiseRouteSummaries?.[containerId]
+);
         let expandedMapDiv =
             document.getElementById(`expanded-map-${day}`) ||
             document.getElementById(`expanded-route-map-day${day}`);
