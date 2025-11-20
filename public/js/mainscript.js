@@ -3932,14 +3932,18 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
   const summary = pairwiseSummaries[idx];
 
    // --- BURAYA EKLE ---
-    console.log("[Distance Separator]", {
-      day,
-      idx,
-      pairwiseSummaries,
-      summary,
-      from: item.name,
-      to: dayItemsArr[idx+1].name
-    });
+    console.log(
+  "[DISTANCE SEPARATOR]",
+  {
+    day,
+    idx,
+    travelMode: typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
+    from: item?.name,
+    to: dayItemsArr[idx + 1]?.name,
+    summary: summary, // API'den gelen ya da fallback haversine
+    pairwiseSummaries
+  }
+);
     // ---------------
 
 
