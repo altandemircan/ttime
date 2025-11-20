@@ -7477,8 +7477,6 @@ async function renderRouteForDay(day) {
     const isInTurkey = areAllPointsInTurkey(points);
     const hasRealRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
 
-const isInTurkey = areAllPointsInTurkey(points);
-const hasRealRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
 
 if (!hasRealRoute) {
   if (isInTurkey) {
