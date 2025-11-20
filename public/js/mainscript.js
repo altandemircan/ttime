@@ -10804,6 +10804,15 @@ function loadTripFromStorage(tripKey) {
     return true;
 }
 
+function groupTripsByDate(trips) {
+    const grouped = {};
+    Object.values(trips).forEach(trip => {
+        const date = trip.date;
+        if (!grouped[date]) grouped[date] = [];
+        grouped[date].push(trip);
+    });
+    return grouped;
+}
 
 function getTimeGroupLabel(updatedAt) {
     const now = Date.now();
