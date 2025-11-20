@@ -8032,10 +8032,22 @@ async function renderRouteForDay(day) {
         renderLeafletRoute(containerId, window.lastRouteGeojsons[containerId], points, summary, day);
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
-        const pairwiseSummaries = [];
-for (let i = 0; i < points.length - 1; i++) {
-    const summary = await getPairwiseRouteSummary(points[i], points[i + 1], day);
-    pairwiseSummaries.push(summary);
+const pairwiseSummaries = [];
+// Önce leg bilgisi var mı API cevabında bakıyoruz
+if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeData.legs)) {
+    for (let i = 0; i < routeData.legs.length; i++) {
+        pairwiseSummaries.push({
+            distance: routeData.legs[i].distance,
+            duration: routeData.legs[i].duration
+        });
+    }
+} else {
+    // Fallback: haversine ile hesapla
+    for (let i = 0; i < points.length - 1; i++) {
+        const distance = Math.round(haversine(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng));
+        const duration = Math.round(distance / 1000 / 4 * 3600);
+        pairwiseSummaries.push({ distance, duration });
+    }
 }
 window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
@@ -8046,6 +8058,7 @@ console.log(
   "pairwiseRouteSummaries:",
   window.pairwiseRouteSummaries?.[containerId]
 );
+
         let expandedMapDiv =
             document.getElementById(`expanded-map-${day}`) ||
             document.getElementById(`expanded-route-map-day${day}`);
@@ -8145,14 +8158,32 @@ console.log(
         updateExpandedMap(expandedMapObj.expandedMap, day);
     }
 
-    const pairwiseSummaries = [];
+  const pairwiseSummaries = [];
+// Önce leg bilgisi var mı API cevabında bakıyoruz
+if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeData.legs)) {
+    for (let i = 0; i < routeData.legs.length; i++) {
+        pairwiseSummaries.push({
+            distance: routeData.legs[i].distance,
+            duration: routeData.legs[i].duration
+        });
+    }
+} else {
+    // Fallback: haversine ile hesapla
     for (let i = 0; i < points.length - 1; i++) {
         const distance = Math.round(haversine(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng));
         const duration = Math.round(distance / 1000 / 4 * 3600);
         pairwiseSummaries.push({ distance, duration });
     }
-    window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-    window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+}
+window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+console.log(
+  "[PAIRWISE SUMMARY]",
+  "GÜN:", day,
+  "TravelMode:", typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
+  "pairwiseRouteSummaries:",
+  window.pairwiseRouteSummaries?.[containerId]
+);
       console.log("pairwise summary", pairwiseSummaries.length, pairwiseSummaries);
 
 
