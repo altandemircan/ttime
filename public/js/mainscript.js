@@ -3946,28 +3946,16 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
 );
     // ---------------
 
-// ... travel-item'lar döngüsü (updateCart içinde) ...
-if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-  distanceStr = summary.distance >= 1000
+
+  if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+    // DOĞRU (API'den gelen) mesafe ve süre!
+    distanceStr = summary.distance >= 1000
       ? (summary.distance / 1000).toFixed(2) + " km"
       : Math.round(summary.distance) + " m";
-  durationStr = summary.duration >= 60
+    durationStr = summary.duration >= 60
       ? Math.round(summary.duration / 60) + " dk"
       : Math.round(summary.duration) + " sn";
-  // Separatorı ekle:
-  const distanceSeparator = document.createElement('div');
-  distanceSeparator.className = 'distance-separator';
-  distanceSeparator.innerHTML = `
-    <div class="separator-line"></div>
-    <div class="distance-label">
-      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
-    </div>
-    <div class="separator-line"></div>
-  `;
-  dayList.appendChild(distanceSeparator);
-} // HAVERSINE Fallback block SİLİNECEK! Eğer pairwise yoksa separator hiç eklenmeyecek.
-
-else {
+  } else {
   // API datası YOKSA haversine Fallback
   if (
     dayItemsArr[idx] && dayItemsArr[idx].location &&
