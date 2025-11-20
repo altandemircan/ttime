@@ -8009,13 +8009,12 @@ async function renderRouteForDay(day) {
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
         const pairwiseSummaries = [];
-        for (let i = 0; i < points.length - 1; i++) {
-            const distance = Math.round(haversine(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng));
-            const duration = Math.round(distance / 1000 / 4 * 3600);
-            pairwiseSummaries.push({ distance, duration });
-        }
-        window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-        window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
+for (let i = 0; i < points.length - 1; i++) {
+    const summary = await getPairwiseRouteSummary(points[i], points[i + 1], day);
+    pairwiseSummaries.push(summary);
+}
+window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
 
         let expandedMapDiv =
             document.getElementById(`expanded-map-${day}`) ||
@@ -12207,3 +12206,23 @@ async function renderFavoritePlacesPanel() {
     });
 }
 
+
+async function getPairwiseRouteSummary(ptA, ptB, day) {
+    const profile = typeof getTravelModeForDay === 'function' ? getTravelModeForDay(day) : 'walking';
+    const url = buildDirectionsUrl(`${ptA.lng},${ptA.lat};${ptB.lng},${ptB.lat}`, day);
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (data.routes && data.routes[0]) {
+            // Mesafe: metre, süre: saniye
+            return {
+                distance: Math.round(data.routes[0].distance), // metre
+                duration: Math.round(data.routes[0].duration)  // saniye
+            };
+        }
+    } catch (e) {}
+    // Hata olursa fallback
+    const havDist = Math.round(haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng));
+    const havDur = Math.round(havDist / 1000 / 4 * 3600);
+    return { distance: havDist, duration: havDur };
+}
