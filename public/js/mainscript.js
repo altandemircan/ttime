@@ -3766,7 +3766,6 @@ if (summary && typeof summary.distance === "number" && typeof summary.duration =
 // else bloğu kaldır! (Separator eklenmesin)
 
 
-}
 
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
