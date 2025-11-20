@@ -9289,6 +9289,22 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 
 function renderRouteScaleBar(container, totalKm, markers) {
+
+      // ⬇️ EN BAŞTA: day ve geojson keyleri tanımla
+  const dayMatch = container.id && container.id.match(/day(\d+)/);
+  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+  const gjKey = day ? `route-map-day${day}` : null;
+  const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
+  const coords = gj?.features?.[0]?.geometry?.coordinates;
+
+  // ⬇️ Artık coords güvenli şekilde kullanılabilir:
+  const hasGeoJson = coords && coords.length >= 2;
+  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
+  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
+  const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
+
+
+
       console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
     console.log("renderRouteScaleBar", container?.id, totalKm, markers);
