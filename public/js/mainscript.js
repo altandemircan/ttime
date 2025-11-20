@@ -3934,9 +3934,11 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
             const lat2 = dayItemsArr[idx + 1].location.lat, lon2 = dayItemsArr[idx + 1].location.lng;
             const turkiyeIcinde = isPointInTurkey(lat1, lon1) && isPointInTurkey(lat2, lon2);
 
-           const containerId = `route-map-day${day}`;
+const containerId = `route-map-day${day}`;
 const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
 const summary = pairwiseSummaries[idx];
+distanceStr = "-";
+durationStr = "-";
 if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
   distanceStr = summary.distance >= 1000
     ? (summary.distance / 1000).toFixed(2) + " km"
@@ -3944,10 +3946,8 @@ if (summary && typeof summary.distance === "number" && typeof summary.duration =
   durationStr = summary.duration >= 60
     ? Math.round(summary.duration / 60) + " dk"
     : Math.round(summary.duration) + " sn";
-} else {
-  distanceStr = "-";
-  durationStr = "-";
 }
+
           }
 
           // Separator oluştur
