@@ -3743,15 +3743,23 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
 
 
 if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-  // OSRM segmentiyle ekle
+  // DOĞRU (API'den gelen) mesafe ve süre!
   distanceStr = summary.distance >= 1000
     ? (summary.distance / 1000).toFixed(2) + " km"
     : Math.round(summary.distance) + " m";
   durationStr = summary.duration >= 60
     ? Math.round(summary.duration / 60) + " dk"
     : Math.round(summary.duration) + " sn";
+} else {
+  // Sadece fly mode'da haversine fallback kullanılacak, Türkiye rotasında Fallback iptal!
+  // Türkiye içi ise haversine Fallback YOK; separator gösterilmeyecek.
+  distanceStr = '';
+  durationStr = '';
+  // İstersen separatorı hiç eklemeyebilirsin!
+  // continue; // veya dayList.appendChild(distanceSeparator) çağrısı iptal
+}
 
-  // Separator ekle
+
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
   distanceSeparator.innerHTML = `
@@ -7661,12 +7669,13 @@ if (typeof routeData !== "undefined" && routeData.legs && Array.isArray(routeDat
         });
     }
 } else {
-  // Haversine ile hesapla
-  const d = haversine(item.location.lat, item.location.lng, dayItemsArr[idx+1].location.lat, dayItemsArr[idx+1].location.lng);
-  distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
-  durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
+    // Fallback: haversine ile hesapla
+    for (let i = 0; i < points.length - 1; i++) {
+        const distance = Math.round(haversine(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng));
+        const duration = Math.round(distance / 1000 / 4 * 3600);
+        pairwiseSummaries.push({ distance, duration });
+    }
 }
-
 window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
 console.log(
