@@ -3937,7 +3937,6 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
            const containerId = `route-map-day${day}`;
 const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
 const summary = pairwiseSummaries[idx];
-
 if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
   distanceStr = summary.distance >= 1000
     ? (summary.distance / 1000).toFixed(2) + " km"
