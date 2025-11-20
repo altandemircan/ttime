@@ -8527,6 +8527,19 @@ window.setTravelMode = function(mode, day) {
   } catch(_) {}
 
   markActiveTravelModeButtons();
+
+  setTimeout(() => {
+  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
+  const totalKm = (window.lastRouteSummaries?.[`route-map-day${d}`]?.distance || 0) / 1000;
+  const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function')
+    ? getRouteMarkerPositionsOrdered(d) : [];
+  if (scaleBarDiv && typeof renderRouteScaleBar === 'function') {
+    scaleBarDiv.innerHTML = '';
+    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+  }
+}, 200);
+
+  
 };
 
 
