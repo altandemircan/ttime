@@ -5214,33 +5214,7 @@ function saveArcPointsForDay(day, points) {
     window._curvedArcPointsByDay[day] = points;
 }
 
-function testArcVisualization(day, map) {
-    const arcPts = window._curvedArcPointsByDay[day];
-    if (!arcPts) return;
-    
-    // Yayı görsel olarak çiz
-    const polyline = L.polyline(arcPts.map(pt => [pt[1], pt[0]]), {
-        color: 'red',
-        weight: 3,
-        opacity: 0.7,
-        dashArray: '5, 5'
-    }).addTo(map);
-    
-    // Başlangıç ve bitiş noktalarını işaretle
-    L.circleMarker([arcPts[0][1], arcPts[0][0]], {
-        radius: 8,
-        color: 'green',
-        fillColor: 'green'
-    }).addTo(map).bindPopup('START');
-    
-    L.circleMarker([arcPts[arcPts.length-1][1], arcPts[arcPts.length-1][0]], {
-        radius: 8,
-        color: 'blue',
-        fillColor: 'blue'
-    }).addTo(map).bindPopup('END');
-    
-    console.log("Test arc drawn - START (green) to END (blue)");
-}
+
 // Alternatif çözüm: Yay noktalarını ters çevir
 function getReversedCurvedArcCoords(start, end, strength = 0.25, segments = 18) {
     const originalCoords = getCurvedArcCoords(start, end, strength, segments);
@@ -8142,8 +8116,6 @@ scaleBarDiv.innerHTML = '<div class="spinner"></div>';
 
 
 
-
-
 window.buildDirectionsUrl = function(coordsStr, day) {
   const d = day || window.currentDay || 1;
   const profile = getProfileForDay(d); // 'driving' | 'cycling' | 'walking'
@@ -8596,8 +8568,6 @@ function wrapRouteControlsForAllDays() {
   }
 })();
 
-
-
 window.TT_SVG_ICONS = {
   // Travel modes
   driving: '/img/way_car.svg',
@@ -8907,7 +8877,6 @@ ascBadge.title = `${Math.round(ascentM)} m ascent`;
 dscBadge.title = `${Math.round(descentM)} m descent`;
   }
 }
-
 
 function renderRouteScaleBar(container, totalKm, markers) {
 const spinner = container.querySelector('.spinner');
@@ -9486,7 +9455,6 @@ document.addEventListener('mousedown', (e) => {
 });
 
 
-
 (function ensureElevationThrottleHelpers(){
   if (window.__elevHelpersReadyV2) return;
 
@@ -9710,8 +9678,6 @@ document.addEventListener('mousedown', (e) => {
   window.__tt_elevMuxReady = true;
 })();
 
-
-
 (function(){
   if (!document.getElementById('suggestions-hidden-style')) {
     const st = document.createElement('style');
@@ -9802,6 +9768,7 @@ if (typeof startKm !== 'number' || typeof endKm !== 'number') {
     try { m.fitBounds(poly.getBounds(), { padding: [16, 16] }); } catch(_) {}
   });
 }
+
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
       const svgNS = 'http://www.w3.org/2000/svg'; // <-- EKLE
 
@@ -10057,6 +10024,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   track.removeEventListener('mousemove', track.__onMove);
   track.addEventListener('mousemove', track.__onMove);
 }
+
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
   const cid = `route-map-day${d}`;
@@ -10302,7 +10270,6 @@ function attachImLuckyEvents() {
   });
 }
 
-
 // Trip seçilince input-wrapper gizlensin
 document.addEventListener('click', function(e) {
   if (e.target.closest('.trip-item')) {
@@ -10338,9 +10305,6 @@ function hideLoadingPanel() {
     }
 }
 
-
-
-
 // Markdown'dan HTML'e çevirici fonksiyon
 function markdownToHtml(text) {
   // Kalın yazı
@@ -10360,8 +10324,6 @@ function markdownToHtml(text) {
   text = text.replace(/\n/g, '<br>');
   return text;
 }
-
-
 
 function startStreamingTypewriterEffect(element, queue, speed = 5) {
   let chunkIndex = 0;
@@ -10390,9 +10352,6 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
   }
   type();
 }
-
-
-
 
 // iki nokta arasında yay çizen fonksiyon
 function drawCurvedLine(map, pointA, pointB, options = {}) {
