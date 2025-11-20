@@ -10805,21 +10805,6 @@ function loadTripFromStorage(tripKey) {
 }
 
 
-function getTimeGroupLabel(updatedAt) {
-    const now = Date.now();
-    const diffMs = now - updatedAt;
-    const diffMin = diffMs / (1000 * 60);
-    const diffHour = diffMin / 60;
-    const diffDay = diffHour / 24;
-
-    if (diffMin < 15) return "Last 15 minutes";
-    if (diffHour < 1) return "Last 1 hour";
-    if (diffDay < 1) return "Last 1 day";
-    if (diffDay < 7) return "Last 1 week";
-    if (diffDay < 15) return "Last 15 days";
-    if (diffDay < 31) return "Last 1 month";
-    return "Older";
-}
 function formatTime(date) {
     const d = new Date(date);
     return d.toLocaleTimeString('tr-TR', { hour12: false });
