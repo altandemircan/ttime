@@ -3917,14 +3917,14 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
 
     dayList.appendChild(li);
 
-    // Separator ekle 
-  if (
+ if (
   item.location &&
   typeof item.location.lat === "number" &&
   typeof item.location.lng === "number" &&
-  dayItemsArr[idx + 1].location &&
-  typeof dayItemsArr[idx + 1].location.lat === "number" &&
-  typeof dayItemsArr[idx + 1].location.lng === "number"
+  dayItemsArr[idx+1] &&
+  dayItemsArr[idx+1].location &&
+  typeof dayItemsArr[idx+1].location.lat === "number" &&
+  typeof dayItemsArr[idx+1].location.lng === "number"
 ) {
   // Travel mode'a AİT data varsa onu kullan!
   const containerId = `route-map-day${day}`;
@@ -3947,17 +3947,18 @@ console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nod
     distanceStr = d >= 1000 ? (d/1000).toFixed(2) + " km" : Math.round(d) + " m";
     durationStr = d >= 60 ? Math.round((d/1000)/4*60) + " dk" : Math.round(d/1000/4*60) + " sn";
   }
-    const distanceSeparator = document.createElement('div');
-    distanceSeparator.className = 'distance-separator';
-    distanceSeparator.innerHTML = `
-      <div class="separator-line"></div>
-      <div class="distance-label">
-        <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
-      </div>
-      <div class="separator-line"></div>
-    `;
-    dayList.appendChild(distanceSeparator);
-  }
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      <span class="distance-value">${distanceStr}</span> • <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
+}
+
 }
 
 dayContainer.appendChild(dayList);
