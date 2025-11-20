@@ -3986,6 +3986,41 @@ if (idx < dayItemsArr.length - 1) {
   `;
   dayList.appendChild(distanceSeparator);
 }
+    }
+
+dayContainer.appendChild(dayList);
+// PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
+ensureDayMapContainer(day);
+initEmptyDayMap(day);
+wrapRouteControls(day);
+setTimeout(() => wrapRouteControls(day), 0);
+
+
+
+// --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
+const anyDayHasRealItem = window.cart.some(i =>
+  !i._starter && !i._placeholder && i.category !== "Note" && i.name
+);
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+
+
+if (anyDayHasRealItem && !hideAddCat) {
+  // 2. ADD CATEGORY BUTONU
+  const addMoreButton = document.createElement("button");
+  addMoreButton.className = "add-more-btn";
+  addMoreButton.textContent = "+ Add Category";
+  addMoreButton.dataset.day = day;
+  addMoreButton.onclick = function () {
+    // Önce eski içeriği temizle!
+    const cartDiv = document.getElementById("cart-items");
+    if (cartDiv) cartDiv.innerHTML = "";
+    showCategoryList(this.dataset.day);
+  };
+  dayList.appendChild(addMoreButton);
+}
+
+  cartDiv.appendChild(dayContainer);
+  }
 
 
   // Tüm günler eklendikten sonra, EN ALTA ekle:
