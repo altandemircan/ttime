@@ -274,7 +274,18 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       wrap.className = 'marker-badge';
       wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);z-index:5;`;
       wrap.title = m.name || '';
-      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      wrap.innerHTML = `<div style="width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #d32f2f;
+    border: 1px solid #fff;
+    box-shadow: 0 2px 6px #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #fff;
+    font-weight: 700;">${idx + 1}</div>`;
       track.appendChild(wrap);
 
       // ALTINA DİK ÇİZGİ (vertical marker line)
