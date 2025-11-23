@@ -292,8 +292,16 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       const vline = document.createElement('div');
       vline.className = 'marker-vertical-line';
       vline.style.cssText =
-        `position:absolute;left:${left}%;top:22px;width:2px;height:24px;
-        background:#d32f2f;opacity:.35;z-index:4;transform:translateX(-50%);border-radius:2px;`;
+        `position: absolute;
+    left: 29.5952%;
+    top: 22px;
+    width: 1px;
+    height: 128px;
+    background: rgb(211 47 47 / 30%);
+    opacity: 0.35;
+    z-index: 4;
+    transform: translateX(-50%);
+    border-radius: 2px;`;
       track.appendChild(vline);
 
       // İstenirse: console.log('BADGE + LINE', idx, m.name, left);
