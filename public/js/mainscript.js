@@ -261,7 +261,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   // Marker badge/render
-  if (Array.isArray(markers)) {
+    if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       // Bar'ın uzunluğunda markerın konumu
@@ -269,15 +269,27 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
       left = Math.max(0, Math.min(100, left));
 
+      // Marker badge
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);`;
+      wrap.style.cssText = `position:absolute;left:${left}%;top:2px;width:18px;height:18px;transform:translateX(-50%);z-index:5;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
-      console.log('BADGE ADDED', idx, m.name, 'at', left.toFixed(2), '%');
+
+      // ALTINA DİK ÇİZGİ (vertical marker line)
+      const vline = document.createElement('div');
+      vline.className = 'marker-vertical-line';
+      vline.style.cssText =
+        `position:absolute;left:${left}%;top:22px;width:2px;height:24px;
+        background:#d32f2f;opacity:.35;z-index:4;transform:translateX(-50%);border-radius:2px;`;
+      track.appendChild(vline);
+
+      // İstenirse: console.log('BADGE + LINE', idx, m.name, left);
     });
-  } else {
+  }
+
+   else {
     console.warn("[DEBUG] markers is not array", markers);
   }
 
