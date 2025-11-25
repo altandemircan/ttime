@@ -287,9 +287,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
       // İstenirse: console.log('BADGE + LINE', idx, m.name, left);
     });
-  }
-
-   else {
+  } else {
     console.warn("[DEBUG] markers is not array", markers);
   }
 
