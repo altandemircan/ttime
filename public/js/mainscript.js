@@ -3739,32 +3739,28 @@ const hasNextLoc =
   typeof nextItem.location.lat === "number" &&
   typeof nextItem.location.lng === "number";
 
-// travel mode normalization (her zaman küçük harf ve TRIM!)
+// Travel mode. Kesin şekilde normalize et:
 const travelMode =
   typeof getTravelModeForDay === "function"
     ? String(getTravelModeForDay(day)).trim().toLowerCase()
     : "driving";
 
-// Separator ekle:
-// nextItem, hasNextLoc tanımı yukarıda.
 if (hasNextLoc) {
-  const travelMode =
-    typeof getTravelModeForDay === "function"
-      ? String(getTravelModeForDay(day)).trim().toLowerCase()
-      : "driving";
   let distanceStr = '';
   let durationStr = '';
   let autoPrefix = '';
-  // FLY modda
+
   if (travelMode === "fly") {
+    // Sadece FLY modda auto generated prefix gelecek!
     const ptA = item.location;
     const ptB = nextItem.location;
     const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
-    const durSec = Math.round((distM / 1000) / 4 * 3600);
+    const durSec = Math.round((distM / 1000) / 4 * 3600); // 4km/h default hız
     distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
     durationStr = durSec >= 60 ? Math.round(durSec / 60) + " dk" : Math.round(durSec) + " sn";
-    autoPrefix = `<span class="auto-generated-label" style="font-size:12px;color:#8a4af3;font-weight:500;">Auto generated</span> `;
+    autoPrefix = `<span class="auto-generated-label" style="font-size:12px;color:#8a4af3;font-weight:500;margin-right:4px;">Auto generated</span> `;
   } else {
+    // Route summary veya fallback
     const summary = pairwiseSummaries[idx];
     if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
       distanceStr = summary.distance >= 1000
@@ -3781,11 +3777,10 @@ if (hasNextLoc) {
       distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
       durationStr = durSec >= 60 ? Math.round(durSec / 60) + " dk" : Math.round(durSec) + " sn";
     }
-    autoPrefix = '';
+    autoPrefix = ''; // Sadece FLY ise prefix var!
   }
-  // Konsol logu burada kullanabilirsin:
-  console.log("Mode:", travelMode, "Sep =", autoPrefix, "Dist=", distanceStr, "Dur=", durationStr);
 
+  // DOM separator ekle:
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
   distanceSeparator.innerHTML = `
