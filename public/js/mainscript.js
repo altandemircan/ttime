@@ -3784,11 +3784,11 @@ if (hasNextLoc) {
 
     // --- İKONLAR ---
     if (travelMode === "driving") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;opacity:0.5;">`;
+      prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
     } else if (travelMode === "bike" || travelMode === "cycling") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;opacity:0.5;">`;
+      prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
     } else if (travelMode === "walk" || travelMode === "walking") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;opacity:0.5;">`;
+      prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
     } else {
       prefix = ''; // Diğer tiplerde ikon gösterme
     }
