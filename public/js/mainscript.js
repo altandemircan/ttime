@@ -3783,7 +3783,7 @@ if (hasNextLoc) {
     }
 
     // --- İKONLAR ---
-    if (travelMode === "car") {
+    if (travelMode === "driving") {
       prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;">`;
     } else if (travelMode === "bike" || travelMode === "cycling") {
       prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;">`;
