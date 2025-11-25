@@ -3739,25 +3739,32 @@ const hasNextLoc =
   typeof nextItem.location.lat === "number" &&
   typeof nextItem.location.lng === "number";
 
-// Noktaları al
-const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Boolean);
+// Travel mode kesin al
+const travelMode =
+  typeof getTravelModeForDay === "function"
+    ? String(getTravelModeForDay(day)).trim().toLowerCase()
+    : "car"; // fallback
 
 if (hasNextLoc) {
   let distanceStr = '';
   let durationStr = '';
-  let autoPrefix = '';
+  let prefix = '';
 
-  // Türkiye DIŞINDA ise "Auto generated" prefix ekle!
-  if (!areAllPointsInTurkey([item.location, nextItem.location])) {
+  // Noktaları al
+  // Sadece şu iki noktanın Türkiye'de olup olmadığını kontrol etmek ideal
+  const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
+
+  if (!isInTurkey) {
+    // --- TÜRKİYE DIŞI: Auto generated ---
     const ptA = item.location;
     const ptB = nextItem.location;
     const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
     const durSec = Math.round((distM / 1000) / 4 * 3600);
     distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
     durationStr = durSec >= 60 ? Math.round(durSec / 60) + " dk" : Math.round(durSec) + " sn";
-    autoPrefix = `<span class="auto-generated-label" style="font-size:12px;color:#8a4af3;font-weight:500;margin-right:4px;">Auto generated</span> `;
+    prefix = `<span class="auto-generated-label" style="font-size:12px;color:#8a4af3;font-weight:500;margin-right:5px;">Auto generated</span>`;
   } else {
-    // Türkiye'de ise summary normal ya da fallback
+    // --- TÜRKİYE İÇİ: Icon modları ---
     const summary = pairwiseSummaries[idx];
     if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
       distanceStr = summary.distance >= 1000
@@ -3774,16 +3781,26 @@ if (hasNextLoc) {
       distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
       durationStr = durSec >= 60 ? Math.round(durSec / 60) + " dk" : Math.round(durSec) + " sn";
     }
-    autoPrefix = '';
+
+    // --- İKONLAR ---
+    if (travelMode === "car") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;">`;
+    } else if (travelMode === "bike" || travelMode === "cycling") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;">`;
+    } else if (travelMode === "walk" || travelMode === "walking") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;">`;
+    } else {
+      prefix = ''; // Diğer tiplerde ikon gösterme
+    }
   }
 
-  // DOM separator ekle:
+  // DOM separator ekle
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
   distanceSeparator.innerHTML = `
     <div class="separator-line"></div>
     <div class="distance-label">
-      ${autoPrefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
+      ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
     </div>
     <div class="separator-line"></div>
   `;
