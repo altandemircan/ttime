@@ -3746,13 +3746,17 @@ const travelMode =
     : "driving";
 
 // Separator ekle:
+// nextItem, hasNextLoc tanımı yukarıda.
 if (hasNextLoc) {
+  const travelMode =
+    typeof getTravelModeForDay === "function"
+      ? String(getTravelModeForDay(day)).trim().toLowerCase()
+      : "driving";
   let distanceStr = '';
   let durationStr = '';
   let autoPrefix = '';
-
+  // FLY modda
   if (travelMode === "fly") {
-    // Sadece FLY modda "Auto generated" yazacak!
     const ptA = item.location;
     const ptB = nextItem.location;
     const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
@@ -3777,10 +3781,11 @@ if (hasNextLoc) {
       distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
       durationStr = durSec >= 60 ? Math.round(durSec / 60) + " dk" : Math.round(durSec) + " sn";
     }
-    autoPrefix = ''; // Sadece fly mode’da görünür, diğerlerinde YOK!
+    autoPrefix = '';
   }
+  // Konsol logu burada kullanabilirsin:
+  console.log("Mode:", travelMode, "Sep =", autoPrefix, "Dist=", distanceStr, "Dur=", durationStr);
 
-  // DOM’a ekle:
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
   distanceSeparator.innerHTML = `
