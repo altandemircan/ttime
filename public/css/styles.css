@@ -7067,6 +7067,13 @@ display: flex
         gap: 5px;
 
 }
+.distance-label img {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    /* margin-right: 5px; */
+    opacity: 0.5;
+}
 
 .splide__arrow {
     background: #67ccd1;
