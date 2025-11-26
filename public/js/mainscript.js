@@ -349,7 +349,7 @@ tick.style.cssText = `
   opacity: 0.7;
   display: inline-block;
   margin-left: 2px;
-  margin-top: 1px;
+  margin-top: -1px;
 `;
 
   wrapper.appendChild(label);
