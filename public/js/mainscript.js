@@ -344,11 +344,11 @@ gridLabels.forEach(obj => {
   const tick = document.createElement('div');
   tick.style.cssText = `
     width: 22px;
-    height: 2px;
-    background: #cfd8dc;
-    display: inline-block;
-    margin-left: 2px;
-    margin-top: 0;
+  height: 0;
+  border-bottom: 1px dashed #cfd8dc; /* <-- Kesik */
+  display: inline-block;
+  margin-left: 2px;
+  margin-top: 0;
   `;
 
   wrapper.appendChild(label);
