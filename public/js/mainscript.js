@@ -322,22 +322,45 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
   gridLabels.forEach(obj => {
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `
+    position: absolute;
+    right: 0;
+    top: ${obj.y - 10}px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    pointer-events: none;
+    text-align: right;
+    width: 70px;
+    height:14px;
+  `;
   const label = document.createElement('div');
   label.className = 'elevation-label';
   label.style.cssText = `
-    position: absolute;
-    right: 0;
-    top: ${obj.y - 16}px;
-    text-align: right;
-    padding-right: 5px;
-    border-right: 1px solid #cfd8dc;
     font-size: 10px;
     color: #607d8b;
     background: none;
     line-height: 1;
+    text-align: right;
+    padding-right: 6px;
+    white-space: nowrap;
   `;
   label.textContent = obj.value;
-  elevationLabels.appendChild(label);
+
+  const tick = document.createElement('div');
+  tick.style.cssText = `
+    width: 22px;
+    height: 2px;
+    background: #cfd8dc;
+    display: inline-block;
+    margin-left: 2px;
+    margin-top: 0;
+  `;
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(tick);
+  elevationLabels.appendChild(wrapper);
 });
 
   track.style.position = 'relative';
