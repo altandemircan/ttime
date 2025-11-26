@@ -9297,7 +9297,23 @@ track.__onMove = function(e) {
   }
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
-  tooltip.style.left = `${x}px`;
+  // Scale bar container'ının width'ini ve tooltip'in kendi genişliğini al
+    const tooltipWidth = tooltip.offsetWidth || 140; // varsayılan genişlik
+    const scaleBarRight = rect.right;
+    const mouseScreenX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
+
+    // Ölçüm: scale bar'ın sağına %70'ten fazla yaklaştıysa, tooltipl'i sola yerleştir
+    let tooltipLeft;
+    if ((mouseScreenX + tooltipWidth + 8) > scaleBarRight) {
+      // Sağa taşacak, sol tarafa yerleştir
+      tooltipLeft = Math.max(0, x - tooltipWidth - 12);
+      tooltip.style.left = `${tooltipLeft}px`;
+    } else {
+      // Normal: mouse'un biraz sağında
+      tooltipLeft = x + 14;
+      tooltip.style.left = `${tooltipLeft}px`;
+    }
+
   verticalLine.style.left = `${x}px`;
   verticalLine.style.display = 'block';
 };
