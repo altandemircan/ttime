@@ -345,6 +345,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     text-align: right;
     padding-right: 6px;
     white-space: nowrap;
+    /* border-right kaldırıldı! */
   `;
   label.textContent = obj.value;
 
