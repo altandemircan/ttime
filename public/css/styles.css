@@ -6932,19 +6932,7 @@ display: flex
 /* TRIP LOADING */
 
 
-.elevation-labels-container {
-  position: absolute;
-  left: -50px;
-  top: 0;
-  bottom: 0;
-  width: 45px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  font-size: 10px;
-  color: #607d8b;
-  pointer-events: none;
-}
+
 
 
 /* Ana konteyner için padding ekleyerek sol tarafta yer açın */
