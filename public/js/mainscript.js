@@ -312,19 +312,19 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  gridLabels.forEach(obj => {
+gridLabels.forEach(obj => {
   const wrapper = document.createElement('div');
   wrapper.style.cssText = `
     position: absolute;
     right: 0;
-top: ${obj.y}px;
+    top: ${obj.y}px;
     display: flex;
     flex-direction: row;
     align-items: center;
     pointer-events: none;
     text-align: right;
     width: 70px;
-   
+    height:14px;
   `;
   const label = document.createElement('div');
   label.className = 'elevation-label';
