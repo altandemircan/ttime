@@ -338,7 +338,7 @@ label.style.cssText = `
   text-align: right;
   padding-right: 0px;
   white-space: nowrap;
-  margin-bottom: 4px;
+  margin-bottom: 0px;
 `;
 
 label.textContent = obj.value;
@@ -351,7 +351,7 @@ tick.style.cssText = `
   opacity: 0.7;
   display: block;
   margin-left: 0px;
-  margin-top: 4px;
+  margin-top: 0px;
 `;
 
 wrapper.appendChild(label);
