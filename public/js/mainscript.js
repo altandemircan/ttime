@@ -316,7 +316,7 @@ gridLabels.forEach(obj => {
   const trackHeight = track.clientHeight || 180;
   const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
   const correctedY = (obj.y / svgHeight) * trackHeight; // 👈 ORANTALA!
- const wrapper = document.createElement('div');
+const wrapper = document.createElement('div');
 wrapper.style.cssText = `
   position: absolute;
   right: 0;
@@ -357,6 +357,7 @@ tick.style.cssText = `
 wrapper.appendChild(label);
 wrapper.appendChild(tick);
 elevationLabels.appendChild(wrapper);
+});
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
