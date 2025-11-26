@@ -316,46 +316,47 @@ gridLabels.forEach(obj => {
   const trackHeight = track.clientHeight || 180;
   const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
   const correctedY = (obj.y / svgHeight) * trackHeight; // 👈 ORANTALA!
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = `
-    position: absolute;
-    right: 0;
-    top: ${correctedY - 2}px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    pointer-events: none;
-    text-align: right;
-   
-  `;
-  const label = document.createElement('div');
-  label.className = 'elevation-label';
-  label.style.cssText = `
-    font-size: 10px;
-    color: #607d8b;
-    background: none;
-    line-height: 1;
-    text-align: right;
-    padding-right: 0px;
-    white-space: nowrap;
-  `;
-  label.textContent = obj.value;
+ const wrapper = document.createElement('div');
+wrapper.style.cssText = `
+  position: absolute;
+  right: 0;
+  top: ${correctedY - 2}px;
+  display: flex;
+  flex-direction: column;   /* Dikey */
+  align-items: flex-start;
+  pointer-events: none;
+  text-align: right;
+`;
 
-  const tick = document.createElement('div');
+const label = document.createElement('div');
+label.className = 'elevation-label';
+label.style.cssText = `
+  font-size: 10px;
+  color: #607d8b;
+  background: none;
+  line-height: 1;
+  text-align: right;
+  padding-right: 0px;
+  white-space: nowrap;
+  margin-bottom: 0px;
+`;
+
+label.textContent = obj.value;
+
+const tick = document.createElement('div');
 tick.style.cssText = `
-  width: 16px;
+  width: 38px;
   height: 0;
   border-bottom: 1px dashed #cfd8dc;
   opacity: 0.7;
-  display: inline-block;
-  margin-left: 2px;
-  margin-top: -1px;
+  display: block;
+  margin-left: 0px;
+  margin-top: 0px;
 `;
 
-  wrapper.appendChild(label);
-  wrapper.appendChild(tick);
-  elevationLabels.appendChild(wrapper);
-});
+wrapper.appendChild(label);
+wrapper.appendChild(tick);
+elevationLabels.appendChild(wrapper);
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
