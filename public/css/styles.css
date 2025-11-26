@@ -4566,12 +4566,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-    width: 100%;
-    font-size: 0.9rem;
-    height: 150px;
-    text-align: left;
-    display: inherit;
-    padding: 10px;
+    width: calc(100% - 40px);
 }
 
 .scale-bar-track { user-select: none; }
@@ -4582,10 +4577,10 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
 
 .expanded-map-panel {
- right: 10px;
-    left: 10px;
-    width: calc(100% - 455px);
-    z-index: 1231231231231;
+right: 20px;
+    left: 20px;
+    width: calc(100% - 475px);
+    z-index: 123456;
     display: flex;
     position: fixed;
     bottom: 10px;
