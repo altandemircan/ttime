@@ -299,14 +299,15 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
   elevationLabels.style.cssText = `
-    position: absolute;
-    left: -50px;
-    top: 0;
-    bottom: 0;
-    width: 45px;
+        position: absolute;
+    left: -20px;
+    top: 0px;
+    bottom: 0px;
+    width: 50px;
     height: 100%;
     pointer-events: none;
     z-index: 5;
+    display: block;
   `;
   elevationLabels.style.display = 'block';
 
