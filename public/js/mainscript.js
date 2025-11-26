@@ -317,7 +317,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   wrapper.style.cssText = `
     position: absolute;
     right: 0;
-    top: ${obj.y - 10}px;
+top: ${obj.y}px;
     display: flex;
     flex-direction: row;
     align-items: center;
