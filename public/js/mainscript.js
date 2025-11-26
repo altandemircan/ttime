@@ -277,15 +277,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
 
-      // ALTINA DİK ÇİZGİ (vertical marker line)
-      const vline = document.createElement('div');
-      vline.className = 'marker-vertical-line';
-      vline.style.cssText =
-        `position:absolute;left:${left}%;top:22px;width:2px;height:24px;
-        background:#d32f2f;opacity:.35;z-index:4;transform:translateX(-50%);border-radius:2px;`;
-      track.appendChild(vline);
-
-      // İstenirse: console.log('BADGE + LINE', idx, m.name, left);
     });
   } else {
     console.warn("[DEBUG] markers is not array", markers);
