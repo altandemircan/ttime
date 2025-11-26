@@ -320,7 +320,7 @@ gridLabels.forEach(obj => {
   wrapper.style.cssText = `
     position: absolute;
     right: 0;
-    top: ${correctedY - 4}px;
+    top: ${correctedY - 2}px;
     display: flex;
     flex-direction: row;
     align-items: center;
