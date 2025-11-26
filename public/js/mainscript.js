@@ -324,7 +324,7 @@ top: ${obj.y}px;
     pointer-events: none;
     text-align: right;
     width: 70px;
-    height:14px;
+   
   `;
   const label = document.createElement('div');
   label.className = 'elevation-label';
