@@ -338,14 +338,14 @@ label.style.cssText = `
   text-align: right;
   padding-right: 0px;
   white-space: nowrap;
-  margin-bottom: 4px;
+  margin-bottom: 0px;
 `;
 
 label.textContent = obj.value;
 
 const tick = document.createElement('div');
 tick.style.cssText = `
-  width: 38px;
+  width: 20px;
   height: 0;
   border-bottom: 1px dashed #cfd8dc;
   opacity: 0.7;
