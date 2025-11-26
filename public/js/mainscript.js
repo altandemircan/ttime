@@ -312,19 +312,21 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-gridLabels.forEach((obj, i) => {
+gridLabels.forEach(obj => {
+  const trackHeight = track.clientHeight || 180;
+  const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
+  const correctedY = (obj.y / svgHeight) * trackHeight; // 👈 ORANTALA!
   const wrapper = document.createElement('div');
   wrapper.style.cssText = `
     position: absolute;
     right: 0;
-    top: ${obj.y - (i === 0 ? 4 : 0)}px;
+    top: ${correctedY - 4}px;
     display: flex;
     flex-direction: row;
     align-items: center;
     pointer-events: none;
     text-align: right;
-    width: 70px;
-    height:14px;
+   
   `;
   const label = document.createElement('div');
   label.className = 'elevation-label';
