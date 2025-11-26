@@ -320,7 +320,7 @@ const wrapper = document.createElement('div');
 wrapper.style.cssText = `
   position: absolute;
   right: 0;
-  top: ${correctedY - 6}px;
+  top: ${correctedY - 7}px;
   display: flex;
   flex-direction: column;   /* Dikey */
   align-items: flex-start;
