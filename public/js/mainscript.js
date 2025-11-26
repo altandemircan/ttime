@@ -322,45 +322,23 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
   gridLabels.forEach(obj => {
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = `
-    position: absolute;
-    right: 0;
-    top: ${obj.y - 14}px; /* Yükseklik labelını yukarı al, çizgi alta */
-    text-align: right;
-    width: 38px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    pointer-events: none;
-  `;
   const label = document.createElement('div');
   label.className = 'elevation-label';
   label.style.cssText = `
-    font-size: 15px;
+    position: absolute;
+    right: 0;
+    top: ${obj.y - 16}px;
+    text-align: right;
+    padding-right: 5px;
+    border-right: 1px solid #cfd8dc;
+    font-size: 10px;
     color: #607d8b;
     background: none;
     line-height: 1;
-    margin-bottom: 0px;
-    margin-right:0;
-    text-align: center;
   `;
   label.textContent = obj.value;
-
-  const tick = document.createElement('div');
-  tick.style.cssText = `
-    width: 2px;
-    height: 16px;
-    background: #cfd8dc;
-    margin-top: 0px;
-  `;
-
-  wrapper.appendChild(label);
-  wrapper.appendChild(tick);
-  elevationLabels.appendChild(wrapper);
+  elevationLabels.appendChild(label);
 });
-
-  
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
