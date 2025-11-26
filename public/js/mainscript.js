@@ -299,26 +299,25 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
   elevationLabels.style.cssText = `
-        position: absolute;
-    left: -20px;
-    top: 0px;
-    bottom: 0px;
-    width: 50px;
+    position: absolute;
+    left: -50px;
+    top: 0;
+    bottom: 0;
+    width: 45px;
     height: 100%;
     pointer-events: none;
     z-index: 5;
-    display: block;
   `;
   elevationLabels.style.display = 'block';
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-gridLabels.forEach(obj => {
+gridLabels.forEach((obj, i) => {
   const wrapper = document.createElement('div');
   wrapper.style.cssText = `
     position: absolute;
     right: 0;
-top: ${obj.y - 4}px;
+    top: ${obj.y - (i === 0 ? 4 : 0)}px;
     display: flex;
     flex-direction: row;
     align-items: center;
