@@ -338,7 +338,7 @@ label.style.cssText = `
   text-align: right;
   padding-right: 0px;
   white-space: nowrap;
-  margin-bottom: 0px;
+  margin-bottom: 4px;
 `;
 
 label.textContent = obj.value;
