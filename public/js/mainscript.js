@@ -343,13 +343,13 @@ gridLabels.forEach(obj => {
 
   const tick = document.createElement('div');
 tick.style.cssText = `
-  width: 38px;
+  width: 16px;
   height: 0;
   border-bottom: 1px dashed #cfd8dc;
   opacity: 0.7;
   display: inline-block;
   margin-left: 2px;
-  margin-top: 0;
+  margin-top: 1px;
 `;
 
   wrapper.appendChild(label);
