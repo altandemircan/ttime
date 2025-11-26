@@ -6946,13 +6946,6 @@ display: flex
   pointer-events: none;
 }
 
-.elevation-label {
-  text-align: right;
-  padding-right: 5px;
-  border-right: 1px solid #cfd8dc;
-  height: 20px;
-  line-height: 20px;
-}
 
 /* Ana konteyner için padding ekleyerek sol tarafta yer açın */
 .track-container {
