@@ -334,9 +334,8 @@ top: ${obj.y}px;
     background: none;
     line-height: 1;
     text-align: right;
-    padding-right: 6px;
+    padding-right: 0px;
     white-space: nowrap;
-    /* border-right kaldırıldı! */
   `;
   label.textContent = obj.value;
 
