@@ -9963,16 +9963,12 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
     ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
-
-    const tx = document.createElementNS(svgNS, 'text');
+const tx = document.createElementNS(svgNS, 'text');
 tx.setAttribute('x', '6'); 
 tx.setAttribute('y', String(y - 4));
 tx.setAttribute('fill', '#90a4ae'); 
 tx.setAttribute('font-size', '11');
-tx.textContent = `${Math.round(ev)} m`;
-// GÖRÜNMEZ YAP!
-tx.setAttribute('opacity', '0'); 
-// veya: tx.setAttribute('display','none');
+tx.textContent = '';  // <--- SADECE BUNU YAP
 gridG.appendChild(tx);
   }
   // Alan (profile area)
