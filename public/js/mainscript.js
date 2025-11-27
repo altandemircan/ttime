@@ -284,24 +284,15 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // Elevation label rendering
   let gridLabels = [];
-const svg = track.querySelector('svg.tt-elev-svg');
-// Yükseklik aralıklarını profile çizimde kullandığın gibi hesapla:
-const svgHeight = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
-const levels = 4;
-// vizMin/vizMax fonksiyondan veya globalden geliyorsa:
-const vizMin = track._elevVizMin ?? 0;
-const vizMax = track._elevVizMax ?? 100;
-const vizSpan = vizMax - vizMin;
-const Y = (e) => svgHeight - ((e - vizMin) / (vizMax - vizMin)) * svgHeight;
-
-for (let i = 0; i <= levels; i++) {
-  const ev = vizMin + (i / levels) * vizSpan;
-  const y = Y(ev);
-  gridLabels.push({
-    value: `${Math.round(ev)} m`,
-    y: y
-  });
-}
+  const svg = track.querySelector('svg.tt-elev-svg');
+  if (svg) {
+    gridLabels = Array.from(svg.querySelectorAll('text'))
+      .map(t => ({
+        value: t.textContent.trim(),
+        y: Number(t.getAttribute('y'))
+      }))
+      .filter(obj => /-?\d+\s*m$/.test(obj.value));
+  }
 
   gridLabels.sort((a, b) => b.y - a.y);
 
@@ -329,7 +320,7 @@ const wrapper = document.createElement('div');
 wrapper.style.cssText = `
   position: absolute;
   right: 0;
-  top: ${correctedY - 11}px;
+  top: ${correctedY - 7.5}px;
   display: flex;
   flex-direction: column;   /* Dikey */
   align-items: flex-start;
@@ -358,10 +349,10 @@ tick.style.cssText = `
       width: 26px;
     height: 8px;
   border-bottom: 1px dashed #cfd8dc;
-      opacity: 0.7;
-    display: block;
-    margin-left: 0px;
-    margin-top: 0px;
+  opacity: 0.7;
+  display: block;
+  margin-left: 0px;
+  margin-top: 0px;
 `;
 
 wrapper.appendChild(label);
@@ -9230,12 +9221,10 @@ container._elevKmSpan = totalKm;
       gridG.appendChild(ln);
 
       const tx = document.createElementNS(svgNS, 'text');
-tx.setAttribute('x', '6'); 
-tx.setAttribute('y', String(y - 4));
-tx.setAttribute('fill', '#90a4ae'); 
-tx.setAttribute('font-size', '11');
-tx.textContent = '';         // SVG’deki label tamamen boş!
-gridG.appendChild(tx)
+      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+      tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
     }
 
     // Alan
@@ -9975,14 +9964,11 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
 
- const tx = document.createElementNS(svgNS, 'text');
-tx.setAttribute('x', '6');
-tx.setAttribute('y', String(y - 4));
-tx.setAttribute('fill', '#90a4ae');
-tx.setAttribute('font-size', '11');
-// YAZIYI TAMAMEN BOŞ BIRAK!
-tx.textContent = '';
-gridG.appendChild(tx);
+    const tx = document.createElementNS(svgNS, 'text');
+    tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+    tx.textContent = `${Math.round(ev)} m`;
+    gridG.appendChild(tx);
   }
   // Alan (profile area)
   let topD = '';
