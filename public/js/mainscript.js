@@ -9230,10 +9230,12 @@ container._elevKmSpan = totalKm;
       gridG.appendChild(ln);
 
       const tx = document.createElementNS(svgNS, 'text');
-      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-      tx.textContent = `${Math.round(ev)} m`;
-      gridG.appendChild(tx);
+tx.setAttribute('x', '6'); 
+tx.setAttribute('y', String(y - 4));
+tx.setAttribute('fill', '#90a4ae'); 
+tx.setAttribute('font-size', '11');
+tx.textContent = `${Math.round(ev)} m`;
+gridG.appendChild(tx);
     }
 
     // Alan
@@ -9973,11 +9975,14 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
 
-    const tx = document.createElementNS(svgNS, 'text');
-    tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-    tx.textContent = `${Math.round(ev)} m`;
-    gridG.appendChild(tx);
+ const tx = document.createElementNS(svgNS, 'text');
+tx.setAttribute('x', '6');
+tx.setAttribute('y', String(y - 4));
+tx.setAttribute('fill', '#90a4ae');
+tx.setAttribute('font-size', '11');
+// YAZIYI TAMAMEN BOŞ BIRAK!
+tx.textContent = '';
+gridG.appendChild(tx);
   }
   // Alan (profile area)
   let topD = '';
