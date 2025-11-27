@@ -284,15 +284,24 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // Elevation label rendering
   let gridLabels = [];
-  const svg = track.querySelector('svg.tt-elev-svg');
-  if (svg) {
-    gridLabels = Array.from(svg.querySelectorAll('text'))
-      .map(t => ({
-        value: t.textContent.trim(),
-        y: Number(t.getAttribute('y'))
-      }))
-      .filter(obj => /-?\d+\s*m$/.test(obj.value));
-  }
+const svg = track.querySelector('svg.tt-elev-svg');
+// Yükseklik aralıklarını profile çizimde kullandığın gibi hesapla:
+const svgHeight = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+const levels = 4;
+// vizMin/vizMax fonksiyondan veya globalden geliyorsa:
+const vizMin = track._elevVizMin ?? 0;
+const vizMax = track._elevVizMax ?? 100;
+const vizSpan = vizMax - vizMin;
+const Y = (e) => svgHeight - ((e - vizMin) / (vizMax - vizMin)) * svgHeight;
+
+for (let i = 0; i <= levels; i++) {
+  const ev = vizMin + (i / levels) * vizSpan;
+  const y = Y(ev);
+  gridLabels.push({
+    value: `${Math.round(ev)} m`,
+    y: y
+  });
+}
 
   gridLabels.sort((a, b) => b.y - a.y);
 
@@ -9223,8 +9232,8 @@ container._elevKmSpan = totalKm;
       const tx = document.createElementNS(svgNS, 'text');
       tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
       tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-      tx.textContent = '';
-gridG.appendChild(tx);;
+      tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
     }
 
     // Alan
@@ -9963,13 +9972,12 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
     ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
-const tx = document.createElementNS(svgNS, 'text');
-tx.setAttribute('x', '6'); 
-tx.setAttribute('y', String(y - 4));
-tx.setAttribute('fill', '#90a4ae'); 
-tx.setAttribute('font-size', '11');
-tx.textContent = '';  // <--- SADECE BUNU YAP
-gridG.appendChild(tx);
+
+    const tx = document.createElementNS(svgNS, 'text');
+    tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+    tx.textContent = `${Math.round(ev)} m`;
+    gridG.appendChild(tx);
   }
   // Alan (profile area)
   let topD = '';
