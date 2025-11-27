@@ -9224,6 +9224,7 @@ container._elevKmSpan = totalKm;
       tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
       tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
       tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
     }
 
     // Alan
@@ -9964,9 +9965,15 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     gridG.appendChild(ln);
 
     const tx = document.createElementNS(svgNS, 'text');
-    tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-    tx.textContent = `${Math.round(ev)} m`;
+tx.setAttribute('x', '6'); 
+tx.setAttribute('y', String(y - 4));
+tx.setAttribute('fill', '#90a4ae'); 
+tx.setAttribute('font-size', '11');
+tx.textContent = `${Math.round(ev)} m`;
+// GÖRÜNMEZ YAP!
+tx.setAttribute('opacity', '0'); 
+// veya: tx.setAttribute('display','none');
+gridG.appendChild(tx);
   }
   // Alan (profile area)
   let topD = '';
