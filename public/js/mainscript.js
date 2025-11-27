@@ -9234,7 +9234,7 @@ tx.setAttribute('x', '6');
 tx.setAttribute('y', String(y - 4));
 tx.setAttribute('fill', '#90a4ae'); 
 tx.setAttribute('font-size', '11');
-tx.textContent = `${Math.round(ev)} m`;
+tx.textContent = '';         // SVG’deki label tamamen boş!
 gridG.appendChild(tx);
     }
 
