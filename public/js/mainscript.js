@@ -326,6 +326,7 @@ wrapper.style.cssText = `
   align-items: flex-start;
   pointer-events: none;
   text-align: right;
+  gap: 4px;
 `;
 
 const label = document.createElement('div');
@@ -334,24 +335,24 @@ label.style.cssText = `
   font-size: 10px;
   color: #607d8b;
   background: none;
-  line-height: 1;
-  text-align: right;
-  padding-right: 0px;
-  white-space: nowrap;
-  margin-bottom: 0px;
+  line-height: 0.50;
+    text-align: right;
+    padding-right: 0px;
+    white-space: nowrap;
+    margin-bottom: -6px;
 `;
 
 label.textContent = obj.value;
 
 const tick = document.createElement('div');
 tick.style.cssText = `
-  width: 20px;
-  height: 0;
+      width: 26px;
+    height: 8px;
   border-bottom: 1px dashed #cfd8dc;
-  opacity: 0.7;
-  display: block;
-  margin-left: 0px;
-  margin-top: 0px;
+      opacity: 0.7;
+    display: block;
+    margin-left: 0px;
+    margin-top: 0px;
 `;
 
 wrapper.appendChild(label);
