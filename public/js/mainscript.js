@@ -322,52 +322,47 @@ for (let i = 0; i <= levels; i++) {
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
 gridLabels.forEach(obj => {
-  const trackHeight = track.clientHeight || 180;
-  const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
-  const correctedY = (obj.y / svgHeight) * trackHeight; // 👈 ORANTALA!
-const wrapper = document.createElement('div');
-wrapper.style.cssText = `
-  position: absolute;
-  right: 0;
-  top: ${correctedY - 7.5}px;
-  display: flex;
-  flex-direction: column;   /* Dikey */
-  align-items: flex-start;
-  pointer-events: none;
-  text-align: right;
-  gap: 4px;
-`;
-
-const label = document.createElement('div');
-label.className = 'elevation-label';
-label.style.cssText = `
-  font-size: 10px;
-  color: #607d8b;
-  background: none;
-  line-height: 0.50;
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `
+    position: absolute;
+    right: 0;
+    top: ${obj.y}px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    pointer-events: none;
+    text-align: right;
+    width: 70px;
+    height:14px;
+  `;
+  const label = document.createElement('div');
+  label.className = 'elevation-label';
+  label.style.cssText = `
+    font-size: 10px;
+    color: #607d8b;
+    background: none;
+    line-height: 1;
     text-align: right;
     padding-right: 0px;
     white-space: nowrap;
-    margin-bottom: -6px;
-`;
+  `;
+  label.textContent = obj.value;
 
-label.textContent = obj.value;
+  const tick = document.createElement('div');
+  tick.style.cssText = `
+    width: 22px;
+    height: 2px;
+    background: #cfd8dc;
+    display: inline-block;
+    margin-left: 2px;
+    margin-top: 0;
+  `;
 
-const tick = document.createElement('div');
-tick.style.cssText = `
-      width: 26px;
-    height: 8px;
-  border-bottom: 1px dashed #cfd8dc;
-      opacity: 0.7;
-    display: block;
-    margin-left: 0px;
-    margin-top: 0px;
-`;
-
-wrapper.appendChild(label);
-wrapper.appendChild(tick);
-elevationLabels.appendChild(wrapper);
+  wrapper.appendChild(label);
+  wrapper.appendChild(tick);
+  elevationLabels.appendChild(wrapper);
 });
+
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
@@ -9235,7 +9230,7 @@ tx.setAttribute('y', String(y - 4));
 tx.setAttribute('fill', '#90a4ae'); 
 tx.setAttribute('font-size', '11');
 tx.textContent = '';         // SVG’deki label tamamen boş!
-gridG.appendChild(tx);
+gridG.appendChild(tx)
     }
 
     // Alan
