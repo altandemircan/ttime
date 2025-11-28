@@ -7611,8 +7611,22 @@ if (!hasRealRoute) {
       }
       expandedScaleBar.style.display = "block";
       expandedScaleBar.innerHTML = "";
-      renderRouteScaleBar(expandedScaleBar, 0, []); // Mesafe yok, scale bar boş
-    }
+if (
+  window.selectedTravelMode === 'fly' ||
+  (
+    window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1 &&
+    window.lastRouteSummaries?.[containerId]?.distance > 0
+  )
+) {
+if (
+  window.selectedTravelMode === 'fly' ||
+  (
+    window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1 &&
+    window.lastRouteSummaries?.[containerId]?.distance > 0
+  )
+) {
+  renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions); // veya 0, []
+}}    }
     return;
   } else {
     // YURTDIŞI/Fly Mode: HAVERSINE ile mesafe ve süre dolsun!
@@ -7689,8 +7703,15 @@ if (!hasRealRoute) {
       }
       expandedScaleBar.style.display = "block";
       expandedScaleBar.innerHTML = "";
-      renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
-    }
+if (
+  window.selectedTravelMode === 'fly' ||
+  (
+    window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1 &&
+    window.lastRouteSummaries?.[containerId]?.distance > 0
+  )
+) {
+  renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions); // veya 0, []
+}    }
     return;
   }
 }
