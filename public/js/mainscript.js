@@ -9135,29 +9135,18 @@ tooltip.style.left = '0px';
 tooltip.style.display = 'none';
 track.appendChild(tooltip);
 
-// Mouse ile çizgiyi hareket ettirirken tooltip de göster!
+// Mouse ile çizgiyi hareket ettir (her zaman görünür!)
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
   const x = e.clientX - rect.left;
   verticalLine.style.left = `${x}px`;
-  tooltip.style.display = 'block';  // Mouse hareketiyle aç!
-  // Tooltip içeriğini burada güncelle
 });
 track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
   const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
   verticalLine.style.left = `${x}px`;
-  tooltip.style.display = 'block';  // Dokunarak aç!
-  // Tooltip içeriğini burada güncelle
 });
-
-// Mouseleave ile kapanmalı!
-track.addEventListener('mouseleave', function() {
-  tooltip.style.display = 'none';
-});
-track.addEventListener('touchend', function() {
-  tooltip.style.display = 'none';
-});
+// Mouseleave, touchend gibi eventlerde ÇİZGİYİ GİZLEME! Kodun başka yerinde verticalLine.style.display = 'none' geçiyorsa SİL.
 
 // Mesafe (Haversine)
 function hv(lat1, lon1, lat2, lon2) {
