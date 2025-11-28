@@ -9230,11 +9230,14 @@ container._elevKmSpan = totalKm;
       ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
       gridG.appendChild(ln);
 
-      const tx = document.createElementNS(svgNS, 'text');
-      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-      tx.textContent = `${Math.round(ev)} m`;
-      gridG.appendChild(tx);
+       // BAR İÇİNDEKİ YÜKSEKLİK LABELI GÖSTERİLMESİN
+  /*
+  const tx = document.createElementNS(svgNS, 'text');
+  tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+  tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+  tx.textContent = `${Math.round(ev)} m`;
+  gridG.appendChild(tx);
+  */
     }
 
     // Alan
@@ -9970,7 +9973,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     const y = Y(ev);
     const ln = document.createElementNS(svgNS, 'line');
     ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(widthNow));
-    ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+    ln.setAttribute('y1',  String(y)); ln.setAttribute('y2', String(y));
     ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
 
