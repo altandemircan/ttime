@@ -312,10 +312,10 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
- gridLabels.forEach(obj => {
-  const trackHeight = track.clientHeight || 180;
-  const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
-  const correctedY = (obj.y / svgHeight) * trackHeight; // 👈 ORANTALA!
+  gridLabels.forEach(obj => {
+    const trackHeight = track.clientHeight || 180;
+    const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
+    const correctedY = (obj.y / svgHeight) * trackHeight; // 👈 ORANTALA!
   const wrapper = document.createElement('div');
   wrapper.style.cssText = `
     position: absolute;
@@ -344,8 +344,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   label.textContent = obj.value;
 
-  /*
-  // SAĠ ETİKET VE ÇİZGİYİ YORUMA AL:
   const tick = document.createElement('div');
   tick.style.cssText = `
         width: 26px;
@@ -360,11 +358,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   wrapper.appendChild(label);
   wrapper.appendChild(tick);
   elevationLabels.appendChild(wrapper);
-  */
-
-  // SADECE soldaki label'ı doğrudan ekle!
-  elevationLabels.appendChild(label);
-});
+  });
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
