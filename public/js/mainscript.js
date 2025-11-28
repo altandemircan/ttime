@@ -4396,25 +4396,22 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
-    } else if (pts.length > 1) {
-        let allArcPoints = [];
-        for (let i = 0; i < pts.length - 1; i++) {
-            const start = [pts[i].lng, pts[i].lat];
-            const end = [pts[i + 1].lng, pts[i + 1].lat];
-            const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
-            L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
-                color: "#1976d2",
-                weight: 6,
-                opacity: 0.93,
-                dashArray: "6,8"
-            }).addTo(expandedMap);
-            if (i === 0) allArcPoints.push([start[0], start[1]]);
-            allArcPoints = allArcPoints.concat(arcPoints.slice(1));
-        }
-        if (pts.length > 0) {
-            const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
-            allArcPoints.push(lastPoint);
-        }
+    } } else if (pts.length > 1 && !areAllPointsInTurkey(pts)) {
+    // SADECE TÜRKİYE DIŞI İÇİN HAVERSINE/YAY ÇİZ
+    let allArcPoints = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+        const start = [pts[i].lng, pts[i].lat];
+        const end = [pts[i + 1].lng, pts[i + 1].lat];
+        const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
+        L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
+            color: "#1976d2",
+            weight: 6,
+            opacity: 0.93,
+            dashArray: "6,8"
+        }).addTo(expandedMap);
+        if (i === 0) allArcPoints.push([start[0], start[1]]);
+        allArcPoints = allArcPoints.concat(arcPoints.slice(1));
+    }
         window._curvedArcPointsByDay[day] = allArcPoints;
         console.log("[DEBUG] Arc points saved:", allArcPoints.length);
     }
