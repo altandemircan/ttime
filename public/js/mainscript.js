@@ -4746,7 +4746,9 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 
     // ARTIK day VAR!
     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
-        const pts = getDayPoints(day);
+        const pts = getDayPoints(day).filter(
+  p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
+);
         if (pts.length === 1) {
             map.setView([pts[0].lat, pts[0].lng], 14);
         }
@@ -7199,7 +7201,9 @@ async function renderRouteForDay(day) {
 
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
-    const pts = getDayPoints(day);
+   const pts = getDayPoints(day).filter(
+  p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
+);
     console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
 
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
