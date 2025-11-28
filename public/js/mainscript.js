@@ -9295,6 +9295,10 @@ if (track.__onMove) track.removeEventListener('mousemove', track.__onMove);
 track.__onMove = function(e) {
   const ed = container._elevationData;
   if (!ed || !Array.isArray(ed.smooth)) return;
+
+    tooltip.style.display = 'block'; // PATCH — burada ekle!
+
+
   const s = container._elevSamples || [];
   const startKmDom = Number(container._elevStartKm || 0);
   const spanKm = Number(container._elevKmSpan || totalKm) || 1;
@@ -9332,22 +9336,17 @@ track.__onMove = function(e) {
   tooltip.style.opacity = '1';
   tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
   // Scale bar container'ının width'ini ve tooltip'in kendi genişliğini al
-    const tooltipWidth = tooltip.offsetWidth || 140; // varsayılan genişlik
-    const scaleBarRight = rect.right;
-    const mouseScreenX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
-
-    // Ölçüm: scale bar'ın sağına %70'ten fazla yaklaştıysa, tooltipl'i sola yerleştir
-    let tooltipLeft;
-    if ((mouseScreenX + tooltipWidth + 8) > scaleBarRight) {
-      // Sağa taşacak, sol tarafa yerleştir
-      tooltipLeft = Math.max(0, x - tooltipWidth - 12);
-      tooltip.style.left = `${tooltipLeft}px`;
-    } else {
-      // Normal: mouse'un biraz sağında
-      tooltipLeft = x + 14;
-      tooltip.style.left = `${tooltipLeft}px`;
-    }
-
+  const tooltipWidth = tooltip.offsetWidth || 140;
+  const scaleBarRight = rect.right;
+  const mouseScreenX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
+  let tooltipLeft;
+  if ((mouseScreenX + tooltipWidth + 8) > scaleBarRight) {
+    tooltipLeft = Math.max(0, x - tooltipWidth - 12);
+    tooltip.style.left = `${tooltipLeft}px`;
+  } else {
+    tooltipLeft = x + 14;
+    tooltip.style.left = `${tooltipLeft}px`;
+  }
   verticalLine.style.left = `${x}px`;
   verticalLine.style.display = 'block';
 };
