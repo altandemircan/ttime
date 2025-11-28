@@ -9131,8 +9131,7 @@ track.appendChild(verticalLine);
 const tooltip = document.createElement('div');
 tooltip.className = 'tt-elev-tooltip';
 tooltip.style.left = '0px';
-// EKLE: Başta görünmesin!
-tooltip.style.display = 'none';
+tooltip.style.display = 'none'; // ilk başta görünmesin
 track.appendChild(tooltip);
 
 // Mouse ile çizgiyi hareket ettir (her zaman görünür!)
