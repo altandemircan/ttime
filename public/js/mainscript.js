@@ -9005,29 +9005,28 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   // Sadece FLY modda haversine ile bar/profil render edilir. 
   // Car/bike/walk modda sadece GERÇEK route varsa bar/profil oluşmalı!
+  // Sadece FLY modda haversine bar/profil
+if (window.selectedTravelMode === 'fly') {
   if (
-    window.selectedTravelMode !== 'fly' &&
-    !hasValidRoute
-  ) {
-    container.innerHTML = '';
-    return;
-  }
-
-  // FLY modda ve route yoksa haversine ile bar/profil render edilir.
-  if (
-    window.selectedTravelMode === 'fly' &&
     (!spanKm || spanKm < 0.01) &&
     Array.isArray(markers) && markers.length > 1 &&
     !(hasSummary || hasPairwise || hasGeoJson)
   ) {
     spanKm = getTotalKmFromMarkers(markers);
   }
-
-  // GERÇEK route veya haversine yoksa bar/profil renderlanmasın!
   if (!spanKm || spanKm < 0.01) {
     container.innerHTML = '';
     return;
   }
+} else {
+  // CAR/BIKE/WALK modda bar/profil YALNIZCA gerçek route varsa!
+  if (
+    !hasGeoJson || !hasSummary || !hasPairwise
+  ) {
+    container.innerHTML = '';
+    return;
+  }
+}
 
   console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "spanKm=", spanKm, "markers=", markers);
 
