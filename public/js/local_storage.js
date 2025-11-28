@@ -265,7 +265,9 @@ tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
-    aiInfo: window.lastTripAIInfo || null // <-- EKLE
+    aiInfo: window.lastTripAIInfo || null
+        elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
+
   };
 
   // Thumbnail üretimi
@@ -356,6 +358,9 @@ function loadTripFromStorage(tripKey) {
     // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
+
+        // --- Elevation ascent/descent datalarını yükle ---
+    window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
     // --- Null ve tip garanti düzeltme ---
     window.cart = window.cart.map(item => {
