@@ -5141,15 +5141,28 @@ function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   let summary = window.lastRouteSummaries?.[key] || null;
 
-  // PATCH: Sadece fly modda haversine fallback ver, diğer modlarda badge/profil DOM’u sil
+  // --- PATCH BAŞLANGIÇ ---
+  const isFly = window.selectedTravelMode === 'fly';
+  const geojson = window.lastRouteGeojsons?.[key];
+  const hasRealRoute =
+    geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
+  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+
+  if (!isFly && !hasRealRoute) {
+    if (routeSummarySpan) routeSummarySpan.innerHTML = "";
+    window.lastRouteSummaries[key] = null;
+    return;
+  }
+  // --- PATCH SONU ---
+
+  // Eski fallback logic sadece fly modda
   if (!summary ||
       typeof summary.distance !== "number" ||
       typeof summary.duration !== "number" ||
       isNaN(summary.distance) ||
-      isNaN(summary.duration) ||
-      !areAllPointsInTurkey(getDayPoints(day))
+      isNaN(summary.duration)
    ) {
-    if (window.selectedTravelMode === 'fly') {
+    if (isFly) {
       const points = getDayPoints(day);
       summary = getFallbackRouteSummary(points);
       window.lastRouteSummaries[key] = summary;
@@ -5162,7 +5175,6 @@ function updateRouteStatsUI(day) {
   const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "";
   const durationMin = summary ? Math.round(summary.duration / 60) : "";
 
-  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
       routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
