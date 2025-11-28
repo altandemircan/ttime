@@ -9003,7 +9003,14 @@ if (spinner) spinner.remove();
 container.innerHTML = '<div class="spinner"></div>';
     return;
   }
-
+// TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ ENGELLE
+const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
+if (isInTurkey && (!Array.isArray(coords) || coords.length < 2)) {
+  console.log("[SCALEBAR] Türkiye rotası - scale bar çizilmedi");
+  container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div></div>`;
+  container.style.display = 'block';
+  return;
+}
   // Eğer geojson veya rota yoksa hata döndür
   if (!Array.isArray(coords) || coords.length < 2) {
     container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
