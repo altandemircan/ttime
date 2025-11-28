@@ -9111,8 +9111,16 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
   // FLY modda haversine serbest
 
-  let spanKm = typeof totalKm === "number" ? totalKm : 0;
-  if (isFly) {
+const isTurkey = markers && markers.length && areAllPointsInTurkey(markers);
+const isFly = window.selectedTravelMode === 'fly';
+
+if (isTurkey && !isFly && !(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0 && Array.isArray(markers) && markers.length > 1)) {
+  container.innerHTML = '';
+  container.style.display = 'none';
+  return;
+}
+
+let spanKm = typeof totalKm === "number" ? totalKm : 0;  if (isFly) {
     if (
       (!spanKm || spanKm < 0.01) &&
       Array.isArray(markers) && markers.length > 1 &&
