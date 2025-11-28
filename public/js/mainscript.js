@@ -4491,7 +4491,7 @@ function updateExpandedMap(expandedMap, day) {
     // Route summary yoksa haversine ile üret!
     const sumKey = `route-map-day${day}`;
     const isFly = window.selectedTravelMode === 'fly';
-const geojson = window.lastRouteGeojsons?.[sumKey];
+
 const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
 const hasSummary = window.lastRouteSummaries?.[sumKey]?.distance > 0;
 const hasPairwise = window.pairwiseRouteSummaries?.[sumKey]?.length > 0;
