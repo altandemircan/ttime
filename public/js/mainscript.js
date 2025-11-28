@@ -3772,18 +3772,16 @@ const travelMode =
   typeof getTravelModeForDay === "function"
     ? String(getTravelModeForDay(day)).trim().toLowerCase()
     : "car"; // fallback
-
 if (hasNextLoc) {
   let distanceStr = '';
   let durationStr = '';
   let prefix = '';
 
-  // Noktaları al
-  // Sadece şu iki noktanın Türkiye'de olup olmadığını kontrol etmek ideal
+  // Sadece iki noktanın Türkiye'de olup olmadığını kontrol et
   const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
 
   if (!isInTurkey) {
-    // --- TÜRKİYE DIŞI: Auto generated ---
+    // --- TÜRKİYE DIŞI: haversine ile "Auto generated" separator ekle
     const ptA = item.location;
     const ptB = nextItem.location;
     const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
@@ -3792,7 +3790,6 @@ if (hasNextLoc) {
     durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
     prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
 
-    // DOM separator ekle
     const distanceSeparator = document.createElement('div');
     distanceSeparator.className = 'distance-separator';
     distanceSeparator.innerHTML = `
@@ -3805,7 +3802,7 @@ if (hasNextLoc) {
     dayList.appendChild(distanceSeparator);
 
   } else {
-    // --- TÜRKİYE İÇİ: Sadece gerçek route varsa separator ekle ---
+    // --- TÜRKİYE İÇİ: Yalnızca gerçek route varsa separator ekle!
     const summary = pairwiseSummaries[idx];
     if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
       distanceStr = summary.distance >= 1000
@@ -3815,7 +3812,7 @@ if (hasNextLoc) {
         ? Math.round(summary.duration / 60) + " min"
         : Math.round(summary.duration) + " sec";
 
-      // --- İKONLAR ---
+      // İkonlar
       if (travelMode === "driving") {
         prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
       } else if (travelMode === "bike" || travelMode === "cycling") {
@@ -3826,7 +3823,7 @@ if (hasNextLoc) {
         prefix = '';
       }
 
-      // DOM separator ekle (sadece gerçek route varsa!)
+      // Sadece gerçek route varsa separator DOM'a eklenir
       const distanceSeparator = document.createElement('div');
       distanceSeparator.className = 'distance-separator';
       distanceSeparator.innerHTML = `
@@ -3838,6 +3835,9 @@ if (hasNextLoc) {
       `;
       dayList.appendChild(distanceSeparator);
     }
+    // summary yoksa TÜRKİYE İÇİNDEYKEN separator/badge DOM’a eklenmeyecek!
+  }
+}
 }
 
 
