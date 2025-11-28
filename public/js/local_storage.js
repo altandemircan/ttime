@@ -265,7 +265,7 @@ tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
-    aiInfo: window.lastTripAIInfo || null
+    aiInfo: window.lastTripAIInfo || null;
         elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
 
   };
