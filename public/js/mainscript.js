@@ -3782,7 +3782,7 @@ if (hasNextLoc) {
     const durSec = Math.round((distM / 1000) / 4 * 3600);
     distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
     durationStr = durSec >= 60 ? Math.round(durSec / 60) + " dk" : Math.round(durSec) + " sn";
-    prefix = `<span class="auto-generated-label" style="font-size:12px;font-weight:500;margin-right:5px;">Auto generated</span>`;
+    prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
   } else {
     // --- TÜRKİYE İÇİ: Icon modları ---
     const summary = pairwiseSummaries[idx];
