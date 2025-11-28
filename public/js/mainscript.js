@@ -1154,12 +1154,6 @@ let lastUserQuery = ""
 
 
 
-
-
-
-
-// Tema başlığından şehir ve gün ayıklama fonksiyonu (kalsın)
-// Tema başlığından şehir ve gün ayıklama fonksiyonu (kalsın)
 function extractCityAndDaysFromTheme(title) {
   let days = 2;
   let dayMatch = title.match(/(\d+)[- ]*day|(\d+)[- ]*days|(\d+)[- ]*gün/i);
@@ -1320,17 +1314,6 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     }, 120);
   });
 });
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7561,15 +7544,17 @@ async function renderRouteForDay(day) {
     const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
 
     const geojson = window.lastRouteGeojsons?.[containerId];
-    const isInTurkey = areAllPointsInTurkey(points);
-    const hasRealRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
-
+const isInTurkey = areAllPointsInTurkey(points);
+const hasRealRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
 
 if (!hasRealRoute) {
   if (isInTurkey) {
-    // TÜRKİYE'DE: HAVERSINE İLE Fallback summary/bar YOK, DOM'a badge/bar BOŞ!
+    // TÜRKİYE'DE: HAVERSINE İLE FALLBACK YAPMA - SADECE TEMİZ HARİTA GÖSTER
+    ensureDayMapContainer(day);
+    initEmptyDayMap(day);
+    
     window.lastRouteSummaries = window.lastRouteSummaries || {};
-    window.lastRouteSummaries[containerId] = {}; // Boş bırak!
+    window.lastRouteSummaries[containerId] = {};
     window.lastRouteGeojsons = window.lastRouteGeojsons || {};
     window.lastRouteGeojsons[containerId] = {
       type: "FeatureCollection",
@@ -7582,26 +7567,33 @@ if (!hasRealRoute) {
         properties: {}
       }]
     };
-    renderLeafletRoute(containerId, window.lastRouteGeojsons[containerId], points, {}, day);
-    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-
-    let expandedMapDiv =
-      document.getElementById(`expanded-map-${day}`) ||
-      document.getElementById(`expanded-route-map-day${day}`);
-    if (expandedMapDiv) {
-      let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-      if (!expandedScaleBar) {
-        expandedScaleBar = document.createElement('div');
-        expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
-        expandedScaleBar.className = 'route-scale-bar expanded';
-        expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+    
+    // SADECE MARKERLARI GÖSTER, ROTA ÇİZME
+    const map = window.leafletMaps?.[containerId];
+    if (map && points.length > 0) {
+      map.eachLayer(l => {
+        if (l instanceof L.Marker || l instanceof L.Polyline) {
+          map.removeLayer(l);
+        }
+      });
+      
+      // Sadece markerları ekle
+      points.forEach((point, index) => {
+        L.marker([point.lat, point.lng]).addTo(map)
+          .bindPopup(point.name || `Point ${index + 1}`);
+      });
+      
+      // Markerlara zoom yap
+      if (points.length > 1) {
+        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+      } else if (points.length === 1) {
+        map.setView([points[0].lat, points[0].lng], 14);
       }
-      expandedScaleBar.style.display = "block";
-      expandedScaleBar.innerHTML = "";
-      renderRouteScaleBar(expandedScaleBar, 0, []); // Mesafe yok, scale bar boş
     }
-    return;
-  } else {
+    
+    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+    return; // FONKSİYONDAN ERKEN ÇIK - HAVERSINE FALLBACK YAPMA
+  } else { 
     // YURTDIŞI/Fly Mode: HAVERSINE ile mesafe ve süre dolsun!
     let totalKm = 0;
     let markerPositions = [];
