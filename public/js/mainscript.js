@@ -189,14 +189,13 @@ function fitExpandedMapToRoute(day) {
     }
   }
 }
-        // Nice tick helpers
-  function niceStep(total, target) {
-    const raw = total / Math.max(1, target);
-    const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
-    const n = raw / p10;
-    const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
-    return f * p10;
-  }
+function niceStep(total, target) {
+  const raw = total / Math.max(1, target);
+  const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / p10;
+  const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  return f * p10;
+}
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
@@ -206,54 +205,40 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const gjKey = day ? `route-map-day${day}` : null;
 
   // Değişkenler bir kez tanımlanır
-  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
-  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
-  const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
+  const hasSummary   = window.lastRouteSummaries?.[gjKey]?.distance;
+  const hasPairwise  = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
+  const hasGeoJson   = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
 
-  // PATCH: Sadece FLY modda haversine ile bar/profil/mesafe
- // Sadece FLY modda haversine bar/profil render edilir.
-// Car/bike/walk modda GERÇEK route (geojson, summary, pairwise) yoksa bar/profil renderlanMAZ!
-if (
-  window.selectedTravelMode !== 'fly' && !(hasGeoJson && hasSummary && hasPairwise)
-) {
-  track.innerHTML = '';
-  return;
-}
-
-// FLY modda route yoksa haversine ile bar/profil render edilir.
-if (
-  window.selectedTravelMode === 'fly' &&
-  (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
-) {
-  spanKm = getTotalKmFromMarkers(markers);
-}
-
-// GERÇEK route veya haversine yoksa bar/profil renderlanmasın!
-if (!spanKm || spanKm < 0.01) {
-  track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-  return;
-}
-
+  // spanKm tanımsızsa veya geçersizse haversineyle doldur (sadece FLY modda, markerlar varsa)
   if (
-    window.selectedTravelMode === 'fly' &&
-    (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
+    typeof spanKm === "undefined" || spanKm === null ||
+    (window.selectedTravelMode === 'fly' && spanKm < 0.01 && Array.isArray(markers) && markers.length > 1 &&
+      !(hasSummary || hasPairwise || hasGeoJson))
   ) {
     spanKm = getTotalKmFromMarkers(markers);
   }
-  
-  if (!spanKm || spanKm < 0.01) {
-    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-    console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
+
+  // Sadece FLY modda haversine bar/profil render edilir
+  // Car/bike/walk modda sadece GERÇEK route varsa bar/profil renderlanır!
+  if (
+    window.selectedTravelMode !== 'fly' &&
+    !(hasGeoJson && hasSummary && hasPairwise)
+  ) {
+    track.innerHTML = '';
     return;
   }
-  if (!track) return;
 
-  // console.log("[DEBUG] createScaleElements called", {
-  //   widthPx, spanKm, startKmDom, markers
-  // });
+  // Route veya haversine mesafesi hala yoksa renderlanmasın!
+  if (!spanKm || spanKm < 0.01) {
+    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+    return;
+  }
+
+  if (!track) return;
 
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
+
 
   // Tick + label dizisi
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
@@ -9015,9 +9000,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
-  // PATCH: Sadece FLY modda haversine ile bar/profil/mesafe
- // YALNIZCA FLY MODDA haversine ile bar/profil render edilir
-// Car/bike/walk modda GERÇEK route (geojson, summary, pairwise) yoksa bar/profil renderlanmaz!
+
 if (
   window.selectedTravelMode !== 'fly' &&
   !(hasGeoJson && hasSummary && hasPairwise)
