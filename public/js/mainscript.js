@@ -9244,10 +9244,17 @@ container._elevKmSpan = totalKm;
       topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
     }
     if (topD) {
-      const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
-      areaPath.setAttribute('d', areaD);
-      areaPath.setAttribute('fill', '#263445');
-    }
+  // topD'nin son X'i width ise fazladan dik çizgi olmasın!
+  let lastX = null;
+  let points = topD.match(/[\d\.]+/g);
+  if (points && points.length >= 2) {
+    lastX = Number(points[points.length - 2]);
+  }
+  let closingX = (lastX !== null && Math.abs(lastX - width) < 0.1) ? '' : `L ${width} ${SVG_H} `;
+  const areaD = `${topD} ${closingX}L 0 ${SVG_H} Z`;
+  areaPath.setAttribute('d', areaD);
+  areaPath.setAttribute('fill', '#263445');
+}
 
     // Eğim renkli çizgiler
     for (let i = 1; i < n; i++) {
@@ -9985,10 +9992,17 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
   }
   if (topD) {
-    const areaD = `${topD} L ${widthNow} ${heightNow} L 0 ${heightNow} Z`;
-    areaPath.setAttribute('d', areaD);
-    areaPath.setAttribute('fill', '#263445');
+  // topD'nin son X'i width ise fazladan dik çizgi olmasın!
+  let lastX = null;
+  let points = topD.match(/[\d\.]+/g);
+  if (points && points.length >= 2) {
+    lastX = Number(points[points.length - 2]);
   }
+  let closingX = (lastX !== null && Math.abs(lastX - width) < 0.1) ? '' : `L ${width} ${SVG_H} `;
+  const areaD = `${topD} ${closingX}L 0 ${SVG_H} Z`;
+  areaPath.setAttribute('d', areaD);
+  areaPath.setAttribute('fill', '#263445');
+}
 
   // Eğim renkli segmentler
   for (let i = 1; i < elevSmooth.length; i++) {
