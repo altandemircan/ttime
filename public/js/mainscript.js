@@ -3781,7 +3781,7 @@ if (hasNextLoc) {
     const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
     const durSec = Math.round((distM / 1000) / 4 * 3600);
     distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
-    durationStr = durSec >= 60 ? Math.round(durSec / 60) + " dk" : Math.round(durSec) + " sn";
+    durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
     prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
   } else {
     // --- TÜRKİYE İÇİ: Icon modları ---
@@ -4956,7 +4956,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             </span>
             <span class="stat stat-duration">
                 <img class="icon" src="/img/way_time.svg" alt="Duration" loading="lazy" decoding="async">
-                <span class="badge">${Math.round(summary.duration / 60)} dk</span>
+                <span class="badge">${Math.round(summary.duration / 60)} min</span>
             </span>`;
     }
     controlRow.appendChild(infoDiv);
@@ -5137,8 +5137,8 @@ function updateRouteStatsUI(day) {
 
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
-    routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " kms";
-routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " dks";
+    routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
+routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
   }
 }
 
@@ -8558,7 +8558,7 @@ function wrapRouteControlsForAllDays() {
 /* Patch: renderLeafletRoute içinde controls eklendikten sonra bar'a sar */
 (function patchRenderLeafletRouteToWrapBar(){
   if (!window.__tt_wrapBarPatched && typeof renderLeafletRoute === 'function') {
-    const original = renderLeafletRoute;
+    const original = renderLeafletRoute;  
     window.renderLeafletRoute = async function(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
       const result = await original.apply(this, arguments);
       try { 
@@ -8573,7 +8573,7 @@ function wrapRouteControlsForAllDays() {
 
 
 (function initRouteSummaryIconizer(){
-  // Basit metin ayrıştırıcı: "Mesafe: 3.58 km  Süre: 13 dk" gibi metinden değeri çeker
+  // Basit metin ayrıştırıcı: "Mesafe: 3.58 km  Süre: 13 min" gibi metinden değeri çeker
   function parseStats(text) {
     if (!text) return { dist: '', dura: '' };
     const t = text.replace(/\s+/g, ' ').trim();
@@ -8671,7 +8671,7 @@ window.TT_SVG_ICONS = {
     if (!text) return { dist: '', dura: '' };
     const t = text.replace(/\s+/g, ' ').trim();
     const distMatch = t.match(/([\d.,]+)\s*(km|m)\b/i);
-    const duraMatch = t.match(/([\d.,]+)\s*(dk|sn|saat|sa)\b/i);
+    const duraMatch = t.match(/([\d.,]+)\s*(min|sec|hour|h)\b/i);
     return {
       dist: distMatch ? `${distMatch[1]} ${distMatch[2]}` : '',
       dura: duraMatch ? `${duraMatch[1]} ${duraMatch[2]}` : ''
@@ -8766,7 +8766,7 @@ window.TT_SVG_ICONS = {
     const distStr = (typeof distanceMeters === 'number')
       ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
     const duraStr = (typeof durationSeconds === 'number')
-      ? Math.round(durationSeconds / 60) + ' dk' : '';
+      ? Math.round(durationSeconds / 60) + ' min' : '';
     const ascStr = (typeof ascentM === 'number')
       ? Math.round(ascentM) + ' m' : '';
     const descStr = (typeof descentM === 'number')
