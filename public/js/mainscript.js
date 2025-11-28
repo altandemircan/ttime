@@ -5137,9 +5137,15 @@ function updateRouteStatsUI(day) {
 
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
-    routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
-routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
-  }
+  routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
+  routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
+  // Ascent/descent badge ekle
+  const elev = window.routeElevStatsByDay?.[day] || {};
+  if (routeSummarySpan.querySelector('.stat-ascent .badge'))
+    routeSummarySpan.querySelector('.stat-ascent .badge').textContent = (typeof elev.ascent === "number" ? elev.ascent + " m" : "— m");
+  if (routeSummarySpan.querySelector('.stat-descent .badge'))
+    routeSummarySpan.querySelector('.stat-descent .badge').textContent = (typeof elev.descent === "number" ? elev.descent + " m" : "— m");
+}
 }
 
  function getTotalKmFromMarkers(markers) {
