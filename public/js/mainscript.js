@@ -8165,7 +8165,13 @@ window.setTravelMode = async function(mode, day) {
   window.travelMode = m;
   localStorage.setItem('tt_travel_mode', m);
 
-  // KRİTİK: Artık async, await!
+  // ÖNCE ROTA CACHE'LERİNİ TEMİZLE
+  const containerId = `route-map-day${d}`;
+  if (window.lastRouteGeojsons) delete window.lastRouteGeojsons[containerId];
+  if (window.lastRouteSummaries) delete window.lastRouteSummaries[containerId];
+  if (window.pairwiseRouteSummaries) delete window.pairwiseRouteSummaries[containerId];
+
+  // SONRA YENİ ROTAYI ÇİZ
   if (typeof renderRouteForDay === 'function') 
    await renderRouteForDay(d);
 
