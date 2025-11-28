@@ -220,9 +220,9 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
   if (!track) return;
 
-  console.log("[DEBUG] createScaleElements called", {
-    widthPx, spanKm, startKmDom, markers
-  });
+  // console.log("[DEBUG] createScaleElements called", {
+  //   widthPx, spanKm, startKmDom, markers
+  // });
 
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
