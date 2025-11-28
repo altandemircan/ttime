@@ -217,10 +217,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const dayMatch = container?.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
 
-  // Değişkenler bir kez tanımlanır
-  const hasSummary   = window.lastRouteSummaries?.[gjKey]?.distance;
-  const hasPairwise  = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
-  const hasGeoJson   = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
+
 
   // spanKm tanımsızsa veya geçersizse haversineyle doldur (sadece FLY modda, markerlar varsa)
   if (
