@@ -3802,11 +3802,11 @@ const travelMode =
   } else {
     // --- TÜRKİYE İÇİ PATCH ---
     const summary = pairwiseSummaries[idx];
-    if (!(summary && typeof summary.distance === "number" && typeof summary.duration === "number")) {
-      // GERÇEK ROTASI YOKSA DOM'A HİÇBİR ŞEY EKLEME!
-      // Haversine ile eklemeyi komple engelliyoruz.
-      return;
-    }
+   if (!(summary && typeof summary.distance === "number" && typeof summary.duration === "number")) {
+  // GERÇEK ROTASI YOKSA DOM'A HİÇBİR ŞEY EKLEME!
+  // PATCH: DOM’a separator eklemeyeceğiz
+  continue; // Doğru: bir sonraki döngüye geç, separator eklenmesin!
+}
     distanceStr = summary.distance >= 1000
       ? (summary.distance / 1000).toFixed(2) + " km"
       : Math.round(summary.distance) + " m";
@@ -4546,18 +4546,14 @@ if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
         const hasSummary = window.lastRouteSummaries?.[`route-map-day${day}`]?.distance > 0;
         const hasPairwise = window.pairwiseRouteSummaries?.[`route-map-day${day}`]?.length > 0;
 
-        if (
-          isFly ||
-          (hasGeoJson && hasSummary && hasPairwise)
-        ) {
-          renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
-          const track = scaleBarDiv.querySelector('.scale-bar-track');
-          const svg = track && track.querySelector('svg.tt-elev-svg');
-          if (track && svg) {
-            const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-            createScaleElements(track, width, totalKm, 0, markerPositions || []);
-          }
-        }
+        if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
+      // Türkiye içindeyken, OSRM route yoksa scaleBarDiv DOM’a bir şey eklenmesin!
+      scaleBarDiv.innerHTML = '';
+      scaleBarDiv.style.display = 'none';
+      return;
+    }
+    // FLY modda veya gerçek OSRM route varsa scale bar eklenir!
+    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
 
         // Eğer koşul sağlanmazsa scaleBarDiv DOM'u BOŞ!
             }
