@@ -7023,7 +7023,7 @@ display: flex
 }
 
 .distance-separator .separator-line {
-  width: 80%;
+  width: 48%;
   height: 1px;
   background: #e2e2e2;
   margin: 0 auto 2px auto;
