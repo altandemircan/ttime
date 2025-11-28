@@ -234,14 +234,18 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   // Sadece FLY modda haversine bar/profil render edilir
   // Car/bike/walk modda sadece GERÇEK route varsa bar/profil renderlanır!
-  if (
-    window.selectedTravelMode !== 'fly' &&
-    !(hasGeoJson && hasSummary && hasPairwise)
-  ) {
-    track.innerHTML = '';
-    return;
-  }
+  const isFly = window.selectedTravelMode === 'fly';
+const isTurkey = markers && markers.length && areAllPointsInTurkey(markers);
+const gjKey = day ? `route-map-day${day}` : null;
+const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
+const hasSummary   = window.lastRouteSummaries?.[gjKey]?.distance;
+const hasPairwise  = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
 
+// PATCH: Türkiye içi ve OSRM route yoksa haversine ile scale bar DOM'a YAZMA!
+if (!isFly && isTurkey && !(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0)) {
+  track.innerHTML = '';
+  return;
+}
   // Route veya haversine mesafesi hala yoksa renderlanmasın!
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
