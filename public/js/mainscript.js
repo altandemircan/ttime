@@ -4396,30 +4396,28 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
-    } else if (pts.length > 1 && !areAllPointsInTurkey(pts)) {
-    // SADECE TÜRKİYE DIŞI İÇİN YAY ÇİZ
-    console.log("[DEBUG] Fly mode - yay çizimi");
-    let allArcPoints = [];
-    for (let i = 0; i < pts.length - 1; i++) {
-        const start = [pts[i].lng, pts[i].lat];
-        const end = [pts[i + 1].lng, pts[i + 1].lat];
-        const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
-        L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
-            color: "#1976d2",
-            weight: 6,
-            opacity: 0.93,
-            dashArray: "6,8"
-        }).addTo(expandedMap);
-        if (i === 0) allArcPoints.push([start[0], start[1]]);
-        allArcPoints = allArcPoints.concat(arcPoints.slice(1));
+    } else if (pts.length > 1) {
+        let allArcPoints = [];
+        for (let i = 0; i < pts.length - 1; i++) {
+            const start = [pts[i].lng, pts[i].lat];
+            const end = [pts[i + 1].lng, pts[i + 1].lat];
+            const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
+            L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
+                color: "#1976d2",
+                weight: 6,
+                opacity: 0.93,
+                dashArray: "6,8"
+            }).addTo(expandedMap);
+            if (i === 0) allArcPoints.push([start[0], start[1]]);
+            allArcPoints = allArcPoints.concat(arcPoints.slice(1));
+        }
+        if (pts.length > 0) {
+            const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
+            allArcPoints.push(lastPoint);
+        }
+        window._curvedArcPointsByDay[day] = allArcPoints;
+        console.log("[DEBUG] Arc points saved:", allArcPoints.length);
     }
-    window._curvedArcPointsByDay[day] = allArcPoints;
-    console.log("[DEBUG] Arc points saved:", allArcPoints.length);
-} else if (pts.length > 1) {
-    // TÜRKİYE İÇİ - HİÇBİR ŞEY ÇİZME
-    console.log("[DEBUG] Türkiye rotası - yay çizilmedi");
-    window._curvedArcPointsByDay[day] = [];
-}
 
     pts.forEach((item, idx) => {
         const markerHtml = `
@@ -9006,11 +9004,25 @@ container.innerHTML = '<div class="spinner"></div>';
     return;
   }
 // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ ENGELLE
+// TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ BEKLE - OSRM ROTASI GELENE KADAR BOŞ GÖSTER
 const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
 if (isInTurkey && (!Array.isArray(coords) || coords.length < 2)) {
-  console.log("[SCALEBAR] Türkiye rotası - scale bar çizilmedi");
-  container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div></div>`;
+  console.log("[SCALEBAR] Türkiye rotası - OSRM bekleniyor, scale bar çizilmedi");
+  container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+    <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
+  </div>`;
   container.style.display = 'block';
+  
+  // 2 saniye sonra tekrar dene
+  setTimeout(() => {
+    if (typeof renderRouteScaleBar === 'function') {
+      const newCoords = window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates;
+      if (Array.isArray(newCoords) && newCoords.length > 1) {
+        console.log("[SCALEBAR] OSRM rotası geldi, scale bar çiziliyor");
+        renderRouteScaleBar(container, totalKm, markers);
+      }
+    }
+  }, 2000);
   return;
 }
   // Eğer geojson veya rota yoksa hata döndür
