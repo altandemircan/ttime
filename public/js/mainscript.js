@@ -3799,14 +3799,23 @@ const travelMode =
       <div class="separator-line"></div>
     `;
     dayList.appendChild(distanceSeparator);
-  } else {
+  }   else {
     // --- TÜRKİYE İÇİ PATCH ---
     const summary = pairwiseSummaries[idx];
-   if (!(summary && typeof summary.distance === "number" && typeof summary.duration === "number")) {
-  // GERÇEK ROTASI YOKSA DOM'A HİÇBİR ŞEY EKLEME!
-  // PATCH: DOM’a separator eklemeyeceğiz
-  continue; // Doğru: bir sonraki döngüye geç, separator eklenmesin!
-}
+    // PATCH: Yalnızca GERÇEK OSRM ROTASI varsa separator ekle
+    if (
+      !summary ||
+      typeof summary.distance !== "number" ||
+      typeof summary.duration !== "number" ||
+      isNaN(summary.distance) ||
+      isNaN(summary.duration) ||
+      summary.distance <= 0 ||
+      summary.duration <= 0
+    ) {
+      // Türkiye içindeyken HAVERSINE DOM separatorı/asla/eklenmeyecek!
+      continue;
+    }
+
     distanceStr = summary.distance >= 1000
       ? (summary.distance / 1000).toFixed(2) + " km"
       : Math.round(summary.distance) + " m";
@@ -3825,7 +3834,7 @@ const travelMode =
       prefix = '';
     }
 
-    // DOM separator ekle (YALNIZCA gerçek summary varsa!)
+    // DOM separator ekle (YALNIZCA gerçek summary varsa)
     const distanceSeparator = document.createElement('div');
     distanceSeparator.className = 'distance-separator';
     distanceSeparator.innerHTML = `
