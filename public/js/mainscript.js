@@ -8986,17 +8986,22 @@ container.innerHTML = '<div class="spinner"></div>';
 
  // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
 // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
+// TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
+// TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
 const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
 if (isInTurkey) {
   // ÖNCEKİ TRAVEL MODE'UN ROTASINI KULLAN, YENİSİ GELENE KADAR BEKLE
   const prevGeojson = window.lastRouteGeojsons?.[gjKey];
   const prevCoords = prevGeojson?.features?.[0]?.geometry?.coordinates;
   
+  let useCoords = coords;
+  let useTotalKm = totalKm;
+  
   if (Array.isArray(prevCoords) && prevCoords.length > 10) {
     // ÖNCEKİ ROTAYI GÖSTER
     console.log("[SCALEBAR] Önceki rotayı gösteriyor, yeni rota bekleniyor");
-    coords = prevCoords;
-    totalKm = window.lastRouteSummaries?.[gjKey]?.distance / 1000 || totalKm;
+    useCoords = prevCoords;
+    useTotalKm = window.lastRouteSummaries?.[gjKey]?.distance / 1000 || totalKm;
   } else if (!Array.isArray(coords) || coords.length < 10) {
     // HİÇ ROTA YOKSA BOŞ GÖSTER
     console.log("[SCALEBAR] Türkiye rotası - OSRM bekleniyor, scale bar çizilmedi");
@@ -9006,6 +9011,10 @@ if (isInTurkey) {
     container.style.display = 'block';
     return;
   }
+  
+  // DEĞİŞKENLERİ GÜNCELLE
+  coords = useCoords;
+  totalKm = useTotalKm;
 }
  // Eğer geojson veya rota yoksa hata döndür
   if (!Array.isArray(coords) || coords.length < 2) {
