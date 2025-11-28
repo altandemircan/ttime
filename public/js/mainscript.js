@@ -5199,7 +5199,7 @@ if (!Array.isArray(arcPts) || arcPts.length === 0) {
   return;
 }
 
-console.log("Arc points length:", arcPts.length);
+// console.log("Arc points length:", arcPts.length);
 console.log("Percent:", percent);
 // Doğru indeksi hesapla
 let idx = Math.round(percent * (arcPts.length - 1));
