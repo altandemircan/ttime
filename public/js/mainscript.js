@@ -234,31 +234,31 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
   if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
 
-  for (let i = 0; i <= majors; i++) {
-    const curKm = Math.min(spanKm, i * stepKm);
-    const leftPct = (curKm / spanKm) * 100;
+  // for (let i = 0; i <= majors; i++) {
+  //   const curKm = Math.min(spanKm, i * stepKm);
+  //   const leftPct = (curKm / spanKm) * 100;
 
-    const tick = document.createElement('div');
-    tick.className = 'scale-bar-tick';
-    tick.style.left = `${leftPct}%`;
-    tick.style.position = 'absolute';
-    tick.style.top = '10px';
-    tick.style.width = '1px';
-    tick.style.height = '16px';
-    tick.style.background = '#cfd8dc';
-    track.appendChild(tick);
+  //   const tick = document.createElement('div');
+  //   tick.className = 'scale-bar-tick';
+  //   tick.style.left = `${leftPct}%`;
+  //   tick.style.position = 'absolute';
+  //   tick.style.top = '10px';
+  //   tick.style.width = '1px';
+  //   tick.style.height = '16px';
+  //   tick.style.background = '#cfd8dc';
+  //   track.appendChild(tick);
 
-    const label = document.createElement('div');
-    label.className = 'scale-bar-label';
-    label.style.left = `${leftPct}%`;
-    label.style.position = 'absolute';
-    label.style.top = '30px';
-    label.style.transform = 'translateX(-50%)';
-    label.style.fontSize = '11px';
-    label.style.color = '#607d8b';
-    label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
-    track.appendChild(label);
-  }
+  //   const label = document.createElement('div');
+  //   label.className = 'scale-bar-label';
+  //   label.style.left = `${leftPct}%`;
+  //   label.style.position = 'absolute';
+  //   label.style.top = '30px';
+  //   label.style.transform = 'translateX(-50%)';
+  //   label.style.fontSize = '11px';
+  //   label.style.color = '#607d8b';
+  //   label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+  //   track.appendChild(label);
+  // }
 
   // Marker badge/render
     if (Array.isArray(markers)) {
@@ -312,53 +312,53 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-// gridLabels.forEach(obj => {
-//   const trackHeight = track.clientHeight || 180;
-//   const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
-//   const correctedY = (obj.y / svgHeight) * trackHeight; // 👈 ORANTALA!
-// const wrapper = document.createElement('div');
-// wrapper.style.cssText = `
-//   position: absolute;
-//   right: 0;
-//   top: ${correctedY - 7.5}px;
-//   display: flex;
-//   flex-direction: column;   /* Dikey */
-//   align-items: flex-start;
-//   pointer-events: none;
-//   text-align: right;
-//   gap: 4px;
-// `;
+  gridLabels.forEach(obj => {
+    const trackHeight = track.clientHeight || 180;
+    const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
+    const correctedY = (obj.y / svgHeight) * trackHeight; // 👈 ORANTALA!
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `
+    position: absolute;
+    right: 0;
+    top: ${correctedY - 7.5}px;
+    display: flex;
+    flex-direction: column;   /* Dikey */
+    align-items: flex-start;
+    pointer-events: none;
+    text-align: right;
+    gap: 4px;
+  `;
 
-// const label = document.createElement('div');
-// label.className = 'elevation-label';
-// label.style.cssText = `
-//   font-size: 10px;
-//   color: #607d8b;
-//   background: none;
-//   line-height: 0.50;
-//     text-align: right;
-//     padding-right: 0px;
-//     white-space: nowrap;
-//     margin-bottom: -6px;
-// `;
+  const label = document.createElement('div');
+  label.className = 'elevation-label';
+  label.style.cssText = `
+    font-size: 10px;
+    color: #607d8b;
+    background: none;
+    line-height: 0.50;
+      text-align: right;
+      padding-right: 0px;
+      white-space: nowrap;
+      margin-bottom: -6px;
+  `;
 
-// label.textContent = obj.value;
+  label.textContent = obj.value;
 
-// const tick = document.createElement('div');
-// tick.style.cssText = `
-//       width: 26px;
-//     height: 8px;
-//   border-bottom: 1px dashed #cfd8dc;
-//   opacity: 0.7;
-//   display: block;
-//   margin-left: 0px;
-//   margin-top: 0px;
-// `;
+  const tick = document.createElement('div');
+  tick.style.cssText = `
+        width: 26px;
+      height: 8px;
+    border-bottom: 1px dashed #cfd8dc;
+    opacity: 0.7;
+    display: block;
+    margin-left: 0px;
+    margin-top: 0px;
+  `;
 
-// wrapper.appendChild(label);
-// wrapper.appendChild(tick);
-// elevationLabels.appendChild(wrapper);
-// });
+  wrapper.appendChild(label);
+  wrapper.appendChild(tick);
+  elevationLabels.appendChild(wrapper);
+  });
 
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
