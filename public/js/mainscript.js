@@ -4529,14 +4529,28 @@ function updateExpandedMap(expandedMap, day) {
         scaleBarDiv.style.display = "block";
         scaleBarDiv.innerHTML = "";
 
-        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
-        const track = scaleBarDiv.querySelector('.scale-bar-track');
-        const svg = track && track.querySelector('svg.tt-elev-svg');
-        if (track && svg) {
+        // PATCH: Yalnızca FLY mode veya gerçek route varsa scale bar/profil render et!
+        const isFly = window.selectedTravelMode === 'fly';
+        const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`];
+        const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
+        const hasSummary = window.lastRouteSummaries?.[`route-map-day${day}`]?.distance > 0;
+        const hasPairwise = window.pairwiseRouteSummaries?.[`route-map-day${day}`]?.length > 0;
+
+        if (
+          isFly ||
+          (hasGeoJson && hasSummary && hasPairwise)
+        ) {
+          renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
+          const track = scaleBarDiv.querySelector('.scale-bar-track');
+          const svg = track && track.querySelector('svg.tt-elev-svg');
+          if (track && svg) {
             const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
             createScaleElements(track, width, totalKm, 0, markerPositions || []);
+          }
         }
-    }
+
+        // Eğer koşul sağlanmazsa scaleBarDiv DOM'u BOŞ!
+            }
 
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
@@ -5740,13 +5754,26 @@ if (typeof renderRouteScaleBar === 'function') {
     scaleBarDiv.style.display = "block";
     scaleBarDiv.innerHTML = ""; // Temizle
 
-    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-    const track = scaleBarDiv.querySelector('.scale-bar-track');
-    const svg = track && track.querySelector('svg.tt-elev-svg');
-    if (track && svg) {
+    // PATCH: Sadece fly modda veya gerçek route varsa scale barı render et!
+    const isFly = window.selectedTravelMode === 'fly';
+    const geojson = window.lastRouteGeojsons?.[containerId];
+    const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
+    const hasSummary = window.lastRouteSummaries?.[containerId]?.distance > 0;
+    const hasPairwise = window.pairwiseRouteSummaries?.[containerId]?.length > 0;
+    
+    if (
+      isFly ||
+      (hasGeoJson && hasSummary && hasPairwise)
+    ) {
+      renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+      const track = scaleBarDiv.querySelector('.scale-bar-track');
+      const svg = track && track.querySelector('svg.tt-elev-svg');
+      if (track && svg) {
         const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
         createScaleElements(track, width, totalKm, 0, markerPositions);
+      }
     }
+    // PATCH SONU: Diğer modda/haversine ile scale bar/profil DOM'u asla renderlanmaz!
 }
 
 
@@ -7166,46 +7193,59 @@ function ensureExpandedScaleBar(day, raw) {
     expandedScaleBar.className = 'route-scale-bar expanded';
     expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
   }
-  if (typeof renderRouteScaleBar === 'function') {
-    let samples = raw;
-    if (samples.length > 600) {
-      const step = Math.ceil(samples.length / 600);
-      samples = samples.filter((_,i)=>i%step===0);
-    }
-    let dist = 0, dists = [0];
-    for (let i=1; i<samples.length; i++) {
-      dist += haversine(
-        samples[i-1].lat, samples[i-1].lng,
-        samples[i].lat, samples[i].lng
-      );
-      dists.push(dist);
-    }
-    expandedScaleBar.innerHTML = "";
-    // GPS import track varsa, tüm noktaları marker gibi ver
-const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-if (imported) {
-  renderRouteScaleBar(
-    expandedScaleBar,
-    dist/1000,
-    samples.map((p, i) => ({
-  name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
-  distance: dists[i]/1000,
-  snapped: true
-}))
-  );
-} else {
-  // Eski haliyle devam et
-  renderRouteScaleBar(
-    expandedScaleBar,
-    dist/1000,
-    samples.map((p,i)=>({
-      name: '',
-      distance: dists[i]/1000,
-      snapped: true
-    }))
-  );
-}
+if (typeof renderRouteScaleBar === 'function') {
+  const isFly = window.selectedTravelMode === 'fly';
+  const containerId = `route-map-day${day}`;
+  const geojson = window.lastRouteGeojsons?.[containerId];
+  const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
+  const hasSummary = window.lastRouteSummaries?.[containerId]?.distance > 0;
+  const hasPairwise = window.pairwiseRouteSummaries?.[containerId]?.length > 0;
+
+  let samples = raw;
+  if (samples.length > 600) {
+    const step = Math.ceil(samples.length / 600);
+    samples = samples.filter((_,i)=>i%step===0);
   }
+  let dist = 0, dists = [0];
+  for (let i=1; i<samples.length; i++) {
+    dist += haversine(
+      samples[i-1].lat, samples[i-1].lng,
+      samples[i].lat, samples[i].lng
+    );
+    dists.push(dist);
+  }
+  expandedScaleBar.innerHTML = "";
+
+  // PATCH: Sadece fly modda veya gerçek route varsa scale bar/profil render edilir!
+  if (
+    isFly ||
+    (hasGeoJson && hasSummary && hasPairwise)
+  ) {
+    const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+    if (imported) {
+      renderRouteScaleBar(
+        expandedScaleBar,
+        dist/1000,
+        samples.map((p, i) => ({
+          name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+          distance: dists[i]/1000,
+          snapped: true
+        }))
+      );
+    } else {
+      renderRouteScaleBar(
+        expandedScaleBar,
+        dist/1000,
+        samples.map((p,i)=>({
+          name: '',
+          distance: dists[i]/1000,
+          snapped: true
+        }))
+      );
+    }
+  }
+  // PATCH: Diğer modda haversine ile scale bar/profil DOM'u asla renderlanmaz!
+}
 }
 
 async function renderRouteForDay(day) {
@@ -7625,6 +7665,7 @@ if (
     window.lastRouteSummaries?.[containerId]?.distance > 0
   )
 ) {
+  
   renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions); // veya 0, []
 }}    }
     return;
@@ -9062,7 +9103,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     container.style.display = 'block';
     return;
   }
-  
+
 const mid = coords[Math.floor(coords.length / 2)];
 
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
