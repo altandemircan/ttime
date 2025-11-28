@@ -9044,7 +9044,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 function renderRouteScaleBar(container, totalKm, markers) {
 
-  const dayMatch = container.id && container.id.match(/day(\d+)/);
+   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? window.lastRouteGeojsons?.[gjKey] : null;
@@ -9054,13 +9054,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const hasSummary  = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
 
-  // PATCH: Sadece FLY modda haversine ile, diğerlerinde gerçek route varsa bar görünür!
-  if (
-    !isFly &&
-    !(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0)
-  ) {
-    container.innerHTML = '';
-    return;
+  // YENİ PATCH: Sadece FLY modda haversine ile bar/profile render edilir!
+  // Türkiye içi (car/bike/walk) modda GERÇEK route yoksa bar/profil DOM'a asla eklenmesin:
+  if (!isFly) {
+    if (!(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0)) {
+      container.innerHTML = '';
+      return;
+    }
   }
 
   let spanKm = typeof totalKm === "number" ? totalKm : 0;
