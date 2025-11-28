@@ -211,11 +211,19 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
 
   if (
-  window.selectedTravelMode === 'fly' &&
-  (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
-) {
-  spanKm = getTotalKmFromMarkers(markers);
-}
+    window.selectedTravelMode !== 'fly' &&
+    (!hasGeoJson || !hasSummary || !hasPairwise)
+  ) {
+    // Türkiye'de car/bike/walk modda gerçek rota yoksa bar/profil/render YOK!
+    track.innerHTML = '';
+    return;
+  }
+  if (
+    window.selectedTravelMode === 'fly' &&
+    (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
+  ) {
+    spanKm = getTotalKmFromMarkers(markers);
+  }
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
     console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
