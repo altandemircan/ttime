@@ -9129,8 +9129,20 @@ verticalLine.style.left = (width / 2) + 'px';
 track.appendChild(verticalLine);
 
 const tooltip = document.createElement('div');
-tooltip.className = 'tt-elev-tooltip';
-tooltip.style.left = '0px';
+tooltip.className = 'scale-bar-tooltip';
+
+// VARSAYILAN TOOLTIP İÇERİĞİ EKLE
+if (samples && samples.length) {
+    // Örneğin ilk sample veya ortadaki sample kullan
+    const idx = Math.floor(samples.length / 2);
+    const elev = elevSmooth[idx] || '';
+    const km = samples[idx]?.distM ? (samples[idx].distM / 1000).toFixed(2) : '';
+    tooltip.innerHTML = `<b>${elev} m</b> &mdash; ${km} km`;
+} else {
+    // Boş ise gizle veya "Veri yok" göster
+    tooltip.innerHTML = `<span style="color:#aaa">Veri yok</span>`;
+}
+
 track.appendChild(tooltip);
 
 // Mouse ile çizgiyi hareket ettir (her zaman görünür!)
