@@ -5146,35 +5146,41 @@ function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   let summary = window.lastRouteSummaries?.[key] || null;
 
-  // YENI PATCH: FLY MODE'da veya summary eksikse/hatalıysa fallback ile doldur
-  // (bu satır: profile veya travel mode mantığından bağımsız)
+  // PATCH: Sadece fly modda haversine fallback ver, diğer modlarda badge/profil DOM’u sil
   if (!summary ||
       typeof summary.distance !== "number" ||
       typeof summary.duration !== "number" ||
       isNaN(summary.distance) ||
       isNaN(summary.duration) ||
       !areAllPointsInTurkey(getDayPoints(day))
-     ) {
-    // Sadece haversine ile km/dk ver, profil değişmiyor!
-    const points = getDayPoints(day);
-    summary = getFallbackRouteSummary(points);
-    window.lastRouteSummaries[key] = summary;
+   ) {
+    if (window.selectedTravelMode === 'fly') {
+      const points = getDayPoints(day);
+      summary = getFallbackRouteSummary(points);
+      window.lastRouteSummaries[key] = summary;
+    } else {
+      summary = null;
+      window.lastRouteSummaries[key] = null;
+    }
   }
 
-  const distanceKm = (summary.distance / 1000).toFixed(2);
-  const durationMin = Math.round(summary.duration / 60);
+  const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "";
+  const durationMin = summary ? Math.round(summary.duration / 60) : "";
 
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
-  routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
-  routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
-  // Ascent/descent badge ekle
-  const elev = window.routeElevStatsByDay?.[day] || {};
-  if (routeSummarySpan.querySelector('.stat-ascent .badge'))
-    routeSummarySpan.querySelector('.stat-ascent .badge').textContent = (typeof elev.ascent === "number" ? elev.ascent + " m" : "— m");
-  if (routeSummarySpan.querySelector('.stat-descent .badge'))
-    routeSummarySpan.querySelector('.stat-descent .badge').textContent = (typeof elev.descent === "number" ? elev.descent + " m" : "— m");
-}
+    if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+      routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
+      routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
+      const elev = window.routeElevStatsByDay?.[day] || {};
+      if (routeSummarySpan.querySelector('.stat-ascent .badge'))
+        routeSummarySpan.querySelector('.stat-ascent .badge').textContent = (typeof elev.ascent === "number" ? elev.ascent + " m" : "— m");
+      if (routeSummarySpan.querySelector('.stat-descent .badge'))
+        routeSummarySpan.querySelector('.stat-descent .badge').textContent = (typeof elev.descent === "number" ? elev.descent + " m" : "— m");
+    } else {
+      routeSummarySpan.innerHTML = "";
+    }
+  }
 }
 
  function getTotalKmFromMarkers(markers) {
