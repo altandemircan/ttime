@@ -8993,19 +8993,18 @@ if (spinner) spinner.remove();
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-    if (
+   const hasGeoJson = coords && coords.length >= 2;
+  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
+  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
+  const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
+
+  if (
     window.selectedTravelMode !== 'fly' &&
     (!hasGeoJson || !hasSummary || !hasPairwise)
   ) {
     if (container) container.innerHTML = '';
     return;
   }
-
-// Route ile ilgili verilerin varlığını kontrol et (TEK SEFER!)
-  const hasGeoJson = coords && coords.length >= 2;
-  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
-  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
-  const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
   console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
