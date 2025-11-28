@@ -8984,8 +8984,9 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-const spinner = container.querySelector('.spinner');
-if (spinner) spinner.remove();
+  const spinner = container.querySelector('.spinner');
+  if (spinner) spinner.remove();
+
   // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
@@ -8993,15 +8994,14 @@ if (spinner) spinner.remove();
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-   const hasGeoJson = coords && coords.length >= 2;
+  const isFlyMode = window.selectedTravelMode === 'fly';
+  const hasGeoJson = coords && coords.length >= 2;
   const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
-  if (
-    window.selectedTravelMode !== 'fly' &&
-    (!hasGeoJson || !hasSummary || !hasPairwise)
-  ) {
+  // --- EN KRİTİK PATCH ---
+  if (!isFlyMode && !hasValidRoute) {
     if (container) container.innerHTML = '';
     return;
   }
@@ -9015,7 +9015,7 @@ if (spinner) spinner.remove();
 
   // Sadece expanded bar’da çalış; küçük bar’ı kapat
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-container.innerHTML = '<div class="spinner"></div>';
+    container.innerHTML = '<div class="spinner"></div>';
     return;
   }
 
