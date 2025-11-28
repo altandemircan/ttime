@@ -3838,9 +3838,6 @@ if (hasNextLoc) {
       `;
       dayList.appendChild(distanceSeparator);
     }
-    // !!! summary yoksa hiçbir separator/badge DOM'a eklenmez !!!
-  }
-}
 }
 
 
