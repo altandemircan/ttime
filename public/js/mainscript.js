@@ -9072,12 +9072,28 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   // YENİ PATCH: Sadece FLY modda haversine ile bar/profile render edilir!
   // Türkiye içi (car/bike/walk) modda GERÇEK route yoksa bar/profil DOM'a asla eklenmesin:
+    // PATCH: Sadece FLY mod haversine ile bar ekler;
+  // Türkiye içi car/bike/walk modlarda OSRM gelmeden bar DOM’a eklenmez!
   if (!isFly) {
-    if (!(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0)) {
+    // Sadece OSRM route (gerçek) varsa scale bar DOM’a ekle, yoksa DOM’u boşalt!
+    if (
+      !(
+        hasGeoJson &&
+        hasSummary &&
+        hasPairwise &&
+        Number(hasSummary) > 0 &&
+        markers &&
+        Array.isArray(markers) &&
+        markers.length > 1
+      )
+    ) {
       container.innerHTML = '';
+      container.style.display = 'none'; // PATCH: DOM görünmez olsun
       return;
     }
+    container.style.display = 'block'; // PATCH: gerçek route geldiyse tekrar göster
   }
+  // FLY modda haversine serbest
 
   let spanKm = typeof totalKm === "number" ? totalKm : 0;
   if (isFly) {
