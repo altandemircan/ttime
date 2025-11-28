@@ -8986,6 +8986,8 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
+    let spanKm = typeof totalKm === "number" ? totalKm : 0;
+
   const spinner = container.querySelector('.spinner');
   if (spinner) spinner.remove();
 
