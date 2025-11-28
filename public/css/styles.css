@@ -4577,8 +4577,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
 
 .expanded-map-panel {
-right: 20px;
-    left: 20px;
+right: 40px;
+    left: 40px;
     width: calc(100% - 475px);
     z-index: 123456;
     display: flex;
