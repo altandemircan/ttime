@@ -8993,7 +8993,15 @@ if (spinner) spinner.remove();
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-  // Route ile ilgili verilerin varlığını kontrol et (TEK SEFER!)
+    if (
+    window.selectedTravelMode !== 'fly' &&
+    (!hasGeoJson || !hasSummary || !hasPairwise)
+  ) {
+    if (container) container.innerHTML = '';
+    return;
+  }
+
+// Route ile ilgili verilerin varlığını kontrol et (TEK SEFER!)
   const hasGeoJson = coords && coords.length >= 2;
   const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
