@@ -9129,34 +9129,35 @@ verticalLine.style.left = (width / 2) + 'px';
 track.appendChild(verticalLine);
 
 const tooltip = document.createElement('div');
-tooltip.className = 'scale-bar-tooltip';
-
-// VARSAYILAN TOOLTIP İÇERİĞİ EKLE
-if (samples && samples.length) {
-    // Örneğin ilk sample veya ortadaki sample kullan
-    const idx = Math.floor(samples.length / 2);
-    const elev = elevSmooth[idx] || '';
-    const km = samples[idx]?.distM ? (samples[idx].distM / 1000).toFixed(2) : '';
-    tooltip.innerHTML = `<b>${elev} m</b> &mdash; ${km} km`;
-} else {
-    // Boş ise gizle veya "Veri yok" göster
-    tooltip.innerHTML = `<span style="color:#aaa">Veri yok</span>`;
-}
-
+tooltip.className = 'tt-elev-tooltip';
+tooltip.style.left = '0px';
+// EKLE: Başta görünmesin!
+tooltip.style.display = 'none';
 track.appendChild(tooltip);
 
-// Mouse ile çizgiyi hareket ettir (her zaman görünür!)
+// Mouse ile çizgiyi hareket ettirirken tooltip de göster!
 track.addEventListener('mousemove', function(e) {
   const rect = track.getBoundingClientRect();
   const x = e.clientX - rect.left;
   verticalLine.style.left = `${x}px`;
+  tooltip.style.display = 'block';  // Mouse hareketiyle aç!
+  // Tooltip içeriğini burada güncelle
 });
 track.addEventListener('touchmove', function(e) {
   const rect = track.getBoundingClientRect();
   const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
   verticalLine.style.left = `${x}px`;
+  tooltip.style.display = 'block';  // Dokunarak aç!
+  // Tooltip içeriğini burada güncelle
 });
-// Mouseleave, touchend gibi eventlerde ÇİZGİYİ GİZLEME! Kodun başka yerinde verticalLine.style.display = 'none' geçiyorsa SİL.
+
+// Mouseleave ile kapanmalı!
+track.addEventListener('mouseleave', function() {
+  tooltip.style.display = 'none';
+});
+track.addEventListener('touchend', function() {
+  tooltip.style.display = 'none';
+});
 
 // Mesafe (Haversine)
 function hv(lat1, lon1, lat2, lon2) {
