@@ -3798,7 +3798,10 @@ const travelMode =
       </div>
       <div class="separator-line"></div>
     `;
-    dayList.appendChild(distanceSeparator);
+    if (isInTurkey && (!summary || summary.distance <= 0 || summary.duration <= 0 || isNaN(summary.distance) || isNaN(summary.duration))) {
+  continue;
+}
+dayList.appendChild(distanceSeparator);
   }   else {
     // --- TÜRKİYE İÇİ PATCH ---
     const summary = pairwiseSummaries[idx];
@@ -3844,7 +3847,10 @@ const travelMode =
       </div>
       <div class="separator-line"></div>
     `;
-    dayList.appendChild(distanceSeparator);
+    if (isInTurkey && (!summary || summary.distance <= 0 || summary.duration <= 0 || isNaN(summary.distance) || isNaN(summary.duration))) {
+  continue;
+}
+dayList.appendChild(distanceSeparator);
   }
 }
 }
