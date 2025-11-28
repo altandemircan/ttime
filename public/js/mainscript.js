@@ -4490,19 +4490,30 @@ function updateExpandedMap(expandedMap, day) {
 
     // Route summary yoksa haversine ile üret!
     const sumKey = `route-map-day${day}`;
-    let sum = window.lastRouteSummaries?.[sumKey];
-    if (!sum && pts.length > 1) {
-        let totalKmSum = 0;
-        for (let i = 0; i < pts.length - 1; i++) {
-            totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
-        }
-        sum = {
-            distance: Math.round(totalKmSum * 1000),
-            duration: Math.round(totalKmSum/4*60),
-            ascent: 0,
-            descent: 0
-        };
+    const isFly = window.selectedTravelMode === 'fly';
+const geojson = window.lastRouteGeojsons?.[sumKey];
+const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
+const hasSummary = window.lastRouteSummaries?.[sumKey]?.distance > 0;
+const hasPairwise = window.pairwiseRouteSummaries?.[sumKey]?.length > 0;
+
+let sum = window.lastRouteSummaries?.[sumKey];
+// YENİ PATCH: Türkiye içindeyken ve gerçek route (summary/geojson) YOKSA haversine summary/bar/badge HIÇ hesaplanmasın:
+if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
+    sum = null;
+    window.lastRouteSummaries[sumKey] = null;
+} else if (!sum && pts.length > 1) {
+    // Yalnızca fly modda haversine ile summary/bar/badge hesapla!
+    let totalKmSum = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+        totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
     }
+    sum = {
+        distance: Math.round(totalKmSum * 1000),
+        duration: Math.round(totalKmSum/4*60),
+        ascent: 0,
+        descent: 0
+    };
+}
     if (sum && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
