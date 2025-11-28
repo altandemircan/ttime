@@ -8986,47 +8986,40 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  // HER ZAMAN spanKm tanımlı!
-  let spanKm = typeof totalKm === "number" ? totalKm : 0;
-
-  const spinner = container.querySelector('.spinner');
-  if (spinner) spinner.remove();
-
+  // PATCH: Sadece fly modda marker/haversine bar olur,
+  // Car/Bike/Walk modda GERÇEK route yoksa bar/profil DOM'u gösterme!
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? window.lastRouteGeojsons?.[gjKey] : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
+  let spanKm = typeof totalKm === "number" ? totalKm : 0;
+  const isFly = window.selectedTravelMode === 'fly';
   const hasGeoJson  = coords && coords.length >= 2;
   const hasSummary  = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
-  const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
-  // Sadece FLY modda haversine ile bar/profil render edilir. 
-  // Car/bike/walk modda sadece GERÇEK route varsa bar/profil oluşmalı!
-  // Sadece FLY modda haversine bar/profil
-if (window.selectedTravelMode === 'fly') {
-  if (
-    (!spanKm || spanKm < 0.01) &&
-    Array.isArray(markers) && markers.length > 1 &&
-    !(hasSummary || hasPairwise || hasGeoJson)
-  ) {
-    spanKm = getTotalKmFromMarkers(markers);
-  }
-  if (!spanKm || spanKm < 0.01) {
+  // EN BAŞTA GERÇEK KONTROL:
+  if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
     container.innerHTML = '';
     return;
   }
-} else {
-  // CAR/BIKE/WALK modda bar/profil YALNIZCA gerçek route varsa!
-  if (
-    !hasGeoJson || !hasSummary || !hasPairwise
-  ) {
-    container.innerHTML = '';
-    return;
+
+  // Fly mod için haversine fallback
+  if (isFly) {
+    if (
+      (!spanKm || spanKm < 0.01) &&
+      Array.isArray(markers) && markers.length > 1 &&
+      !(hasSummary || hasPairwise || hasGeoJson)
+    ) {
+      spanKm = getTotalKmFromMarkers(markers);
+    }
+    if (!spanKm || spanKm < 0.01) {
+      container.innerHTML = '';
+      return;
+    }
   }
-}
 
   console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "spanKm=", spanKm, "markers=", markers);
 
@@ -9047,7 +9040,6 @@ if (window.selectedTravelMode === 'fly') {
     container.style.display = 'block';
     return;
   }
-
   
 const mid = coords[Math.floor(coords.length / 2)];
 
