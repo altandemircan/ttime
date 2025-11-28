@@ -8986,27 +8986,24 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  // PATCH: Sadece fly modda marker/haversine bar olur,
-  // Car/Bike/Walk modda GERÇEK route yoksa bar/profil DOM'u gösterme!
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? window.lastRouteGeojsons?.[gjKey] : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
-
-  let spanKm = typeof totalKm === "number" ? totalKm : 0;
   const isFly = window.selectedTravelMode === 'fly';
   const hasGeoJson  = coords && coords.length >= 2;
   const hasSummary  = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
 
-  // EN BAŞTA GERÇEK KONTROL:
+  // --- PATCH ---
+  // Sadece Fly modda haversine bar/profil çıkacak. Diğer modda gerçek route olmadan bar/profil çıkmaz!
   if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
     container.innerHTML = '';
     return;
   }
 
-  // Fly mod için haversine fallback
+  let spanKm = typeof totalKm === "number" ? totalKm : 0;
   if (isFly) {
     if (
       (!spanKm || spanKm < 0.01) &&
