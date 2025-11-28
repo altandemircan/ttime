@@ -9016,13 +9016,29 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
   // PATCH: Sadece FLY modda haversine ile bar/profil/mesafe
-  if (
-    window.selectedTravelMode !== 'fly' &&
-    !hasValidRoute
-  ) {
-    container.innerHTML = '';
-    return;
-  }
+ // YALNIZCA FLY MODDA haversine ile bar/profil render edilir
+// Car/bike/walk modda GERÇEK route (geojson, summary, pairwise) yoksa bar/profil renderlanmaz!
+if (
+  window.selectedTravelMode !== 'fly' &&
+  !(hasGeoJson && hasSummary && hasPairwise)
+) {
+  track.innerHTML = '';
+  return;
+}
+
+// FLY modda route yoksa haversine ile bar/profil render edilir.
+if (
+  window.selectedTravelMode === 'fly' &&
+  (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
+) {
+  spanKm = getTotalKmFromMarkers(markers);
+}
+
+// GERÇEK route veya haversine yoksa bar/profil renderlanmasın!
+if (!spanKm || spanKm < 0.01) {
+  track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+  return;
+}
 
   console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
