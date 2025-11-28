@@ -216,7 +216,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const container = track?.parentElement;
   const dayMatch = container?.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-  const gjKey = day ? `route-map-day${day}` : null;
 
   // Değişkenler bir kez tanımlanır
   const hasSummary   = window.lastRouteSummaries?.[gjKey]?.distance;
