@@ -7652,6 +7652,11 @@ if (!hasRealRoute) {
         properties: {}
       }]
     };
+    // TÜRKİYE İÇİ ROTALARDA HAVERSINE FALLBACK ENGELLE
+if (isInTurkey) {
+    console.log("[ROUTE] Türkiye rotası - haversine fallback engellendi");
+    return; // Haversine çizim yapma, fonksiyondan çık
+}
     renderLeafletRoute(containerId, window.lastRouteGeojsons[containerId], points, summary, day);
     if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
