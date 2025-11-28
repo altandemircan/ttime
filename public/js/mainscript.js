@@ -234,31 +234,35 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
   if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
 
-  // for (let i = 0; i <= majors; i++) {
-  //   const curKm = Math.min(spanKm, i * stepKm);
-  //   const leftPct = (curKm / spanKm) * 100;
+ for (let i = 0; i <= majors; i++) {
+  const curKm = Math.min(spanKm, i * stepKm);
+  const leftPct = (curKm / spanKm) * 100;
 
-  //   const tick = document.createElement('div');
-  //   tick.className = 'scale-bar-tick';
-  //   tick.style.left = `${leftPct}%`;
-  //   tick.style.position = 'absolute';
-  //   tick.style.top = '10px';
-  //   tick.style.width = '1px';
-  //   tick.style.height = '16px';
-  //   tick.style.background = '#cfd8dc';
-  //   track.appendChild(tick);
+  // TICK çizgisi (isteğe bağlı; dilersen barın çizgisini de gizleyebilirsin)
+  const tick = document.createElement('div');
+  tick.className = 'scale-bar-tick';
+  tick.style.left = `${leftPct}%`;
+  tick.style.position = 'absolute';
+  tick.style.top = '10px';
+  tick.style.width = '1px';
+  tick.style.height = '16px';
+  tick.style.background = '#cfd8dc';
+  track.appendChild(tick);
 
-  //   const label = document.createElement('div');
-  //   label.className = 'scale-bar-label';
-  //   label.style.left = `${leftPct}%`;
-  //   label.style.position = 'absolute';
-  //   label.style.top = '30px';
-  //   label.style.transform = 'translateX(-50%)';
-  //   label.style.fontSize = '11px';
-  //   label.style.color = '#607d8b';
-  //   label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
-  //   track.appendChild(label);
-  // }
+  /*
+  // ==> SAĞDAKİ LABEL KAPALI!
+  const label = document.createElement('div');
+  label.className = 'scale-bar-label';
+  label.style.left = `${leftPct}%`;
+  label.style.position = 'absolute';
+  label.style.top = '30px';
+  label.style.transform = 'translateX(-50%)';
+  label.style.fontSize = '11px';
+  label.style.color = '#607d8b';
+  label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+  track.appendChild(label);
+  */
+}
 
   // Marker badge/render
     if (Array.isArray(markers)) {
