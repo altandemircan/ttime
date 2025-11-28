@@ -5771,19 +5771,8 @@ if (typeof renderRouteScaleBar === 'function') {
       isFly ||
       (hasGeoJson && hasSummary && hasPairwise)
     ) {
-// PATCH
-const isFly = window.selectedTravelMode === 'fly';
-const geojson = window.lastRouteGeojsons?.[containerId];
-const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
-const hasSummary = window.lastRouteSummaries?.[containerId]?.distance > 0;
-const hasPairwise = window.pairwiseRouteSummaries?.[containerId]?.length > 0;
-
-if (
-  isFly ||
-  (hasGeoJson && hasSummary && hasPairwise)
-) {
-  renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-}      const track = scaleBarDiv.querySelector('.scale-bar-track');
+      renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+      const track = scaleBarDiv.querySelector('.scale-bar-track');
       const svg = track && track.querySelector('svg.tt-elev-svg');
       if (track && svg) {
         const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
@@ -7080,19 +7069,8 @@ console.log('markerPositions:', markerPositions);
 if (scaleBarDiv && totalKm > 0 && markerPositions.length > 0) {
   try { delete scaleBarDiv.dataset.elevLoadedKey; } catch(_) {}
   window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
-// PATCH
-const isFly = window.selectedTravelMode === 'fly';
-const geojson = window.lastRouteGeojsons?.[containerId];
-const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
-const hasSummary = window.lastRouteSummaries?.[containerId]?.distance > 0;
-const hasPairwise = window.pairwiseRouteSummaries?.[containerId]?.length > 0;
-
-if (
-  isFly ||
-  (hasGeoJson && hasSummary && hasPairwise)
-) {
   renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-}  // Scale bar render edildikten hemen sonra sol baremi tekrar ekle!
+  // Scale bar render edildikten hemen sonra sol baremi tekrar ekle!
 const track = scaleBarDiv.querySelector('.scale-bar-track');
 const svg = track && track.querySelector('svg.tt-elev-svg');
 if (track && svg) {
@@ -9086,14 +9064,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const hasSummary  = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
 
-  // YALNIZCA FLY modda haversine ile scale bar render edilir,
-  // WALK/CAR/BIKE modunda YALNIZCA GERÇEK route varsa bar görünür!
-  if (!isFly) {
-    // WALK/CAR/BIKE için ALTTAKİ KONTROL:
-    if (!(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0)) {
-      container.innerHTML = '';
-      return;
-    }
+  // PATCH: Sadece FLY modda haversine ile, diğerlerinde gerçek route varsa bar görünür!
+  if (
+    !isFly &&
+    !(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0)
+  ) {
+    container.innerHTML = '';
+    return;
   }
 
   let spanKm = typeof totalKm === "number" ? totalKm : 0;
