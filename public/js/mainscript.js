@@ -3780,78 +3780,71 @@ const travelMode =
   const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
 
   if (!isInTurkey) {
-    // --- TÜRKİYE DIŞI: Havresine ile Auto generated separator
-    const ptA = item.location;
-    const ptB = nextItem.location;
-    const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
-    const durSec = Math.round((distM / 1000) / 4 * 3600);
-    distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
-    durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
-    prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
-    // DOM separator ekle
-    const distanceSeparator = document.createElement('div');
-    distanceSeparator.className = 'distance-separator';
-    distanceSeparator.innerHTML = `
-      <div class="separator-line"></div>
-      <div class="distance-label">
-        ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
-      </div>
-      <div class="separator-line"></div>
-    `;
-    if (isInTurkey && (!summary || summary.distance <= 0 || summary.duration <= 0 || isNaN(summary.distance) || isNaN(summary.duration))) {
-  continue;
-}
-dayList.appendChild(distanceSeparator);
-  }   else {
-    // --- TÜRKİYE İÇİ PATCH ---
-    const summary = pairwiseSummaries[idx];
-    // PATCH: Yalnızca GERÇEK OSRM ROTASI varsa separator ekle
-    if (
-  !summary ||
-  typeof summary.distance !== "number" ||
-  typeof summary.duration !== "number" ||
-  isNaN(summary.distance) ||
-  isNaN(summary.duration) ||
-  summary.distance <= 0 ||
-  summary.duration <= 0
-) {
-  console.warn("[% PATCH ] Türkiye içi: Fallback summary/bar DOM’a yazılmayacak! summary=", summary);
-  continue;
-}
+  // --- TÜRKİYE DIŞI: Havresine ile Auto generated separator
+  const ptA = item.location;
+  const ptB = nextItem.location;
+  const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
+  const durSec = Math.round((distM / 1000) / 4 * 3600);
+  distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
+  durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
+  prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  // PATCH: TÜRKİYE İÇİNDEYKEN HAVERSINE ile DOM’a eklemeyeceksin!
+  if (isInTurkey) continue;
 
-    distanceStr = summary.distance >= 1000
-      ? (summary.distance / 1000).toFixed(2) + " km"
-      : Math.round(summary.distance) + " m";
-    durationStr = summary.duration >= 60
-      ? Math.round(summary.duration / 60) + " min"
-      : Math.round(summary.duration) + " sec";
-
-    // --- İKONLAR ---
-    if (travelMode === "driving") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
-    } else if (travelMode === "bike" || travelMode === "cycling") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
-    } else if (travelMode === "walk" || travelMode === "walking") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
-    } else {
-      prefix = '';
-    }
-
-    // DOM separator ekle (YALNIZCA gerçek summary varsa)
-    const distanceSeparator = document.createElement('div');
-    distanceSeparator.className = 'distance-separator';
-    distanceSeparator.innerHTML = `
-      <div class="separator-line"></div>
-      <div class="distance-label">
-        ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
-      </div>
-      <div class="separator-line"></div>
-    `;
-    if (isInTurkey && (!summary || summary.distance <= 0 || summary.duration <= 0 || isNaN(summary.distance) || isNaN(summary.duration))) {
-  continue;
-}
-dayList.appendChild(distanceSeparator);
+  dayList.appendChild(distanceSeparator);
+} else {
+  // --- TÜRKİYE İÇİ PATCH ---
+  const summary = pairwiseSummaries[idx];
+  // PATCH: Yalnızca GERÇEK OSRM ROTASI varsa separator ekle
+  if (
+    !summary ||
+    typeof summary.distance !== "number" ||
+    typeof summary.duration !== "number" ||
+    isNaN(summary.distance) ||
+    isNaN(summary.duration) ||
+    summary.distance <= 0 ||
+    summary.duration <= 0
+  ) {
+    continue;
   }
+  distanceStr = summary.distance >= 1000
+    ? (summary.distance / 1000).toFixed(2) + " km"
+    : Math.round(summary.distance) + " m";
+  durationStr = summary.duration >= 60
+    ? Math.round(summary.duration / 60) + " min"
+    : Math.round(summary.duration) + " sec";
+
+  // --- İKONLAR ---
+  if (travelMode === "driving") {
+    prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
+  } else if (travelMode === "bike" || travelMode === "cycling") {
+    prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
+  } else if (travelMode === "walk" || travelMode === "walking") {
+    prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
+  } else {
+    prefix = '';
+  }
+
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
+}
 }
 }
 
