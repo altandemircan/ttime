@@ -9073,10 +9073,9 @@ ascBadge.title = `${Math.round(ascentM)} m ascent`;
 dscBadge.title = `${Math.round(descentM)} m descent`;
   }
 }
-
 function renderRouteScaleBar(container, totalKm, markers) {
 
-   const dayMatch = container.id && container.id.match(/day(\d+)/);
+  const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? window.lastRouteGeojsons?.[gjKey] : null;
@@ -9085,42 +9084,20 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const hasGeoJson  = coords && coords.length >= 2;
   const hasSummary  = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
+  const isTurkey = markers && markers.length && areAllPointsInTurkey(markers);
 
-  // YENİ PATCH: Sadece FLY modda haversine ile bar/profile render edilir!
-  // Türkiye içi (car/bike/walk) modda GERÇEK route yoksa bar/profil DOM'a asla eklenmesin:
-    // PATCH: Sadece FLY mod haversine ile bar ekler;
-  // Türkiye içi car/bike/walk modlarda OSRM gelmeden bar DOM’a eklenmez!
-  if (!isFly) {
-    // Sadece OSRM route (gerçek) varsa scale bar DOM’a ekle, yoksa DOM’u boşalt!
-    if (
-      !(
-        hasGeoJson &&
-        hasSummary &&
-        hasPairwise &&
-        Number(hasSummary) > 0 &&
-        markers &&
-        Array.isArray(markers) &&
-        markers.length > 1
-      )
-    ) {
-      container.innerHTML = '';
-      container.style.display = 'none'; // PATCH: DOM görünmez olsun
-      return;
-    }
-    container.style.display = 'block'; // PATCH: gerçek route geldiyse tekrar göster
+  // ---- SADE PATCH ----
+  // Sadece FLY modda haversine ile bar DOM'a gelir.
+  // Türkiye içi (car/bike/walk) modda gerçek route yoksa bar/badge DOM'a ASLA GELMEZ!
+  if (!isFly && isTurkey && !(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0 && Array.isArray(markers) && markers.length > 1)) {
+    container.innerHTML = '';
+    container.style.display = 'none';
+    return;
   }
   // FLY modda haversine serbest
 
-const isTurkey = markers && markers.length && areAllPointsInTurkey(markers);
-const isFly = window.selectedTravelMode === 'fly';
-
-if (isTurkey && !isFly && !(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0 && Array.isArray(markers) && markers.length > 1)) {
-  container.innerHTML = '';
-  container.style.display = 'none';
-  return;
-}
-
-let spanKm = typeof totalKm === "number" ? totalKm : 0;  if (isFly) {
+  let spanKm = typeof totalKm === "number" ? totalKm : 0;
+  if (isFly) {
     if (
       (!spanKm || spanKm < 0.01) &&
       Array.isArray(markers) && markers.length > 1 &&
