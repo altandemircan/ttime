@@ -3791,15 +3791,15 @@ if (hasNextLoc) {
         ? (summary.distance / 1000).toFixed(2) + " km"
         : Math.round(summary.distance) + " m";
       durationStr = summary.duration >= 60
-        ? Math.round(summary.duration / 60) + " dk"
-        : Math.round(summary.duration) + " sn";
+        ? Math.round(summary.duration / 60) + " min"
+        : Math.round(summary.duration) + " sec";
     } else {
       const ptA = item.location;
       const ptB = nextItem.location;
       const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
       const durSec = Math.round((distM / 1000) / 4 * 3600);
       distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
-      durationStr = durSec >= 60 ? Math.round(durSec / 60) + " dk" : Math.round(durSec) + " sn";
+      durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
     }
 
     // --- İKONLAR ---
@@ -5138,7 +5138,7 @@ function updateRouteStatsUI(day) {
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
     routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " kms";
-routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " dk";
+routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " dks";
   }
 }
 
