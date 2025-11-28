@@ -5200,7 +5200,7 @@ if (!Array.isArray(arcPts) || arcPts.length === 0) {
 }
 
 // console.log("Arc points length:", arcPts.length);
-console.log("Percent:", percent);
+// console.log("Percent:", percent);
 // Doğru indeksi hesapla
 let idx = Math.round(percent * (arcPts.length - 1));
 idx = Math.max(0, Math.min(idx, arcPts.length - 1));
