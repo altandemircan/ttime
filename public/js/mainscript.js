@@ -9131,6 +9131,7 @@ track.appendChild(verticalLine);
 const tooltip = document.createElement('div');
 tooltip.className = 'tt-elev-tooltip';
 tooltip.style.left = '0px';
+tooltip.style.display = 'none'; // ilk başta görünmesin
 track.appendChild(tooltip);
 
 // Mouse ile çizgiyi hareket ettir (her zaman görünür!)
@@ -9251,7 +9252,7 @@ container._elevKmSpan = totalKm;
     lastX = Number(points[points.length - 2]);
   }
   let closingX = (lastX !== null && Math.abs(lastX - width) < 0.1) ? '' : `L ${width} ${SVG_H} `;
-  const areaD = `${topD} ${closingX}L 0 ${SVG_H} Z`;
+const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
   areaPath.setAttribute('d', areaD);
   areaPath.setAttribute('fill', '#263445');
 }
@@ -9992,14 +9993,14 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
   }
   if (topD) {
-  // topD'nin son X'i width ise fazladan dik çizgi olmasın!
+  // PATCH İÇİN BUL!
   let lastX = null;
   let points = topD.match(/[\d\.]+/g);
   if (points && points.length >= 2) {
     lastX = Number(points[points.length - 2]);
   }
   let closingX = (lastX !== null && Math.abs(lastX - width) < 0.1) ? '' : `L ${width} ${SVG_H} `;
-  const areaD = `${topD} ${closingX}L 0 ${SVG_H} Z`;
+const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
   areaPath.setAttribute('d', areaD);
   areaPath.setAttribute('fill', '#263445');
 }
