@@ -8958,20 +8958,33 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-const spinner = container.querySelector('.spinner');
-if (spinner) spinner.remove();
-  // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
+  // --- TÜRKİYE İÇİNDE, gerçek rota yoksa elevation chart/yükseklik profilini GÖSTERME ---
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
-
-  // Route ile ilgili verilerin varlığını kontrol et (TEK SEFER!)
+  let isInTurkey = false;
+  if (typeof getDayPoints === 'function' && day) {
+    const pts = getDayPoints(day);
+    isInTurkey = areAllPointsInTurkey(pts);
+  }
   const hasGeoJson = coords && coords.length >= 2;
   const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
+  // Türkiye içinde ve gerçek rota yoksa sadece tick/marker, elevation çizme!
+  if (isInTurkey && !hasValidRoute) {
+    container.innerHTML = `<div class="scale-bar-track"></div>`;
+    const track = container.querySelector('.scale-bar-track');
+    track.style.position = 'relative';
+    createScaleElements(track, 400, totalKm, 0, markers || []);
+    container.style.display = 'block';
+    return;
+  }
+
+  const spinner = container.querySelector('.spinner');
+  if (spinner) spinner.remove();
 
   console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
@@ -9534,25 +9547,25 @@ setTimeout(function() {
 }
 
 
-// ✅ TÜM YETIM SCALE-BAR-TRACK'LERI TEMİZLE (güvenlik)
-function cleanupOrphanScaleBars() {
-  document.querySelectorAll('.scale-bar-track').forEach(track => {
-    // Eğer track bir expanded-route-scale-bar veya route-scale-bar container'ının içinde DEĞİLSE
-    const parent = track.closest('[id^="expanded-route-scale-bar-day"], [id^="route-scale-bar-day"]');
-    if (!parent) {
-      console.warn('[cleanup] Orphan scale-bar-track removed:', track);
-      track.remove();
-    }
-  });
-}
+// // ✅ TÜM YETIM SCALE-BAR-TRACK'LERI TEMİZLE (güvenlik)
+// function cleanupOrphanScaleBars() {
+//   document.querySelectorAll('.scale-bar-track').forEach(track => {
+//     // Eğer track bir expanded-route-scale-bar veya route-scale-bar container'ının içinde DEĞİLSE
+//     const parent = track.closest('[id^="expanded-route-scale-bar-day"], [id^="route-scale-bar-day"]');
+//     if (!parent) {
+//       console.warn('[cleanup] Orphan scale-bar-track removed:', track);
+//       track.remove();
+//     }
+//   });
+// }
 
-// Her segment seçiminden ÖNCE   temizle
-document.addEventListener('mousedown', (e) => {
-  const scaleBar = e.target.closest('.scale-bar-track');
-  if (scaleBar) {
-    setTimeout(cleanupOrphanScaleBars, 100);
-  }
-});
+// // Her segment seçiminden ÖNCE   temizle
+// document.addEventListener('mousedown', (e) => {
+//   const scaleBar = e.target.closest('.scale-bar-track');
+//   if (scaleBar) {
+//     setTimeout(cleanupOrphanScaleBars, 100);
+//   }
+// });
 
 
 (function ensureElevationThrottleHelpers(){
