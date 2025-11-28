@@ -227,8 +227,9 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
             : getNextTripTitle()
     );
   }
+
   // TRIP TITLE HER ZAMAN LATIN OLSUN
-tripTitle = toLatin(tripTitle);
+  tripTitle = toLatin(tripTitle);
 
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
     tripTitle = `${window.selectedCity} trip plan`;
@@ -240,6 +241,7 @@ tripTitle = toLatin(tripTitle);
 
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   let tripKey;
+
   // --- En önemli blok ---
   if (window.activeTripKey) {
     // Zaten aktif bir trip varsa, ona ekle
@@ -247,7 +249,7 @@ tripTitle = toLatin(tripTitle);
   } else {
     // Yeni bir trip başlatılıyorsa (ör: Start with map veya yeni chat)
     let timestamp = Date.now();
-tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
+    tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
     window.activeTripKey = tripKey; // Sadece ilk defa trip oluşturulurken atanır
   }
   // --------------------------------
@@ -265,9 +267,8 @@ tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
-    aiInfo: window.lastTripAIInfo || null;
-        elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
-
+    aiInfo: window.lastTripAIInfo || null,
+    elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
   };
 
   // Thumbnail üretimi
