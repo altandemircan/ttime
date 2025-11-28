@@ -210,9 +210,12 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
 
-  if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)) {
-    spanKm = getTotalKmFromMarkers(markers);
-  }
+  if (
+  window.selectedTravelMode === 'fly' &&
+  (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
+) {
+  spanKm = getTotalKmFromMarkers(markers);
+}
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
     console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
