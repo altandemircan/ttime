@@ -9017,11 +9017,14 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const hasSummary  = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
 
-  // --- PATCH ---
-  // Sadece Fly modda haversine bar/profil çıkacak. Diğer modda gerçek route olmadan bar/profil çıkmaz!
-  if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
-    container.innerHTML = '';
-    return;
+  // YALNIZCA FLY modda haversine ile scale bar render edilir,
+  // WALK/CAR/BIKE modunda YALNIZCA GERÇEK route varsa bar görünür!
+  if (!isFly) {
+    // WALK/CAR/BIKE için ALTTAKİ KONTROL:
+    if (!(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0)) {
+      container.innerHTML = '';
+      return;
+    }
   }
 
   let spanKm = typeof totalKm === "number" ? totalKm : 0;
@@ -9031,6 +9034,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       Array.isArray(markers) && markers.length > 1 &&
       !(hasSummary || hasPairwise || hasGeoJson)
     ) {
+      // HAVERSINE MODU SADECE FLY! Diğer modda hiç çalışmaz.
       spanKm = getTotalKmFromMarkers(markers);
     }
     if (!spanKm || spanKm < 0.01) {
