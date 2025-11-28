@@ -9080,8 +9080,6 @@ track.addEventListener('touchstart', function(e) {
   // Görünüm
 
   track.style.position = 'relative';
-  track.style.paddingLeft = `35px`;
-  track.style.paddingRight = `15px`;
   track.style.overflow = 'visible';
 
 let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
