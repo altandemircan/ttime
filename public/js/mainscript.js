@@ -9049,6 +9049,22 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
+   // --- KESİN PATCH ---
+  if (
+    typeof window.selectedTravelMode !== 'undefined' &&
+    window.selectedTravelMode !== 'fly'
+  ) {
+    if (container && container.innerHTML && (
+      !window.lastRouteGeojsons ||         // geojson hiç yoksa
+      !window.lastRouteSummaries ||        // summary hiç yoksa
+      !window.pairwiseRouteSummaries       // pairwise hiç yoksa
+    )) {
+      container.innerHTML = '';
+      container.style.display = 'none';
+      return;
+    }
+  }
+  
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
