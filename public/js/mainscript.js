@@ -211,13 +211,28 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
 
   // PATCH: Sadece FLY modda haversine ile bar/profil/mesafe
-  if (
-    window.selectedTravelMode !== 'fly' &&
-    !(hasGeoJson && hasSummary && hasPairwise)
-  ) {
-    track.innerHTML = '';
-    return;
-  }
+ // Sadece FLY modda haversine bar/profil render edilir.
+// Car/bike/walk modda GERÇEK route (geojson, summary, pairwise) yoksa bar/profil renderlanMAZ!
+if (
+  window.selectedTravelMode !== 'fly' && !(hasGeoJson && hasSummary && hasPairwise)
+) {
+  track.innerHTML = '';
+  return;
+}
+
+// FLY modda route yoksa haversine ile bar/profil render edilir.
+if (
+  window.selectedTravelMode === 'fly' &&
+  (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
+) {
+  spanKm = getTotalKmFromMarkers(markers);
+}
+
+// GERÇEK route veya haversine yoksa bar/profil renderlanmasın!
+if (!spanKm || spanKm < 0.01) {
+  track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+  return;
+}
 
   if (
     window.selectedTravelMode === 'fly' &&
@@ -9001,28 +9016,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
   // PATCH: Sadece FLY modda haversine ile bar/profil/mesafe
- // Sadece FLY modda haversine bar/profil render edilir.
-// Car/bike/walk modda GERÇEK route (geojson, summary, pairwise) yoksa bar/profil renderlanMAZ!
-if (
-  window.selectedTravelMode !== 'fly' && !(hasGeoJson && hasSummary && hasPairwise)
-) {
-  track.innerHTML = '';
-  return;
-}
-
-// FLY modda route yoksa haversine ile bar/profil render edilir.
-if (
-  window.selectedTravelMode === 'fly' &&
-  (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
-) {
-  spanKm = getTotalKmFromMarkers(markers);
-}
-
-// GERÇEK route veya haversine yoksa bar/profil renderlanmasın!
-if (!spanKm || spanKm < 0.01) {
-  track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-  return;
-}
+  if (
+    window.selectedTravelMode !== 'fly' &&
+    !hasValidRoute
+  ) {
+    container.innerHTML = '';
+    return;
+  }
 
   console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
