@@ -4396,7 +4396,7 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
         window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
         console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
-    } } else if (pts.length > 1 && !areAllPointsInTurkey(pts)) {
+    } else if (pts.length > 1 && !areAllPointsInTurkey(pts)) {
     // SADECE TÜRKİYE DIŞI İÇİN HAVERSINE/YAY ÇİZ
     let allArcPoints = [];
     for (let i = 0; i < pts.length - 1; i++) {
@@ -4411,6 +4411,13 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
         if (i === 0) allArcPoints.push([start[0], start[1]]);
         allArcPoints = allArcPoints.concat(arcPoints.slice(1));
+    }
+        if (pts.length > 0) {
+            const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
+            allArcPoints.push(lastPoint);
+        }
+        window._curvedArcPointsByDay[day] = allArcPoints;
+        console.log("[DEBUG] Arc points saved:", allArcPoints.length);
     }
 
     pts.forEach((item, idx) => {
