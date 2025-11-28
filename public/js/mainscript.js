@@ -210,20 +210,22 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
 
+  // PATCH: Sadece FLY modda haversine ile bar/profil/mesafe
   if (
     window.selectedTravelMode !== 'fly' &&
-    (!hasGeoJson || !hasSummary || !hasPairwise)
+    !(hasGeoJson && hasSummary && hasPairwise)
   ) {
-    // Türkiye'de car/bike/walk modda gerçek rota yoksa bar/profil/render YOK!
     track.innerHTML = '';
     return;
   }
+
   if (
     window.selectedTravelMode === 'fly' &&
     (!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)
   ) {
     spanKm = getTotalKmFromMarkers(markers);
   }
+  
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
     console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
@@ -8987,22 +8989,23 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const spinner = container.querySelector('.spinner');
   if (spinner) spinner.remove();
 
-  // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
   const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-  const isFlyMode = window.selectedTravelMode === 'fly';
   const hasGeoJson = coords && coords.length >= 2;
   const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
-  // --- EN KRİTİK PATCH ---
-  if (!isFlyMode && !hasValidRoute) {
-    if (container) container.innerHTML = '';
+  // PATCH: Sadece FLY modda haversine ile bar/profil/mesafe
+  if (
+    window.selectedTravelMode !== 'fly' &&
+    !hasValidRoute
+  ) {
+    container.innerHTML = '';
     return;
   }
 
