@@ -300,7 +300,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   elevationLabels.className = 'elevation-labels-container';
   elevationLabels.style.cssText = `
     position: absolute;
-    left: -50px;
+    left: -65px;
     top: 0;
     bottom: 0;
     width: 45px;
@@ -9078,10 +9078,10 @@ track.addEventListener('touchstart', function(e) {
 });
 
   // Görünüm
-  const MARKER_PAD_PX = 10;
+
   track.style.position = 'relative';
-  track.style.paddingLeft = `${MARKER_PAD_PX}px`;
-  track.style.paddingRight = `${MARKER_PAD_PX}px`;
+  track.style.paddingLeft = `35px`;
+  track.style.paddingRight = `15px`;
   track.style.overflow = 'visible';
 
 let width = Math.max(200, Math.round(track.getBoundingClientRect().width));
