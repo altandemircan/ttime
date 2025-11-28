@@ -3804,17 +3804,17 @@ const travelMode =
     const summary = pairwiseSummaries[idx];
     // PATCH: Yalnızca GERÇEK OSRM ROTASI varsa separator ekle
     if (
-      !summary ||
-      typeof summary.distance !== "number" ||
-      typeof summary.duration !== "number" ||
-      isNaN(summary.distance) ||
-      isNaN(summary.duration) ||
-      summary.distance <= 0 ||
-      summary.duration <= 0
-    ) {
-      // Türkiye içindeyken HAVERSINE DOM separatorı/asla/eklenmeyecek!
-      continue;
-    }
+  !summary ||
+  typeof summary.distance !== "number" ||
+  typeof summary.duration !== "number" ||
+  isNaN(summary.distance) ||
+  isNaN(summary.duration) ||
+  summary.distance <= 0 ||
+  summary.duration <= 0
+) {
+  console.warn("[% PATCH ] Türkiye içi: Fallback summary/bar DOM’a yazılmayacak! summary=", summary);
+  continue;
+}
 
     distanceStr = summary.distance >= 1000
       ? (summary.distance / 1000).toFixed(2) + " km"
