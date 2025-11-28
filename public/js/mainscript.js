@@ -1,23 +1,9 @@
-// Haversine mesafe (metre)
 function haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const toRad = x => x * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    const R = 6371000, toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
     return 2 * R * Math.asin(Math.sqrt(a));
 }
-
-function getSlopeColor(slope) {
-  // Dengeli (orta doygunluk) tonlar
-  if (slope < 2)  return "#9CCC65"; // medium-soft green
-  if (slope < 6)  return "#E6C15A"; // mellow mustard
-  if (slope < 10) return "#F2994A"; // balanced orange
-  if (slope < 15) return "#EF5350"; // medium soft red
-  return "#9575CD";                 // soft purple
-}
-
 function isTripFav(item) {
     return window.favTrips && window.favTrips.some(f =>
         f.name === item.name &&
@@ -203,56 +189,43 @@ function fitExpandedMapToRoute(day) {
     }
   }
 }
-function niceStep(total, target) {
-  const raw = total / Math.max(1, target);
-  const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
-  const n = raw / p10;
-  const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
-  return f * p10;
-}
+        // Nice tick helpers
+  function niceStep(total, target) {
+    const raw = total / Math.max(1, target);
+    const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / p10;
+    const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return f * p10;
+  }
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const container = track?.parentElement;
   const dayMatch = container?.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+  const gjKey = day ? `route-map-day${day}` : null;
 
+  // Değişkenler bir kez tanımlanır
+  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
+  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
+  const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
 
-
-  // spanKm tanımsızsa veya geçersizse haversineyle doldur (sadece FLY modda, markerlar varsa)
-  if (
-    typeof spanKm === "undefined" || spanKm === null ||
-    (window.selectedTravelMode === 'fly' && spanKm < 0.01 && Array.isArray(markers) && markers.length > 1 &&
-      !(hasSummary || hasPairwise || hasGeoJson))
-  ) {
+  if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)) {
     spanKm = getTotalKmFromMarkers(markers);
   }
-
-  // Sadece FLY modda haversine bar/profil render edilir
-  // Car/bike/walk modda sadece GERÇEK route varsa bar/profil renderlanır!
-  const isFly = window.selectedTravelMode === 'fly';
-const isTurkey = markers && markers.length && areAllPointsInTurkey(markers);
-const gjKey = day ? `route-map-day${day}` : null;
-const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
-const hasSummary   = window.lastRouteSummaries?.[gjKey]?.distance;
-const hasPairwise  = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
-
-// PATCH: Türkiye içi ve OSRM route yoksa haversine ile scale bar DOM'a YAZMA!
-if (!isFly && isTurkey && !(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0)) {
-  track.innerHTML = '';
-  return;
-}
-  // Route veya haversine mesafesi hala yoksa renderlanmasın!
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+    console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
     return;
   }
-
   if (!track) return;
+
+  // console.log("[DEBUG] createScaleElements called", {
+  //   widthPx, spanKm, startKmDom, markers
+  // });
 
   // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
-
 
   // Tick + label dizisi
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
@@ -408,6 +381,25 @@ function movingAverage(arr, win = 5) {
 
 window.cart = JSON.parse(localStorage.getItem('cart')) || [];
 
+// Haversine mesafe (metre)
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function getSlopeColor(slope) {
+  // Dengeli (orta doygunluk) tonlar
+  if (slope < 2)  return "#9CCC65"; // medium-soft green
+  if (slope < 6)  return "#E6C15A"; // mellow mustard
+  if (slope < 10) return "#F2994A"; // balanced orange
+  if (slope < 15) return "#EF5350"; // medium soft red
+  return "#9575CD";                 // soft purple
+}
 
 
 // --- PLAN SEÇİM ZORUNLULUĞU FLAGS ---
@@ -3773,67 +3765,56 @@ const travelMode =
     ? String(getTravelModeForDay(day)).trim().toLowerCase()
     : "car"; // fallback
 
- if (hasNextLoc) {
+if (hasNextLoc) {
   let distanceStr = '';
   let durationStr = '';
   let prefix = '';
+
+  // Noktaları al
+  // Sadece şu iki noktanın Türkiye'de olup olmadığını kontrol etmek ideal
   const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
 
   if (!isInTurkey) {
-  // --- TÜRKİYE DIŞI: Havresine ile Auto generated separator
-  const ptA = item.location;
-  const ptB = nextItem.location;
-  const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
-  const durSec = Math.round((distM / 1000) / 4 * 3600);
-  distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
-  durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
-  prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
-  const distanceSeparator = document.createElement('div');
-  distanceSeparator.className = 'distance-separator';
-  distanceSeparator.innerHTML = `
-    <div class="separator-line"></div>
-    <div class="distance-label">
-      ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
-    </div>
-    <div class="separator-line"></div>
-  `;
-  // PATCH: TÜRKİYE İÇİNDEYKEN HAVERSINE ile DOM’a eklemeyeceksin!
-  if (isInTurkey) continue;
-
-  dayList.appendChild(distanceSeparator);
-} else {
-  // --- TÜRKİYE İÇİ PATCH ---
-  const summary = pairwiseSummaries[idx];
-  // PATCH: Yalnızca GERÇEK OSRM ROTASI varsa separator ekle
-  if (
-    !summary ||
-    typeof summary.distance !== "number" ||
-    typeof summary.duration !== "number" ||
-    isNaN(summary.distance) ||
-    isNaN(summary.duration) ||
-    summary.distance <= 0 ||
-    summary.duration <= 0
-  ) {
-    continue;
-  }
-  distanceStr = summary.distance >= 1000
-    ? (summary.distance / 1000).toFixed(2) + " km"
-    : Math.round(summary.distance) + " m";
-  durationStr = summary.duration >= 60
-    ? Math.round(summary.duration / 60) + " min"
-    : Math.round(summary.duration) + " sec";
-
-  // --- İKONLAR ---
-  if (travelMode === "driving") {
-    prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
-  } else if (travelMode === "bike" || travelMode === "cycling") {
-    prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
-  } else if (travelMode === "walk" || travelMode === "walking") {
-    prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
+    // --- TÜRKİYE DIŞI: Auto generated ---
+    const ptA = item.location;
+    const ptB = nextItem.location;
+    const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
+    const durSec = Math.round((distM / 1000) / 4 * 3600);
+    distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
+    durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
+    prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
   } else {
-    prefix = '';
+    // --- TÜRKİYE İÇİ: Icon modları ---
+    const summary = pairwiseSummaries[idx];
+    if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+      distanceStr = summary.distance >= 1000
+        ? (summary.distance / 1000).toFixed(2) + " km"
+        : Math.round(summary.distance) + " m";
+      durationStr = summary.duration >= 60
+        ? Math.round(summary.duration / 60) + " min"
+        : Math.round(summary.duration) + " sec";
+    } else {
+      const ptA = item.location;
+      const ptB = nextItem.location;
+      const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
+      const durSec = Math.round((distM / 1000) / 4 * 3600);
+      distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
+      durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
+    }
+
+    // --- İKONLAR ---
+    if (travelMode === "driving") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
+    } else if (travelMode === "bike" || travelMode === "cycling") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
+    } else if (travelMode === "walk" || travelMode === "walking") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
+    } else {
+      prefix = ''; // Diğer tiplerde ikon gösterme
+    }
   }
 
+  // DOM separator ekle
   const distanceSeparator = document.createElement('div');
   distanceSeparator.className = 'distance-separator';
   distanceSeparator.innerHTML = `
@@ -3844,7 +3825,6 @@ const travelMode =
     <div class="separator-line"></div>
   `;
   dayList.appendChild(distanceSeparator);
-}
 }
 }
 
@@ -4498,30 +4478,19 @@ function updateExpandedMap(expandedMap, day) {
 
     // Route summary yoksa haversine ile üret!
     const sumKey = `route-map-day${day}`;
-    const isFly = window.selectedTravelMode === 'fly';
-
-const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
-const hasSummary = window.lastRouteSummaries?.[sumKey]?.distance > 0;
-const hasPairwise = window.pairwiseRouteSummaries?.[sumKey]?.length > 0;
-
-let sum = window.lastRouteSummaries?.[sumKey];
-// YENİ PATCH: Türkiye içindeyken ve gerçek route (summary/geojson) YOKSA haversine summary/bar/badge HIÇ hesaplanmasın:
-if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
-    sum = null;
-    window.lastRouteSummaries[sumKey] = null;
-} else if (!sum && pts.length > 1) {
-    // Yalnızca fly modda haversine ile summary/bar/badge hesapla!
-    let totalKmSum = 0;
-    for (let i = 0; i < pts.length - 1; i++) {
-        totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
+    let sum = window.lastRouteSummaries?.[sumKey];
+    if (!sum && pts.length > 1) {
+        let totalKmSum = 0;
+        for (let i = 0; i < pts.length - 1; i++) {
+            totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
+        }
+        sum = {
+            distance: Math.round(totalKmSum * 1000),
+            duration: Math.round(totalKmSum/4*60),
+            ascent: 0,
+            descent: 0
+        };
     }
-    sum = {
-        distance: Math.round(totalKmSum * 1000),
-        duration: Math.round(totalKmSum/4*60),
-        ascent: 0,
-        descent: 0
-    };
-}
     if (sum && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
@@ -4547,24 +4516,14 @@ if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
         scaleBarDiv.style.display = "block";
         scaleBarDiv.innerHTML = "";
 
-        // PATCH: Yalnızca FLY mode veya gerçek route varsa scale bar/profil render et!
-        const isFly = window.selectedTravelMode === 'fly';
-        const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`];
-        const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
-        const hasSummary = window.lastRouteSummaries?.[`route-map-day${day}`]?.distance > 0;
-        const hasPairwise = window.pairwiseRouteSummaries?.[`route-map-day${day}`]?.length > 0;
-
-        if (!isFly && !(hasGeoJson && hasSummary && hasPairwise)) {
-      // Türkiye içindeyken, OSRM route yoksa scaleBarDiv DOM’a bir şey eklenmesin!
-      scaleBarDiv.innerHTML = '';
-      scaleBarDiv.style.display = 'none';
-      return;
+        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
+        const track = scaleBarDiv.querySelector('.scale-bar-track');
+        const svg = track && track.querySelector('svg.tt-elev-svg');
+        if (track && svg) {
+            const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+            createScaleElements(track, width, totalKm, 0, markerPositions || []);
+        }
     }
-    // FLY modda veya gerçek OSRM route varsa scale bar eklenir!
-    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
-
-        // Eğer koşul sağlanmazsa scaleBarDiv DOM'u BOŞ!
-            }
 
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
@@ -5160,53 +5119,35 @@ function updateRouteStatsUI(day) {
   const key = `route-map-day${day}`;
   let summary = window.lastRouteSummaries?.[key] || null;
 
-  // --- PATCH BAŞLANGIÇ ---
-  const isFly = window.selectedTravelMode === 'fly';
-  const geojson = window.lastRouteGeojsons?.[key];
-  const hasRealRoute =
-    geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
-  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-
-  if (!isFly && !hasRealRoute) {
-    if (routeSummarySpan) routeSummarySpan.innerHTML = "";
-    window.lastRouteSummaries[key] = null;
-    return;
-  }
-  // --- PATCH SONU ---
-
-  // Eski fallback logic sadece fly modda
+  // YENI PATCH: FLY MODE'da veya summary eksikse/hatalıysa fallback ile doldur
+  // (bu satır: profile veya travel mode mantığından bağımsız)
   if (!summary ||
       typeof summary.distance !== "number" ||
       typeof summary.duration !== "number" ||
       isNaN(summary.distance) ||
-      isNaN(summary.duration)
-   ) {
-    if (isFly) {
-      const points = getDayPoints(day);
-      summary = getFallbackRouteSummary(points);
-      window.lastRouteSummaries[key] = summary;
-    } else {
-      summary = null;
-      window.lastRouteSummaries[key] = null;
-    }
+      isNaN(summary.duration) ||
+      !areAllPointsInTurkey(getDayPoints(day))
+     ) {
+    // Sadece haversine ile km/dk ver, profil değişmiyor!
+    const points = getDayPoints(day);
+    summary = getFallbackRouteSummary(points);
+    window.lastRouteSummaries[key] = summary;
   }
 
-  const distanceKm = summary ? (summary.distance / 1000).toFixed(2) : "";
-  const durationMin = summary ? Math.round(summary.duration / 60) : "";
+  const distanceKm = (summary.distance / 1000).toFixed(2);
+  const durationMin = Math.round(summary.duration / 60);
 
+  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
-    if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-      routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
-      routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
-      const elev = window.routeElevStatsByDay?.[day] || {};
-      if (routeSummarySpan.querySelector('.stat-ascent .badge'))
-        routeSummarySpan.querySelector('.stat-ascent .badge').textContent = (typeof elev.ascent === "number" ? elev.ascent + " m" : "— m");
-      if (routeSummarySpan.querySelector('.stat-descent .badge'))
-        routeSummarySpan.querySelector('.stat-descent .badge').textContent = (typeof elev.descent === "number" ? elev.descent + " m" : "— m");
-    } else {
-      routeSummarySpan.innerHTML = "";
-    }
-  }
+  routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
+  routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
+  // Ascent/descent badge ekle
+  const elev = window.routeElevStatsByDay?.[day] || {};
+  if (routeSummarySpan.querySelector('.stat-ascent .badge'))
+    routeSummarySpan.querySelector('.stat-ascent .badge').textContent = (typeof elev.ascent === "number" ? elev.ascent + " m" : "— m");
+  if (routeSummarySpan.querySelector('.stat-descent .badge'))
+    routeSummarySpan.querySelector('.stat-descent .badge').textContent = (typeof elev.descent === "number" ? elev.descent + " m" : "— m");
+}
 }
 
  function getTotalKmFromMarkers(markers) {
@@ -5786,26 +5727,13 @@ if (typeof renderRouteScaleBar === 'function') {
     scaleBarDiv.style.display = "block";
     scaleBarDiv.innerHTML = ""; // Temizle
 
-    // PATCH: Sadece fly modda veya gerçek route varsa scale barı render et!
-    const isFly = window.selectedTravelMode === 'fly';
-    const geojson = window.lastRouteGeojsons?.[containerId];
-    const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
-    const hasSummary = window.lastRouteSummaries?.[containerId]?.distance > 0;
-    const hasPairwise = window.pairwiseRouteSummaries?.[containerId]?.length > 0;
-    
-    if (
-      isFly ||
-      (hasGeoJson && hasSummary && hasPairwise)
-    ) {
-      renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-      const track = scaleBarDiv.querySelector('.scale-bar-track');
-      const svg = track && track.querySelector('svg.tt-elev-svg');
-      if (track && svg) {
+    renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+    const track = scaleBarDiv.querySelector('.scale-bar-track');
+    const svg = track && track.querySelector('svg.tt-elev-svg');
+    if (track && svg) {
         const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
         createScaleElements(track, width, totalKm, 0, markerPositions);
-      }
     }
-    // PATCH SONU: Diğer modda/haversine ile scale bar/profil DOM'u asla renderlanmaz!
 }
 
 
@@ -7225,59 +7153,46 @@ function ensureExpandedScaleBar(day, raw) {
     expandedScaleBar.className = 'route-scale-bar expanded';
     expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
   }
-if (typeof renderRouteScaleBar === 'function') {
-  const isFly = window.selectedTravelMode === 'fly';
-  const containerId = `route-map-day${day}`;
-  const geojson = window.lastRouteGeojsons?.[containerId];
-  const hasGeoJson = geojson?.features?.[0]?.geometry?.coordinates?.length > 1;
-  const hasSummary = window.lastRouteSummaries?.[containerId]?.distance > 0;
-  const hasPairwise = window.pairwiseRouteSummaries?.[containerId]?.length > 0;
-
-  let samples = raw;
-  if (samples.length > 600) {
-    const step = Math.ceil(samples.length / 600);
-    samples = samples.filter((_,i)=>i%step===0);
-  }
-  let dist = 0, dists = [0];
-  for (let i=1; i<samples.length; i++) {
-    dist += haversine(
-      samples[i-1].lat, samples[i-1].lng,
-      samples[i].lat, samples[i].lng
-    );
-    dists.push(dist);
-  }
-  expandedScaleBar.innerHTML = "";
-
-  // PATCH: Sadece fly modda veya gerçek route varsa scale bar/profil render edilir!
-  if (
-    isFly ||
-    (hasGeoJson && hasSummary && hasPairwise)
-  ) {
-    const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
-    if (imported) {
-      renderRouteScaleBar(
-        expandedScaleBar,
-        dist/1000,
-        samples.map((p, i) => ({
-          name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
-          distance: dists[i]/1000,
-          snapped: true
-        }))
-      );
-    } else {
-      renderRouteScaleBar(
-        expandedScaleBar,
-        dist/1000,
-        samples.map((p,i)=>({
-          name: '',
-          distance: dists[i]/1000,
-          snapped: true
-        }))
-      );
+  if (typeof renderRouteScaleBar === 'function') {
+    let samples = raw;
+    if (samples.length > 600) {
+      const step = Math.ceil(samples.length / 600);
+      samples = samples.filter((_,i)=>i%step===0);
     }
-  }
-  // PATCH: Diğer modda haversine ile scale bar/profil DOM'u asla renderlanmaz!
+    let dist = 0, dists = [0];
+    for (let i=1; i<samples.length; i++) {
+      dist += haversine(
+        samples[i-1].lat, samples[i-1].lng,
+        samples[i].lat, samples[i].lng
+      );
+      dists.push(dist);
+    }
+    expandedScaleBar.innerHTML = "";
+    // GPS import track varsa, tüm noktaları marker gibi ver
+const imported = window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw;
+if (imported) {
+  renderRouteScaleBar(
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p, i) => ({
+  name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
+  distance: dists[i]/1000,
+  snapped: true
+}))
+  );
+} else {
+  // Eski haliyle devam et
+  renderRouteScaleBar(
+    expandedScaleBar,
+    dist/1000,
+    samples.map((p,i)=>({
+      name: '',
+      distance: dists[i]/1000,
+      snapped: true
+    }))
+  );
 }
+  }
 }
 
 async function renderRouteForDay(day) {
@@ -7683,17 +7598,8 @@ if (!hasRealRoute) {
       }
       expandedScaleBar.style.display = "block";
       expandedScaleBar.innerHTML = "";
-if (
-  window.selectedTravelMode === 'fly' ||
-  (
-    window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1 &&
-    window.lastRouteSummaries?.[containerId]?.distance > 0
-  )
-) {
-{
-
-  renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions); // veya 0, []
-}}    }
+      renderRouteScaleBar(expandedScaleBar, 0, []); // Mesafe yok, scale bar boş
+    }
     return;
   } else {
     // YURTDIŞI/Fly Mode: HAVERSINE ile mesafe ve süre dolsun!
@@ -7770,15 +7676,8 @@ if (
       }
       expandedScaleBar.style.display = "block";
       expandedScaleBar.innerHTML = "";
-if (
-  window.selectedTravelMode === 'fly' ||
-  (
-    window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1 &&
-    window.lastRouteSummaries?.[containerId]?.distance > 0
-  )
-) {
-  renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions); // veya 0, []
-}    }
+      renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
+    }
     return;
   }
 }
@@ -9072,46 +8971,24 @@ ascBadge.title = `${Math.round(ascentM)} m ascent`;
 dscBadge.title = `${Math.round(descentM)} m descent`;
   }
 }
-function renderRouteScaleBar(container, totalKm, markers) {
 
+function renderRouteScaleBar(container, totalKm, markers) {
+const spinner = container.querySelector('.spinner');
+if (spinner) spinner.remove();
+  // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
-  const gj = gjKey ? window.lastRouteGeojsons?.[gjKey] : null;
+  const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
   const coords = gj?.features?.[0]?.geometry?.coordinates;
-  const isFly = window.selectedTravelMode === 'fly';
-  const hasGeoJson  = coords && coords.length >= 2;
-  const hasSummary  = window.lastRouteSummaries?.[gjKey]?.distance;
-  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey]?.length > 0;
-  const isTurkey = markers && markers.length && areAllPointsInTurkey(markers);
 
-  // ---- SADE PATCH ----
-  // Sadece FLY modda haversine ile bar DOM'a gelir.
-  // Türkiye içi (car/bike/walk) modda gerçek route yoksa bar/badge DOM'a ASLA GELMEZ!
-  if (!isFly && isTurkey && !(hasGeoJson && hasSummary && hasPairwise && Number(hasSummary) > 0 && Array.isArray(markers) && markers.length > 1)) {
-    container.innerHTML = '';
-    container.style.display = 'none';
-    return;
-  }
-  // FLY modda haversine serbest
+  // Route ile ilgili verilerin varlığını kontrol et (TEK SEFER!)
+  const hasGeoJson = coords && coords.length >= 2;
+  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
+  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
+  const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
-  let spanKm = typeof totalKm === "number" ? totalKm : 0;
-  if (isFly) {
-    if (
-      (!spanKm || spanKm < 0.01) &&
-      Array.isArray(markers) && markers.length > 1 &&
-      !(hasSummary || hasPairwise || hasGeoJson)
-    ) {
-      // HAVERSINE MODU SADECE FLY! Diğer modda hiç çalışmaz.
-      spanKm = getTotalKmFromMarkers(markers);
-    }
-    if (!spanKm || spanKm < 0.01) {
-      container.innerHTML = '';
-      return;
-    }
-  }
-
-  console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "spanKm=", spanKm, "markers=", markers);
+  console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
   if (!container || isNaN(totalKm)) {
     if (container) { container.innerHTML = ""; container.style.display = 'block'; }
@@ -9120,7 +8997,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   // Sadece expanded bar’da çalış; küçük bar’ı kapat
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-    container.innerHTML = '<div class="spinner"></div>';
+container.innerHTML = '<div class="spinner"></div>';
     return;
   }
 
@@ -9130,7 +9007,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
     container.style.display = 'block';
     return;
   }
-
 const mid = coords[Math.floor(coords.length / 2)];
 
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
