@@ -7659,13 +7659,7 @@ if (
     window.lastRouteSummaries?.[containerId]?.distance > 0
   )
 ) {
-if (
-  window.selectedTravelMode === 'fly' ||
-  (
-    window.lastRouteGeojsons?.[containerId]?.features?.[0]?.geometry?.coordinates?.length > 1 &&
-    window.lastRouteSummaries?.[containerId]?.distance > 0
-  )
-) {
+{
 
   renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions); // veya 0, []
 }}    }
@@ -9049,22 +9043,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-   // --- KESİN PATCH ---
-  if (
-    typeof window.selectedTravelMode !== 'undefined' &&
-    window.selectedTravelMode !== 'fly'
-  ) {
-    if (container && container.innerHTML && (
-      !window.lastRouteGeojsons ||         // geojson hiç yoksa
-      !window.lastRouteSummaries ||        // summary hiç yoksa
-      !window.pairwiseRouteSummaries       // pairwise hiç yoksa
-    )) {
-      container.innerHTML = '';
-      container.style.display = 'none';
-      return;
-    }
-  }
-  
+
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
