@@ -4412,9 +4412,6 @@ function updateExpandedMap(expandedMap, day) {
         if (i === 0) allArcPoints.push([start[0], start[1]]);
         allArcPoints = allArcPoints.concat(arcPoints.slice(1));
     }
-        window._curvedArcPointsByDay[day] = allArcPoints;
-        console.log("[DEBUG] Arc points saved:", allArcPoints.length);
-    }
 
     pts.forEach((item, idx) => {
         const markerHtml = `
