@@ -343,11 +343,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   gridLabels.forEach((obj, index) => { // 'index' parametresi eklendi
     const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
-   const correctedY = (obj.y / svgHeight) * trackHeight; 
+const correctedY = (obj.y / svgHeight) * trackHeight; 
     const wrapper = document.createElement('div');
-    
-    // Gizleme stilini oluştur
-    let opacityStyle = index === lastIndex ? 'opacity: 0;' : ''; 
     
     wrapper.style.cssText = `
         position: absolute;
@@ -359,8 +356,12 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
         pointer-events: none;
         text-align: right;
         gap: 6px;
-        ${opacityStyle} /* Gizleme stilini uyguladık */
     `;
+    
+    // YAPIYI BOZMAYAN KONTROL: En alttakini gizle
+    if (index === lastIndex) {
+        wrapper.style.opacity = '0'; // <-- BU SATIR EKLENDİ
+    }
 
      const tick = document.createElement('div');
     tick.style.cssText = `
