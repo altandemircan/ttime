@@ -4411,10 +4411,47 @@ function updateExpandedMap(expandedMap, day) {
             weight: 6,
             opacity: 1,
             dashArray: null
-        }).addTo(expandedMap);
-        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
-        console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
-    } else if (pts.length > 1 && !isInTurkey) {
+            }).addTo(expandedMap);
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
+        console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
+
+        // --- YOL SAPMA ÇİZGİLERİ (SNAP LINES) EKLENİYOR ---
+        // isPointReallyMissing, [lng, lat] formatında raw koordinatları bekler
+        const rawGeojsonCoords = geojson.features[0].geometry.coordinates; 
+        // Marker'lar ve Polyline çizimi [lat, lng] formatını kullanır
+        const routePtsForSnap = routeCoords; 
+        
+        pts.forEach((mp) => { // 'points' yerine 'pts' kullanıldı
+            // Marker rotadan 50 metreden fazla sapmış mı?
+            if (isPointReallyMissing(mp, rawGeojsonCoords, 50)) {
+                let minIdx = 0, minDist = Infinity;
+                
+                // Rotadaki en yakın noktayı bul
+                for (let i = 0; i < routePtsForSnap.length; i++) {
+                    const [lat, lng] = routePtsForSnap[i];
+                    const d = haversine(lat, lng, mp.lat, mp.lng);
+                    if (d < minDist) {
+                        minDist = d;
+                        minIdx = i;
+                    }
+                }
+                
+                const start = [mp.lat, mp.lng]; // Marker'ın konumu [lat, lng]
+                const end = routePtsForSnap[minIdx]; // Rotadaki en yakın nokta [lat, lng]
+                
+                L.polyline([start, end], {
+                    dashArray: '8, 12',
+                    color: '#d32f2f',
+                    weight: 4,
+                    opacity: 0.8,
+                    interactive: false,
+                    renderer: ensureCanvasRenderer(expandedMap)
+                }).addTo(expandedMap);
+            }
+        });
+        // --- YOL SAPMA ÇİZGİLERİ EKLEME SONU ---
+        
+    } else if (pts.length > 1 && !isInTurkey) {
         // SADECE TÜRKİYE DIŞINDAYSA (Fly Mode) Yay çiz
         let allArcPoints = [];
         for (let i = 0; i < pts.length - 1; i++) {
