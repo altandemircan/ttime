@@ -4594,7 +4594,9 @@ right: 40px;
     }
 
     @media (max-width:768px) {
- .expanded-map-panel { width: -webkit-fill-available;     
+ .expanded-map-panel { 
+    width: -webkit-fill-available;   
+    right:  0px;  
     }
 }
 
