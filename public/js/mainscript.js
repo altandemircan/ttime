@@ -1154,6 +1154,12 @@ let lastUserQuery = ""
 
 
 
+
+
+
+
+// Tema başlığından şehir ve gün ayıklama fonksiyonu (kalsın)
+// Tema başlığından şehir ve gün ayıklama fonksiyonu (kalsın)
 function extractCityAndDaysFromTheme(title) {
   let days = 2;
   let dayMatch = title.match(/(\d+)[- ]*day|(\d+)[- ]*days|(\d+)[- ]*gün/i);
@@ -1314,6 +1320,17 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     }, 120);
   });
 });
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5099,32 +5116,31 @@ function getFallbackRouteSummary(points) {
 }
 
 function updateRouteStatsUI(day) {
-  const key = `route-map-day${day}`;
-  let summary = window.lastRouteSummaries?.[key] || null;
+  const key = `route-map-day${day}`;
+  let summary = window.lastRouteSummaries?.[key] || null;
 
-  // YENİ PATCH: SADECE FLY MODE'da (Türkiye dışı) ise Haversine ile doldur/overwrite et.
-  // Türkiye içindeki (walk/bike/car modları) başlangıçtaki Haversine "flash"ını engeller.
-  const isFlyMode = !areAllPointsInTurkey(getDayPoints(day));
-
-  // Türkiye içindeysen ve summary eksikse, Haversine kullanma.
-  const isSummaryMissing = !summary || typeof summary.distance !== "number" || isNaN(summary.distance);
-
-  if (isFlyMode && isSummaryMissing) { 
-    // Fly Mode'da (Türkiye dışı) ve summary eksikse, Haversine ile doldur.
-    const points = getDayPoints(day);
-    summary = getFallbackRouteSummary(points);
-    window.lastRouteSummaries[key] = summary;
+  // YENI PATCH: FLY MODE'da veya summary eksikse/hatalıysa fallback ile doldur
+  // (bu satır: profile veya travel mode mantığından bağımsız)
+  if (!summary ||
+      typeof summary.distance !== "number" ||
+      typeof summary.duration !== "number" ||
+      isNaN(summary.distance) ||
+      isNaN(summary.duration) ||
+      !areAllPointsInTurkey(getDayPoints(day))
+     ) {
+    // Sadece haversine ile km/dk ver, profil değişmiyor!
+    const points = getDayPoints(day);
+    summary = getFallbackRouteSummary(points);
+    window.lastRouteSummaries[key] = summary;
   }
-  // Türkiye içinde ve summary eksikse: Haversine çalışmaz, rota beklenir.
-  
-  const distanceKm = (summary?.distance / 1000)?.toFixed(2) || '...';
-  const durationMin = Math.round(summary?.duration / 60) || '...';
 
-  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-  if (routeSummarySpan) {
-    // Eğer değer '...' ise ' km' veya ' min' ekle
-    routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + (distanceKm === '...' ? ' km' : ' km');
-    routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + (durationMin === '...' ? ' min' : ' min');
+  const distanceKm = (summary.distance / 1000).toFixed(2);
+  const durationMin = Math.round(summary.duration / 60);
+
+  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+  if (routeSummarySpan) {
+  routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
+  routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
   // Ascent/descent badge ekle
   const elev = window.routeElevStatsByDay?.[day] || {};
   if (routeSummarySpan.querySelector('.stat-ascent .badge'))
@@ -7587,12 +7603,7 @@ if (!hasRealRoute) {
     return;
   } else {
     // YURTDIŞI/Fly Mode: HAVERSINE ile mesafe ve süre dolsun!
-   // TÜRKİYE İÇİ HAVERSINE FALLBACK ENGELLE
-if (isInTurkey) {
-  console.log("[ROUTE] Türkiye rotası - haversine fallback engellendi");
-  return; // Haversine yapma, fonksiyondan çık
-}
- let totalKm = 0;
+    let totalKm = 0;
     let markerPositions = [];
     for (let i = 0; i < points.length; i++) {
       if (i > 0) {
@@ -8962,51 +8973,43 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
- // ... (dayMatch, day, gjKey tanımlamaları)
-// ... (dayMatch, day, gjKey tanımlamaları)
-const dayMatch = container.id.match(/day(\d+)/);
-const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-const gjKey = day ? `route-map-day${day}` : null;
+const spinner = container.querySelector('.spinner');
+if (spinner) spinner.remove();
+  // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
+  const dayMatch = container.id && container.id.match(/day(\d+)/);
+  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+  const gjKey = day ? `route-map-day${day}` : null;
+  const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
+  const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-// YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
-let track = container.querySelector('.scale-bar-track');
-if (track) track.innerHTML = ''; 
+  // Route ile ilgili verilerin varlığını kontrol et (TEK SEFER!)
+  const hasGeoJson = coords && coords.length >= 2;
+  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
+  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
+  const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
-// OSRM verilerinin durumunu kontrol et
-const gj = window.lastRouteGeojsons?.[gjKey] || null;
-const coords = gj?.features?.[0]?.geometry?.coordinates;
+  console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
 
-// KRİTİK TANIM: Gerçek Travel Mode kontrolü
-// **UYARI:** Eğer 'window.planRouteMode' sizin uygulamanızdaki doğru değişken değilse,
-// lütfen bu satırı uygulamanızın mevcut modu ('car', 'bike', 'walk' vb.) tutan değişkenle değiştirin.
-const isOSRMMode = ['car', 'bike', 'walk'].includes(window.planRouteMode); 
+  if (!container || isNaN(totalKm)) {
+    if (container) { container.innerHTML = ""; container.style.display = 'block'; }
+    return;
+  }
 
-// Kontrol 1: Rota koordinatı hiç yoksa
-if (!coords || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
-        <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
-    </div>`;
+  // Sadece expanded bar’da çalış; küçük bar’ı kapat
+  if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
+container.innerHTML = '<div class="spinner"></div>';
+    return;
+  }
+
+  // Eğer geojson veya rota yoksa hata döndür
+  if (!Array.isArray(coords) || coords.length < 2) {
+    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
     container.style.display = 'block';
     return;
-}
-
-// Kontrol 2: OSRM rotası bekleniyorsa (isOSRMMode) VE elimizde sadece Haversine rotası varsa (uzunluk 2), KESİNLİKLE ENGELLE.
-const isHaversineRoute = coords.length === 2;
-
-if (isOSRMMode && isHaversineRoute) {
-    console.log("[SCALEBAR] OSRM bekleniyor (Sadece 2 nokta mevcut). Haversine çizimi engellendi.");
-    container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
-        <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
-    </div>`;
-    container.style.display = 'block';
-    return; // FLASH'I ENGELLEYEN KRİTİK NOKTA.
-}
-
-
-// BURADAN İTİBAREN GeoJSON var ve çizime devam edilir.
+  }
 const mid = coords[Math.floor(coords.length / 2)];
-const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
-// ... (if (Date.now() < (window.__elevCooldownUntil || 0)) { ... bloğu buradan devam eder)
+
+  const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
@@ -9020,7 +9023,7 @@ const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${c
   }
 
   // Tek track
-
+  let track = container.querySelector('.scale-bar-track');
   if (!track) {
 container.innerHTML = '<div class="spinner"></div>';
     track = document.createElement('div');
@@ -9242,13 +9245,17 @@ container._elevKmSpan = totalKm;
       topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
     }
     if (topD) {
-        // SVG alanını kapatma: Önce sağ alta (width, SVG_H) in,
-        // sonra sola kay (0, SVG_H) ve başa dön (Z). Bu, dikey çizgiyi engeller.
-        let areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
-
-        areaPath.setAttribute('d', areaD);
-        areaPath.setAttribute('fill', '#263445');
-    }
+  // topD'nin son X'i width ise fazladan dik çizgi olmasın!
+  let lastX = null;
+  let points = topD.match(/[\d\.]+/g);
+  if (points && points.length >= 2) {
+    lastX = Number(points[points.length - 2]);
+  }
+  let closingX = (lastX !== null && Math.abs(lastX - width) < 0.1) ? '' : `L ${width} ${SVG_H} `;
+const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
+  areaPath.setAttribute('d', areaD);
+  areaPath.setAttribute('fill', '#263445');
+}
 
     // Eğim renkli çizgiler
     for (let i = 1; i < n; i++) {
