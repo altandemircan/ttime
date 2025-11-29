@@ -334,12 +334,12 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
   elevationLabels.style.display = 'block';
-const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+
+  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
   const lastIndex = gridLabels.length - 1; // 👈 EKLENMELİ
 
   gridLabels.forEach((obj, index) => { // 👈 index parametresi EKLENMELİ
-    const trackHeight = track.clientHeight || 180;
     const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
     const correctedY = (obj.y / svgHeight) * trackHeight; 
