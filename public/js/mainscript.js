@@ -339,10 +339,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   const lastIndex = gridLabels.length - 1; // En alttaki elemanın indeksi
 
-  gridLabels.forEach((obj, index) => {
-    if (index === lastIndex) {
-        return; // En alttaki etiketi atla
-    }
+  gridLabels.forEach((obj, index) => { // index'i döngüye ekledik
     const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
     const correctedY = (obj.y / svgHeight) * trackHeight; 
