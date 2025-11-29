@@ -265,7 +265,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   if (Array.isArray(markers)) {
-    const lastIndex = markers.length - 1; // 👈 Bu satırı ekleyin!
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       // Bar'ın uzunluğunda markerın konumu
@@ -309,8 +308,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
       // left ve bottom dinamik olarak ayarlandı
-      wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;transition: bottom 0.3s ease;`;
-      wrap.title = m.name || '';
+wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:${transformStyle};z-index:5;transition: bottom 0.3s ease;`; // <-- Yeni transformStyle kullanıldı      wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
     });
