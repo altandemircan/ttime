@@ -256,7 +256,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-  // --- MARKER KONUMLANDIRMA (Yükseklik Takibi ve Hizalama Eklendi) ---
+  // --- MARKER KONUMLANDIRMA (Yükseklik Takibi ve Hizalama) ---
   
   // Yükseklik verisi var mı kontrol et
   let elevData = null;
@@ -308,10 +308,9 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
           transformStyle = 'translateX(-100%)'; // Son marker: Sağa yaslı
       }
 
-      // Marker badge (Tasarım baz alınarak border:1px solid #fff; kullanıldı)
+      // Marker badge (Son gönderilen kod baz alındı: border:1px solid #fff;)
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      // bottom ve transform artık dinamik
       wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:${transformStyle};z-index:5;transition: bottom 0.3s ease;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
@@ -321,7 +320,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     console.warn("[DEBUG] markers is not array", markers);
   }
 
-  // --- ELEVATION LABEL RENDERING (En Alttaki Etiket Silindi) ---
+  // --- ELEVATION LABEL RENDERING (Tasarım DÜZELTİLDİ, En Alttaki Etiket Silindi) ---
   let gridLabels = [];
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
@@ -345,7 +344,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   gridLabels.forEach((obj, index) => {
     
-    // YENİ İSTEK: En alttaki etiketi ve çizgisini tamamen render etme
+    // İSTEK: En alttaki etiketi (en büyük y değeri) ve çizgisini tamamen render etme
     if (index === lastIndex) {
         return; 
     }
@@ -359,11 +358,11 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     right: 0;
     top: ${correctedY - 7.5}px;
     display: flex;
-    flex-direction: column;   
-    align-items: flex-end; /* ORİJİNAL TASARIM */
+    flex-direction: column;   /* Dikey */
+    align-items: flex-start; /* 👈 ORİJİNAL TASARIM DÜZELTİLDİ */
     pointer-events: none;
     text-align: right;
-    gap: 6px; /* ORİJİNAL TASARIM */
+    gap: 4px; /* 👈 ORİJİNAL TASARIM DÜZELTİLDİ */
   `;
 
   const label = document.createElement('div');
@@ -382,7 +381,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   const tick = document.createElement('div');
   tick.style.cssText = `
-        width: 35px; /* ORİJİNAL TASARIM */
+        width: 26px; /* 👈 ORİJİNAL TASARIM DÜZELTİLDİ */
       height: 8px;
     border-bottom: 1px dashed #cfd8dc;
     opacity: 0.7;
@@ -391,8 +390,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     margin-top: 0px;
   `;
   
+  wrapper.appendChild(label); // Önce label, sonra tick/çizgi
   wrapper.appendChild(tick);
-  wrapper.appendChild(label);
   elevationLabels.appendChild(wrapper);
   });
 
