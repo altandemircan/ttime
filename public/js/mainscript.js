@@ -356,7 +356,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   wrapper.appendChild(label);
   wrapper.appendChild(tick);
   elevationLabels.appendChild(wrapper);
-  });
+  }
 
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
