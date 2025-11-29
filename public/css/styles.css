@@ -4602,6 +4602,10 @@ right: 40px;
     .route-scale-bar {
          width: calc(100% - 20px);
     }
+    ..expanded-map{
+        height: calc(100% - 185px) !important;
+    bottom: 185px;
+    }
 }
 .elevation-labels-container {
     position: absolute;
@@ -6560,7 +6564,8 @@ border-bottom:1px solid #ddd;
   overflow: visible !important;
 }
     @supports (height: 100dvh) { .scale-bar-track { bottom: auto; } }
-    @media (max-width:768px) { .scale-bar-track { width: 100%; } }
+    @media (max-width:768px) { .scale-bar-track { width: 100%;
+    right: -5px; } }
     /* Distance baseline and ticks (top) */
    
     .scale-bar-tick { position:absolute; top:10px; width:1px; height:16px; background:#cfd8dc; }
