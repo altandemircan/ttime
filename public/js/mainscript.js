@@ -4461,19 +4461,19 @@ function updateExpandedMap(expandedMap, day) {
 
     // Route summary yoksa haversine ile üret!
     const sumKey = `route-map-day${day}`;
-    let sum = window.lastRouteSummaries?.[sumKey];
-    if (!sum && pts.length > 1) {
-        let totalKmSum = 0;
-        for (let i = 0; i < pts.length - 1; i++) {
-            totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
-        }
-        sum = {
-            distance: Math.round(totalKmSum * 1000),
-            duration: Math.round(totalKmSum/4*60),
-            ascent: 0,
-            descent: 0
-        };
+let sum = window.lastRouteSummaries?.[sumKey];
+if (!sum && pts.length > 1 && !areAllPointsInTurkey(pts)) {
+    let totalKmSum = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+        totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
     }
+    sum = {
+        distance: Math.round(totalKmSum * 1000),
+        duration: Math.round(totalKmSum/4*60),
+        ascent: 0,
+        descent: 0
+    };
+}
     if (sum && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
