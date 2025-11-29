@@ -347,17 +347,9 @@ gridLabels.sort((a, b) => a.y - b.y); // 👈 TERS SIRALAMAYI DÜZELT: Yüksek y
     // Gizleme stilini oluştur
 let visibilityStyle = index === lastIndex ? 'visibility: hidden;' : ''; // 👈 EKLENMELİ (opacity yerine visibility)
     wrapper.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: ${correctedY - 7.5}px;
-        display: flex;
-        flex-direction: column;   
-        align-items: flex-end;
-        pointer-events: none;
-        text-align: right;
-        gap: 6px;
+
 ${visibilityStyle} /* 👈 EKLENMELİ */    `;
-  
+
      const tick = document.createElement('div');
     tick.style.cssText = `
         width: 35px;
