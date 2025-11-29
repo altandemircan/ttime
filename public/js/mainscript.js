@@ -8963,8 +8963,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 function renderRouteScaleBar(container, totalKm, markers) {
     // ... fonksiyonun başında bulunan diğer değişken tanımlamaları ...
- // ... fonksiyonun başında bulunan diğer değişken tanımlamaları ...
-const dayMatch = container.id.match(/day(\d+)/);
+ onst dayMatch = container.id.match(/day(\d+)/);
 const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
 const gjKey = day ? `route-map-day${day}` : null;
     
