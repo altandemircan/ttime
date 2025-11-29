@@ -8962,10 +8962,11 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
- const dayMatch = container.id.match(/day(\d+)/);
+ // ... (dayMatch, day, gjKey tanımlamaları)
+const dayMatch = container.id.match(/day(\d+)/);
 const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
 const gjKey = day ? `route-map-day${day}` : null;
-    
+
 // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
 let track = container.querySelector('.scale-bar-track');
 if (track) track.innerHTML = ''; 
@@ -8974,9 +8975,10 @@ if (track) track.innerHTML = '';
 const gj = window.lastRouteGeojsons?.[gjKey] || null;
 const coords = gj?.features?.[0]?.geometry?.coordinates;
 
+// OSRM rotası bekleniyor mu? (areAllPointsInTurkey, OSRM modlarının proxy'sidir)
 const isInTurkey = areAllPointsInTurkey(getDayPoints(day)); 
 
-// Kontrol 1: Rota koordinatı hiç yoksa (en güvenli engelleme)
+// Kontrol 1: Rota koordinatı hiç yoksa
 if (!coords || coords.length < 2) {
     container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
