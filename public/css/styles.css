@@ -4579,7 +4579,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .expanded-map-panel {
 right: 40px;
     left: 40px;
-    width: calc(100% - 475px);
+    width: calc(100% - 465px);
     z-index: 123456;
     display: flex;
     position: fixed;
