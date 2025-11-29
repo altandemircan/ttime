@@ -4508,20 +4508,38 @@ function updateExpandedMap(expandedMap, day) {
         let markerPositions = [];
         // DÜZELTME: Türkiye içindeyseniz ve totalKm 0 ise markerları hesaplayıp gönderme.
         // Bu sayede createScaleElements fonksiyonu kendi içinde fallback olarak Haversine hesaplamaz.
-        if (totalKm > 0 || !isInTurkey) {
-            let currentDist = 0;
-            for (let i = 0; i < pts.length; i++) {
-                if (i > 0) {
-                    currentDist += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-                }
-                markerPositions.push({
-                    name: pts[i].name || "",
-                    distance: currentDist, // Burası sadece marker yerleşimi için, gerçek rota varsa üzerine yazılır
-                    lat: pts[i].lat,
-                    lng: pts[i].lng
-                });
-            }
+       // --- SCALE BAR MARKER POZİSYON HESAPLAMA MANTIĞI GÜNCELLENDİ ---
+
+// 1. GERÇEK ROTA VERİSİNİ KULLAN
+const hasRealRouteData = (sum && sum.distance > 0 && typeof getRouteMarkerPositionsOrdered === 'function');
+
+if (hasRealRouteData) {
+    // Rota özeti (summary) varsa, marker pozisyonlarını gerçek OSRM mesafelerine göre al.
+    markerPositions = getRouteMarkerPositionsOrdered(day);
+    if (!markerPositions || markerPositions.length === 0) {
+         markerPositions = [];
+    }
+} 
+// 2. FLY MODE (Türkiye Dışı) İSE HAVERSINE KULLAN (SADECE GERÇEK ROTA YOKSA)
+else if (pts.length > 1 && !isInTurkey) {
+    // Rota verisi gelmemiş Fly Mode ise Haversine ile kuş uçuşu hesapla
+    let currentDist = 0;
+    for (let i = 0; i < pts.length; i++) {
+        if (i > 0) {
+            currentDist += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
         }
+        // Dikkat: Bu mesafe kuş uçuşudur. Fly Mode için uygundur.
+        markerPositions.push({
+            name: pts[i].name || "",
+            distance: currentDist, 
+            lat: pts[i].lat,
+            lng: pts[i].lng
+        });
+    }
+} 
+// 3. TÜRKİYE İÇİ VE ROTA VERİSİ YOKSA: markerPositions boş kalır (Haversine çizimi yapılmaz).
+
+// --- GÜNCELLEME SONU ---
 
         scaleBarDiv.style.display = "block";
         scaleBarDiv.innerHTML = "";
