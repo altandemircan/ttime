@@ -4595,7 +4595,7 @@ right: 40px;
 
     @media (max-width:768px) {
  .expanded-map-panel { 
-    width: calc(100% - 50px);
+    width: calc(100% - 25px);
         right: 0px;
         left: 20px;
         /* background: #ff9900; */
@@ -5166,7 +5166,7 @@ right: 40px;
   .expanded-map-container {
     z-index: 1005 !important;
     width: 100% !important;
-        max-height: calc(100vh - 50px);
+        max-height: calc(100vh - 60px);
            background-color: #6382b6;
   }
 }
