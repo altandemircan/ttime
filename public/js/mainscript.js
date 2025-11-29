@@ -7586,7 +7586,12 @@ if (!hasRealRoute) {
     return;
   } else {
     // YURTDIŞI/Fly Mode: HAVERSINE ile mesafe ve süre dolsun!
-    let totalKm = 0;
+   // TÜRKİYE İÇİ HAVERSINE FALLBACK ENGELLE
+if (isInTurkey) {
+  console.log("[ROUTE] Türkiye rotası - haversine fallback engellendi");
+  return; // Haversine yapma, fonksiyondan çık
+}
+ let totalKm = 0;
     let markerPositions = [];
     for (let i = 0; i < points.length; i++) {
       if (i > 0) {
