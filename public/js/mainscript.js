@@ -335,26 +335,33 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   elevationLabels.className = 'elevation-labels-container';
   elevationLabels.style.display = 'block';
 
-  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+ const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  gridLabels.forEach(obj => {
-    const trackHeight = track.clientHeight || 180;
+  const lastIndex = gridLabels.length - 1; // 👈 Bu satır EKLENDİ
+
+  gridLabels.forEach((obj, index) => { // 👈 index parametresi EKLENDİ
+    const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
     const correctedY = (obj.y / svgHeight) * trackHeight; 
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: ${correctedY - 7.5}px;
-        display: flex;
-        flex-direction: column;   
-        align-items: flex-end;
-        pointer-events: none;
-        text-align: right;
-        gap: 6px;
-    `;
+  const wrapper = document.createElement('div');
+    wrapper.style.cssText = `
+        position: absolute;
+        right: 0;
+        top: ${correctedY - 7.5}px;
+        display: flex;
+        flex-direction: column;   
+        align-items: flex-end;
+        pointer-events: none;
+        text-align: right;
+        gap: 6px;
+    `;
+    
+    // EN ALTTAKİ ETİKETİ GİZLEME KONTROLÜ
+    if (index === lastIndex) { // 👈 BU SATIR EKLENDİ
+        wrapper.style.opacity = '0'; // 👈 BU SATIR EKLENDİ
+    }
 
-     const tick = document.createElement('div');
+     const tick = document.createElement('div');
     tick.style.cssText = `
         width: 35px;
         height: 8px;
