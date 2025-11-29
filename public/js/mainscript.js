@@ -10500,17 +10500,16 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
   }
   if (topD) {
-  // PATCH İÇİN BUL!
-  let lastX = null;
-  let points = topD.match(/[\d\.]+/g);
-  if (points && points.length >= 2) {
-    lastX = Number(points[points.length - 2]);
-  }
-  let closingX = (lastX !== null && Math.abs(lastX - width) < 0.1) ? '' : `L ${width} ${SVG_H} `;
-const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
-  areaPath.setAttribute('d', areaD);
-  areaPath.setAttribute('fill', '#263445');
-}
+  // DÜZELTİLMİŞ KISIM
+  // Yüksekliği temsil eden değişkeni kullanıyoruz
+  const floorY = heightNow; 
+
+  // Alanı kapatma (çizimi en sağ alta, oradan da sol alta bağlar)
+  // lastX kontrolünü yapmaya gerek yok, çünkü tüm örnekleri çizdikten sonra daima en sağ ve en alta gitmeliyiz.
+  const areaD = `${topD} L ${widthNow} ${floorY} L 0 ${floorY} Z`;
+
+  areaPath.setAttribute('d', areaD);
+  areaPath.setAttribute('fill', '#263445');
 
   // Eğim renkli segmentler
   for (let i = 1; i < elevSmooth.length; i++) {
