@@ -256,9 +256,9 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-  // --- MARKER KONUMLANDIRMA (Yükseklik ve Hizalama Güncellemeleri) ---
+  // --- MARKER KONUMLANDIRMA (Yükseklik ve Hizalama) ---
   
-  // Yükseklik verisi var mı kontrol et
+  // Yükseklik verisi var mı kontrol et (Markerların dikey pozisyonu için)
   let elevData = null;
   if (container && container._elevationData) {
       elevData = container._elevationData;
@@ -299,7 +299,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
           }
       }
     
-      // Marker hizalama mantığı (Yeni: İlk sola, Son sağa yaslı)
+      // Marker hizalama mantığı (İlk sola yaslı, Son sağa yaslı)
       let transformStyle = 'translateX(-50%)'; // Varsayılan: Ortalanmış
 
       if (idx === 0) {
@@ -310,10 +310,9 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
           transformStyle = 'translateX(-100%)'; 
       }
 
-      // Marker badge
+      // Marker badge (Stil, ikinci kod bloğundaki gibi 1px border kullanıyor)
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      // left, bottom ve transform dinamik olarak ayarlandı
       wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:${transformStyle};z-index:5;transition: bottom 0.3s ease;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
@@ -323,7 +322,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     console.warn("[DEBUG] markers is not array", markers);
   }
 
-  // Elevation label rendering
+  // --- ELEVATION LABEL RENDERING (Stiller Geri Yüklendi ve Çizgi Gizleme Eklendi) ---
   let gridLabels = [];
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
@@ -335,7 +334,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       .filter(obj => /-?\d+\s*m$/.test(obj.value));
   }
 
-  gridLabels.sort((a, b) => b.y - a.y);
+  gridLabels.sort((a, b) => b.y - a.y); // En alttaki eleman sona denk gelir (y değeri en büyük olan)
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
@@ -343,35 +342,25 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  // gridLabels y eksenine göre (büyük y değeri aşağıda) azalan sırada sıralanmıştı
+  // gridLabels y eksenine göre azalan sırada sıralanmıştı
   const lastIndex = gridLabels.length - 1; 
 
   gridLabels.forEach((obj, index) => {
     const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
-    const correctedY = (obj.y / svgHeight) * trackHeight; 
+    const correctedY = (obj.y / svgHeight) * trackHeight; // ORANTILAMA
+    
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `
         position: absolute;
         right: 0;
         top: ${correctedY - 7.5}px;
         display: flex;
-        flex-direction: column;   
-        align-items: flex-end;
+        flex-direction: column;   /* Dikey */
+        align-items: flex-start; /* ORİJİNAL STİL */
         pointer-events: none;
         text-align: right;
-        gap: 6px;
-    `;
-
-     const tick = document.createElement('div');
-    tick.style.cssText = `
-        width: 35px;
-        height: 8px;
-        border-bottom: 1px dashed #cfd8dc;
-        opacity: 0.7;
-        display: block;
-        margin-left: 0px;
-        margin-top: 0px;
+        gap: 4px; /* ORİJİNAL STİL */
     `;
 
     const label = document.createElement('div');
@@ -388,15 +377,26 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     `;
     label.textContent = obj.value;
 
-    // YENİ MANTIK: En alttaki etiketin çizgisini gizle
+    const tick = document.createElement('div');
+    tick.style.cssText = `
+        width: 26px; /* ORİJİNAL STİL */
+        height: 8px;
+        border-bottom: 1px dashed #cfd8dc;
+        opacity: 0.7;
+        display: block;
+        margin-left: 0px;
+        margin-top: 0px;
+    `;
+
+    // İstenen MANTIK: En alttaki etiketin çizgisini gizle
     if (index === lastIndex) {
         tick.style.display = 'none';
     }
-   
-
+    
+    // ORİJİNAL DOM SIRASI
+    wrapper.appendChild(label); 
     wrapper.appendChild(tick);
-    wrapper.appendChild(label);
-    
+    
     elevationLabels.appendChild(wrapper);
   });
 
