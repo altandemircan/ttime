@@ -8963,34 +8963,44 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 function renderRouteScaleBar(container, totalKm, markers) {
     // ... fonksiyonun başında bulunan diğer değişken tanımlamaları ...
-    const dayMatch = container.id.match(/day(\d+)/);
-    const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-    const gjKey = day ? `route-map-day${day}` : null;
+ onst dayMatch = container.id.match(/day(\d+)/);
+const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+const gjKey = day ? `route-map-day${day}` : null;
     
- // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
+// YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
 let track = container.querySelector('.scale-bar-track');
 if (track) track.innerHTML = ''; 
 
 // OSRM verilerinin durumunu kontrol et
 const gj = window.lastRouteGeojsons?.[gjKey] || null;
 const coords = gj?.features?.[0]?.geometry?.coordinates;
+const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance; // OSRM yanıtının geldiğinin kesin kanıtı
 
-// GeoJSON var mı?
-const hasGeoJson = coords && coords.length >= 2;
+// Geçerli rota sayılır: Ya koordinat listesi 2'den büyükse (rota detayları gelmişse) ya da özet (Summary) verisi varsa.
+const hasValidRoute = (coords && coords.length > 2) || hasSummary; 
 
-// Rota noktaları yoksa (yeni yükleniyor veya boş)
-if (!hasGeoJson) {
+const isInTurkey = areAllPointsInTurkey(getDayPoints(day)); // Non-Fly mode proxy (OSRM rotası)
+
+// KRİTİK KONTROL: Eğer Türkiye rotası (Fly Mode değil) VE geçerli OSRM rotası henüz gelmemişse, ÇİZİMİ ENGELLE.
+if (isInTurkey && !hasValidRoute) {
+    console.log("[SCALEBAR] OSRM verisi bekleniyor. Haversine çizimi engellendi.");
     container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
     </div>`;
     container.style.display = 'block';
-    return; 
+    return; // KRİTİK: ÇİZİMİ KESİNLİKLE ENGELLER.
 }
 
-// BURADAN İTİBAREN GeoJSON var (Eski veya yeni)
+// Rota noktaları bulunamadıysa (bu genellikle boş bir sepet veya Fly Mode'da olur)
+if (!Array.isArray(coords) || coords.length < 2) {
+    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
+    container.style.display = 'block';
+    return;
+}
+
+// BURADAN İTİBAREN GeoJSON var ve çizime devam edilir.
 const mid = coords[Math.floor(coords.length / 2)];
 const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
-
 
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
