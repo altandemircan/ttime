@@ -367,7 +367,7 @@ ${visibilityStyle} /* 👈 EKLENMELİ */    `;
         font-size: 10px;
         color: #607d8b;
         background: none;
-        line-height: 0.50;
+           line-height: 1.5;
         text-align: right;
         padding-right: 0px;
         white-space: nowrap;
