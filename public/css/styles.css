@@ -4597,6 +4597,7 @@ right: 40px;
  .expanded-map-panel { 
     width: -webkit-fill-available;   
     right:  0px;  
+    bottom: 0px;
     }
     .route-scale-bar {
          width: calc(100% - 20px);
