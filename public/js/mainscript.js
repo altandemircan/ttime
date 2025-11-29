@@ -334,19 +334,18 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
   elevationLabels.style.display = 'block';
-
-  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
   const lastIndex = gridLabels.length - 1; // 👈 EKLENMELİ
 
   gridLabels.forEach((obj, index) => { // 👈 index parametresi EKLENMELİ
     const trackHeight = track.clientHeight || 180;
+    const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
     const correctedY = (obj.y / svgHeight) * trackHeight; 
   const wrapper = document.createElement('div');
     // Gizleme stilini oluştur
-    let opacityStyle = index === lastIndex ? 'opacity: 0;' : ''; // 👈 EKLENMELİ
-
+let visibilityStyle = index === lastIndex ? 'visibility: hidden;' : ''; // 👈 EKLENMELİ (opacity yerine visibility)
     wrapper.style.cssText = `
         position: absolute;
         right: 0;
@@ -357,8 +356,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
         pointer-events: none;
         text-align: right;
         gap: 6px;
-        ${opacityStyle} /* 👈 EKLENMELİ */
-    `;
+${visibilityStyle} /* 👈 EKLENMELİ */    `;
      const tick = document.createElement('div');
     tick.style.cssText = `
         width: 35px;
