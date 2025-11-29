@@ -8991,18 +8991,6 @@ if (!hasGeoJson) {
 const mid = coords[Math.floor(coords.length / 2)];
 const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
 
-const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
-
-// KRİTİK KONTROL: Eğer Türkiye rotası ve mevcut GeoJSON'un anahtarı, 
-// yüklenmiş elevation verisinin anahtarıyla EŞLEŞMİYORSA, çizimi ENGELLE.
-if (isInTurkey && container.dataset.elevLoadedKey !== routeKey) {
-    console.log("[SCALEBAR] Yeni rota GeoJSON'u tespit edildi, elevation verisi bekleniyor. Çizim Engellendi.");
-    container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
-        <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
-    </div>`;
-    container.style.display = 'block';
-    return; // ÇİZİMİ KESİN OLARAK ENGELLER.
-}
 
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
