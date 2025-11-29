@@ -8962,11 +8962,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-    // ... fonksiyonun başında bulunan diğer değişken tanımlamaları ...
- // ... (fonksiyonun başlangıcı: function renderRouteScaleBar(container, totalKm, markers) { ... )
-
-// ... fonksiyonun başında bulunan diğer değişken tanımlamaları ...
-const dayMatch = container.id.match(/day(\d+)/);
+ const dayMatch = container.id.match(/day(\d+)/);
 const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
 const gjKey = day ? `route-map-day${day}` : null;
     
@@ -8984,7 +8980,6 @@ const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
 
 // Kontrol 1: Rota koordinatı hiç yoksa (en güvenli engelleme)
 if (!coords || coords.length < 2) {
-    console.log("[SCALEBAR] Rota noktaları bulunamadı. Yükleniyor.");
     container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
     </div>`;
@@ -9009,7 +9004,6 @@ if (isInTurkey && isHaversineRoute && !hasSummary) {
 // BURADAN İTİBAREN GeoJSON var ve çizime devam edilir.
 const mid = coords[Math.floor(coords.length / 2)];
 const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
-
 // ... (if (Date.now() < (window.__elevCooldownUntil || 0)) { ... bloğu buradan devam eder)
 
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
