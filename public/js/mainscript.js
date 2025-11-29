@@ -329,8 +329,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       .filter(obj => /-?\d+\s*m$/.test(obj.value));
   }
 
-gridLabels.sort((a, b) => b.y - a.y);
-  gridLabels.pop(); // 👈 SADECE BU SATIR EKLENMELİ: En alttaki etiketi (dizinin son elemanını) diziden çıkarır.
+  gridLabels.sort((a, b) => b.y - a.y);
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
@@ -338,23 +337,28 @@ gridLabels.sort((a, b) => b.y - a.y);
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  gridLabels.forEach(obj => {
-    const trackHeight = track.clientHeight || 180;
+  const lastIndex = gridLabels.length - 1; // 👈 EKLENMELİ
+
+  gridLabels.forEach((obj, index) => { // 👈 index parametresi EKLENMELİ
+    const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
     const correctedY = (obj.y / svgHeight) * trackHeight; 
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: ${correctedY - 7.5}px;
-        display: flex;
-        flex-direction: column;   
-        align-items: flex-end;
-        pointer-events: none;
-        text-align: right;
-        gap: 6px;
-    `;
+  const wrapper = document.createElement('div');
+    // Gizleme stilini oluştur
+    let opacityStyle = index === lastIndex ? 'opacity: 0;' : ''; // 👈 EKLENMELİ
 
+    wrapper.style.cssText = `
+        position: absolute;
+        right: 0;
+        top: ${correctedY - 7.5}px;
+        display: flex;
+        flex-direction: column;   
+        align-items: flex-end;
+        pointer-events: none;
+        text-align: right;
+        gap: 6px;
+        ${opacityStyle} /* 👈 EKLENMELİ */
+    `;
      const tick = document.createElement('div');
     tick.style.cssText = `
         width: 35px;
