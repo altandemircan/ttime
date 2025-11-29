@@ -5035,10 +5035,10 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
         top: ${correctedY - 7.5}px;
         display: flex;
         flex-direction: column;   
-        align-items: flex-start;
+        align-items: flex-end;
         pointer-events: none;
         text-align: right;
-        gap: 4px;
+        gap: 6px;
     `;
 
      const tick = document.createElement('div');
