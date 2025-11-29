@@ -265,6 +265,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
 
   if (Array.isArray(markers)) {
+    const lastIndex = markers.length - 1; // 👈 Bu satırı ekleyin!
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       // Bar'ın uzunluğunda markerın konumu
@@ -303,13 +304,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
               bottomStyle = `calc(${heightPct}% - 7px)`;
           }
       }
-// Marker Hizalama (Fonksiyonel İyileştirme)
-      let transformStyle = 'translateX(-50%)';
-      if (idx === 0) {
-          transformStyle = 'translateX(0)'; // İlk marker: Sola yaslı
-      } else if (idx === lastIndex && lastIndex > 0) {
-          transformStyle = 'translateX(-100%)'; // Son marker: Sağa yaslı
-      }
+
       // Marker badge
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
