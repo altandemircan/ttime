@@ -5041,6 +5041,17 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
         gap: 4px;
     `;
 
+     const tick = document.createElement('div');
+    tick.style.cssText = `
+        width: 26px;
+        height: 8px;
+        border-bottom: 1px dashed #cfd8dc;
+        opacity: 0.7;
+        display: block;
+        margin-left: 0px;
+        margin-top: 0px;
+    `;
+
     const label = document.createElement('div');
     label.className = 'elevation-label';
     label.style.cssText = `
@@ -5053,22 +5064,13 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
         white-space: nowrap;
         margin-bottom: -6px;
     `;
-
     label.textContent = obj.value;
 
-    const tick = document.createElement('div');
-    tick.style.cssText = `
-        width: 26px;
-        height: 8px;
-        border-bottom: 1px dashed #cfd8dc;
-        opacity: 0.7;
-        display: block;
-        margin-left: 0px;
-        margin-top: 0px;
-    `;
+   
 
-    wrapper.appendChild(label);
     wrapper.appendChild(tick);
+    wrapper.appendChild(label);
+    
     elevationLabels.appendChild(wrapper);
   });
 
