@@ -10510,6 +10510,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   areaPath.setAttribute('d', areaD);
   areaPath.setAttribute('fill', '#263445');
+}
 
   // Eğim renkli segmentler
   for (let i = 1; i < elevSmooth.length; i++) {
