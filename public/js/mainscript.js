@@ -335,15 +335,18 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   elevationLabels.className = 'elevation-labels-container';
   elevationLabels.style.display = 'block';
 
- const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
+const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  const lastIndex = gridLabels.length - 1; // 👈 Bu satır EKLENDİ
+  const lastIndex = gridLabels.length - 1; // 👈 Bu satır EKLENMELİ
 
-  gridLabels.forEach((obj, index) => { // 👈 index parametresi EKLENDİ
+  gridLabels.forEach((obj, index) => { // 👈 index parametresi EKLENMELİ
     const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
     const correctedY = (obj.y / svgHeight) * trackHeight; 
-  const wrapper = document.createElement('div');
+    const wrapper = document.createElement('div');
+    // Gizleme stilini oluştur
+    let opacityStyle = index === lastIndex ? 'opacity: 0;' : ''; // 👈 BU SATIR EKLENMELİ
+
     wrapper.style.cssText = `
         position: absolute;
         right: 0;
@@ -354,12 +357,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
         pointer-events: none;
         text-align: right;
         gap: 6px;
+        ${opacityStyle} /* 👈 BU SATIR EKLENMELİ */
     `;
-    
-    // EN ALTTAKİ ETİKETİ GİZLEME KONTROLÜ
-    if (index === lastIndex) { // 👈 BU SATIR EKLENDİ
-        wrapper.style.opacity = '0'; // 👈 BU SATIR EKLENDİ
-    }
 
      const tick = document.createElement('div');
     tick.style.cssText = `
