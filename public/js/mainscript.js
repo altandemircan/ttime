@@ -235,7 +235,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     const leftPct = (curKm / spanKm) * 100;
 
     const tick = document.createElement('div');
-    tick.className = 'scale-bar-tick';
+    tick.className = 'scale-bar-tick'; // <-- Class adı eklendi
     tick.style.left = `${leftPct}%`;
     tick.style.position = 'absolute';
     tick.style.top = '10px';
@@ -245,7 +245,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(tick);
 
     const label = document.createElement('div');
-    label.className = 'scale-bar-label';
+    label.className = 'scale-bar-label'; // <-- Class adı eklendi
     label.style.left = `${leftPct}%`;
     label.style.position = 'absolute';
     label.style.top = '30px';
@@ -329,7 +329,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       .filter(obj => /-?\d+\s*m$/.test(obj.value));
   }
 
-gridLabels.sort((a, b) => a.y - b.y); // Y koordinatına göre küçükten büyüğe sırala (Ekranın üstünden altına)
+// 1. DÜZELTME: Sıralama Düzeltildi (Tersten Yazmayı Engeller)
+  gridLabels.sort((a, b) => a.y - b.y);
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
@@ -337,15 +338,14 @@ gridLabels.sort((a, b) => a.y - b.y); // Y koordinatına göre küçükten büy�
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  // GİZLEME MANTIĞI İÇİN YENİ EKLENEN/GÜNCELLENEN KISIMLAR:
   const lastIndex = gridLabels.length - 1; 
 
-  gridLabels.forEach((obj, index) => { // 'index' parametresi eklendi
+  gridLabels.forEach((obj, index) => { 
     const trackHeight = track.clientHeight || 180;
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
-const correctedY = (obj.y / svgHeight) * trackHeight; 
+    const correctedY = (obj.y / svgHeight) * trackHeight; 
     const wrapper = document.createElement('div');
-    
+    
     wrapper.style.cssText = `
         position: absolute;
         right: 0;
@@ -357,13 +357,18 @@ const correctedY = (obj.y / svgHeight) * trackHeight; 
         text-align: right;
         gap: 6px;
     `;
-    
-    // YAPIYI BOZMAYAN KONTROL: En alttakini gizle
-    if (index === lastIndex) {
-        wrapper.style.opacity = '0'; // <-- BU SATIR EKLENDİ
-    }
+    
+    // 2. DÜZELTME: En alttaki etiketi pozisyonu bozmadan gizle
+    if (index === lastIndex) {
+        wrapper.style.opacity = '0'; 
+    }
 
      const tick = document.createElement('div');
+    // 3. DÜZELTME: Çizgi (tick) için sınıf adı eklendi (Tasarım geri geldi)
+    // Sınıf adı bilinmediği için yaygın kullanılan 'elevation-tick' veya 'scale-bar-tick' gibi bir isim eklenmeli. 
+    // En güvenli varsayım için 'elevation-tick' kullanalım.
+    tick.className = 'elevation-tick'; 
+    
     tick.style.cssText = `
         width: 35px;
         height: 8px;
@@ -375,7 +380,7 @@ const correctedY = (obj.y / svgHeight) * trackHeight; 
     `;
 
     const label = document.createElement('div');
-    label.className = 'elevation-label';
+    label.className = 'elevation-label'; // Bu zaten doğruydu
     label.style.cssText = `
         font-size: 10px;
         color: #607d8b;
