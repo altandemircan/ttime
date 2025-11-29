@@ -8963,6 +8963,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 function renderRouteScaleBar(container, totalKm, markers) {
  // ... (dayMatch, day, gjKey tanımlamaları)
+// ... (dayMatch, day, gjKey tanımlamaları)
 const dayMatch = container.id.match(/day(\d+)/);
 const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
 const gjKey = day ? `route-map-day${day}` : null;
@@ -8975,8 +8976,10 @@ if (track) track.innerHTML = '';
 const gj = window.lastRouteGeojsons?.[gjKey] || null;
 const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-// OSRM rotası bekleniyor mu? (areAllPointsInTurkey, OSRM modlarının proxy'sidir)
-const isInTurkey = areAllPointsInTurkey(getDayPoints(day)); 
+// KRİTİK TANIM: Gerçek Travel Mode kontrolü
+// **UYARI:** Eğer 'window.planRouteMode' sizin uygulamanızdaki doğru değişken değilse,
+// lütfen bu satırı uygulamanızın mevcut modu ('car', 'bike', 'walk' vb.) tutan değişkenle değiştirin.
+const isOSRMMode = ['car', 'bike', 'walk'].includes(window.planRouteMode); 
 
 // Kontrol 1: Rota koordinatı hiç yoksa
 if (!coords || coords.length < 2) {
@@ -8987,10 +8990,10 @@ if (!coords || coords.length < 2) {
     return;
 }
 
-// Kontrol 2: OSRM rotası bekleniyorsa (isInTurkey) VE elimizde sadece Haversine rotası varsa (uzunluk 2), KESİNLİKLE ENGELLE.
+// Kontrol 2: OSRM rotası bekleniyorsa (isOSRMMode) VE elimizde sadece Haversine rotası varsa (uzunluk 2), KESİNLİKLE ENGELLE.
 const isHaversineRoute = coords.length === 2;
 
-if (isInTurkey && isHaversineRoute) {
+if (isOSRMMode && isHaversineRoute) {
     console.log("[SCALEBAR] OSRM bekleniyor (Sadece 2 nokta mevcut). Haversine çizimi engellendi.");
     container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
@@ -9004,7 +9007,6 @@ if (isInTurkey && isHaversineRoute) {
 const mid = coords[Math.floor(coords.length / 2)];
 const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
 // ... (if (Date.now() < (window.__elevCooldownUntil || 0)) { ... bloğu buradan devam eder)
-
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
