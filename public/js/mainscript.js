@@ -8967,9 +8967,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
     const gjKey = day ? `route-map-day${day}` : null;
     
-    // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle
-    // Bu, önceki Haversine/OSRM grafiğini anında DOM'dan kaldırır.
-    // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
+ // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
 let track = container.querySelector('.scale-bar-track');
 if (track) track.innerHTML = ''; 
 
@@ -9005,15 +9003,6 @@ if (isInTurkey && container.dataset.elevLoadedKey !== routeKey) {
     container.style.display = 'block';
     return; // ÇİZİMİ KESİN OLARAK ENGELLER.
 }
-
-    // Eğer buraya geldiyse, ya Fly Mode'dadır ya da tüm veri hazırdır. 
-    // Eğer hala rota noktası yoksa (coords.length < 2) hata döndür:
-    if (!Array.isArray(coords) || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
-    container.style.display = 'block';
-    return;
-  }
-const mid = coords[Math.floor(coords.length / 2)];
 
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
