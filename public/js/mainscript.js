@@ -9018,7 +9018,7 @@ const mid = coords[Math.floor(coords.length / 2)];
   }
 
   // Tek track
-  let track = container.querySelector('.scale-bar-track');
+
   if (!track) {
 container.innerHTML = '<div class="spinner"></div>';
     track = document.createElement('div');
