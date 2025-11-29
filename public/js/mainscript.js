@@ -4461,19 +4461,19 @@ function updateExpandedMap(expandedMap, day) {
 
     // Route summary yoksa haversine ile üret!
     const sumKey = `route-map-day${day}`;
-let sum = window.lastRouteSummaries?.[sumKey];
-if (!sum && pts.length > 1 && !areAllPointsInTurkey(pts)) {
-    let totalKmSum = 0;
-    for (let i = 0; i < pts.length - 1; i++) {
-        totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
+    let sum = window.lastRouteSummaries?.[sumKey];
+    if (!sum && pts.length > 1) {
+        let totalKmSum = 0;
+        for (let i = 0; i < pts.length - 1; i++) {
+            totalKmSum += haversine(pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng) / 1000;
+        }
+        sum = {
+            distance: Math.round(totalKmSum * 1000),
+            duration: Math.round(totalKmSum/4*60),
+            ascent: 0,
+            descent: 0
+        };
     }
-    sum = {
-        distance: Math.round(totalKmSum * 1000),
-        duration: Math.round(totalKmSum/4*60),
-        ascent: 0,
-        descent: 0
-    };
-}
     if (sum && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
@@ -8961,6 +8961,20 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
+    // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
+  const dayMatch = container.id && container.id.match(/day(\d+)/);
+  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+  const isInTurkey = day ? areAllPointsInTurkey(getDayPoints(day)) : false;
+  
+  if (isInTurkey && totalKm < 5) {
+    console.log("[SCALEBAR] Türkiye rotası - haversine engellendi, totalKm:", totalKm);
+    container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+      <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
+    </div>`;
+    container.style.display = 'block';
+    return;
+  }
+  
 const spinner = container.querySelector('.spinner');
 if (spinner) spinner.remove();
   // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
