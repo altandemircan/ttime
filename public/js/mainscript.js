@@ -8973,9 +8973,7 @@ if (track) track.innerHTML = '';
 // OSRM verilerinin durumunu kontrol et
 const gj = window.lastRouteGeojsons?.[gjKey] || null;
 const coords = gj?.features?.[0]?.geometry?.coordinates;
-const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance; // OSRM'den gelen rota özetinin varlığı
 
-// areAllPointsInTurkey, genellikle OSRM (car/bike/walk) rotalarının proxy'sidir.
 const isInTurkey = areAllPointsInTurkey(getDayPoints(day)); 
 
 // Kontrol 1: Rota koordinatı hiç yoksa (en güvenli engelleme)
@@ -8987,11 +8985,10 @@ if (!coords || coords.length < 2) {
     return;
 }
 
-// Kontrol 2: OSRM rotası bekleniyorsa (isInTurkey) VE elimizde sadece Haversine rotası varsa (uzunluk 2) 
-// VEYA OSRM summary verisi henüz gelmemişse, KESİNLİKLE ENGELLE.
+// Kontrol 2: OSRM rotası bekleniyorsa (isInTurkey) VE elimizde sadece Haversine rotası varsa (uzunluk 2), KESİNLİKLE ENGELLE.
 const isHaversineRoute = coords.length === 2;
 
-if (isInTurkey && isHaversineRoute && !hasSummary) {
+if (isInTurkey && isHaversineRoute) {
     console.log("[SCALEBAR] OSRM bekleniyor (Sadece 2 nokta mevcut). Haversine çizimi engellendi.");
     container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
