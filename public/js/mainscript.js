@@ -329,7 +329,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       .filter(obj => /-?\d+\s*m$/.test(obj.value));
   }
 
-  gridLabels.sort((a, b) => b.y - a.y);
+gridLabels.sort((a, b) => a.y - b.y); // 👈 TERS SIRALAMAYI DÜZELT: Yüksek y'yi (aşağıyı) sona alır.
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
