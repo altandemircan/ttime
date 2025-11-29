@@ -8990,9 +8990,6 @@ container.innerHTML = '<div class="spinner"></div>';
  // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
 // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
 const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
-const isFlyMode = !isInTurkey; // Fly Mode kontrolü
-
-// hasGeoJson: gerçek rota (OSRM) koordinatları var mı? (geojson && geojson.features[0].geometry.coordinates.length > 1)
 if (isInTurkey && !hasGeoJson) {
   console.log("[SCALEBAR] Türkiye rotası - OSRM bekleniyor, scale bar çizilmedi");
   container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
