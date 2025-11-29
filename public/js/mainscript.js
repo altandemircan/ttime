@@ -5043,7 +5043,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
      const tick = document.createElement('div');
     tick.style.cssText = `
-        width: 26px;
+        width: 35px;
         height: 8px;
         border-bottom: 1px dashed #cfd8dc;
         opacity: 0.7;
