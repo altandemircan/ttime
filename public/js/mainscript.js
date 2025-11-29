@@ -333,7 +333,7 @@ gridLabels.sort((a, b) => a.y - b.y); // 👈 TERS SIRALAMAYI DÜZELT: Yüksek y
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
-  elevationLabels.style.display = 'block';
+  elevationLabels.style.display = 'flex';
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
