@@ -4942,7 +4942,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
               
               // CSS calc ile ayarla. 
               // -9px çıkarma sebebimiz marker'ın yüksekliği 18px olduğu için tam ortasını çizgiye denk getirmek.
-              bottomStyle = `calc(${heightPct}% - 9px)`;
+              bottomStyle = `calc(${heightPct}% - 7px)`;
           }
       }
 
