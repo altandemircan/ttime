@@ -4614,14 +4614,18 @@ right: 40px;
 .elevation-labels-container {
     position: absolute;
     left: -65px;
-    top: 2px;
+    top: -8px;
     bottom: 0px;
     width: 45px;
     height: 100%;
     pointer-events: none;
     z-index: 5;
-    display: block;
     background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    
 }
 .expanded-map {
     width: 100%;
