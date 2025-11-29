@@ -5103,29 +5103,28 @@ function updateRouteStatsUI(day) {
   let summary = window.lastRouteSummaries?.[key] || null;
 
   // YENİ PATCH: SADECE FLY MODE'da (Türkiye dışı) ise Haversine ile doldur/overwrite et.
+  // Türkiye içindeki (walk/bike/car modları) başlangıçtaki Haversine "flash"ını engeller.
   const isFlyMode = !areAllPointsInTurkey(getDayPoints(day));
 
-  // Türkiye içindeki (walk/bike/car modları) başlangıçtaki Haversine "flash"ını engeller.
-  // Bu kontrolü, sadece Fly Mode'da summary eksikse/hatalıysa Haversine kullanacak şekilde güncelleyin:
-  const shouldUseFallback = isFlyMode && (!summary || typeof summary.distance !== "number" || isNaN(summary.distance));
-  
-  if (shouldUseFallback) { 
-    // Fly Mode'da ve summary eksikse, Haversine kullan
-    const points = getDayPoints(day);
-    summary = getFallbackRouteSummary(points); // Bu fonksiyonun Haversine kullandığı varsayılır
-    window.lastRouteSummaries[key] = summary;
+  // Türkiye içindeysen ve summary eksikse, Haversine kullanma.
+  const isSummaryMissing = !summary || typeof summary.distance !== "number" || isNaN(summary.distance);
+
+  if (isFlyMode && isSummaryMissing) { 
+    // Fly Mode'da (Türkiye dışı) ve summary eksikse, Haversine ile doldur.
+    const points = getDayPoints(day);
+    summary = getFallbackRouteSummary(points);
+    window.lastRouteSummaries[key] = summary;
   }
-  // Türkiye içinde ve summary eksik/hatalıysa: Haversine çalışmaz, rota beklenir.
+  // Türkiye içinde ve summary eksikse: Haversine çalışmaz, rota beklenir.
   
-  // Eğer Türkiye içinde ve rota henüz gelmediyse, summary null/eksik kalabilir.
-  // Bu durumda, metin alanlarını placeholder ile doldurun:
-  const distanceKm = (summary?.distance / 1000)?.toFixed(2) || '...';
-  const durationMin = Math.round(summary?.duration / 60) || '...';
+  const distanceKm = (summary?.distance / 1000)?.toFixed(2) || '...';
+  const durationMin = Math.round(summary?.duration / 60) || '...';
 
   const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
   if (routeSummarySpan) {
-  routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
-  routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
+    // Eğer değer '...' ise ' km' veya ' min' ekle
+    routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + (distanceKm === '...' ? ' km' : ' km');
+    routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + (durationMin === '...' ? ' min' : ' min');
   // Ascent/descent badge ekle
   const elev = window.routeElevStatsByDay?.[day] || {};
   if (routeSummarySpan.querySelector('.stat-ascent .badge'))
