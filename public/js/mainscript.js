@@ -353,7 +353,7 @@ ${visibilityStyle} /* 👈 EKLENMELİ */    `;
      const tick = document.createElement('div');
     tick.style.cssText = `
         width: 35px;
-        height: 8px;
+       
         border-bottom: 1px dashed #cfd8dc;
         opacity: 0.7;
         display: block;
@@ -371,7 +371,7 @@ ${visibilityStyle} /* 👈 EKLENMELİ */    `;
         text-align: right;
         padding-right: 0px;
         white-space: nowrap;
-        margin-bottom: -6px;
+      
     `;
     label.textContent = obj.value;
 
