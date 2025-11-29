@@ -3777,13 +3777,10 @@ if (hasNextLoc) {
         ? Math.round(summary.duration / 60) + " min"
         : Math.round(summary.duration) + " sec";
     } else {
-      const ptA = item.location;
-      const ptB = nextItem.location;
-      const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
-      const durSec = Math.round((distM / 1000) / 4 * 3600);
-      distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
-      durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
-    }
+            // TÜRKİYE İÇİ: Summary yoksa Haversine KULLANMA. Rota beklenir.
+            distanceStr = '... km'; 
+            durationStr = '... min';
+        }
 
     // --- İKONLAR ---
     if (travelMode === "driving") {
@@ -5104,18 +5101,15 @@ function updateRouteStatsUI(day) {
 
   // YENI PATCH: FLY MODE'da veya summary eksikse/hatalıysa fallback ile doldur
   // (bu satır: profile veya travel mode mantığından bağımsız)
-  if (!summary ||
-      typeof summary.distance !== "number" ||
-      typeof summary.duration !== "number" ||
-      isNaN(summary.distance) ||
-      isNaN(summary.duration) ||
-      !areAllPointsInTurkey(getDayPoints(day))
-     ) {
-    // Sadece haversine ile km/dk ver, profil değişmiyor!
-    const points = getDayPoints(day);
-    summary = getFallbackRouteSummary(points);
-    window.lastRouteSummaries[key] = summary;
-  }
+ const isFlyMode = !areAllPointsInTurkey(getDayPoints(day));
+
+if (isFlyMode) { 
+  // Fly Mode'da summary'nin invalid olup olmaması fark etmez, Haversine ile doldurulur.
+  const points = getDayPoints(day);
+  summary = getFallbackRouteSummary(points);
+  window.lastRouteSummaries[key] = summary;
+}
+// Türkiye içinde ve summary eksik/hatalıysa: Haversine çalışmaz, rota beklenir.
 
   const distanceKm = (summary.distance / 1000).toFixed(2);
   const durationMin = Math.round(summary.duration / 60);
@@ -8961,20 +8955,6 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-    // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
-  const dayMatch = container.id && container.id.match(/day(\d+)/);
-  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-  const isInTurkey = day ? areAllPointsInTurkey(getDayPoints(day)) : false;
-  
-  if (isInTurkey && totalKm < 5) {
-    console.log("[SCALEBAR] Türkiye rotası - haversine engellendi, totalKm:", totalKm);
-    container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
-      <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
-    </div>`;
-    container.style.display = 'block';
-    return;
-  }
-  
 const spinner = container.querySelector('.spinner');
 if (spinner) spinner.remove();
   // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
