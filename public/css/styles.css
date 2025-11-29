@@ -4602,7 +4602,17 @@ right: 40px;
          width: calc(100% - 20px);
     }
 }
-
+.elevation-labels-container {
+    position: absolute;
+    left: -65px;
+    top: 0px;
+    bottom: 0px;
+    width: 45px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    display: block;
+}
 .expanded-map {
     width: 100%;
     height: calc(100% - 50px);   
