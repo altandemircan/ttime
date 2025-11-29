@@ -3777,10 +3777,13 @@ if (hasNextLoc) {
         ? Math.round(summary.duration / 60) + " min"
         : Math.round(summary.duration) + " sec";
     } else {
-            // TÜRKİYE İÇİ: Summary yoksa Haversine KULLANMA. Rota beklenir.
-            distanceStr = '... km'; 
-            durationStr = '... min';
-        }
+      const ptA = item.location;
+      const ptB = nextItem.location;
+      const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
+      const durSec = Math.round((distM / 1000) / 4 * 3600);
+      distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
+      durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
+    }
 
     // --- İKONLAR ---
     if (travelMode === "driving") {
@@ -5104,7 +5107,8 @@ function updateRouteStatsUI(day) {
  const isFlyMode = !areAllPointsInTurkey(getDayPoints(day));
 
 if (isFlyMode) { 
-  // Fly Mode'da summary'nin invalid olup olmaması fark etmez, Haversine ile doldurulur.
+  // Fly Mode'da (Türkiye dışı) summary'nin invalid olup olmaması fark etmez, 
+  // Haversine ile doldurulur ve geçici rota çizilir.
   const points = getDayPoints(day);
   summary = getFallbackRouteSummary(points);
   window.lastRouteSummaries[key] = summary;
@@ -8986,7 +8990,10 @@ container.innerHTML = '<div class="spinner"></div>';
  // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
 // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
 const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
-if (isInTurkey && (!Array.isArray(coords) || coords.length < 10)) {
+const isFlyMode = !isInTurkey; // Fly Mode kontrolü
+
+// hasGeoJson: gerçek rota (OSRM) koordinatları var mı? (geojson && geojson.features[0].geometry.coordinates.length > 1)
+if (isInTurkey && !hasGeoJson) {
   console.log("[SCALEBAR] Türkiye rotası - OSRM bekleniyor, scale bar çizilmedi");
   container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
     <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
