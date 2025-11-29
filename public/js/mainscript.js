@@ -8967,7 +8967,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
     const gjKey = day ? `route-map-day${day}` : null;
     
-    // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle
+    // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
     // Bu, önceki Haversine/OSRM grafiğini anında DOM'dan kaldırır.
     let track = container.querySelector('.scale-bar-track');
     if (track) track.innerHTML = ''; 
@@ -8977,34 +8977,36 @@ function renderRouteScaleBar(container, totalKm, markers) {
     const coords = gj?.features?.[0]?.geometry?.coordinates;
     
     const hasGeoJson = coords && coords.length >= 2;
-    // Summary ve Pairwise verilerinin varlığı, OSRM yanıtının geldiğinin kesin kanıtıdır.
     const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance; 
     const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
     const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
-    // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
-    const isInTurkey = areAllPointsInTurkey(getDayPoints(day)); // Bu fonksiyonun doğru çalıştığını varsayıyoruz.
-
-    // KATI KONTROL: Türkiye içindeysen (Fly Mode değil) ve rota verilerinin TAMAMI gelmemişse, SADECE yükleniyor mesajını göster ve ÇİZİMİ TAMAMEN ENGELLE.
-    if (isInTurkey && !hasValidRoute) {
-        console.log("[SCALEBAR] Türkiye rotası - OSRM bekleniyor, scale bar çizilmedi");
-        container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
-            <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
-        </div>`;
+    // Rota noktaları yoksa (örneğin sepet boşken)
+    if (!hasGeoJson) {
+        // Eğer hasGeoJson false ise, `coords` dizisi ya yok ya da 2'den az elemana sahip demektir.
+        // Bu durumda, sadece yükleniyor mesajını gösterip erken dönmek en güvenlisidir.
+        const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
+        if (isInTurkey && !hasValidRoute) {
+            container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+                <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
+            </div>`;
+            container.style.display = 'block';
+            return; 
+        }
+        
+        // Eğer Fly Mode ise veya rota hiç yoksa hata mesajı gösterilebilir.
+        container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
         container.style.display = 'block';
-        return; // BURASI ÇOK KRİTİK: Fonksiyonu burada durdur!
+        return;
     }
 
-    // Eğer buraya geldiyse, ya Fly Mode'dadır ya da tüm veri hazırdır. 
-    // Eğer hala rota noktası yoksa (coords.length < 2) hata döndür:
-    if (!Array.isArray(coords) || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
-    container.style.display = 'block';
-    return;
-  }
-const mid = coords[Math.floor(coords.length / 2)];
+    // BURADAN İTİBAREN hasGeoJson = true. Yani, elimizde bir rota GeoJSON'u var (eski/yeni).
 
-  const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
+    // Mevcut rota için benzersiz bir anahtar hesapla.
+    const mid = coords[Math.floor(coords.length / 2)];
+    const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
+
+    const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
