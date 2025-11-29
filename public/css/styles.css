@@ -4597,10 +4597,12 @@ right: 40px;
  .expanded-map-panel { 
     width: -webkit-fill-available;   
     right:  0px;  
+    background: #ff9900;
     bottom: 0px;
     }
     .route-scale-bar {
          width: calc(100% - 20px);
+         background: aquamarine;
     }
     .expanded-map{
         height: calc(100% - 185px) !important;
@@ -5162,6 +5164,8 @@ right: 40px;
   .expanded-map-container {
     z-index: 1005 !important;
     width: 100% !important;
+        max-height: calc(100vh - 45px);
+           background-color: #6382b6;
   }
 }
 @keyframes spin {
