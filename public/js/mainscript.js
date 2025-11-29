@@ -344,17 +344,21 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
     const correctedY = (obj.y / svgHeight) * trackHeight; 
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: ${correctedY - 7.5}px;
-        display: flex;
-        flex-direction: column;   
-        align-items: flex-end;
-        pointer-events: none;
-        text-align: right;
-        gap: 6px;
-    `;
+    // GİZLEME MANTIĞI: lastIndex'te ise opacity: 0 uygula
+    let opacityStyle = index === lastIndex ? 'opacity: 0;' : ''; // 👈 BU SATIR EKLENDİ
+
+    wrapper.style.cssText = `
+        position: absolute;
+        right: 0;
+        top: ${correctedY - 7.5}px;
+        display: flex;
+        flex-direction: column;   
+        align-items: flex-end;
+        pointer-events: none;
+        text-align: right;
+        gap: 6px;
+        ${opacityStyle} /* 👈 BURAYA EKLENMELİ */
+    `;
 
      const tick = document.createElement('div');
     tick.style.cssText = `
