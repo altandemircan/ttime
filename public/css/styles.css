@@ -4602,7 +4602,7 @@ right: 40px;
     .route-scale-bar {
          width: calc(100% - 20px);
     }
-    ..expanded-map{
+    .expanded-map{
         height: calc(100% - 185px) !important;
     bottom: 185px;
     }
