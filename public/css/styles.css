@@ -4598,6 +4598,9 @@ right: 40px;
     width: -webkit-fill-available;   
     right:  0px;  
     }
+    .route-scale-bar {
+         width: calc(100% - 20px);
+    }
 }
 
 .expanded-map {
