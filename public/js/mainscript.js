@@ -302,7 +302,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
 
-  // gridLabels y eksenine göre (büyük y değeri aşağıda) azalan sırada sıralanmıştı (gridLabels.sort((a, b) => b.y - a.y);)
+ // gridLabels y eksenine göre (büyük y değeri aşağıda) azalan sırada sıralanmıştı (gridLabels.sort((a, b) => b.y - a.y);)
   const lastIndex = gridLabels.length - 1; 
 
   gridLabels.forEach((obj, index) => {
