@@ -8994,6 +8994,9 @@ container.innerHTML = '<div class="spinner"></div>';
  // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
 // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
 const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
+const isFlyMode = !isInTurkey; // Fly Mode kontrolü
+
+// YENİ VE KATI KONTROL: Türkiye içindeysen VE gerçek rota verisi (hasGeoJson) yoksa, grafiği çizme.
 if (isInTurkey && !hasGeoJson) {
   console.log("[SCALEBAR] Türkiye rotası - OSRM bekleniyor, scale bar çizilmedi");
   container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
@@ -9002,8 +9005,18 @@ if (isInTurkey && !hasGeoJson) {
   container.style.display = 'block';
   return;
 }
- // Eğer geojson veya rota yoksa hata döndür
-  if (!Array.isArray(coords) || coords.length < 2) {
+
+// Eğer Fly Mode değilsen (isInTurkey: true) ve hasGeoJson hala false ise, 
+// ikinci bir kontrol ile rotanın çizilmemesini sağla:
+if (!hasGeoJson && !isFlyMode) { 
+    // Bu, Fly Mode olmayan ve geçerli rotası (OSRM/geojson) olmayan tüm durumları yakalar.
+    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota bilgisi bekleniyor.</div></div>`;
+    container.style.display = 'block';
+    return;
+}
+
+// Eğer geojson veya rota yoksa (Fly Mode olsa bile, coords.length < 2 durumunda) hata döndür
+if (!Array.isArray(coords) || coords.length < 2) {
     container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
     container.style.display = 'block';
     return;
