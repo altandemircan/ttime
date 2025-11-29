@@ -5099,27 +5099,31 @@ function getFallbackRouteSummary(points) {
 }
 
 function updateRouteStatsUI(day) {
-  const key = `route-map-day${day}`;
-  let summary = window.lastRouteSummaries?.[key] || null;
+  const key = `route-map-day${day}`;
+  let summary = window.lastRouteSummaries?.[key] || null;
 
-  // YENI PATCH: FLY MODE'da veya summary eksikse/hatalıysa fallback ile doldur
-  // (bu satır: profile veya travel mode mantığından bağımsız)
- const isFlyMode = !areAllPointsInTurkey(getDayPoints(day));
+  // YENİ PATCH: SADECE FLY MODE'da (Türkiye dışı) ise Haversine ile doldur/overwrite et.
+  const isFlyMode = !areAllPointsInTurkey(getDayPoints(day));
 
-if (isFlyMode) { 
-  // Fly Mode'da (Türkiye dışı) summary'nin invalid olup olmaması fark etmez, 
-  // Haversine ile doldurulur ve geçici rota çizilir.
-  const points = getDayPoints(day);
-  summary = getFallbackRouteSummary(points);
-  window.lastRouteSummaries[key] = summary;
-}
-// Türkiye içinde ve summary eksik/hatalıysa: Haversine çalışmaz, rota beklenir.
+  // Türkiye içindeki (walk/bike/car modları) başlangıçtaki Haversine "flash"ını engeller.
+  // Bu kontrolü, sadece Fly Mode'da summary eksikse/hatalıysa Haversine kullanacak şekilde güncelleyin:
+  const shouldUseFallback = isFlyMode && (!summary || typeof summary.distance !== "number" || isNaN(summary.distance));
+  
+  if (shouldUseFallback) { 
+    // Fly Mode'da ve summary eksikse, Haversine kullan
+    const points = getDayPoints(day);
+    summary = getFallbackRouteSummary(points); // Bu fonksiyonun Haversine kullandığı varsayılır
+    window.lastRouteSummaries[key] = summary;
+  }
+  // Türkiye içinde ve summary eksik/hatalıysa: Haversine çalışmaz, rota beklenir.
+  
+  // Eğer Türkiye içinde ve rota henüz gelmediyse, summary null/eksik kalabilir.
+  // Bu durumda, metin alanlarını placeholder ile doldurun:
+  const distanceKm = (summary?.distance / 1000)?.toFixed(2) || '...';
+  const durationMin = Math.round(summary?.duration / 60) || '...';
 
-  const distanceKm = (summary.distance / 1000).toFixed(2);
-  const durationMin = Math.round(summary.duration / 60);
-
-  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-  if (routeSummarySpan) {
+  const routeSummarySpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+  if (routeSummarySpan) {
   routeSummarySpan.querySelector('.stat-distance .badge').textContent = distanceKm + " km";
   routeSummarySpan.querySelector('.stat-duration .badge').textContent = durationMin + " min";
   // Ascent/descent badge ekle
