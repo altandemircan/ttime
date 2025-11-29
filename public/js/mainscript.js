@@ -5618,17 +5618,41 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             }).addTo(map);
         }
         // Eksik noktalar için yaylı kırmızı çizgiler
-        if (Array.isArray(missingPoints) && missingPoints.length > 1 && hasValidGeo) {
-            for (let i = 0; i < missingPoints.length - 1; i++) {
-                drawCurvedLine(map, missingPoints[i], missingPoints[i + 1], {
-                    color: "#1976d2",
-                    weight: 4,
-                    opacity: 0.8,
-                    dashArray: "8,12",
-                    interactive: false,
-                    renderer: ensureCanvasRenderer(map)
-                });
-            }
+       // Eksik noktalar/sapmış markerlar için kırmızı kesikli snap çizgileri (Büyük haritadaki ile aynı mantık)
+        if (hasValidGeo) {
+            // isPointReallyMissing, [lng, lat] formatında raw koordinatları bekler
+            const rawGeojsonCoords = geojson.features[0].geometry.coordinates; 
+            // Polyline çizimi için [lat, lng] formatı kullanılır
+            const routePtsForSnap = routeCoords; 
+            
+            points.forEach((mp) => { // 'points' değişkeni bu fonksiyonda mevcut
+                // Marker rotadan 50 metreden fazla sapmış mı?
+                if (typeof isPointReallyMissing === 'function' && typeof haversine === 'function' && isPointReallyMissing(mp, rawGeojsonCoords, 50)) {
+                    let minIdx = 0, minDist = Infinity;
+                    
+                    // Rotadaki en yakın noktayı bul
+                    for (let i = 0; i < routePtsForSnap.length; i++) {
+                        const [lat, lng] = routePtsForSnap[i];
+                        const d = haversine(lat, lng, mp.lat, mp.lng);
+                        if (d < minDist) {
+                            minDist = d;
+                            minIdx = i;
+                        }
+                    }
+                    
+                    const start = [mp.lat, mp.lng]; // Marker'ın konumu [lat, lng]
+                    const end = routePtsForSnap[minIdx]; // Rotadaki en yakın nokta [lat, lng]
+                    
+                    L.polyline([start, end], {
+                        dashArray: '8, 12',
+                        color: '#d32f2f', // Kırmızı çizgi
+                        weight: 2, // Küçük harita için daha ince çizgi
+                        opacity: 0.8,
+                        interactive: false,
+                        renderer: ensureCanvasRenderer(map)
+                    }).addTo(map); 
+                }
+            });
         }
 
         addNumberedMarkers(map, points);
