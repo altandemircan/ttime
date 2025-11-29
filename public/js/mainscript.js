@@ -9004,7 +9004,6 @@ if (isInTurkey && container.dataset.elevLoadedKey !== routeKey) {
     return; // ÇİZİMİ KESİN OLARAK ENGELLER.
 }
 
-  const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
