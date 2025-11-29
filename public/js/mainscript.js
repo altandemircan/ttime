@@ -4967,7 +4967,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       // Marker badge
       // Marker badge/render
 if (Array.isArray(markers)) {
-    const lastIndex = markers.length - 1;
+    const lastIndex = markers.length - 1; // Son indeksi hesapla
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       // Bar'ın uzunluğunda markerın konumu
@@ -4980,7 +4980,6 @@ if (Array.isArray(markers)) {
 
       // Eğer yükseklik verisi varsa hesapla (Önceki adımda eklenen kod)
       if (elevData && elevData.smooth && elevData.smooth.length > 0) {
-          // ... (elevData hesaplaması önceki gibi kalır) ...
           const { smooth, min, max } = elevData;
           let vizMin = min, vizMax = max;
           const eSpan = max - min;
@@ -4998,22 +4997,21 @@ if (Array.isArray(markers)) {
           }
       }
       
-      // Marker hizalama mantığı (Yeni Ekleme)
+      // Marker hizalama mantığı (YENİ EKLENEN KISIM)
       let transformStyle = 'translateX(-50%)'; // Varsayılan: Ortalanmış
 
       if (idx === 0) {
           // İlk marker: Sola yaslı
           transformStyle = 'translateX(0)'; 
       } else if (idx === lastIndex && lastIndex > 0) {
-          // Son marker: Sağa yaslı (sadece 1'den fazla marker varsa)
+          // Son marker: Sağa yaslı (marker genişliği kadar sola kaydırılır)
           transformStyle = 'translateX(-100%)'; 
       }
-
 
       // Marker badge
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      // CSS'i güncellendi: transformStyle kullanıldı
+      // transformStyle uygulandı, diğer stillere dokunulmadı:
       wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:${transformStyle};z-index:5;transition: bottom 0.3s ease;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:2px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
