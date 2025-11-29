@@ -8963,7 +8963,10 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 
 function renderRouteScaleBar(container, totalKm, markers) {
     // ... fonksiyonun başında bulunan diğer değişken tanımlamaları ...
- const dayMatch = container.id.match(/day(\d+)/);
+ // ... (fonksiyonun başlangıcı: function renderRouteScaleBar(container, totalKm, markers) { ... )
+
+// ... fonksiyonun başında bulunan diğer değişken tanımlamaları ...
+const dayMatch = container.id.match(/day(\d+)/);
 const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
 const gjKey = day ? `route-map-day${day}` : null;
     
@@ -8974,33 +8977,40 @@ if (track) track.innerHTML = '';
 // OSRM verilerinin durumunu kontrol et
 const gj = window.lastRouteGeojsons?.[gjKey] || null;
 const coords = gj?.features?.[0]?.geometry?.coordinates;
-const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance; // OSRM yanıtının geldiğinin kesin kanıtı
+const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance; // OSRM'den gelen rota özetinin varlığı
 
-// Geçerli rota sayılır: Ya koordinat listesi 2'den büyükse (rota detayları gelmişse) ya da özet (Summary) verisi varsa.
-const hasValidRoute = (coords && coords.length > 2) || hasSummary; 
+// areAllPointsInTurkey, genellikle OSRM (car/bike/walk) rotalarının proxy'sidir.
+const isInTurkey = areAllPointsInTurkey(getDayPoints(day)); 
 
-const isInTurkey = areAllPointsInTurkey(getDayPoints(day)); // Non-Fly mode proxy (OSRM rotası)
-
-// KRİTİK KONTROL: Eğer Türkiye rotası (Fly Mode değil) VE geçerli OSRM rotası henüz gelmemişse, ÇİZİMİ ENGELLE.
-if (isInTurkey && !hasValidRoute) {
-    console.log("[SCALEBAR] OSRM verisi bekleniyor. Haversine çizimi engellendi.");
+// Kontrol 1: Rota koordinatı hiç yoksa (en güvenli engelleme)
+if (!coords || coords.length < 2) {
+    console.log("[SCALEBAR] Rota noktaları bulunamadı. Yükleniyor.");
     container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
     </div>`;
     container.style.display = 'block';
-    return; // KRİTİK: ÇİZİMİ KESİNLİKLE ENGELLER.
-}
-
-// Rota noktaları bulunamadıysa (bu genellikle boş bir sepet veya Fly Mode'da olur)
-if (!Array.isArray(coords) || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
-    container.style.display = 'block';
     return;
 }
+
+// Kontrol 2: OSRM rotası bekleniyorsa (isInTurkey) VE elimizde sadece Haversine rotası varsa (uzunluk 2) 
+// VEYA OSRM summary verisi henüz gelmemişse, KESİNLİKLE ENGELLE.
+const isHaversineRoute = coords.length === 2;
+
+if (isInTurkey && isHaversineRoute && !hasSummary) {
+    console.log("[SCALEBAR] OSRM bekleniyor (Sadece 2 nokta mevcut). Haversine çizimi engellendi.");
+    container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
+    </div>`;
+    container.style.display = 'block';
+    return; // FLASH'I ENGELLEYEN KRİTİK NOKTA.
+}
+
 
 // BURADAN İTİBAREN GeoJSON var ve çizime devam edilir.
 const mid = coords[Math.floor(coords.length / 2)];
 const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
+
+// ... (if (Date.now() < (window.__elevCooldownUntil || 0)) { ... bloğu buradan devam eder)
 
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
