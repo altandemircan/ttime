@@ -4612,6 +4612,7 @@ right: 40px;
     pointer-events: none;
     z-index: 5;
     display: block;
+    background: #ffffff;
 }
 .expanded-map {
     width: 100%;
