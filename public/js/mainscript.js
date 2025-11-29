@@ -8962,60 +8962,42 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-const spinner = container.querySelector('.spinner');
-if (spinner) spinner.remove();
-  // EN BAŞTA: day ve geojson keyleri tanımla (TEK SEFER!)
-  const dayMatch = container.id && container.id.match(/day(\d+)/);
-  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-  const gjKey = day ? `route-map-day${day}` : null;
-  const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
-  const coords = gj?.features?.[0]?.geometry?.coordinates;
+    // ... fonksiyonun başında bulunan diğer değişken tanımlamaları ...
+    const dayMatch = container.id.match(/day(\d+)/);
+    const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
+    const gjKey = day ? `route-map-day${day}` : null;
+    
+    // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle
+    // Bu, önceki Haversine/OSRM grafiğini anında DOM'dan kaldırır.
+    let track = container.querySelector('.scale-bar-track');
+    if (track) track.innerHTML = ''; 
 
-  // Route ile ilgili verilerin varlığını kontrol et (TEK SEFER!)
-  const hasGeoJson = coords && coords.length >= 2;
-  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
-  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
-  const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
+    // OSRM verilerinin durumunu kontrol et
+    const gj = window.lastRouteGeojsons?.[gjKey] || null;
+    const coords = gj?.features?.[0]?.geometry?.coordinates;
+    
+    const hasGeoJson = coords && coords.length >= 2;
+    // Summary ve Pairwise verilerinin varlığı, OSRM yanıtının geldiğinin kesin kanıtıdır.
+    const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance; 
+    const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
+    const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
 
-  console.log("[DEBUG] renderRouteScaleBar container=", container?.id, "totalKm=", totalKm, "markers=", markers);
+    // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
+    const isInTurkey = areAllPointsInTurkey(getDayPoints(day)); // Bu fonksiyonun doğru çalıştığını varsayıyoruz.
 
-  if (!container || isNaN(totalKm)) {
-    if (container) { container.innerHTML = ""; container.style.display = 'block'; }
-    return;
-  }
+    // KATI KONTROL: Türkiye içindeysen (Fly Mode değil) ve rota verilerinin TAMAMI gelmemişse, SADECE yükleniyor mesajını göster ve ÇİZİMİ TAMAMEN ENGELLE.
+    if (isInTurkey && !hasValidRoute) {
+        console.log("[SCALEBAR] Türkiye rotası - OSRM bekleniyor, scale bar çizilmedi");
+        container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+            <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
+        </div>`;
+        container.style.display = 'block';
+        return; // BURASI ÇOK KRİTİK: Fonksiyonu burada durdur!
+    }
 
-  // Sadece expanded bar’da çalış; küçük bar’ı kapat
-  if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-container.innerHTML = '<div class="spinner"></div>';
-    return;
-  }
-
- // TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
-// TÜRKİYE ROTALARINDA HAVERSINE GRAFİĞİ TAMAMEN ENGELLE
-const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
-const isFlyMode = !isInTurkey; // Fly Mode kontrolü
-
-// YENİ VE KATI KONTROL: Türkiye içindeysen VE gerçek rota verisi (hasGeoJson) yoksa, grafiği çizme.
-if (isInTurkey && !hasGeoJson) {
-  console.log("[SCALEBAR] Türkiye rotası - OSRM bekleniyor, scale bar çizilmedi");
-  container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
-    <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
-  </div>`;
-  container.style.display = 'block';
-  return;
-}
-
-// Eğer Fly Mode değilsen (isInTurkey: true) ve hasGeoJson hala false ise, 
-// ikinci bir kontrol ile rotanın çizilmemesini sağla:
-if (!hasGeoJson && !isFlyMode) { 
-    // Bu, Fly Mode olmayan ve geçerli rotası (OSRM/geojson) olmayan tüm durumları yakalar.
-    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota bilgisi bekleniyor.</div></div>`;
-    container.style.display = 'block';
-    return;
-}
-
-// Eğer geojson veya rota yoksa (Fly Mode olsa bile, coords.length < 2 durumunda) hata döndür
-if (!Array.isArray(coords) || coords.length < 2) {
+    // Eğer buraya geldiyse, ya Fly Mode'dadır ya da tüm veri hazırdır. 
+    // Eğer hala rota noktası yoksa (coords.length < 2) hata döndür:
+    if (!Array.isArray(coords) || coords.length < 2) {
     container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
     container.style.display = 'block';
     return;
@@ -9258,14 +9240,26 @@ container._elevKmSpan = totalKm;
       topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
     }
     if (topD) {
-  // topD'nin son X'i width ise fazladan dik çizgi olmasın!
   let lastX = null;
+  // topD path verisindeki son X koordinatını çek
   let points = topD.match(/[\d\.]+/g);
   if (points && points.length >= 2) {
-    lastX = Number(points[points.length - 2]);
+      lastX = Number(points[points.length - 2]); 
   }
-  let closingX = (lastX !== null && Math.abs(lastX - width) < 0.1) ? '' : `L ${width} ${SVG_H} `;
-const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
+
+  // Eğer son X koordinatı, SVG genişliğine çok yakınsa (çizgi zaten bitişe ulaşmışsa),
+  // kapatma sırasında gereksiz dikey çizgiyi çizme.
+  const isLastPointAtEnd = (lastX !== null && Math.abs(lastX - width) < 0.1);
+
+  let areaD;
+  if (isLastPointAtEnd) {
+    // Son nokta tam uçtaysa, sadece sola dönüp alanı kapat (`L 0 ${SVG_H} Z`).
+    areaD = `${topD} L 0 ${SVG_H} Z`; 
+  } else {
+    // Aksi takdirde, önce sağ alta in, sonra sola dönüp alanı kapat (`L ${width} ${SVG_H} L 0 ${SVG_H} Z`).
+    areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
+  }
+  
   areaPath.setAttribute('d', areaD);
   areaPath.setAttribute('fill', '#263445');
 }
