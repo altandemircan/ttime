@@ -363,24 +363,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
         wrapper.style.opacity = '0'; 
     }
 
-     const tick = document.createElement('div');
-    // 3. DÜZELTME: Çizgi (tick) için sınıf adı eklendi (Tasarım geri geldi)
-    // Sınıf adı bilinmediği için yaygın kullanılan 'elevation-tick' veya 'scale-bar-tick' gibi bir isim eklenmeli. 
-    // En güvenli varsayım için 'elevation-tick' kullanalım.
-    tick.className = 'elevation-tick'; 
-    
-    tick.style.cssText = `
-        width: 35px;
-        height: 8px;
-        border-bottom: 1px dashed #cfd8dc;
-        opacity: 0.7;
-        display: block;
-        margin-left: 0px;
-        margin-top: 0px;
-    `;
-
-    const label = document.createElement('div');
-    label.className = 'elevation-label'; // Bu zaten doğruydu
+const label = document.createElement('div');
+    label.className = 'elevation-label';
     label.style.cssText = `
         font-size: 10px;
         color: #607d8b;
@@ -391,7 +375,19 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
         white-space: nowrap;
         margin-bottom: -6px;
     `;
+
     label.textContent = obj.value;
+
+    const tick = document.createElement('div');
+    tick.style.cssText = `
+        width: 26px;
+      height: 8px;
+    border-bottom: 1px dashed #cfd8dc;
+    opacity: 0.7;
+    display: block;
+    margin-left: 0px;
+    margin-top: 0px;
+  `;
 
    
 
