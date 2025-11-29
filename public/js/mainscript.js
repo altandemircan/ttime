@@ -8967,46 +8967,55 @@ function renderRouteScaleBar(container, totalKm, markers) {
     const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
     const gjKey = day ? `route-map-day${day}` : null;
     
-    // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
+    // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle
     // Bu, önceki Haversine/OSRM grafiğini anında DOM'dan kaldırır.
-    let track = container.querySelector('.scale-bar-track');
-    if (track) track.innerHTML = ''; 
+    // YENİ PATCH: Geçiş anında eski/yanlış çizimi hemen temizle.
+let track = container.querySelector('.scale-bar-track');
+if (track) track.innerHTML = ''; 
 
-    // OSRM verilerinin durumunu kontrol et
-    const gj = window.lastRouteGeojsons?.[gjKey] || null;
-    const coords = gj?.features?.[0]?.geometry?.coordinates;
-    
-    const hasGeoJson = coords && coords.length >= 2;
-    const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance; 
-    const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
-    const hasValidRoute = hasGeoJson && hasSummary && hasPairwise;
+// OSRM verilerinin durumunu kontrol et
+const gj = window.lastRouteGeojsons?.[gjKey] || null;
+const coords = gj?.features?.[0]?.geometry?.coordinates;
 
-    // Rota noktaları yoksa (örneğin sepet boşken)
-    if (!hasGeoJson) {
-        // Eğer hasGeoJson false ise, `coords` dizisi ya yok ya da 2'den az elemana sahip demektir.
-        // Bu durumda, sadece yükleniyor mesajını gösterip erken dönmek en güvenlisidir.
-        const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
-        if (isInTurkey && !hasValidRoute) {
-            container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
-                <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
-            </div>`;
-            container.style.display = 'block';
-            return; 
-        }
-        
-        // Eğer Fly Mode ise veya rota hiç yoksa hata mesajı gösterilebilir.
-        container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
-        container.style.display = 'block';
-        return;
-    }
+// GeoJSON var mı?
+const hasGeoJson = coords && coords.length >= 2;
 
-    // BURADAN İTİBAREN hasGeoJson = true. Yani, elimizde bir rota GeoJSON'u var (eski/yeni).
+// Rota noktaları yoksa (yeni yükleniyor veya boş)
+if (!hasGeoJson) {
+    container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
+    </div>`;
+    container.style.display = 'block';
+    return; 
+}
 
-    // Mevcut rota için benzersiz bir anahtar hesapla.
-    const mid = coords[Math.floor(coords.length / 2)];
-    const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
+// BURADAN İTİBAREN GeoJSON var (Eski veya yeni)
+const mid = coords[Math.floor(coords.length / 2)];
+const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
 
-    const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
+const isInTurkey = areAllPointsInTurkey(getDayPoints(day));
+
+// KRİTİK KONTROL: Eğer Türkiye rotası ve mevcut GeoJSON'un anahtarı, 
+// yüklenmiş elevation verisinin anahtarıyla EŞLEŞMİYORSA, çizimi ENGELLE.
+if (isInTurkey && container.dataset.elevLoadedKey !== routeKey) {
+    console.log("[SCALEBAR] Yeni rota GeoJSON'u tespit edildi, elevation verisi bekleniyor. Çizim Engellendi.");
+    container.innerHTML = `<div class="scale-bar-track" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;padding:12px;font-size:13px;color:#607d8b;">Rota yükleniyor...</div>
+    </div>`;
+    container.style.display = 'block';
+    return; // ÇİZİMİ KESİN OLARAK ENGELLER.
+}
+
+    // Eğer buraya geldiyse, ya Fly Mode'dadır ya da tüm veri hazırdır. 
+    // Eğer hala rota noktası yoksa (coords.length < 2) hata döndür:
+    if (!Array.isArray(coords) || coords.length < 2) {
+    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
+    container.style.display = 'block';
+    return;
+  }
+const mid = coords[Math.floor(coords.length / 2)];
+
+  const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
@@ -9242,29 +9251,13 @@ container._elevKmSpan = totalKm;
       topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
     }
     if (topD) {
-  let lastX = null;
-  // topD path verisindeki son X koordinatını çek
-  let points = topD.match(/[\d\.]+/g);
-  if (points && points.length >= 2) {
-      lastX = Number(points[points.length - 2]); 
-  }
+        // SVG alanını kapatma: Önce sağ alta (width, SVG_H) in,
+        // sonra sola kay (0, SVG_H) ve başa dön (Z). Bu, dikey çizgiyi engeller.
+        let areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
 
-  // Eğer son X koordinatı, SVG genişliğine çok yakınsa (çizgi zaten bitişe ulaşmışsa),
-  // kapatma sırasında gereksiz dikey çizgiyi çizme.
-  const isLastPointAtEnd = (lastX !== null && Math.abs(lastX - width) < 0.1);
-
-  let areaD;
-  if (isLastPointAtEnd) {
-    // Son nokta tam uçtaysa, sadece sola dönüp alanı kapat (`L 0 ${SVG_H} Z`).
-    areaD = `${topD} L 0 ${SVG_H} Z`; 
-  } else {
-    // Aksi takdirde, önce sağ alta in, sonra sola dönüp alanı kapat (`L ${width} ${SVG_H} L 0 ${SVG_H} Z`).
-    areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
-  }
-  
-  areaPath.setAttribute('d', areaD);
-  areaPath.setAttribute('fill', '#263445');
-}
+        areaPath.setAttribute('d', areaD);
+        areaPath.setAttribute('fill', '#263445');
+    }
 
     // Eğim renkli çizgiler
     for (let i = 1; i < n; i++) {
