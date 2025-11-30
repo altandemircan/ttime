@@ -2981,25 +2981,56 @@ function initEmptyDayMap(day) {
     if (!el) return;
   }
 
+  // Leaflet kütüphanesi henüz yüklenmediyse bekle
   if (typeof L === 'undefined') {
     setTimeout(() => initEmptyDayMap(day), 60);
     return;
   }
 
+  // Zaten harita varsa ve container içindeyse çık (Gereksiz render önleme)
   const existingMap = window.leafletMaps && window.leafletMaps[containerId];
   const hasInner = el.querySelector('.leaflet-container');
   if (existingMap && hasInner) return;
+  
+  // Harita var ama container uçmuşsa temizle
   if (existingMap && !hasInner) {
     try { existingMap.remove(); } catch(_) {}
     delete window.leafletMaps[containerId];
   }
 
   if (!el.style.height) el.style.height = '285px';
-  if (!document.getElementById(containerId)) return;
+  
+  // --- KRİTİK BÖLÜM BAŞLANGICI ---
+  
+  // 1. Önce bu güne ait noktaları al
+  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+  const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+  
+  // 2. Başlangıç merkezi ve zoom seviyesini belirle
+  let startCenter = [0, 0];
+  let startZoom = 2;
+  let startBounds = null;
 
+  if (validPts.length > 0) {
+      // Eğer nokta varsa, Afrika'dan (0,0) başlatma!
+      if (validPts.length === 1) {
+          // Tek nokta ise direkt orası
+          startCenter = [validPts[0].lat, validPts[0].lng];
+          startZoom = 14;
+      } else {
+          // Çok nokta varsa hepsini kapsayan alanı hesapla
+          startBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
+          startCenter = startBounds.getCenter();
+          startZoom = 10; // Geçici zoom, fitBounds düzeltecek
+      }
+  }
+
+  // 3. Haritayı "DOĞRU KONUMDA" başlat
   const map = L.map(containerId, {
+    center: startCenter,
+    zoom: startZoom,
     scrollWheelZoom: true,
-    fadeAnimation: true,
+    fadeAnimation: false, // İlk açılışta animasyon olmasın ki zıplama görünmesin
     zoomAnimation: true,
     zoomAnimationThreshold: 8,
     zoomSnap: 0.25,
@@ -3008,19 +3039,22 @@ function initEmptyDayMap(day) {
     wheelPxPerZoomLevel: 120,
     inertia: true,
     easeLinearity: 0.2
-  }).setView([0, 0], 2);
+  });
 
-  // --- KRİTİK DEĞİŞİKLİK BURADA ---
-  // Önce bu gün için nokta var mı kontrol et.
-  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-  // Geçerli (lat/lng olan) noktalar var mı?
-  const hasPoints = points && points.filter(p => isFinite(p.lat) && isFinite(p.lng)).length > 0;
+  // 4. Eğer birden fazla nokta varsa, animasyonsuz (anında) sığdır
+  if (startBounds && startBounds.isValid()) {
+      map.fitBounds(startBounds, { 
+          padding: [20, 20], 
+          animate: false // Zıplamayı önler
+      });
+  }
+  
+  // --- KRİTİK BÖLÜM SONU ---
 
-  // SADECE HİÇ NOKTA YOKSA (Harita boşsa) kullanıcının konumuna git.
-  // Nokta varsa gitme, çünkü birazdan renderRouteForDay rotayı çizecek.
-  if (!hasPoints && navigator.geolocation) {
+  // Konum izni mantığı (Sadece harita boşsa çalışır)
+  if (validPts.length === 0 && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(pos) {
-      // Async olduğu için tekrar kontrol et: hala nokta yoksa git
+      // Async kontrol: hala nokta eklenmediyse git
       const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
       if (currentPts.length === 0) {
           map.whenReady(function() {
@@ -3029,28 +3063,23 @@ function initEmptyDayMap(day) {
             } catch(e) {}
           });
       }
-    }, function(err) {
-        // Konum alınamazsa sessiz kal
-    }, { timeout: 3000 });
+    }, function(err) {}, { timeout: 3000 });
   }
-  // --------------------------------
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
-
-  // Tek nokta varsa oraya odakla (Rota çizimi gelene kadar boş kalmasın)
-  if (hasPoints && points.length === 1) {
-    map.setView([points[0].lat, points[0].lng], 14);
-  }
   
+  // Initial View kaydet (Reset durumları için)
   if (!map._initialView) {
     map._initialView = {
       center: map.getCenter(),
       zoom: map.getZoom()
     };
   }
+  
+  // Global referansa ekle
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 }
