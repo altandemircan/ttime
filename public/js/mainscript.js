@@ -9449,6 +9449,27 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
+  // 1. ADIM: CSS GÜVENLİK KİLİDİ (Loading sırasında her şeyi gizle)
+  if (!document.getElementById('tt-marker-loading-style')) {
+    const style = document.createElement('style');
+    style.id = 'tt-marker-loading-style';
+    style.innerHTML = `
+        /* Loading sınıfı varsa marker, tick, label ve DİKEY ÇİZGİYİ gizle */
+        .scale-bar-track.loading .marker-badge,
+        .scale-bar-track.loading .scale-bar-tick,
+        .scale-bar-track.loading .scale-bar-label,
+        .scale-bar-track.loading .scale-bar-vertical-line, 
+        .scale-bar-track.loading .tt-elev-tooltip { 
+            display: none !important; 
+        }
+        /* Loader dönerken alanın boş kalmaması için */
+        .scale-bar-track.loading {
+            min-height: 200px; 
+        }
+    `;
+    document.head.appendChild(style);
+  }
+
   const spinner = container.querySelector('.spinner');
   if (spinner) spinner.remove();
   
@@ -9463,7 +9484,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-  // --- TEMİZLİK ---
+  // Eski verileri temizle
   delete container._elevationData;
   delete container._elevationDataFull;
 
@@ -9500,8 +9521,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track.innerHTML = '';
   }
 
-  // --- KRİTİK: LOADING SINIFINI EKLE ---
-  // Bu sınıf varken createScaleElements marker çizmeyecek!
+  // --- LOADING BAŞLADI ---
   track.classList.add('loading');
 
   container.dataset.totalKm = String(totalKm);
@@ -9718,8 +9738,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       segG.appendChild(seg);
     }
     
-    // JS buradan çağırsa bile createScaleElements fonksiyonunun başındaki kontrol
-    // 'loading' sınıfını görüp çizimi reddedecek.
+    // Veri geldiği için markerları çizmek güvenli, CSS loading sınıfı kalkana kadar görünmezler
     createScaleElements(track, width, totalKm, 0, markers);
   }
   container._redrawElevation = redrawElevation;
@@ -9798,13 +9817,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
       redrawElevation(container._elevationData);
       
-      // --- KRİTİK: Veri başarıyla çizildiğinde sınıfı kaldırıp markerları çiz ---
+      // --- LOADING BİTTİ ---
       requestAnimationFrame(() => {
           setTimeout(() => {
               window.hideScaleBarLoading?.(container);
+              // Loading sınıfını kaldırınca CSS sayesinde her şey görünür olur
               track.classList.remove('loading');
-              // Artık loading olmadığı için bu çağrı markerları çizecektir
-              createScaleElements(track, width, totalKm, 0, markers);
           }, 60);
       });
 
@@ -9823,19 +9841,19 @@ function renderRouteScaleBar(container, totalKm, markers) {
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
       
-      // Hata durumunda Fallback olarak markerları boş bara çiz
+      // Hata durumunda Fallback
       track.classList.remove('loading');
       createScaleElements(track, width, totalKm, 0, markers);
     }
   })();
 
   function handleResize() {
+    if (!container._elevationData) return;
+
     const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
     const spanKm = container._elevKmSpan || 1;
     const startKmDom = container._elevStartKm || 0;
     const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    
-    // createScaleElements içindeki 'loading' kontrolü burayı da korur
     createScaleElements(track, newW, spanKm, startKmDom, markers);
   }
 
