@@ -8775,7 +8775,7 @@ function wrapRouteControls(day) {
   if (!controlsEl) {
     controlsEl = document.createElement('div');
     controlsEl.id = `map-bottom-controls-wrapper-day${day}`;
-    controlsEl.style.display = 'none'; // Yedek wrapper, DOM olduktan sonra bar eklemek için lazım
+    controlsEl.style.display = 'none'; 
     // Doğru parent'a ekle!
     const dayContainer = document.getElementById(`day-container-${day}`);
     const parentEl = dayContainer || mapDiv.parentNode;
@@ -8834,33 +8834,61 @@ function wrapRouteControls(day) {
   mapFunctionsDiv.appendChild(mapTitleDiv);
   mapFunctionsDiv.appendChild(arrowSpan);
 
-  // Expand Map butonu - HER ZAMAN
+  // --- DEĞİŞİKLİK BURADA: Expanded durumunu kontrol et ---
+  const isExpanded = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
+
+  // Expand Map butonu
   const expandBtn = document.createElement('button');
   expandBtn.type = 'button';
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
-  expandBtn.style.background = '#ffffff';
-  expandBtn.onmouseover = function() { expandBtn.style.background = "#fafafa"; };
-  expandBtn.onmouseout = function() { expandBtn.style.background = "#ffffff"; };
-  expandBtn.style.border = '1px solid rgb(43 129 213)';
-  expandBtn.style.borderRadius = '10px';
+  
+  // Ortak stiller
   expandBtn.style.display = 'flex';
   expandBtn.style.flexDirection = 'row';
   expandBtn.style.alignItems = 'center';
   expandBtn.style.gap = '4px';
   expandBtn.style.padding = '4px 6px';
   expandBtn.style.fontWeight = 'bold';
-  expandBtn.style.color = '#297fd4';
-  expandBtn.style.cursor = 'pointer';
-  expandBtn.innerHTML = `
-    <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy" decoding="async">
-    <span class="tm-label" style="color: #297fd4">Expand map</span>
-  `;
-  expandBtn.onclick = function(e) {
-    e.stopPropagation();
-    const containerId = `route-map-day${day}`;
-    if (typeof expandMap === "function") expandMap(containerId, day);
-  };
+  expandBtn.style.borderRadius = '10px';
+  expandBtn.style.border = '1px solid'; // Renk duruma göre aşağıda atanacak
+
+  if (isExpanded) {
+      // --- DURUM 1: ZATEN AÇIK (PASİF) ---
+      expandBtn.disabled = true;
+      expandBtn.style.pointerEvents = 'none';
+      expandBtn.style.opacity = '0.6';
+      expandBtn.style.cursor = 'default';
+      expandBtn.style.borderColor = '#ccc';
+      expandBtn.style.background = '#f9f9f9';
+      
+      expandBtn.innerHTML = `
+        <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy" decoding="async" style="filter: grayscale(100%);">
+        <span class="tm-label" style="color: #888">Map Expanded</span>
+      `;
+  } else {
+      // --- DURUM 2: KAPALI (AKTİF) ---
+      expandBtn.style.background = '#ffffff';
+      expandBtn.style.borderColor = 'rgb(43 129 213)';
+      expandBtn.style.color = '#297fd4';
+      expandBtn.style.cursor = 'pointer';
+      
+      // Hover efektleri sadece aktifken
+      expandBtn.onmouseover = function() { expandBtn.style.background = "#fafafa"; };
+      expandBtn.onmouseout = function() { expandBtn.style.background = "#ffffff"; };
+
+      expandBtn.innerHTML = `
+        <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy" decoding="async">
+        <span class="tm-label" style="color: #297fd4">Expand map</span>
+      `;
+      
+      expandBtn.onclick = function(e) {
+        e.stopPropagation();
+        const containerId = `route-map-day${day}`;
+        if (typeof expandMap === "function") expandMap(containerId, day);
+      };
+  }
+  // -----------------------------------------------------------
 
   mapBarHeader.appendChild(mapFunctionsDiv);
   mapBarHeader.appendChild(expandBtn);
