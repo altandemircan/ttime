@@ -9449,7 +9449,7 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  // 1. ADIM: CSS GÜVENLİK KİLİDİ (Loading sırasında her şeyi gizle)
+  // 1. ADIM: CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-marker-loading-style')) {
     const style = document.createElement('style');
     style.id = 'tt-marker-loading-style';
@@ -9596,7 +9596,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const verticalLine = document.createElement('div');
   verticalLine.className = 'scale-bar-vertical-line';
   verticalLine.style.cssText = `position:absolute;top:0;bottom:0;width:2px;background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;`;
-  verticalLine.style.left = (width / 2) + 'px';
+  
+  // --- DEĞİŞİKLİK BURADA: Başlangıç konumu 0px ---
+  verticalLine.style.left = '0px'; 
+  
   track.appendChild(verticalLine);
 
   const tooltip = document.createElement('div');
@@ -9817,11 +9820,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
       redrawElevation(container._elevationData);
       
-      // --- LOADING BİTTİ ---
       requestAnimationFrame(() => {
           setTimeout(() => {
               window.hideScaleBarLoading?.(container);
-              // Loading sınıfını kaldırınca CSS sayesinde her şey görünür olur
               track.classList.remove('loading');
           }, 60);
       });
@@ -9841,7 +9842,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
       
-      // Hata durumunda Fallback
       track.classList.remove('loading');
       createScaleElements(track, width, totalKm, 0, markers);
     }
