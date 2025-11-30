@@ -8445,12 +8445,11 @@ function setupSidebarAccordion() {
 
 
 function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
-    // snapThreshold: km cinsinden (örn: 0.2 km = 200m)
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
-    const summary = window.lastRouteSummaries?.[containerId]; // <--- EKLENDİ: API Özet verisi
+    // API'dan gelen kesin toplam mesafe (metre cinsinden)
+    const summary = window.lastRouteSummaries?.[containerId]; 
 
-    // GÜVENLİ KONTROL!
     if (
       !geojson ||
       !geojson.features ||
@@ -8462,7 +8461,7 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
 
-    // Haversine mesafe (metre)
+    // Haversine (Metre)
     function haversine(lat1, lon1, lat2, lon2) {
         const R = 6371000;
         const toRad = x => x * Math.PI / 180;
@@ -8473,32 +8472,31 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
         return 2 * R * Math.asin(Math.sqrt(a));
     }
 
-    // Polyline cumulative distance
+    // 1. Geometrinin kümülatif mesafelerini hesapla
     let cumDist = [0];
     for (let i = 1; i < routeCoords.length; i++) {
         const [lon1, lat1] = routeCoords[i - 1], [lon2, lat2] = routeCoords[i];
         cumDist[i] = cumDist[i - 1] + haversine(lat1, lon1, lat2, lon2);
     }
 
-    // --- EKLENEN NORMALİZASYON MANTIĞI ---
-    // Geometriden hesaplanan toplam uzunluk
-    const manualTotalDistance = cumDist[cumDist.length - 1];
+    // Geometrik toplam uzunluk
+    const totalGeomDist = cumDist[cumDist.length - 1];
     
-    // API'dan gelen gerçek sürüş mesafesi (varsa)
-    const apiTotalDistance = (summary && summary.distance) ? summary.distance : manualTotalDistance;
+    // API'dan gelen Gerçek Toplam (yoksa geometriyi kullan)
+    const totalApiDist = (summary && summary.distance) ? summary.distance : totalGeomDist;
 
-    // Ölçekleme Çarpanı (Scale Factor)
-    // Eğer geometri mesafesi ile API mesafesi farklıysa, markerları bu oranda ileri kaydır.
-    let scaleFactor = 1;
-    if (manualTotalDistance > 0 && apiTotalDistance > 0) {
-        scaleFactor = apiTotalDistance / manualTotalDistance;
-    }
-    // -------------------------------------
-
-    // SIRALI snap: her marker için, polyline'da bir öncekinin index'inden sonrasını tara
     let lastIdx = 0;
-    return points.map((marker) => {
+    
+    return points.map((marker, index) => {
+        // İlk nokta her zaman 0'dır
+        if (index === 0) {
+             return { name: marker.name, distance: 0, snapped: true, snappedDistance: 0 };
+        }
+
+        // En yakın noktayı bul (Snap)
         let minIdx = lastIdx, minDist = Infinity;
+        // Performans için sadece lastIdx'ten ileriye bak
+        // (Eğer rota çok karmaşıksa veya geri dönüşler varsa burayı 0'dan başlatmak gerekebilir ama genelde bu yeterlidir)
         for (let i = lastIdx; i < routeCoords.length; i++) {
             const [lon, lat] = routeCoords[i];
             const d = haversine(lat, lon, marker.lat, marker.lng);
@@ -8509,15 +8507,31 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
         }
         lastIdx = minIdx;
 
-        // Ham mesafeyi scaleFactor ile çarpıyoruz
-        const normalizedDist = cumDist[minIdx] * scaleFactor;
+        // --- DÜZELTME: ORANLAMA MANTIĞI ---
+        // Marker'ın geometrik mesafesi
+        const markerGeomDist = cumDist[minIdx];
+
+        // Oran: (Marker'ın Yeri / Toplam Geometri)
+        // Eğer totalGeomDist 0 ise (tek nokta vs) oran 0 olsun.
+        const ratio = totalGeomDist > 0 ? (markerGeomDist / totalGeomDist) : 0;
+
+        // Final Mesafe: Oran * Gerçek API Toplamı
+        let finalDist = ratio * totalApiDist;
+
+        // Güvenlik: Asla toplam mesafeyi aşmasın (Küsürat hataları için)
+        if (finalDist > totalApiDist) finalDist = totalApiDist;
+
+        // Son nokta ise kesinlikle toplam mesafeye eşitle (birebir olması için)
+        if (index === points.length - 1) {
+            finalDist = totalApiDist;
+        }
 
         return {
             name: marker.name,
-            distance: normalizedDist / 1000, // km cinsinden düzeltilmiş mesafe
-            snapped: minDist <= snapThreshold * 1000, 
-            snappedDistance: minDist 
-        }
+            distance: finalDist / 1000, // Metreyi KM'ye çevir
+            snapped: minDist <= snapThreshold * 1000,
+            snappedDistance: minDist
+        };
     });
 }
 
