@@ -3651,7 +3651,7 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
              <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <div class="item-img-position">${listMarkerHtml} 
-                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                  <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
                 </div>
                 <div class="item-info">
                   <p class="toggle-title">${item.name}</p>
