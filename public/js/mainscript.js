@@ -9522,6 +9522,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track.className = 'scale-bar-track';
     container.appendChild(track);
   } else {
+    // Daha önce çizilmiş markerları ve grafikleri temizle
     track.innerHTML = '';
   }
 
@@ -9582,8 +9583,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   svgElem.setAttribute('height', SVG_H);
   track.appendChild(svgElem);
   
-  // --- DEĞİŞİKLİK 1: Buradaki erken createScaleElements çağrısı SİLİNDİ ---
-  // Böylece loader dönerken markerlar görünmeyecek.
+  // BURADA createScaleElements ÇAĞRISI YOK! (Loader dönerken marker görünmesin)
 
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class', 'tt-elev-grid');
@@ -9742,7 +9742,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       segG.appendChild(seg);
     }
     
-    // --- DEĞİŞİKLİK 2: Markerlar ARTIK BURADA ÇİZİLİYOR (Veri geldikten sonra) ---
+    // Veri geldi, grafik çizildi, ARTIK markerları çizebiliriz.
     createScaleElements(track, width, totalKm, 0, markers);
   }
   container._redrawElevation = redrawElevation;
@@ -9842,7 +9842,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
       
-      // --- DEĞİŞİKLİK 3: Hata durumunda (catch) markerları boş bir bar üzerine çiz (Fallback) ---
+      // Hata durumunda Fallback olarak markerları boş bara çiz
       createScaleElements(track, width, totalKm, 0, markers);
     }
   })();
@@ -9852,6 +9852,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
     const spanKm = container._elevKmSpan || 1;
     const startKmDom = container._elevStartKm || 0;
     const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+    
+    // --- ÖNEMLİ EKLEME: Veri yüklenmediyse (loader dönüyorsa) resize sırasında marker çizme! ---
+    if (!container._elevationData) return;
+
     createScaleElements(track, newW, spanKm, startKmDom, markers);
   }
 
