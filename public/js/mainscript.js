@@ -8447,7 +8447,8 @@ function setupSidebarAccordion() {
 function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
-    // API'dan gelen gerçek sürüş mesafesi
+    
+    // API'dan gelen "Kesin" toplam mesafe (Eğer varsa)
     const summary = window.lastRouteSummaries?.[containerId]; 
 
     if (
@@ -8461,7 +8462,7 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
 
-    // Haversine
+    // Haversine Formülü
     function haversine(lat1, lon1, lat2, lon2) {
         const R = 6371000;
         const toRad = x => x * Math.PI / 180;
@@ -8472,86 +8473,85 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
         return 2 * R * Math.asin(Math.sqrt(a));
     }
 
-    // 1. Rota geometrisinin kümülatif mesafelerini hesapla
-    let cumDist = [0];
+    // 1. Rota üzerindeki her bir noktanın "Başlangıca olan mesafesini" hesapla (Lookup Table)
+    // Bu, mor topun hareket ettiği 'raylar'ın haritasıdır.
+    let polylineDistances = [0];
     for (let i = 1; i < routeCoords.length; i++) {
-        const [lon1, lat1] = routeCoords[i - 1], [lon2, lat2] = routeCoords[i];
-        cumDist[i] = cumDist[i - 1] + haversine(lat1, lon1, lat2, lon2);
+        const [lon1, lat1] = routeCoords[i - 1];
+        const [lon2, lat2] = routeCoords[i];
+        const segDist = haversine(lat1, lon1, lat2, lon2);
+        polylineDistances[i] = polylineDistances[i - 1] + segDist;
     }
 
-    const geomTotal = cumDist[cumDist.length - 1];
-    const apiTotal = (summary && summary.distance) ? summary.distance : geomTotal;
+    // Geometrik Toplam Uzunluk
+    const geomTotal = polylineDistances[polylineDistances.length - 1];
     
-    // Geometri ile API arasındaki sapmayı düzelten katsayı
-    const scaleRatio = geomTotal > 0 ? (apiTotal / geomTotal) : 1;
+    // Eğer API özeti varsa ve geometriyle arasında fark varsa, bu farkı 'lokal' olarak değil
+    // sadece nihai km gösterimi için bir düzeltme çarpanı olarak sakla.
+    // Ancak marker hizalaması için GEOMETRİK mesafeyi baz alacağız çünkü mor top geometri üzerinde gider.
+    const apiTotal = (summary && summary.distance) ? summary.distance : geomTotal;
+    const globalRatio = geomTotal > 0 ? (apiTotal / geomTotal) : 1;
 
-    // Arama optimizasyonu için son bulunan indeksi tutuyoruz
     let lastFoundIdx = 0;
-    // Bir önceki markerın mesafesini tutuyoruz (Monotonluk kontrolü için)
-    let lastDistanceKm = 0;
 
     return points.map((marker, index) => {
-        // Başlangıç noktası
+        // --- BAŞLANGIÇ ---
         if (index === 0) {
-            lastDistanceKm = 0;
+            lastFoundIdx = 0;
             return { name: marker.name, distance: 0, snapped: true, snappedDistance: 0 };
         }
 
-        // Bitiş noktası (Kesinlikle sona eşitliyoruz)
+        // --- BİTİŞ ---
+        // Son nokta her zaman toplam mesafedir.
         if (index === points.length - 1) {
             return { name: marker.name, distance: apiTotal / 1000, snapped: true, snappedDistance: 0 };
         }
 
-        // --- EN YAKIN NOKTAYI BULMA (SNAP) ---
-        let minIdx = lastFoundIdx; 
-        let minDist = Infinity;
+        // --- ARA NOKTALAR (SNAP) ---
+        // Marker'ın koordinatının rota çizgisine (polyline) en yakın olduğu indeksi bul.
+        // KRİTİK: Aramaya 'lastFoundIdx'ten başla. Asla geriye bakma.
+        let bestIdx = lastFoundIdx;
+        let bestDist = Infinity;
 
-        // ÖNEMLİ: Döngüyü lastFoundIdx'ten başlatıyoruz (Geriye bakmayı engeller)
-        // Ancak çok yakın noktalarda hata payı için küçük bir tampon (-5) bırakabiliriz,
-        // fakat katı sıralama için lastFoundIdx daha güvenlidir.
+        // Performans optimizasyonu: Tüm rotayı taramak yerine, mantıklı bir aralıkta ara.
+        // Ancak sapma olmaması için sona kadar tarıyoruz (polyline çok uzun değilse sorun olmaz).
         for (let i = lastFoundIdx; i < routeCoords.length; i++) {
             const [lon, lat] = routeCoords[i];
             
-            // Eğer aradığımız nokta, son bulduğumuz noktadan çok uzaklaştıysa (örn: 5km),
-            // ve daha önce daha yakın bir nokta bulduysak döngüyü kırabiliriz (Optimizasyon).
-            // (Basitlik için şimdilik tüm kalan rotayı tarıyoruz, performans sorunu olmaz).
-            
+            // Marker ile rota noktası arasındaki kuş uçuşu mesafe
             const d = haversine(lat, lon, marker.lat, marker.lng);
-            if (d < minDist) {
-                minDist = d;
-                minIdx = i;
+            
+            if (d < bestDist) {
+                bestDist = d;
+                bestIdx = i;
+            } else {
+                // Eğer uzaklaşmaya başladıysak ve belirli bir eşiği geçtiysek (örn 2km),
+                // ve zaten makul bir yakınlık bulduysak (örn 50m), döngüyü kesebiliriz.
+                // Bu 'local minimum' tuzağına düşmemek için dikkatli yapılmalı.
+                // Şimdilik güvenli olması için kesmiyoruz.
             }
         }
 
-        // Bir sonraki marker için aramayı bu noktadan başlat
-        lastFoundIdx = minIdx;
+        // Bulunan indeksi sakla, bir sonraki marker buradan devam etsin
+        lastFoundIdx = bestIdx;
 
-        // --- MESAFE HESABI ---
-        // 1. Geometrik mesafeyi al
-        let rawDist = cumDist[minIdx];
+        // --- HİZALAMA ÇÖZÜMÜ ---
+        // Marker'ın Scale Bar üzerindeki konumu = Rota üzerindeki o noktanın başlangıca uzaklığı.
+        // Mor top bu 'polylineDistances' dizisine göre hareket ettiği için,
+        // biz de tam olarak o değeri kullanırsak %100 örtüşür.
         
-        // 2. Scale factor ile gerçek mesafeye oranla
-        let adjustedDist = rawDist * scaleRatio;
+        // Ham geometrik mesafe (metre)
+        let geomDistAtMarker = polylineDistances[bestIdx];
 
-        // 3. MONOTONLUK KONTROLÜ: 
-        // Eğer hesaplanan mesafe, bir önceki marker'dan daha gerideyse, onu bir öncekiyle eşitle.
-        // (Bu durum virajlı yollarda markerın yanlış segmente snap olmasıyla yaşanır)
-        if (adjustedDist < lastDistanceKm * 1000) {
-            adjustedDist = lastDistanceKm * 1000;
-        }
-
-        // 4. Güvenlik: Asla toplamı aşma
-        if (adjustedDist > apiTotal) adjustedDist = apiTotal;
-
-        // Sonucu kaydet (km cinsinden)
-        const finalKm = adjustedDist / 1000;
-        lastDistanceKm = finalKm;
+        // Eğer API ile Geometri arasında fark varsa (örn: API 10km diyor, çizgi 9.8km çıktı),
+        // bu farkı yansıtmak zorundayız yoksa scale barın sonuna varamayız.
+        let finalDist = geomDistAtMarker * globalRatio;
 
         return {
             name: marker.name,
-            distance: finalKm,
-            snapped: minDist <= snapThreshold * 1000,
-            snappedDistance: minDist
+            distance: finalDist / 1000, // KM'ye çevir
+            snapped: bestDist <= snapThreshold * 1000,
+            snappedDistance: bestDist
         };
     });
 }
