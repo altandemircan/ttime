@@ -3768,6 +3768,89 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
       
       // ... (Mesafe/Süre separator kodları devam eder) ...
 
+  // travelMode'yi doğru al:
+// Separator (mesafe/süre) ayraçlarını doğru ekle!
+const nextItem = dayItemsArr[idx + 1];
+const hasNextLoc =
+  item.location &&
+  typeof item.location.lat === "number" &&
+  typeof item.location.lng === "number" &&
+  nextItem &&
+  nextItem.location &&
+  typeof nextItem.location.lat === "number" &&
+  typeof nextItem.location.lng === "number";
+
+// Travel mode kesin al
+const travelMode =
+  typeof getTravelModeForDay === "function"
+    ? String(getTravelModeForDay(day)).trim().toLowerCase()
+    : "car"; // fallback
+
+if (hasNextLoc) {
+  let distanceStr = '';
+  let durationStr = '';
+  let prefix = '';
+
+  // Noktaları al
+  // Sadece şu iki noktanın Türkiye'de olup olmadığını kontrol etmek ideal
+  const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
+
+  if (!isInTurkey) {
+    // --- TÜRKİYE DIŞI: Auto generated ---
+    const ptA = item.location;
+    const ptB = nextItem.location;
+    const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
+    const durSec = Math.round((distM / 1000) / 4 * 3600);
+    distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
+    durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
+    prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
+  } else {
+    // --- TÜRKİYE İÇİ: Icon modları ---
+    const summary = pairwiseSummaries[idx];
+    if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+      distanceStr = summary.distance >= 1000
+        ? (summary.distance / 1000).toFixed(2) + " km"
+        : Math.round(summary.distance) + " m";
+      durationStr = summary.duration >= 60
+        ? Math.round(summary.duration / 60) + " min"
+        : Math.round(summary.duration) + " sec";
+    } else {
+      const ptA = item.location;
+      const ptB = nextItem.location;
+      const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
+      const durSec = Math.round((distM / 1000) / 4 * 3600);
+      distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
+      durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
+    }
+
+    // --- İKONLAR ---
+    if (travelMode === "driving") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
+    } else if (travelMode === "bike" || travelMode === "cycling") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
+    } else if (travelMode === "walk" || travelMode === "walking") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
+    } else {
+      prefix = ''; // Diğer tiplerde ikon gösterme
+    }
+  }
+
+  // DOM separator ekle
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
+}
+}
+
+
+
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
 ensureDayMapContainer(day);
