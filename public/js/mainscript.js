@@ -2987,7 +2987,7 @@ function initEmptyDayMap(day) {
     return;
   }
 
-  // Zaten harita varsa ve container içindeyse çık (Gereksiz render önleme)
+  // Zaten harita varsa ve container içindeyse çık
   const existingMap = window.leafletMaps && window.leafletMaps[containerId];
   const hasInner = el.querySelector('.leaflet-container');
   if (existingMap && hasInner) return;
@@ -3000,37 +3000,50 @@ function initEmptyDayMap(day) {
 
   if (!el.style.height) el.style.height = '285px';
   
-  // --- KRİTİK BÖLÜM BAŞLANGICI ---
+  // --- KONUM BELİRLEME MANTIĞI ---
   
   // 1. Önce bu güne ait noktaları al
   const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
   
-  // 2. Başlangıç merkezi ve zoom seviyesini belirle
   let startCenter = [0, 0];
   let startZoom = 2;
   let startBounds = null;
+  let hasFocus = false; // Bir odak noktası bulduk mu?
 
+  // DURUM A: Bu günün zaten noktaları var (Düzenleme modu vb.)
   if (validPts.length > 0) {
-      // Eğer nokta varsa, Afrika'dan (0,0) başlatma!
       if (validPts.length === 1) {
-          // Tek nokta ise direkt orası
           startCenter = [validPts[0].lat, validPts[0].lng];
           startZoom = 14;
       } else {
-          // Çok nokta varsa hepsini kapsayan alanı hesapla
           startBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
           startCenter = startBounds.getCenter();
-          startZoom = 10; // Geçici zoom, fitBounds düzeltecek
+          startZoom = 10;
+      }
+      hasFocus = true;
+  } 
+  // DURUM B: Bu gün boş ama ÖNCEKİ GÜN var (Yeni gün ekleme senaryosu)
+  else if (day > 1 && typeof getDayPoints === 'function') {
+      const prevPoints = getDayPoints(day - 1);
+      const validPrevPts = prevPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
+      
+      if (validPrevPts.length > 0) {
+          // Önceki günün EN SON noktasını al
+          const lastPt = validPrevPts[validPrevPts.length - 1];
+          startCenter = [lastPt.lat, lastPt.lng];
+          startZoom = 12; // Yeni gün için ideal başlangıç zoom seviyesi
+          hasFocus = true;
+          console.log(`[Map Init] Day ${day} starts at Day ${day-1}'s last point:`, lastPt.name);
       }
   }
 
-  // 3. Haritayı "DOĞRU KONUMDA" başlat
+  // 3. Haritayı belirlenen konumda başlat
   const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
     scrollWheelZoom: true,
-    fadeAnimation: false, // İlk açılışta animasyon olmasın ki zıplama görünmesin
+    fadeAnimation: false,
     zoomAnimation: true,
     zoomAnimationThreshold: 8,
     zoomSnap: 0.25,
@@ -3041,20 +3054,18 @@ function initEmptyDayMap(day) {
     easeLinearity: 0.2
   });
 
-  // 4. Eğer birden fazla nokta varsa, animasyonsuz (anında) sığdır
+  // 4. Eğer sınır kutusu (bounds) varsa ona sığdır
   if (startBounds && startBounds.isValid()) {
       map.fitBounds(startBounds, { 
           padding: [20, 20], 
-          animate: false // Zıplamayı önler
+          animate: false 
       });
   }
   
-  // --- KRİTİK BÖLÜM SONU ---
-
-  // Konum izni mantığı (Sadece harita boşsa çalışır)
-  if (validPts.length === 0 && navigator.geolocation) {
+  // 5. GPS Kullanımı (Sadece hiçbir odak noktası bulunamadıysa - örn: Day 1 ve boş)
+  if (!hasFocus && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(pos) {
-      // Async kontrol: hala nokta eklenmediyse git
+      // Async kontrol: Kullanıcı bu arada nokta eklemiş olabilir mi?
       const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
       if (currentPts.length === 0) {
           map.whenReady(function() {
@@ -3071,7 +3082,6 @@ function initEmptyDayMap(day) {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
   
-  // Initial View kaydet (Reset durumları için)
   if (!map._initialView) {
     map._initialView = {
       center: map.getCenter(),
@@ -3079,11 +3089,9 @@ function initEmptyDayMap(day) {
     };
   }
   
-  // Global referansa ekle
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 }
-
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
   Object.keys(window.leafletMaps).forEach(id => {
