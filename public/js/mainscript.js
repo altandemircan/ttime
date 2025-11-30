@@ -5380,43 +5380,29 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         preferCanvas: true
     });
 
-    // --- OpenFreeMap/MapLibreGL kodları YORUMDA ---
-    /*
-    // DAİMA Vektör TileLayer ekle (OpenFreeMap)
-    fetch('https://tiles.openfreemap.org/styles/bright')
-      .then(res => res.json())
-      .then(style => {
-        Object.keys(style.sources).forEach(src => {
-          if (style.sources[src].url)
-            style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf'; // DİKKAT: aynen bırak, encode etme!
-        });
-        L.maplibreGL({ style }).addTo(map);
-        console.log('[PROXY PATCH] Style sources tile URL proxyye yönlendi:', style.sources);
-      });
-    */
-
-    // --- SADECE OSM TILE ---
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // --- PATCH: Tek marker durumunda haritayı ve markerı göster ---
+    // --- DEĞİŞİKLİK BAŞLANGICI: Sınır Kutusu Oluştur ---
+    let bounds = L.latLngBounds();
+    // --------------------------------------------------
+
+    // Tek marker durumu
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (points.length === 1) {
-        // Her zaman leaflet marker olarak ekle (SVG/path değil!):
         L.marker([points[0].lat, points[0].lng], {
             icon: L.divIcon({
-                html:
-                  `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
+                html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
                 className: "",
                 iconSize: [32,32],
                 iconAnchor: [16,16]
             })
         }).addTo(map).bindPopup(points[0].name || points[0].category || "Point");
         map.setView([points[0].lat, points[0].lng], 14, { animate: true });
-    } else if (points.length >= 1) {
-        // Normal multiple marker, route, yay vb.
+    } 
+    else if (points.length >= 1) {
         const isFlyMode = !areAllPointsInTurkey(points);
 
         // FLY MODE ise yaylı çizgi
@@ -5429,37 +5415,40 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 const curve = getCurvedArcCoords(start, end, 0.33, 32);
                 arcPoints = arcPoints.concat(curve);
 
-                drawCurvedLine(map, points[i], points[i + 1], {
+                const curvePoly = drawCurvedLine(map, points[i], points[i + 1], {
                     color: "#1976d2",
                     weight: 5,
                     opacity: 0.85,
                     dashArray: "6,8"
                 });
+                
+                // Yay sınırlarını ekle
+                bounds.extend(curvePoly.getBounds());
             }
             window._curvedArcPointsByDay[day] = arcPoints;
-        } else if (hasValidGeo && routeCoords.length > 1) {
-            L.polyline(routeCoords, {
+        } 
+        else if (hasValidGeo && routeCoords.length > 1) {
+            // GERÇEK ROTA
+            const routePoly = L.polyline(routeCoords, {
                 color: '#1976d2',
                 weight: 8,
                 opacity: 0.92,
                 interactive: true,
                 dashArray: null
             }).addTo(map);
+            
+            // --- KRİTİK: Rota sınırlarını ekle ---
+            bounds.extend(routePoly.getBounds());
         }
-        // Eksik noktalar için yaylı kırmızı çizgiler
-       // Eksik noktalar/sapmış markerlar için kırmızı kesikli snap çizgileri (Büyük haritadaki ile aynı mantık)
+
+        // Eksik noktalar/sapmış markerlar için kırmızı kesikli snap çizgileri
         if (hasValidGeo) {
-            // isPointReallyMissing, [lng, lat] formatında raw koordinatları bekler
             const rawGeojsonCoords = geojson.features[0].geometry.coordinates; 
-            // Polyline çizimi için [lat, lng] formatı kullanılır
             const routePtsForSnap = routeCoords; 
             
-            points.forEach((mp) => { // 'points' değişkeni bu fonksiyonda mevcut
-                // Marker rotadan 50 metreden fazla sapmış mı?
+            points.forEach((mp) => { 
                 if (typeof isPointReallyMissing === 'function' && typeof haversine === 'function' && isPointReallyMissing(mp, rawGeojsonCoords, 50)) {
                     let minIdx = 0, minDist = Infinity;
-                    
-                    // Rotadaki en yakın noktayı bul
                     for (let i = 0; i < routePtsForSnap.length; i++) {
                         const [lat, lng] = routePtsForSnap[i];
                         const d = haversine(lat, lng, mp.lat, mp.lng);
@@ -5468,40 +5457,43 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                             minIdx = i;
                         }
                     }
+                    const start = [mp.lat, mp.lng]; 
+                    const end = routePtsForSnap[minIdx]; 
                     
-                    const start = [mp.lat, mp.lng]; // Marker'ın konumu [lat, lng]
-                    const end = routePtsForSnap[minIdx]; // Rotadaki en yakın nokta [lat, lng]
-                    
-                    L.polyline([start, end], {
+                    const snapPoly = L.polyline([start, end], {
                         dashArray: '8, 12',
-                        color: '#d32f2f', // Kırmızı çizgi
-                        weight: 2, // Küçük harita için daha ince çizgi
+                        color: '#d32f2f', 
+                        weight: 2, 
                         opacity: 0.8,
                         interactive: false,
                         renderer: ensureCanvasRenderer(map)
                     }).addTo(map); 
+                    
+                    // Snap çizgilerini de kapsasın
+                    bounds.extend(snapPoly.getBounds());
                 }
             });
         }
 
         addNumberedMarkers(map, points);
 
+        // Markerları da sınırlara ekle (Garanti olsun)
+        points.forEach(p => bounds.extend([p.lat, p.lng]));
+
         if (geojson && geojson.features[0]?.properties?.names) {
             addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
         }
 
-        // Haritayı noktalar arasında ortala
-        if (!points || points.length < 2) {
-            // Sadece marker ekle, haritayı ortala, rota/fitBounds/polyline yapma
-            if (points.length === 1) {
-                L.marker([points[0].lat, points[0].lng], {/*icon*/}).addTo(map);
-                map.setView([points[0].lat, points[0].lng], 14);
-            }
-            return;
+        // --- SONUÇ: Rota ve markerları kapsayan alana odakla ---
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [20, 20] });
+        } else {
+            // Eğer bounds oluşmadıysa sadece markerlara
+            map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
         }
-        map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+
     } else {
-        // Hiç marker yoksa harita orijinal konumda
+        // Hiç marker yoksa
         map.setView([0, 0], 2, { animate: true });
     }
 
