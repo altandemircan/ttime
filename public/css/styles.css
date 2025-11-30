@@ -6534,7 +6534,7 @@ border-bottom:1px solid #ddd;
 
      .tt-scale-loader{    position: absolute;
     left: 50%;
-    top: 70%;
+    top: 45%;
     transform: translate(-50%, -50%);
     display: flex
 ;
