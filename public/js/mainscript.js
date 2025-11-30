@@ -5590,48 +5590,118 @@ function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
+    
     let hoverMarker = null;
 
+    // Cache (Performans için mesafeleri bir kere hesaplayıp saklayacağız)
+    let cachedDay = null;
+    let cachedCumDist = []; // Kümülatif mesafeler
+    let cachedTotalDist = 0;
+
+    // Haversine Formülü (İçeride tanımlı olsun garanti olsun)
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371000; 
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2)**2;
+        return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    function prepareDistanceCache() {
+        // Eğer zaten bu gün için hesapladıysak tekrar yapma
+        if (cachedDay === day && cachedCumDist.length > 0) return;
+
+        const arcPts = window._curvedArcPointsByDay ? window._curvedArcPointsByDay[day] : [];
+        if (!Array.isArray(arcPts) || arcPts.length < 2) return;
+
+        cachedCumDist = [0];
+        cachedTotalDist = 0;
+
+        for (let i = 1; i < arcPts.length; i++) {
+            // Veri yapısı [lng, lat] şeklinde geliyor
+            const [lon1, lat1] = arcPts[i-1];
+            const [lon2, lat2] = arcPts[i];
+            
+            const d = haversine(lat1, lon1, lat2, lon2);
+            cachedTotalDist += d;
+            cachedCumDist.push(cachedTotalDist);
+        }
+        cachedDay = day;
+    }
+
     function onMove(e) {
+        const arcPts = window._curvedArcPointsByDay ? window._curvedArcPointsByDay[day] : [];
+        if (!Array.isArray(arcPts) || arcPts.length === 0) return;
+
+        // Cache hazırla
+        prepareDistanceCache();
+        if (cachedTotalDist === 0) return;
+
         const rect = scaleBar.getBoundingClientRect();
-        let x = (e.touches && e.touches.length)
-            ? (e.touches[0].clientX - rect.left)
-            : (e.clientX - rect.left);
+        let clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
+        let x = clientX - rect.left;
+        
+        // Yüzdelik dilim (0 ile 1 arası)
         let percent = Math.max(0, Math.min(x / rect.width, 1));
 
-        // YAY üzerinde marker hareketi - HATA AYIKLAMA
-        if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
-            let arcPts = window._curvedArcPointsByDay[day];
+        // Hedeflenen Gerçek Mesafe (Metre)
+        // Örn: %50 * 10km = 5000 metre
+        const targetMeters = percent * cachedTotalDist;
 
-if (!Array.isArray(arcPts) || arcPts.length === 0) {
-  console.log("Arc points yok veya boş!", arcPts);
-  return;
-}
+        // Bu mesafeye denk gelen segmenti bul
+        // (Binary search yapılabilir ama nokta sayısı az olduğu için düz döngü yeterli)
+        let foundIndex = 0;
+        for (let i = 0; i < cachedCumDist.length; i++) {
+            if (cachedCumDist[i] >= targetMeters) {
+                foundIndex = i;
+                break;
+            }
+        }
 
-// console.log("Arc points length:", arcPts.length);
-// console.log("Percent:", percent);
-// Doğru indeksi hesapla
-let idx = Math.round(percent * (arcPts.length - 1));
-idx = Math.max(0, Math.min(idx, arcPts.length - 1));
-// console.log("Calculated index:", idx);
-const [lng, lat] = arcPts[idx];
-// console.log("Marker position:", lat, lng);
+        // İki nokta arasında enterpolasyon (yumuşak geçiş) yap
+        // foundIndex şu anki segmentin bitişi, foundIndex-1 başlangıcı
+        let lat, lng;
 
-if (hoverMarker) {
-    hoverMarker.setLatLng([lat, lng]);
-} else {
-    hoverMarker = L.circleMarker([lat, lng], {
-        radius: 10,
-        color: "#fff",
-        fillColor: "#8a4af3",
-        fillOpacity: 0.9,
-        weight: 3,
-        zIndexOffset: 9999
-    }).addTo(map);
-}
-
+        if (foundIndex === 0) {
+            [lng, lat] = arcPts[0];
         } else {
-            console.log("No arc points found for day:", day);
+            const idx1 = foundIndex - 1;
+            const idx2 = foundIndex;
+
+            const dist1 = cachedCumDist[idx1];
+            const dist2 = cachedCumDist[idx2];
+            const segmentLen = dist2 - dist1;
+
+            // Segmentin içinde ne kadar ilerlemişiz?
+            let ratio = 0;
+            if (segmentLen > 0) {
+                ratio = (targetMeters - dist1) / segmentLen;
+            }
+
+            const [lon1, lat1] = arcPts[idx1];
+            const [lon2, lat2] = arcPts[idx2];
+
+            // Koordinat Enterpolasyonu
+            lat = lat1 + (lat2 - lat1) * ratio;
+            lng = lon1 + (lon2 - lon1) * ratio;
+        }
+
+        // Marker'ı çiz veya güncelle
+        if (hoverMarker) {
+            hoverMarker.setLatLng([lat, lng]);
+            // En üste getir
+            hoverMarker.bringToFront(); 
+        } else {
+            hoverMarker = L.circleMarker([lat, lng], {
+                radius: 8,              // Biraz daha küçük ve net
+                color: "#fff",
+                fillColor: "#8a4af3",
+                fillOpacity: 1,
+                weight: 2,
+                zIndexOffset: 10000,    // Diğer markerların üstünde dursun
+                interactive: false      // Tıklamayı engellemesin
+            }).addTo(map);
         }
     }
     
@@ -5642,6 +5712,12 @@ if (hoverMarker) {
         }
     }
     
+    // Eski listenerları temizle (eğer varsa) ve yenilerini ekle
+    scaleBar.removeEventListener("mousemove", onMove);
+    scaleBar.removeEventListener("mouseleave", onLeave);
+    scaleBar.removeEventListener("touchmove", onMove);
+    scaleBar.removeEventListener("touchend", onLeave);
+
     scaleBar.addEventListener("mousemove", onMove);
     scaleBar.addEventListener("mouseleave", onLeave);
     scaleBar.addEventListener("touchmove", onMove);
