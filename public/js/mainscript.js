@@ -3616,216 +3616,157 @@ const travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForD
 const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
 const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Boolean);
 
-for (let idx = 0; idx < dayItemsArr.length; idx++) {
-  const item = dayItemsArr[idx];
-  const currIdx = window.cart.indexOf(item);
+// ... updateCart fonksiyonunun içi ...
 
-  const li = document.createElement("li");
-  li.className = "travel-item";
-  li.draggable = true;
-  li.dataset.index = currIdx;
-  if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
-    li.setAttribute("data-lat", item.location.lat);
-    li.setAttribute("data-lon", item.location.lng);
-  }
-  li.addEventListener("dragstart", dragStart);
+    for (let idx = 0; idx < dayItemsArr.length; idx++) {
+      const item = dayItemsArr[idx];
+      const currIdx = window.cart.indexOf(item);
 
-  if (item.category === "Note") {
-    li.innerHTML = `
-      <div class="cart-item">
-        <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
-        <div class="item-info">
-          <p class="toggle-title">${item.name}</p>
-        </div>
-        <button class="remove-btn" onclick="removeFromCart(${currIdx})">
-          <img src="img/remove-icon.svg" alt="Close">
-        </button>
-        <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
-        <span class="arrow">
-          <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-        </span>
-        <div class="content">
-          <div class="info-section">
-            <div class="note-details">
-              <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    let openingHoursDisplay = "No working hours info";
-    if (item.opening_hours) {
-      if (Array.isArray(item.opening_hours)) {
-        const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
-        if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-      } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-        openingHoursDisplay = item.opening_hours.trim();
+      const li = document.createElement("li");
+      li.className = "travel-item";
+      li.draggable = true;
+      li.dataset.index = currIdx;
+      if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+        li.setAttribute("data-lat", item.location.lat);
+        li.setAttribute("data-lon", item.location.lng);
       }
-    }
-    const leafletMapId = "leaflet-map-" + currIdx;
-    const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
-      ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
-      : '<div class="map-error">Location not available</div>';
+      li.addEventListener("dragstart", dragStart);
 
-    li.innerHTML = `
-      <div class="cart-item">
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-            <img src="${item.image}" alt="${item.name}" class="cart-image">
-            <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
-            <div class="item-info">
-              <p class="toggle-title">${item.name}</p>
-            </div>
-          </div>
-          <span class="arrow">
-            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
-          </span>
+      // --- MARKER HTML YAPISI (Senin İstediğin) ---
+      // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
+      const listMarkerHtml = `
+        <div class="custom-marker-outer red" style="position:relative; flex-shrink: 0; transform: scale(0.85); margin-right: -2px;">
+            <span class="custom-marker-label" style="font-size: 14px;">${idx + 1}</span>
         </div>
-        <div class="content">
-          <div class="info-section">
-            <div class="place-rating">${mapHtml}</div>
-            <div class="contact">
-              <p>📌 Address: ${item.address || 'Address not available'}</p>
+      `;
+      // -------------------------------------------
+
+      if (item.category === "Note") {
+        li.innerHTML = `
+          <div class="cart-item">
+             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                ${listMarkerHtml} 
+                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                <div class="item-info">
+                  <p class="toggle-title">${item.name}</p>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:5px;">
+                <button class="remove-btn" onclick="removeFromCart(${currIdx})">
+                  <img src="img/remove-icon.svg" alt="Close">
+                </button>
+                <span class="arrow">
+                  <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                </span>
+              </div>
             </div>
-            <p class="working-hours-title">
-              🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
-            </p>
-            ${
-              item.location ? `
-                <div class="coords-info" style="margin-top:8px;">
-                  📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
-                  Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+            <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
+            <div class="content">
+              <div class="info-section">
+                <div class="note-details">
+                  <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
                 </div>
-                ${item.website ? `
-                  <div class="website-info" style="margin-top:8px;">
-                    🔗 <a href="${item.website}" target="_blank" rel="noopener">
-                      ${item.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  </div>
-                ` : ''}
-                <div class="google-search-info" style="margin-top:8px;">
-                  <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank" rel="noopener">
-                    🇬 Search images on Google
-                  </a>
-                </div>
-              ` : ''
-            }
-          </div>
-          <button class="add-favorite-btn"
-            data-name="${item.name}"
-            data-category="${item.category}"
-            data-lat="${item.location?.lat ?? item.lat ?? ""}"
-            data-lon="${item.location?.lng ?? item.lon ?? ""}">
-            <span class="fav-heart"
-              data-name="${item.name}"
-              data-category="${item.category}"
-              data-lat="${item.location?.lat ?? item.lat ?? ""}"
-              data-lon="${item.location?.lng ?? item.lon ?? ""}">
-              <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
-            </span>
-            <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
-          </button>
-          <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
-            Remove place
-          </button>
-          <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
-            <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
-            <div class="modal-actions">
-              <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
-              <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    `;
-  }
+        `;
+      } else {
+        // --- NORMAL YERLER (Places) ---
+        let openingHoursDisplay = "No working hours info";
+        if (item.opening_hours) {
+          if (Array.isArray(item.opening_hours)) {
+            const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+            if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+          } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+            openingHoursDisplay = item.opening_hours.trim();
+          }
+        }
+        const leafletMapId = "leaflet-map-" + currIdx;
+        const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
+          ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
+          : '<div class="map-error">Location not available</div>';
 
-  dayList.appendChild(li);
+        li.innerHTML = `
+          <div class="cart-item">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                
+                ${listMarkerHtml}
+                
+                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+                <img src="${item.image}" alt="${item.name}" class="cart-image">
+                <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+                <div class="item-info">
+                  <p class="toggle-title">${item.name}</p>
+                </div>
+              </div>
+              <span class="arrow">
+                <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+              </span>
+            </div>
+            <div class="content">
+              <div class="info-section">
+                <div class="place-rating">${mapHtml}</div>
+                <div class="contact">
+                  <p>📌 Address: ${item.address || 'Address not available'}</p>
+                </div>
+                <p class="working-hours-title">
+                  🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+                </p>
+                ${
+                  item.location ? `
+                    <div class="coords-info" style="margin-top:8px;">
+                      📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+                      Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+                    </div>
+                    ${item.website ? `
+                      <div class="website-info" style="margin-top:8px;">
+                        🔗 <a href="${item.website}" target="_blank" rel="noopener">
+                          ${item.website.replace(/^https?:\/\//, '')}
+                        </a>
+                      </div>
+                    ` : ''}
+                    <div class="google-search-info" style="margin-top:8px;">
+                      <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank" rel="noopener">
+                        🇬 Search images on Google
+                      </a>
+                    </div>
+                  ` : ''
+                }
+              </div>
+              <button class="add-favorite-btn"
+                data-name="${item.name}"
+                data-category="${item.category}"
+                data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                <span class="fav-heart"
+                  data-name="${item.name}"
+                  data-category="${item.category}"
+                  data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                  data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                  <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                </span>
+                <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
+              </button>
+              <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
+                Remove place
+              </button>
+              <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
+                <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+                <div class="modal-actions">
+                  <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
+                  <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
 
-  // travelMode'yi doğru al:
-// Separator (mesafe/süre) ayraçlarını doğru ekle!
-const nextItem = dayItemsArr[idx + 1];
-const hasNextLoc =
-  item.location &&
-  typeof item.location.lat === "number" &&
-  typeof item.location.lng === "number" &&
-  nextItem &&
-  nextItem.location &&
-  typeof nextItem.location.lat === "number" &&
-  typeof nextItem.location.lng === "number";
-
-// Travel mode kesin al
-const travelMode =
-  typeof getTravelModeForDay === "function"
-    ? String(getTravelModeForDay(day)).trim().toLowerCase()
-    : "car"; // fallback
-
-if (hasNextLoc) {
-  let distanceStr = '';
-  let durationStr = '';
-  let prefix = '';
-
-  // Noktaları al
-  // Sadece şu iki noktanın Türkiye'de olup olmadığını kontrol etmek ideal
-  const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
-
-  if (!isInTurkey) {
-    // --- TÜRKİYE DIŞI: Auto generated ---
-    const ptA = item.location;
-    const ptB = nextItem.location;
-    const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
-    const durSec = Math.round((distM / 1000) / 4 * 3600);
-    distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
-    durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
-    prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
-  } else {
-    // --- TÜRKİYE İÇİ: Icon modları ---
-    const summary = pairwiseSummaries[idx];
-    if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
-      distanceStr = summary.distance >= 1000
-        ? (summary.distance / 1000).toFixed(2) + " km"
-        : Math.round(summary.distance) + " m";
-      durationStr = summary.duration >= 60
-        ? Math.round(summary.duration / 60) + " min"
-        : Math.round(summary.duration) + " sec";
-    } else {
-      const ptA = item.location;
-      const ptB = nextItem.location;
-      const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
-      const durSec = Math.round((distM / 1000) / 4 * 3600);
-      distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
-      durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
-    }
-
-    // --- İKONLAR ---
-    if (travelMode === "driving") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
-    } else if (travelMode === "bike" || travelMode === "cycling") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
-    } else if (travelMode === "walk" || travelMode === "walking") {
-      prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
-    } else {
-      prefix = ''; // Diğer tiplerde ikon gösterme
-    }
-  }
-
-  // DOM separator ekle
-  const distanceSeparator = document.createElement('div');
-  distanceSeparator.className = 'distance-separator';
-  distanceSeparator.innerHTML = `
-    <div class="separator-line"></div>
-    <div class="distance-label">
-      ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
-    </div>
-    <div class="separator-line"></div>
-  `;
-  dayList.appendChild(distanceSeparator);
-}
-}
-
-
+      dayList.appendChild(li);
+      
+      // ... (Mesafe/Süre separator kodları devam eder) ...
 
 dayContainer.appendChild(dayList);
 // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
