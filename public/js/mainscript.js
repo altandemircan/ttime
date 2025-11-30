@@ -200,12 +200,20 @@ function niceStep(total, target) {
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
+  // --- GÜVENLİK KİLİDİ ---
+  // Eğer track 'loading' modundaysa asla marker çizme!
+  if (track && track.classList.contains('loading')) {
+      // Var olanları temizle ve çık
+      track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+      return; 
+  }
+  // ------------------------
+
   const container = track?.parentElement;
   const dayMatch = container?.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? `route-map-day${day}` : null;
 
-  // Değişkenler bir kez tanımlanır
   const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
   const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
   const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
@@ -215,15 +223,12 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   }
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-    // console.warn('[SCALEBAR] BAD spanKm, marker badge DOM temizlendi, render atlandı!', spanKm);
     return;
   }
   if (!track) return;
 
-  // Temizle
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-  // Tick + label dizisi
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -256,9 +261,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-  // --- MARKER POSİTİONİNG (DÜZENLENEN KISIM) ---
-  
-  // Yükseklik verisi var mı kontrol et
   let elevData = null;
   if (container && container._elevationData) {
       elevData = container._elevationData;
@@ -267,57 +269,38 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
-      // Bar'ın uzunluğunda markerın konumu
       const relKm = dist - startKmDom;
       let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
       left = Math.max(0, Math.min(100, left));
 
-      // Varsayılan bottom değeri (veri yoksa altta durur)
       let bottomStyle = "2px"; 
 
-      // Eğer yükseklik verisi varsa hesapla
       if (elevData && elevData.smooth && elevData.smooth.length > 0) {
           const { smooth, min, max } = elevData;
-          
-          // redrawElevation'daki görsel hesaplama mantığının aynısını kullanıyoruz
           let vizMin = min, vizMax = max;
           const eSpan = max - min;
-          // Grafik çizilirken kullanılan padding oranları:
           if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
           else { vizMin = min - 1; vizMax = max + 1; }
 
-          // Mesafeye (left percentage) göre array içindeki indexi bul
           const pct = Math.max(0, Math.min(1, left / 100));
           const sampleIdx = Math.floor(pct * (smooth.length - 1));
-          
-          // O noktadaki yükseklik değeri
           const val = smooth[sampleIdx];
           
           if (typeof val === 'number') {
-              // Yüksekliği yüzdeye çevir
-              // (val - vizMin) / (vizMax - vizMin) bize 0 ile 1 arası oran verir
               const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
-              
-              // CSS calc ile ayarla. 
-              // -9px çıkarma sebebimiz marker'ın yüksekliği 18px olduğu için tam ortasını çizgiye denk getirmek.
               bottomStyle = `calc(${heightPct}% - 7px)`;
           }
       }
 
-      // Marker badge
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      // left ve bottom dinamik olarak ayarlandı
       wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;transition: bottom 0.3s ease;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
     });
-  } else {
-    console.warn("[DEBUG] markers is not array", markers);
   }
 
-  // Elevation label rendering
   let gridLabels = [];
   const svg = track.querySelector('svg.tt-elev-svg');
   if (svg) {
@@ -329,30 +312,21 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
       .filter(obj => /-?\d+\s*m$/.test(obj.value));
   }
 
-gridLabels.sort((a, b) => a.y - b.y); // 👈 TERS SIRALAMAYI DÜZELT: Yüksek y'yi (aşağıyı) sona alır.
+  gridLabels.sort((a, b) => a.y - b.y); 
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
 
+  const lastIndex = gridLabels.length - 1; 
 
-  const svgH = svg ? (Number(svg.getAttribute('height')) || 180) : 180;
-
-  const lastIndex = gridLabels.length - 1; // 👈 EKLENMELİ
-
-  gridLabels.forEach((obj, index) => { // 👈 index parametresi EKLENMELİ
-    const trackHeight = track.clientHeight || 180;
-    const svgHeight = svg ? Number(svg.getAttribute('height')) || 180 : 180;
-    const correctedY = (obj.y / svgHeight) * trackHeight; 
-  const wrapper = document.createElement('div');
-    // Gizleme stilini oluştur
-let visibilityStyle = index === lastIndex ? 'visibility: hidden;' : ''; // 👈 EKLENMELİ (opacity yerine visibility)
-    wrapper.style.cssText = `
-
-${visibilityStyle} /* 👈 EKLENMELİ */    `;
+  gridLabels.forEach((obj, index) => { 
+    const wrapper = document.createElement('div');
+    let visibilityStyle = index === lastIndex ? 'visibility: hidden;' : ''; 
+    wrapper.style.cssText = `${visibilityStyle}`;
 
      const tick = document.createElement('div');
     tick.style.cssText = `
-        width: 35px;       
+        width: 35px;
         border-bottom: 1px dashed #cfd8dc;
         opacity: 0.7;
         display: block;
@@ -366,15 +340,12 @@ ${visibilityStyle} /* 👈 EKLENMELİ */    `;
         font-size: 10px;
         color: #607d8b;
         background: none;
-           line-height: 1.5;
+        line-height: 1.5;
         text-align: right;
         padding-right: 0px;
         white-space: nowrap;
-      
     `;
     label.textContent = obj.value;
-
-   
 
     wrapper.appendChild(tick);
     wrapper.appendChild(label);
@@ -9478,25 +9449,6 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  // 1. ADIM: CSS GÜVENLİK KİLİDİ (Loading sırasında markerları zorla gizle)
-  if (!document.getElementById('tt-marker-loading-style')) {
-    const style = document.createElement('style');
-    style.id = 'tt-marker-loading-style';
-    style.innerHTML = `
-        /* Loading sınıfı varsa marker, tick ve labelları gizle */
-        .scale-bar-track.loading .marker-badge,
-        .scale-bar-track.loading .scale-bar-tick,
-        .scale-bar-track.loading .scale-bar-label { 
-            display: none !important; 
-        }
-        /* Loader dönerken alanın boş kalmaması için */
-        .scale-bar-track.loading {
-            min-height: 200px; 
-        }
-    `;
-    document.head.appendChild(style);
-  }
-
   const spinner = container.querySelector('.spinner');
   if (spinner) spinner.remove();
   
@@ -9511,7 +9463,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-  // Eski verileri temizle
+  // --- TEMİZLİK ---
   delete container._elevationData;
   delete container._elevationDataFull;
 
@@ -9548,9 +9500,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track.innerHTML = '';
   }
 
-  // --- KRİTİK: Başlangıçta 'loading' sınıfını ekle ---
+  // --- KRİTİK: LOADING SINIFINI EKLE ---
+  // Bu sınıf varken createScaleElements marker çizmeyecek!
   track.classList.add('loading');
-  // --------------------------------------------------
 
   container.dataset.totalKm = String(totalKm);
 
@@ -9766,7 +9718,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
       segG.appendChild(seg);
     }
     
-    // JS yine de çağırabilir ama CSS gizleyecek
+    // JS buradan çağırsa bile createScaleElements fonksiyonunun başındaki kontrol
+    // 'loading' sınıfını görüp çizimi reddedecek.
     createScaleElements(track, width, totalKm, 0, markers);
   }
   container._redrawElevation = redrawElevation;
@@ -9845,12 +9798,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
       redrawElevation(container._elevationData);
       
-      // --- KRİTİK: Loader'ı gecikmeli kapat VE markerları görünür yap ---
+      // --- KRİTİK: Veri başarıyla çizildiğinde sınıfı kaldırıp markerları çiz ---
       requestAnimationFrame(() => {
           setTimeout(() => {
               window.hideScaleBarLoading?.(container);
-              // Loading sınıfını kaldır -> CSS markerları görünür yapar
               track.classList.remove('loading');
+              // Artık loading olmadığı için bu çağrı markerları çizecektir
+              createScaleElements(track, width, totalKm, 0, markers);
           }, 60);
       });
 
@@ -9869,20 +9823,19 @@ function renderRouteScaleBar(container, totalKm, markers) {
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
       
-      // Hata olsa bile markerları göster (Loading sınıfını kaldır)
+      // Hata durumunda Fallback olarak markerları boş bara çiz
       track.classList.remove('loading');
       createScaleElements(track, width, totalKm, 0, markers);
     }
   })();
 
   function handleResize() {
-    // Veri yoksa çizme
-    if (!container._elevationData) return;
-
     const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
     const spanKm = container._elevKmSpan || 1;
     const startKmDom = container._elevStartKm || 0;
     const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+    
+    // createScaleElements içindeki 'loading' kontrolü burayı da korur
     createScaleElements(track, newW, spanKm, startKmDom, markers);
   }
 
