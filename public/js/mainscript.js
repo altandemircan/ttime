@@ -9492,6 +9492,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
+  // --- KRİTİK DÜZELTME: Eski veriyi temizle ---
+  // Bu yapılmazsa ResizeObserver eski veriyi görüp markerları hemen çizer!
+  delete container._elevationData;
+  delete container._elevationDataFull;
+  // --------------------------------------------
+
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
     container.innerHTML = '<div class="spinner"></div>';
     return;
@@ -9522,7 +9528,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track.className = 'scale-bar-track';
     container.appendChild(track);
   } else {
-    // Daha önce çizilmiş markerları ve grafikleri temizle
     track.innerHTML = '';
   }
 
@@ -9583,7 +9588,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   svgElem.setAttribute('height', SVG_H);
   track.appendChild(svgElem);
   
-  // BURADA createScaleElements ÇAĞRISI YOK! (Loader dönerken marker görünmesin)
+  // createScaleElements BURADA YOK.
 
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class', 'tt-elev-grid');
@@ -9742,7 +9747,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       segG.appendChild(seg);
     }
     
-    // Veri geldi, grafik çizildi, ARTIK markerları çizebiliriz.
+    // Veri geldi, markerları çiz
     createScaleElements(track, width, totalKm, 0, markers);
   }
   container._redrawElevation = redrawElevation;
@@ -9842,20 +9847,19 @@ function renderRouteScaleBar(container, totalKm, markers) {
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
       
-      // Hata durumunda Fallback olarak markerları boş bara çiz
+      // Fallback: veri gelmezse markerları çiz
       createScaleElements(track, width, totalKm, 0, markers);
     }
   })();
 
   function handleResize() {
+    // --- KRİTİK: Veri henüz yoksa çizme ---
+    if (!container._elevationData) return;
+
     const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
     const spanKm = container._elevKmSpan || 1;
     const startKmDom = container._elevStartKm || 0;
     const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    
-    // --- ÖNEMLİ EKLEME: Veri yüklenmediyse (loader dönüyorsa) resize sırasında marker çizme! ---
-    if (!container._elevationData) return;
-
     createScaleElements(track, newW, spanKm, startKmDom, markers);
   }
 
