@@ -2616,7 +2616,9 @@ ease;
     flex: 1;
     margin-top: 1px;
 }
-
+.item-position {
+    position: relative;
+}
 /* Category List Styles */
 .category-item {
   margin-bottom: 15px;
