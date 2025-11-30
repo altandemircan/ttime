@@ -352,8 +352,7 @@ ${visibilityStyle} /* 👈 EKLENMELİ */    `;
 
      const tick = document.createElement('div');
     tick.style.cssText = `
-        width: 35px;
-       
+        width: 35px;       
         border-bottom: 1px dashed #cfd8dc;
         opacity: 0.7;
         display: block;
@@ -8449,6 +8448,8 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
     // snapThreshold: km cinsinden (örn: 0.2 km = 200m)
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
+    const summary = window.lastRouteSummaries?.[containerId]; // <--- EKLENDİ: API Özet verisi
+
     // GÜVENLİ KONTROL!
     if (
       !geojson ||
@@ -8479,6 +8480,21 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
         cumDist[i] = cumDist[i - 1] + haversine(lat1, lon1, lat2, lon2);
     }
 
+    // --- EKLENEN NORMALİZASYON MANTIĞI ---
+    // Geometriden hesaplanan toplam uzunluk
+    const manualTotalDistance = cumDist[cumDist.length - 1];
+    
+    // API'dan gelen gerçek sürüş mesafesi (varsa)
+    const apiTotalDistance = (summary && summary.distance) ? summary.distance : manualTotalDistance;
+
+    // Ölçekleme Çarpanı (Scale Factor)
+    // Eğer geometri mesafesi ile API mesafesi farklıysa, markerları bu oranda ileri kaydır.
+    let scaleFactor = 1;
+    if (manualTotalDistance > 0 && apiTotalDistance > 0) {
+        scaleFactor = apiTotalDistance / manualTotalDistance;
+    }
+    // -------------------------------------
+
     // SIRALI snap: her marker için, polyline'da bir öncekinin index'inden sonrasını tara
     let lastIdx = 0;
     return points.map((marker) => {
@@ -8492,11 +8508,15 @@ function getRouteMarkerPositionsOrdered(day, snapThreshold = 0.2) {
             }
         }
         lastIdx = minIdx;
+
+        // Ham mesafeyi scaleFactor ile çarpıyoruz
+        const normalizedDist = cumDist[minIdx] * scaleFactor;
+
         return {
             name: marker.name,
-            distance: cumDist[minIdx] / 1000, // km
-            snapped: minDist <= snapThreshold * 1000, // threshold'un altında mı
-            snappedDistance: minDist // metre
+            distance: normalizedDist / 1000, // km cinsinden düzeltilmiş mesafe
+            snapped: minDist <= snapThreshold * 1000, 
+            snappedDistance: minDist 
         }
     });
 }
