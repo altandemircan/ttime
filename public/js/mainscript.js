@@ -3010,64 +3010,39 @@ function initEmptyDayMap(day) {
     easeLinearity: 0.2
   }).setView([0, 0], 2);
 
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    map.whenReady(function() {
-      map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true });
-    });
-  });
-}
+  // --- KRİTİK DEĞİŞİKLİK BURADA ---
+  // Önce bu gün için nokta var mı kontrol et.
+  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+  // Geçerli (lat/lng olan) noktalar var mı?
+  const hasPoints = points && points.filter(p => isFinite(p.lat) && isFinite(p.lng)).length > 0;
 
-  // --- YORUMDA: OpenFreeMap/MapLibreGL vektör tile layer ---
-  /*
-  fetch('https://tiles.openfreemap.org/styles/bright')
-    .then(async res => {
-      if (!res.ok) {
-        console.error(`[MAPLIBRE] Style JSON fetch failed: ${res.status} ${res.statusText}`);
-        return null;
+  // SADECE HİÇ NOKTA YOKSA (Harita boşsa) kullanıcının konumuna git.
+  // Nokta varsa gitme, çünkü birazdan renderRouteForDay rotayı çizecek.
+  if (!hasPoints && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      // Async olduğu için tekrar kontrol et: hala nokta yoksa git
+      const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+      if (currentPts.length === 0) {
+          map.whenReady(function() {
+            try {
+               map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true });
+            } catch(e) {}
+          });
       }
-      const txt = await res.text();
-      if (!txt || txt.trim().length < 10) {
-        console.error('[MAPLIBRE] Style JSON blank/short:', txt);
-        return null;
-      }
-      try {
-        return JSON.parse(txt);
-      } catch (e) {
-        console.error('[MAPLIBRE] Style JSON parse error:', e, txt);
-        return null;
-      }
-    })
-    .then(style => {
-      if (!style || !style.sources) {
-        console.error('[MAPLIBRE] style.json missing/sources absent:', style);
-        return;
-      }
-      Object.keys(style.sources).forEach(src => {
-        if (style.sources[src].url)
-          style.sources[src].url = window.location.origin + '/api/tile/{z}/{x}/{y}.pbf';
-      });
-      map.whenReady(() => {
-        try {
-          L.maplibreGL({ style }).addTo(map);
-        } catch (e) { console.error('[MAPLIBRE ADD ERROR]', e); }
-      });
-    })
-    .catch(e => {
-      console.error('[MAPLIBRE FETCH ERROR]', e);
-    });
-  */
+    }, function(err) {
+        // Konum alınamazsa sessiz kal
+    }, { timeout: 3000 });
+  }
+  // --------------------------------
 
-  // --- [OSM DEFAULT TILE] ---
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Tek marker varsa haritayı ortala
-  const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-  if (pts.length === 1 && isFinite(pts[0].lat) && isFinite(pts[0].lng)) {
-    map.setView([pts[0].lat, pts[0].lng], 14);
+  // Tek nokta varsa oraya odakla (Rota çizimi gelene kadar boş kalmasın)
+  if (hasPoints && points.length === 1) {
+    map.setView([points[0].lat, points[0].lng], 14);
   }
   
   if (!map._initialView) {
