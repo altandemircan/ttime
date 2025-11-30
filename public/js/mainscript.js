@@ -9506,7 +9506,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   
-  // Throttle check
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
     window.showScaleBarLoading?.(container, 'Loading elevation…');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
@@ -9582,7 +9581,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
   svgElem.setAttribute('width', '100%');
   svgElem.setAttribute('height', SVG_H);
   track.appendChild(svgElem);
-  createScaleElements(track, width, totalKm, 0, markers);
+  
+  // --- DEĞİŞİKLİK 1: Buradaki erken createScaleElements çağrısı SİLİNDİ ---
+  // Böylece loader dönerken markerlar görünmeyecek.
 
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class', 'tt-elev-grid');
@@ -9740,6 +9741,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
       seg.setAttribute('fill', 'none');
       segG.appendChild(seg);
     }
+    
+    // --- DEĞİŞİKLİK 2: Markerlar ARTIK BURADA ÇİZİLİYOR (Veri geldikten sonra) ---
     createScaleElements(track, width, totalKm, 0, markers);
   }
   container._redrawElevation = redrawElevation;
@@ -9818,13 +9821,11 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
       redrawElevation(container._elevationData);
       
-      // --- DÜZELTME BURADA: SVG Render edilene kadar Loader'ı tut ---
       requestAnimationFrame(() => {
           setTimeout(() => {
               window.hideScaleBarLoading?.(container);
-          }, 60); 
+          }, 60);
       });
-      // -------------------------------------------------------------
 
       if (typeof day !== "undefined") {
         let ascent = 0, descent = 0;
@@ -9840,6 +9841,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
     } catch {
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
+      
+      // --- DEĞİŞİKLİK 3: Hata durumunda (catch) markerları boş bir bar üzerine çiz (Fallback) ---
+      createScaleElements(track, width, totalKm, 0, markers);
     }
   })();
 
