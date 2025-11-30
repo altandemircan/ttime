@@ -4366,7 +4366,6 @@ function updateExpandedMap(expandedMap, day) {
         p => typeof p.lat === "number" && isFinite(p.lat) &&
              typeof p.lng === "number" && isFinite(p.lng)
     );
-    console.log("getDayPoints:", JSON.stringify(pts));
 
     if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
     window._curvedArcPointsByDay[day] = []; // Reset
@@ -4386,7 +4385,6 @@ function updateExpandedMap(expandedMap, day) {
         }
     });
 
-    // GÜVENLİ KONTROL: geojson route verisi var mı?
     let hasValidRoute = (
       isInTurkey &&
       geojson &&
@@ -4397,6 +4395,8 @@ function updateExpandedMap(expandedMap, day) {
       geojson.features[0].geometry.coordinates.length > 1
     );
 
+    let routeCoordsForBounds = [];
+
     if (hasValidRoute) {
         const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         L.polyline(routeCoords, {
@@ -4404,22 +4404,20 @@ function updateExpandedMap(expandedMap, day) {
             weight: 6,
             opacity: 1,
             dashArray: null
-            }).addTo(expandedMap);
-        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
-        console.log("[DEBUG] OSRM route points saved:", window._curvedArcPointsByDay[day].length);
+        }).addTo(expandedMap);
+        
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
+        
+        // --- BOUNDS İÇİN ROTA KOORDİNATLARINI SAKLA ---
+        routeCoordsForBounds = routeCoords; 
 
-        // --- YOL SAPMA ÇİZGİLERİ (SNAP LINES) EKLENİYOR ---
-        // isPointReallyMissing, [lng, lat] formatında raw koordinatları bekler
+        // Snap Lines (Kesikli kırmızı çizgiler)
         const rawGeojsonCoords = geojson.features[0].geometry.coordinates; 
-        // Marker'lar ve Polyline çizimi [lat, lng] formatını kullanır
         const routePtsForSnap = routeCoords; 
         
-        pts.forEach((mp) => { // 'points' yerine 'pts' kullanıldı
-            // Marker rotadan 50 metreden fazla sapmış mı?
+        pts.forEach((mp) => { 
             if (isPointReallyMissing(mp, rawGeojsonCoords, 50)) {
                 let minIdx = 0, minDist = Infinity;
-                
-                // Rotadaki en yakın noktayı bul
                 for (let i = 0; i < routePtsForSnap.length; i++) {
                     const [lat, lng] = routePtsForSnap[i];
                     const d = haversine(lat, lng, mp.lat, mp.lng);
@@ -4428,10 +4426,8 @@ function updateExpandedMap(expandedMap, day) {
                         minIdx = i;
                     }
                 }
-                
-                const start = [mp.lat, mp.lng]; // Marker'ın konumu [lat, lng]
-                const end = routePtsForSnap[minIdx]; // Rotadaki en yakın nokta [lat, lng]
-                
+                const start = [mp.lat, mp.lng]; 
+                const end = routePtsForSnap[minIdx]; 
                 L.polyline([start, end], {
                     dashArray: '8, 12',
                     color: '#d32f2f',
@@ -4442,10 +4438,9 @@ function updateExpandedMap(expandedMap, day) {
                 }).addTo(expandedMap);
             }
         });
-        // --- YOL SAPMA ÇİZGİLERİ EKLEME SONU ---
-        
-    } else if (pts.length > 1 && !isInTurkey) {
-        // SADECE TÜRKİYE DIŞINDAYSA (Fly Mode) Yay çiz
+
+    } else if (pts.length > 1 && !isInTurkey) {
+        // FLY MODE
         let allArcPoints = [];
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
@@ -4465,9 +4460,13 @@ function updateExpandedMap(expandedMap, day) {
             allArcPoints.push(lastPoint);
         }
         window._curvedArcPointsByDay[day] = allArcPoints;
-        console.log("[DEBUG] Arc points saved:", allArcPoints.length);
+        
+        // --- BOUNDS İÇİN YAY KOORDİNATLARINI SAKLA ---
+        // (Arc points [lng, lat] gelir, Leaflet [lat, lng] ister)
+        routeCoordsForBounds = allArcPoints.map(p => [p[1], p[0]]);
     }
 
+    // Markerları çiz
     pts.forEach((item, idx) => {
         const markerHtml = `
             <div style="background:#d32f2f;color:#fff;border-radius:50%;
@@ -4496,23 +4495,30 @@ function updateExpandedMap(expandedMap, day) {
         }).addTo(expandedMap);
     }
 
-    if (pts.length > 1) {
-        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+    // --- KRİTİK GÜNCELLEME: FIT BOUNDS MANTIĞI ---
+    if (routeCoordsForBounds.length > 0) {
+        // 1. Rota varsa, rotanın tüm kıvrımlarını kapsayacak şekilde odakla
+        expandedMap.fitBounds(routeCoordsForBounds, { padding: [40, 40] });
+    } else if (pts.length > 1) {
+        // 2. Rota yoksa markerlara odakla
+        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [40, 40] });
     } else if (pts.length === 1) {
+        // 3. Tek nokta varsa oraya zoom yap
         expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
     } else {
+        // 4. Hiçbir şey yoksa varsayılan
         expandedMap.setView([41.0, 12.0], 5, { animate: true });
     }
+    // ---------------------------------------------
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
 
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // Route summary yoksa haversine ile üret!
+    // Scale Bar & UI Güncellemeleri
     const sumKey = `route-map-day${day}`;
     let sum = window.lastRouteSummaries?.[sumKey];
 
-    // DÜZELTME: Türkiye içindeysek ve summary henüz yoksa, uydurma Haversine hesabı YAPMA.
     if (!sum && pts.length > 1 && !isInTurkey) {
         let totalKmSum = 0;
         for (let i = 0; i < pts.length - 1; i++) {
@@ -4530,51 +4536,35 @@ function updateExpandedMap(expandedMap, day) {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
 
-    // SCALE BAR 
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBarDiv) {
         const totalKm = sum ? sum.distance / 1000 : 0;
-        
         let markerPositions = [];
-        // DÜZELTME: Türkiye içindeyseniz ve totalKm 0 ise markerları hesaplayıp gönderme.
-        // Bu sayede createScaleElements fonksiyonu kendi içinde fallback olarak Haversine hesaplamaz.
-       // --- SCALE BAR MARKER POZİSYON HESAPLAMA MANTIĞI GÜNCELLENDİ ---
+        
+        const hasRealRouteData = (sum && sum.distance > 0 && typeof getRouteMarkerPositionsOrdered === 'function');
 
-// 1. GERÇEK ROTA VERİSİNİ KULLAN
-const hasRealRouteData = (sum && sum.distance > 0 && typeof getRouteMarkerPositionsOrdered === 'function');
-
-if (hasRealRouteData) {
-    // Rota özeti (summary) varsa, marker pozisyonlarını gerçek OSRM mesafelerine göre al.
-    markerPositions = getRouteMarkerPositionsOrdered(day);
-    if (!markerPositions || markerPositions.length === 0) {
-         markerPositions = [];
-    }
-} 
-// 2. FLY MODE (Türkiye Dışı) İSE HAVERSINE KULLAN (SADECE GERÇEK ROTA YOKSA)
-else if (pts.length > 1 && !isInTurkey) {
-    // Rota verisi gelmemiş Fly Mode ise Haversine ile kuş uçuşu hesapla
-    let currentDist = 0;
-    for (let i = 0; i < pts.length; i++) {
-        if (i > 0) {
-            currentDist += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-        }
-        // Dikkat: Bu mesafe kuş uçuşudur. Fly Mode için uygundur.
-        markerPositions.push({
-            name: pts[i].name || "",
-            distance: currentDist, 
-            lat: pts[i].lat,
-            lng: pts[i].lng
-        });
-    }
-} 
-// 3. TÜRKİYE İÇİ VE ROTA VERİSİ YOKSA: markerPositions boş kalır (Haversine çizimi yapılmaz).
-
-// --- GÜNCELLEME SONU ---
+        if (hasRealRouteData) {
+            markerPositions = getRouteMarkerPositionsOrdered(day);
+            if (!markerPositions || markerPositions.length === 0) markerPositions = [];
+        } 
+        else if (pts.length > 1 && !isInTurkey) {
+            let currentDist = 0;
+            for (let i = 0; i < pts.length; i++) {
+                if (i > 0) {
+                    currentDist += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
+                }
+                markerPositions.push({
+                    name: pts[i].name || "",
+                    distance: currentDist, 
+                    lat: pts[i].lat,
+                    lng: pts[i].lng
+                });
+            }
+        } 
 
         scaleBarDiv.style.display = "block";
         scaleBarDiv.innerHTML = "";
 
-        // Eğer Türkiye'de ve km 0 ise (rota yoksa), markerPositions boş gideceği için scale bar düz çizgi/spinner kalır
         if (isInTurkey && totalKm <= 0.01) {
              scaleBarDiv.innerHTML = '<div class="spinner"></div>';
         } else {
@@ -4590,7 +4580,6 @@ else if (pts.length > 1 && !isInTurkey) {
 
     setTimeout(() => {
         setupScaleBarInteraction(day, expandedMap);
-        console.log("[DEBUG] Scale bar interaction initialized for day", day);
     }, 500);
 
     adjustExpandedHeader(day);
