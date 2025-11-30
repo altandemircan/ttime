@@ -3695,11 +3695,11 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
-                
+                                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+
                 <div class="item-position">${listMarkerHtml}                
                   <img src="${item.image}" alt="${item.name}" class="cart-image">
                 </div>
-                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
                 
                 <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
                 <div class="item-info">
