@@ -4368,12 +4368,12 @@ function updateExpandedMap(expandedMap, day) {
     );
 
     if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
-    window._curvedArcPointsByDay[day] = []; // Reset
+    window._curvedArcPointsByDay[day] = []; 
 
     // Türkiye kontrolü
     const isInTurkey = areAllPointsInTurkey(pts);
 
-    // Sadece overlay layerları sil!
+    // Overlay layerları temizle
     expandedMap.eachLayer(layer => {
         if (
             layer instanceof L.Marker ||
@@ -4385,6 +4385,9 @@ function updateExpandedMap(expandedMap, day) {
         }
     });
 
+    // --- YENİ MANTIK: Boş bir sınır kutusu oluştur ---
+    let bounds = L.latLngBounds(); 
+
     let hasValidRoute = (
       isInTurkey &&
       geojson &&
@@ -4395,23 +4398,24 @@ function updateExpandedMap(expandedMap, day) {
       geojson.features[0].geometry.coordinates.length > 1
     );
 
-    let routeCoordsForBounds = [];
-
     if (hasValidRoute) {
+        // [lng, lat] -> [lat, lng] dönüşümü
         const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        L.polyline(routeCoords, {
+        
+        // Rotayı çiz
+        const poly = L.polyline(routeCoords, {
             color: "#1976d2",
             weight: 6,
             opacity: 1,
             dashArray: null
         }).addTo(expandedMap);
         
-        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
-        
-        // --- BOUNDS İÇİN ROTA KOORDİNATLARINI SAKLA ---
-        routeCoordsForBounds = routeCoords; 
+        // --- KRİTİK: Rota çizgisinin sınırlarını kutuya ekle ---
+        bounds.extend(poly.getBounds());
 
-        // Snap Lines (Kesikli kırmızı çizgiler)
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
+
+        // Snap Lines (Eksik noktalar için kesikli çizgiler)
         const rawGeojsonCoords = geojson.features[0].geometry.coordinates; 
         const routePtsForSnap = routeCoords; 
         
@@ -4446,12 +4450,18 @@ function updateExpandedMap(expandedMap, day) {
             const start = [pts[i].lng, pts[i].lat];
             const end = [pts[i + 1].lng, pts[i + 1].lat];
             const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
-            L.polyline(arcPoints.map(pt => [pt[1], pt[0]]), {
+            const latLngs = arcPoints.map(pt => [pt[1], pt[0]]);
+            
+            const poly = L.polyline(latLngs, {
                 color: "#1976d2",
                 weight: 6,
                 opacity: 0.93,
                 dashArray: "6,8"
             }).addTo(expandedMap);
+            
+            // Fly mode çizgilerini de kutuya ekle
+            bounds.extend(poly.getBounds());
+
             if (i === 0) allArcPoints.push([start[0], start[1]]);
             allArcPoints = allArcPoints.concat(arcPoints.slice(1));
         }
@@ -4460,13 +4470,9 @@ function updateExpandedMap(expandedMap, day) {
             allArcPoints.push(lastPoint);
         }
         window._curvedArcPointsByDay[day] = allArcPoints;
-        
-        // --- BOUNDS İÇİN YAY KOORDİNATLARINI SAKLA ---
-        // (Arc points [lng, lat] gelir, Leaflet [lat, lng] ister)
-        routeCoordsForBounds = allArcPoints.map(p => [p[1], p[0]]);
     }
 
-    // Markerları çiz
+    // Markerları çiz ve sınır kutusuna dahil et (Garanti olsun diye)
     pts.forEach((item, idx) => {
         const markerHtml = `
             <div style="background:#d32f2f;color:#fff;border-radius:50%;
@@ -4480,12 +4486,14 @@ function updateExpandedMap(expandedMap, day) {
             iconSize: [32, 32],
             iconAnchor: [16, 16]
         });
-        L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
+        const marker = L.marker([item.lat, item.lng], { icon }).addTo(expandedMap)
             .bindPopup(`<b>${item.name || "Point"}</b>`);
+            
+        bounds.extend(marker.getLatLng());
     });
 
     if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
-        L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
+        const missingPoly = L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
             dashArray: '8, 12',
             color: '#d32f2f',
             weight: 4,
@@ -4493,23 +4501,21 @@ function updateExpandedMap(expandedMap, day) {
             interactive: false,
             renderer: ensureCanvasRenderer(expandedMap)
         }).addTo(expandedMap);
+        bounds.extend(missingPoly.getBounds());
     }
 
-    // --- KRİTİK GÜNCELLEME: FIT BOUNDS MANTIĞI ---
-    if (routeCoordsForBounds.length > 0) {
-        // 1. Rota varsa, rotanın tüm kıvrımlarını kapsayacak şekilde odakla
-        expandedMap.fitBounds(routeCoordsForBounds, { padding: [40, 40] });
-    } else if (pts.length > 1) {
-        // 2. Rota yoksa markerlara odakla
-        expandedMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [40, 40] });
-    } else if (pts.length === 1) {
-        // 3. Tek nokta varsa oraya zoom yap
-        expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+    // --- SON NOKTA: OLUŞTURULAN SINIR KUTUSUNA ODAKLA ---
+    if (bounds.isValid()) {
+        // Padding değeri (örneğin 50px) rotanın kenarlara yapışmasını engeller
+        expandedMap.fitBounds(bounds, { padding: [50, 50] });
     } else {
-        // 4. Hiçbir şey yoksa varsayılan
-        expandedMap.setView([41.0, 12.0], 5, { animate: true });
+        // Eğer bounds oluşmadıysa (tek nokta veya boş)
+        if (pts.length === 1) {
+            expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+        } else {
+            expandedMap.setView([41.0, 12.0], 5, { animate: true });
+        }
     }
-    // ---------------------------------------------
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
 
@@ -4570,9 +4576,9 @@ function updateExpandedMap(expandedMap, day) {
         } else {
              renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
              const track = scaleBarDiv.querySelector('.scale-bar-track');
-             const svg = track && track.querySelector('svg.tt-elev-svg');
-             if (track && svg) {
+             if (track) {
                  const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+                 // Loading sınıfı varsa bu çalışsa bile çizmez, güvenli.
                  createScaleElements(track, width, totalKm, 0, markerPositions || []);
              }
         }
