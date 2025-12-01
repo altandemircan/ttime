@@ -199,28 +199,21 @@ function niceStep(total, target) {
 }
 
 
-function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
-  // --- GÜVENLİK KİLİDİ ---
-  // Eğer track 'loading' modundaysa asla marker çizme!
+function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
+  // Güvenlik: Loading varsa çizme
   if (track && track.classList.contains('loading')) {
-      // Var olanları temizle ve çık
       track.querySelectorAll('.marker-badge').forEach(el => el.remove());
       return; 
   }
-  // ------------------------
 
   const container = track?.parentElement;
-  const dayMatch = container?.id && container.id.match(/day(\d+)/);
-  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-  const gjKey = day ? `route-map-day${day}` : null;
-
-  const hasSummary = window.lastRouteSummaries?.[gjKey]?.distance;
-  const hasPairwise = window.pairwiseRouteSummaries?.[gjKey] && window.pairwiseRouteSummaries[gjKey].length > 0;
-  const hasGeoJson = gjKey && window.lastRouteGeojsons?.[gjKey]?.features?.[0]?.geometry?.coordinates?.length > 1;
-
-  if ((!spanKm || spanKm < 0.01) && Array.isArray(markers) && markers.length > 1 && !(hasSummary || hasPairwise || hasGeoJson)) {
-    spanKm = getTotalKmFromMarkers(markers);
+  if ((!spanKm || spanKm < 0.01) && !customElevData) {
+      // Fallback logic...
+      if (Array.isArray(markers) && markers.length > 1) {
+         spanKm = getTotalKmFromMarkers(markers);
+      }
   }
+  
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
     return;
@@ -229,6 +222,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
 
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
+  // --- Ticks & Labels ---
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -261,68 +255,150 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = []) {
     track.appendChild(label);
   }
 
-  let elevData = null;
-  if (container && container._elevationData) {
-      elevData = container._elevationData;
+  // --- MARKER POSITIONING ---
+  
+  // Veri kaynağını belirle: Ya parametre olarak gelen segment verisi ya da container üzerindeki global veri
+  let activeData = null;
+  
+  if (customElevData) {
+      // Segment modundaysak, drawSegmentProfile'dan gelen hazır veriyi kullan
+      // Bu veri zaten vizMin/vizMax içeriyor, tekrar hesaplamaya gerek yok
+      activeData = customElevData; 
+  } else if (container && container._elevationData) {
+      // Global moddaysak container verisini kullan ve vizMin/vizMax hesapla
+      const { smooth, min, max } = container._elevationData;
+      let vizMin = min, vizMax = max;
+      const eSpan = max - min;
+      if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
+      else { vizMin = min - 1; vizMax = max + 1; }
+      
+      activeData = { smooth, vizMin, vizMax };
   }
 
   if (Array.isArray(markers)) {
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
+      
+      // 1. Filtreleme: Eğer marker bu segmentin dışındaysa ÇİZME
+      // (Ufak bir tolerans payı +/- 0.05 km eklenebilir)
+      if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
+          return;
+      }
+
       const relKm = dist - startKmDom;
       let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
+      
+      // Sınırları aşmaması için clamp (yine de yukarıdaki if ile eledik ama güvenlik)
       left = Math.max(0, Math.min(100, left));
 
       let bottomStyle = "2px"; 
 
-      if (elevData && elevData.smooth && elevData.smooth.length > 0) {
-          const { smooth, min, max } = elevData;
-          let vizMin = min, vizMax = max;
-          const eSpan = max - min;
-          if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
-          else { vizMin = min - 1; vizMax = max + 1; }
-
+      if (activeData && activeData.smooth && activeData.smooth.length > 0) {
+          const { smooth, vizMin, vizMax } = activeData;
+          
+          // Markerın, grafiğin veri dizisi (smooth array) içindeki denk geldiği index
           const pct = Math.max(0, Math.min(1, left / 100));
           const sampleIdx = Math.floor(pct * (smooth.length - 1));
           const val = smooth[sampleIdx];
           
           if (typeof val === 'number') {
+              // Yükseklik Yüzdesi Hesabı
+              // (Değer - GörselAltSınır) / (GörselÜstSınır - GörselAltSınır)
               const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
+              
+              // Marker boyutu ve padding ayarı
               bottomStyle = `calc(${heightPct}% - 7px)`;
           }
       }
 
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;transition: bottom 0.3s ease;`;
+      // Transition'ı kaldırdım çünkü zoom yaparken markerların kayarak gelmesi kafa karıştırabilir
+      wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
     });
   }
 
+  // --- Grid Labels (Dikey Eksen Yazıları) ---
+  // Eğer özel veri varsa (segment), etiketleri de o aralığa göre çiz
+  // Değilse eski SVG içinden çekmeye çalışır (Global mod)
+  
   let gridLabels = [];
-  const svg = track.querySelector('svg.tt-elev-svg');
-  if (svg) {
-    gridLabels = Array.from(svg.querySelectorAll('text'))
-      .map(t => ({
-        value: t.textContent.trim(),
-        y: Number(t.getAttribute('y'))
-      }))
-      .filter(obj => /-?\d+\s*m$/.test(obj.value));
+  if (customElevData) {
+      // Segment modunda label'ları manuel oluşturmamız lazım çünkü SVG henüz DOM'da tam oluşmamış olabilir
+      // veya SVG içinden okumak yerine veriden üretmek daha sağlıklıdır.
+      // drawSegmentProfile'da kullanılan 4 seviyeli grid mantığının aynısı:
+      const { vizMin, vizMax } = customElevData;
+      // SVG yüksekliği genelde 220px veya mobil ayarı. Oranlayarak Y bulacağız.
+      // Ancak createScaleElements sadece HTML basıyor, SVG koordinatını bilmiyor.
+      // Basit çözüm: Yüzde olarak yerleştirmek.
+      
+      for(let i=0; i<=4; i++) {
+          const val = vizMin + (i/4)*(vizMax - vizMin);
+          // Yüzde hesabı:
+          const pct = (i/4) * 100; 
+          // SVG'de Y ekseni ters (yukarı 0) ama HTML bottom (aşağı 0). 
+          // Profile çiziminde bottom = 0 -> vizMin değil, vizMin biraz aşağıda kalıyor.
+          // drawSegmentProfile mantığına sadık kalmak için:
+          // Oradaki Y fonksiyonu: ((height-1) - ((e-vizMin)/(vizMax-vizMin))*(height-2))
+          // Yani lineer bir mapping.
+          
+          gridLabels.push({
+              value: Math.round(val) + ' m',
+              pct: pct // Bu height yüzdesi
+          });
+      }
+  } else {
+      // Global mod: SVG'den oku (Eski yöntem)
+      const svg = track.querySelector('svg.tt-elev-svg');
+      if (svg) {
+        gridLabels = Array.from(svg.querySelectorAll('text'))
+          .map(t => ({
+            value: t.textContent.trim(),
+            y: Number(t.getAttribute('y')), // SVG pixel coordinates
+            svgHeight: Number(svg.getAttribute('height')) || 180
+          }))
+          .filter(obj => /-?\d+\s*m$/.test(obj.value));
+      }
   }
-
-  gridLabels.sort((a, b) => a.y - b.y); 
 
   const elevationLabels = document.createElement('div');
   elevationLabels.className = 'elevation-labels-container';
 
-  const lastIndex = gridLabels.length - 1; 
-
   gridLabels.forEach((obj, index) => { 
+    // Segment modunda (pct var) veya Global modda (y var)
+    let topStyle = '';
+    
+    if (typeof obj.pct !== 'undefined') {
+        // Segment modu: CSS bottom ile konumlandır
+        // drawSegmentProfile Y fonksiyonunun tersi mantığı:
+        // Y = H - (val_norm * H). Yani val_norm 0 ise Y=H (en alt).
+        // HTML'de bottom: 0% -> val_norm 0.
+        // Ancak paddingler var (min - span*0.5).
+        // createScaleElements içindeki marker mantığı ile aynı yüzdeyi kullanalım:
+        // heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
+        // obj.pct zaten (i/4)*100 yani tam grid çizgilerine denk gelir.
+        
+        // CSS top kullanmak daha güvenli çünkü parent relative.
+        // %100 yükseklik = vizMax. %0 = vizMin.
+        // Grid çizgisi i=4 (en üst) -> %100 elevation -> top: 0%.
+        // Grid çizgisi i=0 (en alt) -> %0 elevation -> top: 100%.
+        topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
+        
+    } else {
+        // Global mod: SVG pikselinden hesapla
+        const trackHeight = track.clientHeight || 180;
+        const correctedY = (obj.y / obj.svgHeight) * trackHeight;
+        topStyle = `top: ${correctedY}px;`;
+    }
+
     const wrapper = document.createElement('div');
-    let visibilityStyle = index === lastIndex ? 'visibility: hidden;' : ''; 
-    wrapper.style.cssText = `${visibilityStyle}`;
+    // En alttakini veya en üsttekini gizleme ihtiyacı varsa burada yapılabilir
+    let visibilityStyle = ''; 
+    
+    wrapper.style.cssText = `position: absolute; right: 0; ${topStyle} ${visibilityStyle}`;
 
      const tick = document.createElement('div');
     tick.style.cssText = `
@@ -10333,28 +10409,21 @@ if (typeof startKm !== 'number' || typeof endKm !== 'number') {
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
   const svgNS = 'http://www.w3.org/2000/svg';
 
-  // Segment state’i kaydet
   window._lastSegmentDay = day;
   window._lastSegmentStartKm = startKm;
   window._lastSegmentEndKm = endKm;
   console.log('SEGMENT PROFILE SET', day, startKm, endKm);
 
-  // Scale bar track’i bul
   const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
 
-  // --- KRİTİK DÜZELTME: SEÇİM KUTUSUNU GİZLE/SIFIRLA ---
-  // Grafik zoomlandığı için, eski seçim kutusunun (mor alan) işi bitti.
-  // Ekranda yanlış yerde asılı kalmaması için gizliyoruz.
   const selDiv = container.querySelector('.scale-bar-selection');
   if (selDiv) {
       selDiv.style.display = 'none';
       selDiv.style.width = '0px';
       selDiv.style.left = '0px';
   }
-  // -----------------------------------------------------
 
-  // Segment overlay SVG'lerini, toolbar ve sol baremi temizle
   track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
   track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
@@ -10364,23 +10433,49 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
     ? getRouteMarkerPositionsOrdered(day) : [];
 
-  // Segment/profil marker ve km çizelgesi güncelle
+  // Görsel aralık (Min/Max) Hesabı
+  const min = Math.min(...elevSmooth);
+  const max = Math.max(...elevSmooth, min + 1);
+  const span = max - min;
+  
+  // Burada kullanılan vizMin/vizMax değerleri, markerları çizerken de BİREBİR kullanılmalı
+  let vizMin, vizMax;
+  if (span > 0) { 
+      vizMin = min - span * 0.50; 
+      vizMax = max + span * 1.0; 
+  } else { 
+      vizMin = min - 1; 
+      vizMax = max + 1; 
+  }
+
+  // Segment verisi paketi (createScaleElements'e gönderilecek)
+  const segmentElevData = {
+      smooth: elevSmooth,
+      vizMin: vizMin,
+      vizMax: vizMax,
+      min: min,
+      max: max
+  };
+
+  // Eğer çok küçük bir aralıksa (Reset durumu gibi)
   if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
-    // Tam profile dön
     container._elevStartKm = 0;
     container._elevKmSpan  = totalKm;
-    createScaleElements(track, widthPx, totalKm, 0, markers);
-
-    // Tam profil gösteriliyorsa, segment px aralığı yok
+    
     track._segmentStartPx = undefined;
     track._segmentWidthPx = undefined;
+    
+    // Global moda dön (parametre olarak null gönder)
+    createScaleElements(track, widthPx, totalKm, 0, markers, null);
+
   } else {
     // Segment seçiliyken
     container._elevStartKm = startKm;
     container._elevKmSpan  = endKm - startKm;
-    createScaleElements(track, widthPx, endKm - startKm, startKm, markers);
+    
+    // --- BURADA ÖZEL VERİYİ GÖNDERİYORUZ ---
+    createScaleElements(track, widthPx, endKm - startKm, startKm, markers, segmentElevData);
 
-    // Segment overlay’in px aralığını kaydet
     const rect = track.getBoundingClientRect();
     const segStartPx = (startKm / totalKm) * rect.width;
     const segWidthPx = ((endKm - startKm) / totalKm) * rect.width;
@@ -10388,7 +10483,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     track._segmentWidthPx = segWidthPx;
   }
 
-  // ----- SVG Overlay Kısmı -----
+  // ----- SVG Çizimi -----
   const widthNow = widthPx || 400;
   const heightNow = 220;
 
@@ -10413,15 +10508,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   segG.setAttribute('class','tt-elev-segments');
   svg.appendChild(segG);
 
-  // Görsel aralık
-  const min = Math.min(...elevSmooth);
-  const max = Math.max(...elevSmooth, min + 1);
-  const span = max - min;
-  const vizMin = min - span * 0.5;
-  const vizMax = max + span * 1.0;
-
-  const segKm = Math.max(0.001, endKm - startKm);
-  const X = (km) => (km / segKm) * widthNow;
+  const X = (km) => (km / (endKm - startKm)) * widthNow;
   const Y = (e) => (isNaN(e) || vizMax === vizMin) ? (heightNow/2) : ((heightNow - 1) - ((e - vizMin) / (vizMax - vizMin)) * (heightNow - 2));
 
   // Grid çizgileri
@@ -10433,15 +10520,12 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
     ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
-
-    const tx = document.createElementNS(svgNS, 'text');
-    tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-    tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-    tx.textContent = `${Math.round(ev)} m`;
-    gridG.appendChild(tx);
+    // Not: Label'ları artık createScaleElements içinde çiziyoruz, buradakini kaldırabiliriz veya
+    // createScaleElements'in label çizimini kapatıp burada tutabiliriz. 
+    // Tutarlılık için createScaleElements içinde çizmek daha iyi (DOM sıralaması açısından).
   }
   
-  // Alan (profile area)
+  // Alan
   let topD = '';
   for (let i = 0; i < elevSmooth.length; i++) {
     const kmRel = (samples[i].distM / 1000) - startKm;
@@ -10456,7 +10540,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     areaPath.setAttribute('fill', '#263445');
   }
 
-  // Eğim renkli segmentler
+  // Eğim çizgileri
   for (let i = 1; i < elevSmooth.length; i++) {
     const kmRel1 = (samples[i-1].distM / 1000) - startKm;
     const kmRel2 = (samples[i].distM / 1000) - startKm;
@@ -10499,18 +10583,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
   tb.style.cssText = `
-   bottom: 10px;
-    z-index: 1005;
-    display: inline-flex;
-    gap: 10px;
-    align-items: center;
-    border-radius: 10px;
-    padding: 6px;
-    font-size: 12px;
-    color: rgb(0, 0, 0);
-    right: 6px;
-    position: absolute;
-    background: rgb(255 255 255 / 43%);  
+   bottom: 10px; z-index: 1005; display: inline-flex; gap: 10px;
+   align-items: center; border-radius: 10px; padding: 6px;
+   font-size: 12px; color: rgb(0, 0, 0); right: 6px; position: absolute;
+   background: rgb(255 255 255 / 43%);  
   `;
   tb.innerHTML = `
     <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
@@ -10521,7 +10597,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   `;
   track.appendChild(tb);
 
-  // Reset butonu
   tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
     track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
     track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
@@ -10559,13 +10634,13 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     const selection = container.querySelector('.scale-bar-selection');
     if (selection) selection.style.display = 'none';
 
-    const totalKm = Number(container.dataset.totalKm) || 0;
     container._elevStartKm = 0;
     container._elevKmSpan  = totalKm;
 
-    const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
     const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    createScaleElements(track, widthPx, totalKm, 0, markers);
+    
+    // Reset yapınca global veriye dön
+    createScaleElements(track, widthPx, totalKm, 0, markers, null);
 
     if (Array.isArray(container._elevFullSamples)) {
       container._elevSamples = container._elevFullSamples.slice();
