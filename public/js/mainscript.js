@@ -10207,12 +10207,14 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 })();
 
 (function ensureElevationMux(){
-  if (window.__tt_elevMuxReady) return;
+  // Eğer zaten tanımlıysa ve versiyon kontrolü yapmıyorsak çıkabiliriz
+  // Ancak içeriği değiştirdiğimiz için bu kontrolü geçici olarak devre dışı bırakıp
+  // üzerine yazmasını sağlamak daha garantidir. 
+  // if (window.__tt_elevMuxReady) return; <--- Bunu kaldırdık veya içeriğini güncelledik.
 
   const TTL_MS = 48 * 60 * 60 * 1000;
   const LS_PREFIX = 'tt_elev_cache_v1:';
 
-  // Sadece kendi VPS/api provider!
   const providers = [
     { key: 'myApi', fn: viaMyApi, chunk: 80, minInterval: 1200 },
   ];
@@ -10239,15 +10241,6 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
     } catch {}
   }
 
-  async function throttle(key, minInterval) {
-    const now = Date.now();
-    const cd = cooldownUntil[key] || 0;
-    if (now < cd) await sleep(cd - now);
-    const wait = Math.max(0, minInterval - (now - (lastTs[key] || 0)));
-    if (wait) await sleep(wait);
-    lastTs[key] = Date.now();
-  }
-
   async function viaMyApi(samples) {
     const CHUNK = 120;
     const res = [];
@@ -10262,7 +10255,6 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
       }
       if (!resp.ok) throw new Error('HTTP '+resp.status);
       const j = await resp.json();
-      // API backend response
       if (j.results && j.results.length === chunk.length) {
         res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
       } else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
@@ -10270,7 +10262,6 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
       } else if (j.data && Array.isArray(j.data)) {
         res.push(...j.data);
       } else {
-        console.error('[Elevation] Bad response:', j);
         throw new Error('bad response');
       }
       if (samples.length > CHUNK) await sleep(400);
@@ -10279,7 +10270,6 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
     return res;
   }
 
-  // Main multiplexer function
   window.getElevationsForRoute = async function(samples, container, routeKey) {
     const cached = loadCache(routeKey, samples.length);
     if (cached && cached.length === samples.length) {
@@ -10287,13 +10277,15 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
       return cached;
     }
 
-    // Only own provider
     for (const p of providers) {
       try {
         if (Date.now() < cooldownUntil[p.key]) continue;
-        if (typeof updateScaleBarLoadingText === 'function') {
-          updateScaleBarLoadingText(container, `Loading elevation…`);
-        }
+        
+        // --- DEĞİŞİKLİK BURADA: ---
+        // updateScaleBarLoadingText çağrısı KALDIRILDI.
+        // Artık metni çağıran fonksiyon (renderRouteScaleBar veya fetchAndRenderSegmentElevation) belirliyor.
+        // --------------------------
+
         const elev = await p.fn(samples);
         if (Array.isArray(elev) && elev.length === samples.length) {
           saveCache(routeKey, samples.length, elev);
@@ -10304,7 +10296,6 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
         continue;
       }
     }
-    // No successful elevation
     return null;
   };
 
