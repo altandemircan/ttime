@@ -6089,7 +6089,7 @@ async function expandMap(containerId, day) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
-  // --- LAYER DEĞİŞTİRME FONKSİYONU (DÜZELTİLDİ) ---
+  // --- LAYER DEĞİŞTİRME FONKSİYONU ---
   function setExpandedMapTile(styleKey) {
       if (expandedMapInstance._osmTileLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer);
@@ -6100,14 +6100,14 @@ async function expandMap(containerId, day) {
       let options = { maxZoom: 19 };
 
       if (styleKey === 'satellite') {
-          // Satellite (Esri)
+          // --- SATELLITE (Esri World Imagery) ---
           url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
           options.attribution = 'Tiles &copy; Esri';
       } else {
-          // --- NORMAL (CartoDB Voyager - Modern Stil) ---
-          url = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-          options.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
-          options.subdomains = 'abcd';
+          // --- NORMAL (Esri World Street Map - Google Maps Benzeri) ---
+          // Bu stil çok daha canlı, net ve profesyoneldir. Sarımtırak değildir.
+          url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+          options.attribution = 'Tiles &copy; Esri';
       }
 
       expandedMapInstance._osmTileLayer = L.tileLayer(url, options).addTo(expandedMapInstance);
