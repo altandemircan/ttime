@@ -2619,6 +2619,14 @@ ease;
 .item-position {
     position: relative;
 }
+
+.item-position .custom-marker-outer {
+        flex-shrink: 0;
+    transform: scale(0.70);
+    position: absolute;
+    left: -14px;
+    top: 6px;
+} 
 /* Category List Styles */
 .category-item {
   margin-bottom: 15px;
