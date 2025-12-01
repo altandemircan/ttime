@@ -10300,82 +10300,129 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
+
 function highlightSegmentOnMap(day, startKm, endKm) {
-                if (
-              typeof window._lastSegmentDay !== "number" ||
-              typeof window._lastSegmentStartKm !== "number" ||
-              typeof window._lastSegmentEndKm !== "number"
-            ) {
-              // Segment seçili değil, highlight çizilmesin!
-              return;
-            }
+  // Parametre kontrolü ve Temizlik
+  if (
+      typeof startKm !== "number" ||
+      typeof endKm !== "number" ||
+      typeof day !== "number"
+  ) {
+      if (window._segmentHighlight && window._segmentHighlight[day]) {
+          Object.values(window._segmentHighlight[day]).forEach(poly => poly.remove());
+          delete window._segmentHighlight[day];
+      }
+      return;
+  }
+
   const cid = `route-map-day${day}`;
-  const gj = window.lastRouteGeojsons?.[cid];
-  if (!gj || !gj.features || !gj.features[0]?.geometry?.coordinates) return;
+  
+  // --- VERİ KAYNAĞINI BELİRLE (FLY MODE vs NORMAL ROTA) ---
+  let coords = null;
+  let isFlyMode = false;
+
+  // 1. Önce Fly Mode (Yay) verisi var mı bak (Daha detaylı olduğu için öncelikli)
+  if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 1) {
+      coords = window._curvedArcPointsByDay[day]; // [lng, lat] formatında yoğun noktalar
+      isFlyMode = true;
+  } 
+  // 2. Yoksa Normal OSRM GeoJSON verisine bak
+  else {
+      const gj = window.lastRouteGeojsons?.[cid];
+      if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
+          coords = gj.features[0].geometry.coordinates; // [lng, lat]
+      }
+  }
+
+  if (!coords || coords.length < 2) return;
+  // -------------------------------------------------------
 
   window._segmentHighlight = window._segmentHighlight || {};
+  
   const maps = [];
-  const small = window.leafletMaps?.[cid];
-  if (small) maps.push(small);
-  const exp = window.expandedMaps?.[cid]?.expandedMap;
-  if (exp) maps.push(exp);
+  if (window.leafletMaps && window.leafletMaps[cid]) {
+      maps.push(window.leafletMaps[cid]);
+  }
+  const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
+  if (expandedObj && expandedObj.expandedMap) {
+      maps.push(expandedObj.expandedMap);
+  }
 
-  // Önce eski highlight'ları sil
-  maps.forEach(m => {
-    if (window._segmentHighlight[day]?.[m._leaflet_id]) {
-      try { m.removeLayer(window._segmentHighlight[day][m._leaflet_id]); } catch(_){}
-      try { delete window._segmentHighlight[day][m._leaflet_id]; } catch(_){}
-    }
-  });
-clearScaleBarSelection(day);
+  // Eski highlight'ları sil
+  if (window._segmentHighlight[day]) {
+      Object.values(window._segmentHighlight[day]).forEach(poly => {
+          try { poly.remove(); } catch(_) {}
+      });
+      window._segmentHighlight[day] = {};
+  } else {
+      window._segmentHighlight[day] = {};
+  }
 
-  // Eğer reset (segment yok) ise haritayı ilk açılış merkez/zoom'una döndür
-if (typeof startKm !== 'number' || typeof endKm !== 'number') {
-  maps.forEach(m => {
-    if (m && m._initialBounds) {
-      try { m.fitBounds(m._initialBounds, { padding: [20, 20] }); } catch(_) {}
-    } else if (m && m._initialView) {
-      try { m.setView(m._initialView.center, m._initialView.zoom, { animate: true }); } catch(_) {}
-    }
-  });
-  return;
-}
-  // Kümülatif mesafe
+  // --- MESAFE HESAPLAMA VE KESME (SLICING) ---
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
     const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
     return 2*R*Math.asin(Math.sqrt(a));
   }
-  const coords = gj.features[0].geometry.coordinates;
-  const cum=[0];
-  for (let i=1;i<coords.length;i++){
-    const [lon1,lat1]=coords[i-1], [lon2,lat2]=coords[i];
-    cum[i]=cum[i-1]+hv(lat1,lon1,lat2,lon2);
+
+  const cum = [0];
+  
+  // Kümülatif mesafeleri hesapla
+  for (let i = 1; i < coords.length; i++) {
+    const [lon1, lat1] = coords[i-1];
+    const [lon2, lat2] = coords[i];
+    cum[i] = cum[i-1] + hv(lat1, lon1, lat2, lon2);
   }
-  const segStartM = startKm*1000, segEndM = endKm*1000;
 
-  let iStart = 0, iEnd = coords.length - 1;
-  for (let i=1;i<cum.length;i++){ if (cum[i] >= segStartM){ iStart = i; break; } }
-  for (let i=cum.length-2;i>=0;i--){ if (cum[i] <= segEndM){ iEnd = i+1; break; } }
-  iStart = Math.max(0, Math.min(iStart, coords.length-2));
-  iEnd   = Math.max(iStart+1, Math.min(iEnd, coords.length-1));
+  const segStartM = startKm * 1000;
+  const segEndM = endKm * 1000;
 
-  const sub = coords.slice(iStart, iEnd+1).map(c => [c[1], c[0]]);
-  if (sub.length < 2) return;
+  let iStart = 0;
+  let iEnd = coords.length - 1;
 
-  window._segmentHighlight[day] = window._segmentHighlight[day] || {};
-  maps.forEach(m => {
-    const poly = L.polyline(sub, {
-      color: '#8a4af3',
+  for (let i = 0; i < cum.length; i++) {
+      if (cum[i] >= segStartM) {
+          iStart = i;
+          if (i > 0) iStart = i - 1; 
+          break;
+      }
+  }
+
+  for (let i = iStart; i < cum.length; i++) {
+      if (cum[i] >= segEndM) {
+          iEnd = i;
+          break;
+      }
+  }
+
+  // [lng, lat] -> [lat, lng] dönüşümü
+  const subCoords = coords.slice(iStart, iEnd + 1).map(c => [c[1], c[0]]);
+
+  if (subCoords.length < 2) return;
+
+  // --- STİL AYARLARI ---
+  const polyOptions = {
+      color: '#8a4af3', // Mor renk
       weight: 6,
-      opacity: 0.95,
-      dashArray: ''
-    }).addTo(m);
+      opacity: 0.9,
+      lineCap: 'round',
+      lineJoin: 'round'
+  };
+
+  // Eğer Fly Mode ise kesikli çizgi yap
+  if (isFlyMode) {
+      polyOptions.dashArray = '10, 15'; // Kesik çizgiler
+      polyOptions.weight = 5; // Biraz daha ince olabilir
+  }
+
+  // Haritalara çiz
+  maps.forEach(m => {
+    const poly = L.polyline(subCoords, polyOptions).addTo(m);
+    
     window._segmentHighlight[day][m._leaflet_id] = poly;
+    
     if (poly.bringToFront) poly.bringToFront();
-    // Segment seçilince mor çizgiye zoom yap
-    try { m.fitBounds(poly.getBounds(), { padding: [16, 16] }); } catch(_) {}
   });
 }
 
