@@ -3784,7 +3784,7 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
                 <div class="item-position">${listMarkerHtml}                
                   <img src="${item.image}" alt="${item.name}" class="cart-image">
                 </div>
-
+                
                 <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
                 <div class="item-info">
                   <p class="toggle-title">${item.name}</p>
@@ -5031,6 +5031,7 @@ function forceCleanExpandedMap(day) {
 }
 // Yardımcı fonksiyon - Yay koordinatlarını al
 // [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
+// [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
 function getCurvedArcCoords(start, end) {
     const lon1 = start[0];
     const lat1 = start[1];
@@ -5043,11 +5044,10 @@ function getCurvedArcCoords(start, end) {
     const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
     const theta = Math.atan2(offsetY, offsetX);
     
-    // --- DEĞİŞİKLİK BURADA: YAY EĞİMİNİ AZALT ---
-    // Math.PI / 10 (18°) yerine Math.PI / 22 (~8°) yapıyoruz.
-    // Sayı büyüdükçe (bölünen) yay düzleşir.
+    // --- DÜZELTME: KÜÇÜK HARİTA ORANI GERİ GELDİ ---
+    // Math.PI / 10 (18 derece) orijinal orandır.
     const thetaOffset = (Math.PI / 10); 
-    // --------------------------------------------
+    // -----------------------------------------------
     
     const r2 = (r / 2.0) / Math.cos(thetaOffset);
     const theta2 = theta + thetaOffset;
@@ -5056,7 +5056,7 @@ function getCurvedArcCoords(start, end) {
     const controlY = (r2 * Math.sin(theta2)) + lat1;
     
     const coords = [];
-    // Adım sayısını biraz azalttık (daha düz olduğu için çok noktaya gerek yok)
+    // Pürüzsüzlük için adım sayısı
     for (let t = 0; t < 1.01; t += 0.05) {
         const x = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * controlX + t * t * lon2;
         const y = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * controlY + t * t * lat2;
