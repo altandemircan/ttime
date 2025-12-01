@@ -10321,16 +10321,16 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   let coords = null;
   let isFlyMode = false;
 
-  // 1. Önce Fly Mode (Yay) verisi var mı bak (Daha detaylı olduğu için öncelikli)
+  // 1. Önce Fly Mode (Yay) verisi var mı bak
   if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 1) {
-      coords = window._curvedArcPointsByDay[day]; // [lng, lat] formatında yoğun noktalar
+      coords = window._curvedArcPointsByDay[day]; 
       isFlyMode = true;
   } 
   // 2. Yoksa Normal OSRM GeoJSON verisine bak
   else {
       const gj = window.lastRouteGeojsons?.[cid];
       if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
-          coords = gj.features[0].geometry.coordinates; // [lng, lat]
+          coords = gj.features[0].geometry.coordinates; 
       }
   }
 
@@ -10367,8 +10367,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   }
 
   const cum = [0];
-  
-  // Kümülatif mesafeleri hesapla
   for (let i = 1; i < coords.length; i++) {
     const [lon1, lat1] = coords[i-1];
     const [lon2, lat2] = coords[i];
@@ -10396,24 +10394,24 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       }
   }
 
-  // [lng, lat] -> [lat, lng] dönüşümü
   const subCoords = coords.slice(iStart, iEnd + 1).map(c => [c[1], c[0]]);
 
   if (subCoords.length < 2) return;
 
-  // --- STİL AYARLARI ---
+  // --- STİL AYARLARI (GÜNCELLENDİ) ---
   const polyOptions = {
       color: '#8a4af3', // Mor renk
       weight: 6,
-      opacity: 0.9,
+      opacity: 1.0,     // Tam opak (Maviyi kapatması için)
       lineCap: 'round',
-      lineJoin: 'round'
+      lineJoin: 'round',
+      dashArray: null   // Varsayılan: Düz çizgi
   };
 
-  // Eğer Fly Mode ise kesikli çizgi yap
+  // Fly Mode ise alttaki çizgiyi tam kapatmak için biraz daha kalın yap
   if (isFlyMode) {
-      polyOptions.dashArray = '10, 15'; // Kesik çizgiler
-      polyOptions.weight = 5; // Biraz daha ince olabilir
+      polyOptions.weight = 7; 
+      // Dash array YOK, düz çizgi olsun.
   }
 
   // Haritalara çiz
