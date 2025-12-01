@@ -3784,7 +3784,7 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
                 <div class="item-position">${listMarkerHtml}                
                   <img src="${item.image}" alt="${item.name}" class="cart-image">
                 </div>
-                
+
                 <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
                 <div class="item-info">
                   <p class="toggle-title">${item.name}</p>
@@ -5046,7 +5046,7 @@ function getCurvedArcCoords(start, end) {
     // --- DEĞİŞİKLİK BURADA: YAY EĞİMİNİ AZALT ---
     // Math.PI / 10 (18°) yerine Math.PI / 22 (~8°) yapıyoruz.
     // Sayı büyüdükçe (bölünen) yay düzleşir.
-    const thetaOffset = (Math.PI / 22); 
+    const thetaOffset = (Math.PI / 10); 
     // --------------------------------------------
     
     const r2 = (r / 2.0) / Math.cos(thetaOffset);
