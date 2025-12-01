@@ -207,7 +207,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
   const container = track?.parentElement;
   if ((!spanKm || spanKm < 0.01) && !customElevData) {
-      // Fallback logic...
       if (Array.isArray(markers) && markers.length > 1) {
          spanKm = getTotalKmFromMarkers(markers);
       }
@@ -248,21 +247,17 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     label.style.position = 'absolute';
     label.style.top = '30px';
     
-    // --- HİZALAMA MANTIĞI GÜNCELLENDİ ---
+    // Etiket Hizalaması
     if (i === 0) {
-        // İLK: Sola Yasla (Başlangıç çizgisinden başlasın)
-        label.style.transform = 'translateX(0%)';
+        label.style.transform = 'translateX(0%)'; 
         label.style.textAlign = 'left';
     } else if (i === majors) {
-        // SON: Sağa Yasla (Bitiş çizgisinde bitsin)
         label.style.transform = 'translateX(-100%)';
         label.style.textAlign = 'right';
     } else {
-        // ARA: Ortala
-        label.style.transform = 'translateX(-50%)';
+        label.style.transform = 'translateX(-50%)'; 
         label.style.textAlign = 'center';
     }
-    // -------------------------------------
 
     label.style.fontSize = '11px';
     label.style.color = '#607d8b';
@@ -314,9 +309,22 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
           }
       }
 
+      // --- DEĞİŞİKLİK BURADA: Marker Hizalaması ---
+      let transformX = '-50%'; // Varsayılan: Ortala
+      
+      if (left < 1) {
+          // Başlangıç çizgisindeyse (veya çok yakınsa) Sola Yasla
+          transformX = '0%';
+      } else if (left > 99) {
+          // Bitiş çizgisindeyse Sağa Yasla
+          transformX = '-100%';
+      }
+      // --------------------------------------------
+
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;`;
+      // transform:translateX(...) kısmını değişkene bağladık
+      wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(${transformX});z-index:5;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
