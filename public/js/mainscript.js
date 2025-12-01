@@ -9500,7 +9500,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
     const style = document.createElement('style');
     style.id = 'tt-marker-loading-style';
     style.innerHTML = `
-        /* Loading sınıfı varsa marker, tick, label ve DİKEY ÇİZGİYİ gizle */
         .scale-bar-track.loading .marker-badge,
         .scale-bar-track.loading .scale-bar-tick,
         .scale-bar-track.loading .scale-bar-label,
@@ -9508,7 +9507,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
         .scale-bar-track.loading .tt-elev-tooltip { 
             display: none !important; 
         }
-        /* Loader dönerken alanın boş kalmaması için */
         .scale-bar-track.loading {
             min-height: 200px; 
         }
@@ -9530,7 +9528,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-  // Eski verileri temizle
   delete container._elevationData;
   delete container._elevationDataFull;
 
@@ -9567,7 +9564,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track.innerHTML = '';
   }
 
-  // --- LOADING BAŞLADI ---
   track.classList.add('loading');
 
   container.dataset.totalKm = String(totalKm);
@@ -9642,10 +9638,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const verticalLine = document.createElement('div');
   verticalLine.className = 'scale-bar-vertical-line';
   verticalLine.style.cssText = `position:absolute;top:0;bottom:0;width:2px;background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;`;
-  
-  // --- DEĞİŞİKLİK BURADA: Başlangıç konumu 0px ---
   verticalLine.style.left = '0px'; 
-  
   track.appendChild(verticalLine);
 
   const tooltip = document.createElement('div');
@@ -9787,7 +9780,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       segG.appendChild(seg);
     }
     
-    // Veri geldiği için markerları çizmek güvenli, CSS loading sınıfı kalkana kadar görünmezler
     createScaleElements(track, width, totalKm, 0, markers);
   }
   container._redrawElevation = redrawElevation;
@@ -9846,7 +9838,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.addEventListener('mousemove', track.__onMove);
   track.addEventListener('touchmove', track.__onMove);
 
+  // --- BURADA ÖZEL METNİ BİZ BELİRLİYORUZ ---
   window.showScaleBarLoading?.(container, 'Loading elevation…');
+  // ------------------------------------------
 
   (async () => {
     try {
@@ -9987,7 +9981,6 @@ window.__sb_onMouseUp = function() {
 
 async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   const containerId = container.id;
-  // Duplike container temizliği
   document.querySelectorAll(`#${CSS.escape(containerId)}`).forEach((el, idx) => {
     if (idx > 0) el.remove();
   });
@@ -10042,9 +10035,10 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
     }
   }
 
-  // --- DEĞİŞİKLİK BURADA: Metin güncellendi ---
+  // --- ÖZEL METİN ---
+  // ensureElevationMux içinden müdahaleyi kaldırdığımız için bu yazı kalıcı olacak.
   window.showScaleBarLoading?.(container, 'Loading segment elevation...');
-  // --------------------------------------------
+  // ------------------
 
   const routeKey = `seg:${coords.length}|${samples[0].lat.toFixed(4)},${samples[0].lng.toFixed(4)}|${samples[samples.length - 1].lat.toFixed(4)},${samples[samples.length - 1].lng.toFixed(4)}|${N}`;
    try {
@@ -10207,11 +10201,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 })();
 
 (function ensureElevationMux(){
-  // Eğer zaten tanımlıysa ve versiyon kontrolü yapmıyorsak çıkabiliriz
-  // Ancak içeriği değiştirdiğimiz için bu kontrolü geçici olarak devre dışı bırakıp
-  // üzerine yazmasını sağlamak daha garantidir. 
-  // if (window.__tt_elevMuxReady) return; <--- Bunu kaldırdık veya içeriğini güncelledik.
-
+  // Global değişkenler ve Rate Limit koruması burada kalmalı
   const TTL_MS = 48 * 60 * 60 * 1000;
   const LS_PREFIX = 'tt_elev_cache_v1:';
 
@@ -10271,9 +10261,10 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   }
 
   window.getElevationsForRoute = async function(samples, container, routeKey) {
+    // Cache kontrolü
     const cached = loadCache(routeKey, samples.length);
     if (cached && cached.length === samples.length) {
-      try { if (typeof hideScaleBarLoading === 'function') hideScaleBarLoading(container); } catch(_){}
+      // Not: Buradan loader kapatma komutunu kaldırdık, çağıran fonksiyon kapatacak.
       return cached;
     }
 
@@ -10281,15 +10272,12 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
       try {
         if (Date.now() < cooldownUntil[p.key]) continue;
         
-        // --- DEĞİŞİKLİK BURADA: ---
-        // updateScaleBarLoadingText çağrısı KALDIRILDI.
-        // Artık metni çağıran fonksiyon (renderRouteScaleBar veya fetchAndRenderSegmentElevation) belirliyor.
-        // --------------------------
-
+        // --- DEĞİŞİKLİK: Burada artık yazı güncelleme YOK ---
+        // Sadece veri çekmeye odaklansın.
+        
         const elev = await p.fn(samples);
         if (Array.isArray(elev) && elev.length === samples.length) {
           saveCache(routeKey, samples.length, elev);
-          try { if (typeof hideScaleBarLoading === 'function') hideScaleBarLoading(container); } catch(_){}
           return elev;
         }
       } catch (e) {
