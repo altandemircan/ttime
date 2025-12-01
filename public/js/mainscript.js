@@ -5590,9 +5590,7 @@ function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
 
-    // --- ESKİ LİSTENER'LARI VE MARKERLARI TEMİZLE ---
-    
-    // Eğer bu elementte daha önce tanımlanmış listenerlar varsa kaldır
+    // --- TEMİZLİK ---
     if (scaleBar._onMoveHandler) {
         scaleBar.removeEventListener("mousemove", scaleBar._onMoveHandler);
         scaleBar.removeEventListener("touchmove", scaleBar._onMoveHandler);
@@ -5602,22 +5600,17 @@ function setupScaleBarInteraction(day, map) {
         scaleBar.removeEventListener("touchend", scaleBar._onLeaveHandler);
     }
 
-    // Eğer daha önce oluşturulmuş bir hover marker varsa haritadan sil
-    // (Her gün için ayrı bir global değişkende tutuyoruz: window._hoverMarkersByDay)
     window._hoverMarkersByDay = window._hoverMarkersByDay || {};
     if (window._hoverMarkersByDay[day]) {
         map.removeLayer(window._hoverMarkersByDay[day]);
         window._hoverMarkersByDay[day] = null;
     }
 
-    // --- YENİ LİSTENER TANIMLARI ---
-
-    // Cache (Performans için)
+    // --- CACHE ---
     let cachedDay = null;
     let cachedCumDist = []; 
     let cachedTotalDist = 0;
 
-    // Haversine
     function haversine(lat1, lon1, lat2, lon2) {
         const R = 6371000; 
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -5657,12 +5650,37 @@ function setupScaleBarInteraction(day, map) {
         let clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
         let x = clientX - rect.left;
         
+        // Mouse'un bar üzerindeki yüzdesi (0.0 - 1.0)
         let percent = Math.max(0, Math.min(x / rect.width, 1));
-        const targetMeters = percent * cachedTotalDist;
+        
+        let targetMeters = 0;
 
-        // Binary Search ile performans artışı (Opsiyonel ama iyi olur)
-        // Basit döngü de yeterli
+        // --- KRİTİK DÜZELTME: SEGMENT HESABI ---
+        // Eğer şu an bir segment seçiliyse (Zoom yapılmışsa)
+        if (
+            typeof window._lastSegmentStartKm === 'number' && 
+            typeof window._lastSegmentEndKm === 'number' &&
+            window._lastSegmentDay === day // Sadece o gün için
+        ) {
+            // Segmentin başlangıcı (Metre)
+            const startM = window._lastSegmentStartKm * 1000;
+            // Segmentin uzunluğu (Metre)
+            const spanM = (window._lastSegmentEndKm - window._lastSegmentStartKm) * 1000;
+            
+            // Hedef = Başlangıç + (Yüzde * Uzunluk)
+            targetMeters = startM + (percent * spanM);
+        } else {
+            // Segment yoksa tüm yol
+            targetMeters = percent * cachedTotalDist;
+        }
+        // ---------------------------------------
+
+        // Güvenlik: Hedef mesafe toplamı aşamaz
+        targetMeters = Math.max(0, Math.min(targetMeters, cachedTotalDist));
+
+        // Bu mesafeye denk gelen koordinatı bul
         let foundIndex = 0;
+        // Basit lineer arama (Array küçük olduğu için hızlıdır)
         for (let i = 0; i < cachedCumDist.length; i++) {
             if (cachedCumDist[i] >= targetMeters) {
                 foundIndex = i;
@@ -5679,17 +5697,18 @@ function setupScaleBarInteraction(day, map) {
             const dist1 = cachedCumDist[idx1];
             const dist2 = cachedCumDist[idx2];
             const segmentLen = dist2 - dist1;
+            
             let ratio = 0;
             if (segmentLen > 0) {
                 ratio = (targetMeters - dist1) / segmentLen;
             }
             const [lon1, lat1] = arcPts[idx1];
             const [lon2, lat2] = arcPts[idx2];
+            
             lat = lat1 + (lat2 - lat1) * ratio;
             lng = lon1 + (lon2 - lon1) * ratio;
         }
 
-        // Global marker'ı kullan
         let marker = window._hoverMarkersByDay[day];
         if (marker) {
             marker.setLatLng([lat, lng]);
@@ -5704,7 +5723,7 @@ function setupScaleBarInteraction(day, map) {
                 zIndexOffset: 10000,
                 interactive: false
             }).addTo(map);
-            window._hoverMarkersByDay[day] = marker; // Kaydet
+            window._hoverMarkersByDay[day] = marker; 
         }
     };
     
@@ -5712,11 +5731,10 @@ function setupScaleBarInteraction(day, map) {
         let marker = window._hoverMarkersByDay[day];
         if (marker) {
             map.removeLayer(marker);
-            window._hoverMarkersByDay[day] = null; // Silindi işaretle
+            window._hoverMarkersByDay[day] = null;
         }
     };
 
-    // Handlerları element üzerinde sakla ki sonra silebilelim
     scaleBar._onMoveHandler = onMove;
     scaleBar._onLeaveHandler = onLeave;
 
