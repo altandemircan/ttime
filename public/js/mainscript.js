@@ -5910,7 +5910,6 @@ async function expandMap(containerId, day) {
     return;
   }
 
-  // Diğer günlerin expanded'ını kapat
   if (window.expandedMaps) {
     Object.keys(window.expandedMaps).forEach(otherId => {
       if (otherId !== containerId) {
@@ -5923,7 +5922,6 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // Butonu Pasif Yapma
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   const expandBtns = [];
   if (controlsBar) {
@@ -5965,7 +5963,6 @@ async function expandMap(containerId, day) {
 
   originalContainer.style.display = 'none';
 
-  // === HEADER DIV ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
 
@@ -6017,7 +6014,6 @@ async function expandMap(containerId, day) {
   statsDiv.className = 'route-stats';
   headerDiv.appendChild(statsDiv);
 
-  // --- EXPANDED MAP CONTAINER ---
   const expandedMapId = `expanded-map-${day}`;
   const expandedContainer = document.createElement('div');
   expandedContainer.id = expandedMapId;
@@ -6089,7 +6085,7 @@ async function expandMap(containerId, day) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
-  // --- LAYER DEĞİŞTİRME FONKSİYONU ---
+  // --- LAYER DEĞİŞTİRME FONKSİYONU (GÜNCELLENDİ: GOOGLE MAPS) ---
   function setExpandedMapTile(styleKey) {
       if (expandedMapInstance._osmTileLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer);
@@ -6097,23 +6093,23 @@ async function expandMap(containerId, day) {
       }
 
       let url = '';
-      let options = { maxZoom: 19 };
+      let options = { maxZoom: 20 }; // Google 20-21'e kadar destekler
 
       if (styleKey === 'satellite') {
-          // --- SATELLITE (Esri World Imagery) ---
+          // --- SATELLITE (Esri - Çok detaylı) ---
           url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
           options.attribution = 'Tiles &copy; Esri';
       } else {
-          // --- NORMAL (Esri World Street Map - Google Maps Benzeri) ---
-          // Bu stil çok daha canlı, net ve profesyoneldir. Sarımtırak değildir.
-          url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
-          options.attribution = 'Tiles &copy; Esri';
+          // --- NORMAL (Google Maps Standard) ---
+          // Sarı tonlar yok, bildiğimiz Google Maps görünümü.
+          url = 'http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+          options.subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+          options.attribution = '&copy; Google';
       }
 
       expandedMapInstance._osmTileLayer = L.tileLayer(url, options).addTo(expandedMapInstance);
   }
 
-  // İlk açılış
   setExpandedMapTile(currentLayer);
 
   expandedMapInstance.on('styleimagemissing', function(e) {
@@ -6134,7 +6130,6 @@ async function expandMap(containerId, day) {
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
       if (layer instanceof L.Marker) {
-        // Markerlar updateExpandedMap ile zaten ekleniyor
       }
     });
   }
