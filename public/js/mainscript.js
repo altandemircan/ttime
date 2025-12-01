@@ -9913,7 +9913,35 @@ function renderRouteScaleBar(container, totalKm, markers) {
         }
         window.routeElevStatsByDay = window.routeElevStatsByDay || {};
         window.routeElevStatsByDay[day] = { ascent: Math.round(ascent), descent: Math.round(descent) };
-        if
+        if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
+      }
+    } catch {
+      window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
+      try { delete container.dataset.elevLoadedKey; } catch(_) {}
+      
+      track.classList.remove('loading');
+      createScaleElements(track, width, totalKm, 0, markers);
+    }
+  })();
+
+  function handleResize() {
+    if (!container._elevationData) return;
+
+    const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
+    const spanKm = container._elevKmSpan || 1;
+    const startKmDom = container._elevStartKm || 0;
+    const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+    createScaleElements(track, newW, spanKm, startKmDom, markers);
+  }
+
+  if (container._elevResizeObserver) {
+    try { container._elevResizeObserver.disconnect(); } catch(_) {}
+    container._elevResizeObserver = null;
+  }
+  const ro = new ResizeObserver(() => { handleResize(); });
+  ro.observe(track);
+  container._elevResizeObserver = ro;
+}
 
 // Kartları ekledikten sonra çağır: attachFavEvents();
 
