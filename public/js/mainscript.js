@@ -3708,11 +3708,7 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
       // --- MARKER HTML YAPISI (Senin İstediğin) ---
       // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
       const listMarkerHtml = `
-        <div class="custom-marker-outer red" style="flex-shrink: 0;
-    transform: scale(0.70);
-    position: absolute;
-    left: 30px;
-    top: 0px;">
+        <div class="custom-marker-outer red">
             <span class="custom-marker-label" style="font-size: 14px;">${idx + 1}</span>
         </div>
       `;
