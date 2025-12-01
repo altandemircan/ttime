@@ -5910,6 +5910,7 @@ async function expandMap(containerId, day) {
     return;
   }
 
+  // Diğer günlerin expanded'ını kapat
   if (window.expandedMaps) {
     Object.keys(window.expandedMaps).forEach(otherId => {
       if (otherId !== containerId) {
@@ -5922,6 +5923,7 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
+  // Butonu Pasif Yapma
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   const expandBtns = [];
   if (controlsBar) {
@@ -5963,6 +5965,7 @@ async function expandMap(containerId, day) {
 
   originalContainer.style.display = 'none';
 
+  // === HEADER DIV ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
 
@@ -6085,7 +6088,7 @@ async function expandMap(containerId, day) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
-  // --- LAYER DEĞİŞTİRME FONKSİYONU (GÜNCELLENDİ: GOOGLE MAPS) ---
+  // --- LAYER DEĞİŞTİRME FONKSİYONU (POSİTRON) ---
   function setExpandedMapTile(styleKey) {
       if (expandedMapInstance._osmTileLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer);
@@ -6093,23 +6096,24 @@ async function expandMap(containerId, day) {
       }
 
       let url = '';
-      let options = { maxZoom: 20 }; // Google 20-21'e kadar destekler
+      let options = { maxZoom: 20 };
 
       if (styleKey === 'satellite') {
-          // --- SATELLITE (Esri - Çok detaylı) ---
+          // SATELLITE (Esri)
           url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
           options.attribution = 'Tiles &copy; Esri';
       } else {
-          // --- NORMAL (Google Maps Standard) ---
-          // Sarı tonlar yok, bildiğimiz Google Maps görünümü.
-          url = 'http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
-          options.subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
-          options.attribution = '&copy; Google';
+          // --- NORMAL (CartoDB Positron - Temiz Gri/Beyaz) ---
+          // Bu stil, sarı tonlardan arınmış en güvenli ve yasal seçenektir.
+          url = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+          options.subdomains = 'abcd';
+          options.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
       }
 
       expandedMapInstance._osmTileLayer = L.tileLayer(url, options).addTo(expandedMapInstance);
   }
 
+  // İlk açılış
   setExpandedMapTile(currentLayer);
 
   expandedMapInstance.on('styleimagemissing', function(e) {
@@ -6117,7 +6121,7 @@ async function expandMap(containerId, day) {
   });
 
   if (!expandedMapInstance._initialView) {
-    expandedMapInstance._initialView = {
+    expandedMapMapInstance._initialView = {
       center: expandedMapInstance.getCenter(),
       zoom: expandedMapInstance.getZoom()
     };
