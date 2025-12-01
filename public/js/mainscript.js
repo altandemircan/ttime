@@ -9575,11 +9575,19 @@ function renderRouteScaleBar(container, totalKm, markers) {
   window.__scaleBarDragTrack = track;
   window.__scaleBarDragSelDiv = selDiv;
 
+  // --- KRİTİK: GLOBAL EVENT LISTENER GÜNCELLEMESİ (MOBİL DESTEKLİ) ---
   window.removeEventListener('mousemove', window.__sb_onMouseMove);
   window.removeEventListener('mouseup', window.__sb_onMouseUp);
+  window.removeEventListener('touchmove', window.__sb_onMouseMove); // Mobil için temizle
+  window.removeEventListener('touchend', window.__sb_onMouseUp);   // Mobil için temizle
+
   window.addEventListener('mousemove', window.__sb_onMouseMove);
   window.addEventListener('mouseup', window.__sb_onMouseUp);
+  window.addEventListener('touchmove', window.__sb_onMouseMove, { passive: false }); // Mobil Ekle (passive: false scroll engellemek için)
+  window.addEventListener('touchend', window.__sb_onMouseUp);     // Mobil Ekle
+  // -------------------------------------------------------------------
 
+  // Mouse Down
   track.addEventListener('mousedown', function(e) {
     const rect = track.getBoundingClientRect();
     window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
@@ -9589,7 +9597,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
     selDiv.style.width = `0px`;
     selDiv.style.display = 'block';
   });
+
+  // Touch Start (Mobil)
   track.addEventListener('touchstart', function(e) {
+    // Mobilde sürüklerken sayfanın kaymasını engelle
+    if (e.cancelable) e.preventDefault(); 
+    
     const rect = track.getBoundingClientRect();
     const x = e.touches[0].clientX - rect.left;
     window.__scaleBarDrag = { startX: x, lastX: x };
@@ -9598,7 +9611,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     selDiv.style.left = `${x}px`;
     selDiv.style.width = `0px`;
     selDiv.style.display = 'block';
-  });
+  }, { passive: false }); // Passive false önemli!
 
   track.style.position = 'relative';
   track.style.overflow = 'visible';
@@ -9838,9 +9851,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.addEventListener('mousemove', track.__onMove);
   track.addEventListener('touchmove', track.__onMove);
 
-  // --- BURADA ÖZEL METNİ BİZ BELİRLİYORUZ ---
   window.showScaleBarLoading?.(container, 'Loading elevation…');
-  // ------------------------------------------
 
   (async () => {
     try {
@@ -9910,10 +9921,20 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
 window.__sb_onMouseMove = function(e) {
   if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
+  
+  // Mobilde sayfa kaymasını engelle (Scroll Lock)
+  if (e.type === 'touchmove' && e.cancelable) {
+      e.preventDefault(); 
+  }
+
   const rect = window.__scaleBarDragTrack.getBoundingClientRect();
-  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, (e.touches && e.touches.length ? e.touches[0].clientX : e.clientX) - rect.left));
+  const clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
+  
+  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+  
   const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
   const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
+  
   window.__scaleBarDragSelDiv.style.left = `${left}px`;
   window.__scaleBarDragSelDiv.style.width = `${right - left}px`;
 };
