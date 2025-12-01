@@ -248,7 +248,16 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     label.style.left = `${leftPct}%`;
     label.style.position = 'absolute';
     label.style.top = '30px';
-    label.style.transform = 'translateX(-50%)';
+    
+    // --- DEĞİŞİKLİK BURADA: İlk etiketi sola yasla, diğerlerini ortala ---
+    if (i === 0) {
+        label.style.transform = 'translateX(0%)'; // Sola yasla
+        label.style.textAlign = 'left';
+    } else {
+        label.style.transform = 'translateX(-50%)'; // Ortala (Varsayılan)
+    }
+    // -------------------------------------------------------------------
+
     label.style.fontSize = '11px';
     label.style.color = '#607d8b';
     label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
@@ -432,7 +441,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
 }
-
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
 window.mapPlanningActive = false;
