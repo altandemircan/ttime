@@ -9988,12 +9988,6 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   const coords = gj?.features?.[0]?.geometry?.coordinates;
   if (!coords || coords.length < 2) return;
 
-  const existingTrack = container.querySelector('.scale-bar-track');
-  if (existingTrack) {
-    existingTrack.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
-    existingTrack.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
-  }
-
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
@@ -10011,7 +10005,21 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
   const segStartM = Math.max(0, Math.min(totalM, startKm * 1000));
   const segEndM   = Math.max(0, Math.min(totalM, endKm * 1000));
-  if (segEndM - segStartM < 100) return;
+  
+  // --- KONTROL ÖNCE YAPILIYOR ---
+  // Eğer segment çok kısaysa (< 100m) işlem yapma ve ESKİ GÖRÜNÜMÜ SİLME.
+  // Böylece reset butonu ekranda kalır.
+  if (segEndM - segStartM < 100) return; 
+  // ------------------------------
+
+  // --- TEMİZLİK ŞİMDİ YAPILIYOR ---
+  // Artık yeni segmentin geçerli olduğunu biliyoruz, eskiyi silebiliriz.
+  const existingTrack = container.querySelector('.scale-bar-track');
+  if (existingTrack) {
+    existingTrack.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
+    existingTrack.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+  }
+  // --------------------------------
 
   const segKm = (segEndM - segStartM) / 1000;
   const N = Math.min(200, Math.max(60, Math.round(segKm * 14)));
@@ -10033,10 +10041,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
     }
   }
 
-  // --- ÖZEL METİN ---
-  // ensureElevationMux içinden müdahaleyi kaldırdığımız için bu yazı kalıcı olacak.
   window.showScaleBarLoading?.(container, 'Loading segment elevation...');
-  // ------------------
 
   const routeKey = `seg:${coords.length}|${samples[0].lat.toFixed(4)},${samples[0].lng.toFixed(4)}|${samples[samples.length - 1].lat.toFixed(4)},${samples[samples.length - 1].lng.toFixed(4)}|${N}`;
    try {
