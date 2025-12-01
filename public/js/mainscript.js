@@ -4560,17 +4560,13 @@ function updateExpandedMap(expandedMap, day) {
             }
         });
 
-   } else if (pts.length > 1 && !isInTurkey) {
-        // FLY MODE (Büyük Harita)
+    } else if (pts.length > 1 && !isInTurkey) {
+        // FLY MODE
         let allArcPoints = [];
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
             const end = [pts[i + 1].lng, pts[i + 1].lat];
-            
-            // Yeni ortak fonksiyonu kullan
-            const arcPoints = getCurvedArcCoords(start, end);
-            
-            // Leaflet [lat, lng] ister, dönüştür:
+            const arcPoints = getCurvedArcCoords(start, end, 0.33, 22);
             const latLngs = arcPoints.map(pt => [pt[1], pt[0]]);
             
             const poly = L.polyline(latLngs, {
@@ -4580,6 +4576,7 @@ function updateExpandedMap(expandedMap, day) {
                 dashArray: "6,8"
             }).addTo(expandedMap);
             
+            // Fly mode çizgilerini de kutuya ekle
             bounds.extend(poly.getBounds());
 
             if (i === 0) allArcPoints.push([start[0], start[1]]);
@@ -5030,40 +5027,19 @@ function forceCleanExpandedMap(day) {
   }
 }
 // Yardımcı fonksiyon - Yay koordinatlarını al
-// [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
-// [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
-// [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
-function getCurvedArcCoords(start, end) {
-    const lon1 = start[0];
-    const lat1 = start[1];
-    const lon2 = end[0];
-    const lat2 = end[1];
-
-    const offsetX = lon2 - lon1;
-    const offsetY = lat2 - lat1;
+function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
+    // start & end: [lng, lat] formatında
+    const sx = start[0], sy = start[1];
+    const ex = end[0], ey = end[1];
     
-    // İki nokta arası mesafe
-    const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
-    const theta = Math.atan2(offsetY, offsetX);
-    
-    // --- DÜZELTME: KAVİS ORANI (BOMBE) ---
-    // Math.PI / 10 (18°) çok fazlaydı.
-    // Math.PI / 15 (12°) yaptık. Daha düzgün, hafif bir yay çizer.
-    const thetaOffset = (Math.PI / 15); 
-    // -------------------------------------
-    
-    const r2 = (r / 2.0) / Math.cos(thetaOffset);
-    const theta2 = theta + thetaOffset;
-    
-    const controlX = (r2 * Math.cos(theta2)) + lon1;
-    const controlY = (r2 * Math.sin(theta2)) + lat1;
+    const mx = (sx + ex) / 2 + strength * (ey - sy);
+    const my = (sy + ey) / 2 - strength * (ex - sx);
     
     const coords = [];
-    // Pürüzsüzlük adımı
-    for (let t = 0; t < 1.01; t += 0.05) {
-        const x = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * controlX + t * t * lon2;
-        const y = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * controlY + t * t * lat2;
-        coords.push([x, y]); 
+    for (let t = 0; t <= 1; t += 1/segments) {
+        const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+        const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+        coords.push([x, y]);
     }
     return coords;
 }
@@ -5506,31 +5482,27 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         const isFlyMode = !areAllPointsInTurkey(points);
 
         // FLY MODE ise yaylı çizgi
-       if (isFlyMode) {
+        if (isFlyMode) {
             window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
             let arcPoints = [];
             for (let i = 0; i < points.length - 1; i++) {
                 const start = [points[i].lng, points[i].lat];
                 const end = [points[i + 1].lng, points[i + 1].lat];
-                
-                // Aynı matematik fonksiyonu çağır
-                const curveCoords = getCurvedArcCoords(start, end);
-                arcPoints = arcPoints.concat(curveCoords);
+                const curve = getCurvedArcCoords(start, end, 0.33, 32);
+                arcPoints = arcPoints.concat(curve);
 
-                // Leaflet için [lat, lng] çevirip çiz
-                const latLngs = curveCoords.map(c => [c[1], c[0]]);
-                
-                const curvePoly = L.polyline(latLngs, {
+                const curvePoly = drawCurvedLine(map, points[i], points[i + 1], {
                     color: "#1976d2",
                     weight: 5,
                     opacity: 0.85,
                     dashArray: "6,8"
-                }).addTo(map);
+                });
                 
+                // Yay sınırlarını ekle
                 bounds.extend(curvePoly.getBounds());
             }
             window._curvedArcPointsByDay[day] = arcPoints;
-        }
+        } 
         else if (hasValidGeo && routeCoords.length > 1) {
             // GERÇEK ROTA
             const routePoly = L.polyline(routeCoords, {
