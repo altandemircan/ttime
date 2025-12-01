@@ -5032,6 +5032,7 @@ function forceCleanExpandedMap(day) {
 // Yardımcı fonksiyon - Yay koordinatlarını al
 // [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
 // [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
+// [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
 function getCurvedArcCoords(start, end) {
     const lon1 = start[0];
     const lat1 = start[1];
@@ -5041,13 +5042,15 @@ function getCurvedArcCoords(start, end) {
     const offsetX = lon2 - lon1;
     const offsetY = lat2 - lat1;
     
+    // İki nokta arası mesafe
     const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
     const theta = Math.atan2(offsetY, offsetX);
     
-    // --- DÜZELTME: KÜÇÜK HARİTA ORANI GERİ GELDİ ---
-    // Math.PI / 10 (18 derece) orijinal orandır.
-    const thetaOffset = (Math.PI / 10); 
-    // -----------------------------------------------
+    // --- DÜZELTME: KAVİS ORANI (BOMBE) ---
+    // Math.PI / 10 (18°) çok fazlaydı.
+    // Math.PI / 15 (12°) yaptık. Daha düzgün, hafif bir yay çizer.
+    const thetaOffset = (Math.PI / 15); 
+    // -------------------------------------
     
     const r2 = (r / 2.0) / Math.cos(thetaOffset);
     const theta2 = theta + thetaOffset;
@@ -5056,7 +5059,7 @@ function getCurvedArcCoords(start, end) {
     const controlY = (r2 * Math.sin(theta2)) + lat1;
     
     const coords = [];
-    // Pürüzsüzlük için adım sayısı
+    // Pürüzsüzlük adımı
     for (let t = 0; t < 1.01; t += 0.05) {
         const x = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * controlX + t * t * lon2;
         const y = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * controlY + t * t * lat2;
