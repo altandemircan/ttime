@@ -10429,12 +10429,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
     ? getRouteMarkerPositionsOrdered(day) : [];
 
-  // Görsel aralık (Min/Max) Hesabı
   const min = Math.min(...elevSmooth);
   const max = Math.max(...elevSmooth, min + 1);
   const span = max - min;
   
-  // Burada kullanılan vizMin/vizMax değerleri, markerları çizerken de BİREBİR kullanılmalı
   let vizMin, vizMax;
   if (span > 0) { 
       vizMin = min - span * 0.50; 
@@ -10444,7 +10442,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       vizMax = max + 1; 
   }
 
-  // Segment verisi paketi (createScaleElements'e gönderilecek)
   const segmentElevData = {
       smooth: elevSmooth,
       vizMin: vizMin,
@@ -10453,23 +10450,15 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       max: max
   };
 
-  // Eğer çok küçük bir aralıksa (Reset durumu gibi)
   if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
     container._elevStartKm = 0;
     container._elevKmSpan  = totalKm;
-    
     track._segmentStartPx = undefined;
     track._segmentWidthPx = undefined;
-    
-    // Global moda dön (parametre olarak null gönder)
     createScaleElements(track, widthPx, totalKm, 0, markers, null);
-
   } else {
-    // Segment seçiliyken
     container._elevStartKm = startKm;
     container._elevKmSpan  = endKm - startKm;
-    
-    // --- BURADA ÖZEL VERİYİ GÖNDERİYORUZ ---
     createScaleElements(track, widthPx, endKm - startKm, startKm, markers, segmentElevData);
 
     const rect = track.getBoundingClientRect();
@@ -10479,7 +10468,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     track._segmentWidthPx = segWidthPx;
   }
 
-  // ----- SVG Çizimi -----
   const widthNow = widthPx || 400;
   const heightNow = 220;
 
@@ -10507,7 +10495,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const X = (km) => (km / (endKm - startKm)) * widthNow;
   const Y = (e) => (isNaN(e) || vizMax === vizMin) ? (heightNow/2) : ((heightNow - 1) - ((e - vizMin) / (vizMax - vizMin)) * (heightNow - 2));
 
-  // Grid çizgileri
   for (let i = 0; i <= 4; i++) {
     const ev = vizMin + (i / 4) * (vizMax - vizMin);
     const y = Y(ev);
@@ -10516,12 +10503,8 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
     ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
     gridG.appendChild(ln);
-    // Not: Label'ları artık createScaleElements içinde çiziyoruz, buradakini kaldırabiliriz veya
-    // createScaleElements'in label çizimini kapatıp burada tutabiliriz. 
-    // Tutarlılık için createScaleElements içinde çizmek daha iyi (DOM sıralaması açısından).
   }
   
-  // Alan
   let topD = '';
   for (let i = 0; i < elevSmooth.length; i++) {
     const kmRel = (samples[i].distM / 1000) - startKm;
@@ -10536,7 +10519,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     areaPath.setAttribute('fill', '#263445');
   }
 
-  // Eğim çizgileri
   for (let i = 1; i < elevSmooth.length; i++) {
     const kmRel1 = (samples[i-1].distM / 1000) - startKm;
     const kmRel2 = (samples[i].distM / 1000) - startKm;
@@ -10566,7 +10548,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     segG.appendChild(seg);
   }
 
-  // Toolbar
   let up = 0, down = 0;
   for (let i = 1; i < elevSmooth.length; i++) {
     const d = elevSmooth[i] - elevSmooth[i-1];
@@ -10593,68 +10574,80 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   `;
   track.appendChild(tb);
 
-  tb.querySelector('.elev-segment-reset')?.addEventListener('click', () => {
-    track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
-    track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
-    track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
+  // --- KRİTİK DEĞİŞİKLİK: RESET BUTONUNA ÖZEL DOKUNMA YÖNETİMİ ---
+  const resetBtn = tb.querySelector('.elev-segment-reset');
+  if (resetBtn) {
+      // Bu butona dokunulduğunda olayın Track'e (üst elemente) ulaşmasını engelle.
+      // Böylece Track'in preventDefault'u çalışmaz ve Click olayı gerçekleşir.
+      const stopProp = (e) => e.stopPropagation();
+      resetBtn.addEventListener('touchstart', stopProp, { passive: true });
+      resetBtn.addEventListener('mousedown', stopProp);
 
-    if (typeof highlightSegmentOnMap === 'function') {
-      highlightSegmentOnMap(day);
-    }
+      resetBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Garanti olsun
+        
+        // --- RESET MANTIĞI ---
+        track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
+        track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+        track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
 
-    window._lastSegmentDay = undefined;
-    window._lastSegmentStartKm = undefined;
-    window._lastSegmentEndKm = undefined;
+        if (typeof highlightSegmentOnMap === 'function') {
+          highlightSegmentOnMap(day);
+        }
 
-    const cid = `route-map-day${day}`;
-    const expObj = window.expandedMaps && window.expandedMaps[cid];
-    if (expObj && expObj.expandedMap) {
-      let fitted = false;
-      expObj.expandedMap.eachLayer(layer => {
-        if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-          try {
-            expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
-            fitted = true;
-          } catch(_) {}
+        window._lastSegmentDay = undefined;
+        window._lastSegmentStartKm = undefined;
+        window._lastSegmentEndKm = undefined;
+
+        const cid = `route-map-day${day}`;
+        const expObj = window.expandedMaps && window.expandedMaps[cid];
+        if (expObj && expObj.expandedMap) {
+          let fitted = false;
+          expObj.expandedMap.eachLayer(layer => {
+            if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+              try {
+                expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
+                fitted = true;
+              } catch(_) {}
+            }
+          });
+          if (!fitted && expObj.expandedMap._initialView) {
+            expObj.expandedMap.setView(
+              expObj.expandedMap._initialView.center,
+              expObj.expandedMap._initialView.zoom,
+              { animate: true }
+            );
+          }
+        }
+
+        const selection = container.querySelector('.scale-bar-selection');
+        if (selection) selection.style.display = 'none';
+
+        container._elevStartKm = 0;
+        container._elevKmSpan  = totalKm;
+
+        const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+        
+        createScaleElements(track, widthPx, totalKm, 0, markers, null);
+
+        if (Array.isArray(container._elevFullSamples)) {
+          container._elevSamples = container._elevFullSamples.slice();
+        }
+
+        if (container._elevationDataFull && typeof container._redrawElevation === 'function') {
+          container._elevationData = {
+            min: container._elevationDataFull.min,
+            max: container._elevationDataFull.max,
+            smooth: container._elevationDataFull.smooth.slice()
+          };
+          container._redrawElevation(container._elevationData);
+        } else {
+          if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
+            renderRouteScaleBar(container, totalKm, markers);
+          }
         }
       });
-      if (!fitted && expObj.expandedMap._initialView) {
-        expObj.expandedMap.setView(
-          expObj.expandedMap._initialView.center,
-          expObj.expandedMap._initialView.zoom,
-          { animate: true }
-        );
-      }
-    }
-
-    const selection = container.querySelector('.scale-bar-selection');
-    if (selection) selection.style.display = 'none';
-
-    container._elevStartKm = 0;
-    container._elevKmSpan  = totalKm;
-
-    const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    
-    // Reset yapınca global veriye dön
-    createScaleElements(track, widthPx, totalKm, 0, markers, null);
-
-    if (Array.isArray(container._elevFullSamples)) {
-      container._elevSamples = container._elevFullSamples.slice();
-    }
-
-    if (container._elevationDataFull && typeof container._redrawElevation === 'function') {
-      container._elevationData = {
-        min: container._elevationDataFull.min,
-        max: container._elevationDataFull.max,
-        smooth: container._elevationDataFull.smooth.slice()
-      };
-      container._redrawElevation(container._elevationData);
-    } else {
-      if (totalKm > 0 && typeof renderRouteScaleBar === 'function') {
-        renderRouteScaleBar(container, totalKm, markers);
-      }
-    }
-  });
+  }
 
   track.removeEventListener('mousemove', track.__onMove);
   track.addEventListener('mousemove', track.__onMove);
