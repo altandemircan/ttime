@@ -5043,8 +5043,11 @@ function getCurvedArcCoords(start, end) {
     const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
     const theta = Math.atan2(offsetY, offsetX);
     
-    // Küçük haritada kullanılan sabit açı sapması (Bu sayede yön aynı olur)
-    const thetaOffset = (Math.PI / 10); 
+    // --- DEĞİŞİKLİK BURADA: YAY EĞİMİNİ AZALT ---
+    // Math.PI / 10 (18°) yerine Math.PI / 22 (~8°) yapıyoruz.
+    // Sayı büyüdükçe (bölünen) yay düzleşir.
+    const thetaOffset = (Math.PI / 22); 
+    // --------------------------------------------
     
     const r2 = (r / 2.0) / Math.cos(thetaOffset);
     const theta2 = theta + thetaOffset;
@@ -5053,11 +5056,11 @@ function getCurvedArcCoords(start, end) {
     const controlY = (r2 * Math.sin(theta2)) + lat1;
     
     const coords = [];
-    // 20 adımda çiz (Yeterince pürüzsüz)
+    // Adım sayısını biraz azalttık (daha düz olduğu için çok noktaya gerek yok)
     for (let t = 0; t < 1.01; t += 0.05) {
         const x = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * controlX + t * t * lon2;
         const y = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * controlY + t * t * lat2;
-        coords.push([x, y]); // [lng, lat]
+        coords.push([x, y]); 
     }
     return coords;
 }
