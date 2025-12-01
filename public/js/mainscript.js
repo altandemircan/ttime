@@ -198,7 +198,6 @@ function niceStep(total, target) {
   return f * p10;
 }
 
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
   // Güvenlik: Loading varsa çizme
   if (track && track.classList.contains('loading')) {
@@ -249,14 +248,21 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     label.style.position = 'absolute';
     label.style.top = '30px';
     
-    // --- DEĞİŞİKLİK BURADA: İlk etiketi sola yasla, diğerlerini ortala ---
+    // --- HİZALAMA MANTIĞI GÜNCELLENDİ ---
     if (i === 0) {
-        label.style.transform = 'translateX(0%)'; // Sola yasla
+        // İLK: Sola Yasla (Başlangıç çizgisinden başlasın)
+        label.style.transform = 'translateX(0%)';
         label.style.textAlign = 'left';
+    } else if (i === majors) {
+        // SON: Sağa Yasla (Bitiş çizgisinde bitsin)
+        label.style.transform = 'translateX(-100%)';
+        label.style.textAlign = 'right';
     } else {
-        label.style.transform = 'translateX(-50%)'; // Ortala (Varsayılan)
+        // ARA: Ortala
+        label.style.transform = 'translateX(-50%)';
+        label.style.textAlign = 'center';
     }
-    // -------------------------------------------------------------------
+    // -------------------------------------
 
     label.style.fontSize = '11px';
     label.style.color = '#607d8b';
@@ -266,15 +272,11 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
   // --- MARKER POSITIONING ---
   
-  // Veri kaynağını belirle: Ya parametre olarak gelen segment verisi ya da container üzerindeki global veri
   let activeData = null;
   
   if (customElevData) {
-      // Segment modundaysak, drawSegmentProfile'dan gelen hazır veriyi kullan
-      // Bu veri zaten vizMin/vizMax içeriyor, tekrar hesaplamaya gerek yok
       activeData = customElevData; 
   } else if (container && container._elevationData) {
-      // Global moddaysak container verisini kullan ve vizMin/vizMax hesapla
       const { smooth, min, max } = container._elevationData;
       let vizMin = min, vizMax = max;
       const eSpan = max - min;
@@ -288,8 +290,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       
-      // 1. Filtreleme: Eğer marker bu segmentin dışındaysa ÇİZME
-      // (Ufak bir tolerans payı +/- 0.05 km eklenebilir)
       if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
           return;
       }
@@ -297,7 +297,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       const relKm = dist - startKmDom;
       let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
       
-      // Sınırları aşmaması için clamp (yine de yukarıdaki if ile eledik ama güvenlik)
       left = Math.max(0, Math.min(100, left));
 
       let bottomStyle = "2px"; 
@@ -305,24 +304,18 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       if (activeData && activeData.smooth && activeData.smooth.length > 0) {
           const { smooth, vizMin, vizMax } = activeData;
           
-          // Markerın, grafiğin veri dizisi (smooth array) içindeki denk geldiği index
           const pct = Math.max(0, Math.min(1, left / 100));
           const sampleIdx = Math.floor(pct * (smooth.length - 1));
           const val = smooth[sampleIdx];
           
           if (typeof val === 'number') {
-              // Yükseklik Yüzdesi Hesabı
-              // (Değer - GörselAltSınır) / (GörselÜstSınır - GörselAltSınır)
               const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
-              
-              // Marker boyutu ve padding ayarı
               bottomStyle = `calc(${heightPct}% - 7px)`;
           }
       }
 
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      // Transition'ı kaldırdım çünkü zoom yaparken markerların kayarak gelmesi kafa karıştırabilir
       wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
@@ -330,43 +323,22 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     });
   }
 
-  // --- Grid Labels (Dikey Eksen Yazıları) ---
-  // Eğer özel veri varsa (segment), etiketleri de o aralığa göre çiz
-  // Değilse eski SVG içinden çekmeye çalışır (Global mod)
-  
+  // --- Grid Labels ---
   let gridLabels = [];
   if (customElevData) {
-      // Segment modunda label'ları manuel oluşturmamız lazım çünkü SVG henüz DOM'da tam oluşmamış olabilir
-      // veya SVG içinden okumak yerine veriden üretmek daha sağlıklıdır.
-      // drawSegmentProfile'da kullanılan 4 seviyeli grid mantığının aynısı:
       const { vizMin, vizMax } = customElevData;
-      // SVG yüksekliği genelde 220px veya mobil ayarı. Oranlayarak Y bulacağız.
-      // Ancak createScaleElements sadece HTML basıyor, SVG koordinatını bilmiyor.
-      // Basit çözüm: Yüzde olarak yerleştirmek.
-      
       for(let i=0; i<=4; i++) {
           const val = vizMin + (i/4)*(vizMax - vizMin);
-          // Yüzde hesabı:
           const pct = (i/4) * 100; 
-          // SVG'de Y ekseni ters (yukarı 0) ama HTML bottom (aşağı 0). 
-          // Profile çiziminde bottom = 0 -> vizMin değil, vizMin biraz aşağıda kalıyor.
-          // drawSegmentProfile mantığına sadık kalmak için:
-          // Oradaki Y fonksiyonu: ((height-1) - ((e-vizMin)/(vizMax-vizMin))*(height-2))
-          // Yani lineer bir mapping.
-          
-          gridLabels.push({
-              value: Math.round(val) + ' m',
-              pct: pct // Bu height yüzdesi
-          });
+          gridLabels.push({ value: Math.round(val) + ' m', pct: pct });
       }
   } else {
-      // Global mod: SVG'den oku (Eski yöntem)
       const svg = track.querySelector('svg.tt-elev-svg');
       if (svg) {
         gridLabels = Array.from(svg.querySelectorAll('text'))
           .map(t => ({
             value: t.textContent.trim(),
-            y: Number(t.getAttribute('y')), // SVG pixel coordinates
+            y: Number(t.getAttribute('y')),
             svgHeight: Number(svg.getAttribute('height')) || 180
           }))
           .filter(obj => /-?\d+\s*m$/.test(obj.value));
@@ -377,34 +349,17 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   elevationLabels.className = 'elevation-labels-container';
 
   gridLabels.forEach((obj, index) => { 
-    // Segment modunda (pct var) veya Global modda (y var)
     let topStyle = '';
     
     if (typeof obj.pct !== 'undefined') {
-        // Segment modu: CSS bottom ile konumlandır
-        // drawSegmentProfile Y fonksiyonunun tersi mantığı:
-        // Y = H - (val_norm * H). Yani val_norm 0 ise Y=H (en alt).
-        // HTML'de bottom: 0% -> val_norm 0.
-        // Ancak paddingler var (min - span*0.5).
-        // createScaleElements içindeki marker mantığı ile aynı yüzdeyi kullanalım:
-        // heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
-        // obj.pct zaten (i/4)*100 yani tam grid çizgilerine denk gelir.
-        
-        // CSS top kullanmak daha güvenli çünkü parent relative.
-        // %100 yükseklik = vizMax. %0 = vizMin.
-        // Grid çizgisi i=4 (en üst) -> %100 elevation -> top: 0%.
-        // Grid çizgisi i=0 (en alt) -> %0 elevation -> top: 100%.
         topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
-        
     } else {
-        // Global mod: SVG pikselinden hesapla
         const trackHeight = track.clientHeight || 180;
         const correctedY = (obj.y / obj.svgHeight) * trackHeight;
         topStyle = `top: ${correctedY}px;`;
     }
 
     const wrapper = document.createElement('div');
-    // En alttakini veya en üsttekini gizleme ihtiyacı varsa burada yapılabilir
     let visibilityStyle = ''; 
     
     wrapper.style.cssText = `position: absolute; right: 0; ${topStyle} ${visibilityStyle}`;
