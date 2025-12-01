@@ -9575,19 +9575,17 @@ function renderRouteScaleBar(container, totalKm, markers) {
   window.__scaleBarDragTrack = track;
   window.__scaleBarDragSelDiv = selDiv;
 
-  // --- KRİTİK: GLOBAL EVENT LISTENER GÜNCELLEMESİ (MOBİL DESTEKLİ) ---
   window.removeEventListener('mousemove', window.__sb_onMouseMove);
   window.removeEventListener('mouseup', window.__sb_onMouseUp);
-  window.removeEventListener('touchmove', window.__sb_onMouseMove); // Mobil için temizle
-  window.removeEventListener('touchend', window.__sb_onMouseUp);   // Mobil için temizle
+  window.removeEventListener('touchmove', window.__sb_onMouseMove); 
+  window.removeEventListener('touchend', window.__sb_onMouseUp);   
 
   window.addEventListener('mousemove', window.__sb_onMouseMove);
   window.addEventListener('mouseup', window.__sb_onMouseUp);
-  window.addEventListener('touchmove', window.__sb_onMouseMove, { passive: false }); // Mobil Ekle (passive: false scroll engellemek için)
-  window.addEventListener('touchend', window.__sb_onMouseUp);     // Mobil Ekle
-  // -------------------------------------------------------------------
+  window.addEventListener('touchmove', window.__sb_onMouseMove, { passive: false }); 
+  window.addEventListener('touchend', window.__sb_onMouseUp);     
 
-  // Mouse Down
+  // Mouse Down (Masaüstü - Hemen başlar)
   track.addEventListener('mousedown', function(e) {
     const rect = track.getBoundingClientRect();
     window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
@@ -9598,20 +9596,48 @@ function renderRouteScaleBar(container, totalKm, markers) {
     selDiv.style.display = 'block';
   });
 
-  // Touch Start (Mobil)
+  // --- MOBİL İÇİN LONG PRESS (UZUN BASMA) MANTIĞI ---
+  let longPressTimer = null;
+
+  // 1. Dokunma Başladı: Sayacı başlat
   track.addEventListener('touchstart', function(e) {
-    // Mobilde sürüklerken sayfanın kaymasını engelle
-    if (e.cancelable) e.preventDefault(); 
-    
+    // Scroll'u engelleme (passive: true), kullanıcı scroll yapabilsin
     const rect = track.getBoundingClientRect();
     const x = e.touches[0].clientX - rect.left;
-    window.__scaleBarDrag = { startX: x, lastX: x };
-    window.__scaleBarDragTrack = track;
-    window.__scaleBarDragSelDiv = selDiv;
-    selDiv.style.left = `${x}px`;
-    selDiv.style.width = `0px`;
-    selDiv.style.display = 'block';
-  }, { passive: false }); // Passive false önemli!
+
+    longPressTimer = setTimeout(() => {
+        // Süre doldu, seçim modunu aktif et
+        window.__scaleBarDrag = { startX: x, lastX: x };
+        window.__scaleBarDragTrack = track;
+        window.__scaleBarDragSelDiv = selDiv;
+        selDiv.style.left = `${x}px`;
+        selDiv.style.width = `0px`;
+        selDiv.style.display = 'block';
+        
+        // Kullanıcıya hissettir (Titreşim)
+        if (navigator.vibrate) navigator.vibrate(40);
+        
+    }, 600); // 600ms basılı tutarsa devreye girer
+
+  }, { passive: true });
+
+  // 2. Parmağı Oynattı: Eğer seçim daha başlamadıysa (timer bitmediyse) iptal et
+  track.addEventListener('touchmove', function(e) {
+      if (longPressTimer && !window.__scaleBarDrag) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+          // Kullanıcı kaydırıyor (scroll yapıyor), seçimi iptal et
+      }
+  }, { passive: true });
+
+  // 3. Parmağı Çekti: Sayacı temizle
+  track.addEventListener('touchend', function() {
+      if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+      }
+  });
+  // --------------------------------------------------
 
   track.style.position = 'relative';
   track.style.overflow = 'visible';
@@ -9887,35 +9913,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
         }
         window.routeElevStatsByDay = window.routeElevStatsByDay || {};
         window.routeElevStatsByDay[day] = { ascent: Math.round(ascent), descent: Math.round(descent) };
-        if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
-      }
-    } catch {
-      window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
-      try { delete container.dataset.elevLoadedKey; } catch(_) {}
-      
-      track.classList.remove('loading');
-      createScaleElements(track, width, totalKm, 0, markers);
-    }
-  })();
-
-  function handleResize() {
-    if (!container._elevationData) return;
-
-    const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
-    const spanKm = container._elevKmSpan || 1;
-    const startKmDom = container._elevStartKm || 0;
-    const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    createScaleElements(track, newW, spanKm, startKmDom, markers);
-  }
-
-  if (container._elevResizeObserver) {
-    try { container._elevResizeObserver.disconnect(); } catch(_) {}
-    container._elevResizeObserver = null;
-  }
-  const ro = new ResizeObserver(() => { handleResize(); });
-  ro.observe(track);
-  container._elevResizeObserver = ro;
-}
+        if
 
 // Kartları ekledikten sonra çağır: attachFavEvents();
 
