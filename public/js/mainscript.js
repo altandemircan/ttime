@@ -9853,22 +9853,58 @@ window.__sb_onMouseUp = function() {
   const rect = window.__scaleBarDragTrack.getBoundingClientRect();
   const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
   const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  if (rightPx - leftPx < 8) { window.__scaleBarDragSelDiv.style.display = 'none'; window.__scaleBarDrag = null; return; }
+  
+  // Seçim bitti, div'i gizleyelim ki ekranda asılı kalmasın
+  window.__scaleBarDragSelDiv.style.display = 'none';
 
-  // Segment logic burada (aynısını bırakabilirsin)
+  if (rightPx - leftPx < 8) { 
+      window.__scaleBarDrag = null; 
+      return; 
+  }
+
   const container = window.__scaleBarDragTrack.closest('.route-scale-bar');
   if (!container) { window.__scaleBarDrag = null; return; }
+  
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-  const totalKmToUse = Number(container.dataset.totalKm);
-  const startKm = (leftPx / rect.width) * totalKmToUse;
-  const endKm   = (rightPx / rect.width) * totalKmToUse;
 
   window.__scaleBarDrag = null;
 
   if (day != null) {
-    fetchAndRenderSegmentElevation(container, day, startKm, endKm);
-    if (typeof highlightSegmentOnMap === 'function') highlightSegmentOnMap(day, startKm, endKm);
+    // --- NESTED SEGMENT MANTIĞI ---
+    
+    // Varsayılan: Ana grafik (0'dan Toplam KM'ye)
+    let baseStartKm = 0;
+    let visibleSpanKm = Number(container.dataset.totalKm) || 0;
+
+    // Eğer zaten bir segmentin içindeysek (Zoomlu görünüm)
+    if (
+        typeof window._lastSegmentDay === 'number' &&
+        window._lastSegmentDay === day &&
+        typeof window._lastSegmentStartKm === 'number' &&
+        typeof window._lastSegmentEndKm === 'number'
+    ) {
+        // Hesaplamayı mevcut segmentin üzerine kur
+        baseStartKm = window._lastSegmentStartKm;
+        visibleSpanKm = window._lastSegmentEndKm - window._lastSegmentStartKm;
+    }
+
+    // Mouse'un bar üzerindeki oranını hesapla (0.0 - 1.0)
+    const ratioStart = leftPx / rect.width;
+    const ratioEnd   = rightPx / rect.width;
+
+    // Yeni başlangıç ve bitiş km'lerini hesapla
+    // Formül: (Mevcut Başlangıç) + (Oran * Mevcut Genişlik)
+    const newStartKm = baseStartKm + (ratioStart * visibleSpanKm);
+    const newEndKm   = baseStartKm + (ratioEnd * visibleSpanKm);
+
+    // Yeni segmenti çiz
+    fetchAndRenderSegmentElevation(container, day, newStartKm, newEndKm);
+    
+    // Haritadaki çizgiyi de hemen güncelle (Gecikmeyi önlemek için buraya da ekledim)
+    if (typeof highlightSegmentOnMap === 'function') {
+        highlightSegmentOnMap(day, newStartKm, newEndKm);
+    }
   }
 };
 
