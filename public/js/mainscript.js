@@ -10064,107 +10064,6 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 }
 
 
-// // ✅ TÜM YETIM SCALE-BAR-TRACK'LERI TEMİZLE (güvenlik)
-// function cleanupOrphanScaleBars() {
-//   document.querySelectorAll('.scale-bar-track').forEach(track => {
-//     // Eğer track bir expanded-route-scale-bar veya route-scale-bar container'ının içinde DEĞİLSE
-//     const parent = track.closest('[id^="expanded-route-scale-bar-day"], [id^="route-scale-bar-day"]');
-//     if (!parent) {
-//       console.warn('[cleanup] Orphan scale-bar-track removed:', track);
-//       track.remove();
-//     }
-//   });
-// }
-
-// // Her segment seçiminden ÖNCE   temizle
-// document.addEventListener('mousedown', (e) => {
-//   const scaleBar = e.target.closest('.scale-bar-track');
-//   if (scaleBar) {
-//     setTimeout(cleanupOrphanScaleBars, 100);
-//   }
-// });
-
-
-(function ensureElevationThrottleHelpers(){
-  if (window.__elevHelpersReadyV2) return;
-
-  // Global pacing: serialize requests
-  window.__elevQueue = window.__elevQueue || Promise.resolve();
-  window.__elevReqMinIntervalMs = 1000;
-
-  window.__lastElevRequestTs = window.__lastElevRequestTs || 0;
-
-  // Cooldown if 429 happens
-  window.__elevCooldownUntil = window.__elevCooldownUntil || 0; // timestamp ms
-
-  // Per-route singleflight guard (avoid duplicate fetches for same route)
-  window.__elevInFlightByKey = window.__elevInFlightByKey || Object.create(null);
-
-  // Simple route signature for caching/dedup
-  window.__routeKeyFromCoords = window.__routeKeyFromCoords || function(coords){
-    try {
-      if (!Array.isArray(coords) || coords.length < 2) return '';
-      const first = coords[0]?.join(',');
-      const last  = coords[coords.length - 1]?.join(',');
-      return `${coords.length}|${first}|${last}`;
-    } catch { return ''; }
-  };
-
-  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
-
-  function enqueue(fn) {
-    const next = window.__elevQueue.then(fn, fn);
-    window.__elevQueue = next.catch(() => {}); // keep chain alive
-    return next;
-  }
-
-  // Throttled fetch with cooldown on 429
-  window.__throttledElevFetch = function(url, { retries = 2, baseDelay = 1000, cooldownMs = 180000 } = {}) {
-    return enqueue(async () => {
-      // Respect global cooldown
-      const now0 = Date.now();
-      if (now0 < window.__elevCooldownUntil) {
-        throw new Error('Elevation fetch skipped (cooldown active)');
-      }
-
-      // Respect min interval
-      const now = Date.now();
-      const wait = Math.max(0, window.__elevReqMinIntervalMs - (now - window.__lastElevRequestTs));
-      if (wait) await sleep(wait);
-
-      let delay = baseDelay;
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        const resp = await fetch(url);
-        window.__lastElevRequestTs = Date.now();
-
-        if (resp.status === 429) {
-          // Derive cooldown from Retry-After if present; else use fallback
-          const ra = parseInt(resp.headers.get('retry-after') || '0', 10);
-          const cd = (ra > 0 ? ra * 1000 : cooldownMs);
-          window.__elevCooldownUntil = Date.now() + cd;
-
-          // Exponential backoff before retrying (if any retries left)
-          await sleep(delay);
-          delay = Math.min(delay * 2, 5000);
-          if (attempt < retries) continue;
-
-          // Give up: propagate as error so caller can skip drawing silently
-          throw new Error('Elevation API rate-limited (429); cooldown engaged');
-        }
-
-        if (!resp.ok) throw new Error(`Elevation HTTP ${resp.status}`);
-        return resp;
-      }
-
-      // Should not reach here
-      throw new Error('Elevation retries exhausted');
-    });
-
-  };
-
-  window.__elevHelpersReadyV2 = true;
-})();
-
 
 (function ensureScaleBarLoadingHelpers(){
   if (window.__tt_scaleBarLoaderReady) return;
@@ -10185,6 +10084,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   };
   window.__tt_scaleBarLoaderReady = true;
 })();
+
 (function ensureElev429Planner(){
   if (window.__tt_elev429PlannerReady) return;
   window.planElevationRetry = function(container, routeKey, waitMs, retryFn){
