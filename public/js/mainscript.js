@@ -3784,7 +3784,7 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
                 <div class="item-position">${listMarkerHtml}                
                   <img src="${item.image}" alt="${item.name}" class="cart-image">
                 </div>
-                
+
                 <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
                 <div class="item-info">
                   <p class="toggle-title">${item.name}</p>
@@ -5602,23 +5602,7 @@ function updateRouteStatsUI(day) {
   return totalKm;
 }
 
-// Yardımcı fonksiyon - Yay koordinatlarını al
-function getCurvedArcCoords(start, end, strength = 0.33, segments = 22) {
-    // start & end: [lng, lat] formatında
-    const sx = start[0], sy = start[1];
-    const ex = end[0], ey = end[1];
-    
-    const mx = (sx + ex) / 2 + strength * (ey - sy);
-    const my = (sy + ey) / 2 - strength * (ex - sx);
-    
-    const coords = [];
-    for (let t = 0; t <= 1; t += 1/segments) {
-        const x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
-        const y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
-        coords.push([x, y]);
-    }
-    return coords;
-}
+
 
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
@@ -5778,32 +5762,41 @@ function setupScaleBarInteraction(day, map) {
     scaleBar.addEventListener("touchend", onLeave);
 }
 
-function getCurvedArcCoords(start, end, strength = 0.5, segments = 30) {
-    // start & end: [lng, lat] formatında olmalı
-    const sx = start[0], sy = start[1];
-    const ex = end[0], ey = end[1];
+// [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
+function getCurvedArcCoords(start, end) {
+    const lon1 = start[0];
+    const lat1 = start[1];
+    const lon2 = end[0];
+    const lat2 = end[1];
+
+    const offsetX = lon2 - lon1;
+    const offsetY = lat2 - lat1;
     
-    // Orta nokta ve kontrol noktası
-    const midX = (sx + ex) / 2;
-    const midY = (sy + ey) / 2;
+    // İki nokta arası mesafe ve açı
+    const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
+    const theta = Math.atan2(offsetY, offsetX);
     
-    // Kontrol noktası - yönü değiştirmek için işaretleri ayarlayın
-    const controlX = midX + strength * (ey - sy);
-    const controlY = midY - strength * (ex - sx);
+    // --- SABİT ORAN: KÜÇÜK HARİTA İLE BİREBİR AYNI ---
+    // (Math.PI / 10) değeri küçük haritadaki drawCurvedLine ile aynıdır.
+    const thetaOffset = (Math.PI / 10); 
+    // -------------------------------------------------
+    
+    const r2 = (r / 2.0) / Math.cos(thetaOffset);
+    const theta2 = theta + thetaOffset;
+    
+    const controlX = (r2 * Math.cos(theta2)) + lon1;
+    const controlY = (r2 * Math.sin(theta2)) + lat1;
     
     const coords = [];
-    for (let t = 0; t <= 1; t += 1/segments) {
-        // Quadratic Bezier formülü
-        const x = Math.pow(1 - t, 2) * sx + 2 * (1 - t) * t * controlX + Math.pow(t, 2) * ex;
-        const y = Math.pow(1 - t, 2) * sy + 2 * (1 - t) * t * controlY + Math.pow(t, 2) * ey;
-        coords.push([x, y]);
+    // 20 adımda çizim (0.05 artış)
+    for (let t = 0; t < 1.01; t += 0.05) {
+        const x = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * controlX + t * t * lon2;
+        const y = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * controlY + t * t * lat2;
+        coords.push([x, y]); 
     }
-    
-    // Son noktayı ekle
-    coords.push([ex, ey]);
-    
     return coords;
 }
+
 // Yay noktalarını kaydetmek için yardımcı fonksiyon
 function saveArcPointsForDay(day, points) {
     if (!window._curvedArcPointsByDay) {
