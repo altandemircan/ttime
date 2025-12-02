@@ -5727,6 +5727,7 @@ ease;
 }
 .leaflet-bottom  {
     bottom: 185px;
+        position: fixed;
 }
 .leaflet-popup-pane {
     z-index: 700;
