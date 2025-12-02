@@ -9427,7 +9427,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
             display: none !important; 
         }
         .scale-bar-track.loading {
-        
+            min-height: 200px; 
+      width:100%
         }
     `;
     document.head.appendChild(style);
