@@ -5936,7 +5936,7 @@ async function expandMap(containerId, day) {
     { value: 'normal', img: '/img/preview_bright.png', label: 'Normal' },       // Eski Bright -> Normal (OSM)
     { value: 'satellite', img: '/img/preview_positron.png', label: 'Satellite' }, // Eski Positron -> Satellite (Esri)
     { value: '3d', img: '/img/preview_3d.png', label: '3D' }                    // 3D Dokunulmadı
-  ];
+  ]; 
 
   let currentLayer = 'normal';
 
