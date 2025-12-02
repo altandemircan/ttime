@@ -1,37 +1,25 @@
+// --- Paylaşım Metni Oluşturucu ---
 function generateShareableText() {
-    let shareText = "İşte gezi planın!\n\n";
+    let shareText = "Here's your trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
-
-    // Tarih formatlama ayarları (gün ve ay adı)
     const dateOptions = { day: 'numeric', month: 'long' };
 
     for (let day = 1; day <= maxDay; day++) {
         const dayItems = window.cart.filter(item => item.day == day && item.name);
         if (dayItems.length > 0) {
-            
-            // --- GÜN BAŞLIĞI OLUŞTURMA BÖLÜMÜ GÜNCELLENDİ ---
-            if (typeof window.customDayNames === 'undefined') {
-                window.customDayNames = {};
-            }
-            const dayName = window.customDayNames[day] || `${day}. Gün`;
-            
+            if (typeof window.customDayNames === 'undefined') window.customDayNames = {};
+            const dayName = window.customDayNames[day] || `Day ${day}`;
             let dayHeader;
-
-            // Eğer başlangıç tarihi varsa, her gün için tarihi hesapla ve formatla
-            // Artık window.tripDates.startDate kullanılmalı!
             const startDateValue = window.tripDates && window.tripDates.startDate ? window.tripDates.startDate : null;
             if (startDateValue) {
                 const startDateObj = new Date(startDateValue);
                 const currentDate = new Date(startDateObj.setDate(startDateObj.getDate() + (day - 1)));
-                const formattedDate = currentDate.toLocaleDateString('tr-TR', dateOptions);
+                const formattedDate = currentDate.toLocaleDateString('en-US', dateOptions);
                 dayHeader = `--- ${dayName} - ${formattedDate} ---\n`;
             } else {
                 dayHeader = `--- ${dayName} ---\n`;
             }
-            // --- GÜN BAŞLIĞI OLUŞTURMA SONU ---
-
-            shareText += dayHeader; // Oluşturulan başlığı metne ekle
-
+            shareText += dayHeader;
             dayItems.forEach(item => {
                 shareText += `• ${item.name} (${item.category})\n`;
             });
@@ -39,22 +27,17 @@ function generateShareableText() {
         }
     }
 
-    shareText += "Bu plan triptime.ai ile oluşturuldu! Sen de kendi gezi planını oluştur ve arkadaşlarınla paylaş!"; 
+    shareText += "This plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
     
     return shareText;
 }
 
-// WhatsApp'ta paylaşım yapan yardımcı fonksiyon
+// WhatsApp share
 function shareOnWhatsApp() {
     const textToShare = generateShareableText();
     const encodedText = encodeURIComponent(textToShare);
-
-    // Mobil veya WhatsApp Desktop yüklü sistemler
     const whatsappAppUrl = `whatsapp://send?text=${encodedText}`;
-    // WhatsApp Web için URL
     const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodedText}`;
-
-    // Basit tespit: Eğer cihaz mobil değilse WhatsApp Web aç
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         window.open(whatsappAppUrl, '_blank');
     } else {
@@ -62,17 +45,16 @@ function shareOnWhatsApp() {
     }
 }
 
-// Instagram için metni panoya kopyalayan yardımcı fonksiyon
+// Instagram - Copy to clipboard
 function shareOnInstagram() {
     const textToShare = generateShareableText();
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(textToShare).then(() => {
-            alert("Gezi planı metni panoya kopyalandı! Şimdi Instagram'a gidip gönderi açıklamasına yapıştırabilirsiniz.");
+            alert("Trip plan copied to clipboard! Now go to Instagram and paste it into your post description.");
         }, () => {
-            alert("Otomatik kopyalama başarısız oldu.");
+            alert("Automatic copy failed.");
         });
     } else {
-        // Güvenli olmayan bağlantılar için yedek yöntem
         const textArea = document.createElement("textarea");
         textArea.value = textToShare;
         textArea.style.position = "fixed";
@@ -82,10 +64,24 @@ function shareOnInstagram() {
         textArea.select();
         try {
             document.execCommand('copy');
-            alert("Gezi planı metni panoya kopyalandı! Şimdi Instagram'a gidip gönderi açıklamasına yapıştırabilirsiniz.");
+            alert("Trip plan copied to clipboard! Now go to Instagram and paste it into your post description.");
         } catch (err) {
-            alert("Kopyalama başarısız oldu.");
+            alert("Copy failed.");
         }
         document.body.removeChild(textArea);
     }
+}
+
+// Facebook share
+function shareOnFacebook() {
+    const textToShare = generateShareableText();
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://triptime.ai')}&quote=${encodeURIComponent(textToShare)}`;
+    window.open(facebookShareUrl, '_blank');
+}
+
+// Twitter share
+function shareOnTwitter() {
+    const textToShare = generateShareableText();
+    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textToShare)}&url=${encodeURIComponent('https://triptime.ai')}`;
+    window.open(twitterShareUrl, '_blank');
 }

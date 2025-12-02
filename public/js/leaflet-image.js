@@ -8,8 +8,6 @@ var cacheBusterDate = +new Date();
 // leaflet-image
 module.exports = function leafletImage(map, callback) {
 
-    var hasMapbox = !!L.mapbox;
-
     var dimensions = map.getSize(),
         layerQueue = new queue(1);
 
@@ -87,11 +85,8 @@ module.exports = function leafletImage(map, callback) {
             zoom = map.getZoom(),
             tileSize = layer.options.tileSize;
 
-        if (zoom > layer.options.maxZoom ||
-            zoom < layer.options.minZoom ||
-            // mapbox.tileLayer
-            (hasMapbox &&
-                layer instanceof L.mapbox.tileLayer && !layer.options.tiles)) {
+        // Sadece zoom sınırı kontrolü
+        if (zoom > layer.options.maxZoom || zoom < layer.options.minZoom) {
             return callback();
         }
 
@@ -256,15 +251,14 @@ module.exports = function leafletImage(map, callback) {
 
     function addCacheString(url) {
         // If it's a data URL we don't want to touch this.
-        if (typeof url !== "string") return url; // PATCH: undefined veya null ise dokunma!
-        if (isDataURL(url) || url.indexOf('mapbox.com/styles/v1') !== -1) {
-            return url;
-        }
+        if (typeof url !== "string") return url; // undefined/null ise dokunma
+        if (isDataURL(url)) return url;
+
         return url + ((url.match(/\?/)) ? '&' : '?') + 'cache=' + cacheBusterDate;
     }
 
     function isDataURL(url) {
-        if (typeof url !== "string") return false; // PATCH: undefined.match hatasını engeller
+        if (typeof url !== "string") return false;
         var dataURLRegex = /^\s*data:([a-z]+\/[a-z]+(;[a-z\-]+\=[a-z\-]+)?)?(;base64)?,[a-z0-9\!\$\&\'\,\(\)\*\+\,\;\=\-\.\_\~\:\@\/\?\%\s]*\s*$/i;
         return !!url.match(dataURLRegex);
     }

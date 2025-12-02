@@ -37,10 +37,6 @@ saveButton.onclick = function() {
 
     updateCart();
 
-    // !! BU SATIRI KALDIR !!
-    // if (window.cart && window.cart.startDate) {
-    //     showTripDetails(window.cart.startDate);
-    // }
 };
 
 function openCalendar(tripDuration) {

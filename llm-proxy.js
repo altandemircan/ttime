@@ -1,118 +1,71 @@
 const express = require('express');
-const router = express.Router();
 const axios = require('axios');
+const router = express.Router();
 
-
-router.post('/clarify-location', async (req, res) => {
-    try {
-        const { query } = req.body;
-        // Basit bir dönüşüm örneği (gerçekte AI entegrasyonu yapılacak)
-        const result = {
-            city: query.split(' ')[0].charAt(0).toUpperCase() + query.split(' ')[0].slice(1),
-            country: ""
-        };
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: "Location clarification failed" });
+// Plan summary endpoint
+router.post('/plan-summary', async (req, res) => {
+    const { city, country } = req.body;
+    if (!city) {
+        res.status(400).send('City is required');
+        return;
     }
-});
+    const aiReqCity = country ? `${city}, ${country}` : city;
 
-router.post('/item-guide', async (req, res) => {
-    const { name, address, city, category } = req.body;
-    const prompt = `Describe "${name}" (${category}) in ${city} for a tourist in max 50 words. Address: ${address}.`;
+    // DEBUG: Her sorguda şehir ne gidiyor görün
+    console.log("AIReqCity:", aiReqCity);
 
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
-        });
-        res.json({ text: response.data.response.trim() });
-    } catch (error) {
-        res.json({ text: "", error: "AI açıklama alınamadı." });
-    }
-});
+const prompt = `
+You are an expert travel assistant.
+For the city "${aiReqCity}", respond ONLY with a valid JSON object with these fields (no code block, no explanation):
 
-router.post('/suggest-categories', async (req, res) => {
-    const { city, days } = req.body;
-    const prompt = `Suggest ${days} day trip categories for ${city}. Choose from: Coffee, Touristic, Restaurant, Accommodation, Historic, Adventure, Luxury. Respond as JSON array.`;
+{
+  "summary": "...",
+  "tip": "...",
+  "highlight": "..."
+}
 
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
-        });
-        res.json(JSON.parse(response.data.response));
-    } catch (error) {
-        res.json([]);
-    }
-});
-
-router.post('/generate-notes', async (req, res) => {
-    const { name, city, category } = req.body;
-    const prompt = `Describe ${name} in ${city} (category: ${category}) for tourists in 15 words max.`;
-
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
-        });
-        res.json({ notes: response.data.response.trim() });
-    } catch (error) {
-        res.json({ notes: "" });
-    }
-});
-
-router.post('/generate-tags', async (req, res) => {
-    const { name, category } = req.body;
-    const prompt = `Generate 3 hashtags for ${name} (${category}). Respond as JSON array.`;
-
-    try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3:2:1b",
-            prompt,
-            stream: false
-        });
-        res.json({ tags: JSON.parse(response.data.response) });
-    } catch (error) {
-        res.json({ tags: [] });
-    }
-});
-
-
-
-
-
-router.post('/trip-info', async (req, res) => {
-    const { tripPlan } = req.body;
-    const steps = tripPlan.map(x => x.name).filter(Boolean).join(', ');
-    const prompt = `
-Given these trip steps: ${steps}.
-Write a single-sentence summary in JSON: { "summary": "..." }
-Respond only in valid JSON. Do not use code block formatting or extra text.
+If you don't know the answer, put "Bilgi yok." for that field.
 `.trim();
 
     try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
+        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+            model: "gemma:2b",
+            messages: [{ role: "user", content: prompt }],
+            stream: false,
+            max_tokens: 200
         });
-        let data = response.data.response.trim();
-        if (data.startsWith('```json')) data = data.replace(/```json|```/g, '').trim();
-        else if (data.startsWith('```')) data = data.replace(/```/g, '').trim();
 
-        // JSON parse veya regex fallback
-        let summary = "";
-        try { summary = JSON.parse(data).summary; }
-        catch { summary = (data.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || ""; }
+        // Yanıtı debug et!
+        console.log("Ollama response:", response.data);
 
-        if (!summary) return res.json({ summary: "", error: "AI trip info could not be generated." });
-        res.json({ summary });
+        // Gemma yanıtı şu formatta gelir:
+        // { model: ..., message: { role: 'assistant', content: '{...}' }, ... }
+        let jsonText = '';
+        if (typeof response.data === 'object' && response.data.message && response.data.message.content) {
+            jsonText = response.data.message.content;
+        } else if (typeof response.data === 'string') {
+            const match = response.data.match(/\{[\s\S]*?\}/);
+            if (match) {
+                jsonText = match[0];
+            }
+        }
+
+        let jsonResponse;
+        try {
+            jsonResponse = JSON.parse(jsonText);
+        } catch (e) {
+            console.error('Yanıt JSON değil:', response.data);
+            res.status(500).send('AI geçersiz yanıt verdi.');
+            return;
+        }
+
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.json(jsonResponse);
     } catch (error) {
-        res.json({ summary: "", error: "AI trip info could not be generated." });
+        const errMsg = error?.response?.data || error?.message || String(error);
+        console.error('LLM Proxy Error:', errMsg);
+        res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
     }
 });
 
@@ -120,62 +73,89 @@ Respond only in valid JSON. Do not use code block formatting or extra text.
 
 
 
-router.post('/plan-summary', async (req, res) => {
-    const { plan, city, days } = req.body;
-    const places = Array.isArray(plan) ? plan.map(p => ({
-        name: p.name,
-        category: p.category,
-        day: p.day
-    })) : [];
-    const prompt = `
-You are an expert travel assistant. Given this ${days}-day trip plan for ${city}:
-${JSON.stringify(places, null, 2)}
-Please write:
-- An inspiring and positive summary of this trip (max 60 words).
-- A creative tip for the traveler.
-- A highlight that makes this trip special.
-Respond as formatted JSON: { "summary": "...", "tip": "...", "highlight": "..." }
-    `.trim();
+// Chat stream (SSE) endpoint
+router.get('/chat-stream', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    let finished = false;
+
+    // Tüm mesaj geçmişini frontendden al
+    let userMessages = [];
+    try {
+        userMessages = JSON.parse(req.query.messages || "[]");
+    } catch (e) {
+        userMessages = [];
+    }
+
+    // System prompt'u her zaman en başa ekle!
+const systemPrompt = `
+You are a friendly and knowledgeable travel assistant.
+Help users discover and plan trips by providing clear, concise, and useful information about destinations, activities, food, transportation, hotels, and local tips.
+Give brief answers (maximum 150 characters) unless more detail is requested.
+If asked about something unrelated to travel, politely say you only answer travel-related questions.
+`;  
+
+    // Mesajları birleştir: system + diğer geçmiş
+    const messages = [
+        { role: "system", content: systemPrompt },
+        ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
+    ];
+
+    const model = 'gemma:2b';
 
     try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-            model: "llama3.2:1b",
-            prompt,
-            stream: false
+        const ollama = await axios({
+            method: 'post',
+            url: 'http://127.0.0.1:11434/api/chat',
+            data: {
+                model,
+                messages,
+                stream: true,
+                max_tokens: 200 // Yanıtın 300 karakteri geçmemesi için yeterli
+            },
+            responseType: 'stream',
+            timeout: 180000 // 3 dakika
         });
 
-        let data = response.data.response.trim();
+        ollama.data.on('data', chunk => {
+            if (finished) return;
+            const str = chunk.toString().trim();
+            if (str) {
+                res.write(`data: ${str}\n\n`);
+            }
+        });
 
-        // Ollama bazen kod bloğu veya metin döndürebilir, JSON değilse düzelt:
-        // Kod bloğu varsa çıkar
-        if (data.startsWith('```json')) {
-            data = data.replace(/```json|```/g, '').trim();
-        } else if (data.startsWith('```')) {
-            data = data.replace(/```/g, '').trim();
-        }
+        ollama.data.on('end', () => {
+            if (!finished) {
+                finished = true;
+                res.write('event: end\ndata: [DONE]\n\n');
+                res.end();
+            }
+        });
 
-        // Sonunda fazlalık karakterler olabiliyor, JSON.parse bozulmasın diye
-        let aiResult;
-        try {
-            aiResult = JSON.parse(data);
-        } catch (e) {
-            // JSON parse edilemiyorsa, regex ile manuel ayıkla
-            const summary = (data.match(/"summary"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            const tip = (data.match(/"tip"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            const highlight = (data.match(/"highlight"\s*:\s*"([^"]+)"/) || [])[1] || "";
-            aiResult = { summary, tip, highlight };
-        }
+        ollama.data.on('error', (err) => {
+            if (!finished) {
+                finished = true;
+                res.write(`event: error\ndata: ${err.message}\n\n`);
+                res.end();
+            }
+        });
 
-        if (!aiResult.summary && !aiResult.tip && !aiResult.highlight) {
-            return res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
-        }
-
-        res.json(aiResult);
+        req.on('close', () => {
+            if (!finished) {
+                finished = true;
+                res.end();
+            }
+        });
     } catch (error) {
-        res.json({ summary: "", tip: "", highlight: "", error: "AI plan özeti alınamadı." });
+        finished = true;
+        res.write(`event: error\ndata: ${error.message}\n\n`);
+        res.end();
     }
 });
-
-
 
 module.exports = router;

@@ -1,0 +1,126 @@
+document.addEventListener("DOMContentLoaded", function() {
+  let chatHistory = []; // Sadece user ve assistant mesajları olacak!
+
+  // Günlük soru limiti yardımcı fonksiyonları:
+  function getDailyQuestionCount() {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = "questionCount_" + today;
+    return parseInt(localStorage.getItem(key) || "0", 10);
+  }
+  function incrementQuestionCount() {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = "questionCount_" + today; 
+    let count = getDailyQuestionCount();
+    localStorage.setItem(key, count + 1);
+  }
+  function canAskQuestion() {
+    return getDailyQuestionCount() < 10;
+  }
+
+  // Bilgilendirme mesajı (ilk açılışta)
+  var messagesDiv = document.getElementById('ai-chat-messages');
+  if (messagesDiv) {
+    var infoDiv = document.createElement("div");
+    infoDiv.className = "chat-info";
+    infoDiv.textContent = "Mira: You have a daily limit of 10 questions. Use them wisely!";
+    messagesDiv.appendChild(infoDiv);
+  }
+
+  async function sendAIChatMessage(userMessage) {
+    var messagesDiv = document.getElementById('ai-chat-messages');
+    if (!messagesDiv) return;
+
+    // Günlük soru hakkı kontrolü
+    if (!canAskQuestion()) {
+      var limitDiv = document.createElement('div');
+      limitDiv.className = 'chat-message ai-message';
+      limitDiv.style.background = "#ffeaea";
+      limitDiv.style.textAlign = "center";
+      limitDiv.style.fontWeight = "bold";
+      limitDiv.textContent = "🤖 You have reached your daily question limit (10). Please come back tomorrow!";
+      messagesDiv.appendChild(limitDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      return;
+    }
+
+    // Kullanıcı mesajını ekle
+    var userDiv = document.createElement('div');
+    userDiv.textContent = '🧑 ' + userMessage;
+    userDiv.className = 'chat-message user-message';
+    messagesDiv.appendChild(userDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // Chat geçmişine user mesajı ekle
+    chatHistory.push({ role: "user", content: userMessage });
+
+    // AI cevabı için div
+    var aiDiv = document.createElement('div');
+    aiDiv.innerHTML = '🤖 ';
+    aiDiv.className = 'chat-message ai-message';
+    messagesDiv.appendChild(aiDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // Sadece user/assistant mesajlarını backend'e gönder
+    const eventSource = new EventSource(
+      `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+    );
+
+    let chunkQueue = [];
+    let sseEndedOrErrored = false;
+    eventSource.onmessage = function(event) {
+      if (sseEndedOrErrored) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.message && typeof data.message.content === "string" && data.message.content.length > 0) {
+          chunkQueue.push(data.message.content);
+          if (chunkQueue.length === 1 && aiDiv.innerHTML === '🤖 ') {
+            startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
+          }
+        }
+      } catch (e) {
+        console.error('SSE message parse error:', e);
+      }
+    };
+
+    eventSource.onerror = function(event) {
+      if (!sseEndedOrErrored) {
+        console.error('SSE error:', event);
+        if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+        chunkQueue.length = 0;
+        aiDiv.innerHTML += "<br><span style='color:red'>AI connection error!</span>";
+        sseEndedOrErrored = true;
+      }
+    };
+
+    eventSource.addEventListener('end', function() {
+  if (!sseEndedOrErrored) {
+    const aiText = chunkQueue.join('');
+    chatHistory.push({ role: "assistant", content: aiText });
+    incrementQuestionCount();
+    if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+    chunkQueue.length = 0;
+    sseEndedOrErrored = true;
+
+    // AI cevabını şık ve düzenli ekle!
+    aiDiv.innerHTML = '🤖 ' + markdownToHtml(aiText);
+  }
+});
+  }
+
+  var chatInput = document.getElementById('ai-chat-input');
+  var sendBtn = document.getElementById('ai-chat-send-btn');
+  if (sendBtn && chatInput) {
+    sendBtn.addEventListener('click', function () {
+      var val = chatInput.value.trim();
+      if (val) {
+        sendAIChatMessage(val);
+        chatInput.value = '';
+      }
+    });
+    chatInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        sendBtn.click();
+      }
+    });
+  }
+});
