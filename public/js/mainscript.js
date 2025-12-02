@@ -367,6 +367,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       track.appendChild(wrap);
     });
   }
+<<<<<<< HEAD
 
 <<<<<<< HEAD
   // --- Grid Labels (Dikey Eksen Yazıları) ---
@@ -401,6 +402,9 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   } else {
       // Global mod: SVG'den oku (Eski yöntem)
 =======
+=======
+ 
+>>>>>>> 6721cb8b958ab16bb795b339d23d017830eda5b5
   // --- Grid Labels ---
   let gridLabels = [];
   if (customElevData) {
