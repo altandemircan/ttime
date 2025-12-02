@@ -3121,11 +3121,6 @@ function initEmptyDayMap(day) {
   
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
-  // <<< DEĞİŞİKLİK BURADA: Yeni taşıma fonksiyonunu çağır!
-  map.whenReady(() => {
-      // Small map'te scale bar yoksa, taşıma yapmaya gerek yok, sadece default render kalsın.
-      // Small map için sadece renderRouteForDay çağrılırsa oluşur.
-  });
 }
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
@@ -4562,11 +4557,6 @@ function updateExpandedMap(expandedMap, day) {
     }
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
-    // <<< EKLE: Taşıma fonksiyonunu çağır (Expanded Harita için)
-    expandedMap.whenReady(() => {
-        moveAttributionToScalebar(expandedMap, day);
-    });
-    // >>>
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
     // Scale Bar işlemleri (Aynen kalsın)
@@ -5134,12 +5124,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // <<< EKLE: Attribution kontrolünü taşı!
-    map.whenReady(() => {
-        moveLeafletAttribution(map, containerId);
-    });
-    // >>>
-
     // ARTIK day VAR!
     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
         const pts = getDayPoints(day).filter(
@@ -5161,16 +5145,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
-    // <<< EKLE: Taşıma fonksiyonunu çağır (Küçük Harita için)
-    map.whenReady(() => {
-        // Küçük haritada scale bar'ı çağırıp oluşturmak için renderRouteScaleBar'ı taklit ediyoruz.
-        // Telif hakkını küçük harita altındaki özet alana taşı.
-        const smallScaleBar = document.getElementById(`route-scale-bar-day${day}`);
-        if (smallScaleBar) {
-            // Eğer varsa, telif hakkını buraya taşırız.
-            moveAttributionToScalebar(map, day);
-        }
-    });
     setTimeout(function() { map.invalidateSize(); }, 120);
 }
 
@@ -5327,55 +5301,7 @@ function addNumberedMarkers(map, points) {
             .bindPopup(`<b>${label}</b>`);
     });
 }
-// Harita oluşturulduktan sonra telif hakkı kontrolünü (attribution)
-// haritanın altındaki statik/fixed pozisyonlu scale bar yapısının içine taşır.
-function moveAttributionToScalebar(map, day) {
-    if (!map || !map.getContainer || !day) return;
 
-    const mapContainer = map.getContainer();
-    const isExpanded = mapContainer.closest('.expanded-map-container');
-    const containerSelector = isExpanded 
-        ? `#expanded-route-scale-bar-day${day}` 
-        : `#route-scale-bar-day${day}`;
-
-    const targetScaleBar = document.querySelector(containerSelector);
-    if (!targetScaleBar) return;
-
-    // 1. Leaflet'in Attribution kontrolünü bul.
-    const attributionElement = mapContainer.querySelector('.leaflet-control-attribution');
-    if (!attributionElement) return;
-
-    // 2. Telif hakkı elementini Leaflet'in sarmalayıcılarından ayır.
-    if (attributionElement.parentNode) {
-        attributionElement.parentNode.removeChild(attributionElement);
-    }
-
-    // 3. Taşıma: Telif hakkı elementini hedef scale bar'ın içine taşı.
-    targetScaleBar.appendChild(attributionElement);
-    
-    // 4. Konumlandırma stilini direkt elemente uygula (Scale bar'a göre absolute)
-    // Scale bar'ın fixed/absolute/relative durumuna uyum sağlayacak stil
-    attributionElement.style.cssText = `
-        position: absolute !important; /* Scale bar'a göre konumlanacak */
-        bottom: 0 !important; 
-        right: 0 !important; 
-        z-index: 501 !important; /* Scale bar'ın üzerindeki diğer elementlerden üstte */
-        margin: 0 !important; 
-        padding: 0 4px !important;
-        background: rgba(255, 255, 255, 0.75) !important;
-        font-size: 8px !important; 
-        border-radius: 4px 0 0 0 !important;
-        opacity: 0.9 !important;
-        /* Yazar bilgisinin tamamını göster */
-        display: block !important;
-    `;
-
-    // 5. Leaflet'in kendi alt kontrol konteynerini gizle (gereksiz boşluk ve fixed çakışmasını engelle)
-    const leafletBottomRight = mapContainer.querySelector('.leaflet-bottom.leaflet-right');
-    if (leafletBottomRight) {
-        leafletBottomRight.style.display = 'none'; 
-    }
-}
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
@@ -5446,12 +5372,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
-
-    // <<< EKLE: Attribution kontrolünü taşı!
-    map.whenReady(() => {
-        moveLeafletAttribution(map, containerId);
-    });
-    // >>>
 
     // --- DEĞİŞİKLİK BAŞLANGICI: Sınır Kutusu Oluştur ---
     let bounds = L.latLngBounds();
@@ -5567,11 +5487,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
-    // <<< DEĞİŞİKLİK BURADA: Yeni taşıma fonksiyonunu çağır!
-  map.whenReady(() => {
-      // Small map'te scale bar yoksa, taşıma yapmaya gerek yok, sadece default render kalsın.
-      // Small map için sadece renderRouteForDay çağrılırsa oluşur.
-  });
 }
 
 // Harita durumlarını yönetmek için global değişken
