@@ -4602,26 +4602,7 @@ function updateExpandedMap(expandedMap, day) {
     }
     setTimeout(() => { setupScaleBarInteraction(day, expandedMap); }, 500);
     adjustExpandedHeader(day);
-    setTimeout(() => {
-        const scaleBarContainer = document.getElementById(`expanded-route-scale-bar-day${day}`);
-        // Harita konteynerindeki attribution'ı bul (Leaflet varsayılanı)
-        const attribution = expandedMapInstance.getContainer().querySelector('.leaflet-control-attribution');
-        
-        if (scaleBarContainer && attribution) {
-            // Attribution'ı scalebar'ın içine taşı (append)
-            scaleBarContainer.appendChild(attribution);
-            
-            // Stil ayarları: Scalebar'ın sağ altına yapıştır
-            attribution.style.position = 'absolute';
-            attribution.style.bottom = '2px';
-            attribution.style.right = '4px';
-            attribution.style.margin = '0';
-            attribution.style.zIndex = '999'; // En üstte görünsün
-            attribution.style.fontSize = '9px'; // Mobilde çok yer kaplamasın
-            attribution.style.background = 'rgba(255,255,255,0.6)'; // Hafif şeffaf
-            attribution.style.pointerEvents = 'auto'; // Linklere tıklanabilsin
-        }
-    }, 500); // Harita ve DOM tam oturduktan sonra çalışması için ufak bir gecikme
+    
 }
 
 // 2. renderRouteForDay Fonksiyonunu Güncelle (Türkiye içi fallback'i temizle)
