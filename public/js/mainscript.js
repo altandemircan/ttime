@@ -5310,45 +5310,71 @@ function addNumberedMarkers(map, points) {
 
 // Harita oluşturulduktan hemen sonra Attribution Control'ü map container içine taşır.
 // Bu, mobil cihazlarda görünürlük sorununu çözer.
+// Harita oluşturulduktan hemen sonra Attribution Control'ü map container içine taşır.
+// Bu, mobil cihazlarda görünürlük sorununu çözer.
 function moveLeafletAttribution(map, containerId) {
     if (!map || !map.getContainer) return;
 
     const mapContainer = map.getContainer();
     
-    // Leaflet'in varsayılan Attribution kontrol DOM'unu bul
-    const attributionControl = mapContainer.querySelector('.leaflet-control-attribution');
-    const bottomControls = mapContainer.querySelector('.leaflet-bottom.leaflet-right');
+    // 1. Haritanın içindeki Leaflet Attribution DOM elementini bulun.
+    // Bu, mapContainer'ın içinde veya hemen dışında olabilir (Leaflet kurulumuna bağlı).
+    let attributionElement = mapContainer.querySelector('.leaflet-control-attribution');
     
-    // Eğer Leaflet kontrolünü bulduysak ve zaten mapContainer'ın doğrudan çocuğu değilse taşıyalım.
-    // DİKKAT: Leaflet'in kendisi bu elementi zaten en alt div'e (leaflet-control-container) koyar.
-    // Bizim ihtiyacımız olan, onu mapContainer'ın hemen içine taşımak.
-    if (attributionControl && mapContainer.contains(attributionControl)) {
-        // Kontrol zaten harita konteynerinin bir parçasıysa (mobil hatayı tetikliyorsa)
-        // Ekstra bir taşıma işlemi yapmaya gerek kalmadan, sadece CSS stilini uygula.
-    } else if (bottomControls) {
-         // Harita konteynerinin dışındaki (body içindeki) kontrol divini bul
-        const globalAttribution = document.querySelector('.leaflet-control-attribution');
-        if (globalAttribution && !mapContainer.contains(globalAttribution)) {
-            // Kontrolü harita konteynerinin içine taşı
-            mapContainer.appendChild(globalAttribution);
-
-            // CSS stilini direkt olarak bu elemente uygula
-            globalAttribution.style.cssText = `
-                position: absolute !important; 
-                bottom: 0 !important; 
-                right: 0 !important; 
-                z-index: 500 !important;
-                margin: 0 !important; 
-                padding: 0 4px !important;
-                background: rgba(255, 255, 255, 0.75) !important;
-                font-size: 10px !important; 
-                border-radius: 4px 0 0 0 !important;
-            `;
-        }
+    // Eğer harita içinde bulamadıysak, tüm DOM'da arayalım ve sadece sonuncuyu alalım.
+    if (!attributionElement) {
+        const allAttributions = document.querySelectorAll('.leaflet-control-attribution');
+        // Eğer birden fazla varsa (küçük/büyük harita), sadece en son oluşturulanı (genellikle en alttaki) alalım.
+        attributionElement = allAttributions[allAttributions.length - 1];
     }
 
-    // Harita konteynerine relative pozisyonu garanti et (CSS'i ezerek)
+    if (!attributionElement) return;
+
+    // 2. Telif hakkı elementini bulduysak, onu tüm Leaflet kontrol katmanından ayırıp
+    // doğrudan harita konteynerinin içine taşıyalım.
+    if (attributionElement.parentNode !== mapContainer) {
+        // Taşıma işlemi: Parent'ı mapContainer yap
+        mapContainer.appendChild(attributionElement);
+    }
+    
+    // 3. Konumlandırma stilini direkt elemente uygula
+    // Bu stil, elementin mapContainer'ın sağ altına yapışmasını sağlayacak.
+    attributionElement.style.cssText = `
+        position: absolute !important; 
+        bottom: 0 !important; 
+        right: 0 !important; 
+        left: auto !important; /* Sol konumu sıfırla */
+        z-index: 500 !important;
+        margin: 0 !important; 
+        padding: 0 4px !important;
+        background: rgba(255, 255, 255, 0.75) !important;
+        font-size: 10px !important; 
+        border-radius: 4px 0 0 0 !important;
+        opacity: 0.8 !important;
+    `;
+    
+    // 4. Harita konteynerinin de relative olduğundan emin ol
     mapContainer.style.position = 'relative';
+
+    // 5. Leaflet'in alt kontrol konteynerlerini gizle (gereksiz boşluk bırakmasınlar)
+    const controlContainer = mapContainer.querySelector('.leaflet-control-container');
+    const bottomControls = mapContainer.querySelector('.leaflet-bottom');
+    if (controlContainer) {
+        // Kontrol konteynerindeki diğer elementler için sadece attribution'ı geri taşı.
+        const allControls = controlContainer.querySelectorAll('.leaflet-control');
+        allControls.forEach(control => {
+            if (control !== attributionElement && control.parentNode === bottomControls) {
+                // Diğer kontrolleri harita konteynerinin içine taşıyıp gizleyebiliriz
+                control.style.display = 'none';
+            }
+        });
+    }
+
+    // Haritanın invalidateSize fonksiyonunu çağırarak düzeni zorla yenile.
+    // Bu bazen Leaflet'in DOM değişikliklerini algılamasına yardımcı olur.
+    setTimeout(() => {
+        try { map.invalidateSize(); } catch(e){}
+    }, 10);
 }
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
