@@ -4622,9 +4622,9 @@ function updateExpandedMap(expandedMap, day) {
             
             // CSS ile panelin sağ altına çivile
             attribution.style.cssText = `
-                    position: absolute !important;
-    bottom: 175px !important;
-    right: 20px !important;
+             position: absolute !important;
+    bottom: 180px !important;
+    right: 10px !important;
     margin: 0px !important;
     padding: 2px 4px !important;
     font-size: 10px !important;
@@ -4632,7 +4632,6 @@ function updateExpandedMap(expandedMap, day) {
     color: rgb(0, 0, 0) !important;
     z-index: 1005 !important;
     pointer-events: auto !important;
-    background: #fff;
             `;
             
             // Linklerin rengini düzelt
