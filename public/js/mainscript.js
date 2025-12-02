@@ -4424,7 +4424,7 @@ function isSupportedTravelMode(mode) {
   return ['car', 'bike', 'foot'].includes(mode);
 }
 
-// 1. updateExpandedMap Fonksiyonunu Güncelle (Haversine hesabını engelle)
+
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
@@ -4602,7 +4602,48 @@ function updateExpandedMap(expandedMap, day) {
     }
     setTimeout(() => { setupScaleBarInteraction(day, expandedMap); }, 500);
     adjustExpandedHeader(day);
-    
+
+    // --- MOBIL ATTRIBUTION FIX (SONA EKLENDİ) ---
+    // Leaflet yazısını haritadan alıp, FIXED olan scalebar panelinin içine taşırız.
+    setTimeout(() => {
+        // 1. Ana expanded container'ı bul
+        const expandedContainer = document.getElementById(`expanded-map-${day}`);
+        if (!expandedContainer) return;
+
+        // 2. Senin CSS'de "fixed" olan paneli bul (.expanded-map-panel)
+        const fixedPanel = expandedContainer.querySelector('.expanded-map-panel');
+        
+        // 3. Haritanın içindeki attribution'ı bul
+        const attribution = expandedMap.getContainer().querySelector('.leaflet-control-attribution');
+
+        if (fixedPanel && attribution) {
+            // Attribution'ı panelin içine taşı (Böylece panel fixed olduğu için bu da fixed olur)
+            fixedPanel.appendChild(attribution);
+            
+            // CSS ile panelin sağ altına çivile
+            attribution.style.cssText = `
+                position: absolute !important;
+                bottom: 2px !important;
+                right: 4px !important;
+                margin: 0 !important;
+                padding: 0 4px !important;
+                background: rgba(255, 255, 255, 0.6) !important;
+                font-size: 9px !important;
+                line-height: 1 !important;
+                color: #888 !important;
+                z-index: 1005 !important;
+                pointer-events: auto !important;
+                border-radius: 4px;
+            `;
+            
+            // Linklerin rengini düzelt
+            attribution.querySelectorAll('a').forEach(a => {
+                a.style.color = '#666';
+                a.style.textDecoration = 'none';
+            });
+        }
+    }, 600); 
+    // ---------------------------------------------
 }
 
 // 2. renderRouteForDay Fonksiyonunu Güncelle (Türkiye içi fallback'i temizle)
