@@ -198,6 +198,7 @@ function niceStep(total, target) {
   return f * p10;
 }
 
+
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
   // Güvenlik: Loading varsa çizme
   if (track && track.classList.contains('loading')) {
@@ -207,6 +208,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
   const container = track?.parentElement;
   if ((!spanKm || spanKm < 0.01) && !customElevData) {
+      // Fallback logic...
       if (Array.isArray(markers) && markers.length > 1) {
          spanKm = getTotalKmFromMarkers(markers);
       }
@@ -220,7 +222,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-  // --- Ticks & Labels (Yatay Eksen) ---
+  // --- Ticks & Labels ---
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -246,18 +248,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     label.style.left = `${leftPct}%`;
     label.style.position = 'absolute';
     label.style.top = '30px';
-    
-    if (i === 0) {
-        label.style.transform = 'translateX(0%)'; 
-        label.style.textAlign = 'left';
-    } else if (i === majors) {
-        label.style.transform = 'translateX(-100%)';
-        label.style.textAlign = 'right';
-    } else {
-        label.style.transform = 'translateX(-50%)'; 
-        label.style.textAlign = 'center';
-    }
-
+    label.style.transform = 'translateX(-50%)';
     label.style.fontSize = '11px';
     label.style.color = '#607d8b';
     label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
@@ -265,16 +256,22 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   }
 
   // --- MARKER POSITIONING ---
+  
+  // Veri kaynağını belirle: Ya parametre olarak gelen segment verisi ya da container üzerindeki global veri
   let activeData = null;
   
   if (customElevData) {
+      // Segment modundaysak, drawSegmentProfile'dan gelen hazır veriyi kullan
+      // Bu veri zaten vizMin/vizMax içeriyor, tekrar hesaplamaya gerek yok
       activeData = customElevData; 
   } else if (container && container._elevationData) {
+      // Global moddaysak container verisini kullan ve vizMin/vizMax hesapla
       const { smooth, min, max } = container._elevationData;
       let vizMin = min, vizMax = max;
       const eSpan = max - min;
       if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
       else { vizMin = min - 1; vizMax = max + 1; }
+      
       activeData = { smooth, vizMin, vizMax };
   }
 
@@ -282,57 +279,85 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       
+      // 1. Filtreleme: Eğer marker bu segmentin dışındaysa ÇİZME
+      // (Ufak bir tolerans payı +/- 0.05 km eklenebilir)
       if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
           return;
       }
 
       const relKm = dist - startKmDom;
       let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
+      
+      // Sınırları aşmaması için clamp (yine de yukarıdaki if ile eledik ama güvenlik)
       left = Math.max(0, Math.min(100, left));
 
       let bottomStyle = "2px"; 
 
       if (activeData && activeData.smooth && activeData.smooth.length > 0) {
           const { smooth, vizMin, vizMax } = activeData;
+          
+          // Markerın, grafiğin veri dizisi (smooth array) içindeki denk geldiği index
           const pct = Math.max(0, Math.min(1, left / 100));
           const sampleIdx = Math.floor(pct * (smooth.length - 1));
           const val = smooth[sampleIdx];
           
           if (typeof val === 'number') {
+              // Yükseklik Yüzdesi Hesabı
+              // (Değer - GörselAltSınır) / (GörselÜstSınır - GörselAltSınır)
               const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
+              
+              // Marker boyutu ve padding ayarı
               bottomStyle = `calc(${heightPct}% - 7px)`;
           }
       }
 
-      let transformX = '-50%';
-      if (left < 1) transformX = '0%';
-      else if (left > 99) transformX = '-100%';
-
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(${transformX});z-index:5;`;
+      // Transition'ı kaldırdım çünkü zoom yaparken markerların kayarak gelmesi kafa karıştırabilir
+      wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
       track.appendChild(wrap);
     });
   }
 
-  // --- Grid Labels (Dikey Eksen) ---
+  // --- Grid Labels (Dikey Eksen Yazıları) ---
+  // Eğer özel veri varsa (segment), etiketleri de o aralığa göre çiz
+  // Değilse eski SVG içinden çekmeye çalışır (Global mod)
+  
   let gridLabels = [];
   if (customElevData) {
+      // Segment modunda label'ları manuel oluşturmamız lazım çünkü SVG henüz DOM'da tam oluşmamış olabilir
+      // veya SVG içinden okumak yerine veriden üretmek daha sağlıklıdır.
+      // drawSegmentProfile'da kullanılan 4 seviyeli grid mantığının aynısı:
       const { vizMin, vizMax } = customElevData;
+      // SVG yüksekliği genelde 220px veya mobil ayarı. Oranlayarak Y bulacağız.
+      // Ancak createScaleElements sadece HTML basıyor, SVG koordinatını bilmiyor.
+      // Basit çözüm: Yüzde olarak yerleştirmek.
+      
       for(let i=0; i<=4; i++) {
           const val = vizMin + (i/4)*(vizMax - vizMin);
+          // Yüzde hesabı:
           const pct = (i/4) * 100; 
-          gridLabels.push({ value: Math.round(val) + ' m', pct: pct });
+          // SVG'de Y ekseni ters (yukarı 0) ama HTML bottom (aşağı 0). 
+          // Profile çiziminde bottom = 0 -> vizMin değil, vizMin biraz aşağıda kalıyor.
+          // drawSegmentProfile mantığına sadık kalmak için:
+          // Oradaki Y fonksiyonu: ((height-1) - ((e-vizMin)/(vizMax-vizMin))*(height-2))
+          // Yani lineer bir mapping.
+          
+          gridLabels.push({
+              value: Math.round(val) + ' m',
+              pct: pct // Bu height yüzdesi
+          });
       }
   } else {
+      // Global mod: SVG'den oku (Eski yöntem)
       const svg = track.querySelector('svg.tt-elev-svg');
       if (svg) {
         gridLabels = Array.from(svg.querySelectorAll('text'))
           .map(t => ({
             value: t.textContent.trim(),
-            y: Number(t.getAttribute('y')),
+            y: Number(t.getAttribute('y')), // SVG pixel coordinates
             svgHeight: Number(svg.getAttribute('height')) || 180
           }))
           .filter(obj => /-?\d+\s*m$/.test(obj.value));
@@ -343,30 +368,46 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   elevationLabels.className = 'elevation-labels-container';
 
   gridLabels.forEach((obj, index) => { 
+    // Segment modunda (pct var) veya Global modda (y var)
     let topStyle = '';
     
     if (typeof obj.pct !== 'undefined') {
+        // Segment modu: CSS bottom ile konumlandır
+        // drawSegmentProfile Y fonksiyonunun tersi mantığı:
+        // Y = H - (val_norm * H). Yani val_norm 0 ise Y=H (en alt).
+        // HTML'de bottom: 0% -> val_norm 0.
+        // Ancak paddingler var (min - span*0.5).
+        // createScaleElements içindeki marker mantığı ile aynı yüzdeyi kullanalım:
+        // heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
+        // obj.pct zaten (i/4)*100 yani tam grid çizgilerine denk gelir.
+        
+        // CSS top kullanmak daha güvenli çünkü parent relative.
+        // %100 yükseklik = vizMax. %0 = vizMin.
+        // Grid çizgisi i=4 (en üst) -> %100 elevation -> top: 0%.
+        // Grid çizgisi i=0 (en alt) -> %0 elevation -> top: 100%.
         topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
+        
     } else {
+        // Global mod: SVG pikselinden hesapla
         const trackHeight = track.clientHeight || 180;
         const correctedY = (obj.y / obj.svgHeight) * trackHeight;
         topStyle = `top: ${correctedY}px;`;
     }
 
     const wrapper = document.createElement('div');
-    // En alttakini gizlemek için burayı veya aşağıdaki label kontrolünü kullanabiliriz.
-    // Biz aşağıda label.display = none yapacağız.
+    // En alttakini veya en üsttekini gizleme ihtiyacı varsa burada yapılabilir
     let visibilityStyle = ''; 
+    
     wrapper.style.cssText = `position: absolute; right: 0; ${topStyle} ${visibilityStyle}`;
 
      const tick = document.createElement('div');
     tick.style.cssText = `
         width: 35px;
-        border-bottom: 1px dashed #acb0b2;
+        border-bottom: 1px dashed #cfd8dc;
         opacity: 0.7;
         display: block;
         margin-left: 0px;
-        margin-top: 2px;
+        margin-top: 0px;
     `;
 
     const label = document.createElement('div');
@@ -382,13 +423,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     `;
     label.textContent = obj.value;
 
-    // --- DEĞİŞİKLİK BURADA: EN ALTTAKİ YAZIYI GİZLE ---
-    // Döngü 0'dan 4'e gider. 0 en alt (min), 4 en üst (max).
-    if (index === 0) {
-        label.style.display = 'none';
-    }
-    // -------------------------------------------------
-
     wrapper.appendChild(tick);
     wrapper.appendChild(label);
     
@@ -398,6 +432,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
 }
+
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
 window.mapPlanningActive = false;
@@ -3673,7 +3708,11 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
       // --- MARKER HTML YAPISI (Senin İstediğin) ---
       // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
       const listMarkerHtml = `
-        <div class="custom-marker-outer red">
+        <div class="custom-marker-outer red" style="flex-shrink: 0;
+    transform: scale(0.70);
+    position: absolute;
+    left: 30px;
+    top: 0px;">
             <span class="custom-marker-label" style="font-size: 14px;">${idx + 1}</span>
         </div>
       `;
@@ -5860,6 +5899,7 @@ function openMapLibre3D(expandedMap) {
 }
 
 async function expandMap(containerId, day) {
+  // En başa ekle!
   forceCleanExpandedMap(day);
 
   window.currentDay = day; 
@@ -5871,6 +5911,7 @@ async function expandMap(containerId, day) {
     return;
   }
 
+  // Diğer günlerin expanded'ını kapat
   if (window.expandedMaps) {
     Object.keys(window.expandedMaps).forEach(otherId => {
       if (otherId !== containerId) {
@@ -5883,7 +5924,9 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
+  // --- DEĞİŞİKLİK BURADA: Butonu bul ve PASİF yap ---
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
+  // Hem bar içindeki hem de travel-mode set içindeki butonu yakalamaya çalışalım
   const expandBtns = [];
   if (controlsBar) {
       const btn = controlsBar.querySelector('.expand-map-btn');
@@ -5896,22 +5939,26 @@ async function expandMap(containerId, day) {
   }
 
   expandBtns.forEach(btn => {
+      // Butonu pasifleştir
       btn.disabled = true;
-      btn.style.pointerEvents = 'none';
+      btn.style.pointerEvents = 'none'; // Tıklamayı engelle
       btn.style.opacity = '0.6';
       btn.style.cursor = 'default';
       btn.style.borderColor = '#ccc';
       btn.style.background = '#f9f9f9';
       
+      // İkonu gri yap
       const img = btn.querySelector('img');
       if (img) img.style.filter = 'grayscale(100%)';
 
+      // Metni değiştir
       const label = btn.querySelector('.tm-label');
       if (label) {
           label.textContent = 'Map Expanded';
           label.style.color = '#888';
       }
   });
+  // ------------------------------------------------
 
   if (!originalContainer) {
     console.error('[expandMap] original small map container yok. İptal.');
@@ -5924,17 +5971,17 @@ async function expandMap(containerId, day) {
 
   originalContainer.style.display = 'none';
 
+  // === HEADER DIV OLUŞTUR ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
 
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row'; 
 
-  // --- OPENFREEMAP SEÇENEKLERİ ---
   const layerOptions = [
-    { value: 'bright',   img: '/img/preview_bright.png',   label: 'Bright' },
+    { value: 'bright', img: '/img/preview_bright.png', label: 'Bright' },
     { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
-    { value: 'liberty',  img: '/img/preview_3d.png',       label: '3D' } // 3D etiketi altında Liberty stili
+    { value: '3d', img: '/img/preview_3d.png', label: '3D' }
   ];
 
   let currentLayer = 'bright';
@@ -5949,7 +5996,22 @@ async function expandMap(containerId, day) {
     div.onclick = function() {
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
-      setExpandedMapTile(opt.value);
+      if (opt.value === '3d') {
+        expandedMap.getContainer().style.display = "none";
+        let map3d = document.getElementById('maplibre-3d-view');
+        if (map3d) {
+          map3d.style.display = "block";
+        } else {
+          openMapLibre3D(expandedMap); 
+        }
+      } else {
+        expandedMap.getContainer().style.display = "";
+        let map3d = document.getElementById('maplibre-3d-view');
+        if (map3d) {
+          map3d.style.display = "none";
+        }
+        setExpandedMapTile(opt.value);
+      }
     };
     layersBar.appendChild(div);
   });
@@ -5960,6 +6022,7 @@ async function expandMap(containerId, day) {
   statsDiv.className = 'route-stats';
   headerDiv.appendChild(statsDiv);
 
+  // --- EXPANDED MAP CONTAINER ---
   const expandedMapId = `expanded-map-${day}`;
   const expandedContainer = document.createElement('div');
   expandedContainer.id = expandedMapId;
@@ -6026,60 +6089,40 @@ async function expandMap(containerId, day) {
     easeLinearity: 0.2
   });
 
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(expandedMapInstance);
+
   const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   if (!pts || pts.length === 0) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
-  // --- OPENFREEMAP ENTEGRASYONU ---
+  updateExpandedMap(expandedMapInstance, day);
+
+  try {
+    expandedMapInstance.dragging.enable?.();
+    expandedMapInstance.scrollWheelZoom.enable?.();
+    expandedMapInstance.options.minZoom = 1;
+    expandedMapInstance.options.maxZoom = 19;
+  } catch(e){}
+
   function setExpandedMapTile(styleKey) {
-      // Varsa eski layer'ı kaldır
-      if (expandedMapInstance._maplibreLayer) {
-          expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
-          expandedMapInstance._maplibreLayer = null;
-      }
       if (expandedMapInstance._osmTileLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer);
           expandedMapInstance._osmTileLayer = null;
       }
-
-      const validStyles = ['bright', 'positron', 'liberty'];
-      const styleToUse = validStyles.includes(styleKey) ? styleKey : 'bright';
-      const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
-
-      try {
-          // L.maplibreGL kullanıyoruz (Vektör Tile)
-          if (typeof L.maplibreGL === 'function') {
-              expandedMapInstance._maplibreLayer = L.maplibreGL({
-                  style: url,
-                  attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
-                  interactive: true // Tıklamalar Leaflet'e geçsin
-              }).addTo(expandedMapInstance);
-          } else {
-              // Fallback: Eğer kütüphane yoksa standart OSM
-              console.warn('L.maplibreGL not found, using OSM fallback');
-              expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                  maxZoom: 19,
-                  attribution: '© OpenStreetMap contributors'
-              }).addTo(expandedMapInstance);
-          }
-      } catch (e) {
-          console.error("OpenFreeMap error:", e);
-      }
+      expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+      }).addTo(expandedMapInstance);
   }
 
-  // İlk açılış
   setExpandedMapTile(currentLayer);
 
-  // Eksik imaj hatalarını yut
   expandedMapInstance.on('styleimagemissing', function(e) {
-    try { 
-        if (expandedMapInstance.addImage) {
-             const img = new Image();
-             img.onload = () => { if(!expandedMapInstance.hasImage(e.id)) expandedMapInstance.addImage(e.id, img); };
-             img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // Boş pixel
-        }
-    } catch (_) {}
+    try { expandedMapInstance.addImage(e.id, new window.Image()); } catch (_) {}
   });
 
   if (!expandedMapInstance._initialView) {
@@ -6091,21 +6134,14 @@ async function expandMap(containerId, day) {
 
   const geojson = window.lastRouteGeojsons?.[containerId];
 
-  updateExpandedMap(expandedMapInstance, day);
-
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
       if (layer instanceof L.Marker) {
+        const mk = L.marker(layer.getLatLng(), { icon: layer.options.icon }).addTo(expandedMapInstance);
+        if (layer._popup) mk.bindPopup(layer._popup._content);
       }
     });
   }
-
-  try {
-    expandedMapInstance.dragging.enable?.();
-    expandedMapInstance.scrollWheelZoom.enable?.();
-    expandedMapInstance.options.minZoom = 1;
-    expandedMapInstance.options.maxZoom = 19;
-  } catch(e){}
 
   setTimeout(() => expandedMapInstance.invalidateSize({ pan: false }), 400);
 
@@ -6130,7 +6166,8 @@ async function expandMap(containerId, day) {
       scaleBarDiv.innerHTML = "";
       renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
       const track = scaleBarDiv.querySelector('.scale-bar-track');
-      if (track) {
+      const svg = track && track.querySelector('svg.tt-elev-svg');
+      if (track && svg) {
           const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
           createScaleElements(track, width, totalKm, 0, markerPositions);
       }
