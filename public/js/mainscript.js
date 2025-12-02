@@ -5898,41 +5898,7 @@ function openMapLibre3D(expandedMap) {
   });
 }
 
-< const ex = window.expandedMaps[otherId];
-        if (ex) restoreMap(otherId, ex.day);
-      }
-    });
-  }
-
-  const originalContainer = document.getElementById(containerId);
-  const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
-
-
-  const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
-  // Hem bar içindeki hem de travel-mode set içindeki butonu yakalamaya çalışalım
-  const expandBtns = [];
-  if (controlsBar) {
-      const btn = controlsBar.querySelector('.expand-map-btn');
-      if (btn) expandBtns.push(btn);
-  }
-  const tmSet = document.getElementById(`tt-travel-mode-set-day${day}`);
-  if (tmSet) {
-      const btn = tmSet.querySelector('.expand-map-btn');
-      if (btn) expandBtns.push(btn);
-  }
-
-  expandBtns.forEach(btn => {
-      // Butonu pasifleştir
-      btn.disabled = true;
-      btn.style.pointerEvents = 'none'; // Tıklamayı engelle
-      btn.style.opacity = '0.6';
-      btn.style.cursor = 'default';
-      btn.style.borderColor = '#ccc';
-      btn.style.background = '#f9f9f9';
-      
-      // İkonu gri yap
-      const img = btn.querySelector('img');
-     <async function expandMap(containerId, day) {
+async function expandMap(containerId, day) {
   forceCleanExpandedMap(day);
 
   window.currentDay = day; 
@@ -6257,7 +6223,6 @@ function openMapLibre3D(expandedMap) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
-
 function restoreMap(containerId, day) {
     const expandedData = window.expandedMaps?.[containerId];
     if (!expandedData) return;
