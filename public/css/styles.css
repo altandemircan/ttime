@@ -4414,10 +4414,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     min-height: 285px;
     height: 285px;
     width: 100%;
-    /* Responsive için ekstra:
-    max-width: 100%;
-    box-sizing: border-box;
-    */
+    position: relative; /* <<< EKLENDİ */
 }
 #route-map-day1, #route-map-day2, #route-map-day3, #route-map-day4, #route-map-day5  .leaflet-container {
     min-height: 285px;
@@ -4432,7 +4429,11 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     position: relative !important;
     z-index: 2;
 }
-
+.route-map, .expanded-map {
+    /* ... mevcut diğer stiller ... */
+    position: relative; /* BURAYI EKLE/DÜZELT: Mutlak konumlandırma için anahtar */
+    /* ... */
+}
 
 .expanded-map {
     width: 100% !important;
