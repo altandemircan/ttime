@@ -10931,7 +10931,7 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
       if (charIndex < chunk.length) {
         element.innerHTML += chunk.charAt(charIndex);
         charIndex++;
-        setTimeout(type, speed);
+        setTimeout(type, speed); 
       } else {
         chunkIndex++;
         charIndex = 0;
