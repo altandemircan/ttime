@@ -5758,7 +5758,7 @@ function openMapLibre3D(expandedMap) {
   if (!maplibre3d) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
-    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;';
+    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;    height: calc(100% - 190px) !important;';
     mapDiv.parentNode.appendChild(maplibre3d);
   }
   maplibre3d.style.display = 'block'; // 3D harita görünür!
