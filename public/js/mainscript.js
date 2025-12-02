@@ -3121,6 +3121,11 @@ function initEmptyDayMap(day) {
   
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
+  // <<< DEĞİŞİKLİK BURADA: Yeni taşıma fonksiyonunu çağır!
+  map.whenReady(() => {
+      // Small map'te scale bar yoksa, taşıma yapmaya gerek yok, sadece default render kalsın.
+      // Small map için sadece renderRouteForDay çağrılırsa oluşur.
+  });
 }
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
@@ -5307,75 +5312,56 @@ function addNumberedMarkers(map, points) {
             .bindPopup(`<b>${label}</b>`);
     });
 }
-
-// Harita oluşturulduktan hemen sonra Attribution Control'ü map container içine taşır.
-// Bu, mobil cihazlarda görünürlük sorununu çözer.
-// Harita oluşturulduktan hemen sonra Attribution Control'ü map container içine taşır.
-// Bu, mobil cihazlarda görünürlük sorununu çözer.
-function moveLeafletAttribution(map, containerId) {
-    if (!map || !map.getContainer) return;
+// Harita oluşturulduktan sonra telif hakkı kontrolünü (attribution)
+// haritanın altındaki statik/fixed pozisyonlu scale bar yapısının içine taşır.
+function moveAttributionToScalebar(map, day) {
+    if (!map || !map.getContainer || !day) return;
 
     const mapContainer = map.getContainer();
-    
-    // 1. Haritanın içindeki Leaflet Attribution DOM elementini bulun.
-    // Bu, mapContainer'ın içinde veya hemen dışında olabilir (Leaflet kurulumuna bağlı).
-    let attributionElement = mapContainer.querySelector('.leaflet-control-attribution');
-    
-    // Eğer harita içinde bulamadıysak, tüm DOM'da arayalım ve sadece sonuncuyu alalım.
-    if (!attributionElement) {
-        const allAttributions = document.querySelectorAll('.leaflet-control-attribution');
-        // Eğer birden fazla varsa (küçük/büyük harita), sadece en son oluşturulanı (genellikle en alttaki) alalım.
-        attributionElement = allAttributions[allAttributions.length - 1];
-    }
+    const isExpanded = mapContainer.closest('.expanded-map-container');
+    const containerSelector = isExpanded 
+        ? `#expanded-route-scale-bar-day${day}` 
+        : `#route-scale-bar-day${day}`;
 
+    const targetScaleBar = document.querySelector(containerSelector);
+    if (!targetScaleBar) return;
+
+    // 1. Leaflet'in Attribution kontrolünü bul.
+    const attributionElement = mapContainer.querySelector('.leaflet-control-attribution');
     if (!attributionElement) return;
 
-    // 2. Telif hakkı elementini bulduysak, onu tüm Leaflet kontrol katmanından ayırıp
-    // doğrudan harita konteynerinin içine taşıyalım.
-    if (attributionElement.parentNode !== mapContainer) {
-        // Taşıma işlemi: Parent'ı mapContainer yap
-        mapContainer.appendChild(attributionElement);
+    // 2. Telif hakkı elementini Leaflet'in sarmalayıcılarından ayır.
+    if (attributionElement.parentNode) {
+        attributionElement.parentNode.removeChild(attributionElement);
     }
+
+    // 3. Taşıma: Telif hakkı elementini hedef scale bar'ın içine taşı.
+    targetScaleBar.appendChild(attributionElement);
     
-    // 3. Konumlandırma stilini direkt elemente uygula
-    // Bu stil, elementin mapContainer'ın sağ altına yapışmasını sağlayacak.
+    // 4. Konumlandırma stilini direkt elemente uygula (Scale bar'a göre absolute)
+    // Scale bar'ın fixed/absolute/relative durumuna uyum sağlayacak stil
     attributionElement.style.cssText = `
-        position: absolute !important; 
+        position: absolute !important; /* Scale bar'a göre konumlanacak */
         bottom: 0 !important; 
         right: 0 !important; 
-        left: auto !important; /* Sol konumu sıfırla */
-        z-index: 500 !important;
+        z-index: 501 !important; /* Scale bar'ın üzerindeki diğer elementlerden üstte */
         margin: 0 !important; 
         padding: 0 4px !important;
         background: rgba(255, 255, 255, 0.75) !important;
-        font-size: 10px !important; 
+        font-size: 8px !important; 
         border-radius: 4px 0 0 0 !important;
-        opacity: 0.8 !important;
+        opacity: 0.9 !important;
+        /* Yazar bilgisinin tamamını göster */
+        display: block !important;
     `;
-    
-    // 4. Harita konteynerinin de relative olduğundan emin ol
-    mapContainer.style.position = 'relative';
 
-    // 5. Leaflet'in alt kontrol konteynerlerini gizle (gereksiz boşluk bırakmasınlar)
-    const controlContainer = mapContainer.querySelector('.leaflet-control-container');
-    const bottomControls = mapContainer.querySelector('.leaflet-bottom');
-    if (controlContainer) {
-        // Kontrol konteynerindeki diğer elementler için sadece attribution'ı geri taşı.
-        const allControls = controlContainer.querySelectorAll('.leaflet-control');
-        allControls.forEach(control => {
-            if (control !== attributionElement && control.parentNode === bottomControls) {
-                // Diğer kontrolleri harita konteynerinin içine taşıyıp gizleyebiliriz
-                control.style.display = 'none';
-            }
-        });
+    // 5. Leaflet'in kendi alt kontrol konteynerini gizle (gereksiz boşluk ve fixed çakışmasını engelle)
+    const leafletBottomRight = mapContainer.querySelector('.leaflet-bottom.leaflet-right');
+    if (leafletBottomRight) {
+        leafletBottomRight.style.display = 'none'; 
     }
-
-    // Haritanın invalidateSize fonksiyonunu çağırarak düzeni zorla yenile.
-    // Bu bazen Leaflet'in DOM değişikliklerini algılamasına yardımcı olur.
-    setTimeout(() => {
-        try { map.invalidateSize(); } catch(e){}
-    }, 10);
 }
+
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
@@ -5566,6 +5552,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
+    // <<< DEĞİŞİKLİK BURADA: Yeni taşıma fonksiyonunu çağır!
+  map.whenReady(() => {
+      // Small map'te scale bar yoksa, taşıma yapmaya gerek yok, sadece default render kalsın.
+      // Small map için sadece renderRouteForDay çağrılırsa oluşur.
+  });
 }
 
 // Harita durumlarını yönetmek için global değişken
