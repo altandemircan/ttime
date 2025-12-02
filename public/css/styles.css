@@ -5742,6 +5742,7 @@ ease;
   padding: 0 4px;
   background: rgba(255, 255, 255, 0.75); /* Okunabilirliği artırmak için arka plan ekle */
   border-radius: 4px 0 0 0;
+  width: max-content;
 }
 @media (max-width: 768px) {
   /* Mobilde harita yüksekliği küçük olduğu için yazı çok altta kalmasın */
