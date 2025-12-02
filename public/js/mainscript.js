@@ -9492,9 +9492,15 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   window.removeEventListener('mousemove', window.__sb_onMouseMove);
   window.removeEventListener('mouseup', window.__sb_onMouseUp);
+  window.removeEventListener('touchmove', window.__sb_onMouseMove); 
+  window.removeEventListener('touchend', window.__sb_onMouseUp);   
+
   window.addEventListener('mousemove', window.__sb_onMouseMove);
   window.addEventListener('mouseup', window.__sb_onMouseUp);
+  window.addEventListener('touchmove', window.__sb_onMouseMove, { passive: false }); 
+  window.addEventListener('touchend', window.__sb_onMouseUp);     
 
+  // Mouse Down (Masaüstü - Hemen başlar)
   track.addEventListener('mousedown', function(e) {
     const rect = track.getBoundingClientRect();
     window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
@@ -9504,16 +9510,49 @@ function renderRouteScaleBar(container, totalKm, markers) {
     selDiv.style.width = `0px`;
     selDiv.style.display = 'block';
   });
+
+  // --- MOBİL İÇİN LONG PRESS (UZUN BASMA) MANTIĞI ---
+  let longPressTimer = null;
+
+  // 1. Dokunma Başladı: Sayacı başlat
   track.addEventListener('touchstart', function(e) {
+    // Scroll'u engelleme (passive: true), kullanıcı scroll yapabilsin
     const rect = track.getBoundingClientRect();
     const x = e.touches[0].clientX - rect.left;
-    window.__scaleBarDrag = { startX: x, lastX: x };
-    window.__scaleBarDragTrack = track;
-    window.__scaleBarDragSelDiv = selDiv;
-    selDiv.style.left = `${x}px`;
-    selDiv.style.width = `0px`;
-    selDiv.style.display = 'block';
+
+    longPressTimer = setTimeout(() => {
+        // Süre doldu, seçim modunu aktif et
+        window.__scaleBarDrag = { startX: x, lastX: x };
+        window.__scaleBarDragTrack = track;
+        window.__scaleBarDragSelDiv = selDiv;
+        selDiv.style.left = `${x}px`;
+        selDiv.style.width = `0px`;
+        selDiv.style.display = 'block';
+        
+        // Kullanıcıya hissettir (Titreşim)
+        if (navigator.vibrate) navigator.vibrate(40);
+        
+    }, 600); // 600ms basılı tutarsa devreye girer
+
+  }, { passive: true });
+
+  // 2. Parmağı Oynattı: Eğer seçim daha başlamadıysa (timer bitmediyse) iptal et
+  track.addEventListener('touchmove', function(e) {
+      if (longPressTimer && !window.__scaleBarDrag) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+          // Kullanıcı kaydırıyor (scroll yapıyor), seçimi iptal et
+      }
+  }, { passive: true });
+
+  // 3. Parmağı Çekti: Sayacı temizle
+  track.addEventListener('touchend', function() {
+      if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+      }
   });
+  // --------------------------------------------------
 
   track.style.position = 'relative';
   track.style.overflow = 'visible';
@@ -9550,11 +9589,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
   segG.setAttribute('class', 'tt-elev-segments');
   svgElem.appendChild(segG);
 
-  // --- DEĞİŞİKLİK BURADA: Dikey Çizgi ---
   const verticalLine = document.createElement('div');
   verticalLine.className = 'scale-bar-vertical-line';
-  // Başlangıçta display:none yaptık
-  verticalLine.style.cssText = `position:absolute;top:0;bottom:0;width:2px;background:#111;opacity:0.5;pointer-events:none;z-index:100;display:none;`;
+  verticalLine.style.cssText = `position:absolute;top:0;bottom:0;width:2px;background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;`;
   verticalLine.style.left = '0px'; 
   track.appendChild(verticalLine);
 
@@ -9564,20 +9601,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
   tooltip.style.display = 'none';
   track.appendChild(tooltip);
 
-  // Mouse çıkınca gizle
-  const hideOverlay = () => {
-      verticalLine.style.display = 'none';
-      tooltip.style.display = 'none';
-  };
-  track.addEventListener('mouseleave', hideOverlay);
-  track.addEventListener('touchend', hideOverlay);
-
-  // Basit mousemove (veri gelmeden önceki)
   track.addEventListener('mousemove', function(e) {
     const rect = track.getBoundingClientRect();
     const x = e.clientX - rect.left;
     verticalLine.style.left = `${x}px`;
-    // Not: Burada display='block' yapmıyoruz, veri gelince __onMove yapacak.
   });
   track.addEventListener('touchmove', function(e) {
     const rect = track.getBoundingClientRect();
@@ -9715,11 +9742,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.__onMove = function(e) {
     const ed = container._elevationData;
     if (!ed || !Array.isArray(ed.smooth)) return;
-    
-    // Veri geldiğinde göster
     tooltip.style.display = 'block';
-    verticalLine.style.display = 'block';
-
     const s = container._elevSamples || [];
     const startKmDom = Number(container._elevStartKm || 0);
     const spanKm = Number(container._elevKmSpan || totalKm) || 1;
@@ -9764,6 +9787,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       tooltip.style.left = `${tooltipLeft}px`;
     }
     verticalLine.style.left = `${x}px`;
+    verticalLine.style.display = 'block';
   };
   track.addEventListener('mousemove', track.__onMove);
   track.addEventListener('touchmove', track.__onMove);
