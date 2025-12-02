@@ -5854,7 +5854,7 @@ function openMapLibre3D(expandedMap) {
         .setPopup(new maplibregl.Popup().setText(`${idx + 1}. ${p.name || "Place"}`));
       marker.addTo(window._maplibre3DInstance);
     });
-  }); 
+  });
 }
 
 async function expandMap(containerId, day) {
@@ -10840,7 +10840,7 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
       setTimeout(type, speed);
     }
   }
-  type(); 
+  type();
 }
 
 // iki nokta arasında yay çizen fonksiyon
