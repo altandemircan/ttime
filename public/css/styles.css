@@ -5726,7 +5726,7 @@ ease;
     display: none;
 }
 .leaflet-control-attribution a {
-    color: #000;
+    color: #000 !important;
 }
 
 .leaflet-popup-pane {
