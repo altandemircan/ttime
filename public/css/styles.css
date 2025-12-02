@@ -5725,6 +5725,9 @@ ease;
 .leaflet-control-attribution {
     font-size: 10px;
 }
+.leaflet-bottom  {
+    bottom: 185px;
+}
 .leaflet-popup-pane {
     z-index: 700;
     margin-left: 18px;
