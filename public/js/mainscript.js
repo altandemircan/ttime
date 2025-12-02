@@ -322,7 +322,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       track.appendChild(wrap);
     });
   }
-
+ 
   // --- Grid Labels ---
   let gridLabels = [];
   if (customElevData) {
