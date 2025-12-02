@@ -10942,7 +10942,7 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
       setTimeout(type, speed);
     }
   }
-  type();
+  type(); 
 }
 
 // iki nokta arasında yay çizen fonksiyon
