@@ -5924,7 +5924,11 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
+<<<<<<< HEAD
   // --- DEĞİŞİKLİK BURADA: Butonu bul ve PASİF yap ---
+=======
+  // Butonu Pasif Yapma İşlemi
+>>>>>>> parent of d8337ea (Update mainscript.js)
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   // Hem bar içindeki hem de travel-mode set içindeki butonu yakalamaya çalışalım
   const expandBtns = [];
@@ -5978,34 +5982,58 @@ async function expandMap(containerId, day) {
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row'; 
 
+<<<<<<< HEAD
   const layerOptions = [
     { value: 'bright', img: '/img/preview_bright.png', label: 'Bright' },
     { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
     { value: '3d', img: '/img/preview_3d.png', label: '3D' }
+=======
+  // --- DEĞİŞİKLİK 1: SEÇENEKLER GÜNCELLENDİ ---
+  const layerOptions = [
+    { value: 'normal', img: '/img/preview_bright.png', label: 'Normal' },       // Eski Bright -> Normal (OSM)
+    { value: 'satellite', img: '/img/preview_positron.png', label: 'Satellite' }, // Eski Positron -> Satellite (Esri)
+    { value: '3d', img: '/img/preview_3d.png', label: '3D' }                    // 3D Dokunulmadı
+>>>>>>> parent of d8337ea (Update mainscript.js)
   ];
 
-  let currentLayer = 'bright';
+  let currentLayer = 'normal';
 
   layerOptions.forEach(opt => {
     const div = document.createElement('div');
     div.className = 'map-type-option';
     div.setAttribute('data-value', opt.value);
+    // Not: Resim yollarını (img src) projenizdeki uygun ikonlarla değiştirebilirsiniz.
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     if (opt.value === currentLayer) div.classList.add('selected');
 
     div.onclick = function() {
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
+<<<<<<< HEAD
       if (opt.value === '3d') {
         expandedMap.getContainer().style.display = "none";
+=======
+      
+      if (opt.value === '3d') {
+        // 3D Modu (Değişmedi)
+        expandedMapInstance.getContainer().style.display = "none";
+>>>>>>> parent of d8337ea (Update mainscript.js)
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) {
           map3d.style.display = "block";
         } else {
+<<<<<<< HEAD
           openMapLibre3D(expandedMap); 
         }
       } else {
         expandedMap.getContainer().style.display = "";
+=======
+          openMapLibre3D(expandedMapInstance); 
+        }
+      } else {
+        // 2D Modları (Normal veya Satellite)
+        expandedMapInstance.getContainer().style.display = "";
+>>>>>>> parent of d8337ea (Update mainscript.js)
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) {
           map3d.style.display = "none";
@@ -6099,6 +6127,7 @@ async function expandMap(containerId, day) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
+<<<<<<< HEAD
   updateExpandedMap(expandedMapInstance, day);
 
   try {
@@ -6109,16 +6138,42 @@ async function expandMap(containerId, day) {
   } catch(e){}
 
   function setExpandedMapTile(styleKey) {
+=======
+  // --- DEĞİŞİKLİK 2: LAYER DEĞİŞTİRME FONKSİYONU ---
+  function setExpandedMapTile(styleKey) {
+      // Eski layerı kaldır
+>>>>>>> parent of d8337ea (Update mainscript.js)
       if (expandedMapInstance._osmTileLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer);
           expandedMapInstance._osmTileLayer = null;
       }
+<<<<<<< HEAD
       expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           attribution: '© OpenStreetMap contributors'
       }).addTo(expandedMapInstance);
   }
 
+=======
+
+      let url = '';
+      let options = { maxZoom: 19 };
+
+      if (styleKey === 'satellite') {
+          // --- SATELLITE (Esri) ---
+          url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+          options.attribution = 'Tiles &copy; Esri';
+      } else {
+          // --- NORMAL (Standart OSM) ---
+          url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+          options.attribution = '&copy; OpenStreetMap contributors';
+      }
+
+      expandedMapInstance._osmTileLayer = L.tileLayer(url, options).addTo(expandedMapInstance);
+  }
+
+  // İlk açılışta seçili olanı yükle
+>>>>>>> parent of d8337ea (Update mainscript.js)
   setExpandedMapTile(currentLayer);
 
   expandedMapInstance.on('styleimagemissing', function(e) {
@@ -6134,11 +6189,22 @@ async function expandMap(containerId, day) {
 
   const geojson = window.lastRouteGeojsons?.[containerId];
 
+<<<<<<< HEAD
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
       if (layer instanceof L.Marker) {
         const mk = L.marker(layer.getLatLng(), { icon: layer.options.icon }).addTo(expandedMapInstance);
         if (layer._popup) mk.bindPopup(layer._popup._content);
+=======
+  // Rota ve markerları çiz
+  updateExpandedMap(expandedMapInstance, day);
+
+  if (baseMap) {
+    Object.values(baseMap._layers).forEach(layer => {
+      if (layer instanceof L.Marker) {
+        // Zaten updateExpandedMap içinde çiziliyor, burası gereksiz duplike olabilir 
+        // ama eski marker popup içeriklerini korumak için bırakılabilir.
+>>>>>>> parent of d8337ea (Update mainscript.js)
       }
     });
   }
