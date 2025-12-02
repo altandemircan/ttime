@@ -5971,7 +5971,6 @@ async function expandMap(containerId, day) {
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row'; 
 
-  // --- OPENFREEMAP STİL SEÇENEKLERİNE GERİ DÖNÜŞ ---
   const layerOptions = [
     { value: 'bright',   img: '/img/preview_bright.png',   label: 'Bright' },
     { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
@@ -5990,10 +5989,25 @@ async function expandMap(containerId, day) {
     div.onclick = function() {
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
-      setExpandedMapTile(opt.value);
+      
+      // --- DÜZELTME: 3D BUTONUNUN ORİJİNAL İŞLEVİNİ KORU ---
+      if (opt.value === 'liberty') {
+        // Maplibre 3D view aç
+        expandedMapInstance.getContainer().style.display = "none";
+        openMapLibre3D(expandedMapInstance); 
+      } else {
+        // 2D Modlar (Leaflet)
+        expandedMapInstance.getContainer().style.display = "";
+        let map3d = document.getElementById('maplibre-3d-view');
+        if (map3d) map3d.style.display = "none";
+
+        setExpandedMapTile(opt.value);
+      }
+      // --------------------------------------------------------
     };
     layersBar.appendChild(div);
   });
+
 
   headerDiv.appendChild(layersBar);
 
