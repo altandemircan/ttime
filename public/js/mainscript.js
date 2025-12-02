@@ -5973,9 +5973,9 @@ async function expandMap(containerId, day) {
 
   // --- OPENFREEMAP STİL SEÇENEKLERİNE GERİ DÖNÜŞ ---
   const layerOptions = [
-    { value: 'bright',   img: '/img/preview_bright.png',   label: 'Bright' }, // Varsayılan stil (OSM-like)
-    { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' }, // Sade, gri/beyaz stil
-    { value: 'liberty',  img: '/img/preview_3d.png',       label: '3D' } // Detaylı, 3D bina görünümlü stil
+    { value: 'bright',   img: '/img/preview_bright.png',   label: 'Bright' },
+    { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
+    { value: 'liberty',  img: '/img/preview_3d.png',       label: '3D' }
   ];
 
   let currentLayer = 'bright';
@@ -6072,9 +6072,9 @@ async function expandMap(containerId, day) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
-  // --- LAYER DEĞİŞTİRME FONKSİYONU (OPENFREEMAP) ---
+  // --- LAYER DEĞİŞTİRME FONKSİYONU ---
   function setExpandedMapTile(styleKey) {
-      // Varsa eski layer'ı kaldır
+      // 1. Önceki layer'ları temizle
       if (expandedMapInstance._maplibreLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
           expandedMapInstance._maplibreLayer = null;
@@ -6089,15 +6089,15 @@ async function expandMap(containerId, day) {
       const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
 
       try {
-          // L.maplibreGL kullanıyoruz (Vektör Tile)
+          // 2. MapLibre Layer'ı ekle
           if (typeof L.maplibreGL === 'function') {
               expandedMapInstance._maplibreLayer = L.maplibreGL({
                   style: url,
                   attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
-                  interactive: true 
+                  interactive: true
               }).addTo(expandedMapInstance);
           } else {
-              // Fallback: Eğer kütüphane yoksa standart OSM (eski)
+              // 3. Fallback: Eğer kütüphane yoksa standart OSM kullan
               console.warn('L.maplibreGL not found, using OSM fallback');
               expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                   maxZoom: 19,
@@ -6105,7 +6105,13 @@ async function expandMap(containerId, day) {
               }).addTo(expandedMapInstance);
           }
       } catch (e) {
-          console.error("OpenFreeMap error:", e);
+          // 4. Hata Yönetimi: Stil yüklenemezse Bright'a geri dön
+          console.error("MapLibre Style failed to load:", e);
+          if (styleKey !== 'bright') {
+               setExpandedMapTile('bright'); 
+          } else {
+               console.error("Critical failure: Cannot load any map style.");
+          }
       }
   }
   // -----------------------------------------------------
