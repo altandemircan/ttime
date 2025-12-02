@@ -5992,7 +5992,6 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
-
 function restoreMap(containerId, day) {
     const expandedData = window.expandedMaps?.[containerId];
     if (!expandedData) return;
