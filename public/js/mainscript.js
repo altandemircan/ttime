@@ -7248,6 +7248,15 @@ function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     const start = polylineCoords[0];
     const end = polylineCoords[polylineCoords.length - 1];
 
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const toRad = x => x * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat/2)**2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+        return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
     // Polyline üzerindeki en yakın noktayı ve mesafesini bul
     let minDist = Infinity, minIdx = -1;
     for (let i = 0; i < polylineCoords.length; i++) {
@@ -8219,6 +8228,17 @@ function getRouteMarkerPositionsOrdered(day) {
 
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
+
+    // Haversine Formülü
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const toRad = x => x * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(a));
+    }
 
     // Polyline kümülatif mesafesi: her noktaya kadar
     let polylineDistances = [0];
