@@ -4624,16 +4624,14 @@ function updateExpandedMap(expandedMap, day) {
             attribution.style.cssText = `
                 position: absolute !important;
                 bottom: 185px !important;
-                right: 4px !important;
-                margin: 0 !important;
-                padding: 0 4px !important;
-                background: rgba(255, 255, 255, 0.6) !important;
-                font-size: 9px !important;
+                right: 20px !important;
+                margin: 0px !important;
+                padding: 0px 4px !important;
+                font-size: 10px !important;
                 line-height: 1 !important;
-                color: #888 !important;
+                color: rgb(0 0 0) !important;
                 z-index: 1005 !important;
                 pointer-events: auto !important;
-                border-radius: 4px;
             `;
             
             // Linklerin rengini düzelt
