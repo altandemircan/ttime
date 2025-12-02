@@ -3121,6 +3121,11 @@ function initEmptyDayMap(day) {
   
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
+  // <<< DEĞİŞİKLİK BURADA: Yeni taşıma fonksiyonunu çağır!
+  map.whenReady(() => {
+      // Small map'te scale bar yoksa, taşıma yapmaya gerek yok, sadece default render kalsın.
+      // Small map için sadece renderRouteForDay çağrılırsa oluşur.
+  });
 }
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
@@ -5547,6 +5552,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
+    // <<< DEĞİŞİKLİK BURADA: Yeni taşıma fonksiyonunu çağır!
+  map.whenReady(() => {
+      // Small map'te scale bar yoksa, taşıma yapmaya gerek yok, sadece default render kalsın.
+      // Small map için sadece renderRouteForDay çağrılırsa oluşur.
+  });
 }
 
 // Harita durumlarını yönetmek için global değişken
