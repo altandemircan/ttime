@@ -5124,6 +5124,12 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
+    // <<< EKLE: Attribution kontrolünü taşı!
+    map.whenReady(() => {
+        moveLeafletAttribution(map, containerId);
+    });
+    // >>>
+
     // ARTIK day VAR!
     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
         const pts = getDayPoints(day).filter(
@@ -5302,7 +5308,48 @@ function addNumberedMarkers(map, points) {
     });
 }
 
+// Harita oluşturulduktan hemen sonra Attribution Control'ü map container içine taşır.
+// Bu, mobil cihazlarda görünürlük sorununu çözer.
+function moveLeafletAttribution(map, containerId) {
+    if (!map || !map.getContainer) return;
 
+    const mapContainer = map.getContainer();
+    
+    // Leaflet'in varsayılan Attribution kontrol DOM'unu bul
+    const attributionControl = mapContainer.querySelector('.leaflet-control-attribution');
+    const bottomControls = mapContainer.querySelector('.leaflet-bottom.leaflet-right');
+    
+    // Eğer Leaflet kontrolünü bulduysak ve zaten mapContainer'ın doğrudan çocuğu değilse taşıyalım.
+    // DİKKAT: Leaflet'in kendisi bu elementi zaten en alt div'e (leaflet-control-container) koyar.
+    // Bizim ihtiyacımız olan, onu mapContainer'ın hemen içine taşımak.
+    if (attributionControl && mapContainer.contains(attributionControl)) {
+        // Kontrol zaten harita konteynerinin bir parçasıysa (mobil hatayı tetikliyorsa)
+        // Ekstra bir taşıma işlemi yapmaya gerek kalmadan, sadece CSS stilini uygula.
+    } else if (bottomControls) {
+         // Harita konteynerinin dışındaki (body içindeki) kontrol divini bul
+        const globalAttribution = document.querySelector('.leaflet-control-attribution');
+        if (globalAttribution && !mapContainer.contains(globalAttribution)) {
+            // Kontrolü harita konteynerinin içine taşı
+            mapContainer.appendChild(globalAttribution);
+
+            // CSS stilini direkt olarak bu elemente uygula
+            globalAttribution.style.cssText = `
+                position: absolute !important; 
+                bottom: 0 !important; 
+                right: 0 !important; 
+                z-index: 500 !important;
+                margin: 0 !important; 
+                padding: 0 4px !important;
+                background: rgba(255, 255, 255, 0.75) !important;
+                font-size: 10px !important; 
+                border-radius: 4px 0 0 0 !important;
+            `;
+        }
+    }
+
+    // Harita konteynerine relative pozisyonu garanti et (CSS'i ezerek)
+    mapContainer.style.position = 'relative';
+}
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
@@ -5372,6 +5419,12 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    // <<< EKLE: Attribution kontrolünü taşı!
+    map.whenReady(() => {
+        moveLeafletAttribution(map, containerId);
+    });
+    // >>>
 
     // --- DEĞİŞİKLİK BAŞLANGICI: Sınır Kutusu Oluştur ---
     let bounds = L.latLngBounds();
