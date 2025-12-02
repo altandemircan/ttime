@@ -5898,24 +5898,7 @@ function openMapLibre3D(expandedMap) {
   });
 }
 
-async function expandMap(containerId, day) {
-  // En başa ekle!
-  forceCleanExpandedMap(day);
-
-  window.currentDay = day; 
-
-  console.log('[expandMap] start →', containerId, 'day=', day);
-
-  if (window.expandedMaps && window.expandedMaps[containerId]) {
-    console.log('[expandMap] already expanded, returning');
-    return;
-  }
-
-  // Diğer günlerin expanded'ını kapat
-  if (window.expandedMaps) {
-    Object.keys(window.expandedMaps).forEach(otherId => {
-      if (otherId !== containerId) {
-        const ex = window.expandedMaps[otherId];
+< const ex = window.expandedMaps[otherId];
         if (ex) restoreMap(otherId, ex.day);
       }
     });
@@ -5949,16 +5932,61 @@ async function expandMap(containerId, day) {
       
       // İkonu gri yap
       const img = btn.querySelector('img');
+     <async function expandMap(containerId, day) {
+  forceCleanExpandedMap(day);
+
+  window.currentDay = day; 
+
+  console.log('[expandMap] start →', containerId, 'day=', day);
+
+  if (window.expandedMaps && window.expandedMaps[containerId]) {
+    console.log('[expandMap] already expanded, returning');
+    return;
+  }
+
+  // Diğer günlerin expanded'ını kapat
+  if (window.expandedMaps) {
+    Object.keys(window.expandedMaps).forEach(otherId => {
+      if (otherId !== containerId) {
+        const ex = window.expandedMaps[otherId];
+        if (ex) restoreMap(otherId, ex.day);
+      }
+    });
+  }
+
+  const originalContainer = document.getElementById(containerId);
+  const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
+
+  // Butonu Pasif Yapma
+  const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
+  const expandBtns = [];
+  if (controlsBar) {
+      const btn = controlsBar.querySelector('.expand-map-btn');
+      if (btn) expandBtns.push(btn);
+  }
+  const tmSet = document.getElementById(`tt-travel-mode-set-day${day}`);
+  if (tmSet) {
+      const btn = tmSet.querySelector('.expand-map-btn');
+      if (btn) expandBtns.push(btn);
+  }
+
+  expandBtns.forEach(btn => {
+      btn.disabled = true;
+      btn.style.pointerEvents = 'none';
+      btn.style.opacity = '0.6';
+      btn.style.cursor = 'default';
+      btn.style.borderColor = '#ccc';
+      btn.style.background = '#f9f9f9';
+      
+      const img = btn.querySelector('img');
       if (img) img.style.filter = 'grayscale(100%)';
 
-      // Metni değiştir
       const label = btn.querySelector('.tm-label');
       if (label) {
           label.textContent = 'Map Expanded';
           label.style.color = '#888';
       }
   });
-  // ------------------------------------------------
 
   if (!originalContainer) {
     console.error('[expandMap] original small map container yok. İptal.');
@@ -5971,25 +5999,17 @@ async function expandMap(containerId, day) {
 
   originalContainer.style.display = 'none';
 
-  // === HEADER DIV OLUŞTUR ===
+  // === HEADER DIV ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
 
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row'; 
 
-<<<<<<< HEAD
   const layerOptions = [
-    { value: 'bright', img: '/img/preview_bright.png', label: 'Bright' },
-    { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
-    { value: '3d', img: '/img/preview_3d.png', label: '3D' }
-=======
-  // --- DEĞİŞİKLİK 1: SEÇENEKLER GÜNCELLENDİ ---
-  const layerOptions = [
-    { value: 'normal', img: '/img/preview_bright.png', label: 'Normal' },       // Eski Bright -> Normal (OSM)
-    { value: 'satellite', img: '/img/preview_positron.png', label: 'Satellite' }, // Eski Positron -> Satellite (Esri)
-    { value: '3d', img: '/img/preview_3d.png', label: '3D' }                    // 3D Dokunulmadı
->>>>>>> parent of d8337ea (Update mainscript.js)
+    { value: 'normal', img: '/img/preview_bright.png', label: 'Normal' },
+    { value: 'satellite', img: '/img/preview_positron.png', label: 'Satellite' }, 
+    { value: '3d', img: '/img/preview_3d.png', label: '3D' }                    
   ];
 
   let currentLayer = 'normal';
@@ -5998,38 +6018,23 @@ async function expandMap(containerId, day) {
     const div = document.createElement('div');
     div.className = 'map-type-option';
     div.setAttribute('data-value', opt.value);
-    // Not: Resim yollarını (img src) projenizdeki uygun ikonlarla değiştirebilirsiniz.
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     if (opt.value === currentLayer) div.classList.add('selected');
 
     div.onclick = function() {
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
-<<<<<<< HEAD
-      if (opt.value === '3d') {
-        expandedMap.getContainer().style.display = "none";
-=======
       
       if (opt.value === '3d') {
-        // 3D Modu (Değişmedi)
         expandedMapInstance.getContainer().style.display = "none";
->>>>>>> parent of d8337ea (Update mainscript.js)
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) {
           map3d.style.display = "block";
         } else {
-<<<<<<< HEAD
-          openMapLibre3D(expandedMap); 
-        }
-      } else {
-        expandedMap.getContainer().style.display = "";
-=======
           openMapLibre3D(expandedMapInstance); 
         }
       } else {
-        // 2D Modları (Normal veya Satellite)
         expandedMapInstance.getContainer().style.display = "";
->>>>>>> parent of d8337ea (Update mainscript.js)
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) {
           map3d.style.display = "none";
@@ -6046,7 +6051,6 @@ async function expandMap(containerId, day) {
   statsDiv.className = 'route-stats';
   headerDiv.appendChild(statsDiv);
 
-  // --- EXPANDED MAP CONTAINER ---
   const expandedMapId = `expanded-map-${day}`;
   const expandedContainer = document.createElement('div');
   expandedContainer.id = expandedMapId;
@@ -6113,63 +6117,37 @@ async function expandMap(containerId, day) {
     easeLinearity: 0.2
   });
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(expandedMapInstance);
-
   const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   if (!pts || pts.length === 0) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
-<<<<<<< HEAD
-  updateExpandedMap(expandedMapInstance, day);
-
-  try {
-    expandedMapInstance.dragging.enable?.();
-    expandedMapInstance.scrollWheelZoom.enable?.();
-    expandedMapInstance.options.minZoom = 1;
-    expandedMapInstance.options.maxZoom = 19;
-  } catch(e){}
-
+  // --- LAYER DEĞİŞTİRME FONKSİYONU (POSİTRON) ---
   function setExpandedMapTile(styleKey) {
-=======
-  // --- DEĞİŞİKLİK 2: LAYER DEĞİŞTİRME FONKSİYONU ---
-  function setExpandedMapTile(styleKey) {
-      // Eski layerı kaldır
->>>>>>> parent of d8337ea (Update mainscript.js)
       if (expandedMapInstance._osmTileLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer);
           expandedMapInstance._osmTileLayer = null;
       }
-<<<<<<< HEAD
-      expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap contributors'
-      }).addTo(expandedMapInstance);
-  }
-
-=======
 
       let url = '';
-      let options = { maxZoom: 19 };
+      let options = { maxZoom: 20 };
 
       if (styleKey === 'satellite') {
-          // --- SATELLITE (Esri) ---
+          // SATELLITE (Esri)
           url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
           options.attribution = 'Tiles &copy; Esri';
       } else {
-          // --- NORMAL (Standart OSM) ---
-          url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-          options.attribution = '&copy; OpenStreetMap contributors';
+          // --- NORMAL (CartoDB Positron - Temiz Gri/Beyaz) ---
+          // Bu stil, sarı tonlardan arınmış en güvenli ve yasal seçenektir.
+          url = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+          options.subdomains = 'abcd';
+          options.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
       }
 
       expandedMapInstance._osmTileLayer = L.tileLayer(url, options).addTo(expandedMapInstance);
   }
 
-  // İlk açılışta seçili olanı yükle
->>>>>>> parent of d8337ea (Update mainscript.js)
+  // İlk açılış
   setExpandedMapTile(currentLayer);
 
   expandedMapInstance.on('styleimagemissing', function(e) {
@@ -6177,7 +6155,7 @@ async function expandMap(containerId, day) {
   });
 
   if (!expandedMapInstance._initialView) {
-    expandedMapInstance._initialView = {
+    expandedMapMapInstance._initialView = {
       center: expandedMapInstance.getCenter(),
       zoom: expandedMapInstance.getZoom()
     };
@@ -6185,25 +6163,21 @@ async function expandMap(containerId, day) {
 
   const geojson = window.lastRouteGeojsons?.[containerId];
 
-<<<<<<< HEAD
-  if (baseMap) {
-    Object.values(baseMap._layers).forEach(layer => {
-      if (layer instanceof L.Marker) {
-        const mk = L.marker(layer.getLatLng(), { icon: layer.options.icon }).addTo(expandedMapInstance);
-        if (layer._popup) mk.bindPopup(layer._popup._content);
-=======
-  // Rota ve markerları çiz
   updateExpandedMap(expandedMapInstance, day);
 
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
       if (layer instanceof L.Marker) {
-        // Zaten updateExpandedMap içinde çiziliyor, burası gereksiz duplike olabilir 
-        // ama eski marker popup içeriklerini korumak için bırakılabilir.
->>>>>>> parent of d8337ea (Update mainscript.js)
       }
     });
   }
+
+  try {
+    expandedMapInstance.dragging.enable?.();
+    expandedMapInstance.scrollWheelZoom.enable?.();
+    expandedMapInstance.options.minZoom = 1;
+    expandedMapInstance.options.maxZoom = 19;
+  } catch(e){}
 
   setTimeout(() => expandedMapInstance.invalidateSize({ pan: false }), 400);
 
@@ -6228,8 +6202,7 @@ async function expandMap(containerId, day) {
       scaleBarDiv.innerHTML = "";
       renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
       const track = scaleBarDiv.querySelector('.scale-bar-track');
-      const svg = track && track.querySelector('svg.tt-elev-svg');
-      if (track && svg) {
+      if (track) {
           const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
           createScaleElements(track, width, totalKm, 0, markerPositions);
       }
