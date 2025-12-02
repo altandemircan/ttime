@@ -198,7 +198,6 @@ function niceStep(total, target) {
   return f * p10;
 }
 
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
   // Güvenlik: Loading varsa çizme
   if (track && track.classList.contains('loading')) {
@@ -248,7 +247,23 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     label.style.left = `${leftPct}%`;
     label.style.position = 'absolute';
     label.style.top = '30px';
-    label.style.transform = 'translateX(-50%)';
+    
+    // --- HİZALAMA MANTIĞI GÜNCELLENDİ ---
+    if (i === 0) {
+        // İLK: Sola Yasla (Başlangıç çizgisinden başlasın)
+        label.style.transform = 'translateX(0%)';
+        label.style.textAlign = 'left';
+    } else if (i === majors) {
+        // SON: Sağa Yasla (Bitiş çizgisinde bitsin)
+        label.style.transform = 'translateX(-100%)';
+        label.style.textAlign = 'right';
+    } else {
+        // ARA: Ortala
+        label.style.transform = 'translateX(-50%)';
+        label.style.textAlign = 'center';
+    }
+    // -------------------------------------
+
     label.style.fontSize = '11px';
     label.style.color = '#607d8b';
     label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
@@ -257,15 +272,11 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
   // --- MARKER POSITIONING ---
   
-  // Veri kaynağını belirle: Ya parametre olarak gelen segment verisi ya da container üzerindeki global veri
   let activeData = null;
   
   if (customElevData) {
-      // Segment modundaysak, drawSegmentProfile'dan gelen hazır veriyi kullan
-      // Bu veri zaten vizMin/vizMax içeriyor, tekrar hesaplamaya gerek yok
       activeData = customElevData; 
   } else if (container && container._elevationData) {
-      // Global moddaysak container verisini kullan ve vizMin/vizMax hesapla
       const { smooth, min, max } = container._elevationData;
       let vizMin = min, vizMax = max;
       const eSpan = max - min;
@@ -279,8 +290,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       
-      // 1. Filtreleme: Eğer marker bu segmentin dışındaysa ÇİZME
-      // (Ufak bir tolerans payı +/- 0.05 km eklenebilir)
       if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
           return;
       }
@@ -288,7 +297,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       const relKm = dist - startKmDom;
       let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
       
-      // Sınırları aşmaması için clamp (yine de yukarıdaki if ile eledik ama güvenlik)
       left = Math.max(0, Math.min(100, left));
 
       let bottomStyle = "2px"; 
@@ -296,24 +304,18 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       if (activeData && activeData.smooth && activeData.smooth.length > 0) {
           const { smooth, vizMin, vizMax } = activeData;
           
-          // Markerın, grafiğin veri dizisi (smooth array) içindeki denk geldiği index
           const pct = Math.max(0, Math.min(1, left / 100));
           const sampleIdx = Math.floor(pct * (smooth.length - 1));
           const val = smooth[sampleIdx];
           
           if (typeof val === 'number') {
-              // Yükseklik Yüzdesi Hesabı
-              // (Değer - GörselAltSınır) / (GörselÜstSınır - GörselAltSınır)
               const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
-              
-              // Marker boyutu ve padding ayarı
               bottomStyle = `calc(${heightPct}% - 7px)`;
           }
       }
 
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
-      // Transition'ı kaldırdım çünkü zoom yaparken markerların kayarak gelmesi kafa karıştırabilir
       wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
@@ -321,43 +323,22 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     });
   }
 
-  // --- Grid Labels (Dikey Eksen Yazıları) ---
-  // Eğer özel veri varsa (segment), etiketleri de o aralığa göre çiz
-  // Değilse eski SVG içinden çekmeye çalışır (Global mod)
-  
+  // --- Grid Labels ---
   let gridLabels = [];
   if (customElevData) {
-      // Segment modunda label'ları manuel oluşturmamız lazım çünkü SVG henüz DOM'da tam oluşmamış olabilir
-      // veya SVG içinden okumak yerine veriden üretmek daha sağlıklıdır.
-      // drawSegmentProfile'da kullanılan 4 seviyeli grid mantığının aynısı:
       const { vizMin, vizMax } = customElevData;
-      // SVG yüksekliği genelde 220px veya mobil ayarı. Oranlayarak Y bulacağız.
-      // Ancak createScaleElements sadece HTML basıyor, SVG koordinatını bilmiyor.
-      // Basit çözüm: Yüzde olarak yerleştirmek.
-      
       for(let i=0; i<=4; i++) {
           const val = vizMin + (i/4)*(vizMax - vizMin);
-          // Yüzde hesabı:
           const pct = (i/4) * 100; 
-          // SVG'de Y ekseni ters (yukarı 0) ama HTML bottom (aşağı 0). 
-          // Profile çiziminde bottom = 0 -> vizMin değil, vizMin biraz aşağıda kalıyor.
-          // drawSegmentProfile mantığına sadık kalmak için:
-          // Oradaki Y fonksiyonu: ((height-1) - ((e-vizMin)/(vizMax-vizMin))*(height-2))
-          // Yani lineer bir mapping.
-          
-          gridLabels.push({
-              value: Math.round(val) + ' m',
-              pct: pct // Bu height yüzdesi
-          });
+          gridLabels.push({ value: Math.round(val) + ' m', pct: pct });
       }
   } else {
-      // Global mod: SVG'den oku (Eski yöntem)
       const svg = track.querySelector('svg.tt-elev-svg');
       if (svg) {
         gridLabels = Array.from(svg.querySelectorAll('text'))
           .map(t => ({
             value: t.textContent.trim(),
-            y: Number(t.getAttribute('y')), // SVG pixel coordinates
+            y: Number(t.getAttribute('y')),
             svgHeight: Number(svg.getAttribute('height')) || 180
           }))
           .filter(obj => /-?\d+\s*m$/.test(obj.value));
@@ -368,34 +349,17 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   elevationLabels.className = 'elevation-labels-container';
 
   gridLabels.forEach((obj, index) => { 
-    // Segment modunda (pct var) veya Global modda (y var)
     let topStyle = '';
     
     if (typeof obj.pct !== 'undefined') {
-        // Segment modu: CSS bottom ile konumlandır
-        // drawSegmentProfile Y fonksiyonunun tersi mantığı:
-        // Y = H - (val_norm * H). Yani val_norm 0 ise Y=H (en alt).
-        // HTML'de bottom: 0% -> val_norm 0.
-        // Ancak paddingler var (min - span*0.5).
-        // createScaleElements içindeki marker mantığı ile aynı yüzdeyi kullanalım:
-        // heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
-        // obj.pct zaten (i/4)*100 yani tam grid çizgilerine denk gelir.
-        
-        // CSS top kullanmak daha güvenli çünkü parent relative.
-        // %100 yükseklik = vizMax. %0 = vizMin.
-        // Grid çizgisi i=4 (en üst) -> %100 elevation -> top: 0%.
-        // Grid çizgisi i=0 (en alt) -> %0 elevation -> top: 100%.
         topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
-        
     } else {
-        // Global mod: SVG pikselinden hesapla
         const trackHeight = track.clientHeight || 180;
         const correctedY = (obj.y / obj.svgHeight) * trackHeight;
         topStyle = `top: ${correctedY}px;`;
     }
 
     const wrapper = document.createElement('div');
-    // En alttakini veya en üsttekini gizleme ihtiyacı varsa burada yapılabilir
     let visibilityStyle = ''; 
     
     wrapper.style.cssText = `position: absolute; right: 0; ${topStyle} ${visibilityStyle}`;
@@ -432,7 +396,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
 }
-
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
 window.mapPlanningActive = false;
@@ -3708,11 +3671,7 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
       // --- MARKER HTML YAPISI (Senin İstediğin) ---
       // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
       const listMarkerHtml = `
-        <div class="custom-marker-outer red" style="flex-shrink: 0;
-    transform: scale(0.70);
-    position: absolute;
-    left: 30px;
-    top: 0px;">
+        <div class="custom-marker-outer red">
             <span class="custom-marker-label" style="font-size: 14px;">${idx + 1}</span>
         </div>
       `;
@@ -5899,7 +5858,6 @@ function openMapLibre3D(expandedMap) {
 }
 
 async function expandMap(containerId, day) {
-  // En başa ekle!
   forceCleanExpandedMap(day);
 
   window.currentDay = day; 
@@ -5924,9 +5882,8 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-
+  // Butonu Pasif Yapma İşlemi
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
-  // Hem bar içindeki hem de travel-mode set içindeki butonu yakalamaya çalışalım
   const expandBtns = [];
   if (controlsBar) {
       const btn = controlsBar.querySelector('.expand-map-btn');
@@ -5939,26 +5896,22 @@ async function expandMap(containerId, day) {
   }
 
   expandBtns.forEach(btn => {
-      // Butonu pasifleştir
       btn.disabled = true;
-      btn.style.pointerEvents = 'none'; // Tıklamayı engelle
+      btn.style.pointerEvents = 'none';
       btn.style.opacity = '0.6';
       btn.style.cursor = 'default';
       btn.style.borderColor = '#ccc';
       btn.style.background = '#f9f9f9';
       
-      // İkonu gri yap
       const img = btn.querySelector('img');
       if (img) img.style.filter = 'grayscale(100%)';
 
-      // Metni değiştir
       const label = btn.querySelector('.tm-label');
       if (label) {
           label.textContent = 'Map Expanded';
           label.style.color = '#888';
       }
   });
-  // ------------------------------------------------
 
   if (!originalContainer) {
     console.error('[expandMap] original small map container yok. İptal.');
@@ -5978,13 +5931,11 @@ async function expandMap(containerId, day) {
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row'; 
 
-
   // --- DEĞİŞİKLİK 1: SEÇENEKLER GÜNCELLENDİ ---
   const layerOptions = [
     { value: 'normal', img: '/img/preview_bright.png', label: 'Normal' },       // Eski Bright -> Normal (OSM)
     { value: 'satellite', img: '/img/preview_positron.png', label: 'Satellite' }, // Eski Positron -> Satellite (Esri)
     { value: '3d', img: '/img/preview_3d.png', label: '3D' }                    // 3D Dokunulmadı
-
   ];
 
   let currentLayer = 'normal';
@@ -6000,31 +5951,19 @@ async function expandMap(containerId, day) {
     div.onclick = function() {
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
-<<<<<<< HEAD
-      if (opt.value === '3d') {
-        expandedMap.getContainer().style.display = "none";
-=======
       
       if (opt.value === '3d') {
         // 3D Modu (Değişmedi)
         expandedMapInstance.getContainer().style.display = "none";
->>>>>>> parent of d8337ea (Update mainscript.js)
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) {
           map3d.style.display = "block";
         } else {
-<<<<<<< HEAD
-          openMapLibre3D(expandedMap); 
-        }
-      } else {
-        expandedMap.getContainer().style.display = "";
-=======
           openMapLibre3D(expandedMapInstance); 
         }
       } else {
         // 2D Modları (Normal veya Satellite)
         expandedMapInstance.getContainer().style.display = "";
->>>>>>> parent of d8337ea (Update mainscript.js)
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) {
           map3d.style.display = "none";
@@ -6108,44 +6047,18 @@ async function expandMap(containerId, day) {
     easeLinearity: 0.2
   });
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(expandedMapInstance);
-
   const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   if (!pts || pts.length === 0) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
-<<<<<<< HEAD
-  updateExpandedMap(expandedMapInstance, day);
-
-  try {
-    expandedMapInstance.dragging.enable?.();
-    expandedMapInstance.scrollWheelZoom.enable?.();
-    expandedMapInstance.options.minZoom = 1;
-    expandedMapInstance.options.maxZoom = 19;
-  } catch(e){}
-
-  function setExpandedMapTile(styleKey) {
-=======
   // --- DEĞİŞİKLİK 2: LAYER DEĞİŞTİRME FONKSİYONU ---
   function setExpandedMapTile(styleKey) {
       // Eski layerı kaldır
->>>>>>> parent of d8337ea (Update mainscript.js)
       if (expandedMapInstance._osmTileLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer);
           expandedMapInstance._osmTileLayer = null;
       }
-<<<<<<< HEAD
-      expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap contributors'
-      }).addTo(expandedMapInstance);
-  }
-
-=======
 
       let url = '';
       let options = { maxZoom: 19 };
@@ -6164,7 +6077,6 @@ async function expandMap(containerId, day) {
   }
 
   // İlk açılışta seçili olanı yükle
->>>>>>> parent of d8337ea (Update mainscript.js)
   setExpandedMapTile(currentLayer);
 
   expandedMapInstance.on('styleimagemissing', function(e) {
@@ -6180,13 +6092,6 @@ async function expandMap(containerId, day) {
 
   const geojson = window.lastRouteGeojsons?.[containerId];
 
-<<<<<<< HEAD
-  if (baseMap) {
-    Object.values(baseMap._layers).forEach(layer => {
-      if (layer instanceof L.Marker) {
-        const mk = L.marker(layer.getLatLng(), { icon: layer.options.icon }).addTo(expandedMapInstance);
-        if (layer._popup) mk.bindPopup(layer._popup._content);
-=======
   // Rota ve markerları çiz
   updateExpandedMap(expandedMapInstance, day);
 
@@ -6195,10 +6100,16 @@ async function expandMap(containerId, day) {
       if (layer instanceof L.Marker) {
         // Zaten updateExpandedMap içinde çiziliyor, burası gereksiz duplike olabilir 
         // ama eski marker popup içeriklerini korumak için bırakılabilir.
->>>>>>> parent of d8337ea (Update mainscript.js)
       }
     });
   }
+
+  try {
+    expandedMapInstance.dragging.enable?.();
+    expandedMapInstance.scrollWheelZoom.enable?.();
+    expandedMapInstance.options.minZoom = 1;
+    expandedMapInstance.options.maxZoom = 19;
+  } catch(e){}
 
   setTimeout(() => expandedMapInstance.invalidateSize({ pan: false }), 400);
 
@@ -6223,8 +6134,7 @@ async function expandMap(containerId, day) {
       scaleBarDiv.innerHTML = "";
       renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
       const track = scaleBarDiv.querySelector('.scale-bar-track');
-      const svg = track && track.querySelector('svg.tt-elev-svg');
-      if (track && svg) {
+      if (track) {
           const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
           createScaleElements(track, width, totalKm, 0, markerPositions);
       }
@@ -7535,15 +7445,6 @@ function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     const start = polylineCoords[0];
     const end = polylineCoords[polylineCoords.length - 1];
 
-    function haversine(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const toRad = x => x * Math.PI / 180;
-        const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat/2)**2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-        return 2 * R * Math.asin(Math.sqrt(a));
-    }
-
     // Polyline üzerindeki en yakın noktayı ve mesafesini bul
     let minDist = Infinity, minIdx = -1;
     for (let i = 0; i < polylineCoords.length; i++) {
@@ -8515,17 +8416,6 @@ function getRouteMarkerPositionsOrdered(day) {
 
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
-
-    // Haversine Formülü
-    function haversine(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const toRad = x => x * Math.PI / 180;
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-        return 2 * R * Math.asin(Math.sqrt(a));
-    }
 
     // Polyline kümülatif mesafesi: her noktaya kadar
     let polylineDistances = [0];
@@ -10340,29 +10230,37 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   if (subCoords.length < 2) return;
 
-  // --- STİL AYARLARI (GÜNCELLENDİ) ---
+  // --- STİL AYARLARI ---
   const polyOptions = {
       color: '#8a4af3', // Mor renk
       weight: 6,
-      opacity: 1.0,     // Tam opak (Maviyi kapatması için)
+      opacity: 1.0,     // Tam opak
       lineCap: 'round',
       lineJoin: 'round',
-      dashArray: null   // Varsayılan: Düz çizgi
+      dashArray: null   // Düz çizgi
   };
 
-  // Fly Mode ise alttaki çizgiyi tam kapatmak için biraz daha kalın yap
   if (isFlyMode) {
       polyOptions.weight = 7; 
-      // Dash array YOK, düz çizgi olsun.
   }
 
-  // Haritalara çiz
+  // Haritalara çiz ve ZOOM YAP
   maps.forEach(m => {
     const poly = L.polyline(subCoords, polyOptions).addTo(m);
     
     window._segmentHighlight[day][m._leaflet_id] = poly;
     
     if (poly.bringToFront) poly.bringToFront();
+
+    // --- DEĞİŞİKLİK BURADA: Sadece Büyük Haritaya (Expanded) Zoom Yap ---
+    // Eğer harita expanded container içindeyse fitBounds yap
+    if (m.getContainer().closest('.expanded-map-container')) {
+        m.fitBounds(poly.getBounds(), { 
+            padding: [50, 50], // Kenarlardan biraz boşluk bırak
+            animate: true,
+            duration: 0.5
+        });
+    }
   });
 }
 
@@ -10931,7 +10829,7 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
       if (charIndex < chunk.length) {
         element.innerHTML += chunk.charAt(charIndex);
         charIndex++;
-        setTimeout(type, speed); 
+        setTimeout(type, speed);
       } else {
         chunkIndex++;
         charIndex = 0;
