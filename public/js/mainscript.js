@@ -5854,7 +5854,7 @@ function openMapLibre3D(expandedMap) {
         .setPopup(new maplibregl.Popup().setText(`${idx + 1}. ${p.name || "Place"}`));
       marker.addTo(window._maplibre3DInstance);
     });
-  });
+  }); 
 }
 
 async function expandMap(containerId, day) {
