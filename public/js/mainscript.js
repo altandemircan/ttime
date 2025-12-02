@@ -5877,7 +5877,7 @@ async function expandMap(containerId, day) {
         if (ex) restoreMap(otherId, ex.day);
       }
     });
-  }
+  } 
 
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
