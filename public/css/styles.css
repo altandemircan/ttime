@@ -5725,6 +5725,10 @@ ease;
 .maplibregl-ctrl-bottom-right {
     display: none;
 }
+.leaflet-control-attribution a {
+    color: #000;
+}
+
 .leaflet-popup-pane {
     z-index: 700;
     margin-left: 18px;
