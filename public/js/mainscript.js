@@ -4562,6 +4562,11 @@ function updateExpandedMap(expandedMap, day) {
     }
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
+    // <<< EKLE: Taşıma fonksiyonunu çağır (Expanded Harita için)
+    expandedMap.whenReady(() => {
+        moveAttributionToScalebar(expandedMap, day);
+    });
+    // >>>
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
     // Scale Bar işlemleri (Aynen kalsın)
@@ -5156,6 +5161,16 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
+    // <<< EKLE: Taşıma fonksiyonunu çağır (Küçük Harita için)
+    map.whenReady(() => {
+        // Küçük haritada scale bar'ı çağırıp oluşturmak için renderRouteScaleBar'ı taklit ediyoruz.
+        // Telif hakkını küçük harita altındaki özet alana taşı.
+        const smallScaleBar = document.getElementById(`route-scale-bar-day${day}`);
+        if (smallScaleBar) {
+            // Eğer varsa, telif hakkını buraya taşırız.
+            moveAttributionToScalebar(map, day);
+        }
+    });
     setTimeout(function() { map.invalidateSize(); }, 120);
 }
 
