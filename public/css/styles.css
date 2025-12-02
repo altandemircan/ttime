@@ -5728,7 +5728,10 @@ ease;
 .leaflet-control-attribution a {
     color: #000 !important;
 }
-
+/* Leaflet bayrağını gizle */
+.leaflet-attribution-flag {
+    display: none !important;
+}
 .leaflet-popup-pane {
     z-index: 700;
     margin-left: 18px;
