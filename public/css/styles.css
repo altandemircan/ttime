@@ -4624,7 +4624,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 .elevation-labels-container {
     position: absolute;
-    left: -55px;
+    left: -65px;
     width: 45px;
     height: 165px;
     pointer-events: none;
