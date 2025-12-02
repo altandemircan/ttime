@@ -4623,7 +4623,7 @@ function updateExpandedMap(expandedMap, day) {
             // CSS ile panelin sağ altına çivile
             attribution.style.cssText = `
                 position: absolute !important;
-                bottom: 2px !important;
+                bottom: 185px !important;
                 right: 4px !important;
                 margin: 0 !important;
                 padding: 0 4px !important;
