@@ -5725,6 +5725,30 @@ ease;
 .leaflet-control-attribution {
     font-size: 10px;
 }
+/* Leaflet Attribution Fixes (Mobile Scroll visibility) */
+/* Harita altındaki telif hakkı kutusunu sabit yerine mutlak konumlandırarak mobil scroll sorununu çözer */
+.leaflet-container .leaflet-control-container .leaflet-bottom {
+  /* position: fixed; Leaflet'in varsayılanı, mutlak yapıyoruz */
+  position: absolute; 
+}
+/* Sadece harita konteyneri içindeki attribution'ı hedefle */
+.route-map .leaflet-control-attribution,
+.expanded-map .leaflet-control-attribution {
+  position: absolute; /* Tekrar garanti altına alıyoruz */
+  bottom: 0;
+  right: 0;
+  margin: 0; /* Leaflet'in varsayılan marginlerini sıfırla */
+  padding: 0 4px;
+  background: rgba(255, 255, 255, 0.75); /* Okunabilirliği artırmak için arka plan ekle */
+  border-radius: 4px 0 0 0;
+}
+@media (max-width: 768px) {
+  /* Mobilde harita yüksekliği küçük olduğu için yazı çok altta kalmasın */
+  .route-map .leaflet-control-attribution {
+    font-size: 8px; /* Yazıyı daha da küçült */
+    z-index: 500;
+  }
+}
 .leaflet-popup-pane {
     z-index: 700;
     margin-left: 18px;
