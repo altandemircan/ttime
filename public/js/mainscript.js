@@ -5924,11 +5924,7 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-<<<<<<< HEAD
-  // --- DEĞİŞİKLİK BURADA: Butonu bul ve PASİF yap ---
-=======
-  // Butonu Pasif Yapma İşlemi
->>>>>>> parent of d8337ea (Update mainscript.js)
+
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   // Hem bar içindeki hem de travel-mode set içindeki butonu yakalamaya çalışalım
   const expandBtns = [];
