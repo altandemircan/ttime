@@ -366,7 +366,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
         opacity: 0.7;
         display: block;
         margin-left: 0px;
-        margin-top: 0px;
+        margin-top: 2px;
     `;
 
     const label = document.createElement('div');
