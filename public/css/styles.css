@@ -4628,7 +4628,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     width: 45px;
     height: 165px;
     pointer-events: none;
-    z-index: 5;
+    z-index: 5; 
     background: #ffffff;
     display: flex;
     flex-direction: column;

@@ -198,7 +198,10 @@ function niceStep(total, target) {
   return f * p10;
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
   // Güvenlik: Loading varsa çizme
   if (track && track.classList.contains('loading')) {
@@ -248,7 +251,27 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     label.style.left = `${leftPct}%`;
     label.style.position = 'absolute';
     label.style.top = '30px';
+<<<<<<< HEAD
     label.style.transform = 'translateX(-50%)';
+=======
+    
+    // --- HİZALAMA MANTIĞI GÜNCELLENDİ ---
+    if (i === 0) {
+        // İLK: Sola Yasla (Başlangıç çizgisinden başlasın)
+        label.style.transform = 'translateX(0%)';
+        label.style.textAlign = 'left';
+    } else if (i === majors) {
+        // SON: Sağa Yasla (Bitiş çizgisinde bitsin)
+        label.style.transform = 'translateX(-100%)';
+        label.style.textAlign = 'right';
+    } else {
+        // ARA: Ortala
+        label.style.transform = 'translateX(-50%)';
+        label.style.textAlign = 'center';
+    }
+    // -------------------------------------
+
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
     label.style.fontSize = '11px';
     label.style.color = '#607d8b';
     label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
@@ -257,6 +280,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
   // --- MARKER POSITIONING ---
   
+<<<<<<< HEAD
   // Veri kaynağını belirle: Ya parametre olarak gelen segment verisi ya da container üzerindeki global veri
   let activeData = null;
   
@@ -266,6 +290,13 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       activeData = customElevData; 
   } else if (container && container._elevationData) {
       // Global moddaysak container verisini kullan ve vizMin/vizMax hesapla
+=======
+  let activeData = null;
+  
+  if (customElevData) {
+      activeData = customElevData; 
+  } else if (container && container._elevationData) {
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
       const { smooth, min, max } = container._elevationData;
       let vizMin = min, vizMax = max;
       const eSpan = max - min;
@@ -279,8 +310,11 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       
+<<<<<<< HEAD
       // 1. Filtreleme: Eğer marker bu segmentin dışındaysa ÇİZME
       // (Ufak bir tolerans payı +/- 0.05 km eklenebilir)
+=======
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
       if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
           return;
       }
@@ -288,7 +322,10 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       const relKm = dist - startKmDom;
       let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
       
+<<<<<<< HEAD
       // Sınırları aşmaması için clamp (yine de yukarıdaki if ile eledik ama güvenlik)
+=======
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
       left = Math.max(0, Math.min(100, left));
 
       let bottomStyle = "2px"; 
@@ -296,24 +333,34 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       if (activeData && activeData.smooth && activeData.smooth.length > 0) {
           const { smooth, vizMin, vizMax } = activeData;
           
+<<<<<<< HEAD
           // Markerın, grafiğin veri dizisi (smooth array) içindeki denk geldiği index
+=======
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
           const pct = Math.max(0, Math.min(1, left / 100));
           const sampleIdx = Math.floor(pct * (smooth.length - 1));
           const val = smooth[sampleIdx];
           
           if (typeof val === 'number') {
+<<<<<<< HEAD
               // Yükseklik Yüzdesi Hesabı
               // (Değer - GörselAltSınır) / (GörselÜstSınır - GörselAltSınır)
               const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
               
               // Marker boyutu ve padding ayarı
+=======
+              const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
               bottomStyle = `calc(${heightPct}% - 7px)`;
           }
       }
 
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
+<<<<<<< HEAD
       // Transition'ı kaldırdım çünkü zoom yaparken markerların kayarak gelmesi kafa karıştırabilir
+=======
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
       wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(-50%);z-index:5;`;
       wrap.title = m.name || '';
       wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
@@ -321,6 +368,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     });
   }
 
+<<<<<<< HEAD
   // --- Grid Labels (Dikey Eksen Yazıları) ---
   // Eğer özel veri varsa (segment), etiketleri de o aralığa göre çiz
   // Değilse eski SVG içinden çekmeye çalışır (Global mod)
@@ -352,12 +400,28 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       }
   } else {
       // Global mod: SVG'den oku (Eski yöntem)
+=======
+  // --- Grid Labels ---
+  let gridLabels = [];
+  if (customElevData) {
+      const { vizMin, vizMax } = customElevData;
+      for(let i=0; i<=4; i++) {
+          const val = vizMin + (i/4)*(vizMax - vizMin);
+          const pct = (i/4) * 100; 
+          gridLabels.push({ value: Math.round(val) + ' m', pct: pct });
+      }
+  } else {
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
       const svg = track.querySelector('svg.tt-elev-svg');
       if (svg) {
         gridLabels = Array.from(svg.querySelectorAll('text'))
           .map(t => ({
             value: t.textContent.trim(),
+<<<<<<< HEAD
             y: Number(t.getAttribute('y')), // SVG pixel coordinates
+=======
+            y: Number(t.getAttribute('y')),
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
             svgHeight: Number(svg.getAttribute('height')) || 180
           }))
           .filter(obj => /-?\d+\s*m$/.test(obj.value));
@@ -368,6 +432,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   elevationLabels.className = 'elevation-labels-container';
 
   gridLabels.forEach((obj, index) => { 
+<<<<<<< HEAD
     // Segment modunda (pct var) veya Global modda (y var)
     let topStyle = '';
     
@@ -389,13 +454,23 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
         
     } else {
         // Global mod: SVG pikselinden hesapla
+=======
+    let topStyle = '';
+    
+    if (typeof obj.pct !== 'undefined') {
+        topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
+    } else {
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
         const trackHeight = track.clientHeight || 180;
         const correctedY = (obj.y / obj.svgHeight) * trackHeight;
         topStyle = `top: ${correctedY}px;`;
     }
 
     const wrapper = document.createElement('div');
+<<<<<<< HEAD
     // En alttakini veya en üsttekini gizleme ihtiyacı varsa burada yapılabilir
+=======
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
     let visibilityStyle = ''; 
     
     wrapper.style.cssText = `position: absolute; right: 0; ${topStyle} ${visibilityStyle}`;
@@ -407,7 +482,11 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
         opacity: 0.7;
         display: block;
         margin-left: 0px;
+<<<<<<< HEAD
         margin-top: 2px;
+=======
+        margin-top: 0px;
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
     `;
 
     const label = document.createElement('div');
@@ -432,7 +511,10 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> bbee840ae5ea8debfc0c532057c26a470ba08aec
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
 window.mapPlanningActive = false;
@@ -5895,7 +5977,7 @@ function openMapLibre3D(expandedMap) {
         .setPopup(new maplibregl.Popup().setText(`${idx + 1}. ${p.name || "Place"}`));
       marker.addTo(window._maplibre3DInstance);
     });
-  });
+  }); 
 }
 
 async function expandMap(containerId, day) {
@@ -10908,7 +10990,7 @@ function startStreamingTypewriterEffect(element, queue, speed = 5) {
       setTimeout(type, speed);
     }
   }
-  type();
+  type(); 
 }
 
 // iki nokta arasında yay çizen fonksiyon
