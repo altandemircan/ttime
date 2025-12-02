@@ -366,7 +366,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
         opacity: 0.7;
         display: block;
         margin-left: 0px;
-        margin-top: 0px;
+        margin-top: 2px;
     `;
 
     const label = document.createElement('div');
@@ -5871,7 +5871,6 @@ async function expandMap(containerId, day) {
     return;
   }
 
-  // Diğer günlerin expanded'ını kapat
   if (window.expandedMaps) {
     Object.keys(window.expandedMaps).forEach(otherId => {
       if (otherId !== containerId) {
@@ -5884,7 +5883,6 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // Butonu Pasif Yapma İşlemi
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   const expandBtns = [];
   if (controlsBar) {
@@ -5926,52 +5924,32 @@ async function expandMap(containerId, day) {
 
   originalContainer.style.display = 'none';
 
-  // === HEADER DIV OLUŞTUR ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
 
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row'; 
 
-  // --- DEĞİŞİKLİK 1: SEÇENEKLER GÜNCELLENDİ ---
+  // --- OPENFREEMAP SEÇENEKLERİ ---
   const layerOptions = [
-    { value: 'normal', img: '/img/preview_bright.png', label: 'Normal' },       // Eski Bright -> Normal (OSM)
-    { value: 'satellite', img: '/img/preview_positron.png', label: 'Satellite' }, // Eski Positron -> Satellite (Esri)
-    { value: '3d', img: '/img/preview_3d.png', label: '3D' }                    // 3D Dokunulmadı
+    { value: 'bright',   img: '/img/preview_bright.png',   label: 'Bright' },
+    { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
+    { value: 'liberty',  img: '/img/preview_3d.png',       label: '3D' } // 3D etiketi altında Liberty stili
   ];
 
-  let currentLayer = 'normal';
+  let currentLayer = 'bright';
 
   layerOptions.forEach(opt => {
     const div = document.createElement('div');
     div.className = 'map-type-option';
     div.setAttribute('data-value', opt.value);
-    // Not: Resim yollarını (img src) projenizdeki uygun ikonlarla değiştirebilirsiniz.
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     if (opt.value === currentLayer) div.classList.add('selected');
 
     div.onclick = function() {
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
-      
-      if (opt.value === '3d') {
-        // 3D Modu (Değişmedi)
-        expandedMapInstance.getContainer().style.display = "none";
-        let map3d = document.getElementById('maplibre-3d-view');
-        if (map3d) {
-          map3d.style.display = "block";
-        } else {
-          openMapLibre3D(expandedMapInstance); 
-        }
-      } else {
-        // 2D Modları (Normal veya Satellite)
-        expandedMapInstance.getContainer().style.display = "";
-        let map3d = document.getElementById('maplibre-3d-view');
-        if (map3d) {
-          map3d.style.display = "none";
-        }
-        setExpandedMapTile(opt.value);
-      }
+      setExpandedMapTile(opt.value);
     };
     layersBar.appendChild(div);
   });
@@ -5982,7 +5960,6 @@ async function expandMap(containerId, day) {
   statsDiv.className = 'route-stats';
   headerDiv.appendChild(statsDiv);
 
-  // --- EXPANDED MAP CONTAINER ---
   const expandedMapId = `expanded-map-${day}`;
   const expandedContainer = document.createElement('div');
   expandedContainer.id = expandedMapId;
@@ -6054,35 +6031,55 @@ async function expandMap(containerId, day) {
       expandedMapInstance.setView([41.0, 12.0], 5); 
   }
 
-  // --- DEĞİŞİKLİK 2: LAYER DEĞİŞTİRME FONKSİYONU ---
+  // --- OPENFREEMAP ENTEGRASYONU ---
   function setExpandedMapTile(styleKey) {
-      // Eski layerı kaldır
+      // Varsa eski layer'ı kaldır
+      if (expandedMapInstance._maplibreLayer) {
+          expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
+          expandedMapInstance._maplibreLayer = null;
+      }
       if (expandedMapInstance._osmTileLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer);
           expandedMapInstance._osmTileLayer = null;
       }
 
-      let url = '';
-      let options = { maxZoom: 19 };
+      const validStyles = ['bright', 'positron', 'liberty'];
+      const styleToUse = validStyles.includes(styleKey) ? styleKey : 'bright';
+      const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
 
-      if (styleKey === 'satellite') {
-          // --- SATELLITE (Esri) ---
-          url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-          options.attribution = 'Tiles &copy; Esri';
-      } else {
-          // --- NORMAL (Standart OSM) ---
-          url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-          options.attribution = '&copy; OpenStreetMap contributors';
+      try {
+          // L.maplibreGL kullanıyoruz (Vektör Tile)
+          if (typeof L.maplibreGL === 'function') {
+              expandedMapInstance._maplibreLayer = L.maplibreGL({
+                  style: url,
+                  attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
+                  interactive: true // Tıklamalar Leaflet'e geçsin
+              }).addTo(expandedMapInstance);
+          } else {
+              // Fallback: Eğer kütüphane yoksa standart OSM
+              console.warn('L.maplibreGL not found, using OSM fallback');
+              expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  maxZoom: 19,
+                  attribution: '© OpenStreetMap contributors'
+              }).addTo(expandedMapInstance);
+          }
+      } catch (e) {
+          console.error("OpenFreeMap error:", e);
       }
-
-      expandedMapInstance._osmTileLayer = L.tileLayer(url, options).addTo(expandedMapInstance);
   }
 
-  // İlk açılışta seçili olanı yükle
+  // İlk açılış
   setExpandedMapTile(currentLayer);
 
+  // Eksik imaj hatalarını yut
   expandedMapInstance.on('styleimagemissing', function(e) {
-    try { expandedMapInstance.addImage(e.id, new window.Image()); } catch (_) {}
+    try { 
+        if (expandedMapInstance.addImage) {
+             const img = new Image();
+             img.onload = () => { if(!expandedMapInstance.hasImage(e.id)) expandedMapInstance.addImage(e.id, img); };
+             img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // Boş pixel
+        }
+    } catch (_) {}
   });
 
   if (!expandedMapInstance._initialView) {
@@ -6094,14 +6091,11 @@ async function expandMap(containerId, day) {
 
   const geojson = window.lastRouteGeojsons?.[containerId];
 
-  // Rota ve markerları çiz
   updateExpandedMap(expandedMapInstance, day);
 
   if (baseMap) {
     Object.values(baseMap._layers).forEach(layer => {
       if (layer instanceof L.Marker) {
-        // Zaten updateExpandedMap içinde çiziliyor, burası gereksiz duplike olabilir 
-        // ama eski marker popup içeriklerini korumak için bırakılabilir.
       }
     });
   }
