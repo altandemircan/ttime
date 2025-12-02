@@ -10263,37 +10263,29 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   if (subCoords.length < 2) return;
 
-  // --- STİL AYARLARI ---
+  // --- STİL AYARLARI (GÜNCELLENDİ) ---
   const polyOptions = {
       color: '#8a4af3', // Mor renk
       weight: 6,
-      opacity: 1.0,     // Tam opak
+      opacity: 1.0,     // Tam opak (Maviyi kapatması için)
       lineCap: 'round',
       lineJoin: 'round',
-      dashArray: null   // Düz çizgi
+      dashArray: null   // Varsayılan: Düz çizgi
   };
 
+  // Fly Mode ise alttaki çizgiyi tam kapatmak için biraz daha kalın yap
   if (isFlyMode) {
       polyOptions.weight = 7; 
+      // Dash array YOK, düz çizgi olsun.
   }
 
-  // Haritalara çiz ve ZOOM YAP
+  // Haritalara çiz
   maps.forEach(m => {
     const poly = L.polyline(subCoords, polyOptions).addTo(m);
     
     window._segmentHighlight[day][m._leaflet_id] = poly;
     
     if (poly.bringToFront) poly.bringToFront();
-
-    // --- DEĞİŞİKLİK BURADA: Sadece Büyük Haritaya (Expanded) Zoom Yap ---
-    // Eğer harita expanded container içindeyse fitBounds yap
-    if (m.getContainer().closest('.expanded-map-container')) {
-        m.fitBounds(poly.getBounds(), { 
-            padding: [50, 50], // Kenarlardan biraz boşluk bırak
-            animate: true,
-            duration: 0.5
-        });
-    }
   });
 }
 
