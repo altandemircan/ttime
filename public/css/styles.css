@@ -4667,8 +4667,9 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     font-weight: 500
 }
 .elev-segment-reset {
-    color: #ffffff; 
-    background: #899ab3;
+    color: #ffffff;
+    background: #d32f2f;
+    border: none;
 }
 
 .expanded-map {
