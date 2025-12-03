@@ -4576,7 +4576,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-    width: calc(100% - 40px);
+    width: calc(100% - 30px);
 }
 
 .scale-bar-track { user-select: none; }
