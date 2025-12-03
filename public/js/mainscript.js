@@ -5806,9 +5806,9 @@ function saveArcPointsForDay(day, points) {
 
 
 function openMapLibre3D(expandedMap) {
+  // DOM elementini hazırla
   let mapDiv = expandedMap.getContainer();
   let maplibre3d = document.getElementById('maplibre-3d-view');
-  
   if (!maplibre3d) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
@@ -5840,7 +5840,7 @@ function openMapLibre3D(expandedMap) {
   if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
       const coords = geojson.features[0].geometry.coordinates;
       coords.forEach(coord => {
-          bounds.extend(coord); 
+          bounds.extend(coord); // GeoJSON zaten [lng, lat] formatındadır
           hasBounds = true;
       });
   }
@@ -5851,17 +5851,19 @@ function openMapLibre3D(expandedMap) {
     container: 'maplibre-3d-view',
     style: 'https://tiles.openfreemap.org/styles/liberty',
     pitch: 60,
-    bearing: -20, 
+    bearing: -20, // Hafif çapraz bakış
     interactive: true,
-    attributionControl: false 
+    attributionControl: false // Temiz görünüm için
   };
 
+  // Eğer geçerli sınırlar varsa, bounds ile başlat
   if (hasBounds) {
       mapOptions.bounds = bounds;
       mapOptions.fitBoundsOptions = {
-          padding: { top: 80, bottom: 200, left: 60, right: 60 } 
+          padding: { top: 80, bottom: 200, left: 60, right: 60 } // Alt panel ve kenarlar için boşluk
       };
   } else {
+      // Yoksa eski yöntem (Leaflet merkezini al)
       mapOptions.center = expandedMap.getCenter();
       mapOptions.zoom = expandedMap.getZoom();
   }
@@ -5876,42 +5878,66 @@ function openMapLibre3D(expandedMap) {
     const isFlyMode = !areAllPointsInTurkey(points); 
     const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
 
-    // --- ROTA ÇİZİMİ ---
+    // A) GERÇEK ROTA (Türkiye içi)
     if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
       window._maplibre3DInstance.addSource('route', {
         type: 'geojson',
-        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: routeCoords } }
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: routeCoords
+          }
+        }
       });
       window._maplibre3DInstance.addLayer({
-        id: 'route-line', type: 'line', source: 'route',
+        id: 'route-line',
+        type: 'line',
+        source: 'route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
+        paint: {
+          'line-color': '#1976d2',
+          'line-width': 8,
+          'line-opacity': 0.9
+        }
       });
-    } else if (isFlyMode && points.length > 1) {
+    } 
+    // B) FLY MODE (Yay çizgiler)
+    else if (isFlyMode && points.length > 1) {
       for (let i = 0; i < points.length - 1; i++) {
         const start = [points[i].lng, points[i].lat];
         const end = [points[i + 1].lng, points[i + 1].lat];
-        const curveCoords = getCurvedArcCoords(start, end);
+        const curveCoords = getCurvedArcCoords(start, end); // Mevcut yay fonksiyonunu kullan
 
         window._maplibre3DInstance.addSource(`flyroute-${i}`, {
           type: 'geojson',
-          data: { type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } }
+          data: {
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: curveCoords }
+          }
         });
+
         window._maplibre3DInstance.addLayer({
-          id: `flyroute-line-${i}`, type: 'line', source: `flyroute-${i}`,
+          id: `flyroute-line-${i}`,
+          type: 'line',
+          source: `flyroute-${i}`,
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
+          paint: {
+            'line-color': '#1976d2',
+            'line-width': 6,
+            'line-opacity': 0.8,
+            'line-dasharray': [1, 2]
+          }
         });
       }
     }
 
-    // --- MARKER DRAG LOGIC ---
+    // C) MARKERLAR (HTML Marker kullanmıyoruz, GL Marker kullanıyoruz)
     points.forEach((p, idx) => {
-      // Custom Marker Elementi Oluştur
+      // Özel Marker Elementi Oluştur (CSS ile yuvarlak ve numaralı)
       const el = document.createElement('div');
-      el.className = 'maplibre-marker-day';
-      el.dataset.day = day; 
-      el.dataset.idx = idx; 
+      el.className = 'maplibre-marker';
+      el.style.backgroundImage = 'none'; // Default ikonu kaldır
       el.style.backgroundColor = '#d32f2f';
       el.style.width = '32px';
       el.style.height = '32px';
@@ -5925,56 +5951,12 @@ function openMapLibre3D(expandedMap) {
       el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
       el.innerText = idx + 1;
 
-      // Markerı draggable yap ve eventleri bağla
-      const marker = new maplibregl.Marker({ element: el, draggable: true }) // ✅ DRAGGABLE TRUE
+      new maplibregl.Marker({ element: el })
         .setLngLat([p.lng, p.lat])
-        .setPopup(new maplibregl.Popup({ offset: 25 }).setText(`${idx + 1}. ${p.name || "Point"}`));
-      marker.addTo(window._maplibre3DInstance);
-      
-      // DRAG END: Konumu güncelle ve sepeti yenile
-      marker.on('dragend', async (e) => {
-          const newLngLat = e.target.getLngLat();
-          
-          // Helper fonksiyonun var olduğunu varsayıyoruz (findCartIndexByDayPosition)
-          const cartIdx = findCartIndexByDayPosition(day, idx); 
-          
-          if (cartIdx > -1) {
-              const info = await getPlaceInfoFromLatLng(newLngLat.lat, newLngLat.lng);
-              
-              // Sepet güncellemesi
-              const it = window.cart[cartIdx];
-              it.location.lat = newLngLat.lat;
-              it.location.lng = newLngLat.lng;
-              it.name = info.name || it.name;
-              it.address = info.address || it.address;
-              
-              // UI güncellemesi
-              if (typeof renderRouteForDay === "function") renderRouteForDay(day);
-              if (typeof updateCart === "function") updateCart();
-              
-              marker.setPopup(new maplibregl.Popup({ offset: 25 }).setText(`${idx + 1}. ${it.name || "Point"}`));
-              marker.togglePopup();
-          }
-      });
+        .setPopup(new maplibregl.Popup({ offset: 25 }).setText(p.name || "Point"))
+        .addTo(window._maplibre3DInstance);
     });
   }); 
-
-  // --- CLICK LOGIC (NEARBY PLACES) ---
-  window._maplibre3DInstance.on('click', function(e) {
-      // Tıklanan yer bir marker/popup değilse devam et
-      if (e.originalEvent.target.closest('.maplibre-marker-day') || e.originalEvent.target.closest('.maplibregl-popup')) {
-          return;
-      }
-      
-      const lat = e.lngLat.lat;
-      const lng = e.lngLat.lng;
-      
-      // Leaflet map instance'ını (expandedMap) kullanarak Nearby Places popup'ını aç
-      // Bu, mevcut Leaflet/DOM/CSS yapınızla uyumlu çalışmasını sağlar.
-      if (typeof showNearbyPlacesPopup === 'function') {
-          showNearbyPlacesPopup(lat, lng, expandedMap, day); // ✅ Leaflet instance'ı kullan
-      }
-  });
 }
 
 async function expandMap(containerId, day) {
