@@ -4559,7 +4559,7 @@ function updateExpandedMap(expandedMap, day) {
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // Scale Bar işlemleri
+    // Scale Bar işlemleri (Aynen kalsın)
     const sumKey = `route-map-day${day}`;
     let sum = window.lastRouteSummaries?.[sumKey];
     if (!sum && pts.length > 1 && !isInTurkey) {
@@ -4603,12 +4603,7 @@ function updateExpandedMap(expandedMap, day) {
     setTimeout(() => { setupScaleBarInteraction(day, expandedMap); }, 500);
     adjustExpandedHeader(day);
 
-    // --- 1. DÜZELTME: NEARBY SEARCH GARANTİSİ ---
-    if (typeof attachClickNearbySearch === 'function') {
-        attachClickNearbySearch(expandedMap, day);
-    }
-
-    // --- 2. DÜZELTME: MOBİL ATTRIBUTION FIX ---
+    // --- MOBIL ATTRIBUTION FIX (SONA EKLENDİ) ---
     // Leaflet yazısını haritadan alıp, FIXED olan scalebar panelinin içine taşırız.
     setTimeout(() => {
         // 1. Ana expanded container'ı bul
@@ -4623,20 +4618,11 @@ function updateExpandedMap(expandedMap, day) {
 
         if (fixedPanel && attribution) {
             // Attribution'ı panelin içine taşı (Böylece panel fixed olduğu için bu da fixed olur)
-            fixedPanel.appendChild(attribution);
-            
-            // SADECE KONUM AYARLARI (Renk/Font yok, sadece sağ alta kilitle)
-            attribution.style.position = 'absolute';
-            attribution.style.bottom = '0px';
-            attribution.style.right = '0px';
-            attribution.style.margin = '0';
-            attribution.style.padding = '0 4px';
-            attribution.style.zIndex = '2000';
-            attribution.style.background = 'transparent'; // Panel zaten beyaz
-            attribution.style.pointerEvents = 'auto'; 
-            attribution.style.whiteSpace = 'nowrap'; // Mobilde tek satır kalsın
+            fixedPanel.appendChild(attribution);            
+        
         }
     }, 600); 
+    // ---------------------------------------------
 }
 
 // 2. renderRouteForDay Fonksiyonunu Güncelle (Türkiye içi fallback'i temizle)
@@ -10490,12 +10476,18 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
+  tb.style.cssText = `
+   bottom: 10px; z-index: 1005; display: inline-flex; gap: 10px;
+   align-items: center; border-radius: 10px; padding: 6px;
+   font-size: 12px; color: rgb(0, 0, 0); right: 6px; position: absolute;
+   background: rgb(255 255 255 / 43%);  
+  `;
   tb.innerHTML = `
-    <span class="pill">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
-    <span class="pill">↑ ${Math.round(up)} m</span>
-    <span class="pill">↓ ${Math.round(down)} m</span>
-    <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset">Reset</button>
+    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
+    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">↑ ${Math.round(up)} m</span>
+    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">↓ ${Math.round(down)} m</span>
+    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">Avg %${avgGrade.toFixed(1)}</span>
+    <button type="button" class="elev-segment-reset" style="appearance:none;border:1px solid #d0d7de;background:#fff;color:#333;border-radius:8px;padding:4px 8px;cursor:pointer;font-weight:600;">Reset</button>
   `;
   track.appendChild(tb);
 
