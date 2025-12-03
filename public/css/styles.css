@@ -7436,3 +7436,8 @@ scrollbar-width: thin;
     opacity: 0.9;
 }
 
+/* Sayfa kilidi */
+body.dragging-active {
+    overflow: hidden !important;
+    touch-action: none;
+}
