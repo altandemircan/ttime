@@ -3938,26 +3938,26 @@ cartDiv.appendChild(addNewDayButton);
 
 
   // --- Diğer kalan işlemler ---
+// --- FONKSİYON SONUNDAKİ TEMİZLİK ---
   const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
   if (menuCount) {
     menuCount.textContent = itemCount;
     menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
   }
 
-  attachDragListeners();
+  // attachDragListeners(); // SİLİNDİ (Hata verir)
   days.forEach(d => initPlaceSearch(d));
   addCoordinatesToContent();
+  
   days.forEach(d => {
-    const suppressing = window.__suppressMiniUntilFirstPoint &&
-                        window.__suppressMiniUntilFirstPoint[d];
+    const suppressing = window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[d];
     const realPoints = getDayPoints ? getDayPoints(d) : [];
-    if (suppressing && realPoints.length === 0) {
-      return;
-    }
+    if (suppressing && realPoints.length === 0) return;
     renderRouteForDay(d);
   });
-  setTimeout(wrapRouteControlsForAllDays, 0);
 
+  setTimeout(wrapRouteControlsForAllDays, 0);
+  attachChatDropListeners();
 
   if (window.expandedMaps) {
     Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
@@ -3965,9 +3965,10 @@ cartDiv.appendChild(addNewDayButton);
     });
   }
 
- 
-  setupSidebarAccordion();
+  // initDragDropSystem(); // SİLİNDİ (Gerek yok, drag.js otomatik halleder)
+  // if (typeof interact !== 'undefined') setupMobileDragDrop(); // SİLİNDİ
 
+  setupSidebarAccordion();
   renderTravelModeControlsForAllDays();
 
   (function ensureSelectDatesButton() {
