@@ -3081,7 +3081,8 @@ function initEmptyDayMap(day) {
     wheelDebounceTime: 35,
     wheelPxPerZoomLevel: 120,
     inertia: true,
-    easeLinearity: 0.2
+    easeLinearity: 0.2,
+    preferCanvas: false // Düzeltildi: SVG kullanılsın (kaymayı önler)
   });
 
   // 4. Eğer sınır kutusu (bounds) varsa ona sığdır
@@ -5400,7 +5401,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         scrollWheelZoom: true,
         fadeAnimation: false,
         zoomAnimation: false,
-        preferCanvas: true
+        preferCanvas: false // Düzeltildi: SVG kullanılsın (kaymayı önler)
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
