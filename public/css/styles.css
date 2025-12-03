@@ -5743,18 +5743,18 @@ ease;
 
 
 .leaflet-control-attribution  {
-    position: absolute !important;
-    bottom: 180px !important;
+       position: absolute !important;
+    bottom: 12px !important;
     right: 20px !important;
     margin: 0px !important;
     font-size: 10px !important;
     line-height: 1 !important;
-    color: rgb(0, 0, 0) !important;
+    color: #00000060 !important;
     z-index: 1005 !important;
     pointer-events: auto !important;
 }
 .leaflet-control-attribution a {
-    color: #000 !important;
+    color: #00000060 !important
 }
 
 .leaflet-attribution-flag {
