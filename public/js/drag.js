@@ -329,6 +329,21 @@ function dragStart(event) {
 
 // ========== SHARED HELPERS ==========
 function createPlaceholder(target) {
+    const parent = target.closest(".day-list");
+    if (!parent) return;
+
+    // --- FIX & SAFETY: Kendi üzerindeysek ---
+    // Eğer hedef sürüklenen öğenin kendisiyse:
+    if (draggedItem && target === draggedItem) {
+        // Placeholder varsa ve bir yere takılıysa kaldır
+        if (placeholder && placeholder.parentNode) {
+            placeholder.remove();
+        }
+        // Placeholder yoksa hiç oluşturma ve fonksiyondan çık
+        return;
+    }
+
+    // --- Placeholder Yoksa Oluştur (Sadece ihtiyaç olduğunda) ---
     if (!placeholder) {
         placeholder = document.createElement("div");
         placeholder.classList.add("insertion-placeholder");
@@ -338,33 +353,24 @@ function createPlaceholder(target) {
         placeholder.style.borderRadius = '2px';
     }
 
-    const parent = target.closest(".day-list");
-    if (!parent) return;
-
-    // --- FIX: Eğer target, sürüklenen öğenin kendisi ise placeholder oluşturma ---
-    if (target === draggedItem) {
-        if (placeholder.parentNode) placeholder.remove();
-        return;
-    }
-
+    // --- Yerleştirme Mantığı ---
     if (target.classList.contains("travel-item")) {
-        // Eğer target sürüklenen öğe değilse normal işle
+        // Normal item'ın önüne ekle
         parent.insertBefore(placeholder, target);
     } else if (target.classList.contains("day-list")) {
-        // --- FIX: Listenin sonuna eklerken kontrol ---
-        // Eğer zaten bu listenin sonundaysak placeholder gösterme
-        if (draggedItem.parentNode === parent) {
+        // Listenin sonu veya boş liste
+        // Add Category butonu varsa onun önüne, yoksa sona ekle
+        const addBtn = parent.querySelector('.add-more-btn');
+        
+        // Eğer zaten oradaysak (son öğe bizsek) placeholder koyma
+        if (draggedItem && draggedItem.parentNode === parent) {
             const next = draggedItem.nextElementSibling;
-            const addBtn = parent.querySelector('.add-more-btn');
-            
-            // Zaten sondayız veya add butonu önündeyiz
-            if (!next || (addBtn && next === addBtn)) {
+            if (!next || (addBtn && next === addBtn) || next === placeholder) {
                 if (placeholder.parentNode) placeholder.remove();
                 return;
             }
         }
 
-        const addBtn = parent.querySelector('.add-more-btn');
         if (addBtn) {
             parent.insertBefore(placeholder, addBtn);
         } else {
