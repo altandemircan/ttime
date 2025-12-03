@@ -9490,7 +9490,61 @@ ascBadge.title = `${Math.round(ascentM)} m ascent`;
 dscBadge.title = `${Math.round(descentM)} m descent`;
   }
 }
+// Helper: Selection eventlerini bağla
+function setupScaleBarEvents(track, selDiv) {
+  // Önceki eventleri temizle
+  window.removeEventListener('mousemove', window.__sb_onMouseMove);
+  window.removeEventListener('mouseup', window.__sb_onMouseUp);
+  window.removeEventListener('touchmove', window.__sb_onMouseMove); 
+  window.removeEventListener('touchend', window.__sb_onMouseUp);   
 
+  // Yeni eventleri ekle
+  window.addEventListener('mousemove', window.__sb_onMouseMove);
+  window.addEventListener('mouseup', window.__sb_onMouseUp);
+  window.addEventListener('touchmove', window.__sb_onMouseMove, { passive: false }); 
+  window.addEventListener('touchend', window.__sb_onMouseUp);     
+
+  // Mouse Down
+  track.addEventListener('mousedown', function(e) {
+    const rect = track.getBoundingClientRect();
+    window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
+    window.__scaleBarDragTrack = track;
+    window.__scaleBarDragSelDiv = selDiv;
+    selDiv.style.left = `${window.__scaleBarDrag.startX}px`;
+    selDiv.style.width = `0px`;
+    selDiv.style.display = 'block';
+  });
+
+  // Mobil Long Press
+  let longPressTimer = null;
+  track.addEventListener('touchstart', function(e) {
+    const rect = track.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    longPressTimer = setTimeout(() => {
+        window.__scaleBarDrag = { startX: x, lastX: x };
+        window.__scaleBarDragTrack = track;
+        window.__scaleBarDragSelDiv = selDiv;
+        selDiv.style.left = `${x}px`;
+        selDiv.style.width = `0px`;
+        selDiv.style.display = 'block';
+        if (navigator.vibrate) navigator.vibrate(40);
+    }, 600);
+  }, { passive: true });
+
+  track.addEventListener('touchmove', function(e) {
+      if (longPressTimer && !window.__scaleBarDrag) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+      }
+  }, { passive: true });
+
+  track.addEventListener('touchend', function() {
+      if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+      }
+  });
+}
 function renderRouteScaleBar(container, totalKm, markers) {
   // 1. ADIM: CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-marker-loading-style')) {
