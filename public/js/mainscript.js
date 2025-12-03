@@ -397,7 +397,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
 }
-
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
 window.mapPlanningActive = false;
@@ -5758,7 +5757,7 @@ function openMapLibre3D(expandedMap) {
   if (!maplibre3d) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
-    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;    height: calc(100% - 190px) !important;';
+    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;';
     mapDiv.parentNode.appendChild(maplibre3d);
   }
   maplibre3d.style.display = 'block'; // 3D harita görünür!
