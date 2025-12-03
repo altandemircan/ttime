@@ -5281,7 +5281,6 @@ function hideConfirmation(confirmationContainerId) {
 }
 
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
-// Kullanıcı yeni gün oluşturduğunda çalışır
 function addNewDay(button) {
     // 1. Mevcut en yüksek gün sayısını bul
     let maxDay = 1;
@@ -5299,7 +5298,6 @@ function addNewDay(button) {
     let lastMarkerOfPrevDay = null;
     for (let i = window.cart.length - 1; i >= 0; i--) {
         const item = window.cart[i];
-        // Note olmayan ve geçerli koordinatı olan son öğeyi al
         if (item.day === maxDay && item.location && 
             typeof item.location.lat === 'number' && 
             !isNaN(item.location.lat)) {
@@ -5308,59 +5306,60 @@ function addNewDay(button) {
         }
     }
 
-    // 3. Eğer önceki günün bir bitiş noktası varsa, yeni güne kopyala
+    // 3. Kopyalama ve Ekleme
     if (lastMarkerOfPrevDay) {
         const newItem = JSON.parse(JSON.stringify(lastMarkerOfPrevDay));
         newItem.day = newDay;
         newItem.addedAt = new Date().toISOString();
-        
-        // Eğer kopyalanan item "Start" veya "_starter" flag'ine sahipse temizle
-        delete newItem._starter; 
-        
+        delete newItem._starter; // Starter flag'ini temizle
         window.cart.push(newItem);
     } else {
-        // Yoksa boş gün ekle
         window.cart.push({ day: newDay });
     }
 
     window.currentDay = newDay;
     
-    // Arayüzü güncelle (DOM yeniden oluşur)
+    // Arayüzü güncelle
     if (typeof updateCart === "function") updateCart();
 
-    // 4. HARİTA GÖRÜNÜRLÜK DÜZELTMESİ
-    // updateCart işlemi bittikten kısa bir süre sonra haritayı zorla görünür yap ve çiz
+    // 4. HARİTA ODAKLAMA DÜZELTMESİ (Konya Sorunu Çözümü)
     if (lastMarkerOfPrevDay) {
         setTimeout(() => {
             const mapId = `route-map-day${newDay}`;
             const mapDiv = document.getElementById(mapId);
             
-            // Harita div'ini zorla görünür yap
+            // A) Haritayı görünür yap
             if (mapDiv) {
                 mapDiv.style.display = 'block';
                 mapDiv.style.height = '285px';
             }
 
-            // Harita kontrollerini zorla görünür yap
+            // B) Kontrolleri aç
             const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${newDay}`);
             if (controlsWrapper) controlsWrapper.style.display = 'block';
 
-            const controlsBar = document.getElementById(`route-controls-bar-day${newDay}`);
-            if (controlsBar) controlsBar.style.display = 'flex';
-
-            // Haritayı bu gün için tekrar render et (Leaflet'i tetikle)
+            // C) Haritayı çizdir
             if (typeof renderRouteForDay === 'function') {
                 renderRouteForDay(newDay);
             }
-            
-            // Eğer "Fly Mode" uyarısı varsa ve tek nokta ise, onu gizle
-            const travelModeSet = document.getElementById(`tt-travel-mode-set-day${newDay}`);
-            if (travelModeSet) {
-               // Tek nokta varsa Travel Mode seti görünür olmalı, Fly Mode değil
-               // renderRouteForDay bunu düzeltecektir ama garanti olsun
-            }
 
-        }, 250); // DOM'un oturması için 250ms bekle
+            // D) GARANTİ ODAKLAMA: Harita objesini bul ve manuel setView yap
+            setTimeout(() => {
+                const mapInstance = window.leafletMaps && window.leafletMaps[mapId];
+                if (mapInstance && lastMarkerOfPrevDay.location) {
+                    // Leaflet'in "invalidateSize" fonksiyonu, harita boyutu değişimini algılar
+                    mapInstance.invalidateSize(); 
+                    
+                    // Doğrudan Konya koordinatına uçur
+                    mapInstance.setView(
+                        [lastMarkerOfPrevDay.location.lat, lastMarkerOfPrevDay.location.lng], 
+                        14, 
+                        { animate: false }
+                    );
+                }
+            }, 150); // renderRouteForDay çalıştıktan hemen sonra
+
+        }, 250); 
     }
 }
 function addCoordinatesToContent() {
