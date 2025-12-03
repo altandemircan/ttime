@@ -4579,9 +4579,6 @@ function updateExpandedMap(expandedMap, day) {
     // 1. Önce Loading Skeleton'ı göster
 showElevationLoading(scaleBarDiv);
 
-// 2. Sonra asıl veriyi çekmeye başla
-const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`]
-
 
     if (scaleBarDiv) {
         const totalKm = sum ? sum.distance / 1000 : 0;
@@ -7491,10 +7488,6 @@ scaleBarDiv.innerHTML = '<div class="spinner"></div>';
 
   // 1. Önce Loading Skeleton'ı göster
 showElevationLoading(scaleBarDiv);
-
-// 2. Sonra asıl veriyi çekmeye başla
-const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`]
-
 
   if (scaleBarDiv) {
     try { delete scaleBarDiv.dataset.elevLoadedKey; } catch(_) {}
