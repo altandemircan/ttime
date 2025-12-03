@@ -388,3 +388,20 @@ window.initDragDropSystem = initDragDropSystem;
 
 // Sayfa yüklendiğinde başlat
 document.addEventListener('DOMContentLoaded', initDragDropSystem);
+// ========== MISSING FUNCTION FIX ==========
+
+// mainscript.js'in updateCart fonksiyonu bu ismi arıyor.
+// Bu fonksiyon, HTML yenilendiğinde eventleri tekrar bağlar.
+function attachDragListeners() {
+    // Drop zone'ları (gün listeleri) tekrar tanımla
+    setupDropZones();
+
+    // Mobil için global listener kullanıyoruz, o yüzden tekrar bağlamaya gerek yok.
+    // Ancak Desktop için her öğeye event listener eklemeliyiz.
+    if (!isMobile) {
+        setupDesktopDragDrop();
+    }
+}
+
+// Fonksiyonu global (window) nesnesine ekle ki mainscript.js görebilsin
+window.attachDragListeners = attachDragListeners;
