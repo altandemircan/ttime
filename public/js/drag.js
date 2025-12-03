@@ -68,39 +68,33 @@ function activateMobileDrag(item, touch) {
     longPressTriggered = true;
     draggedItem = item;
 
-    // 1. Ölçüleri al
+    // 1. Koordinat hesaplama (Parmağın öğe içindeki konumu)
     const rect = item.getBoundingClientRect();
-    
-    // Parmağın öğe üzerindeki konumu (Offset)
     mobileDragOffsetX = touch.clientX - rect.left;
     mobileDragOffsetY = touch.clientY - rect.top;
 
-    // 2. Öğenin stilini hazırla (Sabit pozisyona geçiş)
-    // Orijinal genişliği piksel olarak sabitle (Yüzde olmasın, yoksa bozulur)
+    // 2. Öğeyi "Fixed" moda al (En stabil yöntem)
     item.style.width = rect.width + 'px';
     item.style.height = rect.height + 'px';
-    
-    // Fixed pozisyona al ve parmağın konumuna yerleştir
     item.style.position = 'fixed';
     item.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
     item.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
-    
-    // CSS class'ını ekle (Yukarıdaki CSS burada devreye giriyor)
+    item.style.zIndex = '9999';
+    item.style.opacity = '0.9';
+    item.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
     item.classList.add('dragging');
 
     // 3. Placeholder oluştur
     createPlaceholder(item);
 
-    // 4. Scroll kilidi
+    // 4. Sayfa kaydırmayı kilitle
     document.body.classList.add('dragging-active');
     document.body.classList.add('dragging-items');
 
-    // 5. Titreşim (Haptic feedback) - Hissiyatı artırır
-    if (navigator.vibrate) {
-        navigator.vibrate(70); // Biraz daha belirgin titreşim
-    }
+    // 5. Titreşim
+    if (navigator.vibrate) navigator.vibrate(50);
 
-    // 6. Global listenerları başlat
+    // 6. Global event listener'ları ekle (Document üzerine)
     document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
     document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false });
     document.addEventListener('touchcancel', handleGlobalTouchEnd, { passive: false });
