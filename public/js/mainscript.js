@@ -6421,49 +6421,54 @@ function restoreMap(containerId, day) {
     window.removeEventListener('mouseup', window.__sb_onMouseUp);
 }
 /* ==== NEW: Click-based nearby search (replaces long-press) ==== */
+/* ==== NEW: Click-based nearby search (GÜNCELLENDİ) ==== */
 function attachClickNearbySearch(map, day, options = {}) {
-  const radius = options.radius || 500; // metres
+  const radius = options.radius || 500; // varsayılan 500 metre
 
-  if (map.__ttLongPressCleanup) {
-    try { map.__ttLongPressCleanup(); } catch(_){}
-    map.__ttLongPressCleanup = null;
+  // Eski listener varsa temizle (Duplicate tıklamayı önler)
+  if (map.__ttNearbyClickBound) {
+      map.off('click', map.__ttNearbyClickHandler);
+      map.__ttNearbyClickBound = false;
   }
 
-  if (map.__ttNearbyClickBound) return;
+  let __nearbySingleTimer = null;
+  const __nearbySingleDelay = (options && options.singleDelay) || 250; // ms
+
+  // Tıklama işleyicisi
+  const clickHandler = function(e) {
+    // Eğer tıklanan şey bir marker veya poligon ise işlem yapma (Leaflet interactive kontrolü)
+    if (e.originalEvent && e.originalEvent.target && 
+       (e.originalEvent.target.classList.contains('leaflet-interactive') || 
+        e.originalEvent.target.closest('.leaflet-interactive'))) {
+      return;
+    }
+
+    // Çift tıklama (zoom) ile çakışmaması için zamanlayıcı
+    if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
+    
+    __nearbySingleTimer = setTimeout(async () => {
+      console.log("[Nearby] Map clicked at:", e.latlng); // Debug için
+      
+      // Varsa açık popup'ı kapat
+      if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+      
+      // Yeni popup'ı aç
+      if (typeof showNearbyPlacesPopup === 'function') {
+          showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
+      }
+    }, __nearbySingleDelay);
+  };
+
+  // Event'i haritaya bağla
+  map.on('click', clickHandler);
+  
+  // Referansları sakla (temizlik için)
+  map.__ttNearbyClickHandler = clickHandler;
   map.__ttNearbyClickBound = true;
 
-  let __nearbySingleTimer = null;
-  const __nearbySingleDelay = (options && options.singleDelay) || 300; // ms
-
-  map.on('click', function(e) {
-    if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
-    __nearbySingleTimer = setTimeout(async () => {
-      // YENİDEN: Polyline veya marker tıklamasında nearby açma!
-      if (
-        e.originalEvent &&
-        e.originalEvent.target &&
-        e.originalEvent.target.classList.contains('leaflet-interactive')
-      ) {
-        return;
-      }
-      closeNearbyPopup();
-      showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
-    }, __nearbySingleDelay);
-  });
-
-  map.on('dblclick', function() {
-    if (__nearbySingleTimer) {
-      clearTimeout(__nearbySingleTimer);
-      __nearbySingleTimer = null;
-    }
-  });
-
-  map.on('zoomstart', function() {
-    if (__nearbySingleTimer) {
-      clearTimeout(__nearbySingleTimer);
-      __nearbySingleTimer = null;
-    }
-  });
+  // Çift tıklama veya zoom yaparsa tek tık işlemini iptal et
+  map.on('dblclick', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
+  map.on('zoomstart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
