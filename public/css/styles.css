@@ -7355,7 +7355,7 @@ scrollbar-width: thin;
     height: 100% !important;
 }
 
-
+/* Day X menu header */
     .action-buttons-container { position: relative; display: flex; align-items: center; }
     .action-menu-trigger {
       appearance: none; border: 1px solid #ddd; background: #fff; color: #333;
@@ -7393,3 +7393,4 @@ scrollbar-width: thin;
       align-items: center;
       gap: 8px;
     }
+/* Day X menu header */
