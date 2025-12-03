@@ -1,4 +1,4 @@
-// ========== DRAG.JS - TRELLO STİLİ & MOR ÇİZGİ (STABIL) ==========
+// ========== DRAG.JS - AKILLI GRUPLAMA (ITEM + MESAFE) ==========
 
 if (!window.cart || !Array.isArray(window.cart)) window.cart = [];
 
@@ -19,11 +19,11 @@ let longPressTimer = null;
 let autoScrollInterval = null;
 
 // Ayarlar
-const LONG_PRESS_DURATION = 250; // Mobilde basılı tutma süresi (ms)
+const LONG_PRESS_DURATION = 250; 
 const SCROLL_ZONE_HEIGHT = 80;   
 const SCROLL_SPEED = 15;         
 
-// 1. CSS (Sadece sürükleme efekti için - Tasarıma dokunmaz)
+// 1. CSS Enjeksiyonu
 (function injectDragStyles() {
     if (document.getElementById('tt-drag-logic-style')) return;
     const style = document.createElement('style');
@@ -31,23 +31,16 @@ const SCROLL_SPEED = 15;
     style.innerHTML = `
         /* Sürüklenen kopya (Hayalet) */
         .drag-clone {
-            position: fixed; 
-            z-index: 99999; 
-            pointer-events: none; 
-            opacity: 0.95; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+            position: fixed; z-index: 99999; pointer-events: none;
+            opacity: 0.95; box-shadow: 0 15px 35px rgba(0,0,0,0.3);
             transform: scale(1.02) rotate(1deg); 
-            background: #fff; 
-            list-style: none; 
-            border-radius: 8px;
+            background: #fff; list-style: none; border-radius: 8px;
             width: var(--drag-width);
             height: var(--drag-height);
         }
         
         /* Orijinal öğe yerinde kalsın ama görünmesin */
-        .travel-item.is-dragging { 
-            opacity: 0.0 !important; 
-        }
+        .travel-item.is-dragging { opacity: 0.0 !important; }
         
         /* --- MOR KALIN ÇİZGİ PLACEHOLDER --- */
         .drag-placeholder {
@@ -60,12 +53,8 @@ const SCROLL_SPEED = 15;
             display: block;
         }
         
-        /* Drag sırasında sayfa kaymasını engelle */
         body.dragging-active { 
-            user-select: none; 
-            touch-action: none;
-            -webkit-user-select: none;
-            overflow: hidden;
+            user-select: none; touch-action: none; -webkit-user-select: none; overflow: hidden;
         }
     `;
     document.head.appendChild(style);
@@ -85,43 +74,35 @@ document.addEventListener('mouseup', onMouseUp);
 function onTouchStart(e) {
     if (e.touches.length !== 1) return;
     const target = e.target.closest('.travel-item');
-    // Butonlara/Linklere basıldıysa iptal
     if (!target || e.target.closest('button') || e.target.closest('a') || e.target.closest('.action-menu')) return;
 
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-    
     const rect = target.getBoundingClientRect();
     touchOffsetX = touchStartX - rect.left;
     touchOffsetY = touchStartY - rect.top;
 
     draggedItem = target;
 
-    // Trello usulü: Basılı tutunca drag başlar
     longPressTimer = setTimeout(() => {
         startDrag(target, touchStartX, touchStartY);
     }, LONG_PRESS_DURATION);
 }
 
 function onTouchMove(e) {
-    const touch = e.touches[0];
-
-    // Henüz drag başlamadıysa
     if (!isDragging) {
         if (draggedItem) {
-            const dx = Math.abs(touch.clientX - touchStartX);
-            const dy = Math.abs(touch.clientY - touchStartY);
-            // Parmak oynarsa iptal et (Scroll yapıyor)
+            const dx = Math.abs(e.touches[0].clientX - touchStartX);
+            const dy = Math.abs(e.touches[0].clientY - touchStartY);
             if (dx > 10 || dy > 10) {
                 clearTimeout(longPressTimer);
                 draggedItem = null;
             }
         }
-        return; // Normal scroll
+        return; 
     }
-
-    // Drag başladıysa
     if (e.cancelable) e.preventDefault();
+    const touch = e.touches[0];
     updateDragPosition(touch.clientX, touch.clientY);
     handleAutoScroll(touch.clientY);
     checkDropZone(touch.clientX, touch.clientY);
@@ -173,12 +154,17 @@ function startDrag(item, x, y) {
     document.body.classList.add('dragging-active');
     if (navigator.vibrate) navigator.vibrate(40);
 
-    // Placeholder (Mor Çizgi)
     placeholder = document.createElement('li');
     placeholder.className = 'drag-placeholder';
-    item.parentNode.insertBefore(placeholder, item);
+    
+    // Başlangıçta hemen arkasına koy (varsa separatörü de atla)
+    let insertPoint = item.nextSibling;
+    if (insertPoint && insertPoint.classList && insertPoint.classList.contains('distance-separator')) {
+        insertPoint = insertPoint.nextSibling;
+    }
+    item.parentNode.insertBefore(placeholder, insertPoint);
 
-    // Clone (Hayalet)
+    // Clone
     const rect = item.getBoundingClientRect();
     clone = item.cloneNode(true);
     clone.classList.add('drag-clone');
@@ -186,7 +172,6 @@ function startDrag(item, x, y) {
     clone.style.setProperty('--drag-height', `${rect.height}px`);
     clone.style.width = `${rect.width}px`;
     clone.style.height = `${rect.height}px`;
-    
     document.body.appendChild(clone);
 
     item.classList.add('is-dragging'); 
@@ -213,6 +198,7 @@ function handleAutoScroll(y) {
     }
 }
 
+// --- KRİTİK DÜZELTME: SEPARATOR ATLAYARAK HEDEF BELİRLEME ---
 function checkDropZone(x, y) {
     if(clone) clone.style.display = 'none';
     const elemBelow = document.elementFromPoint(x, y);
@@ -220,21 +206,46 @@ function checkDropZone(x, y) {
     
     if (!elemBelow) return;
 
-    const targetItem = elemBelow.closest('.travel-item');
+    // Hedef öğeyi bul (Travel Item veya Separator olabilir)
+    let targetItem = elemBelow.closest('.travel-item');
+    let targetSeparator = elemBelow.closest('.distance-separator');
     const targetList = elemBelow.closest('.day-list');
 
     if (targetList) {
-        if (targetItem && targetItem !== draggedItem && targetItem !== placeholder) {
+        // Eğer separator üzerindeysek, hedef olarak ondan önceki travel-item'ı al
+        if (targetSeparator && !targetItem) {
+            targetItem = targetSeparator.previousElementSibling;
+            // Eğer önceki eleman travel-item değilse (örn. placeholder ise), null kalsın
+            if (!targetItem || !targetItem.classList.contains('travel-item')) {
+                targetItem = null;
+            }
+        }
+
+        if (targetItem && targetItem !== draggedItem) {
             const rect = targetItem.getBoundingClientRect();
-            const midpoint = rect.top + rect.height / 2;
+            // Separator varsa onun yüksekliğini de hesaba kat (paket mantığı)
+            let totalHeight = rect.height;
+            let nextEl = targetItem.nextElementSibling;
+            if (nextEl && nextEl.classList.contains('distance-separator')) {
+                totalHeight += nextEl.getBoundingClientRect().height;
+            }
+
+            const midpoint = rect.top + (totalHeight / 2);
             
-            if (y < midpoint) targetList.insertBefore(placeholder, targetItem);
-            else targetList.insertBefore(placeholder, targetItem.nextSibling);
+            if (y < midpoint) {
+                // Üstüne ekle
+                targetList.insertBefore(placeholder, targetItem);
+            } else {
+                // Altına ekle (Varsa separatörü de geç)
+                let insertPoint = targetItem.nextSibling;
+                if (insertPoint && insertPoint.classList.contains('distance-separator')) {
+                    insertPoint = insertPoint.nextSibling;
+                }
+                targetList.insertBefore(placeholder, insertPoint);
+            }
         } 
-        else if (!targetItem && targetList.children.length === 0) {
-            targetList.appendChild(placeholder);
-        } 
-        else if (!targetItem) {
+        // Liste boşsa veya en alttaki boşluğa geldiysek
+        else if (!targetItem && !targetSeparator) {
             targetList.appendChild(placeholder);
         }
     }
@@ -243,7 +254,6 @@ function checkDropZone(x, y) {
 function finishDrag() {
     if (placeholder && draggedItem) {
         placeholder.parentNode.insertBefore(draggedItem, placeholder);
-        // Veriyi güncelle
         updateCartOrderData();
     }
 }
