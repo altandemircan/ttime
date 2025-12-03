@@ -3503,7 +3503,6 @@ async function updateCart() {
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
 
-  // Rotaları Çiz
   for (const d of days) {
     try { await renderRouteForDay(d); } catch(e) {}
   }
@@ -3520,13 +3519,11 @@ async function updateCart() {
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  // --- BOŞ CART KONTROLÜ ---
+  // BOŞ DURUM
   if (!window.cart || window.cart.length === 0) {
     cartDiv.innerHTML = `
       <div class="day-container" id="day-container-1" data-day="1">
-        <h4 class="day-header">
-          <div class="title-container"><span class="day-title">Day 1</span></div>
-        </h4>
+        <h4 class="day-header"><div class="title-container"><span class="day-title">Day 1</span></div></h4>
         <ul class="day-list" data-day="1">
           <div class="empty-day-block">
             <p class="empty-day-message">No item has been added yet.</p>
@@ -3544,6 +3541,7 @@ async function updateCart() {
 
   cartDiv.innerHTML = "";
 
+  // GÜNLERİ VE ITEMLARI OLUŞTUR
   for (let day = 1; day <= totalDays; day++) {
     const dayItemsArr = window.cart.filter(i => Number(i.day) === Number(day) && !i._starter && !i._placeholder);
     
@@ -3577,7 +3575,8 @@ async function updateCart() {
 
       const li = document.createElement("li");
       li.className = "travel-item";
-      // DİKKAT: draggable ve event listener BURADAN SİLİNDİ (drag.js otomatik tanır)
+      // --- SİLİNEN KISIM (Sadece bunlar): li.draggable = true; li.addEventListener('dragstart', ...);
+      // drag.js bu işi global yapıyor.
       li.dataset.index = currIdx;
       
       if (item.location?.lat) {
@@ -3637,7 +3636,7 @@ async function updateCart() {
                 <p class="working-hours-title">🕔 <span class="working-hours-value">${openingHoursDisplay}</span></p>
                 ${item.location ? `<div class="google-search-info" style="margin-top:8px;"><a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank">🇬 Search images on Google</a></div>` : ''}
               </div>
-              <button class="add-favorite-btn" data-name="${item.name}"><span class="fav-heart">❤️</span> Add to My Places</button>
+              <button class="add-favorite-btn" data-name="${item.name}" onclick=""><span class="fav-heart">❤️</span> Add to My Places</button>
               <button class="remove-btn" onclick="showRemoveItemConfirmation(${currIdx}, this)">Remove place</button>
               <div class="confirmation-container" id="confirmation-item-${currIdx}" style="display:none;">
                  <p>Remove?</p>
@@ -3649,13 +3648,10 @@ async function updateCart() {
       }
       dayList.appendChild(li);
 
-      // --- MESAFE VE SÜRE ---
+      // --- MESAFE HESAPLAMA KISMI (KORUNDU) ---
       const nextItem = dayItemsArr[idx + 1];
       if (item.location && nextItem && nextItem.location) {
-          const travelMode = typeof getTravelModeForDay === "function" 
-            ? String(getTravelModeForDay(day)).trim().toLowerCase() 
-            : "driving";
-
+          const travelMode = typeof getTravelModeForDay === "function" ? String(getTravelModeForDay(day)).trim().toLowerCase() : "driving";
           const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
           let distStr = '', durStr = '', prefix = '';
           
@@ -3670,12 +3666,7 @@ async function updateCart() {
              if(s) {
                  distStr = s.distance >= 1000 ? (s.distance/1000).toFixed(2)+" km" : Math.round(s.distance)+" m";
                  durStr = s.duration >= 60 ? Math.round(s.duration/60)+" min" : Math.round(s.duration)+" sec";
-             } else {
-                 const d = haversine(item.location.lat, item.location.lng, nextItem.location.lat, nextItem.location.lng);
-                 distStr = d >= 1000 ? (d/1000).toFixed(2)+" km" : Math.round(d)+" m";
-                 durStr = "..."; 
              }
-             
              if(travelMode==="driving") prefix=`<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
              else if(travelMode==="cycling") prefix=`<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
              else if(travelMode==="walking") prefix=`<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
@@ -3718,7 +3709,6 @@ async function updateCart() {
       menuCount.style.display = count > 0 ? "inline-block" : "none";
   }
 
-  // --- TEMİZLİK: Eski drag çağrıları silindi ---
   days.forEach(d => initPlaceSearch(d));
   if(typeof addCoordinatesToContent === 'function') addCoordinatesToContent();
   
@@ -3740,6 +3730,8 @@ async function updateCart() {
 
   if(typeof setupSidebarAccordion === 'function') setupSidebarAccordion();
   if(typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
+
+  // SİLİNEN: attachDragListeners() ve initDragDropSystem() çağrıları yok.
 }
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
