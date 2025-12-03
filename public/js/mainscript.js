@@ -3503,6 +3503,7 @@ async function updateCart() {
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
 
+  // Rotaları Çiz
   for (const d of days) {
     try { await renderRouteForDay(d); } catch(e) {}
   }
@@ -3519,7 +3520,7 @@ async function updateCart() {
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  // BOŞ DURUM
+  // BOŞ CART
   if (!window.cart || window.cart.length === 0) {
     cartDiv.innerHTML = `
       <div class="day-container" id="day-container-1" data-day="1">
@@ -3541,7 +3542,6 @@ async function updateCart() {
 
   cartDiv.innerHTML = "";
 
-  // GÜNLERİ VE ITEMLARI OLUŞTUR
   for (let day = 1; day <= totalDays; day++) {
     const dayItemsArr = window.cart.filter(i => Number(i.day) === Number(day) && !i._starter && !i._placeholder);
     
@@ -3575,8 +3575,7 @@ async function updateCart() {
 
       const li = document.createElement("li");
       li.className = "travel-item";
-      // --- SİLİNEN KISIM (Sadece bunlar): li.draggable = true; li.addEventListener('dragstart', ...);
-      // drag.js bu işi global yapıyor.
+      // DİKKAT: draggable ve dragstart YOK.
       li.dataset.index = currIdx;
       
       if (item.location?.lat) {
@@ -3648,7 +3647,7 @@ async function updateCart() {
       }
       dayList.appendChild(li);
 
-      // --- MESAFE HESAPLAMA KISMI (KORUNDU) ---
+      // Mesafe Separator (Korundu)
       const nextItem = dayItemsArr[idx + 1];
       if (item.location && nextItem && nextItem.location) {
           const travelMode = typeof getTravelModeForDay === "function" ? String(getTravelModeForDay(day)).trim().toLowerCase() : "driving";
@@ -3730,8 +3729,6 @@ async function updateCart() {
 
   if(typeof setupSidebarAccordion === 'function') setupSidebarAccordion();
   if(typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
-
-  // SİLİNEN: attachDragListeners() ve initDragDropSystem() çağrıları yok.
 }
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
