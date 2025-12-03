@@ -335,7 +335,54 @@ function dragStart(event) {
 
 // ========== SHARED HELPERS ==========
 function createPlaceholder(target) {
-  
+    const parent = target.closest(".day-list");
+    if (!parent) return;
+
+    // --- FIX & SAFETY: Kendi üzerindeysek ---
+    // Eğer hedef sürüklenen öğenin kendisiyse:
+    if (draggedItem && target === draggedItem) {
+        // Placeholder varsa ve bir yere takılıysa kaldır
+        if (placeholder && placeholder.parentNode) {
+            placeholder.remove();
+        }
+        // Placeholder yoksa hiç oluşturma ve fonksiyondan çık
+        return;
+    }
+
+    // --- Placeholder Yoksa Oluştur (Sadece ihtiyaç olduğunda) ---
+    if (!placeholder) {
+        placeholder = document.createElement("div");
+        placeholder.classList.add("insertion-placeholder");
+        placeholder.style.height = '4px';
+        placeholder.style.backgroundColor = '#8a4af3';
+        placeholder.style.margin = '8px 0';
+        placeholder.style.borderRadius = '2px';
+    }
+
+    // --- Yerleştirme Mantığı ---
+    if (target.classList.contains("travel-item")) {
+        // Normal item'ın önüne ekle
+        parent.insertBefore(placeholder, target);
+    } else if (target.classList.contains("day-list")) {
+        // Listenin sonu veya boş liste
+        // Add Category butonu varsa onun önüne, yoksa sona ekle
+        const addBtn = parent.querySelector('.add-more-btn');
+        
+        // Eğer zaten oradaysak (son öğe bizsek) placeholder koyma
+        if (draggedItem && draggedItem.parentNode === parent) {
+            const next = draggedItem.nextElementSibling;
+            if (!next || (addBtn && next === addBtn) || next === placeholder) {
+                if (placeholder.parentNode) placeholder.remove();
+                return;
+            }
+        }
+
+        if (addBtn) {
+            parent.insertBefore(placeholder, addBtn);
+        } else {
+            parent.appendChild(placeholder);
+        }
+    }
 }
 function setupDropZones() {
     // Masaüstü drop zone dinleyicileri
