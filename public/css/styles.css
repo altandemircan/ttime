@@ -6606,7 +6606,7 @@ border-bottom:1px solid #ddd;
 }
     @supports (height: 100dvh) { .scale-bar-track { bottom: auto; } }
     @media (max-width:768px) { .scale-bar-track { width: 100%;
-    right: -5px; } }
+   } }
     /* Distance baseline and ticks (top) */
    
     .scale-bar-tick { position:absolute; top:10px; width:1px; height:16px; background:#cfd8dc; }
