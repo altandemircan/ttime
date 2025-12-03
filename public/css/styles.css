@@ -4613,7 +4613,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
       
     }
     .route-scale-bar {
-         width: calc(100%);
+       width: calc(100% - 25px);
       
     }
     .expanded-map{
