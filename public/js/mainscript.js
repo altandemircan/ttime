@@ -4575,6 +4575,14 @@ function updateExpandedMap(expandedMap, day) {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+
+    // 1. Önce Loading Skeleton'ı göster
+showElevationLoading(scaleBarDiv);
+
+// 2. Sonra asıl veriyi çekmeye başla
+const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`]
+
+
     if (scaleBarDiv) {
         const totalKm = sum ? sum.distance / 1000 : 0;
         let markerPositions = [];
