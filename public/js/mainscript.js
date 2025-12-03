@@ -3082,7 +3082,7 @@ function initEmptyDayMap(day) {
     wheelPxPerZoomLevel: 120,
     inertia: true,
     easeLinearity: 0.2,
-    
+
   });
 
   // 4. Eğer sınır kutusu (bounds) varsa ona sığdır
@@ -7480,6 +7480,14 @@ scaleBarDiv.innerHTML = '<div class="spinner"></div>';
   });
 
   const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+
+  // 1. Önce Loading Skeleton'ı göster
+showElevationLoading(scaleBarDiv);
+
+// 2. Sonra asıl veriyi çekmeye başla
+const geojson = window.lastRouteGeojsons?.[`route-map-day${day}`]
+
+
   if (scaleBarDiv) {
     try { delete scaleBarDiv.dataset.elevLoadedKey; } catch(_) {}
     window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
@@ -10937,4 +10945,36 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     }
 
     return L.polyline(latlngs, options).addTo(map);
+}
+
+
+
+function showElevationLoading(container) {
+    if (!container) return;
+
+    // Rastgele ama düzgün görünen bir dağ silüeti (SVG Path)
+    // Bu path görseldeki gibi inişli çıkışlı bir grafik taklidi yapar.
+    const svgPathData = "M0,100 L0,60 C20,65 40,50 60,55 C80,60 100,40 120,45 C140,50 160,30 180,35 C200,40 220,20 240,25 C260,30 280,15 300,20 L300,100 Z";
+    
+    // Sadece çizgi için (altını kapatmadan)
+    const linePathData = "M0,60 C20,65 40,50 60,55 C80,60 100,40 120,45 C140,50 160,30 180,35 C200,40 220,20 240,25 C260,30 280,15 300,20";
+
+    const html = `
+        <div class="elevation-skeleton-container">
+            <div class="elevation-skeleton-grid"></div>
+            
+            <svg class="elevation-skeleton-graph" viewBox="0 0 300 100" preserveAspectRatio="none">
+                <path d="${svgPathData}" class="skeleton-fill"></path>
+                <path d="${linePathData}" class="skeleton-line"></path>
+            </svg>
+
+            <div class="elevation-loading-overlay">
+                <div class="spinner" style="border-top-color: #4CAF50;"></div>
+                <div class="elevation-loading-text">Elevation Calculating...</div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+    container.style.display = "block";
 }
