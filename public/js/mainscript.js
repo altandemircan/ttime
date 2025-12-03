@@ -4424,7 +4424,7 @@ function isSupportedTravelMode(mode) {
   return ['car', 'bike', 'foot'].includes(mode);
 }
 
-
+// 1. updateExpandedMap Fonksiyonunu Güncelle (Haversine hesabını engelle)
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
@@ -4602,7 +4602,6 @@ function updateExpandedMap(expandedMap, day) {
     }
     setTimeout(() => { setupScaleBarInteraction(day, expandedMap); }, 500);
     adjustExpandedHeader(day);
-
 }
 
 // 2. renderRouteForDay Fonksiyonunu Güncelle (Türkiye içi fallback'i temizle)
@@ -9429,7 +9428,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
         }
         .scale-bar-track.loading {
             min-height: 200px; 
-      width:100%
         }
     `;
     document.head.appendChild(style);
