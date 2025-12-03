@@ -4667,8 +4667,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     font-weight: 500
 }
 .elev-segment-reset {
-    color: #333;
-    font-weight: 600;
+    color: #ffffff; 
+    background: #899ab3;
 }
 
 .expanded-map {
@@ -7365,5 +7365,7 @@ scrollbar-width: thin;
 #maplibre-3d-view {
     height: 100% !important;
 }
+
+    
 
     
