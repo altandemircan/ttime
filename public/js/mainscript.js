@@ -7484,23 +7484,38 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
 
     marker.on('click', (e) => {
       if (e.originalEvent) e.originalEvent.stopPropagation();
+
+      // 1. Tıklanan markerın şu anki durumunu kontrol et (Yeşil mi?)
+      const outer = marker.getElement()?.querySelector('.custom-marker-outer');
+      const wasActive = outer && outer.classList.contains('green');
+
+      // 2. ÖNCE TEMİZLİK: Haritadaki tüm markerları pasif (kırmızı) moda al
       disableAllMarkerDragging(expandedMap);
-      if (marker.dragging && marker.dragging.enable) marker.dragging.enable();
+      clearAllMarkersUI();
 
-      activateMarkerUI(marker);
-      showDragArrows(marker);
-      showTransientDragHint(marker, expandedMap, 'Drag to reposition');
-      marker.openPopup();
+      // 3. EĞER MARKER ÖNCEDEN AKTİF DEĞİLSE -> ŞİMDİ AKTİF ET
+      if (!wasActive) {
+          if (marker.dragging && marker.dragging.enable) marker.dragging.enable();
 
-      const box = marker.getElement()?.querySelector('.custom-marker-place-name');
-      if (box) {
-        box.style.opacity = 0;
-        box.classList.remove('name-bubble-animate');
-        const xBtn = box.querySelector('.marker-remove-x-btn');
-        if (xBtn) xBtn.style.display = 'none';
+          activateMarkerUI(marker); // Yeşil yap ve döndür
+          showDragArrows(marker);
+          showTransientDragHint(marker, expandedMap, 'Drag to reposition');
+          marker.openPopup();
+
+          const box = marker.getElement()?.querySelector('.custom-marker-place-name');
+          if (box) {
+            box.style.opacity = 0;
+            box.classList.remove('name-bubble-animate');
+            const xBtn = box.querySelector('.marker-remove-x-btn');
+            if (xBtn) xBtn.style.display = 'none';
+          }
+
+          if ('vibrate' in navigator) navigator.vibrate(15);
+      } 
+      // 4. EĞER ZATEN AKTİFSE -> HİÇBİR ŞEY YAPMA (Zaten yukarıda clearAllMarkersUI ile pasif oldu)
+      else {
+          marker.closePopup(); // İsteğe bağlı: Tekrar tıklayınca popup'ı da kapat
       }
-
-      if ('vibrate' in navigator) navigator.vibrate(15);
     });
 
     marker.on('dragstart', () => {
