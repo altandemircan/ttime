@@ -7053,36 +7053,36 @@ display: flex
 .day-steps { min-height: 300px; }
 
 .route-info-banner {
-      position: absolute;
+   position: absolute;
     top: 24px;
     left: 50%;
     transform: translateX(-50%);
     background: #2980d5;
     color: #fff;
     font-size: 15px;
-    padding: 10px 20px;
+    padding: 6px 12px;
     border-radius: 22px;
     box-shadow: 0 4px 24px #0006;
     z-index: 1008;
-    display: flex
-;
+    display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0px;
     opacity: 0.97;
     max-width: 90vw;
     min-width: 210px;
 }
 .route-info-close {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 23px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0 3px;
-  margin-left: 8px;
-  opacity: 0.8;
-  transition: opacity 0.2s;
+      background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0px 3px;
+    margin-left: 6px;
+    padding-top: 1px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
 }
 .route-info-close:hover { opacity: 1; }
 
