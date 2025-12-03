@@ -4647,7 +4647,16 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 .elev-segment-toolbar {
         bottom: 160px;
-       right: -12px;
+    z-index: 1005;
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    border-radius: 10px;
+    padding: 6px;
+    font-size: 12px;
+    color: rgb(0, 0, 0);
+
+    right: -12px;
     position: absolute;
     display: flex;
     align-items: center;
@@ -4659,16 +4668,29 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     font-size: 11px;
     color: #8a4af3;
     font-weight: 700;
+    position: absolute;
+    background: rgb(255 255 255 / 43%);
+    position: absolute;
+   display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 5;
+    background: #ffffff;  
+    border-radius: 10px;
+    padding: 6px 10px;   
+    font-size: 11px;
+    color: #8a4af3;
+    font-weight: 700;
 }
-.elev-segment-toolbar .pill, .elev-segment-reset {
+.elev-segment-toolbar .pill, .elev-segment-toolbar button {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 2px 6px;
     font-weight: 500
 }
-.elev-segment-reset {
-    color: #ffffff; 
-    background: #899ab3;
+.elev-segment-toolbar button {
+    color: #333;
+    font-weight: 600;
 }
 
 .expanded-map {
@@ -7365,7 +7387,5 @@ scrollbar-width: thin;
 #maplibre-3d-view {
     height: 100% !important;
 }
-
-    
 
     
