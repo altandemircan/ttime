@@ -7356,13 +7356,6 @@ scrollbar-width: thin;
 }
 
 
-
-
-
-
-
-
-
     .action-buttons-container { position: relative; display: flex; align-items: center; }
     .action-menu-trigger {
       appearance: none; border: 1px solid #ddd; background: #fff; color: #333;
@@ -7386,3 +7379,17 @@ scrollbar-width: thin;
     /* Remove maddesi vurgulu (isteğe bağlı) */
     .action-menu-item.remove { color: #c62828; }
     .action-menu-item.remove:hover { background: #ffecec; }
+
+  .day-header {
+      display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-block-start: 0em;
+    margin-block-end: 1em;
+    }
+    .day-header .title-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
