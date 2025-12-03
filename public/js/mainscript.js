@@ -3663,8 +3663,10 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
         li.setAttribute("data-lat", item.location.lat);
         li.setAttribute("data-lon", item.location.lng);
       }
-      li.addEventListener("dragstart", dragStart);
-
+// dragStart fonksiyonu drag.js'den window'a eklendiği için window.dragStart olarak erişiyoruz
+li.addEventListener("dragstart", function(e) {
+    if (window.dragStart) window.dragStart(e);
+});
       // --- MARKER HTML YAPISI (Senin İstediğin) ---
       // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
       const listMarkerHtml = `
