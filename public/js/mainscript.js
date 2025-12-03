@@ -9082,7 +9082,7 @@ function wrapRouteControls(day) {
       // --- DURUM 2: KAPALI (AKTİF) ---
       expandBtn.style.background = '#ffffff';
       expandBtn.style.borderColor = 'rgb(43 129 213)';
-      expandBtn.style.color = '#297fd4';
+      expandBtn.style.color = '#0080ff';
       expandBtn.style.cursor = 'pointer';
       
       // Hover efektleri sadece aktifken
@@ -10347,7 +10347,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   const cid = `route-map-day${day}`;
   
-  // --- VERİ KAYNAĞINI BELİRLE (FLY MODE vs NORMAL ROTA) ---
+  // --- VERİ KAYNAĞINI BELİRLE ---
   let coords = null;
   let isFlyMode = false;
 
@@ -10365,14 +10365,15 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   }
 
   if (!coords || coords.length < 2) return;
-  // -------------------------------------------------------
 
   window._segmentHighlight = window._segmentHighlight || {};
   
   const maps = [];
+  // Küçük harita varsa ekle
   if (window.leafletMaps && window.leafletMaps[cid]) {
       maps.push(window.leafletMaps[cid]);
   }
+  // Büyük (Expanded) harita varsa ekle
   const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
   if (expandedObj && expandedObj.expandedMap) {
       maps.push(expandedObj.expandedMap);
@@ -10450,23 +10451,23 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     
     if (poly.bringToFront) poly.bringToFront();
 
-    // --- YENİ EKLENEN KISIM: ZOOM ---
-    // Oluşturulan polyline'ın sınırlarına haritayı odakla
+    // --- YENİ EKLENEN KISIM: SEGMENTE ZOOM YAP ---
     try {
         m.fitBounds(poly.getBounds(), {
             padding: [50, 50], // Segment kenarlara yapışmasın diye boşluk
-            maxZoom: 16,       // Çok kısa segmentlerde aşırı zoom yapmasın
+            maxZoom: 16,
             animate: true,
-            duration: 0.6      // Yumuşak geçiş süresi
+            duration: 0.8
         });
     } catch(e) { 
         console.warn("Segment zoom hatası:", e); 
     }
-    // -------------------------------
+    // ---------------------------------------------
   });
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
+  // ... (Fonksiyonun başındaki değişken tanımlamaları aynı kalacak) ...
   const svgNS = 'http://www.w3.org/2000/svg';
 
   window._lastSegmentDay = day;
@@ -10483,44 +10484,38 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       selDiv.style.left = '0px';
   }
 
-  // Eski SVG'leri temizle ama Tooltip'e dokunma
+  // Eski SVG'leri temizle
   track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
   track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
 
+  // ... (Geri kalan hesaplama ve çizim kodları buraya gelir, orjinal kodunuzdaki gibi) ...
+  // (Burayı kısaltıyorum, sadece Reset butonu mantığı değişiyor)
+  
   const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
   const totalKm = Number(container.dataset.totalKm) || 0;
-  const markers = (typeof getRouteMarkerPositionsOrdered === 'function')
-    ? getRouteMarkerPositionsOrdered(day) : [];
+  const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
 
+  // ... (Min/Max, SegmentElevData hesaplamaları, createScaleElements çağrıları aynı) ...
   const min = Math.min(...elevSmooth);
   const max = Math.max(...elevSmooth, min + 1);
   const span = max - min;
   
   let vizMin, vizMax;
-  if (span > 0) { 
-      vizMin = min - span * 0.50; 
-      vizMax = max + span * 1.0; 
-  } else { 
-      vizMin = min - 1; 
-      vizMax = max + 1; 
-  }
+  if (span > 0) { vizMin = min - span * 0.50; vizMax = max + span * 1.0; } 
+  else { vizMin = min - 1; vizMax = max + 1; }
 
-  const segmentElevData = {
-      smooth: elevSmooth,
-      vizMin: vizMin,
-      vizMax: vizMax,
-      min: min,
-      max: max
-  };
+  const segmentElevData = { smooth: elevSmooth, vizMin, vizMax, min, max };
 
   if (startKm <= 0.05 && Math.abs(endKm - totalKm) < 0.05) {
+    // Tüm rota seçiliyse normal çiz
     container._elevStartKm = 0;
     container._elevKmSpan  = totalKm;
     track._segmentStartPx = undefined;
     track._segmentWidthPx = undefined;
     createScaleElements(track, widthPx, totalKm, 0, markers, null);
   } else {
+    // Segment ise
     container._elevStartKm = startKm;
     container._elevKmSpan  = endKm - startKm;
     createScaleElements(track, widthPx, endKm - startKm, startKm, markers, segmentElevData);
@@ -10532,35 +10527,32 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     track._segmentWidthPx = segWidthPx;
   }
 
+  // ... (SVG oluşturma ve çizgi çizme kodları aynı - widthNow, heightNow vb.) ...
   const widthNow = widthPx || 400;
   const heightNow = 220;
-
   const svg = document.createElementNS(svgNS, 'svg');
+  // ... (SVG attribute setleri ve appendChild işlemleri aynı) ...
   svg.setAttribute('class', 'tt-elev-svg');
   svg.setAttribute('data-role', 'elev-segment');
   svg.setAttribute('viewBox', `0 0 ${widthNow} ${heightNow}`);
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', String(heightNow));
-  
-  // SVG'yi ekle ama Tooltip'in altında kalmasın diye...
   track.appendChild(svg);
 
-  // --- KRİTİK: Tooltip ve Vertical Line'ı en üste taşı ---
+  // Tooltip koruma (Önceki fix'ten gelen)
   const existingTooltip = track.querySelector('.tt-elev-tooltip');
   const existingLine = track.querySelector('.scale-bar-vertical-line');
   if (existingLine) track.appendChild(existingLine);
   if (existingTooltip) track.appendChild(existingTooltip);
-  // ------------------------------------------------------
 
+  // ... (Grid, Path, Segment çizim döngüleri aynı) ...
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class','tt-elev-grid');
   svg.appendChild(gridG);
-
   const areaPath = document.createElementNS(svgNS, 'path');
   areaPath.setAttribute('class','tt-elev-area');
   svg.appendChild(areaPath);
-
   const segG = document.createElementNS(svgNS, 'g');
   segG.setAttribute('class','tt-elev-segments');
   svg.appendChild(segG);
@@ -10568,6 +10560,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const X = (km) => (km / (endKm - startKm)) * widthNow;
   const Y = (e) => (isNaN(e) || vizMax === vizMin) ? (heightNow/2) : ((heightNow - 1) - ((e - vizMin) / (vizMax - vizMin)) * (heightNow - 2));
 
+  // Grid Çizgileri
   for (let i = 0; i <= 4; i++) {
     const ev = vizMin + (i / 4) * (vizMax - vizMin);
     const y = Y(ev);
@@ -10578,6 +10571,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     gridG.appendChild(ln);
   }
   
+  // Alan (Area)
   let topD = '';
   for (let i = 0; i < elevSmooth.length; i++) {
     const kmRel = (samples[i].distM / 1000) - startKm;
@@ -10592,6 +10586,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     areaPath.setAttribute('fill', '#263445');
   }
 
+  // Segment Renkleri
   for (let i = 1; i < elevSmooth.length; i++) {
     const kmRel1 = (samples[i-1].distM / 1000) - startKm;
     const kmRel2 = (samples[i].distM / 1000) - startKm;
@@ -10603,12 +10598,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     const dx = samples[i].distM - samples[i-1].distM;
     const dy = elevSmooth[i] - elevSmooth[i-1];
     let slope = 0, color = '#72c100';
-
     if (dx !== 0) {
       slope = (dy / dx) * 100;
       color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
     }
-
     const seg = document.createElementNS(svgNS, 'line');
     seg.setAttribute('x1', String(x1));
     seg.setAttribute('y1', String(y1));
@@ -10621,6 +10614,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     segG.appendChild(seg);
   }
 
+  // Toolbar
   let up = 0, down = 0;
   for (let i = 1; i < elevSmooth.length; i++) {
     const d = elevSmooth[i] - elevSmooth[i-1];
@@ -10647,15 +10641,18 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       resetBtn.addEventListener('touchstart', stopProp, { passive: true });
       resetBtn.addEventListener('mousedown', stopProp);
 
+     // --- RESET BUTONU MANTIĞI GÜNCELLENDİ ---
      resetBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         
+        // 1. Temizlik
         track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
         track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
         track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
 
+        // Haritadaki mor segmenti kaldır
         if (typeof highlightSegmentOnMap === 'function') {
-          highlightSegmentOnMap(day); 
+          highlightSegmentOnMap(day); // Argümansız çağırınca siler
         }
 
         window._lastSegmentDay = undefined;
@@ -10665,6 +10662,8 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
         const selection = container.querySelector('.scale-bar-selection');
         if (selection) selection.style.display = 'none';
 
+        // 2. ZOOM RESETLEME (GÜNCELLENEN KISIM)
+        // O günün tüm noktalarını alıp haritayı ona sığdırıyoruz
         const allPoints = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
         const validPoints = allPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
 
@@ -10672,6 +10671,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
             const bounds = L.latLngBounds(validPoints.map(p => [p.lat, p.lng]));
             const cid = `route-map-day${day}`;
 
+            // Büyük harita varsa resetle
             const expObj = window.expandedMaps && window.expandedMaps[cid];
             if (expObj && expObj.expandedMap) {
                 if (validPoints.length > 1) {
@@ -10681,6 +10681,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
                 }
             }
 
+            // Küçük harita varsa resetle
             const smallMap = window.leafletMaps && window.leafletMaps[cid];
             if (smallMap) {
                 if (validPoints.length > 1) {
@@ -10691,10 +10692,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
             }
         }
 
+        // 3. Scale Bar'ı resetle
         container._elevStartKm = 0;
         container._elevKmSpan  = totalKm;
 
-        const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
         createScaleElements(track, widthPx, totalKm, 0, markers, null);
 
         if (Array.isArray(container._elevFullSamples)) {
