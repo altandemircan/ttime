@@ -4670,6 +4670,17 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     color: #8a4af3;
     font-weight: 700;
 }
+.elev-segment-toolbar .pill, .elev-segment-toolbar button {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2px 6px;
+    font-weight: 500
+}
+.elev-segment-toolbar button {
+    color: #333;
+    font-weight: 600;
+}
+
 .expanded-map {
     width: 100%;
     height: calc(100% - 50px);   
