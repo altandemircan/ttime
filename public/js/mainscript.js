@@ -5806,45 +5806,79 @@ function saveArcPointsForDay(day, points) {
 
 
 function openMapLibre3D(expandedMap) {
-  // Kesinlikle maplibre-3d-view id'li div varlığını garanti et
+  // DOM elementini hazırla
   let mapDiv = expandedMap.getContainer();
   let maplibre3d = document.getElementById('maplibre-3d-view');
   if (!maplibre3d) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
-    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;    height: calc(100% - 190px) !important;';
+    // Style: Haritanın tamamını kaplasın ama alttaki paneli kapatmasın
+    maplibre3d.style.cssText = 'width:100%;height:100%;position:absolute;left:0;top:0;z-index:10000;';
     mapDiv.parentNode.appendChild(maplibre3d);
   }
-  maplibre3d.style.display = 'block'; // 3D harita görünür!
+  maplibre3d.style.display = 'block';
   maplibre3d.innerHTML = '';
 
-  // MapLibreGL başlat
-  window._maplibre3DInstance = new maplibregl.Map({
-    container: 'maplibre-3d-view',
-    style: 'https://tiles.openfreemap.org/styles/liberty',
-    center: expandedMap.getCenter(),
-    zoom: expandedMap.getZoom(),
-    pitch: 60,
-    bearing: 30,
-    interactive: true // zaten vardır
+  const day = window.currentDay || 1;
+  const containerId = `route-map-day${day}`;
+  
+  // --- SINIRLARI HESAPLA (BOUNDS CALCULATION) ---
+  const bounds = new maplibregl.LngLatBounds();
+  let hasBounds = false;
+
+  // 1. Markerları sınırlara ekle
+  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+  points.forEach(p => {
+      if (isFinite(p.lat) && isFinite(p.lng)) {
+          bounds.extend([p.lng, p.lat]);
+          hasBounds = true;
+      }
   });
 
-  window._maplibre3DInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-left');
-  // Sağa döndür
-  window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() + 20, { animate: true });
-  // Sola döndür
-  window._maplibre3DInstance.rotateTo(window._maplibre3DInstance.getBearing() - 20, { animate: true });
+  // 2. Rota çizgisini sınırlara ekle (Varsa)
+  const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+  if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+      const coords = geojson.features[0].geometry.coordinates;
+      coords.forEach(coord => {
+          bounds.extend(coord); // GeoJSON zaten [lng, lat] formatındadır
+          hasBounds = true;
+      });
+  }
+  // ---------------------------------------------
 
-  // ROTAYI GERÇEK YOL (OSRM POLYLINE) veya FLY MODE'da marker arası YAY ile çiz!
+  // Başlangıç Ayarları
+  const mapOptions = {
+    container: 'maplibre-3d-view',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    pitch: 60,
+    bearing: -20, // Hafif çapraz bakış
+    interactive: true,
+    attributionControl: false // Temiz görünüm için
+  };
+
+  // Eğer geçerli sınırlar varsa, bounds ile başlat
+  if (hasBounds) {
+      mapOptions.bounds = bounds;
+      mapOptions.fitBoundsOptions = {
+          padding: { top: 80, bottom: 200, left: 60, right: 60 } // Alt panel ve kenarlar için boşluk
+      };
+  } else {
+      // Yoksa eski yöntem (Leaflet merkezini al)
+      mapOptions.center = expandedMap.getCenter();
+      mapOptions.zoom = expandedMap.getZoom();
+  }
+
+  // MapLibreGL başlat
+  window._maplibre3DInstance = new maplibregl.Map(mapOptions);
+
+  window._maplibre3DInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
+
+  // Harita yüklendiğinde içerikleri çiz
   window._maplibre3DInstance.on('load', function () {
-    const day = window.currentDay || 1;
-    const containerId = `route-map-day${day}`;
-    // Yol geometri verisi alınır (Leaflet'te olduğu gibi!)
-    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+    const isFlyMode = !areAllPointsInTurkey(points); 
     const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
-    const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-    const isFlyMode = !areAllPointsInTurkey(points); // Türkiye dışında mı?
 
+    // A) GERÇEK ROTA (Türkiye içi)
     if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
       window._maplibre3DInstance.addSource('route', {
         type: 'geojson',
@@ -5852,7 +5886,7 @@ function openMapLibre3D(expandedMap) {
           type: 'Feature',
           geometry: {
             type: 'LineString',
-            coordinates: routeCoords // OSRM rotası (Türkiye içi)
+            coordinates: routeCoords
           }
         }
       });
@@ -5862,57 +5896,65 @@ function openMapLibre3D(expandedMap) {
         source: 'route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#1976d2',    // BİREBİR MAVİ
-          'line-width': 8,            // Leaflet polyline ile aynı
-          'line-opacity': 0.92        // Aynı şeffaflık!
+          'line-color': '#1976d2',
+          'line-width': 8,
+          'line-opacity': 0.9
         }
       });
     } 
+    // B) FLY MODE (Yay çizgiler)
+    else if (isFlyMode && points.length > 1) {
+      for (let i = 0; i < points.length - 1; i++) {
+        const start = [points[i].lng, points[i].lat];
+        const end = [points[i + 1].lng, points[i + 1].lat];
+        const curveCoords = getCurvedArcCoords(start, end); // Mevcut yay fonksiyonunu kullan
 
-    else
+        window._maplibre3DInstance.addSource(`flyroute-${i}`, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: curveCoords }
+          }
+        });
 
-     if (isFlyMode && points.length > 1) {
-  for (let i = 0; i < points.length - 1; i++) {
-    const start = [points[i].lng, points[i].lat];
-    const end = [points[i + 1].lng, points[i + 1].lat];
-    // Kavis güç ve segment ayarıyla pürüzsüz (0.33/22 önerilir)
-    const curveCoords = getCurvedArcCoords(start, end, 0.33, 22);
-
-    // GeoJSON source ekle
-    window._maplibre3DInstance.addSource(`flyroute-${i}`, {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        geometry: { type: 'LineString', coordinates: curveCoords }
+        window._maplibre3DInstance.addLayer({
+          id: `flyroute-line-${i}`,
+          type: 'line',
+          source: `flyroute-${i}`,
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#1976d2',
+            'line-width': 6,
+            'line-opacity': 0.8,
+            'line-dasharray': [1, 2]
+          }
+        });
       }
-    });
+    }
 
-    // LineLayer ile çiz - dash, renk, opacity ile görsel efekt!
-    window._maplibre3DInstance.addLayer({
-      id: `flyroute-line-${i}`,
-      type: 'line',
-      source: `flyroute-${i}`,
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round'
-      },
-      paint: {
-        'line-color': '#1976d2',         // Mavi
-        'line-width': 13,                // Kalınlık
-        'line-opacity': 0.96,            // Opaklık
-        'line-dasharray': [1, 2]         // Kesikli çizgi efekti
-      }
-    });
-  }
-}
-
-
-    // Markerları ekle (sıra numaralı)
+    // C) MARKERLAR (HTML Marker kullanmıyoruz, GL Marker kullanıyoruz)
     points.forEach((p, idx) => {
-      const marker = new maplibregl.Marker({ color: '#d32f2f' })
+      // Özel Marker Elementi Oluştur (CSS ile yuvarlak ve numaralı)
+      const el = document.createElement('div');
+      el.className = 'maplibre-marker';
+      el.style.backgroundImage = 'none'; // Default ikonu kaldır
+      el.style.backgroundColor = '#d32f2f';
+      el.style.width = '32px';
+      el.style.height = '32px';
+      el.style.borderRadius = '50%';
+      el.style.border = '2px solid white';
+      el.style.color = 'white';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.style.fontWeight = 'bold';
+      el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+      el.innerText = idx + 1;
+
+      new maplibregl.Marker({ element: el })
         .setLngLat([p.lng, p.lat])
-        .setPopup(new maplibregl.Popup().setText(`${idx + 1}. ${p.name || "Place"}`));
-      marker.addTo(window._maplibre3DInstance);
+        .setPopup(new maplibregl.Popup({ offset: 25 }).setText(p.name || "Point"))
+        .addTo(window._maplibre3DInstance);
     });
   }); 
 }
@@ -10384,7 +10426,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   window._lastSegmentDay = day;
   window._lastSegmentStartKm = startKm;
   window._lastSegmentEndKm = endKm;
-  console.log('SEGMENT PROFILE SET', day, startKm, endKm);
 
   const track = container.querySelector('.scale-bar-track'); 
   if (!track) return;
@@ -10396,6 +10437,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       selDiv.style.left = '0px';
   }
 
+  // Eski SVG'leri temizle ama Tooltip'e dokunma
   track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
   track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
@@ -10454,7 +10496,16 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', String(heightNow));
+  
+  // SVG'yi ekle ama Tooltip'in altında kalmasın diye...
   track.appendChild(svg);
+
+  // --- KRİTİK: Tooltip ve Vertical Line'ı en üste taşı ---
+  const existingTooltip = track.querySelector('.tt-elev-tooltip');
+  const existingLine = track.querySelector('.scale-bar-vertical-line');
+  if (existingLine) track.appendChild(existingLine);
+  if (existingTooltip) track.appendChild(existingTooltip);
+  // ------------------------------------------------------
 
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class','tt-elev-grid');
@@ -10544,39 +10595,30 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   `;
   track.appendChild(tb);
 
-  // --- KRİTİK DEĞİŞİKLİK: RESET BUTONUNA ÖZEL DOKUNMA YÖNETİMİ ---
   const resetBtn = tb.querySelector('.elev-segment-reset');
   if (resetBtn) {
-      // Bu butona dokunulduğunda olayın Track'e (üst elemente) ulaşmasını engelle.
-      // Böylece Track'in preventDefault'u çalışmaz ve Click olayı gerçekleşir.
       const stopProp = (e) => e.stopPropagation();
       resetBtn.addEventListener('touchstart', stopProp, { passive: true });
       resetBtn.addEventListener('mousedown', stopProp);
 
      resetBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Garanti olsun
+        e.stopPropagation();
         
-        // --- 1. TEMİZLİK ---
         track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
         track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
         track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
 
-        // Haritadaki mor segment çizgisini kaldır
         if (typeof highlightSegmentOnMap === 'function') {
-          highlightSegmentOnMap(day); // Parametre vermeden çağırınca siler
+          highlightSegmentOnMap(day); 
         }
 
-        // Global değişkenleri sıfırla
         window._lastSegmentDay = undefined;
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
 
-        // Selection kutusunu gizle
         const selection = container.querySelector('.scale-bar-selection');
         if (selection) selection.style.display = 'none';
 
-        // --- 2. ZOOM RESETLEME (GÜNCELLENDİ) ---
-        // Hem küçük harita hem büyük harita için tüm noktaları kapsayan alana (bounds) dön
         const allPoints = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
         const validPoints = allPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
 
@@ -10584,7 +10626,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
             const bounds = L.latLngBounds(validPoints.map(p => [p.lat, p.lng]));
             const cid = `route-map-day${day}`;
 
-            // A) Genişletilmiş Harita (Expanded Map) Varsa Zoom Resetle
             const expObj = window.expandedMaps && window.expandedMaps[cid];
             if (expObj && expObj.expandedMap) {
                 if (validPoints.length > 1) {
@@ -10594,7 +10635,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
                 }
             }
 
-            // B) Küçük Harita (Inline Map) Varsa Zoom Resetle
             const smallMap = window.leafletMaps && window.leafletMaps[cid];
             if (smallMap) {
                 if (validPoints.length > 1) {
@@ -10605,12 +10645,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
             }
         }
 
-        // --- 3. SCALE BAR RESETLEME ---
         container._elevStartKm = 0;
         container._elevKmSpan  = totalKm;
 
         const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-        
         createScaleElements(track, widthPx, totalKm, 0, markers, null);
 
         if (Array.isArray(container._elevFullSamples)) {
@@ -10631,9 +10669,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
         }
       });
   }
-
-  track.removeEventListener('mousemove', track.__onMove);
-  track.addEventListener('mousemove', track.__onMove);
 }
 
 function resetDayAction(day, confirmationContainerId) {
