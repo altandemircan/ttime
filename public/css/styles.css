@@ -4612,7 +4612,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
         padding-left: 40px;
         bottom: 5px; /* Bu boşluk sabit kaldı */
         height: 155px;
-                padding-top: 20px;
+        /* Toplam Kaplanan Alan: 155px + 5px = 160px */
     }
 
     .route-scale-bar {
@@ -4644,33 +4644,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     align-items: flex-end;
 
 }
-
-.elev-segment-toolbar {
-        bottom: 160px;
-       right: -12px;
-    position: absolute;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    z-index: 5;
-    background: #ffffff;
-    border-radius: 12px 0 0 0;
-    padding: 6px 10px;
-    font-size: 11px;
-    color: #8a4af3;
-    font-weight: 700;
-}
-.elev-segment-toolbar .pill, .elev-segment-reset {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 2px 6px;
-    font-weight: 500
-}
-.elev-segment-reset {
-    color: #ffffff; 
-    background: #899ab3;
-}
-
 .expanded-map {
     width: 100%;
     height: calc(100% - 50px);   
@@ -5763,18 +5736,18 @@ ease;
 
 
 .leaflet-control-attribution  {
-       position: absolute !important;
-    bottom: -6px !important;
+    position: absolute !important;
+    bottom: 180px !important;
     right: 20px !important;
     margin: 0px !important;
     font-size: 10px !important;
     line-height: 1 !important;
-    color: #000000c0 !important;
+    color: rgb(0, 0, 0) !important;
     z-index: 1005 !important;
     pointer-events: auto !important;
 }
 .leaflet-control-attribution a {
-    color: #000000c0 !important;
+    color: #000 !important;
 }
 
 .leaflet-attribution-flag {
