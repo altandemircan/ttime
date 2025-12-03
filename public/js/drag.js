@@ -155,6 +155,12 @@ function handleGlobalTouchMove(e) {
         });
 
         if (closestItem) {
+            // --- DÜZELTME 1: Kendi üzerindeysek veya çok yakınsak gösterme ---
+            if (closestItem === draggedItem) {
+                if (placeholder && placeholder.parentNode) placeholder.remove();
+                return;
+            }
+
             const rect = closestItem.getBoundingClientRect();
             if (touch.clientY < rect.top + rect.height / 2) {
                 dropZone.insertBefore(placeholder, closestItem);
@@ -162,11 +168,20 @@ function handleGlobalTouchMove(e) {
                 dropZone.insertBefore(placeholder, closestItem.nextSibling);
             }
         } else {
-            // --- DÜZELTME BURADA ---
-            // Eğer en yakın item bulunamadıysa (listenin en altı veya boş liste)
+            // --- DÜZELTME 2: Listenin en altına geldik ---
+            
+            // Eğer kendi listemizdeysek ve zaten son öğeysek placeholder gösterme
+            if (dropZone === draggedItem.parentNode) {
+                const next = draggedItem.nextElementSibling;
+                // next yoksa VEYA next "Add Button" ise zaten sondayız demektir
+                if (!next || next.classList.contains('add-more-btn') || next === placeholder) {
+                    if (placeholder && placeholder.parentNode) placeholder.remove();
+                    return;
+                }
+            }
+
             const addBtn = dropZone.querySelector('.add-more-btn');
             if (addBtn) {
-                // Butonun önüne ekle (butonun altına düşmesin)
                 dropZone.insertBefore(placeholder, addBtn);
             } else {
                 dropZone.appendChild(placeholder);
@@ -304,13 +319,12 @@ function dragStart(event) {
 }
 
 // ========== SHARED HELPERS ==========
-
 function createPlaceholder(target) {
     if (!placeholder) {
         placeholder = document.createElement("div");
         placeholder.classList.add("insertion-placeholder");
         placeholder.style.height = '4px';
-        placeholder.style.backgroundColor = '#8a4af3'; // Mor renk
+        placeholder.style.backgroundColor = '#8a4af3';
         placeholder.style.margin = '8px 0';
         placeholder.style.borderRadius = '2px';
     }
@@ -319,19 +333,18 @@ function createPlaceholder(target) {
     if (!parent) return;
 
     if (target.classList.contains("travel-item")) {
-        // Eğer target sürüklenen öğe ise, placeholder'ı onun yerine koyma
+        // --- DÜZELTME: Kendi üzerindeyken placeholder'ı sil ---
         if (target !== draggedItem) {
             parent.insertBefore(placeholder, target);
+        } else {
+            // Eğer hedef kendisi ise placeholder'a gerek yok
+            if (placeholder.parentNode) placeholder.remove();
         }
     } else if (target.classList.contains("day-list")) {
-        // --- DÜZELTME BURADA ---
-        // Listenin kendisine bırakılıyorsa, "Add Category" butonunu kontrol et
         const addBtn = parent.querySelector('.add-more-btn');
         if (addBtn) {
-            // Buton varsa, onun hemen üstüne ekle
             parent.insertBefore(placeholder, addBtn);
         } else {
-            // Buton yoksa en alta ekle
             parent.appendChild(placeholder);
         }
     }
