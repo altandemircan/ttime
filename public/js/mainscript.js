@@ -4618,26 +4618,8 @@ function updateExpandedMap(expandedMap, day) {
 
         if (fixedPanel && attribution) {
             // Attribution'ı panelin içine taşı (Böylece panel fixed olduğu için bu da fixed olur)
-            fixedPanel.appendChild(attribution);
-            
-            // CSS ile panelin sağ altına çivile
-            attribution.style.cssText = `
-                position: absolute !important;
-    bottom: 180px !important;
-    right: 20px !important;
-    margin: 0px !important;
-    font-size: 10px !important;
-    line-height: 1 !important;
-    color: rgb(0, 0, 0) !important;
-    z-index: 1005 !important;
-    pointer-events: auto !important;
-            `;
-            
-            // Linklerin rengini düzelt
-            attribution.querySelectorAll('a').forEach(a => {
-                a.style.color = '#666';
-                a.style.textDecoration = 'none';
-            });
+            fixedPanel.appendChild(attribution);            
+       
         }
     }, 600); 
     // ---------------------------------------------
