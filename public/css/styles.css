@@ -4605,9 +4605,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 @media (max-width: 768px) {
-/* styles.css */
-
-@media (max-width: 768px) {
     .expanded-map-panel { 
         width: calc(100% - 40px);
         right: 0px;
