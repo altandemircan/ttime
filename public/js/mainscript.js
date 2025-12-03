@@ -5871,19 +5871,7 @@ function openMapLibre3D(expandedMap) {
   // MapLibreGL başlat
   window._maplibre3DInstance = new maplibregl.Map(mapOptions);
 
-  // 1. Standart Navigasyon Kontrolleri (Zoom, Pusula)
   window._maplibre3DInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
-
-  // --- YENİ EKLENEN: KONUM BUTONU (GEOLOCATE) ---
-  const geolocateControl = new maplibregl.GeolocateControl({
-      positionOptions: {
-          enableHighAccuracy: true
-      },
-      trackUserLocation: true, // Konumu takip et
-      showUserHeading: true    // Yönü göster (ok işareti)
-  });
-  window._maplibre3DInstance.addControl(geolocateControl, 'top-right');
-  // ----------------------------------------------
 
   // Harita yüklendiğinde içerikleri çiz
   window._maplibre3DInstance.on('load', function () {
@@ -5944,11 +5932,12 @@ function openMapLibre3D(expandedMap) {
       }
     }
 
-    // C) MARKERLAR
+    // C) MARKERLAR (HTML Marker kullanmıyoruz, GL Marker kullanıyoruz)
     points.forEach((p, idx) => {
+      // Özel Marker Elementi Oluştur (CSS ile yuvarlak ve numaralı)
       const el = document.createElement('div');
       el.className = 'maplibre-marker';
-      el.style.backgroundImage = 'none'; 
+      el.style.backgroundImage = 'none'; // Default ikonu kaldır
       el.style.backgroundColor = '#d32f2f';
       el.style.width = '32px';
       el.style.height = '32px';
