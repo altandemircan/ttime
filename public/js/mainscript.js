@@ -9082,7 +9082,7 @@ function wrapRouteControls(day) {
       // --- DURUM 2: KAPALI (AKTİF) ---
       expandBtn.style.background = '#ffffff';
       expandBtn.style.borderColor = 'rgb(43 129 213)';
-      expandBtn.style.color = '#297fd4';
+      expandBtn.style.color = '#0080ff';
       expandBtn.style.cursor = 'pointer';
       
       // Hover efektleri sadece aktifken
