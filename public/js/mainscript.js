@@ -4473,7 +4473,8 @@ function updateExpandedMap(expandedMap, day) {
             color: "#1976d2",
             weight: 6,
             opacity: 1,
-            dashArray: null
+            dashArray: null,
+            renderer: L.canvas({ padding: 0.5 }) // Çizgiyi harita zeminine kilitler
         }).addTo(expandedMap);
         
         bounds.extend(poly.getBounds());
