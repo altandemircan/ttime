@@ -4608,7 +4608,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
  .expanded-map-panel { 
     width: calc(100% - 40px);
         right: 0px;
-        left: 20px;
+        left: 30px;
         /* background: #ff9900; */
       
     }
