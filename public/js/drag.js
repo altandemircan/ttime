@@ -120,76 +120,82 @@ document.addEventListener('touchmove', function(e) {
 function handleGlobalTouchMove(e) {
     if (!longPressTriggered || !draggedItem) return;
 
-    e.preventDefault(); 
+    e.preventDefault();
     e.stopImmediatePropagation();
 
     const touch = e.touches[0];
 
+    // Sürüklenen öğeyi parmakla hareket ettir
     draggedItem.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
     draggedItem.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
 
+    // Parmağın altındaki elementi bul
+    draggedItem.style.visibility = 'hidden'; // Kendini gizle ki altındakini görelim
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    draggedItem.style.visibility = 'visible'; // Geri aç
+
     if (!elementBelow) return;
 
     const dropZone = elementBelow.closest('.day-list');
     
     if (dropZone) {
+        // Dropzone highlight işlemleri
         if (currentDropZone && currentDropZone !== dropZone) {
             currentDropZone.classList.remove('drop-hover');
         }
         currentDropZone = dropZone;
         currentDropZone.classList.add('drop-hover');
+
+        // Hedef travel-item'ı bul
+        const targetItem = elementBelow.closest('.travel-item');
         
-        const items = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging)'));
-        let closestItem = null;
-        let closestDistance = Infinity;
-        
-        items.forEach(item => {
-            const rect = item.getBoundingClientRect();
+        // --- SENARYO 1: Bir Item'ın üzerindeyiz ---
+        if (targetItem && targetItem !== draggedItem) {
+            const rect = targetItem.getBoundingClientRect();
             const offset = touch.clientY - (rect.top + rect.height / 2);
-            const distance = Math.abs(offset);
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestItem = item;
-            }
-        });
-
-        if (closestItem) {
-            const rect = closestItem.getBoundingClientRect();
             
-            // --- FIX 1: ARA ELEMENTLER İÇİN KONTROL ---
-            if (touch.clientY < rect.top + rect.height / 2) {
-                // ÜST KISIM (Insert Before)
-                // Eğer hedef kendisi ise VEYA hedef bir altındaki elemansa (yani zaten onun üstündeysek)
-                if (closestItem === draggedItem || closestItem.previousElementSibling === draggedItem) {
+            // Eğer hedef, sürüklenen öğenin hemen komşusu ise titremeyi önlemek için kontrol
+            const isNext = draggedItem.nextElementSibling === targetItem;
+            const isPrev = draggedItem.previousElementSibling === targetItem;
+
+            if (offset < 0) {
+                // --- ÜST YARI (Insert Before) ---
+                // Eğer hemen altındaki öğenin üstüne geldiysek (zaten oradayız) -> Gizle
+                if (isNext) {
                     if (placeholder && placeholder.parentNode) placeholder.remove();
                     return;
                 }
-                dropZone.insertBefore(placeholder, closestItem);
+                dropZone.insertBefore(placeholder, targetItem);
             } else {
-                // ALT KISIM (Insert After)
-                // Eğer hedef kendisi ise
-                if (closestItem === draggedItem) {
+                // --- ALT YARI (Insert After) ---
+                // Eğer hemen üstündeki öğenin altına geldiysek (zaten oradayız) -> Gizle
+                if (isPrev) {
                     if (placeholder && placeholder.parentNode) placeholder.remove();
                     return;
                 }
-                dropZone.insertBefore(placeholder, closestItem.nextSibling);
+                dropZone.insertBefore(placeholder, targetItem.nextSibling);
             }
-        } else {
-            // --- FIX 2: LİSTENİN EN ALTI (ADD CATEGORY KONTROLÜ) ---
-            const addBtn = dropZone.querySelector('.add-more-btn');
+        } 
+        // --- SENARYO 2: Boşluktayız veya Add Button üzerindeyiz ---
+        else {
+            // Eğer sürüklenen öğe zaten listenin en sonundaysa ve boşluğa/butona geldiysek
+            // Placeholder GÖSTERME (Zaten en altta)
+            const siblings = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging)'));
+            const lastItem = siblings[siblings.length - 1];
             
-            // Eğer biz zaten bu listenin içindeysek
-            if (draggedItem.parentNode === dropZone) {
-                const next = draggedItem.nextElementSibling;
-                // Eğer bizden sonraki eleman "Add Button" ise veya hiçbir şey yoksa (zaten sondayız)
-                // Placeholder'ı gizle ve çık.
-                if (!next || next === placeholder || (addBtn && next === addBtn)) {
-                    if (placeholder && placeholder.parentNode) placeholder.remove();
-                    return;
-                }
+            if (draggedItem === lastItem) {
+                if (placeholder && placeholder.parentNode) placeholder.remove();
+                return;
             }
 
+            // Kendi üzerindeysek de gösterme
+            if (targetItem === draggedItem) {
+                if (placeholder && placeholder.parentNode) placeholder.remove();
+                return;
+            }
+
+            // Diğer durumlarda en alta (Add butonunun önüne) ekle
+            const addBtn = dropZone.querySelector('.add-more-btn');
             if (addBtn) {
                 dropZone.insertBefore(placeholder, addBtn);
             } else {
@@ -329,54 +335,7 @@ function dragStart(event) {
 
 // ========== SHARED HELPERS ==========
 function createPlaceholder(target) {
-    const parent = target.closest(".day-list");
-    if (!parent) return;
-
-    // --- FIX & SAFETY: Kendi üzerindeysek ---
-    // Eğer hedef sürüklenen öğenin kendisiyse:
-    if (draggedItem && target === draggedItem) {
-        // Placeholder varsa ve bir yere takılıysa kaldır
-        if (placeholder && placeholder.parentNode) {
-            placeholder.remove();
-        }
-        // Placeholder yoksa hiç oluşturma ve fonksiyondan çık
-        return;
-    }
-
-    // --- Placeholder Yoksa Oluştur (Sadece ihtiyaç olduğunda) ---
-    if (!placeholder) {
-        placeholder = document.createElement("div");
-        placeholder.classList.add("insertion-placeholder");
-        placeholder.style.height = '4px';
-        placeholder.style.backgroundColor = '#8a4af3';
-        placeholder.style.margin = '8px 0';
-        placeholder.style.borderRadius = '2px';
-    }
-
-    // --- Yerleştirme Mantığı ---
-    if (target.classList.contains("travel-item")) {
-        // Normal item'ın önüne ekle
-        parent.insertBefore(placeholder, target);
-    } else if (target.classList.contains("day-list")) {
-        // Listenin sonu veya boş liste
-        // Add Category butonu varsa onun önüne, yoksa sona ekle
-        const addBtn = parent.querySelector('.add-more-btn');
-        
-        // Eğer zaten oradaysak (son öğe bizsek) placeholder koyma
-        if (draggedItem && draggedItem.parentNode === parent) {
-            const next = draggedItem.nextElementSibling;
-            if (!next || (addBtn && next === addBtn) || next === placeholder) {
-                if (placeholder.parentNode) placeholder.remove();
-                return;
-            }
-        }
-
-        if (addBtn) {
-            parent.insertBefore(placeholder, addBtn);
-        } else {
-            parent.appendChild(placeholder);
-        }
-    }
+  
 }
 function setupDropZones() {
     // Masaüstü drop zone dinleyicileri
@@ -390,9 +349,78 @@ function setupDropZones() {
 
 function desktopDragOver(event) {
     event.preventDefault();
-    const target = event.target.closest("li.travel-item, .day-list");
-    if (!target) return;
-    createPlaceholder(target);
+    
+    // Placeholder yoksa oluştur
+    if (!placeholder) {
+        placeholder = document.createElement("div");
+        placeholder.classList.add("insertion-placeholder");
+        placeholder.style.height = '4px';
+        placeholder.style.backgroundColor = '#8a4af3';
+        placeholder.style.margin = '8px 0';
+        placeholder.style.borderRadius = '2px';
+    }
+
+    const dropZone = event.target.closest('.day-list');
+    const targetItem = event.target.closest('.travel-item');
+
+    if (!dropZone) return;
+
+    // Sürüklenen öğeyi (draggedItem) globalden alıyoruz (dragStart'ta set edilmişti)
+    if (!draggedItem) return;
+
+    // --- SENARYO 1: Bir Item'ın üzerindeyiz ---
+    if (targetItem && targetItem !== draggedItem) {
+        const rect = targetItem.getBoundingClientRect();
+        // Mouse Y pozisyonu öğenin ortasından yukarıda mı aşağıda mı?
+        const offset = event.clientY - (rect.top + rect.height / 2);
+        
+        const isNext = draggedItem.nextElementSibling === targetItem;
+        const isPrev = draggedItem.previousElementSibling === targetItem;
+
+        if (offset < 0) {
+            // --- ÜST YARI ---
+            // Zaten bu konumdaysak gösterme
+            if (isNext) {
+                if (placeholder.parentNode) placeholder.remove();
+                return;
+            }
+            dropZone.insertBefore(placeholder, targetItem);
+        } else {
+            // --- ALT YARI ---
+            // Zaten bu konumdaysak gösterme
+            if (isPrev) {
+                if (placeholder.parentNode) placeholder.remove();
+                return;
+            }
+            dropZone.insertBefore(placeholder, targetItem.nextSibling);
+        }
+    } 
+    // --- SENARYO 2: Boşluk veya Buton üzerindeyiz ---
+    else if (!targetItem) {
+        // Eğer sürüklenen öğe zaten en sondaysa ve biz boşluğa geldiysek -> GÖSTERME
+        const siblings = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging)'));
+        const lastItem = siblings[siblings.length - 1];
+
+        // Sürüklenen öğe zaten listenin son elemanıysa ve hedef dropZone ise
+        if (draggedItem === lastItem && dropZone === draggedItem.parentNode) {
+            if (placeholder.parentNode) placeholder.remove();
+            return;
+        }
+        
+        // Kendi üzerindeysek (targetItem null ama event.target draggedItem olabilir)
+        if (event.target === draggedItem) {
+            if (placeholder.parentNode) placeholder.remove();
+            return;
+        }
+
+        // Değilse en alta ekle
+        const addBtn = dropZone.querySelector('.add-more-btn');
+        if (addBtn) {
+            dropZone.insertBefore(placeholder, addBtn);
+        } else {
+            dropZone.appendChild(placeholder);
+        }
+    }
 }
 
 function desktopDrop(event) {
