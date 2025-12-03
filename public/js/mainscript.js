@@ -5667,37 +5667,26 @@ function setupScaleBarInteraction(day, map) {
         let clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
         let x = clientX - rect.left;
         
-        // Mouse'un bar üzerindeki yüzdesi (0.0 - 1.0)
         let percent = Math.max(0, Math.min(x / rect.width, 1));
         
         let targetMeters = 0;
 
-        // --- KRİTİK DÜZELTME: SEGMENT HESABI ---
-        // Eğer şu an bir segment seçiliyse (Zoom yapılmışsa)
+        // Segment Hesabı (Zoomlu ise)
         if (
             typeof window._lastSegmentStartKm === 'number' && 
             typeof window._lastSegmentEndKm === 'number' &&
-            window._lastSegmentDay === day // Sadece o gün için
+            window._lastSegmentDay === day
         ) {
-            // Segmentin başlangıcı (Metre)
             const startM = window._lastSegmentStartKm * 1000;
-            // Segmentin uzunluğu (Metre)
             const spanM = (window._lastSegmentEndKm - window._lastSegmentStartKm) * 1000;
-            
-            // Hedef = Başlangıç + (Yüzde * Uzunluk)
             targetMeters = startM + (percent * spanM);
         } else {
-            // Segment yoksa tüm yol
             targetMeters = percent * cachedTotalDist;
         }
-        // ---------------------------------------
 
-        // Güvenlik: Hedef mesafe toplamı aşamaz
         targetMeters = Math.max(0, Math.min(targetMeters, cachedTotalDist));
 
-        // Bu mesafeye denk gelen koordinatı bul
         let foundIndex = 0;
-        // Basit lineer arama (Array küçük olduğu için hızlıdır)
         for (let i = 0; i < cachedCumDist.length; i++) {
             if (cachedCumDist[i] >= targetMeters) {
                 foundIndex = i;
@@ -5729,17 +5718,35 @@ function setupScaleBarInteraction(day, map) {
         let marker = window._hoverMarkersByDay[day];
         if (marker) {
             marker.setLatLng([lat, lng]);
-            marker.bringToFront();
+            // Z-Index zaten yüksek ama garanti olsun
+            if(marker._icon) marker._icon.style.zIndex = "10000"; 
         } else {
-            marker = L.circleMarker([lat, lng], {
-                radius: 8,
-                color: "#fff",
-                fillColor: "#8a4af3",
-                fillOpacity: 1,
-                weight: 2,
-                zIndexOffset: 10000,
-                interactive: false
+            // --- DEĞİŞİKLİK BURADA: CircleMarker yerine DivIcon Marker ---
+            // Kırmızı markerlarla aynı boyut (32x32 wrapper, 24x24 daire) ve stil
+            const purpleIconHtml = `
+                <div style="
+                    background: #8a4af3; 
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    border: 2px solid #fff;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                "></div>
+            `;
+            
+            const icon = L.divIcon({
+                className: '', // Default class yok
+                html: purpleIconHtml,
+                iconSize: [32, 32],   // Kırmızı markerlarla aynı alan
+                iconAnchor: [16, 16]  // Tam ortası
+            });
+
+            marker = L.marker([lat, lng], {
+                icon: icon,
+                zIndexOffset: 10000, // En üstte dursun
+                interactive: false   // Tıklamayı engellemesin
             }).addTo(map);
+            
             window._hoverMarkersByDay[day] = marker; 
         }
     };
