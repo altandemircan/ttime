@@ -4612,7 +4612,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
         padding-left: 40px;
         bottom: 5px; /* Bu boşluk sabit kaldı */
         height: 155px;
-        /* Toplam Kaplanan Alan: 155px + 5px = 160px */
+                padding-top: 20px;
     }
 
     .route-scale-bar {
@@ -4643,6 +4643,13 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     justify-content: space-between;
     align-items: flex-end;
 
+}
+
+.elev-segment-toolbar {
+     bottom: 200px; z-index: 1005; display: inline-flex; gap: 10px;
+   align-items: center; border-radius: 10px; padding: 6px;
+   font-size: 12px; color: rgb(0, 0, 0); right: 6px; position: absolute;
+   background: rgb(255 255 255 / 43%);  
 }
 .expanded-map {
     width: 100%;
@@ -5736,18 +5743,18 @@ ease;
 
 
 .leaflet-control-attribution  {
-    position: absolute !important;
-    bottom: 180px !important;
+       position: absolute !important;
+    bottom: 12px !important;
     right: 20px !important;
     margin: 0px !important;
     font-size: 10px !important;
     line-height: 1 !important;
-    color: rgb(0, 0, 0) !important;
+    color: #00000060 !important
     z-index: 1005 !important;
     pointer-events: auto !important;
 }
 .leaflet-control-attribution a {
-    color: #000 !important;
+    color: #00000060 !important
 }
 
 .leaflet-attribution-flag {
