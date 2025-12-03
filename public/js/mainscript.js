@@ -11090,64 +11090,193 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 // --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN - FINAL) ---
 // --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN - FINAL V2) ---
+// --- LEAFLET CSS FIX & NEW UI DESIGN ---
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v4'; // ID güncellendi
+    const styleId = 'tt-leaflet-fix-v5-ui'; // ID güncellendi
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. Harita Kayma (Sliding) Sorunu Çözümü */
-        .leaflet-pane, 
-        .leaflet-tile, 
-        .leaflet-marker-icon, 
-        .leaflet-marker-shadow, 
-        .leaflet-tile-container, 
-        .leaflet-zoom-animated {
+        /* --- Temel Leaflet Düzeltmeleri --- */
+        .leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-zoom-animated {
             transition: none !important;
             transform-origin: 50% 50%;
         }
-        
-        /* 2. Resimlerin animasyonunu engelle */
         .leaflet-container img.leaflet-tile {
-            max-width: none !important;
-            width: 256px !important;
-            height: 256px !important;
-            transition: none !important; 
+            max-width: none !important; width: 256px !important; height: 256px !important; transition: none !important;
         }
-
-        /* 3. İmleç Sorunu: Pointer yerine Grab */
-        /* Harita container'ı ve içindeki etkileşimli alanlar için 'el' işareti */
-        .expanded-map.leaflet-container,
-        .expanded-map .leaflet-grab,
-        .expanded-map .leaflet-interactive {
+        .expanded-map.leaflet-container, .expanded-map .leaflet-grab, .expanded-map .leaflet-interactive {
             cursor: grab !important;
         }
-        .expanded-map.leaflet-container:active,
-        .expanded-map .leaflet-grab:active {
+        .expanded-map.leaflet-container:active, .expanded-map .leaflet-grab:active {
             cursor: grabbing !important;
         }
-        
-        /* Markerlar hariç! Markerlar pointer (parmak) kalmalı */
-        .expanded-map .leaflet-marker-icon,
-        .expanded-map .leaflet-popup-close-button,
-        .expanded-map a {
+        .expanded-map .leaflet-marker-icon, .expanded-map .leaflet-popup-close-button, .expanded-map a {
             cursor: pointer !important;
         }
+        .custom-marker-outer { transition: transform 0.1s ease !important; will-change: auto; }
 
-        /* 4. Tıklamayı Engelleyen Overlay Sorunu (Z-Index Temizliği) */
-        /* Z-Indexlerle oynamak yerine pointer-events ayarı yapıyoruz */
-        .leaflet-pane { 
-            pointer-events: auto; 
+        /* --- YENİ UI TASARIMI (FOTOĞRAFA GÖRE) --- */
+        
+        /* 1. Harita Kapsayıcısı */
+        .expanded-map-container {
+            position: relative; /* Floating elementler buna göre hizalanır */
         }
-        .leaflet-tile-pane {
-            z-index: 200; /* Standart */
+
+        /* 2. Ortak Buton Stili (Beyaz Kutu, Gölge) */
+        .tt-floating-control {
+            background: #fff;
+            border: 2px solid rgba(0,0,0,0.2);
+            background-clip: padding-box;
+            border-radius: 4px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .tt-floating-control:hover {
+            background-color: #f4f4f4;
+        }
+
+        /* 3. Layer Seçici (SOL ÜST - Dikey Stack) */
+        .map-layers-floating {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column; /* Dikey */
+            gap: 5px; /* Butonlar arası boşluk */
+            z-index: 1000;
+        }
+        .map-layer-btn {
+            width: 44px;
+            height: 44px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            border-radius: 4px;
+            border: 2px solid rgba(0,0,0,0.2);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            transition: all 0.2s;
+            position: relative;
+        }
+        .map-layer-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 2px;
+            opacity: 0.7;
+        }
+        .map-layer-btn.selected {
+            border-color: #333; /* Seçili olana koyu kenarlık */
+        }
+        .map-layer-btn.selected img {
+            opacity: 1;
+        }
+        .map-layer-btn:hover .layer-tooltip {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        /* Tooltip (Yanda çıkan yazı) */
+        .layer-tooltip {
+            position: absolute;
+            left: 50px;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateX(-5px);
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        /* 4. Konum Butonu (SAĞ ÜST - Zoom kontrolünün altına) */
+        .use-my-location-btn {
+            position: absolute !important;
+            top: 80px; /* Zoom butonlarının altına denk gelir */
+            right: 10px;
+            width: 34px; /* Leaflet standart boyutu */
+            height: 34px;
+            background: #fff;
+            border-radius: 4px;
+            border: 2px solid rgba(0,0,0,0.2);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            padding: 0;
+        }
+        .use-my-location-btn:hover {
+            background-color: #f4f4f4;
+        }
+        .use-my-location-btn img {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* 5. İstatistikler (ALT ORTA - Yüzen Hap) */
+        .route-stats-floating {
+            position: absolute;
+            bottom: 30px; /* Scale barın hemen üstü */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(4px);
+            padding: 6px 12px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 15px;
+            z-index: 900;
+            border: 1px solid rgba(0,0,0,0.1);
+            pointer-events: none; /* Tıklamayı engellemesin */
+        }
+        .route-stats-floating .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+        }
+        .route-stats-floating img.icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
         }
         
-        /* 5. Custom Marker Animasyon Kontrolü */
-        .custom-marker-outer {
-            transition: transform 0.1s ease !important;
-            will-change: auto; 
+        /* 6. Leaflet Zoom Kontrolünü Özelleştir (Fotoğraftaki gibi) */
+        .leaflet-control-zoom {
+            border: none !important;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65) !important;
+        }
+        .leaflet-control-zoom a {
+            width: 34px !important;
+            height: 34px !important;
+            line-height: 34px !important;
+            border-radius: 4px !important;
+            border: 2px solid rgba(0,0,0,0.2) !important;
+            color: #333 !important;
+            background: #fff !important;
+            margin-bottom: 5px !important; /* Butonlar arası boşluk */
+        }
+        .leaflet-control-zoom a:hover {
+            background: #f4f4f4 !important;
+        }
+        .leaflet-touch .leaflet-bar a:first-child {
+            border-top-left-radius: 4px !important;
+            border-top-right-radius: 4px !important;
+        }
+        .leaflet-touch .leaflet-bar a:last-child {
+            border-bottom-left-radius: 4px !important;
+            border-bottom-right-radius: 4px !important;
         }
     `;
     document.head.appendChild(style);
