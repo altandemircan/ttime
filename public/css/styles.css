@@ -4602,24 +4602,33 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     /* box-shadow: 0 3px 14px rgb(0 0 0 / 8%); */
     flex-direction: column;
     height: 155px;
+}
+
+@media (max-width: 768px) {
+    .expanded-map-panel {
+        width: calc(100% - 40px); /* Kenarlardan 20'şer px boşluk */
+        left: 20px; /* Ortalamak için soldan 20px */
+        right: 20px;
+        padding-left: 10px; /* Standart padding */
+        
+        /* Panel Yüksekliği (155px) + Alt Boşluk (10px) = 165px Kaplar */
+        height: 155px;
+        bottom: 10px; 
     }
 
-    @media (max-width:768px) {
- .expanded-map-panel { 
-   width: calc(100% - 40px);
-        right: 0px;
-        left: 0px;
-        padding-left: 40px;
-        bottom: 5px;
-      
-    }
     .route-scale-bar {
-       width: calc(100% - 20px);
-      
+        width: 100%; /* Panel içinde tam genişlik */
     }
-    .expanded-map{
-        height: calc(100% - 185px) !important;
-    bottom: 185px;
+
+    .expanded-map {
+        /* dvh: Mobilde adres çubuğu değişince zıplamayı önler */
+        height: calc(100dvh - 165px) !important;
+        
+        /* KRİTİK NOKTA: Panel (155) + Bottom (10) = 165px */
+        bottom: 165px !important; 
+        
+        position: fixed !important;
+        width: 100% !important;
     }
 }
 .elevation-labels-container {
