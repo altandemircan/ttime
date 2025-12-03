@@ -6069,16 +6069,20 @@ async function expandMap(containerId, day) {
 
   const expandedMapInstance = L.map(mapDivId, {
     center: [0, 0],
-    zoom: 2,         
+    zoom: 2,
     scrollWheelZoom: true,
-    fadeAnimation: true,      // <-- BUNU false YAP
-    zoomAnimation: true,      // <-- BUNU false YAP
-    zoomAnimationThreshold: 8,
+    // --- KESİN ÇÖZÜM AYARLARI ---
+    fadeAnimation: false,       // Animasyonları kapat (Senkronizasyon için)
+    zoomAnimation: false,       // Zoom animasyonunu kapat
+    markerZoomAnimation: false, // Marker animasyonunu kapat
+    inertia: false,             // EYLEMSİZLİĞİ KAPAT (Kaymanın %90 sebebi budur)
+    preferCanvas: true,         // Vektörleri Canvas'a çiz (Performans artar)
+    renderer: L.canvas({ padding: 0.5 }), // Harita dışına taşan çizim yap (Yırtılmayı önler)
+    // ----------------------------
     zoomSnap: 0.25,
     zoomDelta: 0.25,
     wheelDebounceTime: 35,
     wheelPxPerZoomLevel: 120,
-    inertia: true,
     easeLinearity: 0.2
   });
 
