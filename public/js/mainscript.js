@@ -3491,29 +3491,33 @@ function attachMapClickAddMode(day) {
 }
 
 
+// mainscript.js içindeki updateCart fonksiyonunu bununla değiştirin:
+
 async function updateCart() {
   window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
   
-  // Cart'ı temizle ve sırala
+  // 1. Veri Temizliği ve Sıralama
   const oldStartDate = window.cart.startDate;
   const oldEndDates  = window.cart.endDates;
-  window.cart = window.cart.filter(it => it && (it.day || it.name)); // Basit filtre
+  // Boş veya hatalı öğeleri filtrele
+  window.cart = window.cart.filter(it => it && (it.day || it.name)); 
   if (oldStartDate) window.cart.startDate = oldStartDate;
   if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
   const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
   const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
 
-  // ÖNCE Rotaları Çiz (Async)
+  // 2. Rotaları Çiz (Hata olsa bile devam et)
   for (const d of days) {
-    // Burada await kullanmıyoruz ki UI kilitlenmesin, arka planda çizsin
-    renderRouteForDay(d);
+    try { renderRouteForDay(d); } catch(e) { console.warn(e); }
   }
 
-  // Scale bar ve highlight temizliği
+  // 3. UI Temizliği
   document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
   if (window.expandedMaps) {
-    days.forEach(day => clearRouteSegmentHighlight(day));
+    days.forEach(day => {
+        if(typeof clearRouteSegmentHighlight === 'function') clearRouteSegmentHighlight(day);
+    });
     window._lastSegmentDay = undefined;
   }
 
@@ -3521,7 +3525,7 @@ async function updateCart() {
   const menuCount = document.getElementById("menu-count");
   if (!cartDiv) return;
 
-  // --- BOŞ CART KONTROLÜ ---
+  // --- BOŞ CART DURUMU ---
   if (!window.cart || window.cart.length === 0) {
     cartDiv.innerHTML = `
       <div class="day-container" id="day-container-1" data-day="1">
@@ -3543,7 +3547,7 @@ async function updateCart() {
 
   cartDiv.innerHTML = "";
 
-  // GÜNLERİ OLUŞTUR
+  // 4. GÜNLERİ VE LİSTELERİ OLUŞTUR
   for (let day = 1; day <= totalDays; day++) {
     const dayItemsArr = window.cart.filter(i => Number(i.day) === Number(day) && !i._starter && !i._placeholder);
     
@@ -3552,12 +3556,11 @@ async function updateCart() {
     dayContainer.id = `day-container-${day}`;
     dayContainer.dataset.day = day;
 
+    // Header
     const dayHeader = document.createElement("h4");
     dayHeader.className = "day-header";
-    dayHeader.innerHTML = `
-        <div class="title-container"><span class="day-title">${window.customDayNames?.[day] || `Day ${day}`}</span></div>
-    `;
-    dayHeader.appendChild(createDayActionMenu(day));
+    dayHeader.innerHTML = `<div class="title-container"><span class="day-title">${window.customDayNames?.[day] || `Day ${day}`}</span></div>`;
+    if(typeof createDayActionMenu === 'function') dayHeader.appendChild(createDayActionMenu(day));
     dayContainer.appendChild(dayHeader);
 
     // Confirmation container
@@ -3567,6 +3570,7 @@ async function updateCart() {
     confCont.style.display = "none";
     dayContainer.appendChild(confCont);
 
+    // Liste (UL)
     const dayList = document.createElement("ul");
     dayList.className = "day-list";
     dayList.dataset.day = day;
@@ -3578,7 +3582,8 @@ async function updateCart() {
 
       const li = document.createElement("li");
       li.className = "travel-item"; 
-      // DİKKAT: draggable="true" ve dragStart eventini EKLEMİYORUZ. drag.js halledecek.
+      // DİKKAT: 'draggable' attribute'unu ve 'dragstart' eventini kaldırdık. 
+      // drag.js global olarak yönetiyor.
       li.dataset.index = currIdx;
       
       if (item.location?.lat) {
@@ -3586,10 +3591,9 @@ async function updateCart() {
         li.setAttribute("data-lon", item.location.lng);
       }
 
-      // Marker Numarası
       const listMarkerHtml = `<div class="custom-marker-outer red" style="flex-shrink:0; transform:scale(0.70); position:absolute; left:30px; top:0px;"><span class="custom-marker-label" style="font-size:14px;">${idx + 1}</span></div>`;
 
-      // HTML İçeriği
+      // İçerik HTML'i
       if (item.category === "Note") {
          li.innerHTML = `
           <div class="cart-item">
@@ -3641,7 +3645,7 @@ async function updateCart() {
       }
       dayList.appendChild(li);
       
-      // Separator (Mesafe)
+      // Mesafe Separator
       const nextItem = dayItemsArr[idx + 1];
       if (item.location && nextItem && nextItem.location) {
           const sep = document.createElement('div');
@@ -3651,7 +3655,7 @@ async function updateCart() {
       }
     }
     
-    // Add Category Button
+    // "Add Category" Butonu
     const addMoreBtn = document.createElement("button");
     addMoreBtn.className = "add-more-btn";
     addMoreBtn.textContent = "+ Add Category";
@@ -3662,43 +3666,48 @@ async function updateCart() {
 
     dayContainer.appendChild(dayList);
     
-    // Harita ve Kontrolleri Ekle
-    ensureDayMapContainer(day);
-    initEmptyDayMap(day);
-    wrapRouteControls(day);
+    // Harita Container'ı
+    if(typeof ensureDayMapContainer === 'function') ensureDayMapContainer(day);
+    if(typeof initEmptyDayMap === 'function') initEmptyDayMap(day);
+    if(typeof wrapRouteControls === 'function') wrapRouteControls(day);
 
     cartDiv.appendChild(dayContainer);
   }
 
-  // Add New Day Button
+  // "Add New Day" Butonu
   const hr = document.createElement('hr'); hr.className = 'add-new-day-separator'; cartDiv.appendChild(hr);
   const addDayBtn = document.createElement("button");
   addDayBtn.className = "add-new-day-btn";
   addDayBtn.textContent = "+ Add New Day";
-  addDayBtn.onclick = function() { addNewDay(this); };
+  addDayBtn.onclick = function () { addNewDay(this); };
   cartDiv.appendChild(addDayBtn);
 
-  // Sayaç Güncelle
+  // Menü Sayacı
   if (menuCount) {
       const count = window.cart.filter(i => i.name && !i._starter).length;
       menuCount.textContent = count;
       menuCount.style.display = count > 0 ? "inline-block" : "none";
   }
 
-  // --- SON İŞLEMLER ---
-  days.forEach(d => initPlaceSearch(d));
+  // --- SON İŞLEMLER (DİĞER ÖZELLİKLERİ GERİ YÜKLEME) ---
+  if(typeof initPlaceSearch === 'function') days.forEach(d => initPlaceSearch(d));
+  if(typeof addCoordinatesToContent === 'function') addCoordinatesToContent();
   
-  // Expanded map güncelle
+  setTimeout(() => {
+      if(typeof wrapRouteControlsForAllDays === 'function') wrapRouteControlsForAllDays();
+  }, 0);
+  
   if (window.expandedMaps) {
     Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
-      if (expandedMap) updateExpandedMap(expandedMap, day);
+      if (expandedMap && typeof updateExpandedMap === 'function') updateExpandedMap(expandedMap, day);
     });
   }
 
-  setupSidebarAccordion();
-  renderTravelModeControlsForAllDays();
+  if(typeof setupSidebarAccordion === 'function') setupSidebarAccordion();
+  if(typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
   
-  // [CRASH FIX] attachChatDropListeners ÇAĞRISI KALDIRILDI!
+  // ÖNEMLİ: attachDragListeners, attachChatDropListeners VB. BURADA ASLA ÇAĞIRILMAMALI!
+  // drag.js kendi kendine çalışıyor.
 }
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
