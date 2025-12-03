@@ -4,26 +4,32 @@ if (!window.cart || !Array.isArray(window.cart)) window.cart = [];
 let placeholder = null;
 let isMobile = false;
 let draggedItem = null;
-let currentDropZone = null;
+let dragClone = null; // Mobilde sürüklenen hayalet kopya
+
+// Koordinat ve Offsetlar
 let touchStartX = 0;
 let touchStartY = 0;
+let touchOffsetX = 0; // Dokunulan noktanın öğe sol üst köşesine uzaklığı
+let touchOffsetY = 0;
 
 // Long-press state
 let longPressTimer = null;
 let longPressTriggered = false;
-let touchTargetItem = null;
-const LONG_PRESS_MS = 350;       // 300-500ms arası önerilir
-const MOVE_CANCEL_PX = 12;       // Long press başlamadan önce bu kadar hareket iptal eder
+const LONG_PRESS_MS = 300; // Trello hissi için biraz kısalttık
+const MOVE_CANCEL_PX = 10; // Bu kadar piksel oynarsa long-press iptal (scroll sayılır)
+
+// Auto-Scroll değişkenleri
+let autoScrollInterval = null;
+const SCROLL_ZONE_SIZE = 60; // Ekranın alt/üstünden kaç pikselde scroll başlasın
+const SCROLL_SPEED = 12; // Kaydırma hızı
 
 function dayRouteIsValidStrict(day) {
     const routeItems = window.cart
         .filter(i => Number(i.day) === Number(day) && i.location && typeof i.location.lat === "number" && typeof i.location.lng === "number")
         .map(i => i.location);
 
-    // Hiç nokta yoksa hep TRUE
     if (routeItems.length < 2) return true;
 
-    // Türkiye mi? (tüm noktalar)
     const isTurkey = routeItems.every(pt =>
         pt.lat >= 35.81 && pt.lat <= 42.11 &&
         pt.lng >= 25.87 && pt.lng <= 44.57
@@ -35,30 +41,27 @@ function dayRouteIsValidStrict(day) {
     }
 
     if (isTurkey) {
-        // Route summary varsa onu kullan
         const key = `route-map-day${day}`;
         if (window.lastRouteSummaries && window.lastRouteSummaries[key] && typeof window.lastRouteSummaries[key].distance === "number") {
             const routeKm = window.lastRouteSummaries[key].distance / 1000;
             return routeKm <= 300;
         }
-        // Rota özet yoksa, haversine ile fallback olarak TRUE döndür
         return haversineKm <= 300;
     }
-
-    // Türkiye değilse (fly mode), haversine ile kontrol
     return haversineKm <= 300;
 }
 
 // ========== DEVICE DETECTION ==========
 function isTouchDevice() {
-    return 'ontouchstart' in window || 
-           navigator.maxTouchPoints > 0 || 
-           navigator.msMaxTouchPoints > 0;
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 }
 
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
     isMobile = isTouchDevice();
+    
+    // Her durumda eventleri temizleyip yeniden bağla
+    cleanupDragEvents();
     
     if (isMobile) {
         initTouchDragDrop();
@@ -67,22 +70,197 @@ function initDragDropSystem() {
     }
     
     setupDropZones();
-   
 }
 
-function initTouchDragDrop() {
+function cleanupDragEvents() {
     document.querySelectorAll('.travel-item').forEach(item => {
-        // Önceki listener’ları temizle (tekrarı önlemek için)
         item.removeEventListener('touchstart', handleTouchStart);
         item.removeEventListener('touchmove', handleTouchMove);
         item.removeEventListener('touchend', handleTouchEnd);
         item.removeEventListener('touchcancel', handleTouchCancel);
+        item.removeEventListener('dragstart', desktopDragStart);
+        item.removeEventListener('dragend', desktopDragEnd);
+        item.removeAttribute('draggable');
+    });
+}
 
+// ========== MOBILE (TOUCH) DRAG & DROP ==========
+function initTouchDragDrop() {
+    document.querySelectorAll('.travel-item').forEach(item => {
+        // Pasif: false önemli, preventDefault çalışması için
         item.addEventListener('touchstart', handleTouchStart, { passive: false });
         item.addEventListener('touchmove', handleTouchMove, { passive: false });
         item.addEventListener('touchend', handleTouchEnd);
         item.addEventListener('touchcancel', handleTouchCancel);
     });
+}
+
+function handleTouchStart(e) {
+    // Sadece tek parmak
+    if (e.touches.length !== 1) return;
+    
+    const item = e.target.closest('.travel-item');
+    // Eğer butonlara veya linklere basıldıysa drag başlatma
+    if (!item || e.target.closest('button') || e.target.closest('a')) return;
+
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+
+    // Öğenin içindeki dokunma noktasını hesapla (Offset)
+    const rect = item.getBoundingClientRect();
+    touchOffsetX = touchStartX - rect.left;
+    touchOffsetY = touchStartY - rect.top;
+
+    longPressTriggered = false;
+    draggedItem = item;
+
+    // Timer başlat
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+        startMobileDrag(e.touches[0]);
+    }, LONG_PRESS_MS);
+}
+
+function startMobileDrag(touch) {
+    if (!draggedItem) return;
+    longPressTriggered = true;
+
+    // 1. Placeholder oluştur (Listenin kaymasını önler)
+    createPlaceholder(draggedItem);
+    
+    // 2. Clone (Hayalet) oluştur - Trello stili
+    const rect = draggedItem.getBoundingClientRect();
+    dragClone = draggedItem.cloneNode(true);
+    
+    // Clone stilleri
+    dragClone.style.position = 'fixed';
+    dragClone.style.width = `${rect.width}px`;
+    dragClone.style.height = `${rect.height}px`;
+    dragClone.style.left = `${rect.left}px`;
+    dragClone.style.top = `${rect.top}px`;
+    dragClone.style.zIndex = '9999';
+    dragClone.style.opacity = '0.9';
+    dragClone.style.pointerEvents = 'none'; // Dokunmayı engellemesin, altını görelim
+    dragClone.style.boxShadow = '0 15px 30px rgba(0,0,0,0.3)';
+    dragClone.style.transform = 'scale(1.02)'; // Hafif büyüt
+    dragClone.classList.add('dragging-clone');
+    
+    document.body.appendChild(dragClone);
+
+    // 3. Orijinal öğeyi gizle (ama yer kaplamaya devam etsin diye placeholder var)
+    draggedItem.style.opacity = '0';
+    draggedItem.classList.add('dragging-original');
+
+    // Titreşim
+    if (navigator.vibrate) navigator.vibrate(30);
+    document.body.classList.add('dragging-active');
+}
+
+function handleTouchMove(e) {
+    if (!draggedItem) return;
+
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartX);
+    const dy = Math.abs(touch.clientY - touchStartY);
+
+    // Henüz drag başlamadıysa (Long press bekleniyor)
+    if (!longPressTriggered) {
+        // Eğer parmak çok oynadıysa (scroll yapıyor olabilir), drag iptal
+        if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
+            clearTimeout(longPressTimer);
+            draggedItem = null;
+        }
+        return; // Scroll'a izin ver
+    }
+
+    // --- DRAG BAŞLADIYSA ---
+    e.preventDefault(); // Sayfa scrollunu engelle (Biz yöneteceğiz)
+
+    // 1. Clone'u taşı (Parmağın olduğu yere, offseti koruyarak)
+    if (dragClone) {
+        const x = touch.clientX - touchOffsetX;
+        const y = touch.clientY - touchOffsetY;
+        dragClone.style.left = `${x}px`;
+        dragClone.style.top = `${y}px`;
+    }
+
+    // 2. Auto-Scroll Kontrolü
+    handleAutoScroll(touch.clientY);
+
+    // 3. Altındaki öğeyi bul ve yer değiştir
+    // pointerEvents='none' olduğu için clone'un altındaki elemanı bulabiliriz
+    const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+    const dropTarget = elementUnder ? elementUnder.closest('.travel-item') : null;
+    const dropList = elementUnder ? elementUnder.closest('.day-list') : null;
+
+    if (dropList) {
+        if (dropTarget && dropTarget !== draggedItem && dropTarget !== placeholder) {
+            // Hedefin üst yarısında mı alt yarısında mı?
+            const targetRect = dropTarget.getBoundingClientRect();
+            const offset = touch.clientY - targetRect.top;
+            
+            if (offset < targetRect.height / 2) {
+                dropList.insertBefore(placeholder, dropTarget);
+            } else {
+                dropList.insertBefore(placeholder, dropTarget.nextSibling);
+            }
+        } else if (!dropTarget) {
+            // Liste boşsa veya boşluğa gelindiyse sona ekle
+            dropList.appendChild(placeholder);
+        }
+    }
+}
+
+function handleAutoScroll(clientY) {
+    clearInterval(autoScrollInterval);
+    autoScrollInterval = null;
+
+    const viewportHeight = window.innerHeight;
+    
+    // Aşağı kaydır
+    if (viewportHeight - clientY < SCROLL_ZONE_SIZE) {
+        autoScrollInterval = setInterval(() => {
+            window.scrollBy(0, SCROLL_SPEED);
+        }, 16);
+    } 
+    // Yukarı kaydır
+    else if (clientY < SCROLL_ZONE_SIZE) {
+        autoScrollInterval = setInterval(() => {
+            window.scrollBy(0, -SCROLL_SPEED);
+        }, 16);
+    }
+}
+
+function handleTouchEnd(e) {
+    clearTimeout(longPressTimer);
+    clearInterval(autoScrollInterval);
+
+    if (!longPressTriggered) {
+        draggedItem = null;
+        return;
+    }
+
+    finalizeDrag();
+}
+
+function handleTouchCancel() {
+    clearTimeout(longPressTimer);
+    clearInterval(autoScrollInterval);
+    if (longPressTriggered) {
+        // İptal durumunda eski yerine döndür
+        if (placeholder && placeholder.parentNode) {
+            placeholder.parentNode.removeChild(placeholder);
+        }
+        if (draggedItem) {
+            draggedItem.style.opacity = '';
+            draggedItem.classList.remove('dragging-original');
+        }
+        if (dragClone) dragClone.remove();
+        placeholder = null;
+        draggedItem = null;
+        dragClone = null;
+        document.body.classList.remove('dragging-active');
+    }
 }
 
 // ========== DESKTOP DRAG & DROP ==========
@@ -94,584 +272,153 @@ function setupDesktopDragDrop() {
     });
 }
 
-function dragStart(event) {
-    const index = event.currentTarget.dataset.index;
-    if (index !== undefined) {
-        event.dataTransfer.setData("text/plain", index);
-        event.dataTransfer.setData("source", "cart");
-        event.dataTransfer.effectAllowed = "move";
-        event.currentTarget.classList.add('dragging');
-    }
-}
-
-
-function allowDrop(event) {
-    event.preventDefault();
-    if (!placeholder) {
-        placeholder = document.createElement("div");
-        placeholder.classList.add("insertion-placeholder");
-    }
-
-    const target = event.target.closest("li.travel-item, .day-list");
-    if (!target) return;
-
-    const parent = target.closest(".day-list");
-    if (!parent) return;
-
-    if (target.classList.contains("travel-item")) {
-        if (placeholder.parentNode !== parent || placeholder.nextSibling !== target) {
-            parent.insertBefore(placeholder, target);
-        }
-    } else if (target.classList.contains("day-list")) {
-        if (placeholder.parentNode !== parent || placeholder !== parent.lastChild) {
-            parent.appendChild(placeholder);
-        }
-    }
-}
-
-function drop(event) {
-    event.preventDefault();
-    if (!placeholder) return;
-    
-    const source = event.dataTransfer.getData("source") || event.dataTransfer.getData("text/plain");
-    if (source !== "cart") return;
-
-    const fromIndex = parseInt(event.dataTransfer.getData("text"));
-    const placeholderParent = placeholder.parentNode;
-    const toDayList = placeholderParent.closest(".day-list");
-    
-    if (!toDayList || !toDayList.dataset?.day) {
-        placeholder.remove();
-        placeholder = null;
-        return;
-    }
-    
-    const toDay = parseInt(toDayList.dataset.day);
-    const itemsInDay = Array.from(toDayList.querySelectorAll(".travel-item"));
-    let toIndex = itemsInDay.indexOf(placeholder.nextSibling);
-    if (toIndex === -1) toIndex = itemsInDay.length;
-
-    const fromDayList = document.querySelector(`.travel-item[data-index="${fromIndex}"]`)?.closest(".day-list");
-    const fromDay = fromDayList?.dataset?.day ? parseInt(fromDayList.dataset.day) : null;
-
-    if (fromIndex === toIndex && fromDay === toDay) {
-        placeholder.remove();
-        placeholder = null;
-        return;
-    }
-
-    reorderCart(fromIndex, toIndex, fromDay, toDay);
-    placeholder.remove();
-    placeholder = null;
-}
-
-function dragEnd(event) {
-    event.target.classList.remove('dragging');
-    if (placeholder) {
-        placeholder.remove();
-        placeholder = null;
-    }
-}
-
-
-// ========== DESKTOP HANDLERS ==========
 function desktopDragStart(event) {
-    const index = event.target.dataset.index;
-    if (index !== undefined) {
-        event.dataTransfer.setData("text/plain", index);
-        event.dataTransfer.setData("source", "cart");
-        event.dataTransfer.effectAllowed = "move";
-        event.target.classList.add('dragging');
-
-        const rect = event.target.getBoundingClientRect();
-        const clone = event.target.cloneNode(true);
-        clone.id = 'drag-clone';
-        clone.style.position = 'fixed';
-        clone.style.width = `${rect.width}px`;
-        clone.style.height = `${rect.height}px`;
-        clone.style.left = `${rect.left}px`;
-        clone.style.top = `${rect.top}px`;
-        clone.style.zIndex = '10000';
-        clone.style.opacity = '0.8';
-        clone.style.pointerEvents = 'none';
-        clone.style.boxShadow = '0 10px 20px rgba(0,0,0,0.2)';
-        document.body.appendChild(clone);
-    }
-    document.body.classList.add('dragging-items');  // EKLE
+    const item = event.target.closest('.travel-item');
+    if (!item) return;
+    
+    draggedItem = item;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", item.dataset.index); // Firefox gereksinimi
+    
+    // Placeholder hemen oluştur
+    setTimeout(() => {
+        item.classList.add('dragging-original');
+        createPlaceholder(item);
+    }, 0);
 }
 
 function desktopDragEnd(event) {
-    event.target.classList.remove('dragging');
-    event.target.style.visibility = 'visible';
-    
-    const clone = document.getElementById('drag-clone');
-    if (clone) clone.remove();
-    
-    if (placeholder) {
-        placeholder.remove();
-        placeholder = null;
-    }
-    document.body.classList.remove('dragging-items');  // EKLE
+    finalizeDrag();
 }
 
-// ========== IMPROVED PLACEHOLDER SYSTEM ==========
-function createPlaceholder(target) {
-    if (!placeholder) {
-        placeholder = document.createElement("div");
-        placeholder.classList.add("insertion-placeholder");
-        placeholder.style.height = '4px';
-        placeholder.style.backgroundColor = '#4CAF50';
-        placeholder.style.margin = '8px 0';
-        placeholder.style.borderRadius = '2px';
-        placeholder.style.position = 'relative';
-        placeholder.innerHTML = `
-            <div class="placeholder-arrow left"></div>
-            <div class="placeholder-arrow right"></div>
-        `;
-    }
-
-    const parent = target.closest(".day-list");
-    if (!parent) return;
-
-    if (target.classList.contains("travel-item")) {
-        if (placeholder.parentNode !== parent || placeholder.nextSibling !== target) {
-            parent.insertBefore(placeholder, target);
-        }
-    } else if (target.classList.contains("day-list")) {
-        if (placeholder.parentNode !== parent || placeholder !== parent.lastChild) {
-            parent.appendChild(placeholder);
-        }
-    }
-}
+// ========== SHARED LOGIC ==========
 
 function setupDropZones() {
     document.querySelectorAll('.day-list').forEach(list => {
-        list.removeEventListener('dragover', desktopDragOver);
-        list.removeEventListener('drop', desktopDrop);
-        list.addEventListener('dragover', desktopDragOver);
-        list.addEventListener('drop', desktopDrop);
-        
-        if (isMobile) {
-            list.removeEventListener('touchmove', handleTouchMoveOver);
-            list.removeEventListener('touchend', handleTouchDrop);
-            list.addEventListener('touchmove', handleTouchMoveOver, { passive: false });
-            list.addEventListener('touchend', handleTouchDrop);
-        }
-    });
-}
-
-function desktopDragOver(event) {
-    event.preventDefault();
-
-    const target = event.target.closest("li.travel-item, .day-list");
-    if (!target) return;
-
-    createPlaceholder(target);
-
-    const dayList = target.closest('.day-list');
-    if (dayList) {
-        dayList.classList.add('drop-possible');
-    }
-}
-
-function desktopDrop(event) {
-    event.preventDefault();
-    document.querySelectorAll('.day-list').forEach(list => {
-        list.classList.remove('drop-possible');
-    });
-    
-    if (!placeholder) return;
-    const source = event.dataTransfer.getData("source") || event.dataTransfer.getData("text/plain");
-    if (source !== "cart") return;
-
-    const fromIndex = parseInt(event.dataTransfer.getData("text"));
-    const placeholderParent = placeholder.parentNode;
-    const toDayList = placeholderParent.closest(".day-list");
-    
-    if (!toDayList || !toDayList.dataset || !toDayList.dataset.day) {
-        placeholder.remove();
-        placeholder = null;
-        return;
-    }
-    
-    const toDay = parseInt(toDayList.dataset.day);
-    const itemsInDay = Array.from(toDayList.querySelectorAll(".travel-item"));
-    let toIndex = itemsInDay.indexOf(placeholder.nextSibling);
-    if (toIndex === -1) toIndex = itemsInDay.length;
-
-    const fromDayList = document.querySelector(`.travel-item[data-index="${fromIndex}"]`)?.closest(".day-list");
-    const fromDay = fromDayList && fromDayList.dataset && fromDayList.dataset.day
-        ? parseInt(fromDayList.dataset.day)
-        : null;
-
-    if (fromIndex === toIndex && fromDay === toDay) {
-        placeholder.remove();
-        placeholder = null;
-        return;
-    }
-
-    reorderCart(fromIndex, toIndex, fromDay, toDay);
-    placeholder.remove();
-    placeholder = null;
-}
-
-// ========== MOBILE DRAG & DROP with LONG PRESS ==========
-
-// Long press tetiklendiğinde gerçek sürüklemeyi başlat
-function activateMobileDrag(item) {
-    longPressTriggered = true;
-    draggedItem = item;
-
-    // Görsel geri bildirim
-    item.classList.add('dragging');
-    item.style.transition = 'none';
-    item.style.zIndex = '1000';
-    item.style.position = 'relative';
-    item.style.boxShadow = '0 10px 20px rgba(0,0,0,0.2)';
-    item.style.opacity = '0.8';
-
-    // Placeholder oluştur
-    createPlaceholder(item);
-
-    // Hafif titreşim (destekleniyorsa)
-    if ('vibrate' in navigator) {
-        navigator.vibrate(30);
-    }
-    document.body.classList.add('dragging-items');  // EKLE
-}
-
-function handleTouchStart(e) {
-    if (e.touches.length !== 1) return;
-    
-    const item = e.target.closest('.travel-item');
-    if (!item) return;
-
-    // Başlangıç değerlerini kaydet
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-
-    // Long press kurulumu
-    longPressTriggered = false;
-    touchTargetItem = item;
-
-    // Long-press zamanlayıcısı: Süre dolunca gerçek drag’i başlat
-    clearTimeout(longPressTimer);
-    longPressTimer = setTimeout(() => {
-        if (touchTargetItem) {
-            activateMobileDrag(touchTargetItem);
-        }
-    }, LONG_PRESS_MS);
-
-    // ÖNEMLİ: Burada preventDefault çağırmıyoruz; böylece kullanıcı kaydırmaya devam edebilir.
-}
-
-function handleTouchMove(e) {
-    // Long press daha tetiklenmediyse ve hareket eşik üstüyse iptal et (scroll'a izin ver)
-    if (!longPressTriggered) {
-        if (!touchTargetItem || e.touches.length !== 1) return;
-        const t = e.touches[0];
-        const dx = Math.abs(t.clientX - touchStartX);
-        const dy = Math.abs(t.clientY - touchStartY);
-        if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
-            // Kullanıcı kaydırıyor, long press iptal
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-            touchTargetItem = null;
-        }
-        // Not: preventDefault yok -> sayfa kayar
-        return;
-    }
-
-    // Drag aktifse, mevcut sürükleme davranışı
-    if (!draggedItem || e.touches.length !== 1) return;
-    
-    const touch = e.touches[0];
-    const x = touch.clientX - touchStartX;
-    const y = touch.clientY - touchStartY;
-    
-    draggedItem.style.transform = `translate(${x}px, ${y}px)`;
-    
-    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
-    const dropZone = elements.find(el => el.classList && el.classList.contains('day-list'));
-    
-    if (dropZone) {
-        if (currentDropZone && currentDropZone !== dropZone) {
-            currentDropZone.classList.remove('drop-hover');
-        }
-        currentDropZone = dropZone;
-        currentDropZone.classList.add('drop-hover');
-        
-        const items = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging)'));
-        let closestItem = null;
-        let closestDistance = Infinity;
-        
-        items.forEach(item => {
-            const rect = item.getBoundingClientRect();
-            const distance = Math.abs(touch.clientY - (rect.top + rect.height/2));
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestItem = item;
+        // Desktop events
+        list.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Drop'a izin ver
+            
+            if (!placeholder) return;
+            
+            const target = e.target.closest('.travel-item');
+            if (target && target !== draggedItem) {
+                const rect = target.getBoundingClientRect();
+                const offset = e.clientY - rect.top;
+                if (offset < rect.height / 2) {
+                    list.insertBefore(placeholder, target);
+                } else {
+                    list.insertBefore(placeholder, target.nextSibling);
+                }
+            } else if (!target && e.target === list) {
+                list.appendChild(placeholder);
             }
         });
         
-        if (closestItem) {
-            if (touch.clientY < closestItem.getBoundingClientRect().top + closestItem.offsetHeight/2) {
-                dropZone.insertBefore(placeholder, closestItem);
-            } else {
-                dropZone.insertBefore(placeholder, closestItem.nextSibling);
-            }
-        } else {
-            dropZone.appendChild(placeholder);
+        list.addEventListener('drop', (e) => {
+            e.preventDefault();
+            // Logic handled in dragEnd/finalize
+        });
+    });
+}
+
+function createPlaceholder(item) {
+    if (!placeholder) {
+        placeholder = document.createElement('li');
+        placeholder.className = 'travel-item placeholder-item';
+        // Trello benzeri hafif gri alan
+        placeholder.style.height = `${item.offsetHeight}px`;
+        placeholder.style.backgroundColor = 'rgba(0,0,0,0.05)';
+        placeholder.style.border = '2px dashed rgba(0,0,0,0.1)';
+        placeholder.style.borderRadius = '8px';
+        placeholder.style.margin = '5px 0';
+    }
+    // Mevcut öğenin hemen arkasına veya yerine koy
+    if (item.parentNode) {
+        item.parentNode.insertBefore(placeholder, item.nextSibling);
+    }
+}
+
+function finalizeDrag() {
+    if (!draggedItem || !placeholder || !placeholder.parentNode) {
+        // Hata veya iptal durumu temizliği
+        if (draggedItem) {
+            draggedItem.style.opacity = '';
+            draggedItem.classList.remove('dragging-original');
         }
-    } else if (currentDropZone) {
-        currentDropZone.classList.remove('drop-hover');
-        currentDropZone = null;
-    }
-
-    // Drag sırasında kaydırmayı engelle
-    e.preventDefault();
-}
-
-function handleTouchMoveOver(e) {
-    if (!longPressTriggered || !draggedItem) return;
-    e.preventDefault();
-}
-
-function handleTouchDrop(e) {
-    // Sadece gerçekten drag başlamışsa bırakma işlemi yap
-    if (!longPressTriggered || !draggedItem || !currentDropZone) {
-        cleanupTouchDrag();
-        return;
-    }
-    
-    const fromIndex = parseInt(draggedItem.dataset.index);
-    const fromDayList = draggedItem.closest('.day-list');
-    const fromDay = fromDayList ? parseInt(fromDayList.dataset.day) : null;
-    const toDay = parseInt(currentDropZone.dataset.day);
-    
-    const items = Array.from(currentDropZone.querySelectorAll('.travel-item:not(.dragging)'));
-    const touch = e.changedTouches[0];
-    let toIndex = items.length;
-    for (let i = 0; i < items.length; i++) {
-        const rect = items[i].getBoundingClientRect();
-        if (touch.clientY < rect.top + rect.height / 2) {
-            toIndex = i;
-            break;
-        }
-    }
-    
-    reorderCart(fromIndex, toIndex, fromDay, toDay);
-    cleanupTouchDrag();
-}
-
-function handleTouchEnd(e) {
-    // Long press süresi dolmadan bırakıldıysa: sadece zamanlayıcıyı iptal et, hiçbir şey yapma
-    if (!longPressTriggered) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-        touchTargetItem = null;
-        return;
-    }
-
-    // Drag aktifti ama hedef bölge yoksa: yerine geri koy ve temizle
-    if (draggedItem && !currentDropZone) {
-        draggedItem.style.transition = 'transform 0.3s ease';
-        draggedItem.style.transform = 'translate(0, 0)';
-        setTimeout(() => {
-            cleanupTouchDrag();
-        }, 300);
-    }
-}
-
-function handleTouchCancel() {
-    cleanupTouchDrag();
-}
-
-function cleanupTouchDrag() {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-    longPressTriggered = false;
-    touchTargetItem = null;
-
-    if (draggedItem) {
-        draggedItem.classList.remove('dragging');
-        draggedItem.style.transition = '';
-        draggedItem.style.transform = '';
-        draggedItem.style.zIndex = '';
-        draggedItem.style.position = '';
-        draggedItem.style.boxShadow = '';
-        draggedItem.style.opacity = '';
+        if (dragClone) dragClone.remove();
+        if (placeholder) placeholder.remove();
         draggedItem = null;
-    }
-    
-    if (currentDropZone) {
-        currentDropZone.classList.remove('drop-hover');
-        currentDropZone = null;
-    }
-    
-    if (placeholder) {
-        placeholder.remove();
+        dragClone = null;
         placeholder = null;
+        document.body.classList.remove('dragging-active');
+        return;
     }
-    document.body.classList.remove('dragging-items');  // EKLE
+
+    // 1. DOM'da öğeyi placeholder'ın yerine taşı
+    const newParent = placeholder.parentNode;
+    newParent.insertBefore(draggedItem, placeholder);
+    
+    // 2. Görsel temizlik
+    placeholder.remove();
+    if (dragClone) dragClone.remove();
+    draggedItem.style.opacity = '';
+    draggedItem.classList.remove('dragging-original');
+    document.body.classList.remove('dragging-active');
+
+    // 3. Veri Güncellemesi (Window.cart)
+    updateCartOrderFromDOM();
+
+    // Reset
+    placeholder = null;
+    draggedItem = null;
+    dragClone = null;
 }
 
- 
-// --- REORDER PATCH ---
-// Bu fonksiyonu doğrudan değiştir!
+function updateCartOrderFromDOM() {
+    // Tüm günleri gez ve DOM sırasına göre cart'ı yeniden oluştur
+    const newCart = [];
+    
+    document.querySelectorAll('.day-container').forEach(dayContainer => {
+        const day = parseInt(dayContainer.dataset.day);
+        
+        // Bu günün öğelerini DOM sırasıyla al
+        const items = dayContainer.querySelectorAll('.travel-item');
+        items.forEach(item => {
+            const oldIndex = parseInt(item.dataset.index);
+            const cartItem = window.cart[oldIndex];
+            
+            if (cartItem) {
+                // Gün değiştiyse güncelle
+                if (cartItem.day !== day) {
+                    cartItem.day = day;
+                }
+                newCart.push(cartItem);
+            }
+        });
+    });
+
+    // Cart'ı güncelle
+    window.cart = newCart;
+
+    // UI ve Rota güncelle
+    if (typeof updateCart === 'function') updateCart();
+    if (typeof attachChatDropListeners === 'function') attachChatDropListeners();
+    if (typeof saveCurrentTripToStorage === 'function') saveCurrentTripToStorage();
+    
+    // Rota çizimi güncelle
+    const affectedDays = [...new Set(window.cart.map(i => i.day))];
+    if (typeof renderRouteForDay === 'function') {
+        affectedDays.forEach(d => renderRouteForDay(d));
+    }
+}
+
+// ========== REORDER HELPER (Eski kod uyumluluğu için) ==========
 function reorderCart(fromIndex, toIndex, fromDay, toDay) {
-    console.log("[REORDER DEBUG] öncesi:", JSON.stringify(window.cart, null, 2));
-
-    try {
-        if (fromIndex < 0 || fromIndex >= window.cart.length) {
-            throw new Error("Invalid fromIndex");
-        }
-
-        // Geri alma için window.cart'ın eski halini sakla:
-        const prevCart = JSON.parse(JSON.stringify(window.cart));
-
-        const item = window.cart.splice(fromIndex, 1)[0];
-        item.day = toDay;
-
-        if (fromDay === toDay) {
-            let dayItems = window.cart.filter(i => i.day === toDay);
-            dayItems.splice(toIndex, 0, item);
-            window.cart = window.cart.filter(i => i.day !== toDay).concat(dayItems);
-        } else {
-            let insertAt = window.cart.findIndex(it => it.day === toDay);
-            if (insertAt === -1) insertAt = window.cart.length;
-
-            let seen = 0;
-            for (let i = 0; i < window.cart.length; ++i) {
-                if (window.cart[i].day === toDay) {
-                    if (seen === toIndex) {
-                        insertAt = i;
-                        break;
-                    }
-                    seen++;
-                }
-            }
-            window.cart.splice(insertAt, 0, item);
-        }
-
-        // --- 300 KM limit patch ---
-        const affectedDays = new Set([fromDay, toDay].map(Number));
-        let errorKm = false;
-        for (const day of affectedDays) {
-            if (!dayRouteIsValidStrict(day)) {
-                errorKm = true;
-                break;
-            }
-        }
-        if (errorKm) {
-    alert("Max route length for this day is 300 km.");
-    window.cart = JSON.parse(JSON.stringify(prevCart));
-    updateCart();
-    attachChatDropListeners();
-    return;
+    // Bu fonksiyonu manuel çağırmıyoruz artık, DOM okuyarak yapıyoruz.
+    // Ancak dışarıdan çağrılırsa diye bırakıldı.
+    console.warn("reorderCart deprecated in favor of DOM-based reorder");
 }
 
-        // Sonraki işlemler
-        updateCart();
-        attachChatDropListeners();
-        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-
-        // PATCH: updateCart'dan sonra tekrar summary ile km kontrolü!
-        setTimeout(() => {
-            for (const day of affectedDays) {
-                if (!dayRouteIsValidStrict(day)) {
-                    window.showWarning?.("Max route length for this day is 300 km.", () => {
-                        window.cart = JSON.parse(JSON.stringify(prevCart));
-                        updateCart();
-                        attachChatDropListeners();
-                    });
-                    break;
-                }
-            }
-        }, 1000);
-
-        if (window.expandedMaps) {
-            clearRouteSegmentHighlight(fromDay);
-            clearRouteSegmentHighlight(toDay);
-            window._lastSegmentDay = undefined;
-            window._lastSegmentStartKm = undefined;
-            window._lastSegmentEndKm = undefined;
-        }
-
-    } catch (error) {
-        console.error("Reorder error:", error);
-        window.showWarning?.("Reorder error. Please try again.");
-    }
-    console.log("[REORDER DEBUG] sonrası:", JSON.stringify(window.cart, null, 2));
-}
-function attachDragListeners() {
-    document.querySelectorAll('.travel-item').forEach(item => {
-        item.removeEventListener('dragstart', dragStart);
-        item.removeEventListener('dragend', dragEnd);
-    });
-
-    document.querySelectorAll('.day-list').forEach(list => {
-        list.removeEventListener('dragover', allowDrop);
-        list.removeEventListener('drop', drop);
-    });
-
-    document.querySelectorAll('.travel-item').forEach(item => {
-        item.setAttribute('draggable', true);
-        item.addEventListener('dragstart', dragStart);
-        item.addEventListener('dragend', dragEnd);
-    });
-
-    document.querySelectorAll('.day-list').forEach(list => {
-        list.addEventListener('dragover', allowDrop);
-        list.addEventListener('drop', drop);
-    });
-}
-
-function attachChatDropListeners() {
-    document.querySelectorAll('.day-list').forEach(list => {
-
-     
-   
-    });
-
-    document.querySelectorAll('.day-list').forEach(list => {
-   
-      
-       
-    });
-}
-
-function handleStepDragStart(e) {
-    const stepsDiv = e.currentTarget;
-    const data = {
-        name: stepsDiv.querySelector('.title')?.textContent?.trim() || '',
-        image: stepsDiv.querySelector('img.check')?.src || '',
-        category: stepsDiv.getAttribute('data-category') || '',
-        address: stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
-        opening_hours: stepsDiv.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '',
-        lat: stepsDiv.getAttribute('data-lat'),
-        lon: stepsDiv.getAttribute('data-lon'),
-        website: (stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick')?.match(/'([^']+)'/) || [])[1] || ''
-    };
-
-    if (data.lat && data.lon) {
-        data.lat = Number(data.lat);
-        data.lon = Number(data.lon);
-    }
-
-    e.dataTransfer.setData('application/json', JSON.stringify(data));
-    e.dataTransfer.setData('text/plain', 'chat');
-    e.dataTransfer.setData('source', 'chat');
-    e.dataTransfer.effectAllowed = 'copyMove';
-    stepsDiv.classList.add('dragging');
-}
-
-// ========== EVENT LISTENERS ==========
-document.addEventListener('DOMContentLoaded', function() {
-    initDragDropSystem();
-});
-
-document.addEventListener('dragend', function(e) {
-    document.querySelectorAll('.steps.dragging').forEach(el => el.classList.remove('dragging'));
-});
-
+// Başlangıç
+document.addEventListener('DOMContentLoaded', initDragDropSystem);
