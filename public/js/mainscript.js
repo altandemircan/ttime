@@ -5427,17 +5427,21 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         scrollWheelZoom: true,
         fadeAnimation: false,
         zoomAnimation: false,
-        preferCanvas: false // Düzeltildi: SVG kullanılsın (kaymayı önler)
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // --- DEĞİŞİKLİK BURADA: OpenFreeMap Bright Tile Layer ---
+    L.tileLayer('https://tiles.openfreemap.org/tiles/bright/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
+        attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors'
     }).addTo(map);
 
-    // --- DEĞİŞİKLİK BAŞLANGICI: Sınır Kutusu Oluştur ---
+    // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    //     maxZoom: 19,
+    //     attribution: '© OpenStreetMap contributors'
+    // }).addTo(map);
+    // ----------------------------------------------------------------
+
     let bounds = L.latLngBounds();
-    // --------------------------------------------------
 
     // Tek marker durumu
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
@@ -5472,7 +5476,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                     dashArray: "6,8"
                 });
                 
-                // Yay sınırlarını ekle
                 bounds.extend(curvePoly.getBounds());
             }
             window._curvedArcPointsByDay[day] = arcPoints;
@@ -5487,7 +5490,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 dashArray: null
             }).addTo(map);
             
-            // --- KRİTİK: Rota sınırlarını ekle ---
             bounds.extend(routePoly.getBounds());
         }
 
@@ -5519,7 +5521,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                         renderer: ensureCanvasRenderer(map)
                     }).addTo(map); 
                     
-                    // Snap çizgilerini de kapsasın
                     bounds.extend(snapPoly.getBounds());
                 }
             });
