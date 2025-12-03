@@ -10216,6 +10216,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 
+// SEGMENT SEÇİMİ SONRASI ZOOM
 function highlightSegmentOnMap(day, startKm, endKm) {
   // Parametre kontrolü ve Temizlik
   if (
@@ -10313,29 +10314,41 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   if (subCoords.length < 2) return;
 
-  // --- STİL AYARLARI (GÜNCELLENDİ) ---
+  // --- STİL AYARLARI ---
   const polyOptions = {
       color: '#8a4af3', // Mor renk
       weight: 6,
-      opacity: 1.0,     // Tam opak (Maviyi kapatması için)
+      opacity: 1.0,     // Tam opak
       lineCap: 'round',
       lineJoin: 'round',
-      dashArray: null   // Varsayılan: Düz çizgi
+      dashArray: null   
   };
 
-  // Fly Mode ise alttaki çizgiyi tam kapatmak için biraz daha kalın yap
   if (isFlyMode) {
       polyOptions.weight = 7; 
-      // Dash array YOK, düz çizgi olsun.
   }
 
-  // Haritalara çiz
+  // Haritalara çiz ve ZOOM YAP
   maps.forEach(m => {
     const poly = L.polyline(subCoords, polyOptions).addTo(m);
     
     window._segmentHighlight[day][m._leaflet_id] = poly;
     
     if (poly.bringToFront) poly.bringToFront();
+
+    // --- YENİ EKLENEN KISIM: ZOOM ---
+    // Oluşturulan polyline'ın sınırlarına haritayı odakla
+    try {
+        m.fitBounds(poly.getBounds(), {
+            padding: [50, 50], // Segment kenarlara yapışmasın diye boşluk
+            maxZoom: 16,       // Çok kısa segmentlerde aşırı zoom yapmasın
+            animate: true,
+            duration: 0.6      // Yumuşak geçiş süresi
+        });
+    } catch(e) { 
+        console.warn("Segment zoom hatası:", e); 
+    }
+    // -------------------------------
   });
 }
 
