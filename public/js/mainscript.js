@@ -5281,9 +5281,8 @@ function hideConfirmation(confirmationContainerId) {
 }
 
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
-// Kullanıcı yeni gün oluşturduğunda çalışır
 function addNewDay(button) {
-    // 1. Mevcut en yüksek gün sayısını bul
+    // Tüm mevcut günleri bul:
     let maxDay = 1;
     if (Array.isArray(window.cart) && window.cart.length > 0) {
         window.cart.forEach(item => {
@@ -5292,51 +5291,12 @@ function addNewDay(button) {
             }
         });
     }
-
+    // Her zaman yeni gün objesi ekle:
     const newDay = maxDay + 1;
-
-    // 2. Önceki günün (maxDay) son geçerli lokasyonunu bul
-    // (Tersten tarıyoruz ki en son eklenen yeri bulalım)
-    let lastMarkerOfPrevDay = null;
-    for (let i = window.cart.length - 1; i >= 0; i--) {
-        const item = window.cart[i];
-        // Sadece aynı güne ait ve koordinatı olan (Note olmayan) öğeyi al
-        if (item.day === maxDay && item.location && typeof item.location.lat === 'number') {
-            lastMarkerOfPrevDay = item;
-            break; 
-        }
-    }
-
-    // 3. Eğer önceki günün bir bitiş noktası varsa, yeni güne kopyala
-    if (lastMarkerOfPrevDay) {
-        // Nesneyi derinlemesine kopyala (referans hatası olmasın)
-        const newItem = JSON.parse(JSON.stringify(lastMarkerOfPrevDay));
-        
-        newItem.day = newDay; // Gününü güncelle
-        newItem.addedAt = new Date().toISOString();
-        
-        // İsteğe bağlı: İsmin yanına (Start) ekleyebilirsin, ama sade kalsın dersen bu satırı sil.
-        // newItem.name = newItem.name; 
-
-        window.cart.push(newItem);
-        
-        // Kullanıcıya bilgi vermek istersen (Opsiyonel)
-        if(window.showToast) window.showToast("Starting point added from previous day.", "success");
-
-    } else {
-        // Önceki gün boşsa veya marker yoksa, eskisi gibi boş gün ekle
-        window.cart.push({ day: newDay });
-    }
-
+window.cart = [...window.cart, { day: newDay }];
     window.currentDay = newDay;
     updateCart();
-    
-    // Yeni eklenen günün haritasını o noktaya odaklamak için render tetikle
-    if (lastMarkerOfPrevDay && typeof renderRouteForDay === 'function') {
-        setTimeout(() => renderRouteForDay(newDay), 100);
-    }
 }
-
 function addCoordinatesToContent() {
     document.querySelectorAll('.travel-item').forEach(item => {
         const contentDiv = item.querySelector('.content');
