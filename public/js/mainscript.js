@@ -5727,8 +5727,8 @@ function setupScaleBarInteraction(day, map) {
                 <div style="
                     background: #8a4af3; 
                     border-radius: 50%;
-                    width: 24px;
-                    height: 24px;
+                    width: 20px;
+                    height: 20px;
                     border: 2px solid #fff;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                 "></div>
