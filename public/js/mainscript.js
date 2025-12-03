@@ -6280,46 +6280,94 @@ async function expandMap(containerId, day) {
   }
 }
 function restoreMap(containerId, day) {
+    // containerId'den expandedData'yı bulmaya çalış, yoksa day üzerinden manuel temizlik yap
     const expandedData = window.expandedMaps?.[containerId];
-    if (!expandedData) return;
+    
+    // --- 1. BUTONLARI ESKİ HALİNE GETİR (AKTİF ET) ---
+    const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
+    const tmSet = document.getElementById(`tt-travel-mode-set-day${day}`);
+    const expandBtns = [];
 
-    const { originalContainer, originalMap, expandedMap, expandButton } = expandedData;
+    if (controlsBar) {
+        const btn = controlsBar.querySelector('.expand-map-btn');
+        if (btn) expandBtns.push(btn);
+    }
+    if (tmSet) {
+        const btn = tmSet.querySelector('.expand-map-btn');
+        if (btn) expandBtns.push(btn);
+    }
+
+    expandBtns.forEach(btn => {
+        btn.disabled = false;
+        btn.style.pointerEvents = 'auto';
+        btn.style.opacity = '1';
+        btn.style.filter = 'none';
+        btn.style.cursor = 'pointer';
+        btn.style.borderColor = 'rgb(43 129 213)'; // Orijinal Mavi
+        btn.style.background = '#ffffff';
+        btn.style.color = '#297fd4';
+
+        const img = btn.querySelector('img');
+        if (img) img.style.filter = 'none';
+
+        const label = btn.querySelector('.tm-label');
+        if (label) {
+            label.textContent = 'Expand map';
+            label.style.color = '#297fd4';
+        }
+        
+        // Hover efektlerini tekrar aktif hissettirmek için
+        btn.onmouseover = function() { this.style.background = "#fafafa"; };
+        btn.onmouseout = function() { this.style.background = "#ffffff"; };
+    });
+    // ------------------------------------------------
 
     try {
-        if (expandedMap && expandedMap.remove) {
-            expandedMap.remove();
+        // Expanded Map Instance Temizliği
+        if (expandedData && expandedData.expandedMap) {
+            try { expandedData.expandedMap.remove(); } catch(e) {}
+        } else {
+            // Expanded data kaybolduysa bile DOM'dan instance'ı bulup silmeye çalış
+            const domMap = document.getElementById(`expanded-map-${day}`);
+            if (domMap) {
+                // Leaflet instance'ı DOM elementine bağlı olabilir, temizleme şansımız yoksa DOM silmek yeterli
+            }
         }
 
+        // Expanded Container DOM Temizliği
         const expandedContainer = document.getElementById(`expanded-map-${day}`);
         if (expandedContainer) {
             expandedContainer.remove();
         }
 
+        // Expanded Scale Bar Temizliği
         const expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
         if (expandedScaleBar && expandedScaleBar.parentNode) {
             expandedScaleBar.parentNode.removeChild(expandedScaleBar);
         }
 
+        // Küçük Harita Scale Bar'ı Geri Getir (Varsa)
         const originalScaleBar = document.getElementById(`route-scale-bar-day${day}`);
         if (originalScaleBar) {
-            originalScaleBar.style.display = "none";
+            originalScaleBar.style.display = "block"; // none ise block yap
         }
 
-        if (originalContainer) {
-            originalContainer.style.display = '';
+        // Küçük Haritayı Geri Göster
+        if (expandedData && expandedData.originalContainer) {
+            expandedData.originalContainer.style.display = '';
+        } else {
+            // Fallback: ID ile bulup göster
+            const smallMap = document.getElementById(containerId);
+            if (smallMap) smallMap.style.display = '';
         }
 
-        // Restore expand button in travel mode set
-        const travelModeSet = document.getElementById(`tt-travel-mode-set-day${day}`);
-        const expandBtn = travelModeSet?.querySelector('.expand-map-btn');
-        if (expandBtn) {
-            expandBtn.style.visibility = 'visible';
-        }
-
+        // Diğer günlerin haritalarını ve kontrollerini geri göster (eğer gizlendiyse)
         document.querySelectorAll('.day-container').forEach(dc => {
             const smallMap = dc.querySelector('.route-map');
             const otherDay = parseInt(dc.dataset.day, 10);
             const controls = document.getElementById(`map-bottom-controls-wrapper-day${otherDay}`);
+            
+            // Eğer collapsed (akordiyon kapalı) değilse görünür yap
             if (smallMap && !smallMap.classList.contains('collapsed')) {
                  smallMap.style.display = '';
             }
@@ -6328,7 +6376,8 @@ function restoreMap(containerId, day) {
             }
         });
 
-        // --- EKLENDİ: Küçük haritadaki markerlar/focus düzelt ---
+        // --- KÜÇÜK HARİTAYI RESETLE / ODAKLA ---
+        const originalMap = expandedData ? expandedData.originalMap : window.leafletMaps[containerId];
         if (originalMap && typeof getDayPoints === "function") {
             try {
                 const pts = getDayPoints(day).filter(p => isFinite(p.lat) && isFinite(p.lng));
@@ -6343,21 +6392,21 @@ function restoreMap(containerId, day) {
             } catch (e) {
                 console.warn("restoreMap: fitBounds after restore failed", e);
             }
-
-
-        // --- YENİ EKLE ---
+        }
+        
+        // Rotayı tekrar render et (Görsel tutarlılık için)
         if (typeof renderRouteForDay === "function") {
             setTimeout(() => { renderRouteForDay(day); }, 160);
-        }
-
-
         }
 
     } catch (e) {
         console.error('Error while closing the map:', e);
     } finally {
-        delete window.expandedMaps[containerId];
+        if (window.expandedMaps && window.expandedMaps[containerId]) {
+            delete window.expandedMaps[containerId];
+        }
     }
+
     // Segment seçim & event cleanup:
     window._lastSegmentDay = undefined;
     window._lastSegmentStartKm = undefined;
@@ -6365,8 +6414,16 @@ function restoreMap(containerId, day) {
     window.__scaleBarDrag = null;
     window.__scaleBarDragTrack = null;
     window.__scaleBarDragSelDiv = null;
-    window.removeEventListener('mousemove', window.__sb_onMouseMove);
-    window.removeEventListener('mouseup', window.__sb_onMouseUp);
+    
+    // Event listenerları temizle
+    if (typeof window.__sb_onMouseMove === 'function') {
+        window.removeEventListener('mousemove', window.__sb_onMouseMove);
+        window.removeEventListener('touchmove', window.__sb_onMouseMove);
+    }
+    if (typeof window.__sb_onMouseUp === 'function') {
+        window.removeEventListener('mouseup', window.__sb_onMouseUp);
+        window.removeEventListener('touchend', window.__sb_onMouseUp);
+    }
 }
 /* ==== NEW: Click-based nearby search (replaces long-press) ==== */
 /* ==== NEW: Click-based nearby search (GÜNCELLENDİ) ==== */
