@@ -4619,7 +4619,7 @@ function updateExpandedMap(expandedMap, day) {
         if (fixedPanel && attribution) {
             // Attribution'ı panelin içine taşı (Böylece panel fixed olduğu için bu da fixed olur)
             fixedPanel.appendChild(attribution);            
-       
+        
         }
     }, 600); 
     // ---------------------------------------------
@@ -10476,12 +10476,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
-  tb.style.cssText = `
-   bottom: 10px; z-index: 1005; display: inline-flex; gap: 10px;
-   align-items: center; border-radius: 10px; padding: 6px;
-   font-size: 12px; color: rgb(0, 0, 0); right: 6px; position: absolute;
-   background: rgb(255 255 255 / 43%);  
-  `;
   tb.innerHTML = `
     <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
     <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">↑ ${Math.round(up)} m</span>
