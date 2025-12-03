@@ -7367,44 +7367,36 @@ scrollbar-width: thin;
 }
 
     
+/* --- LEAFLET KAYMA SORUNU İÇİN GPU KİLİDİ --- */
 
-
-/* 1. Harita konteynerini GPU moduna zorla ve yuvarlatılmış köşeleri maskele */
-.leaflet-container {
+/* Harita içindeki her şeyi donanım hızlandırmaya zorla */
+.expanded-map .leaflet-container,
+.expanded-map .leaflet-map-pane,
+.expanded-map .leaflet-tile,
+.expanded-map .leaflet-marker-icon,
+.expanded-map .leaflet-marker-shadow,
+.expanded-map .leaflet-tile-container,
+.expanded-map .leaflet-pane,
+.expanded-map .leaflet-layer {
+    will-change: transform;
     -webkit-transform: translate3d(0, 0, 0);
     transform: translate3d(0, 0, 0);
-    will-change: transform;
-    z-index: 1; /* Yeni istifleme bağlamı oluştur */
-    border-radius: 0 !important; /* Yuvarlak köşe hesaplamasını kapat (performans için) */
-}
-
-/* Yuvarlak köşe istiyorsanız bunu dıştaki kapsayıcıya (wrapper) verin, haritaya değil */
-.route-map, .expanded-map {
-    overflow: hidden; /* Dışarı taşmayı engelle */
-    border-radius: 12px; /* Köşeleri burada ver */
-    -webkit-mask-image: -webkit-radial-gradient(white, black); /* Safari fix */
-}
-
-/* 2. Tüm harita katmanlarını (Tile ve Overlay) aynı GPU düzlemine kilitle */
-.leaflet-map-pane,
-.leaflet-tile-pane,
-.leaflet-overlay-pane,
-.leaflet-shadow-pane,
-.leaflet-marker-pane,
-.leaflet-popup-pane {
-    transform: translate3d(0,0,0) !important; 
-    will-change: transform;
-}
-
-/* 3. Rota Çizgisi (SVG/Canvas) ile Zemin Resmini (Tile) Senkronize Et */
-.leaflet-zoom-animated {
-    -webkit-transform-origin: 0 0;
-    -ms-transform-origin: 0 0;
-    transform-origin: 0 0;
-}
-
-.leaflet-tile {
-    /* Resimlerin titremesini engelle */
-    backface-visibility: hidden;
+    /* Titremeyi önler */
     -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+/* Rota çizgisinin (Canvas/SVG) CSS geçişlerini kapat */
+.expanded-map .leaflet-zoom-animated {
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -o-transition: none !important;
+    transition: none !important;
+}
+
+/* Harita resimlerinin (Tiles) boyutunu sabitle */
+.leaflet-container img.leaflet-tile {
+    max-width: none !important;
+    width: 256px !important;
+    height: 256px !important;
 }
