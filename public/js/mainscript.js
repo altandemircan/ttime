@@ -9492,19 +9492,16 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  // 1. ADIM: CSS GÜVENLİK KİLİDİ (GÜNCELLENDİ)
-  // Eski "display: none" kuralını kaldırdık. Artık sadece opacity düşürüyoruz.
+  // 1. ADIM: CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-marker-loading-style')) {
     const style = document.createElement('style');
     style.id = 'tt-marker-loading-style';
     style.innerHTML = `
-        /* Yüklenirken öğeleri gizleme, sadece soluklaştır */
         .scale-bar-track.loading > *:not(.tt-scale-loader) {
             opacity: 0.4; 
             pointer-events: none;
             transition: opacity 0.2s ease;
         }
-        /* Loader'ın kendisi tam opak olsun */
         .scale-bar-track.loading .tt-scale-loader {
             opacity: 1 !important;
         }
@@ -9548,9 +9545,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   
-  // Rate limit kontrolü
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
-    window.showScaleBarLoading?.(container, 'Loading elevation... 12345'); // Test yazısı
+    window.showScaleBarLoading?.(container, 'Loading elevation...');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
@@ -9560,25 +9556,19 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    // İlk oluşturma: Spinner koy (henüz eski grafik yok)
     container.innerHTML = '<div class="spinner"></div>';
     track = document.createElement('div');
     track.className = 'scale-bar-track';
     container.appendChild(track);
   } 
   
-  // [FIX] track.innerHTML = '' SATIRINI KALDIRDIK.
-  // Eski grafik altta dursun, üzerine loading sınıfı ve loader ekleyelim.
-
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
-  // Loader'ı göster (Test yazısı ile)
-  window.showScaleBarLoading?.(container, 'Loading elevation... 12345');
+  window.showScaleBarLoading?.(container, 'Loading elevation...');
 
   const N = Math.max(40, Math.round(totalKm * 2));
   
-  // Mesafeleri hesapla
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
@@ -9616,78 +9606,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
   container._elevStartKm = 0;
   container._elevKmSpan = totalKm;
 
-  // ASYNC VERİ ÇEKME
   (async () => {
     try {
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
       
-      // --- VERİ GELDİ! ŞİMDİ ESKİ GRAFİĞİ SİLİP YENİSİNİ ÇİZİYORUZ ---
-      track.innerHTML = ''; 
-      
-      // Selection Div ve Eventler yeniden eklenmeli
-      const selDiv = document.createElement('div');
-      selDiv.className = 'scale-bar-selection';
-      selDiv.style.cssText = `position:absolute; top:0; bottom:0; background: rgba(138,74,243,0.16); border: 1px solid rgba(138,74,243,0.45); display:none; z-index: 6;`;
-      track.appendChild(selDiv);
-      window.__scaleBarDragTrack = track;
-      window.__scaleBarDragSelDiv = selDiv;
-
-      setupScaleBarEvents(track, selDiv); 
-
-      // SVG Yapısını Kur
-      const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const SVG_TOP = 48;
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      let SVG_H = isMobile
-        ? Math.max(180, Math.min(240, Math.round(track.getBoundingClientRect().height - SVG_TOP - 12)))
-        : Math.max(180, Math.min(320, Math.round(track.getBoundingClientRect().height - SVG_TOP - 16)));
-      if (isNaN(SVG_H)) SVG_H = isMobile ? 160 : 220;
-
-      const svgElem = document.createElementNS(svgNS, 'svg');
-      svgElem.setAttribute('class', 'tt-elev-svg');
-      svgElem.setAttribute('data-role', 'elev-base');
-      svgElem.setAttribute('viewBox', `0 0 ${width} ${SVG_H}`);
-      svgElem.setAttribute('preserveAspectRatio', 'none');
-      svgElem.setAttribute('width', '100%');
-      svgElem.setAttribute('height', SVG_H);
-      track.appendChild(svgElem);
-
-      const gridG = document.createElementNS(svgNS, 'g');
-      gridG.setAttribute('class', 'tt-elev-grid');
-      svgElem.appendChild(gridG);
-
-      const areaPath = document.createElementNS(svgNS, 'path');
-      areaPath.setAttribute('class', 'tt-elev-area');
-      svgElem.appendChild(areaPath);
-
-      const segG = document.createElementNS(svgNS, 'g');
-      segG.setAttribute('class', 'tt-elev-segments');
-      svgElem.appendChild(segG);
-
-      const verticalLine = document.createElement('div');
-      verticalLine.className = 'scale-bar-vertical-line';
-      verticalLine.style.cssText = `position:absolute;top:0;bottom:0;width:2px;background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;`;
-      verticalLine.style.left = '0px'; 
-      track.appendChild(verticalLine);
-
-      const tooltip = document.createElement('div');
-      tooltip.className = 'tt-elev-tooltip';
-      tooltip.style.left = '0px';
-      tooltip.style.display = 'none';
-      track.appendChild(tooltip);
-
-      track.addEventListener('mousemove', function(e) {
-        const rect = track.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        verticalLine.style.left = `${x}px`;
-      });
-      track.addEventListener('touchmove', function(e) {
-        const rect = track.getBoundingClientRect();
-        const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
-        verticalLine.style.left = `${x}px`;
-      });
-
       if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
         track.innerHTML = `<div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div>`;
         return;
@@ -9701,9 +9623,84 @@ function renderRouteScaleBar(container, totalKm, markers) {
       container._elevationDataFull = { smooth: smooth.slice(), min, max };
       container.dataset.elevLoadedKey = routeKey;
 
-      // REDRAW ELEVATION
+      // --- DOM GÜNCELLEMESİNİ HAZIRLA ---
+      // (Burada track.innerHTML = '' yapmıyoruz! Direkt fonksiyonu güncelleyip çağırıyoruz.)
+
       container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
+        
+        // 1. Önce track içindeki eski SVG ve elemanları temizle (AMA HEPSİNİ DEĞİL)
+        // Loader kalsın ki geçiş yumuşak olsun.
+        const oldLoader = track.querySelector('.tt-scale-loader');
+        track.innerHTML = ''; 
+        if (oldLoader) track.appendChild(oldLoader); // Loader'ı geri koy (hala loading state ise)
+
+        // 2. Selection Div ve Eventler yeniden ekle
+        const selDiv = document.createElement('div');
+        selDiv.className = 'scale-bar-selection';
+        selDiv.style.cssText = `position:absolute; top:0; bottom:0; background: rgba(138,74,243,0.16); border: 1px solid rgba(138,74,243,0.45); display:none; z-index: 6;`;
+        track.appendChild(selDiv);
+        window.__scaleBarDragTrack = track;
+        window.__scaleBarDragSelDiv = selDiv;
+
+        setupScaleBarEvents(track, selDiv); 
+
+        // 3. SVG Çizimi Başlasın
+        const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const SVG_TOP = 48;
+        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        let SVG_H = isMobile
+            ? Math.max(180, Math.min(240, Math.round(track.getBoundingClientRect().height - SVG_TOP - 12)))
+            : Math.max(180, Math.min(320, Math.round(track.getBoundingClientRect().height - SVG_TOP - 16)));
+        if (isNaN(SVG_H)) SVG_H = isMobile ? 160 : 220;
+
+        const svgElem = document.createElementNS(svgNS, 'svg');
+        svgElem.setAttribute('class', 'tt-elev-svg');
+        svgElem.setAttribute('data-role', 'elev-base');
+        svgElem.setAttribute('viewBox', `0 0 ${width} ${SVG_H}`);
+        svgElem.setAttribute('preserveAspectRatio', 'none');
+        svgElem.setAttribute('width', '100%');
+        svgElem.setAttribute('height', SVG_H);
+        track.appendChild(svgElem);
+
+        const gridG = document.createElementNS(svgNS, 'g');
+        gridG.setAttribute('class', 'tt-elev-grid');
+        svgElem.appendChild(gridG);
+
+        const areaPath = document.createElementNS(svgNS, 'path');
+        areaPath.setAttribute('class', 'tt-elev-area');
+        svgElem.appendChild(areaPath);
+
+        const segG = document.createElementNS(svgNS, 'g');
+        segG.setAttribute('class', 'tt-elev-segments');
+        svgElem.appendChild(segG);
+
+        const verticalLine = document.createElement('div');
+        verticalLine.className = 'scale-bar-vertical-line';
+        verticalLine.style.cssText = `position:absolute;top:0;bottom:0;width:2px;background:#111;opacity:0.5;pointer-events:none;z-index:100;display:block;`;
+        verticalLine.style.left = '0px'; 
+        track.appendChild(verticalLine);
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tt-elev-tooltip';
+        tooltip.style.left = '0px';
+        tooltip.style.display = 'none';
+        track.appendChild(tooltip);
+
+        // Listenerlar
+        track.addEventListener('mousemove', function(e) {
+            const rect = track.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            verticalLine.style.left = `${x}px`;
+        });
+        track.addEventListener('touchmove', function(e) {
+            const rect = track.getBoundingClientRect();
+            const x = (e.touches && e.touches.length) ? (e.touches[0].clientX - rect.left) : (width / 2);
+            verticalLine.style.left = `${x}px`;
+        });
+
+        // Veriyi işle ve çiz
         const { smooth, min, max } = elevationData;
         const s = container._elevSamples || [];
         const startKmDom = Number(container._elevStartKm || 0);
@@ -9717,73 +9714,73 @@ function renderRouteScaleBar(container, totalKm, markers) {
         const X = kmRel => (kmRel / spanKm) * width;
         const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
 
-        while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
-        while (segG.firstChild) segG.removeChild(segG.firstChild);
+        // Grid Çizgileri
+        for (let i = 0; i <= 4; i++) {
+            const ev = vizMin + (i / 4) * (vizMax - vizMin);
+            const y = Y(ev);
+            if (isNaN(y)) continue;
+            const ln = document.createElementNS(svgNS, 'line');
+            ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+            ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+            ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+            gridG.appendChild(ln);
 
-        const levels = 4;
-        for (let i = 0; i <= levels; i++) {
-          const ev = vizMin + (i / levels) * (vizMax - vizMin);
-          const y = Y(ev);
-          if (isNaN(y)) continue;
-          const ln = document.createElementNS(svgNS, 'line');
-          ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
-          ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-          ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-          gridG.appendChild(ln);
-
-          const tx = document.createElementNS(svgNS, 'text');
-          tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-          tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-          tx.textContent = `${Math.round(ev)} m`;
-          gridG.appendChild(tx);
+            const tx = document.createElementNS(svgNS, 'text');
+            tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+            tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+            tx.textContent = `${Math.round(ev)} m`;
+            gridG.appendChild(tx);
         }
 
+        // Alan Grafiği (Area)
         let topD = '';
         const n = Math.min(smooth.length, s.length);
         for (let i = 0; i < n; i++) {
-          const kmAbs = s[i].distM / 1000;
-          const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
-          const y = Y(smooth[i]);
-          if (isNaN(x) || isNaN(y)) continue;
-          topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+            const kmAbs = s[i].distM / 1000;
+            const x = Math.max(0, Math.min(width, X(kmAbs - startKmDom)));
+            const y = Y(smooth[i]);
+            if (isNaN(x) || isNaN(y)) continue;
+            topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
         }
         if (topD) {
-          const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
-          areaPath.setAttribute('d', areaD);
-          areaPath.setAttribute('fill', '#263445');
+            const areaD = `${topD} L ${width} ${SVG_H} L 0 ${SVG_H} Z`;
+            areaPath.setAttribute('d', areaD);
+            areaPath.setAttribute('fill', '#263445');
         }
 
+        // Segment Çizgileri (Slope Colors)
         for (let i = 1; i < n; i++) {
-          const kmAbs1 = s[i - 1].distM / 1000;
-          const kmAbs2 = s[i].distM / 1000;
-          const x1 = Math.max(0, Math.min(width, X(kmAbs1 - startKmDom)));
-          const y1 = Y(smooth[i - 1]);
-          const x2 = Math.max(0, Math.min(width, X(kmAbs2 - startKmDom)));
-          const y2 = Y(smooth[i]);
+            const kmAbs1 = s[i - 1].distM / 1000;
+            const kmAbs2 = s[i].distM / 1000;
+            const x1 = Math.max(0, Math.min(width, X(kmAbs1 - startKmDom)));
+            const y1 = Y(smooth[i - 1]);
+            const x2 = Math.max(0, Math.min(width, X(kmAbs2 - startKmDom)));
+            const y2 = Y(smooth[i]);
 
-          const dx = s[i].distM - s[i - 1].distM;
-          const dy = smooth[i] - smooth[i - 1];
-          let slope = 0, color = '#72c100';
-          if (i > 1 && dx > 50) {
-            slope = (dy / dx) * 100;
-            color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
-          }
+            const dx = s[i].distM - s[i - 1].distM;
+            const dy = smooth[i] - smooth[i - 1];
+            let slope = 0, color = '#72c100';
+            if (i > 1 && dx > 50) {
+                slope = (dy / dx) * 100;
+                color = (slope < 0) ? '#72c100' : getSlopeColor(slope);
+            }
 
-          const seg = document.createElementNS(svgNS, 'line');
-          seg.setAttribute('x1', String(x1));
-          seg.setAttribute('y1', String(y1));
-          seg.setAttribute('x2', String(x2));
-          seg.setAttribute('y2', String(y2));
-          seg.setAttribute('stroke', color);
-          seg.setAttribute('stroke-width', '3');
-          seg.setAttribute('stroke-linecap', 'round');
-          seg.setAttribute('fill', 'none');
-          segG.appendChild(seg);
+            const seg = document.createElementNS(svgNS, 'line');
+            seg.setAttribute('x1', String(x1));
+            seg.setAttribute('y1', String(y1));
+            seg.setAttribute('x2', String(x2));
+            seg.setAttribute('y2', String(y2));
+            seg.setAttribute('stroke', color);
+            seg.setAttribute('stroke-width', '3');
+            seg.setAttribute('stroke-linecap', 'round');
+            seg.setAttribute('fill', 'none');
+            segG.appendChild(seg);
         }
         
         createScaleElements(track, width, totalKm, 0, markers);
       };
 
+      // Tooltip Eventi (Yeniden Bağla)
       if (track.__onMove) track.removeEventListener('mousemove', track.__onMove);
       track.__onMove = function(e) {
         const ed = container._elevationData;
@@ -9854,14 +9851,11 @@ function renderRouteScaleBar(container, totalKm, markers) {
       ro.observe(track);
       container._elevResizeObserver = ro;
 
-      // İLK ÇİZİM
-      container._redrawElevation(container._elevationData);
-      
+      // İLK ÇİZİM: requestAnimationFrame içinde yaparak render senkronizasyonu sağla
       requestAnimationFrame(() => {
-          setTimeout(() => {
-              window.hideScaleBarLoading?.(container);
-              track.classList.remove('loading');
-          }, 60);
+          container._redrawElevation(container._elevationData);
+          window.hideScaleBarLoading?.(container); // Loader'ı gizle
+          track.classList.remove('loading'); // Opacity'yi normale döndür
       });
 
       if (typeof day !== "undefined") {
@@ -9881,6 +9875,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
       
       track.classList.remove('loading');
+      // Hata olsa bile baremleri çiz
       createScaleElements(track, width || 400, totalKm, 0, markers);
     }
   })();
