@@ -6341,6 +6341,30 @@ async function expandMap(containerId, day) {
   ) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
+
+  // --- EKLENECEK KISIM (FIX) ---
+  // Tek nokta (0 km) durumunda harita etkileşimini ve cursor'ı düzelt
+  setTimeout(() => {
+      // 1. Harita container'ına 'grab' imlecini zorla
+      const container = expandedMapInstance.getContainer();
+      if (container) {
+          container.style.cursor = 'grab';
+      }
+
+      // 2. Eğer tek nokta varsa, Leaflet'in "dragging" özelliğini tazele
+      const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+      if (pts.length === 1) {
+          expandedMapInstance.dragging.disable();
+          setTimeout(() => { 
+              expandedMapInstance.dragging.enable(); 
+          }, 10);
+      }
+
+      // 3. Tıklama olayını en üste al (Diğer layerların engellememesi için)
+      if (typeof attachClickNearbySearch === 'function') {
+          attachClickNearbySearch(expandedMapInstance, day);
+      }
+  }, 350);
 }
 function restoreMap(containerId, day) {
     const expandedData = window.expandedMaps?.[containerId];
@@ -11060,3 +11084,45 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 
+// --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN) ---
+(function forceLeafletCssFix() {
+    const styleId = 'tt-leaflet-fix-v2';
+    if (document.getElementById(styleId)) return;
+    
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML = `
+        /* 1. Harita Kayma Sorunu: Leaflet pane içindeki geçişleri kapat */
+        .leaflet-pane, 
+        .leaflet-tile, 
+        .leaflet-marker-icon, 
+        .leaflet-marker-shadow, 
+        .leaflet-tile-container, 
+        .leaflet-pane > svg, 
+        .leaflet-pane > canvas, 
+        .leaflet-zoom-animated, 
+        .leaflet-proxy {
+            transition: none !important;
+            transform-origin: 50% 50%; /* Merkezden zoom */
+        }
+
+        /* 2. Marker animasyonlarını özel olarak kapat */
+        .custom-marker-outer {
+            transition: transform 0.1s ease !important; /* Sadece kendi scale efekti kalsın */
+            will-change: auto; 
+        }
+
+        /* 3. İmleç (Cursor) Sorunu: Harita üzerinde varsayılan 'grab' olsun */
+        .expanded-map.leaflet-container {
+            cursor: grab !important;
+        }
+        .expanded-map.leaflet-container:active {
+            cursor: grabbing !important;
+        }
+
+        /* 4. Tıklamayı Engelleyen Overlayleri Kaldır */
+        .leaflet-pane { z-index: 400; }
+        .leaflet-top, .leaflet-bottom { z-index: 1000; }
+    `;
+    document.head.appendChild(style);
+})();
