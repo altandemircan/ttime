@@ -3657,12 +3657,13 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
 
       const li = document.createElement("li");
       li.className = "travel-item";
-      // li.draggable = true;  <-- SİLİNDİ (Yeni drag.js buna ihtiyaç duymaz)
+      li.draggable = true;
       li.dataset.index = currIdx;
       if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
         li.setAttribute("data-lat", item.location.lat);
         li.setAttribute("data-lon", item.location.lng);
       }
+      li.addEventListener("dragstart", dragStart);
 
       // --- MARKER HTML YAPISI (Senin İstediğin) ---
       // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
@@ -3938,24 +3939,24 @@ cartDiv.appendChild(addNewDayButton);
 
 
   // --- Diğer kalan işlemler ---
-// --- FONKSİYON SONUNDAKİ TEMİZLİK ---
   const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
   if (menuCount) {
     menuCount.textContent = itemCount;
     menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
   }
 
-  // attachDragListeners(); // SİLİNDİ (Hata verir)
+  attachDragListeners();
   days.forEach(d => initPlaceSearch(d));
   addCoordinatesToContent();
-  
   days.forEach(d => {
-    const suppressing = window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[d];
+    const suppressing = window.__suppressMiniUntilFirstPoint &&
+                        window.__suppressMiniUntilFirstPoint[d];
     const realPoints = getDayPoints ? getDayPoints(d) : [];
-    if (suppressing && realPoints.length === 0) return;
+    if (suppressing && realPoints.length === 0) {
+      return;
+    }
     renderRouteForDay(d);
   });
-
   setTimeout(wrapRouteControlsForAllDays, 0);
   attachChatDropListeners();
 
@@ -3965,10 +3966,10 @@ cartDiv.appendChild(addNewDayButton);
     });
   }
 
-  // initDragDropSystem(); // SİLİNDİ (Gerek yok, drag.js otomatik halleder)
-  // if (typeof interact !== 'undefined') setupMobileDragDrop(); // SİLİNDİ
-
+  initDragDropSystem();
+  if (typeof interact !== 'undefined') setupMobileDragDrop();
   setupSidebarAccordion();
+
   renderTravelModeControlsForAllDays();
 
   (function ensureSelectDatesButton() {
@@ -4178,6 +4179,27 @@ cartDiv.appendChild(addNewDayButton);
   tripTitleDiv.insertAdjacentElement('afterend', btnDiv);
 })();
 
+  setTimeout(() => {
+    document.querySelectorAll('.day-list').forEach(dayList => {
+      if (!dayList._sortableSetup) {
+        Sortable.create(dayList, {
+          animation: 150,
+          handle: '.drag-icon',
+          onEnd: function (evt) {
+            const day = dayList.dataset.day;
+            const newOrder = Array.from(dayList.querySelectorAll('.travel-item')).map(li => Number(li.dataset.index));
+            const items = window.cart.filter(i => Number(i.day) === Number(day) && !i._starter && !i._placeholder && (i.name || i.category === "Note"));
+            newOrder.forEach((cartIdx, newPos) => {
+              const moved = window.cart.findIndex(it => window.cart.indexOf(it) === cartIdx);
+              if (moved > -1) window.cart.splice(moved, 1, items[newPos]);
+            });
+            updateCart();
+          }
+        });
+        dayList._sortableSetup = true;
+      }
+    });
+  }, 0);
 
  // EN SON:
     if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
