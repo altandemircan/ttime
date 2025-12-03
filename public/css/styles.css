@@ -5750,7 +5750,14 @@ ease;
 .maplibregl-ctrl-bottom-right {
     display: none;
 }
-
+.route-controls-bar .leaflet-touch .leaflet-control-attribution {
+    width: max-content;
+    bottom: 0px !important;
+    right: 2px !important;
+    padding: 3px;
+    border-radius: 5px;
+    font-weight: 400;
+}
 
 .leaflet-control-attribution  {
        position: absolute !important;
