@@ -4606,11 +4606,11 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
     @media (max-width:768px) {
  .expanded-map-panel { 
-    width: calc(100% - 40px);
+   width: calc(100% - 40px);
         right: 0px;
-        left: 30px;
+        left: 0px;
+        padding-left: 40px;
         bottom: 5px;
-        /* background: #ff9900; */
       
     }
     .route-scale-bar {
