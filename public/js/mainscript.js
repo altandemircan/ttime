@@ -6056,20 +6056,16 @@ async function expandMap(containerId, day) {
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
       
-      // --- DÜZELTME: 3D BUTONUNUN ORİJİNAL İŞLEVİNİ KORU ---
       if (opt.value === 'liberty') {
-        // Maplibre 3D view aç
         expandedMapInstance.getContainer().style.display = "none";
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // 2D Modlar (Leaflet)
         expandedMapInstance.getContainer().style.display = "";
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) map3d.style.display = "none";
 
         setExpandedMapTile(opt.value);
       }
-      // --------------------------------------------------------
     };
     layersBar.appendChild(div);
   });
@@ -6110,11 +6106,6 @@ async function expandMap(containerId, day) {
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-expanded-map';
   closeBtn.textContent = '✕ Close';
-  closeBtn.style.cssText = `
-    position:absolute;top:16px;right:16px;z-index:10001;
-    background:#ff4444;color:#fff;border:none;padding:8px 12px;
-    border-radius:4px;font-weight:500;cursor:pointer;
-  `;
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
 
@@ -6132,18 +6123,37 @@ async function expandMap(containerId, day) {
 
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
+  // --- DÜZELTME BURADA BAŞLIYOR: Başlangıç Konumunu Belirle ---
+  const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+  const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
+  
+  let startCenter = [39.0, 35.0]; // Varsayılan Türkiye Ortası
+  let startZoom = 5;
+  
+  if (validPtsInit.length > 0) {
+      if (validPtsInit.length === 1) {
+          // Tek nokta varsa (Yeni gün senaryosu), direkt o noktaya odaklan
+          startCenter = [validPtsInit[0].lat, validPtsInit[0].lng];
+          startZoom = 14; 
+      } else {
+          // Birden fazla nokta varsa ortala
+          const b = L.latLngBounds(validPtsInit.map(p => [p.lat, p.lng]));
+          startCenter = b.getCenter();
+          startZoom = 10;
+      }
+  }
+  // -----------------------------------------------------------
+
   const expandedMapInstance = L.map(mapDivId, {
-    center: [0, 0],
-    zoom: 2,
+    center: startCenter, // Hesaplanan merkez
+    zoom: startZoom,     // Hesaplanan zoom
     scrollWheelZoom: true,
-    // --- KESİN ÇÖZÜM AYARLARI ---
-    fadeAnimation: false,       // Animasyonları kapat (Senkronizasyon için)
-    zoomAnimation: false,       // Zoom animasyonunu kapat
-    markerZoomAnimation: false, // Marker animasyonunu kapat
-    inertia: false,             // EYLEMSİZLİĞİ KAPAT (Kaymanın %90 sebebi budur)
-    preferCanvas: true,         // Vektörleri Canvas'a çiz (Performans artar)
-    renderer: L.canvas({ padding: 0.5 }), // Harita dışına taşan çizim yap (Yırtılmayı önler)
-    // ----------------------------
+    fadeAnimation: false,
+    zoomAnimation: false,
+    markerZoomAnimation: false,
+    inertia: false,
+    preferCanvas: true,
+    renderer: L.canvas({ padding: 0.5 }), 
     zoomSnap: 0.25,
     zoomDelta: 0.25,
     wheelDebounceTime: 35,
@@ -6151,14 +6161,11 @@ async function expandMap(containerId, day) {
     easeLinearity: 0.2
   });
 
-  const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-  if (!pts || pts.length === 0) {
-      expandedMapInstance.setView([41.0, 12.0], 5); 
-  }
+  // --- ARTIK GEREKSİZ OLAN [0,0] KONTROLÜNÜ KALDIRIYORUZ ---
+  // (Çünkü yukarıda startCenter ile zaten doğru yeri verdik)
 
   // --- LAYER DEĞİŞTİRME FONKSİYONU ---
   function setExpandedMapTile(styleKey) {
-      // 1. Önceki layer'ları temizle
       if (expandedMapInstance._maplibreLayer) {
           expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
           expandedMapInstance._maplibreLayer = null;
@@ -6173,7 +6180,6 @@ async function expandMap(containerId, day) {
       const url = `https://tiles.openfreemap.org/styles/${styleToUse}`;
 
       try {
-          // 2. MapLibre Layer'ı ekle
           if (typeof L.maplibreGL === 'function') {
               expandedMapInstance._maplibreLayer = L.maplibreGL({
                   style: url,
@@ -6181,7 +6187,6 @@ async function expandMap(containerId, day) {
                   interactive: true
               }).addTo(expandedMapInstance);
           } else {
-              // 3. Fallback: Eğer kütüphane yoksa standart OSM kullan
               console.warn('L.maplibreGL not found, using OSM fallback');
               expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                   maxZoom: 19,
@@ -6189,7 +6194,6 @@ async function expandMap(containerId, day) {
               }).addTo(expandedMapInstance);
           }
       } catch (e) {
-          // 4. Hata Yönetimi: Stil yüklenemezse Bright'a geri dön
           console.error("MapLibre Style failed to load:", e);
           if (styleKey !== 'bright') {
                setExpandedMapTile('bright'); 
@@ -6198,7 +6202,6 @@ async function expandMap(containerId, day) {
           }
       }
   }
-  // -----------------------------------------------------
 
   // İlk açılış
   setExpandedMapTile(currentLayer);
@@ -6238,7 +6241,19 @@ async function expandMap(containerId, day) {
     expandedMapInstance.options.maxZoom = 19;
   } catch(e){}
 
-  setTimeout(() => expandedMapInstance.invalidateSize({ pan: false }), 400);
+  // Garanti Zoom Check (Resize sonrası)
+  setTimeout(() => {
+      expandedMapInstance.invalidateSize({ pan: false });
+      // Burada tekrar kontrol ediyoruz, eğer harita boyutu değiştiyse kayma olmasın
+      if (validPtsInit.length > 0) {
+          if (validPtsInit.length === 1) {
+             expandedMapInstance.setView([validPtsInit[0].lat, validPtsInit[0].lng], 14, { animate: false });
+          } else {
+             const b = L.latLngBounds(validPtsInit.map(p => [p.lat, p.lng]));
+             expandedMapInstance.fitBounds(b, { padding: [50, 50], animate: false });
+          }
+      }
+  }, 200);
 
   const summary = window.lastRouteSummaries?.[containerId];
   statsDiv.innerHTML = '';
