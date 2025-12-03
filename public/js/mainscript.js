@@ -5986,7 +5986,7 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // Butonları pasif yap
+  // Kontrolleri pasif yap
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   const expandBtns = [];
   if (controlsBar) {
@@ -6102,7 +6102,7 @@ async function expandMap(containerId, day) {
 
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // --- BAŞLANGIÇ KONUMUNU BELİRLE ---
+  // --- BAŞLANGIÇ KONUMU ---
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
   
@@ -6120,6 +6120,7 @@ async function expandMap(containerId, day) {
       }
   }
 
+  // --- HARİTA BAŞLAT ---
   const expandedMapInstance = L.map(mapDivId, {
     center: startCenter,
     zoom: startZoom,
@@ -6135,7 +6136,7 @@ async function expandMap(containerId, day) {
     wheelDebounceTime: 35,
     wheelPxPerZoomLevel: 120,
     easeLinearity: 0.2,
-    dragging: true // Explicitly true
+    dragging: true // Sürükleme açık başla
   });
 
   function setExpandedMapTile(styleKey) {
@@ -6148,7 +6149,7 @@ async function expandMap(containerId, day) {
           expandedMapInstance._osmTileLayer = null;
       }
 
-      const url = `https://tiles.openfreemap.org/styles/${styleKey === 'liberty' ? 'bright' : styleKey}`; // Liberty 2D için bright kullan
+      const url = `https://tiles.openfreemap.org/styles/${styleKey === 'liberty' ? 'bright' : styleKey}`;
 
       try {
           if (typeof L.maplibreGL === 'function') {
@@ -6187,7 +6188,7 @@ async function expandMap(containerId, day) {
 
   updateExpandedMap(expandedMapInstance, day);
 
-  // --- GARANTİ ODAKLAMA & INTERACTION FIX ---
+  // --- GARANTİ ODAKLAMA & ETKİLEŞİM DÜZELTMELERİ ---
   setTimeout(() => {
       expandedMapInstance.invalidateSize();
       
@@ -6205,34 +6206,34 @@ async function expandMap(containerId, day) {
           expandedMapInstance.setView([39.0, 35.0], 6);
       }
 
-      // --- CRITICAL FIXES FOR SINGLE POINT INTERACTION ---
+      // --- CRITICAL FIX: IMLEC ve TIKLAMA ---
       
-      // 1. Force Enable Dragging (Sürükleme Kilidini Aç)
+      // 1. Sürükleme Kilidini Kontrol Et ve Aç
       if (!expandedMapInstance.dragging.enabled()) {
           expandedMapInstance.dragging.enable();
       }
 
-      // 2. Force Cursor Style (İmleci El Yap)
+      // 2. İmleci "El" (Grab) Yapmaya Zorla (Pointer'dan kurtar)
       const container = expandedMapInstance.getContainer();
       if (container) {
           container.style.cursor = 'grab';
-          container.classList.remove('leaflet-interactive'); // Bazen bu sınıf pointer yapar
+          container.classList.remove('leaflet-interactive'); // Bu sınıf bazen pointer yapar, kaldırıyoruz
       }
 
-      // 3. Re-attach Click Listener (Tıklama Özelliği)
+      // 3. Tıklama Olayını (Nearby Search) En Sona Bağla
       if (typeof attachClickNearbySearch === 'function') {
-          // Önce temizle
+          // Önce temizle (varsa)
           if (expandedMapInstance.__ttNearbyClickBound) {
              expandedMapInstance.off('click', expandedMapInstance.__ttNearbyClickHandler);
              expandedMapInstance.__ttNearbyClickBound = false;
           }
-          // Sonra tekrar bağla
+          // Sonra tekrar bağla (Tek nokta olsa bile çalışsın)
           attachClickNearbySearch(expandedMapInstance, day);
       }
 
-  }, 300); // 300ms delay to let map initialize
+  }, 350); 
 
-  // ... (Geri kalan Scale Bar ve UI kodları aynı) ...
+  // ... (Standart kodlar) ...
   const summary = window.lastRouteSummaries?.[containerId];
   statsDiv.innerHTML = '';
 
@@ -6369,32 +6370,29 @@ function restoreMap(containerId, day) {
 }
 /* ==== NEW: Click-based nearby search (replaces long-press) ==== */
 /* ==== NEW: Click-based nearby search (GÜNCELLENDİ) ==== */
+/* ==== NEW: Click-based nearby search (DÜZELTİLDİ - BASİTLEŞTİRİLDİ) ==== */
 function attachClickNearbySearch(map, day, options = {}) {
-  const radius = options.radius || 500; // varsayılan 500 metre
+  const radius = options.radius || 500; 
 
-  // Eski listener varsa temizle (Duplicate tıklamayı önler)
+  // Eski listener varsa temizle
   if (map.__ttNearbyClickBound) {
       map.off('click', map.__ttNearbyClickHandler);
       map.__ttNearbyClickBound = false;
   }
 
   let __nearbySingleTimer = null;
-  const __nearbySingleDelay = (options && options.singleDelay) || 250; // ms
+  const __nearbySingleDelay = 250;
 
-  // Tıklama işleyicisi
+  // Yeni Tıklama İşleyicisi (Filtresiz)
   const clickHandler = function(e) {
-    // Eğer tıklanan şey bir marker veya poligon ise işlem yapma (Leaflet interactive kontrolü)
-    if (e.originalEvent && e.originalEvent.target && 
-       (e.originalEvent.target.classList.contains('leaflet-interactive') || 
-        e.originalEvent.target.closest('.leaflet-interactive'))) {
-      return;
-    }
-
-    // Çift tıklama (zoom) ile çakışmaması için zamanlayıcı
+    // Sadece "Nearby Popup" açıkken tıklanırsa onu kapatıp yenisini açmak için devam et.
+    // Markerlara tıklayınca zaten L.DomEvent.stopPropagation() marker içinde yapıldığı için burası tetiklenmez.
+    // Bu yüzden buradaki manuel "leaflet-interactive" kontrolünü KALDIRIYORUZ.
+    
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
     
     __nearbySingleTimer = setTimeout(async () => {
-      console.log("[Nearby] Map clicked at:", e.latlng); // Debug için
+      console.log("[Nearby] Map clicked at:", e.latlng); // Konsoldan takip edebilirsiniz
       
       // Varsa açık popup'ı kapat
       if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
@@ -6409,13 +6407,13 @@ function attachClickNearbySearch(map, day, options = {}) {
   // Event'i haritaya bağla
   map.on('click', clickHandler);
   
-  // Referansları sakla (temizlik için)
   map.__ttNearbyClickHandler = clickHandler;
   map.__ttNearbyClickBound = true;
 
-  // Çift tıklama veya zoom yaparsa tek tık işlemini iptal et
+  // Zoom veya çift tıklama sırasında tek tık işlemini iptal et
   map.on('dblclick', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
   map.on('zoomstart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
+  map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
@@ -10997,8 +10995,9 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 // --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN - FINAL) ---
+// --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN - FINAL V2) ---
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v3';
+    const styleId = 'tt-leaflet-fix-v4'; // ID güncellendi
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
@@ -11024,24 +11023,32 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
         }
 
         /* 3. İmleç Sorunu: Pointer yerine Grab */
-        .expanded-map.leaflet-container {
+        /* Harita container'ı ve içindeki etkileşimli alanlar için 'el' işareti */
+        .expanded-map.leaflet-container,
+        .expanded-map .leaflet-grab,
+        .expanded-map .leaflet-interactive {
             cursor: grab !important;
         }
-        .expanded-map.leaflet-container:active {
+        .expanded-map.leaflet-container:active,
+        .expanded-map .leaflet-grab:active {
             cursor: grabbing !important;
         }
-        /* Leaflet interactive class'ı bazen pointer yapar, bunu eziyoruz */
-        .expanded-map .leaflet-interactive {
-            cursor: grab !important; 
-        }
-        /* Markerlar pointer kalabilir */
-        .expanded-map .leaflet-marker-icon {
+        
+        /* Markerlar hariç! Markerlar pointer (parmak) kalmalı */
+        .expanded-map .leaflet-marker-icon,
+        .expanded-map .leaflet-popup-close-button,
+        .expanded-map a {
             cursor: pointer !important;
         }
 
-        /* 4. Tıklamayı Engelleyen Layer Sorunu */
-        .leaflet-pane { z-index: 400; }
-        .leaflet-top, .leaflet-bottom { z-index: 1000; }
+        /* 4. Tıklamayı Engelleyen Overlay Sorunu (Z-Index Temizliği) */
+        /* Z-Indexlerle oynamak yerine pointer-events ayarı yapıyoruz */
+        .leaflet-pane { 
+            pointer-events: auto; 
+        }
+        .leaflet-tile-pane {
+            z-index: 200; /* Standart */
+        }
         
         /* 5. Custom Marker Animasyon Kontrolü */
         .custom-marker-outer {
