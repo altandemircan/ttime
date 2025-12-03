@@ -6111,6 +6111,7 @@ async function expandMap(containerId, day) {
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
   // --- BAŞLANGIÇ KONUMU ---
+  // İlk çalıştırma için bir merkez ve zoom belirle (Aşağıdaki setTimeout bloğunda kesin ortalama yapılacak)
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
   
@@ -6200,19 +6201,38 @@ async function expandMap(containerId, day) {
   setTimeout(() => {
       expandedMapInstance.invalidateSize();
       
+      // *** GÜNCELLENEN ODAKLAMA MANTIĞI: ROTA + MARKERLARI KAPSAYACAK ŞEKİLDE ***
+      const containerId = `route-map-day${day}`;
+      const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+      
+      let allLatLngs = [];
+
+      // 1. Markerları ekle
       const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
       const currentValidPts = currentPts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+      allLatLngs = allLatLngs.concat(currentValidPts.map(p => L.latLng(p.lat, p.lng)));
 
-      if (currentValidPts.length > 0) {
-          if (currentValidPts.length === 1) {
-             expandedMapInstance.setView([currentValidPts[0].lat, currentValidPts[0].lng], 14, { animate: false });
+      // 2. Rota koordinatlarını ekle (GeoJSON [lng, lat] -> L.latLng(lat, lng))
+      if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+          const routeCoords = geojson.features[0].geometry.coordinates;
+          // Leaflet'te LatLng(lat, lng) beklenir. GeoJSON [lng, lat] verir.
+          allLatLngs = allLatLngs.concat(routeCoords.map(c => L.latLng(c[1], c[0])));
+      }
+
+      if (allLatLngs.length > 0) {
+          if (allLatLngs.length === 1) {
+              expandedMapInstance.setView([allLatLngs[0].lat, allLatLngs[0].lng], 14, { animate: false });
           } else {
-             const b = L.latLngBounds(currentValidPts.map(p => [p.lat, p.lng]));
-             expandedMapInstance.fitBounds(b, { padding: [50, 50], animate: false });
+              // Rota ve Markerları kapsayan sınır kutusunu hesapla
+              const b = L.latLngBounds(allLatLngs);
+              // Padding ekleyerek haritanın kenarlara çok yapışmasını engelle
+              expandedMapInstance.fitBounds(b, { padding: [50, 50], animate: false });
           }
       } else {
+          // Fallback
           expandedMapInstance.setView([39.0, 35.0], 6);
       }
+      // *************************************************************************
 
       // --- CRITICAL FIX: IMLEC ve TIKLAMA ---
       
@@ -6287,6 +6307,7 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
+
 function restoreMap(containerId, day) {
     // containerId'den expandedData'yı bulmaya çalış, yoksa day üzerinden manuel temizlik yap
     const expandedData = window.expandedMaps?.[containerId];
