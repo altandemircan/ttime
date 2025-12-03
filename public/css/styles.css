@@ -4646,11 +4646,31 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .elev-segment-toolbar {
-     bottom: 200px; z-index: 1005; display: inline-flex; gap: 10px;
-   align-items: center; border-radius: 10px; padding: 6px;
-   font-size: 12px; color: rgb(0, 0, 0); right: 6px; position: absolute;
-   background: rgb(255 255 255 / 43%);  
+        bottom: 160px;
+       right: -12px;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 5;
+    background: #ffffff;
+    border-radius: 12px 0 0 0;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #8a4af3;
+    font-weight: 700;
 }
+.elev-segment-toolbar .pill, .elev-segment-reset {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2px 6px;
+    font-weight: 500
+}
+.elev-segment-reset {
+    color: #333;
+    font-weight: 600;
+}
+
 .expanded-map {
     width: 100%;
     height: calc(100% - 50px);   
@@ -5744,17 +5764,17 @@ ease;
 
 .leaflet-control-attribution  {
        position: absolute !important;
-    bottom: 12px !important;
+    bottom: -6px !important;
     right: 20px !important;
     margin: 0px !important;
     font-size: 10px !important;
     line-height: 1 !important;
-    color: #00000060 !important
+    color: #000000c0 !important;
     z-index: 1005 !important;
     pointer-events: auto !important;
 }
 .leaflet-control-attribution a {
-    color: #00000060 !important
+    color: #000000c0 !important;
 }
 
 .leaflet-attribution-flag {
