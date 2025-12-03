@@ -7404,31 +7404,7 @@ scrollbar-width: thin;
 /* Day X menu header */
 
 
-/* drag.js içine JavaScript ile inject edebilir veya style.css'e ekleyebilirsin */
-.travel-item {
-    /* Tarayıcının varsayılan dokunma eylemlerini (pan/zoom) yönetir */
-    touch-action: pan-y; 
-    /* Metin seçimini engeller (Android/iOS) */
-    -webkit-user-select: none;
-    user-select: none;
-    /* Mobilde dokunma gecikmesini kaldırır */
-    -webkit-touch-callout: none; 
-    /* Donanım hızlandırma */
-    transform: translate3d(0,0,0);
-}
 
-.travel-item.dragging {
-    opacity: 0.9;
-    /* Sürüklenen öğe olayları yakalamasın, altındaki elementleri algılayabilelim */
-    pointer-events: none; 
-    z-index: 9999 !important;
-}
-
-/* Sürükleme anında arka plandaki kaydırmayı kilitlemek için */
-body.dragging-active {
-    overflow: hidden !important;
-    touch-action: none;
-}
 /* Sürüklenen öğe (Kutu Efekti) */
 .travel-item.dragging {
     transform: scale(1.02) !important;
@@ -7460,8 +7436,3 @@ body.dragging-active {
     opacity: 0.9;
 }
 
-/* Sayfa kilidi */
-body.dragging-active {
-    overflow: hidden !important;
-    touch-action: none;
-}
