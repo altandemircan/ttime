@@ -3491,42 +3491,31 @@ function attachMapClickAddMode(day) {
 }
 
 
-
 async function updateCart() {
   window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
-
-  // ÖNCE route'ları HAZIRLA!
-  for (const d of days) {
-    try { await renderRouteForDay(d); } catch(e){}
-  }
   
-  document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
+  const oldStartDate = window.cart.startDate;
+  const oldEndDates  = window.cart.endDates;
+  window.cart = window.cart.filter(it => it && (it.day || it.name)); 
+  if (oldStartDate) window.cart.startDate = oldStartDate;
+  if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
+  const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
+
+  // Rotaları Çiz
+  for (const d of days) {
+    try { await renderRouteForDay(d); } catch(e) {}
+  }
+
+  // Temizlik
+  document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
   if (window.expandedMaps) {
     days.forEach(day => {
-      if(typeof clearRouteSegmentHighlight === 'function') clearRouteSegmentHighlight(day);
+        if(typeof clearRouteSegmentHighlight === 'function') clearRouteSegmentHighlight(day);
     });
     window._lastSegmentDay = undefined;
   }
-
-  days.forEach(day => {
-    const hasRealItem = window.cart.some(i =>
-      Number(i.day) === Number(day) &&
-      !i._starter &&
-      !i._placeholder &&
-      (i.name || i.category === "Note")
-    );
-    if (hasRealItem && window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day]) {
-      window.__hideAddCatBtnByDay[day] = false;
-    }
-  });
-
-  const oldStartDate = window.cart.startDate;
-  const oldEndDates  = window.cart.endDates;
-  window.cart = window.cart.filter(it => it && (it.day || it.name));
-  if (oldStartDate) window.cart.startDate = oldStartDate;
-  if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
   const cartDiv = document.getElementById("cart-items");
   const menuCount = document.getElementById("menu-count");
@@ -3536,9 +3525,7 @@ async function updateCart() {
   if (!window.cart || window.cart.length === 0) {
     cartDiv.innerHTML = `
       <div class="day-container" id="day-container-1" data-day="1">
-        <h4 class="day-header">
-          <div class="title-container"><span class="day-title">Day 1</span></div>
-        </h4>
+        <h4 class="day-header"><div class="title-container"><span class="day-title">Day 1</span></div></h4>
         <ul class="day-list" data-day="1">
           <div class="empty-day-block">
             <p class="empty-day-message">No item has been added yet.</p>
@@ -3554,18 +3541,12 @@ async function updateCart() {
     return;
   }
 
-  const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
   cartDiv.innerHTML = "";
 
   for (let day = 1; day <= totalDays; day++) {
-    const dayItemsArr = window.cart.filter(i =>
-      Number(i.day) === Number(day) &&
-      !i._starter &&
-      !i._placeholder &&
-      (i.name || i.category === "Note")
-    );
-
-    let dayContainer = document.createElement("div");
+    const dayItemsArr = window.cart.filter(i => Number(i.day) === Number(day) && !i._starter && !i._placeholder);
+    
+    const dayContainer = document.createElement("div");
     dayContainer.className = "day-container";
     dayContainer.id = `day-container-${day}`;
     dayContainer.dataset.day = day;
@@ -3586,6 +3567,7 @@ async function updateCart() {
     dayList.className = "day-list";
     dayList.dataset.day = day;
 
+    // Rota verilerini al (Mesafe hesabı için)
     const containerId = `route-map-day${day}`;
     const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
 
@@ -3595,7 +3577,7 @@ async function updateCart() {
 
       const li = document.createElement("li");
       li.className = "travel-item";
-      // --- DÜZELTME: dragstart eventini ve draggable attribute'unu SİLDİK (drag.js hallediyor) ---
+      // DİKKAT: 'draggable' ve 'dragstart' BURADAN KALDIRILDI (drag.js hallediyor)
       li.dataset.index = currIdx;
       
       if (item.location?.lat) {
@@ -3606,7 +3588,7 @@ async function updateCart() {
       const listMarkerHtml = `<div class="custom-marker-outer red" style="flex-shrink:0; transform:scale(0.70); position:absolute; left:30px; top:0px;"><span class="custom-marker-label" style="font-size:14px;">${idx + 1}</span></div>`;
 
       if (item.category === "Note") {
-        li.innerHTML = `
+         li.innerHTML = `
           <div class="cart-item">
              <div style="display:flex; align-items:center; justify-content:space-between; width:100%">
               <div style="display:flex; align-items:center; gap:10px;">
@@ -3626,6 +3608,18 @@ async function updateCart() {
       } else {
         const leafletMapId = "leaflet-map-" + currIdx;
         const mapHtml = item.location ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>` : '';
+        
+        // Opening Hours
+        let openingHoursDisplay = "No working hours info";
+        if (item.opening_hours) {
+            if (Array.isArray(item.opening_hours)) {
+                const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+                if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+            } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+                openingHoursDisplay = item.opening_hours.trim();
+            }
+        }
+
         li.innerHTML = `
           <div class="cart-item">
             <div style="display:flex; align-items:center; justify-content:space-between; width:100%">
@@ -3641,7 +3635,9 @@ async function updateCart() {
               <div class="info-section">
                 <div class="place-rating">${mapHtml}</div>
                 <div class="contact"><p>📌 ${item.address || ''}</p></div>
+                <p class="working-hours-title">🕔 <span class="working-hours-value">${openingHoursDisplay}</span></p>
               </div>
+              <button class="add-favorite-btn" data-name="${item.name}" onclick=""><span class="fav-heart">❤️</span> Add to My Places</button>
               <button class="remove-btn" onclick="showRemoveItemConfirmation(${currIdx}, this)">Remove place</button>
               <div class="confirmation-container" id="confirmation-item-${currIdx}" style="display:none;">
                  <p>Remove?</p>
@@ -3653,16 +3649,53 @@ async function updateCart() {
       }
       dayList.appendChild(li);
 
-      // Mesafe Separator
+      // --- MESAFE VE SÜRE HESAPLAMA (GERİ EKLENDİ) ---
       const nextItem = dayItemsArr[idx + 1];
       if (item.location && nextItem && nextItem.location) {
+          // Travel mode
+          const travelMode = typeof getTravelModeForDay === "function" 
+            ? String(getTravelModeForDay(day)).trim().toLowerCase() 
+            : "driving";
+
+          // Türkiye içi/dışı kontrolü
+          const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
+          let distStr = '', durStr = '', prefix = '';
+          
+          if (!isInTurkey) {
+             // Yurt dışı: Kuş uçuşu
+             const d = haversine(item.location.lat, item.location.lng, nextItem.location.lat, nextItem.location.lng);
+             distStr = d >= 1000 ? (d/1000).toFixed(2)+" km" : Math.round(d)+" m";
+             // Tahmini süre (4 km/h)
+             const durSec = Math.round((d/1000)/4 * 3600);
+             durStr = durSec >= 60 ? Math.round(durSec/60)+" min" : Math.round(durSec)+" sec";
+             prefix = '<span style="font-size:11px;color:#888;">Auto</span>';
+          } else {
+             // Türkiye: Rota verisinden (pairwiseSummaries)
+             const s = pairwiseSummaries[idx];
+             if(s) {
+                 distStr = s.distance >= 1000 ? (s.distance/1000).toFixed(2)+" km" : Math.round(s.distance)+" m";
+                 durStr = s.duration >= 60 ? Math.round(s.duration/60)+" min" : Math.round(s.duration)+" sec";
+             } else {
+                 // Veri henüz yoksa kuş uçuşu fallback
+                 const d = haversine(item.location.lat, item.location.lng, nextItem.location.lat, nextItem.location.lng);
+                 distStr = d >= 1000 ? (d/1000).toFixed(2)+" km" : Math.round(d)+" m";
+                 durStr = "..."; 
+             }
+             
+             // İkonlar
+             if(travelMode==="driving") prefix=`<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
+             else if(travelMode==="cycling") prefix=`<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
+             else if(travelMode==="walking") prefix=`<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
+          }
+          
           const sep = document.createElement('div');
           sep.className = 'distance-separator';
-          sep.innerHTML = `<div class="separator-line"></div><div class="distance-label">...</div><div class="separator-line"></div>`;
+          sep.innerHTML = `<div class="separator-line"></div><div class="distance-label">${prefix} <span class="distance-value">${distStr}</span> · <span class="duration-value">${durStr}</span></div><div class="separator-line"></div>`;
           dayList.appendChild(sep);
       }
+      // ------------------------------------------------
     }
-
+    
     const addMoreBtn = document.createElement("button");
     addMoreBtn.className = "add-more-btn";
     addMoreBtn.textContent = "+ Add Category";
@@ -3672,6 +3705,7 @@ async function updateCart() {
     }
 
     dayContainer.appendChild(dayList);
+    
     if(typeof ensureDayMapContainer === 'function') ensureDayMapContainer(day);
     if(typeof initEmptyDayMap === 'function') initEmptyDayMap(day);
     if(typeof wrapRouteControls === 'function') wrapRouteControls(day);
@@ -3714,9 +3748,8 @@ async function updateCart() {
   if(typeof setupSidebarAccordion === 'function') setupSidebarAccordion();
   if(typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
 
-  // --- KRİTİK DÜZELTME: Sortable.create ve drag listenerlar tamamen SİLİNDİ. ---
+  // --- KRİTİK: dragStart ve diğer eski listener çağrıları SİLİNDİ ---
 }
-
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
   const container = document.getElementById(id);
