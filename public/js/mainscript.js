@@ -397,6 +397,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   track.style.position = 'relative';
   track.appendChild(elevationLabels);
 }
+
         // Aktif harita planlama modu için
 window.mapPlanningDay = null;
 window.mapPlanningActive = false;
@@ -4423,7 +4424,7 @@ function isSupportedTravelMode(mode) {
   return ['car', 'bike', 'foot'].includes(mode);
 }
 
-// 1. updateExpandedMap Fonksiyonunu Güncelle (Haversine hesabını engelle)
+
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
@@ -4558,7 +4559,7 @@ function updateExpandedMap(expandedMap, day) {
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // Scale Bar işlemleri (Aynen kalsın)
+    // Scale Bar işlemleri
     const sumKey = `route-map-day${day}`;
     let sum = window.lastRouteSummaries?.[sumKey];
     if (!sum && pts.length > 1 && !isInTurkey) {
@@ -4601,6 +4602,41 @@ function updateExpandedMap(expandedMap, day) {
     }
     setTimeout(() => { setupScaleBarInteraction(day, expandedMap); }, 500);
     adjustExpandedHeader(day);
+
+    // --- 1. DÜZELTME: NEARBY SEARCH GARANTİSİ ---
+    if (typeof attachClickNearbySearch === 'function') {
+        attachClickNearbySearch(expandedMap, day);
+    }
+
+    // --- 2. DÜZELTME: MOBİL ATTRIBUTION FIX ---
+    // Leaflet yazısını haritadan alıp, FIXED olan scalebar panelinin içine taşırız.
+    setTimeout(() => {
+        // 1. Ana expanded container'ı bul
+        const expandedContainer = document.getElementById(`expanded-map-${day}`);
+        if (!expandedContainer) return;
+
+        // 2. Senin CSS'de "fixed" olan paneli bul (.expanded-map-panel)
+        const fixedPanel = expandedContainer.querySelector('.expanded-map-panel');
+        
+        // 3. Haritanın içindeki attribution'ı bul
+        const attribution = expandedMap.getContainer().querySelector('.leaflet-control-attribution');
+
+        if (fixedPanel && attribution) {
+            // Attribution'ı panelin içine taşı (Böylece panel fixed olduğu için bu da fixed olur)
+            fixedPanel.appendChild(attribution);
+            
+            // SADECE KONUM AYARLARI (Renk/Font yok, sadece sağ alta kilitle)
+            attribution.style.position = 'absolute';
+            attribution.style.bottom = '0px';
+            attribution.style.right = '0px';
+            attribution.style.margin = '0';
+            attribution.style.padding = '0 4px';
+            attribution.style.zIndex = '2000';
+            attribution.style.background = 'transparent'; // Panel zaten beyaz
+            attribution.style.pointerEvents = 'auto'; 
+            attribution.style.whiteSpace = 'nowrap'; // Mobilde tek satır kalsın
+        }
+    }, 600); 
 }
 
 // 2. renderRouteForDay Fonksiyonunu Güncelle (Türkiye içi fallback'i temizle)
@@ -5757,7 +5793,7 @@ function openMapLibre3D(expandedMap) {
   if (!maplibre3d) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
-    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;';
+    maplibre3d.style.cssText = 'width:100%;height:480px;position:absolute;left:0;top:0;z-index:10000;    height: calc(100% - 190px) !important;';
     mapDiv.parentNode.appendChild(maplibre3d);
   }
   maplibre3d.style.display = 'block'; // 3D harita görünür!
@@ -9427,6 +9463,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
         }
         .scale-bar-track.loading {
             min-height: 200px; 
+      width:100%
         }
     `;
     document.head.appendChild(style);
@@ -10453,18 +10490,12 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
-  tb.style.cssText = `
-   bottom: 10px; z-index: 1005; display: inline-flex; gap: 10px;
-   align-items: center; border-radius: 10px; padding: 6px;
-   font-size: 12px; color: rgb(0, 0, 0); right: 6px; position: absolute;
-   background: rgb(255 255 255 / 43%);  
-  `;
   tb.innerHTML = `
-    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
-    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">↑ ${Math.round(up)} m</span>
-    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">↓ ${Math.round(down)} m</span>
-    <span class="pill" style="border:1px solid #e0e0e0;border-radius:8px;padding:2px 6px;font-weight:600;">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset" style="appearance:none;border:1px solid #d0d7de;background:#fff;color:#333;border-radius:8px;padding:4px 8px;cursor:pointer;font-weight:600;">Reset</button>
+    <span class="pill">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
+    <span class="pill">↑ ${Math.round(up)} m</span>
+    <span class="pill">↓ ${Math.round(down)} m</span>
+    <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
+    <button type="button" class="elev-segment-reset">Reset</button>
   `;
   track.appendChild(tb);
 
