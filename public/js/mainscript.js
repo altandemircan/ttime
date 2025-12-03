@@ -5369,6 +5369,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
+    // Harita zaten varsa temizle
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         window.leafletMaps[containerId].remove();
         delete window.leafletMaps[containerId];
@@ -5377,6 +5378,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.innerHTML = "";
     sidebarContainer.style.height = "285px";
     sidebarContainer.classList.remove("big-map", "full-screen-map");
+    // [FIX] Harita yüklenirken beyaz/gri flash patlamasını önlemek için zemin rengi
+    sidebarContainer.style.backgroundColor = "#eef0f5"; 
 
     // Route summary and controls
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
@@ -5425,29 +5428,34 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // Haritayı oluştur
     const map = L.map(containerId, { 
         scrollWheelZoom: true,
-        fadeAnimation: false,
-        zoomAnimation: false,
+        fadeAnimation: true, // Yumuşak geçiş için true
+        zoomAnimation: true,
+        inertia: false
     });
 
-    // --- DEĞİŞİKLİK BURADA: Büyük Haritadaki (expandMap) Mantığı Kullan ---
+    // --- HARİTA ZEMİNİ (TILE LAYER) ---
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
 
     if (typeof L.maplibreGL === 'function') {
-        // Vektör Tile (OpenFreeMap)
-        L.maplibreGL({
+        // 1. Önce MapLibre (Vektör) Katmanını Ekle
+        const glLayer = L.maplibreGL({
             style: openFreeMapStyle,
             attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
             interactive: true
-        }).addTo(map);
+        });
+        
+        // [FIX] OSM görünme sorununu çözmek için layer'ı hemen ekle
+        glLayer.addTo(map);
+
     } else {
-        // Fallback: Kütüphane yoksa mecburen OSM (Resim)
-        console.warn('L.maplibreGL not found, fallback to OSM.');
+        // Fallback: Sadece kütüphane yüklenemediyse OSM kullan (Normalde buraya girmez)
+        console.warn('L.maplibreGL not found, using OSM fallback.');
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
     }
-    // ---------------------------------------------------------------------
+    // ----------------------------------------------------------------
 
     let bounds = L.latLngBounds();
 
@@ -5462,12 +5470,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 iconAnchor: [16,16]
             })
         }).addTo(map).bindPopup(points[0].name || points[0].category || "Point");
-        map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+        map.setView([points[0].lat, points[0].lng], 14, { animate: false });
     } 
     else if (points.length >= 1) {
         const isFlyMode = !areAllPointsInTurkey(points);
 
-        // FLY MODE ise yaylı çizgi
         if (isFlyMode) {
             window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
             let arcPoints = [];
@@ -5489,7 +5496,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             window._curvedArcPointsByDay[day] = arcPoints;
         } 
         else if (hasValidGeo && routeCoords.length > 1) {
-            // GERÇEK ROTA
             const routePoly = L.polyline(routeCoords, {
                 color: '#1976d2',
                 weight: 8,
@@ -5501,7 +5507,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             bounds.extend(routePoly.getBounds());
         }
 
-        // Eksik noktalar/sapmış markerlar için kırmızı kesikli snap çizgileri
         if (hasValidGeo) {
             const rawGeojsonCoords = geojson.features[0].geometry.coordinates; 
             const routePtsForSnap = routeCoords; 
@@ -5535,25 +5540,20 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         }
 
         addNumberedMarkers(map, points);
-
-        // Markerları da sınırlara ekle (Garanti olsun)
         points.forEach(p => bounds.extend([p.lat, p.lng]));
 
         if (geojson && geojson.features[0]?.properties?.names) {
             addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
         }
 
-        // --- SONUÇ: Rota ve markerları kapsayan alana odakla ---
         if (bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [20, 20] });
+            map.fitBounds(bounds, { padding: [20, 20], animate: false });
         } else {
-            // Eğer bounds oluşmadıysa sadece markerlara
-            map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+            map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20], animate: false });
         }
 
     } else {
-        // Hiç marker yoksa
-        map.setView([0, 0], 2, { animate: true });
+        map.setView([0, 0], 2, { animate: false });
     }
 
     map.zoomControl.setPosition('topright');
