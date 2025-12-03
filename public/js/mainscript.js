@@ -10331,6 +10331,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 
 // SEGMENT SEÇİMİ SONRASI ZOOM
+// SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
 function highlightSegmentOnMap(day, startKm, endKm) {
   // Parametre kontrolü ve Temizlik
   if (
@@ -10351,12 +10352,12 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   let coords = null;
   let isFlyMode = false;
 
-  // 1. Önce Fly Mode (Yay) verisi var mı bak
+  // 1. Fly Mode (Yay) verisi var mı?
   if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 1) {
       coords = window._curvedArcPointsByDay[day]; 
       isFlyMode = true;
   } 
-  // 2. Yoksa Normal OSRM GeoJSON verisine bak
+  // 2. Yoksa Normal OSRM GeoJSON verisi
   else {
       const gj = window.lastRouteGeojsons?.[cid];
       if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
@@ -10369,11 +10370,9 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   window._segmentHighlight = window._segmentHighlight || {};
   
   const maps = [];
-  // Küçük harita varsa ekle
   if (window.leafletMaps && window.leafletMaps[cid]) {
       maps.push(window.leafletMaps[cid]);
   }
-  // Büyük (Expanded) harita varsa ekle
   const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
   if (expandedObj && expandedObj.expandedMap) {
       maps.push(expandedObj.expandedMap);
@@ -10389,7 +10388,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       window._segmentHighlight[day] = {};
   }
 
-  // --- MESAFE HESAPLAMA VE KESME (SLICING) ---
+  // --- MESAFE HESAPLAMA ---
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -10432,15 +10431,16 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   // --- STİL AYARLARI ---
   const polyOptions = {
       color: '#8a4af3', // Mor renk
-      weight: 6,
+      weight: 9,        // Mavi rotadan daha kalın olsun
       opacity: 1.0,     // Tam opak
       lineCap: 'round',
       lineJoin: 'round',
-      dashArray: null   
+      dashArray: null,
+      renderer: L.svg() // [FIX] Canvas yerine SVG kullanarak en üste çizdiriyoruz
   };
 
   if (isFlyMode) {
-      polyOptions.weight = 7; 
+      polyOptions.weight = 8; 
   }
 
   // Haritalara çiz ve ZOOM YAP
@@ -10449,12 +10449,14 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     
     window._segmentHighlight[day][m._leaflet_id] = poly;
     
+    // Vektör katmanlarının üzerine çıkması için pane ayarı gerekebilir ama L.svg() genellikle çözer.
+    // Garanti olsun diye bringToFront çağırıyoruz.
     if (poly.bringToFront) poly.bringToFront();
 
-    // --- YENİ EKLENEN KISIM: SEGMENTE ZOOM YAP ---
+    // Segment sınırlarına zoomla
     try {
         m.fitBounds(poly.getBounds(), {
-            padding: [50, 50], // Segment kenarlara yapışmasın diye boşluk
+            padding: [50, 50],
             maxZoom: 16,
             animate: true,
             duration: 0.8
@@ -10462,7 +10464,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     } catch(e) { 
         console.warn("Segment zoom hatası:", e); 
     }
-    // ---------------------------------------------
   });
 }
 
