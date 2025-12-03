@@ -5295,13 +5295,14 @@ function addNewDay(button) {
 
     const newDay = maxDay + 1;
 
-    // 2. Önceki günün (maxDay) son geçerli lokasyonunu bul
-    // (Tersten tarıyoruz ki en son eklenen yeri bulalım)
+    // 2. Önceki günün son geçerli lokasyonunu bul
     let lastMarkerOfPrevDay = null;
     for (let i = window.cart.length - 1; i >= 0; i--) {
         const item = window.cart[i];
-        // Sadece aynı güne ait ve koordinatı olan (Note olmayan) öğeyi al
-        if (item.day === maxDay && item.location && typeof item.location.lat === 'number') {
+        // Note olmayan ve geçerli koordinatı olan son öğeyi al
+        if (item.day === maxDay && item.location && 
+            typeof item.location.lat === 'number' && 
+            !isNaN(item.location.lat)) {
             lastMarkerOfPrevDay = item;
             break; 
         }
@@ -5309,31 +5310,57 @@ function addNewDay(button) {
 
     // 3. Eğer önceki günün bir bitiş noktası varsa, yeni güne kopyala
     if (lastMarkerOfPrevDay) {
-        // Nesneyi derinlemesine kopyala (referans hatası olmasın)
         const newItem = JSON.parse(JSON.stringify(lastMarkerOfPrevDay));
-        
-        newItem.day = newDay; // Gününü güncelle
+        newItem.day = newDay;
         newItem.addedAt = new Date().toISOString();
         
-        // İsteğe bağlı: İsmin yanına (Start) ekleyebilirsin, ama sade kalsın dersen bu satırı sil.
-        // newItem.name = newItem.name; 
-
-        window.cart.push(newItem);
+        // Eğer kopyalanan item "Start" veya "_starter" flag'ine sahipse temizle
+        delete newItem._starter; 
         
-        // Kullanıcıya bilgi vermek istersen (Opsiyonel)
-        if(window.showToast) window.showToast("Starting point added from previous day.", "success");
-
+        window.cart.push(newItem);
     } else {
-        // Önceki gün boşsa veya marker yoksa, eskisi gibi boş gün ekle
+        // Yoksa boş gün ekle
         window.cart.push({ day: newDay });
     }
 
     window.currentDay = newDay;
-    updateCart();
     
-    // Yeni eklenen günün haritasını o noktaya odaklamak için render tetikle
-    if (lastMarkerOfPrevDay && typeof renderRouteForDay === 'function') {
-        setTimeout(() => renderRouteForDay(newDay), 100);
+    // Arayüzü güncelle (DOM yeniden oluşur)
+    if (typeof updateCart === "function") updateCart();
+
+    // 4. HARİTA GÖRÜNÜRLÜK DÜZELTMESİ
+    // updateCart işlemi bittikten kısa bir süre sonra haritayı zorla görünür yap ve çiz
+    if (lastMarkerOfPrevDay) {
+        setTimeout(() => {
+            const mapId = `route-map-day${newDay}`;
+            const mapDiv = document.getElementById(mapId);
+            
+            // Harita div'ini zorla görünür yap
+            if (mapDiv) {
+                mapDiv.style.display = 'block';
+                mapDiv.style.height = '285px';
+            }
+
+            // Harita kontrollerini zorla görünür yap
+            const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${newDay}`);
+            if (controlsWrapper) controlsWrapper.style.display = 'block';
+
+            const controlsBar = document.getElementById(`route-controls-bar-day${newDay}`);
+            if (controlsBar) controlsBar.style.display = 'flex';
+
+            // Haritayı bu gün için tekrar render et (Leaflet'i tetikle)
+            if (typeof renderRouteForDay === 'function') {
+                renderRouteForDay(newDay);
+            }
+            
+            // Eğer "Fly Mode" uyarısı varsa ve tek nokta ise, onu gizle
+            const travelModeSet = document.getElementById(`tt-travel-mode-set-day${newDay}`);
+            if (travelModeSet) {
+               // Tek nokta varsa Travel Mode seti görünür olmalı, Fly Mode değil
+               // renderRouteForDay bunu düzeltecektir ama garanti olsun
+            }
+
+        }, 250); // DOM'un oturması için 250ms bekle
     }
 }
 function addCoordinatesToContent() {
