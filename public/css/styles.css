@@ -4606,11 +4606,11 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
     @media (max-width:768px) {
  .expanded-map-panel { 
-   width: calc(100% - 40px);
+    width: calc(100% - 40px);
         right: 0px;
-        left: 0px;
-        padding-left: 40px;
+        left: 30px;
         bottom: 5px;
+        /* background: #ff9900; */
       
     }
     .route-scale-bar {
@@ -6567,10 +6567,10 @@ border-bottom:1px solid #ddd;
 
      .tt-scale-loader{    position: absolute;
     left: 50%;
-    margin-left: -30px;
     top: 40%;
     transform: translate(-50%, -50%);
-    display: flex;
+    display: flex
+;
     align-items: center;
     gap: 10px;
     z-index: 5;
@@ -6582,7 +6582,6 @@ border-bottom:1px solid #ddd;
     font-size: 12px;
     color: #8a4af3;
     font-weight: 700;}
-
       .tt-scale-loader .spinner{width: 20px;
     height: 20px;
     border: 4px solid #e0e0e0;
