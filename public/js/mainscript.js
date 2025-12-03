@@ -3030,18 +3030,19 @@ function initEmptyDayMap(day) {
 
   if (!el.style.height) el.style.height = '285px';
   
-  // --- KONUM BELİRLEME MANTIĞI ---
+  // --- KONUM BELİRLEME MANTIĞI (GÜNCELLENDİ) ---
   
   // 1. Önce bu güne ait noktaları al
   const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
   
-  let startCenter = [0, 0];
-  let startZoom = 2;
+  // varsayılan: [0,0] yerine Türkiye Ortası
+  let startCenter = [39.0, 35.0]; 
+  let startZoom = 5;
   let startBounds = null;
   let hasFocus = false; // Bir odak noktası bulduk mu?
 
-  // DURUM A: Bu günün zaten noktaları var (Düzenleme modu vb.)
+  // DURUM A: Bu günün zaten noktaları var (Düzenleme modu veya AddNewDay ile kopyalanan nokta)
   if (validPts.length > 0) {
       if (validPts.length === 1) {
           startCenter = [validPts[0].lat, validPts[0].lng];
@@ -3053,7 +3054,7 @@ function initEmptyDayMap(day) {
       }
       hasFocus = true;
   } 
-  // DURUM B: Bu gün boş ama ÖNCEKİ GÜN var (Yeni gün ekleme senaryosu)
+  // DURUM B: Bu gün boş ama ÖNCEKİ GÜN var (Fallback)
   else if (day > 1 && typeof getDayPoints === 'function') {
       const prevPoints = getDayPoints(day - 1);
       const validPrevPts = prevPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
@@ -3062,9 +3063,8 @@ function initEmptyDayMap(day) {
           // Önceki günün EN SON noktasını al
           const lastPt = validPrevPts[validPrevPts.length - 1];
           startCenter = [lastPt.lat, lastPt.lng];
-          startZoom = 12; // Yeni gün için ideal başlangıç zoom seviyesi
+          startZoom = 12; 
           hasFocus = true;
-          console.log(`[Map Init] Day ${day} starts at Day ${day-1}'s last point:`, lastPt.name);
       }
   }
 
@@ -3082,7 +3082,6 @@ function initEmptyDayMap(day) {
     wheelPxPerZoomLevel: 120,
     inertia: true,
     easeLinearity: 0.2,
-
   });
 
   // 4. Eğer sınır kutusu (bounds) varsa ona sığdır
@@ -3093,10 +3092,9 @@ function initEmptyDayMap(day) {
       });
   }
   
-  // 5. GPS Kullanımı (Sadece hiçbir odak noktası bulunamadıysa - örn: Day 1 ve boş)
+  // 5. GPS Kullanımı (Sadece hiçbir odak noktası bulunamadıysa)
   if (!hasFocus && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(pos) {
-      // Async kontrol: Kullanıcı bu arada nokta eklemiş olabilir mi?
       const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
       if (currentPts.length === 0) {
           map.whenReady(function() {
@@ -3123,6 +3121,7 @@ function initEmptyDayMap(day) {
   window.leafletMaps = window.leafletMaps || {};
   window.leafletMaps[containerId] = map;
 }
+
 function restoreLostDayMaps() {
   if (!window.leafletMaps) return;
   Object.keys(window.leafletMaps).forEach(id => {
