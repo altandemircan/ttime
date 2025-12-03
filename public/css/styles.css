@@ -4576,7 +4576,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-    width: calc(100% - 40px);
+    width: calc(100% - 30px);
 }
 
 .scale-bar-track { user-select: none; }
@@ -4602,24 +4602,32 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     /* box-shadow: 0 3px 14px rgb(0 0 0 / 8%); */
     flex-direction: column;
     height: 155px;
+}
+
+@media (max-width: 768px) {
+    .expanded-map-panel { 
+        width: calc(100% - 40px);
+        right: 0px;
+        left: 0px;
+        padding-left: 40px;
+        bottom: 5px; /* Bu boşluk sabit kaldı */
+        height: 155px;
+                padding-top: 20px;
     }
 
-    @media (max-width:768px) {
- .expanded-map-panel { 
-    width: calc(100% - 50px);
-        right: 0px;
-        left: 20px;
-        /* background: #ff9900; */
-        bottom: 10px;
-        padding: 0 20px;
-    }
     .route-scale-bar {
-         width: calc(100% - 20px);
-      
+        width: calc(100% - 20px);
     }
-    .expanded-map{
-        height: calc(100% - 185px) !important;
-    bottom: 185px;
+
+    .expanded-map {
+        /* Haritanın altını tam panelin bittiği yere (160px) çekiyoruz */
+        bottom: 160px !important; 
+        
+        /* Harita yüksekliği: Ekran boyu - Alt Panel Alanı (160px) */
+        height: calc(100dvh - 160px) !important; 
+        
+        width: 100% !important;
+        position: fixed !important;
     }
 }
 .elevation-labels-container {
@@ -4636,6 +4644,33 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     align-items: flex-end;
 
 }
+
+.elev-segment-toolbar {
+        bottom: 160px;
+       right: -12px;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 5;
+    background: #ffffff;
+    border-radius: 12px 0 0 0;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #8a4af3;
+    font-weight: 700;
+}
+.elev-segment-toolbar .pill, .elev-segment-reset {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2px 6px;
+    font-weight: 500
+}
+.elev-segment-reset {
+    color: #ffffff; 
+    background: #899ab3;
+}
+
 .expanded-map {
     width: 100%;
     height: calc(100% - 50px);   
@@ -5722,6 +5757,29 @@ ease;
 
   
 }
+.maplibregl-ctrl-bottom-right {
+    display: none;
+}
+
+
+.leaflet-control-attribution  {
+       position: absolute !important;
+    bottom: -6px !important;
+    right: 20px !important;
+    margin: 0px !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    color: #000000c0 !important;
+    z-index: 1005 !important;
+    pointer-events: auto !important;
+}
+.leaflet-control-attribution a {
+    color: #000000c0 !important;
+}
+
+.leaflet-attribution-flag {
+    display: none !important;
+}
 .leaflet-popup-pane {
     z-index: 700;
     margin-left: 18px;
@@ -6544,10 +6602,10 @@ border-bottom:1px solid #ddd;
 
      .tt-scale-loader{    position: absolute;
     left: 50%;
+    margin-left: -30px;
     top: 40%;
     transform: translate(-50%, -50%);
-    display: flex
-;
+    display: flex;
     align-items: center;
     gap: 10px;
     z-index: 5;
@@ -6559,6 +6617,7 @@ border-bottom:1px solid #ddd;
     font-size: 12px;
     color: #8a4af3;
     font-weight: 700;}
+
       .tt-scale-loader .spinner{width: 20px;
     height: 20px;
     border: 4px solid #e0e0e0;
@@ -6584,7 +6643,7 @@ border-bottom:1px solid #ddd;
 }
     @supports (height: 100dvh) { .scale-bar-track { bottom: auto; } }
     @media (max-width:768px) { .scale-bar-track { width: 100%;
-    right: -5px; } }
+   } }
     /* Distance baseline and ticks (top) */
    
     .scale-bar-tick { position:absolute; top:10px; width:1px; height:16px; background:#cfd8dc; }
@@ -7306,5 +7365,7 @@ scrollbar-width: thin;
 #maplibre-3d-view {
     height: 100% !important;
 }
+
+    
 
     
