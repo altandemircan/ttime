@@ -6037,13 +6037,26 @@ async function expandMap(containerId, day) {
     div.onclick = function() {
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
+
+      // --- PANEL GİZLEME/GÖSTERME MANTIĞI ---
+      // Scale bar'ın olduğu paneli bul
+      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
+
       if (opt.value === 'liberty') {
+        // 3D MOD: Paneli GİZLE
         expandedMapInstance.getContainer().style.display = "none";
+        if (panelDiv) panelDiv.style.display = "none"; 
+        
         openMapLibre3D(expandedMapInstance); 
       } else {
+        // 2D MOD: Paneli GÖSTER
         expandedMapInstance.getContainer().style.display = "";
+        
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) map3d.style.display = "none";
+        
+        if (panelDiv) panelDiv.style.display = "block"; // Geri getir
+
         setExpandedMapTile(opt.value);
       }
     };
@@ -6150,7 +6163,7 @@ async function expandMap(containerId, day) {
           if (typeof L.maplibreGL === 'function') {
               expandedMapInstance._maplibreLayer = L.maplibreGL({
                   style: url,
-                  attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
+                  attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
                   interactive: true
               }).addTo(expandedMapInstance);
           } else {
