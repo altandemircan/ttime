@@ -150,37 +150,20 @@ function addRoutePolylineWithClick(map, coords) {
     return routeLine;
 }
 function showRouteInfoBanner(day) {
-  const expandedContainer = document.getElementById(`expanded-map-${day}`);
-  if (!expandedContainer) return;
+  const banner = document.getElementById('route-info-banner');
+  if (!banner) return;
 
-  let banner = expandedContainer.querySelector('#route-info-banner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'route-info-banner';
-    banner.className = 'route-info-banner';
-    banner.innerHTML = `
-      <span>Click the map to list nearby restaurants, cafes and bars.</span>
-      <button id="close-route-info" class="route-info-close">✕</button>
-    `;
-    expandedContainer.prepend(banner);
-  }
+  // Banner'ı görünür yap
   banner.style.display = 'flex';
+  
+  // Kullanıcının tıklanabilir olduğunu anlaması için imleci 'el' yap
+  banner.style.cursor = 'pointer';
 
-  // Kapatma butonunda sadece display:none yapıyoruz
-  const closeBtn = banner.querySelector('#close-route-info');
-  if (closeBtn) {
-    closeBtn.onclick = function() {
-      banner.style.display = 'none';
-    };
-  }
-
-  // 1 dakika sonra otomatik kapansın
-  setTimeout(function() {
-    // Banner hâlâ açıksa (kullanıcı kapatmadıysa)
-    if (banner.style.display !== 'none') {
-      banner.style.display = 'none';
-    }
-  }, 5000);
+  // --- TÜM KUTUYA TIKLAMA OLAYI ---
+  // (İçindeki X butonuna, yazıya veya boşluğa tıklansa da çalışır)
+  banner.onclick = function() {
+    banner.style.display = 'none';
+  };
 }
 async function getRestaurantPopupHTML(f, day) {
     const name = f.properties.name || "Restoran";
