@@ -120,17 +120,14 @@ document.addEventListener('touchmove', function(e) {
 function handleGlobalTouchMove(e) {
     if (!longPressTriggered || !draggedItem) return;
 
-    e.preventDefault(); // Sayfa kaymasını engelle
+    e.preventDefault(); 
     e.stopImmediatePropagation();
 
     const touch = e.touches[0];
 
-    // Öğeyi hareket ettir
     draggedItem.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
     draggedItem.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
 
-    // Parmağın altındaki öğeyi bul
-    // pointer-events: none sayesinde draggedItem'ı görmez, altındakini görür
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!elementBelow) return;
 
@@ -165,9 +162,45 @@ function handleGlobalTouchMove(e) {
                 dropZone.insertBefore(placeholder, closestItem.nextSibling);
             }
         } else {
-            dropZone.appendChild(placeholder);
+            // --- DÜZELTME BURADA ---
+            // Eğer en yakın item bulunamadıysa (listenin en altı veya boş liste)
+            const addBtn = dropZone.querySelector('.add-more-btn');
+            if (addBtn) {
+                // Butonun önüne ekle (butonun altına düşmesin)
+                dropZone.insertBefore(placeholder, addBtn);
+            } else {
+                dropZone.appendChild(placeholder);
+            }
         }
     }
+}
+function handleTouchDrop(e) {
+    if (!longPressTriggered || !draggedItem || !currentDropZone) {
+        cleanupTouchDrag();
+        return;
+    }
+    
+    const fromIndex = parseInt(draggedItem.dataset.index);
+    const fromDayList = draggedItem.closest('.day-list');
+    const fromDay = fromDayList ? parseInt(fromDayList.dataset.day) : null;
+    const toDay = parseInt(currentDropZone.dataset.day);
+    
+    const items = Array.from(currentDropZone.querySelectorAll('.travel-item:not(.dragging)'));
+    
+    // --- İNDEKS HESAPLAMA DÜZELTMESİ ---
+    let toIndex;
+    
+    // Eğer placeholder'ın bir sonraki kardeşi yoksa VEYA bir sonraki kardeşi Add butonu ise
+    if (placeholder.nextSibling === null || placeholder.nextSibling.classList.contains('add-more-btn')) {
+        toIndex = items.length; // Listenin sonu demektir
+    } else {
+        // Normal item'lar arasındaysa
+        toIndex = items.indexOf(placeholder.nextSibling);
+        if (toIndex === -1) toIndex = items.length; // Güvenlik önlemi
+    }
+    
+    reorderCart(fromIndex, toIndex, fromDay, toDay);
+    cleanupTouchDrag();
 }
 
 function handleGlobalTouchEnd(e) {
@@ -291,10 +324,18 @@ function createPlaceholder(target) {
             parent.insertBefore(placeholder, target);
         }
     } else if (target.classList.contains("day-list")) {
-        parent.appendChild(placeholder);
+        // --- DÜZELTME BURADA ---
+        // Listenin kendisine bırakılıyorsa, "Add Category" butonunu kontrol et
+        const addBtn = parent.querySelector('.add-more-btn');
+        if (addBtn) {
+            // Buton varsa, onun hemen üstüne ekle
+            parent.insertBefore(placeholder, addBtn);
+        } else {
+            // Buton yoksa en alta ekle
+            parent.appendChild(placeholder);
+        }
     }
 }
-
 function setupDropZones() {
     // Masaüstü drop zone dinleyicileri
     document.querySelectorAll('.day-list').forEach(list => {
