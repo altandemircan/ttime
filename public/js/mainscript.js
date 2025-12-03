@@ -9064,16 +9064,7 @@ function wrapRouteControls(day) {
   expandBtn.className = 'expand-map-btn';
   expandBtn.setAttribute('aria-label', 'Expand Map');
   
-  // Ortak stiller
-  expandBtn.style.display = 'flex';
-  expandBtn.style.flexDirection = 'row';
-  expandBtn.style.alignItems = 'center';
-  expandBtn.style.gap = '4px';
-  expandBtn.style.padding = '4px 6px';
-  expandBtn.style.fontWeight = 'bold';
-  expandBtn.style.borderRadius = '10px';
-  expandBtn.style.border = '1px solid'; // Renk duruma göre aşağıda atanacak
-
+ 
   if (isExpanded) {
       // --- DURUM 1: ZATEN AÇIK (PASİF) ---
       expandBtn.disabled = true;
