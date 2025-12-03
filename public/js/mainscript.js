@@ -4299,21 +4299,7 @@ function searchPlaceOnGoogle(place, city) {
   if (document.getElementById('tt-day-header-flex')) return;
   const s = document.createElement('style');
   s.id = 'tt-day-header-flex';
-  s.textContent = `
-    .day-header {
-      display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-block-start: 0em;
-    margin-block-end: 1em;
-    }
-    .day-header .title-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-  `;
+ 
   document.head.appendChild(s);
 })();
 
