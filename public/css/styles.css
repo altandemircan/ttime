@@ -4644,6 +4644,13 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     align-items: flex-end;
 
 }
+
+.elev-segment-toolbar {
+     bottom: 200px; z-index: 1005; display: inline-flex; gap: 10px;
+   align-items: center; border-radius: 10px; padding: 6px;
+   font-size: 12px; color: rgb(0, 0, 0); right: 6px; position: absolute;
+   background: rgb(255 255 255 / 43%);  
+}
 .expanded-map {
     width: 100%;
     height: calc(100% - 50px);   
