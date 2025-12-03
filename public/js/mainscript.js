@@ -6340,12 +6340,7 @@ function restoreMap(containerId, day) {
     expandBtns.forEach(btn => {
         btn.disabled = false;
         btn.style.pointerEvents = 'auto';
-        btn.style.opacity = '1';
-        btn.style.filter = 'none';
-        btn.style.cursor = 'pointer';
-        btn.style.borderColor = 'rgb(43 129 213)'; // Orijinal Mavi
-        btn.style.background = '#ffffff';
-        btn.style.color = '#297fd4';
+     
 
         const img = btn.querySelector('img');
         if (img) img.style.filter = 'none';
@@ -6353,7 +6348,7 @@ function restoreMap(containerId, day) {
         const label = btn.querySelector('.tm-label');
         if (label) {
             label.textContent = 'Expand map';
-            label.style.color = '#297fd4';
+            
         }
         
         // Hover efektlerini tekrar aktif hissettirmek için
