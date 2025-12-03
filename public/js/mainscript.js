@@ -10337,7 +10337,6 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 
-// SEGMENT SEÇİMİ SONRASI ZOOM
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
 function highlightSegmentOnMap(day, startKm, endKm) {
   // Parametre kontrolü ve Temizlik
