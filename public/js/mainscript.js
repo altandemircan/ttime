@@ -2193,7 +2193,9 @@ function addToCart(
         if (sidebar) sidebar.classList.add('open');
       }
     }
-   
+    if (typeof attachChatDropListeners === 'function') {
+      attachChatDropListeners();
+    }
     if (window.expandedMaps) {
       clearRouteSegmentHighlight(resolvedDay);
       fitExpandedMapToRoute(resolvedDay);
@@ -3958,7 +3960,7 @@ cartDiv.appendChild(addNewDayButton);
     renderRouteForDay(d);
   });
   setTimeout(wrapRouteControlsForAllDays, 0);
-  
+  attachChatDropListeners();
 
   if (window.expandedMaps) {
     Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
