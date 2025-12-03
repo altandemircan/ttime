@@ -5378,7 +5378,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.style.height = "285px";
     sidebarContainer.classList.remove("big-map", "full-screen-map");
 
-    // Route summary and controls (Diğer DOM oluşturma kodları aynı)
+    // Route summary and controls
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
     document.getElementById(controlsWrapperId)?.remove();
 
@@ -5429,15 +5429,25 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         zoomAnimation: false,
     });
 
-    // --- DEĞİŞİKLİK BURADA: OpenFreeMap URL'sini HTTPS ile zorla ---
-    const openFreeMapUrl = 'https://tiles.openfreemap.org/tiles/bright/{z}/{x}/{y}.png';
+    // --- DEĞİŞİKLİK BURADA: Büyük Haritadaki (expandMap) Mantığı Kullan ---
+    const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
 
-    L.tileLayer(openFreeMapUrl, {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors'
-    }).addTo(map);
-
-    // ----------------------------------------------------------------
+    if (typeof L.maplibreGL === 'function') {
+        // Vektör Tile (OpenFreeMap)
+        L.maplibreGL({
+            style: openFreeMapStyle,
+            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+            interactive: true
+        }).addTo(map);
+    } else {
+        // Fallback: Kütüphane yoksa mecburen OSM (Resim)
+        console.warn('L.maplibreGL not found, fallback to OSM.');
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    }
+    // ---------------------------------------------------------------------
 
     let bounds = L.latLngBounds();
 
