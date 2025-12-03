@@ -4268,31 +4268,6 @@ function searchPlaceOnGoogle(place, city) {
   if (document.getElementById('tt-day-action-menu-styles')) return;
   const s = document.createElement('style');
   s.id = 'tt-day-action-menu-styles';
-  s.textContent = `
-    .action-buttons-container { position: relative; display: flex; align-items: center; }
-    .action-menu-trigger {
-      appearance: none; border: 1px solid #ddd; background: #fff; color: #333;
-      border-radius: 8px; padding: 4px 8px; cursor: pointer; font-size: 16px; line-height: 1;
-    }
-    .action-menu { position: relative; }
-    .action-menu-list {
-      position: absolute; right: 0; top: calc(100% + 6px);
-      background: #fff; border: 1px solid #e0e0e0; border-radius: 10px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-      padding: 6px 0; min-width: 160px; z-index: 10005; display: none;
-    }
-    .action-menu.open .action-menu-list { display: block; }
-    .action-menu-item {
-      width: 100%; display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; background: transparent; border: none; text-align: left;
-      cursor: pointer; font-size: 14px; color: #333;
-    }
-    .action-menu-item:hover { background: #f5f7ff; }
-    .action-menu-item .icon { width: 18px; display: inline-block; }
-    /* Remove maddesi vurgulu (isteğe bağlı) */
-    .action-menu-item.remove { color: #c62828; }
-    .action-menu-item.remove:hover { background: #ffecec; }
-  `;
   document.head.appendChild(s);
 })();
 
