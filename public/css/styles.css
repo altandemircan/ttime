@@ -5152,17 +5152,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     width: 100%;
 }
 
-.expanded-map-container .close-expanded-map {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 10001;
-    background: white;
-    border: 1px solid #ccc;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-}
 
 
 .empty-day-message, .one-item-message {
