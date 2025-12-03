@@ -8777,31 +8777,30 @@ function cleanupLegacyTravelMode() {
   } catch (_) {}
 }
 // Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
+// Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
 function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
 
   const setId = `tt-travel-mode-set-day${day}`;
+  
+  // Önce her durumda eskiyi kaldır
   document.getElementById(setId)?.remove();
 
   const realPoints = typeof getDayPoints === "function" ? getDayPoints(day) : [];
 
-  // Önce her durumda eskiyi kaldır
-  const oldSet = document.getElementById(setId);
-  if (oldSet) oldSet.remove();
-
-  // --- PATCH: Artık 1 veya daha fazla point varsa MAP/EXPAND MAP barı görünmeli! ---
+  // --- 1. SIFIR NOKTA VARSA HİÇBİR ŞEY GÖSTERME ---
   if (!Array.isArray(realPoints) || realPoints.length < 1) {
-    return; // SIFIR point için bar/expand map tuşu yok! (Ama 1 varsa var)
+    return; 
   }
 
-  // 1 veya daha fazla point varsa:
-  // FLY MODE aktifleştirme sadece markerlar yay ile bağlanıyorsa:
-  const containerId = `route-map-day${day}`;
-  const geojson = window.lastRouteGeojsons?.[containerId];
+  // --- 2. KONUM KONTROLÜ ---
   const isInTurkey = areAllPointsInTurkey(realPoints);
-  const hasRealRoute = isInTurkey && geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1;
 
-  // Eğer Türkiye dışıysa veya route yoksa, sadece FLY MODE kutusu göster
-  if (!hasRealRoute) {
+  // --- 3. MOD SEÇİM MANTIĞI ---
+  // Rota oluşup oluşmadığına (hasRealRoute) bakmaksızın, 
+  // eğer nokta Türkiye dışındaysa "FLY MODE", içindeyse standart butonları göster.
+  
+  if (!isInTurkey) {
+    // --- TURKEY DIŞI: FLY MODE ---
     const set = document.createElement('div');
     set.id = setId;
     set.className = 'tt-travel-mode-set';
@@ -8812,25 +8811,16 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
           <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
           <span class="tm-label">FLY MODE</span>
         </button>
-        <div class="fly-info-msg" style="font-size: 13px;
-    color: #607d8b;
-    margin-top: 3px;
-    margin-left: 4px;
-    font-weight: 400;">
-        *Route options inactive for this area
-      </div>
+        <div class="fly-info-msg" style="font-size: 13px; color: #607d8b; margin-top: 3px; margin-left: 4px; font-weight: 400;">
+            *Route options inactive for this area
+        </div>
       </div>
     `;
-    // Insert
-    if (controlsWrapperEl && controlsWrapperEl.parentNode) {
-      controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
-    } else if (routeMapEl && routeMapEl.parentNode) {
-      routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
-    }
+    insertSetToDOM(set, routeMapEl, controlsWrapperEl);
     return;
   }
 
-  // --- Aşağıdaki kodun aynen kaldı ve Türkiye'de CAR/BIKE/WALK, aktif/renk-change logic aynen çalışıyor ---
+  // --- TURKEY İÇİ: CAR / BIKE / WALK (Standart) ---
   const set = document.createElement('div');
   set.id = setId;
   set.className = 'tt-travel-mode-set';
@@ -8851,12 +8841,10 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
       </button>
     </div>
   `;
-  if (controlsWrapperEl && controlsWrapperEl.parentNode) {
-    controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
-  } else if (routeMapEl && routeMapEl.parentNode) {
-    routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
-  }
+  
+  insertSetToDOM(set, routeMapEl, controlsWrapperEl);
 
+  // Buton Eventleri
   set.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
   set.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -8865,9 +8853,19 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
     window.setTravelMode(btn.getAttribute('data-mode'), day);
   });
 
+  // Aktif butonu işaretle
   if (typeof markActiveTravelModeButtons === 'function') {
     markActiveTravelModeButtons();
   }
+}
+
+// Yardımcı: DOM'a ekleme işini yapan ufak fonksiyon
+function insertSetToDOM(set, routeMapEl, controlsWrapperEl) {
+    if (controlsWrapperEl && controlsWrapperEl.parentNode) {
+      controlsWrapperEl.parentNode.insertBefore(set, controlsWrapperEl);
+    } else if (routeMapEl && routeMapEl.parentNode) {
+      routeMapEl.parentNode.insertBefore(set, routeMapEl.nextSibling);
+    }
 }
 
 // Update: only clean header sets, we place the visible set near the map
