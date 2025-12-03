@@ -314,17 +314,49 @@ function setupDesktopDragDrop() {
 function desktopDragStart(event) {
     const index = event.currentTarget.dataset.index;
     if (index !== undefined) {
+        // --- FIX: Global değişkeni set et ---
+        draggedItem = event.currentTarget;
+        
         event.dataTransfer.setData("text/plain", index);
         event.dataTransfer.setData("source", "cart");
         event.dataTransfer.effectAllowed = "move";
         event.currentTarget.classList.add('dragging');
+
+        // Clone (hayalet görüntü) oluşturma
+        const rect = event.target.getBoundingClientRect();
+        const clone = event.target.cloneNode(true);
+        clone.id = 'drag-clone';
+        clone.style.position = 'fixed';
+        clone.style.width = `${rect.width}px`;
+        clone.style.height = `${rect.height}px`;
+        clone.style.left = `${rect.left}px`;
+        clone.style.top = `${rect.top}px`;
+        clone.style.zIndex = '10000';
+        clone.style.opacity = '0.8';
+        clone.style.pointerEvents = 'none';
+        clone.style.boxShadow = '0 10px 20px rgba(0,0,0,0.2)';
+        document.body.appendChild(clone);
+        
+        // Browser'ın varsayılan hayalet görüntüsünü gizle
+        event.dataTransfer.setDragImage(new Image(), 0, 0);
     }
     document.body.classList.add('dragging-items');
 }
-
 function desktopDragEnd(event) {
     event.target.classList.remove('dragging');
-    if (placeholder) { placeholder.remove(); placeholder = null; }
+    event.target.style.visibility = 'visible';
+    
+    const clone = document.getElementById('drag-clone');
+    if (clone) clone.remove();
+    
+    if (placeholder) {
+        placeholder.remove();
+        placeholder = null;
+    }
+    
+    // --- FIX: Global değişkeni temizle ---
+    draggedItem = null;
+    
     document.body.classList.remove('dragging-items');
 }
 
@@ -389,7 +421,7 @@ function createPlaceholder(target) {
 function desktopDragOver(event) {
     event.preventDefault();
 
-    // Sürüklenen öğeyi kontrol et
+    // Sürüklenen öğeyi kontrol et (Artık draggedItem dolu olduğu için burayı geçecek)
     if (!draggedItem) return;
 
     const dropZone = event.target.closest('.day-list');
@@ -403,7 +435,6 @@ function desktopDragOver(event) {
         placeholder.style.backgroundColor = '#8a4af3';
         placeholder.style.margin = '8px 0';
         placeholder.style.borderRadius = '2px';
-        // Olayları yakalamasın ki mouse eventleri alttaki elemana geçsin
         placeholder.style.pointerEvents = 'none'; 
     }
 
@@ -414,7 +445,6 @@ function desktopDragOver(event) {
         const rect = targetItem.getBoundingClientRect();
         const offset = event.clientY - (rect.top + rect.height / 2);
         
-        // Komşuluk kontrolü
         const isNext = draggedItem.nextElementSibling === targetItem;
         const isPrev = draggedItem.previousElementSibling === targetItem;
 
@@ -448,7 +478,7 @@ function desktopDragOver(event) {
             }
         }
         
-        // Kendi üzerindeysek (event.target == draggedItem)
+        // Kendi üzerindeysek
         if (event.target === draggedItem) {
             if (placeholder.parentNode) placeholder.remove();
             return;
