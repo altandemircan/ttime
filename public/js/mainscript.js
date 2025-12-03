@@ -5967,6 +5967,8 @@ function openMapLibre3D(expandedMap) {
 async function expandMap(containerId, day) {
   forceCleanExpandedMap(day);
 
+  // Gün parametresini sayıya çevir (Garanti olsun)
+  day = parseInt(day, 10);
   window.currentDay = day; 
 
   console.log('[expandMap] start →', containerId, 'day=', day);
@@ -6106,6 +6108,11 @@ async function expandMap(containerId, day) {
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-expanded-map';
   closeBtn.textContent = '✕ Close';
+  closeBtn.style.cssText = `
+    position:absolute;top:16px;right:16px;z-index:10001;
+    background:#ff4444;color:#fff;border:none;padding:8px 12px;
+    border-radius:4px;font-weight:500;cursor:pointer;
+  `;
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
 
@@ -6123,7 +6130,7 @@ async function expandMap(containerId, day) {
 
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // --- DÜZELTME BURADA BAŞLIYOR: Başlangıç Konumunu Belirle ---
+  // --- BAŞLANGIÇ KONUMUNU BELİRLE ---
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
   
@@ -6132,37 +6139,35 @@ async function expandMap(containerId, day) {
   
   if (validPtsInit.length > 0) {
       if (validPtsInit.length === 1) {
-          // Tek nokta varsa (Yeni gün senaryosu), direkt o noktaya odaklan
+          // Tek nokta varsa
           startCenter = [validPtsInit[0].lat, validPtsInit[0].lng];
           startZoom = 14; 
       } else {
-          // Birden fazla nokta varsa ortala
+          // Çok nokta varsa
           const b = L.latLngBounds(validPtsInit.map(p => [p.lat, p.lng]));
           startCenter = b.getCenter();
           startZoom = 10;
       }
   }
-  // -----------------------------------------------------------
 
   const expandedMapInstance = L.map(mapDivId, {
-    center: startCenter, // Hesaplanan merkez
-    zoom: startZoom,     // Hesaplanan zoom
+    center: startCenter,
+    zoom: startZoom,
     scrollWheelZoom: true,
-    fadeAnimation: false,
-    zoomAnimation: false,
-    markerZoomAnimation: false,
-    inertia: false,
-    preferCanvas: true,
-    renderer: L.canvas({ padding: 0.5 }), 
+    // --- KESİN ÇÖZÜM AYARLARI ---
+    fadeAnimation: false,       // Animasyonları kapat (Senkronizasyon için)
+    zoomAnimation: false,       // Zoom animasyonunu kapat
+    markerZoomAnimation: false, // Marker animasyonunu kapat
+    inertia: false,             // EYLEMSİZLİĞİ KAPAT (Kaymanın %90 sebebi budur)
+    preferCanvas: true,         // Vektörleri Canvas'a çiz (Performans artar)
+    renderer: L.canvas({ padding: 0.5 }), // Harita dışına taşan çizim yap (Yırtılmayı önler)
+    // ----------------------------
     zoomSnap: 0.25,
     zoomDelta: 0.25,
     wheelDebounceTime: 35,
     wheelPxPerZoomLevel: 120,
     easeLinearity: 0.2
   });
-
-  // --- ARTIK GEREKSİZ OLAN [0,0] KONTROLÜNÜ KALDIRIYORUZ ---
-  // (Çünkü yukarıda startCenter ile zaten doğru yeri verdik)
 
   // --- LAYER DEĞİŞTİRME FONKSİYONU ---
   function setExpandedMapTile(styleKey) {
@@ -6203,7 +6208,6 @@ async function expandMap(containerId, day) {
       }
   }
 
-  // İlk açılış
   setExpandedMapTile(currentLayer);
 
   expandedMapInstance.on('styleimagemissing', function(e) {
@@ -6223,8 +6227,6 @@ async function expandMap(containerId, day) {
     };
   }
 
-  const geojson = window.lastRouteGeojsons?.[containerId];
-
   updateExpandedMap(expandedMapInstance, day);
 
   if (baseMap) {
@@ -6241,17 +6243,26 @@ async function expandMap(containerId, day) {
     expandedMapInstance.options.maxZoom = 19;
   } catch(e){}
 
-  // Garanti Zoom Check (Resize sonrası)
+  // --- GARANTİ ODAKLAMA: Timeout içinde veriyi tekrar çek ---
   setTimeout(() => {
-      expandedMapInstance.invalidateSize({ pan: false });
-      // Burada tekrar kontrol ediyoruz, eğer harita boyutu değiştiyse kayma olmasın
-      if (validPtsInit.length > 0) {
-          if (validPtsInit.length === 1) {
-             expandedMapInstance.setView([validPtsInit[0].lat, validPtsInit[0].lng], 14, { animate: false });
+      expandedMapInstance.invalidateSize();
+      
+      // Veriyi o anki durumdan tekrar al (Cart güncellenmiş olabilir)
+      const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+      const currentValidPts = currentPts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+
+      if (currentValidPts.length > 0) {
+          if (currentValidPts.length === 1) {
+             // Tek nokta varsa oraya kesin zoom yap
+             expandedMapInstance.setView([currentValidPts[0].lat, currentValidPts[0].lng], 14, { animate: false });
           } else {
-             const b = L.latLngBounds(validPtsInit.map(p => [p.lat, p.lng]));
+             // Çok nokta varsa hepsini kapsa
+             const b = L.latLngBounds(currentValidPts.map(p => [p.lat, p.lng]));
              expandedMapInstance.fitBounds(b, { padding: [50, 50], animate: false });
           }
+      } else {
+          // Nokta yoksa Türkiye geneli
+          expandedMapInstance.setView([39.0, 35.0], 6);
       }
   }, 200);
 
