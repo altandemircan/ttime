@@ -7366,43 +7366,6 @@ scrollbar-width: thin;
     height: 100% !important;
 }
 
-    
-/* --- LEAFLET KAYMA SORUNU İÇİN GPU KİLİDİ --- */
-
-/* Harita içindeki her şeyi donanım hızlandırmaya zorla */
-.expanded-map .leaflet-container,
-.expanded-map .leaflet-map-pane,
-.expanded-map .leaflet-tile,
-.expanded-map .leaflet-marker-icon,
-.expanded-map .leaflet-marker-shadow,
-.expanded-map .leaflet-tile-container,
-.expanded-map .leaflet-pane,
-.expanded-map .leaflet-layer {
-    will-change: transform;
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
-    /* Titremeyi önler */
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-}
-
-/* Rota çizgisinin (Canvas/SVG) CSS geçişlerini kapat */
-.expanded-map .leaflet-zoom-animated {
-    -webkit-transition: none !important;
-    -moz-transition: none !important;
-    -o-transition: none !important;
-    transition: none !important;
-}
-
-/* Harita resimlerinin (Tiles) boyutunu sabitle */
-.leaflet-container img.leaflet-tile {
-    max-width: none !important;
-    width: 256px !important;
-    height: 256px !important;
-}
-
-
-
 
 
 
