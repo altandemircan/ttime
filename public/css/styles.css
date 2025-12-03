@@ -7402,3 +7402,52 @@ scrollbar-width: thin;
       gap: 8px;
     }
 /* Day X menu header */
+
+
+/* Sürüklenen öğenin (Box) tasarımı */
+.travel-item.dragging {
+    /* 1. Kutuyu havaya kaldır ve büyüt */
+    transform: scale(1.03) !important; 
+    
+    /* 2. Derin bir gölge vererek havada olduğu hissini yarat */
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+    
+    /* 3. Arka planı netleştir (şeffafsa karışmasın) */
+    background-color: #ffffff !important;
+    
+    /* 4. Kenarları yumuşat */
+    border-radius: 12px !important;
+    border: 1px solid rgba(138, 74, 243, 0.3) !important; /* Hafif mor çerçeve */
+    
+    /* 5. Opaklığı koru ama belli et */
+    opacity: 0.95 !important;
+    z-index: 10000 !important;
+    
+    /* 6. Mouse/Touch olaylarını iptal et (alttaki listeyi görebilmek için) */
+    pointer-events: none !important;
+    
+    /* 7. Performans ayarları */
+    will-change: transform, left, top;
+}
+
+/* Sürükleme başladığında animasyonlu geçiş (Pop efekti) */
+.travel-item {
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
+}
+
+/* Placeholder (Yerleşim Çizgisi) Görünümü */
+.insertion-placeholder {
+    height: 6px !important; /* Biraz daha kalın */
+    background: linear-gradient(90deg, #8a4af3, #b388ff) !important; /* Gradyan renk */
+    margin: 10px 0 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 0 10px rgba(138, 74, 243, 0.4);
+    opacity: 0.8;
+    animation: pulsePlaceholder 1.5s infinite ease-in-out;
+}
+
+@keyframes pulsePlaceholder {
+    0% { opacity: 0.5; transform: scaleX(0.95); }
+    50% { opacity: 1; transform: scaleX(1); }
+    100% { opacity: 0.5; transform: scaleX(0.95); }
+}
