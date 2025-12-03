@@ -3082,7 +3082,7 @@ function initEmptyDayMap(day) {
     wheelPxPerZoomLevel: 120,
     inertia: true,
     easeLinearity: 0.2,
-    preferCanvas: false // Düzeltildi: SVG kullanılsın (kaymayı önler)
+    
   });
 
   // 4. Eğer sınır kutusu (bounds) varsa ona sığdır
