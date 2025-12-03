@@ -4612,7 +4612,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
         padding-left: 40px;
         bottom: 5px; /* Bu boşluk sabit kaldı */
         height: 155px;
-        /* Toplam Kaplanan Alan: 155px + 5px = 160px */
+                padding-top: 10px;
     }
 
     .route-scale-bar {
