@@ -4646,8 +4646,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .elev-segment-toolbar {
-        bottom: 160px;
-       right: -12px;
+       bottom: 160px;
+    right: -12px;
     position: absolute;
     display: flex;
     align-items: center;
@@ -4657,19 +4657,19 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     border-radius: 12px 0 0 0;
     padding: 6px 10px;
     font-size: 11px;
-    color: #8a4af3;
+    color: #1e293b;
     font-weight: 700;
 }
 .elev-segment-toolbar .pill, .elev-segment-reset {
-    border: 1px solid #e0e0e0;
+        border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 2px 6px;
-    font-weight: 500
+    font-weight: 600;
 }
 .elev-segment-reset {
     color: #ffffff;
     background: #d32f2f;
-    border: none;
+    border: none;;
 }
 
 .expanded-map {
