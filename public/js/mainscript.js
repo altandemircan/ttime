@@ -9492,21 +9492,26 @@ dscBadge.title = `${Math.round(descentM)} m descent`;
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  // 1. ADIM: CSS GÜVENLİK KİLİDİ (Değişmedi)
+  // 1. ADIM: CSS GÜVENLİK KİLİDİ (GÜNCELLENDİ)
+  // Eski "display: none" kuralını kaldırdık. Artık sadece opacity düşürüyoruz.
   if (!document.getElementById('tt-marker-loading-style')) {
     const style = document.createElement('style');
     style.id = 'tt-marker-loading-style';
     style.innerHTML = `
-        .scale-bar-track.loading .marker-badge,
-        .scale-bar-track.loading .scale-bar-tick,
-        .scale-bar-track.loading .scale-bar-label,
-        .scale-bar-track.loading .scale-bar-vertical-line, 
-        .scale-bar-track.loading .tt-elev-tooltip { 
-            display: none !important; 
+        /* Yüklenirken öğeleri gizleme, sadece soluklaştır */
+        .scale-bar-track.loading > *:not(.tt-scale-loader) {
+            opacity: 0.4; 
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        /* Loader'ın kendisi tam opak olsun */
+        .scale-bar-track.loading .tt-scale-loader {
+            opacity: 1 !important;
         }
         .scale-bar-track.loading {
             min-height: 200px; 
-            width:100%;
+            width: 100%;
+            position: relative;
         }
     `;
     document.head.appendChild(style);
@@ -9543,8 +9548,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   
+  // Rate limit kontrolü
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
-    window.showScaleBarLoading?.(container, 'Loading elevation…');
+    window.showScaleBarLoading?.(container, 'Loading elevation... 12345'); // Test yazısı
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
@@ -9554,20 +9560,21 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    // İlk kez oluşturuluyorsa spinner koy
+    // İlk oluşturma: Spinner koy (henüz eski grafik yok)
     container.innerHTML = '<div class="spinner"></div>';
     track = document.createElement('div');
     track.className = 'scale-bar-track';
     container.appendChild(track);
   } 
-  // [FIX] Eski içeriği hemen silme! (track.innerHTML = '' kaldırıldı)
-  // Böylece spinner, eski grafiğin üzerinde döner, beyaz boşluk olmaz.
+  
+  // [FIX] track.innerHTML = '' SATIRINI KALDIRDIK.
+  // Eski grafik altta dursun, üzerine loading sınıfı ve loader ekleyelim.
 
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
-  // Loader'ı göster (Eski içeriğin üstüne biner)
-  window.showScaleBarLoading?.(container, 'Loading elevation…');
+  // Loader'ı göster (Test yazısı ile)
+  window.showScaleBarLoading?.(container, 'Loading elevation... 12345');
 
   const N = Math.max(40, Math.round(totalKm * 2));
   
@@ -9614,11 +9621,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
     try {
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
       
-      // --- VERİ GELDİ, ŞİMDİ DOM'U TEMİZLEYİP YENİSİNİ ÇİZ ---
-      // [FIX] Beyaz flashı önlemek için temizlik burada yapılır
+      // --- VERİ GELDİ! ŞİMDİ ESKİ GRAFİĞİ SİLİP YENİSİNİ ÇİZİYORUZ ---
       track.innerHTML = ''; 
       
-      // Selection Div ve Eventler yeniden eklenmeli çünkü track temizlendi
+      // Selection Div ve Eventler yeniden eklenmeli
       const selDiv = document.createElement('div');
       selDiv.className = 'scale-bar-selection';
       selDiv.style.cssText = `position:absolute; top:0; bottom:0; background: rgba(138,74,243,0.16); border: 1px solid rgba(138,74,243,0.45); display:none; z-index: 6;`;
@@ -9626,7 +9632,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       window.__scaleBarDragTrack = track;
       window.__scaleBarDragSelDiv = selDiv;
 
-      setupScaleBarEvents(track, selDiv); // Event listenerları bağla (aşağıda tanımlı)
+      setupScaleBarEvents(track, selDiv); 
 
       // SVG Yapısını Kur
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
@@ -9671,7 +9677,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       tooltip.style.display = 'none';
       track.appendChild(tooltip);
 
-      // Mouse/Touch listenerları
       track.addEventListener('mousemove', function(e) {
         const rect = track.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -9696,8 +9701,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       container._elevationDataFull = { smooth: smooth.slice(), min, max };
       container.dataset.elevLoadedKey = routeKey;
 
-      // REDRAW ELEVATION FONKSİYONU
-      // (SVG elemanları artık scope içinde olmadığından fonksiyonu buraya güncelliyoruz)
+      // REDRAW ELEVATION
       container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
         const { smooth, min, max } = elevationData;
@@ -9780,7 +9784,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
         createScaleElements(track, width, totalKm, 0, markers);
       };
 
-      // Tooltip Eventi (tekrar bağlanmalı çünkü track temizlendi)
       if (track.__onMove) track.removeEventListener('mousemove', track.__onMove);
       track.__onMove = function(e) {
         const ed = container._elevationData;
@@ -9836,7 +9839,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.addEventListener('mousemove', track.__onMove);
       track.addEventListener('touchmove', track.__onMove);
 
-      // Handle Resize (tekrar bağlanmalı)
       function handleResize() {
         if (!container._elevationData) return;
         const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
@@ -9879,62 +9881,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
       
       track.classList.remove('loading');
-      // Hata olsa bile baremleri çiz
       createScaleElements(track, width || 400, totalKm, 0, markers);
     }
   })();
-}
-
-// Helper: Selection eventlerini bağla (Çünkü track.innerHTML silindiğinde eventler de gider)
-function setupScaleBarEvents(track, selDiv) {
-  window.removeEventListener('mousemove', window.__sb_onMouseMove);
-  window.removeEventListener('mouseup', window.__sb_onMouseUp);
-  window.removeEventListener('touchmove', window.__sb_onMouseMove); 
-  window.removeEventListener('touchend', window.__sb_onMouseUp);   
-
-  window.addEventListener('mousemove', window.__sb_onMouseMove);
-  window.addEventListener('mouseup', window.__sb_onMouseUp);
-  window.addEventListener('touchmove', window.__sb_onMouseMove, { passive: false }); 
-  window.addEventListener('touchend', window.__sb_onMouseUp);     
-
-  track.addEventListener('mousedown', function(e) {
-    const rect = track.getBoundingClientRect();
-    window.__scaleBarDrag = { startX: e.clientX - rect.left, lastX: e.clientX - rect.left };
-    window.__scaleBarDragTrack = track;
-    window.__scaleBarDragSelDiv = selDiv;
-    selDiv.style.left = `${window.__scaleBarDrag.startX}px`;
-    selDiv.style.width = `0px`;
-    selDiv.style.display = 'block';
-  });
-
-  let longPressTimer = null;
-  track.addEventListener('touchstart', function(e) {
-    const rect = track.getBoundingClientRect();
-    const x = e.touches[0].clientX - rect.left;
-    longPressTimer = setTimeout(() => {
-        window.__scaleBarDrag = { startX: x, lastX: x };
-        window.__scaleBarDragTrack = track;
-        window.__scaleBarDragSelDiv = selDiv;
-        selDiv.style.left = `${x}px`;
-        selDiv.style.width = `0px`;
-        selDiv.style.display = 'block';
-        if (navigator.vibrate) navigator.vibrate(40);
-    }, 600);
-  }, { passive: true });
-
-  track.addEventListener('touchmove', function(e) {
-      if (longPressTimer && !window.__scaleBarDrag) {
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
-      }
-  }, { passive: true });
-
-  track.addEventListener('touchend', function() {
-      if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
-      }
-  });
 }
 
 // Kartları ekledikten sonra çağır: attachFavEvents();
