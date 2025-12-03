@@ -10527,46 +10527,59 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       resetBtn.addEventListener('touchstart', stopProp, { passive: true });
       resetBtn.addEventListener('mousedown', stopProp);
 
-      resetBtn.addEventListener('click', (e) => {
+     resetBtn.addEventListener('click', (e) => {
         e.stopPropagation(); // Garanti olsun
         
-        // --- RESET MANTIĞI ---
+        // --- 1. TEMİZLİK ---
         track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
         track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
         track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
 
+        // Haritadaki mor segment çizgisini kaldır
         if (typeof highlightSegmentOnMap === 'function') {
-          highlightSegmentOnMap(day);
+          highlightSegmentOnMap(day); // Parametre vermeden çağırınca siler
         }
 
+        // Global değişkenleri sıfırla
         window._lastSegmentDay = undefined;
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
 
-        const cid = `route-map-day${day}`;
-        const expObj = window.expandedMaps && window.expandedMaps[cid];
-        if (expObj && expObj.expandedMap) {
-          let fitted = false;
-          expObj.expandedMap.eachLayer(layer => {
-            if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-              try {
-                expObj.expandedMap.fitBounds(layer.getBounds(), { padding: [20, 20] });
-                fitted = true;
-              } catch(_) {}
-            }
-          });
-          if (!fitted && expObj.expandedMap._initialView) {
-            expObj.expandedMap.setView(
-              expObj.expandedMap._initialView.center,
-              expObj.expandedMap._initialView.zoom,
-              { animate: true }
-            );
-          }
-        }
-
+        // Selection kutusunu gizle
         const selection = container.querySelector('.scale-bar-selection');
         if (selection) selection.style.display = 'none';
 
+        // --- 2. ZOOM RESETLEME (GÜNCELLENDİ) ---
+        // Hem küçük harita hem büyük harita için tüm noktaları kapsayan alana (bounds) dön
+        const allPoints = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+        const validPoints = allPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
+
+        if (validPoints.length > 0) {
+            const bounds = L.latLngBounds(validPoints.map(p => [p.lat, p.lng]));
+            const cid = `route-map-day${day}`;
+
+            // A) Genişletilmiş Harita (Expanded Map) Varsa Zoom Resetle
+            const expObj = window.expandedMaps && window.expandedMaps[cid];
+            if (expObj && expObj.expandedMap) {
+                if (validPoints.length > 1) {
+                    expObj.expandedMap.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 0.8 });
+                } else {
+                    expObj.expandedMap.setView([validPoints[0].lat, validPoints[0].lng], 14, { animate: true });
+                }
+            }
+
+            // B) Küçük Harita (Inline Map) Varsa Zoom Resetle
+            const smallMap = window.leafletMaps && window.leafletMaps[cid];
+            if (smallMap) {
+                if (validPoints.length > 1) {
+                    smallMap.fitBounds(bounds, { padding: [20, 20], animate: true, duration: 0.8 });
+                } else {
+                    smallMap.setView([validPoints[0].lat, validPoints[0].lng], 14, { animate: true });
+                }
+            }
+        }
+
+        // --- 3. SCALE BAR RESETLEME ---
         container._elevStartKm = 0;
         container._elevKmSpan  = totalKm;
 
