@@ -5974,10 +5974,10 @@ async function expandMap(containerId, day) {
   console.log('[expandMap] start →', containerId, 'day=', day);
 
   if (window.expandedMaps && window.expandedMaps[containerId]) {
-    console.log('[expandMap] already expanded, returning');
     return;
   }
 
+  // Diğer açık haritaları kapat
   if (window.expandedMaps) {
     Object.keys(window.expandedMaps).forEach(otherId => {
       if (otherId !== containerId) {
@@ -5990,7 +5990,7 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // Butonu Pasif Yapma
+  // Butonları pasif yapma işlemi
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   const expandBtns = [];
   if (controlsBar) {
@@ -6007,32 +6007,18 @@ async function expandMap(containerId, day) {
       btn.disabled = true;
       btn.style.pointerEvents = 'none';
       btn.style.opacity = '0.6';
-      btn.style.cursor = 'default';
-      btn.style.borderColor = '#ccc';
-      btn.style.background = '#f9f9f9';
-      
-      const img = btn.querySelector('img');
-      if (img) img.style.filter = 'grayscale(100%)';
-
+      btn.style.filter = 'grayscale(100%)';
       const label = btn.querySelector('.tm-label');
-      if (label) {
-          label.textContent = 'Map Expanded';
-          label.style.color = '#888';
-      }
+      if (label) label.textContent = 'Map Expanded';
   });
 
   if (!originalContainer) {
-    console.error('[expandMap] original small map container yok. İptal.');
-    return;
+    ensureDayMapContainer(day); 
   }
-  if (!map) {
-    console.warn('[expandMap] Leaflet instance yok. Yeniden initEmptyDayMap çağrılıyor…');
-    initEmptyDayMap(day);
-  }
+  
+  if (originalContainer) originalContainer.style.display = 'none';
 
-  originalContainer.style.display = 'none';
-
-  // === HEADER DIV ===
+  // === HEADER OLUŞTURMA ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
 
@@ -6108,11 +6094,6 @@ async function expandMap(containerId, day) {
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-expanded-map';
   closeBtn.textContent = '✕ Close';
-  closeBtn.style.cssText = `
-    position:absolute;top:16px;right:16px;z-index:10001;
-    background:#ff4444;color:#fff;border:none;padding:8px 12px;
-    border-radius:4px;font-weight:500;cursor:pointer;
-  `;
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
 
@@ -6154,14 +6135,12 @@ async function expandMap(containerId, day) {
     center: startCenter,
     zoom: startZoom,
     scrollWheelZoom: true,
-    // --- KESİN ÇÖZÜM AYARLARI ---
-    fadeAnimation: false,       // Animasyonları kapat (Senkronizasyon için)
-    zoomAnimation: false,       // Zoom animasyonunu kapat
-    markerZoomAnimation: false, // Marker animasyonunu kapat
-    inertia: false,             // EYLEMSİZLİĞİ KAPAT (Kaymanın %90 sebebi budur)
-    preferCanvas: true,         // Vektörleri Canvas'a çiz (Performans artar)
-    renderer: L.canvas({ padding: 0.5 }), // Harita dışına taşan çizim yap (Yırtılmayı önler)
-    // ----------------------------
+    fadeAnimation: false,
+    zoomAnimation: false,
+    markerZoomAnimation: false,
+    inertia: false,
+    preferCanvas: true,
+    renderer: L.canvas({ padding: 0.5 }), 
     zoomSnap: 0.25,
     zoomDelta: 0.25,
     wheelDebounceTime: 35,
@@ -6243,25 +6222,20 @@ async function expandMap(containerId, day) {
     expandedMapInstance.options.maxZoom = 19;
   } catch(e){}
 
-  // --- GARANTİ ODAKLAMA: Timeout içinde veriyi tekrar çek ---
+  // --- GARANTİ ODAKLAMA ---
   setTimeout(() => {
       expandedMapInstance.invalidateSize();
-      
-      // Veriyi o anki durumdan tekrar al (Cart güncellenmiş olabilir)
       const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
       const currentValidPts = currentPts.filter(p => isFinite(p.lat) && isFinite(p.lng));
 
       if (currentValidPts.length > 0) {
           if (currentValidPts.length === 1) {
-             // Tek nokta varsa oraya kesin zoom yap
              expandedMapInstance.setView([currentValidPts[0].lat, currentValidPts[0].lng], 14, { animate: false });
           } else {
-             // Çok nokta varsa hepsini kapsa
              const b = L.latLngBounds(currentValidPts.map(p => [p.lat, p.lng]));
              expandedMapInstance.fitBounds(b, { padding: [50, 50], animate: false });
           }
       } else {
-          // Nokta yoksa Türkiye geneli
           expandedMapInstance.setView([39.0, 35.0], 6);
       }
   }, 200);
@@ -6299,9 +6273,12 @@ async function expandMap(containerId, day) {
   if (typeof setupScaleBarInteraction === 'function') {
     setupScaleBarInteraction(day, expandedMapInstance);
   }
+  
+  // Tıklama olayını en başta çağırıyoruz
   if (typeof attachClickNearbySearch === 'function') {
     attachClickNearbySearch(expandedMapInstance, day);
   }
+  
   if (typeof adjustExpandedHeader === 'function') {
     adjustExpandedHeader(day);
   }
@@ -6342,27 +6319,32 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 
-  // --- EKLENECEK KISIM (FIX) ---
-  // Tek nokta (0 km) durumunda harita etkileşimini ve cursor'ı düzelt
+  // --- KRİTİK DÜZELTME: Tek Nokta Etkileşim Fixi ---
+  // (Harita yüklendikten 300ms sonra çalışır)
   setTimeout(() => {
-      // 1. Harita container'ına 'grab' imlecini zorla
+      // 1. Tıklama olayını (Nearby Search) ZORLA TEKRAR BAĞLA
+      if (typeof attachClickNearbySearch === 'function') {
+          // Önce temizle (varsa) sonra ekle, çakışmayı önle
+          if(expandedMapInstance.__ttNearbyClickBound) {
+             expandedMapInstance.off('click', expandedMapInstance.__ttNearbyClickHandler);
+             expandedMapInstance.__ttNearbyClickBound = false;
+          }
+          attachClickNearbySearch(expandedMapInstance, day);
+      }
+
+      // 2. İmleç (Cursor) Ayarı - 'pointer' yerine 'grab' yap
       const container = expandedMapInstance.getContainer();
       if (container) {
           container.style.cursor = 'grab';
       }
 
-      // 2. Eğer tek nokta varsa, Leaflet'in "dragging" özelliğini tazele
+      // 3. Tek nokta varsa, map dragging özelliğini resetle (takılmayı çözer)
       const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
       if (pts.length === 1) {
-          expandedMapInstance.dragging.disable();
-          setTimeout(() => { 
-              expandedMapInstance.dragging.enable(); 
-          }, 10);
-      }
-
-      // 3. Tıklama olayını en üste al (Diğer layerların engellememesi için)
-      if (typeof attachClickNearbySearch === 'function') {
-          attachClickNearbySearch(expandedMapInstance, day);
+          try {
+             expandedMapInstance.dragging.disable();
+             setTimeout(() => { expandedMapInstance.dragging.enable(); }, 10);
+          } catch(e) {}
       }
   }, 350);
 }
