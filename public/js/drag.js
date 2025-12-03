@@ -461,52 +461,46 @@ function desktopDragOver(event) {
         const rect = targetItem.getBoundingClientRect();
         const offset = event.clientY - (rect.top + rect.height / 2);
         
-        const isSameList = draggedItem.parentNode === dropZone;
+        const isNext = draggedItem.nextElementSibling === targetItem;
+        
+        // Separator'ı atlayarak önceki öğe kontrolü
+        let prevItemCheck = draggedItem.previousElementSibling;
+        if (prevItemCheck && prevItemCheck.classList.contains('distance-separator')) {
+            prevItemCheck = prevItemCheck.previousElementSibling;
+        }
+        const isPrev = prevItemCheck === targetItem;
 
-        // ÜST YARI
         if (offset < 0) {
-            // Bir sonraki elemanın üstüne geldiysek (aslında yerimiz değişmiyor)
-            if (isSameList && draggedItem.nextElementSibling === targetItem) {
+            // --- ÜST YARI ---
+            if (isNext) {
                 if (placeholder.parentNode) placeholder.remove();
                 return;
             }
-            // Listenin başındayız ve en başa koymaya çalışıyoruz (zaten baştayız)
-            if (isSameList && !draggedItem.previousElementSibling && targetItem === dropZone.firstElementChild) {
-                if (placeholder.parentNode) placeholder.remove();
-                return;
-            }
-
             dropZone.insertBefore(placeholder, targetItem);
-        } 
-        // ALT YARI
-        else {
-            // Separator kontrolü
-            let nextNode = targetItem.nextSibling;
-            if (nextNode && nextNode.classList.contains('distance-separator')) {
-                nextNode = nextNode.nextSibling;
-            }
-
-            // Bir önceki elemanın altına geldiysek (yerimiz değişmiyor)
-            if (isSameList && nextNode === draggedItem) {
+        } else {
+            // --- ALT YARI ---
+            if (isPrev) {
                 if (placeholder.parentNode) placeholder.remove();
                 return;
             }
 
-            dropZone.insertBefore(placeholder, nextNode);
+            // --- FIX: Separator (km/süre) Kontrolü ---
+            // Hedefin altında separator varsa, ondan sonraya ekle
+            let insertionPoint = targetItem.nextSibling;
+            if (insertionPoint && insertionPoint.classList.contains('distance-separator')) {
+                insertionPoint = insertionPoint.nextSibling;
+            }
+            
+            dropZone.insertBefore(placeholder, insertionPoint);
         }
     } 
     // --- SENARYO 2: Listenin En Altı veya Boşluk ---
     else if (!targetItem) {
-        // Eğer zaten bu listenin son elemanıysak
         if (draggedItem.parentNode === dropZone) {
-            let nextEl = draggedItem.nextElementSibling;
-            // Araya giren separator/placeholder varsa atla, gerçek item ara
-            while(nextEl && (nextEl === placeholder || nextEl.classList.contains('distance-separator'))) {
-                nextEl = nextEl.nextElementSibling;
-            }
+            const siblings = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging)'));
+            const lastItem = siblings[siblings.length - 1];
 
-            // Eğer bizden sonra sadece buton varsa veya hiçbir şey yoksa -> GÖSTERME
-            if (!nextEl || nextEl.classList.contains('add-more-btn')) {
+            if (draggedItem === lastItem) {
                 if (placeholder.parentNode) placeholder.remove();
                 return;
             }
