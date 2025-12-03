@@ -3029,20 +3029,18 @@ function initEmptyDayMap(day) {
   }
 
   if (!el.style.height) el.style.height = '285px';
+  // [FIX] Yükleme sırasında gri ekran yerine harita zemin rengi
+  el.style.backgroundColor = "#eef0f5"; 
   
-  // --- KONUM BELİRLEME MANTIĞI (GÜNCELLENDİ) ---
-  
-  // 1. Önce bu güne ait noktaları al
+  // --- KONUM BELİRLEME MANTIĞI ---
   const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
   
-  // varsayılan: [0,0] yerine Türkiye Ortası
-  let startCenter = [39.0, 35.0]; 
+  let startCenter = [39.0, 35.0]; // Varsayılan Türkiye
   let startZoom = 5;
   let startBounds = null;
-  let hasFocus = false; // Bir odak noktası bulduk mu?
+  let hasFocus = false;
 
-  // DURUM A: Bu günün zaten noktaları var (Düzenleme modu veya AddNewDay ile kopyalanan nokta)
   if (validPts.length > 0) {
       if (validPts.length === 1) {
           startCenter = [validPts[0].lat, validPts[0].lng];
@@ -3054,13 +3052,10 @@ function initEmptyDayMap(day) {
       }
       hasFocus = true;
   } 
-  // DURUM B: Bu gün boş ama ÖNCEKİ GÜN var (Fallback)
   else if (day > 1 && typeof getDayPoints === 'function') {
       const prevPoints = getDayPoints(day - 1);
       const validPrevPts = prevPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
-      
       if (validPrevPts.length > 0) {
-          // Önceki günün EN SON noktasını al
           const lastPt = validPrevPts[validPrevPts.length - 1];
           startCenter = [lastPt.lat, lastPt.lng];
           startZoom = 12; 
@@ -3068,48 +3063,48 @@ function initEmptyDayMap(day) {
       }
   }
 
-  // 3. Haritayı belirlenen konumda başlat
   const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
     scrollWheelZoom: true,
     fadeAnimation: false,
-    zoomAnimation: true,
-    zoomAnimationThreshold: 8,
-    zoomSnap: 0.25,
-    zoomDelta: 0.25,
-    wheelDebounceTime: 35,
-    wheelPxPerZoomLevel: 120,
-    inertia: true,
-    easeLinearity: 0.2,
+    zoomAnimation: false,
+    inertia: false
   });
 
-  // 4. Eğer sınır kutusu (bounds) varsa ona sığdır
   if (startBounds && startBounds.isValid()) {
-      map.fitBounds(startBounds, { 
-          padding: [20, 20], 
-          animate: false 
-      });
+      map.fitBounds(startBounds, { padding: [20, 20], animate: false });
   }
   
-  // 5. GPS Kullanımı (Sadece hiçbir odak noktası bulunamadıysa)
   if (!hasFocus && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(pos) {
       const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
       if (currentPts.length === 0) {
           map.whenReady(function() {
             try {
-               map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true });
+               map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: false });
             } catch(e) {}
           });
       }
     }, function(err) {}, { timeout: 3000 });
   }
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
+  // --- [FIX] OSM YERİNE OPENFREEMAP ---
+  const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
+  if (typeof L.maplibreGL === 'function') {
+      L.maplibreGL({
+          style: openFreeMapStyle,
+          attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+          interactive: true
+      }).addTo(map);
+  } else {
+      // Sadece kütüphane yüklenemediyse OSM fallback
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+  }
+  // ------------------------------------
   
   if (!map._initialView) {
     map._initialView = {
@@ -5369,7 +5364,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
-    // Harita zaten varsa temizle
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         window.leafletMaps[containerId].remove();
         delete window.leafletMaps[containerId];
@@ -5378,7 +5372,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.innerHTML = "";
     sidebarContainer.style.height = "285px";
     sidebarContainer.classList.remove("big-map", "full-screen-map");
-    // [FIX] Harita yüklenirken beyaz/gri flash patlamasını önlemek için zemin rengi
+    // [FIX] Arka plan rengi (beyaz flashı önler)
     sidebarContainer.style.backgroundColor = "#eef0f5"; 
 
     // Route summary and controls
@@ -5428,38 +5422,27 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // Haritayı oluştur
     const map = L.map(containerId, { 
         scrollWheelZoom: true,
-        fadeAnimation: true, // Yumuşak geçiş için true
-        zoomAnimation: true,
-        inertia: false
+        fadeAnimation: false,
+        zoomAnimation: false,
     });
 
-    // --- HARİTA ZEMİNİ (TILE LAYER) ---
-    const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
-
+    // --- [FIX] KESİN OPENFREEMAP ENTEGRASYONU ---
     if (typeof L.maplibreGL === 'function') {
-        // 1. Önce MapLibre (Vektör) Katmanını Ekle
-        const glLayer = L.maplibreGL({
-            style: openFreeMapStyle,
+        L.maplibreGL({
+            style: 'https://tiles.openfreemap.org/styles/bright',
             attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
             interactive: true
-        });
-        
-        // [FIX] OSM görünme sorununu çözmek için layer'ı hemen ekle
-        glLayer.addTo(map);
-
+        }).addTo(map);
     } else {
-        // Fallback: Sadece kütüphane yüklenemediyse OSM kullan (Normalde buraya girmez)
-        console.warn('L.maplibreGL not found, using OSM fallback.');
+        // Fallback sadece zorunluysa
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            maxZoom: 19, attribution: '© OpenStreetMap'
         }).addTo(map);
     }
-    // ----------------------------------------------------------------
+    // --------------------------------------------
 
     let bounds = L.latLngBounds();
 
-    // Tek marker durumu
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (points.length === 1) {
         L.marker([points[0].lat, points[0].lng], {
