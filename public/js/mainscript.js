@@ -3657,13 +3657,12 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
 
       const li = document.createElement("li");
       li.className = "travel-item";
-      li.draggable = true;
+      // li.draggable = true;  <-- SİLİNDİ (Yeni drag.js buna ihtiyaç duymaz)
       li.dataset.index = currIdx;
       if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
         li.setAttribute("data-lat", item.location.lat);
         li.setAttribute("data-lon", item.location.lng);
       }
-      li.addEventListener("dragstart", dragStart);
 
       // --- MARKER HTML YAPISI (Senin İstediğin) ---
       // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
@@ -3958,7 +3957,7 @@ cartDiv.appendChild(addNewDayButton);
     renderRouteForDay(d);
   });
   setTimeout(wrapRouteControlsForAllDays, 0);
-  attachChatDropListeners();
+
 
   if (window.expandedMaps) {
     Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
@@ -3966,8 +3965,7 @@ cartDiv.appendChild(addNewDayButton);
     });
   }
 
-  initDragDropSystem();
-  if (typeof interact !== 'undefined') setupMobileDragDrop();
+ 
   setupSidebarAccordion();
 
   renderTravelModeControlsForAllDays();
