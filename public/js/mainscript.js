@@ -6071,8 +6071,8 @@ async function expandMap(containerId, day) {
     center: [0, 0],
     zoom: 2,         
     scrollWheelZoom: true,
-    fadeAnimation: true,
-    zoomAnimation: true,
+    fadeAnimation: true,      // <-- BUNU false YAP
+    zoomAnimation: true,      // <-- BUNU false YAP
     zoomAnimationThreshold: 8,
     zoomSnap: 0.25,
     zoomDelta: 0.25,
