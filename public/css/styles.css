@@ -7368,4 +7368,31 @@ scrollbar-width: thin;
 
     
 
-    
+
+
+    /* Leaflet Harita Kayma Düzeltmesi (Global CSS Çakışmalarını Önler) */
+.leaflet-container img {
+    max-width: none !important;
+    width: auto !important;
+}
+
+.leaflet-container {
+    /* Donanım hızlandırmasını zorla, akıcılık sağlar */
+    transform: translate3d(0,0,0);
+}
+
+/* Harita katmanlarının senkronize hareket etmesini sağlar */
+.leaflet-map-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
