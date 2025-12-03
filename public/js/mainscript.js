@@ -4559,7 +4559,7 @@ function updateExpandedMap(expandedMap, day) {
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // Scale Bar işlemleri (Aynen kalsın)
+    // Scale Bar işlemleri
     const sumKey = `route-map-day${day}`;
     let sum = window.lastRouteSummaries?.[sumKey];
     if (!sum && pts.length > 1 && !isInTurkey) {
@@ -4603,7 +4603,12 @@ function updateExpandedMap(expandedMap, day) {
     setTimeout(() => { setupScaleBarInteraction(day, expandedMap); }, 500);
     adjustExpandedHeader(day);
 
-    // --- MOBIL ATTRIBUTION FIX (SONA EKLENDİ) ---
+    // --- 1. DÜZELTME: NEARBY SEARCH GARANTİSİ ---
+    if (typeof attachClickNearbySearch === 'function') {
+        attachClickNearbySearch(expandedMap, day);
+    }
+
+    // --- 2. DÜZELTME: MOBİL ATTRIBUTION FIX ---
     // Leaflet yazısını haritadan alıp, FIXED olan scalebar panelinin içine taşırız.
     setTimeout(() => {
         // 1. Ana expanded container'ı bul
@@ -4618,11 +4623,20 @@ function updateExpandedMap(expandedMap, day) {
 
         if (fixedPanel && attribution) {
             // Attribution'ı panelin içine taşı (Böylece panel fixed olduğu için bu da fixed olur)
-            fixedPanel.appendChild(attribution);            
-        
+            fixedPanel.appendChild(attribution);
+            
+            // SADECE KONUM AYARLARI (Renk/Font yok, sadece sağ alta kilitle)
+            attribution.style.position = 'absolute';
+            attribution.style.bottom = '0px';
+            attribution.style.right = '0px';
+            attribution.style.margin = '0';
+            attribution.style.padding = '0 4px';
+            attribution.style.zIndex = '2000';
+            attribution.style.background = 'transparent'; // Panel zaten beyaz
+            attribution.style.pointerEvents = 'auto'; 
+            attribution.style.whiteSpace = 'nowrap'; // Mobilde tek satır kalsın
         }
     }, 600); 
-    // ---------------------------------------------
 }
 
 // 2. renderRouteForDay Fonksiyonunu Güncelle (Türkiye içi fallback'i temizle)
