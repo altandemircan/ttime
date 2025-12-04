@@ -14,7 +14,7 @@ function injectDragStyles() {
             width: var(--ghost-width);
             height: var(--ghost-height);
             margin: 0 !important;
-            will-change: left, top; 
+            will-change: top; /* Sadece top değişecek, left sabit */
             transition: none !important;
         }
         .insertion-placeholder {
@@ -38,14 +38,13 @@ function injectDragStyles() {
         }
         
         /* --- SÜRÜKLEME SIRASINDA GİZLENECEK ELEMENTLER --- */
-        /* NOT: .distance-separator listesinden çıkarıldı, artık görünür kalacak */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
         body.hide-map-details .add-more-btn,
-        body.hide-map-details .route-info, /* Uyarı mesajlarını gizler */
+        body.hide-map-details .route-info, 
         body.hide-map-details [id^="route-info-day"], 
-        body.hide-map-details .route-scale-bar /* Scale bar'ı gizler */
+        body.hide-map-details .route-scale-bar
         {
             display: none !important;
         }
@@ -56,7 +55,7 @@ function injectDragStyles() {
         body.dragging-active {
             user-select: none !important;
             cursor: grabbing !important;
-            touch-action: none !important; /* Mobilde native scrollu kitle */
+            touch-action: none !important; 
         }
     `;
     const style = document.createElement('style');
@@ -73,7 +72,10 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-let dragShiftX = 0, dragShiftY = 0;
+// Axis Locking için değişkenler
+let dragShiftY = 0;
+let initialGhostLeft = 0; // Sadece dikey hareket için X'i sabitleyeceğiz
+
 let startX = 0, startY = 0;
 let longPressTimer;
 const LONG_PRESS_MS = 200;
@@ -82,8 +84,8 @@ const LONG_PRESS_MS = 200;
 let autoScrollSpeed = 0;
 let autoScrollFrame = null;
 let scrollContainer = null;
-const SCROLL_THRESHOLD = 100; // Kenarlara 100px kala başla
-const MAX_SCROLL_SPEED = 28;  // Hız limiti
+const SCROLL_THRESHOLD = 100; 
+const MAX_SCROLL_SPEED = 28;  
 
 let lastClientX = 0, lastClientY = 0;
 
@@ -179,13 +181,16 @@ function calculateScrollSpeed(clientY) {
 
     const relativeY = clientY - containerTop;
 
+    // YUKARI KAYDIRMA
     if (relativeY < SCROLL_THRESHOLD) {
         const intensity = (SCROLL_THRESHOLD - relativeY) / SCROLL_THRESHOLD;
         autoScrollSpeed = -MAX_SCROLL_SPEED * intensity;
     } 
+    // AŞAĞI KAYDIRMA (HIZ ARTIRILDI)
     else if (relativeY > (containerHeight - SCROLL_THRESHOLD)) {
         const intensity = (relativeY - (containerHeight - SCROLL_THRESHOLD)) / SCROLL_THRESHOLD;
-        autoScrollSpeed = MAX_SCROLL_SPEED * intensity;
+        // * 1.3 diyerek aşağı kaydırmayı %30 hızlandırdık
+        autoScrollSpeed = (MAX_SCROLL_SPEED * intensity) * 1.3; 
     } 
     else {
         autoScrollSpeed = 0;
@@ -249,7 +254,9 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    ghost.style.left = (clientX - dragShiftX) + 'px';
+    // --- AXIS LOCKING İÇİN SABİT X DEĞERİ ---
+    // Ghost'u oluştururken orijinal X pozisyonunu kullanıyoruz ve hep orada tutacağız.
+    ghost.style.left = rect.left + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
     
     document.body.appendChild(ghost);
@@ -258,7 +265,10 @@ function createDragGhost(item, clientX, clientY) {
 function updateDragGhost(clientX, clientY) {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
-    ghost.style.left = (clientX - dragShiftX) + 'px';
+    
+    // --- SADECE Y EKSENİNDE GÜNCELLEME ---
+    // clientX kullanılmıyor, initialGhostLeft kullanılıyor.
+    ghost.style.left = initialGhostLeft + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
 }
 
@@ -277,7 +287,14 @@ function getDragAfterElement(container, y) {
 }
 
 function updatePlaceholder(clientX, clientY) {
-    const elementBelow = document.elementFromPoint(clientX, clientY);
+    // --- X KİLİTLEME DÜZELTMESİ ---
+    // Kullanıcı parmağını çok sağa veya sola kaydırsa bile, 
+    // biz elementFromPoint'i sanki listenin ortasındaymış gibi kontrol edelim.
+    // Böylece ghost item dışarı taşsa bile placeholder doğru yerde çıkar.
+    const rect = draggedItem.getBoundingClientRect(); // Orijinal öğenin genişliği
+    const centerX = initialGhostLeft + (rect.width / 2);
+
+    const elementBelow = document.elementFromPoint(centerX, clientY);
     if (!elementBelow) return;
     
     const dropZone = elementBelow.closest('.day-list');
@@ -310,9 +327,12 @@ function handleTouchStart(e) {
 
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
+    
     const rect = item.getBoundingClientRect();
-    dragShiftX = startX - rect.left;
-    dragShiftY = startY - rect.top;
+    
+    // --- AXIS LOCK DEĞİŞKENLERİ ---
+    initialGhostLeft = rect.left; // Sabit X konumu
+    dragShiftY = startY - rect.top; // Sadece Y ofseti lazım
     
     longPressTimer = setTimeout(() => startDrag(item, startX, startY), LONG_PRESS_MS);
 }
@@ -354,7 +374,9 @@ function setupDesktopListeners() {
             startY = e.clientY;
             
             const rect = item.getBoundingClientRect();
-            dragShiftX = startX - rect.left;
+            
+            // Desktop için de Axis Lock
+            initialGhostLeft = rect.left;
             dragShiftY = startY - rect.top;
 
             let isDragStarted = false;
