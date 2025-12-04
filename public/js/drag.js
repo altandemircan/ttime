@@ -13,11 +13,15 @@ function injectDragStyles() {
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
-            top: 0; left: 0;
+            /* Başlangıç noktasını kesin olarak sol üste sabitliyoruz */
+            top: 0 !important;
+            left: 0 !important;
             margin: 0 !important;
-            will-change: transform;
+            /* Performans ayarları */
+            will-change: transform; 
             transition: none !important;
-            transform: scale(1.02);
+            transform-origin: center center;
+            transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(1.02);
         }
         .insertion-placeholder {
             height: 6px !important;
@@ -102,6 +106,7 @@ let scrollContainer = null;
 const SCROLL_THRESHOLD = 140; 
 const MAX_SCROLL_SPEED = 35;  
 
+// Mouse/Touch koordinatları
 let lastClientX = 0, lastClientY = 0;
 
 // ========== INITIALIZATION ==========
@@ -114,11 +119,9 @@ function initDragDropSystem() {
     cleanupDrag();
 
     if (isMobile) {
-        // Passive: false önemli, scroll engellemek için
         document.body.addEventListener('touchstart', handleTouchStart, { passive: false });
         document.body.addEventListener('touchmove', handleTouchMove, { passive: false });
         document.body.addEventListener('touchend', handleTouchEnd);
-        // CRITICAL FIX: Touchcancel (Parmak kaybolursa/sistem araya girerse yakala)
         document.body.addEventListener('touchcancel', handleTouchEnd);
     } else {
         setupDesktopListeners();
@@ -128,10 +131,7 @@ function initDragDropSystem() {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
 
-    // Pencere odağı kaybederse (alt-tab, bildirim gelmesi vs.) işlemi bitir
     window.addEventListener('blur', () => { if (draggedItem) finishDrag(); });
-    // Global pointerup failsafe
-    window.addEventListener('pointerup', () => { if (draggedItem && isMobile) finishDrag(); });
 }
 
 // ========== HELPER: FIND SCROLL PARENT ==========
@@ -254,10 +254,15 @@ function updateDragGhostVisuals() {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    const targetY = (lastClientY - dragShiftY) - mobileOffsetY;
-    const targetX = initialGhostLeft;
+    // Güvenlik: Eğer koordinat 0 ise (henüz update olmadıysa) işlem yapma
+    if (lastClientY === 0) return;
 
-    ghost.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) scale(1.02)`;
+    const targetY = (lastClientY - dragShiftY) - mobileOffsetY;
+    const targetX = initialGhostLeft; // X ekseni kilitli
+
+    // CSS variable ile güncelle (Daha performanslı)
+    ghost.style.setProperty('--tx', `${targetX}px`);
+    ghost.style.setProperty('--ty', `${targetY}px`);
 }
 
 function updatePlaceholderLogic() {
@@ -266,6 +271,7 @@ function updatePlaceholderLogic() {
     const rect = draggedItem.getBoundingClientRect();
     const centerX = initialGhostLeft + (rect.width / 2);
 
+    // Placeholder kontrolü: Parmağın olduğu Y'ye göre
     const elementBelow = document.elementFromPoint(centerX, lastClientY);
     if (!elementBelow) return;
     
@@ -322,9 +328,10 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // transform ile konumlandırma için başlangıç transformunu set ediyoruz
+    // İlk render'da zıplamayı önlemek için başlangıç değerlerini ata
     const topPos = (clientY - dragShiftY) - mobileOffsetY;
-    ghost.style.transform = `translate3d(${rect.left}px, ${topPos}px, 0) scale(1.02)`;
+    ghost.style.setProperty('--tx', `${rect.left}px`);
+    ghost.style.setProperty('--ty', `${topPos}px`);
     
     document.body.appendChild(ghost);
 }
@@ -343,21 +350,28 @@ function handleTouchStart(e) {
     initialGhostLeft = rect.left;
     dragShiftY = startY - rect.top;
     
+    // İlk dokunuşta da koordinatları kaydet (Güvenlik)
+    lastClientX = startX;
+    lastClientY = startY;
+    
     longPressTimer = setTimeout(() => startDrag(item, startX, startY), LONG_PRESS_MS);
 }
 
 function handleTouchMove(e) {
+    // 1. Koordinatları her zaman güncelle (Sürükleme başlamasa bile!)
+    // Bu, 0,0 noktasına zıplama sorununu çözer.
+    lastClientX = e.touches[0].clientX;
+    lastClientY = e.touches[0].clientY;
+
     if (!isDragging) {
-        const dx = Math.abs(e.touches[0].clientX - startX);
-        const dy = Math.abs(e.touches[0].clientY - startY);
+        const dx = Math.abs(lastClientX - startX);
+        const dy = Math.abs(lastClientY - startY);
+        // Çok hareket ederse drag iptal (kullanıcı scroll yapıyor olabilir)
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
     
     if (e.cancelable) e.preventDefault();
-    
-    lastClientX = e.touches[0].clientX;
-    lastClientY = e.touches[0].clientY;
 }
 
 function handleTouchEnd() {
@@ -380,6 +394,9 @@ function setupDesktopListeners() {
             
             initialGhostLeft = rect.left;
             dragShiftY = startY - rect.top;
+            
+            lastClientX = startX;
+            lastClientY = startY;
 
             let isDragStarted = false;
 
@@ -391,6 +408,10 @@ function setupDesktopListeners() {
 
                 const clientX = moveEvent.clientX;
                 const clientY = moveEvent.clientY;
+                
+                // Desktopta da koordinatları hemen güncelle
+                lastClientX = clientX;
+                lastClientY = clientY;
 
                 if (!isDragStarted) {
                     const dx = Math.abs(clientX - startX);
@@ -399,11 +420,6 @@ function setupDesktopListeners() {
                         isDragStarted = true;
                         startDrag(item, clientX, clientY);
                     }
-                }
-                
-                if (isDragStarted) {
-                    lastClientX = clientX;
-                    lastClientY = clientY;
                 }
             };
 
@@ -424,6 +440,7 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     scrollContainer = getScrollParent(item);
     
+    // Garanti olsun diye tekrar set et
     lastClientX = x;
     lastClientY = y;
 
