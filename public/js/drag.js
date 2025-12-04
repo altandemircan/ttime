@@ -19,12 +19,11 @@ function injectDragStyles() {
             transform: scale(1.02);
         }
         .insertion-placeholder {
-            height: 50px !important;
-            background: rgba(138, 74, 243, 0.1); 
-            border: 2px dashed rgba(138, 74, 243, 0.4);
-            margin: 4px 0;
-            border-radius: 8px;
-            transition: all 0.15s ease-out;
+            height: 6px !important;
+            background: linear-gradient(90deg, #8a4af3, #b388ff); 
+            margin: 8px 0;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(138, 74, 243, 0.5); 
             pointer-events: none;
         }
         @keyframes shakeError {
@@ -53,7 +52,7 @@ function injectDragStyles() {
         body.hide-map-details .add-more-btn,
         body.hide-map-details .add-new-day-btn,
         body.hide-map-details #add-new-day-button,
-        body.hide-map-details .add-new-day-separator, /* Çizgiyi de gizle */
+        body.hide-map-details .add-new-day-separator, 
 
         /* 3. AI ve Üst Menü Elemanları */
         body.hide-map-details .ai-info-section,
@@ -116,6 +115,7 @@ function initDragDropSystem() {
     injectDragStyles();
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
+    // Mobilde item'ı parmağın yukarısında tut
     mobileOffsetY = isMobile ? 85 : 0; 
 
     cleanupDrag();
@@ -316,6 +316,7 @@ function getDragAfterElement(container, y) {
 
 function updatePlaceholder(clientX, clientY) {
     const rect = draggedItem.getBoundingClientRect();
+    // X eksenini ghost'un orijinal pozisyonuna göre sabitle
     const centerX = initialGhostLeft + (rect.width / 2);
 
     const elementBelow = document.elementFromPoint(centerX, clientY);
@@ -327,7 +328,7 @@ function updatePlaceholder(clientX, clientY) {
     if (!placeholder) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
-        placeholder.style.height = (rect.height > 60 ? 60 : rect.height) + 'px';
+        // Placeholder yüksekliğini CSS hallediyor (6px)
     }
     
     const afterElement = getDragAfterElement(dropZone, clientY);
