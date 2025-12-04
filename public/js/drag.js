@@ -1,3 +1,61 @@
+// ========== DRAG & DROP STYLES (INJECTED) ==========
+function injectDragStyles() {
+    const styleId = 'tt-drag-drop-styles';
+    if (document.getElementById(styleId)) return;
+
+    const css = `
+        /* Sürüklenen Öğe (Mobil & Desktop Clone) */
+        .travel-item.dragging, #drag-clone {
+            position: fixed !important;
+            z-index: 10000 !important;
+            pointer-events: none !important; /* Altını görmesi için şart */
+            
+            /* Görsel Efektler */
+            transform: scale(1.02) !important;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25) !important;
+            background-color: #fff !important;
+            opacity: 0.98 !important;
+            border-radius: 12px !important;
+            border: 2px solid #8a4af3 !important;
+            
+            /* Performans */
+            will-change: left, top;
+            transition: none !important; /* Anlık takip için geçiş yok */
+            margin: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Orijinal Öğe (Arkada kalan) */
+        .travel-item.dragging-source {
+            opacity: 0.2 !important;
+            filter: grayscale(100%);
+        }
+
+        /* Yerleşim Çizgisi (Placeholder) */
+        .insertion-placeholder {
+            height: 6px !important;
+            background: linear-gradient(90deg, #8a4af3, #b388ff) !important;
+            margin: 8px 0 !important;
+            border-radius: 4px !important;
+            box-shadow: 0 0 10px rgba(138, 74, 243, 0.4);
+            pointer-events: none !important;
+        }
+
+        /* Sayfa Kilidi */
+        body.dragging-active {
+            overflow: hidden !important;
+            touch-action: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+    `;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = css;
+    document.head.appendChild(style);
+}
+
 // ========== GLOBAL VARIABLES ==========
 if (!window.cart || !Array.isArray(window.cart)) window.cart = [];
 
@@ -8,11 +66,11 @@ let currentDropZone = null;
 let touchStartX = 0;
 let touchStartY = 0;
 
-// Mobil Sürükleme için Global Değişkenler
 let mobileDragOffsetX = 0;
 let mobileDragOffsetY = 0;
+let desktopDragOffsetX = 0;
+let desktopDragOffsetY = 0;
 
-// Long-press state
 let longPressTimer = null;
 let longPressTriggered = false;
 let touchTargetItem = null;
@@ -21,6 +79,9 @@ const MOVE_CANCEL_PX = 10;
 
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
+    // Stilleri ekle
+    injectDragStyles();
+
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
     if (isMobile) {
@@ -31,41 +92,39 @@ function initDragDropSystem() {
     setupDropZones();
 }
 
-// ========== TEMİZLİK FONKSİYONU (YENİ) ==========
-// Ekranda kalan her şeyi zorla temizler
+// ========== CLEANUP ==========
 function forceCleanup() {
-    // 1. Masaüstü klonlarını sil
+    // Desktop clone temizle
     const clones = document.querySelectorAll('#drag-clone');
     clones.forEach(c => c.remove());
 
-    // 2. Mobil dragging classlarını ve stillerini temizle
+    // Sınıfları ve stilleri temizle
     document.querySelectorAll('.travel-item.dragging').forEach(item => {
         item.classList.remove('dragging');
-        item.style.cssText = ''; // Tüm inline stilleri (fixed, top, left) sil
+        item.style.cssText = ''; 
     });
 
-    // 3. Source classlarını temizle
     document.querySelectorAll('.travel-item.dragging-source').forEach(item => {
         item.classList.remove('dragging-source');
         item.style.cssText = '';
     });
 
-    // 4. Placeholder'ı sil
+    // Placeholder temizle
     if (placeholder && placeholder.parentNode) {
         placeholder.remove();
     }
     placeholder = null;
 
-    // 5. Body kilitlerini aç
+    // Body kilidini aç
     document.body.classList.remove('dragging-active');
     document.body.classList.remove('dragging-items');
     
-    // 6. Değişkenleri sıfırla
+    // Değişkenleri sıfırla
     draggedItem = null;
     currentDropZone = null;
 }
 
-// ========== MOBILE (TOUCH) LOGIC ==========
+// ========== MOBILE LOGIC ==========
 
 function initTouchDragDrop() {
     document.body.removeEventListener('touchstart', handleBodyTouchStart);
@@ -83,11 +142,6 @@ function handleBodyTouchStart(e) {
 function handleTouchStart(e, item) {
     if (e.touches.length !== 1) return;
     
-    // Yeni bir dokunuş başladığında ortalığı temizle
-    if (!longPressTriggered) {
-        // forceCleanup(); // Burası bazen double-fire yapabilir, dikkatli kullanmalı
-    }
-
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     
@@ -97,13 +151,13 @@ function handleTouchStart(e, item) {
     clearTimeout(longPressTimer);
     longPressTimer = setTimeout(() => {
         if (touchTargetItem) {
-            // Başlamadan önce temizlik yap
-            forceCleanup();
+            forceCleanup(); // Önce temizle
             activateMobileDrag(touchTargetItem, e.touches[0]);
         }
     }, LONG_PRESS_MS);
 }
 
+// Scroll kontrolü
 document.addEventListener('touchmove', function(e) {
     if (!longPressTriggered && touchTargetItem) {
         const t = e.touches[0];
@@ -126,8 +180,11 @@ function activateMobileDrag(item, touch) {
     mobileDragOffsetX = touch.clientX - rect.left;
     mobileDragOffsetY = touch.clientY - rect.top;
 
+    // Element boyutlarını sabitle
     item.style.width = rect.width + 'px';
     item.style.height = rect.height + 'px';
+    
+    // Fixed moda al
     item.style.position = 'fixed';
     item.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
     item.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
@@ -148,42 +205,36 @@ function activateMobileDrag(item, touch) {
 function handleGlobalTouchMove(e) {
     if (!longPressTriggered || !draggedItem) return;
 
-    // Varsayılan kaydırmayı engelle
-    e.preventDefault(); 
+    e.preventDefault();
     e.stopImmediatePropagation();
 
     const touch = e.touches[0];
 
-    // 1. Öğeyi hareket ettir (DOM güncellemesi)
+    // Hareketi uygula
     draggedItem.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
     draggedItem.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
 
-    // 2. Performans İyileştirmesi: Visibility aç-kapa işlemini kaldırdık.
-    // CSS'teki "pointer-events: none" sayesinde elementFromPoint 
-    // zaten sürüklenen öğeyi delip geçerek altındakini görür.
+    // Altındaki elemanı bul
+    draggedItem.style.visibility = 'hidden'; 
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    draggedItem.style.visibility = 'visible';
 
     if (!elementBelow) return;
 
     const dropZone = elementBelow.closest('.day-list');
     
+    // Placeholder yönetimi
+    if (!placeholder) {
+        placeholder = document.createElement("div");
+        placeholder.classList.add("insertion-placeholder");
+    }
+
     if (dropZone) {
-        // Dropzone değişimini yönet
         if (currentDropZone && currentDropZone !== dropZone) {
             currentDropZone.classList.remove('drop-hover');
         }
         currentDropZone = dropZone;
         currentDropZone.classList.add('drop-hover');
-
-        // Placeholder yoksa hemen oluştur (Gecikmeyi önler)
-        if (!placeholder) {
-            placeholder = document.createElement("div");
-            placeholder.classList.add("insertion-placeholder");
-            placeholder.style.height = '6px';
-            placeholder.style.margin = '8px 0';
-            placeholder.style.borderRadius = '4px';
-            placeholder.style.pointerEvents = 'none';
-        }
 
         const targetItem = elementBelow.closest('.travel-item');
         
@@ -193,21 +244,23 @@ function handleGlobalTouchMove(e) {
             const offset = touch.clientY - (rect.top + rect.height / 2);
             const isSameList = draggedItem.parentNode === dropZone;
             
-            // ÜST YARI (Insert Before)
+            // ÜST YARI
             if (offset < 0) {
                 if (isSameList && draggedItem.nextElementSibling === targetItem) {
                     if (placeholder.parentNode) placeholder.remove();
                     return;
                 }
+                // En üst kısıtlaması
                 if (isSameList && !draggedItem.previousElementSibling && targetItem === dropZone.firstElementChild) {
                      if (placeholder.parentNode) placeholder.remove();
                      return;
                 }
                 dropZone.insertBefore(placeholder, targetItem);
             } 
-            // ALT YARI (Insert After)
+            // ALT YARI
             else {
                 let nextNode = targetItem.nextSibling;
+                // Separator atlama
                 if (nextNode && nextNode.classList.contains('distance-separator')) {
                     nextNode = nextNode.nextSibling;
                 }
@@ -218,11 +271,11 @@ function handleGlobalTouchMove(e) {
                 dropZone.insertBefore(placeholder, nextNode);
             }
         } 
-        // --- SENARYO 2: Boşluk veya Buton ---
+        // --- SENARYO 2: Boşluk ---
         else {
             const addBtn = dropZone.querySelector('.add-more-btn');
             
-            // Kendi listemizdeysek ve sondayız kontrolü
+            // En alt kısıtlaması
             if (draggedItem.parentNode === dropZone) {
                 let nextEl = draggedItem.nextElementSibling;
                 while(nextEl && (nextEl === placeholder || nextEl.classList.contains('distance-separator'))) {
@@ -234,8 +287,7 @@ function handleGlobalTouchMove(e) {
                 }
             }
             
-            // Kendi üzerindeysek (Nadir durum ama güvenlik için)
-            if (elementBelow === draggedItem || elementBelow.closest('.travel-item') === draggedItem) {
+            if (targetItem === draggedItem) {
                 if (placeholder.parentNode) placeholder.remove();
                 return;
             }
@@ -292,7 +344,6 @@ function cleanupTouchDrag() {
     document.removeEventListener('touchend', handleGlobalTouchEnd);
     document.removeEventListener('touchcancel', handleGlobalTouchEnd);
 
-    // Zorla temizlik yap (Ekranda kalmayı önler)
     forceCleanup();
 }
 
@@ -308,19 +359,13 @@ function setupDesktopDragDrop() {
     });
 }
 
-// Global masaüstü offsetleri
-let desktopDragOffsetX = 0;
-let desktopDragOffsetY = 0;
-
 function desktopDragStart(event) {
     const index = event.currentTarget.dataset.index;
     if (index !== undefined) {
-        // Önceki kalıntıları temizle
         forceCleanup();
 
         draggedItem = event.currentTarget; 
         
-        // Mouse offset hesapla
         const rect = draggedItem.getBoundingClientRect();
         desktopDragOffsetX = event.clientX - rect.left;
         desktopDragOffsetY = event.clientY - rect.top;
@@ -329,7 +374,6 @@ function desktopDragStart(event) {
         event.dataTransfer.setData("source", "cart");
         event.dataTransfer.effectAllowed = "move";
         
-        // Orijinali silikleştir
         setTimeout(() => {
             if(draggedItem) draggedItem.classList.add('dragging-source');
         }, 0);
@@ -338,7 +382,6 @@ function desktopDragStart(event) {
         const clone = draggedItem.cloneNode(true);
         clone.id = 'drag-clone';
         
-        // Gereksiz içerikleri temizle
         const content = clone.querySelector('.content');
         if(content) content.style.display = 'none'; 
         
@@ -348,11 +391,9 @@ function desktopDragStart(event) {
         clone.style.left = `${rect.left}px`;
         clone.style.top = `${rect.top}px`;
         clone.style.zIndex = '99999';
-        clone.style.pointerEvents = 'none';
         
         document.body.appendChild(clone);
         
-        // Tarayıcı görüntüsünü gizle
         const emptyImg = new Image();
         emptyImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
         event.dataTransfer.setDragImage(emptyImg, 0, 0);
@@ -394,10 +435,6 @@ function desktopDragOver(event) {
     if (!placeholder) {
         placeholder = document.createElement("div");
         placeholder.classList.add("insertion-placeholder");
-        placeholder.style.height = '6px';
-        placeholder.style.margin = '8px 0';
-        placeholder.style.borderRadius = '4px';
-        placeholder.style.pointerEvents = 'none'; 
     }
 
     const targetItem = event.target.closest('.travel-item');
@@ -464,7 +501,7 @@ function desktopDrop(event) {
     event.preventDefault();
     
     if (!placeholder || !placeholder.parentNode) {
-        forceCleanup(); // Bırakma başarısızsa temizle
+        forceCleanup();
         return;
     }
 
