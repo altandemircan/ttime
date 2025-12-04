@@ -336,7 +336,8 @@ function finishDrag() {
             const conflictItem = isDuplicate(prev) ? prev : next;
             conflictItem.classList.add('shake-error');
             
-            setTimeout(() => alert("⚠️ Aynı mekanı peş peşe ekleyemezsiniz!"), 10);
+            // Notify user (İNGİLİZCE MESAJ)
+            setTimeout(() => alert("⚠️ You cannot add the same place consecutively!"), 10);
 
             cleanupDrag();
             return;
@@ -402,7 +403,8 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
         if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
     } catch (e) {
-        console.error("Sıralama hatası:", e);
+        // Konsol hatası (İNGİLİZCE)
+        console.error("Reorder error:", e);
     }
 }
 
