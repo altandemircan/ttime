@@ -1,4 +1,4 @@
-// ========== STYLES (Görsel Ayarlar) ==========
+// ========== STYLES (Visual Settings) ==========
 function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
@@ -13,14 +13,14 @@ function injectDragStyles() {
             /* Modern, tok bir yeşil (Emerald Green) */
             border: 2px dashed #87cdb5 !important; 
             
-            /* Gölgeyi de aynı tonun şeffafı yapıyoruz */
+            /* Shadow transparency */
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
             
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
             
-            /* POZİSYON AYARLARI */
+            /* POSITION SETTINGS */
             margin: 0 !important;
             
             will-change: left, top; 
@@ -37,21 +37,21 @@ function injectDragStyles() {
             pointer-events: none;
         }
 
-        /* HATA DURUMUNDA TİTREME EFEKTİ */
+        /* SHAKE EFFECT (INFO/WARNING) */
         @keyframes shakeError {
-            0% { transform: translateX(0); border-color: #ff4444; }
+            0% { transform: translateX(0); border-color: #ffa000; } /* Orange instead of red */
             25% { transform: translateX(-5px); }
             50% { transform: translateX(5px); }
             75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); border-color: #ff4444; }
+            100% { transform: translateX(0); border-color: #ffa000; }
         }
         .shake-error {
             animation: shakeError 0.4s ease-in-out;
-            border: 2px solid #ff4444 !important; /* Kırmızı çerçeve */
-            background-color: #fff8f8 !important;
+            border: 2px solid #ffa000 !important; /* Orange border for info */
+            background-color: #fffdf0 !important;
         }
 
-        /* GİZLENECEK ELEMANLAR (Harita vb.) */
+        /* ELEMENTS TO HIDE (Map etc.) */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
@@ -295,24 +295,23 @@ function finishDrag() {
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
         
-        // --- ÇAKIŞMA KONTROLÜ (DUPLICATE CHECK) ---
+        // --- DUPLICATE CHECK (INFO MODE) ---
         const sourceItemData = window.cart[sourceIndex];
         
-        // Helper: Sadece gerçek travel-item'ları bulur (separator ve butonları atlar)
+        // Helper: Find only real travel-items
         const getValidNeighbor = (startNode, direction) => {
             let sibling = direction === 'prev' ? startNode.previousElementSibling : startNode.nextElementSibling;
             while (sibling) {
-                // Eğer sürüklenen kaynaksa veya travel-item değilse (separator ise) atla
                 if (sibling.classList.contains('dragging-source') || !sibling.classList.contains('travel-item')) {
                     sibling = direction === 'prev' ? sibling.previousElementSibling : sibling.nextElementSibling;
                 } else {
-                    return sibling; // Bulduk
+                    return sibling;
                 }
             }
             return null;
         };
 
-        // 1. Önceki ve Sonraki GERÇEK öğeleri bul
+        // 1. Find Neighbors
         let prev = getValidNeighbor(placeholder, 'prev');
         let next = getValidNeighbor(placeholder, 'next');
 
@@ -321,7 +320,6 @@ function finishDrag() {
             const idx = parseInt(element.dataset.index);
             const itemData = window.cart[idx];
             
-            // Eğer cart verisi yoksa veya kendi kendisiyle karşılaştırıyorsak hata yok
             if (!itemData || idx === sourceIndex) return false;
 
             const name1 = (itemData.title || itemData.name || "").trim().toLowerCase();
@@ -330,20 +328,19 @@ function finishDrag() {
             return name1 === name2 && name1 !== "";
         };
 
-        // Eğer üstünde veya altında aynısı varsa
+        // 2. CHECK & NOTIFY (BUT DO NOT BLOCK)
         if (isDuplicate(prev) || isDuplicate(next)) {
-            // Hata efekti ver
+            // Visual cue (Orange shake)
             const conflictItem = isDuplicate(prev) ? prev : next;
             conflictItem.classList.add('shake-error');
             
-            // Notify user (İNGİLİZCE MESAJ)
-            setTimeout(() => alert("⚠️ You cannot add the same place consecutively!"), 10);
-
-            cleanupDrag();
-            return;
+            // Informational Alert
+            setTimeout(() => alert("ℹ️ Note: You added the same place consecutively."), 10);
+            
+            // REMOVED: return and cleanupDrag(); -> Flow continues!
         }
 
-        // --- HATA YOKSA DEVAM ET ---
+        // --- CONTINUE TO DROP ---
         const toDay = parseInt(dropList.dataset.day);
         
         let realIndex = 0;
@@ -403,12 +400,11 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
         if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
     } catch (e) {
-        // Konsol hatası (İNGİLİZCE)
         console.error("Reorder error:", e);
     }
 }
 
-// ========== BAŞLATMA ==========
+// ========== INITIALIZATION ==========
 window.initDragDropSystem = initDragDropSystem;
 if(document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initDragDropSystem);
