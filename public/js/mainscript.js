@@ -4178,55 +4178,55 @@ cartDiv.appendChild(addNewDayButton);
   tripTitleDiv.insertAdjacentElement('afterend', btnDiv);
 })();
 
-  setTimeout(() => {
-    document.querySelectorAll('.day-list').forEach(dayList => {
-      // Sortable zaten varsa tekrar kurma, yoksa kur
-      if (!dayList._sortableSetup) {
-        Sortable.create(dayList, {
-          animation: 150,
-          handle: '.drag-icon', // Sadece ikondan tutunca sürükler
-          // handle: '.travel-item', // (Opsiyonel) Tüm satırdan tutunca sürüklesin istersen bunu aç
-          onEnd: function (evt) {
-            const day = Number(dayList.dataset.day);
+  // setTimeout(() => {
+  //   document.querySelectorAll('.day-list').forEach(dayList => {
+  //     // Sortable zaten varsa tekrar kurma, yoksa kur
+  //     if (!dayList._sortableSetup) {
+  //       Sortable.create(dayList, {
+  //         animation: 150,
+  //         handle: '.drag-icon', // Sadece ikondan tutunca sürükler
+  //         // handle: '.travel-item', // (Opsiyonel) Tüm satırdan tutunca sürüklesin istersen bunu aç
+  //         onEnd: function (evt) {
+  //           const day = Number(dayList.dataset.day);
             
-            // 1. Yeni sıralamayı DOM'daki data-index'lerden al
-            // (Not: data-index, o anki window.cart içindeki eski pozisyonudur)
-            const newIndices = Array.from(dayList.querySelectorAll('.travel-item'))
-                                    .map(el => Number(el.dataset.index));
+  //           // 1. Yeni sıralamayı DOM'daki data-index'lerden al
+  //           // (Not: data-index, o anki window.cart içindeki eski pozisyonudur)
+  //           const newIndices = Array.from(dayList.querySelectorAll('.travel-item'))
+  //                                   .map(el => Number(el.dataset.index));
 
-            // 2. O günün itemlarını, DOM'daki yeni sıraya göre objelerini çek
-            const reorderedDayItems = newIndices.map(idx => window.cart[idx]);
+  //           // 2. O günün itemlarını, DOM'daki yeni sıraya göre objelerini çek
+  //           const reorderedDayItems = newIndices.map(idx => window.cart[idx]);
 
-            // 3. Cart içindeki diğer günlerin itemlarını koru (bu gününkileri çıkar)
-            const otherItems = window.cart.filter(item => Number(item.day) !== day);
+  //           // 3. Cart içindeki diğer günlerin itemlarını koru (bu gününkileri çıkar)
+  //           const otherItems = window.cart.filter(item => Number(item.day) !== day);
 
-            // 4. Yeni cart listesini oluştur: Diğerleri + Yeni Sıralanmışlar
-            // Not: Bu basit bir birleştirmedir. Günlerin sırasını korumak için 
-            // "filter" yerine sadece o günün aralığını bulup splice yapmak daha iyidir ama
-            // en basit çalışan yöntem şudur:
+  //           // 4. Yeni cart listesini oluştur: Diğerleri + Yeni Sıralanmışlar
+  //           // Not: Bu basit bir birleştirmedir. Günlerin sırasını korumak için 
+  //           // "filter" yerine sadece o günün aralığını bulup splice yapmak daha iyidir ama
+  //           // en basit çalışan yöntem şudur:
             
-            let newCart = [];
+  //           let newCart = [];
             
-            // Gün gün tekrar birleştir ki 1. gün, 2. gün sırası bozulmasın
-            const allDays = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b);
+  //           // Gün gün tekrar birleştir ki 1. gün, 2. gün sırası bozulmasın
+  //           const allDays = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b);
             
-            allDays.forEach(d => {
-                if(Number(d) === day) {
-                    newCart = newCart.concat(reorderedDayItems);
-                } else {
-                    newCart = newCart.concat(window.cart.filter(i => Number(i.day) === Number(d)));
-                }
-            });
+  //           allDays.forEach(d => {
+  //               if(Number(d) === day) {
+  //                   newCart = newCart.concat(reorderedDayItems);
+  //               } else {
+  //                   newCart = newCart.concat(window.cart.filter(i => Number(i.day) === Number(d)));
+  //               }
+  //           });
 
-            // Global cart'ı güncelle ve tekrar render et
-            window.cart = newCart;
-            updateCart();
-          }
-        });
-        dayList._sortableSetup = true;
-      }
-    });
-  }, 0);
+  //           // Global cart'ı güncelle ve tekrar render et
+  //           window.cart = newCart;
+  //           updateCart();
+  //         }
+  //       });
+  //       dayList._sortableSetup = true;
+  //     }
+  //   });
+  // }, 0);
 
  // EN SON:
     if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
