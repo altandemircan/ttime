@@ -7446,4 +7446,27 @@ scrollbar-width: thin;
 @keyframes pulseBar {
     from { opacity: 0.6; transform: scaleX(0.98); }
     to { opacity: 1; transform: scaleX(1); }
+}/* Sürüklenen öğe ve Hayalet Kopya */
+.travel-item.dragging, #drag-clone {
+    position: fixed !important;
+    z-index: 10000 !important;
+    pointer-events: none !important;
+    
+    /* DÜZELTME: rotate silindi, sadece hafif büyütme var */
+    transform: scale(1.02) !important; 
+    
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+    background-color: #fff !important;
+    opacity: 0.98 !important;
+    border-radius: 8px !important;
+    /* Kenarlık rengini biraz daha belirgin yaptım */
+    border: 2px solid #8a4af3 !important; 
+    
+    will-change: left, top;
+    /* Transform geçişi kaldırıldı, anlık tepki versin */
+    transition: none !important; 
+}
+
+.travel-item.dragging-source {
+    opacity: 0.3 !important; /* Arkada kalan silik olsun */
 }
