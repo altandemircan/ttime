@@ -38,14 +38,14 @@ function injectDragStyles() {
         }
         
         /* --- SÜRÜKLEME SIRASINDA GİZLENECEK ELEMENTLER --- */
+        /* NOT: .distance-separator listesinden çıkarıldı, artık görünür kalacak */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
         body.hide-map-details .add-more-btn,
         body.hide-map-details .route-info, /* Uyarı mesajlarını gizler */
-        body.hide-map-details [id^="route-info-day"], /* Spesifik ID'li uyarıları gizler */
-        body.hide-map-details .route-scale-bar, /* Scale bar'ı gizler */
-        body.hide-map-details .distance-separator /* Mesafe/Süre bilgilerini gizler */
+        body.hide-map-details [id^="route-info-day"], 
+        body.hide-map-details .route-scale-bar /* Scale bar'ı gizler */
         {
             display: none !important;
         }
@@ -85,7 +85,6 @@ let scrollContainer = null;
 const SCROLL_THRESHOLD = 100; // Kenarlara 100px kala başla
 const MAX_SCROLL_SPEED = 28;  // Hız limiti
 
-// Son parmak pozisyonunu global tutuyoruz (Loop içinde erişmek için)
 let lastClientX = 0, lastClientY = 0;
 
 // ========== INITIALIZATION ==========
@@ -164,9 +163,8 @@ function cleanupDrag() {
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== AUTO SCROLL LOGIC (UPDATED) ==========
+// ========== AUTO SCROLL LOGIC ==========
 
-// Sadece hızı hesaplar, döngüyü başlatmaz (Döngü kendi içinde çağırır)
 function calculateScrollSpeed(clientY) {
     let containerHeight, containerTop;
     
@@ -194,7 +192,6 @@ function calculateScrollSpeed(clientY) {
     }
 }
 
-// Scroll döngüsünü başlatır
 function triggerAutoScroll() {
     if (!autoScrollFrame) {
         startAutoScrollLoop();
@@ -207,24 +204,19 @@ function startAutoScrollLoop() {
         return;
     }
 
-    // 1. Hızı her karede, güncel parmak konumuna (lastClientY) göre TEKRAR HESAPLA.
-    // Bu, mobilde parmak yön değiştirdiğinde scrollun anında tepki vermesini sağlar.
     calculateScrollSpeed(lastClientY);
 
     if (Math.abs(autoScrollSpeed) < 0.5) {
-        // Hız çok düşükse durdurma, sadece bekle (parmak tekrar kenara gelebilir)
         autoScrollFrame = requestAnimationFrame(startAutoScrollLoop);
         return;
     }
 
-    // 2. Scroll işlemini uygula
     if (!scrollContainer || scrollContainer === window) {
         window.scrollBy(0, autoScrollSpeed);
     } else {
         scrollContainer.scrollTop += autoScrollSpeed;
     }
     
-    // 3. Placeholder yerini güncelle (Liste kaydığı için)
     if (lastClientX && lastClientY) {
         updatePlaceholder(lastClientX, lastClientY);
     }
@@ -248,7 +240,6 @@ function createDragGhost(item, clientX, clientY) {
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
     
-    // Ghost içindeki gereksiz detayları gizle
     const mapContent = ghost.querySelector('.map-content-wrap');
     if(mapContent) mapContent.style.display = 'none';
     
@@ -343,7 +334,6 @@ function handleTouchMove(e) {
     updateDragGhost(lastClientX, lastClientY);
     updatePlaceholder(lastClientX, lastClientY);
     
-    // Scroll döngüsünü tetikle (Eğer çalışmıyorsa başlatır)
     triggerAutoScroll(); 
 }
 
@@ -393,7 +383,7 @@ function setupDesktopListeners() {
                     lastClientY = clientY;
                     updateDragGhost(clientX, clientY);
                     updatePlaceholder(clientX, clientY);
-                    triggerAutoScroll(); // Desktop için de aynı tetikleyici
+                    triggerAutoScroll();
                 }
             };
 
@@ -432,7 +422,6 @@ function finishDrag() {
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
         
-        // --- VALIDATION ---
         const getValidNeighbor = (startNode, direction) => {
             let sibling = direction === 'prev' ? startNode.previousElementSibling : startNode.nextElementSibling;
             while (sibling) {
