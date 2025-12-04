@@ -7404,37 +7404,6 @@ scrollbar-width: thin;
 /* Day X menu header */
 
 
-/* Sürüklenen öğe (Kutu Efekti) */
-.travel-item.dragging {
-    transform: scale(1.02) !important;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.1) !important;
-    background-color: #ffffff !important;
-    border-radius: 12px !important;
-    border: 1px solid rgba(138, 74, 243, 0.5) !important;
-    opacity: 0.95 !important;
-   
-}
-
-/* Normal durum geçişi */
-.travel-item {
-    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
-    touch-action: pan-y; 
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-}
-
-/* Placeholder (Yerleşim Çizgisi) */
-.insertion-placeholder {
-    height: 6px !important;
-    background: linear-gradient(90deg, #8a4af3, #b388ff) !important;
-    margin: 10px 0 !important;
-    border-radius: 4px !important;
-    box-shadow: 0 0 10px rgba(138, 74, 243, 0.4);
-    opacity: 0.9;
-}
-
-
 
 
 
