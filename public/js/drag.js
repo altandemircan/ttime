@@ -20,7 +20,7 @@ function injectDragStyles() {
             
             /* Performans */
             will-change: left, top;
-            transition: none !important; /* Anlık takip için geçiş yok */
+            transition: none !important; 
             margin: 0 !important;
             box-sizing: border-box !important;
         }
@@ -118,7 +118,8 @@ function forceCleanup() {
 }
 
 // ========== HELPER: GET CLOSEST ELEMENT (DEAD ZONE FIX) ==========
-// Bu fonksiyon boşlukta (gap) olsanız bile koordinata göre en yakın öğeyi bulur
+// Bu fonksiyon boşlukta (gap) olsanız bile Y koordinatına göre en yakın alt öğeyi bulur.
+// Böylece araya girmeyi sağlar.
 function getDragAfterElement(container, y) {
     // Sürüklenen öğe hariç diğer öğeleri al
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging)')];
@@ -233,6 +234,10 @@ function handleGlobalTouchMove(e) {
     if (!placeholder) {
         placeholder = document.createElement("div");
         placeholder.classList.add("insertion-placeholder");
+        placeholder.style.height = '6px';
+        placeholder.style.margin = '8px 0';
+        placeholder.style.borderRadius = '4px';
+        placeholder.style.pointerEvents = 'none';
     }
 
     if (dropZone) {
@@ -242,12 +247,11 @@ function handleGlobalTouchMove(e) {
         currentDropZone = dropZone;
         currentDropZone.classList.add('drop-hover');
 
-        // Ölü Bölge (Dead Zone) Çözümü:
-        // Eğer tam bir item üzerinde değilsek (boşluktaysak) matematiksel olarak en yakın item'ı buluyoruz.
+        // --- GAP FIX ---
+        // Eğer elementBelow bir item değilse (boşluksa), matematiksel olarak en yakın item'ı bul
         let targetItem = elementBelow.closest('.travel-item');
         let isGapHover = false;
 
-        // Eğer direkt item üzerinde değilsek, hesaplama yap
         if (!targetItem) {
             targetItem = getDragAfterElement(dropZone, touch.clientY);
             isGapHover = true;
@@ -258,7 +262,7 @@ function handleGlobalTouchMove(e) {
         // --- SENARYO 1: Hedef bir item bulundu (Üstünde veya Yakınında) ---
         if (targetItem) {
             const rect = targetItem.getBoundingClientRect();
-            // Eğer Gap Hover ise zaten "After Element" bulduk, yani üstüne ekleyeceğiz.
+            // Gap Hover ise her zaman üstüne ekle (insertBefore)
             // Değilse mouse pozisyonuna göre üst/alt kararı ver.
             const offset = touch.clientY - (rect.top + rect.height / 2);
             
@@ -276,10 +280,10 @@ function handleGlobalTouchMove(e) {
                 }
                 dropZone.insertBefore(placeholder, targetItem);
             } 
-            // ALT YARI
+            // ALT YARI (Sadece item üzerine gelince çalışır)
             else {
-                // Separator kontrolü
                 let nextNode = targetItem.nextSibling;
+                // Separator atla
                 if (nextNode && nextNode.classList.contains('distance-separator')) {
                     nextNode = nextNode.nextSibling;
                 }
@@ -291,13 +295,12 @@ function handleGlobalTouchMove(e) {
                 dropZone.insertBefore(placeholder, nextNode);
             }
         } 
-        // --- SENARYO 2: Listenin En Sonu (Hiçbir item'ın üstünde değilsek) ---
+        // --- SENARYO 2: Listenin En Sonu ---
         else {
             const addBtn = dropZone.querySelector('.add-more-btn');
             
             // En alt kısıtlaması (Kendi listemizdeysek)
             if (isSameList) {
-                // Bizden sonra gerçek item var mı?
                 let nextEl = draggedItem.nextElementSibling;
                 while(nextEl && (nextEl === placeholder || nextEl.classList.contains('distance-separator'))) {
                     nextEl = nextEl.nextElementSibling;
@@ -452,10 +455,14 @@ function desktopDragOver(event) {
     if (!placeholder) {
         placeholder = document.createElement("div");
         placeholder.classList.add("insertion-placeholder");
+        placeholder.style.height = '6px';
+        placeholder.style.margin = '8px 0';
+        placeholder.style.borderRadius = '4px';
+        placeholder.style.pointerEvents = 'none'; 
     }
 
-    // Dead Zone Fix: Mouse'un altındaki item'ı bulamazsak (boşluktaysak)
-    // matematiksel olarak en yakını bul.
+    // --- GAP FIX FOR DESKTOP ---
+    // Mouse boşluktaysa (gap) en yakın item'ı bul
     let targetItem = event.target.closest('.travel-item');
     let isGapHover = false;
 
@@ -470,7 +477,7 @@ function desktopDragOver(event) {
         const rect = targetItem.getBoundingClientRect();
         const offset = event.clientY - (rect.top + rect.height / 2);
 
-        // ÜST YARI (veya Gap Hover)
+        // ÜST YARI (veya Gap Hover - Boşluktaysak direkt üstüne)
         if (isGapHover || offset < 0) {
             if (targetItem === draggedItem || (isSameList && draggedItem.nextElementSibling === targetItem)) {
                 if (placeholder.parentNode) placeholder.remove();
@@ -495,7 +502,7 @@ function desktopDragOver(event) {
             dropZone.insertBefore(placeholder, nextNode);
         }
     } 
-    // Listenin En Sonu (Hiçbir item bulunamadıysa)
+    // SENARYO 2: Hiçbir item yakalanamadıysa (Listenin En Sonu)
     else {
         if (isSameList) {
             let nextEl = draggedItem.nextElementSibling;
