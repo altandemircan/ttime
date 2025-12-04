@@ -3,8 +3,6 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-
-
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
@@ -16,15 +14,15 @@ function injectDragStyles() {
             /* JS ile set edilecekler */
             width: var(--ghost-width);
             height: var(--ghost-height);
-          
+            
+            /* Başlangıç ayarları */
+            top: 0; left: 0;
             margin: 0 !important;
             
-            /* Performans ve Animasyon */
+            /* Performans */
             will-change: transform; 
-            transition: none !important; /* Gecikme olmasın diye none */
+            transition: none !important;
             transform-origin: center center;
-            /* İlk başta ekran dışında dursun, JS hemen düzeltecek */
-            transform: translate3d(-9999px, -9999px, 0); 
         }
         .insertion-placeholder {
             height: 6px !important;
@@ -76,7 +74,6 @@ function injectDragStyles() {
             cursor: grabbing !important;
             touch-action: none !important; 
         }
-        /* İtem üzerindeki tutma ikonu */
         .travel-item { cursor: grab; }
         .travel-item:active { cursor: grabbing; }
     `;
@@ -95,14 +92,14 @@ let sourceIndex = -1;
 let isMobile = false;
 
 // Positioning Variables
-let ghostFixedLeft = 0; // X eksenini sabitlemek için
-let grabOffsetY = 0;    // Y ekseninde tuttuğumuz yerin ortadan farkı
+let ghostFixedLeft = 0; 
+let grabOffsetY = 0;    
 
 let startX = 0, startY = 0;
 let longPressTimer;
 const LONG_PRESS_MS = 200;
 
-// --- RENDER LOOP & SCROLL VARIABLES ---
+// --- RENDER LOOP variables ---
 let isDragging = false; 
 let renderFrameId = null;
 let autoScrollSpeed = 0;
@@ -253,13 +250,12 @@ function calculateScrollSpeed() {
 function updateDragGhostVisuals() {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
+    
+    // Eğer koordinat 0 ise atla
     if (lastClientY === 0) return;
 
-    // Y HESABI: Parmağın olduğu yer (lastClientY) - tutma farkı (grabOffsetY)
-    // Böylece parmak itemin neresinden tuttuysa oradan devam eder.
+    // Y HESABI: Parmağın Y konumu - Tutma payı
     const targetY = lastClientY - grabOffsetY;
-    
-    // X HESABI: Listenin hizasında sabit
     const targetX = ghostFixedLeft; 
 
     ghost.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) scale(1.02)`;
@@ -317,9 +313,9 @@ function createDragGhost(item, clientX, clientY) {
     
     const rect = item.getBoundingClientRect();
     
-    // Değişkenleri burada sabitliyoruz
+    // Sabitleri belirle
     ghostFixedLeft = rect.left;
-    grabOffsetY = clientY - rect.top; // Tutulan noktanın item tepesine uzaklığı
+    grabOffsetY = clientY - rect.top; // Tutulan noktanın item tepesine farkı
 
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
@@ -332,8 +328,13 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // İlk pozisyon: Item'ın mevcut yeri
-    ghost.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.02)`;
+    // --- KESİN ÇÖZÜM: INLINE STYLE İLE BAŞLANGIÇ KONUMU ---
+    // CSS class'ındaki transform'u beklemeden, oluşturulduğu an
+    // doğru koordinatı (clientX/Y bazlı) yapıştırıyoruz.
+    const initialY = clientY - grabOffsetY;
+    
+    // Burası "Sol Üst" sorununu çözen kısımdır.
+    ghost.style.transform = `translate3d(${ghostFixedLeft}px, ${initialY}px, 0) scale(1.02)`;
     
     document.body.appendChild(ghost);
 }
@@ -354,12 +355,14 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
+    // Koordinatları sürekli güncelle
     lastClientX = e.touches[0].clientX;
     lastClientY = e.touches[0].clientY;
 
     if (!isDragging) {
         const dx = Math.abs(lastClientX - startX);
         const dy = Math.abs(lastClientY - startY);
+        // Hassasiyet eşiği
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
@@ -432,7 +435,6 @@ function startDrag(item, x, y) {
     const currentDocHeight = document.documentElement.scrollHeight;
     document.body.style.minHeight = currentDocHeight + 'px';
 
-    // Ghost'u oluştur (x, y parmak pozisyonları)
     createDragGhost(item, x, y);
     item.classList.add('dragging-source');
     
