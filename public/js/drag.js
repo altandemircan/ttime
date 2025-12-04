@@ -39,11 +39,12 @@ function injectDragStyles() {
         }
         .shake-error {
             animation: shakeError 0.4s ease-in-out;
-            border: 2px solid #ffa000 !important; 
+            border: 2px solid #ffa000 !important;
             background-color: #fffdf0 !important;
         }
 
-        /* SADECE MOBİLDE GİZLEME CLASS'I (Desktop etkilenmez) */
+        /* GİZLENECEK ELEMANLAR (HEM DESKTOP HEM MOBİL) */
+        /* display: none ile gizliyoruz, zıplamayı JS ile çözeceğiz */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
@@ -106,25 +107,32 @@ function initDragDropSystem() {
 
 // ========== CLEANUP ==========
 function cleanupDrag() {
-    // --- SADECE MOBİL İÇİN SCROLL GERİ YÜKLEME ---
-    // Haritalar geri gelince sayfa uzayacak, pozisyonu korumak için scrollu ayarla
-    if (isMobile && document.body.classList.contains('hide-map-details')) {
+    // --- SCROLL DÜZELTME (HERKES İÇİN) ---
+    // Haritalar geri geldiğinde (display:block olunca) sayfa uzayacak.
+    // Kullanıcının baktığı yerin kaymaması için scroll'u aşağı itiyoruz.
+    if (document.body.classList.contains('hide-map-details')) {
         const currentItem = document.querySelector('.travel-item.dragging-source');
         if (currentItem) {
             const rectBefore = currentItem.getBoundingClientRect();
-            document.body.classList.remove('hide-map-details'); // Haritaları geri getir
+            
+            // Gizlemeyi kaldır (Harita geri gelsin)
+            document.body.classList.remove('hide-map-details');
+            
+            // Tarayıcı değişikliği hesaplasın
             const rectAfter = currentItem.getBoundingClientRect();
             
-            // Oluşan fark kadar scrollu kaydır (Kullanıcı zıplama hissetmesin)
+            // Oluşan fark (pozitif olacaktır çünkü yukarıdan içerik eklendi)
             const diff = rectAfter.top - rectBefore.top;
+            
             if (diff !== 0) window.scrollBy(0, diff);
         } else {
+            // Öğe bulunamazsa düz sil
             document.body.classList.remove('hide-map-details');
         }
-    } else {
-        // Desktop ise sadece class'ı sil (varsa)
-        document.body.classList.remove('hide-map-details');
     }
+
+    // Min-height kilidini kaldır
+    document.body.style.minHeight = '';
 
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
@@ -194,7 +202,6 @@ function updatePlaceholder(clientX, clientY) {
     
     if (afterElement == null) {
         const addBtn = dropZone.querySelector('.add-more-btn');
-        // Mobilde addBtn gizlense bile (display:none) DOM'da varlığını kontrol edip sona ekliyoruz
         if (addBtn && getComputedStyle(addBtn).display !== 'none') {
              dropZone.insertBefore(placeholder, addBtn);
         } else {
@@ -237,7 +244,6 @@ function handleTouchEnd() {
     if (draggedItem) finishDrag();
 }
 
-// --- DESKTOP İÇİN DOKUNULMAMIŞ ORİJİNAL MANTIK ---
 function setupDesktopListeners() {
     document.addEventListener('mousedown', function(e) {
         if (e.button !== 0) return;
@@ -262,7 +268,6 @@ function setupDesktopListeners() {
                 
                 if (!isDragStarted && (dx > 5 || dy > 5)) {
                     isDragStarted = true;
-                    // Desktop'ta harita gizleme logic'i ÇALIŞMAYACAK, sadece drag başlasın
                     startDrag(draggedItem, moveEvent.clientX, moveEvent.clientY);
                 }
                 if (isDragStarted) {
@@ -288,33 +293,37 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // 1. Önce Ghost'u yarat (Görseli eline al)
+    // --- 1. HEIGHT LOCK ---
+    // Haritalar gidince sayfanın kısalmasını ve tarayıcının scrollu yukarı atmasını engellemek için
+    // mevcut yüksekliği kilitliyoruz.
+    const currentDocHeight = document.documentElement.scrollHeight;
+    document.body.style.minHeight = currentDocHeight + 'px';
+
+    // --- 2. SCROLL COMPENSATION ---
+    // Haritaları gizlemeden önceki pozisyon
+    const rectBefore = item.getBoundingClientRect();
+    const originalTop = rectBefore.top;
+
+    // --- 3. HARİTALARI VE BUTONLARI GİZLE (HERKES İÇİN) ---
+    document.body.classList.add('hide-map-details');
+    
+    // Reflow: Tarayıcıya değişikliği hesaplat
+    void document.body.offsetHeight;
+
+    // Haritalar gizlendikten sonraki pozisyon (Liste yukarı kaydı)
+    const rectAfter = item.getBoundingClientRect();
+    const newTop = rectAfter.top;
+
+    // Aradaki farkı hesapla (Örn: -300px yukarı kaydı)
+    const diff = newTop - originalTop;
+
+    // Sayfayı o fark kadar scroll et (Böylece item görsel olarak parmağın altında kalır)
+    if (diff !== 0) {
+        window.scrollBy(0, diff);
+    }
+
     createDragGhost(item, x, y);
     
-    // --- SADECE MOBİL İÇİN ZIPLAMA DÜZELTMESİ (Desktop'a dokunma) ---
-    if (isMobile) {
-        // A) Şu anki (harita varkenki) pozisyonu al
-        const rectBefore = item.getBoundingClientRect();
-        
-        // B) Haritayı gizle (body'ye class ekle)
-        document.body.classList.add('hide-map-details');
-        
-        // C) Tarayıcı değişikliği işlesin (Reflow)
-        void document.body.offsetHeight;
-        
-        // D) Yeni pozisyonu (harita gidince yukarı kaymış hali) al
-        const rectAfter = item.getBoundingClientRect();
-        
-        // E) Aradaki farkı hesapla (Örn: -300px yukarı kaydı)
-        const diff = rectAfter.top - rectBefore.top;
-        
-        // F) Sayfayı o fark kadar scroll et (Böylece item görsel olarak parmağın altında kalır)
-        if (diff !== 0) {
-            window.scrollBy(0, diff);
-        }
-    }
-    // -------------------------------------------------------------
-
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
 }
@@ -323,7 +332,6 @@ function startDrag(item, x, y) {
 function finishDrag() {
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
-        
         const sourceItemData = window.cart[sourceIndex];
         
         const getValidNeighbor = (startNode, direction) => {
