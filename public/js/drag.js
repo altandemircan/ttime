@@ -11,13 +11,14 @@ function injectDragStyles() {
             border: 2px dashed #87cdb5 !important; 
             box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
             border-radius: 12px !important;
+            /* Genişlik ve yükseklik JS tarafından atanacak */
             width: var(--ghost-width);
             height: var(--ghost-height);
-            top: 0; left: 0; /* Başlangıç sıfır, transform ile taşınacak */
             margin: 0 !important;
-            will-change: transform; /* GPU'ya haber veriyoruz */
+            /* Performans: Sadece transform değişecek */
+            will-change: transform; 
             transition: none !important;
-            transform: scale(1.02);
+            transform-origin: center center;
         }
         .insertion-placeholder {
             height: 6px !important;
@@ -84,17 +85,16 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Axis & Offset Variables
-let dragShiftY = 0;
-let initialGhostLeft = 0; 
-let mobileOffsetY = 0; 
+// Axis Locking & Delta Calculation
+let initialGhostTop = 0;  // Ghost'un başlangıç Y koordinatı
+let startY = 0;           // Dokunma başlangıç Y koordinatı
+let mobileOffsetY = 0;    // Mobilde parmak üstünde gösterme payı
 
-let startX = 0, startY = 0;
 let longPressTimer;
 const LONG_PRESS_MS = 200;
 
 // --- RENDER LOOP & SCROLL VARIABLES ---
-let isDragging = false; // Döngü kontrolü
+let isDragging = false; 
 let renderFrameId = null;
 let autoScrollSpeed = 0;
 let scrollContainer = null;
@@ -102,16 +102,15 @@ let scrollContainer = null;
 const SCROLL_THRESHOLD = 140; 
 const MAX_SCROLL_SPEED = 35;  
 
-// Mouse/Touch koordinatlarını burada tutacağız
-let lastClientX = 0, lastClientY = 0;
+let lastClientY = 0; // Sadece Y koordinatını takip ediyoruz (Axis Lock)
 
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
     injectDragStyles();
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    // Mobilde item'ı parmağın yukarısında tut
-    mobileOffsetY = isMobile ? 85 : 0; 
+    // Mobilde parmağın 70px yukarısında taşı (Görünürlük için)
+    mobileOffsetY = isMobile ? 70 : 0; 
 
     cleanupDrag();
 
@@ -119,6 +118,7 @@ function initDragDropSystem() {
         document.body.addEventListener('touchstart', handleTouchStart, { passive: false });
         document.body.addEventListener('touchmove', handleTouchMove, { passive: false });
         document.body.addEventListener('touchend', handleTouchEnd);
+        document.body.addEventListener('touchcancel', handleTouchEnd);
     } else {
         setupDesktopListeners();
     }
@@ -128,6 +128,7 @@ function initDragDropSystem() {
     });
 
     window.addEventListener('blur', () => { if (draggedItem) finishDrag(); });
+    window.addEventListener('pointerup', () => { if (draggedItem && isMobile) finishDrag(); });
 }
 
 // ========== HELPER: FIND SCROLL PARENT ==========
@@ -190,17 +191,15 @@ function cleanupDrag() {
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== THE RENDER LOOP (PERFORMANCE CORE) ==========
+// ========== THE RENDER LOOP ==========
 function dragRenderLoop() {
     if (!isDragging || !draggedItem) {
         renderFrameId = null;
         return;
     }
 
-    // 1. SCROLL HIZINI HESAPLA
     calculateScrollSpeed();
 
-    // 2. SCROLL UYGULA
     if (Math.abs(autoScrollSpeed) > 0.5) {
         if (!scrollContainer || scrollContainer === window) {
             window.scrollBy(0, autoScrollSpeed);
@@ -209,14 +208,9 @@ function dragRenderLoop() {
         }
     }
 
-    // 3. GHOST POZİSYONUNU GÜNCELLE (GPU Hızlandırmalı)
     updateDragGhostVisuals();
-
-    // 4. PLACEHOLDER GÜNCELLE
-    // Ghost'u değil, parmağın olduğu yeri referans alıyoruz
     updatePlaceholderLogic();
 
-    // Bir sonraki kareyi iste
     renderFrameId = requestAnimationFrame(dragRenderLoop);
 }
 
@@ -236,17 +230,15 @@ function calculateScrollSpeed() {
 
     const relativeY = lastClientY - containerTop;
 
-    // YUKARI
     if (relativeY < SCROLL_THRESHOLD) {
         const ratio = (SCROLL_THRESHOLD - relativeY) / SCROLL_THRESHOLD; 
         const intensity = ratio * ratio; 
         autoScrollSpeed = -MAX_SCROLL_SPEED * intensity;
     } 
-    // AŞAĞI
     else if (relativeY > (containerHeight - SCROLL_THRESHOLD)) {
         const ratio = (relativeY - (containerHeight - SCROLL_THRESHOLD)) / SCROLL_THRESHOLD;
         const intensity = ratio * ratio;
-        autoScrollSpeed = (MAX_SCROLL_SPEED * intensity) * 1.3; // Aşağı hızlandırıldı
+        autoScrollSpeed = (MAX_SCROLL_SPEED * intensity) * 1.3; 
     } 
     else {
         autoScrollSpeed = 0;
@@ -257,23 +249,22 @@ function updateDragGhostVisuals() {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // Y pozisyonunu hesapla
-    const targetY = (lastClientY - dragShiftY) - mobileOffsetY;
-    
-    // X pozisyonu (Kilitli - Locked)
-    const targetX = initialGhostLeft;
+    if (lastClientY === 0) return;
 
-    // Transform kullanarak taşı (GPU Performansı)
-    ghost.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) scale(1.02)`;
+    // --- DELTA HESAPLAMA (KESİN ÇÖZÜM) ---
+    // Ghost'u başlangıç noktasından (initialGhostTop), parmağın gittiği kadar (deltaY) hareket ettiriyoruz.
+    // X ekseni sabit kalıyor (Axis Lock).
+    const deltaY = (lastClientY - startY) - mobileOffsetY;
+    
+    // scale(1.02) hafif bir "havaya kalkma" efekti verir
+    ghost.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.02)`;
 }
 
 function updatePlaceholderLogic() {
     if (!draggedItem) return;
     
     const rect = draggedItem.getBoundingClientRect();
-    // X eksenini ghost'un orijinal pozisyonunun ortasına sabitle
-    // Böylece parmak sağa sola kaysa bile, "bakış açımız" listenin ortası olur.
-    const centerX = initialGhostLeft + (rect.width / 2);
+    const centerX = rect.left + (rect.width / 2);
 
     const elementBelow = document.elementFromPoint(centerX, lastClientY);
     if (!elementBelow) return;
@@ -286,7 +277,6 @@ function updatePlaceholderLogic() {
         placeholder.className = 'insertion-placeholder';
     }
     
-    // Liste içinde uygun yeri bul
     const afterElement = getDragAfterElement(dropZone, lastClientY);
     
     if (afterElement == null) {
@@ -316,7 +306,7 @@ function getDragAfterElement(container, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// ========== INITIAL GHOST CREATION ==========
+// ========== INITIAL GHOST ==========
 function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
@@ -324,7 +314,6 @@ function createDragGhost(item, clientX, clientY) {
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
     
-    // İçerik temizliği
     const mapContent = ghost.querySelector('.map-content-wrap');
     if(mapContent) mapContent.style.display = 'none';
     const routeInfo = ghost.querySelector('.route-info');
@@ -333,11 +322,18 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // İlk pozisyonlama: translate3d ile yapılacak, o yüzden top/left 0 kalabilir
-    // Ancak CSS'de position: fixed var.
-    // İlk karede flash olmasın diye manuel transform set edelim.
-    const topPos = (clientY - dragShiftY) - mobileOffsetY;
-    ghost.style.transform = `translate3d(${rect.left}px, ${topPos}px, 0) scale(1.02)`;
+    // --- BAŞLANGIÇ KONUMUNU SABİTLEME ---
+    // CSS'de top:0, left:0 YAPMIYORUZ.
+    // Burada doğrudan öğenin gerçek koordinatlarını veriyoruz.
+    // Böylece transform (0,0) olsa bile öğe yerinde durur, sol üste gitmez.
+    ghost.style.top = rect.top + 'px';
+    ghost.style.left = rect.left + 'px';
+    
+    // Global referansları kaydet (Delta hesaplamak için)
+    initialGhostTop = rect.top;
+    
+    // İlk offseti uygula (Mobilde parmak üstü için)
+    ghost.style.transform = `translate3d(0, -${mobileOffsetY}px, 0) scale(1.02)`;
     
     document.body.appendChild(ghost);
 }
@@ -348,31 +344,25 @@ function handleTouchStart(e) {
     if (!item || e.target.closest('button') || e.target.closest('.map-content-wrap')) return;
     if (e.touches.length > 1) return;
 
-    startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     
-    const rect = item.getBoundingClientRect();
+    // İlk dokunuşta koordinatı kaydet
+    lastClientY = startY;
     
-    initialGhostLeft = rect.left;
-    dragShiftY = startY - rect.top;
-    
-    longPressTimer = setTimeout(() => startDrag(item, startX, startY), LONG_PRESS_MS);
+    longPressTimer = setTimeout(() => startDrag(item, startY), LONG_PRESS_MS);
 }
 
 function handleTouchMove(e) {
+    lastClientY = e.touches[0].clientY;
+
     if (!isDragging) {
-        const dx = Math.abs(e.touches[0].clientX - startX);
-        const dy = Math.abs(e.touches[0].clientY - startY);
-        if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
+        const dy = Math.abs(lastClientY - startY);
+        // Çok hareket ederse drag iptal (kullanıcı scroll yapıyor olabilir)
+        if (dy > 10) clearTimeout(longPressTimer);
         return;
     }
     
     if (e.cancelable) e.preventDefault();
-    
-    // Sadece koordinatları güncelle, DOM'a dokunma!
-    // DOM işlemleri dragRenderLoop içinde yapılacak.
-    lastClientX = e.touches[0].clientX;
-    lastClientY = e.touches[0].clientY;
 }
 
 function handleTouchEnd() {
@@ -387,13 +377,9 @@ function setupDesktopListeners() {
 
         const item = e.target.closest('.travel-item');
         if (item && !e.target.closest('button')) {
-            draggedItem = item; // Referans al
-            startX = e.clientX;
+            draggedItem = item;
             startY = e.clientY;
-            
-            const rect = item.getBoundingClientRect();
-            initialGhostLeft = rect.left;
-            dragShiftY = startY - rect.top;
+            lastClientY = startY;
 
             let isDragStarted = false;
 
@@ -403,22 +389,14 @@ function setupDesktopListeners() {
                     return;
                 }
 
-                const clientX = moveEvent.clientX;
-                const clientY = moveEvent.clientY;
+                lastClientY = moveEvent.clientY;
 
                 if (!isDragStarted) {
-                    const dx = Math.abs(clientX - startX);
-                    const dy = Math.abs(clientY - startY);
-                    if (dx > 5 || dy > 5) {
+                    const dy = Math.abs(lastClientY - startY);
+                    if (dy > 5) {
                         isDragStarted = true;
-                        startDrag(item, clientX, clientY);
+                        startDrag(item, startY);
                     }
-                }
-                
-                if (isDragStarted) {
-                    // Koordinatları güncelle
-                    lastClientX = clientX;
-                    lastClientY = clientY;
                 }
             };
 
@@ -434,13 +412,11 @@ function setupDesktopListeners() {
     });
 }
 
-function startDrag(item, x, y) {
+function startDrag(item, y) {
     draggedItem = item;
     sourceIndex = parseInt(item.dataset.index);
     scrollContainer = getScrollParent(item);
     
-    // Koordinatları ilkle
-    lastClientX = x;
     lastClientY = y;
 
     if (navigator.vibrate) navigator.vibrate(50);
@@ -448,19 +424,19 @@ function startDrag(item, x, y) {
     const currentDocHeight = document.documentElement.scrollHeight;
     document.body.style.minHeight = currentDocHeight + 'px';
 
-    createDragGhost(item, x, y);
+    // x parametresi artık kullanılmıyor, y yeterli
+    createDragGhost(item, 0, y);
     item.classList.add('dragging-source');
     
     document.body.classList.add('hide-map-details');
     document.body.classList.add('dragging-active');
 
-    // DÖNGÜYÜ BAŞLAT
     isDragging = true;
     dragRenderLoop();
 }
 
 function finishDrag() {
-    isDragging = false; // Döngüyü durdur
+    isDragging = false; 
 
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
