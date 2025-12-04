@@ -43,14 +43,12 @@ function injectDragStyles() {
             background-color: #fffdf0 !important;
         }
 
-        /* MOBİLDE GİZLEME (DESKTOP ETKİLENMEZ) */
-        @media (max-width: 768px) {
-            body.hide-map-details .route-controls-bar,
-            body.hide-map-details .tt-travel-mode-set,
-            body.hide-map-details [id^="map-bottom-controls-wrapper"], 
-            body.hide-map-details .add-more-btn {
-                display: none !important;
-            }
+        /* GİZLENECEK ELEMANLAR (HEM DESKTOP HEM MOBİL İÇİN GEÇERLİ ARTIK) */
+        body.hide-map-details .route-controls-bar,
+        body.hide-map-details .tt-travel-mode-set,
+        body.hide-map-details [id^="map-bottom-controls-wrapper"], 
+        body.hide-map-details .add-more-btn {
+            display: none !important;
         }
 
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
@@ -61,7 +59,7 @@ function injectDragStyles() {
             user-select: none !important;
             cursor: grabbing !important;
             /* Auto-scroll çalışırken tarayıcının kendi scroll'uyla çakışmasın */
-            touch-action: none; 
+            overflow-anchor: none !important; 
         }
     `;
     const style = document.createElement('style');
@@ -89,9 +87,7 @@ const LONG_PRESS_MS = 200;
 // --- AUTO SCROLL VARIABLES ---
 let autoScrollSpeed = 0;
 let autoScrollFrame = null;
-// Kenarlara ne kadar yaklaşınca kaymaya başlasın (px)
 const SCROLL_THRESHOLD = 80; 
-// Maksimum kayma hızı
 const MAX_SCROLL_SPEED = 15; 
 
 // ========== INITIALIZATION ==========
@@ -119,23 +115,30 @@ function initDragDropSystem() {
 
 // ========== CLEANUP ==========
 function cleanupDrag() {
-    // Auto Scroll Durdur
     stopAutoScroll();
 
-    // Scroll Düzeltme (Mobil İçin Geri Yükleme)
-    if (isMobile && document.body.classList.contains('hide-map-details')) {
+    // --- SCROLL DÜZELTME (HERKES İÇİN - DESKTOP & MOBİL) ---
+    // Haritalar geri geldiğinde sayfa uzar, liste aşağı kayar.
+    // Kullanıcının baktığı yeri korumak için scrollu aşağı itiyoruz.
+    if (document.body.classList.contains('hide-map-details')) {
         const currentItem = document.querySelector('.travel-item.dragging-source');
         if (currentItem) {
             const rectBefore = currentItem.getBoundingClientRect();
+            
+            // Gizlemeyi kaldır (Harita geri gelsin)
             document.body.classList.remove('hide-map-details');
+            
+            // Tarayıcı değişikliği hesaplasın
             const rectAfter = currentItem.getBoundingClientRect();
+            
+            // Farkı bul
             const diff = rectAfter.top - rectBefore.top;
+            
+            // Eğer fark varsa (liste aşağı kaydıysa) biz de scrollu kaydırıyoruz
             if (diff !== 0) window.scrollBy(0, diff);
         } else {
             document.body.classList.remove('hide-map-details');
         }
-    } else {
-        document.body.classList.remove('hide-map-details');
     }
 
     // Min-height kaldır
@@ -156,18 +159,14 @@ function cleanupDrag() {
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== AUTO SCROLL LOGIC (YENİ EKLENEN KISIM) ==========
+// ========== AUTO SCROLL LOGIC ==========
 function handleAutoScroll(clientY) {
     const viewportHeight = window.innerHeight;
     
-    // Üst kenara yakın mı?
     if (clientY < SCROLL_THRESHOLD) {
-        // Yukarı kaydır (Hız, kenara yakınlığa göre artar)
         autoScrollSpeed = -MAX_SCROLL_SPEED * ((SCROLL_THRESHOLD - clientY) / SCROLL_THRESHOLD);
     } 
-    // Alt kenara yakın mı?
     else if (clientY > (viewportHeight - SCROLL_THRESHOLD)) {
-        // Aşağı kaydır
         autoScrollSpeed = MAX_SCROLL_SPEED * ((clientY - (viewportHeight - SCROLL_THRESHOLD)) / SCROLL_THRESHOLD);
     } 
     else {
@@ -175,7 +174,7 @@ function handleAutoScroll(clientY) {
     }
 
     if (autoScrollSpeed !== 0 && !autoScrollFrame) {
-        startAutoScrollLoop(clientY); // clientY'yi pass ediyoruz çünkü placeholder güncellemesi için lazım olabilir
+        startAutoScrollLoop(clientY);
     }
 }
 
@@ -188,9 +187,6 @@ function startAutoScrollLoop() {
 
     window.scrollBy(0, autoScrollSpeed);
     
-    // Scroll olurken placeholder'ın yerini güncellememiz lazım
-    // Çünkü sayfa kaydıkça parmağın altındaki eleman değişiyor.
-    // Ancak touch/mouse eventindeki son X/Y değerlerini global tutmalıyız.
     if (window.lastClientX && window.lastClientY) {
         updatePlaceholder(window.lastClientX, window.lastClientY);
     }
@@ -293,20 +289,17 @@ function handleTouchMove(e) {
         return;
     }
     
-    e.preventDefault(); // Sayfanın native scrollunu kapat, biz yöneteceğiz
+    e.preventDefault(); 
     
     const touch = e.touches[0];
     const clientX = touch.clientX;
     const clientY = touch.clientY;
 
-    // Auto Scroll Koordinatları İçin Global Kayıt
     window.lastClientX = clientX;
     window.lastClientY = clientY;
 
     updateDragGhost(clientX, clientY);
     updatePlaceholder(clientX, clientY);
-    
-    // AUTO SCROLL TETİKLE
     handleAutoScroll(clientY);
 }
 
@@ -347,14 +340,11 @@ function setupDesktopListeners() {
                 }
                 
                 if (isDragStarted) {
-                    // Global koordinatları güncelle
                     window.lastClientX = clientX;
                     window.lastClientY = clientY;
 
                     updateDragGhost(clientX, clientY);
                     updatePlaceholder(clientX, clientY);
-                    
-                    // AUTO SCROLL TETİKLE (Desktop için de geçerli)
                     handleAutoScroll(clientY);
                 }
             };
@@ -376,23 +366,32 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // --- HEIGHT LOCK ---
+    // --- 1. HEIGHT LOCK (TÜM CİHAZLAR) ---
+    // Haritalar gizlenince sayfanın kısalmasını engelle
     const currentDocHeight = document.documentElement.scrollHeight;
     document.body.style.minHeight = currentDocHeight + 'px';
 
-    // --- SCROLL COMPENSATION (SADECE MOBİL) ---
-    if (isMobile) {
-        const rectBefore = item.getBoundingClientRect();
-        const originalTop = rectBefore.top;
+    // --- 2. SCROLL COMPENSATION (TÜM CİHAZLAR) ---
+    // Haritaları gizlemeden önceki pozisyon
+    const rectBefore = item.getBoundingClientRect();
+    const originalTop = rectBefore.top;
 
-        document.body.classList.add('hide-map-details'); // Gizle
-        void document.body.offsetHeight; // Reflow
+    // --- 3. HARİTALARI GİZLE (HEM DESKTOP HEM MOBİL) ---
+    document.body.classList.add('hide-map-details'); // display: none devreye girer
+    
+    // Reflow: Tarayıcı değişikliği hesaplasın
+    void document.body.offsetHeight;
 
-        const rectAfter = item.getBoundingClientRect();
-        const newTop = rectAfter.top;
-        const diff = newTop - originalTop;
+    // Haritalar gizlendikten sonraki pozisyon (Liste yukarı kaydı)
+    const rectAfter = item.getBoundingClientRect();
+    const newTop = rectAfter.top;
 
-        if (diff !== 0) window.scrollBy(0, diff);
+    // Farkı bul (Örn: -300px yukarı kaydı)
+    const diff = newTop - originalTop;
+
+    // Sayfayı o fark kadar scroll et (Böylece item görsel olarak parmağın altında kalır)
+    if (diff !== 0) {
+        window.scrollBy(0, diff);
     }
 
     createDragGhost(item, x, y);
@@ -402,7 +401,7 @@ function startDrag(item, x, y) {
 
 // ========== FINISH ==========
 function finishDrag() {
-    stopAutoScroll(); // Scroll durdur
+    stopAutoScroll();
 
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
