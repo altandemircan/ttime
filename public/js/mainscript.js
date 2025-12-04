@@ -3945,7 +3945,6 @@ cartDiv.appendChild(addNewDayButton);
     menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
   }
 
-  attachDragListeners();
   days.forEach(d => initPlaceSearch(d));
   addCoordinatesToContent();
   days.forEach(d => {

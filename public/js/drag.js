@@ -23,6 +23,10 @@ function injectDragStyles() {
             filter: grayscale(100%);
             border: 2px dashed #ccc;
         }
+        /* Harita ve Kontrol Barlarının sürüklemeye karışmasını engelle */
+        .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
+            pointer-events: auto; /* Tıklanabilir kalsın */
+        }
         .insertion-placeholder {
             height: 6px !important;
             background: linear-gradient(90deg, #8a4af3, #b388ff);
@@ -33,12 +37,8 @@ function injectDragStyles() {
         }
         body.dragging-active {
             user-select: none !important;
-            -webkit-user-select: none !important;
-            touch-action: none !important;
             cursor: grabbing !important;
         }
-        .travel-item { cursor: grab; }
-        .travel-item:active { cursor: grabbing; }
     `;
     const style = document.createElement('style');
     style.id = styleId;
@@ -47,7 +47,6 @@ function injectDragStyles() {
 }
 
 // ========== GLOBAL VARIABLES ==========
-// window.cart'a dokunmuyoruz, varsa kullanıyoruz
 if (!window.cart) window.cart = [];
 
 let draggedItem = null;      
@@ -74,15 +73,11 @@ function initDragDropSystem() {
         setupDesktopListeners();
     }
     
-    // NATIVE DRAG ENGELLEME (YAPIŞMA SORUNU ÇÖZÜMÜ)
-    // Sadece .travel-item içindeyse engelliyoruz, haritayı bozmuyoruz
+    // Native Drag ve Resim Seçimini Engelle
     document.addEventListener('dragstart', (e) => {
-        if (e.target.closest('.travel-item')) {
-            e.preventDefault();
-        }
+        if (e.target.closest('.travel-item')) e.preventDefault();
     });
 
-    // Pencere odağı kaybedilirse (Alt-Tab) sürüklemeyi bitir
     window.addEventListener('blur', () => {
         if (draggedItem) finishDrag();
     });
@@ -111,8 +106,9 @@ function createDragGhost(item, clientX, clientY) {
 
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
-    const content = ghost.querySelector('.content');
-    if(content) content.style.display = 'none';
+    // Ghost içindeki map veya görsel öğeleri gizle ki hafif olsun
+    const mapContent = ghost.querySelector('.map-content-wrap');
+    if(mapContent) mapContent.style.display = 'none';
 
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
@@ -131,7 +127,9 @@ function updateDragGhost(clientX, clientY) {
 
 // ========== PLACEHOLDER LOGIC ==========
 function getDragAfterElement(container, y) {
+    // Sadece travel-item olanları dikkate al, map bar veya butonları görmezden gel
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
+    
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
@@ -142,6 +140,8 @@ function getDragAfterElement(container, y) {
 function updatePlaceholder(clientX, clientY) {
     const elementBelow = document.elementFromPoint(clientX, clientY);
     if (!elementBelow) return;
+    
+    // Sadece day-list içine bırakılabilir
     const dropZone = elementBelow.closest('.day-list');
     if (!dropZone) return;
 
@@ -149,9 +149,16 @@ function updatePlaceholder(clientX, clientY) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
     }
+    
     const afterElement = getDragAfterElement(dropZone, clientY);
-    const addBtn = dropZone.querySelector('.add-more-btn');
+    
+    // Harita barı (route-controls-bar) varsa onun altına/üstüne girmemesi için dikkat et
+    // Genelde travel-item'lar arasına girmeli.
+    
     if (afterElement == null) {
+        // Eğer afterElement yoksa, listenin sonuna (veya add butondan önceye) ekle
+        // Ama map bar'ın altına düşmemeye çalışmalı (yapıya bağlı)
+        const addBtn = dropZone.querySelector('.add-more-btn');
         if (addBtn) dropZone.insertBefore(placeholder, addBtn);
         else dropZone.appendChild(placeholder);
     } else {
@@ -162,7 +169,8 @@ function updatePlaceholder(clientX, clientY) {
 // ========== HANDLERS ==========
 function handleTouchStart(e) {
     const item = e.target.closest('.travel-item');
-    if (!item || e.target.closest('button') || e.target.closest('.visual img')) return;
+    if (!item || e.target.closest('button') || e.target.closest('.map-content-wrap')) return;
+    
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     longPressTimer = setTimeout(() => startDrag(item, startX, startY), LONG_PRESS_MS);
@@ -188,11 +196,11 @@ function handleTouchEnd() {
 function setupDesktopListeners() {
     document.addEventListener('mousedown', function(e) {
         if (e.button !== 0) return;
-        const item = e.target.closest('.travel-item');
         
-        // DÜZELTME: Eğer tıklanan yer bir harita kontrolü ise (Leaflet butonları vs) karışma
-        if (e.target.closest('.leaflet-control') || e.target.closest('.mapboxgl-ctrl')) return;
+        // Harita kontrollerine tıklanıyorsa sürükleme başlatma
+        if (e.target.closest('.leaflet-control') || e.target.closest('.map-functions')) return;
 
+        const item = e.target.closest('.travel-item');
         if (item && !e.target.closest('button')) {
             draggedItem = item;
             startX = e.clientX;
@@ -239,22 +247,6 @@ function finishDrag() {
         const dropList = placeholder.parentNode;
         const toDay = parseInt(dropList.dataset.day);
         
-        // Yeni sıra hesabı
-        let newIndex = 0;
-        Array.from(dropList.children).forEach(child => {
-            if (child === placeholder) return; // döngüyü kırma, sadece geç
-            if (child === placeholder.nextSibling) return; // placeholder'ın kendisi sayılmaz
-            
-            // Eğer placeholder'dan önceyse ve item ise say
-            if (child.classList.contains('travel-item') && !child.classList.contains('dragging-source')) {
-                 // Placeholder'ın yerine bakarak index belirleme
-                 if (placeholder.compareDocumentPosition(child) & Node.DOCUMENT_POSITION_PRECEDING) {
-                     newIndex++;
-                 }
-            }
-        });
-        
-        // Daha basit index hesabı: Placeholder listenin kaçıncı 'travel-item'ı?
         let realIndex = 0;
         const siblings = dropList.querySelectorAll('.travel-item:not(.dragging-source), .insertion-placeholder');
         for(let i=0; i<siblings.length; i++) {
@@ -265,7 +257,6 @@ function finishDrag() {
         }
 
         const fromIndex = sourceIndex;
-        // DÜZELTME: Veri kontrolü yapıyoruz
         if (window.cart && window.cart[fromIndex]) {
             reorderCart(fromIndex, realIndex, window.cart[fromIndex].day, toDay);
         }
@@ -273,11 +264,10 @@ function finishDrag() {
     cleanupDrag();
 }
 
+// ========== KRİTİK BÖLÜM: REORDER & HARİTA GÜNCELLEME ==========
 function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     try {
         const newCart = [...window.cart];
-        
-        // Güvenlik kontrolü
         if (!newCart[fromIndex]) return;
 
         const [movedItem] = newCart.splice(fromIndex, 1);
@@ -297,13 +287,34 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
         window.cart = finalCart;
 
-        // Harita fonksiyonunu tetikle
+        // 1. Önce HTML'i güncelle (Bu işlem harita DIV'ini yok eder ve yeniden yapar)
         if (typeof updateCart === "function") {
             updateCart();
-        } else {
-            console.warn("updateCart fonksiyonu bulunamadı, harita güncellenmedi.");
         }
-        
+
+        // 2. Harita DIV'i yenilendiği için Haritayı TEKRAR başlatmamız lazım
+        // HTML render edildikten hemen sonra çalışması için setTimeout kullanıyoruz
+        setTimeout(() => {
+            console.log("Sıralama değişti, haritalar tetikleniyor...");
+
+            // YÖNTEM A: Eğer 'calculateAllRoutes' gibi bir fonksiyonun varsa burada çağır:
+            if (typeof calculateAllRoutes === "function") {
+                calculateAllRoutes();
+            } 
+            // YÖNTEM B: Eğer 'renderMapForDay' gibi bir şey varsa:
+            else if (typeof renderMapForDay === "function") {
+                renderMapForDay(toDay);
+                if(fromDay !== toDay) renderMapForDay(fromDay);
+            }
+            // YÖNTEM C (Evrensel): Eğer fonksiyon ismini bilmiyorsan,
+            // ana scriptinde dinleyebileceğin bir event fırlatıyoruz:
+            else {
+                window.dispatchEvent(new CustomEvent('cartUpdated', { 
+                    detail: { fromDay, toDay } 
+                }));
+            }
+        }, 50); // 50ms gecikme DOM'un oturması için yeterli
+
         if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
     } catch (e) {
@@ -313,10 +324,6 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
 // ========== BAŞLATMA ==========
 window.initDragDropSystem = initDragDropSystem;
-
-// DİKKAT: Eski kodundaki window.dragStart vs fonksiyonlarını EZMİYORUZ.
-// Onları sildim.
-
 if(document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initDragDropSystem);
 } else {
