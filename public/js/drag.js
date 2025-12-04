@@ -3,36 +3,42 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
+        /* SÜRÜKLENEN HAYALET (GHOST) */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
             background: #fff !important;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3) !important;
-            border: 2px solid #8a4af3 !important;
+            
+            /* İSTEK: Sadece yeşil border olsun */
+            border: 2px solid #00e676 !important; /* Canlı Yeşil */
+            box-shadow: 0 15px 40px rgba(0, 230, 118, 0.3) !important; /* Hafif yeşil gölge */
+            
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
             margin: 0 !important;
-            
-            /* DÜZELTME: Transform yerine Left/Top kullanacağız, bu daha güvenli */
             will-change: left, top; 
             transition: none !important;
         }
+
+        /* LİSTEDE KALAN ESKİ ÖĞE (KAYNAK) */
         .travel-item.dragging-source {
-            opacity: 0.2 !important;
-            filter: grayscale(100%);
-            border: 2px dashed #ccc;
+            /* İSTEK: Eski itema dokunma. */
+            /* Buradaki opacity, filter vb. her şeyi kaldırdık. */
+            /* Olduğu gibi görünecek. */
         }
+
+        /* Diğer Ayarlar */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
         .insertion-placeholder {
             height: 6px !important;
-            background: linear-gradient(90deg, #8a4af3, #b388ff);
+            background: linear-gradient(90deg, #00e676, #69f0ae); /* Çizgiyi de yeşil tonlu yaptım uyumlu olsun */
             margin: 8px 0;
             border-radius: 4px;
-            box-shadow: 0 0 10px rgba(138, 74, 243, 0.5);
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
             pointer-events: none;
         }
         body.dragging-active {
@@ -54,7 +60,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Mouse'un kutunun sol üstüne olan uzaklığı
+// Offset Değişkenleri
 let dragShiftX = 0;
 let dragShiftY = 0;
 
@@ -76,7 +82,6 @@ function initDragDropSystem() {
         setupDesktopListeners();
     }
     
-    // Native Drag Engelleme (Resimlerin yapışmasını önler)
     document.addEventListener('dragstart', (e) => {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
@@ -100,12 +105,11 @@ function cleanupDrag() {
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== GHOST LOGIC (DIRECT POSITIONING) ==========
+// ========== GHOST LOGIC ==========
 function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
     
-    // 1. Mouse'un öğenin köşesine olan farkını hesapla
     dragShiftX = clientX - rect.left;
     dragShiftY = clientY - rect.top;
 
@@ -118,7 +122,6 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // 2. İlk pozisyonu tam olarak olduğu yere ata
     ghost.style.left = rect.left + 'px';
     ghost.style.top = rect.top + 'px';
     
@@ -129,8 +132,6 @@ function updateDragGhost(clientX, clientY) {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // 3. Mouse neredeyse, farkı çıkarıp kutuyu oraya koy
-    // Bu yöntem transform'dan çok daha garantidir.
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
 }
@@ -214,7 +215,6 @@ function setupDesktopListeners() {
                 const dy = Math.abs(moveEvent.clientY - startY);
                 if (!isDragStarted && (dx > 5 || dy > 5)) {
                     isDragStarted = true;
-                    // startDrag'e o anki güncel pozisyonu gönderiyoruz
                     startDrag(draggedItem, moveEvent.clientX, moveEvent.clientY);
                 }
                 if (isDragStarted) {
@@ -240,7 +240,6 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // Ghost'u tam olduğu yerde yarat (x,y o anki mouse pozisyonu)
     createDragGhost(item, x, y);
     
     item.classList.add('dragging-source');
@@ -291,7 +290,6 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
         window.cart = finalCart;
 
-        // Harita güncelleme işlemleri
         if (typeof updateCart === "function") updateCart();
 
         setTimeout(() => {
