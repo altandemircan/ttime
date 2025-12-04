@@ -14,7 +14,6 @@ function injectDragStyles() {
             width: var(--ghost-width);
             height: var(--ghost-height);
             margin: 0 !important;
-            /* Transform yerine eski usul top/left kullanacağız, en garantisi bu */
             will-change: left, top; 
             transition: none !important;
         }
@@ -83,7 +82,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// ESKİ KOD MANTIĞI: Shift değerleri (Tutulan yer ile köşe arasındaki fark)
+// ESKİ KOD MANTIĞI: Shift değerleri
 let dragShiftX = 0, dragShiftY = 0;
 
 let startX = 0, startY = 0;
@@ -94,10 +93,12 @@ const LONG_PRESS_MS = 200;
 let autoScrollSpeed = 0;
 let autoScrollFrame = null;
 let scrollContainer = null;
-let isDragging = false; // Render loop kontrolü
+let isDragging = false; 
 
-const SCROLL_THRESHOLD = 100; 
-const MAX_SCROLL_SPEED = 25;  
+// Eşik değerleri (Aşağısı için özel ayar yapacağız)
+const SCROLL_THRESHOLD_TOP = 100; 
+const SCROLL_THRESHOLD_BOTTOM = 160; // Alt kısım için daha geniş alan (Akıcılık için)
+const MAX_SCROLL_SPEED = 28;  
 
 let lastClientX = 0, lastClientY = 0;
 
@@ -179,7 +180,7 @@ function cleanupDrag() {
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== RENDER LOOP (Performanslı Çizim) ==========
+// ========== RENDER LOOP ==========
 function dragRenderLoop() {
     if (!isDragging || !draggedItem) return;
 
@@ -187,7 +188,6 @@ function dragRenderLoop() {
     handleAutoScroll(lastClientY);
 
     // 2. Ghost Pozisyonunu Güncelle (ESKİ KOD MANTIĞI)
-    // Doğrudan stil güncelliyoruz, transform yok.
     const ghost = document.querySelector('.drag-ghost');
     if (ghost) {
         ghost.style.left = (lastClientX - dragShiftX) + 'px';
@@ -200,7 +200,7 @@ function dragRenderLoop() {
     requestAnimationFrame(dragRenderLoop);
 }
 
-// ========== SCROLL LOGIC ==========
+// ========== SCROLL LOGIC (ÖZEL AYARLI) ==========
 function handleAutoScroll(clientY) {
     let containerHeight, containerTop;
     
@@ -215,13 +215,16 @@ function handleAutoScroll(clientY) {
 
     const relativeY = clientY - containerTop;
 
-    if (relativeY < SCROLL_THRESHOLD) {
-        const intensity = (SCROLL_THRESHOLD - relativeY) / SCROLL_THRESHOLD;
+    // YUKARI (Normal hız)
+    if (relativeY < SCROLL_THRESHOLD_TOP) {
+        const intensity = (SCROLL_THRESHOLD_TOP - relativeY) / SCROLL_THRESHOLD_TOP;
         autoScrollSpeed = -MAX_SCROLL_SPEED * intensity;
     } 
-    else if (relativeY > (containerHeight - SCROLL_THRESHOLD)) {
-        const intensity = (relativeY - (containerHeight - SCROLL_THRESHOLD)) / SCROLL_THRESHOLD;
-        autoScrollSpeed = MAX_SCROLL_SPEED * intensity;
+    // AŞAĞI (Güçlendirilmiş hız ve genişletilmiş alan)
+    else if (relativeY > (containerHeight - SCROLL_THRESHOLD_BOTTOM)) {
+        const intensity = (relativeY - (containerHeight - SCROLL_THRESHOLD_BOTTOM)) / SCROLL_THRESHOLD_BOTTOM;
+        // Hız faktörü: 1.2 ile çarparak aşağı inişi hızlandırıyoruz
+        autoScrollSpeed = (MAX_SCROLL_SPEED * intensity) * 1.2;
     } 
     else {
         autoScrollSpeed = 0;
@@ -279,9 +282,6 @@ function getDragAfterElement(container, y) {
 }
 
 function updatePlaceholder(clientX, clientY) {
-    // ESKİ KOD MANTIĞI: Ghost'un merkezini kullanmak yerine doğrudan fareyi kullanıyoruz
-    // (veya tercihe göre ghost'un ortasını hesaplayabiliriz ama cursor daha stabil)
-    
     const elementBelow = document.elementFromPoint(clientX, clientY);
     if (!elementBelow) return;
     
@@ -316,12 +316,10 @@ function handleTouchStart(e) {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     
-    // ESKİ KOD MANTIĞI: Tıklanan yer ile kutunun sol-üst köşesi arasındaki farkı kaydet
     const rect = item.getBoundingClientRect();
     dragShiftX = startX - rect.left;
     dragShiftY = startY - rect.top;
     
-    // Render loop için koordinatları hazırla
     lastClientX = startX;
     lastClientY = startY;
     
@@ -358,7 +356,6 @@ function setupDesktopListeners() {
             startX = e.clientX;
             startY = e.clientY;
             
-            // ESKİ KOD MANTIĞI
             const rect = item.getBoundingClientRect();
             dragShiftX = startX - rect.left;
             dragShiftY = startY - rect.top;
@@ -418,7 +415,6 @@ function startDrag(item, x, y) {
     document.body.classList.add('hide-map-details');
     document.body.classList.add('dragging-active');
 
-    // Döngüyü başlat
     isDragging = true;
     dragRenderLoop();
 }
