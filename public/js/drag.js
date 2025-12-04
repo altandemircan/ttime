@@ -7,15 +7,15 @@ function injectDragStyles() {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: rgba(255, 255, 255, 0.95) !important;
+            background: rgba(255, 255, 255, 0.98) !important;
             border: 2px dashed #87cdb5 !important; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25) !important;
             border-radius: 12px !important;
-            /* JS ile set edilecekler */
-            width: var(--ghost-width);
-            height: var(--ghost-height);
             
-            /* Başlangıç ayarları */
+            /* Başlangıçta görünmez (JS konumlandırınca açacak) */
+            visibility: hidden; 
+            
+            /* JS tarafından set edilecek */
             top: 0; left: 0;
             margin: 0 !important;
             
@@ -24,6 +24,11 @@ function injectDragStyles() {
             transition: none !important;
             transform-origin: center center;
         }
+        /* JS sınıfı ekleyince görünür olacak */
+        .drag-ghost.visible {
+            visibility: visible !important;
+        }
+
         .insertion-placeholder {
             height: 6px !important;
             background: linear-gradient(90deg, #8a4af3, #b388ff); 
@@ -74,6 +79,7 @@ function injectDragStyles() {
             cursor: grabbing !important;
             touch-action: none !important; 
         }
+        /* İtem üzerindeki tutma ikonu */
         .travel-item { cursor: grab; }
         .travel-item:active { cursor: grabbing; }
     `;
@@ -99,7 +105,7 @@ let startX = 0, startY = 0;
 let longPressTimer;
 const LONG_PRESS_MS = 200;
 
-// --- RENDER LOOP variables ---
+// --- RENDER LOOP & SCROLL VARIABLES ---
 let isDragging = false; 
 let renderFrameId = null;
 let autoScrollSpeed = 0;
@@ -251,10 +257,9 @@ function updateDragGhostVisuals() {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // Eğer koordinat 0 ise atla
     if (lastClientY === 0) return;
 
-    // Y HESABI: Parmağın Y konumu - Tutma payı
+    // Parmağın Y konumu - Tutma payı = Ghost'un Tepesi
     const targetY = lastClientY - grabOffsetY;
     const targetX = ghostFixedLeft; 
 
@@ -307,7 +312,7 @@ function getDragAfterElement(container, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// ========== INITIAL GHOST ==========
+// ========== INITIAL GHOST (CRITICAL FIX) ==========
 function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     
@@ -320,23 +325,29 @@ function createDragGhost(item, clientX, clientY) {
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
     
+    // İçerik temizliği
     const mapContent = ghost.querySelector('.map-content-wrap');
     if(mapContent) mapContent.style.display = 'none';
     const routeInfo = ghost.querySelector('.route-info');
     if(routeInfo) routeInfo.style.display = 'none';
 
-    ghost.style.setProperty('--ghost-width', rect.width + 'px');
-    ghost.style.setProperty('--ghost-height', rect.height + 'px');
+    // Genişlik ve Yükseklik Inline Olarak (Kesinlik için)
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
     
-    // --- KESİN ÇÖZÜM: INLINE STYLE İLE BAŞLANGIÇ KONUMU ---
-    // CSS class'ındaki transform'u beklemeden, oluşturulduğu an
-    // doğru koordinatı (clientX/Y bazlı) yapıştırıyoruz.
+    // --- KESİN ÇÖZÜM: SENKRON KONUMLANDIRMA ---
+    // CSS'de "visibility: hidden" var.
+    // Önce doğru konuma getiriyoruz.
     const initialY = clientY - grabOffsetY;
-    
-    // Burası "Sol Üst" sorununu çözen kısımdır.
     ghost.style.transform = `translate3d(${ghostFixedLeft}px, ${initialY}px, 0) scale(1.02)`;
     
+    // DOM'a ekle (Hala görünmez)
     document.body.appendChild(ghost);
+
+    // Bir sonraki kareyi beklemeden görünür yap (Flicker'ı önler)
+    // requestAnimationFrame gerekmez, zaten doğru yerde.
+    // CSS class'ı ekleyerek visibility: visible yapıyoruz.
+    ghost.classList.add('visible');
 }
 
 // ========== HANDLERS ==========
@@ -355,14 +366,12 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
-    // Koordinatları sürekli güncelle
     lastClientX = e.touches[0].clientX;
     lastClientY = e.touches[0].clientY;
 
     if (!isDragging) {
         const dx = Math.abs(lastClientX - startX);
         const dy = Math.abs(lastClientY - startY);
-        // Hassasiyet eşiği
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
