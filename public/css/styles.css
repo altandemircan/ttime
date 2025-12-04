@@ -5726,26 +5726,21 @@ ease;
 }
 
 .expand-map-btn {
-    background: rgb(90 132 173);
     border: none;
     border-radius: 8px;
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 6px;
-    padding: 6px 8px;
-    font-weight: bold;
-    color: rgb(255, 255, 255);
-    cursor: pointer;
+    padding: 6px 12px;
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: 0 0px 6px rgba(0, 0, 0, 0.00), 0 3px 6px rgba(0, 0, 0, 0.05);
 }
 
 .expand-map-btn img {
-
-
-    width: 16px;
-    height: 16px;
-
-  
+    width: 20px;
+    height: 20px;  
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
