@@ -8,7 +8,7 @@ function injectDragStyles() {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: rgba(255, 255, 255, 0.95) !important; /* Biraz daha opak, temiz dursun */
+            background: rgba(255, 255, 255, 0.95) !important;
             
             /* Modern, tok bir yeşil (Emerald Green) */
             border: 2px dashed #87cdb5 !important; 
@@ -24,7 +24,7 @@ function injectDragStyles() {
             transition: none !important;
         }
 
-        /* YERLEŞECEĞİ ÇİZGİ (PLACEHOLDER) -> MOR (Aynen korundu) */
+        /* YERLEŞECEĞİ ÇİZGİ (PLACEHOLDER) -> MOR */
         .insertion-placeholder {
             height: 6px !important;
             background: linear-gradient(90deg, #8a4af3, #b388ff); 
@@ -32,6 +32,15 @@ function injectDragStyles() {
             border-radius: 4px;
             box-shadow: 0 0 10px rgba(138, 74, 243, 0.5); 
             pointer-events: none;
+        }
+
+        /* --- YENİ EKLENEN KISIM: GİZLEME KURALLARI --- */
+        /* Sürükleme başladığında body'ye bu class eklenir ve detaylar gizlenir */
+        body.hide-map-details .route-controls-bar,
+        body.hide-map-details .tt-travel-mode-set,
+        body.hide-map-details [id^="map-bottom-controls-wrapper"], 
+        body.hide-map-details .add-more-btn {
+            display: none !important;
         }
 
         /* LİSTEDE KALAN ESKİ ÖĞE (DOKUNULMADI) */
@@ -84,7 +93,7 @@ function initDragDropSystem() {
         setupDesktopListeners();
     }
     
-    // Native Drag Engelleme (Resimlerin yapışmasını önler)
+    // Native Drag Engelleme
     document.addEventListener('dragstart', (e) => {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
@@ -104,11 +113,15 @@ function cleanupDrag() {
     if (placeholder && placeholder.parentNode) placeholder.remove();
     placeholder = null;
     draggedItem = null;
+    
+    // --- GİZLEME SINIFINI KALDIR ---
     document.body.classList.remove('dragging-active');
+    document.body.classList.remove('hide-map-details'); // Her şey geri gelir
+
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== GHOST LOGIC (DIRECT POSITIONING) ==========
+// ========== GHOST LOGIC (DIRECT POSITIONING - AYNI KALDI) ==========
 function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
@@ -138,7 +151,6 @@ function updateDragGhost(clientX, clientY) {
     if (!ghost) return;
     
     // 3. Mouse neredeyse, farkı çıkarıp kutuyu oraya koy
-    // Bu yöntem transform'dan çok daha garantidir.
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
 }
@@ -168,9 +180,14 @@ function updatePlaceholder(clientX, clientY) {
     const afterElement = getDragAfterElement(dropZone, clientY);
     
     if (afterElement == null) {
+        // --- ADD BTN GİZLİ OLACAĞI İÇİN DİREKT SONA EKLEME ---
         const addBtn = dropZone.querySelector('.add-more-btn');
-        if (addBtn) dropZone.insertBefore(placeholder, addBtn);
-        else dropZone.appendChild(placeholder);
+        // Buton görünürse onun önüne, görünmezse (ki gizledik) sona ekle
+        if (addBtn && getComputedStyle(addBtn).display !== 'none') {
+            dropZone.insertBefore(placeholder, addBtn);
+        } else {
+            dropZone.appendChild(placeholder);
+        }
     } else {
         dropZone.insertBefore(placeholder, afterElement);
     }
@@ -253,6 +270,9 @@ function startDrag(item, x, y) {
     
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
+
+    // --- HARİTALARI VE BUTONLARI GİZLE ---
+    document.body.classList.add('hide-map-details');
 }
 
 function finishDrag() {
