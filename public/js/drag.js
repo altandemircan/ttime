@@ -9,20 +9,12 @@ function injectDragStyles() {
             z-index: 999999 !important;
             pointer-events: none !important;
             background: rgba(255, 255, 255, 0.95) !important;
-            
-            /* Modern, tok bir yeşil (Emerald Green) */
             border: 2px dashed #87cdb5 !important; 
-            
-            /* Shadow transparency */
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
-            
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
-            
-            /* POSITION SETTINGS */
             margin: 0 !important;
-            
             will-change: left, top; 
             transition: none !important;
         }
@@ -37,9 +29,9 @@ function injectDragStyles() {
             pointer-events: none;
         }
 
-        /* SHAKE EFFECT (INFO/WARNING) */
+        /* HATA DURUMUNDA TİTREME EFEKTİ */
         @keyframes shakeError {
-            0% { transform: translateX(0); border-color: #ffa000; } /* Orange instead of red */
+            0% { transform: translateX(0); border-color: #ffa000; }
             25% { transform: translateX(-5px); }
             50% { transform: translateX(5px); }
             75% { transform: translateX(-5px); }
@@ -47,21 +39,16 @@ function injectDragStyles() {
         }
         .shake-error {
             animation: shakeError 0.4s ease-in-out;
-            border: 2px solid #ffa000 !important; /* Orange border for info */
+            border: 2px solid #ffa000 !important; 
             background-color: #fffdf0 !important;
         }
 
-        /* ELEMENTS TO HIDE (Map etc.) */
+        /* GİZLENECEK ELEMANLAR */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
         body.hide-map-details .add-more-btn {
             display: none !important;
-        }
-
-        /* LİSTEDE KALAN ESKİ ÖĞE (DOKUNULMADI) */
-        .travel-item.dragging-source {
-            /* Olduğu gibi kalsın */
         }
 
         /* DİĞER AYARLAR */
@@ -87,7 +74,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Offset (Shift) Değişkenleri
+// Offset (Shift) Variables
 let dragShiftX = 0;
 let dragShiftY = 0;
 
@@ -109,7 +96,6 @@ function initDragDropSystem() {
         setupDesktopListeners();
     }
     
-    // Native Drag Engelleme
     document.addEventListener('dragstart', (e) => {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
@@ -121,6 +107,25 @@ function initDragDropSystem() {
 
 // ========== CLEANUP ==========
 function cleanupDrag() {
+    // Scroll Telafisi (Geri Yükleme): 
+    // Haritalar geri geldiğinde sayfa aşağı uzayacak, scroll'u o kadar aşağı itelim ki
+    // kullanıcı baktığı yeri kaybetmesin.
+    let scrollAdjustment = 0;
+    const currentDragItem = document.querySelector('.travel-item.dragging-source');
+    
+    if (currentDragItem && document.body.classList.contains('hide-map-details')) {
+        const rectBefore = currentDragItem.getBoundingClientRect();
+        document.body.classList.remove('hide-map-details'); // Gizliliği kaldır
+        const rectAfter = currentDragItem.getBoundingClientRect();
+        scrollAdjustment = rectAfter.top - rectBefore.top;
+    } else {
+        document.body.classList.remove('hide-map-details');
+    }
+
+    if (scrollAdjustment !== 0) {
+        window.scrollBy(0, scrollAdjustment);
+    }
+
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
         item.classList.remove('dragging-source');
@@ -132,8 +137,7 @@ function cleanupDrag() {
     draggedItem = null;
     
     document.body.classList.remove('dragging-active');
-    document.body.classList.remove('hide-map-details');
-
+    
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
@@ -151,7 +155,6 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // Ghost'un ilk pozisyonunu hesaplanan shift değerine göre ver
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
     
@@ -283,11 +286,30 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
+    // --- SCROLL COMPENSATION START ---
+    // 1. Önce öğenin şu anki (kayma öncesi) yerini al
+    const rectBefore = item.getBoundingClientRect();
+
+    // 2. Haritaları ve butonları gizle (Bu işlem DOM'u kısaltır)
+    document.body.classList.add('hide-map-details');
+
+    // 3. Öğenin yeni yerini al (Muhtemelen çok daha yukarıda olacaktır)
+    const rectAfter = item.getBoundingClientRect();
+
+    // 4. Aradaki farkı hesapla
+    // Örneğin: 500px'deydi, şimdi 200px'de. Fark = -300px.
+    const diff = rectAfter.top - rectBefore.top;
+
+    // 5. Sayfayı fark kadar kaydır (Senkronize olarak)
+    if (diff !== 0) {
+        window.scrollBy(0, diff);
+    }
+    // --- SCROLL COMPENSATION END ---
+
     createDragGhost(item, x, y);
     
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
-    document.body.classList.add('hide-map-details');
 }
 
 // ========== DUPLICATE CHECK & FINISH ==========
@@ -295,10 +317,9 @@ function finishDrag() {
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
         
-        // --- DUPLICATE CHECK (INFO MODE) ---
+        // --- DUPLICATE CHECK ---
         const sourceItemData = window.cart[sourceIndex];
         
-        // Helper: Find only real travel-items
         const getValidNeighbor = (startNode, direction) => {
             let sibling = direction === 'prev' ? startNode.previousElementSibling : startNode.nextElementSibling;
             while (sibling) {
@@ -311,7 +332,6 @@ function finishDrag() {
             return null;
         };
 
-        // 1. Find Neighbors
         let prev = getValidNeighbor(placeholder, 'prev');
         let next = getValidNeighbor(placeholder, 'next');
 
@@ -328,19 +348,13 @@ function finishDrag() {
             return name1 === name2 && name1 !== "";
         };
 
-        // 2. CHECK & NOTIFY (BUT DO NOT BLOCK)
         if (isDuplicate(prev) || isDuplicate(next)) {
-            // Visual cue (Orange shake)
             const conflictItem = isDuplicate(prev) ? prev : next;
             conflictItem.classList.add('shake-error');
             
-            // Informational Alert
             setTimeout(() => alert("ℹ️ Note: You added the same place consecutively."), 10);
-            
-            // REMOVED: return and cleanupDrag(); -> Flow continues!
         }
 
-        // --- CONTINUE TO DROP ---
         const toDay = parseInt(dropList.dataset.day);
         
         let realIndex = 0;
