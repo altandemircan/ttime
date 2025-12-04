@@ -3,26 +3,18 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* SÜRÜKLENEN HAYALET (GHOST) -> MODERN YEŞİL */
+        /* SÜRÜKLENEN HAYALET (GHOST) */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
             background: rgba(255, 255, 255, 0.95) !important;
-            
-            /* Modern, tok bir yeşil (Emerald Green) */
             border: 2px dashed #87cdb5 !important; 
-            
-            /* Gölgeyi de aynı tonun şeffafı yapıyoruz */
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
-            
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
-            
-            /* POZİSYON AYARLARI */
             margin: 0 !important;
-            
             will-change: left, top; 
             transition: none !important;
         }
@@ -37,7 +29,7 @@ function injectDragStyles() {
             pointer-events: none;
         }
 
-        /* HATA DURUMUNDA TİTREME EFEKTİ */
+        /* UYARI EFEKTİ */
         @keyframes shakeError {
             0% { transform: translateX(0); border-color: #ffa000; }
             25% { transform: translateX(-5px); }
@@ -59,7 +51,6 @@ function injectDragStyles() {
             display: none !important;
         }
 
-        /* DİĞER AYARLAR */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
@@ -82,7 +73,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Offset (Shift) Değişkenleri
+// Offset Variables
 let dragShiftX = 0;
 let dragShiftY = 0;
 
@@ -115,30 +106,6 @@ function initDragDropSystem() {
 
 // ========== CLEANUP ==========
 function cleanupDrag() {
-    // --- SCROLL RESTORATION ---
-    // Haritalar geri geldiğinde sayfa uzar. Kullanıcının baktığı yerin kaymaması için düzeltme.
-    let scrollAdjustment = 0;
-    const currentDragItem = document.querySelector('.travel-item.dragging-source');
-    
-    if (currentDragItem && document.body.classList.contains('hide-map-details')) {
-        const rectBefore = currentDragItem.getBoundingClientRect();
-        document.body.classList.remove('hide-map-details'); 
-        const rectAfter = currentDragItem.getBoundingClientRect();
-        
-        // Yukarıda ne kadar boşluk açıldıysa o kadar geri sar
-        scrollAdjustment = rectAfter.top - rectBefore.top;
-    } else {
-        document.body.classList.remove('hide-map-details');
-    }
-
-    // Yükseklik kilidini kaldır (Sayfa doğal haline dönsün)
-    document.body.style.minHeight = '';
-
-    if (scrollAdjustment !== 0) {
-        window.scrollBy(0, scrollAdjustment);
-    }
-
-    // Standart temizlik
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
         item.classList.remove('dragging-source');
@@ -149,8 +116,11 @@ function cleanupDrag() {
     placeholder = null;
     draggedItem = null;
     
+    // Sınıfları ve kilitleri kaldır
     document.body.classList.remove('dragging-active');
-    
+    document.body.classList.remove('hide-map-details');
+    document.body.style.minHeight = ''; // Height lock kaldır
+
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
@@ -294,40 +264,54 @@ function setupDesktopListeners() {
     });
 }
 
+// ========== CRITICAL FIX: START DRAG WITH SCROLL COMPENSATION ==========
 function startDrag(item, x, y) {
     draggedItem = item;
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // --- 1. HEIGHT LOCK (MOBİL KAYMA ÇÖZÜMÜ) ---
-    // Haritalar gizlenince sayfa kısalır ve tarayıcı scroll'u yukarı çeker.
-    // Bunu engellemek için mevcut yüksekliği body'ye kilitliyoruz.
+    // 1. MEVCUT DURUMU KAYDET
+    // Sayfanın kısalmasını engellemek için mevcut yüksekliği body'ye kilitle
     const currentDocHeight = document.documentElement.scrollHeight;
     document.body.style.minHeight = currentDocHeight + 'px';
 
-    // --- 2. SCROLL COMPENSATION ---
+    // Öğenin ekrandaki (viewport) üst pozisyonunu al (Örn: 300px)
     const rectBefore = item.getBoundingClientRect();
-    document.body.classList.add('hide-map-details');
-    const rectAfter = item.getBoundingClientRect();
+    const originalTop = rectBefore.top;
+
+    // 2. GHOST OLUŞTUR (Görsel kopyayı ekle)
+    createDragGhost(item, x, y);
     
-    // Aradaki fark kadar sayfayı kaydır ki öğe parmağın altında kalsın
-    const diff = rectAfter.top - rectBefore.top;
+    // 3. ELEMANLARI GİZLE (DOM değişiyor, liste yukarı kayıyor)
+    document.body.classList.add('hide-map-details');
+    item.classList.add('dragging-source');
+    document.body.classList.add('dragging-active');
+
+    // 4. BROWSER REFLOW ZORLA (Değişiklikleri hemen işle)
+    void document.body.offsetHeight;
+
+    // 5. YENİ POZİSYONU HESAPLA VE DÜZELT
+    // Liste yukarı kaydığı için öğenin yeni 'top' değeri küçüldü (Örn: 100px)
+    const rectAfter = item.getBoundingClientRect();
+    const newTop = rectAfter.top;
+
+    // Farkı bul: 100 - 300 = -200px (Öğe 200px yukarı kaçtı)
+    const diff = newTop - originalTop;
+
+    // Sayfayı fark kadar scroll et ki öğe görsel olarak aynı yerde kalsın
+    // (newTop - originalTop) negatif ise yukarı kaymıştır, biz scroll'u o kadar yukarı (eksi yönde) çekmeliyiz?
+    // Hayır, içerik yukarı kaçtıysa (top azaldıysa), içeriği aşağı indirmek için scroll'u YUKARI (değerini azaltarak) yapmalıyız.
+    // window.scrollBy(0, diff) işlemi: diff negatifse yukarı scroll eder, bu da içeriği aşağı iter.
+    
     if (diff !== 0) {
         window.scrollBy(0, diff);
     }
-
-    createDragGhost(item, x, y);
-    
-    item.classList.add('dragging-source');
-    document.body.classList.add('dragging-active');
 }
 
 // ========== DUPLICATE CHECK & FINISH ==========
 function finishDrag() {
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
-        
-        // --- DUPLICATE CHECK ---
         const sourceItemData = window.cart[sourceIndex];
         
         const getValidNeighbor = (startNode, direction) => {
@@ -349,16 +333,12 @@ function finishDrag() {
             if (!element) return false;
             const idx = parseInt(element.dataset.index);
             const itemData = window.cart[idx];
-            
             if (!itemData || idx === sourceIndex) return false;
-
             const name1 = (itemData.title || itemData.name || "").trim().toLowerCase();
             const name2 = (sourceItemData.title || sourceItemData.name || "").trim().toLowerCase();
-            
             return name1 === name2 && name1 !== "";
         };
 
-        // BİLGİLENDİRME (Alert + Titreme)
         if (isDuplicate(prev) || isDuplicate(next)) {
             const conflictItem = isDuplicate(prev) ? prev : next;
             conflictItem.classList.add('shake-error');
@@ -428,7 +408,7 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     }
 }
 
-// ========== INITIALIZATION ==========
+// ========== BAŞLATMA ==========
 window.initDragDropSystem = initDragDropSystem;
 if(document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initDragDropSystem);
