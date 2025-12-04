@@ -6,9 +6,8 @@ function injectDragStyles() {
         /* Sürüklenen Görsel Kopya (Ghost) */
         .drag-ghost {
             position: fixed !important;
-            z-index: 999999 !important; /* En üstte */
+            z-index: 999999 !important;
             pointer-events: none !important; /* Altını görmesi için şart */
-            opacity: 0.95 !important;
             background: #fff !important;
             box-shadow: 0 15px 40px rgba(0,0,0,0.3) !important;
             transform: scale(1.05) !important;
@@ -18,13 +17,12 @@ function injectDragStyles() {
             box-sizing: border-box !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
-            /* Yumuşaklık için */
-            transition: transform 0.1s;
+            transition: none !important; /* Anlık takip için */
         }
 
         /* Orijinal Öğe (Listede kalan) */
         .travel-item.dragging-source {
-            opacity: 0.3 !important;
+            opacity: 0.1 !important;
             filter: grayscale(100%);
             border: 2px dashed #ccc;
         }
@@ -43,6 +41,7 @@ function injectDragStyles() {
             user-select: none !important;
             -webkit-user-select: none !important;
             touch-action: none !important;
+            cursor: grabbing !important;
         }
     `;
     const style = document.createElement('style');
@@ -54,18 +53,17 @@ function injectDragStyles() {
 // ========== GLOBAL VARIABLES ==========
 if (!window.cart) window.cart = [];
 
-let draggedItem = null;      // Orijinal öğe
-let dragGhost = null;        // Sürüklenen görsel kopya
+let draggedItem = null;      
 let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
 // Koordinatlar
-let touchStartX, touchStartY;
 let dragOffsetX, dragOffsetY;
 let longPressTimer;
-const LONG_PRESS_MS = 250;
+const LONG_PRESS_MS = 200;
 const MOVE_CANCEL_PX = 10;
+let startX = 0, startY = 0;
 
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
@@ -79,36 +77,66 @@ function initDragDropSystem() {
     } else {
         setupDesktopListeners();
     }
+    
+    // Sayfa yüklendiğinde kalıntı varsa temizle
+    cleanupDrag();
+}
+
+// ========== AGRESSIVE CLEANUP ==========
+function cleanupDrag() {
+    // 1. Tüm Ghost elemanlarını bul ve yok et
+    const ghosts = document.querySelectorAll('.drag-ghost');
+    ghosts.forEach(g => g.remove());
+
+    // 2. Tüm Orijinal öğelerin stillerini sıfırla
+    document.querySelectorAll('.travel-item').forEach(item => {
+        item.classList.remove('dragging-source');
+        item.style.opacity = '';
+    });
+
+    // 3. Placeholder'ı kaldır
+    if (placeholder && placeholder.parentNode) placeholder.remove();
+    placeholder = null;
+
+    // 4. Global değişkenleri sıfırla
+    draggedItem = null;
+    document.body.classList.remove('dragging-active');
+    
+    if (longPressTimer) clearTimeout(longPressTimer);
 }
 
 // ========== HELPER: GHOST OLUŞTURMA ==========
 function createDragGhost(item, clientX, clientY) {
+    // Önceki kalıntıları temizle
+    document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
+
     const rect = item.getBoundingClientRect();
     dragOffsetX = clientX - rect.left;
     dragOffsetY = clientY - rect.top;
 
-    dragGhost = item.cloneNode(true);
-    dragGhost.classList.add('drag-ghost');
+    const ghost = item.cloneNode(true);
+    ghost.classList.add('drag-ghost');
     
-    // İçeriği temizle (sadece başlık ve resim kalsın, harita vs kasmasın)
-    const content = dragGhost.querySelector('.content');
+    // İçeriği temizle (performans)
+    const content = ghost.querySelector('.content');
     if(content) content.style.display = 'none';
 
     // Boyutları sabitle
-    dragGhost.style.setProperty('--ghost-width', rect.width + 'px');
-    dragGhost.style.setProperty('--ghost-height', rect.height + 'px');
+    ghost.style.setProperty('--ghost-width', rect.width + 'px');
+    ghost.style.setProperty('--ghost-height', rect.height + 'px');
 
     // İlk pozisyon
-    dragGhost.style.left = (rect.left) + 'px';
-    dragGhost.style.top = (rect.top) + 'px';
+    ghost.style.left = (rect.left) + 'px';
+    ghost.style.top = (rect.top) + 'px';
 
-    document.body.appendChild(dragGhost);
+    document.body.appendChild(ghost);
 }
 
 function updateDragGhost(clientX, clientY) {
-    if (!dragGhost) return;
-    dragGhost.style.left = (clientX - dragOffsetX) + 'px';
-    dragGhost.style.top = (clientY - dragOffsetY) + 'px';
+    const ghost = document.querySelector('.drag-ghost');
+    if (!ghost) return;
+    ghost.style.left = (clientX - dragOffsetX) + 'px';
+    ghost.style.top = (clientY - dragOffsetY) + 'px';
 }
 
 // ========== HELPER: EN YAKIN ELEMAN ==========
@@ -129,7 +157,8 @@ function getDragAfterElement(container, y) {
 
 // ========== PLACEHOLDER MANTIĞI ==========
 function updatePlaceholder(clientX, clientY) {
-    // Ghost pointer-events:none olduğu için altını görürüz
+    // Ghost'un altındaki elementi bul
+    // pointer-events:none olduğu için ghost delinip geçilir
     const elementBelow = document.elementFromPoint(clientX, clientY);
     if (!elementBelow) return;
 
@@ -157,8 +186,8 @@ function handleTouchStart(e) {
     const item = e.target.closest('.travel-item');
     if (!item || e.target.closest('button') || e.target.closest('.visual img')) return;
 
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
     
     longPressTimer = setTimeout(() => {
         startDrag(item, e.touches[0].clientX, e.touches[0].clientY);
@@ -167,16 +196,14 @@ function handleTouchStart(e) {
 
 function handleTouchMove(e) {
     if (!draggedItem) {
-        // Scroll kontrolü
-        const dx = Math.abs(e.touches[0].clientX - touchStartX);
-        const dy = Math.abs(e.touches[0].clientY - touchStartY);
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
         if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) clearTimeout(longPressTimer);
         return;
     }
 
     e.preventDefault();
     const touch = e.touches[0];
-    
     updateDragGhost(touch.clientX, touch.clientY);
     updatePlaceholder(touch.clientX, touch.clientY);
 }
@@ -189,24 +216,47 @@ function handleTouchEnd(e) {
 
 // ========== DESKTOP HANDLERS ==========
 function setupDesktopListeners() {
-    document.addEventListener('dragstart', function(e) {
+    // Listener'ları document üzerine ekleyelim ki dinamik elemanlarda sorun olmasın
+    document.addEventListener('mousedown', function(e) {
         const item = e.target.closest('.travel-item');
-        if (item) {
-            e.preventDefault(); // Native drag'i iptal et, kendi sistemimizi kullan
-            startDrag(item, e.clientX, e.clientY);
-        }
-    });
+        // Sol tık sadece
+        if (item && e.button === 0 && !e.target.closest('button') && !e.target.closest('.visual img')) {
+            // Desktop'ta anında başlatmayalım, hafif hareket bekleyelim veya direkt başlatalım.
+            // Native drag'i engellemek için:
+            // e.preventDefault(); // Bunu yaparsak click çalışmaz.
+            
+            // Hibrit çözüm:
+            draggedItem = item;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            const onMouseMove = (moveEvent) => {
+                const dx = Math.abs(moveEvent.clientX - startX);
+                const dy = Math.abs(moveEvent.clientY - startY);
+                // 5px hareket varsa sürüklemeyi başlat
+                if (!document.querySelector('.drag-ghost') && (dx > 5 || dy > 5)) {
+                    startDrag(item, startX, startY);
+                }
+                
+                if (document.querySelector('.drag-ghost')) {
+                    updateDragGhost(moveEvent.clientX, moveEvent.clientY);
+                    updatePlaceholder(moveEvent.clientX, moveEvent.clientY);
+                }
+            };
 
-    document.addEventListener('mousemove', function(e) {
-        if (draggedItem) {
-            e.preventDefault();
-            updateDragGhost(e.clientX, e.clientY);
-            updatePlaceholder(e.clientX, e.clientY);
-        }
-    });
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                if (document.querySelector('.drag-ghost')) {
+                    finishDrag();
+                } else {
+                    draggedItem = null;
+                }
+            };
 
-    document.addEventListener('mouseup', function(e) {
-        if (draggedItem) finishDrag();
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
     });
 }
 
@@ -215,20 +265,16 @@ function startDrag(item, x, y) {
     draggedItem = item;
     sourceIndex = parseInt(item.dataset.index);
     
-    // Titreşim
     if (navigator.vibrate) navigator.vibrate(50);
 
-    // Ghost oluştur
     createDragGhost(item, x, y);
 
-    // Orijinali silikleştir
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
 }
 
 function finishDrag() {
     if (placeholder && placeholder.parentNode) {
-        // İndeks hesaplama
         const dropList = placeholder.parentNode;
         const toDay = parseInt(dropList.dataset.day);
         
@@ -246,27 +292,13 @@ function finishDrag() {
         const fromItem = window.cart[fromIndex];
         
         if (fromItem) {
+            // Temizlik yapmadan önce veriyi güncelle
             reorderCart(fromIndex, newIndex, fromItem.day, toDay);
         }
     }
-
+    
+    // En son temizlik
     cleanupDrag();
-}
-
-function cleanupDrag() {
-    if (dragGhost) dragGhost.remove();
-    dragGhost = null;
-
-    if (draggedItem) {
-        draggedItem.classList.remove('dragging-source');
-        draggedItem = null;
-    }
-
-    if (placeholder) placeholder.remove();
-    placeholder = null;
-
-    document.body.classList.remove('dragging-active');
-    clearTimeout(longPressTimer);
 }
 
 // ========== DATA UPDATE ==========
@@ -302,13 +334,11 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
 // ========== EXPORTS & INIT ==========
 window.initDragDropSystem = initDragDropSystem;
-window.attachDragListeners = function() {
-    if (!isMobile) setupDesktopListeners();
-};
-// Mainscript hatalarını önlemek için
+// Mainscript uyumluluğu için boş fonksiyonlar
 window.dragStart = function(){}; 
 window.drop = function(){};
 window.allowDrop = function(){};
+window.attachDragListeners = function(){};
 window.attachChatDropListeners = function(){};
 
 document.addEventListener('DOMContentLoaded', initDragDropSystem);
