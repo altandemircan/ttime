@@ -1,41 +1,38 @@
-// ========== DRAG & DROP STYLES (INJECTED) ==========
+// ========== STYLES (Görsel Hissiyat) ==========
 function injectDragStyles() {
-    const styleId = 'tt-drag-drop-styles';
+    const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
-
     const css = `
         .travel-item.dragging, #drag-clone {
-            position: fixed !important;
-            z-index: 10000 !important;
-            pointer-events: none !important; 
-            transform: scale(1.02) !important;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.25) !important;
-            background-color: #fff !important;
-            opacity: 0.98 !important;
-            border-radius: 12px !important;
-            border: 2px solid #8a4af3 !important;
-            will-change: left, top;
-            transition: none !important; 
-            margin: 0 !important;
-            box-sizing: border-box !important;
+            opacity: 0.9;
+            background: #fff;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: scale(1.02);
+            z-index: 10000;
+            pointer-events: none; /* Altını görmesi için şart */
+            position: fixed;
+            border: 2px solid #8a4af3;
+            border-radius: 8px;
+            margin: 0;
+            will-change: top, left;
         }
         .travel-item.dragging-source {
-            opacity: 0.2 !important;
-            filter: grayscale(100%);
+            opacity: 0.2;
+            background: #f0f0f0;
+            border: 1px dashed #ccc;
         }
         .insertion-placeholder {
-            height: 6px !important;
-            background: linear-gradient(90deg, #8a4af3, #b388ff) !important;
-            margin: 8px 0 !important;
-            border-radius: 4px !important;
-            box-shadow: 0 0 10px rgba(138, 74, 243, 0.4);
-            pointer-events: none !important;
+            height: 6px;
+            background: linear-gradient(90deg, #8a4af3, #b388ff);
+            margin: 8px 0;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(138, 74, 243, 0.4);
+            pointer-events: none;
         }
         body.dragging-active {
-            overflow: hidden !important;
-            touch-action: none !important;
-            user-select: none !important;
-            -webkit-user-select: none !important;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
         }
     `;
     const style = document.createElement('style');
@@ -45,81 +42,50 @@ function injectDragStyles() {
 }
 
 // ========== GLOBAL VARIABLES ==========
-if (!window.cart || !Array.isArray(window.cart)) window.cart = [];
+if (!window.cart) window.cart = [];
 
-let placeholder = null;
+let draggedItem = null;         // Şu an sürüklenen DOM elemanı
+let placeholder = null;         // Araya giren mor çizgi
+let sourceIndex = -1;           // Başlangıç indeksi
 let isMobile = false;
-let draggedItem = null;
-let currentDropZone = null;
-let touchStartX = 0;
-let touchStartY = 0;
 
-let mobileDragOffsetX = 0;
-let mobileDragOffsetY = 0;
-let desktopDragOffsetX = 0;
-let desktopDragOffsetY = 0;
-
-let longPressTimer = null;
-let longPressTriggered = false;
-let touchTargetItem = null;
-const LONG_PRESS_MS = 250;        
-const MOVE_CANCEL_PX = 10;        
+// Mobil için koordinat takibi
+let touchStartX, touchStartY;
+let mobileOffsetX, mobileOffsetY;
+let longPressTimer;
 
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
     injectDragStyles();
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    
+
     if (isMobile) {
-        initTouchDragDrop();
+        // Mobil: Global touch listener
+        document.body.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.body.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.body.addEventListener('touchend', handleTouchEnd);
     } else {
-        setupDesktopDragDrop();
+        // Desktop: Item'lara listener ekle
+        setupDesktopListeners();
     }
-    setupDropZones();
 }
 
-// ========== CLEANUP ==========
-function forceCleanup() {
-    const clones = document.querySelectorAll('#drag-clone');
-    clones.forEach(c => c.remove());
-
-    document.querySelectorAll('.travel-item.dragging').forEach(item => {
-        item.classList.remove('dragging');
-        item.style.cssText = ''; 
-    });
-
-    document.querySelectorAll('.travel-item.dragging-source').forEach(item => {
-        item.classList.remove('dragging-source');
-        item.style.cssText = '';
-    });
-
-    if (placeholder && placeholder.parentNode) {
-        placeholder.remove();
-    }
-    placeholder = null;
-
-    document.body.classList.remove('dragging-active');
-    document.body.classList.remove('dragging-items');
-    
-    draggedItem = null;
-    currentDropZone = null;
-}
-
-// ========== LOGIC CORE: GET NEXT ELEMENT ==========
-// Bu fonksiyon imlecin Y koordinatına göre, placeholder'ın
-// hangisinin ÜSTÜNE (BEFORE) konulması gerektiğini bulur.
+// ========== CORE LOGIC: EN YAKIN ELEMANI BUL (Klasik Yöntem) ==========
+/**
+ * Verilen Y koordinatına (mouseY) göre, placeholder'ın
+ * HANGİ elemandan ÖNCE (before) gelmesi gerektiğini bulur.
+ */
 function getDragAfterElement(container, y) {
-    // Sürüklenen öğe hariç tüm elemanları al
+    // Sürüklenen hariç diğer item'ları al
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging)')];
 
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
-        // offset: mouse ile öğenin merkezi arasındaki mesafe
-        // Negatifse: mouse öğenin üst yarısında veya üstünde
+        // offset: Mouse ile elemanın merkezi arasındaki mesafe
         const offset = y - box.top - box.height / 2;
         
-        // Bizim için önemli olan: Mouse'un öğenin merkezinin ÜSTÜNDE olduğu (negatif offset)
-        // ve bu negatifler içinde 0'a en yakın olanı (en büyük negatif sayı).
+        // Mouse elemanın üst yarısındaysa (offset < 0) ve 
+        // şu ana kadar bulduğumuz en yakın elemansa (offset > closest.offset)
         if (offset < 0 && offset > closest.offset) {
             return { offset: offset, element: child };
         } else {
@@ -128,465 +94,272 @@ function getDragAfterElement(container, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// ========== MOBILE LOGIC ==========
-
-function initTouchDragDrop() {
-    document.body.removeEventListener('touchstart', handleBodyTouchStart);
-    document.body.addEventListener('touchstart', handleBodyTouchStart, { passive: false });
-}
-
-function handleBodyTouchStart(e) {
-    const item = e.target.closest('.travel-item');
-    if (!item || e.target.closest('button') || e.target.closest('a') || e.target.closest('.visual img')) {
-        return;
-    }
-    handleTouchStart(e, item);
-}
-
-function handleTouchStart(e, item) {
-    if (e.touches.length !== 1) return;
-    
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    
-    longPressTriggered = false;
-    touchTargetItem = item;
-
-    clearTimeout(longPressTimer);
-    longPressTimer = setTimeout(() => {
-        if (touchTargetItem) {
-            forceCleanup(); 
-            activateMobileDrag(touchTargetItem, e.touches[0]);
-        }
-    }, LONG_PRESS_MS);
-}
-
-document.addEventListener('touchmove', function(e) {
-    if (!longPressTriggered && touchTargetItem) {
-        const t = e.touches[0];
-        const dx = Math.abs(t.clientX - touchStartX);
-        const dy = Math.abs(t.clientY - touchStartY);
-        
-        if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-            touchTargetItem = null;
-        }
-    }
-}, { passive: false });
-
-function activateMobileDrag(item, touch) {
-    longPressTriggered = true;
-    draggedItem = item;
-
-    const rect = item.getBoundingClientRect();
-    mobileDragOffsetX = touch.clientX - rect.left;
-    mobileDragOffsetY = touch.clientY - rect.top;
-
-    item.style.width = rect.width + 'px';
-    item.style.height = rect.height + 'px';
-    item.style.position = 'fixed';
-    item.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
-    item.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
-    item.style.zIndex = '9999';
-    
-    item.classList.add('dragging');
-
-    document.body.classList.add('dragging-active');
-    document.body.classList.add('dragging-items');
-
-    if (navigator.vibrate) navigator.vibrate(70);
-
-    document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
-    document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false });
-    document.addEventListener('touchcancel', handleGlobalTouchEnd, { passive: false });
-}
-
-function handleGlobalTouchMove(e) {
-    if (!longPressTriggered || !draggedItem) return;
-
-    e.preventDefault();
-    e.stopImmediatePropagation();
-
-    const touch = e.touches[0];
-
-    draggedItem.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
-    draggedItem.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
-
-    // Altındaki elementi bul
-    draggedItem.style.visibility = 'hidden'; 
-    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    draggedItem.style.visibility = 'visible';
-
+// ========== LOGIC: PLACEHOLDER YERLEŞTİRME ==========
+function updatePlaceholderPosition(clientX, clientY) {
+    // Mouse'un altındaki listeyi bul
+    // pointer-events: none olduğu için draggedItem delinip geçilir.
+    const elementBelow = document.elementFromPoint(clientX, clientY);
     if (!elementBelow) return;
 
     const dropZone = elementBelow.closest('.day-list');
-    
-    // Placeholder yoksa oluştur
-    if (!placeholder) {
-        placeholder = document.createElement("div");
-        placeholder.classList.add("insertion-placeholder");
-        placeholder.style.height = '6px';
-        placeholder.style.margin = '8px 0';
-        placeholder.style.borderRadius = '4px';
-        placeholder.style.pointerEvents = 'none';
-    }
-
-    if (dropZone) {
-        if (currentDropZone && currentDropZone !== dropZone) {
-            currentDropZone.classList.remove('drop-hover');
-        }
-        currentDropZone = dropZone;
-        currentDropZone.classList.add('drop-hover');
-
-        // --- MATEMATİKSEL KONUMLANDIRMA ---
-        // elementFromPoint yerine, dropZone içindeki tüm elemanlara göre konumu hesapla.
-        const afterElement = getDragAfterElement(dropZone, touch.clientY);
-        
-        // Kendi üstüne veya kendi bir alt sırasına geliyorsa (yer değişmiyorsa)
-        // Burada hassas bir kontrol yapmamız lazım.
-        
-        // Eğer afterElement null ise (yani listenin en altındaysak)
-        if (afterElement == null) {
-            // "Add Category" butonunu bul
-            const addBtn = dropZone.querySelector('.add-more-btn');
-            
-            // Eğer draggedItem zaten listenin sonundaysa, placeholder gösterme
-            if (draggedItem.parentNode === dropZone) {
-                // Sondayız mı kontrolü: Benden sonra eleman yoksa veya sadece buton varsa
-                let nextEl = draggedItem.nextElementSibling;
-                // Separator/Placeholder atla
-                while(nextEl && (nextEl === placeholder || nextEl.classList.contains('distance-separator'))) {
-                    nextEl = nextEl.nextElementSibling;
-                }
-                if (!nextEl || nextEl.classList.contains('add-more-btn')) {
-                    if (placeholder.parentNode) placeholder.remove();
-                    return;
-                }
-            }
-
-            // Değilse butondan önceye (sona) ekle
-            if (addBtn) {
-                dropZone.insertBefore(placeholder, addBtn);
-            } else {
-                dropZone.appendChild(placeholder);
-            }
-        } 
-        // Eğer bir elementin üstüne geldiysek (afterElement bulundu)
-        else {
-            // Eğer hedef kendimizsek veya hemen altımızdaki elemansa (yerimiz değişmiyor)
-            if (afterElement === draggedItem || afterElement === draggedItem.nextElementSibling) {
-                 if (placeholder.parentNode) placeholder.remove();
-                 return;
-            }
-            
-            // Separator varsa, separator'ın da üstüne mi altına mı?
-            // getDragAfterElement separator'ları görmez (sadece travel-item'ları sayar).
-            // Dolayısıyla travel-item'ın önüne eklemek yeterli. 
-            // Ancak, o travel-item'ın üstünde separator varsa, separator'ın üstüne eklemeliyiz.
-            let insertionPoint = afterElement;
-            // Eğer afterElement'in bir önceki kardeşi separator ise, onun önüne koy
-            if (afterElement.previousElementSibling && afterElement.previousElementSibling.classList.contains('distance-separator')) {
-                insertionPoint = afterElement.previousElementSibling;
-            }
-
-            dropZone.insertBefore(placeholder, insertionPoint);
-        }
-    }
-}
-
-function handleGlobalTouchEnd(e) {
-    if (!longPressTriggered || !draggedItem) {
-        cleanupTouchDrag();
-        return;
-    }
-    
-    e.preventDefault();
-
-    if (currentDropZone && placeholder && placeholder.parentNode) {
-        // İndeks hesaplama
-        const fromIndex = parseInt(draggedItem.dataset.index);
-        const fromItem = window.cart[fromIndex];
-        const fromDay = fromItem ? fromItem.day : null;
-        
-        const toDayList = placeholder.closest('.day-list');
-        const toDay = toDayList ? parseInt(toDayList.dataset.day) : null;
-
-        const itemsInDay = Array.from(toDayList.querySelectorAll('.travel-item:not(.dragging)'));
-        
-        // Placeholder kimin önünde?
-        let nextEl = placeholder.nextElementSibling;
-        // Eğer separator varsa onu atla, gerçek item'ı bul
-        if (nextEl && nextEl.classList.contains('distance-separator')) {
-            nextEl = nextEl.nextElementSibling;
-        }
-
-        let toIndex;
-        // Eğer nextEl yoksa veya buton ise sondayız demektir
-        if (!nextEl || nextEl.classList.contains('add-more-btn')) {
-            toIndex = itemsInDay.length;
-        } else {
-            toIndex = itemsInDay.indexOf(nextEl);
-            if (toIndex === -1) toIndex = itemsInDay.length;
-        }
-
-        if (fromDay !== null && toDay !== null) {
-            reorderCart(fromIndex, toIndex, fromDay, toDay);
-        }
-    }
-
-    cleanupTouchDrag();
-}
-
-function cleanupTouchDrag() {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-    longPressTriggered = false;
-    touchTargetItem = null;
-
-    document.removeEventListener('touchmove', handleGlobalTouchMove);
-    document.removeEventListener('touchend', handleGlobalTouchEnd);
-    document.removeEventListener('touchcancel', handleGlobalTouchEnd);
-
-    forceCleanup();
-}
-
-// ========== DESKTOP DRAG & DROP ==========
-
-function setupDesktopDragDrop() {
-    document.querySelectorAll('.travel-item').forEach(item => {
-        item.setAttribute('draggable', true);
-        item.removeEventListener('dragstart', desktopDragStart);
-        item.removeEventListener('dragend', desktopDragEnd);
-        item.addEventListener('dragstart', desktopDragStart);
-        item.addEventListener('dragend', desktopDragEnd);
-    });
-}
-
-function desktopDragStart(event) {
-    const index = event.currentTarget.dataset.index;
-    if (index !== undefined) {
-        forceCleanup();
-
-        draggedItem = event.currentTarget; 
-        
-        const rect = draggedItem.getBoundingClientRect();
-        desktopDragOffsetX = event.clientX - rect.left;
-        desktopDragOffsetY = event.clientY - rect.top;
-
-        event.dataTransfer.setData("text/plain", index);
-        event.dataTransfer.setData("source", "cart");
-        event.dataTransfer.effectAllowed = "move";
-        
-        setTimeout(() => {
-            if(draggedItem) draggedItem.classList.add('dragging-source');
-        }, 0);
-
-        const clone = draggedItem.cloneNode(true);
-        clone.id = 'drag-clone';
-        
-        const content = clone.querySelector('.content');
-        if(content) content.style.display = 'none'; 
-        
-        clone.style.width = `${rect.width}px`;
-        clone.style.height = `${rect.height}px`; 
-        clone.style.position = 'fixed';
-        clone.style.left = `${rect.left}px`;
-        clone.style.top = `${rect.top}px`;
-        clone.style.zIndex = '99999';
-        clone.style.pointerEvents = 'none';
-        
-        document.body.appendChild(clone);
-        
-        const emptyImg = new Image();
-        emptyImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-        event.dataTransfer.setDragImage(emptyImg, 0, 0);
-
-        document.addEventListener('dragover', updateDesktopClonePosition);
-    }
-    document.body.classList.add('dragging-items');
-}
-
-function updateDesktopClonePosition(event) {
-    const clone = document.getElementById('drag-clone');
-    if (clone && event.clientX) {
-        clone.style.left = (event.clientX - desktopDragOffsetX) + 'px';
-        clone.style.top = (event.clientY - desktopDragOffsetY) + 'px';
-    }
-}
-
-function desktopDragEnd(event) {
-    document.removeEventListener('dragover', updateDesktopClonePosition);
-    forceCleanup();
-}
-
-function setupDropZones() {
-    document.querySelectorAll('.day-list').forEach(list => {
-        list.removeEventListener('dragover', desktopDragOver);
-        list.removeEventListener('drop', desktopDrop);
-        list.addEventListener('dragover', desktopDragOver);
-        list.addEventListener('drop', desktopDrop);
-    });
-}
-
-function desktopDragOver(event) {
-    event.preventDefault();
-    if (!draggedItem) return;
-
-    const dropZone = event.target.closest('.day-list');
     if (!dropZone) return;
 
+    // Placeholder henüz yoksa oluştur
     if (!placeholder) {
-        placeholder = document.createElement("div");
-        placeholder.classList.add("insertion-placeholder");
-        placeholder.style.height = '6px';
-        placeholder.style.margin = '8px 0';
-        placeholder.style.borderRadius = '4px';
-        placeholder.style.pointerEvents = 'none'; 
+        placeholder = document.createElement('div');
+        placeholder.className = 'insertion-placeholder';
     }
 
-    // --- MATH LOGIC FOR DESKTOP TOO ---
-    const afterElement = getDragAfterElement(dropZone, event.clientY);
-    const isSameList = draggedItem.parentNode === dropZone;
+    // Matematiksel olarak arasına girmemiz gereken elemanı bul
+    const afterElement = getDragAfterElement(dropZone, clientY);
+    const addBtn = dropZone.querySelector('.add-more-btn');
 
     if (afterElement == null) {
-        const addBtn = dropZone.querySelector('.add-more-btn');
-        // Sondayız kontrolü
-        if (isSameList) {
-            let nextEl = draggedItem.nextElementSibling;
-            while(nextEl && (nextEl === placeholder || nextEl.classList.contains('distance-separator'))) {
-                nextEl = nextEl.nextElementSibling;
-            }
-            if (!nextEl || nextEl.classList.contains('add-more-btn')) {
-                if (placeholder.parentNode) placeholder.remove();
-                return;
-            }
-        }
-
+        // Eğer bizden sonra eleman yoksa (listenin sonundaysak)
         if (addBtn) {
-            dropZone.insertBefore(placeholder, addBtn);
+            dropZone.insertBefore(placeholder, addBtn); // Butonun önüne koy
         } else {
-            dropZone.appendChild(placeholder);
+            dropZone.appendChild(placeholder); // Buton yoksa en sona koy
         }
     } else {
-        // Kendisi veya komşusu ise
-        if (afterElement === draggedItem || afterElement === draggedItem.nextElementSibling) {
-            if (placeholder.parentNode) placeholder.remove();
-            return;
-        }
-
-        let insertionPoint = afterElement;
-        if (afterElement.previousElementSibling && afterElement.previousElementSibling.classList.contains('distance-separator')) {
-            insertionPoint = afterElement.previousElementSibling;
-        }
-        dropZone.insertBefore(placeholder, insertionPoint);
+        // Bulunan elemanın önüne koy
+        dropZone.insertBefore(placeholder, afterElement);
     }
 }
 
-function desktopDrop(event) {
-    event.preventDefault();
+// ========== DESKTOP HANDLERS ==========
+function setupDesktopListeners() {
+    const items = document.querySelectorAll('.travel-item');
+    items.forEach(item => {
+        item.setAttribute('draggable', true);
+        item.removeEventListener('dragstart', onDesktopDragStart);
+        item.removeEventListener('dragend', onDesktopDragEnd);
+        item.addEventListener('dragstart', onDesktopDragStart);
+        item.addEventListener('dragend', onDesktopDragEnd);
+    });
+
+    const lists = document.querySelectorAll('.day-list');
+    lists.forEach(list => {
+        list.removeEventListener('dragover', onDesktopDragOver);
+        list.removeEventListener('drop', onDesktopDrop);
+        list.addEventListener('dragover', onDesktopDragOver);
+        list.addEventListener('drop', onDesktopDrop);
+    });
+}
+
+function onDesktopDragStart(e) {
+    draggedItem = e.currentTarget;
+    sourceIndex = parseInt(draggedItem.dataset.index);
     
-    if (!placeholder || !placeholder.parentNode) {
-        forceCleanup();
+    // Hayalet görüntüyü özelleştir veya tarayıcıya bırak
+    // Burada basitlik adına tarayıcı defaultunu kullanıyoruz ama class ekliyoruz
+    setTimeout(() => draggedItem.classList.add('dragging-source'), 0);
+    
+    e.dataTransfer.effectAllowed = 'move';
+    // Firefox için gerekli
+    e.dataTransfer.setData('text/plain', sourceIndex);
+    
+    document.body.classList.add('dragging-active');
+}
+
+function onDesktopDragOver(e) {
+    e.preventDefault(); // Drop'a izin ver
+    updatePlaceholderPosition(e.clientX, e.clientY);
+}
+
+function onDesktopDrop(e) {
+    e.preventDefault();
+    finalizeDrag();
+}
+
+function onDesktopDragEnd(e) {
+    draggedItem.classList.remove('dragging-source');
+    draggedItem = null;
+    if (placeholder) placeholder.remove();
+    placeholder = null;
+    document.body.classList.remove('dragging-active');
+}
+
+// ========== MOBILE HANDLERS ==========
+function handleTouchStart(e) {
+    const item = e.target.closest('.travel-item');
+    // Buton vs engelle
+    if (!item || e.target.closest('button') || e.target.closest('.visual img')) return;
+
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    
+    // Long press bekle
+    longPressTimer = setTimeout(() => {
+        startMobileDrag(item, e.touches[0]);
+    }, 250);
+}
+
+function startMobileDrag(item, touch) {
+    draggedItem = item;
+    sourceIndex = parseInt(item.dataset.index);
+    
+    const rect = item.getBoundingClientRect();
+    mobileOffsetX = touch.clientX - rect.left;
+    mobileOffsetY = touch.clientY - rect.top;
+
+    // Görsel kopyayı ayarla (Item'ın kendisini fixed yapıyoruz)
+    item.style.width = rect.width + 'px';
+    item.style.height = rect.height + 'px';
+    item.style.left = (touch.clientX - mobileOffsetX) + 'px';
+    item.style.top = (touch.clientY - mobileOffsetY) + 'px';
+    
+    item.classList.add('dragging');
+    document.body.classList.add('dragging-active');
+    
+    // Placeholder hemen oluşturulup eski yerine konmalı ki liste çökmesin
+    if (!placeholder) {
+        placeholder = document.createElement('div');
+        placeholder.className = 'insertion-placeholder';
+    }
+    item.parentNode.insertBefore(placeholder, item.nextSibling);
+
+    if (navigator.vibrate) navigator.vibrate(50);
+}
+
+function handleTouchMove(e) {
+    // Drag başlamadıysa ve hareket varsa timer iptal (scroll)
+    if (!draggedItem) {
+        const dx = Math.abs(e.touches[0].clientX - touchStartX);
+        const dy = Math.abs(e.touches[0].clientY - touchStartY);
+        if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
 
-    const source = event.dataTransfer.getData("source") || event.dataTransfer.getData("text/plain");
-    if (source !== "cart") return;
+    e.preventDefault(); // Scroll engelle
+    const touch = e.touches[0];
 
-    const fromIndex = parseInt(event.dataTransfer.getData("text"));
-    const placeholderParent = placeholder.parentNode;
-    const toDayList = placeholderParent.closest(".day-list");
+    // Kutuyu hareket ettir
+    draggedItem.style.left = (touch.clientX - mobileOffsetX) + 'px';
+    draggedItem.style.top = (touch.clientY - mobileOffsetY) + 'px';
+
+    // Placeholder'ı güncelle
+    updatePlaceholderPosition(touch.clientX, touch.clientY);
+}
+
+function handleTouchEnd(e) {
+    clearTimeout(longPressTimer);
+    if (!draggedItem) return;
+
+    finalizeDrag();
     
-    if (!toDayList || !toDayList.dataset || !toDayList.dataset.day) {
-        forceCleanup();
-        return;
-    }
+    // Temizlik
+    draggedItem.style = '';
+    draggedItem.classList.remove('dragging');
+    draggedItem = null;
     
-    const toDay = parseInt(toDayList.dataset.day);
-    const itemsInDay = Array.from(toDayList.querySelectorAll(".travel-item"));
+    if (placeholder) placeholder.remove();
+    placeholder = null;
     
-    // Placeholder kimin önünde?
-    let nextEl = placeholder.nextElementSibling;
-    if (nextEl && nextEl.classList.contains('distance-separator')) {
-        nextEl = nextEl.nextElementSibling;
+    document.body.classList.remove('dragging-active');
+}
+
+// ========== SHARED FINALIZATION ==========
+function finalizeDrag() {
+    if (!placeholder || !placeholder.parentNode || !draggedItem) return;
+
+    const dropList = placeholder.parentNode; // Bırakılan gün listesi
+    const toDay = parseInt(dropList.dataset.day);
+    
+    // Placeholder'ın indexini bul (Yeni pozisyon)
+    // Sadece .travel-item'ları sayarak indeks bulmalıyız
+    const siblings = [...dropList.children].filter(c => c.classList.contains('travel-item') && c !== draggedItem);
+    
+    // Placeholder'dan sonraki elemanı bul
+    let nextItem = placeholder.nextElementSibling;
+    while(nextItem && !nextItem.classList.contains('travel-item')) {
+        nextItem = nextItem.nextElementSibling;
     }
 
     let toIndex;
-    if (!nextEl || nextEl.classList.contains('add-more-btn')) {
-        toIndex = itemsInDay.length;
+    if (nextItem) {
+        toIndex = siblings.indexOf(nextItem);
+        if (toIndex === -1) toIndex = siblings.length;
     } else {
-        toIndex = itemsInDay.indexOf(nextEl);
-        if (toIndex === -1) toIndex = itemsInDay.length;
+        toIndex = siblings.length;
     }
 
-    const fromDayList = document.querySelector(`.travel-item[data-index="${fromIndex}"]`)?.closest(".day-list");
-    const fromDay = fromDayList && fromDayList.dataset && fromDayList.dataset.day
-        ? parseInt(fromDayList.dataset.day)
-        : null;
+    // Kaynak verileri
+    const fromIndex = sourceIndex;
+    const fromItem = window.cart[fromIndex];
+    if (!fromItem) return;
+    const fromDay = fromItem.day;
 
-    if (fromIndex === toIndex && fromDay === toDay) {
-        forceCleanup();
-        return;
-    }
+    // Aynı yere bırakıldıysa iptal
+    // (Aynı gün ve indeks değişmediyse)
+    // Not: Bu kontrolü basitleştirmek için direkt reorder çağırıp, reorder içinde kontrol edebiliriz
+    // ama performans için burada kesmek iyidir. Ancak "sıra kayması" hesabını burada yapmak karışık olabilir.
+    // O yüzden direkt reorderCart'a gönderelim, o halletsin.
 
     reorderCart(fromIndex, toIndex, fromDay, toDay);
-    forceCleanup();
 }
 
-// ========== REORDER LOGIC ==========
 function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     try {
-        if (fromIndex < 0 || fromIndex >= window.cart.length) throw new Error("Invalid fromIndex");
+        // Array kopyala
+        const newCart = [...window.cart];
+        
+        // Öğeyi çıkar
+        const [movedItem] = newCart.splice(fromIndex, 1);
+        movedItem.day = toDay;
 
-        const prevCart = JSON.parse(JSON.stringify(window.cart));
-        const item = window.cart.splice(fromIndex, 1)[0];
-        item.day = toDay;
-
-        if (fromDay === toDay) {
-            let dayItems = window.cart.filter(i => i.day === toDay);
-            dayItems.splice(toIndex, 0, item);
-            window.cart = window.cart.filter(i => i.day !== toDay).concat(dayItems);
-        } else {
-            let insertAt = window.cart.findIndex(it => it.day === toDay);
-            if (insertAt === -1) insertAt = window.cart.length;
-
-            let seen = 0;
-            for (let i = 0; i < window.cart.length; ++i) {
-                if (window.cart[i].day === toDay) {
-                    if (seen === toIndex) {
-                        insertAt = i;
-                        break;
-                    }
-                    seen++;
-                }
+        // Hedef listeye ekle
+        // Hedef listedeki elemanları bulmamız lazım global cart içinde
+        // Bu kısım biraz trikli çünkü global cart karışık günlerden oluşuyor.
+        
+        // 1. Hedef günün elemanlarını ayır
+        let targetDayItems = newCart.filter(i => i.day === toDay);
+        // 2. Diğer elemanları ayır
+        let otherItems = newCart.filter(i => i.day !== toDay);
+        
+        // 3. Hedef gün içine doğru indekse yerleştir
+        // NOT: fromDay === toDay ise, splice işlemi indeksleri kaydırmış olabilir.
+        // Ama yukarıdaki `toIndex` placeholder'a göre görsel indeks.
+        targetDayItems.splice(toIndex, 0, movedItem);
+        
+        // 4. Cart'ı birleştir (Sıralamayı koruyarak veya gün bazlı yeniden oluşturarak)
+        // Günleri sırayla birleştirmek en temizidir.
+        const allDays = new Set([...otherItems.map(i=>i.day), toDay]);
+        const sortedDays = [...allDays].sort((a,b)=>a-b);
+        
+        let finalCart = [];
+        sortedDays.forEach(d => {
+            if (d === toDay) {
+                finalCart = finalCart.concat(targetDayItems);
+            } else {
+                finalCart = finalCart.concat(otherItems.filter(i => i.day === d));
             }
-            window.cart.splice(insertAt, 0, item);
-        }
+        });
+
+        window.cart = finalCart;
 
         if (typeof updateCart === "function") updateCart();
         if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
-    } catch (error) {
-        console.error("Reorder error:", error);
+    } catch (e) {
+        console.error("Reorder Error", e);
     }
 }
 
-// ========== HELPERS ==========
-window.dragStart = desktopDragStart;
-window.drop = desktopDrop;
-window.allowDrop = desktopDragOver;
-
-window.attachDragListeners = function() {
-    setupDropZones();
-    if (!isMobile) {
-        setupDesktopDragDrop();
-    } else {
-        initTouchDragDrop();
-    }
-};
-
-window.attachChatDropListeners = function() {};
+// ========== EXPORTS & INIT ==========
+window.dragStart = onDesktopDragStart; // mainscript uyumluluğu için
 window.initDragDropSystem = initDragDropSystem;
+window.attachDragListeners = function() {
+    setupDropZones(); // Desktop için tekrar bağla
+    // Mobil zaten body delegate kullandığı için gerekmez
+    if (!isMobile) setupDesktopListeners();
+};
+window.attachChatDropListeners = function(){}; // Boş fonksiyon (hata önlemek için)
+
+// Helper setup function for updateCart re-renders
+function setupDropZones() {
+    // Sadece Desktop eventlerini yenilemek yeterli
+    if (!isMobile) setupDesktopListeners();
+}
 
 document.addEventListener('DOMContentLoaded', initDragDropSystem);
