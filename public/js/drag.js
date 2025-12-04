@@ -79,9 +79,7 @@ const MOVE_CANCEL_PX = 10;
 
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
-    // Stilleri ekle
     injectDragStyles();
-
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
     if (isMobile) {
@@ -94,11 +92,9 @@ function initDragDropSystem() {
 
 // ========== CLEANUP ==========
 function forceCleanup() {
-    // Desktop clone temizle
     const clones = document.querySelectorAll('#drag-clone');
     clones.forEach(c => c.remove());
 
-    // Sınıfları ve stilleri temizle
     document.querySelectorAll('.travel-item.dragging').forEach(item => {
         item.classList.remove('dragging');
         item.style.cssText = ''; 
@@ -109,19 +105,36 @@ function forceCleanup() {
         item.style.cssText = '';
     });
 
-    // Placeholder temizle
     if (placeholder && placeholder.parentNode) {
         placeholder.remove();
     }
     placeholder = null;
 
-    // Body kilidini aç
     document.body.classList.remove('dragging-active');
     document.body.classList.remove('dragging-items');
     
-    // Değişkenleri sıfırla
     draggedItem = null;
     currentDropZone = null;
+}
+
+// ========== HELPER: GET CLOSEST ELEMENT (DEAD ZONE FIX) ==========
+// Bu fonksiyon boşlukta (gap) olsanız bile koordinata göre en yakın öğeyi bulur
+function getDragAfterElement(container, y) {
+    // Sürüklenen öğe hariç diğer öğeleri al
+    const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        // Mouse'un öğe merkezine olan uzaklığı
+        const offset = y - box.top - box.height / 2;
+        
+        // Offset negatifse (mouse öğe merkezinin üstündeyse) ve şu ana kadarki en büyük negatifse (en yakınsa)
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 // ========== MOBILE LOGIC ==========
@@ -151,13 +164,12 @@ function handleTouchStart(e, item) {
     clearTimeout(longPressTimer);
     longPressTimer = setTimeout(() => {
         if (touchTargetItem) {
-            forceCleanup(); // Önce temizle
+            forceCleanup(); 
             activateMobileDrag(touchTargetItem, e.touches[0]);
         }
     }, LONG_PRESS_MS);
 }
 
-// Scroll kontrolü
 document.addEventListener('touchmove', function(e) {
     if (!longPressTriggered && touchTargetItem) {
         const t = e.touches[0];
@@ -180,11 +192,8 @@ function activateMobileDrag(item, touch) {
     mobileDragOffsetX = touch.clientX - rect.left;
     mobileDragOffsetY = touch.clientY - rect.top;
 
-    // Element boyutlarını sabitle
     item.style.width = rect.width + 'px';
     item.style.height = rect.height + 'px';
-    
-    // Fixed moda al
     item.style.position = 'fixed';
     item.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
     item.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
@@ -210,11 +219,9 @@ function handleGlobalTouchMove(e) {
 
     const touch = e.touches[0];
 
-    // Hareketi uygula
     draggedItem.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
     draggedItem.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
 
-    // Altındaki elemanı bul
     draggedItem.style.visibility = 'hidden'; 
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
     draggedItem.style.visibility = 'visible';
@@ -223,7 +230,6 @@ function handleGlobalTouchMove(e) {
 
     const dropZone = elementBelow.closest('.day-list');
     
-    // Placeholder yönetimi
     if (!placeholder) {
         placeholder = document.createElement("div");
         placeholder.classList.add("insertion-placeholder");
@@ -236,21 +242,34 @@ function handleGlobalTouchMove(e) {
         currentDropZone = dropZone;
         currentDropZone.classList.add('drop-hover');
 
-        const targetItem = elementBelow.closest('.travel-item');
+        // Ölü Bölge (Dead Zone) Çözümü:
+        // Eğer tam bir item üzerinde değilsek (boşluktaysak) matematiksel olarak en yakın item'ı buluyoruz.
+        let targetItem = elementBelow.closest('.travel-item');
+        let isGapHover = false;
+
+        // Eğer direkt item üzerinde değilsek, hesaplama yap
+        if (!targetItem) {
+            targetItem = getDragAfterElement(dropZone, touch.clientY);
+            isGapHover = true;
+        }
+
+        const isSameList = draggedItem.parentNode === dropZone;
         
-        // --- SENARYO 1: Bir Item'ın üzerindeyiz ---
-        if (targetItem && targetItem !== draggedItem) {
+        // --- SENARYO 1: Hedef bir item bulundu (Üstünde veya Yakınında) ---
+        if (targetItem) {
             const rect = targetItem.getBoundingClientRect();
+            // Eğer Gap Hover ise zaten "After Element" bulduk, yani üstüne ekleyeceğiz.
+            // Değilse mouse pozisyonuna göre üst/alt kararı ver.
             const offset = touch.clientY - (rect.top + rect.height / 2);
-            const isSameList = draggedItem.parentNode === dropZone;
             
-            // ÜST YARI
-            if (offset < 0) {
-                if (isSameList && draggedItem.nextElementSibling === targetItem) {
+            // ÜST YARI (veya getDragAfterElement sonucu)
+            if (isGapHover || offset < 0) {
+                // Kendi altımızdakinin üstüne geldiysek veya kendimizsek -> İşlem Yok
+                if (targetItem === draggedItem || (isSameList && draggedItem.nextElementSibling === targetItem)) {
                     if (placeholder.parentNode) placeholder.remove();
                     return;
                 }
-                // En üst kısıtlaması
+                // En üst kilit kontrolü
                 if (isSameList && !draggedItem.previousElementSibling && targetItem === dropZone.firstElementChild) {
                      if (placeholder.parentNode) placeholder.remove();
                      return;
@@ -259,37 +278,35 @@ function handleGlobalTouchMove(e) {
             } 
             // ALT YARI
             else {
+                // Separator kontrolü
                 let nextNode = targetItem.nextSibling;
-                // Separator atlama
                 if (nextNode && nextNode.classList.contains('distance-separator')) {
                     nextNode = nextNode.nextSibling;
                 }
-                if (isSameList && nextNode === draggedItem) {
+                // Kendi üstümüzdekinin altına geldiysek -> İşlem Yok
+                if (targetItem === draggedItem || (isSameList && nextNode === draggedItem)) {
                     if (placeholder.parentNode) placeholder.remove();
                     return;
                 }
                 dropZone.insertBefore(placeholder, nextNode);
             }
         } 
-        // --- SENARYO 2: Boşluk ---
+        // --- SENARYO 2: Listenin En Sonu (Hiçbir item'ın üstünde değilsek) ---
         else {
             const addBtn = dropZone.querySelector('.add-more-btn');
             
-            // En alt kısıtlaması
-            if (draggedItem.parentNode === dropZone) {
+            // En alt kısıtlaması (Kendi listemizdeysek)
+            if (isSameList) {
+                // Bizden sonra gerçek item var mı?
                 let nextEl = draggedItem.nextElementSibling;
                 while(nextEl && (nextEl === placeholder || nextEl.classList.contains('distance-separator'))) {
                     nextEl = nextEl.nextElementSibling;
                 }
+                // Yoksa zaten sondayız
                 if (!nextEl || nextEl.classList.contains('add-more-btn')) {
                     if (placeholder.parentNode) placeholder.remove();
                     return;
                 }
-            }
-            
-            if (targetItem === draggedItem) {
-                if (placeholder.parentNode) placeholder.remove();
-                return;
             }
 
             if (addBtn) {
@@ -378,7 +395,6 @@ function desktopDragStart(event) {
             if(draggedItem) draggedItem.classList.add('dragging-source');
         }, 0);
 
-        // Klon oluştur
         const clone = draggedItem.cloneNode(true);
         clone.id = 'drag-clone';
         
@@ -391,6 +407,7 @@ function desktopDragStart(event) {
         clone.style.left = `${rect.left}px`;
         clone.style.top = `${rect.top}px`;
         clone.style.zIndex = '99999';
+        clone.style.pointerEvents = 'none';
         
         document.body.appendChild(clone);
         
@@ -437,17 +454,25 @@ function desktopDragOver(event) {
         placeholder.classList.add("insertion-placeholder");
     }
 
-    const targetItem = event.target.closest('.travel-item');
+    // Dead Zone Fix: Mouse'un altındaki item'ı bulamazsak (boşluktaysak)
+    // matematiksel olarak en yakını bul.
+    let targetItem = event.target.closest('.travel-item');
+    let isGapHover = false;
 
-    // --- SENARYO 1: Bir Item'ın üzerindeyiz ---
-    if (targetItem && targetItem !== draggedItem) {
+    if (!targetItem) {
+        targetItem = getDragAfterElement(dropZone, event.clientY);
+        isGapHover = true;
+    }
+
+    const isSameList = draggedItem.parentNode === dropZone;
+
+    if (targetItem) {
         const rect = targetItem.getBoundingClientRect();
         const offset = event.clientY - (rect.top + rect.height / 2);
-        const isSameList = draggedItem.parentNode === dropZone;
 
-        // ÜST YARI
-        if (offset < 0) {
-            if (isSameList && draggedItem.nextElementSibling === targetItem) {
+        // ÜST YARI (veya Gap Hover)
+        if (isGapHover || offset < 0) {
+            if (targetItem === draggedItem || (isSameList && draggedItem.nextElementSibling === targetItem)) {
                 if (placeholder.parentNode) placeholder.remove();
                 return;
             }
@@ -463,16 +488,16 @@ function desktopDragOver(event) {
             if (nextNode && nextNode.classList.contains('distance-separator')) {
                 nextNode = nextNode.nextSibling;
             }
-            if (isSameList && nextNode === draggedItem) {
+            if (targetItem === draggedItem || (isSameList && nextNode === draggedItem)) {
                 if (placeholder.parentNode) placeholder.remove();
                 return;
             }
             dropZone.insertBefore(placeholder, nextNode);
         }
     } 
-    // --- SENARYO 2: Boşluk ---
-    else if (!targetItem) {
-        if (draggedItem.parentNode === dropZone) {
+    // Listenin En Sonu (Hiçbir item bulunamadıysa)
+    else {
+        if (isSameList) {
             let nextEl = draggedItem.nextElementSibling;
             while(nextEl && (nextEl === placeholder || nextEl.classList.contains('distance-separator'))) {
                 nextEl = nextEl.nextElementSibling;
@@ -483,11 +508,6 @@ function desktopDragOver(event) {
             }
         }
         
-        if (event.target === draggedItem) {
-            if (placeholder.parentNode) placeholder.remove();
-            return;
-        }
-
         const addBtn = dropZone.querySelector('.add-more-btn');
         if (addBtn) {
             dropZone.insertBefore(placeholder, addBtn);
