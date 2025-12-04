@@ -14,6 +14,7 @@ function injectDragStyles() {
             width: var(--ghost-width);
             height: var(--ghost-height);
             margin: 0 !important;
+            /* Transform yerine eski usul top/left kullanacağız, en garantisi bu */
             will-change: left, top; 
             transition: none !important;
         }
@@ -36,20 +37,36 @@ function injectDragStyles() {
             border: 2px solid #ffa000 !important;
             background-color: #fffdf0 !important;
         }
-        /* Gizleme Sınıfı */
+        
+        /* Gizleme Sınıfları */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
-        body.hide-map-details .add-more-btn {
+        body.hide-map-details .add-more-btn,
+        body.hide-map-details .add-new-day-btn,
+        body.hide-map-details #add-new-day-button,
+        body.hide-map-details .add-new-day-separator, 
+        body.hide-map-details .route-info, 
+        body.hide-map-details [id^="route-info-day"], 
+        body.hide-map-details .route-scale-bar,
+        body.hide-map-details .ai-info-section,
+        body.hide-map-details .ai-trip-info-box,
+        body.hide-map-details #generate-ai-info-btn,
+        body.hide-map-details .add-to-calendar-btn,
+        body.hide-map-details .date-range,
+        body.hide-map-details #newchat,
+        body.hide-map-details .trip-share-section
+        {
             display: none !important;
         }
+
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
         body.dragging-active {
             user-select: none !important;
             cursor: grabbing !important;
-            touch-action: none !important; /* Mobilde scrollu kitle, biz yönetiyoruz */
+            touch-action: none !important; 
         }
     `;
     const style = document.createElement('style');
@@ -66,7 +83,9 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
+// ESKİ KOD MANTIĞI: Shift değerleri (Tutulan yer ile köşe arasındaki fark)
 let dragShiftX = 0, dragShiftY = 0;
+
 let startX = 0, startY = 0;
 let longPressTimer;
 const LONG_PRESS_MS = 200;
@@ -74,8 +93,11 @@ const LONG_PRESS_MS = 200;
 // --- AUTO SCROLL AYARLARI ---
 let autoScrollSpeed = 0;
 let autoScrollFrame = null;
-const SCROLL_THRESHOLD = 80;  // Kenara 80px kala kaymaya başla
-const MAX_SCROLL_SPEED = 20;  // Maksimum hız
+let scrollContainer = null;
+let isDragging = false; // Render loop kontrolü
+
+const SCROLL_THRESHOLD = 100; 
+const MAX_SCROLL_SPEED = 25;  
 
 let lastClientX = 0, lastClientY = 0;
 
@@ -89,32 +111,53 @@ function initDragDropSystem() {
         document.body.addEventListener('touchstart', handleTouchStart, { passive: false });
         document.body.addEventListener('touchmove', handleTouchMove, { passive: false });
         document.body.addEventListener('touchend', handleTouchEnd);
+        document.body.addEventListener('touchcancel', handleTouchEnd);
     } else {
         setupDesktopListeners();
     }
     
-    // Native drag engelleme (Mainscript temizlense bile güvenlik için kalsın)
     document.addEventListener('dragstart', (e) => {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
 
     window.addEventListener('blur', () => { if (draggedItem) finishDrag(); });
+    window.addEventListener('pointerup', () => { if (draggedItem && isMobile) finishDrag(); });
+}
+
+// ========== HELPER: FIND SCROLL PARENT ==========
+function getScrollParent(node) {
+    if (!node) return window;
+    if (node === document.body || node === document.documentElement) return window;
+
+    const style = getComputedStyle(node);
+    const overflowY = style.overflowY;
+    const isScrollable = overflowY === 'auto' || overflowY === 'scroll';
+
+    if (isScrollable && node.scrollHeight > node.clientHeight) {
+        return node;
+    }
+    return getScrollParent(node.parentNode);
 }
 
 // ========== CLEANUP ==========
 function cleanupDrag() {
+    isDragging = false;
     stopAutoScroll();
 
-    // Scroll Düzeltme (Geri Yükleme)
     if (document.body.classList.contains('hide-map-details')) {
         const currentItem = document.querySelector('.travel-item.dragging-source');
         if (currentItem) {
             const rectBefore = currentItem.getBoundingClientRect();
-            document.body.classList.remove('hide-map-details'); // Haritaları geri getir
+            document.body.classList.remove('hide-map-details'); 
             const rectAfter = currentItem.getBoundingClientRect();
-            // Sayfa uzayınca liste aşağı kaydı, biz de scrollu aşağı itelim ki kullanıcı aynı yeri görsün
-            const diff = rectAfter.top - rectBefore.top;
-            if (diff !== 0) window.scrollBy(0, diff);
+            
+            if (scrollContainer && scrollContainer !== window) {
+                const diff = rectAfter.top - rectBefore.top;
+                scrollContainer.scrollTop += diff; 
+            } else {
+                const diff = rectAfter.top - rectBefore.top;
+                if (diff !== 0) window.scrollBy(0, diff);
+            }
         } else {
             document.body.classList.remove('hide-map-details');
         }
@@ -136,48 +179,64 @@ function cleanupDrag() {
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== AUTO SCROLL LOGIC ==========
+// ========== RENDER LOOP (Performanslı Çizim) ==========
+function dragRenderLoop() {
+    if (!isDragging || !draggedItem) return;
+
+    // 1. Scroll Hesapla ve Uygula
+    handleAutoScroll(lastClientY);
+
+    // 2. Ghost Pozisyonunu Güncelle (ESKİ KOD MANTIĞI)
+    // Doğrudan stil güncelliyoruz, transform yok.
+    const ghost = document.querySelector('.drag-ghost');
+    if (ghost) {
+        ghost.style.left = (lastClientX - dragShiftX) + 'px';
+        ghost.style.top = (lastClientY - dragShiftY) + 'px';
+    }
+
+    // 3. Placeholder Güncelle
+    updatePlaceholder(lastClientX, lastClientY);
+
+    requestAnimationFrame(dragRenderLoop);
+}
+
+// ========== SCROLL LOGIC ==========
 function handleAutoScroll(clientY) {
-    const h = window.innerHeight;
-    // Üst kenar
-    if (clientY < SCROLL_THRESHOLD) {
-        autoScrollSpeed = -MAX_SCROLL_SPEED * ((SCROLL_THRESHOLD - clientY) / SCROLL_THRESHOLD);
+    let containerHeight, containerTop;
+    
+    if (!scrollContainer || scrollContainer === window) {
+        containerHeight = window.innerHeight;
+        containerTop = 0;
+    } else {
+        const rect = scrollContainer.getBoundingClientRect();
+        containerHeight = rect.height;
+        containerTop = rect.top;
+    }
+
+    const relativeY = clientY - containerTop;
+
+    if (relativeY < SCROLL_THRESHOLD) {
+        const intensity = (SCROLL_THRESHOLD - relativeY) / SCROLL_THRESHOLD;
+        autoScrollSpeed = -MAX_SCROLL_SPEED * intensity;
     } 
-    // Alt kenar
-    else if (clientY > (h - SCROLL_THRESHOLD)) {
-        autoScrollSpeed = MAX_SCROLL_SPEED * ((clientY - (h - SCROLL_THRESHOLD)) / SCROLL_THRESHOLD);
+    else if (relativeY > (containerHeight - SCROLL_THRESHOLD)) {
+        const intensity = (relativeY - (containerHeight - SCROLL_THRESHOLD)) / SCROLL_THRESHOLD;
+        autoScrollSpeed = MAX_SCROLL_SPEED * intensity;
     } 
     else {
         autoScrollSpeed = 0;
     }
 
-    if (autoScrollSpeed !== 0 && !autoScrollFrame) {
-        startAutoScrollLoop();
+    if (Math.abs(autoScrollSpeed) > 0.5) {
+        if (!scrollContainer || scrollContainer === window) {
+            window.scrollBy(0, autoScrollSpeed);
+        } else {
+            scrollContainer.scrollTop += autoScrollSpeed;
+        }
     }
-}
-
-function startAutoScrollLoop() {
-    if (autoScrollSpeed === 0 || !draggedItem) {
-        cancelAnimationFrame(autoScrollFrame);
-        autoScrollFrame = null;
-        return;
-    }
-
-    window.scrollBy(0, autoScrollSpeed);
-    
-    // Scroll olurken placeholder yerini güncelle
-    if (lastClientX && lastClientY) {
-        updatePlaceholder(lastClientX, lastClientY);
-    }
-
-    autoScrollFrame = requestAnimationFrame(startAutoScrollLoop);
 }
 
 function stopAutoScroll() {
-    if (autoScrollFrame) {
-        cancelAnimationFrame(autoScrollFrame);
-        autoScrollFrame = null;
-    }
     autoScrollSpeed = 0;
 }
 
@@ -189,35 +248,40 @@ function createDragGhost(item, clientX, clientY) {
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
     
+    // Gereksizleri gizle
     const mapContent = ghost.querySelector('.map-content-wrap');
     if(mapContent) mapContent.style.display = 'none';
+    const routeInfo = ghost.querySelector('.route-info');
+    if(routeInfo) routeInfo.style.display = 'none';
 
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
+    // ESKİ KOD MANTIĞI: İlk pozisyonu hesapla ve yapıştır
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
     
     document.body.appendChild(ghost);
 }
 
-function updateDragGhost(clientX, clientY) {
-    const ghost = document.querySelector('.drag-ghost');
-    if (!ghost) return;
-    ghost.style.left = (clientX - dragShiftX) + 'px';
-    ghost.style.top = (clientY - dragShiftY) + 'px';
-}
-
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
+    
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 function updatePlaceholder(clientX, clientY) {
+    // ESKİ KOD MANTIĞI: Ghost'un merkezini kullanmak yerine doğrudan fareyi kullanıyoruz
+    // (veya tercihe göre ghost'un ortasını hesaplayabiliriz ama cursor daha stabil)
+    
     const elementBelow = document.elementFromPoint(clientX, clientY);
     if (!elementBelow) return;
     
@@ -230,6 +294,7 @@ function updatePlaceholder(clientX, clientY) {
     }
     
     const afterElement = getDragAfterElement(dropZone, clientY);
+    
     if (afterElement == null) {
         const addBtn = dropZone.querySelector('.add-more-btn');
         if (addBtn && getComputedStyle(addBtn).display !== 'none') {
@@ -246,38 +311,40 @@ function updatePlaceholder(clientX, clientY) {
 function handleTouchStart(e) {
     const item = e.target.closest('.travel-item');
     if (!item || e.target.closest('button') || e.target.closest('.map-content-wrap')) return;
-    
+    if (e.touches.length > 1) return;
+
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
+    
+    // ESKİ KOD MANTIĞI: Tıklanan yer ile kutunun sol-üst köşesi arasındaki farkı kaydet
     const rect = item.getBoundingClientRect();
     dragShiftX = startX - rect.left;
     dragShiftY = startY - rect.top;
+    
+    // Render loop için koordinatları hazırla
+    lastClientX = startX;
+    lastClientY = startY;
     
     longPressTimer = setTimeout(() => startDrag(item, startX, startY), LONG_PRESS_MS);
 }
 
 function handleTouchMove(e) {
-    if (!draggedItem) {
-        const dx = Math.abs(e.touches[0].clientX - startX);
-        const dy = Math.abs(e.touches[0].clientY - startY);
+    lastClientX = e.touches[0].clientX;
+    lastClientY = e.touches[0].clientY;
+
+    if (!isDragging) {
+        const dx = Math.abs(lastClientX - startX);
+        const dy = Math.abs(lastClientY - startY);
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
     
-    e.preventDefault(); // Tarayıcı scrollunu engelle
-    
-    const touch = e.touches[0];
-    lastClientX = touch.clientX;
-    lastClientY = touch.clientY;
-
-    updateDragGhost(lastClientX, lastClientY);
-    updatePlaceholder(lastClientX, lastClientY);
-    handleAutoScroll(lastClientY); // Otomatik kaydırmayı kontrol et
+    if (e.cancelable) e.preventDefault();
 }
 
 function handleTouchEnd() {
     clearTimeout(longPressTimer);
-    if (draggedItem) finishDrag();
+    if (isDragging) finishDrag();
 }
 
 function setupDesktopListeners() {
@@ -291,32 +358,32 @@ function setupDesktopListeners() {
             startX = e.clientX;
             startY = e.clientY;
             
+            // ESKİ KOD MANTIĞI
             const rect = item.getBoundingClientRect();
             dragShiftX = startX - rect.left;
             dragShiftY = startY - rect.top;
+            
+            lastClientX = startX;
+            lastClientY = startY;
 
             let isDragStarted = false;
 
             const onMouseMove = (moveEvent) => {
-                if (!draggedItem) return;
-                const clientX = moveEvent.clientX;
-                const clientY = moveEvent.clientY;
+                if ((moveEvent.buttons & 1) === 0) {
+                    onMouseUp();
+                    return;
+                }
+
+                lastClientX = moveEvent.clientX;
+                lastClientY = moveEvent.clientY;
 
                 if (!isDragStarted) {
-                    const dx = Math.abs(clientX - startX);
-                    const dy = Math.abs(clientY - startY);
+                    const dx = Math.abs(lastClientX - startX);
+                    const dy = Math.abs(lastClientY - startY);
                     if (dx > 5 || dy > 5) {
                         isDragStarted = true;
-                        startDrag(draggedItem, clientX, clientY);
+                        startDrag(item, lastClientX, lastClientY);
                     }
-                }
-                
-                if (isDragStarted) {
-                    lastClientX = clientX;
-                    lastClientY = clientY;
-                    updateDragGhost(clientX, clientY);
-                    updatePlaceholder(clientX, clientY);
-                    handleAutoScroll(clientY); // Desktop için de auto-scroll
                 }
             };
 
@@ -335,38 +402,33 @@ function setupDesktopListeners() {
 function startDrag(item, x, y) {
     draggedItem = item;
     sourceIndex = parseInt(item.dataset.index);
+    scrollContainer = getScrollParent(item);
+    
+    lastClientX = x;
+    lastClientY = y;
+
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // --- SCROLL COMPENSATION (Zıplamayı Önleme) ---
-    // 1. Height Lock
     const currentDocHeight = document.documentElement.scrollHeight;
     document.body.style.minHeight = currentDocHeight + 'px';
 
-    // 2. Pozisyon Kaydet
-    const rectBefore = item.getBoundingClientRect();
-    const originalTop = rectBefore.top;
-
-    // 3. Gizle!
-    document.body.classList.add('hide-map-details');
-    void document.body.offsetHeight; // Reflow
-
-    // 4. Scroll Ayarla
-    const rectAfter = item.getBoundingClientRect();
-    const diff = rectAfter.top - originalTop;
-    if (diff !== 0) window.scrollBy(0, diff);
-
     createDragGhost(item, x, y);
     item.classList.add('dragging-source');
+    
+    document.body.classList.add('hide-map-details');
     document.body.classList.add('dragging-active');
+
+    // Döngüyü başlat
+    isDragging = true;
+    dragRenderLoop();
 }
 
 function finishDrag() {
-    stopAutoScroll();
+    isDragging = false; 
 
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
         
-        // --- VALIDATION & WARNING ---
         const getValidNeighbor = (startNode, direction) => {
             let sibling = direction === 'prev' ? startNode.previousElementSibling : startNode.nextElementSibling;
             while (sibling) {
