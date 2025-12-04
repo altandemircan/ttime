@@ -9,22 +9,22 @@ function injectDragStyles() {
             pointer-events: none !important;
             background: rgba(255, 255, 255, 0.95) !important;
             border: 2px dashed #87cdb5 !important; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important; /* Gölge artırıldı */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
             margin: 0 !important;
             will-change: top, transform; 
             transition: none !important;
-            transform: scale(1.02); /* Hafif büyütme efekti */
+            transform: scale(1.02);
         }
         .insertion-placeholder {
-            height: 50px !important; /* Yükseklik artırıldı, yer açıldığı belli olsun */
+            height: 50px !important;
             background: rgba(138, 74, 243, 0.1); 
             border: 2px dashed rgba(138, 74, 243, 0.4);
             margin: 4px 0;
             border-radius: 8px;
-            transition: all 0.15s ease-out; /* Yumuşak geçiş */
+            transition: all 0.15s ease-out;
             pointer-events: none;
         }
         @keyframes shakeError {
@@ -39,14 +39,32 @@ function injectDragStyles() {
             background-color: #fffdf0 !important;
         }
         
-        /* Gizleme Sınıfları */
+        /* --- SÜRÜKLEME SIRASINDA GİZLENECEK ELEMENTLER --- */
+        
+        /* 1. Harita ve Rota Detayları */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
-        body.hide-map-details .add-more-btn,
         body.hide-map-details .route-info, 
         body.hide-map-details [id^="route-info-day"], 
-        body.hide-map-details .route-scale-bar
+        body.hide-map-details .route-scale-bar,
+
+        /* 2. Butonlar ve Kategori Ekleme */
+        body.hide-map-details .add-more-btn,
+        body.hide-map-details .add-new-day-btn,
+        body.hide-map-details #add-new-day-button,
+        body.hide-map-details .add-new-day-separator, /* Çizgiyi de gizle */
+
+        /* 3. AI ve Üst Menü Elemanları */
+        body.hide-map-details .ai-info-section,
+        body.hide-map-details .ai-trip-info-box,
+        body.hide-map-details #generate-ai-info-btn,
+
+        /* 4. Tarih ve Yeni Plan */
+        body.hide-map-details .add-to-calendar-btn,
+        body.hide-map-details .date-range,
+        body.hide-map-details #newchat,
+        body.hide-map-details .trip-share-section
         {
             display: none !important;
         }
@@ -77,7 +95,7 @@ let isMobile = false;
 // Axis & Offset Variables
 let dragShiftY = 0;
 let initialGhostLeft = 0; 
-let mobileOffsetY = 0; // Mobilde parmağın üstünde göstermek için
+let mobileOffsetY = 0; 
 
 let startX = 0, startY = 0;
 let longPressTimer;
@@ -88,7 +106,6 @@ let autoScrollSpeed = 0;
 let autoScrollFrame = null;
 let scrollContainer = null;
 
-// Daha geniş alan, daha hızlı tepki
 const SCROLL_THRESHOLD = 140; 
 const MAX_SCROLL_SPEED = 35;  
 
@@ -99,7 +116,6 @@ function initDragDropSystem() {
     injectDragStyles();
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    // Mobilde item'ı parmağın ne kadar yukarısında tutacağız?
     mobileOffsetY = isMobile ? 85 : 0; 
 
     cleanupDrag();
@@ -174,7 +190,7 @@ function cleanupDrag() {
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== AUTO SCROLL LOGIC (EXPONENTIAL) ==========
+// ========== AUTO SCROLL LOGIC ==========
 
 function calculateScrollSpeed(clientY) {
     let containerHeight, containerTop;
@@ -192,9 +208,8 @@ function calculateScrollSpeed(clientY) {
 
     // YUKARI
     if (relativeY < SCROLL_THRESHOLD) {
-        // Lineer değil, karesel artış (Daha agresif tepki)
-        const ratio = (SCROLL_THRESHOLD - relativeY) / SCROLL_THRESHOLD; // 0..1
-        const intensity = ratio * ratio; // Exponential curve
+        const ratio = (SCROLL_THRESHOLD - relativeY) / SCROLL_THRESHOLD; 
+        const intensity = ratio * ratio; 
         autoScrollSpeed = -MAX_SCROLL_SPEED * intensity;
     } 
     // AŞAĞI
@@ -220,7 +235,6 @@ function startAutoScrollLoop() {
         return;
     }
 
-    // Her frame'de hızı yeniden hesapla (Anlık tepki için)
     calculateScrollSpeed(lastClientY);
 
     if (Math.abs(autoScrollSpeed) < 0.5) {
@@ -266,13 +280,9 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // Axis Lock: X pozisyonunu sabitle
+    // Axis Lock
     ghost.style.left = rect.left + 'px';
     
-    // Y Pozisyonu + Mobile Offset
-    // clientY: parmak pozisyonu
-    // dragShiftY: tutulan yerin item tepesine uzaklığı
-    // mobileOffsetY: parmağın üstünde gösterme payı
     const topPos = (clientY - dragShiftY) - mobileOffsetY;
     ghost.style.top = topPos + 'px';
     
@@ -283,25 +293,19 @@ function updateDragGhost(clientX, clientY) {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // Sadece Y ekseninde hareket, X sabit
     ghost.style.left = initialGhostLeft + 'px';
     
-    // Offsetli takip
     const topPos = (clientY - dragShiftY) - mobileOffsetY;
     ghost.style.top = topPos + 'px';
 }
 
 function getDragAfterElement(container, y) {
-    // Sürüklenen hariç tüm elemanlar
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
     
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
-        // Item'ın ortasına göre hesaplama
         const offset = y - box.top - box.height / 2;
         
-        // offset < 0 : Fare item'ın üst yarısında veya üzerinde
-        // offset > closest.offset : En yakın olanı bul
         if (offset < 0 && offset > closest.offset) {
             return { offset: offset, element: child };
         } else {
@@ -311,10 +315,6 @@ function getDragAfterElement(container, y) {
 }
 
 function updatePlaceholder(clientX, clientY) {
-    // Placeholder konumunu belirlerken GHOST'un pozisyonuna değil,
-    // PARMAĞIN (clientY) pozisyonuna bakıyoruz. Bu en doğal hissiyatı verir.
-    
-    // X ekseni sapmalarını engellemek için listenin ortasından bir nokta alalım
     const rect = draggedItem.getBoundingClientRect();
     const centerX = initialGhostLeft + (rect.width / 2);
 
@@ -327,7 +327,6 @@ function updatePlaceholder(clientX, clientY) {
     if (!placeholder) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
-        // Placeholder'ı oluştururken orijinal item yüksekliğine yakın yapalım
         placeholder.style.height = (rect.height > 60 ? 60 : rect.height) + 'px';
     }
     
@@ -366,7 +365,6 @@ function handleTouchMove(e) {
     if (!draggedItem) {
         const dx = Math.abs(e.touches[0].clientX - startX);
         const dy = Math.abs(e.touches[0].clientY - startY);
-        // Hassasiyet eşiği (kazara kaydırmalar için)
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
@@ -469,7 +467,6 @@ function finishDrag() {
     if (placeholder && placeholder.parentNode) {
         const dropList = placeholder.parentNode;
         
-        // --- VALIDATION ---
         const getValidNeighbor = (startNode, direction) => {
             let sibling = direction === 'prev' ? startNode.previousElementSibling : startNode.nextElementSibling;
             while (sibling) {
