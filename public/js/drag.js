@@ -3,28 +3,31 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* SÜRÜKLENEN HAYALET (GHOST) -> MODERN YEŞİL */
+        /* SÜRÜKLENEN HAYALET (GHOST) */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
             background: rgba(255, 255, 255, 0.95) !important;
             
-            /* Modern, tok bir yeşil (Emerald Green) */
+            /* Modern Yeşil Border */
             border: 2px dashed #10b981 !important; 
-            
-            /* Gölgeyi de aynı tonun şeffafı yapıyoruz */
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
             
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
+            
+            /* DÜZELTME: Margin-top ile öğeyi parmağın biraz yukarısına alıyoruz */
             margin: 0 !important;
+            margin-top: -15px !important; /* Hafif yukarı kaldırır */
+            margin-left: -5px !important; /* Hafif ortalar */
+            
             will-change: left, top; 
             transition: none !important;
         }
 
-        /* YERLEŞECEĞİ ÇİZGİ (PLACEHOLDER) -> MOR */
+        /* YERLEŞECEĞİ ÇİZGİ (MOR) */
         .insertion-placeholder {
             height: 6px !important;
             background: linear-gradient(90deg, #8a4af3, #b388ff); 
@@ -34,21 +37,15 @@ function injectDragStyles() {
             pointer-events: none;
         }
 
-        /* SÜRÜKLEME ESNASINDA GİZLENECEK ELEMANLAR */
-        /* Body'ye 'hide-map-details' class'ı eklenince bunlar kaybolur */
+        /* GİZLENECEK ELEMANLAR (Harita vb.) */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
-        body.hide-map-details [id^="map-bottom-controls-wrapper"], /* ID'si bununla başlayanlar */
+        body.hide-map-details [id^="map-bottom-controls-wrapper"], 
         body.hide-map-details .add-more-btn {
             display: none !important;
         }
 
-        /* LİSTEDE KALAN ESKİ ÖĞE (DOKUNULMADI) */
-        .travel-item.dragging-source {
-            /* Olduğu gibi kalsın */
-        }
-
-        /* DİĞER AYARLAR */
+        /* Body Ayarları */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
@@ -71,7 +68,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Mouse'un kutunun sol üstüne olan uzaklığı
+// Offset
 let dragShiftX = 0;
 let dragShiftY = 0;
 
@@ -93,7 +90,6 @@ function initDragDropSystem() {
         setupDesktopListeners();
     }
     
-    // Native Drag Engelleme
     document.addEventListener('dragstart', (e) => {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
@@ -114,9 +110,8 @@ function cleanupDrag() {
     placeholder = null;
     draggedItem = null;
     
-    // Sürükleme bitince body temizliği
     document.body.classList.remove('dragging-active');
-    document.body.classList.remove('hide-map-details'); // Gizlenenleri geri getir
+    document.body.classList.remove('hide-map-details');
 
     if (longPressTimer) clearTimeout(longPressTimer);
 }
@@ -126,6 +121,7 @@ function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
     
+    // Offset hesapla
     dragShiftX = clientX - rect.left;
     dragShiftY = clientY - rect.top;
 
@@ -138,6 +134,7 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
+    // İlk konumlandırma
     ghost.style.left = rect.left + 'px';
     ghost.style.top = rect.top + 'px';
     
@@ -148,13 +145,13 @@ function updateDragGhost(clientX, clientY) {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
+    // Mouse'u birebir takip et (CSS'teki margin-top: -15px bunu yukarı alacak)
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
 }
 
 // ========== PLACEHOLDER LOGIC ==========
 function getDragAfterElement(container, y) {
-    // Görünür olan travel-item'ları baz al
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
@@ -178,9 +175,7 @@ function updatePlaceholder(clientX, clientY) {
     const afterElement = getDragAfterElement(dropZone, clientY);
     
     if (afterElement == null) {
-        // Harita vb gizlendiği için buton görünmeyebilir, direkt sona ekle
         const addBtn = dropZone.querySelector('.add-more-btn');
-        // addBtn display:none olsa bile DOM'da vardır, ama görünmediği için sona eklemek daha güvenli olabilir
         if (addBtn && getComputedStyle(addBtn).display !== 'none') {
              dropZone.insertBefore(placeholder, addBtn);
         } else {
@@ -262,13 +257,13 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
+    // 1. Önce Ghost'u oluştur (Pozisyon hesaplansın)
     createDragGhost(item, x, y);
     
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
     
-    // --- YENİ EKLENEN KISIM: Haritaları Gizle ---
-    // Bu class CSS'te haritayı, butonları ve mod seçimlerini gizler (display: none)
+    // 2. SONRA haritaları gizle (Sıralama önemli)
     document.body.classList.add('hide-map-details');
 }
 
@@ -316,7 +311,6 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
         window.cart = finalCart;
 
-        // Harita güncelleme işlemleri
         if (typeof updateCart === "function") updateCart();
 
         setTimeout(() => {
