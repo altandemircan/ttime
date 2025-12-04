@@ -17,6 +17,8 @@ function injectDragStyles() {
             height: var(--ghost-height);
             
             margin: 0 !important;
+            
+            /* ESKİ KOD MANTIĞI: Transform yerine left/top kullanıyoruz */
             will-change: left, top; 
             transition: none !important;
         }
@@ -28,17 +30,6 @@ function injectDragStyles() {
             box-shadow: 0 0 10px rgba(138, 74, 243, 0.5); 
             pointer-events: none;
         }
-        
-        /* BOŞ GÜNLER İÇİN DROP ZONE AYARI */
-        .day-list {
-            min-height: 60px; /* Boş olsa bile sürüklenecek alan olsun */
-            transition: background-color 0.2s;
-        }
-        /* Sürükleme sırasında boş günün üzerine gelince hafif renk değişimi (Opsiyonel UX) */
-        body.dragging-active .day-list:hover {
-            background-color: rgba(138, 74, 243, 0.03);
-        }
-
         @keyframes shakeError {
             0% { transform: translateX(0); border-color: #ffa000; }
             25% { transform: translateX(-5px); }
@@ -98,7 +89,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Shift değerleri
+// ESKİ KOD MANTIĞI: Shift değerleri
 let dragShiftX = 0, dragShiftY = 0;
 
 let startX = 0, startY = 0;
@@ -111,6 +102,7 @@ let autoScrollFrame = null;
 let scrollContainer = null;
 let isDragging = false; 
 
+// Eşik değerleri
 const SCROLL_THRESHOLD_TOP = 100; 
 const SCROLL_THRESHOLD_BOTTOM = 160; 
 const MAX_SCROLL_SPEED = 28;  
@@ -202,7 +194,8 @@ function dragRenderLoop() {
     // 1. Scroll Hesapla ve Uygula
     handleAutoScroll(lastClientY);
 
-    // 2. Ghost Pozisyonunu Güncelle
+    // 2. Ghost Pozisyonunu Güncelle (ESKİ USUL - LEFT/TOP)
+    // Transform yerine doğrudan stil güncelliyoruz, bu titremeyi ve offset hatasını engeller.
     const ghost = document.querySelector('.drag-ghost');
     if (ghost) {
         ghost.style.left = (lastClientX - dragShiftX) + 'px';
@@ -230,10 +223,12 @@ function handleAutoScroll(clientY) {
 
     const relativeY = clientY - containerTop;
 
+    // YUKARI
     if (relativeY < SCROLL_THRESHOLD_TOP) {
         const intensity = (SCROLL_THRESHOLD_TOP - relativeY) / SCROLL_THRESHOLD_TOP;
         autoScrollSpeed = -MAX_SCROLL_SPEED * intensity;
     } 
+    // AŞAĞI (Güçlendirilmiş)
     else if (relativeY > (containerHeight - SCROLL_THRESHOLD_BOTTOM)) {
         const intensity = (relativeY - (containerHeight - SCROLL_THRESHOLD_BOTTOM)) / SCROLL_THRESHOLD_BOTTOM;
         autoScrollSpeed = (MAX_SCROLL_SPEED * intensity) * 1.2;
@@ -263,6 +258,7 @@ function createDragGhost(item, clientX, clientY) {
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
     
+    // Gereksizleri gizle
     const mapContent = ghost.querySelector('.map-content-wrap');
     if(mapContent) mapContent.style.display = 'none';
     const routeInfo = ghost.querySelector('.route-info');
@@ -271,6 +267,8 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
+    // --- KESİN ÇÖZÜM: Append etmeden ÖNCE konumu ver ---
+    // Bu sayede tarayıcı elementi render ettiği ilk anda doğru yerde olur.
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
     
@@ -292,40 +290,27 @@ function getDragAfterElement(container, y) {
 }
 
 function updatePlaceholder(clientX, clientY) {
-    // 1. Mouse/Parmak altındaki elementi bul
     const elementBelow = document.elementFromPoint(clientX, clientY);
     if (!elementBelow) return;
     
-    // 2. Bu element bir 'day-list' mi veya 'day-list' içinde mi?
     const dropZone = elementBelow.closest('.day-list');
-    
-    // Eğer bir drop zone yoksa işlem yapma
     if (!dropZone) return;
 
-    // Placeholder henüz yoksa oluştur
     if (!placeholder) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
     }
     
-    // 3. Drop zone içindeki diğer itemlara göre konum belirle
     const afterElement = getDragAfterElement(dropZone, clientY);
     
-    // 4. BOŞ GÜN MANTIĞI EKLENDİ
     if (afterElement == null) {
-        // Eğer referans alınacak bir element (afterElement) yoksa:
-        // Listenin içinde 'add-more-btn' var mı?
         const addBtn = dropZone.querySelector('.add-more-btn');
-        
         if (addBtn && getComputedStyle(addBtn).display !== 'none') {
-             // Buton varsa onun önüne koy
              dropZone.insertBefore(placeholder, addBtn);
         } else {
-             // Buton da yoksa (tamamen boşsa) veya gizliyse listenin sonuna (içine) ekle
              dropZone.appendChild(placeholder);
         }
     } else {
-        // Referans element varsa onun önüne koy
         dropZone.insertBefore(placeholder, afterElement);
     }
 }
@@ -339,6 +324,7 @@ function handleTouchStart(e) {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     
+    // ESKİ KOD MANTIĞI: Tutulan yer ile köşe arasındaki farkı al
     const rect = item.getBoundingClientRect();
     dragShiftX = startX - rect.left;
     dragShiftY = startY - rect.top;
@@ -350,12 +336,14 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
+    // Sürekli güncelle
     lastClientX = e.touches[0].clientX;
     lastClientY = e.touches[0].clientY;
 
     if (!isDragging) {
         const dx = Math.abs(lastClientX - startX);
         const dy = Math.abs(lastClientY - startY);
+        // Hassasiyet eşiği
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
@@ -379,6 +367,7 @@ function setupDesktopListeners() {
             startX = e.clientX;
             startY = e.clientY;
             
+            // ESKİ KOD MANTIĞI
             const rect = item.getBoundingClientRect();
             dragShiftX = startX - rect.left;
             dragShiftY = startY - rect.top;
