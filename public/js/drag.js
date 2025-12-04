@@ -8,34 +8,30 @@ function injectDragStyles() {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: #fff !important;
             
-            /* İSTEK: Sadece yeşil border olsun */
-            border: 2px solid #00e676 !important; /* Canlı Yeşil */
-            box-shadow: 0 15px 40px rgba(0, 230, 118, 0.3) !important; /* Hafif yeşil gölge */
+            /* İSTEĞİN: Yeşil Border ve Hafif Transparanlık */
+            background: rgba(255, 255, 255, 0.8) !important; /* Hafif şeffaf beyaz */
+            border: 2px solid #00e676 !important;           /* PARLAK YEŞİL */
+            box-shadow: 0 15px 40px rgba(0, 230, 118, 0.2) !important;
             
             border-radius: 12px !important;
-            width: var(--ghost-width);
-            height: var(--ghost-height);
             margin: 0 !important;
             will-change: left, top; 
             transition: none !important;
         }
 
-        /* LİSTEDE KALAN ESKİ ÖĞE (KAYNAK) */
+        /* LİSTEDE KALAN ESKİ ÖĞE (KAYNAK) - DOKUNULMADI */
         .travel-item.dragging-source {
-            /* İSTEK: Eski itema dokunma. */
-            /* Buradaki opacity, filter vb. her şeyi kaldırdık. */
-            /* Olduğu gibi görünecek. */
+            /* Burası boş, orijinali nasılsa öyle kalsın */
         }
 
-        /* Diğer Ayarlar */
+        /* DİĞER GEREKLİ AYARLAR (Dokunma) */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
         .insertion-placeholder {
             height: 6px !important;
-            background: linear-gradient(90deg, #00e676, #69f0ae); /* Çizgiyi de yeşil tonlu yaptım uyumlu olsun */
+            background: linear-gradient(90deg, #00e676, #69f0ae);
             margin: 8px 0;
             border-radius: 4px;
             box-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
