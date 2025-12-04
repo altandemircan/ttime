@@ -3,16 +3,18 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* SÜRÜKLENEN HAYALET (GHOST) -> YEŞİL BORDER (İstediğin gibi) */
+        /* SÜRÜKLENEN HAYALET (GHOST) -> MODERN YEŞİL */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: rgba(255, 255, 255, 0.9) !important;
+            background: rgba(255, 255, 255, 0.95) !important; /* Biraz daha opak, temiz dursun */
             
-            /* Sadece burası yeşil */
-            border: 2px solid #00e676 !important; 
-            box-shadow: 0 15px 40px rgba(0, 230, 118, 0.2) !important;
+            /* Modern, tok bir yeşil (Emerald Green) */
+            border: 2px solid #10b981 !important; 
+            
+            /* Gölgeyi de aynı tonun şeffafı yapıyoruz */
+            box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
             
             border-radius: 12px !important;
             width: var(--ghost-width);
@@ -22,24 +24,22 @@ function injectDragStyles() {
             transition: none !important;
         }
 
-        /* YERLEŞECEĞİ ÇİZGİ (PLACEHOLDER) -> TEKRAR MOR (Eski hali) */
+        /* YERLEŞECEĞİ ÇİZGİ (PLACEHOLDER) -> MOR (Aynen korundu) */
         .insertion-placeholder {
             height: 6px !important;
-            /* Mor renk geri geldi */
             background: linear-gradient(90deg, #8a4af3, #b388ff); 
             margin: 8px 0;
             border-radius: 4px;
-            /* Gölgesi de mor */
             box-shadow: 0 0 10px rgba(138, 74, 243, 0.5); 
             pointer-events: none;
         }
 
-        /* LİSTEDE KALAN ESKİ ÖĞE (Dokunulmadı) */
+        /* LİSTEDE KALAN ESKİ ÖĞE (DOKUNULMADI) */
         .travel-item.dragging-source {
-            /* Orijinal hali */
+            /* Olduğu gibi kalsın */
         }
 
-        /* Diğer zorunlu ayarlar */
+        /* DİĞER AYARLAR */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
