@@ -12,14 +12,16 @@ function injectDragStyles() {
             
             /* Modern, tok bir yeşil (Emerald Green) */
             border: 2px dashed #87cdb5 !important; 
-            
-            /* Gölgeyi de aynı tonun şeffafı yapıyoruz */
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
             
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
+            
+            /* POZİSYON AYARLARI */
             margin: 0 !important;
+            /* Bu değerleri aşağıda JS ile kontrol ediyoruz, CSS'te sıfırlayalım */
+            
             will-change: left, top; 
             transition: none !important;
         }
@@ -34,8 +36,7 @@ function injectDragStyles() {
             pointer-events: none;
         }
 
-        /* --- YENİ EKLENEN KISIM: GİZLEME KURALLARI --- */
-        /* Sürükleme başladığında body'ye bu class eklenir ve detaylar gizlenir */
+        /* GİZLENECEK ELEMANLAR (Harita vb.) */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
@@ -71,7 +72,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Mouse'un kutunun sol üstüne olan uzaklığı
+// Offset (Shift) Değişkenleri
 let dragShiftX = 0;
 let dragShiftY = 0;
 
@@ -114,21 +115,20 @@ function cleanupDrag() {
     placeholder = null;
     draggedItem = null;
     
-    // --- GİZLEME SINIFINI KALDIR ---
     document.body.classList.remove('dragging-active');
-    document.body.classList.remove('hide-map-details'); // Her şey geri gelir
+    document.body.classList.remove('hide-map-details');
 
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== GHOST LOGIC (DIRECT POSITIONING - AYNI KALDI) ==========
+// ========== GHOST LOGIC ==========
 function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
     
-    // 1. Mouse'un öğenin köşesine olan farkını hesapla
-    dragShiftX = clientX - rect.left;
-    dragShiftY = clientY - rect.top;
+    // NOT: dragShiftX ve dragShiftY artık burada hesaplanmıyor.
+    // Tıklama anında (mousedown/touchstart) hesaplanan değeri kullanıyoruz.
+    // Bu sayede DOM kaymaları ghost'u etkilemiyor.
 
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
@@ -139,9 +139,9 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // 2. İlk pozisyonu tam olarak olduğu yere ata
-    ghost.style.left = rect.left + 'px';
-    ghost.style.top = rect.top + 'px';
+    // Ghost'un ilk pozisyonunu, mouse pozisyonu ve hesaplanmış shift değerine göre veriyoruz
+    ghost.style.left = (clientX - dragShiftX) + 'px';
+    ghost.style.top = (clientY - dragShiftY) + 'px';
     
     document.body.appendChild(ghost);
 }
@@ -150,7 +150,7 @@ function updateDragGhost(clientX, clientY) {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // 3. Mouse neredeyse, farkı çıkarıp kutuyu oraya koy
+    // Mouse'u takip et (Shift değeri sabit kaldığı için kayma yapmaz)
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
 }
@@ -180,13 +180,11 @@ function updatePlaceholder(clientX, clientY) {
     const afterElement = getDragAfterElement(dropZone, clientY);
     
     if (afterElement == null) {
-        // --- ADD BTN GİZLİ OLACAĞI İÇİN DİREKT SONA EKLEME ---
         const addBtn = dropZone.querySelector('.add-more-btn');
-        // Buton görünürse onun önüne, görünmezse (ki gizledik) sona ekle
         if (addBtn && getComputedStyle(addBtn).display !== 'none') {
-            dropZone.insertBefore(placeholder, addBtn);
+             dropZone.insertBefore(placeholder, addBtn);
         } else {
-            dropZone.appendChild(placeholder);
+             dropZone.appendChild(placeholder);
         }
     } else {
         dropZone.insertBefore(placeholder, afterElement);
@@ -200,6 +198,12 @@ function handleTouchStart(e) {
     
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
+
+    // KRİTİK DÜZELTME: Offset'i hemen şimdi hesapla ve kilitle
+    const rect = item.getBoundingClientRect();
+    dragShiftX = startX - rect.left;
+    dragShiftY = startY - rect.top;
+    
     longPressTimer = setTimeout(() => startDrag(item, startX, startY), LONG_PRESS_MS);
 }
 
@@ -231,15 +235,22 @@ function setupDesktopListeners() {
             draggedItem = item;
             startX = e.clientX;
             startY = e.clientY;
+
+            // KRİTİK DÜZELTME: Offset'i tıklar tıklamaz hesapla. 
+            // Böylece sonradan map kapanıp liste kayınca hesap şaşmaz.
+            const rect = item.getBoundingClientRect();
+            dragShiftX = startX - rect.left;
+            dragShiftY = startY - rect.top;
+
             let isDragStarted = false;
 
             const onMouseMove = (moveEvent) => {
                 if (!draggedItem) return;
                 const dx = Math.abs(moveEvent.clientX - startX);
                 const dy = Math.abs(moveEvent.clientY - startY);
+                
                 if (!isDragStarted && (dx > 5 || dy > 5)) {
                     isDragStarted = true;
-                    // startDrag'e o anki güncel pozisyonu gönderiyoruz
                     startDrag(draggedItem, moveEvent.clientX, moveEvent.clientY);
                 }
                 if (isDragStarted) {
@@ -265,13 +276,13 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // Ghost'u tam olduğu yerde yarat (x,y o anki mouse pozisyonu)
+    // Ghost oluştur (Kilitlenmiş Shift değerini kullanır)
     createDragGhost(item, x, y);
     
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
-
-    // --- HARİTALARI VE BUTONLARI GİZLE ---
+    
+    // Haritaları gizle
     document.body.classList.add('hide-map-details');
 }
 
@@ -319,7 +330,6 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
         window.cart = finalCart;
 
-        // Harita güncelleme işlemleri
         if (typeof updateCart === "function") updateCart();
 
         setTimeout(() => {
