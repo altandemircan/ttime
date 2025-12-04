@@ -3655,16 +3655,16 @@ const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Bo
 
       const li = document.createElement("li");
       li.className = "travel-item";
-      li.draggable = true;
+      // li.draggable = true;
       li.dataset.index = currIdx;
       if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
         li.setAttribute("data-lat", item.location.lat);
         li.setAttribute("data-lon", item.location.lng);
       }
 // dragStart fonksiyonu drag.js'den window'a eklendiği için window.dragStart olarak erişiyoruz
-li.addEventListener("dragstart", function(e) {
-    if (window.dragStart) window.dragStart(e);
-});
+// li.addEventListener("dragstart", function(e) {
+//     if (window.dragStart) window.dragStart(e);
+// });
       // --- MARKER HTML YAPISI (Senin İstediğin) ---
       // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
       const listMarkerHtml = `
@@ -3965,7 +3965,7 @@ cartDiv.appendChild(addNewDayButton);
     });
   }
 
-  initDragDropSystem();
+  // initDragDropSystem();
   if (typeof interact !== 'undefined') setupMobileDragDrop();
   setupSidebarAccordion();
 
@@ -4180,18 +4180,46 @@ cartDiv.appendChild(addNewDayButton);
 
   setTimeout(() => {
     document.querySelectorAll('.day-list').forEach(dayList => {
+      // Sortable zaten varsa tekrar kurma, yoksa kur
       if (!dayList._sortableSetup) {
         Sortable.create(dayList, {
           animation: 150,
-          handle: '.drag-icon',
+          handle: '.drag-icon', // Sadece ikondan tutunca sürükler
+          // handle: '.travel-item', // (Opsiyonel) Tüm satırdan tutunca sürüklesin istersen bunu aç
           onEnd: function (evt) {
-            const day = dayList.dataset.day;
-            const newOrder = Array.from(dayList.querySelectorAll('.travel-item')).map(li => Number(li.dataset.index));
-            const items = window.cart.filter(i => Number(i.day) === Number(day) && !i._starter && !i._placeholder && (i.name || i.category === "Note"));
-            newOrder.forEach((cartIdx, newPos) => {
-              const moved = window.cart.findIndex(it => window.cart.indexOf(it) === cartIdx);
-              if (moved > -1) window.cart.splice(moved, 1, items[newPos]);
+            const day = Number(dayList.dataset.day);
+            
+            // 1. Yeni sıralamayı DOM'daki data-index'lerden al
+            // (Not: data-index, o anki window.cart içindeki eski pozisyonudur)
+            const newIndices = Array.from(dayList.querySelectorAll('.travel-item'))
+                                    .map(el => Number(el.dataset.index));
+
+            // 2. O günün itemlarını, DOM'daki yeni sıraya göre objelerini çek
+            const reorderedDayItems = newIndices.map(idx => window.cart[idx]);
+
+            // 3. Cart içindeki diğer günlerin itemlarını koru (bu gününkileri çıkar)
+            const otherItems = window.cart.filter(item => Number(item.day) !== day);
+
+            // 4. Yeni cart listesini oluştur: Diğerleri + Yeni Sıralanmışlar
+            // Not: Bu basit bir birleştirmedir. Günlerin sırasını korumak için 
+            // "filter" yerine sadece o günün aralığını bulup splice yapmak daha iyidir ama
+            // en basit çalışan yöntem şudur:
+            
+            let newCart = [];
+            
+            // Gün gün tekrar birleştir ki 1. gün, 2. gün sırası bozulmasın
+            const allDays = [...new Set(window.cart.map(i => i.day))].sort((a,b)=>a-b);
+            
+            allDays.forEach(d => {
+                if(Number(d) === day) {
+                    newCart = newCart.concat(reorderedDayItems);
+                } else {
+                    newCart = newCart.concat(window.cart.filter(i => Number(i.day) === Number(d)));
+                }
             });
+
+            // Global cart'ı güncelle ve tekrar render et
+            window.cart = newCart;
             updateCart();
           }
         });
