@@ -148,37 +148,42 @@ function activateMobileDrag(item, touch) {
 function handleGlobalTouchMove(e) {
     if (!longPressTriggered || !draggedItem) return;
 
-    e.preventDefault();
+    // Varsayılan kaydırmayı engelle
+    e.preventDefault(); 
     e.stopImmediatePropagation();
 
     const touch = e.touches[0];
 
+    // 1. Öğeyi hareket ettir (DOM güncellemesi)
     draggedItem.style.left = (touch.clientX - mobileDragOffsetX) + 'px';
     draggedItem.style.top = (touch.clientY - mobileDragOffsetY) + 'px';
 
-    draggedItem.style.visibility = 'hidden';
+    // 2. Performans İyileştirmesi: Visibility aç-kapa işlemini kaldırdık.
+    // CSS'teki "pointer-events: none" sayesinde elementFromPoint 
+    // zaten sürüklenen öğeyi delip geçerek altındakini görür.
     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    draggedItem.style.visibility = 'visible';
 
     if (!elementBelow) return;
 
     const dropZone = elementBelow.closest('.day-list');
     
-    if (!placeholder) {
-        placeholder = document.createElement("div");
-        placeholder.classList.add("insertion-placeholder");
-        placeholder.style.height = '6px';
-        placeholder.style.margin = '8px 0';
-        placeholder.style.borderRadius = '4px';
-        placeholder.style.pointerEvents = 'none';
-    }
-
     if (dropZone) {
+        // Dropzone değişimini yönet
         if (currentDropZone && currentDropZone !== dropZone) {
             currentDropZone.classList.remove('drop-hover');
         }
         currentDropZone = dropZone;
         currentDropZone.classList.add('drop-hover');
+
+        // Placeholder yoksa hemen oluştur (Gecikmeyi önler)
+        if (!placeholder) {
+            placeholder = document.createElement("div");
+            placeholder.classList.add("insertion-placeholder");
+            placeholder.style.height = '6px';
+            placeholder.style.margin = '8px 0';
+            placeholder.style.borderRadius = '4px';
+            placeholder.style.pointerEvents = 'none';
+        }
 
         const targetItem = elementBelow.closest('.travel-item');
         
@@ -188,7 +193,7 @@ function handleGlobalTouchMove(e) {
             const offset = touch.clientY - (rect.top + rect.height / 2);
             const isSameList = draggedItem.parentNode === dropZone;
             
-            // ÜST YARI
+            // ÜST YARI (Insert Before)
             if (offset < 0) {
                 if (isSameList && draggedItem.nextElementSibling === targetItem) {
                     if (placeholder.parentNode) placeholder.remove();
@@ -200,7 +205,7 @@ function handleGlobalTouchMove(e) {
                 }
                 dropZone.insertBefore(placeholder, targetItem);
             } 
-            // ALT YARI
+            // ALT YARI (Insert After)
             else {
                 let nextNode = targetItem.nextSibling;
                 if (nextNode && nextNode.classList.contains('distance-separator')) {
@@ -213,10 +218,11 @@ function handleGlobalTouchMove(e) {
                 dropZone.insertBefore(placeholder, nextNode);
             }
         } 
-        // --- SENARYO 2: Boşluk ---
+        // --- SENARYO 2: Boşluk veya Buton ---
         else {
             const addBtn = dropZone.querySelector('.add-more-btn');
             
+            // Kendi listemizdeysek ve sondayız kontrolü
             if (draggedItem.parentNode === dropZone) {
                 let nextEl = draggedItem.nextElementSibling;
                 while(nextEl && (nextEl === placeholder || nextEl.classList.contains('distance-separator'))) {
@@ -228,7 +234,8 @@ function handleGlobalTouchMove(e) {
                 }
             }
             
-            if (targetItem === draggedItem) {
+            // Kendi üzerindeysek (Nadir durum ama güvenlik için)
+            if (elementBelow === draggedItem || elementBelow.closest('.travel-item') === draggedItem) {
                 if (placeholder.parentNode) placeholder.remove();
                 return;
             }
