@@ -3,7 +3,7 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* SÜRÜKLENEN HAYALET (GHOST) */
+        /* SÜRÜKLENEN HAYALET (GHOST) - Yeşil Çerçeve */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
@@ -43,12 +43,25 @@ function injectDragStyles() {
             background-color: #fffdf0 !important;
         }
 
-        /* GİZLENECEK ELEMANLAR (SADECE MOBİLDE) */
-        body.mobile-drag-active .route-controls-bar,
-        body.mobile-drag-active .tt-travel-mode-set,
-        body.mobile-drag-active [id^="map-bottom-controls-wrapper"], 
-        body.mobile-drag-active .add-more-btn {
+        /* --- DESKTOP İÇİN GİZLEME (BOŞLUK KAPANIR) --- */
+        body.hide-map-details .route-controls-bar,
+        body.hide-map-details .tt-travel-mode-set,
+        body.hide-map-details [id^="map-bottom-controls-wrapper"], 
+        body.hide-map-details .add-more-btn {
             display: none !important;
+        }
+
+        /* --- MOBİL İÇİN ÖZEL AYAR (BOŞLUK KALIR, ZIPLAMA OLMAZ) --- */
+        @media (max-width: 768px) {
+            body.hide-map-details .route-controls-bar,
+            body.hide-map-details .tt-travel-mode-set,
+            body.hide-map-details [id^="map-bottom-controls-wrapper"], 
+            body.hide-map-details .add-more-btn {
+                display: block !important;      /* Yer kaplamaya devam etsin */
+                visibility: hidden !important;  /* Ama görünmesin */
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
         }
 
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
@@ -57,8 +70,8 @@ function injectDragStyles() {
         body.dragging-active {
             user-select: none !important;
             cursor: grabbing !important;
-            /* Mobilde tarayıcının otomatik scrollunu kapat */
-            overflow-anchor: none !important;
+            /* Mobilde tarayıcı scrollunu kilitleme */
+            touch-action: none;
         }
     `;
     const style = document.createElement('style');
@@ -86,7 +99,6 @@ const LONG_PRESS_MS = 200;
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
     injectDragStyles();
-    // Mobil kontrolü
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     cleanupDrag();
 
@@ -98,7 +110,6 @@ function initDragDropSystem() {
         setupDesktopListeners();
     }
     
-    // Native Drag Engelleme
     document.addEventListener('dragstart', (e) => {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
@@ -110,42 +121,23 @@ function initDragDropSystem() {
 
 // ========== CLEANUP ==========
 function cleanupDrag() {
-    // --- MOBİL İÇİN SCROLL GERİ YÜKLEME ---
-    // Haritalar geri gelince sayfa uzayacak, pozisyonu korumak için scrollu ayarla
-    if (isMobile && document.body.classList.contains('mobile-drag-active')) {
-        const currentItem = document.querySelector('.travel-item.dragging-source');
-        if (currentItem) {
-            const rectBefore = currentItem.getBoundingClientRect();
-            
-            // Gizlemeyi kaldır (Harita geri gelsin)
-            document.body.classList.remove('mobile-drag-active');
-            
-            const rectAfter = currentItem.getBoundingClientRect();
-            
-            // Oluşan fark kadar scrollu kaydır (Kullanıcı zıplama hissetmesin)
-            const diff = rectAfter.top - rectBefore.top;
-            if (diff !== 0) window.scrollBy(0, diff);
-        } else {
-            document.body.classList.remove('mobile-drag-active');
-        }
-    } else {
-        document.body.classList.remove('mobile-drag-active');
-    }
-
-    // Min-height kilidini kaldır
-    document.body.style.minHeight = '';
-
+    // Ghost ve stilleri temizle
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
         item.classList.remove('dragging-source');
         item.classList.remove('shake-error');
         item.style.opacity = '';
     });
+    
+    // Placeholder temizle
     if (placeholder && placeholder.parentNode) placeholder.remove();
     placeholder = null;
     draggedItem = null;
     
+    // Gizleme sınıflarını kaldır (Haritalar geri gelir)
     document.body.classList.remove('dragging-active');
+    document.body.classList.remove('hide-map-details');
+
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
@@ -179,7 +171,6 @@ function updateDragGhost(clientX, clientY) {
 
 // ========== PLACEHOLDER LOGIC ==========
 function getDragAfterElement(container, y) {
-    // Sadece travel-item olanları baz al (separator'ları atla)
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
@@ -202,10 +193,11 @@ function updatePlaceholder(clientX, clientY) {
     
     const afterElement = getDragAfterElement(dropZone, clientY);
     
+    // Add Button kontrolü
     if (afterElement == null) {
         const addBtn = dropZone.querySelector('.add-more-btn');
-        // Mobilde addBtn gizlense bile DOM'da vardır, kontrol et
-        if (addBtn && getComputedStyle(addBtn).display !== 'none') {
+        // Mobilde addBtn görünmez olsa bile DOM'da vardır, önüne ekle
+        if (addBtn) {
              dropZone.insertBefore(placeholder, addBtn);
         } else {
              dropZone.appendChild(placeholder);
@@ -231,15 +223,18 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
-    if (!draggedItem) {
+    if (draggedItem) {
+        if (e.cancelable) e.preventDefault(); // Sayfa scrollunu kitle
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
+        
+        updateDragGhost(e.touches[0].clientX, e.touches[0].clientY);
+        updatePlaceholder(e.touches[0].clientX, e.touches[0].clientY);
+    } else {
         const dx = Math.abs(e.touches[0].clientX - startX);
         const dy = Math.abs(e.touches[0].clientY - startY);
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
-        return;
     }
-    e.preventDefault();
-    updateDragGhost(e.touches[0].clientX, e.touches[0].clientY);
-    updatePlaceholder(e.touches[0].clientX, e.touches[0].clientY);
 }
 
 function handleTouchEnd() {
@@ -247,7 +242,6 @@ function handleTouchEnd() {
     if (draggedItem) finishDrag();
 }
 
-// --- DESKTOP İÇİN ORİJİNAL MANTIK (DOKUNULMADI) ---
 function setupDesktopListeners() {
     document.addEventListener('mousedown', function(e) {
         if (e.button !== 0) return;
@@ -269,10 +263,8 @@ function setupDesktopListeners() {
                 if (!draggedItem) return;
                 const dx = Math.abs(moveEvent.clientX - startX);
                 const dy = Math.abs(moveEvent.clientY - startY);
-                
                 if (!isDragStarted && (dx > 5 || dy > 5)) {
                     isDragStarted = true;
-                    // Desktop'ta harita gizlenmez, direkt başla
                     startDrag(draggedItem, moveEvent.clientX, moveEvent.clientY);
                 }
                 if (isDragStarted) {
@@ -298,38 +290,12 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // --- 1. HEIGHT LOCK (MOBİL KAYMA ÇÖZÜMÜ) ---
-    // Haritalar gizlenince sayfa boyu kısalır, tarayıcı scrollu yukarı atar.
-    // Bunu önlemek için sayfa yüksekliğini kilitliyoruz.
-    const currentDocHeight = document.documentElement.scrollHeight;
-    document.body.style.minHeight = currentDocHeight + 'px';
-
-    // --- 2. SCROLL COMPENSATION (MOBİLDE) ---
-    if (isMobile) {
-        // Haritaları gizlemeden önceki pozisyon (Ekran üzerindeki yer)
-        const rectBefore = item.getBoundingClientRect();
-        const originalTop = rectBefore.top;
-
-        // Gizle!
-        document.body.classList.add('mobile-drag-active');
-        
-        // Tarayıcı değişikliği hesaplasın
-        void document.body.offsetHeight;
-
-        // Haritalar gizlendikten sonraki pozisyon (Liste yukarı kaydı)
-        const rectAfter = item.getBoundingClientRect();
-        const newTop = rectAfter.top;
-
-        // Farkı bul (Örn: -300px yukarı kaydı)
-        const diff = newTop - originalTop;
-
-        // Sayfayı o fark kadar scroll et (Böylece item görsel olarak parmağın altında kalır)
-        if (diff !== 0) {
-            window.scrollBy(0, diff);
-        }
-    }
-
+    // 1. Ghost Oluştur
     createDragGhost(item, x, y);
+    
+    // 2. Haritaları Gizle (Bu sınıf CSS'te desktop için display:none, mobil için visibility:hidden yapar)
+    document.body.classList.add('hide-map-details');
+    
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
 }
@@ -340,7 +306,6 @@ function finishDrag() {
         const dropList = placeholder.parentNode;
         const sourceItemData = window.cart[sourceIndex];
         
-        // Yardımcı: Sadece travel-item'ları bul, aradaki çizgileri atla
         const getValidNeighbor = (startNode, direction) => {
             let sibling = direction === 'prev' ? startNode.previousElementSibling : startNode.nextElementSibling;
             while (sibling) {
@@ -366,7 +331,7 @@ function finishDrag() {
             return name1 === name2 && name1 !== "";
         };
 
-        // Bilgilendirme (İşlemi durdurmaz)
+        // Bilgilendirme Uyarısı
         if (isDuplicate(prev) || isDuplicate(next)) {
             const conflictItem = isDuplicate(prev) ? prev : next;
             conflictItem.classList.add('shake-error');
