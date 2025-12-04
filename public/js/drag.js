@@ -3,36 +3,45 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
+        /* SÜRÜKLENEN HAYALET (GHOST) -> YEŞİL BORDER (İstediğin gibi) */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: #fff !important;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3) !important;
-border: 2px solid #00e676 !important;            border-radius: 12px !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            
+            /* Sadece burası yeşil */
+            border: 2px solid #00e676 !important; 
+            box-shadow: 0 15px 40px rgba(0, 230, 118, 0.2) !important;
+            
+            border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
             margin: 0 !important;
-            
-            /* DÜZELTME: Transform yerine Left/Top kullanacağız, bu daha güvenli */
             will-change: left, top; 
             transition: none !important;
         }
-        .travel-item.dragging-source {
-            opacity: 0.2 !important;
-            filter: grayscale(100%);
-            border: 2px dashed #ccc;
-        }
-        .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
-            pointer-events: auto;
-        }
+
+        /* YERLEŞECEĞİ ÇİZGİ (PLACEHOLDER) -> TEKRAR MOR (Eski hali) */
         .insertion-placeholder {
             height: 6px !important;
-            background: linear-gradient(90deg, #8a4af3, #b388ff);
+            /* Mor renk geri geldi */
+            background: linear-gradient(90deg, #8a4af3, #b388ff); 
             margin: 8px 0;
             border-radius: 4px;
-            box-shadow: 0 0 10px rgba(138, 74, 243, 0.5);
+            /* Gölgesi de mor */
+            box-shadow: 0 0 10px rgba(138, 74, 243, 0.5); 
             pointer-events: none;
+        }
+
+        /* LİSTEDE KALAN ESKİ ÖĞE (Dokunulmadı) */
+        .travel-item.dragging-source {
+            /* Orijinal hali */
+        }
+
+        /* Diğer zorunlu ayarlar */
+        .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
+            pointer-events: auto;
         }
         body.dragging-active {
             user-select: none !important;
