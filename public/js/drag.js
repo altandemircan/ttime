@@ -14,7 +14,10 @@ function injectDragStyles() {
             width: var(--ghost-width);
             height: var(--ghost-height);
             will-change: transform; 
-            margin: 0 !important; /* Kaymaları önlemek için şart */
+            /* Başlangıçta 0'a çekiyoruz, her şeyi transform ile yöneteceğiz */
+            left: 0 !important; 
+            top: 0 !important;
+            margin: 0 !important;
             transition: none !important; 
         }
         .travel-item.dragging-source {
@@ -22,7 +25,6 @@ function injectDragStyles() {
             filter: grayscale(100%);
             border: 2px dashed #ccc;
         }
-        /* Harita ve Kontrol Barlarının sürüklemeye karışmasını engelle */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
@@ -53,7 +55,10 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// DÜZELTME: Artık sadece startX ve startY referans alacağız
+// Offset değişkenlerini geri getirdik (Kusursuz takip için şart)
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
 let startX = 0, startY = 0;
 let longPressTimer;
 const LONG_PRESS_MS = 200;
@@ -72,7 +77,6 @@ function initDragDropSystem() {
         setupDesktopListeners();
     }
     
-    // Native Drag Engelleme
     document.addEventListener('dragstart', (e) => {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
@@ -96,12 +100,14 @@ function cleanupDrag() {
     if (longPressTimer) clearTimeout(longPressTimer);
 }
 
-// ========== GHOST LOGIC (FIXED POSITIONING) ==========
+// ========== GHOST LOGIC (OFFSET YÖNTEMİ) ==========
 function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
     
-    // NOT: dragOffsetX/Y hesaplamasına gerek kalmadı, delta kullanacağız.
+    // 1. Mouse'un kutunun sol-üst köşesine olan uzaklığını hesapla
+    dragOffsetX = clientX - rect.left;
+    dragOffsetY = clientY - rect.top;
 
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
@@ -112,11 +118,12 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // DÜZELTME: Öğeyi 0,0 yerine tam olarak olduğu yere sabitliyoruz.
-    // Bu sayede ilk anda asla sıçrama yapmaz.
-    ghost.style.left = rect.left + 'px';
-    ghost.style.top = rect.top + 'px';
-    ghost.style.transform = `translate(0px, 0px) scale(1.05)`;
+    // 2. İlk pozisyonu tam olarak olduğu yere ayarla
+    // (Mouse pozisyonu - Offset = Orijinal Kutu Sol Üstü)
+    const initialX = clientX - dragOffsetX;
+    const initialY = clientY - dragOffsetY;
+
+    ghost.style.transform = `translate(${initialX}px, ${initialY}px) scale(1.05)`;
     
     document.body.appendChild(ghost);
 }
@@ -125,12 +132,11 @@ function updateDragGhost(clientX, clientY) {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // DÜZELTME: Mouse ne kadar yer değiştirdiyse, ghost da o kadar yer değiştirsin.
-    // Bu yöntem en kararlı yöntemdir.
-    const dx = clientX - startX;
-    const dy = clientY - startY;
+    // 3. Yeni pozisyon = Yeni Mouse - Sabit Offset
+    const x = clientX - dragOffsetX;
+    const y = clientY - dragOffsetY;
     
-    ghost.style.transform = `translate(${dx}px, ${dy}px) scale(1.05)`;
+    ghost.style.transform = `translate(${x}px, ${y}px) scale(1.05)`;
 }
 
 // ========== PLACEHOLDER LOGIC ==========
@@ -212,8 +218,8 @@ function setupDesktopListeners() {
                 const dy = Math.abs(moveEvent.clientY - startY);
                 if (!isDragStarted && (dx > 5 || dy > 5)) {
                     isDragStarted = true;
-                    // startDrag içinde X ve Y artık sadece görsel başlangıç için kullanılıyor
-                    startDrag(draggedItem, startX, startY);
+                    // startDrag'e o anki mouse koordinatlarını yolluyoruz
+                    startDrag(draggedItem, moveEvent.clientX, moveEvent.clientY);
                 }
                 if (isDragStarted) {
                     updateDragGhost(moveEvent.clientX, moveEvent.clientY);
@@ -238,7 +244,7 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // Ghost'u tam olduğu yerde yarat
+    // x ve y: o anki mouse/touch pozisyonu
     createDragGhost(item, x, y);
     
     item.classList.add('dragging-source');
