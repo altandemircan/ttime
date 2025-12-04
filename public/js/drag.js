@@ -3,18 +3,26 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* SÜRÜKLENEN HAYALET (GHOST) */
+        /* SÜRÜKLENEN HAYALET (GHOST) -> MODERN YEŞİL */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
             background: rgba(255, 255, 255, 0.95) !important;
+            
+            /* Modern, tok bir yeşil (Emerald Green) */
             border: 2px dashed #87cdb5 !important; 
+            
+            /* Gölgeyi de aynı tonun şeffafı yapıyoruz */
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
+            
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
+            
+            /* POZİSYON AYARLARI */
             margin: 0 !important;
+            
             will-change: left, top; 
             transition: none !important;
         }
@@ -43,7 +51,7 @@ function injectDragStyles() {
             background-color: #fff8f8 !important;
         }
 
-        /* GİZLENECEK ELEMANLAR */
+        /* GİZLENECEK ELEMANLAR (Harita vb.) */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
@@ -51,6 +59,12 @@ function injectDragStyles() {
             display: none !important;
         }
 
+        /* LİSTEDE KALAN ESKİ ÖĞE (DOKUNULMADI) */
+        .travel-item.dragging-source {
+            /* Olduğu gibi kalsın */
+        }
+
+        /* DİĞER AYARLAR */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
@@ -73,7 +87,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Offset
+// Offset (Shift) Değişkenleri
 let dragShiftX = 0;
 let dragShiftY = 0;
 
@@ -95,6 +109,7 @@ function initDragDropSystem() {
         setupDesktopListeners();
     }
     
+    // Native Drag Engelleme
     document.addEventListener('dragstart', (e) => {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
@@ -109,7 +124,7 @@ function cleanupDrag() {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
         item.classList.remove('dragging-source');
-        item.classList.remove('shake-error'); // Hata stillerini temizle
+        item.classList.remove('shake-error');
         item.style.opacity = '';
     });
     if (placeholder && placeholder.parentNode) placeholder.remove();
@@ -127,9 +142,6 @@ function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
     
-    // Tıklandığı anki offset kullanılır
-    // Bu değer handleTouchStart veya mousedown'da hesaplandı
-    
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
     
@@ -139,6 +151,7 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
+    // Ghost'un ilk pozisyonunu hesaplanan shift değerine göre ver
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
     
@@ -180,9 +193,9 @@ function updatePlaceholder(clientX, clientY) {
     if (afterElement == null) {
         const addBtn = dropZone.querySelector('.add-more-btn');
         if (addBtn && getComputedStyle(addBtn).display !== 'none') {
-            dropZone.insertBefore(placeholder, addBtn);
+             dropZone.insertBefore(placeholder, addBtn);
         } else {
-            dropZone.appendChild(placeholder);
+             dropZone.appendChild(placeholder);
         }
     } else {
         dropZone.insertBefore(placeholder, afterElement);
@@ -242,6 +255,7 @@ function setupDesktopListeners() {
                 if (!draggedItem) return;
                 const dx = Math.abs(moveEvent.clientX - startX);
                 const dy = Math.abs(moveEvent.clientY - startY);
+                
                 if (!isDragStarted && (dx > 5 || dy > 5)) {
                     isDragStarted = true;
                     startDrag(draggedItem, moveEvent.clientX, moveEvent.clientY);
@@ -284,30 +298,32 @@ function finishDrag() {
         // --- ÇAKIŞMA KONTROLÜ (DUPLICATE CHECK) ---
         const sourceItemData = window.cart[sourceIndex];
         
-        // 1. Önceki öğeyi bul
-        let prev = placeholder.previousElementSibling;
-        // Eğer previous element bizim sürüklediğimiz 'dragging-source' ise onu atla (kendisiyle çakışamaz)
-        if (prev && prev.classList.contains('dragging-source')) {
-            prev = prev.previousElementSibling;
-        }
+        // Helper: Sadece gerçek travel-item'ları bulur (separator ve butonları atlar)
+        const getValidNeighbor = (startNode, direction) => {
+            let sibling = direction === 'prev' ? startNode.previousElementSibling : startNode.nextElementSibling;
+            while (sibling) {
+                // Eğer sürüklenen kaynaksa veya travel-item değilse (separator ise) atla
+                if (sibling.classList.contains('dragging-source') || !sibling.classList.contains('travel-item')) {
+                    sibling = direction === 'prev' ? sibling.previousElementSibling : sibling.nextElementSibling;
+                } else {
+                    return sibling; // Bulduk
+                }
+            }
+            return null;
+        };
 
-        // 2. Sonraki öğeyi bul
-        let next = placeholder.nextElementSibling;
-        // Eğer next element 'dragging-source' ise onu atla
-        if (next && next.classList.contains('dragging-source')) {
-            next = next.nextElementSibling;
-        }
+        // 1. Önceki ve Sonraki GERÇEK öğeleri bul
+        let prev = getValidNeighbor(placeholder, 'prev');
+        let next = getValidNeighbor(placeholder, 'next');
 
         const isDuplicate = (element) => {
-            if (!element || !element.classList.contains('travel-item')) return false;
+            if (!element) return false;
             const idx = parseInt(element.dataset.index);
             const itemData = window.cart[idx];
             
             // Eğer cart verisi yoksa veya kendi kendisiyle karşılaştırıyorsak hata yok
             if (!itemData || idx === sourceIndex) return false;
 
-            // KONTROL: İsimleri (title) veya ID'leri aynı mı?
-            // itemData.title veya itemData.name hangisini kullanıyorsan buraya ekle
             const name1 = (itemData.title || itemData.name || "").trim().toLowerCase();
             const name2 = (sourceItemData.title || sourceItemData.name || "").trim().toLowerCase();
             
@@ -320,10 +336,8 @@ function finishDrag() {
             const conflictItem = isDuplicate(prev) ? prev : next;
             conflictItem.classList.add('shake-error');
             
-            // Kullanıcıya bildir
             setTimeout(() => alert("⚠️ Aynı mekanı peş peşe ekleyemezsiniz!"), 10);
 
-            // İşlemi iptal et (Cleanup her şeyi eski haline döndürür)
             cleanupDrag();
             return;
         }
