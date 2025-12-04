@@ -1,6 +1,8 @@
 // ========== GLOBAL VARIABLES ==========
 if (!window.cart || !Array.isArray(window.cart)) window.cart = [];
-
+// Global değişkenlere ekle (En üste)
+let desktopDragOffsetX = 0;
+let desktopDragOffsetY = 0;
 let placeholder = null;
 let isMobile = false;
 let draggedItem = null;
@@ -305,14 +307,13 @@ function cleanupTouchDrag() {
 }
 
 // ========== DESKTOP DRAG & DROP ==========
+// ========== DESKTOP DRAG & DROP (GÜNCELLENDİ) ==========
 
 function setupDesktopDragDrop() {
     document.querySelectorAll('.travel-item').forEach(item => {
         item.setAttribute('draggable', true);
-        // Öncekileri temizle
         item.removeEventListener('dragstart', desktopDragStart);
         item.removeEventListener('dragend', desktopDragEnd);
-        // Yenileri ekle
         item.addEventListener('dragstart', desktopDragStart);
         item.addEventListener('dragend', desktopDragEnd);
     });
@@ -321,43 +322,79 @@ function setupDesktopDragDrop() {
 function desktopDragStart(event) {
     const index = event.currentTarget.dataset.index;
     if (index !== undefined) {
-        draggedItem = event.currentTarget; // GLOBAL DEĞİŞKENİ SET ET
+        draggedItem = event.currentTarget;
         
+        // Offset Hesapla (Farenin öğe içindeki yeri)
+        const rect = draggedItem.getBoundingClientRect();
+        desktopDragOffsetX = event.clientX - rect.left;
+        desktopDragOffsetY = event.clientY - rect.top;
+
         event.dataTransfer.setData("text/plain", index);
         event.dataTransfer.setData("source", "cart");
         event.dataTransfer.effectAllowed = "move";
-        event.currentTarget.classList.add('dragging');
+        
+        // Orijinal öğeyi gizle (yer tutucu olarak kalsın) ancak tamamen yok etme
+        // setTimeout kullanıyoruz çünkü dragstart anında display:none yaparsak drag iptal olur.
+        setTimeout(() => {
+            draggedItem.classList.add('dragging-source');
+        }, 0);
 
-        // Hayalet görüntü
-        const rect = event.target.getBoundingClientRect();
-        const clone = event.target.cloneNode(true);
+        // --- CLONE OLUŞTURMA VE TAKİP ---
+        const clone = draggedItem.cloneNode(true);
         clone.id = 'drag-clone';
-        clone.style.position = 'fixed';
+        // İçindeki gereksiz script/map iframe'lerini temizle (performans için)
+        const content = clone.querySelector('.content');
+        if(content) content.style.display = 'none'; // Detayları gizle, sadece başlık kalsın
+        
+        // Stil ayarları (CSS class'ı da işleyecek ama inline da verelim)
         clone.style.width = `${rect.width}px`;
-        clone.style.height = `${rect.height}px`;
+        clone.style.height = `${rect.height}px`; // İçerik gizlenince küçülebilir, sabitle
+        clone.style.position = 'fixed';
         clone.style.left = `${rect.left}px`;
         clone.style.top = `${rect.top}px`;
-        clone.style.zIndex = '10000';
-        clone.style.opacity = '0.8';
+        clone.style.zIndex = '99999';
         clone.style.pointerEvents = 'none';
+        
         document.body.appendChild(clone);
         
-        event.dataTransfer.setDragImage(new Image(), 0, 0);
+        // Tarayıcının varsayılan hayalet görüntüsünü şeffaf bir resimle değiştir
+        const emptyImg = new Image();
+        emptyImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        event.dataTransfer.setDragImage(emptyImg, 0, 0);
+
+        // Klonun fareyi takip etmesi için listener
+        document.addEventListener('dragover', updateDesktopClonePosition);
     }
     document.body.classList.add('dragging-items');
 }
 
+// Klonu fare ile hareket ettiren fonksiyon
+function updateDesktopClonePosition(event) {
+    const clone = document.getElementById('drag-clone');
+    if (clone && event.clientX) { // event.clientX 0 olabilir bazen, kontrol et
+        clone.style.left = (event.clientX - desktopDragOffsetX) + 'px';
+        clone.style.top = (event.clientY - desktopDragOffsetY) + 'px';
+    }
+}
+
 function desktopDragEnd(event) {
-    event.target.classList.remove('dragging');
+    if (draggedItem) {
+        draggedItem.classList.remove('dragging-source');
+        draggedItem.style.visibility = ''; // Varsa eski stili temizle
+    }
     
+    // Klonu temizle
     const clone = document.getElementById('drag-clone');
     if (clone) clone.remove();
+    
+    // Listener'ı kaldır
+    document.removeEventListener('dragover', updateDesktopClonePosition);
     
     if (placeholder) {
         placeholder.remove();
         placeholder = null;
     }
-    draggedItem = null; // TEMİZLE
+    draggedItem = null;
     document.body.classList.remove('dragging-items');
 }
 
