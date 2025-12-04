@@ -11,7 +11,7 @@ function injectDragStyles() {
             background: rgba(255, 255, 255, 0.95) !important; /* Biraz daha opak, temiz dursun */
             
             /* Modern, tok bir yeşil (Emerald Green) */
-            border: 2px dashed #10b981 !important; 
+            border: 2px dashed #87cdb5 !important; 
             
             /* Gölgeyi de aynı tonun şeffafı yapıyoruz */
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
