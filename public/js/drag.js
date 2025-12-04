@@ -13,15 +13,13 @@ function injectDragStyles() {
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
-            /* Başlangıç noktasını kesin olarak sol üste sabitliyoruz */
-            top: 0 !important;
-            left: 0 !important;
+            /* Başlangıçta ekran dışına atıyoruz, JS anında düzeltecek */
+            top: 0; left: 0;
             margin: 0 !important;
-            /* Performans ayarları */
             will-change: transform; 
             transition: none !important;
-            transform-origin: center center;
-            transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(1.02);
+            /* Default transform */
+            transform: translate3d(-9999px, -9999px, 0); 
         }
         .insertion-placeholder {
             height: 6px !important;
@@ -106,7 +104,6 @@ let scrollContainer = null;
 const SCROLL_THRESHOLD = 140; 
 const MAX_SCROLL_SPEED = 35;  
 
-// Mouse/Touch koordinatları
 let lastClientX = 0, lastClientY = 0;
 
 // ========== INITIALIZATION ==========
@@ -114,7 +111,8 @@ function initDragDropSystem() {
     injectDragStyles();
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    mobileOffsetY = isMobile ? 85 : 0; 
+    // Mobilde item'ı parmağın biraz yukarısında tut (Occlusion Fix)
+    mobileOffsetY = isMobile ? 70 : 0; 
 
     cleanupDrag();
 
@@ -132,6 +130,7 @@ function initDragDropSystem() {
     });
 
     window.addEventListener('blur', () => { if (draggedItem) finishDrag(); });
+    window.addEventListener('pointerup', () => { if (draggedItem && isMobile) finishDrag(); });
 }
 
 // ========== HELPER: FIND SCROLL PARENT ==========
@@ -254,15 +253,14 @@ function updateDragGhostVisuals() {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // Güvenlik: Eğer koordinat 0 ise (henüz update olmadıysa) işlem yapma
-    if (lastClientY === 0) return;
+    // Koordinatlar 0 ise (ilk frame hatası) işlem yapma
+    if (lastClientX === 0 && lastClientY === 0) return;
 
     const targetY = (lastClientY - dragShiftY) - mobileOffsetY;
     const targetX = initialGhostLeft; // X ekseni kilitli
 
-    // CSS variable ile güncelle (Daha performanslı)
-    ghost.style.setProperty('--tx', `${targetX}px`);
-    ghost.style.setProperty('--ty', `${targetY}px`);
+    // Doğrudan stil manipülasyonu (En hızlısı ve garantisi)
+    ghost.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) scale(1.02)`;
 }
 
 function updatePlaceholderLogic() {
@@ -271,7 +269,6 @@ function updatePlaceholderLogic() {
     const rect = draggedItem.getBoundingClientRect();
     const centerX = initialGhostLeft + (rect.width / 2);
 
-    // Placeholder kontrolü: Parmağın olduğu Y'ye göre
     const elementBelow = document.elementFromPoint(centerX, lastClientY);
     if (!elementBelow) return;
     
@@ -328,10 +325,11 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // İlk render'da zıplamayı önlemek için başlangıç değerlerini ata
+    // --- BAŞLANGIÇ POZİSYONU (CRITICAL FIX) ---
+    // CSS'de -9999px, burada hemen gerçek konuma çekiyoruz.
+    // Böylece 0,0'da görünme (sol üst köşe) sorunu çözülür.
     const topPos = (clientY - dragShiftY) - mobileOffsetY;
-    ghost.style.setProperty('--tx', `${rect.left}px`);
-    ghost.style.setProperty('--ty', `${topPos}px`);
+    ghost.style.transform = `translate3d(${rect.left}px, ${topPos}px, 0) scale(1.02)`;
     
     document.body.appendChild(ghost);
 }
@@ -350,7 +348,7 @@ function handleTouchStart(e) {
     initialGhostLeft = rect.left;
     dragShiftY = startY - rect.top;
     
-    // İlk dokunuşta da koordinatları kaydet (Güvenlik)
+    // GÜVENLİK: Koordinatları hemen kaydet
     lastClientX = startX;
     lastClientY = startY;
     
@@ -358,15 +356,14 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
-    // 1. Koordinatları her zaman güncelle (Sürükleme başlamasa bile!)
-    // Bu, 0,0 noktasına zıplama sorununu çözer.
+    // Koordinatları sürekli güncelle (Sürükleme başlamasa bile!)
     lastClientX = e.touches[0].clientX;
     lastClientY = e.touches[0].clientY;
 
     if (!isDragging) {
         const dx = Math.abs(lastClientX - startX);
         const dy = Math.abs(lastClientY - startY);
-        // Çok hareket ederse drag iptal (kullanıcı scroll yapıyor olabilir)
+        // Çok hareket ederse drag iptal
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
@@ -409,7 +406,6 @@ function setupDesktopListeners() {
                 const clientX = moveEvent.clientX;
                 const clientY = moveEvent.clientY;
                 
-                // Desktopta da koordinatları hemen güncelle
                 lastClientX = clientX;
                 lastClientY = clientY;
 
@@ -440,7 +436,6 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     scrollContainer = getScrollParent(item);
     
-    // Garanti olsun diye tekrar set et
     lastClientX = x;
     lastClientY = y;
 
