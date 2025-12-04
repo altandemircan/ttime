@@ -44,7 +44,7 @@ function injectDragStyles() {
         }
 
         /* GİZLENECEK ELEMANLAR (HEM DESKTOP HEM MOBİL) */
-        /* display: none ile gizliyoruz, zıplamayı JS ile çözeceğiz */
+        /* display: none kullanarak listeyi sıkıştırıyoruz ki uzun mesafeler (1. gün -> 3. gün) kısalsın */
         body.hide-map-details .route-controls-bar,
         body.hide-map-details .tt-travel-mode-set,
         body.hide-map-details [id^="map-bottom-controls-wrapper"], 
@@ -55,9 +55,12 @@ function injectDragStyles() {
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
+        
         body.dragging-active {
             user-select: none !important;
             cursor: grabbing !important;
+            /* Mobilde tarayıcının kendi scroll davranışını durdur, biz yöneteceğiz */
+            overflow-anchor: none !important; 
         }
     `;
     const style = document.createElement('style');
@@ -107,32 +110,33 @@ function initDragDropSystem() {
 
 // ========== CLEANUP ==========
 function cleanupDrag() {
-    // --- SCROLL DÜZELTME (HERKES İÇİN) ---
-    // Haritalar geri geldiğinde (display:block olunca) sayfa uzayacak.
-    // Kullanıcının baktığı yerin kaymaması için scroll'u aşağı itiyoruz.
+    // --- SCROLL DÜZELTME (GERİ YÜKLEME) ---
+    // Haritalar geri geldiğinde (display:block) sayfa uzayacak.
+    // Kullanıcının baktığı yerin kaymaması için scroll'u tekrar ayarlıyoruz.
     if (document.body.classList.contains('hide-map-details')) {
         const currentItem = document.querySelector('.travel-item.dragging-source');
         if (currentItem) {
+            // Şu an (haritalar gizliyken) öğe nerede?
             const rectBefore = currentItem.getBoundingClientRect();
             
-            // Gizlemeyi kaldır (Harita geri gelsin)
+            // Gizlemeyi kaldır (Harita geri gelsin, liste uzasın)
             document.body.classList.remove('hide-map-details');
             
-            // Tarayıcı değişikliği hesaplasın
+            // Şimdi öğe nerede? (Muhtemelen çok daha aşağı indi)
             const rectAfter = currentItem.getBoundingClientRect();
             
-            // Oluşan fark (pozitif olacaktır çünkü yukarıdan içerik eklendi)
+            // Farkı hesapla (Örn: 500px aşağı indi)
             const diff = rectAfter.top - rectBefore.top;
             
+            // Sayfayı o kadar aşağı kaydır ki kullanıcı aynı hizayı görsün
             if (diff !== 0) window.scrollBy(0, diff);
         } else {
-            // Öğe bulunamazsa düz sil
             document.body.classList.remove('hide-map-details');
         }
     }
 
-    // Min-height kilidini kaldır
-    document.body.style.minHeight = '';
+    document.body.style.minHeight = ''; // Height lock kaldır
+    document.body.style.overflowAnchor = ''; // Tarayıcı ayarını sıfırla
 
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
@@ -234,7 +238,7 @@ function handleTouchMove(e) {
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
-    e.preventDefault();
+    e.preventDefault(); // Scrollu engelle
     updateDragGhost(e.touches[0].clientX, e.touches[0].clientY);
     updatePlaceholder(e.touches[0].clientX, e.touches[0].clientY);
 }
@@ -265,7 +269,6 @@ function setupDesktopListeners() {
                 if (!draggedItem) return;
                 const dx = Math.abs(moveEvent.clientX - startX);
                 const dy = Math.abs(moveEvent.clientY - startY);
-                
                 if (!isDragStarted && (dx > 5 || dy > 5)) {
                     isDragStarted = true;
                     startDrag(draggedItem, moveEvent.clientX, moveEvent.clientY);
@@ -288,44 +291,63 @@ function setupDesktopListeners() {
     });
 }
 
+// ========== START DRAG (THE SCROLL FIX) ==========
 function startDrag(item, x, y) {
     draggedItem = item;
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // --- 1. HEIGHT LOCK ---
-    // Haritalar gidince sayfanın kısalmasını ve tarayıcının scrollu yukarı atmasını engellemek için
-    // mevcut yüksekliği kilitliyoruz.
+    // --- 1. HESAPLAMA: PARMAK ÖĞENİN NERESİNDE? ---
+    // Öğe şu an sayfada nerede? (Sayfa başından itibaren absolute değer)
+    const rectBefore = item.getBoundingClientRect();
+    const itemAbsoluteTopBefore = window.scrollY + rectBefore.top;
+    
+    // Parmak öğenin üstünden kaç piksel aşağıda? (Bu bizim korumak istediğimiz offset)
+    const touchOffsetFromItemTop = y - rectBefore.top;
+
+    // Sayfa boyunu kilitle (Browser zıplamasın diye)
     const currentDocHeight = document.documentElement.scrollHeight;
     document.body.style.minHeight = currentDocHeight + 'px';
 
-    // --- 2. SCROLL COMPENSATION ---
-    // Haritaları gizlemeden önceki pozisyon
-    const rectBefore = item.getBoundingClientRect();
-    const originalTop = rectBefore.top;
-
-    // --- 3. HARİTALARI VE BUTONLARI GİZLE (HERKES İÇİN) ---
-    document.body.classList.add('hide-map-details');
-    
-    // Reflow: Tarayıcıya değişikliği hesaplat
-    void document.body.offsetHeight;
-
-    // Haritalar gizlendikten sonraki pozisyon (Liste yukarı kaydı)
-    const rectAfter = item.getBoundingClientRect();
-    const newTop = rectAfter.top;
-
-    // Aradaki farkı hesapla (Örn: -300px yukarı kaydı)
-    const diff = newTop - originalTop;
-
-    // Sayfayı o fark kadar scroll et (Böylece item görsel olarak parmağın altında kalır)
-    if (diff !== 0) {
-        window.scrollBy(0, diff);
-    }
-
+    // --- 2. GİZLEME VE GHOST ---
     createDragGhost(item, x, y);
-    
+    document.body.classList.add('hide-map-details'); // Şimdi gizle!
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
+
+    // --- 3. SCROLL TELAFİSİ (THE FIX) ---
+    // Tarayıcı reflow yapsın
+    void document.body.offsetHeight;
+
+    // Gizleme sonrası öğenin yeni yerini bul
+    // Not: getBoundingClientRect() viewport'a göredir. window.scrollY ile toplayıp sayfa koordinatını buluyoruz.
+    const rectAfter = item.getBoundingClientRect();
+    const itemAbsoluteTopAfter = window.scrollY + rectAfter.top;
+
+    // HEDEF: Öğenin tepesi, parmağın (y) olduğu yerin (offset) kadar yukarısında olmalı.
+    // Yani görsel olarak parmak ile öğe hizası bozulmamalı.
+    // Scroll nereye gitmeli? -> (Yeni Öğe Sayfa Yeri) - (Parmak Ekran Yeri - Offset) değil.
+    // Basit mantık: Öğe yukarı kaydıysa, biz de scroll'u yukarı çekmeliyiz.
+    
+    // Eski Top: 1500px. Yeni Top (haritalar gidince): 500px.
+    // Aradaki fark: 1000px yukarı kaydı.
+    // O zaman Scroll'u da 1000px yukarı (azaltarak) çekmeliyiz ki içerik aşağı insin? 
+    // Hayır, scroll azalırsa viewport yukarı çıkar, içerik aşağı inmiş gibi olur.
+    
+    // En garantisi: Elementin yeni top noktası ile parmak arasındaki farkı korumak.
+    // Şu anki Item Yeri (Viewport): rectAfter.top
+    // Olması Gereken Item Yeri (Viewport): y - touchOffsetFromItemTop
+    // Fark: rectAfter.top - (y - touchOffsetFromItemTop)
+    
+    const targetViewportTop = y - touchOffsetFromItemTop; // Öğe burada görünmeli
+    const currentViewportTop = rectAfter.top; // Ama burada görünüyor (muhtemelen negatif veya çok yukarıda)
+    
+    const scrollCorrection = currentViewportTop - targetViewportTop;
+    
+    // Scroll'u düzelt
+    if (scrollCorrection !== 0) {
+        window.scrollBy(0, scrollCorrection);
+    }
 }
 
 // ========== DUPLICATE CHECK & FINISH ==========
@@ -360,8 +382,6 @@ function finishDrag() {
         };
 
         if (isDuplicate(prev) || isDuplicate(next)) {
-            const conflictItem = isDuplicate(prev) ? prev : next;
-            conflictItem.classList.add('shake-error');
             setTimeout(() => alert("ℹ️ Note: You added the same place consecutively."), 10);
         }
 
