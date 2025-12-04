@@ -13,13 +13,11 @@ function injectDragStyles() {
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
-            /* Başlangıçta ekran dışına atıyoruz, JS anında düzeltecek */
             top: 0; left: 0;
             margin: 0 !important;
-            will-change: transform; 
+            will-change: transform;
             transition: none !important;
-            /* Default transform */
-            transform: translate3d(-9999px, -9999px, 0); 
+            transform: scale(1.02);
         }
         .insertion-placeholder {
             height: 6px !important;
@@ -111,15 +109,16 @@ function initDragDropSystem() {
     injectDragStyles();
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    // Mobilde item'ı parmağın biraz yukarısında tut (Occlusion Fix)
-    mobileOffsetY = isMobile ? 70 : 0; 
+    mobileOffsetY = isMobile ? 85 : 0; 
 
     cleanupDrag();
 
     if (isMobile) {
+        // Passive: false önemli, scroll engellemek için
         document.body.addEventListener('touchstart', handleTouchStart, { passive: false });
         document.body.addEventListener('touchmove', handleTouchMove, { passive: false });
         document.body.addEventListener('touchend', handleTouchEnd);
+        // CRITICAL FIX: Touchcancel (Parmak kaybolursa/sistem araya girerse yakala)
         document.body.addEventListener('touchcancel', handleTouchEnd);
     } else {
         setupDesktopListeners();
@@ -129,7 +128,9 @@ function initDragDropSystem() {
         if (e.target.closest('.travel-item')) e.preventDefault();
     });
 
+    // Pencere odağı kaybederse (alt-tab, bildirim gelmesi vs.) işlemi bitir
     window.addEventListener('blur', () => { if (draggedItem) finishDrag(); });
+    // Global pointerup failsafe
     window.addEventListener('pointerup', () => { if (draggedItem && isMobile) finishDrag(); });
 }
 
@@ -253,13 +254,9 @@ function updateDragGhostVisuals() {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // Koordinatlar 0 ise (ilk frame hatası) işlem yapma
-    if (lastClientX === 0 && lastClientY === 0) return;
-
     const targetY = (lastClientY - dragShiftY) - mobileOffsetY;
-    const targetX = initialGhostLeft; // X ekseni kilitli
+    const targetX = initialGhostLeft;
 
-    // Doğrudan stil manipülasyonu (En hızlısı ve garantisi)
     ghost.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) scale(1.02)`;
 }
 
@@ -325,9 +322,7 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // --- BAŞLANGIÇ POZİSYONU (CRITICAL FIX) ---
-    // CSS'de -9999px, burada hemen gerçek konuma çekiyoruz.
-    // Böylece 0,0'da görünme (sol üst köşe) sorunu çözülür.
+    // transform ile konumlandırma için başlangıç transformunu set ediyoruz
     const topPos = (clientY - dragShiftY) - mobileOffsetY;
     ghost.style.transform = `translate3d(${rect.left}px, ${topPos}px, 0) scale(1.02)`;
     
@@ -348,27 +343,21 @@ function handleTouchStart(e) {
     initialGhostLeft = rect.left;
     dragShiftY = startY - rect.top;
     
-    // GÜVENLİK: Koordinatları hemen kaydet
-    lastClientX = startX;
-    lastClientY = startY;
-    
     longPressTimer = setTimeout(() => startDrag(item, startX, startY), LONG_PRESS_MS);
 }
 
 function handleTouchMove(e) {
-    // Koordinatları sürekli güncelle (Sürükleme başlamasa bile!)
-    lastClientX = e.touches[0].clientX;
-    lastClientY = e.touches[0].clientY;
-
     if (!isDragging) {
-        const dx = Math.abs(lastClientX - startX);
-        const dy = Math.abs(lastClientY - startY);
-        // Çok hareket ederse drag iptal
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
         if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
     
     if (e.cancelable) e.preventDefault();
+    
+    lastClientX = e.touches[0].clientX;
+    lastClientY = e.touches[0].clientY;
 }
 
 function handleTouchEnd() {
@@ -391,9 +380,6 @@ function setupDesktopListeners() {
             
             initialGhostLeft = rect.left;
             dragShiftY = startY - rect.top;
-            
-            lastClientX = startX;
-            lastClientY = startY;
 
             let isDragStarted = false;
 
@@ -405,9 +391,6 @@ function setupDesktopListeners() {
 
                 const clientX = moveEvent.clientX;
                 const clientY = moveEvent.clientY;
-                
-                lastClientX = clientX;
-                lastClientY = clientY;
 
                 if (!isDragStarted) {
                     const dx = Math.abs(clientX - startX);
@@ -416,6 +399,11 @@ function setupDesktopListeners() {
                         isDragStarted = true;
                         startDrag(item, clientX, clientY);
                     }
+                }
+                
+                if (isDragStarted) {
+                    lastClientX = clientX;
+                    lastClientY = clientY;
                 }
             };
 
