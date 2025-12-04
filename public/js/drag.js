@@ -12,16 +12,23 @@ function injectDragStyles() {
             
             /* Modern Yeşil Border */
             border: 2px dashed #10b981 !important; 
-            box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.3) !important;
             
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
             
-            /* DÜZELTME: Margin-top ile öğeyi parmağın biraz yukarısına alıyoruz */
+            /* --- KRİTİK AYARLAR (POZİSYON) --- */
             margin: 0 !important;
-            margin-top: -15px !important; /* Hafif yukarı kaldırır */
-            margin-left: -5px !important; /* Hafif ortalar */
+            
+            /* Item'ı elinin yukarısına çekiyoruz */
+            margin-top: -40px !important; 
+            
+            /* Hafif sağa alıyoruz ki el ikonu gözüksün */
+            margin-left: 15px !important; 
+            
+            /* Hafif eğim verelim, tutuluyor hissi artsın */
+            transform: rotate(-2deg); 
             
             will-change: left, top; 
             transition: none !important;
@@ -45,7 +52,7 @@ function injectDragStyles() {
             display: none !important;
         }
 
-        /* Body Ayarları */
+        /* Diğer Ayarlar */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
@@ -134,7 +141,6 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // İlk konumlandırma
     ghost.style.left = rect.left + 'px';
     ghost.style.top = rect.top + 'px';
     
@@ -145,7 +151,7 @@ function updateDragGhost(clientX, clientY) {
     const ghost = document.querySelector('.drag-ghost');
     if (!ghost) return;
     
-    // Mouse'u birebir takip et (CSS'teki margin-top: -15px bunu yukarı alacak)
+    // Mouse'u takip et (CSS'teki margin-top: -40px bunu yukarı alacak)
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
 }
@@ -257,13 +263,12 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // 1. Önce Ghost'u oluştur (Pozisyon hesaplansın)
     createDragGhost(item, x, y);
     
     item.classList.add('dragging-source');
     document.body.classList.add('dragging-active');
     
-    // 2. SONRA haritaları gizle (Sıralama önemli)
+    // Haritaları gizle
     document.body.classList.add('hide-map-details');
 }
 
