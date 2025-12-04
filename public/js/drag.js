@@ -1,4 +1,4 @@
-// ========== STYLES (Visual Settings) ==========
+// ========== STYLES (Görsel Ayarlar) ==========
 function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
@@ -9,12 +9,20 @@ function injectDragStyles() {
             z-index: 999999 !important;
             pointer-events: none !important;
             background: rgba(255, 255, 255, 0.95) !important;
+            
+            /* Modern, tok bir yeşil (Emerald Green) */
             border: 2px dashed #87cdb5 !important; 
+            
+            /* Gölgeyi de aynı tonun şeffafı yapıyoruz */
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25) !important;
+            
             border-radius: 12px !important;
             width: var(--ghost-width);
             height: var(--ghost-height);
+            
+            /* POZİSYON AYARLARI */
             margin: 0 !important;
+            
             will-change: left, top; 
             transition: none !important;
         }
@@ -74,7 +82,7 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Offset (Shift) Variables
+// Offset (Shift) Değişkenleri
 let dragShiftX = 0;
 let dragShiftY = 0;
 
@@ -107,25 +115,30 @@ function initDragDropSystem() {
 
 // ========== CLEANUP ==========
 function cleanupDrag() {
-    // Scroll Telafisi (Geri Yükleme): 
-    // Haritalar geri geldiğinde sayfa aşağı uzayacak, scroll'u o kadar aşağı itelim ki
-    // kullanıcı baktığı yeri kaybetmesin.
+    // --- SCROLL RESTORATION ---
+    // Haritalar geri geldiğinde sayfa uzar. Kullanıcının baktığı yerin kaymaması için düzeltme.
     let scrollAdjustment = 0;
     const currentDragItem = document.querySelector('.travel-item.dragging-source');
     
     if (currentDragItem && document.body.classList.contains('hide-map-details')) {
         const rectBefore = currentDragItem.getBoundingClientRect();
-        document.body.classList.remove('hide-map-details'); // Gizliliği kaldır
+        document.body.classList.remove('hide-map-details'); 
         const rectAfter = currentDragItem.getBoundingClientRect();
+        
+        // Yukarıda ne kadar boşluk açıldıysa o kadar geri sar
         scrollAdjustment = rectAfter.top - rectBefore.top;
     } else {
         document.body.classList.remove('hide-map-details');
     }
 
+    // Yükseklik kilidini kaldır (Sayfa doğal haline dönsün)
+    document.body.style.minHeight = '';
+
     if (scrollAdjustment !== 0) {
         window.scrollBy(0, scrollAdjustment);
     }
 
+    // Standart temizlik
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
         item.classList.remove('dragging-source');
@@ -286,25 +299,22 @@ function startDrag(item, x, y) {
     sourceIndex = parseInt(item.dataset.index);
     if (navigator.vibrate) navigator.vibrate(50);
     
-    // --- SCROLL COMPENSATION START ---
-    // 1. Önce öğenin şu anki (kayma öncesi) yerini al
+    // --- 1. HEIGHT LOCK (MOBİL KAYMA ÇÖZÜMÜ) ---
+    // Haritalar gizlenince sayfa kısalır ve tarayıcı scroll'u yukarı çeker.
+    // Bunu engellemek için mevcut yüksekliği body'ye kilitliyoruz.
+    const currentDocHeight = document.documentElement.scrollHeight;
+    document.body.style.minHeight = currentDocHeight + 'px';
+
+    // --- 2. SCROLL COMPENSATION ---
     const rectBefore = item.getBoundingClientRect();
-
-    // 2. Haritaları ve butonları gizle (Bu işlem DOM'u kısaltır)
     document.body.classList.add('hide-map-details');
-
-    // 3. Öğenin yeni yerini al (Muhtemelen çok daha yukarıda olacaktır)
     const rectAfter = item.getBoundingClientRect();
-
-    // 4. Aradaki farkı hesapla
-    // Örneğin: 500px'deydi, şimdi 200px'de. Fark = -300px.
+    
+    // Aradaki fark kadar sayfayı kaydır ki öğe parmağın altında kalsın
     const diff = rectAfter.top - rectBefore.top;
-
-    // 5. Sayfayı fark kadar kaydır (Senkronize olarak)
     if (diff !== 0) {
         window.scrollBy(0, diff);
     }
-    // --- SCROLL COMPENSATION END ---
 
     createDragGhost(item, x, y);
     
@@ -348,10 +358,10 @@ function finishDrag() {
             return name1 === name2 && name1 !== "";
         };
 
+        // BİLGİLENDİRME (Alert + Titreme)
         if (isDuplicate(prev) || isDuplicate(next)) {
             const conflictItem = isDuplicate(prev) ? prev : next;
             conflictItem.classList.add('shake-error');
-            
             setTimeout(() => alert("ℹ️ Note: You added the same place consecutively."), 10);
         }
 
