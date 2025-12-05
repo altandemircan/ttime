@@ -3485,11 +3485,11 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     // Şehir yoksa ve statik veri de yoksa çık
     if (!city && !aiStaticInfo) return;
 
-    // --- TEMİZLEME FONKSİYONU (Robot ikonunu siler) ---
+    // --- TEMİZLEME FONKSİYONU (ZORLA TEMİZLER) ---
     function cleanText(text) {
-        if (!text) return "";
-        // 🤖 ikonunu ve gereksiz boşlukları temizle
-        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
+        if (!text) return "Info not available.";
+        // Robot ikonunu, 'AI:' öneki ve fazlalık boşlukları temizle
+        return text.replace(/🤖/g, '').replace(/AI:/gi, '').trim();
     }
 
     // HTML İskeleti
@@ -3524,10 +3524,10 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const aiContent = aiDiv.querySelector('.ai-info-content');
     
     // İçerik Gösterme Yardımcısı
-    function populateAndShow(data, timeElapsed = null) {
+    function populateAndShow(summaryVal, tipVal, highlightVal, timeText) {
         if (aiSpinner) aiSpinner.style.display = "none";
         
-        // Aç/Kapa butonu ekle (yoksa)
+        // Header butonu (Aç/Kapa)
         const header = aiDiv.querySelector('#ai-toggle-header');
         if (!header.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
@@ -3558,33 +3558,34 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
 
-        // --- ROBOT İKONU TEMİZLİĞİ BURADA YAPILIYOR ---
-        const txtSummary = cleanText(data.summary) || "Info not available.";
-        const txtTip = cleanText(data.tip) || "Info not available.";
-        const txtHighlight = cleanText(data.highlight) || "Info not available.";
+        // --- ZORLA TEMİZLEME BURADA YAPILIYOR ---
+        const cleanSum = cleanText(summaryVal);
+        const cleanTip = cleanText(tipVal);
+        const cleanHigh = cleanText(highlightVal);
 
         if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
-             typeWriterEffect(aiSummary, txtSummary, 18, function() {
-                typeWriterEffect(aiTip, txtTip, 18, function() {
-                    typeWriterEffect(aiHighlight, txtHighlight, 18);
+             typeWriterEffect(aiSummary, cleanSum, 18, function() {
+                typeWriterEffect(aiTip, cleanTip, 18, function() {
+                    typeWriterEffect(aiHighlight, cleanHigh, 18);
                 });
             });
         } else {
-            aiSummary.textContent = txtSummary;
-            aiTip.textContent = txtTip;
-            aiHighlight.textContent = txtHighlight;
+            aiSummary.textContent = cleanSum;
+            aiTip.textContent = cleanTip;
+            aiHighlight.textContent = cleanHigh;
         }
 
-        if (timeElapsed) {
-            aiTime.textContent = `⏱️ Generated in ${timeElapsed} ms`;
-        } else {
-            aiTime.textContent = "";
-        }
+        if (aiTime) aiTime.textContent = timeText || "";
     }
 
-    // === SENARYO 1: KAYITLI VERİ VAR ===
+    // === SENARYO 1: KAYITLI VERİ VAR (Burası eski kirli veriyi de temizler) ===
     if (aiStaticInfo) {
-        populateAndShow(aiStaticInfo);
+        populateAndShow(
+            aiStaticInfo.summary,
+            aiStaticInfo.tip,
+            aiStaticInfo.highlight,
+            "" // Kayıtlı veride süre göstermiyoruz
+        );
         return;
     }
 
@@ -3594,18 +3595,22 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city, country })
+            body: JSON.stringify({ city: currentCity, country })
         });
 
         const ollamaData = await resp.json();
         let elapsed = Math.round(performance.now() - t0);
 
-        // Veriyi alırken temizlemiyoruz, ekrana basarken cleanText ile temizliyoruz.
+        // Veriyi alırken temizle
+        const cSummary = cleanText(ollamaData.summary);
+        const cTip = cleanText(ollamaData.tip);
+        const cHighlight = cleanText(ollamaData.highlight);
+
         const aiData = {
-            city: city,
-            summary: ollamaData.summary,
-            tip: ollamaData.tip,
-            highlight: ollamaData.highlight,
+            city: currentCity,
+            summary: cSummary,
+            tip: cTip,
+            highlight: cHighlight,
             time: elapsed
         };
 
@@ -3617,7 +3622,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             saveCurrentTripToStorage();
         }
 
-        populateAndShow(aiData, elapsed);
+        populateAndShow(cSummary, cTip, cHighlight, `⏱️ Generated in ${elapsed} ms`);
 
     } catch (e) {
         console.error("AI Error:", e);
