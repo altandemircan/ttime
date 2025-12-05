@@ -3508,14 +3508,11 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     // Şehir yoksa ve statik veri de yoksa çık
     if (!currentCity && !aiStaticInfo) return;
 
-    // --- ŞEHİR EŞLEŞME KONTROLÜ (Critical Fix) ---
-    // Eğer kayıtlı veri varsa ama bu veri başka bir şehre aitse, o veriyi yok say!
+    // --- ŞEHİR EŞLEŞME KONTROLÜ ---
     if (aiStaticInfo && aiStaticInfo.city) {
-        // Basit bir normalizasyon ile karşılaştır (büyük/küçük harf duyarsız)
         const savedCityNorm = aiStaticInfo.city.toLowerCase().trim();
         const currentCityNorm = currentCity.toLowerCase().trim();
         
-        // Eğer şehirler uyuşmuyorsa staticInfo'yu iptal et, yeniden çeksin.
         if (savedCityNorm !== currentCityNorm && currentCityNorm.length > 0) {
             console.log(`AI Info mismatch: Saved for ${aiStaticInfo.city}, but current is ${currentCity}. Refreshing...`);
             aiStaticInfo = null; 
@@ -3588,7 +3585,6 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
 
-        // Typewriter efekti sadece yeni veri geliyorsa çalışsın
         if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
              typeWriterEffect(aiSummary, data.summary || "Info not available.", 18, function() {
                 typeWriterEffect(aiTip, data.tip || "Info not available.", 18, function() {
@@ -3623,20 +3619,29 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             body: JSON.stringify({ city: currentCity, country })
         });
 
-        const ollamaData = await resp.json();
+        // --- DÜZELTME BAŞLANGICI ---
+        // Doğrudan .json() yerine önce text alıp kontrol ediyoruz
+        const rawText = await resp.text();
+        let ollamaData;
+
+        try {
+            ollamaData = JSON.parse(rawText);
+        } catch (jsonErr) {
+            console.warn("AI Yanıtı JSON formatında değil:", rawText);
+            throw new Error("AI servisinden geçersiz yanıt geldi.");
+        }
+        // --- DÜZELTME BİTİŞİ ---
         
         let elapsed = Math.round(performance.now() - t0);
 
-        // Veriyi hazırla ve ŞEHRİ DE İÇİNE YAZ
         const aiData = {
-            city: currentCity, // <-- Şehri mühürle
+            city: currentCity,
             summary: ollamaData.summary || "Info not available.",
             tip: ollamaData.tip || "Info not available.",
             highlight: ollamaData.highlight || "Info not available.",
             time: elapsed
         };
 
-        // Kaydet
         window.cart.aiData = aiData; 
         window.lastTripAIInfo = aiData;
         if (typeof saveCurrentTripToStorage === "function") {
@@ -3651,7 +3656,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         if (aiSpinner) aiSpinner.style.display = "none";
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
-        aiSummary.textContent = "Error occurred.";
+        aiSummary.textContent = "AI service temporarily unavailable.";
     }
 };
 
