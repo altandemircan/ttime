@@ -363,9 +363,15 @@ function loadTripFromStorage(tripKey) {
         window.lastTripAIInfo = t.aiInfo;
         let aiDiv = document.querySelector('.ai-info-section');
         if (!aiDiv) {
-            insertTripAiInfo(null, t.aiInfo);
+            // Eğer fonksiyon tanımlıysa çağır, yoksa hata vermesin
+            if (typeof window.insertTripAiInfo === "function") {
+                window.insertTripAiInfo(null, t.aiInfo);
+            }
         } else {
-            showTripAiInfo(t.aiInfo);
+            // showTripAiInfo fonksiyonu da global olmalı veya mainscript.js içinde tanımlıysa window üzerinden çağrılmalı
+            if (typeof window.showTripAiInfo === "function") {
+                window.showTripAiInfo(t.aiInfo);
+            }
         }
     }
 

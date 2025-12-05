@@ -4143,11 +4143,12 @@ cartDiv.appendChild(addNewDayButton);
     }
   })();
 
-  // === AI Info yerine Generate AI Info butonu ekle ===
 // --- YENİ GÜNCELLENMİŞ insertTripAiInfo (Tek Fonksiyon, Tam Çözüm) ---
 
-async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // 1. Önce eski kutuları temizle (Tekrar eklenmesini önler)
+window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
+    // ... (Fonksiyonun içeriği aynı kalacak, sadece başındaki 'async function ...' kısmını 'window.insertTripAiInfo = ...' yapıyoruz) ...
+    
+    // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     
     const tripTitleDiv = document.getElementById('trip_title');
@@ -4312,7 +4313,6 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
         const currentAiData = window.cart.aiData || window.lastTripAIInfo || null;
         insertTripAiInfo(null, currentAiData);
     }
-
 
 } 
 
