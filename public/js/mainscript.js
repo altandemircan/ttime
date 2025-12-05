@@ -5484,6 +5484,14 @@ function addNumberedMarkers(map, points) {
 
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
+    // --- GÜVENLİK KONTROLÜ: LEAFLET YÜKLÜ MÜ? ---
+    if (typeof L === 'undefined') {
+        // Yüklü değilse 100ms bekle ve tekrar dene
+        setTimeout(() => renderLeafletRoute(containerId, geojson, points, summary, day, missingPoints), 100);
+        return;
+    }
+    // ---------------------------------------------
+
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
@@ -5495,12 +5503,13 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.innerHTML = "";
     sidebarContainer.style.height = "285px";
     sidebarContainer.classList.remove("big-map", "full-screen-map");
-    // [FIX] Arka plan rengi (beyaz flashı önler)
     sidebarContainer.style.backgroundColor = "#eef0f5"; 
 
     // Route summary and controls
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
-    document.getElementById(controlsWrapperId)?.remove();
+    // Eski wrapper varsa silmeden önce kontrol et, belki sadece içeriğini güncellemek daha iyidir ama şimdilik resetliyoruz
+    const oldWrapper = document.getElementById(controlsWrapperId);
+    if (oldWrapper) oldWrapper.remove();
 
     const controlsWrapper = document.createElement("div");
     controlsWrapper.id = controlsWrapperId;
@@ -5528,7 +5537,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     controlsWrapper.appendChild(controlRow);
     sidebarContainer.parentNode.insertBefore(controlsWrapper, sidebarContainer.nextSibling);
 
-    // Travel mode set
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
     let routeCoords = [];
@@ -5542,31 +5550,33 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     }
 
-    // Haritayı oluştur
     const map = L.map(containerId, { 
         scrollWheelZoom: true,
         fadeAnimation: false,
         zoomAnimation: false,
     });
 
-    // --- [FIX] KESİN OPENFREEMAP ENTEGRASYONU ---
-    if (typeof L.maplibreGL === 'function') {
-        L.maplibreGL({
-            style: 'https://tiles.openfreemap.org/styles/bright',
-            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-            interactive: true
-        }).addTo(map);
-    } else {
-        // Fallback sadece zorunluysa
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19, attribution: '© OpenStreetMap'
-        }).addTo(map);
+    try {
+        if (typeof L.maplibreGL === 'function') {
+            L.maplibreGL({
+                style: 'https://tiles.openfreemap.org/styles/bright',
+                attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+                interactive: true
+            }).addTo(map);
+        } else {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19, attribution: '© OpenStreetMap'
+            }).addTo(map);
+        }
+    } catch(e) {
+        // Fallback
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
-    // --------------------------------------------
 
     let bounds = L.latLngBounds();
 
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+    
     if (points.length === 1) {
         L.marker([points[0].lat, points[0].lng], {
             icon: L.divIcon({
@@ -5587,18 +5597,19 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             for (let i = 0; i < points.length - 1; i++) {
                 const start = [points[i].lng, points[i].lat];
                 const end = [points[i + 1].lng, points[i + 1].lat];
-                const curve = getCurvedArcCoords(start, end, 0.33, 32);
+                const curve = getCurvedArcCoords(start, end);
                 arcPoints = arcPoints.concat(curve);
 
-                const curvePoly = drawCurvedLine(map, points[i], points[i + 1], {
+                // drawCurvedLine fonksiyonu da L.polyline kullanır, L kontrolü başta yapıldığı için güvenli
+                drawCurvedLine(map, points[i], points[i + 1], {
                     color: "#1976d2",
                     weight: 5,
                     opacity: 0.85,
                     dashArray: "6,8"
                 });
-                
-                bounds.extend(curvePoly.getBounds());
             }
+            // Bounds hesapla
+            points.forEach(p => bounds.extend([p.lat, p.lng]));
             window._curvedArcPointsByDay[day] = arcPoints;
         } 
         else if (hasValidGeo && routeCoords.length > 1) {
@@ -5609,58 +5620,25 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 interactive: true,
                 dashArray: null
             }).addTo(map);
-            
             bounds.extend(routePoly.getBounds());
         }
 
-        if (hasValidGeo) {
-            const rawGeojsonCoords = geojson.features[0].geometry.coordinates; 
-            const routePtsForSnap = routeCoords; 
-            
-            points.forEach((mp) => { 
-                if (typeof isPointReallyMissing === 'function' && typeof haversine === 'function' && isPointReallyMissing(mp, rawGeojsonCoords, 50)) {
-                    let minIdx = 0, minDist = Infinity;
-                    for (let i = 0; i < routePtsForSnap.length; i++) {
-                        const [lat, lng] = routePtsForSnap[i];
-                        const d = haversine(lat, lng, mp.lat, mp.lng);
-                        if (d < minDist) {
-                            minDist = d;
-                            minIdx = i;
-                        }
-                    }
-                    const start = [mp.lat, mp.lng]; 
-                    const end = routePtsForSnap[minIdx]; 
-                    
-                    const snapPoly = L.polyline([start, end], {
-                        dashArray: '8, 12',
-                        color: '#d32f2f', 
-                        weight: 2, 
-                        opacity: 0.8,
-                        interactive: false,
-                        renderer: ensureCanvasRenderer(map)
-                    }).addTo(map); 
-                    
-                    bounds.extend(snapPoly.getBounds());
-                }
-            });
-        }
-
         addNumberedMarkers(map, points);
-        points.forEach(p => bounds.extend([p.lat, p.lng]));
-
-        if (geojson && geojson.features[0]?.properties?.names) {
-            addGeziPlanMarkers(map, geojson.features[0].properties.names, day);
+        
+        // Eğer bounds hala boşsa (route yoksa) noktaları ekle
+        if (!bounds.isValid() && points.length > 0) {
+             points.forEach(p => bounds.extend([p.lat, p.lng]));
         }
 
         if (bounds.isValid()) {
             map.fitBounds(bounds, { padding: [20, 20], animate: false });
-        } else {
-            map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [20, 20], animate: false });
         }
-
     } else {
         map.setView([0, 0], 2, { animate: false });
     }
+
+    // Controls wrapper eklemesi
+    wrapRouteControls(day);
 
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
