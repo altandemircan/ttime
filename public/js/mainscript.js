@@ -5993,10 +5993,13 @@ function openMapLibre3D(expandedMap) {
   // MapLibreGL başlat
   window._maplibre3DInstance = new maplibregl.Map(mapOptions);
 
-  // --- HİÇBİR DEFAULT KONTROL EKLEMİYORUZ (NavigationControl YOK) ---
-  // Onun yerine sağ alttaki özel butonlarımızı kullanacağız.
+  // --- SCALE BAR EKLE (SOL ALTTA GÖZÜKSÜN) ---
+  window._maplibre3DInstance.addControl(new maplibregl.ScaleControl({
+      maxWidth: 100,
+      unit: 'metric'
+  }), 'bottom-left');
 
-  // PUSULA SENKRONİZASYONU: Harita döndükçe bizim ikon da dönsün
+  // --- PUSULA SENKRONİZASYONU ---
   window._maplibre3DInstance.on('rotate', () => {
       const bearing = window._maplibre3DInstance.getBearing();
       const compassDisc = document.querySelector(`#custom-compass-btn-${day} .custom-compass-disc`);
@@ -6066,7 +6069,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (HEM KONTROLLER HEM LAYER BUTONLARI İÇİN)
+  // 1. STİL EKLEME (Scale Bar stili eklendi)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -6112,7 +6115,6 @@ async function expandMap(containerId, day) {
             opacity: 0.85;
         }
         
-        /* Zoom yazı stili */
         .map-ctrl-btn.zoom-text {
             font-size: 26px;
             font-weight: 300;
@@ -6128,7 +6130,7 @@ async function expandMap(containerId, day) {
             transform-origin: center center;
         }
 
-        /* --- ÜST LAYER SEÇİCİLERİ (BRIGHT/POSITRON/3D) --- */
+        /* --- ÜST LAYER SEÇİCİLERİ --- */
         .expanded-map-header {
             position: absolute;
             top: 15px;
@@ -6181,7 +6183,7 @@ async function expandMap(containerId, day) {
         }
 
         .map-type-option.selected {
-            background: #eef7ff; /* Açık mavi */
+            background: #eef7ff;
             border-color: #297fd4;
             color: #1976d2;
             box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15);
@@ -6189,6 +6191,26 @@ async function expandMap(containerId, day) {
         
         .map-type-option.selected img {
             opacity: 1;
+        }
+
+        /* --- 3D MAP SCALE BAR STİLİ (YENİ EKLENDİ) --- */
+        .maplibregl-ctrl-bottom-left {
+            bottom: 230px !important; /* Panel hizasına çekmek için yukarı aldık */
+            left: 10px !important;
+            z-index: 10001;
+        }
+        .maplibregl-ctrl-scale {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            padding: 2px 8px !important;
+            color: #555 !important;
+            font-size: 11px !important;
+            font-weight: 500 !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+            border-top: 1px solid #e0e0e0 !important; /* MapLibre default border-top: none olabiliyor */
+            height: auto !important;
+            line-height: 1.4 !important;
         }
       `;
       document.head.appendChild(style);
@@ -6229,7 +6251,7 @@ async function expandMap(containerId, day) {
   if (!originalContainer) ensureDayMapContainer(day); 
   if (originalContainer) originalContainer.style.display = 'none';
 
-  // === HEADER (Katman Seçimi - Yeni Stilli) ===
+  // === HEADER ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
   const layersBar = document.createElement('div');
@@ -6268,15 +6290,23 @@ async function expandMap(containerId, day) {
         // 3D MOD
         expandedMapInstance.getContainer().style.display = "none";
         if (panelDiv) panelDiv.style.display = "none"; 
+        
+        // Pusulayı göster
         if (compassBtn) compassBtn.style.display = 'flex';
+
         openMapLibre3D(expandedMapInstance); 
       } else {
         // 2D MOD
         expandedMapInstance.getContainer().style.display = "";
+        
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) map3d.style.display = "none";
+        
         if (panelDiv) panelDiv.style.display = "block"; 
+
+        // 2D Modunda Pusulayı Gizle
         if (compassBtn) compassBtn.style.display = 'none';
+
         setExpandedMapTile(opt.value);
       }
     };
@@ -6289,7 +6319,7 @@ async function expandMap(containerId, day) {
   headerDiv.appendChild(statsDiv);
   expandedContainer.appendChild(headerDiv);
 
-  // === CUSTOM CONTROLS (Sağ Alt - Yeni Stilli) ===
+  // === CUSTOM CONTROLS ===
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'map-custom-controls';
 
@@ -6325,7 +6355,7 @@ async function expandMap(containerId, day) {
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
     <div class="custom-compass-disc">
-       <img src="https://www.svgrepo.com/show/522082/compass.svg" style="width:100%;height:100%;" alt="N">
+       <img src="https://www.svgrepo.com/show/532130/compass.svg" style="width:100%;height:100%;" alt="N">
     </div>
   `;
   compassBtn.onclick = function() {
@@ -6417,6 +6447,7 @@ async function expandMap(containerId, day) {
       }
   }
 
+  // --- HARİTA BAŞLAT ---
   const expandedMapInstance = L.map(mapDivId, {
     center: startCenter,
     zoom: startZoom,
