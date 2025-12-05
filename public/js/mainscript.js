@@ -3471,28 +3471,51 @@ function attachMapClickAddMode(day) {
   map.on('dblclick', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
+// ================================================================
+// 🤖 ROBOT IKONU YOK ETME TİMİ (Nükleer Çözüm)
+// ================================================================
+
+// 1. Mevcut ekrandaki ikonları hemen temizle
+function nukeRobotIcons() {
+    const targets = document.querySelectorAll('#ai-summary, #ai-tip, #ai-highlight, .ai-info-content p');
+    targets.forEach(el => {
+        if (el.innerHTML.includes('🤖')) {
+            el.innerHTML = el.innerHTML.replace(/🤖/g, '').replace(/AI:/g, '').trim();
+        }
+    });
+}
+
+// 2. Hafızayı (LocalStorage) temizle
+function sanitizeStoredData() {
+    if (window.cart && window.cart.aiData) {
+        ['summary', 'tip', 'highlight'].forEach(key => {
+            if (window.cart.aiData[key]) {
+                window.cart.aiData[key] = window.cart.aiData[key].replace(/🤖/g, '').replace(/AI:/g, '').trim();
+            }
+        });
+        // Temizlenmiş halini kaydet
+        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+    }
+}
+
+// 3. Gelecek verileri temizleyen Ana Fonksiyon (Override)
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // 1. Önce eski kutuları temizle
+    // Önce DOM ve Hafıza temizliği yap
+    nukeRobotIcons();
+    sanitizeStoredData();
+
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
-    
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir bilgisini al
     let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
-    
-    // Şehir yoksa ve statik veri de yoksa çık
     if (!city && !aiStaticInfo) return;
 
-    // --- TEMİZLEME FONKSİYONU (ZORLA TEMİZLER) ---
-    function cleanText(text) {
-        if (!text) return "Info not available.";
-        // Robot ikonunu, 'AI:' öneki ve fazlalık boşlukları temizle
-        return text.replace(/🤖/g, '').replace(/AI:/gi, '').trim();
-    }
+    // Temizleyici
+    const clean = (text) => (text || "").replace(/🤖/g, '').replace(/AI:/gi, '').trim() || "Info not available.";
 
-    // HTML İskeleti
+    // HTML
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -3513,126 +3536,106 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     </div>
     <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
     `;
-    
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    const aiSummary = aiDiv.querySelector('#ai-summary');
-    const aiTip = aiDiv.querySelector('#ai-tip');
-    const aiHighlight = aiDiv.querySelector('#ai-highlight');
-    const aiTime = aiDiv.querySelector('.ai-info-time');
-    const aiSpinner = aiDiv.querySelector('#ai-spinner');
-    const aiContent = aiDiv.querySelector('.ai-info-content');
-    
-    // İçerik Gösterme Yardımcısı
-    function populateAndShow(summaryVal, tipVal, highlightVal, timeText) {
-        if (aiSpinner) aiSpinner.style.display = "none";
+    const els = {
+        sum: aiDiv.querySelector('#ai-summary'),
+        tip: aiDiv.querySelector('#ai-tip'),
+        high: aiDiv.querySelector('#ai-highlight'),
+        time: aiDiv.querySelector('.ai-info-time'),
+        spin: aiDiv.querySelector('#ai-spinner'),
+        content: aiDiv.querySelector('.ai-info-content'),
+        header: aiDiv.querySelector('#ai-toggle-header')
+    };
+
+    function show(data, timeVal) {
+        if (els.spin) els.spin.style.display = "none";
         
-        // Header butonu (Aç/Kapa)
-        const header = aiDiv.querySelector('#ai-toggle-header');
-        if (!header.querySelector('#ai-toggle-btn')) {
+        // Toggle butonu ekle
+        if (!els.header.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
             btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
             btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
-            header.appendChild(btn);
-
-            const aiIcon = btn.querySelector('.arrow-icon');
+            els.header.appendChild(btn);
+            
             let expanded = true;
-            btn.addEventListener('click', function(e) {
+            const icon = btn.querySelector('img');
+            btn.onclick = (e) => {
                 e.stopPropagation();
                 expanded = !expanded;
-                if (expanded) {
-                    aiContent.style.maxHeight = "1200px";
-                    aiContent.style.opacity = "1";
-                    aiIcon.classList.add('open');
-                } else {
-                    aiContent.style.maxHeight = "0";
-                    aiContent.style.opacity = "0";
-                    aiIcon.classList.remove('open');
-                }
-            });
-            if (aiIcon) aiIcon.classList.add('open');
+                els.content.style.maxHeight = expanded ? "1200px" : "0";
+                els.content.style.opacity = expanded ? "1" : "0";
+                icon.classList.toggle('open', expanded);
+            };
         }
 
-        aiContent.style.maxHeight = "1200px";
-        aiContent.style.opacity = "1";
+        els.content.style.maxHeight = "1200px";
+        els.content.style.opacity = "1";
 
-        // --- ZORLA TEMİZLEME BURADA YAPILIYOR ---
-        const cleanSum = cleanText(summaryVal);
-        const cleanTip = cleanText(tipVal);
-        const cleanHigh = cleanText(highlightVal);
+        // Temizlenmiş veriyi bas
+        const cSum = clean(data.summary);
+        const cTip = clean(data.tip);
+        const cHigh = clean(data.highlight);
 
         if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
-             typeWriterEffect(aiSummary, cleanSum, 18, function() {
-                typeWriterEffect(aiTip, cleanTip, 18, function() {
-                    typeWriterEffect(aiHighlight, cleanHigh, 18);
+             typeWriterEffect(els.sum, cSum, 18, () => {
+                typeWriterEffect(els.tip, cTip, 18, () => {
+                    typeWriterEffect(els.high, cHigh, 18);
                 });
             });
         } else {
-            aiSummary.textContent = cleanSum;
-            aiTip.textContent = cleanTip;
-            aiHighlight.textContent = cleanHigh;
+            els.sum.textContent = cSum;
+            els.tip.textContent = cTip;
+            els.high.textContent = cHigh;
         }
-
-        if (aiTime) aiTime.textContent = timeText || "";
+        if (els.time) els.time.textContent = timeVal || "";
     }
 
-    // === SENARYO 1: KAYITLI VERİ VAR (Burası eski kirli veriyi de temizler) ===
+    // A) Kayıtlı veri varsa (Temizleyip göster)
     if (aiStaticInfo) {
-        populateAndShow(
-            aiStaticInfo.summary,
-            aiStaticInfo.tip,
-            aiStaticInfo.highlight,
-            "" // Kayıtlı veride süre göstermiyoruz
-        );
+        show(aiStaticInfo, "");
         return;
     }
 
-    // === SENARYO 2: API'YE GİT ===
+    // B) API'den çek
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city: currentCity, country })
+            body: JSON.stringify({ city, country })
         });
-
-        const ollamaData = await resp.json();
-        let elapsed = Math.round(performance.now() - t0);
-
-        // Veriyi alırken temizle
-        const cSummary = cleanText(ollamaData.summary);
-        const cTip = cleanText(ollamaData.tip);
-        const cHighlight = cleanText(ollamaData.highlight);
-
-        const aiData = {
-            city: currentCity,
-            summary: cSummary,
-            tip: cTip,
-            highlight: cHighlight,
-            time: elapsed
+        const json = await resp.json();
+        
+        // Gelen veriyi temizle ve kaydet
+        const cleanData = {
+            city: city,
+            summary: clean(json.summary),
+            tip: clean(json.tip),
+            highlight: clean(json.highlight)
         };
 
-        // Kaydet
-        window.cart.aiData = aiData; 
-        window.lastTripAIInfo = aiData;
-        
-        if (typeof saveCurrentTripToStorage === "function") {
-            saveCurrentTripToStorage();
-        }
+        window.cart.aiData = cleanData; 
+        window.lastTripAIInfo = cleanData;
+        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
-        populateAndShow(cSummary, cTip, cHighlight, `⏱️ Generated in ${elapsed} ms`);
+        show(cleanData, `⏱️ Generated in ${Math.round(performance.now() - t0)} ms`);
 
     } catch (e) {
-        console.error("AI Error:", e);
-        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
-        if (aiSpinner) aiSpinner.style.display = "none";
-        aiContent.style.maxHeight = "1200px";
-        aiContent.style.opacity = "1";
-        aiSummary.textContent = "AI service temporarily unavailable.";
+        console.error(e);
+        if (els.time) els.time.innerHTML = "<span style='color:red'>Hata oluştu.</span>";
+        if (els.spin) els.spin.style.display = "none";
+        els.sum.textContent = "Bağlantı hatası.";
+        els.content.style.maxHeight = "1200px"; 
+        els.content.style.opacity = "1";
     }
 };
+
+// Sayfa yüklendiğinde ve her updateCart'ta temizlik yap
+setInterval(nukeRobotIcons, 1000); // Her saniye kontrol et ve sil (Garanti çözüm)
+// ================================================================
 
 async function updateCart() {
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
