@@ -6105,12 +6105,12 @@ async function expandMap(containerId, day) {
       style.innerHTML = `
         .map-custom-controls {
             position: absolute;
-            bottom: 235px; /* Panelin üstünde kalacak şekilde ayarlı */
-            right: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 10001; 
+    bottom: 230px;
+    right: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10001;
         }
         .map-ctrl-btn {
             width: 44px; height: 44px; background: #ffffff; border: 1px solid #e0e0e0;
@@ -6123,7 +6123,12 @@ async function expandMap(containerId, day) {
         .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
         .map-ctrl-btn.zoom-text { font-size: 26px; font-weight: 300; line-height: 1; color: #666; padding-bottom: 2px; }
         .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
-        .expanded-map-header { position: absolute; top: 15px; left: 15px; z-index: 10001; display: flex; align-items: center; gap: 15px; }
+        .expanded-map-header { position: absolute;
+    bottom: 230px;
+    left: 15px;
+    z-index: 10001;
+    display: flex;
+    align-items: center; }
         .map-layers-row { display: flex; gap: 8px; background: rgba(255, 255, 255, 0.85); padding: 6px; border-radius: 12px; backdrop-filter: blur(4px); border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 13px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .map-type-option img { width: 20px; height: 20px; border-radius: 4px; object-fit: cover; }
@@ -6478,7 +6483,7 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
- 
+
 function restoreMap(containerId, day) {
     // containerId'den expandedData'yı bulmaya çalış, yoksa day üzerinden manuel temizlik yap
     const expandedData = window.expandedMaps?.[containerId];
