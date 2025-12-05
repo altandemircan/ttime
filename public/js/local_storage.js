@@ -254,7 +254,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   }
   // --------------------------------
 
-  const tripObj = {
+ const tripObj = {
     title: tripTitle,
     date: tripDate,
     days: window.cart && window.cart.length > 0
@@ -267,7 +267,12 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
-    aiInfo: window.lastTripAIInfo || null,
+    
+    // --- DEĞİŞEN KISIM BURASI ---
+    // window.cart.aiData varsa onu kaydet, yoksa global değişkeni dene
+    aiInfo: (window.cart && window.cart.aiData) ? window.cart.aiData : (window.lastTripAIInfo || null),
+    // ----------------------------
+    
     elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
   };
 
@@ -282,10 +287,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     }
   }
   tripObj.thumbnails = thumbnails;
-
-  tripObj.favorite =
-    (trips[tripKey] && typeof trips[tripKey].favorite === "boolean")
-      ? trips[tripKey].favorite : false;
+  tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
 
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
@@ -345,6 +347,17 @@ function loadTripFromStorage(tripKey) {
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
 
+    // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
+    window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
+    window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
+
+    // --- DEĞİŞEN KISIM BURASI ---
+    // Kaydedilen AI bilgisini geri yükle
+    if (t.aiInfo) {
+        window.cart.aiData = t.aiInfo; // Cart objesine geri tak
+        window.lastTripAIInfo = t.aiInfo; // Global yedeği de tut
+    }
+
     // --- AI kutusu işlemleri ---
     if (t.aiInfo) {
         window.lastTripAIInfo = t.aiInfo;
@@ -356,9 +369,7 @@ function loadTripFromStorage(tripKey) {
         }
     }
 
-    // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
-    window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
-    window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
+   
 
         // --- Elevation ascent/descent datalarını yükle ---
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};

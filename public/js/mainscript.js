@@ -3525,8 +3525,15 @@ async function updateCart() {
     }
   });
 
+
+ // updateCart fonksiyonunun başlarında bu kısmı bul:
   const oldStartDate = window.cart.startDate;
   const oldEndDates  = window.cart.endDates;
+  
+  // --- EKLE: AI Datasını koru ---
+  const oldAiData = window.cart.aiData; 
+  // ------------------------------
+
   window.cart = window.cart.filter(it =>
     it && typeof it === "object" &&
     (
@@ -3536,10 +3543,15 @@ async function updateCart() {
   );
   if (oldStartDate) window.cart.startDate = oldStartDate;
   if (oldEndDates)  window.cart.endDates  = oldEndDates;
+  
+  // --- EKLE: Filtreleme sonrası geri yükle ---
+  if (oldAiData) window.cart.aiData = oldAiData;
+  // ------------------------------------------
+
 
   const cartDiv = document.getElementById("cart-items");
-
   const menuCount = document.getElementById("menu-count");
+  
 if (!cartDiv) { console.warn("[updateCart] cartDiv yok!"); return; }
 
 if (!window.cart || window.cart.length === 0) {
@@ -11055,10 +11067,6 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     return L.polyline(latlngs, options).addTo(map);
 }
 
-
-
-// --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN - FINAL) ---
-// --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN - FINAL V2) ---
 (function forceLeafletCssFix() {
     const styleId = 'tt-leaflet-fix-v4'; // ID güncellendi
     if (document.getElementById(styleId)) return;
