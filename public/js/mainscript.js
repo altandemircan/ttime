@@ -3242,17 +3242,45 @@ function attachMapClickAddMode(day) {
 
       const { lat, lng } = e.latlng;
 
-      // 2. İLK NOKTA KONTROLÜ (Sepete eklemeden hemen önce bakıyoruz)
-      // Eğer sepette henüz "gerçek" (starter olmayan) bir yer yoksa, bu eklediğimiz İLK yerdir.
+      // 2. İLK NOKTA MI? (Sepete eklemeden hemen önce bakıyoruz)
       const hasRealItems = window.cart.some(it => !it._starter && !it._placeholder && it.name);
       const isFirstItem = !hasRealItems;
 
-      // Adres verisi çek
+      // 3. ADRESİ ÖNCE ÇEK (Sıralama değişikliği burada başlıyor)
       let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
         if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
+
+      // 4. KRİTİK ADIM: EĞER İLK NOKTAYSA, GLOBALLERİ ŞİMDİ GÜNCELLE
+      // updateCart çağrılmadan ÖNCE bunu yapmalıyız ki, updateCart içindeki AI fonksiyonu şehri görebilsin.
+      if (isFirstItem) {
+          console.log("Start with Map: İlk nokta algılandı. Şehir ayarlanıyor...", placeInfo);
+          
+          let cityName = placeInfo.name; 
+          // Adresten şehri ayıkla (Örn: "Kepez, Antalya, Turkey" -> "Antalya")
+          if (placeInfo.address) {
+             const parts = placeInfo.address.split(',');
+             if (parts.length >= 2) {
+                 // Genellikle sondan 2. parça şehirdir
+                 cityName = parts[parts.length - 2].trim();
+             } else {
+                 cityName = parts[0].trim();
+             }
+          }
+
+          // Global değişkenleri güncelle
+          window.selectedCity = cityName;
+          window.lastUserQuery = "Trip to " + cityName;
+          
+          // Başlığı güncelle
+          const tEl = document.getElementById("trip_title");
+          if(tEl) {
+              tEl.textContent = window.lastUserQuery;
+              tEl.style.display = 'block';
+          }
+      }
 
       // Duplicate engelleme
       const dup = window.cart.some(it =>
@@ -3284,7 +3312,7 @@ function attachMapClickAddMode(day) {
       };
       window.cart.push(markerItem);
 
-      // --- HARİTAYI GÖRÜNÜR TUT (Kapanmasını engelle) ---
+      // --- HARİTAYI GÖRÜNÜR TUT ---
       if (window.__suppressMiniUntilFirstPoint) window.__suppressMiniUntilFirstPoint[day] = false;
       if (window.__hideAddCatBtnByDay) window.__hideAddCatBtnByDay[day] = false;
 
@@ -3296,7 +3324,7 @@ function attachMapClickAddMode(day) {
       const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
       if (controlsWrapper) controlsWrapper.style.display = 'block';
 
-      // Arayüzü güncelle
+      // 5. UPDATE CART (Artık window.selectedCity dolu olduğu için AI çalışacak)
       if (typeof updateCart === "function") updateCart();
 
       // Marker koy
@@ -3312,47 +3340,6 @@ function attachMapClickAddMode(day) {
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 100);
       }
-
-      // ============================================================
-      // --- ÇÖZÜM BURASI: İLK NOKTADA AI'YI TETİKLE ---
-      // ============================================================
-      if (isFirstItem) {
-          console.log("Start with Map: İlk nokta eklendi. AI bilgisi çekiliyor...");
-          
-          // 1. Şehir ismini adresten temizle (Örn: "Kepez, Antalya, Turkey" -> "Antalya")
-          let cityName = placeInfo.name; 
-          if (placeInfo.address) {
-             const parts = placeInfo.address.split(',');
-             // Genellikle sondan 2. parça şehirdir (İlçe, Şehir, Ülke)
-             // Örn: "Kepez, Antalya, Turkey" -> Antalya (index: length-2)
-             if (parts.length >= 2) {
-                 cityName = parts[parts.length - 2].trim();
-             } else {
-                 cityName = parts[0].trim();
-             }
-          }
-
-          // 2. Global değişkenleri güncelle
-          window.selectedCity = cityName;
-          window.lastUserQuery = "Trip to " + cityName;
-          
-          // 3. Başlığı güncelle (HTML'de Day 1'in üzerindeki kısım)
-          const titleEl = document.getElementById("trip_title");
-          if (titleEl) {
-              titleEl.textContent = window.lastUserQuery;
-              titleEl.style.display = 'block';
-          }
-
-          // 4. AI Kutusunu Oluştur
-          // updateCart() DOM'u yenilediği için AI kutusunun ekleneceği yerin hazır olmasını bekle (300ms)
-          setTimeout(() => {
-              if (typeof window.insertTripAiInfo === "function") {
-                  // false: animasyon yok, null: static veri yok, cityName: aranacak şehir
-                  window.insertTripAiInfo(false, null, cityName);
-              }
-          }, 300);
-      }
-      // ============================================================
 
     }, SINGLE_CLICK_DELAY);
   });
