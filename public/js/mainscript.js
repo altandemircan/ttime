@@ -3392,54 +3392,37 @@ function startMapPlanningForDay(day) {
 
   attemptExpandDay(day);
 }
-// mainscript.js içinde attachMapClickAddMode fonksiyonunu bul ve map.on('click'...) kısmını şöyle güncelle:
-
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
   const map = window.leafletMaps[containerId];
   if (!map) return;
 
+  // Aynı gün için bir kere bağla
   map.__tt_clickAddBound = map.__tt_clickAddBound || {};
   if (map.__tt_clickAddBound[day]) return;
   map.__tt_clickAddBound[day] = true;
 
+  // YALNIZCA TEK TIK eklesin: tek-tık zamanlayıcısı
   let __singleClickTimer = null;
-  const SINGLE_CLICK_DELAY = 250; 
+  const SINGLE_CLICK_DELAY = 250; // ms
 
+  // Tek tık: zamanlayıcı ile çalış; bu süre içinde dblclick/zoom başlarsa iptal edilir
   map.on('click', function(e) {
     if (__singleClickTimer) clearTimeout(__singleClickTimer);
     __singleClickTimer = setTimeout(async () => {
+      // Planlama modu açık değilse veya başka günse görmezden gel
       if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
 
       const { lat, lng } = e.latlng;
 
-      // Reverse geocode
-      let placeInfo = { name: "New Point", address: "", opening_hours: "", city: "", country: "" };
+      // Reverse geocode (hızlı) – hata olursa default isim
+      let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
-        if (rInfo) placeInfo = rInfo;
+        if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
 
-      // --- CRITICAL AI FIX: İLK TIKLAMADA ŞEHİR BELİRLE ---
-      // Eğer henüz seçili bir şehir yoksa (Start with map durumu), tıklanan yerin şehrini ata.
-      if (!window.selectedCity && placeInfo.city) {
-          window.selectedCity = placeInfo.city;
-          if (placeInfo.country) {
-             // Şehir, Ülke formatında yaparsak AI daha iyi çalışır
-             window.selectedCity += `, ${placeInfo.country}`; 
-          }
-          console.log("Map Start City Detected:", window.selectedCity);
-          
-          // AI verisini sıfırla ki yeni şehir için çeksin
-          window.lastTripAIInfo = null;
-          if(window.cart) window.cart.aiData = null;
-          
-          // Başlığı güncelle
-          updateTripTitle();
-      }
-      // ----------------------------------------------------
-
-      // Duplicate kontrolü
+      // Aynı koordinatta (± çok küçük delta) duplicate engelle
       const dup = window.cart.some(it =>
         it.day === day &&
         it.location &&
@@ -3448,16 +3431,16 @@ function attachMapClickAddMode(day) {
       );
       if (dup) return;
 
-      // Görsel
+      // Görsel fallback
       let imageUrl = 'img/placeholder.png';
       try {
         imageUrl = await getImageForPlace(placeInfo.name || 'New Point', 'Place', window.selectedCity || '');
       } catch(_) {}
 
-      // 1. Starter sil
+      // 1. Önce starter'ı sil
       window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 
-      // 2. Ekle
+      // 2. Marker item'ı window.cart'a EKSİKSİZ ekle:
       const markerItem = {
         name: placeInfo.name || "Point",
         image: imageUrl,
@@ -3469,10 +3452,10 @@ function attachMapClickAddMode(day) {
       };
       window.cart.push(markerItem);
 
+      // Add Category butonunu aç
       window.__hideAddCatBtnByDay[day] = false;
 
-      // 3. Update Cart -> Bu tetiklendiğinde AI fonksiyonu çalışacak
-      // Artık window.selectedCity dolu olduğu için AI verisi otomatik gelecek.
+      // Sonra updateCart çağır (travel-item DOM garanti!)
       if (typeof updateCart === "function") updateCart();
 
       // Marker çiz
@@ -3487,69 +3470,83 @@ function attachMapClickAddMode(day) {
       window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
       window.mapPlanningMarkersByDay[day].push(marker);
 
+      // 2+ nokta olunca rota
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 100);
       }
     }, SINGLE_CLICK_DELAY);
   });
 
+  // Çift tık (yakınlaşma) gelirse tek-tık zamanlayıcısını iptal et
   map.on('dblclick', function() {
-    if (__singleClickTimer) { clearTimeout(__singleClickTimer); __singleClickTimer = null; }
+    if (__singleClickTimer) {
+      clearTimeout(__singleClickTimer);
+      __singleClickTimer = null;
+    }
   });
+
+  // Yakınlaşma/pan gibi zoomstart sırasında da iptal et (mobil çift-tap zoom vs.)
   map.on('zoomstart', function() {
-    if (__singleClickTimer) { clearTimeout(__singleClickTimer); __singleClickTimer = null; }
+    if (__singleClickTimer) {
+      clearTimeout(__singleClickTimer);
+      __singleClickTimer = null;
+    }
   });
 }
-
-// mainscript.js -> window.insertTripAiInfo fonksiyonunu bununla değiştir:
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
     // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     
-    // Konumlandırma Hedefini Bul (Trip Title)
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir bilgisini belirle
-    let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+    // Şu anki geçerli şehri belirle
+    let currentCity = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     
-    // Şehir yoksa ve kayıtlı veri de yoksa çık
-    if (!city && !aiStaticInfo) return;
+    // Şehir yoksa ve statik veri de yoksa çık
+    if (!currentCity && !aiStaticInfo) return;
 
-    // --- HTML İSKELETİ OLUŞTUR ---
+    // --- ŞEHİR EŞLEŞME KONTROLÜ (Critical Fix) ---
+    // Eğer kayıtlı veri varsa ama bu veri başka bir şehre aitse, o veriyi yok say!
+    if (aiStaticInfo && aiStaticInfo.city) {
+        // Basit bir normalizasyon ile karşılaştır (büyük/küçük harf duyarsız)
+        const savedCityNorm = aiStaticInfo.city.toLowerCase().trim();
+        const currentCityNorm = currentCity.toLowerCase().trim();
+        
+        // Eğer şehirler uyuşmuyorsa staticInfo'yu iptal et, yeniden çeksin.
+        if (savedCityNorm !== currentCityNorm && currentCityNorm.length > 0) {
+            console.log(`AI Info mismatch: Saved for ${aiStaticInfo.city}, but current is ${currentCity}. Refreshing...`);
+            aiStaticInfo = null; 
+        }
+    }
+    // ---------------------------------------------
+
+    // HTML İskeleti
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
-    // Eski butonun stiline benzer bir margin verelim ki arada sıkışmasın
-    aiDiv.style.cssText = "margin: 10px 0 20px 0; background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; padding: 15px;";
-    
     aiDiv.innerHTML = `
-    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;margin-top:0;margin-bottom:10px;font-size:1.1rem;color:#333;">
-      <span style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:18px;">✨</span> AI Information
-      </span>
+    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>AI Information</span>
       <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
         <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;">
-            <circle cx="20" cy="20" r="16" fill="none" stroke="#8a4af3" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60">
+            <circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60">
                 <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/>
             </circle>
         </svg>
       </span>
     </h3>
-    <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.3s ease, opacity 0.3s ease; color:#444; line-height:1.5;">
-      <p style="margin-bottom:8px;"><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
-      <p style="margin-bottom:8px;"><b>👉 Tip:</b> <span id="ai-tip"></span></p>
-      <p style="margin-bottom:8px;"><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
+    <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
+      <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
+      <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
+      <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
     </div>
-    <div class="ai-info-time" style="opacity:.6;font-size:11px;text-align:right;margin-top:8px;"></div>
+    <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
     `;
     
-    // --- YERLEŞTİRME (CRITICAL) ---
-    // Trip Title'dan HEMEN SONRA (Day 1'in üstüne)
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    // Element Referansları
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
@@ -3557,7 +3554,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
     
-    // İçerik Doldurma Yardımcısı
+    // Yardımcı: İçeriği ekrana bas
     function populateAndShow(data, timeElapsed = null) {
         if (aiSpinner) aiSpinner.style.display = "none";
         
@@ -3566,52 +3563,36 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
-            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 5px;display:flex;align-items:center;";
-            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:16px;height:16px;transition:transform 0.2s;">`;
+            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
+            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
             header.appendChild(btn);
 
             const aiIcon = btn.querySelector('.arrow-icon');
             let expanded = true;
-            
-            // Header'a tıklayınca da açılsın/kapansın (daha iyi UX)
-            header.style.cursor = "pointer";
-            header.onclick = function(e) {
-                // Eğer butona tıklandıysa event zaten oradan gelir, ama header click'i de kapsayalım
-                if (e.target.closest('button')) return;
-                toggleAccordion();
-            };
-
-            btn.onclick = function(e) {
+            btn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                toggleAccordion();
-            };
-
-            function toggleAccordion() {
                 expanded = !expanded;
                 if (expanded) {
                     aiContent.style.maxHeight = "1200px";
                     aiContent.style.opacity = "1";
                     aiIcon.classList.add('open');
-                    aiIcon.style.transform = "rotate(90deg)";
                 } else {
                     aiContent.style.maxHeight = "0";
                     aiContent.style.opacity = "0";
                     aiIcon.classList.remove('open');
-                    aiIcon.style.transform = "rotate(0deg)";
                 }
-            }
-            // İlk açılış durumu
-            aiIcon.classList.add('open');
-            aiIcon.style.transform = "rotate(90deg)";
+            });
+            if (aiIcon) aiIcon.classList.add('open');
         }
 
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
 
-        if (typeof window.typeWriterEffect === 'function' && !aiStaticInfo) {
-             window.typeWriterEffect(aiSummary, data.summary || "Info not available.", 18, function() {
-                window.typeWriterEffect(aiTip, data.tip || "Info not available.", 18, function() {
-                    window.typeWriterEffect(aiHighlight, data.highlight || "Info not available.", 18);
+        // Typewriter efekti sadece yeni veri geliyorsa çalışsın
+        if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
+             typeWriterEffect(aiSummary, data.summary || "Info not available.", 18, function() {
+                typeWriterEffect(aiTip, data.tip || "Info not available.", 18, function() {
+                    typeWriterEffect(aiHighlight, data.highlight || "Info not available.", 18);
                 });
             });
         } else {
@@ -3627,7 +3608,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         }
     }
 
-    // === SENARYO 1: HAZIR VERİ VAR ===
+    // === SENARYO 1: DOĞRULANMIŞ KAYITLI VERİ VAR ===
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo);
         return;
@@ -3636,36 +3617,32 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     // === SENARYO 2: API'YE GİT (Otomatik) ===
     let t0 = performance.now();
     try {
-        // Eğer seçili şehir yoksa (Start with map durumu), en azından 'location' bulmaya çalış
-        if (!city && window.cart && window.cart.length > 0) {
-             const firstItem = window.cart.find(i => i.location);
-             if (firstItem && firstItem.location) {
-                 // Koordinattan şehir bulma (opsiyonel, şimdilik boş geçiyoruz)
-                 // city = ...
-             }
-        }
-
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city: city, country: country })
+            body: JSON.stringify({ city: currentCity, country })
         });
 
         const ollamaData = await resp.json();
         
+        let elapsed = Math.round(performance.now() - t0);
+
+        // Veriyi hazırla ve ŞEHRİ DE İÇİNE YAZ
         const aiData = {
+            city: currentCity, // <-- Şehri mühürle
             summary: ollamaData.summary || "Info not available.",
             tip: ollamaData.tip || "Info not available.",
-            highlight: ollamaData.highlight || "Info not available."
+            highlight: ollamaData.highlight || "Info not available.",
+            time: elapsed
         };
 
+        // Kaydet
         window.cart.aiData = aiData; 
         window.lastTripAIInfo = aiData;
         if (typeof saveCurrentTripToStorage === "function") {
-            saveCurrentTripToStorage(); 
+            saveCurrentTripToStorage();
         }
 
-        let elapsed = Math.round(performance.now() - t0);
         populateAndShow(aiData, elapsed);
 
     } catch (e) {
@@ -5285,23 +5262,14 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 
 // 1) Reverse geocode: önce amenity (POI) dene, sonra building, sonra genel adres
 async function getPlaceInfoFromLatLng(lat, lng) {
-  try {
-    const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
-    const data = await resp.json();
-    const props = data?.features?.[0]?.properties || {};
-    
-    return {
-      name: props.name || props.address_line1 || "Unnamed Place",
-      address: props.formatted || "",
-      opening_hours: props.opening_hours || "",
-      // YENİ EKLENENLER: Şehir ve Ülke tespiti
-      city: props.city || props.town || props.village || props.municipality || props.county || "",
-      country: props.country || ""
-    };
-  } catch (e) {
-    console.warn("Reverse geocode error:", e);
-    return { name: "New Point", address: "", opening_hours: "", city: "", country: "" };
-  }
+  const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
+  const data = await resp.json();
+  const props = data?.features?.[0]?.properties || {};
+  return {
+    name: props.name || props.address_line1 || "Unnamed Place",
+    address: props.formatted || "",
+    opening_hours: props.opening_hours || "",
+  };
 }
 
 function toggleContent(arrowIcon) {
