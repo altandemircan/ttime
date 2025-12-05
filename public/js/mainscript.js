@@ -5935,7 +5935,6 @@ function saveArcPointsForDay(day, points) {
 }
 
 function openMapLibre3D(expandedMap) {
-  // DOM elementini hazırla
   let mapDiv = expandedMap.getContainer();
   let maplibre3d = document.getElementById('maplibre-3d-view');
   if (!maplibre3d) {
@@ -5951,7 +5950,6 @@ function openMapLibre3D(expandedMap) {
   const day = window.currentDay || 1;
   const containerId = `route-map-day${day}`;
   
-  // --- SINIRLARI HESAPLA ---
   const bounds = new maplibregl.LngLatBounds();
   let hasBounds = false;
 
@@ -5979,7 +5977,7 @@ function openMapLibre3D(expandedMap) {
     pitch: 60,
     bearing: -20,
     interactive: true,
-    attributionControl: false // Default yazıları kapat
+    attributionControl: false 
   };
 
   if (hasBounds) {
@@ -5993,7 +5991,7 @@ function openMapLibre3D(expandedMap) {
   // MapLibreGL başlat
   window._maplibre3DInstance = new maplibregl.Map(mapOptions);
 
-  // --- SCALE BAR EKLE (SOL ALTTA GÖZÜKSÜN) ---
+  // --- SCALE BAR (Sol Alt) ---
   window._maplibre3DInstance.addControl(new maplibregl.ScaleControl({
       maxWidth: 100,
       unit: 'metric'
@@ -6008,12 +6006,10 @@ function openMapLibre3D(expandedMap) {
       }
   });
   
-  // Harita yüklendiğinde içerikleri çiz (Rota, Markerlar)
   window._maplibre3DInstance.on('load', function () {
     const isFlyMode = !areAllPointsInTurkey(points); 
     const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
 
-    // A) GERÇEK ROTA
     if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
       window._maplibre3DInstance.addSource('route', {
         type: 'geojson',
@@ -6027,7 +6023,6 @@ function openMapLibre3D(expandedMap) {
         paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
       });
     } 
-    // B) FLY MODE
     else if (isFlyMode && points.length > 1) {
       for (let i = 0; i < points.length - 1; i++) {
         const start = [points[i].lng, points[i].lat];
@@ -6047,7 +6042,6 @@ function openMapLibre3D(expandedMap) {
       }
     }
 
-    // C) MARKERLAR
     points.forEach((p, idx) => {
       const el = document.createElement('div');
       el.className = 'maplibre-marker';
@@ -6069,7 +6063,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (Scale Bar stili eklendi)
+  // 1. STİL EKLEME (Scale Bar stili DÜZELTİLDİ)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -6077,7 +6071,7 @@ async function expandMap(containerId, day) {
         /* --- SAĞ ALT KONTROLLER (ZOOM/PUSULA/KONUM) --- */
         .map-custom-controls {
             position: absolute;
-            bottom: 235px;
+            bottom: 235px; /* Zoom butonları panelin üst hizasında kalsın */
             right: 15px;
             display: flex;
             flex-direction: column;
@@ -6193,11 +6187,12 @@ async function expandMap(containerId, day) {
             opacity: 1;
         }
 
-        /* --- 3D MAP SCALE BAR STİLİ (YENİ EKLENDİ) --- */
+        /* --- 3D MAP SCALE BAR STİLİ (DÜZELTİLDİ) --- */
         .maplibregl-ctrl-bottom-left {
-            bottom: 230px !important; /* Panel hizasına çekmek için yukarı aldık */
-            left: 10px !important;
-            z-index: 10001;
+            bottom: 30px !important; /* Panelin yeri boş olduğu için alta alıyoruz */
+            left: 20px !important;
+            z-index: 20000 !important; /* En üstte görünsün */
+            pointer-events: none; /* Tıklamayı engellemesin */
         }
         .maplibregl-ctrl-scale {
             background-color: rgba(255, 255, 255, 0.9) !important;
@@ -6206,11 +6201,12 @@ async function expandMap(containerId, day) {
             padding: 2px 8px !important;
             color: #555 !important;
             font-size: 11px !important;
-            font-weight: 500 !important;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
-            border-top: 1px solid #e0e0e0 !important; /* MapLibre default border-top: none olabiliyor */
+            font-weight: 600 !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+            border-top: 1px solid #e0e0e0 !important;
             height: auto !important;
             line-height: 1.4 !important;
+            pointer-events: auto;
         }
       `;
       document.head.appendChild(style);
@@ -6290,23 +6286,15 @@ async function expandMap(containerId, day) {
         // 3D MOD
         expandedMapInstance.getContainer().style.display = "none";
         if (panelDiv) panelDiv.style.display = "none"; 
-        
-        // Pusulayı göster
         if (compassBtn) compassBtn.style.display = 'flex';
-
         openMapLibre3D(expandedMapInstance); 
       } else {
         // 2D MOD
         expandedMapInstance.getContainer().style.display = "";
-        
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) map3d.style.display = "none";
-        
         if (panelDiv) panelDiv.style.display = "block"; 
-
-        // 2D Modunda Pusulayı Gizle
         if (compassBtn) compassBtn.style.display = 'none';
-
         setExpandedMapTile(opt.value);
       }
     };
@@ -6323,7 +6311,6 @@ async function expandMap(containerId, day) {
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'map-custom-controls';
 
-  // 1. Zoom In (+)
   const zoomInBtn = document.createElement('button');
   zoomInBtn.className = 'map-ctrl-btn zoom-text';
   zoomInBtn.innerText = '+';
@@ -6335,7 +6322,6 @@ async function expandMap(containerId, day) {
       }
   };
 
-  // 2. Zoom Out (-)
   const zoomOutBtn = document.createElement('button');
   zoomOutBtn.className = 'map-ctrl-btn zoom-text';
   zoomOutBtn.innerText = '−';
@@ -6347,7 +6333,6 @@ async function expandMap(containerId, day) {
       }
   };
 
-  // 3. Pusula (Compass)
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
   compassBtn.className = 'map-ctrl-btn ctrl-compass';
@@ -6364,7 +6349,6 @@ async function expandMap(containerId, day) {
       }
   };
 
-  // 4. Konum (Locate)
   const locBtn = document.createElement('button');
   locBtn.className = 'map-ctrl-btn';
   locBtn.id = `use-my-location-btn-day${day}`;
@@ -6395,9 +6379,7 @@ async function expandMap(containerId, day) {
   controlsDiv.appendChild(compassBtn);
   controlsDiv.appendChild(locBtn);
   expandedContainer.appendChild(controlsDiv);
-  // ============================================
 
-  // Scale Bar ve Panel
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
   const scaleBarDiv = document.createElement('div');
@@ -6410,7 +6392,6 @@ async function expandMap(containerId, day) {
   panelDiv.appendChild(scaleBarDiv);
   expandedContainer.appendChild(panelDiv);
 
-  // Kapatma butonu
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-expanded-map';
   closeBtn.textContent = '✕ Close';
@@ -6431,7 +6412,6 @@ async function expandMap(containerId, day) {
 
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // Başlangıç Konumu
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
   let startCenter = [39.0, 35.0]; 
@@ -6447,7 +6427,6 @@ async function expandMap(containerId, day) {
       }
   }
 
-  // --- HARİTA BAŞLAT ---
   const expandedMapInstance = L.map(mapDivId, {
     center: startCenter,
     zoom: startZoom,
