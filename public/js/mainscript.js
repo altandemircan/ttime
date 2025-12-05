@@ -6085,31 +6085,19 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME
+  // 1. STİL EKLEME (Panel Z-Index ve Shadow Düzeltmesi)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
       style.innerHTML = `
-        .map-custom-controls {
-            position: absolute;
-            bottom: 235px;
-            right: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 10001; 
-        }
-        .map-ctrl-btn {
-            width: 44px; height: 44px; background: #ffffff; border: 1px solid #e0e0e0;
-            border-radius: 10px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
-            padding: 0; color: #555;
-        }
+        .map-custom-controls { position: absolute; bottom: 235px; right: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 10001; }
+        .map-ctrl-btn { width: 44px; height: 44px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; padding: 0; color: #555; }
         .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
         .map-ctrl-btn.zoom-text { font-size: 26px; font-weight: 300; line-height: 1; color: #666; padding-bottom: 2px; }
         .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
+        
         .expanded-map-header { position: absolute; top: 15px; left: 15px; z-index: 10001; display: flex; align-items: center; gap: 15px; }
         .map-layers-row { display: flex; gap: 8px; background: rgba(255, 255, 255, 0.85); padding: 6px; border-radius: 12px; backdrop-filter: blur(4px); border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 13px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
@@ -6118,26 +6106,18 @@ async function expandMap(containerId, day) {
         .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
         .map-type-option.selected img { opacity: 1; }
         
-        /* 3D MAP SCALE BAR STİLİ */
-        .maplibregl-ctrl-bottom-left {
-            bottom: 30px !important; 
-            left: 20px !important;
-            z-index: 20000 !important; 
-            pointer-events: none;
-        }
-        .maplibregl-ctrl-scale {
-            background-color: rgba(255, 255, 255, 0.9) !important;
-            border: 1px solid #e0e0e0 !important;
-            border-radius: 6px !important;
-            padding: 2px 8px !important;
-            color: #555 !important;
-            font-size: 11px !important;
-            font-weight: 600 !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
-            border-top: 1px solid #e0e0e0 !important;
-            height: auto !important;
-            line-height: 1.4 !important;
-            pointer-events: auto;
+        /* Scale Bar Fix */
+        .maplibregl-ctrl-bottom-left { bottom: 30px !important; left: 20px !important; z-index: 20000 !important; pointer-events: none; }
+        .maplibregl-ctrl-scale { background-color: rgba(255, 255, 255, 0.9) !important; border: 1px solid #e0e0e0 !important; border-radius: 6px !important; padding: 2px 8px !important; color: #555 !important; font-size: 11px !important; font-weight: 600 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; border-top: 1px solid #e0e0e0 !important; height: auto !important; line-height: 1.4 !important; pointer-events: auto; }
+
+        /* --- YENİ EKLENEN: PANEL STİLİ --- */
+        /* Panelin haritanın üstünde (z-index) ve düzgün hizalı olmasını sağlar */
+        .expanded-map-panel {
+            position: relative;
+            z-index: 20; /* 3D haritadan yüksek (1) */
+            background: #fff;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05); /* Üst kısma hafif gölge */
+            padding-top: 5px;
         }
       `;
       document.head.appendChild(style);
@@ -6211,24 +6191,29 @@ async function expandMap(containerId, day) {
 
       const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
+      const leafletAttr = expandedContainer.querySelector('.leaflet-control-attribution');
 
       if (opt.value === 'liberty') {
         // --- 3D MOD ---
         expandedMapInstance.getContainer().style.display = "none";
         
-        // --- DÜZELTME: panelDiv.style.display SATIRI SİLİNDİ ---
-        // Panelin görünürlüğü tamamen senin CSS'ine kalmış durumda.
-        
+        // 2D Attribution'ı gizle
+        if (leafletAttr) leafletAttr.style.display = 'none';
+
+        if (panelDiv) panelDiv.style.display = "block"; 
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
         // --- 2D MOD ---
         expandedMapInstance.getContainer().style.display = "";
+        
+        // 2D Attribution'ı göster
+        if (leafletAttr) leafletAttr.style.display = 'block';
+
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) map3d.style.display = "none";
         
-        // --- DÜZELTME: panelDiv.style.display SATIRI SİLİNDİ ---
-        
+        if (panelDiv) panelDiv.style.display = "block"; 
         if (compassBtn) compassBtn.style.display = 'none';
         setExpandedMapTile(opt.value);
       }
