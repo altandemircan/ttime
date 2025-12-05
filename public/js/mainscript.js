@@ -3410,36 +3410,32 @@ function attachMapClickAddMode(day) {
   const map = window.leafletMaps[containerId];
   if (!map) return;
 
-  // Event'in üst üste binmesini engelle
+  // Aynı gün için tekrar tekrar event bağlanmasını önle
   map.__tt_clickAddBound = map.__tt_clickAddBound || {};
   if (map.__tt_clickAddBound[day]) return;
   map.__tt_clickAddBound[day] = true;
 
+  // YALNIZCA TEK TIK eklesin: tek-tık zamanlayıcısı
   let __singleClickTimer = null;
-  const SINGLE_CLICK_DELAY = 250; 
+  const SINGLE_CLICK_DELAY = 250; // ms
 
+  // Tek tık: zamanlayıcı ile çalış; bu süre içinde dblclick/zoom başlarsa iptal edilir
   map.on('click', function(e) {
     if (__singleClickTimer) clearTimeout(__singleClickTimer);
-    
     __singleClickTimer = setTimeout(async () => {
-      // Mod kontrolü
+      // Planlama modu açık değilse veya başka günse görmezden gel
       if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
 
       const { lat, lng } = e.latlng;
 
-      // 1. KRİTİK KONTROL: Henüz ekleme yapmadan önce sepette gerçek mekan var mı?
-      // _starter: true olmayan, _placeholder: true olmayan ve ismi olan öğeler "gerçek"tir.
-      const existingRealItems = window.cart.filter(it => !it._starter && !it._placeholder && it.name);
-      const isFirstItem = (existingRealItems.length === 0);
-
-      // Adres bilgisini al
+      // Reverse geocode (hızlı) – hata olursa default isim
       let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
         if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
 
-      // Duplicate (çift) kontrolü
+      // Aynı koordinatta duplicate engelle
       const dup = window.cart.some(it =>
         it.day === day &&
         it.location &&
@@ -3448,16 +3444,16 @@ function attachMapClickAddMode(day) {
       );
       if (dup) return;
 
-      // Görsel bul
+      // Görsel fallback
       let imageUrl = 'img/placeholder.png';
       try {
         imageUrl = await getImageForPlace(placeInfo.name || 'New Point', 'Place', window.selectedCity || '');
       } catch(_) {}
 
-      // Starter'ı temizle (Eğer varsa)
+      // 1. Önce starter'ı (boş başlangıç kartını) sil
       window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 
-      // Yeni öğeyi oluştur
+      // 2. Marker item'ı window.cart'a ekle:
       const markerItem = {
         name: placeInfo.name || "Point",
         image: imageUrl,
@@ -3467,65 +3463,71 @@ function attachMapClickAddMode(day) {
         opening_hours: placeInfo.opening_hours || "",
         location: { lat: lat, lng: lng }
       };
-
-      // Sepete ekle
       window.cart.push(markerItem);
 
-      // UI Güncellemeleri
+      // Add Category butonunu aç (artık içerik var)
       if (window.__hideAddCatBtnByDay) window.__hideAddCatBtnByDay[day] = false;
+
+      // --- BURASI YENİ: İLK NOKTA EKLENDİYSE AI BİLGİSİNİ ÇAĞIR ---
+      const realItems = window.cart.filter(it => !it._starter && !it._placeholder && it.name);
+      
+      // Eğer sepetteki ilk gerçek öğe ise (yani ilk tıklama)
+      if (realItems.length === 1) {
+          // 1. Şehri/Konumu Tahmin Et (Adresten)
+          // Adres genellikle "Mekan Adı, Cadde, Şehir, Ülke" formatındadır.
+          // AI'a tüm adresi veriyoruz, o analizi yapar.
+          const locationContext = placeInfo.address || placeInfo.name;
+          
+          // 2. Global değişkenleri güncelle (Diğer fonksiyonlar bozulmasın diye)
+          window.selectedCity = locationContext;
+          window.lastUserQuery = "Trip to " + (placeInfo.name || "Selected Location");
+          
+          // 3. UI'daki başlığı güncelle
+          updateTripTitle();
+
+          // 4. AI Özetini Getir
+          // insertTripAiInfo(false, null, locationContext) -> locationContext ile AI'ı tetikler
+          insertTripAiInfo(false, null, locationContext);
+      }
+      // -------------------------------------------------------------
+
+      // Sonra updateCart çağır
       if (typeof updateCart === "function") updateCart();
 
-      // Harita marker'ını koy
+      // Marker çiz
       const marker = L.circleMarker([lat, lng], {
-        radius: 7, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
+        radius: 7,
+        color: '#8a4af3',
+        fillColor: '#8a4af3',
+        fillOpacity: 0.9,
+        weight: 2
       }).addTo(map).bindPopup(`<b>${placeInfo.name || 'Point'}</b>`);
 
       if (!window.mapPlanningMarkersByDay) window.mapPlanningMarkersByDay = {};
       window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
       window.mapPlanningMarkersByDay[day].push(marker);
 
-      // Rota çiz
+      // 2+ nokta olunca rota
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 100);
       }
-
-      // --- 2. AI TETİKLEME BÖLÜMÜ ---
-      // Yukarıda isFirstItem true olarak belirlendiyse, AI'ı şimdi çalıştır.
-      if (isFirstItem) {
-          console.log("Start with Map: İlk nokta eklendi, AI tetikleniyor...");
-          
-          // Konum bilgisini belirle (Adres varsa adres, yoksa isim)
-          const locationContext = placeInfo.address || placeInfo.name;
-          
-          // Global değişkenleri güncelle
-          window.selectedCity = locationContext;
-          window.lastUserQuery = "Trip to " + (placeInfo.name || "Selected Location");
-          
-          // Başlığı güncelle
-          if (typeof updateTripTitle === "function") updateTripTitle();
-          else {
-              const titleEl = document.getElementById("trip_title");
-              if (titleEl) titleEl.textContent = window.lastUserQuery;
-          }
-
-          // AI Fonksiyonunu Çağır (Timeout ile DOM'un oturmasını bekle)
-          setTimeout(() => {
-              if (typeof window.insertTripAiInfo === "function") {
-                  // false = token animasyonu yok, null = static info yok, locationContext = şehir/adres
-                  window.insertTripAiInfo(false, null, locationContext);
-              } else {
-                  console.error("insertTripAiInfo fonksiyonu bulunamadı!");
-              }
-          }, 150);
-      }
-      // -----------------------------
-
     }, SINGLE_CLICK_DELAY);
   });
 
-  // Zoom/Drag iptalleri
-  map.on('dblclick', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
-  map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
+  // Çift tık (yakınlaşma) gelirse tek-tık zamanlayıcısını iptal et
+  map.on('dblclick', function() {
+    if (__singleClickTimer) {
+      clearTimeout(__singleClickTimer);
+      __singleClickTimer = null;
+    }
+  });
+
+  map.on('zoomstart', function() {
+    if (__singleClickTimer) {
+      clearTimeout(__singleClickTimer);
+      __singleClickTimer = null;
+    }
+  });
 }
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
