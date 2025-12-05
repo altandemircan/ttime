@@ -10492,31 +10492,41 @@ function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L
 
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
 function highlightSegmentOnMap(day, startKm, endKm) {
-  // Parametre kontrolü ve Temizlik
+  // --- 1. PARAMETRE KONTROLÜ VE TEMİZLİK (RESET) ---
   if (
       typeof startKm !== "number" ||
       typeof endKm !== "number" ||
       typeof day !== "number"
   ) {
+      // 2D Temizlik
       if (window._segmentHighlight && window._segmentHighlight[day]) {
           Object.values(window._segmentHighlight[day]).forEach(poly => poly.remove());
           delete window._segmentHighlight[day];
+      }
+      // 3D Temizlik (YENİ)
+      if (window._maplibre3DInstance) {
+          if (window._maplibre3DInstance.getLayer('segment-highlight-layer')) {
+              window._maplibre3DInstance.removeLayer('segment-highlight-layer');
+          }
+          if (window._maplibre3DInstance.getSource('segment-highlight-source')) {
+              window._maplibre3DInstance.removeSource('segment-highlight-source');
+          }
       }
       return;
   }
 
   const cid = `route-map-day${day}`;
   
-  // --- VERİ KAYNAĞINI BELİRLE ---
+  // --- 2. VERİ KAYNAĞINI BELİRLE ---
   let coords = null;
   let isFlyMode = false;
 
-  // 1. Fly Mode (Yay) verisi var mı?
+  // Fly Mode (Yay) verisi var mı?
   if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 1) {
       coords = window._curvedArcPointsByDay[day]; 
       isFlyMode = true;
   } 
-  // 2. Yoksa Normal OSRM GeoJSON verisi
+  // Yoksa Normal OSRM GeoJSON verisi
   else {
       const gj = window.lastRouteGeojsons?.[cid];
       if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
@@ -10526,28 +10536,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   if (!coords || coords.length < 2) return;
 
-  window._segmentHighlight = window._segmentHighlight || {};
-  
-  const maps = [];
-  if (window.leafletMaps && window.leafletMaps[cid]) {
-      maps.push(window.leafletMaps[cid]);
-  }
-  const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
-  if (expandedObj && expandedObj.expandedMap) {
-      maps.push(expandedObj.expandedMap);
-  }
-
-  // Eski highlight'ları sil
-  if (window._segmentHighlight[day]) {
-      Object.values(window._segmentHighlight[day]).forEach(poly => {
-          try { poly.remove(); } catch(_) {}
-      });
-      window._segmentHighlight[day] = {};
-  } else {
-      window._segmentHighlight[day] = {};
-  }
-
-  // --- MESAFE HESAPLAMA ---
+  // --- 3. SEGMENT HESAPLAMA (Mesafe bazlı kesme) ---
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -10570,8 +10559,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   for (let i = 0; i < cum.length; i++) {
       if (cum[i] >= segStartM) {
-          iStart = i;
-          if (i > 0) iStart = i - 1; 
+          iStart = i > 0 ? i - 1 : i; 
           break;
       }
   }
@@ -10583,47 +10571,97 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       }
   }
 
-  const subCoords = coords.slice(iStart, iEnd + 1).map(c => [c[1], c[0]]);
+  // Leaflet için [Lat, Lng] formatı
+  const subCoordsLeaflet = coords.slice(iStart, iEnd + 1).map(c => [c[1], c[0]]);
+  
+  if (subCoordsLeaflet.length < 2) return;
 
-  if (subCoords.length < 2) return;
+  // --- 4. LEAFLET (2D) ÇİZİMİ ---
+  window._segmentHighlight = window._segmentHighlight || {};
+  if (!window._segmentHighlight[day]) window._segmentHighlight[day] = {};
 
-  // --- STİL AYARLARI ---
+  const maps2D = [];
+  if (window.leafletMaps && window.leafletMaps[cid]) maps2D.push(window.leafletMaps[cid]);
+  
+  const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
+  // Sadece 3D modu kapalıysa 2D expanded haritaya çiz
+  const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
+  if (expandedObj && expandedObj.expandedMap && !is3DActive) {
+      maps2D.push(expandedObj.expandedMap);
+  }
+
+  // Önce eski 2D highlightları temizle
+  Object.values(window._segmentHighlight[day]).forEach(poly => { try { poly.remove(); } catch(_) {} });
+  window._segmentHighlight[day] = {};
+
   const polyOptions = {
-      color: '#8a4af3', // Mor renk
-      weight: 9,        // Mavi rotadan daha kalın olsun
-      opacity: 1.0,     // Tam opak
+      color: '#8a4af3', // Mor
+      weight: 9,
+      opacity: 1.0,
       lineCap: 'round',
       lineJoin: 'round',
       dashArray: null,
-      renderer: L.svg() // [FIX] Canvas yerine SVG kullanarak en üste çizdiriyoruz
+      renderer: L.svg()
   };
+  if (isFlyMode) polyOptions.weight = 8;
 
-  if (isFlyMode) {
-      polyOptions.weight = 8; 
-  }
-
-  // Haritalara çiz ve ZOOM YAP
-  maps.forEach(m => {
-    const poly = L.polyline(subCoords, polyOptions).addTo(m);
-    
+  maps2D.forEach(m => {
+    const poly = L.polyline(subCoordsLeaflet, polyOptions).addTo(m);
     window._segmentHighlight[day][m._leaflet_id] = poly;
-    
-    // Vektör katmanlarının üzerine çıkması için pane ayarı gerekebilir ama L.svg() genellikle çözer.
-    // Garanti olsun diye bringToFront çağırıyoruz.
     if (poly.bringToFront) poly.bringToFront();
-
-    // Segment sınırlarına zoomla
     try {
-        m.fitBounds(poly.getBounds(), {
-            padding: [50, 50],
-            maxZoom: 16,
-            animate: true,
-            duration: 0.8
-        });
-    } catch(e) { 
-        console.warn("Segment zoom hatası:", e); 
-    }
+        m.fitBounds(poly.getBounds(), { padding: [50, 50], maxZoom: 16, animate: true, duration: 0.8 });
+    } catch(e) {}
   });
+
+  // --- 5. MAPLIBRE (3D) ÇİZİMİ VE ZOOM (YENİ) ---
+  if (is3DActive && window._maplibre3DInstance) {
+      const map3d = window._maplibre3DInstance;
+      // MapLibre için [Lng, Lat] formatı (Orijinal coords zaten böyle)
+      const subCoordsGeoJSON = coords.slice(iStart, iEnd + 1);
+
+      const sourceId = 'segment-highlight-source';
+      const layerId = 'segment-highlight-layer';
+
+      // Varsa güncelle, yoksa ekle
+      const source = map3d.getSource(sourceId);
+      if (source) {
+          source.setData({
+              type: 'Feature',
+              geometry: { type: 'LineString', coordinates: subCoordsGeoJSON }
+          });
+      } else {
+          map3d.addSource(sourceId, {
+              type: 'geojson',
+              data: {
+                  type: 'Feature',
+                  geometry: { type: 'LineString', coordinates: subCoordsGeoJSON }
+              }
+          });
+          map3d.addLayer({
+              id: layerId,
+              type: 'line',
+              source: sourceId,
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                  'line-color': '#8a4af3',
+                  'line-width': 10,
+                  'line-opacity': 0.9,
+                  // 3D'de çizginin yerin altına girmemesi için hafif offset verebiliriz (opsiyonel)
+                  // 'line-offset': 2 
+              }
+          });
+      }
+
+      // Zoom (Fit Bounds)
+      const bounds = new maplibregl.LngLatBounds();
+      subCoordsGeoJSON.forEach(c => bounds.extend(c));
+      
+      map3d.fitBounds(bounds, {
+          padding: { top: 100, bottom: 250, left: 50, right: 50 }, // Alt panel için bottom padding fazla
+          duration: 1000
+      });
+  }
 }
 
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
