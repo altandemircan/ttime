@@ -3397,32 +3397,36 @@ function attachMapClickAddMode(day) {
   const map = window.leafletMaps[containerId];
   if (!map) return;
 
-  // Aynı gün için bir kere bağla
+  // Aynı gün için tekrar tekrar event bağlanmasını önle
   map.__tt_clickAddBound = map.__tt_clickAddBound || {};
   if (map.__tt_clickAddBound[day]) return;
   map.__tt_clickAddBound[day] = true;
 
-  // YALNIZCA TEK TIK eklesin: tek-tık zamanlayıcısı
+  // YALNIZCA TEK TIK eklesin
   let __singleClickTimer = null;
-  const SINGLE_CLICK_DELAY = 250; // ms
+  const SINGLE_CLICK_DELAY = 250; 
 
-  // Tek tık: zamanlayıcı ile çalış; bu süre içinde dblclick/zoom başlarsa iptal edilir
   map.on('click', function(e) {
     if (__singleClickTimer) clearTimeout(__singleClickTimer);
+    
     __singleClickTimer = setTimeout(async () => {
-      // Planlama modu açık değilse veya başka günse görmezden gel
+      // Mod kontrolü
       if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
 
       const { lat, lng } = e.latlng;
 
-      // Reverse geocode (hızlı) – hata olursa default isim
+      // 1. İLK NOKTA MI KONTROLÜ (Ekleme yapmadan önce bakıyoruz)
+      const existingRealItems = window.cart.filter(it => !it._starter && !it._placeholder && it.name);
+      const isFirstItem = (existingRealItems.length === 0);
+
+      // Adres verisi
       let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
         if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
 
-      // Aynı koordinatta (± çok küçük delta) duplicate engelle
+      // Duplicate engelleme
       const dup = window.cart.some(it =>
         it.day === day &&
         it.location &&
@@ -3431,16 +3435,16 @@ function attachMapClickAddMode(day) {
       );
       if (dup) return;
 
-      // Görsel fallback
+      // Görsel
       let imageUrl = 'img/placeholder.png';
       try {
         imageUrl = await getImageForPlace(placeInfo.name || 'New Point', 'Place', window.selectedCity || '');
       } catch(_) {}
 
-      // 1. Önce starter'ı sil
+      // Starter'ı temizle
       window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 
-      // 2. Marker item'ı window.cart'a EKSİKSİZ ekle:
+      // Öğeyi ekle
       const markerItem = {
         name: placeInfo.name || "Point",
         image: imageUrl,
@@ -3452,46 +3456,69 @@ function attachMapClickAddMode(day) {
       };
       window.cart.push(markerItem);
 
-      // Add Category butonunu aç
-      window.__hideAddCatBtnByDay[day] = false;
+      // --- KRİTİK DÜZELTME: Haritayı ve Kontrolleri Görünür Yap ---
+      if (window.__suppressMiniUntilFirstPoint) window.__suppressMiniUntilFirstPoint[day] = false;
+      if (window.__hideAddCatBtnByDay) window.__hideAddCatBtnByDay[day] = false;
 
-      // Sonra updateCart çağır (travel-item DOM garanti!)
+      // Harita Container'ını Zorla Aç
+      const smallMapDiv = document.getElementById(containerId);
+      if (smallMapDiv) {
+          smallMapDiv.style.display = 'block';
+          smallMapDiv.style.height = '285px';
+          smallMapDiv.classList.remove('mini-suppressed');
+      }
+      
+      // Alt kontrolleri Zorla Aç
+      const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
+      if (controlsWrapper) {
+          controlsWrapper.style.display = 'block';
+      }
+      // -------------------------------------------------------------
+
+      // Arayüzü güncelle
       if (typeof updateCart === "function") updateCart();
 
-      // Marker çiz
+      // Marker koy
       const marker = L.circleMarker([lat, lng], {
-        radius: 7,
-        color: '#8a4af3',
-        fillColor: '#8a4af3',
-        fillOpacity: 0.9,
-        weight: 2
+        radius: 7, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
       }).addTo(map).bindPopup(`<b>${placeInfo.name || 'Point'}</b>`);
 
+      if (!window.mapPlanningMarkersByDay) window.mapPlanningMarkersByDay = {};
       window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
       window.mapPlanningMarkersByDay[day].push(marker);
 
-      // 2+ nokta olunca rota
+      // Rotayı çiz
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 100);
       }
+
+      // --- 2. AI BİLGİSİNİ TETİKLE (Sadece ilk noktada) ---
+      if (isFirstItem) {
+          // Konum metnini al (Adres veya İsim)
+          const locationContext = placeInfo.address || placeInfo.name;
+          
+          // Global değişkenleri güncelle (Diğer sistemler için)
+          window.selectedCity = locationContext;
+          window.lastUserQuery = "Trip to " + (placeInfo.name || "Selected Location");
+          
+          // Başlığı güncelle
+          const titleEl = document.getElementById("trip_title");
+          if (titleEl) titleEl.textContent = window.lastUserQuery;
+
+          // AI fonksiyonunu çağır
+          setTimeout(() => {
+              if (typeof window.insertTripAiInfo === "function") {
+                  window.insertTripAiInfo(false, null, locationContext);
+              }
+          }, 150);
+      }
+
     }, SINGLE_CLICK_DELAY);
   });
 
-  // Çift tık (yakınlaşma) gelirse tek-tık zamanlayıcısını iptal et
-  map.on('dblclick', function() {
-    if (__singleClickTimer) {
-      clearTimeout(__singleClickTimer);
-      __singleClickTimer = null;
-    }
-  });
-
-  // Yakınlaşma/pan gibi zoomstart sırasında da iptal et (mobil çift-tap zoom vs.)
-  map.on('zoomstart', function() {
-    if (__singleClickTimer) {
-      clearTimeout(__singleClickTimer);
-      __singleClickTimer = null;
-    }
-  });
+  // Zoom/Drag iptalleri
+  map.on('dblclick', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
+  map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
