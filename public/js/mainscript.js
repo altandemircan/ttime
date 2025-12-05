@@ -3242,8 +3242,8 @@ function attachMapClickAddMode(day) {
 
       const { lat, lng } = e.latlng;
 
-      // 2. İLK NOKTA MI? (Henüz ekleme yapmadan kontrol ediyoruz)
-      // Eğer sepette isimli gerçek bir yer yoksa, bu eklediğimiz İLK yerdir.
+      // 2. İLK NOKTA KONTROLÜ (Sepete eklemeden hemen önce bakıyoruz)
+      // Eğer sepette henüz "gerçek" (starter olmayan) bir yer yoksa, bu eklediğimiz İLK yerdir.
       const hasRealItems = window.cart.some(it => !it._starter && !it._placeholder && it.name);
       const isFirstItem = !hasRealItems;
 
@@ -3324,6 +3324,7 @@ function attachMapClickAddMode(day) {
           if (placeInfo.address) {
              const parts = placeInfo.address.split(',');
              // Genellikle sondan 2. parça şehirdir (İlçe, Şehir, Ülke)
+             // Örn: "Kepez, Antalya, Turkey" -> Antalya (index: length-2)
              if (parts.length >= 2) {
                  cityName = parts[parts.length - 2].trim();
              } else {
@@ -3359,7 +3360,6 @@ function attachMapClickAddMode(day) {
   map.on('dblclick', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
-
 
 /* ================== END PATCH ================== */
 // Gün 1 için kullanılan global başlatıcıda da bayrağı set edin
