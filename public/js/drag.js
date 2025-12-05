@@ -29,6 +29,13 @@ function injectDragStyles() {
             pointer-events: none;
         }
 
+        /* --- YENİ KURAL: SÜRÜKLEME KAYNAĞI SİYAH BEYAZ OLSUN (UX) --- */
+        .travel-item.dragging-source {
+            filter: grayscale(100%);
+            opacity: 0.45; /* Hafifçe soluklaştır */
+            transition: opacity 0.2s, filter 0.2s; 
+        }
+
         /* --- CRITICAL FIX: BOŞ GÜNLER İÇİN ALAN --- */
         .day-list {
             min-height: 80px !important; 
@@ -96,8 +103,6 @@ let isMobile = false;
 
 // Offset değerleri
 let dragShiftX = 0, dragShiftY = 0;
-// YENİ: X eksenini sabitlemek için
-let ghostFixedLeft = 0; 
 
 let startX = 0, startY = 0;
 let longPressTimer;
@@ -181,9 +186,10 @@ function cleanupDrag() {
 
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
-        item.classList.remove('dragging-source');
+        item.classList.remove('dragging-source'); // <-- GRYSCALE KALKACAK
         item.classList.remove('shake-error');
         item.style.opacity = '';
+        item.style.removeProperty('filter'); // Safety: Filter'ı temizle
     });
     if (placeholder && placeholder.parentNode) placeholder.remove();
     placeholder = null;
@@ -200,11 +206,10 @@ function dragRenderLoop() {
     // 1. Scroll Hesapla ve Uygula
     handleAutoScroll(lastClientY);
 
-    // 2. Ghost Pozisyonunu Güncelle (Yatay Kilitli)
+    // 2. Ghost Pozisyonunu Güncelle 
     const ghost = document.querySelector('.drag-ghost');
     if (ghost) {
-        // X kilitli, Y takip ediyor
-        ghost.style.left = ghostFixedLeft + 'px';
+        ghost.style.left = (lastClientX - dragShiftX) + 'px';
         ghost.style.top = (lastClientY - dragShiftY) + 'px';
     }
 
@@ -259,11 +264,6 @@ function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
     
-    // --- YENİ: X SABİTLEME ---
-    ghostFixedLeft = rect.left;
-    dragShiftX = clientX - rect.left;
-    dragShiftY = clientY - rect.top; 
-
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
     
@@ -275,9 +275,9 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    // İlk pozisyon: Item'ın tam mevcut yeri
-    ghost.style.left = ghostFixedLeft + 'px';
-    ghost.style.top = (clientY - dragShiftY) + 'px'; // Y'yi tuttuğu yere ayarla
+    // Konumu ayarla (sol üste yapışmayı önler)
+    ghost.style.left = (clientX - dragShiftX) + 'px';
+    ghost.style.top = (clientY - dragShiftY) + 'px';
     
     document.body.appendChild(ghost);
 }
@@ -425,7 +425,7 @@ function startDrag(item, x, y) {
     document.body.style.minHeight = currentDocHeight + 'px';
 
     createDragGhost(item, x, y);
-    item.classList.add('dragging-source');
+    item.classList.add('dragging-source'); // <-- GRYSCALE BAŞLANGIÇ
     
     document.body.classList.add('hide-map-details');
     document.body.classList.add('dragging-active');
