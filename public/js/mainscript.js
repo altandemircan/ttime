@@ -4144,12 +4144,17 @@ cartDiv.appendChild(addNewDayButton);
   })();
 
   // === AI Info yerine Generate AI Info butonu ekle ===
+// mainscript.js -> updateCart içinde en sona yakın bir yere ekle/değiştir:
+
+// === AI Info Bölümü (Otomatik Fetch & Gösterim) ===
 (function(){
-  // AI kutusu veya buton zaten varsa tekrar ekleme
-  if (document.querySelector('.ai-info-section') || document.getElementById('generate-ai-info-btn')) return;
+  // Zaten ekranda varsa tekrar işlem yapma
+  if (document.querySelector('.ai-info-section')) return;
+  
   // Sepette en az 1 gerçek item olmalı
   if (!window.cart || window.cart.length === 0) return;
-  // İlk gerçek noktanın şehir bilgisini çek
+
+  // Şehir bilgisini bul (Address'ten veya selectedCity'den)
   let city = null;
   const first = window.cart.find(it =>
     it.location &&
@@ -4162,29 +4167,92 @@ cartDiv.appendChild(addNewDayButton);
       city = parts[parts.length - 2].trim();
     }
   }
-  if (!city) return;
+  if (!city && window.selectedCity) city = window.selectedCity;
+  if (!city) return; // Şehir yoksa AI çalışmaz
 
-  // AI bilgi kutusunun geleceği yere (trip_title'dan sonra) butonu koy
+  // Başlık elementini bul (bunun altına ekleyeceğiz)
   const tripTitleDiv = document.getElementById('trip_title');
   if (!tripTitleDiv) return;
 
-  // AI kutusu yerine buton
-  const btnDiv = document.createElement('div');
-  btnDiv.className = 'ai-info-section';
-  btnDiv.style = "text-align:center;margin:18px 0 18px 0;";
-  const btn = document.createElement('button');
-  btn.id = 'generate-ai-info-btn';
-  btn.textContent = 'Generate AI Info';
-  btn.style = "padding:10px 24px;font-size:17px;font-weight:600;border-radius:8px;border:1px solid #8a4af3;background:#fff;color:#8a4af3;cursor:pointer;box-shadow:0 1px 8px #e9e1fa;";
-  btn.onclick = async function() {
-    btn.disabled = true;
-    btn.textContent = 'Yükleniyor...';
-    // Butonun yerine AI info kutusunu ekle!
-    await insertTripAiInfo(null, null, city);
-    btnDiv.remove();
-  };
-  btnDiv.appendChild(btn);
-  tripTitleDiv.insertAdjacentElement('afterend', btnDiv);
+  // Ana Container oluştur
+  const container = document.createElement('div');
+  container.className = 'ai-info-section';
+  container.style = "margin: 18px 0; padding: 15px; background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 12px;";
+
+  // --- DURUM 1: Veri Zaten Varsa (Daha önce çekilmiş veya load edilmiş) ---
+  if (window.cart.aiData) {
+      renderAiContent(container, window.cart.aiData);
+      tripTitleDiv.insertAdjacentElement('afterend', container);
+      return; 
+  }
+
+  // --- DURUM 2: Veri Yoksa -> OTOMATİK LOADING BAŞLAT VE ÇEK ---
+  
+  // 1. Loading UI göster
+  container.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #666; padding: 10px;">
+        <svg width="24" height="24" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="16" fill="none" stroke="#8a4af3" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60">
+                <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"></animateTransform>
+            </circle>
+        </svg>
+        <span style="font-weight:500;">Creating AI Trip Info...</span>
+    </div>
+  `;
+  tripTitleDiv.insertAdjacentElement('afterend', container);
+
+  // 2. API İsteği Gönder
+  const startTime = Date.now();
+  fetch('/llm-proxy/plan-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ city: city })
+  })
+  .then(res => res.json())
+  .then(data => {
+      const elapsed = Date.now() - startTime;
+      
+      // Gelen veriyi objeye çevir
+      const aiData = {
+          summary: data.summary || "No summary available.",
+          tip: data.tip || "No tip available.",
+          highlight: data.highlight || "No highlight available.",
+          time: elapsed
+      };
+
+      // 3. Veriyi Kalıcı Olarak Kaydet
+      window.cart.aiData = aiData;
+      if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
+      // 4. İçeriği Güncelle (Loading silinir, içerik gelir)
+      renderAiContent(container, aiData);
+  })
+  .catch(err => {
+      console.error("AI Info Error:", err);
+      container.innerHTML = `
+        <div style="text-align:center; color:#d32f2f; padding:10px;">
+            ⚠️ Could not load AI info. 
+            <button onclick="this.closest('.ai-info-section').remove(); updateCart();" style="margin-left:10px; padding:4px 8px; cursor:pointer; border:1px solid #d32f2f; background:#fff; border-radius:4px;">Retry</button>
+        </div>`;
+  });
+
+  // HTML Render Helper (İçeriği basan fonksiyon)
+  function renderAiContent(targetDiv, data) {
+      targetDiv.innerHTML = `
+        <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between; margin-top:0; margin-bottom:10px; font-size:1.1rem; color:#333;">
+          <span>✨ AI Information</span>
+        </h3>
+        <div class="ai-info-content" style="line-height: 1.5; color:#444;">
+          <p style="margin-bottom:8px;"><b>🧳 Summary:</b> <span>${data.summary}</span></p>
+          <p style="margin-bottom:8px;"><b>👉 Tip:</b> <span>${data.tip}</span></p>
+          <p style="margin-bottom:8px;"><b>🔆 Highlight:</b> <span>${data.highlight}</span></p>
+        </div>
+        <div class="ai-info-time" style="opacity:.6;font-size:12px;text-align:right;margin-top:5px;">
+            ⏱️ Generated in ${data.time} ms
+        </div>
+      `;
+  }
+
 })();
 
  
