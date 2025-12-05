@@ -6512,7 +6512,7 @@ async function expandMap(containerId, day) {
   if (window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
-}
+} 
 function restoreMap(containerId, day) {
     // containerId'den expandedData'yı bulmaya çalış, yoksa day üzerinden manuel temizlik yap
     const expandedData = window.expandedMaps?.[containerId];
