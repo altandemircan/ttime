@@ -5272,6 +5272,8 @@ async function getPlaceInfoFromLatLng(lat, lng) {
   };
 }
 
+
+
 function toggleContent(arrowIcon) {
     const cartItem = arrowIcon.closest('.cart-item');
     if (!cartItem) return;
