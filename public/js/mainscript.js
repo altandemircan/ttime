@@ -5944,11 +5944,7 @@ function openMapLibre3D(expandedMap) {
   // 2D Harita Container'ı ve Ana Taşıyıcıyı Bul
   let mapDiv = expandedMap.getContainer();
   let container = mapDiv.parentNode; // expanded-map-container
-  let panelDiv = container.querySelector('.expanded-map-panel'); 
-
-  // Leaflet attribution'ı gizle
-  const leafletAttr = container.querySelector('.leaflet-control-attribution');
-  if (leafletAttr) leafletAttr.style.display = 'none';
+  let panelDiv = container.querySelector('.expanded-map-panel'); // Alttaki Grafik Paneli
 
   let maplibre3d = document.getElementById('maplibre-3d-view');
   
@@ -5956,22 +5952,20 @@ function openMapLibre3D(expandedMap) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
     
-    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:1; background:#eef0f5;';
+    // --- DÜZELTME BURADA ---
+    // Absolute position yerine Relative yapıyoruz ve yüksekliği 480px (2D harita ile aynı) veriyoruz.
+    // Böylece alttaki paneli ezmiyor, onun üstüne yerleşiyor.
+    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:10000; background:#eef0f5;';
     
-    // Harita div'inin (mapDiv) bulunduğu yere ekliyoruz.
-    // expandMap'te mapDiv'i panelDiv'den ÖNCE ekledik.
-    // maplibre3d'yi de panelDiv'den önce (yani mapDiv'in yerine) eklersek sorun çözülür.
+    // Panelin hemen öncesine ekle (Panel altta kalsın)
     if (panelDiv) {
         container.insertBefore(maplibre3d, panelDiv);
     } else {
         container.appendChild(maplibre3d);
     }
-  } else {
-      maplibre3d.style.display = 'block';
-      maplibre3d.style.height = '480px';
-      maplibre3d.style.zIndex = '1';
   }
   
+  maplibre3d.style.display = 'block';
   maplibre3d.innerHTML = '';
 
   const day = window.currentDay || 1;
@@ -6008,7 +6002,7 @@ function openMapLibre3D(expandedMap) {
 
   if (hasBounds) {
       mapOptions.bounds = bounds;
-      mapOptions.fitBoundsOptions = { padding: { top: 60, bottom: 60, left: 60, right: 60 } };
+      mapOptions.fitBoundsOptions = { padding: { top: 40, bottom: 40, left: 40, right: 40 } };
   } else {
       mapOptions.center = expandedMap.getCenter();
       mapOptions.zoom = expandedMap.getZoom();
@@ -6016,7 +6010,7 @@ function openMapLibre3D(expandedMap) {
 
   window._maplibre3DInstance = new maplibregl.Map(mapOptions);
 
-  // Pusula
+  // Pusula Senkronizasyonu
   window._maplibre3DInstance.on('rotate', () => {
       const bearing = window._maplibre3DInstance.getBearing();
       const compassDisc = document.querySelector(`#custom-compass-btn-${day} .custom-compass-disc`);
@@ -6087,14 +6081,26 @@ async function expandMap(containerId, day) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
       style.innerHTML = `
-        .map-custom-controls { position: absolute; bottom: 235px; right: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 10001; }
-        .map-ctrl-btn { width: 44px; height: 44px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; padding: 0; color: #555; }
+        .map-custom-controls {
+            position: absolute;
+            bottom: 235px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10001; 
+        }
+        .map-ctrl-btn {
+            width: 44px; height: 44px; background: #ffffff; border: 1px solid #e0e0e0;
+            border-radius: 10px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
+            padding: 0; color: #555;
+        }
         .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
         .map-ctrl-btn.zoom-text { font-size: 26px; font-weight: 300; line-height: 1; color: #666; padding-bottom: 2px; }
         .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
-        
         .expanded-map-header { position: absolute; top: 15px; left: 15px; z-index: 10001; display: flex; align-items: center; gap: 15px; }
         .map-layers-row { display: flex; gap: 8px; background: rgba(255, 255, 255, 0.85); padding: 6px; border-radius: 12px; backdrop-filter: blur(4px); border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 13px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
@@ -6103,15 +6109,26 @@ async function expandMap(containerId, day) {
         .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
         .map-type-option.selected img { opacity: 1; }
         
-        .maplibregl-ctrl-bottom-left { bottom: 30px !important; left: 20px !important; z-index: 20000 !important; pointer-events: none; }
-        .maplibregl-ctrl-scale { background-color: rgba(255, 255, 255, 0.9) !important; border: 1px solid #e0e0e0 !important; border-radius: 6px !important; padding: 2px 8px !important; color: #555 !important; font-size: 11px !important; font-weight: 600 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; border-top: 1px solid #e0e0e0 !important; height: auto !important; line-height: 1.4 !important; pointer-events: auto; }
-
-        .expanded-map-panel {
-            position: relative;
-            z-index: 20; 
-            background: #fff;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            padding-top: 5px;
+        /* 3D MAP SCALE BAR STİLİ */
+        .maplibregl-ctrl-bottom-left {
+            bottom: 30px !important; 
+            left: 20px !important;
+            z-index: 20000 !important; 
+            pointer-events: none;
+        }
+        .maplibregl-ctrl-scale {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            padding: 2px 8px !important;
+            color: #555 !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+            border-top: 1px solid #e0e0e0 !important;
+            height: auto !important;
+            line-height: 1.4 !important;
+            pointer-events: auto;
         }
       `;
       document.head.appendChild(style);
@@ -6185,25 +6202,24 @@ async function expandMap(containerId, day) {
 
       const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
-      const leafletAttr = expandedContainer.querySelector('.leaflet-control-attribution');
 
       if (opt.value === 'liberty') {
         // --- 3D MOD ---
         expandedMapInstance.getContainer().style.display = "none";
         
-        if (leafletAttr) leafletAttr.style.display = 'none';
-        // Panel her zaman görünür kalsın
-        if (panelDiv) panelDiv.style.display = "block"; 
+        // --- DÜZELTME: panelDiv.style.display SATIRI SİLİNDİ ---
+        // Panelin görünürlüğü tamamen senin CSS'ine kalmış durumda.
+        
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
         // --- 2D MOD ---
         expandedMapInstance.getContainer().style.display = "";
-        
-        if (leafletAttr) leafletAttr.style.display = 'block';
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) map3d.style.display = "none";
-        if (panelDiv) panelDiv.style.display = "block"; 
+        
+        // --- DÜZELTME: panelDiv.style.display SATIRI SİLİNDİ ---
+        
         if (compassBtn) compassBtn.style.display = 'none';
         setExpandedMapTile(opt.value);
       }
@@ -6290,17 +6306,7 @@ async function expandMap(containerId, day) {
   controlsDiv.appendChild(locBtn);
   expandedContainer.appendChild(controlsDiv);
 
-  // --- DÜZELTME: SIRALAMA DEĞİŞTİ ---
-  // Önce Harita DOM'u oluşturulup ekleniyor
-  const mapDivId = `${containerId}-expanded`;
-  const mapDiv = document.createElement('div');
-  mapDiv.id = mapDivId;
-  mapDiv.className = 'expanded-map';
-  mapDiv.style.width = "100%";
-  mapDiv.style.height = "480px"; 
-  expandedContainer.appendChild(mapDiv); // 1. Harita
-
-  // Sonra Panel ve Scale Bar ekleniyor (Böylece Panel haritanın altında kalır)
+  // Scale Bar ve Panel
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
   const scaleBarDiv = document.createElement('div');
@@ -6311,8 +6317,7 @@ async function expandMap(containerId, day) {
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   panelDiv.appendChild(scaleBarDiv);
-  expandedContainer.appendChild(panelDiv); // 2. Panel (Grafik)
-  // ----------------------------------
+  expandedContainer.appendChild(panelDiv);
 
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-expanded-map';
@@ -6320,8 +6325,17 @@ async function expandMap(containerId, day) {
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
 
+  const mapDivId = `${containerId}-expanded`;
+  const mapDiv = document.createElement('div');
+  mapDiv.id = mapDivId;
+  mapDiv.className = 'expanded-map';
+  expandedContainer.appendChild(mapDiv);
   document.body.appendChild(expandedContainer);
  
+  // 2D Harita yüksekliği
+  mapDiv.style.width = "100%";
+  mapDiv.style.height = "480px"; 
+
   showRouteInfoBanner(day);
 
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
