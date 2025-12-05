@@ -3004,43 +3004,40 @@ function initEmptyDayMap(day) {
   const containerId = `route-map-day${day}`;
   let el = document.getElementById(containerId);
 
-  // Eğer container yoksa oluştur
   if (!el) {
     el = ensureDayMapContainer(day);
     if (!el) return;
   }
 
-  // --- 1. TEMİZLİK: DOM Üzerindeki Leaflet ID'sini Kontrol Et ---
-  // "Map container is already initialized" hatasının kesin çözümü budur.
-  if (el && el._leaflet_id) {
-      // Eğer bu elementte daha önce harita kurulmuşsa, Leaflet instance'ını bulup yok etmeliyiz
-      if (window.leafletMaps && window.leafletMaps[containerId]) {
-          window.leafletMaps[containerId].remove();
-          delete window.leafletMaps[containerId];
-      } else {
-          // Global listede yoksa bile DOM'u temizle
-          el._leaflet_id = null;
-          el.innerHTML = ''; 
-      }
+  // Leaflet kütüphanesi henüz yüklenmediyse bekle
+  if (typeof L === 'undefined') {
+    setTimeout(() => initEmptyDayMap(day), 60);
+    return;
   }
 
-  // Global listede kalmış hayalet harita varsa onu da sil
-  if (window.leafletMaps && window.leafletMaps[containerId]) {
-    try { window.leafletMaps[containerId].remove(); } catch(e){}
+  // Zaten harita varsa ve container içindeyse çık
+  const existingMap = window.leafletMaps && window.leafletMaps[containerId];
+  const hasInner = el.querySelector('.leaflet-container');
+  if (existingMap && hasInner) return;
+  
+  // Harita var ama container uçmuşsa temizle
+  if (existingMap && !hasInner) {
+    try { existingMap.remove(); } catch(_) {}
     delete window.leafletMaps[containerId];
   }
-  // ------------------------------------------------------------
 
   if (!el.style.height) el.style.height = '285px';
+  // [FIX] Yükleme sırasında gri ekran yerine harita zemin rengi
   el.style.backgroundColor = "#eef0f5"; 
   
-  // Konum belirleme
+  // --- KONUM BELİRLEME MANTIĞI ---
   const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
   
-  let startCenter = [39.0, 35.0]; 
+  let startCenter = [39.0, 35.0]; // Varsayılan Türkiye
   let startZoom = 5;
   let startBounds = null;
+  let hasFocus = false;
 
   if (validPts.length > 0) {
       if (validPts.length === 1) {
@@ -3051,9 +3048,19 @@ function initEmptyDayMap(day) {
           startCenter = startBounds.getCenter();
           startZoom = 10;
       }
+      hasFocus = true;
   } 
+  else if (day > 1 && typeof getDayPoints === 'function') {
+      const prevPoints = getDayPoints(day - 1);
+      const validPrevPts = prevPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
+      if (validPrevPts.length > 0) {
+          const lastPt = validPrevPts[validPrevPts.length - 1];
+          startCenter = [lastPt.lat, lastPt.lng];
+          startZoom = 12; 
+          hasFocus = true;
+      }
+  }
 
-  // Haritayı Başlat
   const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
@@ -3067,40 +3074,36 @@ function initEmptyDayMap(day) {
       map.fitBounds(startBounds, { padding: [20, 20], animate: false });
   }
   
-  // --- 2. KATMAN EKLEME (Hata Koruma) ---
-  const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
-  
-  try {
-      // MapLibre varsa onu kullan, yoksa veya hata verirse standart TileLayer kullan
-      if (typeof L.maplibreGL === 'function' && typeof maplibregl !== 'undefined') {
-          const glLayer = L.maplibreGL({
-              style: openFreeMapStyle,
-              attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
-              interactive: true
+  if (!hasFocus && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+      if (currentPts.length === 0) {
+          map.whenReady(function() {
+            try {
+               map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: false });
+            } catch(e) {}
           });
-          
-          // Hata yakalama
-          glLayer.on('error', function() {
-             console.warn("MapLibre layer error, switching to fallback.");
-             map.removeLayer(glLayer);
-             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-          });
-
-          glLayer.addTo(map);
-      } else {
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-          }).addTo(map);
       }
-  } catch (e) {
-      console.warn("Map init error:", e);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    }, function(err) {}, { timeout: 3000 });
+  }
+
+  // --- [FIX] OSM YERİNE OPENFREEMAP ---
+  const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
+  if (typeof L.maplibreGL === 'function') {
+      L.maplibreGL({
+          style: openFreeMapStyle,
+          attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+          interactive: true
+      }).addTo(map);
+  } else {
+      // Sadece kütüphane yüklenemediyse OSM fallback
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
   }
   // ------------------------------------
   
-  map.zoomControl.setPosition('topright');
-
   if (!map._initialView) {
     map._initialView = {
       center: map.getCenter(),
