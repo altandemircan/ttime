@@ -3397,7 +3397,7 @@ function attachMapClickAddMode(day) {
   const map = window.leafletMaps[containerId];
   if (!map) return;
 
-  // Event'in tekrar tekrar bağlanmasını önle
+  // Event çakışmasını önle
   map.__tt_clickAddBound = map.__tt_clickAddBound || {};
   if (map.__tt_clickAddBound[day]) return;
   map.__tt_clickAddBound[day] = true;
@@ -3414,19 +3414,19 @@ function attachMapClickAddMode(day) {
 
       const { lat, lng } = e.latlng;
 
-      // 2. İLK NOKTA MI? (Henüz sepete eklemeden kontrol ediyoruz)
-      // Eğer sepette 'name' alanı olan ve starter/placeholder olmayan bir şey yoksa, bu İLK noktadır.
-      const hasRealItems = window.cart.some(it => !it._starter && !it._placeholder && it.name);
-      const isFirstItem = !hasRealItems;
+      // 2. İLK NOKTA MI? (Henüz ekleme yapmadan önce sepete bakıyoruz)
+      // Starter (başlangıç notu) ve placeholder haricinde gerçek mekan var mı?
+      const existingRealItems = window.cart.filter(it => !it._starter && !it._placeholder && it.name);
+      const isFirstItem = (existingRealItems.length === 0);
 
-      // Adres verisi çek
+      // Adres verisi çek (Reverse Geocode)
       let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
         if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
 
-      // Duplicate engelleme
+      // Duplicate (çift ekleme) engelleme
       const dup = window.cart.some(it =>
         it.day === day &&
         it.location &&
@@ -3435,13 +3435,13 @@ function attachMapClickAddMode(day) {
       );
       if (dup) return;
 
-      // Görsel bul (Placeholder dönse bile devam et)
+      // Görsel bulmaya çalış
       let imageUrl = 'img/placeholder.png';
       try {
         imageUrl = await getImageForPlace(placeInfo.name || 'New Point', 'Place', window.selectedCity || '');
       } catch(_) {}
 
-      // Varsa boş 'Start' kartını temizle
+      // Varsa boş "Start" kartını temizle
       window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 
       // Öğeyi oluştur
@@ -3458,7 +3458,7 @@ function attachMapClickAddMode(day) {
       // Sepete ekle
       window.cart.push(markerItem);
 
-      // --- HARİTAYI VE KONTROLLERİ GÖRÜNÜR YAP (Mevcut yapıyı koruyarak) ---
+      // --- HARİTAYI GÖRÜNÜR YAPMA (GİZLENMESİNİ ENGELLE) ---
       if (window.__suppressMiniUntilFirstPoint) window.__suppressMiniUntilFirstPoint[day] = false;
       if (window.__hideAddCatBtnByDay) window.__hideAddCatBtnByDay[day] = false;
 
@@ -3471,12 +3471,11 @@ function attachMapClickAddMode(day) {
       // Alt kontrolleri aç
       const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
       if (controlsWrapper) controlsWrapper.style.display = 'block';
-      // -----------------------------------------------------------------------
 
-      // Arayüzü güncelle (Kart eklensin)
+      // Arayüzü güncelle (Sepet listesi oluşsun)
       if (typeof updateCart === "function") updateCart();
 
-      // Marker'ı haritaya koy
+      // Marker koy
       const marker = L.circleMarker([lat, lng], {
         radius: 7, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
       }).addTo(map).bindPopup(`<b>${placeInfo.name || 'Point'}</b>`);
@@ -3490,32 +3489,41 @@ function attachMapClickAddMode(day) {
         setTimeout(() => renderRouteForDay(day), 100);
       }
 
-      // --- [ÖNEMLİ] AI INFORMATION TETİKLEME ---
-      // Sadece İLK nokta eklendiğinde çalışır.
+      // --- 3. AI TETİKLEME (SADECE İLK NOKTADA) ---
       if (isFirstItem) {
-          console.log("Start with Map: İlk nokta eklendi. AI bilgisi getiriliyor...", placeInfo);
+          console.log("Start with Map: İlk nokta eklendi, AI hazırlanıyor...", placeInfo);
           
-          // 1. Konum bilgisini belirle (Adres > İsim > Koordinat)
-          const locationContext = placeInfo.address || placeInfo.name;
-          const cityName = (placeInfo.address || "").split(',').pop().trim() || placeInfo.name;
+          // Konum metnini belirle
+          // placeInfo.name: "Sultanahmet Camii" gibi spesifik yer
+          // placeInfo.address: "Binbirdirek, Fatih/İstanbul" gibi adres
+          const locationContext = placeInfo.name || placeInfo.address || "Selected Location";
+          
+          // Başlık için sadece şehir/bölge adını almaya çalışalım
+          // Adres genellikle virgüllerle ayrılır, son kısımlar şehir/ülkedir.
+          let simpleName = placeInfo.name;
+          if(!simpleName && placeInfo.address) {
+             const parts = placeInfo.address.split(',');
+             simpleName = parts.length > 1 ? parts[parts.length - 2] : parts[0]; 
+          }
 
-          // 2. Global değişkenleri güncelle (Sistem buraya göre çalışır)
+          // Global değişkenleri güncelle
           window.selectedCity = locationContext;
-          window.lastUserQuery = "Trip to " + cityName;
+          window.lastUserQuery = "Trip to " + simpleName;
           
-          // 3. Başlığı güncelle
-          const titleEl = document.getElementById("trip_title");
-          if (titleEl) titleEl.textContent = window.lastUserQuery;
+          // Başlığı UI'da güncelle
+          const tEl = document.getElementById("trip_title");
+          if(tEl) tEl.textContent = window.lastUserQuery;
 
-          // 4. AI fonksiyonunu çağır (UI otursun diye ufak gecikmeli)
+          // AI Fonksiyonunu Çağır
+          // setTimeout kullanıyoruz ki UI render işlemi bitsin ve AI kutusu doğru yere eklensin
           setTimeout(() => {
               if (typeof window.insertTripAiInfo === "function") {
-                  // false: animasyon kapalı, null: static data yok, locationContext: aranacak yer
+                  // false: animasyon yok, null: static data yok, locationContext: aranacak yer
+                  // locationContext'i gönderiyoruz ki AI ne hakkında konuşacağını bilsin
                   window.insertTripAiInfo(false, null, locationContext);
               }
-          }, 250);
+          }, 200);
       }
-      // -----------------------------------------
 
     }, SINGLE_CLICK_DELAY);
   });
