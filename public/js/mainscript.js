@@ -3501,59 +3501,55 @@ function attachMapClickAddMode(day) {
   });
 }
 
+// mainscript.js -> window.insertTripAiInfo fonksiyonunu bununla değiştir:
+
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
     // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     
+    // Konumlandırma Hedefini Bul (Trip Title)
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şu anki geçerli şehri belirle
-    let currentCity = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+    // Şehir bilgisini belirle
+    let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     
-    // Şehir yoksa ve statik veri de yoksa çık
-    if (!currentCity && !aiStaticInfo) return;
+    // Şehir yoksa ve kayıtlı veri de yoksa çık
+    if (!city && !aiStaticInfo) return;
 
-    // --- ŞEHİR EŞLEŞME KONTROLÜ (Critical Fix) ---
-    // Eğer kayıtlı veri varsa ama bu veri başka bir şehre aitse, o veriyi yok say!
-    if (aiStaticInfo && aiStaticInfo.city) {
-        // Basit bir normalizasyon ile karşılaştır (büyük/küçük harf duyarsız)
-        const savedCityNorm = aiStaticInfo.city.toLowerCase().trim();
-        const currentCityNorm = currentCity.toLowerCase().trim();
-        
-        // Eğer şehirler uyuşmuyorsa staticInfo'yu iptal et, yeniden çeksin.
-        if (savedCityNorm !== currentCityNorm && currentCityNorm.length > 0) {
-            console.log(`AI Info mismatch: Saved for ${aiStaticInfo.city}, but current is ${currentCity}. Refreshing...`);
-            aiStaticInfo = null; 
-        }
-    }
-    // ---------------------------------------------
-
-    // HTML İskeleti
+    // --- HTML İSKELETİ OLUŞTUR ---
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
+    // Eski butonun stiline benzer bir margin verelim ki arada sıkışmasın
+    aiDiv.style.cssText = "margin: 10px 0 20px 0; background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; padding: 15px;";
+    
     aiDiv.innerHTML = `
-    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>AI Information</span>
+    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;margin-top:0;margin-bottom:10px;font-size:1.1rem;color:#333;">
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">✨</span> AI Information
+      </span>
       <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
         <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;">
-            <circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60">
+            <circle cx="20" cy="20" r="16" fill="none" stroke="#8a4af3" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60">
                 <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/>
             </circle>
         </svg>
       </span>
     </h3>
-    <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
-      <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
-      <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
-      <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
+    <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.3s ease, opacity 0.3s ease; color:#444; line-height:1.5;">
+      <p style="margin-bottom:8px;"><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
+      <p style="margin-bottom:8px;"><b>👉 Tip:</b> <span id="ai-tip"></span></p>
+      <p style="margin-bottom:8px;"><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
     </div>
-    <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
+    <div class="ai-info-time" style="opacity:.6;font-size:11px;text-align:right;margin-top:8px;"></div>
     `;
     
+    // --- YERLEŞTİRME (CRITICAL) ---
+    // Trip Title'dan HEMEN SONRA (Day 1'in üstüne)
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
+    // Element Referansları
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
@@ -3561,7 +3557,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
     
-    // Yardımcı: İçeriği ekrana bas
+    // İçerik Doldurma Yardımcısı
     function populateAndShow(data, timeElapsed = null) {
         if (aiSpinner) aiSpinner.style.display = "none";
         
@@ -3570,36 +3566,52 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
-            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
-            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
+            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 5px;display:flex;align-items:center;";
+            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:16px;height:16px;transition:transform 0.2s;">`;
             header.appendChild(btn);
 
             const aiIcon = btn.querySelector('.arrow-icon');
             let expanded = true;
-            btn.addEventListener('click', function(e) {
+            
+            // Header'a tıklayınca da açılsın/kapansın (daha iyi UX)
+            header.style.cursor = "pointer";
+            header.onclick = function(e) {
+                // Eğer butona tıklandıysa event zaten oradan gelir, ama header click'i de kapsayalım
+                if (e.target.closest('button')) return;
+                toggleAccordion();
+            };
+
+            btn.onclick = function(e) {
                 e.stopPropagation();
+                toggleAccordion();
+            };
+
+            function toggleAccordion() {
                 expanded = !expanded;
                 if (expanded) {
                     aiContent.style.maxHeight = "1200px";
                     aiContent.style.opacity = "1";
                     aiIcon.classList.add('open');
+                    aiIcon.style.transform = "rotate(90deg)";
                 } else {
                     aiContent.style.maxHeight = "0";
                     aiContent.style.opacity = "0";
                     aiIcon.classList.remove('open');
+                    aiIcon.style.transform = "rotate(0deg)";
                 }
-            });
-            if (aiIcon) aiIcon.classList.add('open');
+            }
+            // İlk açılış durumu
+            aiIcon.classList.add('open');
+            aiIcon.style.transform = "rotate(90deg)";
         }
 
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
 
-        // Typewriter efekti sadece yeni veri geliyorsa çalışsın
-        if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
-             typeWriterEffect(aiSummary, data.summary || "Info not available.", 18, function() {
-                typeWriterEffect(aiTip, data.tip || "Info not available.", 18, function() {
-                    typeWriterEffect(aiHighlight, data.highlight || "Info not available.", 18);
+        if (typeof window.typeWriterEffect === 'function' && !aiStaticInfo) {
+             window.typeWriterEffect(aiSummary, data.summary || "Info not available.", 18, function() {
+                window.typeWriterEffect(aiTip, data.tip || "Info not available.", 18, function() {
+                    window.typeWriterEffect(aiHighlight, data.highlight || "Info not available.", 18);
                 });
             });
         } else {
@@ -3615,7 +3627,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         }
     }
 
-    // === SENARYO 1: DOĞRULANMIŞ KAYITLI VERİ VAR ===
+    // === SENARYO 1: HAZIR VERİ VAR ===
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo);
         return;
@@ -3624,32 +3636,36 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     // === SENARYO 2: API'YE GİT (Otomatik) ===
     let t0 = performance.now();
     try {
+        // Eğer seçili şehir yoksa (Start with map durumu), en azından 'location' bulmaya çalış
+        if (!city && window.cart && window.cart.length > 0) {
+             const firstItem = window.cart.find(i => i.location);
+             if (firstItem && firstItem.location) {
+                 // Koordinattan şehir bulma (opsiyonel, şimdilik boş geçiyoruz)
+                 // city = ...
+             }
+        }
+
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city: currentCity, country })
+            body: JSON.stringify({ city: city, country: country })
         });
 
         const ollamaData = await resp.json();
         
-        let elapsed = Math.round(performance.now() - t0);
-
-        // Veriyi hazırla ve ŞEHRİ DE İÇİNE YAZ
         const aiData = {
-            city: currentCity, // <-- Şehri mühürle
             summary: ollamaData.summary || "Info not available.",
             tip: ollamaData.tip || "Info not available.",
-            highlight: ollamaData.highlight || "Info not available.",
-            time: elapsed
+            highlight: ollamaData.highlight || "Info not available."
         };
 
-        // Kaydet
         window.cart.aiData = aiData; 
         window.lastTripAIInfo = aiData;
         if (typeof saveCurrentTripToStorage === "function") {
-            saveCurrentTripToStorage();
+            saveCurrentTripToStorage(); 
         }
 
+        let elapsed = Math.round(performance.now() - t0);
         populateAndShow(aiData, elapsed);
 
     } catch (e) {
