@@ -3242,28 +3242,27 @@ function attachMapClickAddMode(day) {
 
       const { lat, lng } = e.latlng;
 
-      // 2. İLK NOKTA MI? (Sepete eklemeden hemen önce bakıyoruz)
-      const hasRealItems = window.cart.some(it => !it._starter && !it._placeholder && it.name);
-      const isFirstItem = !hasRealItems;
+      // 2. İLK NOKTA MI? (Sepete eklemeden kontrol)
+      const existingRealItems = window.cart.filter(it => !it._starter && !it._placeholder && it.name);
+      const isFirstItem = (existingRealItems.length === 0);
 
-      // 3. ADRESİ ÖNCE ÇEK (Sıralama değişikliği burada başlıyor)
+      // 3. ADRESİ ÖNCE ÇEK (Bekle)
       let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
         if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
 
-      // 4. KRİTİK ADIM: EĞER İLK NOKTAYSA, GLOBALLERİ ŞİMDİ GÜNCELLE
-      // updateCart çağrılmadan ÖNCE bunu yapmalıyız ki, updateCart içindeki AI fonksiyonu şehri görebilsin.
+      // 4. KRİTİK ADIM: EĞER İLK TIKLAMAYSA, ŞEHRİ ŞİMDİ GÜNCELLE
+      // updateCart() birazdan çalışacak ve bu veriyi kullanarak AI oluşturacak.
       if (isFirstItem) {
-          console.log("Start with Map: İlk nokta algılandı. Şehir ayarlanıyor...", placeInfo);
+          console.log("Start with Map: İlk nokta. Şehir ayarlanıyor...", placeInfo);
           
           let cityName = placeInfo.name; 
-          // Adresten şehri ayıkla (Örn: "Kepez, Antalya, Turkey" -> "Antalya")
+          // Adresten şehri ayıkla (Örn: "..., Antalya, Turkey" -> "Antalya")
           if (placeInfo.address) {
              const parts = placeInfo.address.split(',');
              if (parts.length >= 2) {
-                 // Genellikle sondan 2. parça şehirdir
                  cityName = parts[parts.length - 2].trim();
              } else {
                  cityName = parts[0].trim();
@@ -3276,13 +3275,10 @@ function attachMapClickAddMode(day) {
           
           // Başlığı güncelle
           const tEl = document.getElementById("trip_title");
-          if(tEl) {
-              tEl.textContent = window.lastUserQuery;
-              tEl.style.display = 'block';
-          }
+          if(tEl) tEl.textContent = window.lastUserQuery;
       }
 
-      // Duplicate engelleme
+      // Duplicate kontrolü
       const dup = window.cart.some(it =>
         it.day === day &&
         it.location &&
@@ -3297,10 +3293,10 @@ function attachMapClickAddMode(day) {
         imageUrl = await getImageForPlace(placeInfo.name || 'New Point', 'Place', window.selectedCity || '');
       } catch(_) {}
 
-      // Varsa boş 'Start' kartını temizle
+      // Start kartını sil
       window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 
-      // Öğeyi oluştur ve sepete ekle
+      // Sepete ekle
       const markerItem = {
         name: placeInfo.name || "Point",
         image: imageUrl,
@@ -3312,7 +3308,7 @@ function attachMapClickAddMode(day) {
       };
       window.cart.push(markerItem);
 
-      // --- HARİTAYI GÖRÜNÜR TUT ---
+      // Harita görünürlük ayarları
       if (window.__suppressMiniUntilFirstPoint) window.__suppressMiniUntilFirstPoint[day] = false;
       if (window.__hideAddCatBtnByDay) window.__hideAddCatBtnByDay[day] = false;
 
@@ -3324,7 +3320,8 @@ function attachMapClickAddMode(day) {
       const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
       if (controlsWrapper) controlsWrapper.style.display = 'block';
 
-      // 5. UPDATE CART (Artık window.selectedCity dolu olduğu için AI çalışacak)
+      // 5. UPDATE CART
+      // Artık window.selectedCity dolu olduğu için, updateCart içindeki AI kodu çalışacak.
       if (typeof updateCart === "function") updateCart();
 
       // Marker koy
@@ -3336,7 +3333,7 @@ function attachMapClickAddMode(day) {
       window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
       window.mapPlanningMarkersByDay[day].push(marker);
 
-      // Rotayı çiz
+      // Rota çiz
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 100);
       }
