@@ -3471,7 +3471,6 @@ function attachMapClickAddMode(day) {
   map.on('dblclick', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
-
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
     // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
@@ -3479,21 +3478,18 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehri belirle
+    // Şehir bilgisini al
     let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     
+    // Şehir yoksa ve statik veri de yoksa çık
     if (!city && !aiStaticInfo) return;
 
-    // --- TEMİZLEME FONKSİYONU (Tek sefer çalışır) ---
+    // --- TEMİZLEME FONKSİYONU (Robot ikonunu siler) ---
     function cleanText(text) {
         if (!text) return "";
-        // Robot ikonunu, 'AI:' öneki, markdown yıldızlarını ve fazlalık boşlukları temizle
-        return text
-            .replace(/🤖/g, '')      // Robot ikonunu sil
-            .replace(/^AI:\s*/i, '') // "AI:" ile başlıyorsa sil
-            .replace(/\*\*/g, '')    // Markdown kalınlaştırma yıldızlarını sil (isteğe bağlı)
-            .trim();
+        // 🤖 ikonunu ve gereksiz boşlukları temizle
+        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
     }
 
     // HTML İskeleti
@@ -3527,11 +3523,11 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
     
-    // Yardımcı: İçeriği göster
-    function populateAndShow(summaryVal, tipVal, highlightVal, timeText) {
+    // İçerik Gösterme Yardımcısı
+    function populateAndShow(data, timeElapsed = null) {
         if (aiSpinner) aiSpinner.style.display = "none";
         
-        // Toggle butonu ekle
+        // Aç/Kapa butonu ekle (yoksa)
         const header = aiDiv.querySelector('#ai-toggle-header');
         if (!header.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
@@ -3559,59 +3555,57 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             if (aiIcon) aiIcon.classList.add('open');
         }
 
-        aiContent.style.maxHeight = "1200px"; // İçeriğin kesilmemesi için yüksek değer
+        aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
 
-        // Verileri temizle
-        const cleanSum = cleanText(summaryVal);
-        const cleanTip = cleanText(tipVal);
-        const cleanHigh = cleanText(highlightVal);
+        // --- ROBOT İKONU TEMİZLİĞİ BURADA YAPILIYOR ---
+        const txtSummary = cleanText(data.summary) || "Info not available.";
+        const txtTip = cleanText(data.tip) || "Info not available.";
+        const txtHighlight = cleanText(data.highlight) || "Info not available.";
 
-        // Eğer typewriter fonksiyonu varsa kullan, yoksa direkt yaz
         if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
-             typeWriterEffect(aiSummary, cleanSum || "Info not available.", 20, function() {
-                typeWriterEffect(aiTip, cleanTip || "Info not available.", 20, function() {
-                    typeWriterEffect(aiHighlight, cleanHigh || "Info not available.", 20);
+             typeWriterEffect(aiSummary, txtSummary, 18, function() {
+                typeWriterEffect(aiTip, txtTip, 18, function() {
+                    typeWriterEffect(aiHighlight, txtHighlight, 18);
                 });
             });
         } else {
-            aiSummary.textContent = cleanSum || "Info not available.";
-            aiTip.textContent = cleanTip || "Info not available.";
-            aiHighlight.textContent = cleanHigh || "Info not available.";
+            aiSummary.textContent = txtSummary;
+            aiTip.textContent = txtTip;
+            aiHighlight.textContent = txtHighlight;
         }
 
-        if (aiTime) aiTime.textContent = timeText || "";
+        if (timeElapsed) {
+            aiTime.textContent = `⏱️ Generated in ${timeElapsed} ms`;
+        } else {
+            aiTime.textContent = "";
+        }
     }
 
-    // === 1) KAYITLI VERİ VARSA ===
+    // === SENARYO 1: KAYITLI VERİ VAR ===
     if (aiStaticInfo) {
-        populateAndShow(
-            aiStaticInfo.summary,
-            aiStaticInfo.tip,
-            aiStaticInfo.highlight,
-            ""
-        );
+        populateAndShow(aiStaticInfo);
         return;
     }
 
-    // === 2) API'YE GİT ===
+    // === SENARYO 2: API'YE GİT ===
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city: currentCity, country })
+            body: JSON.stringify({ city, country })
         });
 
         const ollamaData = await resp.json();
         let elapsed = Math.round(performance.now() - t0);
 
-        // Veriyi alırken temizle ve öyle kaydet
+        // Veriyi alırken temizlemiyoruz, ekrana basarken cleanText ile temizliyoruz.
         const aiData = {
-            city: currentCity,
-            summary: cleanText(ollamaData.summary),
-            tip: cleanText(ollamaData.tip),
-            highlight: cleanText(ollamaData.highlight),
+            city: city,
+            summary: ollamaData.summary,
+            tip: ollamaData.tip,
+            highlight: ollamaData.highlight,
             time: elapsed
         };
 
@@ -3623,7 +3617,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             saveCurrentTripToStorage();
         }
 
-        populateAndShow(aiData.summary, aiData.tip, aiData.highlight, `⏱️ Generated in ${elapsed} ms`);
+        populateAndShow(aiData, elapsed);
 
     } catch (e) {
         console.error("AI Error:", e);
