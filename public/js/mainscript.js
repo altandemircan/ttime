@@ -3242,41 +3242,42 @@ function attachMapClickAddMode(day) {
 
       const { lat, lng } = e.latlng;
 
-      // 2. İLK NOKTA MI? (Sepete eklemeden kontrol)
+      // 2. İLK NOKTA KONTROLÜ (Henüz eklemeden bakıyoruz)
       const existingRealItems = window.cart.filter(it => !it._starter && !it._placeholder && it.name);
       const isFirstItem = (existingRealItems.length === 0);
 
-      // 3. ADRESİ ÖNCE ÇEK (Bekle)
+      // 3. ADRESİ ÇEK (Await ile bekle, çünkü şehir ismi lazım)
       let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
         if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
 
-      // 4. KRİTİK ADIM: EĞER İLK TIKLAMAYSA, ŞEHRİ ŞİMDİ GÜNCELLE
-      // updateCart() birazdan çalışacak ve bu veriyi kullanarak AI oluşturacak.
+      // --- KRİTİK BÖLÜM: ŞEHRİ VE BAŞLIĞI AYARLA ---
+      // Eğer bu ilk noktaysa, global değişkenleri güncelle ki sistem ne planladığını bilsin.
+      let detectedCity = "";
       if (isFirstItem) {
-          console.log("Start with Map: İlk nokta. Şehir ayarlanıyor...", placeInfo);
-          
-          let cityName = placeInfo.name; 
-          // Adresten şehri ayıkla (Örn: "..., Antalya, Turkey" -> "Antalya")
+          // Adresten şehir bulma (Örn: "Kepez, Antalya, Turkey" -> "Antalya")
           if (placeInfo.address) {
              const parts = placeInfo.address.split(',');
              if (parts.length >= 2) {
-                 cityName = parts[parts.length - 2].trim();
+                 detectedCity = parts[parts.length - 2].trim(); // Genellikle sondan ikinci
              } else {
-                 cityName = parts[0].trim();
+                 detectedCity = parts[0].trim();
              }
+          } else {
+              detectedCity = placeInfo.name;
           }
 
           // Global değişkenleri güncelle
-          window.selectedCity = cityName;
-          window.lastUserQuery = "Trip to " + cityName;
+          window.selectedCity = detectedCity;
+          window.lastUserQuery = "Trip to " + detectedCity;
           
-          // Başlığı güncelle
-          const tEl = document.getElementById("trip_title");
-          if(tEl) tEl.textContent = window.lastUserQuery;
+          // UI başlığını hemen güncelle (updateCart ezmesin diye globali set ettik)
+          const titleEl = document.getElementById("trip_title");
+          if(titleEl) titleEl.textContent = window.lastUserQuery;
       }
+      // ---------------------------------------------
 
       // Duplicate kontrolü
       const dup = window.cart.some(it =>
@@ -3320,8 +3321,7 @@ function attachMapClickAddMode(day) {
       const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
       if (controlsWrapper) controlsWrapper.style.display = 'block';
 
-      // 5. UPDATE CART
-      // Artık window.selectedCity dolu olduğu için, updateCart içindeki AI kodu çalışacak.
+      // 4. LİSTEYİ GÜNCELLE
       if (typeof updateCart === "function") updateCart();
 
       // Marker koy
@@ -3333,9 +3333,24 @@ function attachMapClickAddMode(day) {
       window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
       window.mapPlanningMarkersByDay[day].push(marker);
 
-      // Rota çiz
+      // Rotayı çiz
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 100);
+      }
+
+      // --- SON HAMLE: AI BİLGİSİNİ OLUŞTUR ---
+      // updateCart fonksiyonu bittikten sonra, eğer ilk noktaysa AI servisine git.
+      // Eskiden butona basınca yapılan işi burada yapıyoruz.
+      if (isFirstItem && detectedCity) {
+          console.log("AI tetikleniyor: " + detectedCity);
+          setTimeout(() => {
+              if (typeof window.insertTripAiInfo === "function") {
+                  // false: animasyon yok
+                  // null: statik veri yok (API'ye git)
+                  // detectedCity: Hangi şehir için arama yapacağını söylüyoruz
+                  window.insertTripAiInfo(false, null, detectedCity);
+              }
+          }, 600); // DOM'un oturması için yarım saniye bekle
       }
 
     }, SINGLE_CLICK_DELAY);
