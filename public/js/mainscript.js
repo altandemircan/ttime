@@ -921,6 +921,12 @@ async function handleAnswer(answer) {
   if (window.isProcessing) return;
   window.isProcessing = true;
 
+  // --- EKLE: Yeni sorgu başladığında eski AI verisini ve DOM'u temizle ---
+  window.lastTripAIInfo = null;
+  if (window.cart) window.cart.aiData = null;
+  document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
+  // ----------------------------------------------------------------------
+
   const inputEl = document.getElementById("user-input");
   const raw = (answer || "").toString().trim();
 
@@ -3487,27 +3493,39 @@ function attachMapClickAddMode(day) {
     }
   });
 }
+
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // ... (Fonksiyonun içeriği aynı kalacak, sadece başındaki 'async function ...' kısmını 'window.insertTripAiInfo = ...' yapıyoruz) ...
-    
     // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir bilgisini belirle
-    let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+    // Şu anki geçerli şehri belirle
+    let currentCity = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     
-    // Şehir yoksa ve kayıtlı veri de yoksa çık
-    if (!city && !aiStaticInfo) return;
+    // Şehir yoksa ve statik veri de yoksa çık
+    if (!currentCity && !aiStaticInfo) return;
 
-    // --- HTML İSKELETİ OLUŞTUR (Sizin Tasarımınız) ---
+    // --- ŞEHİR EŞLEŞME KONTROLÜ (Critical Fix) ---
+    // Eğer kayıtlı veri varsa ama bu veri başka bir şehre aitse, o veriyi yok say!
+    if (aiStaticInfo && aiStaticInfo.city) {
+        // Basit bir normalizasyon ile karşılaştır (büyük/küçük harf duyarsız)
+        const savedCityNorm = aiStaticInfo.city.toLowerCase().trim();
+        const currentCityNorm = currentCity.toLowerCase().trim();
+        
+        // Eğer şehirler uyuşmuyorsa staticInfo'yu iptal et, yeniden çeksin.
+        if (savedCityNorm !== currentCityNorm && currentCityNorm.length > 0) {
+            console.log(`AI Info mismatch: Saved for ${aiStaticInfo.city}, but current is ${currentCity}. Refreshing...`);
+            aiStaticInfo = null; 
+        }
+    }
+    // ---------------------------------------------
+
+    // HTML İskeleti
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
-    // Not: Stil class'tan gelmeli, inline style minimal tutuldu
-    
     aiDiv.innerHTML = `
     <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
       <span>AI Information</span>
@@ -3529,7 +3547,6 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    // Element Referansları
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
@@ -3537,14 +3554,11 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
     
-    // --- İÇERİĞİ DOLDURMA VE GÖSTERME YARDIMCISI ---
+    // Yardımcı: İçeriği ekrana bas
     function populateAndShow(data, timeElapsed = null) {
-        // Spinner gizle
         if (aiSpinner) aiSpinner.style.display = "none";
         
-        // Ok butonunu ekle (Header'a)
         const header = aiDiv.querySelector('#ai-toggle-header');
-        // Eğer buton zaten varsa tekrar ekleme
         if (!header.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
@@ -3553,7 +3567,6 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
             header.appendChild(btn);
 
-            // Collapse/Expand Mantığı
             const aiIcon = btn.querySelector('.arrow-icon');
             let expanded = true;
             btn.addEventListener('click', function(e) {
@@ -3569,28 +3582,25 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
                     aiIcon.classList.remove('open');
                 }
             });
-            // İlk açılışta açık olsun
             if (aiIcon) aiIcon.classList.add('open');
         }
 
-        // İçeriği aç
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
 
-        // Metinleri yaz (Typewriter varsa onu kullan, yoksa direkt ata)
+        // Typewriter efekti sadece yeni veri geliyorsa çalışsın
         if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
-             typeWriterEffect(aiSummary, data.summary || "Bilgi yok.", 18, function() {
-                typeWriterEffect(aiTip, data.tip || "Bilgi yok.", 18, function() {
-                    typeWriterEffect(aiHighlight, data.highlight || "Bilgi yok.", 18);
+             typeWriterEffect(aiSummary, data.summary || "Info not available.", 18, function() {
+                typeWriterEffect(aiTip, data.tip || "Info not available.", 18, function() {
+                    typeWriterEffect(aiHighlight, data.highlight || "Info not available.", 18);
                 });
             });
         } else {
-            aiSummary.textContent = data.summary || "Bilgi yok.";
-            aiTip.textContent = data.tip || "Bilgi yok.";
-            aiHighlight.textContent = data.highlight || "Bilgi yok.";
+            aiSummary.textContent = data.summary || "Info not available.";
+            aiTip.textContent = data.tip || "Info not available.";
+            aiHighlight.textContent = data.highlight || "Info not available.";
         }
 
-        // Süre bilgisi
         if (timeElapsed) {
             aiTime.textContent = `⏱️ Generated in ${timeElapsed} ms`;
         } else {
@@ -3598,49 +3608,52 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         }
     }
 
-    // === SENARYO 1: HAZIR VERİ VAR (LocalStorage veya Refresh Sonrası) ===
+    // === SENARYO 1: DOĞRULANMIŞ KAYITLI VERİ VAR ===
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo);
         return;
     }
 
-    // === SENARYO 2: VERİ YOK -> API'YE GİT (Otomatik) ===
+    // === SENARYO 2: API'YE GİT (Otomatik) ===
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city, country })
+            body: JSON.stringify({ city: currentCity, country })
         });
 
         const ollamaData = await resp.json();
         
-        // Veriyi hazırla
+        let elapsed = Math.round(performance.now() - t0);
+
+        // Veriyi hazırla ve ŞEHRİ DE İÇİNE YAZ
         const aiData = {
-            summary: ollamaData.summary || "Bilgi yok.",
-            tip: ollamaData.tip || "Bilgi yok.",
-            highlight: ollamaData.highlight || "Bilgi yok."
+            city: currentCity, // <-- Şehri mühürle
+            summary: ollamaData.summary || "Info not available.",
+            tip: ollamaData.tip || "Info not available.",
+            highlight: ollamaData.highlight || "Info not available.",
+            time: elapsed
         };
 
-        // GLOBAL VE LOCAL STORAGE'A KAYDET
+        // Kaydet
         window.cart.aiData = aiData; 
         window.lastTripAIInfo = aiData;
         if (typeof saveCurrentTripToStorage === "function") {
-            saveCurrentTripToStorage(); // Kalıcı hale getir
+            saveCurrentTripToStorage();
         }
 
-        let elapsed = Math.round(performance.now() - t0);
         populateAndShow(aiData, elapsed);
 
     } catch (e) {
         console.error("AI Error:", e);
-        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
+        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
         if (aiSpinner) aiSpinner.style.display = "none";
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
-        aiSummary.textContent = "Hata oluştu.";
+        aiSummary.textContent = "Error occurred.";
     }
-}
+};
 
 
 async function updateCart() {

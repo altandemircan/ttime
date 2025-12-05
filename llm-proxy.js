@@ -14,17 +14,18 @@ router.post('/plan-summary', async (req, res) => {
     // DEBUG: Her sorguda şehir ne gidiyor görün
     console.log("AIReqCity:", aiReqCity);
 
-const prompt = `
-You are an expert travel assistant.
-For the city "${aiReqCity}", respond ONLY with a valid JSON object with these fields (no code block, no explanation):
+    const prompt = `
+    You are an expert travel guide. 
+    For the city "${aiReqCity}", provide specific travel insights ONLY in ENGLISH.
+    Respond ONLY with a valid JSON object (no markdown, no code blocks, just raw JSON) matching this structure:
 
-{
-  "summary": "...",
-  "tip": "...",
-  "highlight": "..."
-}
+    {
+      "summary": "A captivating 1-sentence overview of the city's vibe, history, and main appeal.",
+      "tip": "One specific, practical insider tip about local transport, etiquette, or safety.",
+      "highlight": "The single most unmissable landmark or unique experience in this city."
+    }
 
-If you don't know the answer, put "Bilgi yok." for that field.
+    If you absolutely don't know the answer for a field, put "Info not available."
 `.trim();
 
     try {
