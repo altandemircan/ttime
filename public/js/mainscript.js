@@ -5733,8 +5733,6 @@ function updateRouteStatsUI(day) {
   return totalKm;
 }
 
-
-
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
@@ -5749,13 +5747,20 @@ function setupScaleBarInteraction(day, map) {
         scaleBar.removeEventListener("touchend", scaleBar._onLeaveHandler);
     }
 
+    // Leaflet markerını temizle
     window._hoverMarkersByDay = window._hoverMarkersByDay || {};
     if (window._hoverMarkersByDay[day]) {
         map.removeLayer(window._hoverMarkersByDay[day]);
         window._hoverMarkersByDay[day] = null;
     }
 
-    // --- CACHE ---
+    // 3D Markerını temizle (Varsa)
+    if (window._hoverMarker3D) {
+        window._hoverMarker3D.remove();
+        window._hoverMarker3D = null;
+    }
+
+    // --- CACHE (Mesafe Hesaplama) ---
     let cachedDay = null;
     let cachedCumDist = []; 
     let cachedTotalDist = 0;
@@ -5794,7 +5799,7 @@ function setupScaleBarInteraction(day, map) {
         
         let targetMeters = 0;
 
-        // Segment Hesabı (Zoomlu ise)
+        // Zoomlu Segment Hesabı
         if (
             typeof window._lastSegmentStartKm === 'number' && 
             typeof window._lastSegmentEndKm === 'number' &&
@@ -5838,47 +5843,70 @@ function setupScaleBarInteraction(day, map) {
             lng = lon1 + (lon2 - lon1) * ratio;
         }
 
-        let marker = window._hoverMarkersByDay[day];
-        if (marker) {
-            marker.setLatLng([lat, lng]);
-            // Z-Index zaten yüksek ama garanti olsun
-            if(marker._icon) marker._icon.style.zIndex = "10000"; 
-        } else {
-            // --- DEĞİŞİKLİK BURADA: CircleMarker yerine DivIcon Marker ---
-            // Kırmızı markerlarla aynı boyut (32x32 wrapper, 24x24 daire) ve stil
-            const purpleIconHtml = `
-                <div style="
-                    background: #8a4af3; 
-                    border-radius: 50%;
-                    width: 20px;
-                    height: 20px;
-                    border: 2px solid #fff;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                "></div>
-            `;
-            
-            const icon = L.divIcon({
-                className: '', // Default class yok
-                html: purpleIconHtml,
-                iconSize: [32, 32],   // Kırmızı markerlarla aynı alan
-                iconAnchor: [16, 16]  // Tam ortası
-            });
+        // --- GÜNCELLEME KISMI: 3D Mİ 2D Mİ? ---
+        const is3DMode = document.getElementById('maplibre-3d-view') && 
+                         document.getElementById('maplibre-3d-view').style.display !== 'none';
 
-            marker = L.marker([lat, lng], {
-                icon: icon,
-                zIndexOffset: 10000, // En üstte dursun
-                interactive: false   // Tıklamayı engellemesin
-            }).addTo(map);
-            
-            window._hoverMarkersByDay[day] = marker; 
+        if (is3DMode && window._maplibre3DInstance) {
+            // --- 3D HARİTA (MapLibre) İŞLEMLERİ ---
+            if (!window._hoverMarker3D) {
+                const el = document.createElement('div');
+                // Leaflet marker stiliyle aynı (Mor Daire)
+                el.style.cssText = 'background: #8a4af3; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
+                
+                window._hoverMarker3D = new maplibregl.Marker({ element: el })
+                    .setLngLat([lng, lat])
+                    .addTo(window._maplibre3DInstance);
+            } else {
+                window._hoverMarker3D.setLngLat([lng, lat]);
+            }
+        } else {
+            // --- 2D HARİTA (Leaflet) İŞLEMLERİ ---
+            let marker = window._hoverMarkersByDay[day];
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+                if(marker._icon) marker._icon.style.zIndex = "10000"; 
+            } else {
+                const purpleIconHtml = `
+                    <div style="
+                        background: #8a4af3; 
+                        border-radius: 50%;
+                        width: 20px;
+                        height: 20px;
+                        border: 2px solid #fff;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    "></div>
+                `;
+                
+                const icon = L.divIcon({
+                    className: '',
+                    html: purpleIconHtml,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+
+                marker = L.marker([lat, lng], {
+                    icon: icon,
+                    zIndexOffset: 10000,
+                    interactive: false
+                }).addTo(map);
+                
+                window._hoverMarkersByDay[day] = marker; 
+            }
         }
     };
     
     const onLeave = function() {
+        // Leaflet Marker Temizle
         let marker = window._hoverMarkersByDay[day];
         if (marker) {
             map.removeLayer(marker);
             window._hoverMarkersByDay[day] = null;
+        }
+        // 3D Marker Temizle
+        if (window._hoverMarker3D) {
+            window._hoverMarker3D.remove();
+            window._hoverMarker3D = null;
         }
     };
 
