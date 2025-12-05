@@ -3472,23 +3472,36 @@ function attachMapClickAddMode(day) {
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
 async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // Önce eski kutuları temizle
+    // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
+    
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
     let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
+    
     if (!city && !aiStaticInfo) return;
 
-    // --- 1) İlk başta sadece spinner ve başlık var, ok YOK ---
+    // --- TEMİZLEME FONKSİYONU (Robot ikonunu siler) ---
+    function cleanText(text) {
+        if (!text) return "";
+        // Robot ikonunu ve gereksiz boşlukları sil
+        return text.replace(/🤖/g, '').trim();
+    }
+
+    // --- HTML İskeleti ---
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
     <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
       <span>AI Information</span>
       <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
-        <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
+        <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;">
+            <circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60">
+                <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/>
+            </circle>
+        </svg>
       </span>
     </h3>
     <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
@@ -3498,6 +3511,7 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
     </div>
     <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
     `;
+    
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
     const aiSummary = aiDiv.querySelector('#ai-summary');
@@ -3508,42 +3522,64 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
     const aiContent = aiDiv.querySelector('.ai-info-content');
     let t0 = performance.now();
 
-    // === 2) EĞER LOCALSTORAGE'DAN GELİYORSA ===
-    if (aiStaticInfo) {
+    // Yardımcı: İçeriği göster ve butonu ekle
+    function setupContent(summary, tip, highlight, timeText) {
         if (aiSpinner) aiSpinner.style.display = "none";
         
         const header = aiDiv.querySelector('#ai-toggle-header');
-        const btn = document.createElement('button');
-        btn.id = "ai-toggle-btn";
-        btn.className = "arrow-btn";
-        btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
-        btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
-        header.appendChild(btn);
+        if (!header.querySelector('#ai-toggle-btn')) {
+            const btn = document.createElement('button');
+            btn.id = "ai-toggle-btn";
+            btn.className = "arrow-btn";
+            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
+            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
+            header.appendChild(btn);
 
-        const aiIcon = btn.querySelector('.arrow-icon');
-        let expanded = true;
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            expanded = !expanded;
-            if (expanded) {
-                aiContent.style.maxHeight = "1200px";
-                aiContent.style.opacity = "1";
-                aiIcon.classList.add('open');
-            } else {
-                aiContent.style.maxHeight = "0";
-                aiContent.style.opacity = "0";
-                aiIcon.classList.remove('open');
-            }
-        });
+            const aiIcon = btn.querySelector('.arrow-icon');
+            let expanded = true;
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                expanded = !expanded;
+                if (expanded) {
+                    aiContent.style.maxHeight = "1200px";
+                    aiContent.style.opacity = "1";
+                    aiIcon.classList.add('open');
+                } else {
+                    aiContent.style.maxHeight = "0";
+                    aiContent.style.opacity = "0";
+                    aiIcon.classList.remove('open');
+                }
+            });
+            if (aiIcon) aiIcon.classList.add('open');
+        }
 
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
-        if (aiIcon) aiIcon.classList.add('open');
-        
-        aiSummary.textContent = aiStaticInfo.summary || "";
-        aiTip.textContent = aiStaticInfo.tip || "";
-        aiHighlight.textContent = aiStaticInfo.highlight || "";
-        aiTime.textContent = "";
+
+        // Yazı efekti veya direkt yazdırma
+        if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
+             typeWriterEffect(aiSummary, summary || "Info not available.", 18, function() {
+                typeWriterEffect(aiTip, tip || "Info not available.", 18, function() {
+                    typeWriterEffect(aiHighlight, highlight || "Info not available.", 18);
+                });
+            });
+        } else {
+            aiSummary.textContent = summary || "Info not available.";
+            aiTip.textContent = tip || "Info not available.";
+            aiHighlight.textContent = highlight || "Info not available.";
+        }
+
+        if (aiTime) aiTime.textContent = timeText;
+    }
+
+    // === 2) EĞER LOCALSTORAGE'DAN GELİYORSA ===
+    if (aiStaticInfo) {
+        setupContent(
+            cleanText(aiStaticInfo.summary),
+            cleanText(aiStaticInfo.tip),
+            cleanText(aiStaticInfo.highlight),
+            ""
+        );
         return;
     }
 
@@ -3556,37 +3592,45 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
         });
 
         const ollamaData = await resp.json();
-        let aiObj = ollamaData;
-
-        // Veriyi hem window.cart.aiData hem de global yedeğe kaydet
-        window.cart.aiData = {
-            summary: aiObj.summary || "Bilgi yok.",
-            tip: aiObj.tip || "Bilgi yok.",
-            highlight: aiObj.highlight || "Bilgi yok."
-        };
-        window.lastTripAIInfo = window.cart.aiData;
         
-        // Veri geldiği an kaydet ki refresh'te gitmesin
-        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+        // Gelen veriyi temizle
+        const cleanSummary = cleanText(ollamaData.summary);
+        const cleanTip = cleanText(ollamaData.tip);
+        const cleanHighlight = cleanText(ollamaData.highlight);
 
+        // Temizlenmiş veriyi kaydet
+        const aiData = {
+            city: city,
+            summary: cleanSummary || "Info not available.",
+            tip: cleanTip || "Info not available.",
+            highlight: cleanHighlight || "Info not available."
+        };
+
+        window.cart.aiData = aiData; 
+        window.lastTripAIInfo = aiData;
+        
+        if (typeof saveCurrentTripToStorage === "function") {
+            saveCurrentTripToStorage();
+        }
+
+        let elapsed = Math.round(performance.now() - t0);
+        setupContent(
+            cleanSummary,
+            cleanTip,
+            cleanHighlight,
+            `⏱️ Generated in ${elapsed} ms`
+        );
+
+    } catch (e) {
+        console.error("AI Error:", e);
+        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
         if (aiSpinner) aiSpinner.style.display = "none";
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
-
-        typeWriterEffect(aiSummary, aiObj.summary || "Bilgi yok.", 18, function() {
-            typeWriterEffect(aiTip, aiObj.tip || "Bilgi yok.", 18, function() {
-                typeWriterEffect(aiHighlight, aiObj.highlight || "Bilgi yok.", 18);
-            });
-        });
-
-        let elapsed = Math.round(performance.now() - t0);
-        if (aiTime) aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
-        
-    } catch (e) {
-        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
-        aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
+        aiSummary.textContent = "AI service temporarily unavailable.";
     }
-}
+};
+
 async function updateCart() {
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 
@@ -4279,7 +4323,7 @@ cartDiv.appendChild(addNewDayButton);
     }
   })();
   // ============================================================
-  
+
   // ===================================
 
   // EN SON: (Keep your existing trailing code)
