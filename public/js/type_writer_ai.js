@@ -50,18 +50,18 @@ async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride 
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
-<h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
-  <span>AI Information</span>
-  <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
-    <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
-  </span>
-</h3>
-<div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
-  <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
-  <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
-  <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
-</div>
-<div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
+    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>AI Information</span>
+      <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
+        <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
+      </span>
+    </h3>
+    <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
+      <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
+      <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
+      <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
+    </div>
+    <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
 `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
