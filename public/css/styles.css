@@ -5124,19 +5124,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 
-.expanded-map-header {
-    position: absolute;
-     z-index: 10001;
-    background: rgb(255 255 255);  
-    border: none;
-    padding: 6px 4px;
-    border-radius: 4px;
-    top: 140px;
-    left: 10px;
-    border: 2px solid rgba(0, 0, 0, 0.2);
-    background-clip: padding-box;
-
-}
 
 
 
