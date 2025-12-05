@@ -3471,51 +3471,32 @@ function attachMapClickAddMode(day) {
   map.on('dblclick', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
-// ================================================================
-// 🤖 ROBOT IKONU YOK ETME TİMİ (Nükleer Çözüm)
-// ================================================================
 
-// 1. Mevcut ekrandaki ikonları hemen temizle
-function nukeRobotIcons() {
-    const targets = document.querySelectorAll('#ai-summary, #ai-tip, #ai-highlight, .ai-info-content p');
-    targets.forEach(el => {
-        if (el.innerHTML.includes('🤖')) {
-            el.innerHTML = el.innerHTML.replace(/🤖/g, '').replace(/AI:/g, '').trim();
-        }
-    });
-}
-
-// 2. Hafızayı (LocalStorage) temizle
-function sanitizeStoredData() {
-    if (window.cart && window.cart.aiData) {
-        ['summary', 'tip', 'highlight'].forEach(key => {
-            if (window.cart.aiData[key]) {
-                window.cart.aiData[key] = window.cart.aiData[key].replace(/🤖/g, '').replace(/AI:/g, '').trim();
-            }
-        });
-        // Temizlenmiş halini kaydet
-        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-    }
-}
-
-// 3. Gelecek verileri temizleyen Ana Fonksiyon (Override)
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // Önce DOM ve Hafıza temizliği yap
-    nukeRobotIcons();
-    sanitizeStoredData();
-
+    // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
+    
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
+    // Şehri belirle
     let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
+    
     if (!city && !aiStaticInfo) return;
 
-    // Temizleyici
-    const clean = (text) => (text || "").replace(/🤖/g, '').replace(/AI:/gi, '').trim() || "Info not available.";
+    // --- TEMİZLEME FONKSİYONU (Tek sefer çalışır) ---
+    function cleanText(text) {
+        if (!text) return "";
+        // Robot ikonunu, 'AI:' öneki, markdown yıldızlarını ve fazlalık boşlukları temizle
+        return text
+            .replace(/🤖/g, '')      // Robot ikonunu sil
+            .replace(/^AI:\s*/i, '') // "AI:" ile başlıyorsa sil
+            .replace(/\*\*/g, '')    // Markdown kalınlaştırma yıldızlarını sil (isteğe bağlı)
+            .trim();
+    }
 
-    // HTML
+    // HTML İskeleti
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -3536,106 +3517,123 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     </div>
     <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
     `;
+    
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    const els = {
-        sum: aiDiv.querySelector('#ai-summary'),
-        tip: aiDiv.querySelector('#ai-tip'),
-        high: aiDiv.querySelector('#ai-highlight'),
-        time: aiDiv.querySelector('.ai-info-time'),
-        spin: aiDiv.querySelector('#ai-spinner'),
-        content: aiDiv.querySelector('.ai-info-content'),
-        header: aiDiv.querySelector('#ai-toggle-header')
-    };
-
-    function show(data, timeVal) {
-        if (els.spin) els.spin.style.display = "none";
+    const aiSummary = aiDiv.querySelector('#ai-summary');
+    const aiTip = aiDiv.querySelector('#ai-tip');
+    const aiHighlight = aiDiv.querySelector('#ai-highlight');
+    const aiTime = aiDiv.querySelector('.ai-info-time');
+    const aiSpinner = aiDiv.querySelector('#ai-spinner');
+    const aiContent = aiDiv.querySelector('.ai-info-content');
+    
+    // Yardımcı: İçeriği göster
+    function populateAndShow(summaryVal, tipVal, highlightVal, timeText) {
+        if (aiSpinner) aiSpinner.style.display = "none";
         
         // Toggle butonu ekle
-        if (!els.header.querySelector('#ai-toggle-btn')) {
+        const header = aiDiv.querySelector('#ai-toggle-header');
+        if (!header.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
             btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
             btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
-            els.header.appendChild(btn);
-            
+            header.appendChild(btn);
+
+            const aiIcon = btn.querySelector('.arrow-icon');
             let expanded = true;
-            const icon = btn.querySelector('img');
-            btn.onclick = (e) => {
+            btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 expanded = !expanded;
-                els.content.style.maxHeight = expanded ? "1200px" : "0";
-                els.content.style.opacity = expanded ? "1" : "0";
-                icon.classList.toggle('open', expanded);
-            };
+                if (expanded) {
+                    aiContent.style.maxHeight = "1200px";
+                    aiContent.style.opacity = "1";
+                    aiIcon.classList.add('open');
+                } else {
+                    aiContent.style.maxHeight = "0";
+                    aiContent.style.opacity = "0";
+                    aiIcon.classList.remove('open');
+                }
+            });
+            if (aiIcon) aiIcon.classList.add('open');
         }
 
-        els.content.style.maxHeight = "1200px";
-        els.content.style.opacity = "1";
+        aiContent.style.maxHeight = "1200px"; // İçeriğin kesilmemesi için yüksek değer
+        aiContent.style.opacity = "1";
 
-        // Temizlenmiş veriyi bas
-        const cSum = clean(data.summary);
-        const cTip = clean(data.tip);
-        const cHigh = clean(data.highlight);
+        // Verileri temizle
+        const cleanSum = cleanText(summaryVal);
+        const cleanTip = cleanText(tipVal);
+        const cleanHigh = cleanText(highlightVal);
 
+        // Eğer typewriter fonksiyonu varsa kullan, yoksa direkt yaz
         if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
-             typeWriterEffect(els.sum, cSum, 18, () => {
-                typeWriterEffect(els.tip, cTip, 18, () => {
-                    typeWriterEffect(els.high, cHigh, 18);
+             typeWriterEffect(aiSummary, cleanSum || "Info not available.", 20, function() {
+                typeWriterEffect(aiTip, cleanTip || "Info not available.", 20, function() {
+                    typeWriterEffect(aiHighlight, cleanHigh || "Info not available.", 20);
                 });
             });
         } else {
-            els.sum.textContent = cSum;
-            els.tip.textContent = cTip;
-            els.high.textContent = cHigh;
+            aiSummary.textContent = cleanSum || "Info not available.";
+            aiTip.textContent = cleanTip || "Info not available.";
+            aiHighlight.textContent = cleanHigh || "Info not available.";
         }
-        if (els.time) els.time.textContent = timeVal || "";
+
+        if (aiTime) aiTime.textContent = timeText || "";
     }
 
-    // A) Kayıtlı veri varsa (Temizleyip göster)
+    // === 1) KAYITLI VERİ VARSA ===
     if (aiStaticInfo) {
-        show(aiStaticInfo, "");
+        populateAndShow(
+            aiStaticInfo.summary,
+            aiStaticInfo.tip,
+            aiStaticInfo.highlight,
+            ""
+        );
         return;
     }
 
-    // B) API'den çek
+    // === 2) API'YE GİT ===
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city, country })
+            body: JSON.stringify({ city: currentCity, country })
         });
-        const json = await resp.json();
-        
-        // Gelen veriyi temizle ve kaydet
-        const cleanData = {
-            city: city,
-            summary: clean(json.summary),
-            tip: clean(json.tip),
-            highlight: clean(json.highlight)
+
+        const ollamaData = await resp.json();
+        let elapsed = Math.round(performance.now() - t0);
+
+        // Veriyi alırken temizle ve öyle kaydet
+        const aiData = {
+            city: currentCity,
+            summary: cleanText(ollamaData.summary),
+            tip: cleanText(ollamaData.tip),
+            highlight: cleanText(ollamaData.highlight),
+            time: elapsed
         };
 
-        window.cart.aiData = cleanData; 
-        window.lastTripAIInfo = cleanData;
-        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+        // Kaydet
+        window.cart.aiData = aiData; 
+        window.lastTripAIInfo = aiData;
+        
+        if (typeof saveCurrentTripToStorage === "function") {
+            saveCurrentTripToStorage();
+        }
 
-        show(cleanData, `⏱️ Generated in ${Math.round(performance.now() - t0)} ms`);
+        populateAndShow(aiData.summary, aiData.tip, aiData.highlight, `⏱️ Generated in ${elapsed} ms`);
 
     } catch (e) {
-        console.error(e);
-        if (els.time) els.time.innerHTML = "<span style='color:red'>Hata oluştu.</span>";
-        if (els.spin) els.spin.style.display = "none";
-        els.sum.textContent = "Bağlantı hatası.";
-        els.content.style.maxHeight = "1200px"; 
-        els.content.style.opacity = "1";
+        console.error("AI Error:", e);
+        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
+        if (aiSpinner) aiSpinner.style.display = "none";
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity = "1";
+        aiSummary.textContent = "AI service temporarily unavailable.";
     }
 };
-
-// Sayfa yüklendiğinde ve her updateCart'ta temizlik yap
-setInterval(nukeRobotIcons, 1000); // Her saniye kontrol et ve sil (Garanti çözüm)
-// ================================================================
 
 async function updateCart() {
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
