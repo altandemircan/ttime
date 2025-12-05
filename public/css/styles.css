@@ -4434,9 +4434,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 
-.expanded-map {
-    width: 100% !important;
-    height: 100% !important;
+.expanded-map, #maplibre-3d-view  {
+    width: 100% !important;    
     min-height: 285px;
      height: calc(100% - 190px) !important;
     bottom: 190px;
@@ -7286,9 +7285,7 @@ scrollbar-width: thin;
 .chat-message.ai-message li { margin-bottom: 6px; }
 .chat-message.ai-message strong { color: #1976d2; }
 
-#maplibre-3d-view {
-    height: 100% !important;
-}
+
 
 /* Day X menu header */
     .action-buttons-container { position: relative; display: flex; align-items: center; }
