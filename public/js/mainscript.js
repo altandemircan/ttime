@@ -6104,7 +6104,7 @@ async function expandMap(containerId, day) {
       style.id = 'tt-custom-map-controls-css';
       style.innerHTML = `
         .map-custom-controls {
-            position: absolute;
+            osition: absolute;
     bottom: 230px;
     right: 15px;
     display: flex;
@@ -6478,7 +6478,7 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
-
+ 
 function restoreMap(containerId, day) {
     // containerId'den expandedData'yı bulmaya çalış, yoksa day üzerinden manuel temizlik yap
     const expandedData = window.expandedMaps?.[containerId];
