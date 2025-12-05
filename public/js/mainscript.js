@@ -5941,9 +5941,14 @@ function saveArcPointsForDay(day, points) {
 }
 
 function openMapLibre3D(expandedMap) {
-  // 2D Harita Container'ı
+  // 2D Harita Container'ı ve Ana Taşıyıcıyı Bul
   let mapDiv = expandedMap.getContainer();
-  let container = mapDiv.parentNode; 
+  let container = mapDiv.parentNode; // expanded-map-container
+  let panelDiv = container.querySelector('.expanded-map-panel'); 
+
+  // Leaflet attribution'ı gizle
+  const leafletAttr = container.querySelector('.leaflet-control-attribution');
+  if (leafletAttr) leafletAttr.style.display = 'none';
 
   let maplibre3d = document.getElementById('maplibre-3d-view');
   
@@ -5951,16 +5956,22 @@ function openMapLibre3D(expandedMap) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
     
-    // --- ÇÖZÜM BURADA ---
-    // Absolute yerine normal akışa (block) sokuyoruz.
-    // Yüksekliği 2D harita ile aynı (480px) yapıyoruz ki paneli ezmesin.
-    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; background:#eef0f5;';
+    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:1; background:#eef0f5;';
     
-    // 2D Haritanın hemen yanına (yerine) ekle
-    container.insertBefore(maplibre3d, mapDiv);
+    // Harita div'inin (mapDiv) bulunduğu yere ekliyoruz.
+    // expandMap'te mapDiv'i panelDiv'den ÖNCE ekledik.
+    // maplibre3d'yi de panelDiv'den önce (yani mapDiv'in yerine) eklersek sorun çözülür.
+    if (panelDiv) {
+        container.insertBefore(maplibre3d, panelDiv);
+    } else {
+        container.appendChild(maplibre3d);
+    }
+  } else {
+      maplibre3d.style.display = 'block';
+      maplibre3d.style.height = '480px';
+      maplibre3d.style.zIndex = '1';
   }
   
-  maplibre3d.style.display = 'block';
   maplibre3d.innerHTML = '';
 
   const day = window.currentDay || 1;
@@ -5997,8 +6008,7 @@ function openMapLibre3D(expandedMap) {
 
   if (hasBounds) {
       mapOptions.bounds = bounds;
-      // Padding ayarları
-      mapOptions.fitBoundsOptions = { padding: { top: 40, bottom: 40, left: 40, right: 40 } };
+      mapOptions.fitBoundsOptions = { padding: { top: 60, bottom: 60, left: 60, right: 60 } };
   } else {
       mapOptions.center = expandedMap.getCenter();
       mapOptions.zoom = expandedMap.getZoom();
@@ -6006,13 +6016,7 @@ function openMapLibre3D(expandedMap) {
 
   window._maplibre3DInstance = new maplibregl.Map(mapOptions);
 
-  // Ölçek Çubuğu (Scale Control) Ekle
-  window._maplibre3DInstance.addControl(new maplibregl.ScaleControl({
-      maxWidth: 100,
-      unit: 'metric'
-  }), 'bottom-left');
-
-  // Pusula Senkronizasyonu
+  // Pusula
   window._maplibre3DInstance.on('rotate', () => {
       const bearing = window._maplibre3DInstance.getBearing();
       const compassDisc = document.querySelector(`#custom-compass-btn-${day} .custom-compass-disc`);
@@ -6025,7 +6029,6 @@ function openMapLibre3D(expandedMap) {
     const isFlyMode = !areAllPointsInTurkey(points); 
     const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
 
-    // Rota Çizimi
     if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
       window._maplibre3DInstance.addSource('route', {
         type: 'geojson',
@@ -6058,7 +6061,6 @@ function openMapLibre3D(expandedMap) {
       }
     }
 
-    // Markerlar
     points.forEach((p, idx) => {
       const el = document.createElement('div');
       el.className = 'maplibre-marker';
@@ -6080,7 +6082,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (Panel Z-Index ve Shadow Düzeltmesi)
+  // 1. STİL EKLEME
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -6101,17 +6103,14 @@ async function expandMap(containerId, day) {
         .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
         .map-type-option.selected img { opacity: 1; }
         
-        /* Scale Bar Fix */
         .maplibregl-ctrl-bottom-left { bottom: 30px !important; left: 20px !important; z-index: 20000 !important; pointer-events: none; }
         .maplibregl-ctrl-scale { background-color: rgba(255, 255, 255, 0.9) !important; border: 1px solid #e0e0e0 !important; border-radius: 6px !important; padding: 2px 8px !important; color: #555 !important; font-size: 11px !important; font-weight: 600 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; border-top: 1px solid #e0e0e0 !important; height: auto !important; line-height: 1.4 !important; pointer-events: auto; }
 
-        /* --- YENİ EKLENEN: PANEL STİLİ --- */
-        /* Panelin haritanın üstünde (z-index) ve düzgün hizalı olmasını sağlar */
         .expanded-map-panel {
             position: relative;
-            z-index: 20; /* 3D haritadan yüksek (1) */
+            z-index: 20; 
             background: #fff;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05); /* Üst kısma hafif gölge */
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
             padding-top: 5px;
         }
       `;
@@ -6192,9 +6191,8 @@ async function expandMap(containerId, day) {
         // --- 3D MOD ---
         expandedMapInstance.getContainer().style.display = "none";
         
-        // 2D Attribution'ı gizle
         if (leafletAttr) leafletAttr.style.display = 'none';
-
+        // Panel her zaman görünür kalsın
         if (panelDiv) panelDiv.style.display = "block"; 
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
@@ -6202,12 +6200,9 @@ async function expandMap(containerId, day) {
         // --- 2D MOD ---
         expandedMapInstance.getContainer().style.display = "";
         
-        // 2D Attribution'ı göster
         if (leafletAttr) leafletAttr.style.display = 'block';
-
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) map3d.style.display = "none";
-        
         if (panelDiv) panelDiv.style.display = "block"; 
         if (compassBtn) compassBtn.style.display = 'none';
         setExpandedMapTile(opt.value);
@@ -6295,7 +6290,17 @@ async function expandMap(containerId, day) {
   controlsDiv.appendChild(locBtn);
   expandedContainer.appendChild(controlsDiv);
 
-  // Scale Bar ve Panel
+  // --- DÜZELTME: SIRALAMA DEĞİŞTİ ---
+  // Önce Harita DOM'u oluşturulup ekleniyor
+  const mapDivId = `${containerId}-expanded`;
+  const mapDiv = document.createElement('div');
+  mapDiv.id = mapDivId;
+  mapDiv.className = 'expanded-map';
+  mapDiv.style.width = "100%";
+  mapDiv.style.height = "480px"; 
+  expandedContainer.appendChild(mapDiv); // 1. Harita
+
+  // Sonra Panel ve Scale Bar ekleniyor (Böylece Panel haritanın altında kalır)
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
   const scaleBarDiv = document.createElement('div');
@@ -6306,7 +6311,8 @@ async function expandMap(containerId, day) {
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   panelDiv.appendChild(scaleBarDiv);
-  expandedContainer.appendChild(panelDiv);
+  expandedContainer.appendChild(panelDiv); // 2. Panel (Grafik)
+  // ----------------------------------
 
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-expanded-map';
@@ -6314,17 +6320,8 @@ async function expandMap(containerId, day) {
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
 
-  const mapDivId = `${containerId}-expanded`;
-  const mapDiv = document.createElement('div');
-  mapDiv.id = mapDivId;
-  mapDiv.className = 'expanded-map';
-  expandedContainer.appendChild(mapDiv);
   document.body.appendChild(expandedContainer);
  
-  // 2D Harita yüksekliği
-  mapDiv.style.width = "100%";
-  mapDiv.style.height = "480px"; 
-
   showRouteInfoBanner(day);
 
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
