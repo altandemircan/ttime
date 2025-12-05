@@ -4228,58 +4228,16 @@ cartDiv.appendChild(addNewDayButton);
     }
   })();
 
-  // === AI Info yerine Generate AI Info butonu ekle ===
-(function(){
-  // AI kutusu veya buton zaten varsa tekrar ekleme
-  if (document.querySelector('.ai-info-section') || document.getElementById('generate-ai-info-btn')) return;
-  // Sepette en az 1 gerçek item olmalı
-  if (!window.cart || window.cart.length === 0) return;
-  // İlk gerçek noktanın şehir bilgisini çek
-  let city = null;
-  const first = window.cart.find(it =>
-    it.location &&
-    typeof it.location.lat === "number" &&
-    typeof it.location.lng === "number"
-  );
-  if (first && first.address) {
-    const parts = first.address.split(",");
-    if (parts.length >= 2) {
-      city = parts[parts.length - 2].trim();
-    }
-  }
-  if (!city) return;
 
-  // AI bilgi kutusunun geleceği yere (trip_title'dan sonra) butonu koy
-  const tripTitleDiv = document.getElementById('trip_title');
-  if (!tripTitleDiv) return;
+// === OTOMATİK AI INFO GENERATION (Start With Map İçin) ===
+  (function autoGenerateAiInfo() {
+    // 1. Eğer ekranda zaten AI kutusu varsa (veya yükleniyorsa) tekrar çalışma
+    if (document.querySelector('.ai-info-section')) return;
 
-  // AI kutusu yerine buton
-  const btnDiv = document.createElement('div');
-  btnDiv.className = 'ai-info-section';
-  btnDiv.style = "text-align:center;margin:18px 0 18px 0;";
-  const btn = document.createElement('button');
-  btn.id = 'generate-ai-info-btn';
-  btn.textContent = 'Generate AI Info';
-  btn.style = "padding:10px 24px;font-size:17px;font-weight:600;border-radius:8px;border:1px solid #8a4af3;background:#fff;color:#8a4af3;cursor:pointer;box-shadow:0 1px 8px #e9e1fa;";
-  btn.onclick = async function() {
-    btn.disabled = true;
-    btn.textContent = 'Yükleniyor...';
-    // Butonun yerine AI info kutusunu ekle!
-    await insertTripAiInfo(null, null, city);
-    btnDiv.remove();
-  };
-  btnDiv.appendChild(btn);
-  tripTitleDiv.insertAdjacentElement('afterend', btnDiv);
-})();
+    // 2. Sepet boşsa çalışma
+    if (!window.cart || window.cart.length === 0) return;
 
- 
- // ... inside updateCart, replacing the button IIFE ...
-
-  // === AUTOMATIC AI INFO GENERATION ===
-  // Only runs if no AI info exists yet AND the cart has items
-  if (!document.querySelector('.ai-info-section') && window.cart && window.cart.length > 0) {
-    
-    // Find the first valid item to determine the location
+    // 3. İlk "gerçek" (start/placeholder olmayan) mekanı bul
     const first = window.cart.find(it =>
       it.location &&
       typeof it.location.lat === "number" &&
@@ -4287,36 +4245,41 @@ cartDiv.appendChild(addNewDayButton);
       !it._starter && !it._placeholder
     );
 
-    if (first) {
-      let city = window.selectedCity;
+    if (!first) return;
 
-      // If city isn't set globally, try to extract it from the address
-      if (!city && first.address) {
-        const parts = first.address.split(",");
-        if (parts.length >= 2) {
-          city = parts[parts.length - 2].trim();
-        } else {
-          city = parts[0].trim();
-        }
-      }
+    // 4. Şehir bilgisini bul (Globalden veya adresten)
+    let city = window.selectedCity;
 
-      // If we found a city, trigger the AI
-      if (city) {
-        // Set global variables so the title updates correctly
-        if (!window.selectedCity) {
-            window.selectedCity = city;
-            window.lastUserQuery = "Trip to " + city;
-            const tEl = document.getElementById("trip_title");
-            if (tEl) tEl.textContent = window.lastUserQuery;
-        }
-
-        // Call the AI function directly
-        if (typeof insertTripAiInfo === "function") {
-           insertTripAiInfo(false, null, city);
-        }
+    // Global seçili şehir yoksa, ilk markerın adresinden çekmeye çalış
+    if (!city && first.address) {
+      const parts = first.address.split(",");
+      if (parts.length >= 2) {
+        city = parts[parts.length - 2].trim(); // Genellikle sondan 2. parça şehirdir
+      } else {
+        city = parts[0].trim();
       }
     }
-  }
+
+    // 5. Şehir bulunduysa -> OTOMATİK BAŞLAT
+    if (city) {
+      // Eğer başlık "Trip Plan" olarak kaldıysa, "Trip to [City]" olarak güncelle
+      if (!window.selectedCity || window.lastUserQuery === "Trip Plan") {
+          window.selectedCity = city;
+          window.lastUserQuery = "Trip to " + city;
+          const tEl = document.getElementById("trip_title");
+          if (tEl) tEl.textContent = window.lastUserQuery;
+      }
+
+      console.log("📍 Start with Map: Otomatik AI tetikleniyor ->", city);
+      
+      // Buton beklemeden direkt fonksiyonu çağırıyoruz
+      if (typeof insertTripAiInfo === "function") {
+         insertTripAiInfo(false, null, city);
+      }
+    }
+  })();
+  // ============================================================
+  
   // ===================================
 
   // EN SON: (Keep your existing trailing code)
