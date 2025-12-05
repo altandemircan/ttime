@@ -5953,9 +5953,9 @@ function openMapLibre3D(expandedMap) {
     maplibre3d.id = 'maplibre-3d-view';
     
     // --- DÜZELTME BURADA ---
-    // Absolute position yerine Relative yapıyoruz ve yüksekliği 480px (2D harita ile aynı) veriyoruz.
-    // Böylece alttaki paneli ezmiyor, onun üstüne yerleşiyor.
-    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:10000; background:#eef0f5;';
+    // z-index: 1 yapıldı (Panelin z-index: 20 değerinden düşük olmalı).
+    // Böylece panelin gölgesi haritanın üzerine düşer, harita paneli ezmez.
+    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:1; background:#eef0f5;';
     
     // Panelin hemen öncesine ekle (Panel altta kalsın)
     if (panelDiv) {
@@ -5965,7 +5965,10 @@ function openMapLibre3D(expandedMap) {
     }
   }
   
+  // Varolan elementin stilini de garantiye al (tekrar açıldığında bozulmasın)
   maplibre3d.style.display = 'block';
+  maplibre3d.style.zIndex = '1'; 
+
   maplibre3d.innerHTML = '';
 
   const day = window.currentDay || 1;
