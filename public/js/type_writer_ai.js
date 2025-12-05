@@ -20,7 +20,7 @@ function extractFirstJson(str) {
     return "";
 }
 
-function typeWriterEffect(element, text, speed, callback) {
+window.typeWriterEffect = function(element, text, speed, callback) {
     let i = 0;
     element.textContent = "";
     function type() {
