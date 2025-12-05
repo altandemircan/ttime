@@ -31,10 +31,10 @@ function injectDragStyles() {
 
         /* --- CRITICAL FIX: BOŞ GÜNLER İÇİN ALAN --- */
         .day-list {
-            min-height: 80px !important; /* Boş olsa bile en az bu kadar yer kaplasın */
-            padding-bottom: 20px;        /* Altına biraz boşluk bırakalım ki drop kolay olsun */
+            min-height: 80px !important; 
+            padding-bottom: 20px;
             box-sizing: border-box;
-            display: block;              /* Block olduğundan emin olalım */
+            display: block;
         }
 
         @keyframes shakeError {
@@ -94,8 +94,10 @@ let placeholder = null;
 let sourceIndex = -1;
 let isMobile = false;
 
-// Shift değerleri
+// Offset değerleri
 let dragShiftX = 0, dragShiftY = 0;
+// YENİ: X eksenini sabitlemek için
+let ghostFixedLeft = 0; 
 
 let startX = 0, startY = 0;
 let longPressTimer;
@@ -198,10 +200,11 @@ function dragRenderLoop() {
     // 1. Scroll Hesapla ve Uygula
     handleAutoScroll(lastClientY);
 
-    // 2. Ghost Pozisyonunu Güncelle
+    // 2. Ghost Pozisyonunu Güncelle (Yatay Kilitli)
     const ghost = document.querySelector('.drag-ghost');
     if (ghost) {
-        ghost.style.left = (lastClientX - dragShiftX) + 'px';
+        // X kilitli, Y takip ediyor
+        ghost.style.left = ghostFixedLeft + 'px';
         ghost.style.top = (lastClientY - dragShiftY) + 'px';
     }
 
@@ -256,6 +259,11 @@ function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     const rect = item.getBoundingClientRect();
     
+    // --- YENİ: X SABİTLEME ---
+    ghostFixedLeft = rect.left;
+    dragShiftX = clientX - rect.left;
+    dragShiftY = clientY - rect.top; 
+
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
     
@@ -267,8 +275,9 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-width', rect.width + 'px');
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
-    ghost.style.left = (clientX - dragShiftX) + 'px';
-    ghost.style.top = (clientY - dragShiftY) + 'px';
+    // İlk pozisyon: Item'ın tam mevcut yeri
+    ghost.style.left = ghostFixedLeft + 'px';
+    ghost.style.top = (clientY - dragShiftY) + 'px'; // Y'yi tuttuğu yere ayarla
     
     document.body.appendChild(ghost);
 }
@@ -288,37 +297,27 @@ function getDragAfterElement(container, y) {
 }
 
 function updatePlaceholder(clientX, clientY) {
-    // 1. Mouse/Parmak altındaki elementi bul
     const elementBelow = document.elementFromPoint(clientX, clientY);
     if (!elementBelow) return;
     
-    // 2. Bu element bir 'day-list' mi veya 'day-list' içinde mi?
     const dropZone = elementBelow.closest('.day-list');
-    
-    // Eğer bir drop zone yoksa işlem yapma
     if (!dropZone) return;
 
-    // Placeholder henüz yoksa oluştur
     if (!placeholder) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
     }
     
-    // 3. Drop zone içindeki diğer itemlara göre konum belirle
     const afterElement = getDragAfterElement(dropZone, clientY);
     
-    // 4. BOŞ GÜN MANTIĞI: Eğer referans alınacak bir element yoksa
     if (afterElement == null) {
         const addBtn = dropZone.querySelector('.add-more-btn');
-        // Eğer buton varsa (gizli değilse) butonun öncesine koy
         if (addBtn && getComputedStyle(addBtn).display !== 'none') {
              dropZone.insertBefore(placeholder, addBtn);
         } else {
-             // Liste tamamen boşsa veya buton yoksa, listenin içine (sonuna) ekle
              dropZone.appendChild(placeholder);
         }
     } else {
-        // Referans element varsa onun önüne koy
         dropZone.insertBefore(placeholder, afterElement);
     }
 }
