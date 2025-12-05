@@ -6082,13 +6082,13 @@ async function expandMap(containerId, day) {
       style.id = 'tt-custom-map-controls-css';
       style.innerHTML = `
         .map-custom-controls {
-            osition: absolute;
-    bottom: 230px;
-    right: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    z-index: 10001;
+            position: absolute;
+            bottom: 235px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10001; 
         }
         .map-ctrl-btn {
             width: 44px; height: 44px; background: #ffffff; border: 1px solid #e0e0e0;
@@ -6108,6 +6108,28 @@ async function expandMap(containerId, day) {
         .map-type-option:hover { background: #f9f9f9; transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.1); border-color: #d0d0d0; }
         .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
         .map-type-option.selected img { opacity: 1; }
+        
+        /* 3D MAP SCALE BAR STİLİ */
+        .maplibregl-ctrl-bottom-left {
+            bottom: 30px !important; 
+            left: 20px !important;
+            z-index: 20000 !important; 
+            pointer-events: none;
+        }
+        .maplibregl-ctrl-scale {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            padding: 2px 8px !important;
+            color: #555 !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+            border-top: 1px solid #e0e0e0 !important;
+            height: auto !important;
+            line-height: 1.4 !important;
+            pointer-events: auto;
+        }
       `;
       document.head.appendChild(style);
   }
@@ -6185,8 +6207,8 @@ async function expandMap(containerId, day) {
         // --- 3D MOD ---
         expandedMapInstance.getContainer().style.display = "none";
         
-        // DÜZELTME: Paneli ASLA GİZLEME, her zaman göster
-        if (panelDiv) panelDiv.style.display = "block"; 
+        // --- DÜZELTME: panelDiv.style.display SATIRI SİLİNDİ ---
+        // Panelin görünürlüğü tamamen senin CSS'ine kalmış durumda.
         
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
@@ -6195,7 +6217,9 @@ async function expandMap(containerId, day) {
         expandedMapInstance.getContainer().style.display = "";
         let map3d = document.getElementById('maplibre-3d-view');
         if (map3d) map3d.style.display = "none";
-        if (panelDiv) panelDiv.style.display = "block"; 
+        
+        // --- DÜZELTME: panelDiv.style.display SATIRI SİLİNDİ ---
+        
         if (compassBtn) compassBtn.style.display = 'none';
         setExpandedMapTile(opt.value);
       }
