@@ -3386,56 +3386,53 @@ function startMapPlanningForDay(day) {
 
   attemptExpandDay(day);
 }
+
 function attachMapClickAddMode(day) {
   const containerId = `route-map-day${day}`;
   const map = window.leafletMaps[containerId];
   if (!map) return;
 
-  // Aynı gün için bir kere bağla
   map.__tt_clickAddBound = map.__tt_clickAddBound || {};
   if (map.__tt_clickAddBound[day]) return;
   map.__tt_clickAddBound[day] = true;
 
-  // YALNIZCA TEK TIK eklesin: tek-tık zamanlayıcısı
   let __singleClickTimer = null;
-  const SINGLE_CLICK_DELAY = 250; // ms
+  const SINGLE_CLICK_DELAY = 250; 
 
-  // Tek tık: zamanlayıcı ile çalış; bu süre içinde dblclick/zoom başlarsa iptal edilir
   map.on('click', function(e) {
     if (__singleClickTimer) clearTimeout(__singleClickTimer);
+    
     __singleClickTimer = setTimeout(async () => {
-      // Planlama modu açık değilse veya başka günse görmezden gel
       if (!window.mapPlanningActive || window.mapPlanningDay !== day) return;
 
       const { lat, lng } = e.latlng;
 
-      // Reverse geocode (hızlı) – hata olursa default isim
+      // Check for duplicate
+      const dup = window.cart.some(it =>
+        it.day === day && it.location &&
+        Math.abs(it.location.lat - lat) < 1e-6 &&
+        Math.abs(it.location.lng - lng) < 1e-6
+      );
+      if (dup) return;
+
+      // Get address info
       let placeInfo = { name: "New Point", address: "", opening_hours: "" };
       try {
         const rInfo = await getPlaceInfoFromLatLng(lat, lng);
         if (rInfo && rInfo.name) placeInfo = rInfo;
       } catch(_) {}
 
-      // Aynı koordinatta (± çok küçük delta) duplicate engelle
-      const dup = window.cart.some(it =>
-        it.day === day &&
-        it.location &&
-        Math.abs(it.location.lat - lat) < 1e-6 &&
-        Math.abs(it.location.lng - lng) < 1e-6
-      );
-      if (dup) return;
-
-      // Görsel fallback
+      // Get image
       let imageUrl = 'img/placeholder.png';
       try {
         imageUrl = await getImageForPlace(placeInfo.name || 'New Point', 'Place', window.selectedCity || '');
       } catch(_) {}
 
-      // 1. Önce starter'ı sil
+      // Remove starter item if exists
       window.cart = window.cart.filter(it => !(it.day === day && it._starter));
 
-      // 2. Marker item'ı window.cart'a EKSİKSİZ ekle:
-      const markerItem = {
+      // Add new item to cart
+      window.cart.push({
         name: placeInfo.name || "Point",
         image: imageUrl,
         day: day,
@@ -3443,53 +3440,153 @@ function attachMapClickAddMode(day) {
         address: placeInfo.address || "",
         opening_hours: placeInfo.opening_hours || "",
         location: { lat: lat, lng: lng }
-      };
-      window.cart.push(markerItem);
+      });
 
-      // Add Category butonunu aç
-      window.__hideAddCatBtnByDay[day] = false;
+      // Unhide map/controls
+      if (window.__suppressMiniUntilFirstPoint) window.__suppressMiniUntilFirstPoint[day] = false;
+      const smallMapDiv = document.getElementById(containerId);
+      if (smallMapDiv) {
+          smallMapDiv.style.display = 'block';
+          smallMapDiv.classList.remove('mini-suppressed');
+      }
+      const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${day}`);
+      if (controlsWrapper) controlsWrapper.style.display = 'block';
 
-      // Sonra updateCart çağır (travel-item DOM garanti!)
+      // Update UI
       if (typeof updateCart === "function") updateCart();
 
-      // Marker çiz
-      const marker = L.circleMarker([lat, lng], {
-        radius: 7,
-        color: '#8a4af3',
-        fillColor: '#8a4af3',
-        fillOpacity: 0.9,
-        weight: 2
+      // Add marker to map
+      L.circleMarker([lat, lng], {
+        radius: 7, color: '#8a4af3', fillColor: '#8a4af3', fillOpacity: 0.9, weight: 2
       }).addTo(map).bindPopup(`<b>${placeInfo.name || 'Point'}</b>`);
 
-      window.mapPlanningMarkersByDay[day] = window.mapPlanningMarkersByDay[day] || [];
-      window.mapPlanningMarkersByDay[day].push(marker);
-
-      // 2+ nokta olunca rota
+      // Render route
       if (typeof renderRouteForDay === 'function') {
         setTimeout(() => renderRouteForDay(day), 100);
       }
+
     }, SINGLE_CLICK_DELAY);
   });
 
-  // Çift tık (yakınlaşma) gelirse tek-tık zamanlayıcısını iptal et
-  map.on('dblclick', function() {
-    if (__singleClickTimer) {
-      clearTimeout(__singleClickTimer);
-      __singleClickTimer = null;
-    }
-  });
-
-  // Yakınlaşma/pan gibi zoomstart sırasında da iptal et (mobil çift-tap zoom vs.)
-  map.on('zoomstart', function() {
-    if (__singleClickTimer) {
-      clearTimeout(__singleClickTimer);
-      __singleClickTimer = null;
-    }
-  });
+  map.on('dblclick', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
+  map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
+async function insertTripAiInfo(onFirstToken, aiStaticInfo = null, cityOverride = null) {
+    // Önce eski kutuları temizle
+    document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
+    const tripTitleDiv = document.getElementById('trip_title');
+    if (!tripTitleDiv) return;
 
+    let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+    let country = (window.selectedLocation && window.selectedLocation.country) || "";
+    if (!city && !aiStaticInfo) return;
 
+    // --- 1) İlk başta sadece spinner ve başlık var, ok YOK ---
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'ai-info-section';
+    aiDiv.innerHTML = `
+    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>AI Information</span>
+      <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
+        <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;"><circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/></circle></svg>
+      </span>
+    </h3>
+    <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
+      <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
+      <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
+      <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
+    </div>
+    <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
+    `;
+    tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
+    const aiSummary = aiDiv.querySelector('#ai-summary');
+    const aiTip = aiDiv.querySelector('#ai-tip');
+    const aiHighlight = aiDiv.querySelector('#ai-highlight');
+    const aiTime = aiDiv.querySelector('.ai-info-time');
+    const aiSpinner = aiDiv.querySelector('#ai-spinner');
+    const aiContent = aiDiv.querySelector('.ai-info-content');
+    let t0 = performance.now();
+
+    // === 2) EĞER LOCALSTORAGE'DAN GELİYORSA ===
+    if (aiStaticInfo) {
+        if (aiSpinner) aiSpinner.style.display = "none";
+        
+        const header = aiDiv.querySelector('#ai-toggle-header');
+        const btn = document.createElement('button');
+        btn.id = "ai-toggle-btn";
+        btn.className = "arrow-btn";
+        btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
+        btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
+        header.appendChild(btn);
+
+        const aiIcon = btn.querySelector('.arrow-icon');
+        let expanded = true;
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            expanded = !expanded;
+            if (expanded) {
+                aiContent.style.maxHeight = "1200px";
+                aiContent.style.opacity = "1";
+                aiIcon.classList.add('open');
+            } else {
+                aiContent.style.maxHeight = "0";
+                aiContent.style.opacity = "0";
+                aiIcon.classList.remove('open');
+            }
+        });
+
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity = "1";
+        if (aiIcon) aiIcon.classList.add('open');
+        
+        aiSummary.textContent = aiStaticInfo.summary || "";
+        aiTip.textContent = aiStaticInfo.tip || "";
+        aiHighlight.textContent = aiStaticInfo.highlight || "";
+        aiTime.textContent = "";
+        return;
+    }
+
+    // === 3) API'dan veri çekiliyor ===
+    try {
+        const resp = await fetch('/llm-proxy/plan-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city, country })
+        });
+
+        const ollamaData = await resp.json();
+        let aiObj = ollamaData;
+
+        // Veriyi hem window.cart.aiData hem de global yedeğe kaydet
+        window.cart.aiData = {
+            summary: aiObj.summary || "Bilgi yok.",
+            tip: aiObj.tip || "Bilgi yok.",
+            highlight: aiObj.highlight || "Bilgi yok."
+        };
+        window.lastTripAIInfo = window.cart.aiData;
+        
+        // Veri geldiği an kaydet ki refresh'te gitmesin
+        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+
+        if (aiSpinner) aiSpinner.style.display = "none";
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity = "1";
+
+        typeWriterEffect(aiSummary, aiObj.summary || "Bilgi yok.", 18, function() {
+            typeWriterEffect(aiTip, aiObj.tip || "Bilgi yok.", 18, function() {
+                typeWriterEffect(aiHighlight, aiObj.highlight || "Bilgi yok.", 18);
+            });
+        });
+
+        let elapsed = Math.round(performance.now() - t0);
+        if (aiTime) aiTime.textContent = `⏱️ AI yanıt süresi: ${elapsed} ms`;
+        
+    } catch (e) {
+        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI bilgi alınamadı.</span>";
+        aiSummary.textContent = aiTip.textContent = aiHighlight.textContent = "AI çıktısı çözülemedi!";
+    }
+}
 async function updateCart() {
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 
@@ -4176,12 +4273,58 @@ cartDiv.appendChild(addNewDayButton);
 })();
 
  
- // EN SON:
-    if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
-        const div = document.createElement("div");
-        div.innerHTML = window.latestAiInfoHtml;
-        cartDiv.appendChild(div.firstElementChild);
+ // ... inside updateCart, replacing the button IIFE ...
+
+  // === AUTOMATIC AI INFO GENERATION ===
+  // Only runs if no AI info exists yet AND the cart has items
+  if (!document.querySelector('.ai-info-section') && window.cart && window.cart.length > 0) {
+    
+    // Find the first valid item to determine the location
+    const first = window.cart.find(it =>
+      it.location &&
+      typeof it.location.lat === "number" &&
+      typeof it.location.lng === "number" &&
+      !it._starter && !it._placeholder
+    );
+
+    if (first) {
+      let city = window.selectedCity;
+
+      // If city isn't set globally, try to extract it from the address
+      if (!city && first.address) {
+        const parts = first.address.split(",");
+        if (parts.length >= 2) {
+          city = parts[parts.length - 2].trim();
+        } else {
+          city = parts[0].trim();
+        }
+      }
+
+      // If we found a city, trigger the AI
+      if (city) {
+        // Set global variables so the title updates correctly
+        if (!window.selectedCity) {
+            window.selectedCity = city;
+            window.lastUserQuery = "Trip to " + city;
+            const tEl = document.getElementById("trip_title");
+            if (tEl) tEl.textContent = window.lastUserQuery;
+        }
+
+        // Call the AI function directly
+        if (typeof insertTripAiInfo === "function") {
+           insertTripAiInfo(false, null, city);
+        }
+      }
     }
+  }
+  // ===================================
+
+  // EN SON: (Keep your existing trailing code)
+  if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
+      const div = document.createElement("div");
+      div.innerHTML = window.latestAiInfoHtml;
+      cartDiv.appendChild(div.firstElementChild);
+  }
 } 
 
 function showRemoveItemConfirmation(index, btn) {
