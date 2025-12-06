@@ -4645,8 +4645,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .elev-segment-toolbar {
-       bottom: 160px;
-    right: -12px;
+        bottom: 160px;
+    right: 14px;
     position: absolute;
     display: flex;
     align-items: center;
