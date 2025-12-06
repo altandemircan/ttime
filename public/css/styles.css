@@ -4659,6 +4659,13 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     color: #1e293b;
     font-weight: 700;
 }
+
+@media (max-width: 768px) {
+    .elev-segment-toolbar {
+            width: 100%;
+    justify-content: flex-end;
+    }
+}
 .elev-segment-toolbar .pill, .elev-segment-reset {
         border: 1px solid #e0e0e0;
     border-radius: 8px;
