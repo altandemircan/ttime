@@ -6994,31 +6994,20 @@ display: flex
 .day-steps { min-height: 300px; }
 
 .route-info-banner {
-   position: absolute;
+position: absolute;
     top: 24px;
     left: 50%;
     transform: translateX(-50%);
-    background: #2980d5;
-    color: #fff;
-    font-size: 15px;
-    padding: 6px 12px;
-    border-radius: 22px;
+    color: #8a4af3;
     box-shadow: 0 4px 24px #0006;
     z-index: 1008;
-    display: flex;
-    align-items: center;
-    gap: 0px;
-    opacity: 0.97;
-    max-width: 90vw;
+    opacity: 1;
     min-width: 210px;
-        cursor: pointer;
-    box-shadow: 0 0px 6px rgba(0, 0, 0, 0.00), 0 3px 6px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     gap: 0px;
     padding: 6px 12px;
     background: #ffffff;
-    border: 1px solid #e0e0e0;
     border-radius: 30px;
     transition: all 0.2s 
 ease;
