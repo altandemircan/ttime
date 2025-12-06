@@ -5873,10 +5873,11 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (Orijinal stil bloklarına SADECE dropdown için gerekli stiller eklenecek)
+  // 1. STİL EKLEME (VERDİĞİNİZ KOD BLOKLARI)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
+      // VERDİĞİNİZ TÜM CSS BURAYA YAZILDI
       style.innerHTML = `
    
  .map-custom-controls {
@@ -5939,7 +5940,6 @@ async function expandMap(containerId, day) {
         right: 20px;
         }
 }
-/* Orijinal Map Layers Row CSS'i */
 .map-layers-row {
     position: relative; /* Dropdown için relative */
     display: flex;
@@ -5950,7 +5950,7 @@ async function expandMap(containerId, day) {
     border: 1px solid rgba(0, 0, 0, 0.05);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     flex-direction: column;
-    width: auto; /* Yeni yapıda flex-direction column olduğu için gerekebilir */
+    width: auto;
 }
 
 /* YENİ DROPDOWN VE ANA BUTON STİLLERİ */
@@ -6018,7 +6018,7 @@ async function expandMap(containerId, day) {
 .map-type-option img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
 .map-type-option.hidden-by-selection { display: none !important; } /* Yeni gizleme sınıfı */
 
-/* Orijinal CSS'in geri kalanı */
+
         /* 3D MAP SCALE BAR STİLİ */
         .maplibregl-ctrl-bottom-left {
             bottom: 30px !important; 
@@ -6029,7 +6029,6 @@ async function expandMap(containerId, day) {
         .maplibregl-ctrl-scale {
             background-color: rgba(255, 255, 255, 0.9) !important;
             border: 1px solid #e0e0e0 !important;
-            border-radius: 6px !important;
             padding: 2px 8px !important;
             color: #555 !important;
             font-size: 11px !important;
@@ -6189,10 +6188,10 @@ async function expandMap(containerId, day) {
   // --- YENİ SEÇİCİ MEKANİZMASI SONU ---
 
 
-  // Burası değişti: layersBar headerDiv'in içine eklendi
+  // Burası değişti: layersBar headerDiv'in içine eklendi (Orijinal yapıya uygun)
   headerDiv.appendChild(layersBar);
   
-  // Burası değişti: route-stats artık headerDiv'in kardeşi olacak
+  // route-stats headerDiv'in kardeşi olarak oluşturuldu
   const statsDiv = document.createElement('div');
   statsDiv.className = 'route-stats';
 
@@ -6276,13 +6275,13 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
-  // === 4. PANEL DOM YAPISI DEĞİŞİKLİĞİ (YENİ HİYERARŞİ) ===
+  // === 4. PANEL DOM YAPISI DEĞİŞİKLİĞİ (YERLEŞİM KORUNUYOR) ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   
-  // Orijinal yerleşimi korumak için: LayersBar ve StatsDiv Header'a kardeş olarak panelin içine yerleştirilir.
-  panelDiv.appendChild(headerDiv);   // 1. expanded-map-header (İçinde layersBar var)
-  panelDiv.appendChild(statsDiv);    // 2. route-stats
+  // Orijinal yapınız: headerDiv ve statsDiv kardeş, Layer Seçici headerDiv içinde.
+  panelDiv.appendChild(headerDiv);   // 1. expanded-map-header (Şimdi içinde yeni tek butonlu seçici var)
+  panelDiv.appendChild(statsDiv);    // 2. route-stats 
   panelDiv.appendChild(controlsDiv); // 3. Controls
   panelDiv.appendChild(scaleBarDiv); // 4. Scale Bar
   
