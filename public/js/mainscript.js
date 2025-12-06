@@ -10686,7 +10686,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   ) {
       // 2D Temizlik
       if (window._segmentHighlight && window._segmentHighlight[day]) {
-          Object.values(window._segmentHighlight[day]).forEach(poly => poly.remove());
+          Object.values(window._segmentHighlight[day]).forEach(poly => { try { poly.remove(); } catch(_) {} });
           delete window._segmentHighlight[day];
       }
       // 3D Temizlik
@@ -10768,34 +10768,38 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   if (window.leafletMaps && window.leafletMaps[cid]) maps2D.push(window.leafletMaps[cid]);
   
   const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
-  
-  // 3D kapalıysa veya 2D harita görünürse listeye ekle
   const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
   if (expandedObj && expandedObj.expandedMap && !is3DActive) {
       maps2D.push(expandedObj.expandedMap);
   }
 
-  // Önce eski 2D highlightları temizle
+  // Önce eski highlightları temizle
   Object.values(window._segmentHighlight[day]).forEach(poly => { try { poly.remove(); } catch(_) {} });
   window._segmentHighlight[day] = {};
 
-  // --- FIX: renderer: L.svg() KALDIRILDI ---
-  // Böylece haritanın kendi renderer'ı (Canvas) kullanılır ve senkronizasyon bozulmaz.
-  const polyOptions = {
-      color: '#8a4af3', // Mor
-      weight: 9,
-      opacity: 1.0,
-      lineCap: 'round',
-      lineJoin: 'round',
-      dashArray: null
-  };
-  
-  if (isFlyMode) polyOptions.weight = 8;
-
   maps2D.forEach(m => {
-    const poly = L.polyline(subCoordsLeaflet, polyOptions).addTo(m);
+    // --- FIX: Custom Pane Oluştur ---
+    // Bu sayede mor çizgi her zaman mavi rotanın (overlayPane: z-index 400) üstünde olur.
+    if (!m.getPane('segmentPane')) {
+        m.createPane('segmentPane');
+        // Standart rota 400, Markerlar 600'dür. Biz ikisinin arasına koyuyoruz.
+        m.getPane('segmentPane').style.zIndex = 450; 
+        m.getPane('segmentPane').style.pointerEvents = 'none'; // Tıklamaları engellemesin
+    }
+
+    const poly = L.polyline(subCoordsLeaflet, {
+        color: '#8a4af3', // Mor
+        weight: 10,       // Kalınlığı artırdık
+        opacity: 1.0,
+        lineCap: 'round',
+        lineJoin: 'round',
+        dashArray: null,
+        pane: 'segmentPane' // FIX: Özel pane kullan
+    }).addTo(m);
+
     window._segmentHighlight[day][m._leaflet_id] = poly;
-    if (poly.bringToFront) poly.bringToFront();
+    
+    // Zoom/Fit işlemi
     try {
         m.fitBounds(poly.getBounds(), { padding: [50, 50], maxZoom: 16, animate: true, duration: 0.8 });
     } catch(e) {}
