@@ -10676,6 +10676,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
+// SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
 function highlightSegmentOnMap(day, startKm, endKm) {
   // --- 1. PARAMETRE KONTROLÜ VE TEMİZLİK (RESET) ---
   if (
@@ -10778,15 +10779,17 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   Object.values(window._segmentHighlight[day]).forEach(poly => { try { poly.remove(); } catch(_) {} });
   window._segmentHighlight[day] = {};
 
+  // --- FIX: renderer: L.svg() KALDIRILDI ---
+  // Böylece haritanın kendi renderer'ı (Canvas) kullanılır ve senkronizasyon bozulmaz.
   const polyOptions = {
       color: '#8a4af3', // Mor
       weight: 9,
       opacity: 1.0,
       lineCap: 'round',
       lineJoin: 'round',
-      dashArray: null,
-      renderer: L.svg()
+      dashArray: null
   };
+  
   if (isFlyMode) polyOptions.weight = 8;
 
   maps2D.forEach(m => {
@@ -10798,7 +10801,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     } catch(e) {}
   });
 
-  // --- 5. MAPLIBRE (3D) ÇİZİMİ VE ZOOM (GÜNCELLENDİ) ---
+  // --- 5. MAPLIBRE (3D) ÇİZİMİ VE ZOOM ---
   if (is3DActive && window._maplibre3DInstance) {
       const map3d = window._maplibre3DInstance;
       const subCoordsGeoJSON = coords.slice(iStart, iEnd + 1);
@@ -10828,17 +10831,15 @@ function highlightSegmentOnMap(day, startKm, endKm) {
                   'line-color': '#8a4af3',
                   'line-width': 10,
                   'line-opacity': 0.9,
-                  'line-offset': 2 // Çizgiyi hafif yukarı kaldırır (z-fighting önler)
+                  'line-offset': 2 
               }
           });
       }
 
-      // --- 3D HARİTA ZOOM (PADDING AYARLI) ---
       const bounds = new maplibregl.LngLatBounds();
       subCoordsGeoJSON.forEach(c => bounds.extend(c));
       
       map3d.fitBounds(bounds, {
-          // Alt panel yüksekliği (250px) kadar boşluk bırakıyoruz ki çizgi panelin altında kalmasın
           padding: { top: 100, bottom: 250, left: 50, right: 50 }, 
           duration: 1000
       });
