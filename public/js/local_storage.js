@@ -347,17 +347,15 @@ function loadTripFromStorage(tripKey) {
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
 
-    // --- 1. Veri Hazırlığı ---
+    // --- 1. Veri Yükleme ---
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
 
-    // AI Verisi Yükleme
     if (t.aiInfo) {
         window.cart.aiData = t.aiInfo;
         window.lastTripAIInfo = t.aiInfo;
     }
 
-    // AI Bilgi Paneli Güncelleme
     if (t.aiInfo) {
         window.lastTripAIInfo = t.aiInfo;
         let aiDiv = document.querySelector('.ai-info-section');
@@ -368,7 +366,6 @@ function loadTripFromStorage(tripKey) {
         }
     }
 
-    // İstatistikler ve Konumlar
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
     window.cart = window.cart.map(item => {
@@ -393,78 +390,71 @@ function loadTripFromStorage(tripKey) {
     if (cartDiv) cartDiv.innerHTML = "";
 
     // ============================================================
-    // --- FIX: AÇIK OLAN BÜYÜK HARİTALARI KAPAT (Buton Tetikleyerek) ---
+    // --- KESİN ÇÖZÜM: 3D'Yİ KAPAT, 2D'Yİ ZORLA AÇ ---
     // ============================================================
-    // Yeni geziye geçerken, ekranda açık kalmış haritaları kendi "Kapat" butonlarına basarak kapatıyoruz.
-    // NOT: Projenizdeki buton ID'leri farklıysa aşağıdaki listeyi güncelleyin.
     
-    const closeButtonsToTrigger = [
-        document.getElementById('close-3d-btn'),        // 3D Harita kapatma butonu
-        document.getElementById('close-expanded-btn'),  // Geniş (2D) harita kapatma butonu
-        document.getElementById('close-map-btn'),       // Genel kapatma butonu (varsa)
-        document.querySelector('.close-map-button')     // Class ile bulma alternatifi
-    ];
-
-    closeButtonsToTrigger.forEach(btn => {
-        // Buton varsa ve şu an görünür durumdaysa (aktifse) tıkla
-        if (btn && btn.offsetParent !== null) {
-            btn.click();
-        }
-    });
-
-    // Ekstra Güvenlik: Eğer buton tıklaması çalışmazsa veya buton bulunamazsa,
-    // 3D container'ı manuel olarak gizle ki eski harita asılı kalmasın.
-    const map3DContainer = document.getElementById('three-js-map-container'); 
+    // 1. 3D Container'ı bul ve YOK ET (display: none)
+    const map3DContainer = document.getElementById('three-js-map-container') || document.getElementById('map-3d-view');
     if (map3DContainer) {
         map3DContainer.style.display = 'none';
+        map3DContainer.style.zIndex = '-999';
     }
+
+    // 2. 3D Kapatma butonunu da gizle (artık 2D moddayız)
+    const closeBtn3D = document.getElementById('close-3d-btn');
+    if (closeBtn3D) {
+        closeBtn3D.style.display = 'none';
+    }
+
+    // 3. Standart 2D Map Container'ı bul ve GÖSTER
+    const map2DContainer = document.getElementById('map-container') || document.getElementById('map');
+    if (map2DContainer) {
+        map2DContainer.style.display = 'block'; // Görünür yap
+        map2DContainer.style.zIndex = '1';      // Öne al
+    }
+
+    // Eğer global bir 3D modu değişkeni varsa sıfırla
+    if (typeof window.is3DMode !== 'undefined') window.is3DMode = false;
     // ============================================================
 
-
-    // --- 3. UI Başlık ve Liste Güncellemeleri ---
+    // --- 3. UI Güncellemeleri ---
     if (typeof updateTripTitle === "function") updateTripTitle();
     if (typeof updateCart === "function") updateCart();
     if (typeof showResults === "function") showResults();
     if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
 
-
-    // --- 4. Gün Sayısını Bul ---
+    // --- 4. Rota Çizimi (Render) ---
+    // Haritayı 2D'ye zorladığımız için, rotayı çizmemiz lazım (renderRouteForDay).
+    // Yoksa kullanıcı sadece boş bir harita görür.
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
 
-    // ============================================================
-    // --- FIX: OTOMATİK HARİTA ÇİZDİRMEYİ İPTAL ET ---
-    // ============================================================
-    // Kullanıcı "Yani haritanın herhangi bir map'i gelmesin" dediği için
-    // aşağıdaki render döngüsünü pasif hale getiriyoruz. 
-    // Böylece harita otomatik yüklenmeyecek, kullanıcı isterse butona basıp açacak.
-    
-    /* setTimeout(async () => {
-        for (let day = 1; day <= maxDay; day++) {
-            await renderRouteForDay(day);
-        }
-        saveTripAfterRoutes();
-    }, 0);
-    */
-    
-    // Sadece mevcut durumu (seçili geziyi) kaydet/güncelle ki aktif gezi bu olsun.
-    // Ancak renderRouteForDay çalışmadığı için thumbnail veya polyline güncellenmeyebilir, 
-    // bu sadece geziyi aktif etmek içindir.
-    // saveTripAfterRoutes(); // Bunu da çağırmıyoruz çünkü içinde renderRouteForDay kontrolü olabilir.
-    
-    // Sadece global state'i güncellemek yeterli olabilir, ancak UI'da harita boş kalacaktır.
-    // Eğer küçük (standart) haritanın güncellenmesini istiyorsanız yukarıdaki yorumu kaldırın.
-    // Ama "Hiçbir map gelmesin" dediğiniz için kapalı tutuyoruz.
-
-    // --- 5. Görünüm Düzeltmeleri (Resize vb.) ---
-    setTimeout(function() {
-        // Harita container'larını yeniden boyutlandır (eğer görünürlerse)
+    setTimeout(async () => {
+        // Harita boyutunu düzelt (display:none'dan block'a geçince bozulabilir)
         Object.values(window.leafletMaps || {}).forEach(map => {
             if (map && typeof map.invalidateSize === 'function') {
                 map.invalidateSize();
             }
         });
-        // Slider vb. güncelle
+
+        // 1. Günü Render Et (Böylece kullanıcı gezisini 2D haritada görür)
+        if (maxDay > 0) {
+            await renderRouteForDay(1); 
+        }
+        
+        // Diğer günleri arka planda işle (isteğe bağlı)
+        for (let day = 2; day <= maxDay; day++) {
+             renderRouteForDay(day);
+        }
+        saveTripAfterRoutes();
+    }, 100); // UI render için ufak gecikme
+
+    // --- 5. Slider vb. Düzeltmeleri ---
+    setTimeout(function() {
+        document.querySelectorAll('.scale-bar-track').forEach(track => {
+            if (typeof track.handleResize === "function") track.handleResize();
+        });
+
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
                 sliderElem._splideInstance.refresh();
