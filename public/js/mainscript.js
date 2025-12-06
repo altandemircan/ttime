@@ -6109,7 +6109,7 @@ async function expandMap(containerId, day) {
         .map-ctrl-btn {
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             display: flex;
-            align-items: center;
+            align-items: center; 
             justify-content: center;
             transition: all 0.2s ease;
             backdrop-filter: blur(4px);
