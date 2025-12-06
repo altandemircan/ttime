@@ -6067,8 +6067,10 @@ async function expandMap(containerId, day) {
     { value: 'liberty',  img: '/img/preview_3d.png',       label: '3D' }
   ];
 
-  let currentLayer = localStorage.getItem(`expanded-map-layer-day${day}`) || 'bright';
-  if (!layerOptions.some(opt => opt.value === currentLayer)) currentLayer = 'bright';
+  // --- FIX: Her zaman 'bright' seçili gelsin ---
+  let currentLayer = 'bright';
+  // Hafızayı da güncelleyelim ki kafa karışıklığı olmasın
+  localStorage.setItem(`expanded-map-layer-day${day}`, 'bright');
 
   const expandedMapId = `expanded-map-${day}`;
   const expandedContainer = document.createElement('div');
