@@ -4677,6 +4677,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     color: #ffffff;
     background: #d32f2f;
     border: none;;
+    font-size: 11px;
 }
 
 .expanded-map {
