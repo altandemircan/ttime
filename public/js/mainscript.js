@@ -9668,52 +9668,15 @@ window.TT_SVG_ICONS = {
     const key = `route-map-day${day}`;
     const summary = window.lastRouteSummaries?.[key] || null;
 
-    // 1. Segment seçili mi kontrol et
-    const isSegmentSelected = window._lastSegmentDay === day && 
-                              typeof window._lastSegmentStartKm === 'number' &&
-                              typeof window._lastSegmentEndKm === 'number';
-
-    // 2. Küçük harita kontrol çubuğu
-    const smallSpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
-    if (smallSpan && summary) {
-        // Küçük haritada segment toolbar olmadığı için her zaman tam rotayı göster
-        const elev = window.routeElevStatsByDay?.[day] || {};
-        const strings = fmt(summary.distance, summary.duration, elev.ascent, elev.descent);
-        smallSpan.innerHTML = buildBadgesHTML(strings);
+    if (!summary) {
+      const span = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
+      if (span) span.innerHTML = '';
+      const statsDiv = document.querySelector(`#expanded-map-${day} .route-stats`);
+      if (statsDiv) statsDiv.innerHTML = '';
+      return;
     }
-
-    // 3. Genişletilmiş harita (route-stats) ve Segment Toolbar'ı yönet
-    const expandedContainer = document.getElementById(`expanded-map-${day}`);
-    const headerStats = expandedContainer?.querySelector('.route-stats');
-    const scaleBarDiv = expandedContainer?.querySelector(`#expanded-route-scale-bar-day${day}`);
-    const segmentToolbar = scaleBarDiv?.querySelector('.elev-segment-toolbar');
-
-    if (isSegmentSelected) {
-        // Segment seçiliyse: Normal istatistikleri gizle, Segment toolbar'ı göster
-        if (headerStats) headerStats.style.display = 'none';
-        if (segmentToolbar) segmentToolbar.style.display = 'flex';
-        return;
-    } 
-    
-    // Segment seçili değilse (Tam Rota görünümü)
-    if (headerStats) {
-        // Segment seçimi temizlendiyse: Normal istatistikleri göster
-        if (summary) {
-            const elev = window.routeElevStatsByDay?.[day] || {};
-            const strings = fmt(summary.distance, summary.duration, elev.ascent, elev.descent);
-            headerStats.innerHTML = buildBadgesHTML(strings);
-        } else {
-            headerStats.innerHTML = '';
-        }
-        // Eğer segment seçili değilse, headerStats'ı görünür yap
-        headerStats.style.display = 'flex'; 
-    }
-
-    // Segment toolbar varsa kaldır/gizle (reset işlemi bitti)
-    if (segmentToolbar) {
-        segmentToolbar.remove();
-    }
-};
+    setSummaryForDay(day, summary.distance, summary.duration);
+  };
 
   // 4) Compute ascent/descent from elevation profile (when available) and refresh UI
   function computeAscDesc(profile) {
@@ -10811,7 +10774,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     track._segmentWidthPx = segWidthPx;
   }
 
-  // SVG Çizimi (Aynı)
+  // SVG Çizimi
   const widthNow = widthPx || 400;
   const heightNow = 220;
   const svg = document.createElementNS(svgNS, 'svg');
@@ -10912,7 +10875,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <span class="pill">↑ ${Math.round(up)} m</span>
     <span class="pill">↓ ${Math.round(down)} m</span>
     <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset">Segment (X)</button>
+    <button type="button" class="elev-segment-reset">Reset</button>
   `;
   track.appendChild(tb);
 
@@ -10922,7 +10885,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       resetBtn.addEventListener('touchstart', stopProp, { passive: true });
       resetBtn.addEventListener('mousedown', stopProp);
 
-     // --- RESET BUTONU MANTIĞI (Segment (X) iken sıfırlama) ---
+     // --- RESET BUTONU MANTIĞI (HEM 2D HEM 3D) ---
      resetBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         
@@ -10943,7 +10906,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
         const selection = container.querySelector('.scale-bar-selection');
         if (selection) selection.style.display = 'none';
 
-        // 2. ZOOM RESETLEME (Aynı)
+        // 2. ZOOM RESETLEME (HEM 2D HEM 3D)
         const allPoints = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
         const validPoints = allPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
 
@@ -10975,7 +10938,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
             }
         }
 
-        // 3. Scale Bar Reset (Aynı)
+        // 3. Scale Bar Reset
         container._elevStartKm = 0;
         container._elevKmSpan  = totalKm;
 
@@ -10997,17 +10960,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
             renderRouteScaleBar(container, totalKm, markers);
           }
         }
-        
-        // 4. İstatistikleri tekrar Road (tam rota) olarak göster
-        updateRouteStatsUI(day);
       });
-  }
-  
-  // Segment seçildiği anda (toolbar oluşturulduğunda) tam rota istatistiklerini gizle
-  const expandedContainer = document.getElementById(`expanded-map-${day}`);
-  const headerStats = expandedContainer?.querySelector('.route-stats');
-  if (headerStats) {
-      headerStats.style.display = 'none';
   }
 }
 
