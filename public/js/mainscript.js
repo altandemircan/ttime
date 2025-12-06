@@ -9668,14 +9668,13 @@ window.updateRouteStatsUI = function(day) {
     const key = `route-map-day${day}`;
     const summary = window.lastRouteSummaries?.[key] || null;
     const expandedContainer = document.getElementById(`expanded-map-${day}`);
-    const scaleBarDiv = expandedContainer?.querySelector(`#expanded-route-scale-bar-day${day}`);
     
-    // NOT: Eski .route-stats'ı (varsa) kaldır (Artık kullanılmayacak)
+    // NOT: Eski .route-stats'ı (varsa) kaldır
     expandedContainer?.querySelector('.route-stats')?.remove();
 
-    // Mevcut segment toolbar'ı bul (ve segment seçiliyken DOM'dan kaldırılmaması için kontrol et)
+    // Mevcut segment toolbar'ı bul
     const existingToolbar = expandedContainer?.querySelector('.elev-segment-toolbar');
-
+    
     // 1. Segment seçili mi kontrol et
     const isSegmentSelected = window._lastSegmentDay === day && 
                               typeof window._lastSegmentStartKm === 'number' &&
@@ -9691,7 +9690,7 @@ window.updateRouteStatsUI = function(day) {
 
     if (!expandedContainer) return; // Genişletilmiş harita yoksa çık
 
-    // 3. Segment seçiliyse: drawSegmentProfile zaten ilgili toolbar'ı oluşturdu.
+    // 3. Segment seçiliyse: drawSegmentProfile zaten ilgili toolbar'ı oluşturdu/bıraktı. Çık.
     if (isSegmentSelected) {
         if (existingToolbar) existingToolbar.style.display = 'flex';
         return;
@@ -9699,7 +9698,7 @@ window.updateRouteStatsUI = function(day) {
     
     // 4. Segment seçili değilse: TAM ROTA istatistiklerini Segment Toolbar formunda yaz
     
-    // Önce eski toolbar'ı kaldır
+    // Önce eski segment toolbar'ı kaldır
     if (existingToolbar) existingToolbar.remove();
 
     if (summary) {
@@ -9709,7 +9708,6 @@ window.updateRouteStatsUI = function(day) {
         const down = Math.round(elev.descent || 0);
         const durationMin = Math.round(summary.duration / 60);
 
-        // Ortalama eğim hesapla (Basitleştirilmiş: Sadece toplam yükseklik farkı / toplam mesafe)
         const startElev = elev.startElev || (elev.smooth && elev.smooth[0]) || 0;
         const endElev = elev.endElev || (elev.smooth && elev.smooth[elev.smooth.length - 1]) || 0;
         const elevDiff = endElev - startElev;
@@ -9726,22 +9724,16 @@ window.updateRouteStatsUI = function(day) {
             <span class="pill">↑ ${up} m</span>
             <span class="pill">↓ ${down} m</span>
             <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-            <button type="button" class="elev-segment-reset">Road</button>
+            <button type="button" class="elev-segment-reset" style="background:#9159ed; cursor: default;">Road</button>
         `;
         
-        // Toolbar'ı panel içine, harita ve diğer panellerin hemen üstüne ekle (drawSegmentProfile ile aynı yerleştirme mantığı)
+        // Toolbar'ı panel içine, harita ve diğer panellerin hemen üstüne ekle
         const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
 
         if (panelDiv && panelDiv.firstChild) {
             panelDiv.insertBefore(tb, panelDiv.firstChild);
         } else if (panelDiv) {
             panelDiv.appendChild(tb);
-        }
-        
-        // Road butonu, tam rotadayken hiçbir şey yapmaz, sadece Road olduğunu belirtir
-        const roadBtn = tb.querySelector('.elev-segment-reset');
-        if (roadBtn) {
-            roadBtn.style.cursor = 'default';
         }
     }
 };
@@ -10947,18 +10939,17 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <span class="pill">↑ ${Math.round(up)} m</span>
     <span class="pill">↓ ${Math.round(down)} m</span>
     <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset">Segment (X)</button>
+    <button type="button" class="elev-segment-reset" style="background:#d32f2f;">Segment (X)</button>
   `;
   
   // Toolbar'ı, expanded container'daki harita div'den sonraki ilk yere ekle
-  const mapDiv = expandedContainer.querySelector('.expanded-map');
-  const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
+  const expandedContainerChildren = expandedContainer.querySelector('.expanded-map-panel');
 
   // Toolbar'ı PANEL içine, harita ve diğer panellerin hemen üstüne ekle (DOM yapısı korunuyor)
-  if (panelDiv && panelDiv.firstChild) {
-      panelDiv.insertBefore(tb, panelDiv.firstChild);
-  } else if (panelDiv) {
-      panelDiv.appendChild(tb);
+  if (expandedContainerChildren && expandedContainerChildren.firstChild) {
+      expandedContainerChildren.insertBefore(tb, expandedContainerChildren.firstChild);
+  } else if (expandedContainerChildren) {
+      expandedContainerChildren.appendChild(tb);
   }
   
   const resetBtn = tb.querySelector('.elev-segment-reset');
