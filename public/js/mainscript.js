@@ -6086,82 +6086,102 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME
+  // 1. STİL EKLEME (MOBİL FIX GÜNCELLENDİ)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
       style.innerHTML = `
-  
- .map-custom-controls {
-    position: absolute;
-    bottom: 200px;
-    right: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 10001;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    padding: 6px;
-    border-radius: 12px;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-}  
-  .map-ctrl-btn {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
-    padding: 6px 12px;
-    background: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    cursor: pointer;
+        /* --- ANA KAPSAYICI (MOBİL FIX: svh KULLANIMI) --- */
+        .expanded-map-container {
+            position: fixed !important;
+            top: 0; 
+            left: 0; 
+            width: 100%;
+            /* 100svh: Adres çubuğu açıkkenki en küçük görünür alan. Kaydırma gerektirmez. */
+            height: 100vh; 
+            height: 100svh; 
+            z-index: 9999;
+            background: #fff;
+            overflow: hidden;
+        }
+        
+        /* Harita Alanı */
+        .expanded-map {
+             width: 100% !important;
+             height: 100% !important;
+        }
+
+        /* --- ALT PANEL (Grafik) --- */
+        .expanded-map-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: auto; 
+            min-height: 220px;
+            z-index: 20; 
+            background: #fff;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            padding-top: 5px;
+            /* iPhone alt çubuğu için güvenli alan */
+            padding-bottom: env(safe-area-inset-bottom, 20px); 
+        }
+
+        /* --- SAĞ ALT KONTROLLER (KONUM DÜZELTMESİ) --- */
+        .map-custom-controls {
+            position: absolute;
+            /* Panelin yüksekliği + Safe Area + Biraz ekstra boşluk */
+            /* svh kullandığımız için artık bottom ekranın görünen altından başlar */
+            bottom: calc(240px + env(safe-area-inset-bottom, 20px));
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10001; 
+            pointer-events: auto;
+        }
+        
+        /* --- ÜST HEADER --- */
+        .expanded-map-header { 
+            position: absolute; 
+            /* Çentik (Notch) güvenliği */
+            top: calc(15px + env(safe-area-inset-top, 10px)); 
+            left: 15px; 
+            z-index: 10001; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            flex-wrap: wrap; /* Mobilde taşarsa aşağı insin */
+            pointer-events: auto;
+        }
+
+        /* --- KAPAT BUTONU --- */
+        .close-expanded-map {
+             position: absolute;
+             top: calc(15px + env(safe-area-inset-top, 10px));
+             right: 15px;
+             z-index: 10002;
+        }
+
+        /* --- DİĞER GENEL STİLLER --- */
+        .map-ctrl-btn {
+            width: 44px; height: 44px; background: #ffffff; border: 1px solid #e0e0e0;
+            border-radius: 10px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
+            padding: 0; color: #555;
         }
         .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
-
-.map-ctrl-btn.zoom-text {
-    font-size: 22px;
-    font-weight: 300;
-    line-height: 1;
-    color: #666;
-    padding-bottom: 2px;
-}
-
+        .map-ctrl-btn.zoom-text { font-size: 26px; font-weight: 300; line-height: 1; color: #666; padding-bottom: 2px; }
         .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
-
-.expanded-map-header {
-    position: absolute;
-    bottom: 200px;
-    left: 10px;
-    z-index: 10001;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.map-layers-row {
-    display: flex;
-    gap: 8px;
-    /* background: rgba(255, 255, 255, 0.85); */
-    padding: 6px;
-    border-radius: 12px;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    flex-direction: column;
-}
-
-       .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 13px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .map-layers-row { display: flex; gap: 8px; background: rgba(255, 255, 255, 0.85); padding: 6px; border-radius: 12px; backdrop-filter: blur(4px); border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 13px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .map-type-option img { width: 20px; height: 20px; border-radius: 4px; object-fit: cover; }
         .map-type-option:hover { background: #f9f9f9; transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.1); border-color: #d0d0d0; }
         .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
         .map-type-option.selected img { opacity: 1; }
         
-        /* 3D MAP SCALE BAR STİLİ */
         .maplibregl-ctrl-bottom-left {
             bottom: 30px !important; 
             left: 20px !important;
@@ -6181,6 +6201,22 @@ async function expandMap(containerId, day) {
             height: auto !important;
             line-height: 1.4 !important;
             pointer-events: auto;
+        }
+
+        /* Küçük ekranlar için düzenlemeler */
+        @media (max-width: 480px) {
+            .map-layers-row { 
+                padding: 4px; 
+                gap: 4px; 
+            }
+            .map-type-option { 
+                padding: 4px 8px; 
+                font-size: 11px; 
+            }
+            .map-type-option img { 
+                width: 16px; 
+                height: 16px; 
+            }
         }
       `;
       document.head.appendChild(style);
