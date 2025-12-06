@@ -4658,6 +4658,10 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     font-size: 11px;
     color: #1e293b;
     font-weight: 700;
+
+    justify-content: flex-end;
+    border-radius: 0;
+    width: 100%;
 }
 
 @media (max-width: 768px) {
