@@ -6095,9 +6095,7 @@ async function expandMap(containerId, day) {
     border-radius: 12px;
     backdrop-filter: blur(4px);
     border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-      
+}  
   .map-ctrl-btn {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     display: flex;
@@ -6310,7 +6308,7 @@ async function expandMap(containerId, day) {
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
     <div class="custom-compass-disc">
-       <img src="https://www.svgrepo.com/show/532130/compass.svg" style="width:100%;height:100%;" alt="N">
+       <img src="https://www.svgrepo.com/show/526952/compass-big.svg" style="width:100%;height:100%;" alt="N">
     </div>
   `;
   compassBtn.onclick = function() {
