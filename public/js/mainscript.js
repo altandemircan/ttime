@@ -10675,6 +10675,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 // YOKSA EKLE: (varsa atla)
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT (GÜNCELLENDİ)
+// SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT (FINAL FIX)
 function highlightSegmentOnMap(day, startKm, endKm) {
   // --- 1. PARAMETRE KONTROLÜ VE TEMİZLİK (RESET) ---
   
@@ -10772,7 +10773,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
   const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
   
-  // 3D kapalıysa Expanded Map'i 2D listesine ekle
   if (expandedObj && expandedObj.expandedMap && !is3DActive) {
       maps2D.push(expandedObj.expandedMap);
   }
@@ -10783,7 +10783,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   // Marker Stili (2D)
   const markerOptions = {
-      radius: 5,
+      radius: 6,
       color: '#8a4af3',
       fillColor: '#ffffff',
       fillOpacity: 1,
@@ -10794,19 +10794,22 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   };
 
   maps2D.forEach(m => {
-    // Custom Pane yoksa oluştur
+    // --- FIX: High Z-Index Pane ---
+    // Katmanı en üste (650) alıyoruz. MarkerPane genelde 600'dür.
+    // Bu sayede mavi çizginin üstünde kalması garanti olur.
     if (!m.getPane('segmentPane')) {
         m.createPane('segmentPane');
-        m.getPane('segmentPane').style.zIndex = 450; 
+        m.getPane('segmentPane').style.zIndex = 650; 
         m.getPane('segmentPane').style.pointerEvents = 'none';
     }
 
+    // Özel bir SVG renderer oluşturuyoruz, böylece Canvas harita ile karışmaz
     const svgRenderer = L.svg({ pane: 'segmentPane' });
 
     // 1. Çizgi
     const poly = L.polyline(subCoordsLeaflet, {
-        color: '#8a4af3', // Mor
-        weight: 6,        // Normal Rota kalınlığı
+        color: '#8a4af3', 
+        weight: 8,        
         opacity: 1.0,
         lineCap: 'round',
         lineJoin: 'round',
@@ -10817,12 +10820,11 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     
     window._segmentHighlight[day][`poly_${m._leaflet_id}`] = poly;
 
-    // 2. Başlangıç Marker
+    // 2. Markerlar
     const startPt = subCoordsLeaflet[0];
     const startMarker = L.circleMarker(startPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     window._segmentHighlight[day][`start_${m._leaflet_id}`] = startMarker;
 
-    // 3. Bitiş Marker
     const endPt = subCoordsLeaflet[subCoordsLeaflet.length - 1];
     const endMarker = L.circleMarker(endPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     window._segmentHighlight[day][`end_${m._leaflet_id}`] = endMarker;
@@ -10832,7 +10834,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
         if (poly.getBounds().isValid()) {
             m.fitBounds(poly.getBounds(), { 
                 padding: [50, 50], 
-                maxZoom: 16, // Zoom limiti
+                maxZoom: 16,
                 animate: true, 
                 duration: 0.8 
             });
@@ -10848,18 +10850,19 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       const sourceId = 'segment-highlight-source';
       const layerId = 'segment-highlight-layer';
 
-      // GeoJSON Verisi
-      const data = {
-          type: 'Feature',
-          geometry: { type: 'LineString', coordinates: subCoordsGeoJSON }
-      };
-
+      // Veriyi Kaynağa Ekle/Güncelle
       if (map3d.getSource(sourceId)) {
-          map3d.getSource(sourceId).setData(data);
+          map3d.getSource(sourceId).setData({
+              type: 'Feature',
+              geometry: { type: 'LineString', coordinates: subCoordsGeoJSON }
+          });
       } else {
           map3d.addSource(sourceId, {
               type: 'geojson',
-              data: data
+              data: {
+                  type: 'Feature',
+                  geometry: { type: 'LineString', coordinates: subCoordsGeoJSON }
+              }
           });
           
           map3d.addLayer({
@@ -10872,17 +10875,18 @@ function highlightSegmentOnMap(day, startKm, endKm) {
               },
               paint: {
                   'line-color': '#8a4af3',  // Mor
-                  'line-width': 14,         // FIX: Daha kalın (Maviyi tam örtsün)
+                  'line-width': 16,         // FIX: Mavi çizgiden (8px) çok daha kalın yapıyoruz
                   'line-opacity': 1.0,
-                  // FIX: line-translate ile fiziksel olarak yukarı (ekrana doğru) taşıyoruz (piksel cinsinden)
-                  // Bu Z-fighting'i kesin çözer.
-                  'line-translate': [0, -2] 
+                  'line-offset': 0
               }
           });
-          
-          // Katmanı en üste taşı (Label'ların altına ama rotanın üstüne)
-          // Eğer haritada sembol katmanları varsa onların altına koymak daha şık olabilir, 
-          // ama şu an rotanın üstünde olması garanti olsun diye en üste ekleniyor.
+      }
+
+      // --- FIX: KATMANI EN ÜSTE TAŞI ---
+      // Katmanı çizdikten sonra zorla en üste (z-order) taşıyoruz.
+      // Bu, 3D motorunda mavi çizginin üstüne çıkmasını garanti eder.
+      if (map3d.getLayer(layerId)) {
+          map3d.moveLayer(layerId); 
       }
 
       // 3D Markerlar
@@ -10892,13 +10896,13 @@ function highlightSegmentOnMap(day, startKm, endKm) {
           const el = document.createElement('div');
           el.className = 'segment-marker-3d';
           el.style.cssText = `
-              width: 12px; 
-              height: 12px; 
+              width: 14px; 
+              height: 14px; 
               background-color: #ffffff; 
-              border: 2px solid #8a4af3; 
+              border: 3px solid #8a4af3; 
               border-radius: 50%;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-              z-index: 1; /* Markerlar çizginin üstünde kalsın */
+              box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+              z-index: 9999; /* Marker en üstte */
           `;
           const marker = new maplibregl.Marker({ element: el })
               .setLngLat(lngLat)
@@ -10915,16 +10919,17 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       const bounds = new maplibregl.LngLatBounds();
       subCoordsGeoJSON.forEach(c => bounds.extend(c));
       
-      // Bottom padding artırıldı!
-      // Panel yaklaşık 220px + header vs = 300px güvenli alan.
+      // Padding dengelendi:
+      // Alt panel ~220px. Bottom padding 240px yeterli. 
+      // Çok fazla padding (300+) haritayı sıkıştırıp zoom yapmasını engelliyordu.
       map3d.fitBounds(bounds, {
           padding: { 
-              top: 50, 
-              bottom: 300, // FIX: Alt panelin altında kalmaması için büyük padding
-              left: 50, 
-              right: 50 
+              top: 60, 
+              bottom: 240, 
+              left: 60, 
+              right: 60 
           }, 
-          duration: 1000 // 1 saniyelik animasyon
+          duration: 1000
       });
   }
 }
