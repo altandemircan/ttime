@@ -10677,10 +10677,11 @@ function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L
 
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
+// SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
 function highlightSegmentOnMap(day, startKm, endKm) {
   // --- 1. PARAMETRE KONTROLÜ VE TEMİZLİK (RESET) ---
   
-  // 3D Marker Temizliği (Global bir dizide tutuyoruz)
+  // 3D Marker Temizliği
   if (window._segment3DMarkers) {
       window._segment3DMarkers.forEach(m => m.remove());
       window._segment3DMarkers = [];
@@ -10691,7 +10692,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       typeof endKm !== "number" ||
       typeof day !== "number"
   ) {
-      // 2D Temizlik (Polyline ve Markerlar silinir)
+      // 2D Temizlik
       if (window._segmentHighlight && window._segmentHighlight[day]) {
           Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
           delete window._segmentHighlight[day];
@@ -10781,20 +10782,19 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
   window._segmentHighlight[day] = {};
 
-  // Marker Stili (Baş ve Son için)
+  // Marker Stili
   const markerOptions = {
-      radius: 6,
-      color: '#8a4af3',      // Çerçeve rengi (Mor)
-      fillColor: '#ffffff',  // İç dolgu (Beyaz)
+      radius: 5,             // Biraz küçülttük (çizgi inceldiği için)
+      color: '#8a4af3',
+      fillColor: '#ffffff',
       fillOpacity: 1,
-      weight: 3,
+      weight: 2,
       opacity: 1,
       interactive: false,
-      pane: 'segmentPane'    // Çizgiyle aynı katmanda
+      pane: 'segmentPane'
   };
 
   maps2D.forEach(m => {
-    // Custom Pane yoksa oluştur
     if (!m.getPane('segmentPane')) {
         m.createPane('segmentPane');
         m.getPane('segmentPane').style.zIndex = 450; 
@@ -10804,7 +10804,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     // 1. Çizgiyi çiz
     const poly = L.polyline(subCoordsLeaflet, {
         color: '#8a4af3',
-        weight: 10,
+        weight: 6,       // FIX: 10'dan 6'ya düşürüldü (Normal Rota Boyutu)
         opacity: 1.0,
         lineCap: 'round',
         lineJoin: 'round',
@@ -10812,15 +10812,14 @@ function highlightSegmentOnMap(day, startKm, endKm) {
         pane: 'segmentPane' 
     }).addTo(m);
     
-    // Referansı sakla (silmek için)
     window._segmentHighlight[day][`poly_${m._leaflet_id}`] = poly;
 
-    // 2. Başlangıç Noktası (Start)
+    // 2. Başlangıç Noktası
     const startPt = subCoordsLeaflet[0];
     const startMarker = L.circleMarker(startPt, markerOptions).addTo(m);
     window._segmentHighlight[day][`start_${m._leaflet_id}`] = startMarker;
 
-    // 3. Bitiş Noktası (End)
+    // 3. Bitiş Noktası
     const endPt = subCoordsLeaflet[subCoordsLeaflet.length - 1];
     const endMarker = L.circleMarker(endPt, markerOptions).addTo(m);
     window._segmentHighlight[day][`end_${m._leaflet_id}`] = endMarker;
@@ -10836,7 +10835,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       const map3d = window._maplibre3DInstance;
       const subCoordsGeoJSON = coords.slice(iStart, iEnd + 1);
 
-      // A) Çizgiyi Çiz
       const sourceId = 'segment-highlight-source';
       const layerId = 'segment-highlight-layer';
 
@@ -10860,9 +10858,9 @@ function highlightSegmentOnMap(day, startKm, endKm) {
               layout: { 'line-join': 'round', 'line-cap': 'round' },
               paint: {
                   'line-color': '#8a4af3',
-                  'line-width': 10,
-                  'line-opacity': 0.9,
-                  'line-offset': 2 
+                  'line-width': 8, // FIX: 10'dan 8'e düşürüldü (3D Rota Boyutu)
+                  'line-opacity': 1.0,
+                  'line-offset': 1 // Çakışmayı önlemek için çok hafif offset
               }
           });
       }
@@ -10874,10 +10872,10 @@ function highlightSegmentOnMap(day, startKm, endKm) {
           const el = document.createElement('div');
           el.className = 'segment-marker-3d';
           el.style.cssText = `
-              width: 14px; 
-              height: 14px; 
+              width: 12px; 
+              height: 12px; 
               background-color: #ffffff; 
-              border: 3px solid #8a4af3; 
+              border: 2px solid #8a4af3; 
               border-radius: 50%;
               box-shadow: 0 1px 4px rgba(0,0,0,0.3);
           `;
@@ -10887,12 +10885,9 @@ function highlightSegmentOnMap(day, startKm, endKm) {
           window._segment3DMarkers.push(marker);
       };
 
-      // Start Point
       create3DMarker(subCoordsGeoJSON[0]);
-      // End Point
       create3DMarker(subCoordsGeoJSON[subCoordsGeoJSON.length - 1]);
 
-      // C) Zoom
       const bounds = new maplibregl.LngLatBounds();
       subCoordsGeoJSON.forEach(c => bounds.extend(c));
       
