@@ -6127,6 +6127,7 @@ async function expandMap(containerId, day) {
       layersBar.classList.toggle('closed');
   };
 
+  // KRİTİK DÜZELTME: Tıklama olayını .map-layers-row container'ına doğrudan bağla
   layersBar.addEventListener('click', handleMapRowClick);
 
   layerOptions.forEach(opt => {
@@ -6140,7 +6141,7 @@ async function expandMap(containerId, day) {
     // Her bir butona tıklama işlevini ekle
     div.addEventListener('click', (e) => {
         // Option'a tıklandığında, row'un kendi click event'i zaten bubble olur,
-        // ancak biz burada sadece seçim/kapanma mantığını tetikliyoruz.
+        // biz burada sadece seçim/kapanma mantığını tetikliyoruz.
         e.stopPropagation();
         handleMapOptionClick(e, opt.value);
     });
