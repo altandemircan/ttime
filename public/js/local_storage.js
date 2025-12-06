@@ -347,15 +347,59 @@ function loadTripFromStorage(tripKey) {
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
 
+    // ============================================================
+    // --- AGRESİF TEMİZLİK (SCORCHED EARTH POLICY) ---
+    // ============================================================
+    
+    // 1. MapLibre 3D Instance'ını bellekten sil
+    if (window._maplibre3DInstance) {
+        try { 
+            window._maplibre3DInstance.remove(); 
+        } catch(e) { 
+            console.warn("MapLibre remove error:", e); 
+        }
+        window._maplibre3DInstance = null;
+    }
+
+    // 2. 3D Harita DOM Elementini sayfadan söküp at
+    const map3DElement = document.getElementById('maplibre-3d-view');
+    if (map3DElement) {
+        map3DElement.remove();
+    }
+    // (Yedek: ID farklıysa diye class veya query ile hepsini sil)
+    document.querySelectorAll('#maplibre-3d-view').forEach(el => el.remove());
+
+    // 3. Genişletilmiş Harita Konteynerlerini (Overlay) sil
+    // Bunlar body'ye append edildiği için manuel silinmeli
+    document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
+
+    // 4. Global Harita State'ini Sıfırla
+    if (window.expandedMaps) {
+        // Varsa leaflet instance'larını da temizle
+        Object.values(window.expandedMaps).forEach(obj => {
+            if (obj && obj.expandedMap) {
+                try { obj.expandedMap.remove(); } catch(_) {}
+            }
+        });
+        window.expandedMaps = {};
+    }
+
+    // 5. 3D'ye ait pusula vs. butonları gizle
+    document.querySelectorAll('.ctrl-compass').forEach(el => el.style.display = 'none');
+
+    // ============================================================
+
     // --- 1. Veri Yükleme ---
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
 
+    // AI Verisi
     if (t.aiInfo) {
         window.cart.aiData = t.aiInfo;
         window.lastTripAIInfo = t.aiInfo;
     }
 
+    // AI Paneli Güncelleme
     if (t.aiInfo) {
         window.lastTripAIInfo = t.aiInfo;
         let aiDiv = document.querySelector('.ai-info-section');
@@ -368,6 +412,7 @@ function loadTripFromStorage(tripKey) {
 
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
+    // Data normalizasyonu
     window.cart = window.cart.map(item => {
         item.day = (item.day == null || isNaN(Number(item.day))) ? 1 : Number(item.day);
         if (item.location) {
@@ -389,65 +434,36 @@ function loadTripFromStorage(tripKey) {
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
 
-    // ============================================================
-    // --- KESİN ÇÖZÜM: 3D'Yİ KAPAT, 2D'Yİ ZORLA AÇ ---
-    // ============================================================
-    
-    // 1. 3D Container'ı bul ve YOK ET (display: none)
-    const map3DContainer = document.getElementById('three-js-map-container') || document.getElementById('map-3d-view');
-    if (map3DContainer) {
-        map3DContainer.style.display = 'none';
-        map3DContainer.style.zIndex = '-999';
-    }
-
-    // 2. 3D Kapatma butonunu da gizle (artık 2D moddayız)
-    const closeBtn3D = document.getElementById('close-3d-btn');
-    if (closeBtn3D) {
-        closeBtn3D.style.display = 'none';
-    }
-
-    // 3. Standart 2D Map Container'ı bul ve GÖSTER
-    const map2DContainer = document.getElementById('map-container') || document.getElementById('map');
-    if (map2DContainer) {
-        map2DContainer.style.display = 'block'; // Görünür yap
-        map2DContainer.style.zIndex = '1';      // Öne al
-    }
-
-    // Eğer global bir 3D modu değişkeni varsa sıfırla
-    if (typeof window.is3DMode !== 'undefined') window.is3DMode = false;
-    // ============================================================
-
     // --- 3. UI Güncellemeleri ---
     if (typeof updateTripTitle === "function") updateTripTitle();
     if (typeof updateCart === "function") updateCart();
     if (typeof showResults === "function") showResults();
     if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
 
-    // --- 4. Rota Çizimi (Render) ---
-    // Haritayı 2D'ye zorladığımız için, rotayı çizmemiz lazım (renderRouteForDay).
-    // Yoksa kullanıcı sadece boş bir harita görür.
+    // --- 4. Rota Çizimi (Normal 2D) ---
+    // Sadece 1. günü hemen çizelim, diğerleri arkadan gelsin
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
 
     setTimeout(async () => {
-        // Harita boyutunu düzelt (display:none'dan block'a geçince bozulabilir)
+        // Harita boyutlarını düzelt
         Object.values(window.leafletMaps || {}).forEach(map => {
             if (map && typeof map.invalidateSize === 'function') {
                 map.invalidateSize();
             }
         });
 
-        // 1. Günü Render Et (Böylece kullanıcı gezisini 2D haritada görür)
+        // 1. Günü Render Et
         if (maxDay > 0) {
             await renderRouteForDay(1); 
         }
         
-        // Diğer günleri arka planda işle (isteğe bağlı)
+        // Diğer günleri işle
         for (let day = 2; day <= maxDay; day++) {
              renderRouteForDay(day);
         }
         saveTripAfterRoutes();
-    }, 100); // UI render için ufak gecikme
+    }, 100);
 
     // --- 5. Slider vb. Düzeltmeleri ---
     setTimeout(function() {
@@ -464,7 +480,6 @@ function loadTripFromStorage(tripKey) {
 
     return true;
 }
-
 function groupTripsByDate(trips) {
     const grouped = {};
     Object.values(trips).forEach(trip => {
