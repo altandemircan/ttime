@@ -10679,17 +10679,24 @@ function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
 function highlightSegmentOnMap(day, startKm, endKm) {
   // --- 1. PARAMETRE KONTROLÜ VE TEMİZLİK (RESET) ---
+  
+  // 3D Marker Temizliği (Global bir dizide tutuyoruz)
+  if (window._segment3DMarkers) {
+      window._segment3DMarkers.forEach(m => m.remove());
+      window._segment3DMarkers = [];
+  }
+
   if (
       typeof startKm !== "number" ||
       typeof endKm !== "number" ||
       typeof day !== "number"
   ) {
-      // 2D Temizlik
+      // 2D Temizlik (Polyline ve Markerlar silinir)
       if (window._segmentHighlight && window._segmentHighlight[day]) {
-          Object.values(window._segmentHighlight[day]).forEach(poly => { try { poly.remove(); } catch(_) {} });
+          Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
           delete window._segmentHighlight[day];
       }
-      // 3D Temizlik
+      // 3D Line Temizlik
       if (window._maplibre3DInstance) {
           if (window._maplibre3DInstance.getLayer('segment-highlight-layer')) {
               window._maplibre3DInstance.removeLayer('segment-highlight-layer');
@@ -10707,13 +10714,10 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   let coords = null;
   let isFlyMode = false;
 
-  // Fly Mode (Yay) verisi var mı?
   if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 1) {
       coords = window._curvedArcPointsByDay[day]; 
       isFlyMode = true;
-  } 
-  // Yoksa Normal OSRM GeoJSON verisi
-  else {
+  } else {
       const gj = window.lastRouteGeojsons?.[cid];
       if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
           coords = gj.features[0].geometry.coordinates; 
@@ -10773,43 +10777,66 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       maps2D.push(expandedObj.expandedMap);
   }
 
-  // Önce eski highlightları temizle
-  Object.values(window._segmentHighlight[day]).forEach(poly => { try { poly.remove(); } catch(_) {} });
+  // Eski highlightları temizle
+  Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
   window._segmentHighlight[day] = {};
 
+  // Marker Stili (Baş ve Son için)
+  const markerOptions = {
+      radius: 6,
+      color: '#8a4af3',      // Çerçeve rengi (Mor)
+      fillColor: '#ffffff',  // İç dolgu (Beyaz)
+      fillOpacity: 1,
+      weight: 3,
+      opacity: 1,
+      interactive: false,
+      pane: 'segmentPane'    // Çizgiyle aynı katmanda
+  };
+
   maps2D.forEach(m => {
-    // --- FIX: Custom Pane Oluştur ---
-    // Bu sayede mor çizgi her zaman mavi rotanın (overlayPane: z-index 400) üstünde olur.
+    // Custom Pane yoksa oluştur
     if (!m.getPane('segmentPane')) {
         m.createPane('segmentPane');
-        // Standart rota 400, Markerlar 600'dür. Biz ikisinin arasına koyuyoruz.
         m.getPane('segmentPane').style.zIndex = 450; 
-        m.getPane('segmentPane').style.pointerEvents = 'none'; // Tıklamaları engellemesin
+        m.getPane('segmentPane').style.pointerEvents = 'none';
     }
 
+    // 1. Çizgiyi çiz
     const poly = L.polyline(subCoordsLeaflet, {
-        color: '#8a4af3', // Mor
-        weight: 10,       // Kalınlığı artırdık
+        color: '#8a4af3',
+        weight: 10,
         opacity: 1.0,
         lineCap: 'round',
         lineJoin: 'round',
         dashArray: null,
-        pane: 'segmentPane' // FIX: Özel pane kullan
+        pane: 'segmentPane' 
     }).addTo(m);
-
-    window._segmentHighlight[day][m._leaflet_id] = poly;
     
-    // Zoom/Fit işlemi
+    // Referansı sakla (silmek için)
+    window._segmentHighlight[day][`poly_${m._leaflet_id}`] = poly;
+
+    // 2. Başlangıç Noktası (Start)
+    const startPt = subCoordsLeaflet[0];
+    const startMarker = L.circleMarker(startPt, markerOptions).addTo(m);
+    window._segmentHighlight[day][`start_${m._leaflet_id}`] = startMarker;
+
+    // 3. Bitiş Noktası (End)
+    const endPt = subCoordsLeaflet[subCoordsLeaflet.length - 1];
+    const endMarker = L.circleMarker(endPt, markerOptions).addTo(m);
+    window._segmentHighlight[day][`end_${m._leaflet_id}`] = endMarker;
+    
+    // Zoom/Fit
     try {
         m.fitBounds(poly.getBounds(), { padding: [50, 50], maxZoom: 16, animate: true, duration: 0.8 });
     } catch(e) {}
   });
 
-  // --- 5. MAPLIBRE (3D) ÇİZİMİ VE ZOOM ---
+  // --- 5. MAPLIBRE (3D) ÇİZİMİ ---
   if (is3DActive && window._maplibre3DInstance) {
       const map3d = window._maplibre3DInstance;
       const subCoordsGeoJSON = coords.slice(iStart, iEnd + 1);
 
+      // A) Çizgiyi Çiz
       const sourceId = 'segment-highlight-source';
       const layerId = 'segment-highlight-layer';
 
@@ -10840,6 +10867,32 @@ function highlightSegmentOnMap(day, startKm, endKm) {
           });
       }
 
+      // B) Baş ve Son Noktaları Ekle (HTML Marker)
+      window._segment3DMarkers = window._segment3DMarkers || [];
+      
+      const create3DMarker = (lngLat) => {
+          const el = document.createElement('div');
+          el.className = 'segment-marker-3d';
+          el.style.cssText = `
+              width: 14px; 
+              height: 14px; 
+              background-color: #ffffff; 
+              border: 3px solid #8a4af3; 
+              border-radius: 50%;
+              box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+          `;
+          const marker = new maplibregl.Marker({ element: el })
+              .setLngLat(lngLat)
+              .addTo(map3d);
+          window._segment3DMarkers.push(marker);
+      };
+
+      // Start Point
+      create3DMarker(subCoordsGeoJSON[0]);
+      // End Point
+      create3DMarker(subCoordsGeoJSON[subCoordsGeoJSON.length - 1]);
+
+      // C) Zoom
       const bounds = new maplibregl.LngLatBounds();
       subCoordsGeoJSON.forEach(c => bounds.extend(c));
       
@@ -10849,7 +10902,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       });
   }
 }
-
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
   const svgNS = 'http://www.w3.org/2000/svg';
 
