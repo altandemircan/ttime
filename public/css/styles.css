@@ -4437,8 +4437,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .expanded-map, #maplibre-3d-view  {
     width: 100% !important;    
     min-height: 285px;
-     height: calc(100% - 190px) !important;
-    bottom: 190px;
+     height: calc(100% - 180px) !important;
+    bottom: 180px;
 }
 
 
@@ -4600,7 +4600,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     align-items: center;
     /* box-shadow: 0 3px 14px rgb(0 0 0 / 8%); */
     flex-direction: column;
-    height: 155px;
+    height: 145px;
 }
 
 @media (max-width: 768px) {
