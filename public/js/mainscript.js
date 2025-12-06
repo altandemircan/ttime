@@ -6086,88 +6086,100 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (YENİ DOM YAPISINA UYGUN GÜNCELLENDİ)
+  // 1. STİL EKLEME (SENİN YOLLADIĞIN ORİJİNAL STİL KODLARI)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
+      // BURASI SENİN GÖNDERDİĞİN ORİJİNAL STİL BLOKLARI OLARAK KALACAK
       style.innerHTML = `
-        /* PANEL AYARLARI (Esnek Kutu) */
-        .expanded-map-panel {
-            position: absolute; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%;
-            height: auto; 
-            min-height: 220px; 
-            z-index: 20; 
-            background: #fff;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            padding-top: 5px;
-            padding-bottom: env(safe-area-inset-bottom, 20px);
-            display: flex;
-            flex-direction: column; /* İçerikleri alt alta sırala */
-        }
-
-        /* HEADER (Panel içinde en üstte) */
-        .expanded-map-header { 
-            position: relative; /* Absolute kaldırıldı */
-            bottom: auto; left: auto;
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
-            padding: 8px 15px;
-            z-index: 10001;
-            order: 1; /* Sıralama: 1 */
-        }
-
-        /* CONTROLS (Panel içinde, sağda) */
         .map-custom-controls {
-            position: absolute; /* Panelin içinde sağ üstte dursun */
-            bottom: 100%; /* Panelin hemen üzerine yapışır */
-            right: 15px;
-            margin-bottom: 10px;
-            display: flex; 
+            position: absolute;
+            bottom: 200px;
+            right: 10px;
+            display: flex;
             flex-direction: column;
             gap: 10px;
-            z-index: 10001; 
-            pointer-events: auto;
-            order: 2;
-        }
-
-        /* Scale Bar (Panel içinde en altta) */
-        .route-scale-bar {
-            order: 3; /* Sıralama: 3 */
-            width: 100%;
-        }
-
-        /* Buton Stilleri (Aynı kaldı) */
+            z-index: 10001;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 6px;
+            border-radius: 12px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }  
         .map-ctrl-btn {
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s ease; backdrop-filter: blur(4px);
-            padding: 6px 12px; background: #ffffff;
-            border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+            padding: 6px 12px;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
         }
         .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
-        .map-ctrl-btn.zoom-text { font-size: 22px; font-weight: 300; line-height: 1; color: #666; padding-bottom: 2px; }
+
+        .map-ctrl-btn.zoom-text {
+            font-size: 22px;
+            font-weight: 300;
+            line-height: 1;
+            color: #666;
+            padding-bottom: 2px;
+        }
+
         .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
-        
-        .map-layers-row { display: flex; gap: 8px; padding: 6px; border-radius: 12px; backdrop-filter: blur(4px); border: 1px solid rgba(0, 0, 0, 0.05); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); flex-direction: row; } /* Row yapıldı */
+
+        .expanded-map-header {
+            position: absolute;
+            bottom: 200px;
+            left: 10px;
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .map-layers-row {
+            display: flex;
+            gap: 8px;
+            padding: 6px;
+            border-radius: 12px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            flex-direction: column;
+        }
+
         .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 13px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .map-type-option img { width: 20px; height: 20px; border-radius: 4px; object-fit: cover; }
         .map-type-option:hover { background: #f9f9f9; transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.1); border-color: #d0d0d0; }
         .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
         .map-type-option.selected img { opacity: 1; }
-
-        .close-expanded-map { position: absolute; top: 15px; right: 15px; z-index: 10002; }
-        .expanded-map-container { position: fixed !important; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: #fff; overflow: hidden; }
-        .expanded-map { width: 100% !important; height: 100% !important; }
-
-        /* 3D MAP SCALE BAR */
-        .maplibregl-ctrl-bottom-left { bottom: 30px !important; left: 20px !important; z-index: 20000 !important; pointer-events: none; }
-        .maplibregl-ctrl-scale { background-color: rgba(255, 255, 255, 0.9) !important; border: 1px solid #e0e0e0 !important; border-radius: 6px !important; padding: 2px 8px !important; color: #555 !important; font-size: 11px !important; font-weight: 600 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; border-top: 1px solid #e0e0e0 !important; height: auto !important; line-height: 1.4 !important; pointer-events: auto; }
+        
+        .maplibregl-ctrl-bottom-left {
+            bottom: 30px !important; 
+            left: 20px !important;
+            z-index: 20000 !important; 
+            pointer-events: none;
+        }
+        .maplibregl-ctrl-scale {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            padding: 2px 8px !important;
+            color: #555 !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+            border-top: 1px solid #e0e0e0 !important;
+            height: auto !important;
+            line-height: 1.4 !important;
+            pointer-events: auto;
+        }
       `;
       document.head.appendChild(style);
   }
@@ -6263,7 +6275,8 @@ async function expandMap(containerId, day) {
   statsDiv.className = 'route-stats';
   headerDiv.appendChild(statsDiv);
   
-  // NOT: Header artık ana container'a DEĞİL, aşağıda panel'e eklenecek.
+  // ÖNEMLİ DEĞİŞİKLİK: Header artık doğrudan expandedContainer'a eklenmiyor.
+  // expandedContainer.appendChild(headerDiv); <--- SİLİNDİ
 
   // === 2. CUSTOM CONTROLS OLUŞTURMA ===
   const controlsDiv = document.createElement('div');
@@ -6337,9 +6350,10 @@ async function expandMap(containerId, day) {
   controlsDiv.appendChild(compassBtn);
   controlsDiv.appendChild(locBtn);
   
-  // NOT: Controls da artık panel'e eklenecek.
+  // ÖNEMLİ DEĞİŞİKLİK: Controls artık doğrudan expandedContainer'a eklenmiyor.
+  // expandedContainer.appendChild(controlsDiv); <--- SİLİNDİ
 
-  // === 3. SCALE BAR ve PANEL OLUŞTURMA ===
+  // === 3. SCALE BAR OLUŞTURMA ===
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
   const scaleBarDiv = document.createElement('div');
@@ -6347,40 +6361,37 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
-  // --- ANA DOM YERLEŞİMİ ---
-  
-  // A) Harita DOM'u (En alta)
-  const mapDivId = `${containerId}-expanded`;
-  const mapDiv = document.createElement('div');
-  mapDiv.id = mapDivId;
-  mapDiv.className = 'expanded-map';
-  mapDiv.style.width = "100%";
-  mapDiv.style.height = "100%"; 
-  expandedContainer.appendChild(mapDiv);
-
-  // B) Panel DOM'u (Üst katman)
+  // === 4. PANEL DOM YAPISI DEĞİŞİKLİĞİ ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   
-  // Hiyerarşik Ekleme: Panel -> [Header, Controls, ScaleBar]
-  panelDiv.appendChild(headerDiv);   // 1. Başlık
-  panelDiv.appendChild(controlsDiv); // 2. Butonlar
-  panelDiv.appendChild(scaleBarDiv); // 3. Grafik
+  // YENİ YAPI: Header, Controls ve ScaleBar'ı panelin içine ekliyoruz
+  panelDiv.appendChild(headerDiv);   // 1. Header (Panel içinde)
+  panelDiv.appendChild(controlsDiv); // 2. Controls (Panel içinde)
+  panelDiv.appendChild(scaleBarDiv); // 3. Scale Bar (Panel içinde)
   
   expandedContainer.appendChild(panelDiv);
 
-  // Kapat butonu (Bağımsız sağ üst)
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-expanded-map';
   closeBtn.textContent = '✕ Close';
   closeBtn.onclick = () => restoreMap(containerId, day);
   expandedContainer.appendChild(closeBtn);
 
+  const mapDivId = `${containerId}-expanded`;
+  const mapDiv = document.createElement('div');
+  mapDiv.id = mapDivId;
+  mapDiv.className = 'expanded-map';
+  expandedContainer.appendChild(mapDiv);
   document.body.appendChild(expandedContainer);
  
+  // 2D Harita yüksekliği
+  mapDiv.style.width = "100%";
+  mapDiv.style.height = "480px"; 
+
   showRouteInfoBanner(day);
 
-  // --- HARİTA BAŞLATMA ---
+  // ... (Fonksiyonun geri kalanı harita oluşturma vb. aynı kalıyor) ...
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
