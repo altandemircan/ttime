@@ -10852,9 +10852,9 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const selDiv = container.querySelector('.scale-bar-selection');
   if (selDiv) { selDiv.style.display = 'none'; selDiv.style.width = '0px'; selDiv.style.left = '0px'; }
 
-  // 1. Temizlik: Sadece çizimle ilgili şeyleri sil, track'i silme!
+  // Temizlik
   track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
-  track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.style.display = 'none'); // Ana grafiği gizle
+  track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.style.display = 'none'); 
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
   track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
   
@@ -10864,8 +10864,8 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
   const totalKm = Number(container.dataset.totalKm) || 0;
   
-  // Markerları filtrele: Sadece bu segmentin içindekileri göster
   const allMarkers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+  // Sadece segment içindeki markerlar
   const segmentMarkers = allMarkers.filter(m => m.distance >= startKm && m.distance <= endKm);
 
   const min = Math.min(...elevSmooth);
@@ -10876,24 +10876,20 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   if (span > 0) { vizMin = min - span * 0.50; vizMax = max + span * 1.0; } 
   else { vizMin = min - 1; vizMax = max + 1; }
 
-  // Segment verilerini container'a kaydet (Tooltip için gerekli)
   container._elevationData = { smooth: elevSmooth, vizMin, vizMax, min, max };
-  // Önemli: Örneklemi güncelle ki tooltip doğru çalışsın
   container._elevSamples = samples; 
   container._elevStartKm = startKm;
   container._elevKmSpan  = endKm - startKm;
 
-  // Scale Elemanlarını (Yazılar, çizgiler) oluştur
+  // Segment Markerlarını Çiz
   createScaleElements(track, widthPx, endKm - startKm, startKm, segmentMarkers, { smooth: elevSmooth, vizMin, vizMax });
 
   const rect = track.getBoundingClientRect();
-  // Segmentin başladığı pikseli sıfırla, çünkü artık grafiğin tamamı segment
   track._segmentStartPx = 0; 
   track._segmentWidthPx = rect.width;
 
   // SVG Çizimi
   const widthNow = widthPx || 400;
-  // Mobil uyumlu yükseklik
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   const SVG_TOP = 48;
   let heightNow = isMobile
@@ -10910,7 +10906,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   svg.setAttribute('height', String(heightNow));
   track.appendChild(svg);
 
-  // Overlayleri en üste taşı
   const existingTooltip = track.querySelector('.tt-elev-tooltip');
   const existingLine = track.querySelector('.scale-bar-vertical-line');
   if (existingLine) track.appendChild(existingLine);
@@ -10929,7 +10924,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const X = (kmRel) => (kmRel / (endKm - startKm)) * widthNow;
   const Y = (e) => (isNaN(e) || vizMax === vizMin) ? (heightNow/2) : ((heightNow - 1) - ((e - vizMin) / (vizMax - vizMin)) * (heightNow - 2));
 
-  // Grid Çizgileri
+  // Grid
   for (let i = 0; i <= 4; i++) {
     const ev = vizMin + (i / 4) * (vizMax - vizMin);
     const y = Y(ev);
@@ -10940,11 +10935,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     gridG.appendChild(ln);
   }
   
-  // Alan (Area) Çizimi
+  // Area
   let topD = '';
   for (let i = 0; i < elevSmooth.length; i++) {
-    const kmRel = (samples[i].distM / 1000) - startKm; // Relatif mesafe
-    // Negatif veya sınır dışı değerleri engelle
+    const kmRel = (samples[i].distM / 1000) - startKm;
     const x = Math.max(0, Math.min(widthNow, X(kmRel)));
     const y = Y(elevSmooth[i]);
     topD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
@@ -10956,7 +10950,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     areaPath.setAttribute('fill', '#263445');
   }
 
-  // Segment Çizgileri (Eğim renkli)
+  // Segments
   for (let i = 1; i < elevSmooth.length; i++) {
     const kmRel1 = (samples[i-1].distM / 1000) - startKm;
     const kmRel2 = (samples[i].distM / 1000) - startKm;
@@ -10984,7 +10978,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     segG.appendChild(seg);
   }
 
-  // İstatistik Toolbar
+  // Toolbar
   let up = 0, down = 0;
   for (let i = 1; i < elevSmooth.length; i++) {
     const d = elevSmooth[i] - elevSmooth[i-1];
@@ -11020,9 +11014,9 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
      resetBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         
-        // 1. Temizlik
+        // 1. DOM Temizliği
         track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
-        track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.style.display = 'block'); // Ana grafiği geri getir
+        track.querySelectorAll('svg[data-role="elev-base"]').forEach(el => el.style.display = 'block'); 
         track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
         track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
 
@@ -11037,7 +11031,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
         const selection = container.querySelector('.scale-bar-selection');
         if (selection) selection.style.display = 'none';
 
-        // 2. UNZOOM (Haritayı Resetle)
+        // 2. Map Unzoom
         const cid = `route-map-day${day}`;
         const gj = window.lastRouteGeojsons?.[cid];
         let bounds = null;
@@ -11075,7 +11069,17 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
             });
         }
 
-        // 3. Scale Bar Reset
+        // --- 3. Scale Bar Reset (FIX: SIRALAMA DÜZELTİLDİ) ---
+        
+        // A) Önce veriyi FULL moda geri yükle
+        if (container._elevationDataFull) {
+          container._elevationData = {
+            min: container._elevationDataFull.min,
+            max: container._elevationDataFull.max,
+            smooth: container._elevationDataFull.smooth.slice()
+          };
+        }
+        
         container._elevStartKm = 0;
         container._elevKmSpan  = totalKm;
         
@@ -11084,19 +11088,19 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
           container._elevSamples = container._elevFullSamples.slice();
         }
 
-        // Scale barı yeniden çiz (Orijinal verilerle)
-        createScaleElements(track, widthPx, totalKm, 0, allMarkers, null);
-
-        if (container._elevationDataFull && typeof container._redrawElevation === 'function') {
-          container._elevationData = {
-            min: container._elevationDataFull.min,
-            max: container._elevationDataFull.max,
-            smooth: container._elevationDataFull.smooth.slice()
-          };
-          // Ana çizim fonksiyonunu çağırma, zaten elev-base SVG'sini görünür yaptık.
-          // Sadece dikey eksen etiketleri için redraw gerekebilir ama base svg zaten duruyor.
-          // createScaleElements yukarıda çağrıldığı için yeterli.
+        // B) SVG Çizgilerini Yenile (Bu fonksiyon eski closure verisi ile marker çizebilir, sorun değil, aşağıda ezeceğiz)
+        if (typeof container._redrawElevation === 'function') {
+          container._redrawElevation(container._elevationData);
         } 
+        
+        // C) Markerları TEMİZ, GÜNCEL VERİLERLE Yeniden Çiz (Öncekileri siler ve doğrusunu koyar)
+        // Güncel genişliği al (Sidebar açılıp kapanmış olabilir)
+        const currentWidth = Math.max(200, Math.round(track.getBoundingClientRect().width));
+        // Güncel marker listesini al
+        const freshMarkers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+        
+        // Markerları "activeData: null" göndererek oluştur ki container._elevationData'yı (Full olanı) kullansın
+        createScaleElements(track, currentWidth, totalKm, 0, freshMarkers, null);
         
         updateRouteStatsUI(day);
       });
