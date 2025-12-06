@@ -5883,7 +5883,7 @@ async function expandMap(containerId, day) {
  .map-custom-controls {
     position: absolute;
     bottom: 200px;
-    right: 10px;
+    
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -5893,6 +5893,7 @@ async function expandMap(containerId, day) {
     border-radius: 12px;
     backdrop-filter: blur(4px);
     border: 1px solid rgba(0, 0, 0, 0.05);
+        right: 20px;
 }  
   .map-ctrl-btn {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -5929,8 +5930,16 @@ async function expandMap(containerId, day) {
     display: flex;
     align-items: center;
     gap: 15px;
+        left: -20px;
 }
-
+@media (max-width:768px) {
+        .expanded-map-header {
+        left: 10px;
+        }
+         .map-custom-controls {
+        right: 20px;
+        }
+}
 .map-layers-row {
     display: flex;
     gap: 8px;
