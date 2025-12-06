@@ -353,8 +353,8 @@ function loadTripFromStorage(tripKey) {
 
     // Kaydedilen AI bilgisini geri yükle
     if (t.aiInfo) {
-        window.cart.aiData = t.aiInfo; // Cart objesine geri tak
-        window.lastTripAIInfo = t.aiInfo; // Global yedeği de tut
+        window.cart.aiData = t.aiInfo;
+        window.lastTripAIInfo = t.aiInfo;
     }
 
     // --- AI kutusu işlemleri ---
@@ -362,12 +362,10 @@ function loadTripFromStorage(tripKey) {
         window.lastTripAIInfo = t.aiInfo;
         let aiDiv = document.querySelector('.ai-info-section');
         if (!aiDiv) {
-            // Eğer fonksiyon tanımlıysa çağır, yoksa hata vermesin
             if (typeof window.insertTripAiInfo === "function") {
                 window.insertTripAiInfo(null, t.aiInfo);
             }
         } else {
-            // showTripAiInfo fonksiyonu da global olmalı veya mainscript.js içinde tanımlıysa window üzerinden çağrılmalı
             if (typeof window.showTripAiInfo === "function") {
                 window.showTripAiInfo(t.aiInfo);
             }
@@ -401,24 +399,42 @@ function loadTripFromStorage(tripKey) {
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
 
-    // --- FIX: 3D Harita Temizliği ---
-    // Yeni gezi yüklenirken eğer ekranda 3D harita kaldıysa onu kapatır.
-    const closeBtn3D = document.getElementById('close-3d-btn');
-    const container3D = document.getElementById('three-js-map-container');
+    // ============================================================
+    // --- FIX: 3D Harita Temizliği (ZORLA GİZLEME) ---
+    // ============================================================
+    
+    // 1. ADIM: 3D Harita Container ID'sini buraya yazın. 
+    // Eğer ID farklıysa (örn: 'view-3d') aşağıdaki parantez içini değiştirin:
+    const container3D = document.getElementById('three-js-map-container') || document.getElementById('map-3d-container');
+    
+    // 2. ADIM: Normal Harita Container ID'si (Genelde 'map-container' veya 'map')
+    const mainMapContainer = document.getElementById('map-container') || document.getElementById('map');
 
-    if (closeBtn3D && closeBtn3D.offsetParent !== null) {
-        // Buton görünürse tıkla (en temiz yöntem)
-        closeBtn3D.click();
-    } else if (typeof window.close3DMap === "function") {
-        // Fonksiyon varsa çağır
-        window.close3DMap();
-    } else if (container3D && container3D.style.display !== 'none') {
-        // Fallback: Manuel gizle
+    // 3D Kutusunu Zorla Gizle
+    if (container3D) {
         container3D.style.display = 'none';
-        const mainMap = document.getElementById('map-container');
-        if (mainMap) mainMap.style.display = 'block';
+        container3D.style.visibility = 'hidden';
+        container3D.style.zIndex = '-1'; // Arkaya at
+        // Eğer canvas varsa onu da temizleyelim (bellek için opsiyonel)
+        // const canvas = container3D.querySelector('canvas');
+        // if(canvas) canvas.style.display = 'none';
     }
-    // --------------------------------
+
+    // Normal Haritayı Zorla Göster
+    if (mainMapContainer) {
+        mainMapContainer.style.display = 'block';
+        mainMapContainer.style.visibility = 'visible';
+        mainMapContainer.style.zIndex = '1'; // Öne al
+    }
+    
+    // Varsa kapatma butonunun stilini de sıfırla (aktif class'ı varsa sil)
+    const closeBtn3D = document.getElementById('close-3d-btn');
+    if (closeBtn3D) {
+         // Butona basarak değil, state'i değiştirerek ilerliyoruz artık
+         closeBtn3D.style.display = 'none'; 
+    }
+    // ============================================================
+
 
     // 3. UI güncellemeleri
     if (typeof updateTripTitle === "function") updateTripTitle();
@@ -430,7 +446,7 @@ function loadTripFromStorage(tripKey) {
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
 
-    // 5. Route'ları çiz, sonra thumbnail üret ve paneli güncelle
+    // 5. Route'ları çiz
     setTimeout(async () => {
         for (let day = 1; day <= maxDay; day++) {
             await renderRouteForDay(day);
@@ -440,9 +456,13 @@ function loadTripFromStorage(tripKey) {
 
     // --- Görünüm sorunları için: Harita, scale bar, slider düzelt ---
     setTimeout(function() {
+        // Normal harita boyutunu güncelle (display: block yapınca bazen gri kalır)
         Object.values(window.leafletMaps || {}).forEach(map => {
-            if (map && typeof map.invalidateSize === 'function') {
-                map.invalidateSize();
+            if (map) {
+                if(typeof map.invalidateSize === 'function') map.invalidateSize();
+                // Haritayı tekrar container'a sığdır
+                const center = map.getCenter(); 
+                map.setView(center, map.getZoom(), { animate: false });
             }
         });
 
