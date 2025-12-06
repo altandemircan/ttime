@@ -5750,18 +5750,18 @@ ease;
 }
 
 .leaflet-control-attribution  {
-       position: absolute !important;
-    bottom: -6px !important;
-    right: 20px !important;
+        position: absolute !important;
+    bottom: 10px !important;
+    right: 26px !important;
     margin: 0px !important;
     font-size: 10px !important;
     line-height: 1 !important;
-    color: #000000c0 !important;
+    color: #00000080 !important;
     z-index: 1005 !important;
     pointer-events: auto !important;
 }
 .leaflet-control-attribution a {
-    color: #000000c0 !important;
+    color: #00000080 !important;
 }
 
 .leaflet-attribution-flag {
