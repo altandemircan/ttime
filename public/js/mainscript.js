@@ -5903,7 +5903,7 @@ async function expandMap(containerId, day) {
     backdrop-filter: blur(4px);
     padding: 4px 10px;
     background: #ffffff;
-    border: 1:px solid #e0e0e0;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
     cursor: pointer;
         }
@@ -6124,12 +6124,11 @@ async function expandMap(containerId, day) {
       // Tıklama eventini durdur, dışarıya yayılmasını engelle
       e.stopPropagation();
       
-      // Sadece menü (row) alanına tıklandığında (butonlara değil) menüyü aç/kapat
-      if (!e.target.closest('.map-type-option')) {
-          layersBar.classList.toggle('closed');
-      }
+      // Menü container'ına tıklama olayını yakala
+      layersBar.classList.toggle('closed');
   };
 
+  // KRİTİK DÜZELTME: Tıklama olayını .map-layers-row container'ına bağla
   layersBar.addEventListener('click', handleMapRowClick);
 
   layerOptions.forEach(opt => {
@@ -6140,8 +6139,13 @@ async function expandMap(containerId, day) {
     
     if (opt.value === currentLayer) div.classList.add('selected');
 
-    // Her bir butona tıklama işlevini ekle
-    div.addEventListener('click', (e) => handleMapOptionClick(e, opt.value));
+    // Her bir butona tıklama işlevini ekle (Bu sadece butona tıklandığında menüyü kapatır/seçim yapar)
+    div.addEventListener('click', (e) => {
+        // Option'a tıklandığında, row'un kendi click event'i zaten bubble olur,
+        // ancak biz burada sadece seçim/kapanma mantığını tetikliyoruz.
+        e.stopPropagation();
+        handleMapOptionClick(e, opt.value);
+    });
     
     layersBar.appendChild(div);
   });
@@ -6183,8 +6187,7 @@ async function expandMap(containerId, day) {
 
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
-  // Hata Düzeltildi: 'map-ctrl-btn ctrl-compass'
-  compassBtn.className = 'map-ctrl-btn ctrl-compass';
+  compassBtn.className = 'map-ctrl-btn ctrl-compass`;
   compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none'; // Başlangıç durumu
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
