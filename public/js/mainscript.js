@@ -5943,11 +5943,11 @@ async function expandMap(containerId, day) {
     padding: 6px;
     border-radius: 12px;
     backdrop-filter: blur(4px);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+   
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     flex-direction: column;
     width: auto;
-    background: #fff; /* Arkaplan eklendi ki yazılar karışmasın */
+   
     cursor: pointer;
     transition: all 0.2s ease;
 }
