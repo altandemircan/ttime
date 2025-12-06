@@ -7011,18 +7011,31 @@ display: flex
     opacity: 0.97;
     max-width: 90vw;
     min-width: 210px;
+        cursor: pointer;
+    box-shadow: 0 0px 6px rgba(0, 0, 0, 0.00), 0 3px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 0px;
+    padding: 6px 12px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 30px;
+    transition: all 0.2s 
+ease;
+    font-size: 13px;
+    font-weight: 600;
 }
 .route-info-close {
-      background: none;
+        background: none;
     border: none;
-    color: #fff;
+    color: #8a4af3;
     font-size: 20px;
     font-weight: 600;
     cursor: pointer;
     padding: 0px 3px;
     margin-left: 6px;
     padding-top: 1px;
-    opacity: 0.8;
+    opacity: 0.7;
     transition: opacity 0.2s;
 }
 .route-info-close:hover { opacity: 1; }
