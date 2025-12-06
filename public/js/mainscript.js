@@ -5728,40 +5728,26 @@ function saveArcPointsForDay(day, points) {
 }
 
 function openMapLibre3D(expandedMap) {
-  // DOM Elementlerini Bul
+  // DOM Hazırlığı
   let mapDiv = expandedMap.getContainer();
   let container = mapDiv.parentNode; 
-  let panelDiv = container.querySelector('.expanded-map-panel'); // Grafik Paneli
+  let panelDiv = container.querySelector('.expanded-map-panel'); 
 
-  // Leaflet attribution'ı gizle (Grafik ile çakışmasın)
   const leafletAttr = container.querySelector('.leaflet-control-attribution');
   if (leafletAttr) leafletAttr.style.display = 'none';
 
   let maplibre3d = document.getElementById('maplibre-3d-view');
-  
   if (!maplibre3d) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
-    
-    // --- TEK MÜDAHALE BURASI ---
-    // z-index: 1 yapıldı (Panelin altında kalsın diye)
-    // position: relative (Akışa uysun diye)
-    // height: 480px (2D harita ile aynı boyda olsun)
     maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:1; background:#eef0f5;';
-    
-    // Haritayı PANELİN ÖNCESİNE (Altına) yerleştir
-    if (panelDiv) {
-        container.insertBefore(maplibre3d, panelDiv);
-    } else {
-        container.appendChild(maplibre3d);
-    }
+    if (panelDiv) { container.insertBefore(maplibre3d, panelDiv); } 
+    else { container.appendChild(maplibre3d); }
   } else {
-      // Varolan elementin stilini de garantiye al
       maplibre3d.style.display = 'block';
       maplibre3d.style.height = '480px';
       maplibre3d.style.zIndex = '1'; 
   }
-  
   maplibre3d.innerHTML = '';
 
   const day = window.currentDay || 1;
@@ -5769,7 +5755,6 @@ function openMapLibre3D(expandedMap) {
   
   const bounds = new maplibregl.LngLatBounds();
   let hasBounds = false;
-
   const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   points.forEach(p => {
       if (isFinite(p.lat) && isFinite(p.lng)) {
@@ -5781,24 +5766,17 @@ function openMapLibre3D(expandedMap) {
   const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
   if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
       const coords = geojson.features[0].geometry.coordinates;
-      coords.forEach(coord => {
-          bounds.extend(coord);
-          hasBounds = true;
-      });
+      coords.forEach(coord => { bounds.extend(coord); hasBounds = true; });
   }
 
   const mapOptions = {
     container: 'maplibre-3d-view',
     style: 'https://tiles.openfreemap.org/styles/liberty',
-    pitch: 60,
-    bearing: -20,
-    interactive: true,
-    attributionControl: false
+    pitch: 60, bearing: -20, interactive: true, attributionControl: false
   };
 
   if (hasBounds) {
       mapOptions.bounds = bounds;
-      // Alttan 40px boşluk bırakıyoruz ki grafiğe çok yapışmasın
       mapOptions.fitBoundsOptions = { padding: { top: 40, bottom: 40, left: 40, right: 40 } };
   } else {
       mapOptions.center = expandedMap.getCenter();
@@ -5807,19 +5785,17 @@ function openMapLibre3D(expandedMap) {
 
   window._maplibre3DInstance = new maplibregl.Map(mapOptions);
 
-  // Pusula
   window._maplibre3DInstance.on('rotate', () => {
       const bearing = window._maplibre3DInstance.getBearing();
       const compassDisc = document.querySelector(`#custom-compass-btn-${day} .custom-compass-disc`);
-      if (compassDisc) {
-          compassDisc.style.transform = `rotate(${-bearing}deg)`;
-      }
+      if (compassDisc) compassDisc.style.transform = `rotate(${-bearing}deg)`;
   });
   
   window._maplibre3DInstance.on('load', function () {
     const isFlyMode = !areAllPointsInTurkey(points); 
     const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
 
+    // 1. Mavi Rotayı Çiz
     if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
       window._maplibre3DInstance.addSource('route', {
         type: 'geojson',
@@ -5832,8 +5808,7 @@ function openMapLibre3D(expandedMap) {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
       });
-    } 
-    else if (isFlyMode && points.length > 1) {
+    } else if (isFlyMode && points.length > 1) {
       for (let i = 0; i < points.length - 1; i++) {
         const start = [points[i].lng, points[i].lat];
         const end = [points[i + 1].lng, points[i + 1].lat];
@@ -5852,6 +5827,7 @@ function openMapLibre3D(expandedMap) {
       }
     }
 
+    // 2. Markerları Çiz
     points.forEach((p, idx) => {
       const el = document.createElement('div');
       el.className = 'maplibre-marker';
@@ -5862,8 +5838,22 @@ function openMapLibre3D(expandedMap) {
         .setPopup(new maplibregl.Popup({ offset: 25 }).setText(p.name || "Point"))
         .addTo(window._maplibre3DInstance);
     });
+
+    // 3. SEGMENT KONTROLÜ (FIX: Mavi rota çizildikten HEMEN SONRA çalışır)
+    // Eğer hafızada seçili bir segment varsa, 3D haritada da mor çizgi olarak göster.
+    if (
+        typeof window._lastSegmentDay === 'number' && 
+        window._lastSegmentDay === day &&
+        typeof window._lastSegmentStartKm === 'number' &&
+        typeof window._lastSegmentEndKm === 'number'
+    ) {
+        // highlightSegmentOnMap fonksiyonunu çağırarak mor çizgiyi çizdiriyoruz.
+        // Fonksiyonun içinde 3D instance kontrolü ve moveLayer(top) olduğu için mavi çizginin üstüne çıkacaktır.
+        highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+    }
+
   }); 
-} 
+}
 
 async function expandMap(containerId, day) {
   forceCleanExpandedMap(day);
@@ -10676,6 +10666,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L.canvas(); return m._ttCanvasRenderer; }
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT (GÜNCELLENDİ)
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT (FINAL FIX)
+// SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT (FINAL FIX V2)
 function highlightSegmentOnMap(day, startKm, endKm) {
   // --- 1. PARAMETRE KONTROLÜ VE TEMİZLİK (RESET) ---
   
@@ -10708,8 +10699,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   }
 
   const cid = `route-map-day${day}`;
-  
-  // --- 2. VERİ KAYNAĞINI BELİRLE ---
   let coords = null;
   let isFlyMode = false;
 
@@ -10725,7 +10714,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 
   if (!coords || coords.length < 2) return;
 
-  // --- 3. SEGMENT HESAPLAMA ---
+  // --- 2. SEGMENT HESAPLAMA ---
   function hv(lat1, lon1, lat2, lon2) {
     const R=6371000, toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
@@ -10752,7 +10741,6 @@ function highlightSegmentOnMap(day, startKm, endKm) {
           break;
       }
   }
-
   for (let i = iStart; i < cum.length; i++) {
       if (cum[i] >= segEndM) {
           iEnd = i;
@@ -10760,7 +10748,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       }
   }
 
-  // --- 4. LEAFLET (2D) ÇİZİMİ ---
+  // --- 3. LEAFLET (2D) ÇİZİMİ ---
   const subCoordsLeaflet = coords.slice(iStart, iEnd + 1).map(c => [c[1], c[0]]);
   if (subCoordsLeaflet.length < 2) return;
 
@@ -10777,72 +10765,41 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       maps2D.push(expandedObj.expandedMap);
   }
 
-  // Temizlik
   Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
   window._segmentHighlight[day] = {};
 
-  // Marker Stili (2D)
   const markerOptions = {
-      radius: 6,
-      color: '#8a4af3',
-      fillColor: '#ffffff',
-      fillOpacity: 1,
-      weight: 2,
-      opacity: 1,
-      interactive: false,
-      pane: 'segmentPane'
+      radius: 6, color: '#8a4af3', fillColor: '#ffffff', fillOpacity: 1, weight: 2, opacity: 1, interactive: false, pane: 'segmentPane'
   };
 
   maps2D.forEach(m => {
-    // --- FIX: High Z-Index Pane ---
-    // Katmanı en üste (650) alıyoruz. MarkerPane genelde 600'dür.
-    // Bu sayede mavi çizginin üstünde kalması garanti olur.
     if (!m.getPane('segmentPane')) {
         m.createPane('segmentPane');
         m.getPane('segmentPane').style.zIndex = 650; 
         m.getPane('segmentPane').style.pointerEvents = 'none';
     }
-
-    // Özel bir SVG renderer oluşturuyoruz, böylece Canvas harita ile karışmaz
     const svgRenderer = L.svg({ pane: 'segmentPane' });
 
-    // 1. Çizgi
     const poly = L.polyline(subCoordsLeaflet, {
-        color: '#8a4af3', 
-        weight: 8,        
-        opacity: 1.0,
-        lineCap: 'round',
-        lineJoin: 'round',
-        dashArray: null,
-        pane: 'segmentPane',
-        renderer: svgRenderer 
+        color: '#8a4af3', weight: 8, opacity: 1.0, lineCap: 'round', lineJoin: 'round', dashArray: null, pane: 'segmentPane', renderer: svgRenderer 
     }).addTo(m);
     
     window._segmentHighlight[day][`poly_${m._leaflet_id}`] = poly;
 
-    // 2. Markerlar
     const startPt = subCoordsLeaflet[0];
-    const startMarker = L.circleMarker(startPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
-    window._segmentHighlight[day][`start_${m._leaflet_id}`] = startMarker;
-
     const endPt = subCoordsLeaflet[subCoordsLeaflet.length - 1];
-    const endMarker = L.circleMarker(endPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
-    window._segmentHighlight[day][`end_${m._leaflet_id}`] = endMarker;
     
-    // Zoom/Fit (2D)
+    window._segmentHighlight[day][`start_${m._leaflet_id}`] = L.circleMarker(startPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
+    window._segmentHighlight[day][`end_${m._leaflet_id}`] = L.circleMarker(endPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
+    
     try {
         if (poly.getBounds().isValid()) {
-            m.fitBounds(poly.getBounds(), { 
-                padding: [50, 50], 
-                maxZoom: 16,
-                animate: true, 
-                duration: 0.8 
-            });
+            m.fitBounds(poly.getBounds(), { padding: [50, 50], maxZoom: 16, animate: true, duration: 0.8 });
         }
     } catch(e) {}
   });
 
-  // --- 5. MAPLIBRE (3D) ÇİZİMİ ---
+  // --- 4. MAPLIBRE (3D) ÇİZİMİ ---
   if (is3DActive && window._maplibre3DInstance) {
       const map3d = window._maplibre3DInstance;
       const subCoordsGeoJSON = coords.slice(iStart, iEnd + 1);
@@ -10850,7 +10807,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       const sourceId = 'segment-highlight-source';
       const layerId = 'segment-highlight-layer';
 
-      // Veriyi Kaynağa Ekle/Güncelle
+      // Veriyi Yükle
       if (map3d.getSource(sourceId)) {
           map3d.getSource(sourceId).setData({
               type: 'Feature',
@@ -10859,54 +10816,38 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       } else {
           map3d.addSource(sourceId, {
               type: 'geojson',
-              data: {
-                  type: 'Feature',
-                  geometry: { type: 'LineString', coordinates: subCoordsGeoJSON }
-              }
+              data: { type: 'Feature', geometry: { type: 'LineString', coordinates: subCoordsGeoJSON } }
           });
-          
           map3d.addLayer({
               id: layerId,
               type: 'line',
               source: sourceId,
-              layout: { 
-                  'line-join': 'round', 
-                  'line-cap': 'round' 
-              },
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
               paint: {
-                  'line-color': '#8a4af3',  // Mor
-                  'line-width': 16,         // FIX: Mavi çizgiden (8px) çok daha kalın yapıyoruz
-                  'line-opacity': 1.0,
-                  'line-offset': 0
+                  'line-color': '#8a4af3',
+                  'line-width': 16, // Kalınlık artırıldı
+                  'line-opacity': 1.0
               }
           });
       }
 
-      // --- FIX: KATMANI EN ÜSTE TAŞI ---
-      // Katmanı çizdikten sonra zorla en üste (z-order) taşıyoruz.
-      // Bu, 3D motorunda mavi çizginin üstüne çıkmasını garanti eder.
+      // --- CRITICAL FIX: LAYER ORDER ---
+      // Segment katmanını zorla en üste taşıyoruz.
       if (map3d.getLayer(layerId)) {
-          map3d.moveLayer(layerId); 
+          map3d.moveLayer(layerId);
       }
 
-      // 3D Markerlar
+      // Markerlar
       window._segment3DMarkers = window._segment3DMarkers || [];
-      
       const create3DMarker = (lngLat) => {
           const el = document.createElement('div');
           el.className = 'segment-marker-3d';
           el.style.cssText = `
-              width: 14px; 
-              height: 14px; 
-              background-color: #ffffff; 
-              border: 3px solid #8a4af3; 
-              border-radius: 50%;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-              z-index: 9999; /* Marker en üstte */
+              width: 14px; height: 14px; background-color: #ffffff; 
+              border: 3px solid #8a4af3; border-radius: 50%;
+              box-shadow: 0 1px 4px rgba(0,0,0,0.4); z-index: 9999;
           `;
-          const marker = new maplibregl.Marker({ element: el })
-              .setLngLat(lngLat)
-              .addTo(map3d);
+          const marker = new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map3d);
           window._segment3DMarkers.push(marker);
       };
 
@@ -10915,20 +10856,14 @@ function highlightSegmentOnMap(day, startKm, endKm) {
           create3DMarker(subCoordsGeoJSON[subCoordsGeoJSON.length - 1]);
       }
 
-      // --- 3D ZOOM FIX ---
+      // --- ZOOM FIX (PADDING AZALTILDI) ---
       const bounds = new maplibregl.LngLatBounds();
       subCoordsGeoJSON.forEach(c => bounds.extend(c));
       
-      // Padding dengelendi:
-      // Alt panel ~220px. Bottom padding 240px yeterli. 
-      // Çok fazla padding (300+) haritayı sıkıştırıp zoom yapmasını engelliyordu.
+      // Bottom padding 300'den 180'e düşürüldü.
+      // Bu sayede harita, segmenti sığdırmak için çok fazla uzaklaşmak zorunda kalmayacak.
       map3d.fitBounds(bounds, {
-          padding: { 
-              top: 60, 
-              bottom: 240, 
-              left: 60, 
-              right: 60 
-          }, 
+          padding: { top: 60, bottom: 180, left: 60, right: 60 }, 
           duration: 1000
       });
   }
