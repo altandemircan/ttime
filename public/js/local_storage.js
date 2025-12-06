@@ -351,7 +351,6 @@ function loadTripFromStorage(tripKey) {
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
 
-    // --- DEĞİŞEN KISIM BURASI ---
     // Kaydedilen AI bilgisini geri yükle
     if (t.aiInfo) {
         window.cart.aiData = t.aiInfo; // Cart objesine geri tak
@@ -375,9 +374,7 @@ function loadTripFromStorage(tripKey) {
         }
     }
 
-   
-
-        // --- Elevation ascent/descent datalarını yükle ---
+    // --- Elevation ascent/descent datalarını yükle ---
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
     // --- Null ve tip garanti düzeltme ---
@@ -403,6 +400,25 @@ function loadTripFromStorage(tripKey) {
     if (chatBox) chatBox.innerHTML = "";
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
+
+    // --- FIX: 3D Harita Temizliği ---
+    // Yeni gezi yüklenirken eğer ekranda 3D harita kaldıysa onu kapatır.
+    const closeBtn3D = document.getElementById('close-3d-btn');
+    const container3D = document.getElementById('three-js-map-container');
+
+    if (closeBtn3D && closeBtn3D.offsetParent !== null) {
+        // Buton görünürse tıkla (en temiz yöntem)
+        closeBtn3D.click();
+    } else if (typeof window.close3DMap === "function") {
+        // Fonksiyon varsa çağır
+        window.close3DMap();
+    } else if (container3D && container3D.style.display !== 'none') {
+        // Fallback: Manuel gizle
+        container3D.style.display = 'none';
+        const mainMap = document.getElementById('map-container');
+        if (mainMap) mainMap.style.display = 'block';
+    }
+    // --------------------------------
 
     // 3. UI güncellemeleri
     if (typeof updateTripTitle === "function") updateTripTitle();
