@@ -4662,7 +4662,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 @media (max-width: 768px) {
     .elev-segment-toolbar {
-        
+                left: 0;
     justify-content: flex-end;
         border-radius: 0;
     }
