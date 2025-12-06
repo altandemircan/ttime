@@ -5864,6 +5864,7 @@ function openMapLibre3D(expandedMap) {
     });
   }); 
 } 
+
 async function expandMap(containerId, day) {
   forceCleanExpandedMap(day);
 
@@ -6123,11 +6124,12 @@ async function expandMap(containerId, day) {
       // Tıklama eventini durdur, dışarıya yayılmasını engelle
       e.stopPropagation();
       
-      // Menü container'ına tıklama olayını yakala
-      layersBar.classList.toggle('closed');
+      // Sadece menü (row) alanına tıklandığında (butonlara değil) menüyü aç/kapat
+      if (!e.target.closest('.map-type-option')) {
+          layersBar.classList.toggle('closed');
+      }
   };
 
-  // KRİTİK DÜZELTME: Tıklama olayını .map-layers-row container'ına doğrudan bağla
   layersBar.addEventListener('click', handleMapRowClick);
 
   layerOptions.forEach(opt => {
@@ -6139,12 +6141,7 @@ async function expandMap(containerId, day) {
     if (opt.value === currentLayer) div.classList.add('selected');
 
     // Her bir butona tıklama işlevini ekle
-    div.addEventListener('click', (e) => {
-        // Option'a tıklandığında, row'un kendi click event'i zaten bubble olur,
-        // biz burada sadece seçim/kapanma mantığını tetikliyoruz.
-        e.stopPropagation();
-        handleMapOptionClick(e, opt.value);
-    });
+    div.addEventListener('click', (e) => handleMapOptionClick(e, opt.value));
     
     layersBar.appendChild(div);
   });
@@ -6186,7 +6183,7 @@ async function expandMap(containerId, day) {
 
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
-  compassBtn.className = 'map-ctrl-btn ctrl-compass'; // Düzeltildi
+  compassBtn.className = 'map-ctrl-btn ctrl-compass`;
   compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none'; // Başlangıç durumu
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
@@ -6413,6 +6410,7 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
+
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
