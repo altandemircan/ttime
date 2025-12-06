@@ -6093,18 +6093,18 @@ async function expandMap(containerId, day) {
       // BURASI SENİN GÖNDERDİĞİN ORİJİNAL STİL BLOKLARI OLARAK KALACAK
       style.innerHTML = `
         .map-custom-controls {
-            position: absolute;
-            bottom: 200px;
-            right: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 10001;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            padding: 6px;
-            border-radius: 12px;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+           position: absolute;
+    bottom: 194px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10001;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 6px;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
         }  
         .map-ctrl-btn {
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -6135,12 +6135,12 @@ async function expandMap(containerId, day) {
 
         .expanded-map-header {
             position: absolute;
-            bottom: 200px;
-            left: 10px;
-            z-index: 10001;
-            display: flex;
-            align-items: center;
-            gap: 15px;
+    bottom: 194px;
+    left: 10px;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+  
         }
 
         .map-layers-row {
