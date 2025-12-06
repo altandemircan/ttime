@@ -5864,7 +5864,6 @@ function openMapLibre3D(expandedMap) {
     });
   }); 
 } 
-
 async function expandMap(containerId, day) {
   forceCleanExpandedMap(day);
 
@@ -6128,7 +6127,6 @@ async function expandMap(containerId, day) {
       layersBar.classList.toggle('closed');
   };
 
-  // KRİTİK DÜZELTME: Tıklama olayını .map-layers-row container'ına bağla
   layersBar.addEventListener('click', handleMapRowClick);
 
   layerOptions.forEach(opt => {
@@ -6139,7 +6137,7 @@ async function expandMap(containerId, day) {
     
     if (opt.value === currentLayer) div.classList.add('selected');
 
-    // Her bir butona tıklama işlevini ekle (Bu sadece butona tıklandığında menüyü kapatır/seçim yapar)
+    // Her bir butona tıklama işlevini ekle
     div.addEventListener('click', (e) => {
         // Option'a tıklandığında, row'un kendi click event'i zaten bubble olur,
         // ancak biz burada sadece seçim/kapanma mantığını tetikliyoruz.
@@ -6187,7 +6185,7 @@ async function expandMap(containerId, day) {
 
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
-  compassBtn.className = 'map-ctrl-btn ctrl-compass`;
+  compassBtn.className = 'map-ctrl-btn ctrl-compass'; // Düzeltildi
   compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none'; // Başlangıç durumu
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
