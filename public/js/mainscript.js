@@ -6092,28 +6092,49 @@ async function expandMap(containerId, day) {
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
 
+      // --- HARİTA DEĞİŞİM MANTIĞI (GÜNCELLENDİ) ---
       if (opt.value === 'liberty') {
+        // 3D MODA GEÇİŞ
         expandedMapInstance.getContainer().style.display = "none";
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
+        // 2D MODA GEÇİŞ
         if (map3d) map3d.style.display = "none";
-        expandedMapInstance.getContainer().style.display = "";
+        
+        // 1. Görünür yap
+        expandedMapInstance.getContainer().style.display = "block";
         if (compassBtn) compassBtn.style.display = 'none';
+        
+        // 2. Tile set et
         setExpandedMapTile(opt.value);
+
+        // 3. FIX: Gri Ekran Sorunu İçin (Aggressive Invalidate)
+        // Harita motoruna "boyutun değişti, kendini yenile" diyoruz.
+        expandedMapInstance.invalidateSize(); 
+        
+        // Bir frame sonra tekrarla (DOM paint garantisi)
+        requestAnimationFrame(() => {
+            expandedMapInstance.invalidateSize();
+        });
+        
+        // Bazen CSS transition yüzünden geç kalabilir, bir de timeout ile garantiye al
+        setTimeout(() => {
+            expandedMapInstance.invalidateSize();
+            // Eğer merkez kaymışsa, mevcut merkezi koruyarak hafif tetikle
+            const c = expandedMapInstance.getCenter();
+            expandedMapInstance.setView(c, expandedMapInstance.getZoom(), { animate: false });
+        }, 200);
       }
       
-      // ============================================================
-      // --- FIX: HARİTA DEĞİŞİNCE SEGMENTİ TEKRAR ÇİZ (2D <-> 3D) ---
-      // ============================================================
+      // --- FIX: SEGMENT VARSA YENİDEN ÇİZ ---
       if (
           typeof window._lastSegmentDay === 'number' && 
           window._lastSegmentDay === day &&
           typeof window._lastSegmentStartKm === 'number' &&
           typeof window._lastSegmentEndKm === 'number'
       ) {
-          // Ufak bir gecikme ile (harita değişiminin bitmesini bekle)
           setTimeout(() => {
               if (typeof highlightSegmentOnMap === 'function') {
                   highlightSegmentOnMap(
@@ -6122,9 +6143,8 @@ async function expandMap(containerId, day) {
                       window._lastSegmentEndKm
                   );
               }
-          }, 150);
+          }, 250); // Harita değişiminden biraz sonra
       }
-      // ============================================================
 
       layersBar.classList.add('closed');
     };
