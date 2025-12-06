@@ -9708,22 +9708,18 @@ window.updateRouteStatsUI = function(day) {
         const down = Math.round(elev.descent || 0);
         const durationMin = Math.round(summary.duration / 60);
 
-        const startElev = elev.startElev || (elev.smooth && elev.smooth[0]) || 0;
-        const endElev = elev.endElev || (elev.smooth && elev.smooth[elev.smooth.length - 1]) || 0;
-        const elevDiff = endElev - startElev;
-        const avgGrade = (summary.distance > 0) ? (elevDiff / summary.distance) * 100 : 0;
+        // Avg Grade bilgisi Road için **KULLANILMAYACAK**. Sadece mesafeler gösterilecek.
         
         const tb = document.createElement('div');
         tb.className = 'elev-segment-toolbar';
         tb.style.display = 'flex';
         
-        // Rota bilgileri "pill" formunda
+        // Rota bilgileri "pill" formunda (Avg pill'i ÇIKARILDI)
         tb.innerHTML = `
             <span class="pill">${totalKm} km</span>
             <span class="pill">${durationMin} min</span>
             <span class="pill">↑ ${up} m</span>
             <span class="pill">↓ ${down} m</span>
-            <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
             <button type="button" class="elev-segment-reset" style="background:#9159ed; cursor: default;">Road</button>
         `;
         
