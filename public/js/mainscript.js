@@ -5925,7 +5925,6 @@ async function expandMap(containerId, day) {
     .map-custom-controls { right: 20px; }
 }
 
-/* İSTEDİĞİN GÖRÜNÜM AYARLARI BURADA */
 .map-layers-row {
     position: relative;
     display: flex;
@@ -5942,7 +5941,6 @@ async function expandMap(containerId, day) {
     transition: all 0.2s ease;
 }
 
-/* KAPALIYKEN SADECE SEÇİLİ OLAN GÖRÜNSÜN */
 .map-layers-row.closed .map-type-option:not(.selected) {
     display: none !important;
 }
@@ -5971,7 +5969,6 @@ async function expandMap(containerId, day) {
 .map-type-option:hover { background: #f9f9f9; }
 .map-type-option img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
 
-/* 3D MAP SCALE BAR STİLİ */
 .maplibregl-ctrl-bottom-left {
     bottom: 30px !important; 
     left: 20px !important;
@@ -5996,11 +5993,9 @@ async function expandMap(containerId, day) {
       document.head.appendChild(style);
   }
   
-  // Harici tıklama (Dışarı tıklayınca kapansın)
   if (!window.__ttMapLayerCloserBound) {
     document.addEventListener('click', (e) => {
         const row = document.querySelector('.map-layers-row');
-        // Eğer row varsa ve tıklanan yer row değilse, kapat
         if (row && !row.contains(e.target)) {
             row.classList.add('closed');
         }
@@ -6022,7 +6017,6 @@ async function expandMap(containerId, day) {
   const originalContainer = document.getElementById(containerId);
   const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // Eski butonları pasif yap
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   const tmSet = document.getElementById(`tt-travel-mode-set-day${day}`);
   const expandBtns = [];
@@ -6047,9 +6041,8 @@ async function expandMap(containerId, day) {
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
   
-  // Tek bir div içinde sıralanacaklar
   const layersBar = document.createElement('div');
-  layersBar.className = 'map-layers-row closed'; // Varsayılan kapalı (tek buton görünür)
+  layersBar.className = 'map-layers-row closed'; 
 
   const layerOptions = [
     { value: 'bright',   img: '/img/preview_bright.png',   label: 'Bright' },
@@ -6057,22 +6050,16 @@ async function expandMap(containerId, day) {
     { value: 'liberty',  img: '/img/preview_3d.png',       label: '3D' }
   ];
 
-  // --- FIX: Her zaman 'bright' seçili gelsin ---
+  // FIX: Her zaman bright ile başla
   let currentLayer = 'bright';
-  // Hafızayı da güncelleyelim ki kafa karışıklığı olmasın
-  localStorage.setItem(`expanded-map-layer-day${day}`, 'bright');
+  localStorage.setItem(`expanded-map-layer-day${day}`, 'bright'); 
 
   const expandedMapId = `expanded-map-${day}`;
   const expandedContainer = document.createElement('div');
   expandedContainer.id = expandedMapId;
   expandedContainer.className = 'expanded-map-container';
 
-  // Container'a tıklayınca menüyü aç/kapat (Toggle)
   layersBar.onclick = function(e) {
-      // Eğer tıklanan şey bir opsiyon değilse (örn aradaki boşluk), toggle yap.
-      // Opsiyon tıklamasını aşağıda ayrı handle ediyoruz ama event bubbling ile buraya gelebilir.
-      // Eğer zaten açık bir opsiyona tıkladıysak ve seçim değiştiyse, 'click' handler'ı zaten kapatacak.
-      // Sadece kapalıyken açmayı garantilemek için:
       if (this.classList.contains('closed')) {
           this.classList.remove('closed');
           e.stopPropagation();
@@ -6088,15 +6075,13 @@ async function expandMap(containerId, day) {
     if (opt.value === currentLayer) div.classList.add('selected');
 
     div.onclick = function(e) {
-      e.stopPropagation(); // Container onclick'ini tetikleme (kapatmayı biz yapacağız)
+      e.stopPropagation(); 
 
-      // Eğer menü kapalıysa, aç (Seçili olana tıklayınca açılır)
       if (layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
 
-      // Eğer menü açıksa ve bir seçim yapıldıysa:
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
       
@@ -6119,7 +6104,28 @@ async function expandMap(containerId, day) {
         setExpandedMapTile(opt.value);
       }
       
-      // Seçim yapıldı, menüyü kapat (tek butona düşür)
+      // ============================================================
+      // --- FIX: HARİTA DEĞİŞİNCE SEGMENTİ TEKRAR ÇİZ (2D <-> 3D) ---
+      // ============================================================
+      if (
+          typeof window._lastSegmentDay === 'number' && 
+          window._lastSegmentDay === day &&
+          typeof window._lastSegmentStartKm === 'number' &&
+          typeof window._lastSegmentEndKm === 'number'
+      ) {
+          // Ufak bir gecikme ile (harita değişiminin bitmesini bekle)
+          setTimeout(() => {
+              if (typeof highlightSegmentOnMap === 'function') {
+                  highlightSegmentOnMap(
+                      day, 
+                      window._lastSegmentStartKm, 
+                      window._lastSegmentEndKm
+                  );
+              }
+          }, 150);
+      }
+      // ============================================================
+
       layersBar.classList.add('closed');
     };
     layersBar.appendChild(div);
@@ -6130,7 +6136,7 @@ async function expandMap(containerId, day) {
   const statsDiv = document.createElement('div');
   statsDiv.className = 'route-stats';
 
-  // === 2. CUSTOM CONTROLS OLUŞTURMA ===
+  // === 2. CUSTOM CONTROLS ===
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'map-custom-controls';
 
@@ -6158,7 +6164,7 @@ async function expandMap(containerId, day) {
 
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
-  compassBtn.className = 'map-ctrl-btn ctrl-compass'; // Düzeltildi
+  compassBtn.className = 'map-ctrl-btn ctrl-compass'; 
   compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none';
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
@@ -6202,7 +6208,7 @@ async function expandMap(containerId, day) {
   controlsDiv.appendChild(compassBtn);
   controlsDiv.appendChild(locBtn);
   
-  // === 3. SCALE BAR OLUŞTURMA ===
+  // === 3. SCALE BAR ===
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
   const scaleBarDiv = document.createElement('div');
@@ -6210,7 +6216,7 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
-  // === 4. PANEL DOM YAPISI ===
+  // === 4. PANEL ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   
@@ -6239,7 +6245,6 @@ async function expandMap(containerId, day) {
 
   showRouteInfoBanner(day);
 
-  // ... (Harita başlatma standart kodları) ...
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
@@ -6382,7 +6387,6 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
-
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
