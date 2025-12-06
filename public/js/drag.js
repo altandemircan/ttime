@@ -39,7 +39,6 @@ function injectDragStyles() {
         /* --- CRITICAL FIX: BOŞ GÜNLER İÇİN ALAN --- */
         .day-list {
             min-height: 80px !important; 
-            padding-bottom: 20px;
             box-sizing: border-box;
             display: block;
         }
