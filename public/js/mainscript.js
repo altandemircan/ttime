@@ -5941,10 +5941,14 @@ function saveArcPointsForDay(day, points) {
 }
 
 function openMapLibre3D(expandedMap) {
-  // 2D Harita Container'ı ve Ana Taşıyıcıyı Bul
+  // DOM Elementlerini Bul
   let mapDiv = expandedMap.getContainer();
-  let container = mapDiv.parentNode; // expanded-map-container
-  let panelDiv = container.querySelector('.expanded-map-panel'); // Alttaki Grafik Paneli
+  let container = mapDiv.parentNode; 
+  let panelDiv = container.querySelector('.expanded-map-panel'); // Grafik Paneli
+
+  // Leaflet attribution'ı gizle (Grafik ile çakışmasın)
+  const leafletAttr = container.querySelector('.leaflet-control-attribution');
+  if (leafletAttr) leafletAttr.style.display = 'none';
 
   let maplibre3d = document.getElementById('maplibre-3d-view');
   
@@ -5952,20 +5956,25 @@ function openMapLibre3D(expandedMap) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
     
-    // --- DÜZELTME BURADA ---
-    // Absolute position yerine Relative yapıyoruz ve yüksekliği 480px (2D harita ile aynı) veriyoruz.
-    // Böylece alttaki paneli ezmiyor, onun üstüne yerleşiyor.
-    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:10000; background:#eef0f5;';
+    // --- TEK MÜDAHALE BURASI ---
+    // z-index: 1 yapıldı (Panelin altında kalsın diye)
+    // position: relative (Akışa uysun diye)
+    // height: 480px (2D harita ile aynı boyda olsun)
+    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:1; background:#eef0f5;';
     
-    // Panelin hemen öncesine ekle (Panel altta kalsın)
+    // Haritayı PANELİN ÖNCESİNE (Altına) yerleştir
     if (panelDiv) {
         container.insertBefore(maplibre3d, panelDiv);
     } else {
         container.appendChild(maplibre3d);
     }
+  } else {
+      // Varolan elementin stilini de garantiye al
+      maplibre3d.style.display = 'block';
+      maplibre3d.style.height = '480px';
+      maplibre3d.style.zIndex = '1'; 
   }
   
-  maplibre3d.style.display = 'block';
   maplibre3d.innerHTML = '';
 
   const day = window.currentDay || 1;
@@ -6002,6 +6011,7 @@ function openMapLibre3D(expandedMap) {
 
   if (hasBounds) {
       mapOptions.bounds = bounds;
+      // Alttan 40px boşluk bırakıyoruz ki grafiğe çok yapışmasın
       mapOptions.fitBoundsOptions = { padding: { top: 40, bottom: 40, left: 40, right: 40 } };
   } else {
       mapOptions.center = expandedMap.getCenter();
@@ -6010,7 +6020,7 @@ function openMapLibre3D(expandedMap) {
 
   window._maplibre3DInstance = new maplibregl.Map(mapOptions);
 
-  // Pusula Senkronizasyonu
+  // Pusula
   window._maplibre3DInstance.on('rotate', () => {
       const bearing = window._maplibre3DInstance.getBearing();
       const compassDisc = document.querySelector(`#custom-compass-btn-${day} .custom-compass-disc`);
