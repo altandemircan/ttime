@@ -5873,7 +5873,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (Orijinal stil bloklarına SADECE dropdown için gerekli stiller eklenecek)
+  // 1. STİL EKLEME (CSS YERLEŞİMİNE DOKUNULMAMIŞ HALİ KULLANILDI)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -6062,7 +6062,7 @@ async function expandMap(containerId, day) {
   
   // Orijinal layersBar container'ını oluştur (Burası menu mekanizmasının kapsayıcısı olacak)
   const layersBar = document.createElement('div');
-  layersBar.className = 'map-layers-row closed'; // Başlangıçta kapalı: Sadece seçili olan gözükecek.
+  layersBar.className = 'map-layers-row closed'; // Başlangıçta kapalı
 
   // Layer Options (Bu options'lar DOM'da oluşturulacak)
   const layerOptions = [
@@ -6082,12 +6082,7 @@ async function expandMap(containerId, day) {
   // --- Orijinal DOM Yapısı ve Tıklama Mekanizması ---
 
   const handleMapOptionClick = function(e, selectedValue) {
-      // EĞER ZATEN SEÇİLİYSE: Sadece menüyü kapat. (Yeni seçenek seçilmemişse)
-      if (e.currentTarget.classList.contains('selected')) {
-          layersBar.classList.add('closed');
-          return;
-      }
-      
+      e.stopPropagation();
       const prevValue = currentLayer;
       
       // 1. Seçili katmanı güncelle
@@ -6121,10 +6116,7 @@ async function expandMap(containerId, day) {
   };
 
   const handleMapRowClick = function(e) {
-      // Tıklama eventini durdur, dışarıya yayılmasını engelle
-      e.stopPropagation();
-      
-      // Sadece menü (row) alanına tıklandığında (butonlara değil) menüyü aç/kapat
+      // Eğer tıklama zaten bir map-type-option'a gitmediyse, menüyü aç/kapat
       if (!e.target.closest('.map-type-option')) {
           layersBar.classList.toggle('closed');
       }
@@ -6183,7 +6175,7 @@ async function expandMap(containerId, day) {
 
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
-  compassBtn.className = 'map-ctrl-btn ctrl-compass`;
+  compassBtn.className = 'map-ctrl-btn ctrl-compass';
   compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none'; // Başlangıç durumu
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
