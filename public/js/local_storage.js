@@ -347,15 +347,17 @@ function loadTripFromStorage(tripKey) {
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
 
-    // --- Verileri Yükleme Kısmı ---
+    // --- 1. Veri Hazırlığı ---
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
 
+    // AI Verisi Yükleme
     if (t.aiInfo) {
         window.cart.aiData = t.aiInfo;
         window.lastTripAIInfo = t.aiInfo;
     }
 
+    // AI Bilgi Paneli Güncelleme
     if (t.aiInfo) {
         window.lastTripAIInfo = t.aiInfo;
         let aiDiv = document.querySelector('.ai-info-section');
@@ -366,6 +368,7 @@ function loadTripFromStorage(tripKey) {
         }
     }
 
+    // İstatistikler ve Konumlar
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
     window.cart = window.cart.map(item => {
@@ -383,60 +386,91 @@ function loadTripFromStorage(tripKey) {
     window.lastUserQuery = t.lastUserQuery || t.title || "";
     window.selectedCity = t.selectedCity || "";
 
-    // --- Panel Temizliği ---
+    // --- 2. Panel Temizliği ---
     const chatBox = document.getElementById("chat-box");
     if (chatBox) chatBox.innerHTML = "";
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
 
     // ============================================================
-    // --- DEĞİŞİKLİK: TÜM HARİTALARI KAPAT & GİZLE ---
+    // --- FIX: AÇIK OLAN BÜYÜK HARİTALARI KAPAT (Buton Tetikleyerek) ---
     // ============================================================
+    // Yeni geziye geçerken, ekranda açık kalmış haritaları kendi "Kapat" butonlarına basarak kapatıyoruz.
+    // NOT: Projenizdeki buton ID'leri farklıysa aşağıdaki listeyi güncelleyin.
     
-    // 1. 3D Harita Kutusunu Bul ve Gizle
-    // ID'niz farklıysa burayı düzeltin: 'three-js-map-container'
-    const map3D = document.getElementById('three-js-map-container') || document.getElementById('map-3d-view');
-    if (map3D) {
-        map3D.style.display = 'none';
+    const closeButtonsToTrigger = [
+        document.getElementById('close-3d-btn'),        // 3D Harita kapatma butonu
+        document.getElementById('close-expanded-btn'),  // Geniş (2D) harita kapatma butonu
+        document.getElementById('close-map-btn'),       // Genel kapatma butonu (varsa)
+        document.querySelector('.close-map-button')     // Class ile bulma alternatifi
+    ];
+
+    closeButtonsToTrigger.forEach(btn => {
+        // Buton varsa ve şu an görünür durumdaysa (aktifse) tıkla
+        if (btn && btn.offsetParent !== null) {
+            btn.click();
+        }
+    });
+
+    // Ekstra Güvenlik: Eğer buton tıklaması çalışmazsa veya buton bulunamazsa,
+    // 3D container'ı manuel olarak gizle ki eski harita asılı kalmasın.
+    const map3DContainer = document.getElementById('three-js-map-container'); 
+    if (map3DContainer) {
+        map3DContainer.style.display = 'none';
     }
-
-    // 2. 2D (Normal) Harita Kutusunu Bul ve Gizle
-    // ID'niz farklıysa burayı düzeltin: 'map-container'
-    const map2D = document.getElementById('map-container') || document.getElementById('map');
-    if (map2D) {
-        map2D.style.display = 'none'; 
-    }
-
-    // 3. Varsa 3D kapatma butonunu da gizle
-    const closeBtn3D = document.getElementById('close-3d-btn');
-    if (closeBtn3D) closeBtn3D.style.display = 'none';
-
-    // Not: Harita container'ları gizlendiği için arkadaki boş background görünecektir.
     // ============================================================
 
-    // UI güncellemeleri (Sidebar, Başlık vs.)
+
+    // --- 3. UI Başlık ve Liste Güncellemeleri ---
     if (typeof updateTripTitle === "function") updateTripTitle();
     if (typeof updateCart === "function") updateCart();
     if (typeof showResults === "function") showResults();
     if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
 
+
+    // --- 4. Gün Sayısını Bul ---
+    let maxDay = 0;
+    window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
+
     // ============================================================
-    // --- DEĞİŞİKLİK: OTOMATİK HARİTA ÇİZDİRMEYİ İPTAL ET ---
+    // --- FIX: OTOMATİK HARİTA ÇİZDİRMEYİ İPTAL ET ---
     // ============================================================
-    // Eski kodda burada 'renderRouteForDay' çağrılıyordu. 
-    // Artık çağırmıyoruz, böylece yeni gezi haritası otomatik açılmıyor.
+    // Kullanıcı "Yani haritanın herhangi bir map'i gelmesin" dediği için
+    // aşağıdaki render döngüsünü pasif hale getiriyoruz. 
+    // Böylece harita otomatik yüklenmeyecek, kullanıcı isterse butona basıp açacak.
     
-    // Sadece data-day attributelerini veya internal state'i güncellemek gerekirse
-    // basit bir döngü bırakılabilir ama render işlemi yapılmamalı.
-    
-    /* İPTAL EDİLEN KOD BLOĞU:
-    setTimeout(async () => {
+    /* setTimeout(async () => {
         for (let day = 1; day <= maxDay; day++) {
             await renderRouteForDay(day);
         }
         saveTripAfterRoutes();
     }, 0);
     */
+    
+    // Sadece mevcut durumu (seçili geziyi) kaydet/güncelle ki aktif gezi bu olsun.
+    // Ancak renderRouteForDay çalışmadığı için thumbnail veya polyline güncellenmeyebilir, 
+    // bu sadece geziyi aktif etmek içindir.
+    // saveTripAfterRoutes(); // Bunu da çağırmıyoruz çünkü içinde renderRouteForDay kontrolü olabilir.
+    
+    // Sadece global state'i güncellemek yeterli olabilir, ancak UI'da harita boş kalacaktır.
+    // Eğer küçük (standart) haritanın güncellenmesini istiyorsanız yukarıdaki yorumu kaldırın.
+    // Ama "Hiçbir map gelmesin" dediğiniz için kapalı tutuyoruz.
+
+    // --- 5. Görünüm Düzeltmeleri (Resize vb.) ---
+    setTimeout(function() {
+        // Harita container'larını yeniden boyutlandır (eğer görünürlerse)
+        Object.values(window.leafletMaps || {}).forEach(map => {
+            if (map && typeof map.invalidateSize === 'function') {
+                map.invalidateSize();
+            }
+        });
+        // Slider vb. güncelle
+        document.querySelectorAll('.splide').forEach(sliderElem => {
+            if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
+                sliderElem._splideInstance.refresh();
+            }
+        });
+    }, 350);
 
     return true;
 }
