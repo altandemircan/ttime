@@ -4555,19 +4555,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     width: calc(100% - 40px) !important;
 }
 
-.route-stats {
-    width: 100%;
-    font-size: 0.9rem;
-    text-align: left;
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
 
-}
-.route-stats .stat img {
-    width: 16px;
-    height: 16px;
-}
 .stat {
     display: flex;
     align-items: center;
