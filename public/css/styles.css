@@ -5736,6 +5736,7 @@ ease;
     transition: all 0.2s 
 ease;
     font-size: 13px;
+    font-weight: 600;
 }
 
 .expand-map-btn img {
