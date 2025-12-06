@@ -10778,13 +10778,12 @@ function highlightSegmentOnMap(day, startKm, endKm) {
       maps2D.push(expandedObj.expandedMap);
   }
 
-  // Eski highlightları temizle
   Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
   window._segmentHighlight[day] = {};
 
-  // Marker Stili
+  // 2D Marker Stili
   const markerOptions = {
-      radius: 5,             // Biraz küçülttük (çizgi inceldiği için)
+      radius: 5,
       color: '#8a4af3',
       fillColor: '#ffffff',
       fillOpacity: 1,
@@ -10801,10 +10800,9 @@ function highlightSegmentOnMap(day, startKm, endKm) {
         m.getPane('segmentPane').style.pointerEvents = 'none';
     }
 
-    // 1. Çizgiyi çiz
     const poly = L.polyline(subCoordsLeaflet, {
         color: '#8a4af3',
-        weight: 6,       // FIX: 10'dan 6'ya düşürüldü (Normal Rota Boyutu)
+        weight: 6,
         opacity: 1.0,
         lineCap: 'round',
         lineJoin: 'round',
@@ -10814,17 +10812,14 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     
     window._segmentHighlight[day][`poly_${m._leaflet_id}`] = poly;
 
-    // 2. Başlangıç Noktası
     const startPt = subCoordsLeaflet[0];
     const startMarker = L.circleMarker(startPt, markerOptions).addTo(m);
     window._segmentHighlight[day][`start_${m._leaflet_id}`] = startMarker;
 
-    // 3. Bitiş Noktası
     const endPt = subCoordsLeaflet[subCoordsLeaflet.length - 1];
     const endMarker = L.circleMarker(endPt, markerOptions).addTo(m);
     window._segmentHighlight[day][`end_${m._leaflet_id}`] = endMarker;
     
-    // Zoom/Fit
     try {
         m.fitBounds(poly.getBounds(), { padding: [50, 50], maxZoom: 16, animate: true, duration: 0.8 });
     } catch(e) {}
@@ -10857,15 +10852,14 @@ function highlightSegmentOnMap(day, startKm, endKm) {
               source: sourceId,
               layout: { 'line-join': 'round', 'line-cap': 'round' },
               paint: {
-                  'line-color': '#8a4af3',
-                  'line-width': 8, // FIX: 10'dan 8'e düşürüldü (3D Rota Boyutu)
+                  'line-color': '#8a4af3', // Mor
+                  'line-width': 12,        // FIX: 8'den 12'ye çıkardık (Rotadan kalın olsun)
                   'line-opacity': 1.0,
-                  'line-offset': 1 // Çakışmayı önlemek için çok hafif offset
+                  'line-offset': 0         // FIX: Offset 0 yaparak tam üstüne bindirdik
               }
           });
       }
 
-      // B) Baş ve Son Noktaları Ekle (HTML Marker)
       window._segment3DMarkers = window._segment3DMarkers || [];
       
       const create3DMarker = (lngLat) => {
