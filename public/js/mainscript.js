@@ -5873,17 +5873,17 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (Sadece Layer Seçici Stilleri eklendi/düzenlendi)
+  // 1. STİL EKLEME (SENİN YOLLADIĞIN ORİJİNAL STİL KODLARI)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
-      // ... (Genişletilmiş map için mevcut tüm CSS'ler buraya eklenecek) ...
+      // BURASI SENİN GÖNDERDİĞİN ORİJİNAL STİL BLOKLARI OLARAK KALACAK
       style.innerHTML = `
    
  .map-custom-controls {
     position: absolute;
     bottom: 200px;
-    right: 20px;
+    
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -5893,13 +5893,15 @@ async function expandMap(containerId, day) {
     border-radius: 12px;
     backdrop-filter: blur(4px);
     border: 1px solid rgba(0, 0, 0, 0.05);
+        right: 20px;
 }  
   .map-ctrl-btn {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.2s 
+ease;
     backdrop-filter: blur(4px);
     padding: 4px 10px;
     background: #ffffff;
@@ -5912,16 +5914,15 @@ async function expandMap(containerId, day) {
         .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
 
 .map-ctrl-btn.zoom-text {
-        font-size: 18px;
+    font-size: 22px;
     font-weight: 300;
     line-height: 1;
     color: #666;
-    padding-bottom: 2px
+    padding-bottom: 2px;
 }
 
         .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
 
-/* DİKKAT: Header'ı yerinde bıraktık, Layer Seçici ayrı bir konteyner olacak */
 .expanded-map-header {
     position: absolute;
     bottom: 200px;
@@ -5930,89 +5931,35 @@ async function expandMap(containerId, day) {
     display: flex;
     align-items: center;
     gap: 15px;
-        left: 20px; 
+        left: -20px;
 }
 @media (max-width:768px) {
         .expanded-map-header {
         left: 10px;
         }
-          .map-custom-controls {
+         .map-custom-controls {
         right: 20px;
         }
 }
-
-/* YENİ LAYER SEÇİCİ KONTEYNER VE BUTON STİLLERİ */
-.map-layers-row-container {
-    position: absolute;
-    bottom: 200px;
-    left: 20px;
-    z-index: 10002; /* Diğer kontrollerden biraz daha yukarıda */
-}
-
-.map-layers-dropdown {
-    position: absolute;
-    bottom: calc(100% + 8px); /* Ana butonun hemen üstünde açılsın */
-    left: 0;
-    display: none;
-    flex-direction: column;
+.map-layers-row {
+    display: flex;
     gap: 8px;
+    /* background: rgba(255, 255, 255, 0.85); */
     padding: 6px;
     border-radius: 12px;
     backdrop-filter: blur(4px);
     border: 1px solid rgba(0, 0, 0, 0.05);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    background: rgba(255, 255, 255, 0.95);
-    min-width: 120px;
-}
-.map-layers-dropdown.open {
-    display: flex;
+    flex-direction: column;
 }
 
-.map-type-main-btn {
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    padding: 6px 12px; 
-    background: #ffffff; 
-    border: 1px solid #e0e0e0; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: all 0.2s ease; 
-    font-size: 12px; 
-    font-weight: 500; 
-    color: #444; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-.map-type-main-btn img { 
-    width: 16px; 
-    height: 16px; 
-    border-radius: 4px; 
-    object-fit: cover; 
-}
-.map-type-option { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    padding: 6px 12px; 
-    background: #ffffff; 
-    border: 1px solid #e0e0e0; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: all 0.2s ease; 
-    font-size: 12px; 
-    font-weight: 500; 
-    color: #444; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-.map-type-option:hover { background: #f9f9f9; }
-.map-type-option img { 
-    width: 16px; 
-    height: 16px; 
-    border-radius: 4px; 
-    object-fit: cover; 
-}
-
-/* 3D MAP SCALE BAR STİLİ */
+       .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 12px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .map-type-option img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
+        .map-type-option:hover { background: #f9f9f9; transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.1); border-color: #d0d0d0; }
+        .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
+        .map-type-option.selected img { opacity: 1; }
+        
+        /* 3D MAP SCALE BAR STİLİ */
         .maplibregl-ctrl-bottom-left {
             bottom: 30px !important; 
             left: 20px !important;
@@ -6036,20 +5983,7 @@ async function expandMap(containerId, day) {
       `;
       document.head.appendChild(style);
   }
-  
-  // Harici tıklama olayını bir kez bağla
-  if (!window.__ttMapLayerCloserBound) {
-    document.addEventListener('click', (e) => {
-        const containers = document.querySelectorAll('.map-layers-row-container');
-        containers.forEach(container => {
-            if (!container && container.contains(e.target)) {
-                container.querySelector('.map-layers-dropdown')?.classList.remove('open');
-            }
-        });
-    });
-    window.__ttMapLayerCloserBound = true;
-  }
-  
+
   if (window.expandedMaps && window.expandedMaps[containerId]) return;
 
   if (window.expandedMaps) {
@@ -6085,98 +6019,61 @@ async function expandMap(containerId, day) {
   if (!originalContainer) ensureDayMapContainer(day); 
   if (originalContainer) originalContainer.style.display = 'none';
 
-  // === 1. HARİTA KATMAN SEÇİCİSİ OLUŞTURMA (TEK BUTON) ===
+  // === 1. HEADER OLUŞTURMA ===
+  const headerDiv = document.createElement('div');
+  headerDiv.className = 'expanded-map-header';
+  const layersBar = document.createElement('div');
+  layersBar.className = 'map-layers-row'; 
+
   const layerOptions = [
     { value: 'bright',   img: '/img/preview_bright.png',   label: 'Bright' },
     { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
     { value: 'liberty',  img: '/img/preview_3d.png',       label: '3D' }
   ];
 
-  let currentLayer = localStorage.getItem(`expanded-map-layer-day${day}`) || 'bright';
-  if (!layerOptions.some(opt => opt.value === currentLayer)) currentLayer = 'bright';
+  let currentLayer = 'bright';
 
   const expandedMapId = `expanded-map-${day}`;
   const expandedContainer = document.createElement('div');
   expandedContainer.id = expandedMapId;
   expandedContainer.className = 'expanded-map-container';
 
-  const mapLayerContainer = document.createElement('div');
-  mapLayerContainer.className = 'map-layers-row-container';
-
-  const mainButton = document.createElement('button');
-  mainButton.className = 'map-type-main-btn';
-  mainButton.id = `main-map-btn-${day}`;
-  mainButton.setAttribute('aria-expanded', 'false');
-  mainButton.setAttribute('aria-controls', `dropdown-${day}`);
-  
-  const dropdown = document.createElement('div');
-  dropdown.className = 'map-layers-dropdown';
-  dropdown.id = `dropdown-${day}`;
-
-  const updateMainButton = (value) => {
-    const opt = layerOptions.find(o => o.value === value);
-    mainButton.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
-    currentLayer = value;
-    localStorage.setItem(`expanded-map-layer-day${day}`, value);
-  };
-  
-  mainButton.onclick = (e) => {
-    e.stopPropagation();
-    const isOpen = dropdown.classList.toggle('open');
-    mainButton.setAttribute('aria-expanded', isOpen);
-  };
-
   layerOptions.forEach(opt => {
     const div = document.createElement('div');
     div.className = 'map-type-option';
     div.setAttribute('data-value', opt.value);
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
-    if (opt.value === currentLayer) div.style.display = 'none'; // Aktif olanı dropdown'da gösterme
-    
-    div.onclick = function(e) {
-      e.stopPropagation();
-      const selectedValue = opt.value;
-      const prevValue = currentLayer;
-      
-      // 1. Yeni butonu ana butona taşı
-      updateMainButton(selectedValue);
+    if (opt.value === currentLayer) div.classList.add('selected');
 
-      // 2. Dropdown'daki elementlerin görünürlüğünü güncelle
-      dropdown.querySelectorAll('.map-type-option').forEach(o => {
-          o.style.display = o.getAttribute('data-value') === selectedValue ? 'none' : 'flex';
-      });
+    div.onclick = function() {
+      layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+      div.classList.add('selected');
+      currentLayer = opt.value;
 
-      // 3. Harita katmanını değiştir
+      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
-      const map3d = document.getElementById('maplibre-3d-view');
-      
-      if (selectedValue === 'liberty') {
+
+      if (opt.value === 'liberty') {
+        // --- 3D MOD ---
         expandedMapInstance.getContainer().style.display = "none";
-        if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        if (prevValue === 'liberty' && map3d) map3d.style.display = "none";
+        // --- 2D MOD ---
         expandedMapInstance.getContainer().style.display = "";
+        let map3d = document.getElementById('maplibre-3d-view');
+        if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
-        setExpandedMapTile(selectedValue);
+        setExpandedMapTile(opt.value);
       }
-      
-      // 4. Dropdown'ı kapat
-      dropdown.classList.remove('open');
-      mainButton.setAttribute('aria-expanded', 'false');
     };
-    dropdown.appendChild(div);
+    layersBar.appendChild(div);
   });
-  
-  mapLayerContainer.appendChild(mainButton);
-  mapLayerContainer.appendChild(dropdown);
-  updateMainButton(currentLayer); // Başlangıçta ana butonu set et
 
-  // === 1.5 HEADER/STATS OLUŞTURMA ===
-  // Orijinal yerleşimi korumak için, headerDiv ve statsDiv'i ayrı ayrı oluşturuyoruz.
-  const headerDiv = document.createElement('div');
-  headerDiv.className = 'expanded-map-header';
+  // Burası değişti: layersBar headerDiv'in içine eklendi
+  headerDiv.appendChild(layersBar);
+  
+  // Burası değişti: route-stats artık headerDiv'in kardeşi olacak
   const statsDiv = document.createElement('div');
   statsDiv.className = 'route-stats';
 
@@ -6209,7 +6106,7 @@ async function expandMap(containerId, day) {
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
   compassBtn.className = 'map-ctrl-btn ctrl-compass';
-  compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none';
+  compassBtn.style.display = 'none';
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
     <div class="custom-compass-disc">
@@ -6260,21 +6157,15 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
-  // === 4. PANEL DOM YAPISI DEĞİŞİKLİĞİ (YERLEŞİM KORUNUYOR) ===
+  // === 4. PANEL DOM YAPISI DEĞİŞİKLİĞİ (YENİ HİYERARŞİ) ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   
-  // Orijinal DOM hiyerarşisine göre ekle (LayerContainer'ı Header/Stats yerine koymak için)
-  // NOT: Eski kodunuzda headerDiv'e layersBar ekliyordunuz. Şimdi layersBar yerine mapLayerContainer eklenecek.
-  
-  // DİKKAT: Eski yapınızda LayersBar, expanded-map-header'ın altındaydı.
-  // LayersBar yerine LayerContainer'ı headerDiv'den bağımsız olarak panelin en üstüne yerleştiriyorum.
-  // Eski yerleşimi korumak adına, MapLayerContainer'ı en üstte tutuyorum.
-  
-  panelDiv.appendChild(mapLayerContainer);
-  // (statsDiv'i kullanmayacağımız için buraya eklemiyoruz, updateRouteStatsUI onu kaldıracak.)
-  panelDiv.appendChild(controlsDiv); 
-  panelDiv.appendChild(scaleBarDiv); 
+  // YENİ YAPI: expanded-map-header ve route-stats aynı seviyede olacak
+  panelDiv.appendChild(headerDiv);   // 1. expanded-map-header
+  panelDiv.appendChild(statsDiv);    // 2. route-stats (YENİ EKLEME)
+  panelDiv.appendChild(controlsDiv); // 3. Controls
+  panelDiv.appendChild(scaleBarDiv); // 4. Scale Bar
   
   expandedContainer.appendChild(panelDiv);
 
@@ -6290,7 +6181,7 @@ async function expandMap(containerId, day) {
   mapDiv.className = 'expanded-map';
   expandedContainer.appendChild(mapDiv);
   document.body.appendChild(expandedContainer);
-  
+ 
   // 2D Harita yüksekliği
   mapDiv.style.width = "100%";
   mapDiv.style.height = "480px"; 
@@ -6407,6 +6298,7 @@ async function expandMap(containerId, day) {
       }
   }, 350); 
 
+  const summary = window.lastRouteSummaries?.[containerId];
   // Burası değişti: statsDiv artık header'dan ayrı bir element olarak alındı
   if(statsDiv) statsDiv.innerHTML = '';
 
@@ -6440,6 +6332,7 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
+
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
