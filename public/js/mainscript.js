@@ -5903,7 +5903,7 @@ async function expandMap(containerId, day) {
     backdrop-filter: blur(4px);
     padding: 4px 10px;
     background: #ffffff;
-    border: 1px solid #e0e0e0;
+    border: 1:px solid #e0e0e0;
     border-radius: 8px;
     cursor: pointer;
         }
@@ -6183,7 +6183,8 @@ async function expandMap(containerId, day) {
 
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
-  compassBtn.className = 'map-ctrl-btn ctrl-compass`;
+  // Hata Düzeltildi: 'map-ctrl-btn ctrl-compass'
+  compassBtn.className = 'map-ctrl-btn ctrl-compass';
   compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none'; // Başlangıç durumu
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
@@ -6410,7 +6411,6 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
-
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
