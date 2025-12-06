@@ -9670,18 +9670,21 @@ window.updateRouteStatsUI = function(day) {
     const expandedContainer = document.getElementById(`expanded-map-${day}`);
     const scaleBarDiv = expandedContainer?.querySelector(`#expanded-route-scale-bar-day${day}`);
     
-    // NOT: Eski .route-stats'ı (varsa) kaldır (Artık kullanılmayacak)
-    expandedContainer?.querySelector('.route-stats')?.remove();
+    // Normal stats div'ini bul ve kaldır (Artık kullanılmayacak)
+    const oldHeaderStats = expandedContainer?.querySelector('.route-stats');
+    if (oldHeaderStats) oldHeaderStats.remove();
 
-    // Mevcut segment toolbar'ı bul (ve segment seçiliyken DOM'dan kaldırılmaması için kontrol et)
-    const existingToolbar = expandedContainer?.querySelector('.elev-segment-toolbar');
+    // Mevcut segment toolbar'ı bul ve temizle (Segment seçimi olmadığında Road stats'ı yazmak için)
+    if (scaleBarDiv) {
+        scaleBarDiv.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+    }
 
     // 1. Segment seçili mi kontrol et
     const isSegmentSelected = window._lastSegmentDay === day && 
                               typeof window._lastSegmentStartKm === 'number' &&
                               typeof window._lastSegmentEndKm === 'number';
 
-    // 2. Küçük harita kontrol çubuğunda (map-bottom-controls) normal istatistikleri göster
+    // Küçük harita kontrol çubuğunda (map-bottom-controls) normal istatistikleri göster
     const smallSpan = document.querySelector(`#map-bottom-controls-day${day} .route-summary-control`);
     if (smallSpan && summary) {
         const elev = window.routeElevStatsByDay?.[day] || {};
@@ -9689,26 +9692,17 @@ window.updateRouteStatsUI = function(day) {
         smallSpan.innerHTML = buildBadgesHTML(strings);
     }
 
-    if (!expandedContainer) return; // Genişletilmiş harita yoksa çık
+    if (!scaleBarDiv) return; // Genişletilmiş harita yoksa çık
 
-    // 3. Segment seçiliyse: drawSegmentProfile zaten ilgili toolbar'ı oluşturdu.
-    if (isSegmentSelected) {
-        if (existingToolbar) existingToolbar.style.display = 'flex';
-        return;
-    } 
-    
-    // 4. Segment seçili değilse: TAM ROTA istatistiklerini Segment Toolbar formunda yaz
-    
-    // Önce eski toolbar'ı kaldır
-    if (existingToolbar) existingToolbar.remove();
+    // 2. Segment seçiliyse: drawSegmentProfile bu bilgiyi yazar ve buraya girmez.
 
-    if (summary) {
+    // 3. Segment seçili değilse: TAM ROTA istatistiklerini Segment Toolbar formunda yaz
+    if (!isSegmentSelected && summary) {
         const elev = window.routeElevStatsByDay?.[day] || {};
         const totalKm = (summary.distance / 1000).toFixed(1);
         const up = Math.round(elev.ascent || 0);
         const down = Math.round(elev.descent || 0);
-        const durationMin = Math.round(summary.duration / 60);
-
+        
         // Ortalama eğim hesapla (Basitleştirilmiş: Sadece toplam yükseklik farkı / toplam mesafe)
         const startElev = elev.startElev || (elev.smooth && elev.smooth[0]) || 0;
         const endElev = elev.endElev || (elev.smooth && elev.smooth[elev.smooth.length - 1]) || 0;
@@ -9717,27 +9711,26 @@ window.updateRouteStatsUI = function(day) {
         
         const tb = document.createElement('div');
         tb.className = 'elev-segment-toolbar';
-        tb.style.display = 'flex';
+        tb.style.display = 'flex'; // Her zaman gözüksün
         
         // Rota bilgileri "pill" formunda
         tb.innerHTML = `
             <span class="pill">${totalKm} km</span>
-            <span class="pill">${durationMin} min</span>
+            <span class="pill">${Math.round(summary.duration / 60)} min</span>
             <span class="pill">↑ ${up} m</span>
             <span class="pill">↓ ${down} m</span>
             <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
             <button type="button" class="elev-segment-reset">Road</button>
         `;
         
-        // Toolbar'ı panel içine, harita ve diğer panellerin hemen üstüne ekle (drawSegmentProfile ile aynı yerleştirme mantığı)
-        const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
-
-        if (panelDiv && panelDiv.firstChild) {
-            panelDiv.insertBefore(tb, panelDiv.firstChild);
-        } else if (panelDiv) {
-            panelDiv.appendChild(tb);
+        // Toolbar'ı, varsa MapDiv'den sonraki ilk elementin hemen önüne ekle (track içine değil, panel içine)
+        const mapDiv = expandedContainer.querySelector('.expanded-map');
+        if (mapDiv && mapDiv.nextSibling) {
+             expandedContainer.insertBefore(tb, mapDiv.nextSibling);
+        } else if (mapDiv) {
+             expandedContainer.appendChild(tb);
         }
-        
+
         // Road butonu, tam rotadayken hiçbir şey yapmaz, sadece Road olduğunu belirtir
         const roadBtn = tb.querySelector('.elev-segment-reset');
         if (roadBtn) {
@@ -10804,14 +10797,10 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       selDiv.style.left = '0px';
   }
 
-  // Temizlik: Harita track'i içindeki eski segment görsellerini ve toolbar'ları temizle
+  // Temizlik
   track.querySelectorAll('svg[data-role="elev-segment"]').forEach(el => el.remove());
   track.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
   track.querySelectorAll('.elevation-labels-container').forEach(el => el.remove());
-
-  // KRİTİK TEMİZLİK: Harita konteyneri dışındaki (panel içindeki) önceki toolbar'ı kaldır
-  const expandedContainer = container.closest('.expanded-map-container');
-  expandedContainer?.querySelector('.elev-segment-toolbar')?.remove(); 
 
   // ... (Hesaplamalar Aynı) ...
   const widthPx = Math.max(200, Math.round(track.getBoundingClientRect().width));
@@ -10857,7 +10846,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', String(heightNow));
   track.appendChild(svg);
-  // ... (Diğer SVG elementleri ve çizim kodları) ...
+
   const existingTooltip = track.querySelector('.tt-elev-tooltip');
   const existingLine = track.querySelector('.scale-bar-vertical-line');
   if (existingLine) track.appendChild(existingLine);
@@ -10949,18 +10938,8 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
     <button type="button" class="elev-segment-reset">Segment (X)</button>
   `;
-  
-  // Toolbar'ı, expanded container'daki harita div'den sonraki ilk yere ekle
-  const mapDiv = expandedContainer.querySelector('.expanded-map');
-  const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
+  track.appendChild(tb);
 
-  // Toolbar'ı PANEL içine, harita ve diğer panellerin hemen üstüne ekle (DOM yapısı korunuyor)
-  if (panelDiv && panelDiv.firstChild) {
-      panelDiv.insertBefore(tb, panelDiv.firstChild);
-  } else if (panelDiv) {
-      panelDiv.appendChild(tb);
-  }
-  
   const resetBtn = tb.querySelector('.elev-segment-reset');
   if (resetBtn) {
       const stopProp = (e) => e.stopPropagation();
@@ -10993,6 +10972,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
         const validPoints = allPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
 
         if (validPoints.length > 0) {
+            // A) Leaflet (2D) Reset
             const bounds = L.latLngBounds(validPoints.map(p => [p.lat, p.lng]));
             const cid = `route-map-day${day}`;
             const expObj = window.expandedMaps && window.expandedMaps[cid];
@@ -11005,12 +10985,14 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
                 }
             }
 
+            // B) MapLibre (3D) Reset
             const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
             if (is3DActive && window._maplibre3DInstance) {
                 const bounds3d = new maplibregl.LngLatBounds();
                 validPoints.forEach(p => bounds3d.extend([p.lng, p.lat]));
                 
                 window._maplibre3DInstance.fitBounds(bounds3d, {
+                    // Alt panel yüksekliğini hesaba kat
                     padding: { top: 80, bottom: 250, left: 60, right: 60 },
                     duration: 1000
                 });
@@ -11043,6 +11025,13 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
         // 4. İstatistikleri tekrar Road (tam rota) olarak göster
         updateRouteStatsUI(day);
       });
+  }
+  
+  // Segment seçildiği anda (toolbar oluşturulduğunda) tam rota istatistiklerini gizle
+  const expandedContainer = document.getElementById(`expanded-map-${day}`);
+  const headerStats = expandedContainer?.querySelector('.route-stats');
+  if (headerStats) {
+      headerStats.style.display = 'none';
   }
 }
 
