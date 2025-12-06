@@ -10677,219 +10677,164 @@ function ensureCanvasRenderer(m){ if(!m._ttCanvasRenderer) m._ttCanvasRenderer=L
 
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
 // SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
-// SEGMENT SEÇİMİ SONRASI ZOOM VE HIGHLIGHT
-function highlightSegmentOnMap(day, startKm, endKm) {
-  // --- 1. PARAMETRE KONTROLÜ VE TEMİZLİK (RESET) ---
+function openMapLibre3D(expandedMap) {
+  // --- DOM Elementlerini Bul ---
+  let mapDiv = expandedMap.getContainer();
+  let container = mapDiv.parentNode; 
+  let panelDiv = container.querySelector('.expanded-map-panel'); 
+
+  // Leaflet attribution'ı gizle
+  const leafletAttr = container.querySelector('.leaflet-control-attribution');
+  if (leafletAttr) leafletAttr.style.display = 'none';
+
+  let maplibre3d = document.getElementById('maplibre-3d-view');
   
-  // 3D Marker Temizliği
-  if (window._segment3DMarkers) {
-      window._segment3DMarkers.forEach(m => m.remove());
-      window._segment3DMarkers = [];
-  }
-
-  if (
-      typeof startKm !== "number" ||
-      typeof endKm !== "number" ||
-      typeof day !== "number"
-  ) {
-      // 2D Temizlik
-      if (window._segmentHighlight && window._segmentHighlight[day]) {
-          Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
-          delete window._segmentHighlight[day];
-      }
-      // 3D Line Temizlik
-      if (window._maplibre3DInstance) {
-          if (window._maplibre3DInstance.getLayer('segment-highlight-layer')) {
-              window._maplibre3DInstance.removeLayer('segment-highlight-layer');
-          }
-          if (window._maplibre3DInstance.getSource('segment-highlight-source')) {
-              window._maplibre3DInstance.removeSource('segment-highlight-source');
-          }
-      }
-      return;
-  }
-
-  const cid = `route-map-day${day}`;
-  
-  // --- 2. VERİ KAYNAĞINI BELİRLE ---
-  let coords = null;
-  let isFlyMode = false;
-
-  if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 1) {
-      coords = window._curvedArcPointsByDay[day]; 
-      isFlyMode = true;
-  } else {
-      const gj = window.lastRouteGeojsons?.[cid];
-      if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
-          coords = gj.features[0].geometry.coordinates; 
-      }
-  }
-
-  if (!coords || coords.length < 2) return;
-
-  // --- 3. SEGMENT HESAPLAMA ---
-  function hv(lat1, lon1, lat2, lon2) {
-    const R=6371000, toRad=x=>x*Math.PI/180;
-    const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
-    const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-    return 2*R*Math.asin(Math.sqrt(a));
-  }
-
-  const cum = [0];
-  for (let i = 1; i < coords.length; i++) {
-    const [lon1, lat1] = coords[i-1];
-    const [lon2, lat2] = coords[i];
-    cum[i] = cum[i-1] + hv(lat1, lon1, lat2, lon2);
-  }
-
-  const segStartM = startKm * 1000;
-  const segEndM = endKm * 1000;
-
-  let iStart = 0;
-  let iEnd = coords.length - 1;
-
-  for (let i = 0; i < cum.length; i++) {
-      if (cum[i] >= segStartM) {
-          iStart = i > 0 ? i - 1 : i; 
-          break;
-      }
-  }
-
-  for (let i = iStart; i < cum.length; i++) {
-      if (cum[i] >= segEndM) {
-          iEnd = i;
-          break;
-      }
-  }
-
-  // --- 4. LEAFLET (2D) ÇİZİMİ ---
-  const subCoordsLeaflet = coords.slice(iStart, iEnd + 1).map(c => [c[1], c[0]]);
-  if (subCoordsLeaflet.length < 2) return;
-
-  window._segmentHighlight = window._segmentHighlight || {};
-  if (!window._segmentHighlight[day]) window._segmentHighlight[day] = {};
-
-  const maps2D = [];
-  if (window.leafletMaps && window.leafletMaps[cid]) maps2D.push(window.leafletMaps[cid]);
-  
-  const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
-  const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
-  if (expandedObj && expandedObj.expandedMap && !is3DActive) {
-      maps2D.push(expandedObj.expandedMap);
-  }
-
-  Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
-  window._segmentHighlight[day] = {};
-
-  // 2D Marker Stili
-  const markerOptions = {
-      radius: 5,
-      color: '#8a4af3',
-      fillColor: '#ffffff',
-      fillOpacity: 1,
-      weight: 2,
-      opacity: 1,
-      interactive: false,
-      pane: 'segmentPane'
-  };
-
-  maps2D.forEach(m => {
-    if (!m.getPane('segmentPane')) {
-        m.createPane('segmentPane');
-        m.getPane('segmentPane').style.zIndex = 450; 
-        m.getPane('segmentPane').style.pointerEvents = 'none';
+  if (!maplibre3d) {
+    maplibre3d = document.createElement('div');
+    maplibre3d.id = 'maplibre-3d-view';
+    // 3D harita ayarları
+    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:1; background:#eef0f5;';
+    
+    if (panelDiv) {
+        container.insertBefore(maplibre3d, panelDiv);
+    } else {
+        container.appendChild(maplibre3d);
     }
+  } else {
+      maplibre3d.style.display = 'block';
+      maplibre3d.style.height = '480px';
+      maplibre3d.style.zIndex = '1'; 
+  }
+  
+  maplibre3d.innerHTML = '';
 
-    const poly = L.polyline(subCoordsLeaflet, {
-        color: '#8a4af3',
-        weight: 6,
-        opacity: 1.0,
-        lineCap: 'round',
-        lineJoin: 'round',
-        dashArray: null,
-        pane: 'segmentPane' 
-    }).addTo(m);
-    
-    window._segmentHighlight[day][`poly_${m._leaflet_id}`] = poly;
+  const day = window.currentDay || 1;
+  const containerId = `route-map-day${day}`;
+  
+  // --- Bounds Hesaplama ---
+  const bounds = new maplibregl.LngLatBounds();
+  let hasBounds = false;
 
-    const startPt = subCoordsLeaflet[0];
-    const startMarker = L.circleMarker(startPt, markerOptions).addTo(m);
-    window._segmentHighlight[day][`start_${m._leaflet_id}`] = startMarker;
-
-    const endPt = subCoordsLeaflet[subCoordsLeaflet.length - 1];
-    const endMarker = L.circleMarker(endPt, markerOptions).addTo(m);
-    window._segmentHighlight[day][`end_${m._leaflet_id}`] = endMarker;
-    
-    try {
-        m.fitBounds(poly.getBounds(), { padding: [50, 50], maxZoom: 16, animate: true, duration: 0.8 });
-    } catch(e) {}
+  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+  points.forEach(p => {
+      if (isFinite(p.lat) && isFinite(p.lng)) {
+          bounds.extend([p.lng, p.lat]);
+          hasBounds = true;
+      }
   });
 
-  // --- 5. MAPLIBRE (3D) ÇİZİMİ ---
-  if (is3DActive && window._maplibre3DInstance) {
-      const map3d = window._maplibre3DInstance;
-      const subCoordsGeoJSON = coords.slice(iStart, iEnd + 1);
-
-      const sourceId = 'segment-highlight-source';
-      const layerId = 'segment-highlight-layer';
-
-      if (map3d.getSource(sourceId)) {
-          map3d.getSource(sourceId).setData({
-              type: 'Feature',
-              geometry: { type: 'LineString', coordinates: subCoordsGeoJSON }
-          });
-      } else {
-          map3d.addSource(sourceId, {
-              type: 'geojson',
-              data: {
-                  type: 'Feature',
-                  geometry: { type: 'LineString', coordinates: subCoordsGeoJSON }
-              }
-          });
-          map3d.addLayer({
-              id: layerId,
-              type: 'line',
-              source: sourceId,
-              layout: { 'line-join': 'round', 'line-cap': 'round' },
-              paint: {
-                  'line-color': '#8a4af3', // Mor
-                  'line-width': 12,        // FIX: 8'den 12'ye çıkardık (Rotadan kalın olsun)
-                  'line-opacity': 1.0,
-                  'line-offset': 0         // FIX: Offset 0 yaparak tam üstüne bindirdik
-              }
-          });
-      }
-
-      window._segment3DMarkers = window._segment3DMarkers || [];
-      
-      const create3DMarker = (lngLat) => {
-          const el = document.createElement('div');
-          el.className = 'segment-marker-3d';
-          el.style.cssText = `
-              width: 12px; 
-              height: 12px; 
-              background-color: #ffffff; 
-              border: 2px solid #8a4af3; 
-              border-radius: 50%;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-          `;
-          const marker = new maplibregl.Marker({ element: el })
-              .setLngLat(lngLat)
-              .addTo(map3d);
-          window._segment3DMarkers.push(marker);
-      };
-
-      create3DMarker(subCoordsGeoJSON[0]);
-      create3DMarker(subCoordsGeoJSON[subCoordsGeoJSON.length - 1]);
-
-      const bounds = new maplibregl.LngLatBounds();
-      subCoordsGeoJSON.forEach(c => bounds.extend(c));
-      
-      map3d.fitBounds(bounds, {
-          padding: { top: 100, bottom: 250, left: 50, right: 50 }, 
-          duration: 1000
+  const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+  if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+      const coords = geojson.features[0].geometry.coordinates;
+      coords.forEach(coord => {
+          bounds.extend(coord);
+          hasBounds = true;
       });
   }
+
+  // --- MapLibre Instance Başlatma ---
+  const mapOptions = {
+    container: 'maplibre-3d-view',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    pitch: 60,
+    bearing: -20,
+    interactive: true,
+    attributionControl: false
+  };
+
+  if (hasBounds) {
+      mapOptions.bounds = bounds;
+      mapOptions.fitBoundsOptions = { padding: { top: 40, bottom: 40, left: 40, right: 40 } };
+  } else {
+      mapOptions.center = expandedMap.getCenter();
+      mapOptions.zoom = expandedMap.getZoom();
+  }
+
+  window._maplibre3DInstance = new maplibregl.Map(mapOptions);
+
+  // Pusula Senkronizasyonu
+  window._maplibre3DInstance.on('rotate', () => {
+      const bearing = window._maplibre3DInstance.getBearing();
+      const compassDisc = document.querySelector(`#custom-compass-btn-${day} .custom-compass-disc`);
+      if (compassDisc) {
+          compassDisc.style.transform = `rotate(${-bearing}deg)`;
+      }
+  });
+  
+  // --- Harita Yüklendiğinde ---
+  window._maplibre3DInstance.on('load', function () {
+    const isFlyMode = !areAllPointsInTurkey(points); 
+    const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
+
+    // A) Mavi Rotayı Çiz
+    if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
+      window._maplibre3DInstance.addSource('route', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: routeCoords } }
+      });
+      window._maplibre3DInstance.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: 'route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
+      });
+    } 
+    else if (isFlyMode && points.length > 1) {
+      // Fly Mode (Kesikli Çizgi)
+      for (let i = 0; i < points.length - 1; i++) {
+        const start = [points[i].lng, points[i].lat];
+        const end = [points[i + 1].lng, points[i + 1].lat];
+        const curveCoords = getCurvedArcCoords(start, end);
+        window._maplibre3DInstance.addSource(`flyroute-${i}`, {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } }
+        });
+        window._maplibre3DInstance.addLayer({
+          id: `flyroute-line-${i}`,
+          type: 'line',
+          source: `flyroute-${i}`,
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
+        });
+      }
+    }
+
+    // B) Markerları Ekle
+    points.forEach((p, idx) => {
+      const el = document.createElement('div');
+      el.className = 'maplibre-marker';
+      el.style.cssText = 'background:#d32f2f;width:32px;height:32px;border-radius:50%;border:2px solid white;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;box-shadow:0 2px 5px rgba(0,0,0,0.3);';
+      el.innerText = idx + 1;
+      new maplibregl.Marker({ element: el })
+        .setLngLat([p.lng, p.lat])
+        .setPopup(new maplibregl.Popup({ offset: 25 }).setText(p.name || "Point"))
+        .addTo(window._maplibre3DInstance);
+    });
+
+    // ============================================================
+    // --- FIX: SEGMENT VARSA 3D HARİTADA HEMEN GÖSTER ---
+    // ============================================================
+    if (
+        typeof window._lastSegmentDay === 'number' && 
+        window._lastSegmentDay === day &&
+        typeof window._lastSegmentStartKm === 'number' &&
+        typeof window._lastSegmentEndKm === 'number'
+    ) {
+        // Harita tam otursun diye çok ufak bir gecikme
+        setTimeout(() => {
+            if (typeof highlightSegmentOnMap === 'function') {
+                highlightSegmentOnMap(
+                    day, 
+                    window._lastSegmentStartKm, 
+                    window._lastSegmentEndKm
+                );
+            }
+        }, 150);
+    }
+    // ============================================================
+
+  }); 
 }
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
   const svgNS = 'http://www.w3.org/2000/svg';
