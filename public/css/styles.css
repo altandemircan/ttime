@@ -4562,7 +4562,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    display: none;
+
 }
 .route-stats .stat img {
     width: 16px;
