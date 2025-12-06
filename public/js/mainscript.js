@@ -5873,10 +5873,11 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (GÜNCELLENMİŞ STİLLER)
+  // 1. STİL EKLEME (Sadece Layer Seçici Stilleri eklendi/düzenlendi)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
+      // ... (Genişletilmiş map için mevcut tüm CSS'ler buraya eklenecek) ...
       style.innerHTML = `
    
  .map-custom-controls {
@@ -5920,6 +5921,7 @@ async function expandMap(containerId, day) {
 
         .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
 
+/* DİKKAT: Header'ı yerinde bıraktık, Layer Seçici ayrı bir konteyner olacak */
 .expanded-map-header {
     position: absolute;
     bottom: 200px;
@@ -5928,30 +5930,39 @@ async function expandMap(containerId, day) {
     display: flex;
     align-items: center;
     gap: 15px;
-        left: 20px; /* Map selector'ı sola taşıdık */
+        left: 20px; 
 }
-/* HARİTA SEÇİCİ STİLİ */
+@media (max-width:768px) {
+        .expanded-map-header {
+        left: 10px;
+        }
+          .map-custom-controls {
+        right: 20px;
+        }
+}
+
+/* YENİ LAYER SEÇİCİ KONTEYNER VE BUTON STİLLERİ */
 .map-layers-row-container {
     position: absolute;
     bottom: 200px;
     left: 20px;
-    z-index: 10001;
+    z-index: 10002; /* Diğer kontrollerden biraz daha yukarıda */
 }
 
 .map-layers-dropdown {
     position: absolute;
-    bottom: 100%; /* Yukarı açılsın */
+    bottom: calc(100% + 8px); /* Ana butonun hemen üstünde açılsın */
     left: 0;
     display: none;
     flex-direction: column;
     gap: 8px;
     padding: 6px;
-    margin-bottom: 8px;
     border-radius: 12px;
     backdrop-filter: blur(4px);
     border: 1px solid rgba(0, 0, 0, 0.05);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
+    min-width: 120px;
 }
 .map-layers-dropdown.open {
     display: flex;
@@ -5993,6 +6004,7 @@ async function expandMap(containerId, day) {
     color: #444; 
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
+.map-type-option:hover { background: #f9f9f9; }
 .map-type-option img { 
     width: 16px; 
     height: 16px; 
@@ -6000,14 +6012,6 @@ async function expandMap(containerId, day) {
     object-fit: cover; 
 }
 
-@media (max-width:768px) {
-        .expanded-map-header {
-        left: 10px;
-        }
-          .map-custom-controls {
-        right: 20px;
-        }
-}
 /* 3D MAP SCALE BAR STİLİ */
         .maplibregl-ctrl-bottom-left {
             bottom: 30px !important; 
@@ -6032,12 +6036,13 @@ async function expandMap(containerId, day) {
       `;
       document.head.appendChild(style);
   }
+  
   // Harici tıklama olayını bir kez bağla
   if (!window.__ttMapLayerCloserBound) {
     document.addEventListener('click', (e) => {
         const containers = document.querySelectorAll('.map-layers-row-container');
         containers.forEach(container => {
-            if (!container.contains(e.target)) {
+            if (!container && container.contains(e.target)) {
                 container.querySelector('.map-layers-dropdown')?.classList.remove('open');
             }
         });
@@ -6168,10 +6173,10 @@ async function expandMap(containerId, day) {
   mapLayerContainer.appendChild(dropdown);
   updateMainButton(currentLayer); // Başlangıçta ana butonu set et
 
-  // === 1.5 HEADER OLUŞTURMA (SADECE STATS VE LAYER CONTAİNER) ===
+  // === 1.5 HEADER/STATS OLUŞTURMA ===
+  // Orijinal yerleşimi korumak için, headerDiv ve statsDiv'i ayrı ayrı oluşturuyoruz.
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
-  // statsDiv artık burada oluşturuluyor
   const statsDiv = document.createElement('div');
   statsDiv.className = 'route-stats';
 
@@ -6255,15 +6260,21 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
-  // === 4. PANEL DOM YAPISI DEĞİŞİKLİĞİ ===
+  // === 4. PANEL DOM YAPISI DEĞİŞİKLİĞİ (YERLEŞİM KORUNUYOR) ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   
-  // YENİ YAPI
-  panelDiv.appendChild(mapLayerContainer); // Harita Seçici
-  panelDiv.appendChild(statsDiv);         // route-stats
-  panelDiv.appendChild(controlsDiv);      // Controls
-  panelDiv.appendChild(scaleBarDiv);      // Scale Bar
+  // Orijinal DOM hiyerarşisine göre ekle (LayerContainer'ı Header/Stats yerine koymak için)
+  // NOT: Eski kodunuzda headerDiv'e layersBar ekliyordunuz. Şimdi layersBar yerine mapLayerContainer eklenecek.
+  
+  // DİKKAT: Eski yapınızda LayersBar, expanded-map-header'ın altındaydı.
+  // LayersBar yerine LayerContainer'ı headerDiv'den bağımsız olarak panelin en üstüne yerleştiriyorum.
+  // Eski yerleşimi korumak adına, MapLayerContainer'ı en üstte tutuyorum.
+  
+  panelDiv.appendChild(mapLayerContainer);
+  // (statsDiv'i kullanmayacağımız için buraya eklemiyoruz, updateRouteStatsUI onu kaldıracak.)
+  panelDiv.appendChild(controlsDiv); 
+  panelDiv.appendChild(scaleBarDiv); 
   
   expandedContainer.appendChild(panelDiv);
 
@@ -6286,7 +6297,7 @@ async function expandMap(containerId, day) {
 
   showRouteInfoBanner(day);
 
-  // ... (Geri kalan harita başlatma ve ayarlamalar) ...
+  // ... (Fonksiyonun geri kalanı harita oluşturma vb. aynı kalıyor) ...
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
