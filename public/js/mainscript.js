@@ -5873,17 +5873,15 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (VERDİĞİNİZ KOD BLOKLARI)
+  // 1. STİL EKLEME
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
-      // VERDİĞİNİZ TÜM CSS BURAYA YAZILDI
       style.innerHTML = `
    
  .map-custom-controls {
     position: absolute;
     bottom: 200px;
-    
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -5893,7 +5891,7 @@ async function expandMap(containerId, day) {
     border-radius: 12px;
     backdrop-filter: blur(4px);
     border: 1px solid rgba(0, 0, 0, 0.05);
-        right: 20px;
+    right: 20px;
 }  
   .map-ctrl-btn {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -5907,10 +5905,10 @@ async function expandMap(containerId, day) {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     cursor: pointer;
-        }
-        .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-        .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
+}
+.map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
 
 .map-ctrl-btn.zoom-text {
     font-size: 22px;
@@ -5920,7 +5918,7 @@ async function expandMap(containerId, day) {
     padding-bottom: 2px;
 }
 
-        .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
+.custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
 
 .expanded-map-header {
     position: absolute;
@@ -5930,18 +5928,16 @@ async function expandMap(containerId, day) {
     display: flex;
     align-items: center;
     gap: 15px;
-        left: -20px;
+    left: -20px;
 }
 @media (max-width:768px) {
-        .expanded-map-header {
-        left: 10px;
-        }
-          .map-custom-controls {
-        right: 20px;
-        }
+    .expanded-map-header { left: 10px; }
+    .map-custom-controls { right: 20px; }
 }
+
+/* İSTEDİĞİN GÖRÜNÜM AYARLARI BURADA */
 .map-layers-row {
-    position: relative; /* Dropdown için relative */
+    position: relative;
     display: flex;
     gap: 8px;
     padding: 6px;
@@ -5951,48 +5947,16 @@ async function expandMap(containerId, day) {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     flex-direction: column;
     width: auto;
+    background: #fff; /* Arkaplan eklendi ki yazılar karışmasın */
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-/* YENİ DROPDOWN VE ANA BUTON STİLLERİ */
-.map-layers-dropdown {
-    position: absolute;
-    bottom: calc(100% + 8px); /* Ana butonun hemen üstünde açılsın */
-    left: 0;
-    display: none;
-    flex-direction: column;
-    gap: 8px;
-    padding: 6px;
-    border-radius: 12px;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    background: rgba(255, 255, 255, 0.95);
-    min-width: 120px;
+/* KAPALIYKEN SADECE SEÇİLİ OLAN GÖRÜNSÜN */
+.map-layers-row.closed .map-type-option:not(.selected) {
+    display: none !important;
 }
-.map-layers-dropdown.open {
-    display: flex;
-}
-.map-type-main-btn {
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    padding: 6px 12px; 
-    background: #ffffff; 
-    border: 1px solid #e0e0e0; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: all 0.2s ease; 
-    font-size: 12px; 
-    font-weight: 500; 
-    color: #444; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-.map-type-main-btn img { 
-    width: 16px; 
-    height: 16px; 
-    border-radius: 4px; 
-    object-fit: cover; 
-}
+
 .map-type-option { 
     display: flex; 
     align-items: center; 
@@ -6014,44 +5978,41 @@ async function expandMap(containerId, day) {
     color: #1976d2; 
     box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15);
 }
-.map-type-option:not(.main-option):hover { background: #f9f9f9; }
+.map-type-option:hover { background: #f9f9f9; }
 .map-type-option img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
-.map-type-option.hidden-by-selection { display: none !important; } /* Yeni gizleme sınıfı */
 
-
-        /* 3D MAP SCALE BAR STİLİ */
-        .maplibregl-ctrl-bottom-left {
-            bottom: 30px !important; 
-            left: 20px !important;
-            z-index: 20000 !important; 
-            pointer-events: none;
-        }
-        .maplibregl-ctrl-scale {
-            background-color: rgba(255, 255, 255, 0.9) !important;
-            border: 1px solid #e0e0e0 !important;
-            padding: 2px 8px !important;
-            color: #555 !important;
-            font-size: 11px !important;
-            font-weight: 600 !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
-            border-top: 1px solid #e0e0e0 !important;
-            height: auto !important;
-            line-height: 1.4 !important;
-            pointer-events: auto;
-        }
-      `;
+/* 3D MAP SCALE BAR STİLİ */
+.maplibregl-ctrl-bottom-left {
+    bottom: 30px !important; 
+    left: 20px !important;
+    z-index: 20000 !important; 
+    pointer-events: none;
+}
+.maplibregl-ctrl-scale {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 6px !important;
+    padding: 2px 8px !important;
+    color: #555 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+    border-top: 1px solid #e0e0e0 !important;
+    height: auto !important;
+    line-height: 1.4 !important;
+    pointer-events: auto;
+}
+      `;
       document.head.appendChild(style);
   }
   
-  // Harici tıklama olayını bir kez bağla
+  // Harici tıklama (Dışarı tıklayınca kapansın)
   if (!window.__ttMapLayerCloserBound) {
     document.addEventListener('click', (e) => {
-        const dropdown = document.querySelector('.map-layers-row .map-layers-dropdown.open');
-        const mainButton = document.querySelector('.map-layers-row .map-type-main-btn');
-        
-        if (dropdown && mainButton && !mainButton.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.remove('open');
-            mainButton.setAttribute('aria-expanded', 'false');
+        const row = document.querySelector('.map-layers-row');
+        // Eğer row varsa ve tıklanan yer row değilse, kapat
+        if (row && !row.contains(e.target)) {
+            row.classList.add('closed');
         }
     });
     window.__ttMapLayerCloserBound = true;
@@ -6096,11 +6057,10 @@ async function expandMap(containerId, day) {
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
   
-  // Orijinal layersBar container'ını DOM'a ekliyor, ancak içeriğini değiştiriyoruz
+  // Tek bir div içinde sıralanacaklar
   const layersBar = document.createElement('div');
-  layersBar.className = 'map-layers-row'; 
-  
-  // Layer Options
+  layersBar.className = 'map-layers-row closed'; // Varsayılan kapalı (tek buton görünür)
+
   const layerOptions = [
     { value: 'bright',   img: '/img/preview_bright.png',   label: 'Bright' },
     { value: 'positron', img: '/img/preview_positron.png', label: 'Positron' },
@@ -6115,33 +6075,16 @@ async function expandMap(containerId, day) {
   expandedContainer.id = expandedMapId;
   expandedContainer.className = 'expanded-map-container';
 
-  // --- YENİ TEK BUTONLU SEÇİCİ MEKANİZMASI ---
-  const mainButton = document.createElement('button');
-  mainButton.className = 'map-type-main-btn';
-  mainButton.id = `main-map-btn-${day}`;
-  mainButton.setAttribute('aria-expanded', 'false');
-  mainButton.setAttribute('aria-controls', `dropdown-${day}`);
-  
-  const dropdown = document.createElement('div');
-  dropdown.className = 'map-layers-dropdown';
-  dropdown.id = `dropdown-${day}`;
-
-  const updateMainButton = (value) => {
-    const opt = layerOptions.find(o => o.value === value);
-    mainButton.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
-    currentLayer = value;
-    localStorage.setItem(`expanded-map-layer-day${day}`, value);
-    
-    // Dropdown içindeki görünürlüğü güncelle
-    dropdown.querySelectorAll('.map-type-option').forEach(o => {
-        o.classList.toggle('hidden-by-selection', o.getAttribute('data-value') === value);
-    });
-  };
-  
-  mainButton.onclick = (e) => {
-    e.stopPropagation();
-    const isOpen = dropdown.classList.toggle('open');
-    mainButton.setAttribute('aria-expanded', isOpen);
+  // Container'a tıklayınca menüyü aç/kapat (Toggle)
+  layersBar.onclick = function(e) {
+      // Eğer tıklanan şey bir opsiyon değilse (örn aradaki boşluk), toggle yap.
+      // Opsiyon tıklamasını aşağıda ayrı handle ediyoruz ama event bubbling ile buraya gelebilir.
+      // Eğer zaten açık bir opsiyona tıkladıysak ve seçim değiştiyse, 'click' handler'ı zaten kapatacak.
+      // Sadece kapalıyken açmayı garantilemek için:
+      if (this.classList.contains('closed')) {
+          this.classList.remove('closed');
+          e.stopPropagation();
+      }
   };
 
   layerOptions.forEach(opt => {
@@ -6150,48 +6093,48 @@ async function expandMap(containerId, day) {
     div.setAttribute('data-value', opt.value);
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
-    div.onclick = function(e) {
-      e.stopPropagation();
-      const selectedValue = opt.value;
-      const prevValue = currentLayer;
-      
-      // 1. Yeni butonu ana butona taşı ve local storage'ı güncelle
-      updateMainButton(selectedValue);
+    if (opt.value === currentLayer) div.classList.add('selected');
 
-      // 2. Harita katmanını değiştir
+    div.onclick = function(e) {
+      e.stopPropagation(); // Container onclick'ini tetikleme (kapatmayı biz yapacağız)
+
+      // Eğer menü kapalıysa, aç (Seçili olana tıklayınca açılır)
+      if (layersBar.classList.contains('closed')) {
+          layersBar.classList.remove('closed');
+          return;
+      }
+
+      // Eğer menü açıksa ve bir seçim yapıldıysa:
+      layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+      div.classList.add('selected');
+      
+      currentLayer = opt.value;
+      localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
+
+      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
-      
-      if (selectedValue === 'liberty') {
+
+      if (opt.value === 'liberty') {
         expandedMapInstance.getContainer().style.display = "none";
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        if (prevValue === 'liberty' && map3d) map3d.style.display = "none";
+        if (map3d) map3d.style.display = "none";
         expandedMapInstance.getContainer().style.display = "";
         if (compassBtn) compassBtn.style.display = 'none';
-        setExpandedMapTile(selectedValue);
+        setExpandedMapTile(opt.value);
       }
       
-      // 3. Dropdown'ı kapat
-      dropdown.classList.remove('open');
-      mainButton.setAttribute('aria-expanded', 'false');
+      // Seçim yapıldı, menüyü kapat (tek butona düşür)
+      layersBar.classList.add('closed');
     };
-    dropdown.appendChild(div);
+    layersBar.appendChild(div);
   });
 
-  // layersBar'ın içeriği: Ana buton ve açılır menü
-  layersBar.appendChild(mainButton);
-  layersBar.appendChild(dropdown);
-  updateMainButton(currentLayer); // Başlangıçta ana butonu set et
-  // --- YENİ SEÇİCİ MEKANİZMASI SONU ---
-
-
-  // Burası değişti: layersBar headerDiv'in içine eklendi (Orijinal yapıya uygun)
   headerDiv.appendChild(layersBar);
   
-  // route-stats headerDiv'in kardeşi olarak oluşturuldu
   const statsDiv = document.createElement('div');
   statsDiv.className = 'route-stats';
 
@@ -6223,8 +6166,8 @@ async function expandMap(containerId, day) {
 
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
-  compassBtn.className = 'map-ctrl-btn ctrl-compass';
-  compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none'; // Başlangıç durumu
+  compassBtn.className = 'map-ctrl-btn ctrl-compass'; // Düzeltildi
+  compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none';
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `
     <div class="custom-compass-disc">
@@ -6275,15 +6218,14 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
-  // === 4. PANEL DOM YAPISI DEĞİŞİKLİĞİ (YERLEŞİM KORUNUYOR) ===
+  // === 4. PANEL DOM YAPISI ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   
-  // Orijinal yapınız: headerDiv ve statsDiv kardeş, Layer Seçici headerDiv içinde.
-  panelDiv.appendChild(headerDiv);   // 1. expanded-map-header (Şimdi içinde yeni tek butonlu seçici var)
-  panelDiv.appendChild(statsDiv);    // 2. route-stats 
-  panelDiv.appendChild(controlsDiv); // 3. Controls
-  panelDiv.appendChild(scaleBarDiv); // 4. Scale Bar
+  panelDiv.appendChild(headerDiv); 
+  panelDiv.appendChild(statsDiv);   
+  panelDiv.appendChild(controlsDiv); 
+  panelDiv.appendChild(scaleBarDiv); 
   
   expandedContainer.appendChild(panelDiv);
 
@@ -6300,13 +6242,12 @@ async function expandMap(containerId, day) {
   expandedContainer.appendChild(mapDiv);
   document.body.appendChild(expandedContainer);
   
-  // 2D Harita yüksekliği
   mapDiv.style.width = "100%";
   mapDiv.style.height = "480px"; 
 
   showRouteInfoBanner(day);
 
-  // ... (Fonksiyonun geri kalanı harita oluşturma vb. aynı kalıyor) ...
+  // ... (Harita başlatma standart kodları) ...
   const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
@@ -6417,7 +6358,6 @@ async function expandMap(containerId, day) {
   }, 350); 
 
   const summary = window.lastRouteSummaries?.[containerId];
-  // route-stats içeriği temizleniyor
   if(statsDiv) statsDiv.innerHTML = '';
 
   window.expandedMaps = window.expandedMaps || {};
