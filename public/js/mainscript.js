@@ -5886,132 +5886,36 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME
+  // 1. STİL EKLEME (GENEL HARİTA KONTROLLERİ)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
       style.innerHTML = `
-   
- .map-custom-controls {
-    position: absolute;
-    bottom: 200px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 10001;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    padding: 6px;
-    border-radius: 12px;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    right: 20px;
-}  
-  .map-ctrl-btn {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
-    padding: 4px 10px;
-    background: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    cursor: pointer;
-}
-.map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-.map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
-
-.map-ctrl-btn.zoom-text {
-    font-size: 22px;
-    font-weight: 300;
-    line-height: 1;
-    color: #666;
-    padding-bottom: 2px;
-}
-
-.custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
-
-.expanded-map-header {
-    position: absolute;
-    bottom: 200px;
-    left: 10px;
-    z-index: 10001;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    left: -20px;
-}
-@media (max-width:768px) {
-    .expanded-map-header { left: 10px; }
-    .map-custom-controls { right: 20px; }
-}
-
-.map-layers-row {
-    position: relative;
-    display: flex;
-    gap: 8px;
-    padding: 6px;
-    border-radius: 12px;
-    backdrop-filter: blur(4px);
-   
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    flex-direction: column;
-    width: auto;
-   
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.map-layers-row.closed .map-type-option:not(.selected) {
-    display: none !important;
-}
-
-.map-type-option { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    padding: 6px 12px; 
-    background: #ffffff; 
-    border: 1px solid #e0e0e0; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: all 0.2s ease; 
-    font-size: 12px; 
-    font-weight: 500; 
-    color: #444; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-.map-type-option.selected { 
-    background: #eef7ff; 
-    border-color: #297fd4; 
-    color: #1976d2; 
-    box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15);
-}
-.map-type-option:hover { background: #f9f9f9; }
-.map-type-option img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
-
-.maplibregl-ctrl-bottom-left {
-    bottom: 30px !important; 
-    left: 20px !important;
-    z-index: 20000 !important; 
-    pointer-events: none;
-}
-.maplibregl-ctrl-scale {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    border: 1px solid #e0e0e0 !important;
-    border-radius: 6px !important;
-    padding: 2px 8px !important;
-    color: #555 !important;
-    font-size: 11px !important;
-    font-weight: 600 !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
-    border-top: 1px solid #e0e0e0 !important;
-    height: auto !important;
-    line-height: 1.4 !important;
-    pointer-events: auto;
-}
+        .map-custom-controls {
+            position: absolute; bottom: 200px; display: flex; flex-direction: column; gap: 10px; z-index: 10001;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); padding: 6px; border-radius: 12px;
+            backdrop-filter: blur(4px); border: 1px solid rgba(0, 0, 0, 0.05); right: 20px;
+        }
+        .map-ctrl-btn {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease; backdrop-filter: blur(4px); padding: 4px 10px;
+            background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer;
+        }
+        .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
+        .map-ctrl-btn.zoom-text { font-size: 22px; font-weight: 300; line-height: 1; color: #666; padding-bottom: 2px; }
+        .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
+        .expanded-map-header { position: absolute; bottom: 200px; left: 10px; z-index: 10001; display: flex; align-items: center; gap: 15px; left: -20px; }
+        @media (max-width:768px) { .expanded-map-header { left: 10px; } .map-custom-controls { right: 20px; } }
+        .map-layers-row { position: relative; display: flex; gap: 8px; padding: 6px; border-radius: 12px; backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); flex-direction: column; width: auto; cursor: pointer; transition: all 0.2s ease; }
+        .map-layers-row.closed .map-type-option:not(.selected) { display: none !important; }
+        .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 12px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
+        .map-type-option:hover { background: #f9f9f9; }
+        .map-type-option img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
+        .maplibregl-ctrl-bottom-left { bottom: 30px !important; left: 20px !important; z-index: 20000 !important; pointer-events: none; }
+        .maplibregl-ctrl-scale { background-color: rgba(255, 255, 255, 0.9) !important; border: 1px solid #e0e0e0 !important; border-radius: 6px !important; padding: 2px 8px !important; color: #555 !important; font-size: 11px !important; font-weight: 600 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; border-top: 1px solid #e0e0e0 !important; height: auto !important; line-height: 1.4 !important; pointer-events: auto; }
       `;
       document.head.appendChild(style);
   }
@@ -6126,7 +6030,6 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'none';
         setExpandedMapTile(opt.value);
 
-        // FIX: Gri Ekran Sorunu İçin
         expandedMapInstance.invalidateSize(); 
         requestAnimationFrame(() => {
             expandedMapInstance.invalidateSize();
@@ -6138,7 +6041,6 @@ async function expandMap(containerId, day) {
         }, 200);
       }
       
-      // FIX: SEGMENT VARSA YENİDEN ÇİZ
       if (
           typeof window._lastSegmentDay === 'number' && 
           window._lastSegmentDay === day &&
@@ -6217,7 +6119,7 @@ async function expandMap(containerId, day) {
   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
   
   // =========================================================
-  // --- FIX: 3D HARİTADA SİNYAL (PULSE) EFEKTİ ---
+  // --- FIX: STANDART KONUM İŞARETÇİSİ (HEM 2D HEM 3D) ---
   // =========================================================
   locBtn.onclick = function() {
       const isActive = window.isLocationActiveByDay[day];
@@ -6225,80 +6127,111 @@ async function expandMap(containerId, day) {
           window.isLocationActiveByDay[day] = true;
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
           
-          if (currentLayer === 'liberty' && window._maplibre3DInstance) {
-              // --- 3D MOD İÇİN KONUM MANTIĞI ---
-              navigator.geolocation.getCurrentPosition(pos => {
-                  const lat = pos.coords.latitude;
-                  const lng = pos.coords.longitude;
+          // 1. Ortak Stil Enjeksiyonu (Çift Halka)
+          if (!document.getElementById('tt-unified-loc-style')) {
+              const s = document.createElement('style');
+              s.id = 'tt-unified-loc-style';
+              s.innerHTML = `
+                @keyframes ttPulse {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+                    100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+                }
+                .user-loc-wrapper { position: relative; width: 20px; height: 20px; }
+                /* Merkez Nokta */
+                .user-loc-dot {
+                    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    width: 14px; height: 14px; background-color: #4285F4;
+                    border: 2px solid white; border-radius: 50%;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 2;
+                }
+                /* Halka 1 */
+                .user-loc-ring-1 {
+                    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6);
+                    border-radius: 50%; z-index: 1;
+                    animation: ttPulse 2.5s infinite linear;
+                }
+                /* Halka 2 (Gecikmeli) */
+                .user-loc-ring-2 {
+                    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6);
+                    border-radius: 50%; z-index: 1;
+                    animation: ttPulse 2.5s infinite linear;
+                    animation-delay: 1.25s;
+                }
+              `;
+              document.head.appendChild(s);
+          }
 
-                  // 1. Kamerayı oraya götür
+          // 2. Ortak HTML Yapısı
+          const locHtml = `
+            <div class="user-loc-wrapper">
+               <div class="user-loc-ring-1"></div>
+               <div class="user-loc-ring-2"></div>
+               <div class="user-loc-dot"></div>
+            </div>
+          `;
+
+          // 3. Konum Alma ve İşleme
+          navigator.geolocation.getCurrentPosition(pos => {
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+
+              // --- 3D MOD (MapLibre) ---
+              if (currentLayer === 'liberty' && window._maplibre3DInstance) {
                   window._maplibre3DInstance.flyTo({ center: [lng, lat], zoom: 14 });
 
-                  // 2. Varsa eski marker'ı sil
-                  if (window._userLocMarker3D) {
-                      window._userLocMarker3D.remove();
-                  }
+                  if (window._userLocMarker3D) window._userLocMarker3D.remove();
 
-                  // 3. Stil Enjeksiyonu (Sinyal Efekti İçin)
-                  if (!document.getElementById('tt-3d-loc-pulse-style')) {
-                      const s = document.createElement('style');
-                      s.id = 'tt-3d-loc-pulse-style';
-                      s.innerHTML = `
-                        @keyframes ttPulse {
-                            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-                            70% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
-                            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
-                        }
-                        .user-loc-wrapper-3d { position: relative; width: 20px; height: 20px; }
-                        .user-loc-dot-3d {
-                            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                            width: 16px; height: 16px; background-color: #4285F4;
-                            border: 3px solid white; border-radius: 50%;
-                            box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 2;
-                        }
-                        .user-loc-ring-3d {
-                            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                            width: 16px; height: 16px; background-color: rgba(66, 133, 244, 0.6);
-                            border-radius: 50%; z-index: 1;
-                            animation: ttPulse 2s infinite;
-                        }
-                      `;
-                      document.head.appendChild(s);
-                  }
-
-                  // 4. Yeni Marker Oluştur (Sinyalli)
                   const el = document.createElement('div');
-                  el.className = 'user-loc-wrapper-3d';
-                  el.innerHTML = `
-                    <div class="user-loc-ring-3d"></div>
-                    <div class="user-loc-dot-3d"></div>
-                  `;
+                  el.innerHTML = locHtml; // Wrapper div oluşturup içine HTML'i basıyoruz
 
                   window._userLocMarker3D = new maplibregl.Marker({ element: el })
                       .setLngLat([lng, lat])
                       .addTo(window._maplibre3DInstance);
+              } 
+              // --- 2D MOD (Leaflet) ---
+              else {
+                  if (expandedMapInstance) {
+                      expandedMapInstance.flyTo([lat, lng], 14, { duration: 1 });
 
-              }, err => {
-                  console.error("Konum hatası:", err);
-                  alert("Konum alınamadı.");
-                  window.isLocationActiveByDay[day] = false;
-                  locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
-              });
-          } else {
-              // --- 2D MOD (LEAFLET) ---
-              if (typeof getMyLocation === 'function') getMyLocation(day, expandedMapInstance);
-          }
+                      if (window._userLocMarker2D) expandedMapInstance.removeLayer(window._userLocMarker2D);
+
+                      const customIcon = L.divIcon({
+                          className: 'custom-loc-icon-leaflet', // Leaflet'in default stillerini ezmek için dummy class
+                          html: locHtml,
+                          iconSize: [20, 20],
+                          iconAnchor: [10, 10]
+                      });
+
+                      window._userLocMarker2D = L.marker([lat, lng], { 
+                          icon: customIcon, 
+                          zIndexOffset: 1000 // En üstte dursun
+                      }).addTo(expandedMapInstance);
+                  }
+              }
+
+          }, err => {
+              console.error("Konum hatası:", err);
+              alert("Konum alınamadı.");
+              window.isLocationActiveByDay[day] = false;
+              locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+          });
+
       } else {
           // --- KONUMU KAPAT ---
           window.isLocationActiveByDay[day] = false;
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
           
-          // 3D Marker'ı temizle
+          // Her iki marker türünü de temizle
           if (window._userLocMarker3D) {
               window._userLocMarker3D.remove();
               window._userLocMarker3D = null;
           }
-          // 2D Marker temizliği (Varsa global fonksiyona bırakıyoruz)
+          if (window._userLocMarker2D && expandedMapInstance) {
+              expandedMapInstance.removeLayer(window._userLocMarker2D);
+              window._userLocMarker2D = null;
+          }
       }
   };
   // =========================================================
@@ -6487,6 +6420,7 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
+
 function updateExpandedMap(expandedMap, day) {
     console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
     console.log("GÜN:", day);
