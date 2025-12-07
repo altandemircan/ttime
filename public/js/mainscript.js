@@ -5273,15 +5273,14 @@ function addNumberedMarkers(map, points) {
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
     // --- GÜVENLİK KONTROLÜ: LEAFLET YÜKLÜ MÜ? ---
     if (typeof L === 'undefined') {
-        // Yüklü değilse 100ms bekle ve tekrar dene
         setTimeout(() => renderLeafletRoute(containerId, geojson, points, summary, day, missingPoints), 100);
         return;
     }
-    // ---------------------------------------------
 
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
+    // Eski haritayı temizle
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         window.leafletMaps[containerId].remove();
         delete window.leafletMaps[containerId];
@@ -5292,9 +5291,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.classList.remove("big-map", "full-screen-map");
     sidebarContainer.style.backgroundColor = "#eef0f5"; 
 
-    // Route summary and controls
+    // --- Route Summary & Controls (Alt Panel) ---
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
-    // Eski wrapper varsa silmeden önce kontrol et, belki sadece içeriğini güncellemek daha iyidir ama şimdilik resetliyoruz
     const oldWrapper = document.getElementById(controlsWrapperId);
     if (oldWrapper) oldWrapper.remove();
 
@@ -5320,12 +5318,12 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             </span>`;
     }
     controlRow.appendChild(infoDiv);
-
     controlsWrapper.appendChild(controlRow);
     sidebarContainer.parentNode.insertBefore(controlsWrapper, sidebarContainer.nextSibling);
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
+    // --- Rota Koordinatları ---
     let routeCoords = [];
     let hasValidGeo = (
         geojson && geojson.features && geojson.features[0] &&
@@ -5337,6 +5335,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     }
 
+    // --- Harita Başlatma ---
     const map = L.map(containerId, { 
         scrollWheelZoom: true,
         fadeAnimation: false,
@@ -5356,14 +5355,13 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             }).addTo(map);
         }
     } catch(e) {
-        // Fallback
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
 
     let bounds = L.latLngBounds();
-
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     
+    // --- Marker ve Rota Çizimi ---
     if (points.length === 1) {
         L.marker([points[0].lat, points[0].lng], {
             icon: L.divIcon({
@@ -5386,8 +5384,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 const end = [points[i + 1].lng, points[i + 1].lat];
                 const curve = getCurvedArcCoords(start, end);
                 arcPoints = arcPoints.concat(curve);
-
-                // drawCurvedLine fonksiyonu da L.polyline kullanır, L kontrolü başta yapıldığı için güvenli
                 drawCurvedLine(map, points[i], points[i + 1], {
                     color: "#1976d2",
                     weight: 5,
@@ -5395,7 +5391,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                     dashArray: "6,8"
                 });
             }
-            // Bounds hesapla
             points.forEach(p => bounds.extend([p.lat, p.lng]));
             window._curvedArcPointsByDay[day] = arcPoints;
         } 
@@ -5412,7 +5407,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
         addNumberedMarkers(map, points);
         
-        // Eğer bounds hala boşsa (route yoksa) noktaları ekle
         if (!bounds.isValid() && points.length > 0) {
              points.forEach(p => bounds.extend([p.lat, p.lng]));
         }
@@ -5424,11 +5418,30 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.setView([0, 0], 2, { animate: false });
     }
 
-    // Controls wrapper eklemesi
+    // --- Controls Wrapper Eklemesi ---
     wrapRouteControls(day);
 
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
+
+    // ============================================================
+    // --- FIX: GRİ HARİTA & KÖŞEYE YIĞILMA SORUNU ÇÖZÜMÜ ---
+    // ============================================================
+    // DOM güncellemeleri (liste ekleme vb.) bitince haritayı zorla güncelle.
+    setTimeout(() => {
+        if (map) {
+            // 1. Boyutları yeniden hesapla (Gri alanı düzeltir)
+            map.invalidateSize();
+
+            // 2. Zoom/Center işlemini tekrar yap (Markerları yerine oturtur)
+            if (points.length === 1) {
+                map.setView([points[0].lat, points[0].lng], 14, { animate: false });
+            } else if (bounds && bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [20, 20], animate: false });
+            }
+        }
+    }, 300); // 300ms gecikme DOM render'ı için güvenlidir.
+    // ============================================================
 }
 
 // Harita durumlarını yönetmek için global değişken
