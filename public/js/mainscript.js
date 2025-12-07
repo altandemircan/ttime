@@ -5280,7 +5280,13 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
-    // Eski haritayı temizle
+    // --- ESKİ HARİTA VE OBSERVER TEMİZLİĞİ ---
+    // Eğer daha önce bu kutuya bir gözlemci (observer) atadıysak onu durdurup silelim.
+    if (sidebarContainer._resizeObserver) {
+        sidebarContainer._resizeObserver.disconnect();
+        delete sidebarContainer._resizeObserver;
+    }
+
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         window.leafletMaps[containerId].remove();
         delete window.leafletMaps[containerId];
@@ -5425,23 +5431,35 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     window.leafletMaps[containerId] = map;
 
     // ============================================================
-    // --- FIX: GRİ HARİTA & KÖŞEYE YIĞILMA SORUNU ÇÖZÜMÜ ---
+    // --- KESİN ÇÖZÜM: RESIZE OBSERVER (BOYUT İZLEYİCİ) ---
     // ============================================================
-    // DOM güncellemeleri (liste ekleme vb.) bitince haritayı zorla güncelle.
-    setTimeout(() => {
+    // Harita kutusunun boyutu ne zaman değişirse (yeni item eklenince liste uzar, div kayar vs.)
+    // bu kod çalışır ve haritayı düzeltir.
+    const ro = new ResizeObserver(() => {
         if (map) {
-            // 1. Boyutları yeniden hesapla (Gri alanı düzeltir)
+            // 1. Haritayı yenile (Gri alanı düzeltir)
             map.invalidateSize();
-
-            // 2. Zoom/Center işlemini tekrar yap (Markerları yerine oturtur)
+            
+            // 2. Haritayı tekrar ortala (Markerları yerine oturtur)
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, { animate: false });
             } else if (bounds && bounds.isValid()) {
                 map.fitBounds(bounds, { padding: [20, 20], animate: false });
             }
         }
-    }, 300); // 300ms gecikme DOM render'ı için güvenlidir.
-    // ============================================================
+    });
+    
+    // Gözlemciyi başlat
+    ro.observe(sidebarContainer);
+    
+    // Gözlemciyi elemente kaydet ki sonra silebilelim
+    sidebarContainer._resizeObserver = ro;
+
+    // Ekstra Güvenlik: Normal Timeout (Eski yöntem de dursun)
+    setTimeout(() => {
+        map.invalidateSize();
+        if (bounds && bounds.isValid()) map.fitBounds(bounds, { padding: [20, 20], animate: false });
+    }, 400);
 }
 
 // Harita durumlarını yönetmek için global değişken
