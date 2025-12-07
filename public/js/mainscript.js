@@ -7085,59 +7085,30 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 async function showNearbyRestaurants(lat, lng, map, day) {
     // ---------------------------------------------------------
     // 1. CSS INJECTION (3D Popup Stil Düzeltmesi)
-    // Bu blok, 3D haritada açılan popup'ın Leaflet ile aynı görünmesini sağlar.
     // ---------------------------------------------------------
     if (!document.getElementById('tt-3d-popup-styles')) {
         const style = document.createElement('style');
         style.id = 'tt-3d-popup-styles';
         style.innerHTML = `
-            /* MapLibre Popup Kutusu Sıfırlama */
             .maplibregl-popup-content {
                 padding: 0 !important;
                 border-radius: 12px !important;
                 overflow: hidden;
                 box-shadow: 0 3px 14px rgba(0,0,0,0.4) !important;
-                background: transparent !important; /* Arkaplanı şeffaf yap, içerik dolduracak */
+                background: transparent !important;
             }
-            
-            /* Kapatma Butonu Tasarımı */
             .maplibregl-popup-close-button {
-                font-size: 20px;
-                color: #666;
-                right: 8px;
-                top: 8px;
-                z-index: 10;
-                background: rgba(255, 255, 255, 0.8); /* Hafif beyaz arkaplan */
-                border-radius: 50%;
-                width: 24px;
-                height: 24px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: none;
-                cursor: pointer;
-                transition: background 0.2s;
+                font-size: 20px; color: #666; right: 8px; top: 8px; z-index: 10;
+                background: rgba(255, 255, 255, 0.8); border-radius: 50%;
+                width: 24px; height: 24px; display: flex; align-items: center;
+                justify-content: center; border: none; cursor: pointer; transition: background 0.2s;
             }
-            .maplibregl-popup-close-button:hover {
-                background: rgba(255, 255, 255, 1);
-                color: #000;
-            }
-
-            /* Popup Ok (Tip) Rengi - İçerik rengiyle (#f8f9fa) uyumlu olsun */
-            .maplibregl-popup-anchor-top .maplibregl-popup-tip,
-            .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
-            .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-                border-bottom-color: #f8f9fa !important;
-            }
-            .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
-            .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
-            .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-                border-top-color: #f8f9fa !important;
-            }
+            .maplibregl-popup-close-button:hover { background: rgba(255, 255, 255, 1); color: #000; }
+            .maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: #f8f9fa !important; }
+            .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: #f8f9fa !important; }
         `;
         document.head.appendChild(style);
     }
-    // ---------------------------------------------------------
 
     const isMapLibre = !!map.addSource; // MapLibre kontrolü
 
@@ -7172,16 +7143,20 @@ async function showNearbyRestaurants(lat, lng, map, day) {
         }
 
         data.features.forEach((f, idx) => {
-            const pLat = f.properties.lat;
+            // GeoJSON'dan koordinatları al (Genellikle [lon, lat] formatındadır)
             const pLng = f.properties.lon;
+            const pLat = f.properties.lat;
+            
             const imgId = `rest-img-${idx}-${Date.now()}`; 
 
             if (isMapLibre) {
+                // ==========================================
                 // --- 3D HARİTA (MapLibre) ---
+                // MapLibre [lng, lat] ister.
+                // ==========================================
                 window._restaurant3DLayers = window._restaurant3DLayers || [];
                 window._restaurant3DMarkers = window._restaurant3DMarkers || [];
 
-                // 1. Yeşil Çizgi
                 const sourceId = `rest-line-src-${idx}`;
                 const layerId = `rest-line-layer-${idx}`;
                 
@@ -7190,7 +7165,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                         type: 'geojson',
                         data: {
                             type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
+                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] } // [lng, lat] formatı DOĞRU
                         }
                     });
                     
@@ -7199,70 +7174,52 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                         type: 'line',
                         source: sourceId,
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: {
-                            'line-color': '#22bb33',
-                            'line-width': 4,
-                            'line-opacity': 0.8,
-                            'line-dasharray': [2, 2]
-                        }
+                        paint: { 'line-color': '#22bb33', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
                     });
                     window._restaurant3DLayers.push(layerId);
                     window._restaurant3DLayers.push(sourceId);
                 }
 
-                // 2. Restoran Markerı Elementi
                 const el = document.createElement('div');
                 if (typeof getPurpleRestaurantMarkerHtml === 'function') {
                     el.innerHTML = getPurpleRestaurantMarkerHtml(); 
                 } else {
                     el.style.cssText = 'background:#8a4af3;width:32px;height:32px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);';
                 }
-                
-                el.style.width = '32px'; 
-                el.style.height = '32px';
-                el.style.cursor = 'pointer';
-                el.style.zIndex = '2000'; // En üstte
+                el.className = 'custom-3d-marker-element';
+                el.style.width = '32px'; el.style.height = '32px'; el.style.cursor = 'pointer'; el.style.zIndex = '2000';
 
-                // 3. Popup Oluşturma
-                // maxWidth ayarı Leaflet tasarımıyla eşleşmesi için 360px yapıldı.
-                const popup = new maplibregl.Popup({ 
-                    offset: 25, 
-                    maxWidth: '360px', 
-                    closeButton: true 
-                });
+                const popup = new maplibregl.Popup({ offset: 25, maxWidth: '360px', closeButton: true, className: 'tt-3d-popup' });
 
-                // HTML İçeriği
                 if (typeof getFastRestaurantPopupHTML === 'function') {
                     popup.setHTML(getFastRestaurantPopupHTML(f, imgId, day));
                 } else {
                     popup.setText(f.properties.name || "Restaurant");
                 }
 
-                // Popup açılınca resim yükle
                 popup.on('open', () => {
-                    if (typeof handlePopupImageLoading === 'function') {
-                        handlePopupImageLoading(f, imgId);
-                    }
+                    if (typeof handlePopupImageLoading === 'function') handlePopupImageLoading(f, imgId);
                 });
 
-                // Marker Ekleme
                 const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat([pLng, pLat])
+                    .setLngLat([pLng, pLat]) // MapLibre: [lng, lat]
                     .setPopup(popup)
                     .addTo(map);
                 
-                // Tıklama Olayı (Manuel Kontrol)
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation(); 
-                    marker.togglePopup();
-                });
-
+                el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
                 window._restaurant3DMarkers.push(marker);
 
             } else {
+                // ==========================================
                 // --- 2D HARİTA (Leaflet) ---
+                // Leaflet [lat, lng] ister. Burası KRİTİK.
+                // ==========================================
                 map.__restaurantLayers = map.__restaurantLayers || [];
-                const line = L.polyline([[lat, lng], [pLng, pLat]], { 
+                
+                // DÜZELTME: Leaflet polyline dizisi [[lat, lng], [lat, lng]] ister.
+                // lat: Senin konumun lat, lng: Senin konumun lng
+                // pLat: Restoranın lat, pLng: Restoranın lng
+                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
                     color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8" 
                 }).addTo(map);
                 map.__restaurantLayers.push(line);
@@ -7271,7 +7228,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                     ? getPurpleRestaurantMarkerHtml() 
                     : '<div style="background:purple;width:20px;height:20px;"></div>';
 
-                const marker = L.marker([pLat, pLng], {
+                const marker = L.marker([pLat, pLng], { // Leaflet: [lat, lng]
                     icon: L.divIcon({ html: iconHtml, className: "", iconSize: [32,32], iconAnchor: [16,16] })
                 }).addTo(map);
                 map.__restaurantLayers.push(marker);
@@ -7283,9 +7240,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                 }
                 
                 marker.on("popupopen", function() { 
-                    if (typeof handlePopupImageLoading === 'function') {
-                        handlePopupImageLoading(f, imgId); 
-                    }
+                    if (typeof handlePopupImageLoading === 'function') handlePopupImageLoading(f, imgId); 
                 });
             }
         });
@@ -7295,7 +7250,6 @@ async function showNearbyRestaurants(lat, lng, map, day) {
         alert("Error fetching restaurants.");
     }
 }
-
 function getFastRestaurantPopupHTML(f, imgId, day) {
     // Spinner CSS'ini garanti et
     if (!document.getElementById('img-loading-spinner-style')) {
