@@ -7082,7 +7082,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   }
 }
 
-
 async function showNearbyRestaurants(lat, lng, map, day) {
     const isMapLibre = !!map.addSource; // MapLibre kontrolü
 
@@ -7119,7 +7118,6 @@ async function showNearbyRestaurants(lat, lng, map, day) {
         data.features.forEach((f, idx) => {
             const pLat = f.properties.lat;
             const pLng = f.properties.lon;
-            // Benzersiz ID (Cache sorununu önlemek için timestamp ekledim)
             const imgId = `rest-img-${idx}-${Date.now()}`; 
 
             if (isMapLibre) {
@@ -7127,11 +7125,10 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                 window._restaurant3DLayers = window._restaurant3DLayers || [];
                 window._restaurant3DMarkers = window._restaurant3DMarkers || [];
 
-                // 1. Yeşil Çizgi (Source + Layer)
+                // 1. Yeşil Çizgi
                 const sourceId = `rest-line-src-${idx}`;
                 const layerId = `rest-line-layer-${idx}`;
                 
-                // Hata önlemek için önce kontrol et
                 if (!map.getSource(sourceId)) {
                     map.addSource(sourceId, {
                         type: 'geojson',
@@ -7157,53 +7154,54 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                     window._restaurant3DLayers.push(sourceId);
                 }
 
-                // 2. Restoran Markerı
+                // 2. Restoran Markerı Elementi Hazırla
                 const el = document.createElement('div');
-                // Mevcut fonksiyonu kullanıyoruz
                 if (typeof getPurpleRestaurantMarkerHtml === 'function') {
                     el.innerHTML = getPurpleRestaurantMarkerHtml(); 
                 } else {
-                    // Fallback (Fonksiyon yoksa diye güvenlik)
                     el.style.backgroundColor = '#8a4af3';
                     el.style.width = '20px'; el.style.height = '20px'; el.style.borderRadius = '50%';
                 }
                 
-                // Stil ayarları (Wrapper)
                 el.style.width = '32px'; 
                 el.style.height = '32px';
                 el.style.cursor = 'pointer';
+                el.style.pointerEvents = 'auto'; // Tıklanabilir olsun
+                el.style.zIndex = '2000';      // En üstte olsun
 
-                // --- FIX: Marker'a tıklayınca Haritaya geçmesini engelle ---
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation(); 
-                });
-
-                // Popup oluştur (Mevcut fonksiyonu kullanarak)
-                // getFastRestaurantPopupHTML zaten restaurant_module.js içinde var.
+                // Popup Oluştur
                 const popup = new maplibregl.Popup({ offset: 25, maxWidth: '300px', closeButton: true });
-                
                 if (typeof getFastRestaurantPopupHTML === 'function') {
                     popup.setHTML(getFastRestaurantPopupHTML(f, imgId, day));
                 } else {
                     popup.setText(f.properties.name || "Restaurant");
                 }
 
-                // --- FIX: Popup açılınca resmi yükle ---
+                // Popup Resim Yükleme Eventi
                 popup.on('open', () => {
                     if (typeof handlePopupImageLoading === 'function') {
                         handlePopupImageLoading(f, imgId);
                     }
                 });
 
+                // Marker'ı Haritaya Ekle
                 const marker = new maplibregl.Marker({ element: el })
                     .setLngLat([pLng, pLat])
                     .setPopup(popup)
                     .addTo(map);
                 
+                // --- FIX: Manuel Tıklama Yönetimi ---
+                // Marker oluşturulduktan sonra listener ekliyoruz
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Harita tıklamasını engelle
+                    e.preventDefault();
+                    marker.togglePopup(); // Popup'ı manuel aç/kapat
+                });
+
                 window._restaurant3DMarkers.push(marker);
 
             } else {
-                // --- 2D HARİTA (Leaflet) - Mevcut Kod ---
+                // --- 2D HARİTA (Leaflet) ---
                 map.__restaurantLayers = map.__restaurantLayers || [];
                 const line = L.polyline([[lat, lng], [pLat, pLng]], { 
                     color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8" 
