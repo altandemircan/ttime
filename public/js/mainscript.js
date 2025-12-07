@@ -6889,8 +6889,8 @@ function attachClickNearbySearch(map, day, options = {}) {
   map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
-  // MapLibre mi kontrolü (addSource metodu varsa MapLibre'dir)
-  const isMapLibre = !!map.addSource; 
+  // MapLibre kontrolü
+  const isMapLibre = !!map.addSource;
 
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
   const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
@@ -6898,7 +6898,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
   closeNearbyPopup(); // Eskileri temizle
 
-  // Loading popup içeriği
+  // Loading popup
   const loadingContent = `
     <div class="nearby-loading-message">
       <div class="nearby-loading-spinner"></div>
@@ -6907,7 +6907,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   `;
   showCustomPopup(lat, lng, map, loadingContent, false);
 
-  // --- SİNYAL (PULSE) MARKER HTML YAPISI (Standart) ---
+  // --- SİNYAL (PULSE) MARKER (YENİ ÖZELLİK) ---
   const pulseHtml = `
     <div class="user-loc-wrapper">
        <div class="user-loc-ring-1"></div>
@@ -6917,21 +6917,18 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   `;
 
   if (isMapLibre) {
-      // --- 3D (MAPLIBRE) ---
+      // 3D Harita (MapLibre)
       const el = document.createElement('div');
       el.innerHTML = pulseHtml;
-      // 3D haritada marker oluştur
       window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
           .setLngLat([lng, lat])
           .addTo(map);
       
-      // Kamerayı oraya kaydır
       map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
-
   } else {
-      // --- 2D (LEAFLET) ---
+      // 2D Harita (Leaflet)
       const pulseIcon = L.divIcon({
-        className: 'custom-loc-icon-leaflet', // CSS'de tanımlı değilse bile dummy class olarak kalsın, stil HTML içinde
+        className: 'custom-loc-icon-leaflet',
         html: pulseHtml,
         iconSize: [20, 20],
         iconAnchor: [10, 10]
@@ -6942,9 +6939,10 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
       if (currentZoom < 14) map.flyTo([lat, lng], 15, { duration: 0.5 });
       else map.panTo([lat, lng], { animate: true, duration: 0.4 });
   }
-  // -------------------------------------
+  // ----------------------------------------------
 
   try {
+    // Nokta bilgisini al
     let pointInfo = { name: "Selected Point", address: "" };
     try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
 
@@ -6952,85 +6950,170 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     const data = await resp.json();
 
     let results = [];
+    let photos = [];
     let placesHtml = "";
 
     if (data.features && data.features.length > 0) {
       results = data.features
+        .filter(f => !!f.properties.name && f.properties.name.trim().length > 2)
         .map(f => ({ ...f, distance: haversine(lat, lng, f.properties.lat, f.properties.lon) }))
         .sort((a, b) => a.distance - b.distance)
         .slice(0, 10);
 
-      // Fotoğraf yükleme simülasyonu (Gerçek fonksiyonda async/await ve pexels var)
-      // Burada yapıyı koruyoruz
-      
-      placesHtml = results.map((f, idx) => {
-          const name = f.properties.name || "Unnamed";
-          const distStr = f.distance < 1000 ? Math.round(f.distance)+" m" : (f.distance/1000).toFixed(2)+" km";
-          // Fotoğraf placeholder (Gerçek kodda burası resim yükleme mantığı içerir)
-          const photo = "img/placeholder.png"; 
+      if (results.length > 0) {
+        // --- ORİJİNAL FOTOĞRAF ÇEKME MANTIĞI (GERİ GELDİ) ---
+        try {
+          photos = await Promise.all(results.map(async (f) => {
+            const name = f.properties.name || "";
+            const cityQuery = name + " " + (window.selectedCity || "");
+            try {
+              let imageUrl = null;
+              if (typeof getPexelsImage === "function") {
+                imageUrl = await getPexelsImage(cityQuery);
+              }
+              if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
+                return imageUrl;
+              }
+              if (typeof getPixabayImage === "function") {
+                imageUrl = await getPixabayImage(name);
+                if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
+                  return imageUrl;
+                }
+              }
+              return PLACEHOLDER_IMG;
+            } catch (error) {
+              console.warn(`Photo loading error: ${name}`, error);
+              return PLACEHOLDER_IMG;
+            }
+          }));
+        } catch (photoError) {
+          console.warn('Photo loading failed, using placeholders:', photoError);
+          photos = results.map(() => PLACEHOLDER_IMG);
+        }
 
-          return `
-            <li class="nearby-place-item">
-               <div class="nearby-place-image">
-                  <img src="${photo}" class="nearby-place-img" onload="this.style.opacity='1'" onerror="this.src='img/placeholder.png'">
-               </div>
-               <div class="nearby-place-info">
+        // --- ORİJİNAL LİSTE HTML YAPISI (GERİ GELDİ) ---
+        placesHtml = results.map((f, idx) => {
+          const name = f.properties.name || "(İsim yok)";
+          const adr = f.properties.formatted || "";
+          const photo = photos[idx] || PLACEHOLDER_IMG;
+          const distStr = f.distance < 1000
+            ? `${Math.round(f.distance)} m`
+            : `${(f.distance / 1000).toFixed(2)} km`;
+
+          const placeLat = f.properties.lat || f.geometry.coordinates[1];
+          const placeLng = f.properties.lon || f.geometry.coordinates[0];
+          const imgId = `nearby-img-${day}-${idx}`;
+
+            return `
+              <li class="nearby-place-item">
+                <div class="nearby-place-image">
+                  <img id="${imgId}"
+                       src="${photo}"
+                       alt="${name}"
+                       class="nearby-place-img"
+                       onload="this.style.opacity='1'"
+                       onerror="handleImageError(this, '${name}', ${idx})"
+                       data-original-src="${photo}"
+                       data-place-name="${name}"
+                       data-index="${idx}">
+                  <div style="position:absolute;top:0;left:0;width:42px;height:42px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;" class="img-loading">
+                    <div class="nearby-loading-spinner" style="width:16px;height:16px;"></div>
+                  </div>
+                </div>
+                <div class="nearby-place-info">
                   <div class="nearby-place-name">${name}</div>
-                  <div class="nearby-place-address">${f.properties.formatted || ""}</div>
-               </div>
-               <div class="nearby-place-actions">
+                  <div class="nearby-place-address">${adr}</div>
+                </div>
+                <div class="nearby-place-actions">
                   <div class="nearby-place-distance">${distStr}</div>
-                  <button class="nearby-place-add-btn" onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, '${f.properties.lat}', '${f.properties.lon}')">+</button>
-               </div>
-            </li>`;
-      }).join('');
+                  <button class="nearby-place-add-btn"
+                          onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, '${placeLat}', '${placeLng}')">+</button>
+                </div>
+              </li>`;
+        }).join('');
+      } else {
+        placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
+      }
     } else {
-      placesHtml = "<li class='nearby-no-results'>No places found nearby.</li>";
+      placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
     }
 
-    // Popup İçeriği
-    const html = `
-      <div class="nearby-popup-title">📍 Nearby Places</div>
-      <div class="add-point-section" style="padding:10px;border-bottom:1px solid #eee;">
-         <b>${pointInfo.name}</b><br><span style="font-size:12px;color:#666;">${pointInfo.address}</span>
-         <button onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="margin-top:5px;width:100%;background:#1976d2;color:white;border:none;padding:5px;border-radius:4px;cursor:pointer;">+ Add This Point</button>
+    const addPointSection = `
+      <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
+        <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+          <div class="point-image" style="width: 42px; height: 42px; position: relative;">
+            <img id="clicked-point-img"
+                 src="img/placeholder.png"
+                 alt="Seçilen Nokta"
+                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
+          </div>
+          <div class="point-info" style="flex: 1; min-width: 0;">
+            <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+              <span id="point-name-display"
+                    style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                    onclick="window.editPointName()">${pointInfo.name}</span>
+              <button onclick="window.editPointName()"
+                      style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
+              <input type="text" id="point-name-input" value="${pointInfo.name}"
+                     style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+            </div>
+            <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${pointInfo.address || 'Selected location'}
+            </div>
+          </div>
+          <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="font-size: 11px; color: #999; text-align: center;">Clicked</div>
+            <button class="add-point-to-cart-btn"
+                    onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})"
+                    style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
+          </div>
+        </div>
       </div>
-      <ul class="nearby-places-list">${placesHtml}</ul>
-      <div style="text-align:center; margin: 10px 0;">
-        <button id="show-restaurants-btn" style="padding:8px 15px;border-radius:6px;background:#8a4af3;color:#fff;font-weight:bold;cursor:pointer;border:none;">
+    `;
+
+    const restaurantBtnHtml = `
+      <div style="text-align:center; margin: 20px 0 4px 0;">
+        <button id="show-restaurants-btn" style="padding:10px 18px;border-radius:9px;background:#8a4af3;color:#fff;font-size:15px;font-weight:bold;cursor:pointer;">
           🍽️ Show Restaurants
         </button>
       </div>
     `;
 
+    const html = `
+      <div class="nearby-popup-title">
+        📍 Nearby Places
+      </div>
+      ${addPointSection}
+      <ul class="nearby-places-list">${placesHtml}</ul>
+      ${restaurantBtnHtml}
+    `;
+
     showCustomPopup(lat, lng, map, html, true);
 
-    window._lastNearbyPlaces = results;
-    window._lastNearbyDay = day;
-    window._currentPointInfo = pointInfo;
-
-    // Resimleri sonradan yüklemek için (Varsa global logic)
-    if (window._lastNearbyPlaces.length > 0) {
-        // Burada loadClickedPointImage gibi bir fonksiyon çağrılabilir
-    }
-
-    // Buton Eventi
     setTimeout(() => {
         const btn = document.getElementById("show-restaurants-btn");
         if (btn) {
             btn.onclick = async function() {
                 btn.disabled = true;
-                btn.textContent = "Loading...";
+                btn.textContent = "Loading restaurants...";
                 await showNearbyRestaurants(lat, lng, map, day);
                 btn.disabled = false;
                 btn.textContent = "🍽️ Show Restaurants";
             };
         }
-    }, 100);
+    }, 250);
+
+    window._lastNearbyPlaces = results;
+    window._lastNearbyPhotos = photos;
+    window._lastNearbyDay = day;
+    window._currentPointInfo = pointInfo;
+    loadClickedPointImage(pointInfo.name);
 
   } catch (error) {
-    console.error(error);
-    showCustomPopup(lat, lng, map, "Error loading places.", true);
+    console.error('Nearby places fetch error:', error);
+    const errorContent = '<div class="nearby-error-message">An error occurred while loading nearby places.</div>';
+    showCustomPopup(lat, lng, map, errorContent, true);
   }
 }
 
