@@ -7083,6 +7083,62 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 }
 
 async function showNearbyRestaurants(lat, lng, map, day) {
+    // ---------------------------------------------------------
+    // 1. CSS INJECTION (3D Popup Stil Düzeltmesi)
+    // Bu blok, 3D haritada açılan popup'ın Leaflet ile aynı görünmesini sağlar.
+    // ---------------------------------------------------------
+    if (!document.getElementById('tt-3d-popup-styles')) {
+        const style = document.createElement('style');
+        style.id = 'tt-3d-popup-styles';
+        style.innerHTML = `
+            /* MapLibre Popup Kutusu Sıfırlama */
+            .maplibregl-popup-content {
+                padding: 0 !important;
+                border-radius: 12px !important;
+                overflow: hidden;
+                box-shadow: 0 3px 14px rgba(0,0,0,0.4) !important;
+                background: transparent !important; /* Arkaplanı şeffaf yap, içerik dolduracak */
+            }
+            
+            /* Kapatma Butonu Tasarımı */
+            .maplibregl-popup-close-button {
+                font-size: 20px;
+                color: #666;
+                right: 8px;
+                top: 8px;
+                z-index: 10;
+                background: rgba(255, 255, 255, 0.8); /* Hafif beyaz arkaplan */
+                border-radius: 50%;
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: none;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .maplibregl-popup-close-button:hover {
+                background: rgba(255, 255, 255, 1);
+                color: #000;
+            }
+
+            /* Popup Ok (Tip) Rengi - İçerik rengiyle (#f8f9fa) uyumlu olsun */
+            .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+            .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+            .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+                border-bottom-color: #f8f9fa !important;
+            }
+            .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+            .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+            .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+                border-top-color: #f8f9fa !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    // ---------------------------------------------------------
+
     const isMapLibre = !!map.addSource; // MapLibre kontrolü
 
     // 2D Temizliği (Leaflet)
@@ -7154,48 +7210,51 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                     window._restaurant3DLayers.push(sourceId);
                 }
 
-                // 2. Restoran Markerı Elementi Hazırla
+                // 2. Restoran Markerı Elementi
                 const el = document.createElement('div');
                 if (typeof getPurpleRestaurantMarkerHtml === 'function') {
                     el.innerHTML = getPurpleRestaurantMarkerHtml(); 
                 } else {
-                    el.style.backgroundColor = '#8a4af3';
-                    el.style.width = '20px'; el.style.height = '20px'; el.style.borderRadius = '50%';
+                    el.style.cssText = 'background:#8a4af3;width:32px;height:32px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);';
                 }
                 
                 el.style.width = '32px'; 
                 el.style.height = '32px';
                 el.style.cursor = 'pointer';
-                el.style.pointerEvents = 'auto'; // Tıklanabilir olsun
-                el.style.zIndex = '2000';      // En üstte olsun
+                el.style.zIndex = '2000'; // En üstte
 
-                // Popup Oluştur
-                const popup = new maplibregl.Popup({ offset: 25, maxWidth: '300px', closeButton: true });
+                // 3. Popup Oluşturma
+                // maxWidth ayarı Leaflet tasarımıyla eşleşmesi için 360px yapıldı.
+                const popup = new maplibregl.Popup({ 
+                    offset: 25, 
+                    maxWidth: '360px', 
+                    closeButton: true 
+                });
+
+                // HTML İçeriği
                 if (typeof getFastRestaurantPopupHTML === 'function') {
                     popup.setHTML(getFastRestaurantPopupHTML(f, imgId, day));
                 } else {
                     popup.setText(f.properties.name || "Restaurant");
                 }
 
-                // Popup Resim Yükleme Eventi
+                // Popup açılınca resim yükle
                 popup.on('open', () => {
                     if (typeof handlePopupImageLoading === 'function') {
                         handlePopupImageLoading(f, imgId);
                     }
                 });
 
-                // Marker'ı Haritaya Ekle
+                // Marker Ekleme
                 const marker = new maplibregl.Marker({ element: el })
                     .setLngLat([pLng, pLat])
                     .setPopup(popup)
                     .addTo(map);
                 
-                // --- FIX: Manuel Tıklama Yönetimi ---
-                // Marker oluşturulduktan sonra listener ekliyoruz
+                // Tıklama Olayı (Manuel Kontrol)
                 el.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Harita tıklamasını engelle
-                    e.preventDefault();
-                    marker.togglePopup(); // Popup'ı manuel aç/kapat
+                    e.stopPropagation(); 
+                    marker.togglePopup();
                 });
 
                 window._restaurant3DMarkers.push(marker);
@@ -7203,7 +7262,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
             } else {
                 // --- 2D HARİTA (Leaflet) ---
                 map.__restaurantLayers = map.__restaurantLayers || [];
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+                const line = L.polyline([[lat, lng], [pLng, pLat]], { 
                     color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8" 
                 }).addTo(map);
                 map.__restaurantLayers.push(line);
