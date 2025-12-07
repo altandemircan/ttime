@@ -6115,43 +6115,30 @@ async function expandMap(containerId, day) {
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
 
-      // --- HARİTA DEĞİŞİM MANTIĞI (GÜNCELLENDİ) ---
       if (opt.value === 'liberty') {
-        // 3D MODA GEÇİŞ
         expandedMapInstance.getContainer().style.display = "none";
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // 2D MODA GEÇİŞ
         if (map3d) map3d.style.display = "none";
-        
-        // 1. Görünür yap
-        expandedMapInstance.getContainer().style.display = "block";
+        expandedMapInstance.getContainer().style.display = "";
         if (compassBtn) compassBtn.style.display = 'none';
-        
-        // 2. Tile set et
         setExpandedMapTile(opt.value);
 
-        // 3. FIX: Gri Ekran Sorunu İçin (Aggressive Invalidate)
-        // Harita motoruna "boyutun değişti, kendini yenile" diyoruz.
+        // FIX: Gri Ekran Sorunu İçin
         expandedMapInstance.invalidateSize(); 
-        
-        // Bir frame sonra tekrarla (DOM paint garantisi)
         requestAnimationFrame(() => {
             expandedMapInstance.invalidateSize();
         });
-        
-        // Bazen CSS transition yüzünden geç kalabilir, bir de timeout ile garantiye al
         setTimeout(() => {
             expandedMapInstance.invalidateSize();
-            // Eğer merkez kaymışsa, mevcut merkezi koruyarak hafif tetikle
             const c = expandedMapInstance.getCenter();
             expandedMapInstance.setView(c, expandedMapInstance.getZoom(), { animate: false });
         }, 200);
       }
       
-      // --- FIX: SEGMENT VARSA YENİDEN ÇİZ ---
+      // FIX: SEGMENT VARSA YENİDEN ÇİZ
       if (
           typeof window._lastSegmentDay === 'number' && 
           window._lastSegmentDay === day &&
@@ -6166,7 +6153,7 @@ async function expandMap(containerId, day) {
                       window._lastSegmentEndKm
                   );
               }
-          }, 250); // Harita değişiminden biraz sonra
+          }, 250); 
       }
 
       layersBar.classList.add('closed');
@@ -6228,23 +6215,63 @@ async function expandMap(containerId, day) {
   locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
   
   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
+  
+  // =========================================================
+  // --- FIX: 3D HARİTADA KONUM MARKER'I GÖSTERME ---
+  // =========================================================
   locBtn.onclick = function() {
       const isActive = window.isLocationActiveByDay[day];
       if (!isActive) {
           window.isLocationActiveByDay[day] = true;
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
+          
           if (currentLayer === 'liberty' && window._maplibre3DInstance) {
+              // --- 3D MOD İÇİN KONUM MANTIĞI ---
               navigator.geolocation.getCurrentPosition(pos => {
-                  window._maplibre3DInstance.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14 });
+                  const lat = pos.coords.latitude;
+                  const lng = pos.coords.longitude;
+
+                  // 1. Kamerayı oraya götür
+                  window._maplibre3DInstance.flyTo({ center: [lng, lat], zoom: 14 });
+
+                  // 2. Varsa eski marker'ı sil
+                  if (window._userLocMarker3D) {
+                      window._userLocMarker3D.remove();
+                  }
+
+                  // 3. Yeni Marker Oluştur (Mavi Nokta)
+                  const el = document.createElement('div');
+                  el.className = 'user-loc-dot-3d';
+                  el.style.cssText = 'width: 18px; height: 18px; background-color: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);';
+
+                  window._userLocMarker3D = new maplibregl.Marker({ element: el })
+                      .setLngLat([lng, lat])
+                      .addTo(window._maplibre3DInstance);
+
+              }, err => {
+                  console.error("Konum hatası:", err);
+                  alert("Konum alınamadı.");
+                  window.isLocationActiveByDay[day] = false;
+                  locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
               });
           } else {
+              // --- 2D MOD (LEAFLET) ---
               if (typeof getMyLocation === 'function') getMyLocation(day, expandedMapInstance);
           }
       } else {
+          // --- KONUMU KAPAT ---
           window.isLocationActiveByDay[day] = false;
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+          
+          // 3D Marker'ı temizle
+          if (window._userLocMarker3D) {
+              window._userLocMarker3D.remove();
+              window._userLocMarker3D = null;
+          }
+          // 2D Marker'ı temizle (Leaflet için genelde getMyLocation içinde toggle mantığı varsa o halleder, yoksa buraya eklenmeli)
       }
   };
+  // =========================================================
 
   controlsDiv.appendChild(zoomInBtn);
   controlsDiv.appendChild(zoomOutBtn);
