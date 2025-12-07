@@ -5815,7 +5815,87 @@ function refresh3DMapData(day) {
         }
     }
 }
+function openMapLibre3D(expandedMap) {
+  // DOM Elementlerini Bul
+  let mapDiv = expandedMap.getContainer();
+  let container = mapDiv.parentNode; 
+  let panelDiv = container.querySelector('.expanded-map-panel'); 
 
+  const leafletAttr = container.querySelector('.leaflet-control-attribution');
+  if (leafletAttr) leafletAttr.style.display = 'none';
+
+  let maplibre3d = document.getElementById('maplibre-3d-view');
+  
+  if (!maplibre3d) {
+    maplibre3d = document.createElement('div');
+    maplibre3d.id = 'maplibre-3d-view';
+    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:1; background:#eef0f5;';
+    if (panelDiv) { container.insertBefore(maplibre3d, panelDiv); } 
+    else { container.appendChild(maplibre3d); }
+  } else {
+      maplibre3d.style.display = 'block';
+      maplibre3d.style.height = '480px';
+      maplibre3d.style.zIndex = '1'; 
+  }
+  maplibre3d.innerHTML = '';
+
+  const day = window.currentDay || 1;
+  const containerId = `route-map-day${day}`;
+  
+  const bounds = new maplibregl.LngLatBounds();
+  let hasBounds = false;
+  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+  points.forEach(p => {
+      if (isFinite(p.lat) && isFinite(p.lng)) {
+          bounds.extend([p.lng, p.lat]);
+          hasBounds = true;
+      }
+  });
+
+  const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+  if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+      const coords = geojson.features[0].geometry.coordinates;
+      coords.forEach(coord => { bounds.extend(coord); hasBounds = true; });
+  }
+
+  const mapOptions = {
+    container: 'maplibre-3d-view',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    pitch: 60, bearing: -20, interactive: true, attributionControl: false
+  };
+
+  if (hasBounds) {
+      mapOptions.bounds = bounds;
+      mapOptions.fitBoundsOptions = { padding: { top: 40, bottom: 40, left: 40, right: 40 } };
+  } else {
+      mapOptions.center = expandedMap.getCenter();
+      mapOptions.zoom = expandedMap.getZoom();
+  }
+
+  window._maplibre3DInstance = new maplibregl.Map(mapOptions);
+
+  window._maplibre3DInstance.on('rotate', () => {
+      const bearing = window._maplibre3DInstance.getBearing();
+      const compassDisc = document.querySelector(`#custom-compass-btn-${day} .custom-compass-disc`);
+      if (compassDisc) compassDisc.style.transform = `rotate(${-bearing}deg)`;
+  });
+  
+  window._maplibre3DInstance.on('load', function () {
+    // Verileri Çiz (Refresh fonksiyonunu kullanıyoruz)
+    if (typeof refresh3DMapData === 'function') {
+        refresh3DMapData(day);
+    }
+
+    // Tıklama Eventi (Nearby Search)
+    window._maplibre3DInstance.on('click', (e) => {
+        const { lng, lat } = e.lngLat;
+        if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+        if (typeof showNearbyPlacesPopup === 'function') {
+            showNearbyPlacesPopup(lat, lng, window._maplibre3DInstance, day, 500);
+        }
+    });
+  }); 
+}
 async function expandMap(containerId, day) {
   forceCleanExpandedMap(day);
 
