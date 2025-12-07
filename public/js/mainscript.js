@@ -6217,7 +6217,7 @@ async function expandMap(containerId, day) {
   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
   
   // =========================================================
-  // --- FIX: 3D HARİTADA KONUM MARKER'I GÖSTERME ---
+  // --- FIX: 3D HARİTADA SİNYAL (PULSE) EFEKTİ ---
   // =========================================================
   locBtn.onclick = function() {
       const isActive = window.isLocationActiveByDay[day];
@@ -6239,10 +6239,40 @@ async function expandMap(containerId, day) {
                       window._userLocMarker3D.remove();
                   }
 
-                  // 3. Yeni Marker Oluştur (Mavi Nokta)
+                  // 3. Stil Enjeksiyonu (Sinyal Efekti İçin)
+                  if (!document.getElementById('tt-3d-loc-pulse-style')) {
+                      const s = document.createElement('style');
+                      s.id = 'tt-3d-loc-pulse-style';
+                      s.innerHTML = `
+                        @keyframes ttPulse {
+                            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+                            70% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+                            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+                        }
+                        .user-loc-wrapper-3d { position: relative; width: 20px; height: 20px; }
+                        .user-loc-dot-3d {
+                            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                            width: 16px; height: 16px; background-color: #4285F4;
+                            border: 3px solid white; border-radius: 50%;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 2;
+                        }
+                        .user-loc-ring-3d {
+                            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                            width: 16px; height: 16px; background-color: rgba(66, 133, 244, 0.6);
+                            border-radius: 50%; z-index: 1;
+                            animation: ttPulse 2s infinite;
+                        }
+                      `;
+                      document.head.appendChild(s);
+                  }
+
+                  // 4. Yeni Marker Oluştur (Sinyalli)
                   const el = document.createElement('div');
-                  el.className = 'user-loc-dot-3d';
-                  el.style.cssText = 'width: 18px; height: 18px; background-color: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);';
+                  el.className = 'user-loc-wrapper-3d';
+                  el.innerHTML = `
+                    <div class="user-loc-ring-3d"></div>
+                    <div class="user-loc-dot-3d"></div>
+                  `;
 
                   window._userLocMarker3D = new maplibregl.Marker({ element: el })
                       .setLngLat([lng, lat])
@@ -6268,7 +6298,7 @@ async function expandMap(containerId, day) {
               window._userLocMarker3D.remove();
               window._userLocMarker3D = null;
           }
-          // 2D Marker'ı temizle (Leaflet için genelde getMyLocation içinde toggle mantığı varsa o halleder, yoksa buraya eklenmeli)
+          // 2D Marker temizliği (Varsa global fonksiyona bırakıyoruz)
       }
   };
   // =========================================================
