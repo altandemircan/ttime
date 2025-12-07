@@ -7005,7 +7005,13 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
     const addPointSection = `
       <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
-        <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+        <div class="point-item" style="display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 0;">
           <div class="point-image" style="width: 42px; height: 42px; position: relative;">
             <img id="clicked-point-img"
                  src="img/placeholder.png"
