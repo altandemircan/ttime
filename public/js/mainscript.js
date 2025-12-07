@@ -5271,7 +5271,7 @@ function addNumberedMarkers(map, points) {
 
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
-    // --- GÜVENLİK KONTROLÜ: LEAFLET YÜKLÜ MÜ? ---
+    // 1. GÜVENLİK: Leaflet yüklenmediyse bekle
     if (typeof L === 'undefined') {
         setTimeout(() => renderLeafletRoute(containerId, geojson, points, summary, day, missingPoints), 100);
         return;
@@ -5280,34 +5280,34 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
-    // --- ESKİ HARİTA VE OBSERVER TEMİZLİĞİ ---
-    // Eğer daha önce bu kutuya bir gözlemci (observer) atadıysak onu durdurup silelim.
+    // 2. TEMİZLİK: Eski Observer ve Haritayı sil
     if (sidebarContainer._resizeObserver) {
         sidebarContainer._resizeObserver.disconnect();
         delete sidebarContainer._resizeObserver;
     }
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
-        window.leafletMaps[containerId].remove();
+        try {
+            window.leafletMaps[containerId].remove();
+        } catch(e) {}
         delete window.leafletMaps[containerId];
     }
 
+    // 3. DOM HAZIRLIĞI
     sidebarContainer.innerHTML = "";
-    sidebarContainer.style.height = "285px";
+    sidebarContainer.style.height = "285px"; // Sabit yükseklik veya CSS'e bırakılabilir
     sidebarContainer.classList.remove("big-map", "full-screen-map");
     sidebarContainer.style.backgroundColor = "#eef0f5"; 
 
     // --- Route Summary & Controls (Alt Panel) ---
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
-    const oldWrapper = document.getElementById(controlsWrapperId);
-    if (oldWrapper) oldWrapper.remove();
+    document.getElementById(controlsWrapperId)?.remove();
 
     const controlsWrapper = document.createElement("div");
     controlsWrapper.id = controlsWrapperId;
 
-    const controlRowId = `map-bottom-controls-day${day}`;
     const controlRow = document.createElement("div");
-    controlRow.id = controlRowId;
+    controlRow.id = `map-bottom-controls-day${day}`;
     controlRow.className = "map-bottom-controls";
 
     const infoDiv = document.createElement("span");
@@ -5329,7 +5329,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // --- Rota Koordinatları ---
+    // --- Rota Verisi Hazırlığı ---
     let routeCoords = [];
     let hasValidGeo = (
         geojson && geojson.features && geojson.features[0] &&
@@ -5346,6 +5346,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         scrollWheelZoom: true,
         fadeAnimation: false,
         zoomAnimation: false,
+        markerZoomAnimation: false // Titreşimi önlemek için kapattık
     });
 
     try {
@@ -5356,18 +5357,17 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 interactive: true
             }).addTo(map);
         } else {
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19, attribution: '© OpenStreetMap'
-            }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
         }
     } catch(e) {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
 
+    // --- Bounds ve Noktalar ---
     let bounds = L.latLngBounds();
     points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     
-    // --- Marker ve Rota Çizimi ---
+    // --- Çizim İşlemleri ---
     if (points.length === 1) {
         L.marker([points[0].lat, points[0].lng], {
             icon: L.divIcon({
@@ -5376,8 +5376,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 iconSize: [32,32],
                 iconAnchor: [16,16]
             })
-        }).addTo(map).bindPopup(points[0].name || points[0].category || "Point");
-        map.setView([points[0].lat, points[0].lng], 14, { animate: false });
+        }).addTo(map).bindPopup(points[0].name || "Point");
+        // setView'i aşağıda 'refitMap' içinde yapacağız
     } 
     else if (points.length >= 1) {
         const isFlyMode = !areAllPointsInTurkey(points);
@@ -5391,10 +5391,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 const curve = getCurvedArcCoords(start, end);
                 arcPoints = arcPoints.concat(curve);
                 drawCurvedLine(map, points[i], points[i + 1], {
-                    color: "#1976d2",
-                    weight: 5,
-                    opacity: 0.85,
-                    dashArray: "6,8"
+                    color: "#1976d2", weight: 5, opacity: 0.85, dashArray: "6,8"
                 });
             }
             points.forEach(p => bounds.extend([p.lat, p.lng]));
@@ -5402,11 +5399,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         } 
         else if (hasValidGeo && routeCoords.length > 1) {
             const routePoly = L.polyline(routeCoords, {
-                color: '#1976d2',
-                weight: 8,
-                opacity: 0.92,
-                interactive: true,
-                dashArray: null
+                color: '#1976d2', weight: 8, opacity: 0.92, interactive: true
             }).addTo(map);
             bounds.extend(routePoly.getBounds());
         }
@@ -5416,50 +5409,49 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         if (!bounds.isValid() && points.length > 0) {
              points.forEach(p => bounds.extend([p.lat, p.lng]));
         }
-
-        if (bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [20, 20], animate: false });
-        }
     } else {
         map.setView([0, 0], 2, { animate: false });
     }
 
-    // --- Controls Wrapper Eklemesi ---
     wrapRouteControls(day);
-
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 
     // ============================================================
-    // --- KESİN ÇÖZÜM: RESIZE OBSERVER (BOYUT İZLEYİCİ) ---
+    // --- FIX: "Corner Bunching" & "Gray Map" İçin Güçlü Yenileme ---
     // ============================================================
-    // Harita kutusunun boyutu ne zaman değişirse (yeni item eklenince liste uzar, div kayar vs.)
-    // bu kod çalışır ve haritayı düzeltir.
-    const ro = new ResizeObserver(() => {
-        if (map) {
-            // 1. Haritayı yenile (Gri alanı düzeltir)
-            map.invalidateSize();
-            
-            // 2. Haritayı tekrar ortala (Markerları yerine oturtur)
-            if (points.length === 1) {
-                map.setView([points[0].lat, points[0].lng], 14, { animate: false });
-            } else if (bounds && bounds.isValid()) {
-                map.fitBounds(bounds, { padding: [20, 20], animate: false });
-            }
+    
+    // Bu fonksiyon haritayı bulunduğu kutuya tam oturtur ve markerları ortalar
+    const refitMap = () => {
+        if (!map) return;
+        map.invalidateSize(); // 1. Boyutu düzelt
+
+        // 2. Tekrar odakla (Önemli: invalidateSize sonrası yapılmalı)
+        if (points.length === 1) {
+            map.setView([points[0].lat, points[0].lng], 14, { animate: false });
+        } else if (bounds && bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [20, 20], animate: false });
         }
+    };
+
+    // 1. Hemen çalıştır
+    refitMap();
+
+    // 2. Observer ile sürekli izle (Boyut her değiştiğinde çalışır)
+    const ro = new ResizeObserver(() => {
+        // Observer tetiklendiğinde requestAnimationFrame ile browser'ın
+        // render döngüsüne senkronize olalım.
+        requestAnimationFrame(() => {
+            refitMap();
+        });
     });
-    
-    // Gözlemciyi başlat
     ro.observe(sidebarContainer);
-    
-    // Gözlemciyi elemente kaydet ki sonra silebilelim
     sidebarContainer._resizeObserver = ro;
 
-    // Ekstra Güvenlik: Normal Timeout (Eski yöntem de dursun)
-    setTimeout(() => {
-        map.invalidateSize();
-        if (bounds && bounds.isValid()) map.fitBounds(bounds, { padding: [20, 20], animate: false });
-    }, 400);
+    // 3. Yedek olarak timeout (Animasyonlu geçişler için)
+    setTimeout(refitMap, 200);
+    setTimeout(refitMap, 500); // Emin olmak için
+    // ============================================================
 }
 
 // Harita durumlarını yönetmek için global değişken
