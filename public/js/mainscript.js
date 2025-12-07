@@ -6119,7 +6119,7 @@ async function expandMap(containerId, day) {
   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
   
   // =========================================================
-  // --- FIX: STANDART KONUM İŞARETÇİSİ (HEM 2D HEM 3D) ---
+  // --- FIX: STANDART KONUM İŞARETÇİSİ (MAVİ <-> YEŞİL & GENİŞ SİNYAL) ---
   // =========================================================
   locBtn.onclick = function() {
       const isActive = window.isLocationActiveByDay[day];
@@ -6127,14 +6127,24 @@ async function expandMap(containerId, day) {
           window.isLocationActiveByDay[day] = true;
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
           
-          // 1. Ortak Stil Enjeksiyonu (Çift Halka)
+          // 1. Ortak Stil Enjeksiyonu (Color Cycle & Wide Pulse)
           if (!document.getElementById('tt-unified-loc-style')) {
               const s = document.createElement('style');
               s.id = 'tt-unified-loc-style';
               s.innerHTML = `
                 @keyframes ttPulse {
                     0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-                    100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+                    100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; }
+                }
+                @keyframes ttColorCycle {
+                    0% { background-color: #4285F4; }
+                    50% { background-color: #34A853; } /* Google Green */
+                    100% { background-color: #4285F4; }
+                }
+                @keyframes ttRingColorCycle {
+                    0% { background-color: rgba(66, 133, 244, 0.6); }
+                    50% { background-color: rgba(52, 168, 83, 0.6); }
+                    100% { background-color: rgba(66, 133, 244, 0.6); }
                 }
                 .user-loc-wrapper { position: relative; width: 20px; height: 20px; }
                 /* Merkez Nokta */
@@ -6143,21 +6153,22 @@ async function expandMap(containerId, day) {
                     width: 14px; height: 14px; background-color: #4285F4;
                     border: 2px solid white; border-radius: 50%;
                     box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 2;
+                    animation: ttColorCycle 2s infinite ease-in-out;
                 }
                 /* Halka 1 */
                 .user-loc-ring-1 {
                     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
                     width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6);
                     border-radius: 50%; z-index: 1;
-                    animation: ttPulse 2.5s infinite linear;
+                    animation: ttPulse 2.5s infinite linear, ttRingColorCycle 2s infinite ease-in-out;
                 }
                 /* Halka 2 (Gecikmeli) */
                 .user-loc-ring-2 {
                     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
                     width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6);
                     border-radius: 50%; z-index: 1;
-                    animation: ttPulse 2.5s infinite linear;
-                    animation-delay: 1.25s;
+                    animation: ttPulse 2.5s infinite linear, ttRingColorCycle 2s infinite ease-in-out;
+                    animation-delay: 1.25s, 0s;
                 }
               `;
               document.head.appendChild(s);
@@ -6184,7 +6195,7 @@ async function expandMap(containerId, day) {
                   if (window._userLocMarker3D) window._userLocMarker3D.remove();
 
                   const el = document.createElement('div');
-                  el.innerHTML = locHtml; // Wrapper div oluşturup içine HTML'i basıyoruz
+                  el.innerHTML = locHtml; 
 
                   window._userLocMarker3D = new maplibregl.Marker({ element: el })
                       .setLngLat([lng, lat])
