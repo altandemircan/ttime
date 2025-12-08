@@ -4758,10 +4758,18 @@ async function renderRouteForDay(day) {
 
     renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
 
-    const expandedMapObj = window.expandedMaps?.[containerId];
-    if (expandedMapObj?.expandedMap) {
-        updateExpandedMap(expandedMapObj.expandedMap, day);
+   // 3D tarafında güncelleme sonrası, varsa eski expanded map'i kapat.
+// Böylece kullanıcı tekrar expand ettiğinde, sıfırdan sağlıklı Leaflet ile açılır.
+if (window.expandedMaps && window.expandedMaps[containerId]) {
+    try {
+        // Mevcut restore fonksiyonun — expanded container'ı kapatıp
+        // küçük haritayı geri getiriyor.
+        restoreMap(containerId, day);
+    } catch (e) {
+        console.warn('[renderRouteForDay] restoreMap after update error:', e);
     }
+    delete window.expandedMaps[containerId];
+}
 
     // ... (Pairwise ve diğer stat güncellemeleri) ...
     const pairwiseSummaries = [];
