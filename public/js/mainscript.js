@@ -6018,13 +6018,12 @@ async function expandMap(containerId, day) {
     
     if (opt.value === currentLayer) div.classList.add('selected');
 
-        div.onclick = function(e) {
+    div.onclick = function(e) {
       e.stopPropagation(); 
       if (layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
-      const prevLayer = currentLayer; // 3D→2D algısı için sakla
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
       
@@ -6089,11 +6088,17 @@ async function expandMap(containerId, day) {
         try { updateExpandedMap(expandedMapInstance, day); } catch (e) { }
 
         // 8. TEK TILE ÇÖZÜMÜ: "SAHTE SEÇİM" (RE-TRIGGER)
+        // 300ms sonra, kullanıcının tekrar tıkladığını simüle ederek katmanı YENİDEN yüklüyoruz.
         requestAnimationFrame(() => {
             setTimeout(() => {
+                // A. Boyutları güncelle
                 expandedMapInstance.invalidateSize(false); 
+
+                // B. KATMANI TEKRAR YÜKLE (Bu işlem eksik tile'ları getirir)
+                // "Tekrar seçme" efektini bu satır yaratır.
                 setExpandedMapTile(opt.value); 
 
+                // C. Odaklama (Veriler artık temiz)
                 const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
                 const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
                 
@@ -6110,7 +6115,7 @@ async function expandMap(containerId, day) {
                         expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
                     }
                 }
-            }, 300);
+            }, 300); // 300ms, DOM'un oturması için ideal süredir.
         });
       }
       
@@ -6128,14 +6133,6 @@ async function expandMap(containerId, day) {
       }
 
       layersBar.classList.add('closed');
-
-      // 3D → 2D geçişinde KOD ikinci seçimi otomatik tetikler
-      if (prevLayer === 'liberty' && opt.value !== 'liberty' && !div.__autoDouble) {
-        div.__autoDouble = true;
-        setTimeout(() => { div.click(); }, 0);
-      } else {
-        div.__autoDouble = false;
-      }
     };
     layersBar.appendChild(div);
   });
