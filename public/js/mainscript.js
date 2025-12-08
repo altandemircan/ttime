@@ -6085,62 +6085,19 @@ if (validPts.length === 1) {
 }
 
 // Tile stilini uygula (başarısız olursa OSM fallback)
-// 2D’ye geçerken eski expanded map’i tamamen sök ve yeni, temiz bir Leaflet+OpenFreeMap kur
-try { expandedMapInstance.remove(); } catch (_) {}
-
-const mapDivId = `${containerId}-expanded`;
-const mapDiv = document.getElementById(mapDivId);
-if (mapDiv) mapDiv.innerHTML = "";
-
-// Güvenli merkez/zoom
-const pts = (typeof getDayPoints === "function") ? getDayPoints(day) : [];
-let safeCenter = [39.0, 35.0], safeZoom = 6;
-let safeBounds = null;
-if (validPts.length === 1) { safeCenter = [validPts[0].lat, validPts[0].lng]; safeZoom = 14; }
-else if (validPts.length > 1) {
-  safeBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-  if (safeBounds.isValid()) { safeCenter = safeBounds.getCenter(); safeZoom = 10; } else { safeBounds = null; }
-}
-
-// Yeni Leaflet haritası
-const newMap = L.map(mapDivId, {
-  center: safeCenter,
-  zoom: safeZoom,
-  zoomControl: false,
-  scrollWheelZoom: true,
-  fadeAnimation: false,
-  zoomAnimation: false
-});
-
-// OpenFreeMap vektör stili (bright/positron)
-const styleUrl = `https://tiles.openfreemap.org/styles/${opt.value}`;
 try {
-  if (typeof L.maplibreGL === "function") {
-    L.maplibreGL({ style: styleUrl, attribution: '&copy; OpenFreeMap' }).addTo(newMap);
-  } else {
-    // Fallback OSM raster
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(newMap);
-  }
+  setExpandedMapTile(opt.value);
 } catch (_) {
-  // Fallback OSM raster
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(newMap);
+  try {
+    // Basit OSM fallback
+    if (expandedMapInstance._maplibreLayer) {
+      expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
+      expandedMapInstance._maplibreLayer = null;
+    }
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
+      .addTo(expandedMapInstance);
+  } catch (_) {}
 }
-
-// Global kayıt güncelle
-if (window.expandedMaps && window.expandedMaps[containerId]) {
-  window.expandedMaps[containerId].expandedMap = newMap;
-}
-
-// Güvenli fit
-setTimeout(() => {
-  newMap.invalidateSize(false);
-  if (safeBounds && safeBounds.isValid()) {
-    newMap.fitBounds(safeBounds, { padding: [50, 50], animate: false });
-  } else {
-    newMap.setView(safeCenter, safeZoom, { animate: false });
-  }
-  try { updateExpandedMap(newMap, day); } catch (e) { console.warn("Update error:", e); }
-}, 80);
 
 // Görünür yap + reflow
 const container = expandedMapInstance.getContainer();
@@ -6560,13 +6517,12 @@ function updateExpandedMap(expandedMap, day) {
     });
 
     // --- ODAKLANMA ---
-       try {
+    try {
         if (bounds.isValid()) {
-            expandedMap.fitBounds(bounds, { padding: [50, 50], animate: false });
-        } else if (safeBounds && safeBounds.isValid()) {
-            expandedMap.fitBounds(safeBounds, { padding: [50, 50], animate: false });
+            expandedMap.fitBounds(bounds, { padding: [50, 50] });
         } else {
-            expandedMap.setView(safeCenter, safeZoom, { animate: false });
+            if (pts.length === 1) expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+            else expandedMap.setView([39.0, 35.0], 6, { animate: false });
         }
     } catch(e) { console.warn("FitBounds error:", e); }
 
