@@ -1,4 +1,3 @@
-
 function showMarkerOnExpandedMap(lat, lon, name, day) {
   // Büyük harita (expand map)
   const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
@@ -7,6 +6,7 @@ function showMarkerOnExpandedMap(lat, lon, name, day) {
     L.marker([lat, lon]).addTo(bigMap).bindPopup(`<b>${name}</b>`);
   }
 }
+
 // Seçilen nokta için fotoğraf yükleme fonksiyonu
 async function loadClickedPointImage(pointName) {
     const img = document.getElementById('clicked-point-img');
@@ -51,7 +51,6 @@ async function loadClickedPointImage(pointName) {
         img.style.opacity = "0.6";
     }
 }
-
 
 // Nokta adını düzenleme fonksiyonu
 window.editPointName = function() {
@@ -134,16 +133,15 @@ window.addClickedPointToCart = async function(lat, lng, day) {
             ""
         );
 
-        
         // Popup'ı kapat
         closeNearbyPopup();
         
         // Başarı mesajı
-console.log(`"${placeName}" added to cart!`);
+        console.log(`"${placeName}" added to cart!`);
         
     } catch (error) {
-    console.error('An error occurred while adding the point to the cart:', error);
-alert('An error occurred while adding the point to the cart.');
+        console.error('An error occurred while adding the point to the cart:', error);
+        alert('An error occurred while adding the point to the cart.');
     }
 };
 if (typeof updateCart === "function") updateCart();
@@ -178,7 +176,6 @@ window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeL
     closeNearbyPopup();
     if (typeof updateCart === "function") updateCart();
 
-    
     // Expanded map varsa ona da marker ekle
     const expandedMapData = Object.values(window.expandedMaps || {}).find(m => m.day === day);
     if (expandedMapData && expandedMapData.expandedMap) {
@@ -261,6 +258,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
     }
 }
+
 // Popup kapatma fonksiyonu
 window.closeNearbyPopup = function() {
   // 1. Popup DOM Elementini Kaldır
@@ -280,7 +278,6 @@ window.closeNearbyPopup = function() {
   }
 
   // 3. LEAFLET KATMAN TARAMASI (Agresif Temizlik)
-  // Eğer global değişken referansı kaybolduysa, haritadaki layerları tarayıp class isminden bulup siler.
   const mapsToCheck = [];
   if (window.leafletMaps) mapsToCheck.push(...Object.values(window.leafletMaps));
   if (window.expandedMaps) mapsToCheck.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
@@ -299,7 +296,7 @@ window.closeNearbyPopup = function() {
       }
   });
   
-  // 4. Diğer temizlikler (Restoran markerları vs.)
+  // 4. Diğer temizlikler
   if (window._restaurant3DMarkers) {
       window._restaurant3DMarkers.forEach(m => { try { m.remove(); } catch(e){} });
       window._restaurant3DMarkers = [];
@@ -334,47 +331,43 @@ window.closeNearbyPopup = function() {
 };
 
 function showSearchButton(lat, lng, map, options = {}) {
+    // PROXY KULLANIMI: Direct API key removed
     const bufferMeters = options.radius || 1000;
     const categories = options.categories || "catering.restaurant";
+    const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=${bufferMeters}&limit=50`;
 
-    // Proxy üzerinden çağrı: anahtar kullanımı yok
-    const url = `/api/geoapify/places?categories=${encodeURIComponent(categories)}&filter=circle:${lng},${lat},${bufferMeters}&limit=50`;
-
-    const button = L.control({ position: 'topright' });
+    // Haritada buton göster
+    const button = L.control({position: 'topright'});
     button.onAdd = function () {
         const div = L.DomUtil.create('div', 'custom-search-btn');
         div.innerHTML = '<button id="search-restaurants-btn" style="padding:8px 16px;border-radius:8px;background:#1976d2;color:#fff;font-weight:600;">Bu alanda restoran ara</button>';
-        div.onclick = async function () {
+        div.onclick = async function() {
+            // Restoranları çek
             try {
                 const resp = await fetch(url);
-                if (!resp.ok) {
-                    alert("Restoranlar alınamadı. Lütfen tekrar deneyin.");
-                    map.removeControl(button);
-                    return;
-                }
                 const data = await resp.json();
                 if (!data.features || data.features.length === 0) {
                     alert("Bu alanda restoran bulunamadı!");
                     map.removeControl(button);
                     return;
                 }
-
                 data.features.forEach(f => {
-                    const p = f.properties || {};
-                    L.marker([p.lat, p.lon]).addTo(map).bindPopup(`<b>${p.name || "Restoran"}</b>`);
+                    L.marker([f.properties.lat, f.properties.lon])
+                        .addTo(map)
+                        .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
                 });
                 alert(`Bu alanda ${data.features.length} restoran bulundu.`);
-            } catch (err) {
-                console.error("Restoran arama hatası:", err);
-                alert("Restoranlar alınamadı. Lütfen tekrar deneyin.");
-            } finally {
                 map.removeControl(button);
+            } catch(e) {
+                console.error("Search error:", e);
+                alert("Restoranlar aranırken hata oluştu.");
             }
         };
         return div;
     };
     button.addTo(map);
 }
+
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; 
 
@@ -389,14 +382,10 @@ function attachClickNearbySearch(map, day, options = {}) {
 
   // Yeni Tıklama İşleyicisi (Filtresiz)
   const clickHandler = function(e) {
-    // Sadece "Nearby Popup" açıkken tıklanırsa onu kapatıp yenisini açmak için devam et.
-    // Markerlara tıklayınca zaten L.DomEvent.stopPropagation() marker içinde yapıldığı için burası tetiklenmez.
-    // Bu yüzden buradaki manuel "leaflet-interactive" kontrolünü KALDIRIYORUZ.
-    
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
     
     __nearbySingleTimer = setTimeout(async () => {
-      console.log("[Nearby] Map clicked at:", e.latlng); // Konsoldan takip edebilirsiniz
+      console.log("[Nearby] Map clicked at:", e.latlng); 
       
       // Varsa açık popup'ı kapat
       if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
@@ -419,17 +408,18 @@ function attachClickNearbySearch(map, day, options = {}) {
   map.on('zoomstart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
   map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
+
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     // 1. Önce kesinlikle eskileri temizle
     if (typeof closeNearbyPopup === 'function') {
         closeNearbyPopup();
     }
 
+    // PROXY KULLANIMI: Direct API key removed
     const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
-    const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&limit=20&apiKey=${apiKey}`;
+    const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=20`;
 
-    // Loading popup göster
-    // NOT: Marker oluşturma işini showCustomPopup yapacağı için buradan SİLDİK.
+    // Loading popup göster - Marker'ı showCustomPopup koyuyor, burada TEKRAR KOYMA!
     const loadingContent = `
         <div class="nearby-loading-message">
             <div class="nearby-loading-spinner"></div>
@@ -550,7 +540,14 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                             <button onclick="window.editPointName()" style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
                             <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
                         </div>
-                        <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <div class="point-address" style="display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+    font-weight: 400;">
                             ${pointInfo.address || 'Selected location'}
                         </div>
                     </div>
@@ -603,32 +600,29 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         showCustomPopup(lat, lng, map, errorContent, true);
     }
 }
-async function showNearbyRestaurants(lat, lng, map, day) {
-    // Koordinatları güvene al
-    const latNum = Number(lat);
-    const lngNum = Number(lng);
-    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
-        console.error("showNearbyRestaurants: lat/lng is not finite", { lat, lng });
-        alert("Konum bilgisi alınamadı.");
-        return;
-    }
 
-    // CSS enjeksi̇yonu (mevcut)
+async function showNearbyRestaurants(lat, lng, map, day) {
+    // ---------------------------------------------------------
+    // 1. CSS ENJEKSİYONU: 3D MAP POPUP TASARIMINI 2D İLE EŞİTLEME
+    // ---------------------------------------------------------
     if (!document.getElementById('tt-popup-unified-styles')) {
         const style = document.createElement('style');
         style.id = 'tt-popup-unified-styles';
         style.innerHTML = `
+            /* MapLibre (3D) Popup Konteynerini Sıfırla */
             .maplibregl-popup-content {
                 padding: 0 !important;
-                background: transparent !important;
+                background: transparent !important; /* İçerik kendi arkaplanına sahip */
                 border-radius: 8px !important;
                 box-shadow: 0 3px 14px rgba(0,0,0,0.4) !important;
-                width: 341px !important;
+                width: 341px !important; /* Leaflet ile aynı genişlik */
                 max-width: 360px !important;
             }
+
+            /* MapLibre Kapatma Butonunu Leaflet Tarzı Yap */
             .maplibregl-popup-close-button {
                 font-size: 18px;
-                color: #c3c3c3;
+                color: #c3c3c3; /* Leaflet grideki 'x' rengi */
                 right: 10px;
                 top: 10px;
                 background: transparent;
@@ -640,6 +634,8 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                 color: #555;
                 background-color: transparent;
             }
+
+            /* Ok İşaretinin (Tip) Rengini İçerik Rengiyle (#f8f9fa) Eşle */
             .maplibregl-popup-anchor-top .maplibregl-popup-tip,
             .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
             .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
@@ -659,15 +655,16 @@ async function showNearbyRestaurants(lat, lng, map, day) {
         `;
         document.head.appendChild(style);
     }
+    // ---------------------------------------------------------
 
-    const isMapLibre = !!map.addSource;
+    const isMapLibre = !!map.addSource; // MapLibre kontrolü
 
-    // 2D temizliği (Leaflet)
+    // 2D Temizliği (Leaflet)
     if (map.__restaurantLayers) {
         map.__restaurantLayers.forEach(l => l.remove());
         map.__restaurantLayers = [];
     }
-    // 3D temizliği (MapLibre)
+    // 3D Temizliği (MapLibre)
     if (window._restaurant3DLayers) {
         window._restaurant3DLayers.forEach(id => {
             if (map.getLayer(id)) map.removeLayer(id);
@@ -680,40 +677,41 @@ async function showNearbyRestaurants(lat, lng, map, day) {
         window._restaurant3DMarkers = [];
     }
 
-    const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
-    const url = `/api/geoapify/places?categories=${encodeURIComponent(categories)}&filter=circle:${lngNum},${latNum},1000&limit=20`;
+    // PROXY KULLANIMI: API Key yerine Proxy
+    const url = `/api/geoapify/places?categories=catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
 
     try {
         const resp = await fetch(url);
-        if (!resp.ok) {
-            console.error("Geoapify proxy error:", resp.status, resp.statusText);
-            alert("Restoranlar alınamadı (servis hatası).");
-            return;
-        }
         const data = await resp.json();
-
+        
         if (!data.features || data.features.length === 0) {
             alert("No restaurants found nearby.");
             return;
         }
 
         data.features.forEach((f, idx) => {
-            const pLng = Number(f?.properties?.lon);
-            const pLat = Number(f?.properties?.lat);
-            if (!Number.isFinite(pLng) || !Number.isFinite(pLat)) {
-                console.warn("Skipping feature with invalid coords", f);
-                return;
-            }
-            const imgId = `rest-img-${idx}-${Date.now()}`;
+            // Koordinatları al
+            const pLng = f.properties.lon;
+            const pLat = f.properties.lat;
+            const imgId = `rest-img-${idx}-${Date.now()}`; 
 
-            const popupContent = (typeof getFastRestaurantPopupHTML === 'function')
-                ? getFastRestaurantPopupHTML(f, imgId, day)
-                : `<b>${f?.properties?.name || "Restaurant"}</b>`;
+            // İçerik HTML'i (Her ikisi için ortak)
+            // Not: getFastRestaurantPopupHTML fonksiyonun mevcut ve doğru çalışıyor olmalı
+            let popupContent = "";
+            if (typeof getFastRestaurantPopupHTML === 'function') {
+                popupContent = getFastRestaurantPopupHTML(f, imgId, day);
+            } else {
+                popupContent = `<b>${f.properties.name || "Restaurant"}</b>`;
+            }
 
             if (isMapLibre) {
+                // ==========================================
+                // --- 3D HARİTA (MapLibre) ---
+                // ==========================================
                 window._restaurant3DLayers = window._restaurant3DLayers || [];
                 window._restaurant3DMarkers = window._restaurant3DMarkers || [];
 
+                // Yeşil Çizgi
                 const sourceId = `rest-line-src-${idx}`;
                 const layerId = `rest-line-layer-${idx}`;
                 if (!map.getSource(sourceId)) {
@@ -721,7 +719,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                         type: 'geojson',
                         data: {
                             type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lngNum, latNum], [pLng, pLat]] }
+                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] } // [lng, lat]
                         }
                     });
                     map.addLayer({
@@ -731,12 +729,14 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
                         paint: { 'line-color': '#22bb33', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
                     });
-                    window._restaurant3DLayers.push(layerId, sourceId);
+                    window._restaurant3DLayers.push(layerId);
+                    window._restaurant3DLayers.push(sourceId);
                 }
 
+                // Marker Elementi
                 const el = document.createElement('div');
                 if (typeof getPurpleRestaurantMarkerHtml === 'function') {
-                    el.innerHTML = getPurpleRestaurantMarkerHtml();
+                    el.innerHTML = getPurpleRestaurantMarkerHtml(); 
                 } else {
                     el.style.cssText = 'background:#8a4af3;width:32px;height:32px;border-radius:50%;border:2px solid white;';
                 }
@@ -744,11 +744,12 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                 el.style.cursor = 'pointer';
                 el.style.zIndex = '2000';
 
-                const popup = new maplibregl.Popup({
-                    offset: 25,
-                    maxWidth: '360px',
+                // Popup (CSS ile Leaflet'e benzetildi)
+                const popup = new maplibregl.Popup({ 
+                    offset: 25, 
+                    maxWidth: '360px', 
                     closeButton: true,
-                    className: 'tt-unified-popup'
+                    className: 'tt-unified-popup' // CSS hedeflemesi için
                 }).setHTML(popupContent);
 
                 popup.on('open', () => {
@@ -759,20 +760,27 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                     .setLngLat([pLng, pLat])
                     .setPopup(popup)
                     .addTo(map);
-
+                
+                // Manuel tıklama kontrolü
                 el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
                 window._restaurant3DMarkers.push(marker);
 
             } else {
+                // ==========================================
+                // --- 2D HARİTA (Leaflet) ---
+                // ==========================================
                 map.__restaurantLayers = map.__restaurantLayers || [];
-
-                const line = L.polyline([[latNum, lngNum], [pLat, pLng]], {
-                    color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8"
+                
+                // DÜZELTME: [Lat, Lng] sırasını zorla
+                // lat, lng = Kullanıcı konumu
+                // pLat, pLng = Restoran konumu
+                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+                    color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8" 
                 }).addTo(map);
                 map.__restaurantLayers.push(line);
 
-                const iconHtml = (typeof getPurpleRestaurantMarkerHtml === 'function')
-                    ? getPurpleRestaurantMarkerHtml()
+                const iconHtml = (typeof getPurpleRestaurantMarkerHtml === 'function') 
+                    ? getPurpleRestaurantMarkerHtml() 
                     : '<div style="background:purple;width:20px;height:20px;"></div>';
 
                 const marker = L.marker([pLat, pLng], {
@@ -780,10 +788,10 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                 }).addTo(map);
                 map.__restaurantLayers.push(marker);
 
-                marker.bindPopup(popupContent, { maxWidth: 341 });
-
-                marker.on("popupopen", function() {
-                    if (typeof handlePopupImageLoading === 'function') handlePopupImageLoading(f, imgId);
+                marker.bindPopup(popupContent, { maxWidth: 341 }); // Leaflet standardı
+                
+                marker.on("popupopen", function() { 
+                    if (typeof handlePopupImageLoading === 'function') handlePopupImageLoading(f, imgId); 
                 });
             }
         });
@@ -793,6 +801,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
         alert("Error fetching restaurants.");
     }
 }
+
 function getFastRestaurantPopupHTML(f, imgId, day) {
     // Spinner CSS'ini garanti et
     if (!document.getElementById('img-loading-spinner-style')) {
@@ -826,249 +835,20 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
           <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
             <span style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
           </div>
-          <div class="point-address" style="font-size: 11px; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${safeAddress}</div>
+          <div class="point-address" style="display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+    font-weight: 400;
+    text-align: left;">${safeAddress}</div>
         </div>
         <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           <button class="add-point-to-cart-btn"
             onclick="window.addRestaurantToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${lat}, ${lon})"
             style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-            +
-          </button>
-        </div>
-      </div>
-    `;
-}
-
-
-
-async function searchRestaurantsAt(lat, lng, map) {
-    const bufferMeters = 1000; // 1 km çap
-    const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (!data.features || data.features.length === 0) {
-        alert("Bu alanda restoran bulunamadı!");
-        return;
-    }
-    data.features.forEach(f => {
-        L.marker([f.properties.lat, f.properties.lon])
-            .addTo(map)
-            .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
-    });
-    alert(`Bu alanda ${data.features.length} restoran bulundu.`);
-}
-
-// Shows nearest restaurants/cafes/bars when the route polyline is clicked
-function addRoutePolylineWithClick(map, coords) {
-    const routeLine = L.polyline(coords, {
-        color: '#1976d2',
-        weight: 7,
-        opacity: 0.93
-    }).addTo(map);
-
-    routeLine.on('click', async function(e) {
-        const lat = e.latlng.lat, lng = e.latlng.lng;
-        const radiusMeters = 1000;
-        const MAX_DISTANCE_METERS = 2200; // 2.2km'den uzakları gösterme
-        const categories = [
-            "catering.restaurant",
-            "catering.cafe",
-            "catering.bar",
-            "catering.fast_food",
-            "catering.pub"
-        ].join(",");
-        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radiusMeters}&limit=200&apiKey=${apiKey}`;
-
-        // DOĞRU: RESTORANLARI ÇEK
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (!data.features || data.features.length === 0) {
-            alert("No restaurant/cafe/bar found in this area!");
-            return;
-        }
-
-        // Filter valid results, sort by distance
-        const haversine = (lat1, lon1, lat2, lon2) => {
-            const R = 6371000, toRad = x => x * Math.PI / 180;
-            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-            const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-            return 2 * R * Math.asin(Math.sqrt(a));
-        };
-
-        const nearest10 = data.features
-            .filter(f => Number.isFinite(f.properties.lat) && Number.isFinite(f.properties.lon))
-            .map(f => ({
-                ...f,
-                distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
-            }))
-            .sort((a, b) => a.distance - b.distance)
-            .slice(0, 10);
-
-        if (nearest10.length === 0) {
-            alert("No nearby restaurant/cafe/bar found!");
-            return;
-        }
-
-        nearest10.forEach((f, idx) => {
-            setTimeout(() => {
-                // Draw line from clicked point to restaurant
-                L.polyline([
-                    [lat, lng],
-                    [f.properties.lat, f.properties.lon]
-                ], {
-                    color: "#22bb33",
-                    weight: 4,
-                    opacity: 0.95,
-                    dashArray: "8,8"
-                }).addTo(map);
-
-                // Purple marker
-                const icon = L.divIcon({
-                    html: getPurpleRestaurantMarkerHtml(),
-                    className: "",
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
-                });
-                const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
-                const address = f.properties.formatted || "";
-                const name = f.properties.name || "Restaurant";
-                const imgId = `rest-img-${f.properties.place_id || idx}`;
-                marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
-                marker.on("popupopen", function() {
-                    handlePopupImageLoading(f, imgId);
-                });
-            }, idx * 120);
-        });
-
-        alert(`The ${nearest10.length} closest restaurant/cafe/bar locations have been displayed.`);
-    });
-
-    return routeLine;
-}
-function showRouteInfoBanner(day) {
-  const expandedContainer = document.getElementById(`expanded-map-${day}`);
-  if (!expandedContainer) return;
-
-  let banner = expandedContainer.querySelector('#route-info-banner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'route-info-banner';
-    banner.className = 'route-info-banner';
-    banner.innerHTML = `
-      <span>Click the map to list nearby restaurants, cafes and bars.</span>
-    
-    `;
-    expandedContainer.prepend(banner);
-  }
-  
-  banner.style.display = 'flex';
-  
-  // Tıklanabilir olduğunu göstermek için imleci değiştir
-  banner.style.cursor = 'pointer';
-
-  // --- TÜM KUTUYA TIKLAYINCA KAPAT ---
-  banner.onclick = function() {
-    banner.style.display = 'none';
-  };
-
-  // X butonuna basılınca da kapansın (Bubble etkisini beklemeden)
-  const closeBtn = banner.querySelector('#close-route-info');
-  if (closeBtn) {
-    closeBtn.onclick = function(e) {
-      e.stopPropagation(); // Banner click'ini tetiklemesin, direkt kapatsın
-      banner.style.display = 'none';
-    };
-  }
-
-  // Otomatik kapanma (5 saniye)
-  setTimeout(function() {
-    if (banner.style.display !== 'none') {
-      banner.style.display = 'none';
-    }
-  }, 5000);
-}
-async function getRestaurantPopupHTML(f, day) {
-    const name = f.properties.name || "Restoran";
-    const address = f.properties.formatted || "";
-    const lat = f.properties.lat;
-    const lon = f.properties.lon;
-    // Stock fotoğraf çek (Pexels, Pixabay, fallback img)
-    let img = "img/restaurant_icon.svg";
-    try {
-        img = await getImageForPlace(name, "restaurant", window.selectedCity || "");
-    } catch(e) { /* fallback kullan */ }
-
-    return `
-      <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-        <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-          <img src="${img}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 1;">
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">🍽️</div>
-        </div>
-        <div class="point-info" style="flex: 1; min-width: 0;">
-          <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-            <span style="font-weight: 500; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
-          </div>
-          <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${address}
-          </div>
-        </div>
-        <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-          <button class="add-point-to-cart-btn" style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;"
-            onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', '${img}', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})">+</button>
-        </div>
-      </div>
-    `;
-}
-
-
-function handlePopupImageLoading(f, imgId) {
-    getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
-        .then(src => {
-            const img = document.getElementById(imgId);
-            const spin = document.getElementById(imgId + "-spin");
-            if (img && src) {
-                img.src = src;
-                img.classList.remove("hidden-img");
-                // Eğer görsel cache'den geldiyse spinnerı hemen kaldır
-                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
-            }
-            if (img) {
-                img.onload = () => { if (spin) spin.style.display = "none"; img.classList.remove("hidden-img"); };
-                img.onerror = () => { if (spin) spin.style.display = "none"; img.classList.add("hidden-img"); };
-            } else if (spin) {
-                spin.style.display = "none";
-            }
-        })
-        .catch(() => {
-            const spin = document.getElementById(imgId + "-spin");
-            const img = document.getElementById(imgId);
-            if (spin) spin.style.display = "none";
-            if (img) img.classList.add("hidden-img");
-        });
-}
-function getFastRestaurantPopupHTML(f, imgId, day) {
-    ensureSpinnerCSS();
-    const name = f.properties.name || "Restoran";
-    const address = f.properties.formatted || "";
-    const lat = f.properties.lat;
-    const lon = f.properties.lon;
-    return `
-      <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-        <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-          <img id="${imgId}" class="hidden-img" src="" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-          <div class="img-loading-spinner" id="${imgId}-spin"></div>
-        </div>
-        <div class="point-info" style="flex: 1; min-width: 0;">
-          <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-            <span style="font-weight: 500; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
-          </div>
-          <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
-        </div>
-        <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-          <button class="add-point-to-cart-btn"
-  onclick="window.addRestaurantToTripFromPopup('${imgId}', '${name.replace(/'/g,"")}', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})"
-            style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;">
             +
           </button>
         </div>
@@ -1099,6 +879,7 @@ function ensureSpinnerCSS() {
     `;
     document.head.appendChild(style);
 }
+
 window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, lon) {
     const img = document.getElementById(imgId);
     // Eğer görsel yüklendiyse onun src'sini, yoksa fallback'i kullan
@@ -1157,6 +938,7 @@ window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, l
 
     alert(`${name} gezi planına eklendi!`);
 };
+
 function getRedRestaurantMarkerHtml() {
     return `
       <div class="custom-marker-outer red" style="position:relative;">
@@ -1200,6 +982,236 @@ window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
     if (typeof updateCart === "function") updateCart();
     alert(`${name} added to your trip!`);
 };
+
+async function searchRestaurantsAt(lat, lng, map) {
+    // PROXY KULLANIMI: API Key removed
+    const bufferMeters = 1000; // 1 km çap
+    const url = `/api/geoapify/places?categories=catering.restaurant&lat=${lat}&lon=${lng}&radius=${bufferMeters}&limit=50`;
+    
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (!data.features || data.features.length === 0) {
+            alert("Bu alanda restoran bulunamadı!");
+            return;
+        }
+        data.features.forEach(f => {
+            L.marker([f.properties.lat, f.properties.lon])
+                .addTo(map)
+                .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
+        });
+        alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+    } catch(e) {
+        console.error("Search error:", e);
+        alert("Arama sırasında hata oluştu.");
+    }
+}
+
+// Shows nearest restaurants/cafes/bars when the route polyline is clicked
+function addRoutePolylineWithClick(map, coords) {
+    const routeLine = L.polyline(coords, {
+        color: '#1976d2',
+        weight: 7,
+        opacity: 0.93
+    }).addTo(map);
+
+    routeLine.on('click', async function(e) {
+        const lat = e.latlng.lat, lng = e.latlng.lng;
+        const radiusMeters = 1000;
+        const MAX_DISTANCE_METERS = 2200; // 2.2km'den uzakları gösterme
+        const categories = [
+            "catering.restaurant",
+            "catering.cafe",
+            "catering.bar",
+            "catering.fast_food",
+            "catering.pub"
+        ].join(",");
+        
+        // PROXY KULLANIMI: API Key removed
+        const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=${radiusMeters}&limit=50`; // 50 ile 200 arasında proxy limiti var mı kontrol etmek gerekir, default 10. Server side kodu 200'ü kabul ediyorsa limit=200 yapabilirsiniz.
+
+        // DOĞRU: RESTORANLARI ÇEK
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data.features || data.features.length === 0) {
+                alert("No restaurant/cafe/bar found in this area!");
+                return;
+            }
+
+            // Filter valid results, sort by distance
+            const haversine = (lat1, lon1, lat2, lon2) => {
+                const R = 6371000, toRad = x => x * Math.PI / 180;
+                const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+                const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+                return 2 * R * Math.asin(Math.sqrt(a));
+            };
+
+            const nearest10 = data.features
+                .filter(f => Number.isFinite(f.properties.lat) && Number.isFinite(f.properties.lon))
+                .map(f => ({
+                    ...f,
+                    distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
+                }))
+                .sort((a, b) => a.distance - b.distance)
+                .slice(0, 10);
+
+            if (nearest10.length === 0) {
+                alert("No nearby restaurant/cafe/bar found!");
+                return;
+            }
+
+            nearest10.forEach((f, idx) => {
+                setTimeout(() => {
+                    // Draw line from clicked point to restaurant
+                    L.polyline([
+                        [lat, lng],
+                        [f.properties.lat, f.properties.lon]
+                    ], {
+                        color: "#22bb33",
+                        weight: 4,
+                        opacity: 0.95,
+                        dashArray: "8,8"
+                    }).addTo(map);
+
+                    // Purple marker
+                    const icon = L.divIcon({
+                        html: getPurpleRestaurantMarkerHtml(),
+                        className: "",
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    });
+                    const marker = L.marker([f.properties.lat, f.properties.lon], { icon }).addTo(map);
+                    const address = f.properties.formatted || "";
+                    const name = f.properties.name || "Restaurant";
+                    const imgId = `rest-img-${f.properties.place_id || idx}`;
+                    marker.bindPopup(getFastRestaurantPopupHTML(f, imgId, window.currentDay || 1), { maxWidth: 340 });
+                    marker.on("popupopen", function() {
+                        handlePopupImageLoading(f, imgId);
+                    });
+                }, idx * 120);
+            });
+
+            alert(`The ${nearest10.length} closest restaurant/cafe/bar locations have been displayed.`);
+        } catch (e) {
+            console.error("Error fetching nearby places:", e);
+            alert("Error fetching nearby places.");
+        }
+    });
+
+    return routeLine;
+}
+
+function showRouteInfoBanner(day) {
+  const expandedContainer = document.getElementById(`expanded-map-${day}`);
+  if (!expandedContainer) return;
+
+  let banner = expandedContainer.querySelector('#route-info-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'route-info-banner';
+    banner.className = 'route-info-banner';
+    banner.innerHTML = `
+      <span>Click the map to list nearby restaurants, cafes and bars.</span>
+    
+    `;
+    expandedContainer.prepend(banner);
+  }
+  
+  banner.style.display = 'flex';
+  
+  // Tıklanabilir olduğunu göstermek için imleci değiştir
+  banner.style.cursor = 'pointer';
+
+  // --- TÜM KUTUYA TIKLAYINCA KAPAT ---
+  banner.onclick = function() {
+    banner.style.display = 'none';
+  };
+
+  // X butonuna basılınca da kapansın (Bubble etkisini beklemeden)
+  const closeBtn = banner.querySelector('#close-route-info');
+  if (closeBtn) {
+    closeBtn.onclick = function(e) {
+      e.stopPropagation(); // Banner click'ini tetiklemesin, direkt kapatsın
+      banner.style.display = 'none';
+    };
+  }
+
+  // Otomatik kapanma (5 saniye)
+  setTimeout(function() {
+    if (banner.style.display !== 'none') {
+      banner.style.display = 'none';
+    }
+  }, 5000);
+}
+
+async function getRestaurantPopupHTML(f, day) {
+    const name = f.properties.name || "Restoran";
+    const address = f.properties.formatted || "";
+    const lat = f.properties.lat;
+    const lon = f.properties.lon;
+    // Stock fotoğraf çek (Pexels, Pixabay, fallback img)
+    let img = "img/restaurant_icon.svg";
+    try {
+        img = await getImageForPlace(name, "restaurant", window.selectedCity || "");
+    } catch(e) { /* fallback kullan */ }
+
+    return `
+      <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+        <div class="point-image" style="width: 42px; height: 42px; position: relative;">
+          <img src="${img}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 1;">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">🍽️</div>
+        </div>
+        <div class="point-info" style="flex: 1; min-width: 0;">
+          <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <span style="font-weight: 500; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+          </div>
+          <div class="point-address" style="display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+    font-weight: 400;
+    text-align: left;">
+            ${address}
+          </div>
+        </div>
+        <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <button class="add-point-to-cart-btn" style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+            onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', '${img}', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})">+</button>
+        </div>
+      </div>
+    `;
+}
+
+function handlePopupImageLoading(f, imgId) {
+    getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
+        .then(src => {
+            const img = document.getElementById(imgId);
+            const spin = document.getElementById(imgId + "-spin");
+            if (img && src) {
+                img.src = src;
+                img.classList.remove("hidden-img");
+                // Eğer görsel cache'den geldiyse spinnerı hemen kaldır
+                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
+            }
+            if (img) {
+                img.onload = () => { if (spin) spin.style.display = "none"; img.classList.remove("hidden-img"); };
+                img.onerror = () => { if (spin) spin.style.display = "none"; img.classList.add("hidden-img"); };
+            } else if (spin) {
+                spin.style.display = "none";
+            }
+        })
+        .catch(() => {
+            const spin = document.getElementById(imgId + "-spin");
+            const img = document.getElementById(imgId);
+            if (spin) spin.style.display = "none";
+            if (img) img.classList.add("hidden-img");
+        });
+}
 
 function addRouteWithRestaurantClick(expandedMap, geojson) {
     // Polyline ve varsa eski markerların hepsini temizle
@@ -1247,7 +1259,8 @@ function addRouteWithRestaurantClick(expandedMap, geojson) {
 
         const lat = e.latlng.lat, lng = e.latlng.lng;
         const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
-        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
+        // PROXY KULLANIMI
+        const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
         try {
             const resp = await fetch(url);
             const data = await resp.json();
@@ -1285,232 +1298,4 @@ function addRouteWithRestaurantClick(expandedMap, geojson) {
             alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
         }
     });
-}
-
-
-async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
-  // MapLibre kontrolü
-  const isMapLibre = !!map.addSource;
-
-  const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
-  const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
-  const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&limit=20&apiKey=${apiKey}`;
-
-  closeNearbyPopup(); // Eskileri temizle
-
-  // Loading popup
-  const loadingContent = `
-    <div class="nearby-loading-message">
-      <div class="nearby-loading-spinner"></div>
-      <small class="nearby-loading-text">Searching nearby...</small>
-    </div>
-  `;
-  showCustomPopup(lat, lng, map, loadingContent, false);
-
-  // --- SİNYAL (PULSE) MARKER ---
-  const pulseHtml = `
-    <div class="user-loc-wrapper">
-       <div class="user-loc-ring-1"></div>
-       <div class="user-loc-ring-2"></div>
-       <div class="user-loc-dot"></div>
-    </div>
-  `;
-
-  if (isMapLibre) {
-      // 3D Harita (MapLibre)
-      const el = document.createElement('div');
-      el.innerHTML = pulseHtml;
-      window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
-          .setLngLat([lng, lat])
-          .addTo(map);
-      
-      map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
-  } else {
-      // 2D Harita (Leaflet)
-      const pulseIcon = L.divIcon({
-        className: 'custom-loc-icon-leaflet',
-        html: pulseHtml,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-      });
-      window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
-      
-      const currentZoom = map.getZoom();
-      if (currentZoom < 14) map.flyTo([lat, lng], 15, { duration: 0.5 });
-      else map.panTo([lat, lng], { animate: true, duration: 0.4 });
-  }
-  // ----------------------------------------------
-
-  try {
-    // Nokta bilgisini al
-    let pointInfo = { name: "Selected Point", address: "" };
-    try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
-
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-    let results = [];
-    let photos = [];
-    let placesHtml = "";
-
-    if (data.features && data.features.length > 0) {
-      results = data.features
-        .filter(f => !!f.properties.name && f.properties.name.trim().length > 2)
-        .map(f => ({ ...f, distance: haversine(lat, lng, f.properties.lat, f.properties.lon) }))
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 10);
-
-      if (results.length > 0) {
-        try {
-          photos = await Promise.all(results.map(async (f) => {
-            const name = f.properties.name || "";
-            const cityQuery = name + " " + (window.selectedCity || "");
-            try {
-              let imageUrl = null;
-              if (typeof getPexelsImage === "function") {
-                imageUrl = await getPexelsImage(cityQuery);
-              }
-              if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
-                return imageUrl;
-              }
-              if (typeof getPixabayImage === "function") {
-                imageUrl = await getPixabayImage(name);
-                if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
-                  return imageUrl;
-                }
-              }
-              return PLACEHOLDER_IMG;
-            } catch (error) {
-              return PLACEHOLDER_IMG;
-            }
-          }));
-        } catch (photoError) {
-          photos = results.map(() => PLACEHOLDER_IMG);
-        }
-
-        placesHtml = results.map((f, idx) => {
-          const name = f.properties.name || "(İsim yok)";
-          const adr = f.properties.formatted || "";
-          const photo = photos[idx] || PLACEHOLDER_IMG;
-          const distStr = f.distance < 1000
-            ? `${Math.round(f.distance)} m`
-            : `${(f.distance / 1000).toFixed(2)} km`;
-
-          const placeLat = f.properties.lat || f.geometry.coordinates[1];
-          const placeLng = f.properties.lon || f.geometry.coordinates[0];
-          const imgId = `nearby-img-${day}-${idx}`;
-
-            return `
-              <li class="nearby-place-item">
-                <div class="nearby-place-image">
-                  <img id="${imgId}"
-                       src="${photo}"
-                       alt="${name}"
-                       class="nearby-place-img"
-                       onload="this.style.opacity='1'"
-                       onerror="handleImageError(this, '${name}', ${idx})"
-                       data-original-src="${photo}"
-                       data-place-name="${name}"
-                       data-index="${idx}">
-                  <div style="position:absolute;top:0;left:0;width:42px;height:42px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;" class="img-loading">
-                    <div class="nearby-loading-spinner" style="width:16px;height:16px;"></div>
-                  </div>
-                </div>
-                <div class="nearby-place-info">
-                  <div class="nearby-place-name">${name}</div>
-                  <div class="nearby-place-address">${adr}</div>
-                </div>
-                <div class="nearby-place-actions">
-                  <div class="nearby-place-distance">${distStr}</div>
-                  <button class="nearby-place-add-btn"
-                          onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, '${placeLat}', '${placeLng}')">+</button>
-                </div>
-              </li>`;
-        }).join('');
-      } else {
-        placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
-      }
-    } else {
-      placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
-    }
-
-    const addPointSection = `
-      <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
-        <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-          <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-            <img id="clicked-point-img"
-                 src="img/placeholder.png"
-                 alt="Seçilen Nokta"
-                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
-          </div>
-          <div class="point-info" style="flex: 1; min-width: 0;">
-            <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-              <span id="point-name-display"
-                    style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                    onclick="window.editPointName()">${pointInfo.name}</span>
-              <button onclick="window.editPointName()"
-                      style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
-              <input type="text" id="point-name-input" value="${pointInfo.name}"
-                     style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-            </div>
-            <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              ${pointInfo.address || 'Selected location'}
-            </div>
-          </div>
-          <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-            <div style="font-size: 11px; color: #999; text-align: center;">Clicked</div>
-            <button class="add-point-to-cart-btn"
-                    onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})"
-                    style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const restaurantBtnHtml = `
-      <div style="text-align:center; margin: 20px 0 4px 0;">
-        <button id="show-restaurants-btn" style="padding:10px 18px;border-radius:9px;background:#8a4af3;color:#fff;font-size:15px;font-weight:bold;cursor:pointer;">
-          🍽️ Show Restaurants
-        </button>
-      </div>
-    `;
-
-    const html = `
-      <div class="nearby-popup-title">
-        📍 Nearby Places
-      </div>
-      ${addPointSection}
-      <ul class="nearby-places-list">${placesHtml}</ul>
-      ${restaurantBtnHtml}
-    `;
-
-    showCustomPopup(lat, lng, map, html, true);
-
-    // --- BUTTON EVENT LISTENER GÜNCELLENDİ ---
-    setTimeout(() => {
-        const btn = document.getElementById("show-restaurants-btn");
-        if (btn) {
-            btn.onclick = function() {
-                // 1. Önce Nearby Popup'ı kapat
-                if (typeof closeNearbyPopup === 'function') {
-                    closeNearbyPopup();
-                }
-                // 2. Sonra restoranları haritaya ekle
-                showNearbyRestaurants(lat, lng, map, day);
-            };
-        }
-    }, 250);
-
-    window._lastNearbyPlaces = results;
-    window._lastNearbyPhotos = photos;
-    window._lastNearbyDay = day;
-    window._currentPointInfo = pointInfo;
-    loadClickedPointImage(pointInfo.name);
-
-  } catch (error) {
-    console.error('Nearby places fetch error:', error);
-    const errorContent = '<div class="nearby-error-message">An error occurred while loading nearby places.</div>';
-    showCustomPopup(lat, lng, map, errorContent, true);
-  }
 }
