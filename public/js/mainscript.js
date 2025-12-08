@@ -6044,44 +6044,37 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MODA GEÇİŞ (Burada Düzeltme Yapıldı) ---
+        // --- 2D MODA GEÇİŞ (GÜNCELLENDİ) ---
         
-        // 1. Önce 3D elementlerini gizle
+        // 1. Önce 3D elementlerini tamamen gizle
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // 2. Leaflet Container'ı görünür yap ("block" zorlaması)
+        // 2. Leaflet Container'ı görünür yap
         const leafletContainer = expandedMapInstance.getContainer();
         leafletContainer.style.display = "block";
-        leafletContainer.style.width = "100%"; // Garanti olsun
-        leafletContainer.style.height = "480px"; // CSS'deki yükseklik
+        leafletContainer.style.opacity = "1"; // Garanti olsun
 
-        // 3. ÇOK ÖNEMLİ: Tile set etmeden ÖNCE boyutu hesaplat
+        // 3. Tile yüklemeden ÖNCE boyutu güncelle (İlk deneme)
         expandedMapInstance.invalidateSize();
 
-        // 4. Şimdi Tile Layer'ı değiştir
-        setExpandedMapTile(opt.value);
-
-        // 5. Render sonrası tetiklemeler (Garanti mekanizması)
-        requestAnimationFrame(() => {
-            expandedMapInstance.invalidateSize();
-        });
-
+        // 4. KÜÇÜK BİR GECİKME İLE TILE YÜKLE VE TEKRAR BOYUT HESAPLA
+        // Bu timeout, tarayıcının "display: block" işlemini bitirmesini bekler.
         setTimeout(() => {
+            // Tekrar boyut hesapla (Artık container kesinlikle görünür)
             expandedMapInstance.invalidateSize();
-            // Haritayı mevcut merkezine odakla ki tile'lar yeniden yüklensin
-            const c = expandedMapInstance.getCenter();
-            const z = expandedMapInstance.getZoom();
-            expandedMapInstance.setView(c, z, { animate: false });
-        }, 100);
-        
-        // Double check
-        setTimeout(() => {
-             expandedMapInstance.invalidateSize();
-        }, 350);
+            
+            // Tile (Harita görseli) katmanını ŞİMDİ değiştir
+            setExpandedMapTile(opt.value);
+            
+            // Merkeze odakla ki tile'lar yeniden render olsun
+            const center = expandedMapInstance.getCenter();
+            const zoom = expandedMapInstance.getZoom();
+            expandedMapInstance.setView(center, zoom, { animate: false });
+        }, 100); // 100ms gecikme DOM render için yeterlidir
       }
       
-      // Segment seçimi varsa tekrar vurgula
+      // Segment çizgilerini güncelle (Varsa)
       if (
           typeof window._lastSegmentDay === 'number' && 
           window._lastSegmentDay === day &&
@@ -6096,7 +6089,7 @@ async function expandMap(containerId, day) {
                       window._lastSegmentEndKm
                   );
               }
-          }, 250); 
+          }, 300); 
       }
 
       layersBar.classList.add('closed');
