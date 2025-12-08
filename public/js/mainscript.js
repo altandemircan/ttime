@@ -5904,7 +5904,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (ORİJİNAL TASARIMINIZ KORUNDU)
+  // 1. STİL EKLEME (SİZİN ORİJİNAL KODUNUZ - DOKUNULMADI)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -6017,40 +6017,40 @@ async function expandMap(containerId, day) {
       const map3d = document.getElementById('maplibre-3d-view');
 
       if (opt.value === 'liberty') {
-        // --- 3D MODU SEÇİLDİ ---
+        // --- 3D MODU ---
         expandedMapInstance.getContainer().style.display = "none";
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MODU SEÇİLDİ (DÜZELTME BURADA) ---
+        // --- 2D MODU (BU BLOKTA DÜZELTME YAPILDI) ---
         
-        // 1. Önce MapLibre katmanını ve animasyonları durdur (NaN kaynağı)
-        expandedMapInstance.stop(); // Pan/Zoom animasyonlarını kes
-        
-        // MapLibre katmanını güvenli şekilde sil
+        // 1. Haritayı durdur (Pan/Zoom animasyonları NaN hatası vermesin)
+        expandedMapInstance.stop();
+
+        // 2. MapLibre katmanını güvenli şekilde sil (Hata Kaynağı)
         if (expandedMapInstance._maplibreLayer) {
             try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
             expandedMapInstance._maplibreLayer = null;
         }
 
-        // Harita merkezini düzelt (Eğer NaN ise)
+        // 3. Harita merkezini düzelt (Eğer NaN ise 0'a çek)
         const center = expandedMapInstance.getCenter();
         if (!center || isNaN(center.lat) || isNaN(center.lng)) {
             expandedMapInstance.setView([0, 0], 1, { animate: false });
         }
 
-        // 2. Görünüm Ayarları
+        // 4. Görünüm Ayarları
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
         
-        // 3. Force Reflow (Gri Ekran Fix)
+        // 5. Force Reflow (Gri Ekran Fix)
         void container.offsetWidth; 
         
-        // 4. Veri Temizliği (NaN Fix) - Ana veriyi düzelt
+        // 6. Veri Temizliği (NaN Fix)
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
@@ -6064,17 +6064,18 @@ async function expandMap(containerId, day) {
             });
         }
 
-        // 5. Tile ve Update
+        // 7. Tile ve Update
         setExpandedMapTile(opt.value);
         expandedMapInstance.invalidateSize(true);
 
+        // 8. Verileri Çiz
         try {
             updateExpandedMap(expandedMapInstance, day);
         } catch (e) {
             console.warn("Update error:", e);
         }
 
-        // 6. Odaklanma (FitBounds)
+        // 9. Odaklama
         requestAnimationFrame(() => {
             setTimeout(() => {
                 expandedMapInstance.invalidateSize();
@@ -6218,6 +6219,7 @@ async function expandMap(containerId, day) {
   controlsDiv.appendChild(compassBtn);
   controlsDiv.appendChild(locBtn);
   
+  // === 3. SCALE BAR ===
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
   const scaleBarDiv = document.createElement('div');
@@ -6225,6 +6227,7 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
+  // === 4. PANEL ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   panelDiv.append(headerDiv, statsDiv, controlsDiv, scaleBarDiv);
@@ -6247,6 +6250,7 @@ async function expandMap(containerId, day) {
   
   showRouteInfoBanner(day);
 
+  // === MAP INITIALIZATION ===
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
   let startCenter = validPtsInit.length === 1 ? [validPtsInit[0].lat, validPtsInit[0].lng] : [39.0, 35.0];
@@ -6339,11 +6343,11 @@ function updateExpandedMap(expandedMap, day) {
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
 
-    // --- 1. GÜVENLİ KATMAN TEMİZLİĞİ (_removePath Hatası Çözümü) ---
-    // Döngü içinde silme yaparken indeks kaymasını ve çökmeyi önlemek için önce topla, sonra sil.
+    // 1. GÜVENLİ TEMİZLİK (Safe Layer Removal) - _removePath hatasını önler
+    // Katmanları önce bir listede topla, sonra sil (Döngü hatasını önler)
     const layersToRemove = [];
     expandedMap.eachLayer(layer => {
-        // Zemin (TileLayer) ve MapLibre katmanlarına dokunma
+        // TileLayer (Zemin) ve MapLibre katmanlarını silme!
         if (
             layer instanceof L.TileLayer || 
             (layer.options && (layer.options.pane === 'tilePane' || layer._maplibreLayer))
@@ -6357,17 +6361,18 @@ function updateExpandedMap(expandedMap, day) {
         try {
             expandedMap.removeLayer(layer);
         } catch (e) {
-            // Hata olursa yut, akışı bozma
+            // Silme hatası olursa yut, akışı bozma
         }
     });
 
+    // Temizlik sonrası global arrayleri sıfırla
     if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
     window._curvedArcPointsByDay[day] = []; 
 
-    // --- 2. VERİ KONTROLÜ (NaN Hatası Çözümü) ---
+    // --- VERİ HAZIRLIĞI VE KONTROLÜ ---
     const rawPoints = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
     
-    // Sadece koordinatları geçerli sayı olanları al
+    // NAN FİLTRESİ: Sadece geçerli sayılardan oluşan noktaları al
     const pts = rawPoints.filter(p => {
         const lat = Number(p.lat);
         const lng = Number(p.lng);
@@ -6377,21 +6382,25 @@ function updateExpandedMap(expandedMap, day) {
     let bounds = L.latLngBounds(); 
     const isInTurkey = (typeof areAllPointsInTurkey === 'function') ? areAllPointsInTurkey(pts) : true;
 
-    // --- ROTA ÇİZİMİ ---
+    // --- ROTA ÇİZİMİ (LineString) ---
     let hasValidRoute = (
-      isInTurkey && geojson && geojson.features && geojson.features[0] &&
+      isInTurkey &&
+      geojson &&
+      geojson.features &&
+      geojson.features[0] &&
       geojson.features[0].geometry &&
       Array.isArray(geojson.features[0].geometry.coordinates) &&
       geojson.features[0].geometry.coordinates.length > 1
     );
 
     if (hasValidRoute) {
+        // Koordinatları güvenli hale getir
         const rawCoords = geojson.features[0].geometry.coordinates;
         const routeCoords = [];
-        // Koordinatları güvenli hale getir
+        
         rawCoords.forEach(c => {
             if (Array.isArray(c) && c.length >= 2 && !isNaN(c[0]) && !isNaN(c[1])) {
-                routeCoords.push([c[1], c[0]]);
+                routeCoords.push([c[1], c[0]]); // [Lat, Lng]
             }
         });
 
@@ -6408,7 +6417,7 @@ function updateExpandedMap(expandedMap, day) {
         }
     } 
     else if (pts.length > 1 && !isInTurkey) {
-        // Fly Mode
+        // --- FLY MODE ---
         let allArcPoints = [];
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
@@ -6419,7 +6428,10 @@ function updateExpandedMap(expandedMap, day) {
                 const latLngs = arcPoints.map(pt => [pt[1], pt[0]]);
                 
                 L.polyline(latLngs, {
-                    color: "#1976d2", weight: 6, opacity: 0.93, dashArray: "6,8"
+                    color: "#1976d2",
+                    weight: 6,
+                    opacity: 0.93,
+                    dashArray: "6,8"
                 }).addTo(expandedMap);
                 
                 latLngs.forEach(ll => bounds.extend(ll));
@@ -6432,30 +6444,44 @@ function updateExpandedMap(expandedMap, day) {
 
     // --- MARKER ÇİZİMİ ---
     pts.forEach((item, idx) => {
+        // Ekstra Güvenlik: Marker oluşturmadan önce tekrar kontrol
+        if (isNaN(item.lat) || isNaN(item.lng)) return;
+
         const markerHtml = `
             <div class="custom-marker-outer red" data-idx="${idx}" style="position:relative;">
                 <span class="custom-marker-label">${idx + 1}</span>
             </div>`;
+            
         const icon = L.divIcon({ html: markerHtml, className: "", iconSize: [32, 32], iconAnchor: [16, 16] });
+        
         const marker = L.marker([item.lat, item.lng], { icon }).addTo(expandedMap);
         marker.bindPopup(`<b>${item.name || "Point"}</b>`);
+        
         bounds.extend(marker.getLatLng());
     });
 
-    // --- ODAKLANMA (FitBounds) ---
+    // --- FIT BOUNDS ---
     try {
         if (bounds.isValid()) {
             expandedMap.fitBounds(bounds, { padding: [50, 50] });
         } else {
-            if (pts.length === 1) expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-            else expandedMap.setView([39.0, 35.0], 6, { animate: false });
+            if (pts.length === 1) {
+                expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+            } else {
+                expandedMap.setView([39.0, 35.0], 6, { animate: false });
+            }
         }
-    } catch(e) { console.warn("FitBounds error:", e); }
+    } catch(e) {
+        console.warn("FitBounds hatası:", e);
+    }
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
     
-    if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMap, day);
+    if (typeof addDraggableMarkersToExpandedMap === 'function') {
+        addDraggableMarkersToExpandedMap(expandedMap, day);
+    }
 
+    // Scale Bar güncelleme (Opsiyonel)
     const sumKey = `route-map-day${day}`;
     let sum = window.lastRouteSummaries?.[sumKey];
     if (sum && typeof updateDistanceDurationUI === 'function') {
