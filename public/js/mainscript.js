@@ -5859,13 +5859,12 @@ function refresh3DMapData(day) {
     }
 
     // Expanded Leaflet map için de aynı fix (sadece invalidateSize + bounds)
-    const expandedObj = window.expandedMaps && window.expandedMaps[containerId];
+     const expandedObj = window.expandedMaps && window.expandedMaps[containerId];
     if (expandedObj && expandedObj.expandedMap) {
         const eMap = expandedObj.expandedMap;
         setTimeout(() => {
             try {
                 eMap.invalidateSize(false);
-
                 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
                 const valid = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
                 if (valid.length >= 2) {
@@ -5873,10 +5872,8 @@ function refresh3DMapData(day) {
                 } else if (valid.length === 1) {
                     eMap.setView([valid[0].lat, valid[0].lng], 14, { animate: false });
                 }
-            } catch(e) {
-                console.warn('Expanded Leaflet map refresh error:', e);
-            }
-        }, 180);
+            } catch(e) {}
+        }, 150);
     }
 }
 
