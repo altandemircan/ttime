@@ -1,6 +1,5 @@
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
 
-window.cart = Array.isArray(window.cart) ? window.cart : [];
 if (!window.areAllPointsInTurkey) {
   window.areAllPointsInTurkey = function(pts) {
     return pts.every(p =>
