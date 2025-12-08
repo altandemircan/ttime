@@ -5722,6 +5722,8 @@ function saveArcPointsForDay(day, points) {
     window._curvedArcPointsByDay[day] = points;
 }
 
+// ... existing code above ...
+
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
     if (!map || !map.getStyle()) return;
@@ -5743,7 +5745,7 @@ function refresh3DMapData(day) {
     if (style && style.layers) {
         style.layers.forEach(l => {
             if (l.id.startsWith('flyroute-line-')) {
-                map.removeLayer(l.id);
+                if (map.getLayer(l.id)) map.removeLayer(l.id);
                 if (map.getSource(l.source)) map.removeSource(l.source);
             }
         });
@@ -5814,7 +5816,54 @@ function refresh3DMapData(day) {
             highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
         }
     }
+
+    // --- 4. EXTRA: 3D → 2D GEÇİŞLERİNDE GRI EKRAN / MARKER KAYBI PATCH ---
+    // 3D haritayı güncelledikten sonra, 2D Leaflet haritalarındaki state'in bozulmamasını garantilemek için:
+    if (window.leafletMaps) {
+        Object.entries(window.leafletMaps).forEach(([id, lfMap]) => {
+            if (!lfMap || !lfMap.invalidateSize) return;
+            // Sadece rotayla ilgili gün için ekstra bakım yap
+            const m = id.match(/route-map-day(\d+)/);
+            const d = m ? parseInt(m[1], 10) : null;
+            if (d && d === day) {
+                setTimeout(() => {
+                    try {
+                        lfMap.invalidateSize(false);
+                        // Eğer route varsa bounds'a fit et, yoksa önceki merkezi koru
+                        const pts = typeof getDayPoints === 'function' ? getDayPoints(d) : [];
+                        const valid = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+                        if (valid.length >= 2) {
+                            lfMap.fitBounds(valid.map(p => [p.lat, p.lng]), { padding: [20, 20], animate: false });
+                        } else if (valid.length === 1) {
+                            lfMap.setView([valid[0].lat, valid[0].lng], 14, { animate: false });
+                        }
+                    } catch(e) {}
+                }, 120);
+            }
+        });
+    }
+
+    // Expanded Leaflet map için de aynı fix (3D açıkken manipüle edilmiş olabiliyor)
+    const containerId = `route-map-day${day}`;
+    const expandedObj = window.expandedMaps && window.expandedMaps[containerId];
+    if (expandedObj && expandedObj.expandedMap) {
+        const eMap = expandedObj.expandedMap;
+        setTimeout(() => {
+            try {
+                eMap.invalidateSize(false);
+                const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+                const valid = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+                if (valid.length >= 2) {
+                    eMap.fitBounds(valid.map(p => [p.lat, p.lng]), { padding: [50, 50], animate: false });
+                } else if (valid.length === 1) {
+                    eMap.setView([valid[0].lat, valid[0].lng], 14, { animate: false });
+                }
+            } catch(e) {}
+        }, 150);
+    }
 }
+
+// ... existing code below ...
 function openMapLibre3D(expandedMap) {
   // DOM Elementlerini Bul
   let mapDiv = expandedMap.getContainer();
