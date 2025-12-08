@@ -133,16 +133,15 @@ window.addClickedPointToCart = async function(lat, lng, day) {
             ""
         );
 
-        
         // Popup'ı kapat
         closeNearbyPopup();
         
         // Başarı mesajı
-console.log(`"${placeName}" added to cart!`);
+        console.log(`"${placeName}" added to cart!`);
         
     } catch (error) {
-    console.error('An error occurred while adding the point to the cart:', error);
-alert('An error occurred while adding the point to the cart.');
+        console.error('An error occurred while adding the point to the cart:', error);
+        alert('An error occurred while adding the point to the cart.');
     }
 };
 if (typeof updateCart === "function") updateCart();
