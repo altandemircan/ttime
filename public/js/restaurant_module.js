@@ -547,7 +547,8 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     font-size: 11px;
     color: #666;
     line-height: 1.2;
-    font-weight: 400;">
+    font-weight: 400;
+    text-align: left;">
                             ${pointInfo.address || 'Selected location'}
                         </div>
                     </div>
@@ -842,7 +843,8 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
     font-size: 11px;
     color: #666;
     line-height: 1.2;
-    font-weight: 400;">${safeAddress}</div>
+    font-weight: 400;
+    text-align: left;">${safeAddress}</div>
         </div>
         <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           <button class="add-point-to-cart-btn"
@@ -1173,7 +1175,8 @@ async function getRestaurantPopupHTML(f, day) {
     font-size: 11px;
     color: #666;
     line-height: 1.2;
-    font-weight: 400;">
+    font-weight: 400;
+    text-align: left;">
             ${address}
           </div>
         </div>
