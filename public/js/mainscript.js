@@ -6017,25 +6017,27 @@ async function expandMap(containerId, day) {
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
     if (opt.value === currentLayer) div.classList.add('selected');
-
-      const handleLayerSelect = (e, forceSelect = false) => {
+    const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation(); 
 
-      // Menü kapalıysa önce aç
+      // Menü kapalıysa önce açıp çık
       if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
 
-      // 3D (liberty) → 2D geçişinde otomatik ikinci seçim
+      // 3D (liberty) → 2D geçişinde kod kendisi ikinci tıklamayı yapar
       const switchingFrom3D = (currentLayer === 'liberty') && (opt.value !== 'liberty');
-      if (switchingFrom3D && !forceSelect && !div.__autoSecondTapDone) {
-          div.__autoSecondTapDone = true;
-          // ikinci çağrıyı hemen tetikle (forceSelect=true)
-          setTimeout(() => handleLayerSelect(new Event('click'), true), 0);
-          return;
+      if (switchingFrom3D && !forceSelect) {
+        if (!div.__autoReclicking) {
+          div.__autoReclicking = true;
+          setTimeout(() => {
+            handleLayerSelect(e, true); // ikinci çağrı, forceSelect=true
+            div.__autoReclicking = false;
+          }, 0);
+        }
+        return; // ilk tıkta burada durur
       }
-      if (forceSelect) div.__autoSecondTapDone = false;
 
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
@@ -6137,10 +6139,7 @@ async function expandMap(containerId, day) {
     div.onclick = (e) => handleLayerSelect(e, false);
     div.ondblclick = (e) => handleLayerSelect(e, true);
 
-    // Tek tık: mevcut davranış, Çift tık: forceSelect (1 tıkla menü açıp 2. tıkla 3D→2D seçimi)
-    div.onclick = (e) => handleLayerSelect(e, false);
-    div.ondblclick = (e) => handleLayerSelect(e, true);
-
+   
     layersBar.appendChild(div);
   });
 
