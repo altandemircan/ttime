@@ -5904,7 +5904,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (ORİJİNAL STİL KORUNDU)
+  // 1. STİL EKLEME (ORİJİNAL)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -6043,40 +6043,43 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MOD (BURADA DÜZELTME VAR - NAN HATASINI KESİN ÇÖZER) ---
+        // --- 2D MOD (DÜZELTME BURADA) ---
         
-        // 1. ÖNCE MAPLIBRE KATMANINI KALDIR (Bu katman silinmezse NaN hatası verir)
+        // 1. Önce 3D elementleri gizle
+        if (map3d) map3d.style.display = "none";
+        if (compassBtn) compassBtn.style.display = 'none';
+
+        // 2. Leaflet'i GÖRÜNÜR yap (Stop etmeden önce görünür olmalı ki boyut alabilsin)
+        const container = expandedMapInstance.getContainer();
+        container.style.display = "block"; 
+        
+        // 3. Force Reflow (Tarayıcıyı boyutu hesaplamaya zorla)
+        void container.offsetWidth; 
+
+        // 4. Şimdi Güvenli Durdurma (Try-Catch içinde)
+        // Eğer harita hala NaN ise stop() hata verebilir, bunu yutmalıyız.
+        try {
+            expandedMapInstance.stop();
+        } catch(e) {}
+
+        // 5. MapLibre katmanını sök (Hata kaynağı)
         if (expandedMapInstance._maplibreLayer) {
-            if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
-                expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
-            }
+            try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
             expandedMapInstance._maplibreLayer = null;
         }
 
-        // 2. Harita animasyonlarını durdur
-        expandedMapInstance.stop();
-
-        // 3. Harita merkezi bozuksa (NaN), güvenli bir yere resetle
+        // 6. Harita merkezini resetle (NaN ise 0,0 yap)
         try {
             const center = expandedMapInstance.getCenter();
             if (!center || isNaN(center.lat) || isNaN(center.lng)) {
+                // Animasyonsuz anında ışınla
                 expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
             }
         } catch(e) {
             expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
         }
 
-        // 4. Görünüm Ayarları
-        if (map3d) map3d.style.display = "none";
-        if (compassBtn) compassBtn.style.display = 'none';
-
-        const container = expandedMapInstance.getContainer();
-        container.style.display = "block"; 
-        
-        // 5. Force Reflow (Gri Ekranı Önle)
-        void container.offsetWidth; 
-        
-        // 6. Veri Temizliği (String -> Float)
+        // 7. Veri Temizliği (NaN Fix)
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
@@ -6090,20 +6093,17 @@ async function expandMap(containerId, day) {
             });
         }
 
-        // 7. Tile Katmanını Ayarla (Artık MapLibre yok, temiz sayfa)
+        // 8. Tile ve Update
         setExpandedMapTile(opt.value);
-
-        // 8. Leaflet Boyut Güncelleme
         expandedMapInstance.invalidateSize(true);
 
-        // 9. Verileri Çiz
         try {
             updateExpandedMap(expandedMapInstance, day);
         } catch (e) {
             console.warn("Update error:", e);
         }
 
-        // 10. Odaklama
+        // 9. Odaklama
         requestAnimationFrame(() => {
             setTimeout(() => {
                 expandedMapInstance.invalidateSize();
@@ -6276,7 +6276,11 @@ async function expandMap(containerId, day) {
   // === 4. PANEL ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
-  panelDiv.append(headerDiv, statsDiv, controlsDiv, scaleBarDiv);
+  panelDiv.appendChild(headerDiv); 
+  panelDiv.appendChild(statsDiv);   
+  panelDiv.appendChild(controlsDiv); 
+  panelDiv.appendChild(scaleBarDiv); 
+  
   expandedContainer.appendChild(panelDiv);
 
   const closeBtn = document.createElement('button');
