@@ -6045,30 +6045,27 @@ async function expandMap(containerId, day) {
       } else {
         // --- 2D MOD (TEK TILE VE NAN SORUNU KESİN ÇÖZÜM) ---
         
-     if (map3d) map3d.style.display = "none";
+        if (map3d) map3d.style.display = "none";
 if (compassBtn) compassBtn.style.display = 'none';
 
-// 3D’yi tamamen kapat
+// --- 3D MOD KAPAT & RESET ---
 try { window._maplibre3DInstance?.remove(); } catch (_) {}
 window._maplibre3DInstance = null;
 document.getElementById('maplibre-3d-view')?.remove();
 
-// MapLibre overlay’i (leaflet-maplibre-gl) zorla sök
+// --- LEAFLET HARİTA FULL RESET (overlay temizliği) ---
 if (expandedMapInstance._maplibreLayer) {
-  try {
-    if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
-      expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
-    }
-  } catch (_) {}
-  expandedMapInstance._maplibreLayer = null;
+    try {
+        if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
+            expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
+        }
+    } catch (_) {}
+    expandedMapInstance._maplibreLayer = null;
 }
 
-// Koordinatları güvenle süz
+// Güvenli merkez/bounds al
 const routePts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-const validPts = Array.isArray(routePts)
-  ? routePts.filter(p => isFinite(Number(p?.lat)) && isFinite(Number(p?.lng)))
-  : [];
-
+const validPts = routePts.filter(p => isFinite(p.lat) && isFinite(p.lng));
 let safeCenter = [39.0, 35.0], safeZoom = 6;
 let safeBounds = null;
 if (validPts.length === 1) {
@@ -6076,35 +6073,19 @@ if (validPts.length === 1) {
   safeZoom = 14;
 } else if (validPts.length > 1) {
   safeBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-  if (safeBounds.isValid()) {
-    safeCenter = safeBounds.getCenter();
-    safeZoom = 10;
-  } else {
-    safeBounds = null;
-  }
+  safeCenter = safeBounds.getCenter();
+  safeZoom = 10;
 }
 
-// Tile stilini uygula (başarısız olursa OSM fallback)
-try {
-  setExpandedMapTile(opt.value);
-} catch (_) {
-  try {
-    // Basit OSM fallback
-    if (expandedMapInstance._maplibreLayer) {
-      expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
-      expandedMapInstance._maplibreLayer = null;
-    }
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
-      .addTo(expandedMapInstance);
-  } catch (_) {}
-}
+// Yeni tile stilini uygula
+setExpandedMapTile(opt.value);
 
-// Görünür yap + reflow
+// Leaflet görünür ve reflow
 const container = expandedMapInstance.getContainer();
 container.style.display = "block";
 void container.offsetWidth;
 
-// Boyut ve görünüm onarımı: çift invalidate + güvenli fit
+// Boyut ve görünüm onarımı: iki aşamalı invalidate + redraw
 requestAnimationFrame(() => {
   expandedMapInstance.invalidateSize(false);
   setTimeout(() => {
@@ -6114,16 +6095,16 @@ requestAnimationFrame(() => {
     } else {
       expandedMapInstance.setView(safeCenter, safeZoom, { animate: false });
     }
-    // GridLayer redraw (tek tile kalmasın)
+    // GridLayer redraw (tek tile kalmasını engeller)
     expandedMapInstance.eachLayer(l => {
       if (l instanceof L.GridLayer) {
         try { l.redraw(); } catch (_) {}
       }
     });
-  }, 120);
+  }, 80);
 });
 
-// Yeniden çiz
+// 9. Verileri Çiz
 try {
   updateExpandedMap(expandedMapInstance, day);
 } catch (e) {
@@ -6450,39 +6431,28 @@ function updateExpandedMap(expandedMap, day) {
     const isInTurkey = (typeof areAllPointsInTurkey === 'function') ? areAllPointsInTurkey(pts) : true;
 
     // --- ROTA ÇİZİMİ ---
-        // Güvenli merkez/zoom
-    const validPts = pts; // zaten filtreli
-    let safeCenter = [39.0, 35.0], safeZoom = 6;
-    let safeBounds = null;
-    if (validPts.length === 1) {
-      safeCenter = [validPts[0].lat, validPts[0].lng];
-      safeZoom = 14;
-    } else if (validPts.length > 1) {
-      safeBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-      if (safeBounds.isValid()) {
-        safeCenter = safeBounds.getCenter();
-        safeZoom = 10;
-        bounds.extend(safeBounds);
-      } else {
-        safeBounds = null;
-      }
-    }
-
-    // Rota koordinatlarını sanitize et
-    const rawCoords = geojson?.features?.[0]?.geometry?.coordinates;
-    const sanitizedRouteCoords = Array.isArray(rawCoords)
-      ? rawCoords.filter(c => Array.isArray(c) && isFinite(c[0]) && isFinite(c[1]))
-      : [];
-    let hasValidRoute = isInTurkey && sanitizedRouteCoords.length > 1;
+    let hasValidRoute = (
+      isInTurkey && geojson && geojson.features && geojson.features[0] &&
+      geojson.features[0].geometry &&
+      Array.isArray(geojson.features[0].geometry.coordinates) &&
+      geojson.features[0].geometry.coordinates.length > 1
+    );
 
     if (hasValidRoute) {
-        const routeLatLngs = sanitizedRouteCoords.map(c => [c[1], c[0]]);
-        if (routeLatLngs.length > 1) {
-            const poly = L.polyline(routeLatLngs, {
+        const rawCoords = geojson.features[0].geometry.coordinates;
+        const routeCoords = [];
+        rawCoords.forEach(c => {
+            if (Array.isArray(c) && c.length >= 2 && !isNaN(c[0]) && !isNaN(c[1])) {
+                routeCoords.push([c[1], c[0]]);
+            }
+        });
+
+        if (routeCoords.length > 1) {
+            const poly = L.polyline(routeCoords, {
                 color: "#1976d2", weight: 6, opacity: 1, renderer: ensureCanvasRenderer(expandedMap) 
             }).addTo(expandedMap);
             bounds.extend(poly.getBounds());
-            window._curvedArcPointsByDay[day] = routeLatLngs.map(ll => [ll[1], ll[0]]); // lng,lat
+            window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
         }
     } 
     else if (pts.length > 1 && !isInTurkey) {
