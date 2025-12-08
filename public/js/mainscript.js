@@ -6438,7 +6438,7 @@ async function expandMap(containerId, day) {
       if (track) {
           const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
           createScaleElements(track, width, totalKm, 0, markerPositions);
-      }
+      } 
   }
 
   if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMapInstance, day);
