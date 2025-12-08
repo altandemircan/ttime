@@ -388,79 +388,35 @@ function attachClickNearbySearch(map, day, options = {}) {
   map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
-    // ---------------------------------------------------------
-    // 1. KESİN TEMİZLİK (AGRESİF YÖNTEM)
-    // ---------------------------------------------------------
-    
-    // A) Standart Popup ve değişken temizliği
+    // 1. Önce kesinlikle eskileri temizle
     if (typeof closeNearbyPopup === 'function') {
         closeNearbyPopup();
     }
-
-    const isMapLibre = !!map.addSource;
-
-    // B) LEAFLET (2D) İÇİN KATMAN TARAMASI (Kökten Çözüm)
-    // Değişken referansı kaybolsa bile, haritadaki o class'a sahip tüm markerları bulup siler.
-    if (!isMapLibre && map.eachLayer) {
-        map.eachLayer(function (layer) {
-            if (layer.options && layer.options.icon && layer.options.icon.options && 
-                layer.options.icon.options.className === 'custom-loc-icon-leaflet') {
-                map.removeLayer(layer);
-            }
-        });
-    }
-
-    // C) 3D MAP İÇİN TEMİZLİK
-    if (isMapLibre && window._nearbyPulseMarker3D) {
-        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
-        window._nearbyPulseMarker3D = null;
-    }
-    // ---------------------------------------------------------
 
     const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
     const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&limit=20&apiKey=${apiKey}`;
 
     // Loading popup göster
+    // NOT: Marker oluşturma işini showCustomPopup yapacağı için buradan SİLDİK.
     const loadingContent = `
         <div class="nearby-loading-message">
             <div class="nearby-loading-spinner"></div>
             <small class="nearby-loading-text">Searching nearby...</small>
         </div>
     `;
+    
+    // showCustomPopup hem popup'ı açar HEM DE pulse marker'ı haritaya koyar.
     showCustomPopup(lat, lng, map, loadingContent, false);
 
-    // --- SİNYAL (PULSE) MARKER EKLEME ---
-    const pulseHtml = `
-        <div class="user-loc-wrapper">
-           <div class="user-loc-ring-1"></div>
-           <div class="user-loc-ring-2"></div>
-           <div class="user-loc-dot"></div>
-        </div>
-    `;
-
+    // Haritayı merkeze al (Marker'ı showCustomPopup koyduğu için sadece pan/fly yapıyoruz)
+    const isMapLibre = !!map.addSource;
     if (isMapLibre) {
-        // 3D Harita (MapLibre)
-        const el = document.createElement('div');
-        el.innerHTML = pulseHtml;
-        window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
-            .setLngLat([lng, lat])
-            .addTo(map);
-        
-        map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
+         map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
     } else {
-        // 2D Harita (Leaflet)
-        const pulseIcon = L.divIcon({
-            className: 'custom-loc-icon-leaflet', // Bu class temizlik için kullanılıyor
-            html: pulseHtml,
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
-        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
-        
-        const currentZoom = map.getZoom();
-        if (currentZoom < 14) map.flyTo([lat, lng], 15, { duration: 0.5 });
-        else map.panTo([lat, lng], { animate: true, duration: 0.4 });
+         const currentZoom = map.getZoom();
+         if (currentZoom < 14) map.flyTo([lat, lng], 15, { duration: 0.5 });
+         else map.panTo([lat, lng], { animate: true, duration: 0.4 });
     }
 
     try {
@@ -597,6 +553,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
             const btn = document.getElementById("show-restaurants-btn");
             if (btn) {
                 btn.onclick = function() {
+                    // Restoranları gösterirken mevcut popup'ı ve markerı temizle
                     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
                     showNearbyRestaurants(lat, lng, map, day);
                 };
