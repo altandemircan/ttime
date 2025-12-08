@@ -6019,13 +6019,23 @@ async function expandMap(containerId, day) {
     if (opt.value === currentLayer) div.classList.add('selected');
 
     // Yeni: tek tık = mevcut davranış, çift tık = doğrudan seç (menüyü açmadan)
+       // Yeni: tek tık = mevcut davranış, 3D→2D için çift tık zorunlu, çift tık her durumda doğrudan seç
     const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation(); 
 
-      // Eğer menü kapalıysa ve forceSelect değilse önce aç
-         if (layersBar.classList.contains('closed')) {
+      // Menü kapalıysa (ve forceSelect değilse) açıp çık
+      if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
+          return;
       }
+
+      // 3D (liberty) → 2D (bright/positron) geçişinde çift tık zorunluluğu
+      const switchingFrom3D = (currentLayer === 'liberty') && (opt.value !== 'liberty');
+      if (switchingFrom3D && !forceSelect && !div.__pending3DExit) {
+          div.__pending3DExit = true; // ilk tıkta beklet
+          return;
+      }
+      div.__pending3DExit = false; // ikinci tık veya forceSelect
 
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
