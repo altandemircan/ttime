@@ -5904,7 +5904,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (ORİJİNAL TASARIM KORUNDU)
+  // 1. STİL EKLEME (ORİJİNAL)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -6032,6 +6032,7 @@ async function expandMap(containerId, day) {
       currentLayer = opt.value;
       localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
 
+      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
 
@@ -6042,35 +6043,35 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MOD (TEK TILE VE GRİ EKRAN ÇÖZÜMÜ) ---
+        // --- 2D MOD (ÇÖKME DÜZELTMESİ) ---
         
         // 1. Önce 3D elementleri gizle
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // 2. Leaflet'i GÖRÜNÜR yap
+        // 2. Leaflet Container'ı GÖRÜNÜR yap
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
         
-        // 3. Force Reflow (Tarayıcıyı boyutu hesaplamaya zorla)
-        // Bu satır gri ekranı önlemek için kritiktir.
+        // 3. Force Reflow (Gri Ekranı Çözer)
         void container.offsetWidth; 
 
-        // 4. Şimdi Güvenli Durdurma (Animasyonları durdur)
+        // 4. Harita Animasyonlarını Durdur (NaN döngüsünü keser)
         try { expandedMapInstance.stop(); } catch(e) {}
 
-        // 5. MapLibre katmanını sök (NaN hatasını önler)
+        // 5. MapLibre Katmanını Sök (NaN kaynağı)
         if (expandedMapInstance._maplibreLayer) {
             try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
             expandedMapInstance._maplibreLayer = null;
         }
 
-        // 6. Veri Temizliği (NaN Fix)
+        // 6. Veri Temizliği (Data Sanitization)
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
                     let lat = parseFloat(item.location.lat);
                     let lng = parseFloat(item.location.lng);
+                    // Bozuk veri varsa 0'a çek, NaN bırakma
                     if (isNaN(lat)) lat = parseFloat(item.lat) || 0;
                     if (isNaN(lng)) lng = parseFloat(item.lon) || 0;
                     item.location.lat = lat;
@@ -6079,33 +6080,46 @@ async function expandMap(containerId, day) {
             });
         }
 
-        // 7. Tile Ayarla
+        // --- 7. MERKEZİ GÜVENLİ ŞEKİLDE RESETLE ---
+        // Harita merkezini haritadan OKUMA (Çünkü o NaN olabilir).
+        // Bunun yerine, veriden hesapla veya varsayılan bir değer kullan.
+        const safePts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+        const validSafePts = safePts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
+        let safeCenter = [39.0, 35.0]; // Varsayılan
+        let safeZoom = 6;
+
+        if (validSafePts.length > 0) {
+            safeCenter = [validSafePts[0].lat, validSafePts[0].lng];
+            safeZoom = 14;
+        }
+        
+        // Haritayı bu güvenli merkeze ışınla (Animasyonsuz)
+        try {
+            expandedMapInstance.setView(safeCenter, safeZoom, { animate: false });
+        } catch(e) {
+            console.warn("SetView safe reset error:", e);
+        }
+
+        // 8. Tile Katmanını Ayarla
         setExpandedMapTile(opt.value);
         
-        // 8. İLK RESIZE: Harita artık görünür, boyutları algılasın
-        expandedMapInstance.invalidateSize(true); 
+        // 9. Harita Boyutunu Güncelle
+        expandedMapInstance.invalidateSize(true);
 
-        // 9. Verileri Çiz
+        // 10. Verileri Çiz
         try {
             updateExpandedMap(expandedMapInstance, day);
         } catch (e) {
             console.warn("Update error:", e);
         }
 
-        // 10. KESİN ÇÖZÜM: Gecikmeli Resize ve Odaklama
-        // Tarayıcının render işlemini bitirmesi için 250ms bekliyoruz.
-        // Bu süre, sol üstteki tek tile sorununu çözer.
+        // 11. Son Odaklama ve Tile Yükleme Garantisi
         requestAnimationFrame(() => {
             setTimeout(() => {
-                // A. Boyutları TEKRAR hesapla (Emin olmak için)
-                expandedMapInstance.invalidateSize(); 
-
-                // B. Verileri ve Sınırları al
-                const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-                const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
+                expandedMapInstance.invalidateSize();
                 
-                if (validPts.length > 0) {
-                    const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
+                if (validSafePts.length > 0) {
+                    const bounds = L.latLngBounds(validSafePts.map(p => [p.lat, p.lng]));
                     const containerId = `route-map-day${day}`;
                     const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
                     if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
@@ -6114,13 +6128,10 @@ async function expandMap(containerId, day) {
                         });
                     }
                     if (bounds.isValid()) {
-                        // C. Haritayı sınırlara oturt
                         expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
                     }
-                } else {
-                    expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
                 }
-            }, 250); // Süre 250ms'ye çıkarıldı (Render garantisi için)
+            }, 250); // Tile sorunu için 250ms ideal
         });
       }
       
@@ -6138,7 +6149,7 @@ async function expandMap(containerId, day) {
                       window._lastSegmentEndKm
                   );
               }
-          }, 300); 
+          }, 250); 
       }
 
       layersBar.classList.add('closed');
