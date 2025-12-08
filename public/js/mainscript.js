@@ -6023,9 +6023,8 @@ async function expandMap(containerId, day) {
       e.stopPropagation(); 
 
       // Eğer menü kapalıysa ve forceSelect değilse önce aç
-      if (!forceSelect && layersBar.classList.contains('closed')) {
+         if (layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
-          return;
       }
 
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
