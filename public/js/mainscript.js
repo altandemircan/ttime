@@ -6505,16 +6505,28 @@ function updateExpandedMap(expandedMap, day) {
 
     const isInTurkey = areAllPointsInTurkey(pts);
 
-    expandedMap.eachLayer(layer => {
+expandedMap.eachLayer(layer => {
+    try {
         if (
             layer instanceof L.Marker ||
             layer instanceof L.Polyline ||
             layer instanceof L.Circle ||
             layer instanceof L.CircleMarker
         ) {
+            // Bazı bozulmuş layer'larda _map veya _renderer yok; bunları sessizce atla
+            if (!layer._map) {
+                // zaten haritaya bağlı değil → remove etmeye çalışma
+                return;
+            }
+
+            // remove işlemi sırasında hata olursa diğer layer'ları etkilemesin
             expandedMap.removeLayer(layer);
         }
-    });
+    } catch (err) {
+        console.warn('[updateExpandedMap] layer remove error, devam ediliyor:', err, layer);
+        // Burada hiçbir şey yapma; sonraki layer'lara devam et
+    }
+});
 
     let bounds = L.latLngBounds(); 
 
