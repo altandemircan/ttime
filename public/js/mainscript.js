@@ -6045,27 +6045,30 @@ async function expandMap(containerId, day) {
       } else {
         // --- 2D MOD (TEK TILE VE NAN SORUNU KESİN ÇÖZÜM) ---
         
-        if (map3d) map3d.style.display = "none";
+     if (map3d) map3d.style.display = "none";
 if (compassBtn) compassBtn.style.display = 'none';
 
-// --- 3D MOD KAPAT & RESET ---
+// 3D’yi tamamen kapat
 try { window._maplibre3DInstance?.remove(); } catch (_) {}
 window._maplibre3DInstance = null;
 document.getElementById('maplibre-3d-view')?.remove();
 
-// --- LEAFLET HARİTA FULL RESET (overlay temizliği) ---
+// MapLibre overlay’i (leaflet-maplibre-gl) zorla sök
 if (expandedMapInstance._maplibreLayer) {
-    try {
-        if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
-            expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
-        }
-    } catch (_) {}
-    expandedMapInstance._maplibreLayer = null;
+  try {
+    if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
+      expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
+    }
+  } catch (_) {}
+  expandedMapInstance._maplibreLayer = null;
 }
 
-// Güvenli merkez/bounds al
+// Koordinatları güvenle süz
 const routePts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-const validPts = routePts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+const validPts = Array.isArray(routePts)
+  ? routePts.filter(p => isFinite(Number(p?.lat)) && isFinite(Number(p?.lng)))
+  : [];
+
 let safeCenter = [39.0, 35.0], safeZoom = 6;
 let safeBounds = null;
 if (validPts.length === 1) {
@@ -6073,19 +6076,35 @@ if (validPts.length === 1) {
   safeZoom = 14;
 } else if (validPts.length > 1) {
   safeBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-  safeCenter = safeBounds.getCenter();
-  safeZoom = 10;
+  if (safeBounds.isValid()) {
+    safeCenter = safeBounds.getCenter();
+    safeZoom = 10;
+  } else {
+    safeBounds = null;
+  }
 }
 
-// Yeni tile stilini uygula
-setExpandedMapTile(opt.value);
+// Tile stilini uygula (başarısız olursa OSM fallback)
+try {
+  setExpandedMapTile(opt.value);
+} catch (_) {
+  try {
+    // Basit OSM fallback
+    if (expandedMapInstance._maplibreLayer) {
+      expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
+      expandedMapInstance._maplibreLayer = null;
+    }
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
+      .addTo(expandedMapInstance);
+  } catch (_) {}
+}
 
-// Leaflet görünür ve reflow
+// Görünür yap + reflow
 const container = expandedMapInstance.getContainer();
 container.style.display = "block";
 void container.offsetWidth;
 
-// Boyut ve görünüm onarımı: iki aşamalı invalidate + redraw
+// Boyut ve görünüm onarımı: çift invalidate + güvenli fit
 requestAnimationFrame(() => {
   expandedMapInstance.invalidateSize(false);
   setTimeout(() => {
@@ -6095,16 +6114,16 @@ requestAnimationFrame(() => {
     } else {
       expandedMapInstance.setView(safeCenter, safeZoom, { animate: false });
     }
-    // GridLayer redraw (tek tile kalmasını engeller)
+    // GridLayer redraw (tek tile kalmasın)
     expandedMapInstance.eachLayer(l => {
       if (l instanceof L.GridLayer) {
         try { l.redraw(); } catch (_) {}
       }
     });
-  }, 80);
+  }, 120);
 });
 
-// 9. Verileri Çiz
+// Yeniden çiz
 try {
   updateExpandedMap(expandedMapInstance, day);
 } catch (e) {
