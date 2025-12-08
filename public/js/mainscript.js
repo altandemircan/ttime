@@ -5545,6 +5545,11 @@ function setupScaleBarInteraction(day, map) {
     }
 
         const onMove = function(e) {
+        // Tooltip ve dikey çizgiyi burada al/oluştur
+        const tooltip = scaleBar.querySelector('.tt-elev-tooltip');
+        const verticalLine = scaleBar.querySelector('.scale-bar-vertical-line');
+        if (!tooltip || !verticalLine) return;
+
         const container = scaleBar.closest('.route-scale-bar');
         const samples = container ? (container._elevSamples || container._elevFullSamples || []) : [];
         if (!samples.length) return;
@@ -5582,21 +5587,18 @@ function setupScaleBarInteraction(day, map) {
             const elevIdx = Math.min(ed.smooth.length - 1, Math.max(0, Math.round((idx - 1) + t)));
             elev = ed.smooth[elevIdx];
         }
-        if (tooltip) {
-            tooltip.style.display = 'block';
-            tooltip.textContent = `${kmAbs.toFixed(2)} km` + (elev !== null ? ` • ${Math.round(elev)} m` : '');
-            const tooltipWidth = tooltip.offsetWidth || 140;
-            const scaleBarRight = rect.right;
-            if ((clientX + tooltipWidth + 8) > scaleBarRight) {
-                tooltip.style.left = `${Math.max(0, x - tooltipWidth - 12)}px`;
-            } else {
-                tooltip.style.left = `${x + 14}px`;
-            }
+        tooltip.style.display = 'block';
+        tooltip.textContent = `${kmAbs.toFixed(2)} km` + (elev !== null ? ` • ${Math.round(elev)} m` : '');
+        const tooltipWidth = tooltip.offsetWidth || 140;
+        const scaleBarRight = rect.right;
+        if ((clientX + tooltipWidth + 8) > scaleBarRight) {
+            tooltip.style.left = `${Math.max(0, x - tooltipWidth - 12)}px`;
+        } else {
+            tooltip.style.left = `${x + 14}px`;
         }
-        if (verticalLine) {
-            verticalLine.style.left = `${x}px`;
-            verticalLine.style.display = 'block';
-        }
+
+        verticalLine.style.left = `${x}px`;
+        verticalLine.style.display = 'block';
 
         // Marker konumu: 3D aktifse 3D, değilse Leaflet
         const is3DMode = document.getElementById('maplibre-3d-view') &&
