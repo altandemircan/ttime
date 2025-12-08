@@ -5413,16 +5413,16 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer._resizeObserver = ro;
     setTimeout(refitMap, 200);
 
-    // ============================================================
-    // --- FIX: EĞER 3D HARİTA AÇIKSA ONU DA GÜNCELLE ---
-    // ============================================================
-    const is3DActive = document.getElementById('maplibre-3d-view') && 
-                       document.getElementById('maplibre-3d-view').style.display !== 'none';
+    // // ============================================================
+    // // --- FIX: EĞER 3D HARİTA AÇIKSA ONU DA GÜNCELLE ---
+    // // ============================================================
+    // const is3DActive = document.getElementById('maplibre-3d-view') && 
+    //                    document.getElementById('maplibre-3d-view').style.display !== 'none';
                        
-    if (is3DActive && window._maplibre3DInstance) {
-        // Yeni veriyle 3D haritayı tazele
-        refresh3DMapData(day);
-    }
+    // if (is3DActive && window._maplibre3DInstance) {
+    //     // Yeni veriyle 3D haritayı tazele
+    //     refresh3DMapData(day);
+    // }
     // ============================================================
 }
 
@@ -6513,18 +6513,13 @@ expandedMap.eachLayer(layer => {
             layer instanceof L.Circle ||
             layer instanceof L.CircleMarker
         ) {
-            // Bazı bozulmuş layer'larda _map veya _renderer yok; bunları sessizce atla
-            if (!layer._map) {
-                // zaten haritaya bağlı değil → remove etmeye çalışma
-                return;
-            }
-
-            // remove işlemi sırasında hata olursa diğer layer'ları etkilemesin
+            // Bazı bozulmuş layer'larda _map veya _renderer olmayabilir
+            if (!layer._map) return; // zaten haritaya bağlı değil
+            
             expandedMap.removeLayer(layer);
         }
     } catch (err) {
-        console.warn('[updateExpandedMap] layer remove error, devam ediliyor:', err, layer);
-        // Burada hiçbir şey yapma; sonraki layer'lara devam et
+        console.warn('[updateExpandedMap] layer remove error, skipping:', err, layer);
     }
 });
 
