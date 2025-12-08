@@ -604,6 +604,16 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     }
 }
 async function showNearbyRestaurants(lat, lng, map, day) {
+    // Koordinatları güvene al
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+        console.error("showNearbyRestaurants: lat/lng is not finite", { lat, lng });
+        alert("Konum bilgisi alınamadı.");
+        return;
+    }
+
+    // CSS enjeksi̇yonu (mevcut)
     if (!document.getElementById('tt-popup-unified-styles')) {
         const style = document.createElement('style');
         style.id = 'tt-popup-unified-styles';
@@ -671,13 +681,13 @@ async function showNearbyRestaurants(lat, lng, map, day) {
     }
 
     const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
-    const url = `/api/geoapify/places?categories=${encodeURIComponent(categories)}&filter=circle:${lng},${lat},1000&limit=20`;
+    const url = `/api/geoapify/places?categories=${encodeURIComponent(categories)}&filter=circle:${lngNum},${latNum},1000&limit=20`;
 
     try {
         const resp = await fetch(url);
         if (!resp.ok) {
             console.error("Geoapify proxy error:", resp.status, resp.statusText);
-            alert("Error fetching restaurants.");
+            alert("Restoranlar alınamadı (servis hatası).");
             return;
         }
         const data = await resp.json();
@@ -688,16 +698,17 @@ async function showNearbyRestaurants(lat, lng, map, day) {
         }
 
         data.features.forEach((f, idx) => {
-            const pLng = f.properties.lon;
-            const pLat = f.properties.lat;
+            const pLng = Number(f?.properties?.lon);
+            const pLat = Number(f?.properties?.lat);
+            if (!Number.isFinite(pLng) || !Number.isFinite(pLat)) {
+                console.warn("Skipping feature with invalid coords", f);
+                return;
+            }
             const imgId = `rest-img-${idx}-${Date.now()}`;
 
-            let popupContent = "";
-            if (typeof getFastRestaurantPopupHTML === 'function') {
-                popupContent = getFastRestaurantPopupHTML(f, imgId, day);
-            } else {
-                popupContent = `<b>${f.properties.name || "Restaurant"}</b>`;
-            }
+            const popupContent = (typeof getFastRestaurantPopupHTML === 'function')
+                ? getFastRestaurantPopupHTML(f, imgId, day)
+                : `<b>${f?.properties?.name || "Restaurant"}</b>`;
 
             if (isMapLibre) {
                 window._restaurant3DLayers = window._restaurant3DLayers || [];
@@ -710,7 +721,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                         type: 'geojson',
                         data: {
                             type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
+                            geometry: { type: 'LineString', coordinates: [[lngNum, latNum], [pLng, pLat]] }
                         }
                     });
                     map.addLayer({
@@ -720,8 +731,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
                         paint: { 'line-color': '#22bb33', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
                     });
-                    window._restaurant3DLayers.push(layerId);
-                    window._restaurant3DLayers.push(sourceId);
+                    window._restaurant3DLayers.push(layerId, sourceId);
                 }
 
                 const el = document.createElement('div');
@@ -756,7 +766,7 @@ async function showNearbyRestaurants(lat, lng, map, day) {
             } else {
                 map.__restaurantLayers = map.__restaurantLayers || [];
 
-                const line = L.polyline([[lat, lng], [pLat, pLng]], {
+                const line = L.polyline([[latNum, lngNum], [pLat, pLng]], {
                     color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8"
                 }).addTo(map);
                 map.__restaurantLayers.push(line);
