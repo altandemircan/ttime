@@ -6038,43 +6038,27 @@ async function expandMap(containerId, day) {
       const map3d = document.getElementById('maplibre-3d-view');
 
       if (opt.value === 'liberty') {
-        // --- 3D MODA GEÇİŞ ---
         expandedMapInstance.getContainer().style.display = "none";
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MODA GEÇİŞ (GÜNCELLENDİ) ---
-        
-        // 1. Önce 3D elementlerini tamamen gizle
         if (map3d) map3d.style.display = "none";
+        expandedMapInstance.getContainer().style.display = "";
         if (compassBtn) compassBtn.style.display = 'none';
+        setExpandedMapTile(opt.value);
 
-        // 2. Leaflet Container'ı görünür yap
-        const leafletContainer = expandedMapInstance.getContainer();
-        leafletContainer.style.display = "block";
-        leafletContainer.style.opacity = "1"; // Garanti olsun
-
-        // 3. Tile yüklemeden ÖNCE boyutu güncelle (İlk deneme)
-        expandedMapInstance.invalidateSize();
-
-        // 4. KÜÇÜK BİR GECİKME İLE TILE YÜKLE VE TEKRAR BOYUT HESAPLA
-        // Bu timeout, tarayıcının "display: block" işlemini bitirmesini bekler.
-        setTimeout(() => {
-            // Tekrar boyut hesapla (Artık container kesinlikle görünür)
+        expandedMapInstance.invalidateSize(); 
+        requestAnimationFrame(() => {
             expandedMapInstance.invalidateSize();
-            
-            // Tile (Harita görseli) katmanını ŞİMDİ değiştir
-            setExpandedMapTile(opt.value);
-            
-            // Merkeze odakla ki tile'lar yeniden render olsun
-            const center = expandedMapInstance.getCenter();
-            const zoom = expandedMapInstance.getZoom();
-            expandedMapInstance.setView(center, zoom, { animate: false });
-        }, 100); // 100ms gecikme DOM render için yeterlidir
+        });
+        setTimeout(() => {
+            expandedMapInstance.invalidateSize();
+            const c = expandedMapInstance.getCenter();
+            expandedMapInstance.setView(c, expandedMapInstance.getZoom(), { animate: false });
+        }, 200);
       }
       
-      // Segment çizgilerini güncelle (Varsa)
       if (
           typeof window._lastSegmentDay === 'number' && 
           window._lastSegmentDay === day &&
@@ -6089,7 +6073,7 @@ async function expandMap(containerId, day) {
                       window._lastSegmentEndKm
                   );
               }
-          }, 300); 
+          }, 250); 
       }
 
       layersBar.classList.add('closed');
