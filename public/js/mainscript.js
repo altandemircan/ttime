@@ -6043,58 +6043,55 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // 1. Hide 3D Map and Compass
+        // --- 1. 3D Haritayı ve pusulayı kapat ---
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // 2. Show 2D Leaflet Container
+        // --- 2. Leaflet Container'ı görünür yap ---
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
         
-        // 3. FORCE REFLOW (Fixes Gray Screen)
-        // Forces browser to calculate dimensions immediately
+        // --- 3. FORCE REFLOW (Gri Ekran Fix) ---
+        // Tarayıcıyı genişliği hesaplamaya zorla
         void container.offsetWidth; 
         
-        // 4. DATA SANITIZATION (Fixes "Invalid LatLng object: (NaN, NaN)")
-        // The 3D map might save coordinates as strings. We must convert them to floats.
+        // --- 4. DATA SANITIZATION (NaN Fix) ---
+        // 3D haritadan gelen string veya bozuk verileri temizle
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
-                    // Force convert to float
                     let lat = parseFloat(item.location.lat);
                     let lng = parseFloat(item.location.lng);
                     
-                    // If still NaN, try to recover from root properties or default to 0
                     if (isNaN(lat)) lat = parseFloat(item.lat) || 0;
                     if (isNaN(lng)) lng = parseFloat(item.lon) || 0;
 
-                    // Write back clean numbers
                     item.location.lat = lat;
                     item.location.lng = lng;
                 }
             });
         }
 
-        // 5. Set Tile Layer
+        // --- 5. Tile katmanını değiştir ---
         setExpandedMapTile(opt.value);
 
-        // 6. Tell Leaflet the size changed
+        // --- 6. Haritayı Güncelle ---
         expandedMapInstance.invalidateSize(true);
 
-        // 7. Redraw Data (Wrapped in Try/Catch to prevent crashing)
+        // --- 7. Verileri Çiz (Hata korumalı) ---
         try {
             updateExpandedMap(expandedMapInstance, day);
         } catch (e) {
-            console.warn("Map update error suppressed:", e);
+            console.warn("Harita güncelleme hatası:", e);
         }
 
-        // 8. Refocus Map
+        // --- 8. Haritayı Odakla ---
         requestAnimationFrame(() => {
             setTimeout(() => {
                 expandedMapInstance.invalidateSize();
 
-                // Filter out any remaining bad points (0,0 or NaN)
                 const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+                // 0,0 noktalarını ve hatalı sayıları filtrele
                 const validPts = currentPts.filter(p => 
                     typeof p.lat === 'number' && !isNaN(p.lat) && p.lat !== 0 &&
                     typeof p.lng === 'number' && !isNaN(p.lng) && p.lng !== 0
@@ -6103,7 +6100,6 @@ async function expandMap(containerId, day) {
                 if (validPts.length > 0) {
                     const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
                     
-                    // Include route points if available
                     const containerId = `route-map-day${day}`;
                     const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
                     if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
@@ -6116,7 +6112,6 @@ async function expandMap(containerId, day) {
                         expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
                     }
                 } else {
-                    // Default view if no valid points
                     expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
                 }
             }, 50);
