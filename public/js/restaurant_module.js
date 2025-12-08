@@ -360,7 +360,7 @@ function showSearchButton(lat, lng, map, options = {}) {
                 map.removeControl(button);
             } catch(e) {
                 console.error("Search error:", e);
-                alert("Restoranlar aranırken hata oluştu.");
+                alert("Arama sırasında hata oluştu.");
             }
         };
         return div;
@@ -419,7 +419,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
     const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=20`;
 
-    // Loading popup göster - Marker'ı showCustomPopup koyuyor, burada TEKRAR KOYMA!
+    // Loading popup göster
     const loadingContent = `
         <div class="nearby-loading-message">
             <div class="nearby-loading-spinner"></div>
@@ -430,7 +430,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     // showCustomPopup hem popup'ı açar HEM DE pulse marker'ı haritaya koyar.
     showCustomPopup(lat, lng, map, loadingContent, false);
 
-    // Haritayı merkeze al (Marker'ı showCustomPopup koyduğu için sadece pan/fly yapıyoruz)
+    // Haritayı merkeze al
     const isMapLibre = !!map.addSource;
     if (isMapLibre) {
          map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
@@ -540,15 +540,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                             <button onclick="window.editPointName()" style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
                             <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
                         </div>
-                        <div class="point-address" style="display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 11px;
-    color: #666;
-    line-height: 1.2;
-    font-weight: 400;
-    text-align: left;">
+                        <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             ${pointInfo.address || 'Selected location'}
                         </div>
                     </div>
@@ -836,15 +828,7 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
           <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
             <span style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
           </div>
-          <div class="point-address" style="display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 11px;
-    color: #666;
-    line-height: 1.2;
-    font-weight: 400;
-    text-align: left;">${safeAddress}</div>
+          <div class="point-address" style="font-size: 11px; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${safeAddress}</div>
         </div>
         <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           <button class="add-point-to-cart-btn"
@@ -1104,116 +1088,6 @@ function addRoutePolylineWithClick(map, coords) {
     return routeLine;
 }
 
-function showRouteInfoBanner(day) {
-  const expandedContainer = document.getElementById(`expanded-map-${day}`);
-  if (!expandedContainer) return;
-
-  let banner = expandedContainer.querySelector('#route-info-banner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'route-info-banner';
-    banner.className = 'route-info-banner';
-    banner.innerHTML = `
-      <span>Click the map to list nearby restaurants, cafes and bars.</span>
-    
-    `;
-    expandedContainer.prepend(banner);
-  }
-  
-  banner.style.display = 'flex';
-  
-  // Tıklanabilir olduğunu göstermek için imleci değiştir
-  banner.style.cursor = 'pointer';
-
-  // --- TÜM KUTUYA TIKLAYINCA KAPAT ---
-  banner.onclick = function() {
-    banner.style.display = 'none';
-  };
-
-  // X butonuna basılınca da kapansın (Bubble etkisini beklemeden)
-  const closeBtn = banner.querySelector('#close-route-info');
-  if (closeBtn) {
-    closeBtn.onclick = function(e) {
-      e.stopPropagation(); // Banner click'ini tetiklemesin, direkt kapatsın
-      banner.style.display = 'none';
-    };
-  }
-
-  // Otomatik kapanma (5 saniye)
-  setTimeout(function() {
-    if (banner.style.display !== 'none') {
-      banner.style.display = 'none';
-    }
-  }, 5000);
-}
-
-async function getRestaurantPopupHTML(f, day) {
-    const name = f.properties.name || "Restoran";
-    const address = f.properties.formatted || "";
-    const lat = f.properties.lat;
-    const lon = f.properties.lon;
-    // Stock fotoğraf çek (Pexels, Pixabay, fallback img)
-    let img = "img/restaurant_icon.svg";
-    try {
-        img = await getImageForPlace(name, "restaurant", window.selectedCity || "");
-    } catch(e) { /* fallback kullan */ }
-
-    return `
-      <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-        <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-          <img src="${img}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 1;">
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">🍽️</div>
-        </div>
-        <div class="point-info" style="flex: 1; min-width: 0;">
-          <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-            <span style="font-weight: 500; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
-          </div>
-          <div class="point-address" style="display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 11px;
-    color: #666;
-    line-height: 1.2;
-    font-weight: 400;
-    text-align: left;">
-            ${address}
-          </div>
-        </div>
-        <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-          <button class="add-point-to-cart-btn" style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;"
-            onclick="window.addRestaurantToTrip('${name.replace(/'/g,"")}', '${img}', '${address.replace(/'/g,"")}', ${day}, ${lat}, ${lon})">+</button>
-        </div>
-      </div>
-    `;
-}
-
-function handlePopupImageLoading(f, imgId) {
-    getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
-        .then(src => {
-            const img = document.getElementById(imgId);
-            const spin = document.getElementById(imgId + "-spin");
-            if (img && src) {
-                img.src = src;
-                img.classList.remove("hidden-img");
-                // Eğer görsel cache'den geldiyse spinnerı hemen kaldır
-                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
-            }
-            if (img) {
-                img.onload = () => { if (spin) spin.style.display = "none"; img.classList.remove("hidden-img"); };
-                img.onerror = () => { if (spin) spin.style.display = "none"; img.classList.add("hidden-img"); };
-            } else if (spin) {
-                spin.style.display = "none";
-            }
-        })
-        .catch(() => {
-            const spin = document.getElementById(imgId + "-spin");
-            const img = document.getElementById(imgId);
-            if (spin) spin.style.display = "none";
-            if (img) img.classList.add("hidden-img");
-        });
-}
-
 function addRouteWithRestaurantClick(expandedMap, geojson) {
     // Polyline ve varsa eski markerların hepsini temizle
     expandedMap.eachLayer(l => {
@@ -1300,3 +1174,47 @@ function addRouteWithRestaurantClick(expandedMap, geojson) {
         }
     });
 }
+
+// --- LEAFLET GRAY MAP FIX ---
+// 3D haritadan 2D haritaya geçişte haritanın gri kalmasını önleyen Observer
+(function fixLeafletGrayMap() {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                const el = mutation.target;
+                // Eğer element görünür olduysa (display: none kalktıysa)
+                if (el.style.display !== 'none' && el.classList.contains('leaflet-container')) {
+                    // Leaflet instance'ını bul ve invalidateSize çalıştır
+                    let map = null;
+                    // Expanded map kontrolü
+                    if (window.expandedMaps) {
+                        const found = Object.values(window.expandedMaps).find(o => o.expandedMap && o.expandedMap.getContainer() === el);
+                        if (found) map = found.expandedMap;
+                    }
+                    // Normal map kontrolü
+                    if (!map && window.leafletMaps) {
+                        const foundKey = Object.keys(window.leafletMaps).find(k => window.leafletMaps[k].getContainer() === el);
+                        if (foundKey) map = window.leafletMaps[foundKey];
+                    }
+                    
+                    if (map) {
+                        setTimeout(() => { map.invalidateSize(); }, 50);
+                        setTimeout(() => { map.invalidateSize(); }, 300); // Double check
+                    }
+                }
+            }
+        });
+    });
+
+    // Sayfadaki mevcut ve yeni eklenecek harita containerlarını izle
+    function observeMaps() {
+        document.querySelectorAll('.leaflet-container').forEach(el => {
+            if (!el._grayFixObserved) {
+                observer.observe(el, { attributes: true, attributeFilter: ['style'] });
+                el._grayFixObserved = true;
+            }
+        });
+    }
+    
+    setInterval(observeMaps, 1000); // Periyodik kontrol (yeni haritalar için)
+})();
