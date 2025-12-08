@@ -1,4 +1,8 @@
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
+
+window.cart = Array.isArray(window.cart) ? window.cart : [];
+
+
 if (!window.areAllPointsInTurkey) {
   window.areAllPointsInTurkey = function(pts) {
     return pts.every(p =>
@@ -310,6 +314,7 @@ function getNextTripTitle() {
   return `My Trip #${nextNum}`;
 }
 function patchCartLocations() {
+    if (!Array.isArray(window.cart)) return; // Güvenlik: array değilse hiç dokunma
     window.cart.forEach(function(item) {
         // Eğer item.location yok ama lat/lon var ise location ekle
         if (!item.location && (item.lat != null && item.lon != null)) {
@@ -322,7 +327,6 @@ function patchCartLocations() {
         }
     });
 }
-
 
 // 2. Tüm gezileri getir
 function getAllSavedTrips() {

@@ -5842,7 +5842,6 @@ function refresh3DMapData(day) {
     }
 
     // Expanded Leaflet map için de aynı fix (3D açıkken manipüle edilmiş olabiliyor)
-    const containerId = `route-map-day${day}`;
     const expandedObj = window.expandedMaps && window.expandedMaps[containerId];
     if (expandedObj && expandedObj.expandedMap) {
         const eMap = expandedObj.expandedMap;
