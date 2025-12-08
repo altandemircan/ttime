@@ -308,6 +308,8 @@ window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, l
     const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
         ? img.src
         : 'https://dev.triptime.ai/img/restaurant_icon.svg';
+        
+    // Sepete Ekle
     addToCart(
         name,
         imgSrc,
@@ -318,7 +320,44 @@ window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, l
         { lat: Number(lat), lng: Number(lon) },
         ""
     );
+    
     if (typeof updateCart === "function") updateCart();
+
+    // =========================================================
+    // --- RESTORAN MARKERLARINI VE ÇİZGİLERİNİ TEMİZLE ---
+    // =========================================================
+
+    // 1. 3D Map (MapLibre) Temizliği
+    if (window._maplibre3DInstance) {
+        if (window._restaurant3DLayers) {
+            window._restaurant3DLayers.forEach(id => {
+                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+            });
+            window._restaurant3DLayers = [];
+        }
+        if (window._restaurant3DMarkers) {
+            window._restaurant3DMarkers.forEach(m => m.remove());
+            window._restaurant3DMarkers = [];
+        }
+    }
+
+    // 2. 2D Map (Leaflet) Temizliği
+    const allMaps = [];
+    // Aktif tüm Leaflet haritalarını topla
+    if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
+    if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
+    
+    allMaps.forEach(map => {
+        if (map && map.__restaurantLayers) {
+            map.__restaurantLayers.forEach(l => {
+               try { l.remove(); } catch(e) {}
+            });
+            map.__restaurantLayers = [];
+        }
+    });
+    // =========================================================
+
     alert(`${name} gezi planına eklendi!`);
 };
 function getRedRestaurantMarkerHtml() {
