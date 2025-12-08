@@ -492,6 +492,11 @@ function addRouteWithRestaurantClick(expandedMap, geojson) {
 }
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
+  // 1. Önce kesinlikle eskileri temizle
+  if (typeof closeNearbyPopup === 'function') {
+      closeNearbyPopup();
+  }
+
   // MapLibre kontrolü
   const isMapLibre = !!map.addSource;
 
