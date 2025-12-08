@@ -5493,7 +5493,21 @@ function updateRouteStatsUI(day) {
   return totalKm;
 }
 
+// === SCALE BAR DRAG GLOBAL HANDLERLARI ===
+// (Bu değişkenler setupScaleBarInteraction fonksiyonunun hemen üzerinde yer alır)
+let cachedDay = null;
+let cachedCumDist = []; 
+let cachedTotalDist = 0;
+
 function setupScaleBarInteraction(day, map) {
+    // --- DÜZELTME BAŞLANGICI: Cache'i Zorla Temizle ---
+    // Fonksiyon her çağrıldığında (rota güncellendiğinde çağrılır),
+    // eski hesaplamaları unutması için cachedDay'i null yapıyoruz.
+    cachedDay = null; 
+    cachedCumDist = [];
+    cachedTotalDist = 0;
+    // --- DÜZELTME BİTİŞİ ---
+
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
 
@@ -5520,12 +5534,9 @@ function setupScaleBarInteraction(day, map) {
         window._hoverMarker3D = null;
     }
 
-    // --- CACHE (Mesafe Hesaplama) ---
-    let cachedDay = null;
-    let cachedCumDist = []; 
-    let cachedTotalDist = 0;
-
     function prepareDistanceCache() {
+        // Eğer cache zaten bu gün için hazırsa ve DOLUYSA tekrar hesaplama
+        // (cachedDay yukarıda null yapıldığı için ilk harekette burası false dönecek ve yeniden hesaplayacak)
         if (cachedDay === day && cachedCumDist.length > 0) return;
 
         const arcPts = window._curvedArcPointsByDay ? window._curvedArcPointsByDay[day] : [];
@@ -5575,6 +5586,7 @@ function setupScaleBarInteraction(day, map) {
         targetMeters = Math.max(0, Math.min(targetMeters, cachedTotalDist));
 
         let foundIndex = 0;
+        // Binary search yerine basit loop (veri az olduğu için yeterli)
         for (let i = 0; i < cachedCumDist.length; i++) {
             if (cachedCumDist[i] >= targetMeters) {
                 foundIndex = i;
@@ -5611,9 +5623,7 @@ function setupScaleBarInteraction(day, map) {
             // --- 3D HARİTA (MapLibre) İŞLEMLERİ ---
             if (!window._hoverMarker3D) {
                 const el = document.createElement('div');
-                // Leaflet marker stiliyle aynı (Mor Daire)
                 el.style.cssText = 'background: #8a4af3; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
-                
                 window._hoverMarker3D = new maplibregl.Marker({ element: el })
                     .setLngLat([lng, lat])
                     .addTo(window._maplibre3DInstance);
@@ -5657,13 +5667,11 @@ function setupScaleBarInteraction(day, map) {
     };
     
     const onLeave = function() {
-        // Leaflet Marker Temizle
         let marker = window._hoverMarkersByDay[day];
         if (marker) {
             map.removeLayer(marker);
             window._hoverMarkersByDay[day] = null;
         }
-        // 3D Marker Temizle
         if (window._hoverMarker3D) {
             window._hoverMarker3D.remove();
             window._hoverMarker3D = null;
