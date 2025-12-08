@@ -6017,23 +6017,17 @@ async function expandMap(containerId, day) {
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
     if (opt.value === currentLayer) div.classList.add('selected');
-    const handleLayerSelect = (e, forceSelect = false) => {
+       const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation(); 
-
-      // 3D (liberty) → 2D geçişinde kod kendi kendine ikinci tıklamayı yapar
-      const is3Dto2D = (currentLayer === 'liberty') && (opt.value !== 'liberty');
-      if (is3Dto2D && !forceSelect && !div.__autoDouble) {
-        div.__autoDouble = true;
-        setTimeout(() => handleLayerSelect(new Event('click'), true), 0); // ikinci çağrı
-        return; // ilk çağrıyı burada bitir
-      }
-      div.__autoDouble = false; // ikinci çağrı veya 3D dışı durum
 
       // Menü kapalıysa önce açıp çık
       if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
+
+      // Önceki layer'ı sakla
+      const prevLayer = currentLayer;
 
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
@@ -6130,7 +6124,15 @@ async function expandMap(containerId, day) {
       }
 
       layersBar.classList.add('closed');
+
+      // 3D -> 2D geçişinde kod ikinci seçimi otomatik tetikler
+      if (prevLayer === 'liberty' && opt.value !== 'liberty' && !forceSelect) {
+        setTimeout(() => handleLayerSelect(new Event('click'), true), 0);
+      }
     };
+
+    div.onclick = (e) => handleLayerSelect(e, false);
+    div.ondblclick = (e) => handleLayerSelect(e, true);
 
     // Tek tık yeterli; dblclick kalsın ama gerek yok
     div.onclick = (e) => handleLayerSelect(e, false);
