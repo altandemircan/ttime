@@ -6450,28 +6450,39 @@ function updateExpandedMap(expandedMap, day) {
     const isInTurkey = (typeof areAllPointsInTurkey === 'function') ? areAllPointsInTurkey(pts) : true;
 
     // --- ROTA ÇİZİMİ ---
-    let hasValidRoute = (
-      isInTurkey && geojson && geojson.features && geojson.features[0] &&
-      geojson.features[0].geometry &&
-      Array.isArray(geojson.features[0].geometry.coordinates) &&
-      geojson.features[0].geometry.coordinates.length > 1
-    );
+        // Güvenli merkez/zoom
+    const validPts = pts; // zaten filtreli
+    let safeCenter = [39.0, 35.0], safeZoom = 6;
+    let safeBounds = null;
+    if (validPts.length === 1) {
+      safeCenter = [validPts[0].lat, validPts[0].lng];
+      safeZoom = 14;
+    } else if (validPts.length > 1) {
+      safeBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
+      if (safeBounds.isValid()) {
+        safeCenter = safeBounds.getCenter();
+        safeZoom = 10;
+        bounds.extend(safeBounds);
+      } else {
+        safeBounds = null;
+      }
+    }
+
+    // Rota koordinatlarını sanitize et
+    const rawCoords = geojson?.features?.[0]?.geometry?.coordinates;
+    const sanitizedRouteCoords = Array.isArray(rawCoords)
+      ? rawCoords.filter(c => Array.isArray(c) && isFinite(c[0]) && isFinite(c[1]))
+      : [];
+    let hasValidRoute = isInTurkey && sanitizedRouteCoords.length > 1;
 
     if (hasValidRoute) {
-        const rawCoords = geojson.features[0].geometry.coordinates;
-        const routeCoords = [];
-        rawCoords.forEach(c => {
-            if (Array.isArray(c) && c.length >= 2 && !isNaN(c[0]) && !isNaN(c[1])) {
-                routeCoords.push([c[1], c[0]]);
-            }
-        });
-
-        if (routeCoords.length > 1) {
-            const poly = L.polyline(routeCoords, {
+        const routeLatLngs = sanitizedRouteCoords.map(c => [c[1], c[0]]);
+        if (routeLatLngs.length > 1) {
+            const poly = L.polyline(routeLatLngs, {
                 color: "#1976d2", weight: 6, opacity: 1, renderer: ensureCanvasRenderer(expandedMap) 
             }).addTo(expandedMap);
             bounds.extend(poly.getBounds());
-            window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
+            window._curvedArcPointsByDay[day] = routeLatLngs.map(ll => [ll[1], ll[0]]); // lng,lat
         }
     } 
     else if (pts.length > 1 && !isInTurkey) {
@@ -6506,12 +6517,13 @@ function updateExpandedMap(expandedMap, day) {
     });
 
     // --- ODAKLANMA ---
-    try {
+       try {
         if (bounds.isValid()) {
-            expandedMap.fitBounds(bounds, { padding: [50, 50] });
+            expandedMap.fitBounds(bounds, { padding: [50, 50], animate: false });
+        } else if (safeBounds && safeBounds.isValid()) {
+            expandedMap.fitBounds(safeBounds, { padding: [50, 50], animate: false });
         } else {
-            if (pts.length === 1) expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-            else expandedMap.setView([39.0, 35.0], 6, { animate: false });
+            expandedMap.setView(safeCenter, safeZoom, { animate: false });
         }
     } catch(e) { console.warn("FitBounds error:", e); }
 
