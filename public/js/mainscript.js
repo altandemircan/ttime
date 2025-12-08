@@ -5904,24 +5904,36 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (SİZİN ORİJİNAL KODUNUZ - DOKUNULMADI)
+  // 1. STİL EKLEME (ORİJİNAL STİL KORUNDU)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
       style.innerHTML = `
-        .map-custom-controls { position: absolute; bottom: 200px; display: flex; flex-direction: column; gap: 10px; z-index: 10001; right: 20px; }
-        .map-ctrl-btn { box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 4px 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; }
-        .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); }
+        .map-custom-controls {
+            position: absolute; bottom: 200px; display: flex; flex-direction: column; gap: 10px; z-index: 10001;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); padding: 6px; border-radius: 12px;
+            backdrop-filter: blur(4px); border: 1px solid rgba(0, 0, 0, 0.05); right: 20px;
+        }
+        .map-ctrl-btn {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease; backdrop-filter: blur(4px); padding: 4px 10px;
+            background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer;
+        }
+        .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
-        .map-ctrl-btn.zoom-text { font-size: 22px; font-weight: 300; color: #666; }
-        .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s; }
-        .expanded-map-header { position: absolute; bottom: 200px; left: 10px; z-index: 10001; display: flex; gap: 15px; left: -20px; }
+        .map-ctrl-btn.zoom-text { font-size: 22px; font-weight: 300; line-height: 1; color: #666; padding-bottom: 2px; }
+        .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
+        .expanded-map-header { position: absolute; bottom: 200px; left: 10px; z-index: 10001; display: flex; align-items: center; gap: 15px; left: -20px; }
         @media (max-width:768px) { .expanded-map-header { left: 10px; } .map-custom-controls { right: 20px; } }
-        .map-layers-row { display: flex; gap: 8px; padding: 6px; border-radius: 12px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); flex-direction: column; width: auto; cursor: pointer; }
+        .map-layers-row { position: relative; display: flex; gap: 8px; padding: 6px; border-radius: 12px; backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); flex-direction: column; width: auto; cursor: pointer; transition: all 0.2s ease; }
         .map-layers-row.closed .map-type-option:not(.selected) { display: none !important; }
-        .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 12px; font-weight: 500; }
-        .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; }
+        .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 12px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
+        .map-type-option:hover { background: #f9f9f9; }
         .map-type-option img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
+        .maplibregl-ctrl-bottom-left { bottom: 30px !important; left: 20px !important; z-index: 20000 !important; pointer-events: none; }
+        .maplibregl-ctrl-scale { background-color: rgba(255, 255, 255, 0.9) !important; border: 1px solid #e0e0e0 !important; border-radius: 6px !important; padding: 2px 8px !important; color: #555 !important; font-size: 11px !important; font-weight: 600 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; border-top: 1px solid #e0e0e0 !important; height: auto !important; line-height: 1.4 !important; pointer-events: auto; }
       `;
       document.head.appendChild(style);
   }
@@ -5929,7 +5941,9 @@ async function expandMap(containerId, day) {
   if (!window.__ttMapLayerCloserBound) {
     document.addEventListener('click', (e) => {
         const row = document.querySelector('.map-layers-row');
-        if (row && !row.contains(e.target)) row.classList.add('closed');
+        if (row && !row.contains(e.target)) {
+            row.classList.add('closed');
+        }
     });
     window.__ttMapLayerCloserBound = true;
   }
@@ -5957,6 +5971,7 @@ async function expandMap(containerId, day) {
   expandBtns.forEach(btn => {
       if(btn) {
           btn.disabled = true;
+          btn.style.pointerEvents = 'none';
           btn.style.opacity = '0.6';
           btn.style.filter = 'grayscale(100%)';
           const label = btn.querySelector('.tm-label');
@@ -5967,8 +5982,10 @@ async function expandMap(containerId, day) {
   if (!originalContainer) ensureDayMapContainer(day); 
   if (originalContainer) originalContainer.style.display = 'none';
 
+  // === HEADER ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
+  
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row closed'; 
 
@@ -6003,41 +6020,50 @@ async function expandMap(containerId, day) {
 
     div.onclick = function(e) {
       e.stopPropagation(); 
+
       if (layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
+
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
       
       currentLayer = opt.value;
       localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
 
+      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
 
       if (opt.value === 'liberty') {
-        // --- 3D MODU ---
+        // --- 3D MOD ---
         expandedMapInstance.getContainer().style.display = "none";
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MODU (BU BLOKTA DÜZELTME YAPILDI) ---
+        // --- 2D MOD (BURADA DÜZELTME VAR - NAN HATASINI KESİN ÇÖZER) ---
         
-        // 1. Haritayı durdur (Pan/Zoom animasyonları NaN hatası vermesin)
-        expandedMapInstance.stop();
-
-        // 2. MapLibre katmanını güvenli şekilde sil (Hata Kaynağı)
+        // 1. ÖNCE MAPLIBRE KATMANINI KALDIR (Bu katman silinmezse NaN hatası verir)
         if (expandedMapInstance._maplibreLayer) {
-            try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
+            if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
+                expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
+            }
             expandedMapInstance._maplibreLayer = null;
         }
 
-        // 3. Harita merkezini düzelt (Eğer NaN ise 0'a çek)
-        const center = expandedMapInstance.getCenter();
-        if (!center || isNaN(center.lat) || isNaN(center.lng)) {
-            expandedMapInstance.setView([0, 0], 1, { animate: false });
+        // 2. Harita animasyonlarını durdur
+        expandedMapInstance.stop();
+
+        // 3. Harita merkezi bozuksa (NaN), güvenli bir yere resetle
+        try {
+            const center = expandedMapInstance.getCenter();
+            if (!center || isNaN(center.lat) || isNaN(center.lng)) {
+                expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
+            }
+        } catch(e) {
+            expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
         }
 
         // 4. Görünüm Ayarları
@@ -6047,10 +6073,10 @@ async function expandMap(containerId, day) {
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
         
-        // 5. Force Reflow (Gri Ekran Fix)
+        // 5. Force Reflow (Gri Ekranı Önle)
         void container.offsetWidth; 
         
-        // 6. Veri Temizliği (NaN Fix)
+        // 6. Veri Temizliği (String -> Float)
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
@@ -6064,18 +6090,20 @@ async function expandMap(containerId, day) {
             });
         }
 
-        // 7. Tile ve Update
+        // 7. Tile Katmanını Ayarla (Artık MapLibre yok, temiz sayfa)
         setExpandedMapTile(opt.value);
+
+        // 8. Leaflet Boyut Güncelleme
         expandedMapInstance.invalidateSize(true);
 
-        // 8. Verileri Çiz
+        // 9. Verileri Çiz
         try {
             updateExpandedMap(expandedMapInstance, day);
         } catch (e) {
             console.warn("Update error:", e);
         }
 
-        // 9. Odaklama
+        // 10. Odaklama
         requestAnimationFrame(() => {
             setTimeout(() => {
                 expandedMapInstance.invalidateSize();
@@ -6097,10 +6125,27 @@ async function expandMap(containerId, day) {
                 } else {
                     expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
                 }
-            }, 50);
+            }, 100);
         });
       }
       
+      if (
+          typeof window._lastSegmentDay === 'number' && 
+          window._lastSegmentDay === day &&
+          typeof window._lastSegmentStartKm === 'number' &&
+          typeof window._lastSegmentEndKm === 'number'
+      ) {
+          setTimeout(() => {
+              if (typeof highlightSegmentOnMap === 'function') {
+                  highlightSegmentOnMap(
+                      day, 
+                      window._lastSegmentStartKm, 
+                      window._lastSegmentEndKm
+                  );
+              }
+          }, 250); 
+      }
+
       layersBar.classList.add('closed');
     };
     layersBar.appendChild(div);
@@ -6111,6 +6156,7 @@ async function expandMap(containerId, day) {
   const statsDiv = document.createElement('div');
   statsDiv.className = 'route-stats';
 
+  // === 2. CUSTOM CONTROLS ===
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'map-custom-controls';
 
