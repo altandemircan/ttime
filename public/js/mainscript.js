@@ -6010,7 +6010,7 @@ async function expandMap(containerId, day) {
       }
   };
 
-  layerOptions.forEach(opt => {
+   layerOptions.forEach(opt => {
     const div = document.createElement('div');
     div.className = 'map-type-option';
     div.setAttribute('data-value', opt.value);
@@ -6018,10 +6018,12 @@ async function expandMap(containerId, day) {
     
     if (opt.value === currentLayer) div.classList.add('selected');
 
-    div.onclick = function(e) {
+    // Yeni: tek tık = mevcut davranış, çift tık = doğrudan seç (menüyü açmadan)
+    const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation(); 
 
-      if (layersBar.classList.contains('closed')) {
+      // Eğer menü kapalıysa ve forceSelect değilse önce aç
+      if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
@@ -6150,6 +6152,11 @@ async function expandMap(containerId, day) {
 
       layersBar.classList.add('closed');
     };
+
+    // Tek tık: mevcut davranış, Çift tık: doğrudan seç (menüyü açmadan)
+    div.onclick = (e) => handleLayerSelect(e, false);
+    div.ondblclick = (e) => handleLayerSelect(e, true);
+
     layersBar.appendChild(div);
   });
 
