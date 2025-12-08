@@ -828,7 +828,7 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
           <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
             <span style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
           </div>
-          <div class="point-address" style="font-size: 11px; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${safeAddress}</div>
+          <div class="point-address" style="font-size: 11px; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: left;">${safeAddress}</div>
         </div>
         <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           <button class="add-point-to-cart-btn"
