@@ -5904,7 +5904,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (ORİJİNAL)
+  // 1. STİL EKLEME (ORİJİNAL TASARIM - DOKUNULMADI)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -5973,7 +5973,7 @@ async function expandMap(containerId, day) {
   if (!originalContainer) ensureDayMapContainer(day); 
   if (originalContainer) originalContainer.style.display = 'none';
 
-  // === UI ELEMENTS ===
+  // === HEADER ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
   const layersBar = document.createElement('div');
@@ -6005,6 +6005,7 @@ async function expandMap(containerId, day) {
     div.className = 'map-type-option';
     div.setAttribute('data-value', opt.value);
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
+    
     if (opt.value === currentLayer) div.classList.add('selected');
 
     div.onclick = function(e) {
@@ -6029,57 +6030,38 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MOD (TEK TILE / GRİ EKRAN / NAN FİX) ---
+        // --- 2D MOD (TEK TILE / NAN FİX UYGULANDI - TASARIM KORUNDU) ---
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; // Görünür yap
         
-        // 1. Force Reflow
+        // Force Reflow
         void container.offsetWidth; 
 
-        // 2. MapLibre Katmanını Sök
+        // MapLibre Katmanını Sök (NaN önlemi)
         if (expandedMapInstance._maplibreLayer) {
-            try { 
-                expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
-            } catch(e){}
+            try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
             expandedMapInstance._maplibreLayer = null;
         }
 
-        // 3. Veri Temizliği (NaN Fix)
-        if (Array.isArray(window.cart)) {
-            window.cart.forEach(item => {
-                if (item.day == day && item.location) {
-                    let lat = parseFloat(item.location.lat);
-                    let lng = parseFloat(item.location.lng);
-                    if (isNaN(lat)) lat = parseFloat(item.lat) || 0;
-                    if (isNaN(lng)) lng = parseFloat(item.lon) || 0;
-                    item.location.lat = lat;
-                    item.location.lng = lng;
-                }
-            });
-        }
-
-        // 4. İLK YÜKLEME (Normal süreç)
+        // Tile Ayarla
         setExpandedMapTile(opt.value);
-        expandedMapInstance.invalidateSize(false);
-        try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
+        
+        // İlk Resize
+        expandedMapInstance.invalidateSize(true);
 
-        // 5. "SAHTE SEÇİM" (RE-TRIGGER) - 250ms Sonra
-        // Bu kısım sizin elle yaptığınız "tekrar seçme" işlemini simüle eder.
+        // Verileri Çiz
+        try { updateExpandedMap(expandedMapInstance, day); } catch (e) { console.warn("Update error:", e); }
+
+        // --- TEK TILE ÇÖZÜMÜ İÇİN GECİKMELİ RESIZE ---
         requestAnimationFrame(() => {
             setTimeout(() => {
-                // A. Boyutu tekrar bildir
-                expandedMapInstance.invalidateSize(false);
-                
-                // B. KATMANI YENİDEN YÜKLE (Kritik nokta burası)
-                // Tile katmanını tekrar set etmek, gri alanları doldurmaya zorlar.
-                setExpandedMapTile(opt.value); 
+                // Haritayı tekrar boyutlandır (Eksik tile'ları getirir)
+                expandedMapInstance.invalidateSize(true);
 
-                // C. Odaklama ve Veri Çizimi (Tekrar)
-                try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
-
+                // Veri Odaklama
                 const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
                 const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
                 
@@ -6096,9 +6078,9 @@ async function expandMap(containerId, day) {
                         expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
                     }
                 } else {
-                    expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
+                    try { expandedMapInstance.setView([39.0, 35.0], 6, { animate: false }); } catch(e){}
                 }
-            }, 250); // 250ms gecikme ile "ikinci tık" etkisi
+            }, 200); // 200ms gecikme ile "tile" yüklenmesini sağlar
         });
       }
       
@@ -6121,6 +6103,7 @@ async function expandMap(containerId, day) {
   const statsDiv = document.createElement('div');
   statsDiv.className = 'route-stats';
 
+  // === 2. CUSTOM CONTROLS ===
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'map-custom-controls';
 
@@ -6128,16 +6111,22 @@ async function expandMap(containerId, day) {
   zoomInBtn.className = 'map-ctrl-btn zoom-text';
   zoomInBtn.innerText = '+';
   zoomInBtn.onclick = function() {
-      if (currentLayer === 'liberty' && window._maplibre3DInstance) window._maplibre3DInstance.zoomIn();
-      else expandedMapInstance.zoomIn();
+      if (currentLayer === 'liberty' && window._maplibre3DInstance) {
+          window._maplibre3DInstance.zoomIn();
+      } else {
+          expandedMapInstance.zoomIn();
+      }
   };
 
   const zoomOutBtn = document.createElement('button');
   zoomOutBtn.className = 'map-ctrl-btn zoom-text';
   zoomOutBtn.innerText = '−';
   zoomOutBtn.onclick = function() {
-      if (currentLayer === 'liberty' && window._maplibre3DInstance) window._maplibre3DInstance.zoomOut();
-      else expandedMapInstance.zoomOut();
+      if (currentLayer === 'liberty' && window._maplibre3DInstance) {
+          window._maplibre3DInstance.zoomOut();
+      } else {
+          expandedMapInstance.zoomOut();
+      }
   };
 
   const compassBtn = document.createElement('button');
@@ -6147,7 +6136,9 @@ async function expandMap(containerId, day) {
   compassBtn.title = "Reset North";
   compassBtn.innerHTML = `<div class="custom-compass-disc"><img src="https://www.svgrepo.com/show/526952/compass-big.svg" style="width:100%;height:100%;" alt="N"></div>`;
   compassBtn.onclick = function() {
-      if (currentLayer === 'liberty' && window._maplibre3DInstance) window._maplibre3DInstance.easeTo({ bearing: 0, pitch: 60, duration: 1000 });
+      if (currentLayer === 'liberty' && window._maplibre3DInstance) {
+          window._maplibre3DInstance.easeTo({ bearing: 0, pitch: 60, duration: 1000 });
+      }
   };
 
   const locBtn = document.createElement('button');
@@ -6168,7 +6159,7 @@ async function expandMap(containerId, day) {
               s.innerHTML = `@keyframes ttPulse{0%{transform:translate(-50%,-50%) scale(1);opacity:.8}100%{transform:translate(-50%,-50%) scale(4.5);opacity:0}} .user-loc-wrapper{position:relative;width:20px;height:20px} .user-loc-dot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;background-color:#4285F4;border:2px solid #fff;border-radius:50%;z-index:2} .user-loc-ring-1{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;background-color:rgba(66,133,244,.6);border-radius:50%;z-index:1;animation:ttPulse 2.5s infinite linear}`;
               document.head.appendChild(s);
           }
-          const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-dot"></div></div>`;
+          const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-ring-2"></div><div class="user-loc-dot"></div></div>`;
 
           navigator.geolocation.getCurrentPosition(pos => {
               const { latitude, longitude } = pos.coords;
@@ -6205,7 +6196,7 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
-  // === 4. PANEL ===
+  // === 4. PANEL VE KAPAT BUTONU ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
   panelDiv.append(headerDiv, statsDiv, controlsDiv, scaleBarDiv);
@@ -6222,9 +6213,10 @@ async function expandMap(containerId, day) {
   mapDiv.id = mapDivId;
   mapDiv.className = 'expanded-map';
   mapDiv.style.width = "100%";
-  mapDiv.style.height = "100%";
+  mapDiv.style.height = "100%"; // CSS ile tam ekran
   expandedContainer.appendChild(mapDiv);
   
+  // DOM'a ekle (Leaflet oluşturulmadan ÖNCE yapılmalı)
   document.body.appendChild(expandedContainer);
   
   showRouteInfoBanner(day);
