@@ -6043,71 +6043,61 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 1. 3D Haritayı ve pusulayı kapat ---
+        // 1. 3D Haritayı ve pusulayı kapat
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // --- 2. Leaflet Container'ı görünür yap ---
+        // 2. Leaflet Container'ı görünür yap
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
         
-        // --- 3. FORCE REFLOW (Gri Ekran Fix) ---
-        // Tarayıcıyı genişliği hesaplamaya zorla
+        // 3. FORCE REFLOW (Gri Ekran Fix)
         void container.offsetWidth; 
         
-        // --- 4. DATA SANITIZATION (NaN Fix) ---
-        // 3D haritadan gelen string veya bozuk verileri temizle
+        // 4. DATA SANITIZATION (NaN Fix - Ana Veri Kaynağını Düzelt)
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
-                if (item.day == day && item.location) {
-                    let lat = parseFloat(item.location.lat);
-                    let lng = parseFloat(item.location.lng);
+                if (item.day == day) {
+                    // String'den sayıya çevir
+                    let lat = parseFloat(item.location?.lat);
+                    let lng = parseFloat(item.location?.lng);
                     
+                    // Location yoksa veya bozuksa kökten düzelt
                     if (isNaN(lat)) lat = parseFloat(item.lat) || 0;
                     if (isNaN(lng)) lng = parseFloat(item.lon) || 0;
 
+                    // Nesneyi güncelle
+                    if (!item.location) item.location = {};
                     item.location.lat = lat;
                     item.location.lng = lng;
+                    
+                    // Ana kök lat/lon da varsa güncelle
+                    if (item.lat !== undefined) item.lat = lat;
+                    if (item.lon !== undefined) item.lon = lng;
                 }
             });
         }
 
-        // --- 5. Tile katmanını değiştir ---
+        // 5. Tile katmanını değiştir
         setExpandedMapTile(opt.value);
 
-        // --- 6. Haritayı Güncelle ---
+        // 6. Haritayı Güncelle
         expandedMapInstance.invalidateSize(true);
 
-        // --- 7. Verileri Çiz (Hata korumalı) ---
-        try {
-            updateExpandedMap(expandedMapInstance, day);
-        } catch (e) {
-            console.warn("Harita güncelleme hatası:", e);
-        }
+        // 7. Verileri Çiz (Artık güvenli fonksiyon çağırılıyor)
+        updateExpandedMap(expandedMapInstance, day);
 
-        // --- 8. Haritayı Odakla ---
+        // 8. Odaklama (Gecikmeli)
         requestAnimationFrame(() => {
             setTimeout(() => {
                 expandedMapInstance.invalidateSize();
-
+                
+                // Güvenli noktaları al
                 const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-                // 0,0 noktalarını ve hatalı sayıları filtrele
-                const validPts = currentPts.filter(p => 
-                    typeof p.lat === 'number' && !isNaN(p.lat) && p.lat !== 0 &&
-                    typeof p.lng === 'number' && !isNaN(p.lng) && p.lng !== 0
-                );
+                const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
                 
                 if (validPts.length > 0) {
                     const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-                    
-                    const containerId = `route-map-day${day}`;
-                    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
-                    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-                        geojson.features[0].geometry.coordinates.forEach(c => {
-                            if (!isNaN(c[1]) && !isNaN(c[0])) bounds.extend([c[1], c[0]]);
-                        });
-                    }
-                    
                     if (bounds.isValid()) {
                         expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
                     }
