@@ -5544,88 +5544,78 @@ function setupScaleBarInteraction(day, map) {
         cachedDay = day;
     }
 
-    const onMove = function(e) {
-        const arcPts = window._curvedArcPointsByDay ? window._curvedArcPointsByDay[day] : [];
-        if (!Array.isArray(arcPts) || arcPts.length === 0) return;
+        const onMove = function(e) {
+        const container = scaleBar.closest('.route-scale-bar');
+        const samples = container ? (container._elevSamples || container._elevFullSamples || []) : [];
+        if (!samples.length) return;
 
-        prepareDistanceCache();
-        if (cachedTotalDist === 0) return;
+        const totalM = samples[samples.length - 1].distM || 0;
+        if (!totalM) return;
 
         const rect = scaleBar.getBoundingClientRect();
         let clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
         let x = clientX - rect.left;
-        
-        let percent = Math.max(0, Math.min(x / rect.width, 1));
-        
-        let targetMeters = 0;
+        x = Math.max(0, Math.min(rect.width, x));
+        const percent = x / rect.width;
 
-        // Zoomlu Segment Hesabı
-        if (
-            typeof window._lastSegmentStartKm === 'number' && 
-            typeof window._lastSegmentEndKm === 'number' &&
-            window._lastSegmentDay === day
-        ) {
-            const startM = window._lastSegmentStartKm * 1000;
-            const spanM = (window._lastSegmentEndKm - window._lastSegmentStartKm) * 1000;
-            targetMeters = startM + (percent * spanM);
-        } else {
-            targetMeters = percent * cachedTotalDist;
+        const startKm = container._elevStartKm || 0;
+        const spanKm  = container._elevKmSpan || (totalM / 1000);
+        const targetM = (startKm * 1000) + percent * spanKm * 1000;
+
+        // En yakın iki sample arasında interpolasyon
+        let idx = samples.findIndex(s => s.distM >= targetM);
+        if (idx <= 0) idx = 1;
+        if (idx >= samples.length) idx = samples.length - 1;
+
+        const p1 = samples[idx - 1];
+        const p2 = samples[idx];
+        const segLen = (p2.distM - p1.distM) || 1;
+        const t = Math.max(0, Math.min(1, (targetM - p1.distM) / segLen));
+        const lat = p1.lat + (p2.lat - p1.lat) * t;
+        const lng = p1.lng + (p2.lng - p1.lng) * t;
+
+        // Tooltip + dikey çizgi
+        const kmAbs = targetM / 1000;
+        const ed = container._elevationData;
+        let elev = null;
+        if (ed && Array.isArray(ed.smooth)) {
+            const elevIdx = Math.min(ed.smooth.length - 1, Math.max(0, Math.round((idx - 1) + t)));
+            elev = ed.smooth[elevIdx];
         }
-
-        targetMeters = Math.max(0, Math.min(targetMeters, cachedTotalDist));
-
-        let foundIndex = 0;
-        for (let i = 0; i < cachedCumDist.length; i++) {
-            if (cachedCumDist[i] >= targetMeters) {
-                foundIndex = i;
-                break;
+        if (tooltip) {
+            tooltip.style.display = 'block';
+            tooltip.textContent = `${kmAbs.toFixed(2)} km` + (elev !== null ? ` • ${Math.round(elev)} m` : '');
+            const tooltipWidth = tooltip.offsetWidth || 140;
+            const scaleBarRight = rect.right;
+            if ((clientX + tooltipWidth + 8) > scaleBarRight) {
+                tooltip.style.left = `${Math.max(0, x - tooltipWidth - 12)}px`;
+            } else {
+                tooltip.style.left = `${x + 14}px`;
             }
         }
-
-        let lat, lng;
-        if (foundIndex === 0) {
-            [lng, lat] = arcPts[0];
-        } else {
-            const idx1 = foundIndex - 1;
-            const idx2 = foundIndex;
-            const dist1 = cachedCumDist[idx1];
-            const dist2 = cachedCumDist[idx2];
-            const segmentLen = dist2 - dist1;
-            
-            let ratio = 0;
-            if (segmentLen > 0) {
-                ratio = (targetMeters - dist1) / segmentLen;
-            }
-            const [lon1, lat1] = arcPts[idx1];
-            const [lon2, lat2] = arcPts[idx2];
-            
-            lat = lat1 + (lat2 - lat1) * ratio;
-            lng = lon1 + (lon2 - lon1) * ratio;
+        if (verticalLine) {
+            verticalLine.style.left = `${x}px`;
+            verticalLine.style.display = 'block';
         }
 
-        // --- GÜNCELLEME KISMI: 3D Mİ 2D Mİ? ---
-        const is3DMode = document.getElementById('maplibre-3d-view') && 
-                         document.getElementById('maplibre-3d-view').style.display !== 'none';
+        // Marker konumu: 3D aktifse 3D, değilse Leaflet
+        const is3DMode = document.getElementById('maplibre-3d-view') &&
+                         document.getElementById('maplibre-3d-view').style.display !== 'none' &&
+                         window._maplibre3DInstance;
 
-        if (is3DMode && window._maplibre3DInstance) {
-            // --- 3D HARİTA (MapLibre) İŞLEMLERİ ---
+        if (is3DMode) {
             if (!window._hoverMarker3D) {
                 const el = document.createElement('div');
-                // Leaflet marker stiliyle aynı (Mor Daire)
-                el.style.cssText = 'background: #8a4af3; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
-                
-                window._hoverMarker3D = new maplibregl.Marker({ element: el })
-                    .setLngLat([lng, lat])
-                    .addTo(window._maplibre3DInstance);
-            } else {
-                window._hoverMarker3D.setLngLat([lng, lat]);
+                el.style.cssText = 'background:#8a4af3;width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+                window._hoverMarker3D = new maplibregl.Marker({ element: el }).addTo(window._maplibre3DInstance);
             }
+            window._hoverMarker3D.setLngLat([lng, lat]);
         } else {
-            // --- 2D HARİTA (Leaflet) İŞLEMLERİ ---
+            window._hoverMarkersByDay = window._hoverMarkersByDay || {};
             let marker = window._hoverMarkersByDay[day];
             if (marker) {
                 marker.setLatLng([lat, lng]);
-                if(marker._icon) marker._icon.style.zIndex = "10000"; 
+                if (marker._icon) marker._icon.style.zIndex = "10000";
             } else {
                 const purpleIconHtml = `
                     <div style="
@@ -5637,21 +5627,18 @@ function setupScaleBarInteraction(day, map) {
                         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                     "></div>
                 `;
-                
                 const icon = L.divIcon({
                     className: '',
                     html: purpleIconHtml,
                     iconSize: [32, 32],
                     iconAnchor: [16, 16]
                 });
-
                 marker = L.marker([lat, lng], {
                     icon: icon,
                     zIndexOffset: 10000,
                     interactive: false
                 }).addTo(map);
-                
-                window._hoverMarkersByDay[day] = marker; 
+                window._hoverMarkersByDay[day] = marker;
             }
         }
     };
