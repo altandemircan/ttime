@@ -6010,7 +6010,7 @@ async function expandMap(containerId, day) {
       }
   };
 
-    layerOptions.forEach(opt => {
+  layerOptions.forEach(opt => {
     const div = document.createElement('div');
     div.className = 'map-type-option';
     div.setAttribute('data-value', opt.value);
