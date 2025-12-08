@@ -5500,7 +5500,7 @@ function setupScaleBarInteraction(day, map) {
     if (!scaleBar || !map) return;
 
     // --- 1. TEMİZLİK ---
-    // Önceki listenerları temizle
+    // Hafıza sızıntısını önlemek için eski listenerları kaldır
     const events = ["mousemove", "touchmove", "mouseleave", "touchend"];
     if (scaleBar._activeListener) {
         events.forEach(evt => scaleBar.removeEventListener(evt, scaleBar._activeListener));
@@ -5519,61 +5519,70 @@ function setupScaleBarInteraction(day, map) {
         window._hoverMarker3D = null;
     }
 
-    // --- 2. VERİ TOPLAMA VE CACHE ---
-    // Veriyi global değil, elementin kendisine (scaleBar._geomCache) kaydediyoruz.
-    // Böylece güncellemelerde karışıklık olmaz.
+    // --- 2. VERİ TOPLAMA VE CACHE (GÜVENLİ) ---
+    // Bu fonksiyon her çağrıldığında o anki en güncel rota verisini hatalara karşı test ederek alır.
     function updateGeomCache() {
         let points = [];
 
-        // A) Fly Mode (Eğrisel Rota) verisi var mı?
-        if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 1) {
-            points = window._curvedArcPointsByDay[day]; // Zaten [Lat, Lng] formatında
+        // A) Fly Mode (Eğrisel Rota)
+        if (window._curvedArcPointsByDay && Array.isArray(window._curvedArcPointsByDay[day])) {
+            const raw = window._curvedArcPointsByDay[day];
+            if (raw.length > 1) {
+                // Bozuk veriyi filtrele
+                points = raw.filter(p => Array.isArray(p) && p.length >= 2);
+            }
         } 
-        // B) Yoksa Normal Rota (GeoJSON) verisine bak (ÖNEMLİ: Görünmeme sorunu buradaydı)
-        else {
+        
+        // B) Normal Rota (GeoJSON) - (Hata genellikle buradaki veriden kaynaklanır)
+        // Eğer Fly Mode yoksa veya yetersizse buraya bakar
+        if (!points || points.length < 2) {
             const containerId = `route-map-day${day}`;
             const gj = window.lastRouteGeojsons?.[containerId];
             if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
                 const coords = gj.features[0].geometry.coordinates;
-                // GeoJSON [Lng, Lat] gelir -> Leaflet [Lat, Lng] ister. Çeviriyoruz:
-                if (coords.length > 1) {
-                    points = coords.map(c => [c[1], c[0]]);
+                if (Array.isArray(coords) && coords.length > 1) {
+                    // DÜZELTME: 'c' tanımlı mı diye kontrol etmeden c[1] okumuyoruz.
+                    points = coords
+                        .filter(c => Array.isArray(c) && c.length >= 2)
+                        .map(c => [c[1], c[0]]);
                 }
             }
         }
 
-        // C) Hala yoksa Sepetteki (Cart) Noktalara bak (Fallback - Marker Garantisi)
+        // C) Fallback: Cart Noktaları (Hiçbir rota yoksa düz çizgi)
         if (!points || points.length < 2) {
             if (window.cart) {
-                const validItems = window.cart.filter(i => i.day == day && i.location && isFinite(i.location.lat));
-                if (validItems.length > 1) {
-                    points = validItems.map(i => [i.location.lat, i.location.lng]);
-                }
+                points = window.cart
+                    .filter(i => i.day == day && i.location && Number.isFinite(i.location.lat) && Number.isFinite(i.location.lng))
+                    .map(i => [i.location.lat, i.location.lng]);
             }
         }
 
-        // Veri bulunamadıysa cache'i boşalt ve çık
+        // Hala veri yoksa cache'i boşalt ve çık
         if (!points || points.length < 2) {
             scaleBar._geomCache = null;
             return;
         }
 
-        // --- HESAPLAMA (GEOMETRİ UZUNLUĞU) ---
-        // API'den gelen km'yi değil, çizginin gerçek uzunluğunu hesaplıyoruz.
-        // Bu sayede kayma (sliding) sorunu çözülür.
-        let totalGeomDist = 0;
+        // Geometrik uzunluk hesapla (Kaymayı önlemek için API yerine gerçek geometri kullanılır)
+        let total = 0;
         const cumDist = [0];
         
         for (let i = 1; i < points.length; i++) {
-            const d = haversine(points[i-1][0], points[i-1][1], points[i][0], points[i][1]); 
-            totalGeomDist += d;
-            cumDist.push(totalGeomDist);
+            const p1 = points[i-1];
+            const p2 = points[i];
+            // Ekstra güvenlik
+            if (!p1 || !p2) continue;
+
+            const d = haversine(p1[0], p1[1], p2[0], p2[1]); 
+            total += d;
+            cumDist.push(total);
         }
 
         scaleBar._geomCache = {
             pts: points,
             cumDist: cumDist,
-            totalDist: totalGeomDist
+            totalDist: total
         };
     }
 
@@ -5583,7 +5592,7 @@ function setupScaleBarInteraction(day, map) {
 
     // --- 3. HAREKET İŞLEYİCİSİ ---
     const handleMove = function(e) {
-        // Cache yoksa oluştur
+        // Cache yoksa oluşturmaya çalış
         if (!scaleBar._geomCache) updateGeomCache();
         
         const cache = scaleBar._geomCache;
@@ -5621,9 +5630,8 @@ function setupScaleBarInteraction(day, map) {
             targetMeters = percent * cache.totalDist;
         }
 
-        // Hangi iki nokta arasında olduğunu bul
+        // Mesafeye denk gelen noktayı bul
         let index = 0;
-        // Binary search yerine basit loop (veri az, performans sorunu olmaz)
         for (let i = 0; i < cache.cumDist.length; i++) {
             if (cache.cumDist[i] >= targetMeters) {
                 index = i;
@@ -5638,6 +5646,9 @@ function setupScaleBarInteraction(day, map) {
         } else {
             const i1 = index - 1;
             const i2 = index;
+            // Güvenlik kontrolü
+            if (!cache.pts[i1] || !cache.pts[i2]) return;
+
             const dist1 = cache.cumDist[i1];
             const dist2 = cache.cumDist[i2];
             const segmentLen = dist2 - dist1;
@@ -5675,7 +5686,7 @@ function setupScaleBarInteraction(day, map) {
             // 2D Harita
             let marker = window._hoverMarkersByDay[day];
             
-            // Marker yoksa YARAT
+            // Marker yoksa veya silinmişse YARAT
             if (!marker || !map.hasLayer(marker)) {
                 if (marker) map.removeLayer(marker); 
                 
@@ -5720,7 +5731,6 @@ function setupScaleBarInteraction(day, map) {
         }
     };
 
-    // Listenerları kaydet
     scaleBar._activeListener = handleMove;
     scaleBar._activeLeaver = handleLeave;
 
