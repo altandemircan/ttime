@@ -6018,22 +6018,24 @@ async function expandMap(containerId, day) {
     
     if (opt.value === currentLayer) div.classList.add('selected');
 
-    const handleLayerSelect = (e, forceSelect = false) => {
+      const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation(); 
 
-      // Menü kapalıysa önce aç, sonra çık (mevcut davranış)
+      // Menü kapalıysa önce aç
       if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
 
-      // 3D (liberty) → 2D (bright/positron) geçişinde çift tık zorunlu
+      // 3D (liberty) → 2D geçişinde otomatik ikinci seçim
       const switchingFrom3D = (currentLayer === 'liberty') && (opt.value !== 'liberty');
-      if (switchingFrom3D && !forceSelect && !div.__pending3DExit) {
-          div.__pending3DExit = true; // ilk tık
-          return;                     // ikinci tık beklenir
+      if (switchingFrom3D && !forceSelect && !div.__autoSecondTapDone) {
+          div.__autoSecondTapDone = true;
+          // ikinci çağrıyı hemen tetikle (forceSelect=true)
+          setTimeout(() => handleLayerSelect(new Event('click'), true), 0);
+          return;
       }
-      div.__pending3DExit = false; // ikinci tık veya forceSelect
+      if (forceSelect) div.__autoSecondTapDone = false;
 
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
@@ -6056,7 +6058,7 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'none';
 
         const container = expandedMapInstance.getContainer();
-        container.style.display = "block";
+        container.style.display = "block"; 
         void container.offsetWidth;
         try { expandedMapInstance.stop(); } catch(e) {}
         if (expandedMapInstance._maplibreLayer) {
@@ -6086,7 +6088,7 @@ async function expandMap(containerId, day) {
 
         setExpandedMapTile(opt.value);
         expandedMapInstance.invalidateSize(true);
-        try { updateExpandedMap(expandedMapInstance, day); } catch(e) { console.warn("Update error:", e); }
+        try { updateExpandedMap(expandedMapInstance, day); } catch (e) { console.warn("Update error:", e); }
 
         requestAnimationFrame(() => {
             setTimeout(() => {
@@ -6131,6 +6133,9 @@ async function expandMap(containerId, day) {
 
       layersBar.classList.add('closed');
     };
+
+    div.onclick = (e) => handleLayerSelect(e, false);
+    div.ondblclick = (e) => handleLayerSelect(e, true);
 
     // Tek tık: mevcut davranış, Çift tık: forceSelect (1 tıkla menü açıp 2. tıkla 3D→2D seçimi)
     div.onclick = (e) => handleLayerSelect(e, false);
