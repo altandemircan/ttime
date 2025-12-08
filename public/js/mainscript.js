@@ -6094,7 +6094,6 @@ if (mapDiv) mapDiv.innerHTML = "";
 
 // Güvenli merkez/zoom
 const pts = (typeof getDayPoints === "function") ? getDayPoints(day) : [];
-const validPts = Array.isArray(pts) ? pts.filter(p => isFinite(p.lat) && isFinite(p.lng)) : [];
 let safeCenter = [39.0, 35.0], safeZoom = 6;
 let safeBounds = null;
 if (validPts.length === 1) { safeCenter = [validPts[0].lat, validPts[0].lng]; safeZoom = 14; }
