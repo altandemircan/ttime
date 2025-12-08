@@ -5493,20 +5493,19 @@ function updateRouteStatsUI(day) {
   return totalKm;
 }
 
-// === SCALE BAR DRAG GLOBAL HANDLERLARI ===
-// === SCALE BAR DRAG GLOBAL HANDLERLARI (CRASH PROOF VERSION) ===
+// === SCALE BAR DRAG GLOBAL HANDLERLARI (CRASH PROOF) ===
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
 
-    // --- 1. TEMİZLİK (Eski listener ve markerları kaldır) ---
+    // --- 1. TEMİZLİK ---
     const events = ["mousemove", "touchmove", "mouseleave", "touchend"];
     if (scaleBar._activeListener) {
         events.forEach(evt => scaleBar.removeEventListener(evt, scaleBar._activeListener));
     }
 
+    // Eski markerları temizle
     if (window._hoverMarkersByDay && window._hoverMarkersByDay[day]) {
-        // Leaflet marker güvenli silme
         try { map.removeLayer(window._hoverMarkersByDay[day]); } catch(e){}
         window._hoverMarkersByDay[day] = null;
     }
@@ -5515,7 +5514,7 @@ function setupScaleBarInteraction(day, map) {
         window._hoverMarker3D = null;
     }
 
-    // --- 2. VERİ TOPLAMA (ASLA HATA VERMEZ) ---
+    // --- 2. VERİ TOPLAMA (HATA KORUMALI) ---
     function updateGeomCache() {
         let points = [];
 
@@ -5524,42 +5523,43 @@ function setupScaleBarInteraction(day, map) {
             if (window._curvedArcPointsByDay && Array.isArray(window._curvedArcPointsByDay[day])) {
                 const raw = window._curvedArcPointsByDay[day];
                 if (raw.length > 1) {
-                    // Sadece geçerli array olan noktaları al
-                    points = raw.filter(p => Array.isArray(p) && p.length >= 2 && !isNaN(p[0]) && !isNaN(p[1]));
+                    // Sadece dolu ve geçerli array olanları al
+                    points = raw.filter(p => Array.isArray(p) && p.length >= 2 && isFinite(p[0]) && isFinite(p[1]));
                 }
             }
 
             // B) Normal Rota (GeoJSON) Kontrolü
-            if ((!points || points.length < 2)) {
+            // Fly mode yoksa veya boşsa buraya bak
+            if (!points || points.length < 2) {
                 const containerId = `route-map-day${day}`;
                 const gj = window.lastRouteGeojsons?.[containerId];
                 
                 if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
                     const coords = gj.features[0].geometry.coordinates;
                     if (Array.isArray(coords) && coords.length > 1) {
-                        // GeoJSON [Lng, Lat] -> Leaflet [Lat, Lng]
-                        // HATA BURADAYDI: .map yapmadan önce filter ile 'c'nin dolu olduğunu garanti ediyoruz.
+                        // --- KRİTİK DÜZELTME BURADA ---
+                        // `c` undefined ise `c[1]` hatası verir. Önce filter ile temizliyoruz.
                         points = coords
-                            .filter(c => Array.isArray(c) && c.length >= 2 && !isNaN(c[0]) && !isNaN(c[1]))
-                            .map(c => [c[1], c[0]]);
+                            .filter(c => Array.isArray(c) && c.length >= 2 && isFinite(c[0]) && isFinite(c[1]))
+                            .map(c => [c[1], c[0]]); // GeoJSON [Lng, Lat] -> Leaflet [Lat, Lng]
                     }
                 }
             }
 
-            // C) Fallback: Cart (Sepetteki Noktalar)
-            // Harita verisi henüz yoksa bile noktalar arası düz çizgi varmış gibi davran.
+            // C) Fallback: Cart (Sepet Noktaları)
+            // Hiçbir rota verisi yoksa (veya hepsi bozuksa) en azından noktalar arası düz çizgi varmış gibi davran
             if ((!points || points.length < 2) && window.cart) {
                 points = window.cart
-                    .filter(i => i.day == day && i.location && Number.isFinite(i.location.lat) && Number.isFinite(i.location.lng))
+                    .filter(i => i.day == day && i.location && isFinite(i.location.lat) && isFinite(i.location.lng))
                     .map(i => [i.location.lat, i.location.lng]);
             }
 
         } catch (err) {
-            console.error("Marker data preparation error:", err);
+            console.warn("Marker data error handled:", err);
             points = [];
         }
 
-        // Veri yoksa null dön
+        // Veri yoksa null dön ve çık (Hata fırlatma)
         if (!points || points.length < 2) {
             scaleBar._geomCache = null;
             return;
@@ -5582,7 +5582,7 @@ function setupScaleBarInteraction(day, map) {
         };
     }
 
-    // Mouse her girdiğinde veriyi tazele (Veri değişmiş olabilir)
+    // Mouse her girdiğinde veriyi tazele (Veri güncellenmiş olabilir)
     scaleBar.addEventListener('mouseenter', updateGeomCache);
     scaleBar.addEventListener('touchstart', updateGeomCache, { passive: true });
 
@@ -5592,13 +5592,12 @@ function setupScaleBarInteraction(day, map) {
         if (!scaleBar._geomCache) updateGeomCache();
         
         const cache = scaleBar._geomCache;
-        // Eğer hala veri yoksa yapacak bir şey yok, sessizce çık (HATA VERME)
+        // Veri yoksa sessizce çık
         if (!cache || !cache.pts || cache.pts.length < 2) return;
 
         const rect = scaleBar.getBoundingClientRect();
         const clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
         
-        // Mouse yüzdesi
         let x = clientX - rect.left;
         let percent = Math.max(0, Math.min(x / rect.width, 1));
         
@@ -5610,10 +5609,7 @@ function setupScaleBarInteraction(day, map) {
             typeof window._lastSegmentEndKm === 'number' &&
             window._lastSegmentDay === day
         ) {
-            // Segment modunda API verisi ile Geometri verisini orantıla
-            // Bu sayede zoom yapıldığında da marker doğru yerde durur.
             const totalKmApi = Number(scaleBar.dataset.totalKm) || (cache.totalDist / 1000);
-            
             if (totalKmApi > 0) {
                 const startRatio = window._lastSegmentStartKm / totalKmApi;
                 const endRatio = window._lastSegmentEndKm / totalKmApi;
@@ -5624,11 +5620,11 @@ function setupScaleBarInteraction(day, map) {
                 targetMeters = percent * cache.totalDist;
             }
         } else {
-            // Normal Mod: Geometrik uzunluk üzerinden yüzde hesabı (Kaymayı engeller)
+            // Normal Mod
             targetMeters = percent * cache.totalDist;
         }
 
-        // --- KONUM BULMA (Binary Search yerine güvenli Loop) ---
+        // --- KONUM BULMA ---
         let index = 0;
         for (let i = 0; i < cache.cumDist.length; i++) {
             if (cache.cumDist[i] >= targetMeters) {
@@ -5645,7 +5641,7 @@ function setupScaleBarInteraction(day, map) {
             const i1 = index - 1;
             const i2 = index;
             
-            // Dizi sınırlarını kontrol et
+            // Eğer index sınır dışıysa çık (Extra Güvenlik)
             if (!cache.pts[i1] || !cache.pts[i2]) return;
 
             const dist1 = cache.cumDist[i1];
@@ -5685,8 +5681,8 @@ function setupScaleBarInteraction(day, map) {
             // 2D MARKER (LEAFLET)
             let marker = window._hoverMarkersByDay[day];
             
+            // Eğer harita değiştiyse marker silinmiş olabilir, kontrol et
             if (!marker || !map.hasLayer(marker)) {
-                // Eğer marker yoksa veya haritadan silinmişse yeniden yarat
                 if (marker) try { map.removeLayer(marker); } catch(e){}
                 
                 const purpleIconHtml = `
@@ -5700,7 +5696,7 @@ function setupScaleBarInteraction(day, map) {
                     "></div>`;
                 
                 const icon = L.divIcon({
-                    className: 'tt-hover-marker-icon', // CSS müdahalesi için class
+                    className: 'tt-hover-marker-icon',
                     html: purpleIconHtml,
                     iconSize: [22, 22],
                     iconAnchor: [11, 11]
@@ -5712,7 +5708,9 @@ function setupScaleBarInteraction(day, map) {
                     interactive: false
                 }).addTo(map);
                 
+                // Tıklamayı engelle
                 if (marker._icon) marker._icon.style.pointerEvents = 'none';
+                
                 window._hoverMarkersByDay[day] = marker; 
             }
             marker.setLatLng([lat, lng]);
