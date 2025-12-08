@@ -6038,27 +6038,50 @@ async function expandMap(containerId, day) {
       const map3d = document.getElementById('maplibre-3d-view');
 
       if (opt.value === 'liberty') {
+        // --- 3D MODA GEÇİŞ ---
         expandedMapInstance.getContainer().style.display = "none";
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
+        // --- 2D MODA GEÇİŞ (Burada Düzeltme Yapıldı) ---
+        
+        // 1. Önce 3D elementlerini gizle
         if (map3d) map3d.style.display = "none";
-        expandedMapInstance.getContainer().style.display = "";
         if (compassBtn) compassBtn.style.display = 'none';
+
+        // 2. Leaflet Container'ı görünür yap ("block" zorlaması)
+        const leafletContainer = expandedMapInstance.getContainer();
+        leafletContainer.style.display = "block";
+        leafletContainer.style.width = "100%"; // Garanti olsun
+        leafletContainer.style.height = "480px"; // CSS'deki yükseklik
+
+        // 3. ÇOK ÖNEMLİ: Tile set etmeden ÖNCE boyutu hesaplat
+        expandedMapInstance.invalidateSize();
+
+        // 4. Şimdi Tile Layer'ı değiştir
         setExpandedMapTile(opt.value);
 
-        expandedMapInstance.invalidateSize(); 
+        // 5. Render sonrası tetiklemeler (Garanti mekanizması)
         requestAnimationFrame(() => {
             expandedMapInstance.invalidateSize();
         });
+
         setTimeout(() => {
             expandedMapInstance.invalidateSize();
+            // Haritayı mevcut merkezine odakla ki tile'lar yeniden yüklensin
             const c = expandedMapInstance.getCenter();
-            expandedMapInstance.setView(c, expandedMapInstance.getZoom(), { animate: false });
-        }, 200);
+            const z = expandedMapInstance.getZoom();
+            expandedMapInstance.setView(c, z, { animate: false });
+        }, 100);
+        
+        // Double check
+        setTimeout(() => {
+             expandedMapInstance.invalidateSize();
+        }, 350);
       }
       
+      // Segment seçimi varsa tekrar vurgula
       if (
           typeof window._lastSegmentDay === 'number' && 
           window._lastSegmentDay === day &&
@@ -6438,7 +6461,7 @@ async function expandMap(containerId, day) {
       if (track) {
           const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
           createScaleElements(track, width, totalKm, 0, markerPositions);
-      }
+      } 
   }
 
   if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMapInstance, day);
