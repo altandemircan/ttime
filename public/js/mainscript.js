@@ -6510,36 +6510,51 @@ async function expandMap(containerId, day) {
 }
 
 function updateExpandedMap(expandedMap, day) {
-    console.log("[ROUTE DEBUG] --- updateExpandedMap ---");
-    console.log("GÜN:", day);
+    console.log("[updateExpandedMap] Safe Render Started. Day:", day);
 
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
 
-    const rawPoints = getDayPoints(day);
-    const pts = rawPoints.filter(
-        p => typeof p.lat === "number" && isFinite(p.lat) &&
-             typeof p.lng === "number" && isFinite(p.lng)
-    );
-
-    if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
-    window._curvedArcPointsByDay[day] = []; 
-
-    const isInTurkey = areAllPointsInTurkey(pts);
-
+    // 1. GÜVENLİ TEMİZLİK (Safe Layer Removal) - _removePath hatasını önler
+    // Katmanları önce bir listede topla, sonra sil (Döngü hatasını önler)
+    const layersToRemove = [];
     expandedMap.eachLayer(layer => {
+        // TileLayer (Zemin) ve MapLibre katmanlarını silme!
         if (
-            layer instanceof L.Marker ||
-            layer instanceof L.Polyline ||
-            layer instanceof L.Circle ||
-            layer instanceof L.CircleMarker
+            layer instanceof L.TileLayer || 
+            (layer.options && (layer.options.pane === 'tilePane' || layer._maplibreLayer))
         ) {
+            return;
+        }
+        layersToRemove.push(layer);
+    });
+
+    layersToRemove.forEach(layer => {
+        try {
             expandedMap.removeLayer(layer);
+        } catch (e) {
+            // Silme hatası olursa yut, akışı bozma
         }
     });
 
-    let bounds = L.latLngBounds(); 
+    // Temizlik sonrası global arrayleri sıfırla
+    if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
+    window._curvedArcPointsByDay[day] = []; 
 
+    // --- VERİ HAZIRLIĞI VE KONTROLÜ ---
+    const rawPoints = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+    
+    // NAN FİLTRESİ: Sadece geçerli sayılardan oluşan noktaları al
+    const pts = rawPoints.filter(p => {
+        const lat = Number(p.lat);
+        const lng = Number(p.lng);
+        return isFinite(lat) && isFinite(lng) && !isNaN(lat) && !isNaN(lng);
+    });
+
+    let bounds = L.latLngBounds(); 
+    const isInTurkey = (typeof areAllPointsInTurkey === 'function') ? areAllPointsInTurkey(pts) : true;
+
+    // --- ROTA ÇİZİMİ (LineString) ---
     let hasValidRoute = (
       isInTurkey &&
       geojson &&
@@ -6551,177 +6566,99 @@ function updateExpandedMap(expandedMap, day) {
     );
 
     if (hasValidRoute) {
-        const routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        const poly = L.polyline(routeCoords, {
-            color: "#1976d2",
-            weight: 6,
-            opacity: 1,
-            dashArray: null,
-            renderer: L.canvas({ padding: 0.5 }) // Çizgiyi harita zeminine kilitler
-        }).addTo(expandedMap);
+        // Koordinatları güvenli hale getir
+        const rawCoords = geojson.features[0].geometry.coordinates;
+        const routeCoords = [];
         
-        bounds.extend(poly.getBounds());
-        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
-
-        // Snap Lines
-        const rawGeojsonCoords = geojson.features[0].geometry.coordinates; 
-        const routePtsForSnap = routeCoords; 
-        pts.forEach((mp) => { 
-            if (isPointReallyMissing(mp, rawGeojsonCoords, 50)) {
-                let minIdx = 0, minDist = Infinity;
-                for (let i = 0; i < routePtsForSnap.length; i++) {
-                    const [lat, lng] = routePtsForSnap[i];
-                    const d = haversine(lat, lng, mp.lat, mp.lng);
-                    if (d < minDist) { minDist = d; minIdx = i; }
-                }
-                const start = [mp.lat, mp.lng]; 
-                const end = routePtsForSnap[minIdx]; 
-                L.polyline([start, end], {
-                    dashArray: '8, 12', color: '#d32f2f', weight: 4, opacity: 0.8,
-                    interactive: false, renderer: ensureCanvasRenderer(expandedMap)
-                }).addTo(expandedMap);
+        rawCoords.forEach(c => {
+            if (Array.isArray(c) && c.length >= 2 && !isNaN(c[0]) && !isNaN(c[1])) {
+                routeCoords.push([c[1], c[0]]); // [Lat, Lng]
             }
         });
 
-    } else if (pts.length > 1 && !isInTurkey) {
-        // --- FLY MODE (BÜYÜK HARİTA) ---
+        if (routeCoords.length > 1) {
+            const poly = L.polyline(routeCoords, {
+                color: "#1976d2",
+                weight: 6,
+                opacity: 1,
+                renderer: ensureCanvasRenderer(expandedMap) 
+            }).addTo(expandedMap);
+            
+            bounds.extend(poly.getBounds());
+            window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
+        }
+    } 
+    else if (pts.length > 1 && !isInTurkey) {
+        // --- FLY MODE ---
         let allArcPoints = [];
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
             const end = [pts[i + 1].lng, pts[i + 1].lat];
             
-            // Güncellediğimiz (küçük harita ile aynı olan) fonksiyonu kullanıyor:
-            const arcPoints = getCurvedArcCoords(start, end);
-            
-            const latLngs = arcPoints.map(pt => [pt[1], pt[0]]);
-            
-            const poly = L.polyline(latLngs, {
-                color: "#1976d2",
-                weight: 6,
-                opacity: 0.93,
-                dashArray: "6,8"
-            }).addTo(expandedMap);
-            
-            bounds.extend(poly.getBounds());
-
-            if (i === 0) allArcPoints.push([start[0], start[1]]);
-            allArcPoints = allArcPoints.concat(arcPoints.slice(1));
-        }
-        if (pts.length > 0) {
-            const lastPoint = [pts[pts.length - 1].lng, pts[pts.length - 1].lat];
-            allArcPoints.push(lastPoint);
+            if (typeof getCurvedArcCoords === 'function') {
+                const arcPoints = getCurvedArcCoords(start, end);
+                const latLngs = arcPoints.map(pt => [pt[1], pt[0]]);
+                
+                L.polyline(latLngs, {
+                    color: "#1976d2",
+                    weight: 6,
+                    opacity: 0.93,
+                    dashArray: "6,8"
+                }).addTo(expandedMap);
+                
+                latLngs.forEach(ll => bounds.extend(ll));
+                if (i === 0) allArcPoints.push([start[0], start[1]]);
+                allArcPoints = allArcPoints.concat(arcPoints.slice(1));
+            }
         }
         window._curvedArcPointsByDay[day] = allArcPoints;
     }
 
+    // --- MARKER ÇİZİMİ ---
     pts.forEach((item, idx) => {
+        // Ekstra Güvenlik: Marker oluşturmadan önce tekrar kontrol
+        if (isNaN(item.lat) || isNaN(item.lng)) return;
+
         const markerHtml = `
-            <div style="background:#d32f2f;color:#fff;border-radius:50%;
-            width:24px;height:24px;display:flex;align-items:center;justify-content:center;
-            font-weight:bold;font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px #888;">
-            ${idx + 1}
+            <div class="custom-marker-outer red" data-idx="${idx}" style="position:relative;">
+                <span class="custom-marker-label">${idx + 1}</span>
             </div>`;
+            
         const icon = L.divIcon({ html: markerHtml, className: "", iconSize: [32, 32], iconAnchor: [16, 16] });
-        const marker = L.marker([item.lat, item.lng], { icon }).addTo(expandedMap).bindPopup(`<b>${item.name || "Point"}</b>`);
+        
+        const marker = L.marker([item.lat, item.lng], { icon }).addTo(expandedMap);
+        marker.bindPopup(`<b>${item.name || "Point"}</b>`);
+        
         bounds.extend(marker.getLatLng());
     });
 
-    if (Array.isArray(window.lastMissingPoints) && window.lastMissingPoints.length > 1) {
-        const missingPoly = L.polyline(window.lastMissingPoints.map(p => [p.lat, p.lng]), {
-            dashArray: '8, 12', color: '#d32f2f', weight: 4, opacity: 0.8,
-            interactive: false, renderer: ensureCanvasRenderer(expandedMap)
-        }).addTo(expandedMap);
-        bounds.extend(missingPoly.getBounds());
-    }
-
-    if (bounds.isValid()) {
-        expandedMap.fitBounds(bounds, { padding: [50, 50] });
-    } else {
-        if (pts.length === 1) expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-        else expandedMap.setView([41.0, 12.0], 5, { animate: true });
+    // --- FIT BOUNDS ---
+    try {
+        if (bounds.isValid()) {
+            expandedMap.fitBounds(bounds, { padding: [50, 50] });
+        } else {
+            if (pts.length === 1) {
+                expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+            } else {
+                expandedMap.setView([39.0, 35.0], 6, { animate: false });
+            }
+        }
+    } catch(e) {
+        console.warn("FitBounds hatası:", e);
     }
 
     setTimeout(() => { try { expandedMap.invalidateSize(); } catch(e){} }, 200);
-    addDraggableMarkersToExpandedMap(expandedMap, day);
+    
+    if (typeof addDraggableMarkersToExpandedMap === 'function') {
+        addDraggableMarkersToExpandedMap(expandedMap, day);
+    }
 
-    // Scale Bar işlemleri
+    // Scale Bar güncelleme (Opsiyonel)
     const sumKey = `route-map-day${day}`;
     let sum = window.lastRouteSummaries?.[sumKey];
-    if (!sum && pts.length > 1 && !isInTurkey) {
-        let totalKmSum = 0;
-        for (let i = 0; i < pts.length - 1; i++) {
-            totalKmSum += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-        }
-        sum = { distance: Math.round(totalKmSum * 1000), duration: Math.round(totalKmSum/4*60), ascent: 0, descent: 0 };
-    }
     if (sum && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(sum.distance, sum.duration);
     }
-    const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (scaleBarDiv) {
-        const totalKm = sum ? sum.distance / 1000 : 0;
-        let markerPositions = [];
-        const hasRealRouteData = (sum && sum.distance > 0 && typeof getRouteMarkerPositionsOrdered === 'function');
-        if (hasRealRouteData) {
-            markerPositions = getRouteMarkerPositionsOrdered(day);
-            if (!markerPositions || markerPositions.length === 0) markerPositions = [];
-        } else if (pts.length > 1 && !isInTurkey) {
-            let currentDist = 0;
-            for (let i = 0; i < pts.length; i++) {
-                if (i > 0) currentDist += haversine(pts[i-1].lat, pts[i-1].lng, pts[i].lat, pts[i].lng) / 1000;
-                markerPositions.push({ name: pts[i].name || "", distance: currentDist, lat: pts[i].lat, lng: pts[i].lng });
-            }
-        } 
-        scaleBarDiv.style.display = "block";
-        scaleBarDiv.innerHTML = "";
-        if (isInTurkey && totalKm <= 0.01) {
-             scaleBarDiv.innerHTML = '<div class="spinner"></div>';
-        } else {
-             renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions || []);
-             const track = scaleBarDiv.querySelector('.scale-bar-track');
-             if (track) {
-                 const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                 createScaleElements(track, width, totalKm, 0, markerPositions || []);
-             }
-        }
-    }
-    setTimeout(() => { setupScaleBarInteraction(day, expandedMap); }, 500);
-    adjustExpandedHeader(day);
-
-    // --- 1. DÜZELTME: NEARBY SEARCH GARANTİSİ ---
-    if (typeof attachClickNearbySearch === 'function') {
-        attachClickNearbySearch(expandedMap, day);
-    }
-
-    // --- 2. DÜZELTME: MOBİL ATTRIBUTION FIX ---
-    // Leaflet yazısını haritadan alıp, FIXED olan scalebar panelinin içine taşırız.
-    setTimeout(() => {
-        // 1. Ana expanded container'ı bul
-        const expandedContainer = document.getElementById(`expanded-map-${day}`);
-        if (!expandedContainer) return;
-
-        // 2. Senin CSS'de "fixed" olan paneli bul (.expanded-map-panel)
-        const fixedPanel = expandedContainer.querySelector('.expanded-map-panel');
-        
-        // 3. Haritanın içindeki attribution'ı bul
-        const attribution = expandedMap.getContainer().querySelector('.leaflet-control-attribution');
-
-        if (fixedPanel && attribution) {
-            // Attribution'ı panelin içine taşı (Böylece panel fixed olduğu için bu da fixed olur)
-            fixedPanel.appendChild(attribution);
-            
-            // SADECE KONUM AYARLARI (Renk/Font yok, sadece sağ alta kilitle)
-            attribution.style.position = 'absolute';
-            attribution.style.bottom = '0px';
-            attribution.style.right = '0px';
-            attribution.style.margin = '0';
-            attribution.style.padding = '0 4px';
-            attribution.style.zIndex = '2000';
-            attribution.style.background = 'transparent'; // Panel zaten beyaz
-            attribution.style.pointerEvents = 'auto'; 
-            attribution.style.whiteSpace = 'nowrap'; // Mobilde tek satır kalsın
-        }
-    }, 600); 
 }
  
 function restoreMap(containerId, day) {
