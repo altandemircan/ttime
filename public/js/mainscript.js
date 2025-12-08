@@ -6043,36 +6043,32 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MOD (DÜZELTME BURADA) ---
+        // --- 2D MOD (TEK TILE SORUNU İÇİN GÜNCELLENDİ) ---
         
         // 1. Önce 3D elementleri gizle
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // 2. Leaflet'i GÖRÜNÜR yap (Stop etmeden önce görünür olmalı ki boyut alabilsin)
+        // 2. Leaflet'i GÖRÜNÜR yap
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
         
         // 3. Force Reflow (Tarayıcıyı boyutu hesaplamaya zorla)
         void container.offsetWidth; 
 
-        // 4. Şimdi Güvenli Durdurma (Try-Catch içinde)
-        // Eğer harita hala NaN ise stop() hata verebilir, bunu yutmalıyız.
-        try {
-            expandedMapInstance.stop();
-        } catch(e) {}
+        // 4. Şimdi Güvenli Durdurma
+        try { expandedMapInstance.stop(); } catch(e) {}
 
-        // 5. MapLibre katmanını sök (Hata kaynağı)
+        // 5. MapLibre katmanını sök
         if (expandedMapInstance._maplibreLayer) {
             try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
             expandedMapInstance._maplibreLayer = null;
         }
 
-        // 6. Harita merkezini resetle (NaN ise 0,0 yap)
+        // 6. Harita merkezini resetle
         try {
             const center = expandedMapInstance.getCenter();
             if (!center || isNaN(center.lat) || isNaN(center.lng)) {
-                // Animasyonsuz anında ışınla
                 expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
             }
         } catch(e) {
@@ -6095,7 +6091,10 @@ async function expandMap(containerId, day) {
 
         // 8. Tile ve Update
         setExpandedMapTile(opt.value);
-        expandedMapInstance.invalidateSize(true);
+        
+        // --- KRİTİK GÜNCELLEME: Invalidate Size ---
+        // Harita görünür olduktan hemen sonra boyut güncellemesi yapılır.
+        expandedMapInstance.invalidateSize(); 
 
         try {
             updateExpandedMap(expandedMapInstance, day);
@@ -6103,10 +6102,13 @@ async function expandMap(containerId, day) {
             console.warn("Update error:", e);
         }
 
-        // 9. Odaklama
+        // 9. Odaklama ve Tekrar Boyutlandırma (Gecikmeli)
         requestAnimationFrame(() => {
+            // setTimeout ile biraz bekletiyoruz ki CSS transitionları bitsin
             setTimeout(() => {
-                expandedMapInstance.invalidateSize();
+                // Tekrar boyut hesapla (Tek tile sorununu çözer)
+                expandedMapInstance.invalidateSize(); 
+
                 const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
                 const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
                 
