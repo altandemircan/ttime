@@ -5809,7 +5809,6 @@ function refresh3DMapData(day) {
         typeof window._lastSegmentStartKm === 'number' &&
         typeof window._lastSegmentEndKm === 'number'
     ) {
-        // Segmenti tekrar çiz (Mavi rotanın üstüne çıkması için)
         if (typeof highlightSegmentOnMap === 'function') {
             highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
         }
@@ -5817,36 +5816,69 @@ function refresh3DMapData(day) {
 
     // --- 4. EXTRA: 3D → 2D GEÇİŞLERİNDE GRI EKRAN / MARKER KAYBI PATCH ---
     // 3D haritayı güncelledikten sonra, 2D Leaflet haritalarındaki state'in bozulmamasını garantilemek için:
+
+    // 4.a) Önce, 2D konteynerların gerçekten görünür olduğundan emin ol
+    const dayContainer = document.getElementById(containerId);
+    if (dayContainer) {
+        // display none ise göster
+        const styleDisplay = window.getComputedStyle(dayContainer).display;
+        if (styleDisplay === 'none') {
+            dayContainer.style.display = 'block';
+        }
+    }
+
+    // 4.b) Leaflet instance'larını boyut + bounds ile yeniden hizala
     if (window.leafletMaps) {
         Object.entries(window.leafletMaps).forEach(([id, lfMap]) => {
             if (!lfMap || !lfMap.invalidateSize) return;
-            // Sadece rotayla ilgili gün için ekstra bakım yap
             const m = id.match(/route-map-day(\d+)/);
             const d = m ? parseInt(m[1], 10) : null;
-            if (d && d === day) {
-                setTimeout(() => {
-                    try {
-                        lfMap.invalidateSize(false);
-                        // Eğer route varsa bounds'a fit et, yoksa önceki merkezi koru
-                        const pts = typeof getDayPoints === 'function' ? getDayPoints(d) : [];
-                        const valid = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
-                        if (valid.length >= 2) {
-                            lfMap.fitBounds(valid.map(p => [p.lat, p.lng]), { padding: [20, 20], animate: false });
-                        } else if (valid.length === 1) {
-                            lfMap.setView([valid[0].lat, valid[0].lng], 14, { animate: false });
-                        }
-                    } catch(e) {}
-                }, 120);
-            }
+
+            // Sadece ilgili günün haritasını agresif düzelt
+            if (!d || d !== day) return;
+
+            setTimeout(() => {
+                try {
+                    // Container görünür mü tekrar kontrol et
+                    const containerEl = lfMap.getContainer && lfMap.getContainer();
+                    if (!containerEl) return;
+                    const cs = window.getComputedStyle(containerEl);
+                    if (cs.display === 'none' || cs.visibility === 'hidden') {
+                        containerEl.style.display = 'block';
+                        containerEl.style.visibility = 'visible';
+                    }
+
+                    lfMap.invalidateSize(false);
+
+                    const pts = typeof getDayPoints === 'function' ? getDayPoints(d) : [];
+                    const valid = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+                    if (valid.length >= 2) {
+                        lfMap.fitBounds(valid.map(p => [p.lat, p.lng]), { padding: [20, 20], animate: false });
+                    } else if (valid.length === 1) {
+                        lfMap.setView([valid[0].lat, valid[0].lng], 14, { animate: false });
+                    }
+                } catch(e) {
+                    console.warn('Leaflet 2D refresh error:', e);
+                }
+            }, 200);
         });
     }
 
-    // Expanded Leaflet map için de aynı fix (3D açıkken manipüle edilmiş olabiliyor)
+    // 4.c) Expanded Leaflet map için de aynı fix
     const expandedObj = window.expandedMaps && window.expandedMaps[containerId];
     if (expandedObj && expandedObj.expandedMap) {
         const eMap = expandedObj.expandedMap;
         setTimeout(() => {
             try {
+                const cEl = eMap.getContainer && eMap.getContainer();
+                if (cEl) {
+                    const cs = window.getComputedStyle(cEl);
+                    if (cs.display === 'none' || cs.visibility === 'hidden') {
+                        cEl.style.display = 'block';
+                        cEl.style.visibility = 'visible';
+                    }
+                }
+
                 eMap.invalidateSize(false);
                 const pts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
                 const valid = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
@@ -5855,8 +5887,10 @@ function refresh3DMapData(day) {
                 } else if (valid.length === 1) {
                     eMap.setView([valid[0].lat, valid[0].lng], 14, { animate: false });
                 }
-            } catch(e) {}
-        }, 150);
+            } catch(e) {
+                console.warn('Expanded 2D map refresh error:', e);
+            }
+        }, 250);
     }
 }
 
