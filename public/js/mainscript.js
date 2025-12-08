@@ -5828,28 +5828,18 @@ function refresh3DMapData(day) {
     }
 
     // 4.b) Leaflet instance'larını boyut + bounds ile yeniden hizala
-    if (window.leafletMaps) {
-        Object.entries(window.leafletMaps).forEach(([id, lfMap]) => {
-            if (!lfMap || !lfMap.invalidateSize) return;
-            const m = id.match(/route-map-day(\d+)/);
-            const d = m ? parseInt(m[1], 10) : null;
-
-            // Sadece ilgili günün haritasını agresif düzelt
-            if (!d || d !== day) return;
-
+    // 3D haritayı güncelledikten sonra, 2D Leaflet haritalarındaki state'in bozulmamasını garantilemek için:
+if (window.leafletMaps) {
+    Object.entries(window.leafletMaps).forEach(([id, lfMap]) => {
+        if (!lfMap || !lfMap.invalidateSize) return;
+        // Sadece rotayla ilgili gün için ekstra bakım yap
+        const m = id.match(/route-map-day(\d+)/);
+        const d = m ? parseInt(m[1], 10) : null;
+        if (d && d === day) {
             setTimeout(() => {
                 try {
-                    // Container görünür mü tekrar kontrol et
-                    const containerEl = lfMap.getContainer && lfMap.getContainer();
-                    if (!containerEl) return;
-                    const cs = window.getComputedStyle(containerEl);
-                    if (cs.display === 'none' || cs.visibility === 'hidden') {
-                        containerEl.style.display = 'block';
-                        containerEl.style.visibility = 'visible';
-                    }
-
                     lfMap.invalidateSize(false);
-
+                    // Eğer route varsa bounds'a fit et, yoksa önceki merkezi koru
                     const pts = typeof getDayPoints === 'function' ? getDayPoints(d) : [];
                     const valid = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
                     if (valid.length >= 2) {
@@ -5857,12 +5847,11 @@ function refresh3DMapData(day) {
                     } else if (valid.length === 1) {
                         lfMap.setView([valid[0].lat, valid[0].lng], 14, { animate: false });
                     }
-                } catch(e) {
-                    console.warn('Leaflet 2D refresh error:', e);
-                }
-            }, 200);
-        });
-    }
+                } catch(e) {}
+            }, 120);
+        }
+    });
+}
 
     // 4.c) Expanded Leaflet map için de aynı fix
     const expandedObj = window.expandedMaps && window.expandedMaps[containerId];
