@@ -5495,27 +5495,29 @@ function updateRouteStatsUI(day) {
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (CRASH PROOF) ===
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (ULTRA GÜVENLİ VERSİYON) ===
+// === SCALE BAR DRAG GLOBAL HANDLERLARI (CRASH PROOF & SYNC FIXED) ===
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
 
-    // --- 1. TEMİZLİK ---
+    // --- 1. TEMİZLİK (Eski listener ve markerları kaldır) ---
     const events = ["mousemove", "touchmove", "mouseleave", "touchend"];
     if (scaleBar._activeListener) {
         events.forEach(evt => scaleBar.removeEventListener(evt, scaleBar._activeListener));
     }
 
-    // Haritadaki markerları temizle
+    // Leaflet marker temizliği
     if (window._hoverMarkersByDay && window._hoverMarkersByDay[day]) {
         try { map.removeLayer(window._hoverMarkersByDay[day]); } catch(e){}
         window._hoverMarkersByDay[day] = null;
     }
+    // 3D marker temizliği
     if (window._hoverMarker3D) {
         try { window._hoverMarker3D.remove(); } catch(e){}
         window._hoverMarker3D = null;
     }
 
-    // --- 2. GÜVENLİ VERİ AYIKLAMA (HELPER) ---
+    // --- 2. GÜVENLİ VERİ TOPLAMA ---
     // Bu fonksiyon asla hata fırlatmaz, sadece geçerli [lat, lng] dizisi döndürür.
     function getCleanPoints() {
         let rawPoints = [];
@@ -5527,7 +5529,7 @@ function setupScaleBarInteraction(day, map) {
                 rawPoints = window._curvedArcPointsByDay[day];
                 source = "fly";
             } 
-            // B) GeoJSON Rota
+            // B) GeoJSON Rota (En çok hata burada çıkar)
             else {
                 const cid = `route-map-day${day}`;
                 const gj = window.lastRouteGeojsons?.[cid];
@@ -5540,38 +5542,38 @@ function setupScaleBarInteraction(day, map) {
                 }
             }
 
-            // C) Fallback: Cart
+            // C) Fallback: Cart (Hiçbir rota yoksa noktaları kullan)
             if (rawPoints.length < 2 && window.cart) {
-                // Cart verisini [lat, lng] formatına çevir
                 rawPoints = window.cart
-                    .filter(i => i.day == day && i.location && isFinite(i.location.lat))
-                    .map(i => [i.location.lat, i.location.lng]);
+                    .filter(i => i.day == day && i.location && Number.isFinite(Number(i.location.lat)))
+                    .map(i => [Number(i.location.lat), Number(i.location.lng)]);
                 source = "cart";
             }
 
-            // --- DATA SANITIZATION (VERİ YIKAMA) ---
+            // --- DATA SANITIZATION (ZORUNLU FİLTRELEME) ---
             const clean = [];
             for (let i = 0; i < rawPoints.length; i++) {
                 const p = rawPoints[i];
-                // Eğer p undefined ise atla
-                if (!p) continue;
+                // Eğer p undefined ise veya array değilse atla
+                if (!p || !Array.isArray(p) || p.length < 2) continue;
 
-                // GeoJSON [Lng, Lat] gelir, ters çevirmemiz lazım
+                const v0 = Number(p[0]);
+                const v1 = Number(p[1]);
+
+                if (isNaN(v0) || isNaN(v1)) continue;
+
+                // GeoJSON [Lng, Lat] gelir, Leaflet [Lat, Lng] ister.
                 if (source === "geojson") {
-                    if (Array.isArray(p) && p.length >= 2 && isFinite(p[0]) && isFinite(p[1])) {
-                        clean.push([p[1], p[0]]); // [Lat, Lng] yap
-                    }
+                    clean.push([v1, v0]); // Swap
                 } else {
-                    // Fly ve Cart zaten [Lat, Lng]
-                    if (Array.isArray(p) && p.length >= 2 && isFinite(p[0]) && isFinite(p[1])) {
-                        clean.push([p[0], p[1]]);
-                    }
+                    // Fly ve Cart zaten [Lat, Lng] formatındadır
+                    clean.push([v0, v1]);
                 }
             }
             return clean;
 
         } catch (e) {
-            console.error("Marker data error:", e);
+            console.warn("Marker data prep error:", e);
             return [];
         }
     }
@@ -5580,6 +5582,7 @@ function setupScaleBarInteraction(day, map) {
     function updateGeomCache() {
         const points = getCleanPoints();
         
+        // Veri yetersizse cache oluşturma
         if (points.length < 2) {
             scaleBar._geomCache = null;
             return;
@@ -5589,7 +5592,6 @@ function setupScaleBarInteraction(day, map) {
         const cumDist = [0];
         
         for (let i = 1; i < points.length; i++) {
-            // points dizisi yukarıda temizlendiği için burada hata vermez
             const d = haversine(points[i-1][0], points[i-1][1], points[i][0], points[i][1]); 
             total += d;
             cumDist.push(total);
@@ -5602,11 +5604,11 @@ function setupScaleBarInteraction(day, map) {
         };
     }
 
-    // Mouse her girdiğinde veriyi tazele
+    // Mouse her girdiğinde veriyi tazele (Veri değişmiş olabilir)
     scaleBar.addEventListener('mouseenter', updateGeomCache);
     scaleBar.addEventListener('touchstart', updateGeomCache, { passive: true });
 
-    // --- 4. HAREKET ---
+    // --- 4. HAREKET MANTIĞI ---
     const handleMove = function(e) {
         // Cache yoksa oluştur
         if (!scaleBar._geomCache) updateGeomCache();
@@ -5621,27 +5623,35 @@ function setupScaleBarInteraction(day, map) {
         let percent = Math.max(0, Math.min(x / rect.width, 1));
         let targetMeters = 0;
 
-        // Segment Zoom Kontrolü
+        // --- SENKRONİZASYON (KAYMA) DÜZELTMESİ ---
+        // Zoom (Segment) Modu Kontrolü
         if (
             typeof window._lastSegmentStartKm === 'number' && 
             typeof window._lastSegmentEndKm === 'number' &&
             window._lastSegmentDay === day
         ) {
+            // Segment modunda, görseldeki oranı globale çeviriyoruz.
+            // API Total KM'sini sadece oranlamak için kullanıyoruz.
             const totalKmApi = Number(scaleBar.dataset.totalKm) || (cache.totalDist / 1000);
+            
             if (totalKmApi > 0) {
                 const startRatio = window._lastSegmentStartKm / totalKmApi;
                 const endRatio = window._lastSegmentEndKm / totalKmApi;
                 const segmentSpan = endRatio - startRatio;
+                
+                // Mouse'un global rota üzerindeki yüzdesi
                 const globalPercent = startRatio + (percent * segmentSpan);
                 targetMeters = globalPercent * cache.totalDist;
             } else {
                 targetMeters = percent * cache.totalDist;
             }
         } else {
+            // Normal Mod: API mesafesini yoksay, doğrudan geometri uzunluğunu kullan.
+            // Bu sayede %50 mouse = %50 çizgi uzunluğu olur.
             targetMeters = percent * cache.totalDist;
         }
 
-        // İndeks bul
+        // --- KONUM BULMA ---
         let index = 0;
         for (let i = 0; i < cache.cumDist.length; i++) {
             if (cache.cumDist[i] >= targetMeters) {
@@ -5650,14 +5660,14 @@ function setupScaleBarInteraction(day, map) {
             }
         }
 
-        // Koordinat Hesapla
+        // Koordinat Enterpolasyonu
         let lat, lng;
         if (index === 0) {
             [lat, lng] = cache.pts[0];
         } else {
             const i1 = index - 1;
             const i2 = index;
-            // Güvenlik: Index sınırlarını kontrol et
+            // Güvenlik
             if (!cache.pts[i1] || !cache.pts[i2]) return;
 
             const dist1 = cache.cumDist[i1];
@@ -5683,7 +5693,7 @@ function setupScaleBarInteraction(day, map) {
                          document.getElementById('maplibre-3d-view').style.display !== 'none';
 
         if (is3DMode && window._maplibre3DInstance) {
-            // 3D
+            // 3D Harita
             if (!window._hoverMarker3D) {
                 const el = document.createElement('div');
                 el.style.cssText = 'background: #8a4af3; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); pointer-events: none;';
@@ -5694,12 +5704,11 @@ function setupScaleBarInteraction(day, map) {
                 window._hoverMarker3D.setLngLat([lng, lat]);
             }
         } else {
-            // 2D Leaflet
+            // 2D Leaflet Harita
             let marker = window._hoverMarkersByDay[day];
             
-            // Eğer marker daha önce oluşturulmamışsa veya haritadan silinmişse
+            // Eğer marker yoksa veya haritadan silinmişse (restoreMap vb.) yeniden oluştur
             if (!marker || !map.hasLayer(marker)) {
-                // Temizlik yap
                 if (marker) try { map.removeLayer(marker); } catch(e){}
                 
                 const purpleIconHtml = `
@@ -5749,7 +5758,7 @@ function setupScaleBarInteraction(day, map) {
     scaleBar.addEventListener("mouseleave", cleanup);
     scaleBar.addEventListener("touchend", cleanup);
     
-    scaleBar._activeListener = handleMove; // Referans
+    scaleBar._activeListener = handleMove; 
 }
 // [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
 function getCurvedArcCoords(start, end) {
