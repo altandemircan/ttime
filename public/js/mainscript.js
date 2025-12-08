@@ -6020,64 +6020,101 @@ async function expandMap(containerId, day) {
     if (opt.value === currentLayer) div.classList.add('selected');
 
     div.onclick = function(e) {
-      e.stopPropagation(); 
+  e.stopPropagation(); 
 
-      if (layersBar.classList.contains('closed')) {
-          layersBar.classList.remove('closed');
-          return;
+  if (layersBar.classList.contains('closed')) {
+      layersBar.classList.remove('closed');
+      return;
+  }
+
+  layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+  div.classList.add('selected');
+  
+  currentLayer = opt.value;
+  localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
+
+  const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
+  const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
+  const map3d = document.getElementById('maplibre-3d-view');
+
+  if (opt.value === 'liberty') {
+    // 2D → 3D
+    expandedMapInstance.getContainer().style.display = "none";
+    if (map3d) map3d.style.display = 'block';
+    if (compassBtn) compassBtn.style.display = 'flex';
+    openMapLibre3D(expandedMapInstance); 
+  } else {
+    // 3D → 2D DÖNÜŞ (PROBLEM BURASIYDI)
+
+    // 3D canvas'ı gizle
+    if (map3d) map3d.style.display = "none";
+
+    // Leaflet expanded map'i geri getir
+    const expandedContainerEl = expandedMapInstance.getContainer();
+    expandedContainerEl.style.display = "";
+    if (compassBtn) compassBtn.style.display = 'none';
+
+    // Tile stilini değiştir
+    setExpandedMapTile(opt.value);
+
+    // HARİTA VE ROTAYI ZORLA YENİDEN ÇİZ
+    // 1) invalidateSize
+    expandedMapInstance.invalidateSize();
+    requestAnimationFrame(() => {
+      expandedMapInstance.invalidateSize();
+    });
+    setTimeout(() => {
+      try {
+        expandedMapInstance.invalidateSize();
+        // 2) route + markerları yeniden çiz
+        if (typeof updateExpandedMap === "function") {
+          updateExpandedMap(expandedMapInstance, day);
+        }
+
+        // 3) rota / noktalar üzerinden fitBounds ile odakla
+        const key = `route-map-day${day}`;
+        const gj = window.lastRouteGeojsons && window.lastRouteGeojsons[key];
+        const pts = typeof getDayPoints === "function" ? getDayPoints(day) : [];
+
+        let bounds = null;
+        if (gj && gj.features && gj.features[0]?.geometry?.coordinates) {
+          const coords = gj.features[0].geometry.coordinates;
+          bounds = L.latLngBounds(coords.map(c => [c[1], c[0]]));
+        } else if (Array.isArray(pts) && pts.length) {
+          bounds = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
+        }
+
+        if (bounds && bounds.isValid()) {
+          expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
+        } else if (pts.length === 1) {
+          expandedMapInstance.setView([pts[0].lat, pts[0].lng], 14, { animate: false });
+        }
+
+      } catch (err) {
+        console.warn("[expandMap] 3D→2D restore error:", err);
       }
+    }, 200);
+  }
+  
+  if (
+      typeof window._lastSegmentDay === 'number' && 
+      window._lastSegmentDay === day &&
+      typeof window._lastSegmentStartKm === 'number' &&
+      typeof window._lastSegmentEndKm === 'number'
+  ) {
+      setTimeout(() => {
+          if (typeof highlightSegmentOnMap === 'function') {
+              highlightSegmentOnMap(
+                  day, 
+                  window._lastSegmentStartKm, 
+                  window._lastSegmentEndKm
+              );
+          }
+      }, 250); 
+  }
 
-      layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
-      div.classList.add('selected');
-      
-      currentLayer = opt.value;
-      localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
-
-      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
-      const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
-      const map3d = document.getElementById('maplibre-3d-view');
-
-      if (opt.value === 'liberty') {
-        expandedMapInstance.getContainer().style.display = "none";
-        if (map3d) map3d.style.display = 'block';
-        if (compassBtn) compassBtn.style.display = 'flex';
-        openMapLibre3D(expandedMapInstance); 
-      } else {
-        if (map3d) map3d.style.display = "none";
-        expandedMapInstance.getContainer().style.display = "";
-        if (compassBtn) compassBtn.style.display = 'none';
-        setExpandedMapTile(opt.value);
-
-        expandedMapInstance.invalidateSize(); 
-        requestAnimationFrame(() => {
-            expandedMapInstance.invalidateSize();
-        });
-        setTimeout(() => {
-            expandedMapInstance.invalidateSize();
-            const c = expandedMapInstance.getCenter();
-            expandedMapInstance.setView(c, expandedMapInstance.getZoom(), { animate: false });
-        }, 200);
-      }
-      
-      if (
-          typeof window._lastSegmentDay === 'number' && 
-          window._lastSegmentDay === day &&
-          typeof window._lastSegmentStartKm === 'number' &&
-          typeof window._lastSegmentEndKm === 'number'
-      ) {
-          setTimeout(() => {
-              if (typeof highlightSegmentOnMap === 'function') {
-                  highlightSegmentOnMap(
-                      day, 
-                      window._lastSegmentStartKm, 
-                      window._lastSegmentEndKm
-                  );
-              }
-          }, 250); 
-      }
-
-      layersBar.classList.add('closed');
-    };
+  layersBar.classList.add('closed');
+};
     layersBar.appendChild(div);
   });
 
