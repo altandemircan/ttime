@@ -5544,80 +5544,88 @@ function setupScaleBarInteraction(day, map) {
         cachedDay = day;
     }
 
-        const onMove = function(e) {
-        // Tooltip ve dikey çizgiyi burada al/oluştur
-        const tooltip = scaleBar.querySelector('.tt-elev-tooltip');
-        const verticalLine = scaleBar.querySelector('.scale-bar-vertical-line');
-        if (!tooltip || !verticalLine) return;
+    const onMove = function(e) {
+        const arcPts = window._curvedArcPointsByDay ? window._curvedArcPointsByDay[day] : [];
+        if (!Array.isArray(arcPts) || arcPts.length === 0) return;
 
-        const container = scaleBar.closest('.route-scale-bar');
-        const samples = container ? (container._elevSamples || container._elevFullSamples || []) : [];
-        if (!samples.length) return;
-
-        const totalM = samples[samples.length - 1].distM || 0;
-        if (!totalM) return;
+        prepareDistanceCache();
+        if (cachedTotalDist === 0) return;
 
         const rect = scaleBar.getBoundingClientRect();
         let clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
         let x = clientX - rect.left;
-        x = Math.max(0, Math.min(rect.width, x));
-        const percent = x / rect.width;
+        
+        let percent = Math.max(0, Math.min(x / rect.width, 1));
+        
+        let targetMeters = 0;
 
-        const startKm = container._elevStartKm || 0;
-        const spanKm  = container._elevKmSpan || (totalM / 1000);
-        const targetM = (startKm * 1000) + percent * spanKm * 1000;
-
-        // En yakın iki sample arasında interpolasyon
-        let idx = samples.findIndex(s => s.distM >= targetM);
-        if (idx <= 0) idx = 1;
-        if (idx >= samples.length) idx = samples.length - 1;
-
-        const p1 = samples[idx - 1];
-        const p2 = samples[idx];
-        const segLen = (p2.distM - p1.distM) || 1;
-        const t = Math.max(0, Math.min(1, (targetM - p1.distM) / segLen));
-        const lat = p1.lat + (p2.lat - p1.lat) * t;
-        const lng = p1.lng + (p2.lng - p1.lng) * t;
-
-        // Tooltip + dikey çizgi
-        const kmAbs = targetM / 1000;
-        const ed = container._elevationData;
-        let elev = null;
-        if (ed && Array.isArray(ed.smooth)) {
-            const elevIdx = Math.min(ed.smooth.length - 1, Math.max(0, Math.round((idx - 1) + t)));
-            elev = ed.smooth[elevIdx];
-        }
-        tooltip.style.display = 'block';
-        tooltip.textContent = `${kmAbs.toFixed(2)} km` + (elev !== null ? ` • ${Math.round(elev)} m` : '');
-        const tooltipWidth = tooltip.offsetWidth || 140;
-        const scaleBarRight = rect.right;
-        if ((clientX + tooltipWidth + 8) > scaleBarRight) {
-            tooltip.style.left = `${Math.max(0, x - tooltipWidth - 12)}px`;
+        // Zoomlu Segment Hesabı
+        if (
+            typeof window._lastSegmentStartKm === 'number' && 
+            typeof window._lastSegmentEndKm === 'number' &&
+            window._lastSegmentDay === day
+        ) {
+            const startM = window._lastSegmentStartKm * 1000;
+            const spanM = (window._lastSegmentEndKm - window._lastSegmentStartKm) * 1000;
+            targetMeters = startM + (percent * spanM);
         } else {
-            tooltip.style.left = `${x + 14}px`;
+            targetMeters = percent * cachedTotalDist;
         }
 
-        verticalLine.style.left = `${x}px`;
-        verticalLine.style.display = 'block';
+        targetMeters = Math.max(0, Math.min(targetMeters, cachedTotalDist));
 
-        // Marker konumu: 3D aktifse 3D, değilse Leaflet
-        const is3DMode = document.getElementById('maplibre-3d-view') &&
-                         document.getElementById('maplibre-3d-view').style.display !== 'none' &&
-                         window._maplibre3DInstance;
+        let foundIndex = 0;
+        for (let i = 0; i < cachedCumDist.length; i++) {
+            if (cachedCumDist[i] >= targetMeters) {
+                foundIndex = i;
+                break;
+            }
+        }
 
-        if (is3DMode) {
+        let lat, lng;
+        if (foundIndex === 0) {
+            [lng, lat] = arcPts[0];
+        } else {
+            const idx1 = foundIndex - 1;
+            const idx2 = foundIndex;
+            const dist1 = cachedCumDist[idx1];
+            const dist2 = cachedCumDist[idx2];
+            const segmentLen = dist2 - dist1;
+            
+            let ratio = 0;
+            if (segmentLen > 0) {
+                ratio = (targetMeters - dist1) / segmentLen;
+            }
+            const [lon1, lat1] = arcPts[idx1];
+            const [lon2, lat2] = arcPts[idx2];
+            
+            lat = lat1 + (lat2 - lat1) * ratio;
+            lng = lon1 + (lon2 - lon1) * ratio;
+        }
+
+        // --- GÜNCELLEME KISMI: 3D Mİ 2D Mİ? ---
+        const is3DMode = document.getElementById('maplibre-3d-view') && 
+                         document.getElementById('maplibre-3d-view').style.display !== 'none';
+
+        if (is3DMode && window._maplibre3DInstance) {
+            // --- 3D HARİTA (MapLibre) İŞLEMLERİ ---
             if (!window._hoverMarker3D) {
                 const el = document.createElement('div');
-                el.style.cssText = 'background:#8a4af3;width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
-                window._hoverMarker3D = new maplibregl.Marker({ element: el }).addTo(window._maplibre3DInstance);
+                // Leaflet marker stiliyle aynı (Mor Daire)
+                el.style.cssText = 'background: #8a4af3; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
+                
+                window._hoverMarker3D = new maplibregl.Marker({ element: el })
+                    .setLngLat([lng, lat])
+                    .addTo(window._maplibre3DInstance);
+            } else {
+                window._hoverMarker3D.setLngLat([lng, lat]);
             }
-            window._hoverMarker3D.setLngLat([lng, lat]);
         } else {
-            window._hoverMarkersByDay = window._hoverMarkersByDay || {};
+            // --- 2D HARİTA (Leaflet) İŞLEMLERİ ---
             let marker = window._hoverMarkersByDay[day];
             if (marker) {
                 marker.setLatLng([lat, lng]);
-                if (marker._icon) marker._icon.style.zIndex = "10000";
+                if(marker._icon) marker._icon.style.zIndex = "10000"; 
             } else {
                 const purpleIconHtml = `
                     <div style="
@@ -5629,18 +5637,21 @@ function setupScaleBarInteraction(day, map) {
                         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                     "></div>
                 `;
+                
                 const icon = L.divIcon({
                     className: '',
                     html: purpleIconHtml,
                     iconSize: [32, 32],
                     iconAnchor: [16, 16]
                 });
+
                 marker = L.marker([lat, lng], {
                     icon: icon,
                     zIndexOffset: 10000,
                     interactive: false
                 }).addTo(map);
-                window._hoverMarkersByDay[day] = marker;
+                
+                window._hoverMarkersByDay[day] = marker; 
             }
         }
     };
@@ -5893,7 +5904,7 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME (ORİJİNAL - DOKUNULMADI)
+  // 1. STİL EKLEME (ORİJİNAL TASARIM - DOKUNULMADI)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
@@ -6006,15 +6017,17 @@ async function expandMap(containerId, day) {
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
     if (opt.value === currentLayer) div.classList.add('selected');
-
-       div.onclick = function(e) {
+       const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation(); 
-      if (layersBar.classList.contains('closed')) {
+
+      // Menü kapalıysa önce açıp çık
+      if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
 
-      const prevLayer = currentLayer; // önceki durumu hatırla (3D→2D algısı)
+      // Önceki layer'ı sakla
+      const prevLayer = currentLayer;
 
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
@@ -6032,35 +6045,26 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MOD (TEK TILE / NAN ÇÖZÜMÜ) ---
-        
-        // 1. 3D'yi Gizle
+        // --- 2D MOD (tek tile/gri fixleri) ---
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // 2. Leaflet'i Görünür Yap
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
-        
-        // 3. Force Reflow (Gri Ekran Önlemi)
-        void container.offsetWidth; 
-
-        // 4. MapLibre katmanını ACİL sök (NaN döngüsü önlemi)
+        void container.offsetWidth;
+        try { expandedMapInstance.stop(); } catch(e) {}
         if (expandedMapInstance._maplibreLayer) {
-            try { 
-                if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
-                    expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); 
-                }
-            } catch(e){}
+            try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
             expandedMapInstance._maplibreLayer = null;
         }
-
-        // 5. Harita Merkezini Güvenli Resetle
         try {
+            const center = expandedMapInstance.getCenter();
+            if (!center || isNaN(center.lat) || isNaN(center.lng)) {
+                expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
+            }
+        } catch(e) {
             expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-        } catch(e) {}
-
-        // 6. Veri Temizliği (Data Sanitization)
+        }
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
@@ -6074,26 +6078,15 @@ async function expandMap(containerId, day) {
             });
         }
 
-        // 7. İLK YÜKLEME (Normal İşlem)
         setExpandedMapTile(opt.value);
-        expandedMapInstance.invalidateSize(false); 
-        try { updateExpandedMap(expandedMapInstance, day); } catch (e) { }
+        expandedMapInstance.invalidateSize(true);
+        try { updateExpandedMap(expandedMapInstance, day); } catch (e) { console.warn("Update error:", e); }
 
-        // 8. TEK TILE ÇÖZÜMÜ: "SAHTE SEÇİM" (RE-TRIGGER)
-        // 300ms sonra, kullanıcının tekrar tıkladığını simüle ederek katmanı YENİDEN yüklüyoruz.
         requestAnimationFrame(() => {
             setTimeout(() => {
-                // A. Boyutları güncelle
-                expandedMapInstance.invalidateSize(false); 
-
-                // B. KATMANI TEKRAR YÜKLE (Bu işlem eksik tile'ları getirir)
-                // "Tekrar seçme" efektini bu satır yaratır.
-                setExpandedMapTile(opt.value); 
-
-                // C. Odaklama (Veriler artık temiz)
+                expandedMapInstance.invalidateSize(true); 
                 const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
                 const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
-                
                 if (validPts.length > 0) {
                     const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
                     const containerId = `route-map-day${day}`;
@@ -6106,13 +6099,19 @@ async function expandMap(containerId, day) {
                     if (bounds.isValid()) {
                         expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
                     }
+                } else {
+                    expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
                 }
-            }, 300); // 300ms, DOM'un oturması için ideal süredir.
+            }, 250);
         });
       }
       
-      // Segment Highlight Desteği
-      if (typeof window._lastSegmentDay === 'number' && window._lastSegmentDay === day) {
+      if (
+          typeof window._lastSegmentDay === 'number' && 
+          window._lastSegmentDay === day &&
+          typeof window._lastSegmentStartKm === 'number' &&
+          typeof window._lastSegmentEndKm === 'number'
+      ) {
           setTimeout(() => {
               if (typeof highlightSegmentOnMap === 'function') {
                   highlightSegmentOnMap(
@@ -6121,21 +6120,25 @@ async function expandMap(containerId, day) {
                       window._lastSegmentEndKm
                   );
               }
-          }, 350); 
+          }, 300); 
       }
 
       layersBar.classList.add('closed');
 
-      // 3D → 2D geçişinde KOD ikinci tıklamayı otomatik yapar
-      if (prevLayer === 'liberty' && opt.value !== 'liberty' && !div.__autoDouble) {
-        div.__autoDouble = true;
-        setTimeout(() => {
-          layersBar.classList.remove('closed');
-          div.click();
-          div.__autoDouble = false;
-        }, 0);
+      // 3D -> 2D geçişinde kod ikinci seçimi otomatik tetikler
+      if (prevLayer === 'liberty' && opt.value !== 'liberty' && !forceSelect) {
+        setTimeout(() => handleLayerSelect(new Event('click'), true), 0);
       }
     };
+
+    div.onclick = (e) => handleLayerSelect(e, false);
+    div.ondblclick = (e) => handleLayerSelect(e, true);
+
+    // Tek tık yeterli; dblclick kalsın ama gerek yok
+    div.onclick = (e) => handleLayerSelect(e, false);
+    div.ondblclick = (e) => handleLayerSelect(e, true);
+
+   
     layersBar.appendChild(div);
   });
 
@@ -6217,18 +6220,28 @@ async function expandMap(containerId, day) {
               if (currentLayer === 'liberty' && window._maplibre3DInstance) {
                   window._maplibre3DInstance.flyTo({ center: [longitude, latitude], zoom: 14 });
                   if (window._userLocMarker3D) window._userLocMarker3D.remove();
-                  const el = document.createElement('div'); el.innerHTML = locHtml; 
+                  const el = document.createElement('div');
+                  el.innerHTML = locHtml; 
                   window._userLocMarker3D = new maplibregl.Marker({ element: el }).setLngLat([longitude, latitude]).addTo(window._maplibre3DInstance);
-              } else if (expandedMapInstance) {
-                  expandedMapInstance.flyTo([latitude, longitude], 14);
-                  if (window._userLocMarker2D) expandedMapInstance.removeLayer(window._userLocMarker2D);
-                  const icon = L.divIcon({ className: 'custom-loc-icon-leaflet', html: locHtml, iconSize: [20, 20] });
-                  window._userLocMarker2D = L.marker([latitude, longitude], { icon, zIndexOffset: 1000 }).addTo(expandedMapInstance);
+              } 
+              else {
+                  if (expandedMapInstance) {
+                      expandedMapInstance.flyTo([latitude, longitude], 14);
+                      if (window._userLocMarker2D) expandedMapInstance.removeLayer(window._userLocMarker2D);
+                      const customIcon = L.divIcon({
+                          className: 'custom-loc-icon-leaflet',
+                          html: locHtml,
+                          iconSize: [20, 20],
+                          iconAnchor: [10, 10]
+                      });
+                      window._userLocMarker2D = L.marker([latitude, longitude], { icon: customIcon, zIndexOffset: 1000 }).addTo(expandedMapInstance);
+                  }
               }
-          }, () => {
-             window.isLocationActiveByDay[day] = false;
-             locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+          }, err => {
+              window.isLocationActiveByDay[day] = false;
+              locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
           });
+
       } else {
           window.isLocationActiveByDay[day] = false;
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
@@ -6237,7 +6250,10 @@ async function expandMap(containerId, day) {
       }
   };
 
-  controlsDiv.append(zoomInBtn, zoomOutBtn, compassBtn, locBtn);
+  controlsDiv.appendChild(zoomInBtn);
+  controlsDiv.appendChild(zoomOutBtn);
+  controlsDiv.appendChild(compassBtn);
+  controlsDiv.appendChild(locBtn);
   
   // === 3. SCALE BAR ===
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
@@ -6247,10 +6263,14 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
-  // === 4. PANEL VE KAPAT BUTONU ===
+  // === 4. PANEL ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
-  panelDiv.append(headerDiv, statsDiv, controlsDiv, scaleBarDiv);
+  panelDiv.appendChild(headerDiv); 
+  panelDiv.appendChild(statsDiv);   
+  panelDiv.appendChild(controlsDiv); 
+  panelDiv.appendChild(scaleBarDiv); 
+  
   expandedContainer.appendChild(panelDiv);
 
   const closeBtn = document.createElement('button');
@@ -6264,9 +6284,8 @@ async function expandMap(containerId, day) {
   mapDiv.id = mapDivId;
   mapDiv.className = 'expanded-map';
   mapDiv.style.width = "100%";
-  mapDiv.style.height = "100%"; 
+  mapDiv.style.height = "480px"; 
   expandedContainer.appendChild(mapDiv);
-  
   document.body.appendChild(expandedContainer);
   
   showRouteInfoBanner(day);
@@ -6313,15 +6332,23 @@ async function expandMap(containerId, day) {
   }
 
   setExpandedMapTile(currentLayer);
-  
-  // DOM'a eklendiği için hemen invalidate
-  expandedMapInstance.invalidateSize(true);
   updateExpandedMap(expandedMapInstance, day);
 
   setTimeout(() => {
       expandedMapInstance.invalidateSize();
-      if (typeof attachClickNearbySearch === 'function') attachClickNearbySearch(expandedMapInstance, day);
-  }, 250); 
+      const container = expandedMapInstance.getContainer();
+      if (container) {
+          container.style.cursor = 'grab';
+          container.classList.remove('leaflet-interactive'); 
+      }
+      if (typeof attachClickNearbySearch === 'function') {
+          if (expandedMapInstance.__ttNearbyClickBound) {
+             expandedMapInstance.off('click', expandedMapInstance.__ttNearbyClickHandler);
+             expandedMapInstance.__ttNearbyClickBound = false;
+          }
+          attachClickNearbySearch(expandedMapInstance, day);
+      }
+  }, 350); 
 
   window.expandedMaps = window.expandedMaps || {};
   window.expandedMaps[containerId] = {
