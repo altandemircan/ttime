@@ -6809,6 +6809,262 @@ function restoreMap(containerId, day) {
 
 
 
+// Nokta adını düzenleme fonksiyonu
+window.editPointName = function() {
+    const displaySpan = document.getElementById('point-name-display');
+    const inputField = document.getElementById('point-name-input');
+    
+    if (!displaySpan || !inputField) return;
+    
+    // Display'i gizle, input'u göster
+    displaySpan.style.display = 'none';
+    inputField.style.display = 'flex';
+    inputField.focus();
+    inputField.select();
+    
+    // Enter veya blur ile kaydet
+    const saveEdit = function() {
+        const newName = inputField.value.trim();
+        if (newName) {
+            displaySpan.textContent = newName;
+            if (window._currentPointInfo) {
+                window._currentPointInfo.name = newName;
+            }
+        }
+        // Input'u gizle, display'i göster
+        inputField.style.display = 'none';
+        displaySpan.style.display = 'block';
+    };
+    
+    inputField.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            saveEdit();
+        } else if (e.key === 'Escape') {
+            // İptal et - orijinal değeri koru
+            inputField.value = displaySpan.textContent;
+            inputField.style.display = 'none';
+            displaySpan.style.display = 'block';
+        }
+    });
+    
+    inputField.addEventListener('blur', saveEdit);
+};
+
+// Güncellenen tıklanan noktayı sepete ekleme fonksiyonu
+window.addClickedPointToCart = async function(lat, lng, day) {
+    try {
+        // Düzenlenmiş nokta bilgisini al
+        const pointInfo = window._currentPointInfo || { name: "Seçilen Nokta", address: "", opening_hours: "" };
+        const placeName = pointInfo.name;
+        
+        // Görsel al
+        let imageUrl = "img/placeholder.png";
+        if (typeof getPexelsImage === "function") {
+            try {
+                imageUrl = await getPexelsImage(placeName + " " + (window.selectedCity || ""));
+                if (!imageUrl || imageUrl === PLACEHOLDER_IMG) {
+                    throw new Error("Pexels image not found");
+                }
+            } catch (e) {
+                if (typeof getPixabayImage === "function") {
+                    try {
+                        imageUrl = await getPixabayImage(placeName);
+                    } catch (e2) {
+                        imageUrl = "img/placeholder.png";
+                    }
+                }
+            }
+        }
+        
+        // Sepete ekle
+        addToCart(
+            placeName,
+            imageUrl,
+            day,
+            "Place",
+            pointInfo.address || "",
+            null, null,
+            pointInfo.opening_hours || "",
+            null,
+            { lat: lat, lng: lng },
+            ""
+        );
+
+        
+        // Popup'ı kapat
+        closeNearbyPopup();
+        
+        // Başarı mesajı
+console.log(`"${placeName}" added to cart!`);
+        
+    } catch (error) {
+    console.error('An error occurred while adding the point to the cart:', error);
+alert('An error occurred while adding the point to the cart.');
+    }
+};
+if (typeof updateCart === "function") updateCart();
+
+// FIX: addToCart fonksiyonunu da güncelleyelim
+window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeLng) {
+    if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
+    
+    const f = window._lastNearbyPlaces[idx];
+    const photo = (window._lastNearbyPhotos && window._lastNearbyPhotos[idx]) ? window._lastNearbyPhotos[idx] : "img/placeholder.png";
+    
+    // FIX: Mekanın gerçek koordinatlarını kullan
+    const actualLat = parseFloat(placeLat);
+    const actualLng = parseFloat(placeLng);
+    
+    console.log(`Adding place: ${f.properties.name} at ${actualLat}, ${actualLng}`); // Debug log
+    
+    addToCart(
+        f.properties.name || "Unnamed",
+        photo,
+        day,
+        "Place",
+        f.properties.formatted || "",
+        null, null,
+        f.properties.opening_hours || "",
+        null,
+        { lat: actualLat, lng: actualLng }, // FIX: Doğru koordinatlar
+        f.properties.website || ""
+    );
+    
+    // Popup'ı kapat ve başarı mesajı göster
+    closeNearbyPopup();
+    if (typeof updateCart === "function") updateCart();
+
+    
+    // Expanded map varsa ona da marker ekle
+    const expandedMapData = Object.values(window.expandedMaps || {}).find(m => m.day === day);
+    if (expandedMapData && expandedMapData.expandedMap) {
+        const map = expandedMapData.expandedMap;
+        
+        // Başarı popup'ı göster
+        L.popup()
+            .setLatLng([actualLat, actualLng])
+            .setContent(`<div style="text-align:center;"><b>${f.properties.name}</b><br><small style="color:#4caf50;">✓ Added!</small></div>`)
+            .openOn(map);
+        
+        setTimeout(() => map.closePopup(), 2000);
+        
+        // Haritayı yeni eklenen yere odakla (isteğe bağlı)
+        map.setView([actualLat, actualLng], map.getZoom(), { animate: true });
+    }
+};
+if (typeof updateCart === "function") updateCart();
+
+// Custom popup sistemi - harita katmanının üzerinde
+// Custom popup sistemi - Hem 2D hem 3D uyumlu
+function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
+    // Önceki popup'ı kapat
+    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+    
+    // Popup container oluştur
+    const popupContainer = document.createElement('div');
+    popupContainer.id = 'custom-nearby-popup';
+    
+    const closeButtonHtml = showCloseButton ? `
+        <button onclick="closeNearbyPopup()" class="nearby-popup-close-btn" title="Close">×</button>
+    ` : '';
+    
+    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
+    document.body.appendChild(popupContainer);
+    window._currentNearbyPopupElement = popupContainer;
+    
+    // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
+    
+    // 1. Temizlik
+    if (window._nearbyPulseMarker) { 
+        try { window._nearbyPulseMarker.remove(); } catch(_) {} 
+        window._nearbyPulseMarker = null; 
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(_) {}
+        window._nearbyPulseMarker3D = null;
+    }
+
+    // 2. Marker HTML
+    const pulseHtml = `
+      <div class="nearby-pulse-marker">
+        <div class="nearby-pulse-core"></div>
+        <div class="nearby-pulse-ring"></div>
+        <div class="nearby-pulse-ring2"></div>
+      </div>
+    `;
+
+    // 3. Harita Tipine Göre Ekleme
+    const isMapLibre = !!map.addSource; // MapLibre kontrolü
+
+    if (isMapLibre) {
+        // --- 3D MOD (MapLibre) ---
+        const el = document.createElement('div');
+        el.className = 'nearby-pulse-icon-wrapper'; // CSS class
+        el.innerHTML = pulseHtml;
+        
+        window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
+            .setLngLat([lng, lat])
+            .addTo(map);
+            
+    } else {
+        // --- 2D MOD (Leaflet) ---
+        const pulseIcon = L.divIcon({
+            html: pulseHtml,
+            className: 'nearby-pulse-icon-wrapper',
+            iconSize: [18,18],
+            iconAnchor: [9,9]
+        });
+        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
+    }
+}
+// Popup kapatma fonksiyonu
+window.closeNearbyPopup = function() {
+  const popupElement = document.getElementById('custom-nearby-popup');
+  if (popupElement) {
+    popupElement.remove();
+  }
+  
+  // 2D Temizlik
+  ['_nearbyMarker', '_nearbyPulseMarker'].forEach(ref => {
+    if (window[ref] && window[ref]._map) {
+      window[ref].remove();
+    }
+    window[ref] = null;
+  });
+  
+  // Eğer window._userLocMarker2D varsa onu da silmek isterseniz:
+  // if (window._userLocMarker2D) window._userLocMarker2D.remove(); (İsteğe bağlı)
+
+  // 2D Restoran Katmanları
+  if (window.leafletMaps) {
+      // Aktif haritadan silmeye çalış
+      // (Burada tüm haritaları gezmek yerine aktif olana bakılabilir ama genel referans silindiği için yeterli)
+  }
+  
+  // --- 3D Temizlik ---
+  if (window._nearbyPulseMarker3D) {
+      window._nearbyPulseMarker3D.remove();
+      window._nearbyPulseMarker3D = null;
+  }
+  
+  // Restoran Markerları
+  if (window._restaurant3DMarkers) {
+      window._restaurant3DMarkers.forEach(m => m.remove());
+      window._restaurant3DMarkers = [];
+  }
+  
+  // Restoran Çizgileri
+  if (window._restaurant3DLayers && window._maplibre3DInstance) {
+      window._restaurant3DLayers.forEach(id => {
+          if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+          if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+      });
+      window._restaurant3DLayers = [];
+  }
+
+  window._currentNearbyPopupElement = null;
+};
+
 
 // Görsel doğrulama fonksiyonu
 async function isImageValid(url, timeout = 3000) {
