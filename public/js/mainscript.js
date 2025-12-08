@@ -6010,7 +6010,7 @@ async function expandMap(containerId, day) {
       }
   };
 
-   layerOptions.forEach(opt => {
+    layerOptions.forEach(opt => {
     const div = document.createElement('div');
     div.className = 'map-type-option';
     div.setAttribute('data-value', opt.value);
@@ -6018,22 +6018,20 @@ async function expandMap(containerId, day) {
     
     if (opt.value === currentLayer) div.classList.add('selected');
 
-    // Yeni: tek tık = mevcut davranış, çift tık = doğrudan seç (menüyü açmadan)
-       // Yeni: tek tık = mevcut davranış, 3D→2D için çift tık zorunlu, çift tık her durumda doğrudan seç
     const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation(); 
 
-      // Menü kapalıysa (ve forceSelect değilse) açıp çık
+      // Menü kapalıysa önce aç, sonra çık (mevcut davranış)
       if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
 
-      // 3D (liberty) → 2D (bright/positron) geçişinde çift tık zorunluluğu
+      // 3D (liberty) → 2D (bright/positron) geçişinde çift tık zorunlu
       const switchingFrom3D = (currentLayer === 'liberty') && (opt.value !== 'liberty');
       if (switchingFrom3D && !forceSelect && !div.__pending3DExit) {
-          div.__pending3DExit = true; // ilk tıkta beklet
-          return;
+          div.__pending3DExit = true; // ilk tık
+          return;                     // ikinci tık beklenir
       }
       div.__pending3DExit = false; // ikinci tık veya forceSelect
 
@@ -6043,7 +6041,6 @@ async function expandMap(containerId, day) {
       currentLayer = opt.value;
       localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
 
-      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
 
@@ -6054,29 +6051,18 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MOD (TEK TILE VE NAN SORUNU KESİN ÇÖZÜM) ---
-        
-        // 1. Önce 3D elementleri gizle
+        // --- 2D MOD (tek tile/gri fixleri) ---
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // 2. Leaflet'i GÖRÜNÜR yap
         const container = expandedMapInstance.getContainer();
-        container.style.display = "block"; 
-        
-        // 3. Force Reflow (Tarayıcıyı boyutu hesaplamaya zorla - GRİ EKRANI ENGELLER)
-        void container.offsetWidth; 
-
-        // 4. Haritayı Durdur (Animasyonları kes)
+        container.style.display = "block";
+        void container.offsetWidth;
         try { expandedMapInstance.stop(); } catch(e) {}
-
-        // 5. MapLibre katmanını sök (NaN hatasını önler)
         if (expandedMapInstance._maplibreLayer) {
             try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
             expandedMapInstance._maplibreLayer = null;
         }
-
-        // 6. Harita merkezini güvenli bir konuma al (NaN ise)
         try {
             const center = expandedMapInstance.getCenter();
             if (!center || isNaN(center.lat) || isNaN(center.lng)) {
@@ -6085,8 +6071,6 @@ async function expandMap(containerId, day) {
         } catch(e) {
             expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
         }
-
-        // 7. Veri Temizliği (Data Sanitization)
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
@@ -6100,28 +6084,15 @@ async function expandMap(containerId, day) {
             });
         }
 
-        // 8. Tile Ayarla
         setExpandedMapTile(opt.value);
-        
-        // 9. İLK RESIZE: Harita artık görünür, boyutları algılasın
-        expandedMapInstance.invalidateSize(true); 
+        expandedMapInstance.invalidateSize(true);
+        try { updateExpandedMap(expandedMapInstance, day); } catch(e) { console.warn("Update error:", e); }
 
-        // 10. Verileri Çiz
-        try {
-            updateExpandedMap(expandedMapInstance, day);
-        } catch (e) {
-            console.warn("Update error:", e);
-        }
-
-        // 11. Gecikmeli Odaklama ve Boyutlandırma (Tek tile sorunu için)
         requestAnimationFrame(() => {
             setTimeout(() => {
-                // A. Boyutları TEKRAR hesapla
                 expandedMapInstance.invalidateSize(true); 
-
                 const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
                 const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
-                
                 if (validPts.length > 0) {
                     const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
                     const containerId = `route-map-day${day}`;
@@ -6137,11 +6108,10 @@ async function expandMap(containerId, day) {
                 } else {
                     expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
                 }
-            }, 250); // 250ms DOM'un oturması için
+            }, 250);
         });
       }
       
-      // Segment Highlight Desteği
       if (
           typeof window._lastSegmentDay === 'number' && 
           window._lastSegmentDay === day &&
@@ -6162,7 +6132,7 @@ async function expandMap(containerId, day) {
       layersBar.classList.add('closed');
     };
 
-    // Tek tık: mevcut davranış, Çift tık: doğrudan seç (menüyü açmadan)
+    // Tek tık: mevcut davranış, Çift tık: forceSelect (1 tıkla menü açıp 2. tıkla 3D→2D seçimi)
     div.onclick = (e) => handleLayerSelect(e, false);
     div.ondblclick = (e) => handleLayerSelect(e, true);
 
