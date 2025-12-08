@@ -5494,24 +5494,13 @@ function updateRouteStatsUI(day) {
 }
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI ===
-// (Bu değişkenler setupScaleBarInteraction fonksiyonunun hemen üzerinde yer alır)
-let cachedDay = null;
-let cachedCumDist = []; 
-let cachedTotalDist = 0;
+// (Eski global let cachedDay... değişkenlerini silebilirsiniz, artık scaleBar objesi içinde tutuyoruz)
 
 function setupScaleBarInteraction(day, map) {
-    // --- DÜZELTME BAŞLANGICI: Cache'i Zorla Temizle ---
-    // Fonksiyon her çağrıldığında (rota güncellendiğinde çağrılır),
-    // eski hesaplamaları unutması için cachedDay'i null yapıyoruz.
-    cachedDay = null; 
-    cachedCumDist = [];
-    cachedTotalDist = 0;
-    // --- DÜZELTME BİTİŞİ ---
-
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (!scaleBar || !map) return;
 
-    // --- TEMİZLİK ---
+    // --- TEMİZLİK: Eski event listenerları kaldır ---
     if (scaleBar._onMoveHandler) {
         scaleBar.removeEventListener("mousemove", scaleBar._onMoveHandler);
         scaleBar.removeEventListener("touchmove", scaleBar._onMoveHandler);
@@ -5528,67 +5517,104 @@ function setupScaleBarInteraction(day, map) {
         window._hoverMarkersByDay[day] = null;
     }
 
-    // 3D Markerını temizle (Varsa)
+    // 3D Markerını temizle
     if (window._hoverMarker3D) {
         window._hoverMarker3D.remove();
         window._hoverMarker3D = null;
     }
 
-    function prepareDistanceCache() {
-        // Eğer cache zaten bu gün için hazırsa ve DOLUYSA tekrar hesaplama
-        // (cachedDay yukarıda null yapıldığı için ilk harekette burası false dönecek ve yeniden hesaplayacak)
-        if (cachedDay === day && cachedCumDist.length > 0) return;
+    // --- CACHE HAZIRLAMA FONKSİYONU ---
+    function ensureGeomCache() {
+        // Eğer cache zaten varsa ve bu güne aitse tekrar hesaplama
+        if (scaleBar._geomCache && scaleBar._geomCache.day === day && scaleBar._geomCache.cumDist.length > 0) {
+            return;
+        }
 
         const arcPts = window._curvedArcPointsByDay ? window._curvedArcPointsByDay[day] : [];
-        if (!Array.isArray(arcPts) || arcPts.length < 2) return;
-
-        cachedCumDist = [0];
-        cachedTotalDist = 0;
-
-        for (let i = 1; i < arcPts.length; i++) {
-            const [lon1, lat1] = arcPts[i-1];
-            const [lon2, lat2] = arcPts[i];
-            const d = haversine(lat1, lon1, lat2, lon2);
-            cachedTotalDist += d;
-            cachedCumDist.push(cachedTotalDist);
+        if (!Array.isArray(arcPts) || arcPts.length < 2) {
+            scaleBar._geomCache = { day: day, cumDist: [], totalDist: 0, pts: [] };
+            return;
         }
-        cachedDay = day;
+
+        let total = 0;
+        const cumDist = [0];
+
+        // Koordinatların [Lat, Lng] olduğunu varsayarak hesapla
+        for (let i = 1; i < arcPts.length; i++) {
+            // arcPts genellikle [Lat, Lng] formatındadır (updateExpandedMap fonksiyonuna göre)
+            const p1 = arcPts[i-1];
+            const p2 = arcPts[i];
+            
+            // Haversine: (lat1, lon1, lat2, lon2)
+            const d = haversine(p1[0], p1[1], p2[0], p2[1]); 
+            total += d;
+            cumDist.push(total);
+        }
+
+        // Cache'i elementin üzerine kaydet
+        scaleBar._geomCache = {
+            day: day,
+            cumDist: cumDist,
+            totalDist: total,
+            pts: arcPts
+        };
     }
 
+    // --- HAREKET HANDLER'I ---
     const onMove = function(e) {
-        const arcPts = window._curvedArcPointsByDay ? window._curvedArcPointsByDay[day] : [];
-        if (!Array.isArray(arcPts) || arcPts.length === 0) return;
-
-        prepareDistanceCache();
-        if (cachedTotalDist === 0) return;
+        ensureGeomCache(); // Veriyi kontrol et veya oluştur
+        
+        const cache = scaleBar._geomCache;
+        if (!cache || !cache.pts || cache.pts.length === 0 || cache.totalDist === 0) return;
 
         const rect = scaleBar.getBoundingClientRect();
         let clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
-        let x = clientX - rect.left;
         
+        // Mouse'un bar üzerindeki yüzdesi (0.0 ile 1.0 arası)
+        let x = clientX - rect.left;
         let percent = Math.max(0, Math.min(x / rect.width, 1));
         
         let targetMeters = 0;
 
-        // Zoomlu Segment Hesabı
+        // --- KRİTİK DÜZELTME: GEOMETRİ BAZLI HESAPLAMA ---
+        // Marker'ı API'den gelen 'totalKm'ye göre değil, 
+        // haritadaki çizginin (polyLine) kendi uzunluğuna (cache.totalDist) göre konumlandırıyoruz.
+        // Bu sayede %50 mouse konumu, haritadaki çizginin tam %50'sine denk gelir.
+        
         if (
             typeof window._lastSegmentStartKm === 'number' && 
             typeof window._lastSegmentEndKm === 'number' &&
             window._lastSegmentDay === day
         ) {
-            const startM = window._lastSegmentStartKm * 1000;
-            const spanM = (window._lastSegmentEndKm - window._lastSegmentStartKm) * 1000;
-            targetMeters = startM + (percent * spanM);
+            // Eğer Zoom (Segment) yapılmışsa:
+            // Segmentin başlangıç ve bitiş yüzdesini bulmamız lazım
+            // Ancak segment km bazlı olduğu için, bunu geometri oranına çevirmeliyiz.
+            
+            // Basitleştirilmiş Yaklaşım: Segmentin görsel oranını kullan
+            // (Tam hassasiyet için segmentin de geometri üzerinden hesaplanması gerekir ama bu yeterli olacaktır)
+            const totalKmApi = Number(scaleBar.dataset.totalKm) || (cache.totalDist / 1000);
+            const startRatio = window._lastSegmentStartKm / totalKmApi;
+            const endRatio = window._lastSegmentEndKm / totalKmApi;
+            const segmentSpanRatio = endRatio - startRatio;
+
+            // Global geometri üzerindeki hedef oran
+            const globalPercent = startRatio + (percent * segmentSpanRatio);
+            targetMeters = globalPercent * cache.totalDist;
+
         } else {
-            targetMeters = percent * cachedTotalDist;
+            // Normal görünüm: Farenin yüzdesi * Toplam Geometri Uzunluğu
+            targetMeters = percent * cache.totalDist;
         }
 
-        targetMeters = Math.max(0, Math.min(targetMeters, cachedTotalDist));
+        // Sınırları koru
+        targetMeters = Math.max(0, Math.min(targetMeters, cache.totalDist));
 
+        // Mesafeye denk gelen noktayı bul (Binary Search gerekmez, düz döngü yeterli)
         let foundIndex = 0;
-        // Binary search yerine basit loop (veri az olduğu için yeterli)
-        for (let i = 0; i < cachedCumDist.length; i++) {
-            if (cachedCumDist[i] >= targetMeters) {
+        const dists = cache.cumDist;
+        
+        for (let i = 0; i < dists.length; i++) {
+            if (dists[i] >= targetMeters) {
                 foundIndex = i;
                 break;
             }
@@ -5596,31 +5622,33 @@ function setupScaleBarInteraction(day, map) {
 
         let lat, lng;
         if (foundIndex === 0) {
-            [lng, lat] = arcPts[0];
+            [lat, lng] = cache.pts[0];
         } else {
             const idx1 = foundIndex - 1;
             const idx2 = foundIndex;
-            const dist1 = cachedCumDist[idx1];
-            const dist2 = cachedCumDist[idx2];
-            const segmentLen = dist2 - dist1;
+            const d1 = dists[idx1];
+            const d2 = dists[idx2];
+            const segmentLen = d2 - d1;
             
+            // İki nokta arası enterpolasyon (yumuşak geçiş)
             let ratio = 0;
             if (segmentLen > 0) {
-                ratio = (targetMeters - dist1) / segmentLen;
+                ratio = (targetMeters - d1) / segmentLen;
             }
-            const [lon1, lat1] = arcPts[idx1];
-            const [lon2, lat2] = arcPts[idx2];
             
-            lat = lat1 + (lat2 - lat1) * ratio;
-            lng = lon1 + (lon2 - lon1) * ratio;
+            const p1 = cache.pts[idx1];
+            const p2 = cache.pts[idx2];
+            
+            // [Lat, Lng] formatı
+            lat = p1[0] + (p2[0] - p1[0]) * ratio;
+            lng = p1[1] + (p2[1] - p1[1]) * ratio;
         }
 
-        // --- GÜNCELLEME KISMI: 3D Mİ 2D Mİ? ---
+        // --- MARKER GÜNCELLEME ---
         const is3DMode = document.getElementById('maplibre-3d-view') && 
                          document.getElementById('maplibre-3d-view').style.display !== 'none';
 
         if (is3DMode && window._maplibre3DInstance) {
-            // --- 3D HARİTA (MapLibre) İŞLEMLERİ ---
             if (!window._hoverMarker3D) {
                 const el = document.createElement('div');
                 el.style.cssText = 'background: #8a4af3; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
@@ -5631,7 +5659,6 @@ function setupScaleBarInteraction(day, map) {
                 window._hoverMarker3D.setLngLat([lng, lat]);
             }
         } else {
-            // --- 2D HARİTA (Leaflet) İŞLEMLERİ ---
             let marker = window._hoverMarkersByDay[day];
             if (marker) {
                 marker.setLatLng([lat, lng]);
@@ -5647,20 +5674,17 @@ function setupScaleBarInteraction(day, map) {
                         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                     "></div>
                 `;
-                
                 const icon = L.divIcon({
                     className: '',
                     html: purpleIconHtml,
                     iconSize: [32, 32],
                     iconAnchor: [16, 16]
                 });
-
                 marker = L.marker([lat, lng], {
                     icon: icon,
                     zIndexOffset: 10000,
                     interactive: false
                 }).addTo(map);
-                
                 window._hoverMarkersByDay[day] = marker; 
             }
         }
@@ -5683,7 +5707,7 @@ function setupScaleBarInteraction(day, map) {
 
     scaleBar.addEventListener("mousemove", onMove);
     scaleBar.addEventListener("mouseleave", onLeave);
-    scaleBar.addEventListener("touchmove", onMove);
+    scaleBar.addEventListener("touchmove", onMove, { passive: true });
     scaleBar.addEventListener("touchend", onLeave);
 }
 
