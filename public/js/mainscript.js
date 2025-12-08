@@ -6043,46 +6043,52 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // 1. Önce 3D'yi gizle, 2D container'ı GÖRÜNÜR yap
+        // 1. Önce 3D Haritayı gizle, pusulayı kaldır
         if (map3d) map3d.style.display = "none";
-        const container = expandedMapInstance.getContainer();
-        container.style.display = ""; // Artık DOM üzerinde yer kaplıyor
         if (compassBtn) compassBtn.style.display = 'none';
+
+        // 2. Leaflet Container'ı görünür yap
+        const container = expandedMapInstance.getContainer();
+        container.style.display = ""; 
         
-        // 2. Tile katmanını ayarla
+        // 3. Tile katmanını (Bright/Positron) ayarla
         setExpandedMapTile(opt.value);
 
-        // 3. KRİTİK GECİKME: Tarayıcının 'display: block' işlemini bitirmesini bekle
-        setTimeout(() => {
-            // A. Leaflet'e "Boyutların değişti, kendini toparla" de
-            expandedMapInstance.invalidateSize(); 
+        // 4. İLK HAMLE: Haritaya "boyutların değişti" sinyali gönder
+        expandedMapInstance.invalidateSize();
 
-            // B. 3D modundayken eklenen verileri ŞİMDİ, harita görünürken tekrar çiz
-            // Bu fonksiyon markerları ve rotayı 0x0 değil, gerçek koordinatlara oturtur.
-            updateExpandedMap(expandedMapInstance, day);
+        // 5. KESİN ÇÖZÜM: Tarayıcının render işlemini bitirmesini bekle (RAF + Timeout)
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                // A. Harita boyutunu tekrar doğrula (DOM oturduktan sonra)
+                expandedMapInstance.invalidateSize(); 
 
-            // C. Haritayı verilere odakla (FitBounds)
-            // updateExpandedMap içinde markerlar eklendi ama odaklama kaymış olabilir.
-            const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-            const validPts = currentPts.filter(p => isFinite(p.lat) && isFinite(p.lng));
-            
-            if (validPts.length > 0) {
-                const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
+                // B. Markerları ve Rotayı ŞİMDİ çiz (Artık harita boyutları biliniyor)
+                // Bu fonksiyon tüm markerları silip doğru koordinatlara tekrar koyar.
+                updateExpandedMap(expandedMapInstance, day);
+
+                // C. Haritayı verilere odakla (FitBounds)
+                const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+                const validPts = currentPts.filter(p => isFinite(p.lat) && isFinite(p.lng));
                 
-                // Rota verisi varsa sınırları ona göre genişlet
-                const containerId = `route-map-day${day}`;
-                const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
-                if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-                    const coords = geojson.features[0].geometry.coordinates;
-                    coords.forEach(c => bounds.extend([c[1], c[0]]));
+                if (validPts.length > 0) {
+                    const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
+                    
+                    // Rota verisi varsa sınırları ona göre genişlet
+                    const containerId = `route-map-day${day}`;
+                    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+                    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+                        const coords = geojson.features[0].geometry.coordinates;
+                        coords.forEach(c => bounds.extend([c[1], c[0]]));
+                    }
+                    
+                    expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
+                } else {
+                    // Veri yoksa varsayılan görünüm
+                    expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
                 }
-                
-                expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
-            } else {
-                // Veri yoksa mevcut merkezi koru ama resize'ı onayla
-                expandedMapInstance.setView(expandedMapInstance.getCenter(), expandedMapInstance.getZoom(), { animate: false });
-            }
-        }, 100); // 100ms gecikme DOM render'ı ve gri ekranı önlemek için idealdir
+            }, 100); // 100ms gecikme, DOM'un ve CSS'in oturması için yeterlidir
+        });
       }
       
       if (
