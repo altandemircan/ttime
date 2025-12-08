@@ -540,7 +540,14 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                             <button onclick="window.editPointName()" style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
                             <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
                         </div>
-                        <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;">
+                        <div class="point-address" style="display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+    font-weight: 400;">
                             ${pointInfo.address || 'Selected location'}
                         </div>
                     </div>
@@ -828,7 +835,14 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
           <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
             <span style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
           </div>
-          <div class="point-address" style="font-size: 11px; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: left;">${safeAddress}</div>
+          <div class="point-address" style="display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+    font-weight: 400;">${safeAddress}</div>
         </div>
         <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           <button class="add-point-to-cart-btn"
@@ -1152,7 +1166,14 @@ async function getRestaurantPopupHTML(f, day) {
           <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
             <span style="font-weight: 500; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
           </div>
-          <div class="point-address" style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <div class="point-address" style="display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+    font-weight: 400;">
             ${address}
           </div>
         </div>
