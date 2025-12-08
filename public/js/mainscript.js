@@ -6007,14 +6007,14 @@ async function expandMap(containerId, day) {
     
     if (opt.value === currentLayer) div.classList.add('selected');
 
-        div.onclick = function(e) {
+       div.onclick = function(e) {
       e.stopPropagation(); 
       if (layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
 
-      const wasLiberty = (currentLayer === 'liberty'); // << eklendi
+      const prevLayer = currentLayer; // önceki durumu hatırla (3D→2D algısı)
 
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
@@ -6126,8 +6126,8 @@ async function expandMap(containerId, day) {
 
       layersBar.classList.add('closed');
 
-      // 3D -> 2D geçişinde kod kendi kendine ikinci tıklamayı tetikler
-      if (wasLiberty && opt.value !== 'liberty' && !div.__autoDouble) {
+      // 3D → 2D geçişinde KOD ikinci tıklamayı otomatik yapar
+      if (prevLayer === 'liberty' && opt.value !== 'liberty' && !div.__autoDouble) {
         div.__autoDouble = true;
         setTimeout(() => {
           layersBar.classList.remove('closed');
