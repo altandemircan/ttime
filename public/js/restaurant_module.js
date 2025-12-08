@@ -45,10 +45,22 @@ function showSearchButton(lat, lng, map, options = {}) {
 
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
-  // 1. Önce kesinlikle eskileri temizle
+  // 1. Önce kesinlikle eskileri temizle (Genel temizlik)
   if (typeof closeNearbyPopup === 'function') {
       closeNearbyPopup();
   }
+
+  // --- FIX: HARİTA ÜZERİNDEKİ ESKİ MAVİ MARKERLARI MANUEL SİL ---
+  // Global değişkenlerde kalan eski marker varsa, yenisini eklemeden önce mutlaka kaldır.
+  if (window._nearbyPulseMarker) {
+      try { window._nearbyPulseMarker.remove(); } catch(e) {}
+      window._nearbyPulseMarker = null;
+  }
+  if (window._nearbyPulseMarker3D) {
+      try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+      window._nearbyPulseMarker3D = null;
+  }
+  // -------------------------------------------------------------
 
   // MapLibre kontrolü
   const isMapLibre = !!map.addSource;
@@ -56,8 +68,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
   const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
   const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&limit=20&apiKey=${apiKey}`;
-
-  closeNearbyPopup(); // Eskileri temizle
 
   // Loading popup
   const loadingContent = `
@@ -81,6 +91,8 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
       // 3D Harita (MapLibre)
       const el = document.createElement('div');
       el.innerHTML = pulseHtml;
+      
+      // Marker'ı oluştur ve global değişkene ata
       window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
           .setLngLat([lng, lat])
           .addTo(map);
@@ -94,6 +106,8 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         iconSize: [20, 20],
         iconAnchor: [10, 10]
       });
+      
+      // Marker'ı oluştur ve global değişkene ata
       window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
       
       const currentZoom = map.getZoom();
@@ -248,16 +262,14 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
     showCustomPopup(lat, lng, map, html, true);
 
-    // --- BUTTON EVENT LISTENER GÜNCELLENDİ ---
+    // --- BUTTON EVENT LISTENER ---
     setTimeout(() => {
         const btn = document.getElementById("show-restaurants-btn");
         if (btn) {
             btn.onclick = function() {
-                // 1. Önce Nearby Popup'ı kapat
                 if (typeof closeNearbyPopup === 'function') {
                     closeNearbyPopup();
                 }
-                // 2. Sonra restoranları haritaya ekle
                 showNearbyRestaurants(lat, lng, map, day);
             };
         }
@@ -275,7 +287,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     showCustomPopup(lat, lng, map, errorContent, true);
   }
 }
-
 async function showNearbyRestaurants(lat, lng, map, day) {
     // ---------------------------------------------------------
     // 1. CSS ENJEKSİYONU: 3D MAP POPUP TASARIMINI 2D İLE EŞİTLEME
