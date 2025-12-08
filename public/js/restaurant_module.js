@@ -12,7 +12,6 @@ function showSearchButton(lat, lng, map, options = {}) {
     // alert(`Polyline tıklama noktası: ${lat}, ${lng}`);
 
     const bufferMeters = options.radius || 1000;
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const categories = options.categories || "catering.restaurant";
     const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
 
@@ -65,7 +64,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   // MapLibre kontrolü
   const isMapLibre = !!map.addSource;
 
-  const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
+
   const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
   const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&limit=20&apiKey=${apiKey}`;
 
@@ -363,7 +362,6 @@ async function showNearbyRestaurants(lat, lng, map, day) {
         window._restaurant3DMarkers = [];
     }
 
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
 
     try {
@@ -537,7 +535,6 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
 
 async function searchRestaurantsAt(lat, lng, map) {
     const bufferMeters = 1000; // 1 km çap
-    const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
     const url = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
     const resp = await fetch(url);
     const data = await resp.json();
@@ -565,7 +562,6 @@ function addRoutePolylineWithClick(map, coords) {
         const lat = e.latlng.lat, lng = e.latlng.lng;
         const radiusMeters = 1000;
         const MAX_DISTANCE_METERS = 2200; // 2.2km'den uzakları gösterme
-        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
         const categories = [
             "catering.restaurant",
             "catering.cafe",
@@ -942,7 +938,6 @@ function addRouteWithRestaurantClick(expandedMap, geojson) {
         expandedMap.__restaurantLayers = [];
 
         const lat = e.latlng.lat, lng = e.latlng.lng;
-        const apiKey = window.GEOAPIFY_API_KEY || "d9a0dce87b1b4ef6b49054ce24aeb462";
         const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
         const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},1000&limit=20&apiKey=${apiKey}`;
         try {
