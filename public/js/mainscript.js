@@ -6045,71 +6045,60 @@ async function expandMap(containerId, day) {
       } else {
         // --- 2D MOD (TEK TILE VE NAN SORUNU KESİN ÇÖZÜM) ---
         
+        // 1. Önce 3D elementleri gizle
         if (map3d) map3d.style.display = "none";
-if (compassBtn) compassBtn.style.display = 'none';
+        if (compassBtn) compassBtn.style.display = 'none';
 
-// --- 3D MOD KAPAT & RESET ---
-try { window._maplibre3DInstance?.remove(); } catch (_) {}
-window._maplibre3DInstance = null;
-document.getElementById('maplibre-3d-view')?.remove();
+        // 2. Leaflet'i GÖRÜNÜR yap
+        const container = expandedMapInstance.getContainer();
+        container.style.display = "block"; 
+        
+        // 3. Force Reflow (Tarayıcıyı boyutu hesaplamaya zorla)
+        void container.offsetWidth; 
 
-// --- LEAFLET HARİTA FULL RESET (overlay temizliği) ---
-if (expandedMapInstance._maplibreLayer) {
-    try {
-        if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
-            expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
+        // 4. MapLibre katmanını ACİL sök (NaN döngüsünü durdurmak için)
+        if (expandedMapInstance._maplibreLayer) {
+            try { 
+                if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
+                    expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); 
+                }
+            } catch(e){}
+            expandedMapInstance._maplibreLayer = null;
         }
-    } catch (_) {}
-    expandedMapInstance._maplibreLayer = null;
-}
 
-// Güvenli merkez/bounds al
-const routePts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-const validPts = routePts.filter(p => isFinite(p.lat) && isFinite(p.lng));
-let safeCenter = [39.0, 35.0], safeZoom = 6;
-let safeBounds = null;
-if (validPts.length === 1) {
-  safeCenter = [validPts[0].lat, validPts[0].lng];
-  safeZoom = 14;
-} else if (validPts.length > 1) {
-  safeBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-  safeCenter = safeBounds.getCenter();
-  safeZoom = 10;
-}
+        // 5. ŞİMDİ GÜVENLİ RESETLEME (Harita merkezini zorla düzelt)
+        // NaN hatasını engellemek için, veriyi yüklemeden önce haritayı güvenli bir konuma ışınla.
+        try {
+            // Animasyonsuz olarak Türkiye merkezine çek. Bu, Leaflet'in iç state'ini (NaN'dan) kurtarır.
+            expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
+        } catch(e) {}
 
-// Yeni tile stilini uygula
-setExpandedMapTile(opt.value);
+        // 6. Veri Temizliği (Data Sanitization)
+        if (Array.isArray(window.cart)) {
+            window.cart.forEach(item => {
+                if (item.day == day && item.location) {
+                    let lat = parseFloat(item.location.lat);
+                    let lng = parseFloat(item.location.lng);
+                    if (isNaN(lat)) lat = parseFloat(item.lat) || 0;
+                    if (isNaN(lng)) lng = parseFloat(item.lon) || 0;
+                    item.location.lat = lat;
+                    item.location.lng = lng;
+                }
+            });
+        }
 
-// Leaflet görünür ve reflow
-const container = expandedMapInstance.getContainer();
-container.style.display = "block";
-void container.offsetWidth;
+        // 7. Tile Ayarla
+        setExpandedMapTile(opt.value);
+        
+        // 8. Boyut Güncelle
+        expandedMapInstance.invalidateSize(false); 
 
-// Boyut ve görünüm onarımı: iki aşamalı invalidate + redraw
-requestAnimationFrame(() => {
-  expandedMapInstance.invalidateSize(false);
-  setTimeout(() => {
-    expandedMapInstance.invalidateSize(false);
-    if (safeBounds && safeBounds.isValid()) {
-      expandedMapInstance.fitBounds(safeBounds, { padding: [50, 50], animate: false });
-    } else {
-      expandedMapInstance.setView(safeCenter, safeZoom, { animate: false });
-    }
-    // GridLayer redraw (tek tile kalmasını engeller)
-    expandedMapInstance.eachLayer(l => {
-      if (l instanceof L.GridLayer) {
-        try { l.redraw(); } catch (_) {}
-      }
-    });
-  }, 80);
-});
-
-// 9. Verileri Çiz
-try {
-  updateExpandedMap(expandedMapInstance, day);
-} catch (e) {
-  console.warn("Update error:", e);
-}
+        // 9. Verileri Çiz
+        try {
+            updateExpandedMap(expandedMapInstance, day);
+        } catch (e) {
+            console.warn("Update error:", e);
+        }
 
         // 10. Gecikmeli Odaklama ve Boyutlandırma
         requestAnimationFrame(() => {
