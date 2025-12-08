@@ -334,34 +334,42 @@ window.closeNearbyPopup = function() {
 };
 
 function showSearchButton(lat, lng, map, options = {}) {
-    // Sadece test için alert bırakabilirsin (çalıştığı belli)
-    // alert(`Polyline tıklama noktası: ${lat}, ${lng}`);
-
     const bufferMeters = options.radius || 1000;
     const categories = options.categories || "catering.restaurant";
-    const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${bufferMeters}&limit=50&apiKey=${apiKey}`;
 
-    // Haritada buton göster
-    const button = L.control({position: 'topright'});
+    // Proxy üzerinden çağrı: anahtar kullanımı yok
+    const url = `/api/geoapify/places?categories=${encodeURIComponent(categories)}&filter=circle:${lng},${lat},${bufferMeters}&limit=50`;
+
+    const button = L.control({ position: 'topright' });
     button.onAdd = function () {
         const div = L.DomUtil.create('div', 'custom-search-btn');
         div.innerHTML = '<button id="search-restaurants-btn" style="padding:8px 16px;border-radius:8px;background:#1976d2;color:#fff;font-weight:600;">Bu alanda restoran ara</button>';
-        div.onclick = async function() {
-            // Restoranları çek
-            const resp = await fetch(url);
-            const data = await resp.json();
-            if (!data.features || data.features.length === 0) {
-                alert("Bu alanda restoran bulunamadı!");
+        div.onclick = async function () {
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) {
+                    alert("Restoranlar alınamadı. Lütfen tekrar deneyin.");
+                    map.removeControl(button);
+                    return;
+                }
+                const data = await resp.json();
+                if (!data.features || data.features.length === 0) {
+                    alert("Bu alanda restoran bulunamadı!");
+                    map.removeControl(button);
+                    return;
+                }
+
+                data.features.forEach(f => {
+                    const p = f.properties || {};
+                    L.marker([p.lat, p.lon]).addTo(map).bindPopup(`<b>${p.name || "Restoran"}</b>`);
+                });
+                alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+            } catch (err) {
+                console.error("Restoran arama hatası:", err);
+                alert("Restoranlar alınamadı. Lütfen tekrar deneyin.");
+            } finally {
                 map.removeControl(button);
-                return;
             }
-            data.features.forEach(f => {
-                L.marker([f.properties.lat, f.properties.lon])
-                    .addTo(map)
-                    .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
-            });
-            alert(`Bu alanda ${data.features.length} restoran bulundu.`);
-            map.removeControl(button);
         };
         return div;
     };
