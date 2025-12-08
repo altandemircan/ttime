@@ -6042,76 +6042,64 @@ async function expandMap(containerId, day) {
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
-     } else {
-        // --- 1. 3D'yi Kapat ---
+      } else {
+        // --- 1. 3D Haritayı ve pusulayı kapat ---
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // --- 2. 2D Container'ı Aç ---
+        // --- 2. Leaflet Container'ı görünür yap ---
         const container = expandedMapInstance.getContainer();
-        container.style.display = "block";
+        container.style.display = "block"; 
         
-        // Gri Ekran Fix (Reflow)
+        // --- 3. FORCE REFLOW (Gri Ekran Fix) ---
+        // Tarayıcıyı genişliği hesaplamaya zorla
         void container.offsetWidth; 
-
-        // --- 3. VERİ TEMİZLİĞİ (CRITICAL FIX) ---
-        // 3D modundan gelen verilerdeki String/Null/NaN hatalarını temizle
-        if (window.cart && Array.isArray(window.cart)) {
+        
+        // --- 4. DATA SANITIZATION (NaN Fix) ---
+        // 3D haritadan gelen string veya bozuk verileri temizle
+        if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
-                    // 1. String ise Float'a çevir
                     let lat = parseFloat(item.location.lat);
                     let lng = parseFloat(item.location.lng);
+                    
+                    if (isNaN(lat)) lat = parseFloat(item.lat) || 0;
+                    if (isNaN(lng)) lng = parseFloat(item.lon) || 0;
 
-                    // 2. Hala NaN ise (bozuksa), item'ın ana verisinden kurtarmayı dene
-                    if (isNaN(lat)) lat = parseFloat(item.lat);
-                    if (isNaN(lng)) lng = parseFloat(item.lon);
-
-                    // 3. Kurtarılamadıysa 0.0 ver (Haritayı çökertmesin)
-                    if (isNaN(lat) || isNaN(lng)) {
-                        lat = 0;
-                        lng = 0;
-                        // İsteğe bağlı: item.location = null; yapıp haritadan düşürebilirsiniz.
-                    }
-
-                    // Temiz veriyi geri yaz
                     item.location.lat = lat;
                     item.location.lng = lng;
                 }
             });
         }
 
-        // --- 4. Tile Katmanını Ayarla ---
+        // --- 5. Tile katmanını değiştir ---
         setExpandedMapTile(opt.value);
 
-        // --- 5. Haritayı Güncelle ---
+        // --- 6. Haritayı Güncelle ---
         expandedMapInstance.invalidateSize(true);
 
-        // --- 6. Verileri Çiz (Try-Catch ile Leaflet'i koru) ---
+        // --- 7. Verileri Çiz (Hata korumalı) ---
         try {
             updateExpandedMap(expandedMapInstance, day);
         } catch (e) {
-            console.warn("Harita çizim hatası (görmezden gelindi):", e);
+            console.warn("Harita güncelleme hatası:", e);
         }
 
-        // --- 7. Odaklanma (Zoom) ---
+        // --- 8. Haritayı Odakla ---
         requestAnimationFrame(() => {
             setTimeout(() => {
                 expandedMapInstance.invalidateSize();
-                
-                // Sağlam noktaları topla
-                const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-                // Lat/Lng kesinlikle sayı olanları filtrele
-                const validPts = currentPts.filter(p => 
-                    typeof p.lat === 'number' && !isNaN(p.lat) &&
-                    typeof p.lng === 'number' && !isNaN(p.lng) &&
-                    p.lat !== 0 && p.lng !== 0 // 0,0'a düşenleri de odaklamaya katma
-                );
 
+                const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+                // 0,0 noktalarını ve hatalı sayıları filtrele
+                const validPts = currentPts.filter(p => 
+                    typeof p.lat === 'number' && !isNaN(p.lat) && p.lat !== 0 &&
+                    typeof p.lng === 'number' && !isNaN(p.lng) && p.lng !== 0
+                );
+                
                 if (validPts.length > 0) {
                     const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
                     
-                    // Varsa rotayı da kapsa
                     const containerId = `route-map-day${day}`;
                     const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
                     if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
@@ -6120,53 +6108,14 @@ async function expandMap(containerId, day) {
                         });
                     }
                     
-                    expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
+                    if (bounds.isValid()) {
+                        expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
+                    }
                 } else {
-                    // Veri yoksa Türkiye/Genel merkez
                     expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
                 }
-            }, 100);
+            }, 50);
         });
-      }
-
-        // 8. Haritayı sınırlara (bounds) oturt
-        setTimeout(() => {
-            // Tekrar boyut kontrolü
-            expandedMapInstance.invalidateSize();
-
-            // Sadece GEÇERLİ (Sayısal) koordinatları al
-            const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-            const validPts = currentPts.filter(p => 
-                typeof p.lat === 'number' && !isNaN(p.lat) &&
-                typeof p.lng === 'number' && !isNaN(p.lng)
-            );
-            
-            if (validPts.length > 0) {
-                // Bounds oluştur
-                const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-                
-                // Rota çizgisini de hesaba kat (Varsa)
-                const containerId = `route-map-day${day}`;
-                const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
-                if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-                    const coords = geojson.features[0].geometry.coordinates;
-                    // Koordinatların da sayısal olduğundan emin ol
-                    coords.forEach(c => {
-                        if (!isNaN(c[1]) && !isNaN(c[0])) {
-                            bounds.extend([c[1], c[0]]);
-                        }
-                    });
-                }
-                
-                // Eğer bounds geçerliyse odakla
-                if (bounds.isValid()) {
-                    expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
-                }
-            } else {
-                // Veri yoksa veya hepsi hatalıysa varsayılan görünüm
-                expandedMapInstance.setView(expandedMapInstance.getCenter(), expandedMapInstance.getZoom(), { animate: false });
-            }
-        }, 50);
       }
       
       if (
