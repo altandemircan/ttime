@@ -6042,7 +6042,7 @@ async function expandMap(containerId, day) {
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
-      } } else {
+      } else {
         // 1. 3D'yi gizle, 2D'yi aç
         if (map3d) map3d.style.display = "none";
         expandedMapInstance.getContainer().style.display = "";
