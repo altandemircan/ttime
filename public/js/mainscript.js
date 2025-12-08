@@ -6872,7 +6872,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
   `;
   showCustomPopup(lat, lng, map, loadingContent, false);
 
-  // --- SİNYAL (PULSE) MARKER (YENİ ÖZELLİK) ---
+  // --- SİNYAL (PULSE) MARKER ---
   const pulseHtml = `
     <div class="user-loc-wrapper">
        <div class="user-loc-ring-1"></div>
@@ -6926,7 +6926,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         .slice(0, 10);
 
       if (results.length > 0) {
-        // --- ORİJİNAL FOTOĞRAF ÇEKME MANTIĞI (GERİ GELDİ) ---
         try {
           photos = await Promise.all(results.map(async (f) => {
             const name = f.properties.name || "";
@@ -6947,16 +6946,13 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
               }
               return PLACEHOLDER_IMG;
             } catch (error) {
-              console.warn(`Photo loading error: ${name}`, error);
               return PLACEHOLDER_IMG;
             }
           }));
         } catch (photoError) {
-          console.warn('Photo loading failed, using placeholders:', photoError);
           photos = results.map(() => PLACEHOLDER_IMG);
         }
 
-        // --- ORİJİNAL LİSTE HTML YAPISI (GERİ GELDİ) ---
         placesHtml = results.map((f, idx) => {
           const name = f.properties.name || "(İsim yok)";
           const adr = f.properties.formatted || "";
@@ -7005,13 +7001,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
     const addPointSection = `
       <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
-        <div class="point-item" style="display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    margin-bottom: 0;">
+        <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
           <div class="point-image" style="width: 42px; height: 42px; position: relative;">
             <img id="clicked-point-img"
                  src="img/placeholder.png"
@@ -7062,15 +7052,17 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
     showCustomPopup(lat, lng, map, html, true);
 
+    // --- BUTTON EVENT LISTENER GÜNCELLENDİ ---
     setTimeout(() => {
         const btn = document.getElementById("show-restaurants-btn");
         if (btn) {
-            btn.onclick = async function() {
-                btn.disabled = true;
-                btn.textContent = "Loading restaurants...";
-                await showNearbyRestaurants(lat, lng, map, day);
-                btn.disabled = false;
-                btn.textContent = "🍽️ Show Restaurants";
+            btn.onclick = function() {
+                // 1. Önce Nearby Popup'ı kapat
+                if (typeof closeNearbyPopup === 'function') {
+                    closeNearbyPopup();
+                }
+                // 2. Sonra restoranları haritaya ekle
+                showNearbyRestaurants(lat, lng, map, day);
             };
         }
     }, 250);
