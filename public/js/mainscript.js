@@ -5941,9 +5941,7 @@ async function expandMap(containerId, day) {
   if (!window.__ttMapLayerCloserBound) {
     document.addEventListener('click', (e) => {
         const row = document.querySelector('.map-layers-row');
-        if (row && !row.contains(e.target)) {
-            row.classList.add('closed');
-        }
+        if (row && !row.contains(e.target)) row.classList.add('closed');
     });
     window.__ttMapLayerCloserBound = true;
   }
@@ -5982,10 +5980,8 @@ async function expandMap(containerId, day) {
   if (!originalContainer) ensureDayMapContainer(day); 
   if (originalContainer) originalContainer.style.display = 'none';
 
-  // === HEADER ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
-  
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row closed'; 
 
@@ -6020,19 +6016,16 @@ async function expandMap(containerId, day) {
 
     div.onclick = function(e) {
       e.stopPropagation(); 
-
       if (layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
-
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
       
       currentLayer = opt.value;
       localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
 
-      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
 
@@ -6043,29 +6036,28 @@ async function expandMap(containerId, day) {
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MOD (TEK TILE SORUNU İÇİN GÜNCELLENDİ) ---
+        // --- 2D MOD (DÜZELTME: TILE YÜKLEME VE NAN ÇÖZÜMÜ) ---
         
-        // 1. Önce 3D elementleri gizle
         if (map3d) map3d.style.display = "none";
         if (compassBtn) compassBtn.style.display = 'none';
 
-        // 2. Leaflet'i GÖRÜNÜR yap
+        // 1. Leaflet Container'ı Görünür Yap
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
         
-        // 3. Force Reflow (Tarayıcıyı boyutu hesaplamaya zorla)
+        // 2. Force Reflow (Tarayıcıyı boyutu hesaplamaya zorla)
         void container.offsetWidth; 
 
-        // 4. Şimdi Güvenli Durdurma
+        // 3. Güvenli Durdurma
         try { expandedMapInstance.stop(); } catch(e) {}
 
-        // 5. MapLibre katmanını sök
+        // 4. MapLibre katmanını sök
         if (expandedMapInstance._maplibreLayer) {
             try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
             expandedMapInstance._maplibreLayer = null;
         }
 
-        // 6. Harita merkezini resetle
+        // 5. Harita merkezini resetle
         try {
             const center = expandedMapInstance.getCenter();
             if (!center || isNaN(center.lat) || isNaN(center.lng)) {
@@ -6075,7 +6067,7 @@ async function expandMap(containerId, day) {
             expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
         }
 
-        // 7. Veri Temizliği (NaN Fix)
+        // 6. Veri Temizliği (NaN Fix)
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
@@ -6089,24 +6081,21 @@ async function expandMap(containerId, day) {
             });
         }
 
-        // 8. Tile ve Update
+        // 7. Tile Ayarla ve İlk Boyutlandırma
         setExpandedMapTile(opt.value);
-        
-        // --- KRİTİK GÜNCELLEME: Invalidate Size ---
-        // Harita görünür olduktan hemen sonra boyut güncellemesi yapılır.
-        expandedMapInstance.invalidateSize(); 
+        expandedMapInstance.invalidateSize(false); // Animasyonsuz anında yap
 
+        // 8. Verileri Çiz
         try {
             updateExpandedMap(expandedMapInstance, day);
         } catch (e) {
             console.warn("Update error:", e);
         }
 
-        // 9. Odaklama ve Tekrar Boyutlandırma (Gecikmeli)
+        // 9. Odaklama ve İkinci Boyutlandırma (Tile Sorunu Çözümü)
         requestAnimationFrame(() => {
-            // setTimeout ile biraz bekletiyoruz ki CSS transitionları bitsin
             setTimeout(() => {
-                // Tekrar boyut hesapla (Tek tile sorununu çözer)
+                // Tekrar boyutlandır (Tile'ların tamamının gelmesi için şart)
                 expandedMapInstance.invalidateSize(); 
 
                 const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
@@ -6127,7 +6116,7 @@ async function expandMap(containerId, day) {
                 } else {
                     expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
                 }
-            }, 100);
+            }, 80); // 80-100ms ideal
         });
       }
       
@@ -6158,7 +6147,6 @@ async function expandMap(containerId, day) {
   const statsDiv = document.createElement('div');
   statsDiv.className = 'route-stats';
 
-  // === 2. CUSTOM CONTROLS ===
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'map-custom-controls';
 
@@ -6278,11 +6266,7 @@ async function expandMap(containerId, day) {
   // === 4. PANEL ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
-  panelDiv.appendChild(headerDiv); 
-  panelDiv.appendChild(statsDiv);   
-  panelDiv.appendChild(controlsDiv); 
-  panelDiv.appendChild(scaleBarDiv); 
-  
+  panelDiv.append(headerDiv, statsDiv, controlsDiv, scaleBarDiv);
   expandedContainer.appendChild(panelDiv);
 
   const closeBtn = document.createElement('button');
@@ -6388,7 +6372,6 @@ async function expandMap(containerId, day) {
     ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
   }
 }
-
 function updateExpandedMap(expandedMap, day) {
     console.log("[updateExpandedMap] Safe Render Started. Day:", day);
 
