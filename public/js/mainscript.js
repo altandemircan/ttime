@@ -5722,8 +5722,6 @@ function saveArcPointsForDay(day, points) {
     window._curvedArcPointsByDay[day] = points;
 }
 
-// ... existing code above ...
-
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
     if (!map || !map.getStyle()) return;
@@ -5863,7 +5861,6 @@ function refresh3DMapData(day) {
     }
 }
 
-// ... existing code below ...
 function openMapLibre3D(expandedMap) {
   // DOM Elementlerini Bul
   let mapDiv = expandedMap.getContainer();
