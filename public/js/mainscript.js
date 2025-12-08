@@ -5897,6 +5897,7 @@ function openMapLibre3D(expandedMap) {
   }); 
 }
 async function expandMap(containerId, day) {
+  // Önce temizlik
   forceCleanExpandedMap(day);
 
   day = parseInt(day, 10);
@@ -5904,24 +5905,37 @@ async function expandMap(containerId, day) {
 
   console.log('[expandMap] start →', containerId, 'day=', day);
 
-  // 1. STİL EKLEME
+  // 1. ORİJİNAL STİL (TASARIM BOZULMADAN)
   if (!document.getElementById('tt-custom-map-controls-css')) {
       const style = document.createElement('style');
       style.id = 'tt-custom-map-controls-css';
+      // ORİJİNAL CSS BURAYA GERİ EKLENDİ
       style.innerHTML = `
-        .map-custom-controls { position: absolute; bottom: 200px; display: flex; flex-direction: column; gap: 10px; z-index: 10001; right: 20px; }
-        .map-ctrl-btn { box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 4px 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; }
-        .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); }
+        .map-custom-controls {
+            position: absolute; bottom: 200px; display: flex; flex-direction: column; gap: 10px; z-index: 10001;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); padding: 6px; border-radius: 12px;
+            backdrop-filter: blur(4px); border: 1px solid rgba(0, 0, 0, 0.05); right: 20px;
+        }
+        .map-ctrl-btn {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease; backdrop-filter: blur(4px); padding: 4px 10px;
+            background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer;
+        }
+        .map-ctrl-btn:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .map-ctrl-btn:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .map-ctrl-btn img { width: 22px; height: 22px; opacity: 0.85; }
-        .map-ctrl-btn.zoom-text { font-size: 22px; font-weight: 300; color: #666; }
-        .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s; }
-        .expanded-map-header { position: absolute; bottom: 200px; left: 10px; z-index: 10001; display: flex; gap: 15px; left: -20px; }
+        .map-ctrl-btn.zoom-text { font-size: 22px; font-weight: 300; line-height: 1; color: #666; padding-bottom: 2px; }
+        .custom-compass-disc { width: 24px; height: 24px; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: center center; }
+        .expanded-map-header { position: absolute; bottom: 200px; left: 10px; z-index: 10001; display: flex; align-items: center; gap: 15px; left: -20px; }
         @media (max-width:768px) { .expanded-map-header { left: 10px; } .map-custom-controls { right: 20px; } }
-        .map-layers-row { display: flex; gap: 8px; padding: 6px; border-radius: 12px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); flex-direction: column; width: auto; cursor: pointer; }
+        .map-layers-row { position: relative; display: flex; gap: 8px; padding: 6px; border-radius: 12px; backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); flex-direction: column; width: auto; cursor: pointer; transition: all 0.2s ease; }
         .map-layers-row.closed .map-type-option:not(.selected) { display: none !important; }
-        .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 12px; font-weight: 500; }
-        .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; }
+        .map-type-option { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 12px; font-weight: 500; color: #444; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .map-type-option.selected { background: #eef7ff; border-color: #297fd4; color: #1976d2; box-shadow: 0 2px 5px rgba(41, 127, 212, 0.15); }
+        .map-type-option:hover { background: #f9f9f9; }
         .map-type-option img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
+        .maplibregl-ctrl-bottom-left { bottom: 30px !important; left: 20px !important; z-index: 20000 !important; pointer-events: none; }
+        .maplibregl-ctrl-scale { background-color: rgba(255, 255, 255, 0.9) !important; border: 1px solid #e0e0e0 !important; border-radius: 6px !important; padding: 2px 8px !important; color: #555 !important; font-size: 11px !important; font-weight: 600 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; border-top: 1px solid #e0e0e0 !important; height: auto !important; line-height: 1.4 !important; pointer-events: auto; }
       `;
       document.head.appendChild(style);
   }
@@ -5929,14 +5943,15 @@ async function expandMap(containerId, day) {
   if (!window.__ttMapLayerCloserBound) {
     document.addEventListener('click', (e) => {
         const row = document.querySelector('.map-layers-row');
-        if (row && !row.contains(e.target)) row.classList.add('closed');
+        if (row && !row.contains(e.target)) {
+            row.classList.add('closed');
+        }
     });
     window.__ttMapLayerCloserBound = true;
   }
   
   if (window.expandedMaps && window.expandedMaps[containerId]) return;
 
-  // Diğer expanded mapleri kapat
   if (window.expandedMaps) {
     Object.keys(window.expandedMaps).forEach(otherId => {
       if (otherId !== containerId) {
@@ -5947,9 +5962,8 @@ async function expandMap(containerId, day) {
   } 
 
   const originalContainer = document.getElementById(containerId);
-  const baseMap = window.leafletMaps ? window.leafletMaps[containerId] : null;
+  const map = window.leafletMaps ? window.leafletMaps[containerId] : null;
 
-  // Butonları disable et
   const controlsBar = document.getElementById(`route-controls-bar-day${day}`);
   const tmSet = document.getElementById(`tt-travel-mode-set-day${day}`);
   const expandBtns = [];
@@ -5959,6 +5973,7 @@ async function expandMap(containerId, day) {
   expandBtns.forEach(btn => {
       if(btn) {
           btn.disabled = true;
+          btn.style.pointerEvents = 'none';
           btn.style.opacity = '0.6';
           btn.style.filter = 'grayscale(100%)';
           const label = btn.querySelector('.tm-label');
@@ -5969,9 +5984,10 @@ async function expandMap(containerId, day) {
   if (!originalContainer) ensureDayMapContainer(day); 
   if (originalContainer) originalContainer.style.display = 'none';
 
-  // HEADER & LAYERS
+  // === HEADER ===
   const headerDiv = document.createElement('div');
   headerDiv.className = 'expanded-map-header';
+  
   const layersBar = document.createElement('div');
   layersBar.className = 'map-layers-row closed'; 
 
@@ -6006,34 +6022,35 @@ async function expandMap(containerId, day) {
 
     div.onclick = function(e) {
       e.stopPropagation(); 
+
       if (layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
+
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       div.classList.add('selected');
       
       currentLayer = opt.value;
       localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
 
+      const panelDiv = expandedContainer.querySelector('.expanded-map-panel');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
 
       if (opt.value === 'liberty') {
-        // --- 3D MODU SEÇİLDİ ---
+        // --- 3D MOD ---
         expandedMapInstance.getContainer().style.display = "none";
         if (map3d) map3d.style.display = 'block';
         if (compassBtn) compassBtn.style.display = 'flex';
         openMapLibre3D(expandedMapInstance); 
       } else {
-        // --- 2D MODU SEÇİLDİ (KRİTİK DÜZELTMELER BURADA) ---
+        // --- 2D MOD (KRİTİK DÜZELTME BURADA) ---
         
-        // 1. ÖNCE HER ŞEYİ DURDUR: Animasyonlar ve MapLibre GL katmanı hataya sebep oluyor.
-        // Harita hareket halindeyse durdur.
+        // 1. Haritayı durdur (Pan/Zoom animasyonları NaN hatası vermesin)
         expandedMapInstance.stop();
 
-        // 2. MapLibre Katmanını KÖKÜNDEN SİL (Hata kaynağı burası)
-        // Eğer bu katman silinmezse, 2D'ye geçtiğinde NaN hatası fırlatmaya devam eder.
+        // 2. MapLibre katmanını söküp at (Hatayı önleyen kısım)
         if (expandedMapInstance._maplibreLayer) {
             try {
                 expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer);
@@ -6041,8 +6058,7 @@ async function expandMap(containerId, day) {
             expandedMapInstance._maplibreLayer = null;
         }
 
-        // 3. Harita Merkezi Bozuksa (NaN), güvenli bir yere al
-        // Bu işlem harita görünmeden önce yapılmalı
+        // 3. Harita merkezini güvenli bir yere al
         const center = expandedMapInstance.getCenter();
         if (!center || isNaN(center.lat) || isNaN(center.lng)) {
             expandedMapInstance.setView([0, 0], 1, { animate: false });
@@ -6055,10 +6071,10 @@ async function expandMap(containerId, day) {
         const container = expandedMapInstance.getContainer();
         container.style.display = "block"; 
         
-        // 5. Force Reflow (Gri Ekran Fix)
+        // 5. Force Reflow (Gri Ekranı Önle)
         void container.offsetWidth; 
         
-        // 6. DATA SANITIZATION (NaN Veri Temizliği)
+        // 6. Verileri Temizle (NaN Düzeltmesi)
         if (Array.isArray(window.cart)) {
             window.cart.forEach(item => {
                 if (item.day == day && item.location) {
@@ -6072,10 +6088,10 @@ async function expandMap(containerId, day) {
             });
         }
 
-        // 7. Tile Katmanını Ayarla (Artık MapLibre yok, temiz sayfa)
+        // 7. Tile Katmanını Ayarla
         setExpandedMapTile(opt.value);
 
-        // 8. Leaflet Boyut Güncelleme
+        // 8. Leaflet Boyutunu Güncelle
         expandedMapInstance.invalidateSize(true);
 
         // 9. Verileri Çiz
@@ -6085,7 +6101,7 @@ async function expandMap(containerId, day) {
             console.warn("Harita güncelleme hatası:", e);
         }
 
-        // 10. Odaklanma (FitBounds)
+        // 10. Odakla
         requestAnimationFrame(() => {
             setTimeout(() => {
                 expandedMapInstance.invalidateSize();
@@ -6111,6 +6127,23 @@ async function expandMap(containerId, day) {
         });
       }
       
+      if (
+          typeof window._lastSegmentDay === 'number' && 
+          window._lastSegmentDay === day &&
+          typeof window._lastSegmentStartKm === 'number' &&
+          typeof window._lastSegmentEndKm === 'number'
+      ) {
+          setTimeout(() => {
+              if (typeof highlightSegmentOnMap === 'function') {
+                  highlightSegmentOnMap(
+                      day, 
+                      window._lastSegmentStartKm, 
+                      window._lastSegmentEndKm
+                  );
+              }
+          }, 250); 
+      }
+
       layersBar.classList.add('closed');
     };
     layersBar.appendChild(div);
@@ -6150,9 +6183,13 @@ async function expandMap(containerId, day) {
   const compassBtn = document.createElement('button');
   compassBtn.id = `custom-compass-btn-${day}`;
   compassBtn.className = 'map-ctrl-btn ctrl-compass'; 
-  compassBtn.style.display = 'none';
+  compassBtn.style.display = currentLayer === 'liberty' ? 'flex' : 'none';
   compassBtn.title = "Reset North";
-  compassBtn.innerHTML = `<div class="custom-compass-disc"><img src="https://www.svgrepo.com/show/526952/compass-big.svg" style="width:100%;height:100%;" alt="N"></div>`;
+  compassBtn.innerHTML = `
+    <div class="custom-compass-disc">
+       <img src="https://www.svgrepo.com/show/526952/compass-big.svg" style="width:100%;height:100%;" alt="N">
+    </div>
+  `;
   compassBtn.onclick = function() {
       if (currentLayer === 'liberty' && window._maplibre3DInstance) {
           window._maplibre3DInstance.easeTo({ bearing: 0, pitch: 60, duration: 1000 });
@@ -6162,32 +6199,78 @@ async function expandMap(containerId, day) {
   const locBtn = document.createElement('button');
   locBtn.className = 'map-ctrl-btn';
   locBtn.id = `use-my-location-btn-day${day}`;
+  locBtn.title = "Use My Location";
   locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+  
   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
   
-  // LOC BTN Event (Özetlendi)
+  // LOC BUTTON EVENT
   locBtn.onclick = function() {
       const isActive = window.isLocationActiveByDay[day];
       if (!isActive) {
           window.isLocationActiveByDay[day] = true;
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
-          // ... (Location Style injection kısmı aynı kalacak) ...
+          
+          if (!document.getElementById('tt-unified-loc-style')) {
+              const s = document.createElement('style');
+              s.id = 'tt-unified-loc-style';
+              s.innerHTML = `
+                @keyframes ttPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; } }
+                @keyframes ttColorCycle { 0% { background-color: #4285F4; } 50% { background-color: #34A853; } 100% { background-color: #4285F4; } }
+                @keyframes ttRingColorCycle { 0% { background-color: rgba(66, 133, 244, 0.6); } 50% { background-color: rgba(52, 168, 83, 0.6); } 100% { background-color: rgba(66, 133, 244, 0.6); } }
+                .user-loc-wrapper { position: relative; width: 20px; height: 20px; }
+                .user-loc-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: #4285F4; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 2; animation: ttColorCycle 2s infinite ease-in-out; }
+                .user-loc-ring-1 { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6); border-radius: 50%; z-index: 1; animation: ttPulse 2.5s infinite linear, ttRingColorCycle 2s infinite ease-in-out; }
+                .user-loc-ring-2 { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6); border-radius: 50%; z-index: 1; animation: ttPulse 2.5s infinite linear, ttRingColorCycle 2s infinite ease-in-out; animation-delay: 1.25s, 0s; }
+              `;
+              document.head.appendChild(s);
+          }
+
+          const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-ring-2"></div><div class="user-loc-dot"></div></div>`;
+
           navigator.geolocation.getCurrentPosition(pos => {
-              const { latitude, longitude } = pos.coords;
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+
               if (currentLayer === 'liberty' && window._maplibre3DInstance) {
-                  window._maplibre3DInstance.flyTo({ center: [longitude, latitude], zoom: 14 });
-                  // ... 3D Marker ekleme ...
-              } else if (expandedMapInstance) {
-                  expandedMapInstance.flyTo([latitude, longitude], 14);
-                  // ... 2D Marker ekleme ...
+                  window._maplibre3DInstance.flyTo({ center: [lng, lat], zoom: 14 });
+                  if (window._userLocMarker3D) window._userLocMarker3D.remove();
+                  const el = document.createElement('div');
+                  el.innerHTML = locHtml; 
+                  window._userLocMarker3D = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(window._maplibre3DInstance);
+              } 
+              else {
+                  if (expandedMapInstance) {
+                      expandedMapInstance.flyTo([lat, lng], 14, { duration: 1 });
+                      if (window._userLocMarker2D) expandedMapInstance.removeLayer(window._userLocMarker2D);
+                      const customIcon = L.divIcon({
+                          className: 'custom-loc-icon-leaflet',
+                          html: locHtml,
+                          iconSize: [20, 20],
+                          iconAnchor: [10, 10]
+                      });
+                      window._userLocMarker2D = L.marker([lat, lng], { icon: customIcon, zIndexOffset: 1000 }).addTo(expandedMapInstance);
+                  }
               }
-          }, () => {
-             window.isLocationActiveByDay[day] = false;
-             locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+          }, err => {
+              console.error("Konum hatası:", err);
+              alert("Konum alınamadı.");
+              window.isLocationActiveByDay[day] = false;
+              locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
           });
+
       } else {
           window.isLocationActiveByDay[day] = false;
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+          
+          if (window._userLocMarker3D) {
+              window._userLocMarker3D.remove();
+              window._userLocMarker3D = null;
+          }
+          if (window._userLocMarker2D && expandedMapInstance) {
+              expandedMapInstance.removeLayer(window._userLocMarker2D);
+              window._userLocMarker2D = null;
+          }
       }
   };
 
@@ -6196,7 +6279,7 @@ async function expandMap(containerId, day) {
   controlsDiv.appendChild(compassBtn);
   controlsDiv.appendChild(locBtn);
   
-  // === 3. SCALE BAR & PANEL ===
+  // === 3. SCALE BAR ===
   const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (oldBar) oldBar.remove();
   const scaleBarDiv = document.createElement('div');
@@ -6204,9 +6287,15 @@ async function expandMap(containerId, day) {
   scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
   scaleBarDiv.style.display = "block";
 
+  // === 4. PANEL ===
   const panelDiv = document.createElement('div');
   panelDiv.className = 'expanded-map-panel';
-  panelDiv.append(headerDiv, statsDiv, controlsDiv, scaleBarDiv);
+  
+  panelDiv.appendChild(headerDiv); 
+  panelDiv.appendChild(statsDiv);   
+  panelDiv.appendChild(controlsDiv); 
+  panelDiv.appendChild(scaleBarDiv); 
+  
   expandedContainer.appendChild(panelDiv);
 
   const closeBtn = document.createElement('button');
@@ -6219,32 +6308,44 @@ async function expandMap(containerId, day) {
   const mapDiv = document.createElement('div');
   mapDiv.id = mapDivId;
   mapDiv.className = 'expanded-map';
-  mapDiv.style.width = "100%";
-  mapDiv.style.height = "480px"; 
   expandedContainer.appendChild(mapDiv);
   document.body.appendChild(expandedContainer);
   
+  mapDiv.style.width = "100%";
+  mapDiv.style.height = "480px"; 
+
   showRouteInfoBanner(day);
 
-  // === MAP INITIALIZATION ===
   const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
   const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
-  let startCenter = validPtsInit.length === 1 ? [validPtsInit[0].lat, validPtsInit[0].lng] : [39.0, 35.0];
-  let startZoom = validPtsInit.length === 1 ? 14 : 5;
-  if(validPtsInit.length > 1) {
-      const b = L.latLngBounds(validPtsInit.map(p=>[p.lat, p.lng]));
-      startCenter = b.getCenter();
-      startZoom = 10;
+  let startCenter = [39.0, 35.0]; 
+  let startZoom = 5;
+  if (validPtsInit.length > 0) {
+      if (validPtsInit.length === 1) {
+          startCenter = [validPtsInit[0].lat, validPtsInit[0].lng];
+          startZoom = 14; 
+      } else {
+          const b = L.latLngBounds(validPtsInit.map(p => [p.lat, p.lng]));
+          startCenter = b.getCenter();
+          startZoom = 10;
+      }
   }
 
   const expandedMapInstance = L.map(mapDivId, {
-    center: startCenter, zoom: startZoom, zoomControl: false, 
-    scrollWheelZoom: true, fadeAnimation: false, zoomAnimation: false, markerZoomAnimation: false,
-    inertia: false, preferCanvas: true, renderer: L.canvas({ padding: 0.5 })
+    center: startCenter,
+    zoom: startZoom,
+    zoomControl: false, 
+    scrollWheelZoom: true,
+    fadeAnimation: false,
+    zoomAnimation: false,
+    markerZoomAnimation: false,
+    inertia: false,
+    preferCanvas: true,
+    renderer: L.canvas({ padding: 0.5 }), 
+    dragging: true
   });
 
   function setExpandedMapTile(styleKey) {
-      // Öncekileri temizle
       if (expandedMapInstance._maplibreLayer) {
           try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
           expandedMapInstance._maplibreLayer = null;
@@ -6255,15 +6356,18 @@ async function expandMap(containerId, day) {
       }
 
       const url = `https://tiles.openfreemap.org/styles/${styleKey === 'liberty' ? 'bright' : styleKey}`;
+
       try {
           if (typeof L.maplibreGL === 'function') {
               expandedMapInstance._maplibreLayer = L.maplibreGL({
                   style: url,
-                  attribution: '',
+                  attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
                   interactive: true
               }).addTo(expandedMapInstance);
           } else {
-              expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(expandedMapInstance);
+              expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  maxZoom: 19
+              }).addTo(expandedMapInstance);
           }
       } catch (e) {
           if (styleKey !== 'bright') setExpandedMapTile('bright'); 
@@ -6271,32 +6375,71 @@ async function expandMap(containerId, day) {
   }
 
   setExpandedMapTile(currentLayer);
+
+  if (!expandedMapInstance._initialView) {
+    expandedMapInstance._initialView = {
+      center: expandedMapInstance.getCenter(),
+      zoom: expandedMapInstance.getZoom()
+    };
+  }
+
   updateExpandedMap(expandedMapInstance, day);
 
   setTimeout(() => {
       expandedMapInstance.invalidateSize();
-      // ... (Initial View logic same as before) ...
+      const containerId = `route-map-day${day}`;
+      const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+      let allLatLngs = [];
+      const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+      const currentValidPts = currentPts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+      allLatLngs = allLatLngs.concat(currentValidPts.map(p => L.latLng(p.lat, p.lng)));
+      if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+          const routeCoords = geojson.features[0].geometry.coordinates;
+          allLatLngs = allLatLngs.concat(routeCoords.map(c => L.latLng(c[1], c[0])));
+      }
+      if (allLatLngs.length > 0) {
+          if (allLatLngs.length === 1) {
+              expandedMapInstance.setView([allLatLngs[0].lat, allLatLngs[0].lng], 14, { animate: false });
+          } else {
+              const b = L.latLngBounds(allLatLngs);
+              expandedMapInstance.fitBounds(b, { padding: [50, 50], animate: false });
+          }
+      } else {
+          expandedMapInstance.setView([39.0, 35.0], 6);
+      }
+      
+      if (!expandedMapInstance.dragging.enabled()) expandedMapInstance.dragging.enable();
       const container = expandedMapInstance.getContainer();
       if (container) {
           container.style.cursor = 'grab';
           container.classList.remove('leaflet-interactive'); 
       }
       if (typeof attachClickNearbySearch === 'function') {
+          if (expandedMapInstance.__ttNearbyClickBound) {
+             expandedMapInstance.off('click', expandedMapInstance.__ttNearbyClickHandler);
+             expandedMapInstance.__ttNearbyClickBound = false;
+          }
           attachClickNearbySearch(expandedMapInstance, day);
       }
   }, 350); 
 
+  const summary = window.lastRouteSummaries?.[containerId];
+  if(statsDiv) statsDiv.innerHTML = '';
+
   window.expandedMaps = window.expandedMaps || {};
   window.expandedMaps[containerId] = {
-    originalContainer, day, originalMap: baseMap, expandedMap: expandedMapInstance
+    originalContainer,
+    day,
+    originalMap: baseMap,
+    expandedMap: expandedMapInstance
   };
 
-  // ... (Stats, Scalebar init, Draggable markers) ...
-  const summary = window.lastRouteSummaries?.[containerId];
   const totalKm = summary ? summary.distance / 1000 : 0;
   const markerPositions = getRouteMarkerPositionsOrdered ? getRouteMarkerPositionsOrdered(day) : [];
 
   if (typeof renderRouteScaleBar === 'function') {
+      scaleBarDiv.style.display = "block";
+      scaleBarDiv.innerHTML = "";
       renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
       const track = scaleBarDiv.querySelector('.scale-bar-track');
       if (track) {
