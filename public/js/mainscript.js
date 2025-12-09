@@ -197,8 +197,8 @@ function niceStep(total, target) {
   const f = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
   return f * p10;
 }
+// DÜZELTİLMİŞ FONKSİYON 2
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
-  // Güvenlik: Loading varsa çizme
   if (track && track.classList.contains('loading')) {
       track.querySelectorAll('.marker-badge').forEach(el => el.remove());
       return; 
@@ -219,7 +219,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
 
-  // --- Ticks & Labels (Yatay Eksen) ---
+  // --- Ticks & Labels ---
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
   let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
@@ -281,6 +281,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     markers.forEach((m, idx) => {
       let dist = typeof m.distance === "number" ? m.distance : 0;
       
+      // Segment dışındakileri çizme
       if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
           return;
       }
@@ -307,16 +308,20 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
       if (left < 1) transformX = '0%';
       else if (left > 99) transformX = '-100%';
 
+      // --- DÜZELTME: BURADA idx DEĞİL originalIndex KULLANILIYOR ---
+      const displayNum = m.originalIndex ? m.originalIndex : (idx + 1);
+      // -------------------------------------------------------------
+
       const wrap = document.createElement('div');
       wrap.className = 'marker-badge';
       wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(${transformX});z-index:5;`;
       wrap.title = m.name || '';
-      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${idx + 1}</div>`;
+      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${displayNum}</div>`;
       track.appendChild(wrap);
     });
   }
 
-  // --- Grid Labels (Dikey Eksen) ---
+  // --- Grid Labels ---
   let gridLabels = [];
   if (customElevData) {
       const { vizMin, vizMax } = customElevData;
@@ -343,7 +348,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
   gridLabels.forEach((obj, index) => { 
     let topStyle = '';
-    
     if (typeof obj.pct !== 'undefined') {
         topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
     } else {
@@ -353,44 +357,20 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     }
 
     const wrapper = document.createElement('div');
-    // En alttakini gizlemek için burayı veya aşağıdaki label kontrolünü kullanabiliriz.
-    // Biz aşağıda label.display = none yapacağız.
-    let visibilityStyle = ''; 
-    wrapper.style.cssText = `position: absolute; right: 0; ${topStyle} ${visibilityStyle}`;
+    wrapper.style.cssText = `position: absolute; right: 0; ${topStyle}`;
 
      const tick = document.createElement('div');
-    tick.style.cssText = `
-        width: 35px;
-        border-bottom: 1px dashed #cfd8dc;
-        opacity: 0.7;
-        display: block;
-        margin-left: 0px;
-        margin-top: 0px;
-    `;
+    tick.style.cssText = `width: 35px; border-bottom: 1px dashed #cfd8dc; opacity: 0.7; display: block; margin-left: 0px; margin-top: 0px;`;
 
     const label = document.createElement('div');
     label.className = 'elevation-label';
-    label.style.cssText = `
-        font-size: 10px;
-        color: #607d8b;
-        background: none;
-        line-height: 1.5;
-        text-align: right;
-        padding-right: 0px;
-        white-space: nowrap;
-    `;
+    label.style.cssText = `font-size: 10px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap;`;
     label.textContent = obj.value;
 
-    // --- DEĞİŞİKLİK BURADA: EN ALTTAKİ YAZIYI GİZLE ---
-    // Döngü 0'dan 4'e gider. 0 en alt (min), 4 en üst (max).
-    if (index === 0) {
-        label.style.display = 'none';
-    }
-    // -------------------------------------------------
+    if (index === 0) label.style.display = 'none';
 
     wrapper.appendChild(tick);
     wrapper.appendChild(label);
-    
     elevationLabels.appendChild(wrapper);
   });
 
@@ -8224,10 +8204,7 @@ function setupSidebarAccordion() {
   });
 }   
 
-
-
-// DÜZELTİLMİŞ: Her bir marker için polyline (rota) boyunca EN YAKIN noktayı bulur ve scale bar km’si ile tam hizalar.
-// Sıralı değil, her marker için en yakın noktayı tam bulur!
+// DÜZELTİLMİŞ FONKSİYON 1
 function getRouteMarkerPositionsOrdered(day) {
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
@@ -8242,7 +8219,6 @@ function getRouteMarkerPositionsOrdered(day) {
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
 
-    // Haversine Formülü
     function haversine(lat1, lon1, lat2, lon2) {
         const R = 6371000;
         const toRad = x => x * Math.PI / 180;
@@ -8253,7 +8229,6 @@ function getRouteMarkerPositionsOrdered(day) {
         return 2 * R * Math.asin(Math.sqrt(a));
     }
 
-    // Polyline kümülatif mesafesi: her noktaya kadar
     let polylineDistances = [0];
     for (let i = 1; i < routeCoords.length; i++) {
         const [lon1, lat1] = routeCoords[i - 1];
@@ -8267,17 +8242,18 @@ function getRouteMarkerPositionsOrdered(day) {
     const apiTotal = (summary && summary.distance) ? summary.distance : geomTotal;
     const globalRatio = geomTotal > 0 ? (apiTotal / geomTotal) : 1;
 
-    // DÜZELTME: Her bir marker için polyline’da en yakın noktayı bul, sıralı arama YOK.
     return points.map((marker, index) => {
-        // Başlangıç -> ilk polyline noktası
+        // --- KRİTİK EKLEME: GLOBAL SIRA NUMARASI ---
+        const globalIndex = index + 1;
+        // -------------------------------------------
+
         if (index === 0) {
-            return { name: marker.name, distance: 0, snapped: true, snappedDistance: 0 };
+            return { name: marker.name, distance: 0, snapped: true, snappedDistance: 0, originalIndex: globalIndex };
         }
-        // Bitiş -> son polyline noktası
         if (index === points.length - 1) {
-            return { name: marker.name, distance: apiTotal / 1000, snapped: true, snappedDistance: 0 };
+            return { name: marker.name, distance: apiTotal / 1000, snapped: true, snappedDistance: 0, originalIndex: globalIndex };
         }
-        // Ara markerlar için: Tüm polyline üzerindeki en yakın noktayı bul!
+        
         let bestIdx = 0, bestDist = Infinity;
         for (let i = 0; i < routeCoords.length; i++) {
             const [lon, lat] = routeCoords[i];
@@ -8292,13 +8268,13 @@ function getRouteMarkerPositionsOrdered(day) {
 
         return {
             name: marker.name,
-            distance: finalDist / 1000, // KM
-            snapped: bestDist <= 200,   // 200m içinde snap kabul
-            snappedDistance: bestDist
+            distance: finalDist / 1000, 
+            snapped: bestDist <= 200,   
+            snappedDistance: bestDist,
+            originalIndex: globalIndex // <-- Bunu Scale Bar okuyacak
         };
     });
 }
-
 
 function getPlacePriority(props) {
     const type = props.result_type || props.place_type || '';
