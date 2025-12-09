@@ -6596,7 +6596,7 @@ border-bottom:1px solid #ddd;
      .tt-scale-loader{    position: absolute;
     left: 50%;
     margin-left: -15px;
-    top: 40%;
+    top: 30%;
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
