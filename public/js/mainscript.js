@@ -1241,127 +1241,39 @@ async function updateSuggestions(queryText) {
     div.dataset.displayText = displayText;
 
     // === BURAYA TIKLAMA EVENTİNİ EKLE ===
-        div.onclick = function(e) {
-      e.stopPropagation(); 
-      if (layersBar.classList.contains('closed')) {
-          layersBar.classList.remove('closed');
-          return;
+    div.onclick = function() {
+      Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+      div.classList.add("selected-suggestion");
+      window.selectedSuggestion = { displayText, props };
+      window.selectedLocation = {
+        name: props.name || cityText,
+        city: cityText,
+        country: countryText,
+        lat: props.lat ?? props.latitude ?? null,
+        lon: props.lon ?? props.longitude ?? null,
+        country_code: props.country_code || ""
+      };
+      // Gün sayısı inputtan
+      const raw = chatInput.value.trim();
+      const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+      let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+      if (!days || days < 1) days = 2;
+      let canonicalStr = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
+      if (typeof formatCanonicalPlan === "function") {
+        const c = formatCanonicalPlan(`${window.selectedLocation.city} ${days} days`);
+        if (c && c.canonical) canonicalStr = c.canonical;
       }
-
-      const wasLiberty = (currentLayer === 'liberty'); // 3D’den mi çıkıyoruz?
-
-      layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
-      div.classList.add('selected');
-      
-      currentLayer = opt.value;
-      localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
-
-      const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
-      const map3d = document.getElementById('maplibre-3d-view');
-
-      if (opt.value === 'liberty') {
-        // --- 3D MOD ---
-        expandedMapInstance.getContainer().style.display = "none";
-        if (map3d) map3d.style.display = 'block';
-        if (compassBtn) compassBtn.style.display = 'flex';
-        openMapLibre3D(expandedMapInstance); 
+      if (typeof setChatInputValue === "function") {
+        setChatInputValue(canonicalStr);
       } else {
-        // --- 2D MOD (TEK TILE / NAN ÇÖZÜMÜ) ---
-        
-        // 1. 3D'yi Gizle
-        if (map3d) map3d.style.display = "none";
-        if (compassBtn) compassBtn.style.display = 'none';
-
-        // 2. Leaflet'i Görünür Yap
-        const container = expandedMapInstance.getContainer();
-        container.style.display = "block"; 
-        
-        // 3. Force Reflow (Gri Ekran Önlemi)
-        void container.offsetWidth; 
-
-        // 4. MapLibre katmanını ACİL sök (NaN döngüsü önlemi)
-        if (expandedMapInstance._maplibreLayer) {
-            try { 
-                if (expandedMapInstance.hasLayer(expandedMapInstance._maplibreLayer)) {
-                    expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); 
-                }
-            } catch(e){}
-            expandedMapInstance._maplibreLayer = null;
-        }
-
-        // 5. Harita Merkezini Güvenli Resetle
-        try {
-            expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-        } catch(e) {}
-
-        // 6. Veri Temizliği (Data Sanitization)
-        if (Array.isArray(window.cart)) {
-            window.cart.forEach(item => {
-                if (item.day == day && item.location) {
-                    let lat = parseFloat(item.location.lat);
-                    let lng = parseFloat(item.location.lng);
-                    if (isNaN(lat)) lat = parseFloat(item.lat) || 0;
-                    if (isNaN(lng)) lng = parseFloat(item.lon) || 0;
-                    item.location.lat = lat;
-                    item.location.lng = lng;
-                }
-            });
-        }
-
-        // 7. İLK YÜKLEME (Normal İşlem)
-        setExpandedMapTile(opt.value);
-        expandedMapInstance.invalidateSize(false); 
-        try { updateExpandedMap(expandedMapInstance, day); } catch (e) { }
-
-        // 8. TEK TILE ÇÖZÜMÜ: "SAHTE SEÇİM" (RE-TRIGGER)
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                expandedMapInstance.invalidateSize(false); 
-                setExpandedMapTile(opt.value); 
-
-                const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-                const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
-                
-                if (validPts.length > 0) {
-                    const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-                    const containerId = `route-map-day${day}`;
-                    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
-                    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-                        geojson.features[0].geometry.coordinates.forEach(c => {
-                            if (!isNaN(c[1]) && !isNaN(c[0])) bounds.extend([c[1], c[0]]);
-                        });
-                    }
-                    if (bounds.isValid()) {
-                        expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
-                    }
-                }
-            }, 300);
-        });
+        chatInput.value = canonicalStr;
       }
-      
-      // Segment Highlight Desteği
-      if (typeof window._lastSegmentDay === 'number' && window._lastSegmentDay === day) {
-          setTimeout(() => {
-              if (typeof highlightSegmentOnMap === 'function') {
-                  highlightSegmentOnMap(
-                      day, 
-                      window._lastSegmentStartKm, 
-                      window._lastSegmentEndKm
-                  );
-              }
-          }, 350); 
-      }
-
-      layersBar.classList.add('closed');
-
-      // 3D → 2D geçişinde kod ikinci tıklamayı otomatik yapar
-      if (wasLiberty && opt.value !== 'liberty' && !div.__autoDouble) {
-        div.__autoDouble = true;
-        setTimeout(() => {
-          layersBar.classList.remove('closed');
-          div.click();
-          div.__autoDouble = false;
-        }, 0);
+      window.selectedLocationLocked = true;
+      window.__locationPickedFromSuggestions = true;
+      enableSendButton && enableSendButton();
+      showSuggestionsDiv && showSuggestionsDiv();
+      if (typeof updateCanonicalPreview === "function") {
+        updateCanonicalPreview();
       }
     };
 
@@ -6131,10 +6043,10 @@ async function expandMap(containerId, day) {
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
     if (opt.value === currentLayer) div.classList.add('selected');
-    const handleLayerSelect = (e, forceSelect = false) => {
-      e.stopPropagation(); 
+        const handleLayerSelect = (e, forceSelect = false) => {
+      e.stopPropagation();
 
-      // 3D (liberty) → 2D geçişinde kod kendi kendine ikinci tıklamayı yapar
+      // 3D (liberty) → 2D geçişinde kod ikinci tıklamayı otomatik yapar
       const is3Dto2D = (currentLayer === 'liberty') && (opt.value !== 'liberty');
       if (is3Dto2D && !forceSelect && !div.__autoDouble) {
         div.__autoDouble = true;
@@ -6246,7 +6158,6 @@ async function expandMap(containerId, day) {
       layersBar.classList.add('closed');
     };
 
-    // Tek tık yeterli; dblclick kalsın ama gerek yok
     div.onclick = (e) => handleLayerSelect(e, false);
     div.ondblclick = (e) => handleLayerSelect(e, true);
 
