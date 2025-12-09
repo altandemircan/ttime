@@ -6046,14 +6046,8 @@ async function expandMap(containerId, day) {
         const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation();
 
-      // 3D (liberty) → 2D geçişinde kod ikinci tıklamayı otomatik yapar
-      const is3Dto2D = (currentLayer === 'liberty') && (opt.value !== 'liberty');
-      if (is3Dto2D && !forceSelect && !div.__autoDouble) {
-        div.__autoDouble = true;
-        setTimeout(() => handleLayerSelect(new Event('click'), true), 0); // ikinci çağrı
-        return; // ilk çağrıyı burada bitir
-      }
-      div.__autoDouble = false; // ikinci çağrı veya 3D dışı durum
+      // Önceki layer 3D miydi?
+      const wasLiberty = (currentLayer === 'liberty');
 
       // Menü kapalıysa önce açıp çık
       if (!forceSelect && layersBar.classList.contains('closed')) {
@@ -6122,41 +6116,8 @@ async function expandMap(containerId, day) {
                 if (validPts.length > 0) {
                     const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
                     const containerId = `route-map-day${day}`;
-                    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
-                    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-                        geojson.features[0].geometry.coordinates.forEach(c => {
-                            if (!isNaN(c[1]) && !isNaN(c[0])) bounds.extend([c[1], c[0]]);
-                        });
-                    }
-                    if (bounds.isValid()) {
-                        expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
-                    }
-                } else {
-                    expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-                }
-            }, 250);
-        });
-      }
-      
-      if (
-          typeof window._lastSegmentDay === 'number' && 
-          window._lastSegmentDay === day &&
-          typeof window._lastSegmentStartKm === 'number' &&
-          typeof window._lastSegmentEndKm === 'number'
-      ) {
-          setTimeout(() => {
-              if (typeof highlightSegmentOnMap === 'function') {
-                  highlightSegmentOnMap(
-                      day, 
-                      window._lastSegmentStartKm, 
-                      window._lastSegmentEndKm
-                  );
-              }
-          }, 300); 
-      }
-
-      layersBar.classList.add('closed');
-    };
+                    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[
+
 
     div.onclick = (e) => handleLayerSelect(e, false);
     div.ondblclick = (e) => handleLayerSelect(e, true);
