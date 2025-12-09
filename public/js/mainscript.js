@@ -5495,6 +5495,7 @@ function updateRouteStatsUI(day) {
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (DEBUG MODU) ===
 // Scale Bar üzerinde gezinirken haritadaki marker'ı hareket ettiren fonksiyon
+// Scale Bar üzerinde gezinirken haritadaki marker'ı hareket ettiren fonksiyon (Segment Destekli)
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     
@@ -5502,7 +5503,6 @@ function setupScaleBarInteraction(day, map) {
     if (!scaleBar || !map) return;
 
     // --- 1. Rota Verisini (Geometriyi) Al ---
-    // Burası kritik: Sadece durakları değil, çizginin kendisini oluşturan tüm noktaları alıyoruz.
     function getRouteGeometry() {
         const containerId = `route-map-day${day}`;
         let coordinates = [];
@@ -5511,7 +5511,6 @@ function setupScaleBarInteraction(day, map) {
         // A) Önce VPS/OSRM'den gelen detaylı rotayı kontrol et
         const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
         if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-            // GeoJSON [lng, lat] formatındadır, Leaflet [lat, lng] ister. Çeviriyoruz:
             const coords = geojson.features[0].geometry.coordinates;
             if (coords.length > 2) {
                 coordinates = coords.map(c => [c[1], c[0]]); // [Lat, Lng]
@@ -5519,19 +5518,16 @@ function setupScaleBarInteraction(day, map) {
             }
         }
 
-        // B) Eğer detaylı rota yoksa (Fly Mode), kavisli çizgiyi (Arc) al
+        // B) Fly Mode (Arc)
         if (coordinates.length === 0 && window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
-             // Arc points zaten [lng, lat] veya [lat, lng] olabilir, kontrol edelim.
-             // getCurvedArcCoords fonksiyonun [lng, lat] döndürüyor görünüyor.
              const arcPts = window._curvedArcPointsByDay[day];
              if (arcPts.length > 1) {
-                 // Eğer arcPts[0][0] > 90 ise muhtemelen Lng'dir (Basit kontrol)
                  coordinates = arcPts.map(p => [p[1], p[0]]); 
                  source = "fly_arc";
              }
         }
 
-        // C) O da yoksa Sepetteki (Cart) düz noktaları al (En kötü senaryo)
+        // C) Sepet (Cart) Düz Çizgi
         if (coordinates.length === 0 && window.cart) {
             const rawPts = window.cart
                 .filter(i => i.day == day && i.location && !isNaN(i.location.lat))
@@ -5545,19 +5541,17 @@ function setupScaleBarInteraction(day, map) {
         return { coordinates, source };
     }
 
-    // --- 2. Mesafe Cache'i Oluştur (Performans İçin) ---
-    // Her mouse hareketinde tekrar hesaplamamak için rotayı bir kere analiz edip "Hangi metrede hangi koordinat var?" dizisi çıkarıyoruz.
+    // --- 2. Mesafe Cache'i Oluştur ---
     function buildGeomCache() {
         const { coordinates } = getRouteGeometry();
         if (!coordinates || coordinates.length < 2) return null;
 
         let totalDist = 0;
-        const distIndex = [0]; // Her noktanın başlangıca olan kümülatif mesafesi
+        const distIndex = [0]; // Kümülatif mesafeler
 
         for (let i = 1; i < coordinates.length; i++) {
             const prev = coordinates[i - 1];
             const curr = coordinates[i];
-            // Haversine formülü (Metre cinsinden)
             const d = haversine(prev[0], prev[1], curr[0], curr[1]);
             totalDist += d;
             distIndex.push(totalDist);
@@ -5570,12 +5564,10 @@ function setupScaleBarInteraction(day, map) {
         };
     }
 
-    // Cache'i oluştur (Mouse scale bar'a girdiğinde yenilenir)
     scaleBar._routeCache = null;
     
-    // --- 3. Marker Oluşturma ve Güncelleme ---
+    // --- 3. Marker Oluşturma/Güncelleme ---
     const updateMarkerPosition = (lat, lng) => {
-        // 3D Harita (MapLibre) Kontrolü
         const is3DMode = document.getElementById('maplibre-3d-view') && 
                          document.getElementById('maplibre-3d-view').style.display !== 'none';
         
@@ -5590,12 +5582,9 @@ function setupScaleBarInteraction(day, map) {
             } else {
                 window._hoverMarker3D.setLngLat([lng, lat]);
             }
-        } 
-        // 2D Harita (Leaflet) Kontrolü
-        else {
+        } else {
             let marker = window._hoverMarkersByDay ? window._hoverMarkersByDay[day] : null;
             if (!marker || !map.hasLayer(marker)) {
-                // Marker yoksa yarat
                 const iconHtml = `<div style="background:#8a4af3;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>`;
                 const icon = L.divIcon({ 
                     className: 'tt-hover-marker-icon', 
@@ -5603,13 +5592,11 @@ function setupScaleBarInteraction(day, map) {
                     iconSize: [18, 18], 
                     iconAnchor: [9, 9] 
                 });
-                
                 marker = L.marker([lat, lng], { 
                     icon: icon, 
                     zIndexOffset: 9999, 
                     interactive: false 
                 }).addTo(map);
-
                 window._hoverMarkersByDay = window._hoverMarkersByDay || {};
                 window._hoverMarkersByDay[day] = marker;
             }
@@ -5617,28 +5604,49 @@ function setupScaleBarInteraction(day, map) {
         }
     };
 
-    // --- 4. Mouse Event Handler ---
+    // --- 4. Mouse Event Handler (DÜZELTİLEN KISIM) ---
     const handleMove = (e) => {
-        // Cache yoksa oluştur
         if (!scaleBar._routeCache) {
             scaleBar._routeCache = buildGeomCache();
         }
         const cache = scaleBar._routeCache;
-        if (!cache) return; // Veri yoksa yapacak bir şey yok
+        if (!cache) return;
 
-        // Mouse pozisyonunu al
         const rect = scaleBar.getBoundingClientRect();
         const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
         
-        // Bar üzerindeki yüzdeyi hesapla (0.0 ile 1.0 arası)
+        // Mouse'un bar üzerindeki yüzdesi (0.0 - 1.0)
         let percent = (clientX - rect.left) / rect.width;
         percent = Math.max(0, Math.min(1, percent));
 
-        // Hedef mesafeyi bul (Örn: Toplam 100km ise ve %50'deysek hedef 50km)
-        const targetMetre = percent * cache.totalLen;
+        let targetMetre = 0;
 
-        // Bu mesafeye denk gelen koordinatı bul (Interpolasyon ile)
-        // Binary search yapabiliriz ama düz döngü şimdilik yeterli
+        // === SEGMENT KONTROLÜ BURADA ===
+        // Eğer şu an bir segment aktifse, hesabı ona göre yap
+        if (
+            window._lastSegmentDay === day && 
+            typeof window._lastSegmentStartKm === 'number' && 
+            typeof window._lastSegmentEndKm === 'number'
+        ) {
+            // Segment başlangıç ve bitiş KM'leri
+            const startKm = window._lastSegmentStartKm;
+            const endKm = window._lastSegmentEndKm;
+            
+            // Mouse yüzdesini segment aralığına map'le
+            // Örn: Segment 10km-20km arasıysa ve mouse %50'deyse -> 15km
+            const currentKm = startKm + (percent * (endKm - startKm));
+            
+            targetMetre = currentKm * 1000; // Metreye çevir
+        } else {
+            // Segment yoksa tüm rota uzunluğunu kullan
+            targetMetre = percent * cache.totalLen;
+        }
+
+        // targetMetre'nin toplam uzunluğu aşmadığından emin ol
+        if (targetMetre > cache.totalLen) targetMetre = cache.totalLen;
+        if (targetMetre < 0) targetMetre = 0;
+
+        // Koordinat bulma (Interpolasyon)
         let idx = 0;
         for (let i = 0; i < cache.dists.length; i++) {
             if (cache.dists[i] >= targetMetre) {
@@ -5651,7 +5659,6 @@ function setupScaleBarInteraction(day, map) {
         if (idx === 0) {
             [lat, lng] = cache.coords[0];
         } else {
-            // İki nokta arasını yumuşat (Interpolation)
             const d1 = cache.dists[idx - 1];
             const d2 = cache.dists[idx];
             const segmentDist = d2 - d1;
@@ -5664,13 +5671,11 @@ function setupScaleBarInteraction(day, map) {
             lng = p1[1] + (p2[1] - p1[1]) * segmentRatio;
         }
 
-        // Marker'ı güncelle
         if (!isNaN(lat) && !isNaN(lng)) {
             updateMarkerPosition(lat, lng);
         }
     };
 
-    // --- 5. Listener Ekleme/Temizleme ---
     const cleanup = () => {
         if (window._hoverMarkersByDay && window._hoverMarkersByDay[day]) {
             try { map.removeLayer(window._hoverMarkersByDay[day]); } catch(e){}
@@ -5682,7 +5687,6 @@ function setupScaleBarInteraction(day, map) {
         }
     };
 
-    // Eski listenerları temizle
     if (scaleBar._activeHandler) {
         scaleBar.removeEventListener('mousemove', scaleBar._activeHandler);
         scaleBar.removeEventListener('touchmove', scaleBar._activeHandler);
@@ -5692,12 +5696,8 @@ function setupScaleBarInteraction(day, map) {
 
     scaleBar.addEventListener('mousemove', handleMove);
     scaleBar.addEventListener('touchmove', handleMove, { passive: true });
-    
-    // Mouse çıkınca marker'ı sil
     scaleBar.addEventListener('mouseleave', cleanup);
     scaleBar.addEventListener('touchend', cleanup);
-    
-    // Mouse girdiğinde cache'i tazele (belki rota değişmiştir)
     scaleBar.addEventListener('mouseenter', () => {
          scaleBar._routeCache = buildGeomCache();
     });
