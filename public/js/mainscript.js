@@ -5496,6 +5496,7 @@ function updateRouteStatsUI(day) {
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (DEBUG MODU) ===
 // Scale Bar üzerinde gezinirken haritadaki marker'ı hareket ettiren fonksiyon
 // Scale Bar üzerinde gezinirken haritadaki marker'ı hareket ettiren fonksiyon (Segment Destekli)
+// Scale Bar Marker Fix: Fly Mode Kavis Desteği + Segment Zoom Desteği
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     
@@ -5508,26 +5509,32 @@ function setupScaleBarInteraction(day, map) {
         let coordinates = [];
         let source = "none";
 
-        // A) Önce VPS/OSRM'den gelen detaylı rotayı kontrol et
-        const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
-        if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-            const coords = geojson.features[0].geometry.coordinates;
-            if (coords.length > 2) {
-                coordinates = coords.map(c => [c[1], c[0]]); // [Lat, Lng]
-                source = "geojson";
+        // A) ÖNCELİK 1: Fly Mode Kavisli Yol (Curved Arc)
+        // Eğer haritada kavisli çizgi çizildiyse, marker bunu takip etmeli.
+        // Düz GeoJSON yerine buna öncelik veriyoruz.
+        if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 0) {
+             const arcPts = window._curvedArcPointsByDay[day];
+             // Veri [Lng, Lat] formatında geliyor, Leaflet [Lat, Lng] ister. Çeviriyoruz:
+             coordinates = arcPts.map(p => [p[1], p[0]]); 
+             source = "fly_arc";
+        }
+
+        // B) ÖNCELİK 2: OSRM/VPS Detaylı Rota (GeoJSON)
+        // Fly mode değilse ve gerçek yol verisi varsa bunu kullan.
+        if (coordinates.length === 0) {
+            const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+            if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+                const coords = geojson.features[0].geometry.coordinates;
+                // Sadece nokta sayısı 2'den fazlaysa (gerçek rota ise) al.
+                // Fly mode'daki dummy geojson genelde sadece 2 nokta (baş-son) içerir.
+                if (coords.length > 2) {
+                    coordinates = coords.map(c => [c[1], c[0]]); // [Lat, Lng]
+                    source = "geojson";
+                }
             }
         }
 
-        // B) Fly Mode (Arc)
-        if (coordinates.length === 0 && window._curvedArcPointsByDay && window._curvedArcPointsByDay[day]) {
-             const arcPts = window._curvedArcPointsByDay[day];
-             if (arcPts.length > 1) {
-                 coordinates = arcPts.map(p => [p[1], p[0]]); 
-                 source = "fly_arc";
-             }
-        }
-
-        // C) Sepet (Cart) Düz Çizgi
+        // C) ÖNCELİK 3: Sepet (Cart) Düz Çizgi (En kötü senaryo)
         if (coordinates.length === 0 && window.cart) {
             const rawPts = window.cart
                 .filter(i => i.day == day && i.location && !isNaN(i.location.lat))
@@ -5604,7 +5611,7 @@ function setupScaleBarInteraction(day, map) {
         }
     };
 
-    // --- 4. Mouse Event Handler (DÜZELTİLEN KISIM) ---
+    // --- 4. Mouse Event Handler ---
     const handleMove = (e) => {
         if (!scaleBar._routeCache) {
             scaleBar._routeCache = buildGeomCache();
@@ -5621,28 +5628,20 @@ function setupScaleBarInteraction(day, map) {
 
         let targetMetre = 0;
 
-        // === SEGMENT KONTROLÜ BURADA ===
-        // Eğer şu an bir segment aktifse, hesabı ona göre yap
+        // === SEGMENT (ZOOM) KONTROLÜ ===
         if (
             window._lastSegmentDay === day && 
             typeof window._lastSegmentStartKm === 'number' && 
             typeof window._lastSegmentEndKm === 'number'
         ) {
-            // Segment başlangıç ve bitiş KM'leri
             const startKm = window._lastSegmentStartKm;
             const endKm = window._lastSegmentEndKm;
-            
-            // Mouse yüzdesini segment aralığına map'le
-            // Örn: Segment 10km-20km arasıysa ve mouse %50'deyse -> 15km
             const currentKm = startKm + (percent * (endKm - startKm));
-            
-            targetMetre = currentKm * 1000; // Metreye çevir
+            targetMetre = currentKm * 1000; 
         } else {
-            // Segment yoksa tüm rota uzunluğunu kullan
             targetMetre = percent * cache.totalLen;
         }
 
-        // targetMetre'nin toplam uzunluğu aşmadığından emin ol
         if (targetMetre > cache.totalLen) targetMetre = cache.totalLen;
         if (targetMetre < 0) targetMetre = 0;
 
