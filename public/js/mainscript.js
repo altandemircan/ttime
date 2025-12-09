@@ -6043,7 +6043,7 @@ async function expandMap(containerId, day) {
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
     if (opt.value === currentLayer) div.classList.add('selected');
-        const handleLayerSelect = (e, forceSelect = false) => {
+              const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation();
 
       // Önceki layer 3D miydi?
@@ -6116,8 +6116,51 @@ async function expandMap(containerId, day) {
                 if (validPts.length > 0) {
                     const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
                     const containerId = `route-map-day${day}`;
-                    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[
-
+                    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
+                    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+                        geojson.features[0].geometry.coordinates.forEach(c => {
+                            if (!isNaN(c[1]) && !isNaN(c[0])) bounds.extend([c[1], c[0]]);
+                        });
+                    }
+                    if (bounds.isValid()) {
+                        expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
+                    }
+                } else {
+                    expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
+                }
+            }, 250);
+        });
+      }
+      
+      if (
+          typeof window._lastSegmentDay === 'number' && 
+          window._lastSegmentDay === day &&
+          typeof window._lastSegmentStartKm === 'number' &&
+          typeof window._lastSegmentEndKm === 'number'
+      ) {
+          setTimeout(() => {
+              if (typeof highlightSegmentOnMap === 'function') {
+                  highlightSegmentOnMap(
+                      day, 
+                      window._lastSegmentStartKm, 
+                      window._lastSegmentEndKm
+                  );
+              }
+          }, 300); 
+      }
+
+      layersBar.classList.add('closed');
+
+      // 3D → 2D geçişinde tek tile fix: kod ikinci tıklamayı otomatik yapar
+      if (wasLiberty && opt.value !== 'liberty' && !div.__autoDouble) {
+        div.__autoDouble = true;
+        setTimeout(() => {
+          layersBar.classList.remove('closed');
+          div.click();
+          div.__autoDouble = false;
+        }, 0);
+      }
+    };
 
     div.onclick = (e) => handleLayerSelect(e, false);
     div.ondblclick = (e) => handleLayerSelect(e, true);
