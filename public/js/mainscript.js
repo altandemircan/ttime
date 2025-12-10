@@ -9890,19 +9890,33 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   // ============================================================
     // --- FIX: EĞER 3D HARİTA AÇIKSA ONU DA GÜNCELLE ---
     // ============================================================
+    // ============================================================
+    // --- 3D MAP FIX: GÜN KARIŞIKLIĞI ÇÖZÜMÜ ---
+    // ============================================================
+    
+    // 1. 3D Harita şu an görünür mü?
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
     
-    // Şu an hangi günün Expanded (Büyük) haritası açık onu buluyoruz
-    const expandedKey = Object.keys(window.expandedMaps || {}).find(k => window.expandedMaps[k].expandedMap);
-    const activeExpandedDay = expandedKey ? parseInt(expandedKey.replace('route-map-day', '')) : null;
+    // 2. Şu an Expanded (Büyük) olarak açık olan gün hangisi?
+    let activeExpandedDay = null;
+    if (window.expandedMaps) {
+        // Expanded objelerinde "expandedMap" property'si dolu olanı bul
+        const key = Object.keys(window.expandedMaps).find(k => window.expandedMaps[k] && window.expandedMaps[k].expandedMap);
+        if (key) {
+            // "route-map-day2" stringinden "2" sayısını al
+            activeExpandedDay = parseInt(key.replace('route-map-day', ''), 10);
+        }
+    }
 
-    // Sadece 3D açıksa VE şu an render edilen gün (day), açık olan günle (activeExpandedDay) aynıysa güncelle!
-    // Bu sayede Day 2 açıkken, arka planda render edilen Day 1 haritayı çalamaz.
+    // 3. KRİTİK KONTROL:
+    // Sadece 3D harita açıksa VE şu an render edilmekte olan 'day', 
+    // kullanıcının ekranda baktığı 'activeExpandedDay' ile EŞİTSE güncelle.
+    // Bu sayede updateCart() arka planda Day 1'i render ederken 3D haritaya dokunamaz.
     if (is3DActive && window._maplibre3DInstance && activeExpandedDay === day) {
-        // Yeni veriyle 3D haritayı tazele
         refresh3DMapData(day);
     }
+    // ============================================================
     // ============================================================
 
   Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
