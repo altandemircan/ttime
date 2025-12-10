@@ -5718,102 +5718,95 @@ function saveArcPointsForDay(day, points) {
 }
 
 // 3D Harita Verisini (Rota ve Markerlar) Yenileme Fonksiyonu
-// [GÜNCELLENDİ] Artık dışarıdan manuel veri kabul ediyor (Sync Sorunu Çözümü)
-function refresh3DMapData(day, manualGeoJSON = null, manualPoints = null) {
+function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
     
-    // Harita veya stil hazır değilse işlem yapma
+    // Harita yoksa veya stil yüklenmediyse çık
     if (!map || !map.getStyle()) return;
 
+    // --- 1. VERİYİ DOĞRUDAN GLOBAL KAYNAKTAN ÇEK (Canlı Veri) ---
+    // Argüman beklemiyoruz, o an hafızada ne varsa en doğrusu odur.
+    const points = (typeof getDayPoints === 'function' ? getDayPoints(day) : []);
     const containerId = `route-map-day${day}`;
+    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
     
-    // --- KRİTİK DEĞİŞİKLİK ---
-    // Eğer dışarıdan manuel veri geldiyse ONU KULLAN (Öncelik ver).
-    // Yoksa globalden çekmeye çalış.
-    const points = manualPoints || (typeof getDayPoints === 'function' ? getDayPoints(day) : []);
-    const geojson = manualGeoJSON || (window.lastRouteGeojsons && window.lastRouteGeojsons[containerId]);
-    
-    // Geçerli noktaları filtrele
+    // Rota koordinatlarını al
+    let routeCoords = [];
+    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+        routeCoords = geojson.features[0].geometry.coordinates;
+    }
+
     const validPoints = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     const isFlyMode = !areAllPointsInTurkey(validPoints);
 
-    console.log(`[3D] Refreshing Day ${day}. Points: ${validPoints.length} (Source: ${manualPoints ? 'Direct' : 'Global'})`);
+    console.log(`[3D FORCE] Refreshing Day ${day}. Points: ${validPoints.length}`);
 
     // ============================================================
-    // --- 1. TEMİZLİK (Eski Marker ve Çizgileri Sil) ---
+    // --- 2. TEMİZLİK (ESKİ KATMANLARI SÖK AT) ---
     // ============================================================
+    
+    // Markerları sil
     if (window._maplibreRouteMarkers) {
         window._maplibreRouteMarkers.forEach(m => m.remove());
     }
     window._maplibreRouteMarkers = [];
 
-    // Kaynak ve Layer ID'leri
-    const sourceId = 'route-source-dynamic';
-    const layerId = 'route-line';
+    // Normal Rota katmanlarını ve kaynaklarını sil
+    if (map.getLayer('route-line')) map.removeLayer('route-line');
+    if (map.getSource('route-source-dynamic')) map.removeSource('route-source-dynamic');
+    
+    // Fly Mode katmanlarını temizle
+    const style = map.getStyle();
+    if (style && style.layers) {
+        style.layers.forEach(l => {
+            if (l.id.startsWith('flyroute-line-')) map.removeLayer(l.id);
+        });
+        Object.keys(style.sources).forEach(k => {
+            if (k.startsWith('flyroute-')) map.removeSource(k);
+        });
+    }
 
     // ============================================================
-    // --- 2. ROTA ÇİZİMİ ---
+    // --- 3. ROTA ÇİZİMİ (SIFIRDAN EKLE) ---
     // ============================================================
     
     if (!isFlyMode) {
-        // --- NORMAL ROTA (OSRM) ---
-        let routeCoords = [];
-        if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-            routeCoords = geojson.features[0].geometry.coordinates;
-        }
-
-        // Eğer rota boşsa ama noktalar varsa (Fallback - Düz Çizgi)
+        // --- NORMAL ROTA ---
         let finalGeoJSON = {
             type: 'Feature',
             properties: {},
             geometry: { type: 'LineString', coordinates: routeCoords }
         };
 
+        // Fallback: Rota yoksa kuş uçuşu çiz
         if (routeCoords.length < 2 && validPoints.length > 1) {
              finalGeoJSON.geometry.coordinates = validPoints.map(p => [p.lng, p.lat]);
         }
 
         if (finalGeoJSON.geometry.coordinates.length > 1) {
-            // Önce Fly Mode kalıntılarını temizle (Çakışmayı önlemek için)
-            const style = map.getStyle();
-            if (style && style.layers) {
-                style.layers.forEach(l => {
-                    if (l.id.startsWith('flyroute-line-')) map.removeLayer(l.id);
-                });
-            }
-
-            if (map.getSource(sourceId)) {
-                // KAYNAK ZATEN VARSA: Sadece veriyi güncelle (setData) - En hızlı yöntem
-                map.getSource(sourceId).setData(finalGeoJSON);
-                
-                // Eğer layer silinmişse tekrar ekle
-                if (!map.getLayer(layerId)) {
-                     map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
-                    });
+            // Kaynağı ve Layer'ı sıfırdan ekliyoruz (setData kullanmıyoruz, garanti olsun)
+            map.addSource('route-source-dynamic', {
+                type: 'geojson',
+                data: finalGeoJSON
+            });
+            
+            map.addLayer({
+                id: 'route-line',
+                type: 'line',
+                source: 'route-source-dynamic',
+                layout: {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                paint: {
+                    'line-color': '#1976d2',
+                    'line-width': 8,
+                    'line-opacity': 0.9
                 }
-            } else {
-                // KAYNAK YOKSA: Sıfırdan oluştur
-                map.addSource(sourceId, { type: 'geojson', data: finalGeoJSON });
-                map.addLayer({
-                    id: layerId,
-                    type: 'line',
-                    source: sourceId,
-                    layout: { 'line-join': 'round', 'line-cap': 'round' },
-                    paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
-                });
-            }
+            });
         }
     } else {
-        // --- FLY MODE (Kavisli Hatlar) ---
-        // Normal rota çizgisini temizle
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-
+        // --- FLY MODE ---
         if (validPoints.length > 1) {
             for (let i = 0; i < validPoints.length - 1; i++) {
                 const start = [validPoints[i].lng, validPoints[i].lat];
@@ -5825,23 +5818,18 @@ function refresh3DMapData(day, manualGeoJSON = null, manualPoints = null) {
                 const sId = `flyroute-${i}`;
                 const lId = `flyroute-line-${i}`;
                 
-                // Varsa güncelle, yoksa ekle
-                if (map.getSource(sId)) {
-                    map.getSource(sId).setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } });
-                } else {
-                    map.addSource(sId, { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } } });
-                    map.addLayer({
-                        id: lId, type: 'line', source: sId,
-                        layout: { 'line-cap': 'round', 'line-join': 'round' },
-                        paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
-                    });
-                }
+                map.addSource(sId, { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } } });
+                map.addLayer({
+                    id: lId, type: 'line', source: sId,
+                    layout: { 'line-cap': 'round', 'line-join': 'round' },
+                    paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
+                });
             }
         }
     }
 
     // ============================================================
-    // --- 3. MARKER EKLEME ---
+    // --- 4. MARKER EKLEME ---
     // ============================================================
     validPoints.forEach((p, idx) => {
         const el = document.createElement('div');
@@ -5863,9 +5851,6 @@ function refresh3DMapData(day, manualGeoJSON = null, manualPoints = null) {
         
         window._maplibreRouteMarkers.push(marker);
     });
-    
-    // Render işlemini zorla
-    map.triggerRepaint();
 }
 function openMapLibre3D(expandedMap) {
   // DOM Elementlerini Bul
