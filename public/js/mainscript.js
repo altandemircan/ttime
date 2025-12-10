@@ -5698,98 +5698,199 @@ function saveArcPointsForDay(day, points) {
     window._curvedArcPointsByDay[day] = points;
 }
 
+// 3D Harita Verisini (Rota ve Markerlar) Yenileme Fonksiyonu
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
-    if (!map || !map.getStyle()) return;
+    
+    // 1. Harita hazır mı kontrol et
+    if (!map || !map.getStyle()) {
+        console.warn("[3D] Map instance or style not ready.");
+        return;
+    }
+
+    console.log(`[3D] Refreshing map data for Day ${day}...`);
 
     const containerId = `route-map-day${day}`;
+    // Güncel noktaları çek
     const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+    // Güncel rota çizgisini (GeoJSON) çek
     const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
-    const routeCoords = geojson?.features?.[0]?.geometry?.coordinates;
+    
+    // Rota koordinatlarını al
+    let routeCoords = [];
+    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
+        routeCoords = geojson.features[0].geometry.coordinates;
+    }
+
+    // Fly Mode mu? (Türkiye dışı kontrolü)
     const isFlyMode = !areAllPointsInTurkey(points);
 
-    // --- 1. ROTA ÇİZGİSİ TEMİZLİĞİ VE GÜNCELLEME ---
+    // ============================================================
+    // --- 1. TEMİZLİK (Eski Marker ve Çizgileri Yok Et) ---
+    // ============================================================
     
-    // Normal Rota (route-line) Temizle
-    if (map.getLayer('route-line')) map.removeLayer('route-line');
-    if (map.getSource('route')) map.removeSource('route');
-
-    // Fly Mode Rotaları Temizle (Döngüsel olabilir, hepsini bulup sil)
-    const style = map.getStyle();
-    if (style && style.layers) {
-        style.layers.forEach(l => {
-            if (l.id.startsWith('flyroute-line-')) {
-                map.removeLayer(l.id);
-                if (map.getSource(l.source)) map.removeSource(l.source);
-            }
-        });
-    }
-
-    // YENİ ROTA ÇİZİMİ
-    if (!isFlyMode && routeCoords && routeCoords.length >= 2) {
-        map.addSource('route', {
-            type: 'geojson',
-            data: { type: 'Feature', geometry: { type: 'LineString', coordinates: routeCoords } }
-        });
-        map.addLayer({
-            id: 'route-line', type: 'line', source: 'route',
-            layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
-        });
-    } else if (isFlyMode && points.length > 1) {
-        for (let i = 0; i < points.length - 1; i++) {
-            const start = [points[i].lng, points[i].lat];
-            const end = [points[i + 1].lng, points[i + 1].lat];
-            const curveCoords = getCurvedArcCoords(start, end);
-            map.addSource(`flyroute-${i}`, {
-                type: 'geojson',
-                data: { type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } }
-            });
-            map.addLayer({
-                id: `flyroute-line-${i}`, type: 'line', source: `flyroute-${i}`,
-                layout: { 'line-cap': 'round', 'line-join': 'round' },
-                paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
-            });
-        }
-    }
-
-    // --- 2. MARKER TEMİZLİĞİ VE GÜNCELLEME ---
-    
-    // Eski markerları sil
+    // A) Markerları Sil
     if (window._maplibreRouteMarkers) {
         window._maplibreRouteMarkers.forEach(m => m.remove());
     }
     window._maplibreRouteMarkers = [];
 
-    // Yeni markerları ekle
-    points.forEach((p, idx) => {
+    // B) Rota Çizgilerini Sil (Normal Rota)
+    if (map.getLayer('route-line')) map.removeLayer('route-line');
+    if (map.getSource('route')) map.removeSource('route');
+
+    // C) Fly Mode Çizgilerini Sil
+    // Stildeki katmanları tara ve flyroute ile başlayanları sil
+    const style = map.getStyle();
+    if (style && style.layers) {
+        style.layers.forEach(l => {
+            if (l.id.startsWith('flyroute-line-')) {
+                if (map.getLayer(l.id)) map.removeLayer(l.id);
+                // Kaynağı da silmemiz lazım ama döngü içinde source silmek riskli olabilir, aşağıda id ile sileriz
+            }
+        });
+        // Kaynakları temizle (tahmini ID'ler üzerinden)
+        // Maksimum 50 segment olacağını varsayarak temizliyoruz
+        for(let i=0; i<50; i++) {
+            if (map.getSource(`flyroute-${i}`)) map.removeSource(`flyroute-${i}`);
+        }
+    }
+
+    // ============================================================
+    // --- 2. YENİ ROTA ÇİZİMİ (LineString) ---
+    // ============================================================
+
+    if (!isFlyMode) {
+        // --- NORMAL ROTA ---
+        if (routeCoords && routeCoords.length >= 2) {
+            // Source Ekle
+            map.addSource('route', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    properties: {},
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: routeCoords
+                    }
+                }
+            });
+            
+            // Layer Ekle (Mavi Çizgi)
+            map.addLayer({
+                id: 'route-line',
+                type: 'line',
+                source: 'route',
+                layout: {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                paint: {
+                    'line-color': '#1976d2',
+                    'line-width': 8,
+                    'line-opacity': 0.9
+                }
+            });
+            console.log(`[3D] Normal route drawn with ${routeCoords.length} points.`);
+        } else {
+            console.log("[3D] No route coordinates found for normal mode.");
+        }
+    } else {
+        // --- FLY MODE (Kavisli Hatlar) ---
+        if (points.length > 1) {
+            for (let i = 0; i < points.length - 1; i++) {
+                const start = [points[i].lng, points[i].lat];
+                const end = [points[i + 1].lng, points[i + 1].lat];
+                
+                // Kavis hesapla
+                let curveCoords = [];
+                if (typeof getCurvedArcCoords === 'function') {
+                    curveCoords = getCurvedArcCoords(start, end);
+                } else {
+                    curveCoords = [start, end]; // Fallback düz çizgi
+                }
+
+                const sourceId = `flyroute-${i}`;
+                const layerId = `flyroute-line-${i}`;
+
+                map.addSource(sourceId, {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: curveCoords
+                        }
+                    }
+                });
+
+                map.addLayer({
+                    id: layerId,
+                    type: 'line',
+                    source: sourceId,
+                    layout: {
+                        'line-cap': 'round',
+                        'line-join': 'round'
+                    },
+                    paint: {
+                        'line-color': '#1976d2',
+                        'line-width': 6,
+                        'line-opacity': 0.8,
+                        'line-dasharray': [1, 2]
+                    }
+                });
+            }
+            console.log(`[3D] Fly mode routes drawn.`);
+        }
+    }
+
+    // ============================================================
+    // --- 3. YENİ MARKERLARIN EKLENMESİ ---
+    // ============================================================
+    
+    // Noktaların geçerli olduğundan emin ol
+    const validPoints = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+
+    validPoints.forEach((p, idx) => {
+        // DOM Elementi oluştur (MapLibre için HTML Marker)
         const el = document.createElement('div');
         el.className = 'maplibre-marker';
-        el.style.cssText = 'background:#d32f2f;width:32px;height:32px;border-radius:50%;border:2px solid white;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;box-shadow:0 2px 5px rgba(0,0,0,0.3);cursor:pointer;';
+        // Marker stili: Kırmızı daire, içinde numara
+        el.style.cssText = `
+            background: #d32f2f;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid white;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: sans-serif;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 10;
+        `;
         el.innerText = idx + 1;
         
-        el.addEventListener('click', (e) => { e.stopPropagation(); });
+        // Tıklama eventini durdur (Harita zoomlamasın)
+        el.addEventListener('click', (e) => { 
+            e.stopPropagation(); 
+            // İstersen burada popup açtırabilirsin
+        });
 
-        const marker = new maplibregl.Marker({ element: el })
+        // Marker'ı Haritaya Ekle
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
             .setLngLat([p.lng, p.lat])
-            .setPopup(new maplibregl.Popup({ offset: 25 }).setText(p.name || "Point"))
+            .setPopup(new maplibregl.Popup({ offset: 25, closeButton: false }).setText(p.name || "Point"))
             .addTo(map);
         
         window._maplibreRouteMarkers.push(marker);
     });
-
-    // --- 3. SEGMENT GÜNCELLEME ---
-    if (
-        typeof window._lastSegmentDay === 'number' && 
-        window._lastSegmentDay === day &&
-        typeof window._lastSegmentStartKm === 'number' &&
-        typeof window._lastSegmentEndKm === 'number'
-    ) {
-        // Segmenti tekrar çiz (Mavi rotanın üstüne çıkması için)
-        if (typeof highlightSegmentOnMap === 'function') {
-            highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-        }
-    }
+    
+    console.log(`[3D] Added ${validPoints.length} markers.`);
 }
 function openMapLibre3D(expandedMap) {
   // DOM Elementlerini Bul
