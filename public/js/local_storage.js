@@ -209,17 +209,15 @@ function safeParse(jsonStr) {
 }
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
   window.directionsPolylines = window.directionsPolylines || {};
-  
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
   }
 
-  // --- BAŞLIK VE KEY OLUŞTURMA (AYNEN KALIYOR) ---
   let tripTitle;
   if (window.__startedWithMapFlag) {
     tripTitle = getNextTripTitle();
-    window.__startedWithMapFlag = false; 
-    window.activeTripKey = null; 
+    window.__startedWithMapFlag = false; // Sıfırla (sadece ilk kayıtta çalışacak)
+    window.activeTripKey = null; // Kritik: yeni trip başlatılırken key sıfırlansın
   } else {
     tripTitle = (
       (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
@@ -232,6 +230,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     );
   }
 
+  // TRIP TITLE HER ZAMAN LATIN OLSUN
   tripTitle = toLatin(tripTitle);
 
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
@@ -245,27 +244,19 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   let tripKey;
 
+  // --- En önemli blok ---
   if (window.activeTripKey) {
+    // Zaten aktif bir trip varsa, ona ekle
     tripKey = window.activeTripKey;
   } else {
+    // Yeni bir trip başlatılıyorsa (ör: Start with map veya yeni chat)
     let timestamp = Date.now();
     tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
-    window.activeTripKey = tripKey; 
+    window.activeTripKey = tripKey; // Sadece ilk defa trip oluşturulurken atanır
   }
+  // --------------------------------
 
-  // --- KRİTİK DEĞİŞİKLİK BURADA BAŞLIYOR ---
-  
-  // 1. ADIM: ÖNCE "SESSION STATE"İ (CART) GARANTİYE AL!
-  // Veritabanı kaydı patlasa bile bu satırlar çalışmış olmalı.
-  try {
-      localStorage.setItem('cart', JSON.stringify(window.cart));
-      localStorage.setItem('tt_active_trip_key', tripKey);
-  } catch (e) {
-      console.error("Session save critical error:", e);
-  }
-
-  // 2. ADIM: VERİTABANI OBJESİNİ HAZIRLA
-  const tripObj = {
+ const tripObj = {
     title: tripTitle,
     date: tripDate,
     days: window.cart && window.cart.length > 0
@@ -278,11 +269,16 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
+    
+    // --- DEĞİŞEN KISIM BURASI ---
+    // window.cart.aiData varsa onu kaydet, yoksa global değişkeni dene
     aiInfo: (window.cart && window.cart.aiData) ? window.cart.aiData : (window.lastTripAIInfo || null),
+    // ----------------------------
+    
     elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
   };
 
-  // Thumbnail Oluşturma (Aynen Kalıyor)
+  // Thumbnail üretimi
   const thumbnails = {};
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
@@ -295,16 +291,8 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   tripObj.thumbnails = thumbnails;
   tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
 
-  // 3. ADIM: BÜYÜK VERİTABANINI KAYDETMEYİ DENE (TRY-CATCH İLE)
-  // Eğer localStorage dolduysa (QuotaExceeded), burası hata verir ama yukarıdaki 'cart' kaydı yapıldığı için sayfa yenilenince veri gelmeye devam eder.
-  try {
-      trips[tripKey] = tripObj;
-      localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
-  } catch (e) {
-      console.warn("My Trips Database Save Failed (Quota Exceeded?):", e);
-      // Kullanıcıya hissettirmeden devam et, çünkü 'cart' zaten kaydedildi.
-      // İstersen burada bir 'Toast' mesajı gösterebilirsin: "History full, only current session saved."
-  }
+  trips[tripKey] = tripObj;
+  localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
@@ -361,31 +349,137 @@ function loadTripFromStorage(tripKey) {
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
 
-    // ... (AGRESİF TEMİZLİK KODLARI AYNEN KALSIN) ...
-    // ...
+    // ============================================================
+    // --- AGRESİF TEMİZLİK (SCORCHED EARTH POLICY) ---
+    // ============================================================
+    
+    // 1. MapLibre 3D Instance'ını bellekten sil
+    if (window._maplibre3DInstance) {
+        try { 
+            window._maplibre3DInstance.remove(); 
+        } catch(e) { 
+            console.warn("MapLibre remove error:", e); 
+        }
+        window._maplibre3DInstance = null;
+    }
+
+    // 2. 3D Harita DOM Elementini sayfadan söküp at
+    const map3DElement = document.getElementById('maplibre-3d-view');
+    if (map3DElement) {
+        map3DElement.remove();
+    }
+    // (Yedek: ID farklıysa diye class veya query ile hepsini sil)
+    document.querySelectorAll('#maplibre-3d-view').forEach(el => el.remove());
+
+    // 3. Genişletilmiş Harita Konteynerlerini (Overlay) sil
+    // Bunlar body'ye append edildiği için manuel silinmeli
+    document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
+
+    // 4. Global Harita State'ini Sıfırla
+    if (window.expandedMaps) {
+        // Varsa leaflet instance'larını da temizle
+        Object.values(window.expandedMaps).forEach(obj => {
+            if (obj && obj.expandedMap) {
+                try { obj.expandedMap.remove(); } catch(_) {}
+            }
+        });
+        window.expandedMaps = {};
+    }
+
     // 5. 3D'ye ait pusula vs. butonları gizle
     document.querySelectorAll('.ctrl-compass').forEach(el => el.style.display = 'none');
 
+    // ============================================================
+
     // --- 1. Veri Yükleme ---
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
-    
-    // --- [FIX] Session Sync Eklendi ---
-    localStorage.setItem('cart', JSON.stringify(window.cart));
-    localStorage.setItem('tt_active_trip_key', tripKey);
-    // ---------------------------------
-
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
 
-    // ... (Kalan kodlar aynen devam etsin) ...
-    // AI Verisi, elevStatsByDay, Data normalizasyonu vs.
+    // AI Verisi
     if (t.aiInfo) {
         window.cart.aiData = t.aiInfo;
         window.lastTripAIInfo = t.aiInfo;
     }
-    // ...
-    
-    // Fonksiyonun sonundaki return true; kısmına kadar olan her şey aynı kalsın.
-    // ...
+
+    // AI Paneli Güncelleme
+    if (t.aiInfo) {
+        window.lastTripAIInfo = t.aiInfo;
+        let aiDiv = document.querySelector('.ai-info-section');
+        if (!aiDiv) {
+            if (typeof window.insertTripAiInfo === "function") window.insertTripAiInfo(null, t.aiInfo);
+        } else {
+            if (typeof window.showTripAiInfo === "function") window.showTripAiInfo(t.aiInfo);
+        }
+    }
+
+    window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
+
+    // Data normalizasyonu
+    window.cart = window.cart.map(item => {
+        item.day = (item.day == null || isNaN(Number(item.day))) ? 1 : Number(item.day);
+        if (item.location) {
+            item.location.lat = (item.location.lat == null || isNaN(Number(item.location.lat))) ? 0 : Number(item.location.lat);
+            item.location.lng = (item.location.lng == null || isNaN(Number(item.location.lng))) ? 0 : Number(item.location.lng);
+        }
+        return item;
+    });
+
+    patchCartLocations();
+
+    window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
+    window.lastUserQuery = t.lastUserQuery || t.title || "";
+    window.selectedCity = t.selectedCity || "";
+
+    // --- 2. Panel Temizliği ---
+    const chatBox = document.getElementById("chat-box");
+    if (chatBox) chatBox.innerHTML = "";
+    let cartDiv = document.getElementById("cart-items");
+    if (cartDiv) cartDiv.innerHTML = "";
+
+    // --- 3. UI Güncellemeleri ---
+    if (typeof updateTripTitle === "function") updateTripTitle();
+    if (typeof updateCart === "function") updateCart();
+    if (typeof showResults === "function") showResults();
+    if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
+
+    // --- 4. Rota Çizimi (Normal 2D) ---
+    // Sadece 1. günü hemen çizelim, diğerleri arkadan gelsin
+    let maxDay = 0;
+    window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
+
+    setTimeout(async () => {
+        // Harita boyutlarını düzelt
+        Object.values(window.leafletMaps || {}).forEach(map => {
+            if (map && typeof map.invalidateSize === 'function') {
+                map.invalidateSize();
+            }
+        });
+
+        // 1. Günü Render Et
+        if (maxDay > 0) {
+            await renderRouteForDay(1); 
+        }
+        
+        // Diğer günleri işle
+        for (let day = 2; day <= maxDay; day++) {
+             renderRouteForDay(day);
+        }
+        saveTripAfterRoutes();
+    }, 100);
+
+    // --- 5. Slider vb. Düzeltmeleri ---
+    setTimeout(function() {
+        document.querySelectorAll('.scale-bar-track').forEach(track => {
+            if (typeof track.handleResize === "function") track.handleResize();
+        });
+
+        document.querySelectorAll('.splide').forEach(sliderElem => {
+            if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
+                sliderElem._splideInstance.refresh();
+            }
+        });
+    }, 350);
+
     return true;
 }
 function groupTripsByDate(trips) {
