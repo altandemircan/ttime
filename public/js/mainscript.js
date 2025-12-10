@@ -1,11 +1,3 @@
-function haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371000, toRad = x => x * Math.PI / 180;
-    const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
-    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-    return 2 * R * Math.asin(Math.sqrt(a));
-}
-
-window.cart = JSON.parse(localStorage.getItem('cart')) || [];
 
 // --- [FIX] EKLENDİ ---
 // Sayfa yenilenince hangi gezide çalıştığımızı hatırla
@@ -13,6 +5,12 @@ window.activeTripKey = localStorage.getItem('tt_active_trip_key') || null;
 // ---------------------
 
 
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000, toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
 function isTripFav(item) {
     return window.favTrips && window.favTrips.some(f =>
         f.name === item.name &&
@@ -401,6 +399,8 @@ function movingAverage(arr, win = 5) {
     return slice.reduce((sum, val) => sum + val, 0) / slice.length;
   });
 }
+
+window.cart = JSON.parse(localStorage.getItem('cart')) || [];
 
 function getSlopeColor(slope) {
   // Dengeli (orta doygunluk) tonlar
