@@ -216,8 +216,8 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   let tripTitle;
   if (window.__startedWithMapFlag) {
     tripTitle = getNextTripTitle();
-    window.__startedWithMapFlag = false; // Sıfırla (sadece ilk kayıtta çalışacak)
-    window.activeTripKey = null; // Kritik: yeni trip başlatılırken key sıfırlansın
+    window.__startedWithMapFlag = false; 
+    window.activeTripKey = null; 
   } else {
     tripTitle = (
       (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
@@ -230,7 +230,6 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     );
   }
 
-  // TRIP TITLE HER ZAMAN LATIN OLSUN
   tripTitle = toLatin(tripTitle);
 
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
@@ -244,17 +243,13 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   let tripKey;
 
-  // --- En önemli blok ---
   if (window.activeTripKey) {
-    // Zaten aktif bir trip varsa, ona ekle
     tripKey = window.activeTripKey;
   } else {
-    // Yeni bir trip başlatılıyorsa (ör: Start with map veya yeni chat)
     let timestamp = Date.now();
     tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
-    window.activeTripKey = tripKey; // Sadece ilk defa trip oluşturulurken atanır
+    window.activeTripKey = tripKey; 
   }
-  // --------------------------------
 
  const tripObj = {
     title: tripTitle,
@@ -269,16 +264,10 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
-    
-    // --- DEĞİŞEN KISIM BURASI ---
-    // window.cart.aiData varsa onu kaydet, yoksa global değişkeni dene
     aiInfo: (window.cart && window.cart.aiData) ? window.cart.aiData : (window.lastTripAIInfo || null),
-    // ----------------------------
-    
     elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
   };
 
-  // Thumbnail üretimi
   const thumbnails = {};
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
@@ -291,8 +280,15 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   tripObj.thumbnails = thumbnails;
   tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
 
+  // 1. Veritabanına Kayıt
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
+
+  // --- [FIX] KRİTİK EKLENTİ: Session State Senkronizasyonu ---
+  // Sayfa yenilendiğinde verilerin kaybolmaması için 'cart' ve 'activeKey' güncellenmeli
+  localStorage.setItem('cart', JSON.stringify(window.cart));
+  localStorage.setItem('tt_active_trip_key', tripKey);
+  // ----------------------------------------------------------
 }
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
