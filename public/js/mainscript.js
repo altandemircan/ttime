@@ -5318,14 +5318,38 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     setTimeout(refitMap, 200);
 
     // ============================================================
-    // --- FIX: EĞER 3D HARİTA AÇIKSA ONU DA GÜNCELLE ---
+    // --- 3D MAP FIX: DOM GÖRÜNÜRLÜK KONTROLÜ (KESİN ÇÖZÜM) ---
     // ============================================================
+    
+    // 1. 3D Harita şu an açık mı?
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
-                       
+    
     if (is3DActive && window._maplibre3DInstance) {
-        // Yeni veriyle 3D haritayı tazele
-        refresh3DMapData(day);
+        // 2. Ekranda ŞU AN hangi günün expanded (büyük) container'ı görünür durumda?
+        // JavaScript değişkenlerine değil, CSS/HTML gerçeğine bakıyoruz (offsetParent != null demek görünür demek).
+        let visibleExpandedDay = null;
+        
+        const allExpandedContainers = document.querySelectorAll('.expanded-map-container');
+        
+        allExpandedContainers.forEach(container => {
+            // Container görünürse ve ID'si "expanded-map-" ile başlıyorsa
+            if (container.offsetParent !== null && container.id.startsWith('expanded-map-')) {
+                const d = parseInt(container.id.replace('expanded-map-', ''), 10);
+                if (!isNaN(d)) {
+                    visibleExpandedDay = d;
+                }
+            }
+        });
+
+        // 3. EĞER VE SADECE EĞER:
+        // Şu an render edilmekte olan gün (day), ekranda GÖZÜKEN gün ile aynıysa güncelle.
+        // Aksi takdirde (örneğin 2. gün açıkken 1. gün render ediliyorsa) 3D haritaya ASLA DOKUNMA.
+        if (visibleExpandedDay === day) {
+            refresh3DMapData(day);
+        } else {
+            // Arka planda çalışan diğer günlerin render işlemleri 3D haritayı bozamaz.
+        }
     }
     // ============================================================
 }
@@ -9887,37 +9911,10 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const maps2D = [];
   if (window.leafletMaps && window.leafletMaps[cid]) maps2D.push(window.leafletMaps[cid]);
   const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
-  // ============================================================
-    // --- FIX: EĞER 3D HARİTA AÇIKSA ONU DA GÜNCELLE ---
-    // ============================================================
-    // ============================================================
-    // --- 3D MAP FIX: GÜN KARIŞIKLIĞI ÇÖZÜMÜ ---
-    // ============================================================
-    
-    // 1. 3D Harita şu an görünür mü?
-    const is3DActive = document.getElementById('maplibre-3d-view') && 
-                       document.getElementById('maplibre-3d-view').style.display !== 'none';
-    
-    // 2. Şu an Expanded (Büyük) olarak açık olan gün hangisi?
-    let activeExpandedDay = null;
-    if (window.expandedMaps) {
-        // Expanded objelerinde "expandedMap" property'si dolu olanı bul
-        const key = Object.keys(window.expandedMaps).find(k => window.expandedMaps[k] && window.expandedMaps[k].expandedMap);
-        if (key) {
-            // "route-map-day2" stringinden "2" sayısını al
-            activeExpandedDay = parseInt(key.replace('route-map-day', ''), 10);
-        }
-    }
-
-    // 3. KRİTİK KONTROL:
-    // Sadece 3D harita açıksa VE şu an render edilmekte olan 'day', 
-    // kullanıcının ekranda baktığı 'activeExpandedDay' ile EŞİTSE güncelle.
-    // Bu sayede updateCart() arka planda Day 1'i render ederken 3D haritaya dokunamaz.
-    if (is3DActive && window._maplibre3DInstance && activeExpandedDay === day) {
-        refresh3DMapData(day);
-    }
-    // ============================================================
-    // ============================================================
+  const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
+  if (expandedObj && expandedObj.expandedMap && !is3DActive) {
+      maps2D.push(expandedObj.expandedMap);
+  }
 
   Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
   window._segmentHighlight[day] = {};
