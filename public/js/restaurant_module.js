@@ -1,3 +1,68 @@
+// Görsel doğrulama fonksiyonu
+async function isImageValid(url, timeout = 3000) {
+    if (!url || url === PLACEHOLDER_IMG) return false;
+    
+    return new Promise((resolve) => {
+        const img = new Image();
+        const timer = setTimeout(() => {
+            img.onload = img.onerror = null;
+            resolve(false);
+        }, timeout);
+        
+        img.onload = function() {
+            clearTimeout(timer);
+            resolve(this.width >= 50 && this.height >= 50);
+        };
+        
+        img.onerror = function() {
+            clearTimeout(timer);
+            resolve(false);
+        };
+        
+        img.src = url;
+    });
+}
+
+// Görsel hata yönetimi
+window.handleImageError = async function(imgElement, placeName, index) {
+    if (imgElement.dataset.errorHandled === 'true') {
+        imgElement.src = PLACEHOLDER_IMG;
+        return;
+    }
+    
+    imgElement.dataset.errorHandled = 'true';
+    
+    const loadingDiv = imgElement.parentNode?.querySelector('.img-loading');
+    if (loadingDiv) {
+        loadingDiv.style.opacity = '1';
+    }
+    
+    try {
+        const backupSources = [
+            () => getPixabayImage && getPixabayImage(placeName),
+            () => getPexelsImage && getPexelsImage(placeName.split(' ')[0])
+        ];
+        
+        for (const getBackup of backupSources) {
+            try {
+                const backupUrl = await getBackup();
+                if (backupUrl && backupUrl !== PLACEHOLDER_IMG && await isImageValid(backupUrl)) {
+                    imgElement.src = backupUrl;
+                    if (loadingDiv) loadingDiv.style.opacity = '0';
+                    return;
+                }
+            } catch (e) {
+                console.warn('Backup image source failed:', e);
+            }
+        }
+    } catch (error) {
+        console.warn('Error handling image fallback:', error);
+    }
+    
+    imgElement.src = PLACEHOLDER_IMG;
+    if (loadingDiv) loadingDiv.style.opacity = '0';
+};
+
 function showMarkerOnExpandedMap(lat, lon, name, day) {
   // Büyük harita (expand map)
   const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
@@ -96,30 +161,18 @@ window.editPointName = function() {
 // Güncellenen tıklanan noktayı sepete ekleme fonksiyonu
 window.addClickedPointToCart = async function(lat, lng, day) {
     try {
-        // Düzenlenmiş nokta bilgisini al
+        window.currentDay = parseInt(day); // Gün sabitleme
+
         const pointInfo = window._currentPointInfo || { name: "Seçilen Nokta", address: "", opening_hours: "" };
         const placeName = pointInfo.name;
         
-        // Görsel al
         let imageUrl = "img/placeholder.png";
         if (typeof getPexelsImage === "function") {
             try {
                 imageUrl = await getPexelsImage(placeName + " " + (window.selectedCity || ""));
-                if (!imageUrl || imageUrl === PLACEHOLDER_IMG) {
-                    throw new Error("Pexels image not found");
-                }
-            } catch (e) {
-                if (typeof getPixabayImage === "function") {
-                    try {
-                        imageUrl = await getPixabayImage(placeName);
-                    } catch (e2) {
-                        imageUrl = "img/placeholder.png";
-                    }
-                }
-            }
+            } catch (e) { /* ... */ }
         }
         
-        // Sepete ekle
         addToCart(
             placeName,
             imageUrl,
@@ -133,32 +186,30 @@ window.addClickedPointToCart = async function(lat, lng, day) {
             ""
         );
 
-        // Popup'ı kapat
         closeNearbyPopup();
         
-        // Başarı mesajı
-        console.log(`"${placeName}" added to cart!`);
-        
     } catch (error) {
-        console.error('An error occurred while adding the point to the cart:', error);
-        alert('An error occurred while adding the point to the cart.');
+        console.error('Error adding point:', error);
     }
 };
+// updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
 if (typeof updateCart === "function") updateCart();
 
 // FIX: addToCart fonksiyonunu da güncelleyelim
 window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeLng) {
     if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
     
+    // 1. Current Day'i sabitle
+    window.currentDay = parseInt(day);
+
     const f = window._lastNearbyPlaces[idx];
     const photo = (window._lastNearbyPhotos && window._lastNearbyPhotos[idx]) ? window._lastNearbyPhotos[idx] : "img/placeholder.png";
-    
-    // FIX: Mekanın gerçek koordinatlarını kullan
     const actualLat = parseFloat(placeLat);
     const actualLng = parseFloat(placeLng);
     
-    console.log(`Adding place: ${f.properties.name} at ${actualLat}, ${actualLng}`); // Debug log
+    console.log(`Adding place: ${f.properties.name}`);
     
+    // 2. addToCart (updateCart'ı bu tetikleyecek)
     addToCart(
         f.properties.name || "Unnamed",
         photo,
@@ -168,29 +219,24 @@ window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeL
         null, null,
         f.properties.opening_hours || "",
         null,
-        { lat: actualLat, lng: actualLng }, // FIX: Doğru koordinatlar
+        { lat: actualLat, lng: actualLng },
         f.properties.website || ""
     );
     
-    // Popup'ı kapat ve başarı mesajı göster
-    closeNearbyPopup();
-    if (typeof updateCart === "function") updateCart();
+    // updateCart() BURADAN SİLİNDİ!
 
-    // Expanded map varsa ona da marker ekle
-    const expandedMapData = Object.values(window.expandedMaps || {}).find(m => m.day === day);
+    closeNearbyPopup();
+
+    // 3. Expanded map varsa başarı popup'ı
+    const expandedMapData = Object.values(window.expandedMaps || {}).find(m => m.day == day);
     if (expandedMapData && expandedMapData.expandedMap) {
         const map = expandedMapData.expandedMap;
-        
-        // Başarı popup'ı göster
         L.popup()
             .setLatLng([actualLat, actualLng])
             .setContent(`<div style="text-align:center;"><b>${f.properties.name}</b><br><small style="color:#4caf50;">✓ Added!</small></div>`)
             .openOn(map);
-        
         setTimeout(() => map.closePopup(), 2000);
-        
-        // Haritayı yeni eklenen yere odakla (isteğe bağlı)
-        map.setView([actualLat, actualLng], map.getZoom(), { animate: true });
+        // İsteğe bağlı: map.setView([actualLat, actualLng], map.getZoom(), { animate: true });
     }
 };
 if (typeof updateCart === "function") updateCart();
@@ -881,13 +927,17 @@ function ensureSpinnerCSS() {
 }
 
 window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+    // 1. Önce Current Day'i sabitle (Karışıklığı önler)
+    window.currentDay = parseInt(day);
+
     const img = document.getElementById(imgId);
-    // Eğer görsel yüklendiyse onun src'sini, yoksa fallback'i kullan
     const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
         ? img.src
         : 'https://dev.triptime.ai/img/restaurant_icon.svg';
         
-    // Sepete Ekle
+    // 2. Sepete Ekle
+    // addToCart fonksiyonu zaten updateCart'ı çağırır (silent parametresi verilmediği sürece)
+    // Bu yüzden buradaki manuel updateCart() çağrısını kaldırıyoruz.
     addToCart(
         name,
         imgSrc,
@@ -899,13 +949,9 @@ window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, l
         ""
     );
     
-    if (typeof updateCart === "function") updateCart();
+    // updateCart() BURADAN SİLİNDİ! addToCart zaten yapıyor.
 
-    // =========================================================
-    // --- RESTORAN MARKERLARINI VE ÇİZGİLERİNİ TEMİZLE ---
-    // =========================================================
-
-    // 1. 3D Map (MapLibre) Temizliği
+    // 3. 3D Marker Temizliği
     if (window._maplibre3DInstance) {
         if (window._restaurant3DLayers) {
             window._restaurant3DLayers.forEach(id => {
@@ -920,9 +966,8 @@ window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, l
         }
     }
 
-    // 2. 2D Map (Leaflet) Temizliği
+    // 4. 2D Marker Temizliği
     const allMaps = [];
-    // Aktif tüm Leaflet haritalarını topla
     if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
     if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
     
@@ -934,7 +979,6 @@ window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, l
             map.__restaurantLayers = [];
         }
     });
-    // =========================================================
 
     alert(`${name} gezi planına eklendi!`);
 };
