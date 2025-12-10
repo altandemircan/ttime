@@ -9887,10 +9887,23 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   const maps2D = [];
   if (window.leafletMaps && window.leafletMaps[cid]) maps2D.push(window.leafletMaps[cid]);
   const expandedObj = Object.values(window.expandedMaps || {}).find(obj => obj.day === day);
-  const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
-  if (expandedObj && expandedObj.expandedMap && !is3DActive) {
-      maps2D.push(expandedObj.expandedMap);
-  }
+  // ============================================================
+    // --- FIX: EĞER 3D HARİTA AÇIKSA ONU DA GÜNCELLE ---
+    // ============================================================
+    const is3DActive = document.getElementById('maplibre-3d-view') && 
+                       document.getElementById('maplibre-3d-view').style.display !== 'none';
+    
+    // Şu an hangi günün Expanded (Büyük) haritası açık onu buluyoruz
+    const expandedKey = Object.keys(window.expandedMaps || {}).find(k => window.expandedMaps[k].expandedMap);
+    const activeExpandedDay = expandedKey ? parseInt(expandedKey.replace('route-map-day', '')) : null;
+
+    // Sadece 3D açıksa VE şu an render edilen gün (day), açık olan günle (activeExpandedDay) aynıysa güncelle!
+    // Bu sayede Day 2 açıkken, arka planda render edilen Day 1 haritayı çalamaz.
+    if (is3DActive && window._maplibre3DInstance && activeExpandedDay === day) {
+        // Yeni veriyle 3D haritayı tazele
+        refresh3DMapData(day);
+    }
+    // ============================================================
 
   Object.values(window._segmentHighlight[day]).forEach(layer => { try { layer.remove(); } catch(_) {} });
   window._segmentHighlight[day] = {};
