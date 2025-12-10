@@ -5184,7 +5184,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
-    // 2. TEMİZLİK
+    // 2. TEMİZLİK (Observer ve eski harita)
     if (sidebarContainer._resizeObserver) {
         sidebarContainer._resizeObserver.disconnect();
         delete sidebarContainer._resizeObserver;
@@ -5231,35 +5231,44 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // Harita Başlatma
-    let routeCoords = [];
-    let hasValidGeo = (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1);
-    if (hasValidGeo) {
-        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-    }
-
+    // --- HARİTA BAŞLATMA ---
     const map = L.map(containerId, { 
         scrollWheelZoom: true, fadeAnimation: false, zoomAnimation: false, markerZoomAnimation: false 
     });
 
+    // [FIX] Rota ve Markerlar için özel "Pane" (Katman) oluşturuyoruz.
+    // Bu sayede harita karoları ne yaparsa yapsın, rota çizgisini EN ÜSTTE tutuyoruz.
+    map.createPane('customRoutePane');
+    map.getPane('customRoutePane').style.zIndex = 450; // TileLayer(200) üstünde, Marker(600) altında
+    
+    // Altlık Harita (Tile Layer)
     try {
         if (typeof L.maplibreGL === 'function') {
             L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/bright',
                 attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-                interactive: true
+                interactive: true,
+                pane: 'tilePane' // En altta kalmaya zorla
             }).addTo(map);
         } else {
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, pane: 'tilePane' }).addTo(map);
         }
     } catch(e) {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { pane: 'tilePane' }).addTo(map);
     }
 
     let bounds = L.latLngBounds();
-    points = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+    // Noktaları temizle
+    points = points.filter(p => isFinite(Number(p.lat)) && isFinite(Number(p.lng)));
     
-    // 2D Çizimler
+    // GeoJSON Koordinatlarını hazırla
+    let routeCoords = [];
+    let hasValidGeo = (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1);
+    if (hasValidGeo) {
+        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]); // [Lng,Lat] -> [Lat,Lng]
+    }
+
+    // --- ÇİZİM İŞLEMLERİ ---
     if (points.length === 1) {
         L.marker([points[0].lat, points[0].lng], {
             icon: L.divIcon({
@@ -5270,6 +5279,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     } 
     else if (points.length >= 1) {
         const isFlyMode = !areAllPointsInTurkey(points);
+        
         if (isFlyMode) {
             window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
             let arcPoints = [];
@@ -5278,21 +5288,36 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 const end = [points[i + 1].lng, points[i + 1].lat];
                 const curve = getCurvedArcCoords(start, end);
                 arcPoints = arcPoints.concat(curve);
+                // [FIX] pane: 'customRoutePane' eklendi
                 drawCurvedLine(map, points[i], points[i + 1], {
-                    color: "#1976d2", weight: 5, opacity: 0.85, dashArray: "6,8"
+                    color: "#1976d2", weight: 5, opacity: 0.85, dashArray: "6,8", pane: 'customRoutePane'
                 });
             }
             points.forEach(p => bounds.extend([p.lat, p.lng]));
             window._curvedArcPointsByDay[day] = arcPoints;
         } 
         else if (hasValidGeo && routeCoords.length > 1) {
+            // [FIX] Rota çizgisini customRoutePane'e basıyoruz (görünürlük garantisi)
             const routePoly = L.polyline(routeCoords, {
-                color: '#1976d2', weight: 8, opacity: 0.92, interactive: true
+                color: '#1976d2', weight: 8, opacity: 0.92, interactive: true, pane: 'customRoutePane'
             }).addTo(map);
             bounds.extend(routePoly.getBounds());
+        } else {
+            // Fallback Düz Çizgiler
+            const fallbackCoords = points.map(p => [p.lat, p.lng]);
+            const fallbackPoly = L.polyline(fallbackCoords, {
+                color: '#1976d2', weight: 6, opacity: 0.7, dashArray: "5, 10", pane: 'customRoutePane'
+            }).addTo(map);
+            bounds.extend(fallbackPoly.getBounds());
         }
+
+        // Markerları ekle
         addNumberedMarkers(map, points);
-        if (!bounds.isValid() && points.length > 0) points.forEach(p => bounds.extend([p.lat, p.lng]));
+        
+        // Bounds hala geçersizse noktalar üzerinden genişlet
+        if (!bounds.isValid() && points.length > 0) {
+            points.forEach(p => bounds.extend([p.lat, p.lng]));
+        }
     } else {
         map.setView([0, 0], 2, { animate: false });
     }
@@ -5301,54 +5326,52 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 
-    // Resize Observer (Gri Harita Çözümü)
+    // [FIX] Harita Boyutlandırma ve Odaklama (Gecikmeli ve Garantili)
     const refitMap = () => {
         if (!map) return;
-        map.invalidateSize();
+        map.invalidateSize(); // Harita boyutunu tekrar hesapla
+        
         if (points.length === 1) {
             map.setView([points[0].lat, points[0].lng], 14, { animate: false });
         } else if (bounds && bounds.isValid()) {
             map.fitBounds(bounds, { padding: [20, 20], animate: false });
         }
     };
+
+    // Hemen çalıştır
     refitMap();
-    const ro = new ResizeObserver(() => { requestAnimationFrame(() => { refitMap(); }); });
+    // DOM güncellemeleri bitince tekrar çalıştır
+    setTimeout(refitMap, 250); 
+    
+    // Resize Observer ile izle
+    const ro = new ResizeObserver(() => { 
+        requestAnimationFrame(() => { refitMap(); }); 
+    });
     ro.observe(sidebarContainer);
     sidebarContainer._resizeObserver = ro;
-    setTimeout(refitMap, 200);
 
     // ============================================================
-    // --- 3D MAP FIX: DOM GÖRÜNÜRLÜK KONTROLÜ (KESİN ÇÖZÜM) ---
+    // --- 3D MAP FIX: DOM GÖRÜNÜRLÜK KONTROLÜ (GÜNCELLENDİ) ---
     // ============================================================
-    
-    // 1. 3D Harita şu an açık mı?
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
     
     if (is3DActive && window._maplibre3DInstance) {
-        // 2. Ekranda ŞU AN hangi günün expanded (büyük) container'ı görünür durumda?
-        // JavaScript değişkenlerine değil, CSS/HTML gerçeğine bakıyoruz (offsetParent != null demek görünür demek).
+        // Ekranda ŞU AN hangi günün expanded (büyük) container'ı görünür durumda?
         let visibleExpandedDay = null;
-        
         const allExpandedContainers = document.querySelectorAll('.expanded-map-container');
-        
         allExpandedContainers.forEach(container => {
-            // Container görünürse ve ID'si "expanded-map-" ile başlıyorsa
             if (container.offsetParent !== null && container.id.startsWith('expanded-map-')) {
                 const d = parseInt(container.id.replace('expanded-map-', ''), 10);
-                if (!isNaN(d)) {
-                    visibleExpandedDay = d;
-                }
+                if (!isNaN(d)) visibleExpandedDay = d;
             }
         });
 
-        // 3. EĞER VE SADECE EĞER:
-        // Şu an render edilmekte olan gün (day), ekranda GÖZÜKEN gün ile aynıysa güncelle.
-        // Aksi takdirde (örneğin 2. gün açıkken 1. gün render ediliyorsa) 3D haritaya ASLA DOKUNMA.
+        // Sadece ekranda görünen gün ile işlem yapılan gün aynıysa güncelle
         if (visibleExpandedDay === day) {
-            refresh3DMapData(day);
-        } else {
-            // Arka planda çalışan diğer günlerin render işlemleri 3D haritayı bozamaz.
+            requestAnimationFrame(() => {
+                refresh3DMapData(day);
+            });
         }
     }
     // ============================================================
