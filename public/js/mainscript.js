@@ -1,3 +1,4 @@
+window.cart = JSON.parse(localStorage.getItem('cart')) || [];
 
 // --- [FIX] EKLENDİ ---
 // Sayfa yenilenince hangi gezide çalıştığımızı hatırla
