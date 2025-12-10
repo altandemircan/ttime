@@ -5351,13 +5351,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer._resizeObserver = ro;
 
     // ============================================================
-    // --- 3D MAP FIX: VERİ SENKRONİZASYONU (GÜNCELLENDİ) ---
+    // --- 3D MAP FIX: CANLI VERİ SENKRONİZASYONU ---
     // ============================================================
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
     
     if (is3DActive && window._maplibre3DInstance) {
-        // Ekranda ŞU AN hangi günün expanded (büyük) container'ı görünür durumda?
+        
+        // Ekranda ŞU AN hangi günün büyük haritası açık?
         let visibleExpandedDay = null;
         const allExpandedContainers = document.querySelectorAll('.expanded-map-container');
         allExpandedContainers.forEach(container => {
@@ -5367,19 +5368,29 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             }
         });
 
-        // Sadece ekranda görünen gün ile işlem yapılan gün aynıysa güncelle
+        // Eğer render edilen gün (day), ekrandaki gün (visibleExpandedDay) ile aynıysa:
         if (visibleExpandedDay === day) {
             
-            // --- KRİTİK DÜZELTME ---
-            // Global değişkenlerin güncellenmesini bekleme!
-            // Elimizdeki "routeData.geojson" ve "points" zaten en güncel veri.
-            // Bunları doğrudan fonksiyona gönderiyoruz.
-            
-            // Eğer routeData oluşmadıysa (API hatası vb.), fallback kullan
-            const freshGeoJSON = (typeof routeData !== 'undefined' && routeData) ? routeData.geojson : geojson;
-            
+            // --- KRİTİK DÜZELTME: VERİYİ YENİDEN ÇEK ---
+            // Argüman olarak gelen 'points' bazen eski kalabiliyor.
+            // Global 'window.cart' üzerinden o günün EN GÜNCEL nokta listesini zorla alıyoruz.
+            const latestPoints = typeof getDayPoints === 'function' ? getDayPoints(day) : points;
+
+            // GeoJSON verisi için öncelik sıralaması: 
+            // 1. Bu fonksiyonda az önce hesaplanan taze 'routeData' (varsa)
+            // 2. Global cache (window.lastRouteGeojsons)
+            // 3. Argüman olarak gelen 'geojson'
+            let bestGeoJSON = geojson;
+            if (typeof routeData !== 'undefined' && routeData && routeData.geojson) {
+                bestGeoJSON = routeData.geojson;
+            } else if (window.lastRouteGeojsons && window.lastRouteGeojsons[containerId]) {
+                bestGeoJSON = window.lastRouteGeojsons[containerId];
+            }
+
+            // requestAnimationFrame ile çizimi bir sonraki kareye bırakarak DOM'un hazır olmasını garantile
             requestAnimationFrame(() => {
-                refresh3DMapData(day, freshGeoJSON, points);
+                // refresh3DMapData'ya "latestPoints" gönderiyoruz (points değil!)
+                refresh3DMapData(day, bestGeoJSON, latestPoints);
             });
         }
     }
