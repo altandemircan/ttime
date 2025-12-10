@@ -5318,14 +5318,38 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     setTimeout(refitMap, 200);
 
     // ============================================================
-    // --- FIX: EĞER 3D HARİTA AÇIKSA ONU DA GÜNCELLE ---
+    // --- 3D MAP FIX: DOM GÖRÜNÜRLÜK KONTROLÜ (KESİN ÇÖZÜM) ---
     // ============================================================
+    
+    // 1. 3D Harita şu an açık mı?
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
-                       
+    
     if (is3DActive && window._maplibre3DInstance) {
-        // Yeni veriyle 3D haritayı tazele
-        refresh3DMapData(day);
+        // 2. Ekranda ŞU AN hangi günün expanded (büyük) container'ı görünür durumda?
+        // JavaScript değişkenlerine değil, CSS/HTML gerçeğine bakıyoruz (offsetParent != null demek görünür demek).
+        let visibleExpandedDay = null;
+        
+        const allExpandedContainers = document.querySelectorAll('.expanded-map-container');
+        
+        allExpandedContainers.forEach(container => {
+            // Container görünürse ve ID'si "expanded-map-" ile başlıyorsa
+            if (container.offsetParent !== null && container.id.startsWith('expanded-map-')) {
+                const d = parseInt(container.id.replace('expanded-map-', ''), 10);
+                if (!isNaN(d)) {
+                    visibleExpandedDay = d;
+                }
+            }
+        });
+
+        // 3. EĞER VE SADECE EĞER:
+        // Şu an render edilmekte olan gün (day), ekranda GÖZÜKEN gün ile aynıysa güncelle.
+        // Aksi takdirde (örneğin 2. gün açıkken 1. gün render ediliyorsa) 3D haritaya ASLA DOKUNMA.
+        if (visibleExpandedDay === day) {
+            refresh3DMapData(day);
+        } else {
+            // Arka planda çalışan diğer günlerin render işlemleri 3D haritayı bozamaz.
+        }
     }
     // ============================================================
 }
