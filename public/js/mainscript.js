@@ -2525,14 +2525,22 @@ function closeCustomNoteInput() {
 function saveCustomNote(day) {
     const title = document.getElementById("noteTitle").value;
     const details = document.getElementById("noteDetails").value;
+    
     window.cart.push({
         name: title,
         noteDetails: details,
         day: Number(day), // sayı olarak!
         category: "Note",
-        image: "img/added-note.png"
+        image: "img/added-note.png",
+        addedAt: new Date().toISOString()
     });
+    
     if (typeof updateCart === "function") updateCart();
+    
+    // --- [FIX] KAYIT EKLE ---
+    if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage({ withThumbnail: false });
+    }
 }
 const apiCache = new Map();
 
@@ -2845,26 +2853,39 @@ function saveDayName(day, newName) {
     // Arayüzü yeni isimle güncellemek için sepeti yeniden çiz.
     updateCart();
 }
-            function syncCartOrderWithDOM(day) {
-            const items = document.querySelectorAll(`.day-container[data-day="${day}"] .travel-item`);
-            if (!items.length) return;
-            const newOrder = [];
-            items.forEach(item => {
-                const idx = item.getAttribute('data-index');
-                if (window.cart[idx]) {
-                    newOrder.push(window.cart[idx]);
-                }
-            });
-            window.cart = [
-                ...window.cart.filter(item => item.day != day),
-                ...newOrder
-            ];
 
-                if (window.expandedMaps) {
-                  clearRouteSegmentHighlight(day);
-                  fitExpandedMapToRoute(day);
-                }
-            }
+function syncCartOrderWithDOM(day) {
+    const items = document.querySelectorAll(`.day-container[data-day="${day}"] .travel-item`);
+    if (!items.length) return;
+    
+    const newOrder = [];
+    items.forEach(item => {
+        const idx = item.getAttribute('data-index');
+        if (window.cart[idx]) {
+            newOrder.push(window.cart[idx]);
+        }
+    });
+    
+    // Diğer günleri koru, bu günün sıralamasını güncelle
+    window.cart = [
+        ...window.cart.filter(item => item.day != day),
+        ...newOrder
+    ];
+
+    if (window.expandedMaps) {
+        clearRouteSegmentHighlight(day);
+        fitExpandedMapToRoute(day);
+    }
+
+    // --- [FIX] KAYIT EKLE ---
+    // Sıralama değiştiği için rotayı güncelle ve kaydet
+    if (typeof saveTripAfterRoutes === "function") {
+        // saveTripAfterRoutes hem rotayı tekrar hesaplar hem de kaydeder
+        saveTripAfterRoutes(); 
+    } else if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage();
+    }
+}
 
 const INITIAL_EMPTY_MAP_CENTER = [0, 0];
 const INITIAL_EMPTY_MAP_ZOOM   = 2;
@@ -5027,19 +5048,29 @@ function showResetConfirmation(day, confirmationContainerId) {
 function removeDayAction(day, dayContainerId, confirmationContainerId) {
     const dayContainer = document.getElementById(dayContainerId);
     const confirmationContainer = document.getElementById(confirmationContainerId);
-    dayContainer.remove();
+    if (dayContainer) dayContainer.remove();
 
+    // Günü sil
     window.cart = window.cart.filter(item => item.day != day);
 
-window.cart.forEach(item => {
-    if (item.day > day) {
-        item.day = item.day - 1;
-    }
-});
+    // Gün numaralarını kaydır (örn: 3 silinirse 4 -> 3 olur)
+    window.cart.forEach(item => {
+        if (item.day > day) {
+            item.day = item.day - 1;
+        }
+    });
 
-    reInitMaps();
-    updateCart();
+    if (typeof reInitMaps === "function") reInitMaps(); // Varsa çağır
+    if (typeof updateCart === "function") updateCart();
+    
     hideConfirmation(confirmationContainerId);
+
+    // --- [FIX] KAYIT EKLE ---
+    if (typeof saveCurrentTripToStorage === "function") {
+        // Gün silindiği için yapı kökten değişti, thumbnail ile birlikte kaydetmek daha güvenli olabilir
+        // ama hızlı olması için thumbnailsiz de kaydedebilirsin.
+        saveCurrentTripToStorage(); 
+    }
 }
 
 function hideConfirmation(confirmationContainerId) {
@@ -5049,7 +5080,7 @@ function hideConfirmation(confirmationContainerId) {
     }
 }
 
-// Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
+// Kullanıcı yeni gün oluşturduğunda çalışır
 function addNewDay(button) {
     // 1. Mevcut en yüksek gün sayısını bul
     let maxDay = 1;
@@ -5091,43 +5122,42 @@ function addNewDay(button) {
     // Arayüzü güncelle
     if (typeof updateCart === "function") updateCart();
 
+    // --- [FIX] KAYIT EKLE ---
+    // Yeni gün eklendiğinde hemen kaydet
+    if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage({ withThumbnail: false }); // Thumbnail gerekmez, sadece yapısal kayıt
+    }
+    // ------------------------
+
     // 4. HARİTA ODAKLAMA DÜZELTMESİ (Konya Sorunu Çözümü)
     if (lastMarkerOfPrevDay) {
         setTimeout(() => {
             const mapId = `route-map-day${newDay}`;
             const mapDiv = document.getElementById(mapId);
             
-            // A) Haritayı görünür yap
             if (mapDiv) {
                 mapDiv.style.display = 'block';
                 mapDiv.style.height = '285px';
             }
 
-            // B) Kontrolleri aç
             const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${newDay}`);
             if (controlsWrapper) controlsWrapper.style.display = 'block';
 
-            // C) Haritayı çizdir
             if (typeof renderRouteForDay === 'function') {
                 renderRouteForDay(newDay);
             }
 
-            // D) GARANTİ ODAKLAMA: Harita objesini bul ve manuel setView yap
             setTimeout(() => {
                 const mapInstance = window.leafletMaps && window.leafletMaps[mapId];
                 if (mapInstance && lastMarkerOfPrevDay.location) {
-                    // Leaflet'in "invalidateSize" fonksiyonu, harita boyutu değişimini algılar
                     mapInstance.invalidateSize(); 
-                    
-                    // Doğrudan Konya koordinatına uçur
                     mapInstance.setView(
                         [lastMarkerOfPrevDay.location.lat, lastMarkerOfPrevDay.location.lng], 
                         14, 
                         { animate: false }
                     );
                 }
-            }, 150); // renderRouteForDay çalıştıktan hemen sonra
-
+            }, 150);
         }, 250); 
     }
 }
@@ -10326,122 +10356,139 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 }
 
 function resetDayAction(day, confirmationContainerId) {
-  const d = parseInt(day, 10);
-  const cid = `route-map-day${d}`;
+    const d = parseInt(day, 10);
+    const cid = `route-map-day${d}`;
 
-  // 0) Expanded’ı ve detay overlay’lerini anında sök + kayıtları temizle
-  try {
-    // window.expandedMaps kaydı varsa önce restoreMap ile kapat, sonra kaydı sil
-    if (window.expandedMaps && window.expandedMaps[cid]) {
-      try { restoreMap(cid, d); } catch(_) {}
-      delete window.expandedMaps[cid];
-    }
-
-    document.getElementById(`expanded-map-${d}`)?.remove();
-    document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
-
-    document.querySelectorAll(`.expanded-map-container[id="expanded-map-${d}"]`).forEach(el => el.remove());
-    document.querySelectorAll(`#expanded-route-scale-bar-day${d}`).forEach(el => el.remove());
-
-    const expWrap = document.getElementById(`expanded-map-${d}`);
-    if (expWrap) {
-      expWrap.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
-    } else {
-      const sb = document.getElementById(`expanded-route-scale-bar-day${d}`);
-      sb?.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
-    }
-
-    // Güvenlik: expanded-open sınıfını kaldır
-    if (document?.body?.classList?.contains('expanded-open')) {
-      document.body.classList.remove('expanded-open');
-    }
-  } catch(_) {}
-
-  // 1) Bu güne ait içe aktarılan ham iz varsa sil
-  if (window.importedTrackByDay && window.importedTrackByDay[d]) {
-    delete window.importedTrackByDay[d];
-  }
-
-  // 2) Genişletilmiş haritayı mevcut fonksiyonla kapat (varsa) — ek güvenlik
-  if (typeof closeExpandedForDay === 'function') {
-    try { closeExpandedForDay(d); } catch (_) {}
-  } else {
+    // 0) Expanded’ı ve detay overlay’lerini anında sök + kayıtları temizle
     try {
-      document.getElementById(`expanded-map-${d}`)?.remove();
-      document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
+        // window.expandedMaps kaydı varsa önce restoreMap ile kapat, sonra kaydı sil
+        if (window.expandedMaps && window.expandedMaps[cid]) {
+            try { restoreMap(cid, d); } catch (_) {}
+            delete window.expandedMaps[cid];
+        }
+
+        document.getElementById(`expanded-map-${d}`)?.remove();
+        document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
+
+        document.querySelectorAll(`.expanded-map-container[id="expanded-map-${d}"]`).forEach(el => el.remove());
+        document.querySelectorAll(`#expanded-route-scale-bar-day${d}`).forEach(el => el.remove());
+
+        const expWrap = document.getElementById(`expanded-map-${d}`);
+        if (expWrap) {
+            expWrap.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
+        } else {
+            const sb = document.getElementById(`expanded-route-scale-bar-day${d}`);
+            sb?.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
+        }
+
+        // Güvenlik: expanded-open sınıfını kaldır
+        if (document?.body?.classList?.contains('expanded-open')) {
+            document.body.classList.remove('expanded-open');
+        }
     } catch (_) {}
-  }
 
-  try {
-    const exp = document.getElementById(`expanded-route-scale-bar-day${d}`);
-    if (exp) exp.innerHTML = '';
-    const small = document.getElementById(`route-scale-bar-day${d}`);
-    if (small) small.innerHTML = '';
-  } catch (_) {}
+    // 1) Bu güne ait içe aktarılan ham iz varsa sil
+    if (window.importedTrackByDay && window.importedTrackByDay[d]) {
+        delete window.importedTrackByDay[d];
+    }
 
-  // 4) Rota görselleri ve önbellekleri temizle
-  if (typeof clearRouteVisualsForDay === 'function') { try { clearRouteVisualsForDay(d); } catch (_) {} }
-  if (typeof clearRouteCachesForDay === 'function')  { try { clearRouteCachesForDay(d); } catch (_) {} }
-  if (window.__ttElevDayCache && window.__ttElevDayCache[d]) delete window.__ttElevDayCache[d];
-  if (window.routeElevStatsByDay && window.routeElevStatsByDay[d]) delete window.routeElevStatsByDay[d];
+    // 2) Genişletilmiş haritayı mevcut fonksiyonla kapat (varsa) — ek güvenlik
+    if (typeof closeExpandedForDay === 'function') {
+        try { closeExpandedForDay(d); } catch (_) {}
+    } else {
+        try {
+            document.getElementById(`expanded-map-${d}`)?.remove();
+            document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
+        } catch (_) {}
+    }
 
-  // 5) Mini harita kapları ve kontrolleri kaldır
-  if (typeof removeDayMapCompletely === 'function') {
-    try { removeDayMapCompletely(d); } catch (_) {}
-  } else if (typeof removeDayMap === 'function') {
-    try { removeDayMap(d); } catch (_) {}
-  } else {
-    document.getElementById(`route-map-day${d}`)?.remove();
-    document.getElementById(`route-info-day${d}`)?.remove();
-    document.getElementById(`map-bottom-controls-wrapper-day${d}`)?.remove();
-    document.getElementById(`route-controls-bar-day${d}`)?.remove();
-    document.getElementById(`route-scale-bar-day${d}`)?.remove();
-  }
+    try {
+        const exp = document.getElementById(`expanded-route-scale-bar-day${d}`);
+        if (exp) exp.innerHTML = '';
+        const small = document.getElementById(`route-scale-bar-day${d}`);
+        if (small) small.innerHTML = '';
+    } catch (_) {}
 
-  // 6) Günün item’larını sıfırla (günü görünür bırak ama boş)
-  if (Array.isArray(window.cart)) {
-    window.cart.forEach(item => {
-      if (item.day == d) {
-        item.name = undefined;
-        item.location = null;
-        item.opening_hours = null;
-        item.address = item.address || null;
-      }
-    });
-  }
-  // 7) Mesafe etiketleri ve rota istatistikleri
-  if (typeof clearDistanceLabels === 'function') { try { clearDistanceLabels(d); } catch (_) {} }
-  if (typeof updateRouteStatsUI === 'function')  { try { updateRouteStatsUI(d); } catch (_) {} }
+    // 4) Rota görselleri ve önbellekleri temizle
+    if (typeof clearRouteVisualsForDay === 'function') { try { clearRouteVisualsForDay(d); } catch (_) {} }
+    if (typeof clearRouteCachesForDay === 'function') { try { clearRouteCachesForDay(d); } catch (_) {} }
+    if (window.__ttElevDayCache && window.__ttElevDayCache[d]) delete window.__ttElevDayCache[d];
+    if (window.routeElevStatsByDay && window.routeElevStatsByDay[d]) delete window.routeElevStatsByDay[d];
 
-  // 8) İlk gerçek nokta eklenene kadar mini harita otomatik doğmasın
-  window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
-  window.__suppressMiniUntilFirstPoint[d] = true;
+    // 5) Mini harita kapları ve kontrolleri kaldır
+    if (typeof removeDayMapCompletely === 'function') {
+        try { removeDayMapCompletely(d); } catch (_) {}
+    } else if (typeof removeDayMap === 'function') {
+        try { removeDayMap(d); } catch (_) {}
+    } else {
+        document.getElementById(`route-map-day${d}`)?.remove();
+        document.getElementById(`route-info-day${d}`)?.remove();
+        document.getElementById(`map-bottom-controls-wrapper-day${d}`)?.remove();
+        document.getElementById(`route-controls-bar-day${d}`)?.remove();
+        document.getElementById(`route-scale-bar-day${d}`)?.remove();
+    }
 
-  // 9) UI’ı yenile
-  if (typeof updateCart === 'function') { try { updateCart(); } catch (_) {} }
+    // 6) Günün item’larını sıfırla (günü görünür bırak ama boş)
+    if (Array.isArray(window.cart)) {
+        window.cart.forEach(item => {
+            if (item.day == d) {
+                // Sadece temel özellikleri resetle
+                item.name = undefined;
+                item.location = null;
+                item.opening_hours = null;
+                item.address = item.address || null;
+            }
+        });
+        // Temizlenmiş (boşaltılmış) itemları listeden tamamen çıkar
+        // (Böylece o gün boş olarak kalır veya updateCart mantığına göre yönetilir)
+        window.cart = window.cart.filter(item => item.day != d || (item.day == d && !item.name));
+    }
 
-  // 10) Onay penceresini kapat
-  if (typeof hideConfirmation === 'function') { try { hideConfirmation(confirmationContainerId); } catch (_) {} }
+    // 7) Mesafe etiketleri ve rota istatistikleri
+    if (typeof clearDistanceLabels === 'function') { try { clearDistanceLabels(d); } catch (_) {} }
+    if (typeof updateRouteStatsUI === 'function') { try { updateRouteStatsUI(d); } catch (_) {} }
 
-  // 11) Re-render ısrarını kırmak için: updateCart sonrası 2 kez daha kökten temizle
-  try {
-    const purgeOnce = () => {
-      if (window.expandedMaps && window.expandedMaps[cid]) {
-        try { restoreMap(cid, d); } catch(_) {}
-        delete window.expandedMaps[cid];
-      }
-      document.getElementById(`expanded-map-${d}`)?.remove();
-      document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
-      const expWrap2 = document.getElementById(`expanded-map-${d}`);
-      expWrap2?.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
-      if (document?.body?.classList?.contains('expanded-open')) {
-        document.body.classList.remove('expanded-open');
-      }
-    };
-    setTimeout(purgeOnce, 0);
-    setTimeout(purgeOnce, 200);
-  } catch(_) {}
-  setTimeout(function(){ highlightSegmentOnMap(day); }, 120);
+    // 8) İlk gerçek nokta eklenene kadar mini harita otomatik doğmasın
+    window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+    window.__suppressMiniUntilFirstPoint[d] = true;
+
+    // 9) UI’ı yenile
+    if (typeof updateCart === 'function') { try { updateCart(); } catch (_) {} }
+
+    // 10) Onay penceresini kapat
+    if (typeof hideConfirmation === 'function') { try { hideConfirmation(confirmationContainerId); } catch (_) {} }
+
+    // 11) Re-render ısrarını kırmak için: updateCart sonrası 2 kez daha kökten temizle
+    try {
+        const purgeOnce = () => {
+            if (window.expandedMaps && window.expandedMaps[cid]) {
+                try { restoreMap(cid, d); } catch (_) {}
+                delete window.expandedMaps[cid];
+            }
+            document.getElementById(`expanded-map-${d}`)?.remove();
+            document.getElementById(`expanded-route-scale-bar-day${d}`)?.remove();
+            const expWrap2 = document.getElementById(`expanded-map-${d}`);
+            expWrap2?.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line, .elev-segment-toolbar').forEach(el => el.remove());
+            if (document?.body?.classList?.contains('expanded-open')) {
+                document.body.classList.remove('expanded-open');
+            }
+        };
+        setTimeout(purgeOnce, 0);
+        setTimeout(purgeOnce, 200);
+    } catch (_) {}
+
+    // --- [FIX] KAYIT EKLE ---
+    // İşlem bittiğinde güncel durumu Local Storage'a kaydet
+    if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage();
+    }
+    // ------------------------
+
+    setTimeout(function() {
+        if (typeof highlightSegmentOnMap === 'function') {
+            highlightSegmentOnMap(d);
+        }
+    }, 120);
 }
 
 function clearScaleBarSelection(day) {
