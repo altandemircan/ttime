@@ -5350,47 +5350,27 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     ro.observe(sidebarContainer);
     sidebarContainer._resizeObserver = ro;
 
-    // ============================================================
-    // --- 3D MAP FIX: CANLI VERİ SENKRONİZASYONU ---
-    // ============================================================
-    // --- 3D MAP FIX: CANLI VERİ ENJEKSİYONU (GÜNCELLENDİ) ---
+   // ============================================================
+    // --- 3D MAP FIX: DOUBLE-TAP UPDATE (KESİN ÇÖZÜM) ---
     // ============================================================
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
     
-    // Sadece 3D harita açıksa ve yüklüyse işlem yap
     if (is3DActive && window._maplibre3DInstance) {
         
-        // Ekranda ŞU AN hangi günün büyük haritası açık? (DOM kontrolü)
-        let visibleExpandedDay = null;
-        const allExpandedContainers = document.querySelectorAll('.expanded-map-container');
-        allExpandedContainers.forEach(container => {
-            if (container.offsetParent !== null && container.id.startsWith('expanded-map-')) {
-                const d = parseInt(container.id.replace('expanded-map-', ''), 10);
-                if (!isNaN(d)) visibleExpandedDay = d;
-            }
-        });
-
-        // Kural: Eğer şu an render ettiğin gün (day), kullanıcının baktığı gün (visibleExpandedDay) ile aynıysa güncelle.
-        if (visibleExpandedDay === day) {
+        // window.currentDay, ekleme yaparken set edildiği için en güvenilir kaynaktır.
+        // Eğer şu an hesaplanan gün, aktif gün ise güncellemeyi zorla.
+        if (window.currentDay === day) {
             
-            // --- ÇÖZÜM BURADA ---
-            // 1. Taze noktaları al (Eski 'points' parametresi bazen eksik olabilir, window.cart en güncelidir)
-            const latestPoints = typeof getDayPoints === 'function' ? getDayPoints(day) : points;
+            // 1. Hemen güncelle (İlk deneme)
+            refresh3DMapData(day);
 
-            // 2. Taze GeoJSON'u al
-            // routeData değişkeni bu fonksiyonun üst kısmında hesaplandı, en taze veri odur.
-            // Eğer routeData yoksa (hata vb.), argüman olarak gelen geojson'u kullan.
-            let freshGeoJSON = geojson;
-            if (typeof routeData !== 'undefined' && routeData && routeData.geojson) {
-                freshGeoJSON = routeData.geojson;
-            }
-
-            // 3. Veriyi refresh3DMapData'ya ELDEN TESLİM ET
-            // Böylece fonksiyon global değişkenlerin güncellenmesini beklemek zorunda kalmaz.
-            requestAnimationFrame(() => {
-                refresh3DMapData(day, freshGeoJSON, latestPoints);
-            });
+            // 2. Gecikmeli güncelle (İkinci deneme - Sigorta)
+            // Bazen OSRM verisi global değişkene (window.lastRouteGeojsons) yazılmadan 
+            // hemen önceki satır çalışabiliyor. 150ms bekleyip tekrar deniyoruz.
+            setTimeout(() => {
+                refresh3DMapData(day);
+            }, 150);
         }
     }
     // ============================================================
