@@ -2529,7 +2529,7 @@ function saveCustomNote(day) {
     window.cart.push({
         name: title,
         noteDetails: details,
-        day: Number(day), // sayı olarak!
+        day: Number(day),
         category: "Note",
         image: "img/added-note.png",
         addedAt: new Date().toISOString()
@@ -2537,7 +2537,7 @@ function saveCustomNote(day) {
     
     if (typeof updateCart === "function") updateCart();
     
-    // --- [FIX] KAYIT EKLE ---
+    // --- [FIX] KAYIT KOMUTU EKLENDİ ---
     if (typeof saveCurrentTripToStorage === "function") {
         saveCurrentTripToStorage({ withThumbnail: false });
     }
@@ -2837,27 +2837,27 @@ function editDayName(day) {
 
 // Gün ismini kaydetme fonksiyonu (güncellendi)
 function saveDayName(day, newName) {
-    // Eğer `customDayNames` nesnesi yoksa, oluştur.
     if (typeof window.customDayNames === 'undefined') {
         window.customDayNames = {};
     }
 
-    // Eğer kullanıcı boş bir isim girerse, bu gün için özel ismi sil.
     if (!newName.trim()) {
         delete window.customDayNames[day];
     } else {
-        // Girilen yeni adı, ilgili gün numarasıyla sakla.
         window.customDayNames[day] = newName.trim();
     }
 
-    // Arayüzü yeni isimle güncellemek için sepeti yeniden çiz.
     updateCart();
+
+    // --- [FIX] KAYIT KOMUTU EKLENDİ ---
+    if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage({ withThumbnail: false });
+    }
 }
 
 function syncCartOrderWithDOM(day) {
     const items = document.querySelectorAll(`.day-container[data-day="${day}"] .travel-item`);
     if (!items.length) return;
-    
     const newOrder = [];
     items.forEach(item => {
         const idx = item.getAttribute('data-index');
@@ -2865,8 +2865,6 @@ function syncCartOrderWithDOM(day) {
             newOrder.push(window.cart[idx]);
         }
     });
-    
-    // Diğer günleri koru, bu günün sıralamasını güncelle
     window.cart = [
         ...window.cart.filter(item => item.day != day),
         ...newOrder
@@ -2877,10 +2875,8 @@ function syncCartOrderWithDOM(day) {
         fitExpandedMapToRoute(day);
     }
 
-    // --- [FIX] KAYIT EKLE ---
-    // Sıralama değiştiği için rotayı güncelle ve kaydet
+    // --- [FIX] KAYIT KOMUTU EKLENDİ ---
     if (typeof saveTripAfterRoutes === "function") {
-        // saveTripAfterRoutes hem rotayı tekrar hesaplar hem de kaydeder
         saveTripAfterRoutes(); 
     } else if (typeof saveCurrentTripToStorage === "function") {
         saveCurrentTripToStorage();
@@ -5050,25 +5046,21 @@ function removeDayAction(day, dayContainerId, confirmationContainerId) {
     const confirmationContainer = document.getElementById(confirmationContainerId);
     if (dayContainer) dayContainer.remove();
 
-    // Günü sil
     window.cart = window.cart.filter(item => item.day != day);
 
-    // Gün numaralarını kaydır (örn: 3 silinirse 4 -> 3 olur)
     window.cart.forEach(item => {
         if (item.day > day) {
             item.day = item.day - 1;
         }
     });
 
-    if (typeof reInitMaps === "function") reInitMaps(); // Varsa çağır
+    if (typeof reInitMaps === "function") reInitMaps(); 
     if (typeof updateCart === "function") updateCart();
     
     hideConfirmation(confirmationContainerId);
 
-    // --- [FIX] KAYIT EKLE ---
+    // --- [FIX] KAYIT KOMUTU EKLENDİ ---
     if (typeof saveCurrentTripToStorage === "function") {
-        // Gün silindiği için yapı kökten değişti, thumbnail ile birlikte kaydetmek daha güvenli olabilir
-        // ama hızlı olması için thumbnailsiz de kaydedebilirsin.
         saveCurrentTripToStorage(); 
     }
 }
@@ -5082,7 +5074,6 @@ function hideConfirmation(confirmationContainerId) {
 
 // Kullanıcı yeni gün oluşturduğunda çalışır
 function addNewDay(button) {
-    // 1. Mevcut en yüksek gün sayısını bul
     let maxDay = 1;
     if (Array.isArray(window.cart) && window.cart.length > 0) {
         window.cart.forEach(item => {
@@ -5094,7 +5085,6 @@ function addNewDay(button) {
 
     const newDay = maxDay + 1;
 
-    // 2. Önceki günün son geçerli lokasyonunu bul
     let lastMarkerOfPrevDay = null;
     for (let i = window.cart.length - 1; i >= 0; i--) {
         const item = window.cart[i];
@@ -5106,12 +5096,11 @@ function addNewDay(button) {
         }
     }
 
-    // 3. Kopyalama ve Ekleme
     if (lastMarkerOfPrevDay) {
         const newItem = JSON.parse(JSON.stringify(lastMarkerOfPrevDay));
         newItem.day = newDay;
         newItem.addedAt = new Date().toISOString();
-        delete newItem._starter; // Starter flag'ini temizle
+        delete newItem._starter; 
         window.cart.push(newItem);
     } else {
         window.cart.push({ day: newDay });
@@ -5119,17 +5108,14 @@ function addNewDay(button) {
 
     window.currentDay = newDay;
     
-    // Arayüzü güncelle
     if (typeof updateCart === "function") updateCart();
 
-    // --- [FIX] KAYIT EKLE ---
-    // Yeni gün eklendiğinde hemen kaydet
+    // --- [FIX] KAYIT KOMUTU EKLENDİ ---
     if (typeof saveCurrentTripToStorage === "function") {
-        saveCurrentTripToStorage({ withThumbnail: false }); // Thumbnail gerekmez, sadece yapısal kayıt
+        saveCurrentTripToStorage({ withThumbnail: false });
     }
-    // ------------------------
+    // ----------------------------------
 
-    // 4. HARİTA ODAKLAMA DÜZELTMESİ (Konya Sorunu Çözümü)
     if (lastMarkerOfPrevDay) {
         setTimeout(() => {
             const mapId = `route-map-day${newDay}`;
