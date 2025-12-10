@@ -1949,7 +1949,83 @@ window.showImage = function(element) {
 
 
 // 2) Yerleri Geoapify'dan çeken fonksiyon
+async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
+  const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
+  if (!geoCategory) {
+    return [];
+  }
+  const coords = await getCityCoordinates(city);
+  if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
+    return [];
+  }
+  const url = `/api/geoapify/places?categories=${geoCategory}&lon=${coords.lon}&lat=${coords.lat}&radius=${radius}&limit=${limit}`;
+  let resp, data;
+  try {
+    resp = await fetch(url);
+    data = await resp.json();
+  } catch (e) {
+    return [];
+  }
+ if (data.features && data.features.length > 0) {
+    const filtered = data.features.filter(f =>
+      !!f.properties.name && f.properties.name.trim().length > 2
+    );
+    const result = filtered.map(f => {
+      const props = f.properties || {};
+      let lat = Number(
+        props.lat ??
+        props.latitude ??
+        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[1])
+      );
+      let lon = Number(
+        props.lon ??
+        props.longitude ??
+        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0])
+      );
+      if (!Number.isFinite(lat)) lat = null;
+      if (!Number.isFinite(lon)) lon = null;
+      return {
+        name: props.name,
+        name_en: props.name_en,
+        name_latin: props.name_latin,
+        address: props.formatted || "",
+        lat,
+        lon,
+        location: (lat !== null && lon !== null) ? { lat, lng: lon } : null,
+        website: props.website || '',
+        opening_hours: props.opening_hours || '',
+        categories: props.categories || [],
+        city: city,
+        properties: props
+      };
+    });
 
+       console.log('getPlacesForCategory:', {
+      city,
+      category,
+      radius,
+      limit,
+      places: result.map(p => ({
+        name: p.name,
+        lat: p.lat,
+        lon: p.lon,
+        address: p.address,
+        categories: p.categories
+      }))
+    });
+
+    // ---- BURAYA EKLE ----
+    // Sıralamayı şehir merkezine en yakın olanı öne alacak şekilde yap!
+    const sorted = result.sort((a, b) => {
+      const da = haversine(a.lat, a.lon, coords.lat, coords.lon);
+      const db = haversine(b.lat, b.lon, coords.lat, coords.lon);
+      return da - db;
+    });
+    return sorted;
+
+  }
+  return [];
+}
 
 
 // Şehir koordinatı bulma fonksiyonu
@@ -6593,8 +6669,93 @@ function restoreMap(containerId, day) {
 }
 
 
+// Görsel doğrulama fonksiyonu
+async function isImageValid(url, timeout = 3000) {
+    if (!url || url === PLACEHOLDER_IMG) return false;
+    
+    return new Promise((resolve) => {
+        const img = new Image();
+        const timer = setTimeout(() => {
+            img.onload = img.onerror = null;
+            resolve(false);
+        }, timeout);
+        
+        img.onload = function() {
+            clearTimeout(timer);
+            resolve(this.width >= 50 && this.height >= 50);
+        };
+        
+        img.onerror = function() {
+            clearTimeout(timer);
+            resolve(false);
+        };
+        
+        img.src = url;
+    });
+}
 
+// Görsel hata yönetimi
+window.handleImageError = async function(imgElement, placeName, index) {
+    if (imgElement.dataset.errorHandled === 'true') {
+        imgElement.src = PLACEHOLDER_IMG;
+        return;
+    }
+    
+    imgElement.dataset.errorHandled = 'true';
+    
+    const loadingDiv = imgElement.parentNode?.querySelector('.img-loading');
+    if (loadingDiv) {
+        loadingDiv.style.opacity = '1';
+    }
+    
+    try {
+        const backupSources = [
+            () => getPixabayImage && getPixabayImage(placeName),
+            () => getPexelsImage && getPexelsImage(placeName.split(' ')[0])
+        ];
+        
+        for (const getBackup of backupSources) {
+            try {
+                const backupUrl = await getBackup();
+                if (backupUrl && backupUrl !== PLACEHOLDER_IMG && await isImageValid(backupUrl)) {
+                    imgElement.src = backupUrl;
+                    if (loadingDiv) loadingDiv.style.opacity = '0';
+                    return;
+                }
+            } catch (e) {
+                console.warn('Backup image source failed:', e);
+            }
+        }
+    } catch (error) {
+        console.warn('Error handling image fallback:', error);
+    }
+    
+    imgElement.src = PLACEHOLDER_IMG;
+    if (loadingDiv) loadingDiv.style.opacity = '0';
+};
 
+window.addNearbyPlaceToTrip = function(idx) {
+    if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
+    const f = window._lastNearbyPlaces[idx];
+    const day = window._lastNearbyDay; // Artık doğru gün!
+    const photo = (window._lastNearbyPhotos && window._lastNearbyPhotos[idx]) ? window._lastNearbyPhotos[idx] : "img/placeholder.png";
+    addToCart(
+        f.properties.name || "Unnamed",
+        photo,
+        day,
+        "Place",
+        f.properties.formatted || "",
+        null, null,
+        f.properties.opening_hours || "",
+        null,
+        { lat: f.properties.lat, lng: f.properties.lon },
+        f.properties.website || ""
+    );
+    // Popup'ı kapat
+    const containerId = Object.keys(window.expandedMaps).find(cid => window.expandedMaps[cid].day == day);
+    const expandedMap = window.expandedMaps && window.expandedMaps[containerId]?.expandedMap;
+    if (expandedMap) expandedMap.closePopup();
+};    
 
 function getDayDisplayName(day) {
   if (window.customDayNames && window.customDayNames[day]) {
