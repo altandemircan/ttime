@@ -5351,7 +5351,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer._resizeObserver = ro;
 
     // ============================================================
-    // --- 3D MAP FIX: DOM GÖRÜNÜRLÜK KONTROLÜ (GÜNCELLENDİ) ---
+    // --- 3D MAP FIX: VERİ SENKRONİZASYONU (GÜNCELLENDİ) ---
     // ============================================================
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
@@ -5369,8 +5369,17 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
         // Sadece ekranda görünen gün ile işlem yapılan gün aynıysa güncelle
         if (visibleExpandedDay === day) {
+            
+            // --- KRİTİK DÜZELTME ---
+            // Global değişkenlerin güncellenmesini bekleme!
+            // Elimizdeki "routeData.geojson" ve "points" zaten en güncel veri.
+            // Bunları doğrudan fonksiyona gönderiyoruz.
+            
+            // Eğer routeData oluşmadıysa (API hatası vb.), fallback kullan
+            const freshGeoJSON = (typeof routeData !== 'undefined' && routeData) ? routeData.geojson : geojson;
+            
             requestAnimationFrame(() => {
-                refresh3DMapData(day);
+                refresh3DMapData(day, freshGeoJSON, points);
             });
         }
     }
