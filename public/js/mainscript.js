@@ -4230,15 +4230,15 @@ cartDiv.appendChild(addNewDayButton);
   })();
 
 
-// === OTOMATİK AI INFO GENERATION (Start With Map İçin) ===
+// === OTOMATİK AI INFO GENERATION & TITLE FIX ===
   (function autoGenerateAiInfo() {
-    // 1. Eğer ekranda zaten AI kutusu varsa (veya yükleniyorsa) tekrar çalışma
+    // 1. Zaten AI kutusu varsa çık
     if (document.querySelector('.ai-info-section')) return;
 
-    // 2. Sepet boşsa çalışma
+    // 2. Sepet boşsa çık
     if (!window.cart || window.cart.length === 0) return;
 
-    // 3. İlk "gerçek" (start/placeholder olmayan) mekanı bul
+    // 3. İlk "gerçek" mekanı bul
     const first = window.cart.find(it =>
       it.location &&
       typeof it.location.lat === "number" &&
@@ -4248,44 +4248,49 @@ cartDiv.appendChild(addNewDayButton);
 
     if (!first) return;
 
-    // 4. Şehir bilgisini bul (Globalden veya adresten)
-    let city = window.selectedCity;
-
-    // Global seçili şehir yoksa, ilk markerın adresinden çekmeye çalış
-    if (!city && first.address) {
-      const parts = first.address.split(",");
-      if (parts.length >= 2) {
-        // Sondan 2. parça genellikle "PostaKodu Şehir" formatındadır (örn: "8003 Barcelona")
-        const rawCity = parts[parts.length - 2].trim();
-        // Baştaki sayıları (posta kodunu) temizle
-        city = rawCity.replace(/^\d+\s*-?\s*/, ''); 
-      } else {
-        city = parts[0].trim();
-      }
+    // 4. ŞEHİR BULMA MANTIĞI (GÜNCELLENDİ)
+    // Önce mekanın adresinden şehri çekmeye çalış (En güvenilir yöntem)
+    let derivedCity = null;
+    if (first.address) {
+        const parts = first.address.split(",");
+        if (parts.length >= 2) {
+            // Genelde adresin sondan 2. parçası şehirdir
+            const rawCity = parts[parts.length - 2].trim();
+            // "8003 Barcelona" gibi posta kodlarını temizle
+            derivedCity = rawCity.replace(/^\d+\s*-?\s*/, '');
+        } else {
+            // Adres tek parça ise direkt temizle
+            derivedCity = first.address.trim().replace(/^\d+\s*-?\s*/, '');
+        }
     }
 
-    // 5. Şehir bulunduysa -> OTOMATİK BAŞLAT
+    // Eğer adresten şehir bulduysak onu kullan, yoksa global hafızadakini (selectedCity) kullan
+    let city = derivedCity || window.selectedCity;
+
+    // 5. BAŞLIĞI GÜNCELLE
     if (city) {
-      // Eğer başlık "Trip Plan" olarak kaldıysa, "Trip to [City]" olarak güncelle
-      if (!window.selectedCity || window.lastUserQuery === "Trip Plan") {
-          window.selectedCity = city;
-          window.lastUserQuery = "Trip to " + city;
+      // Eğer başlık "Trip Plan" ise, "Trip to 8003..." ise veya yanlış şehirde kalmışsa düzelt
+      const currentTitle = window.lastUserQuery || "";
+      const isTitleGeneric = currentTitle === "Trip Plan";
+      const isCityMismatch = derivedCity && window.selectedCity !== derivedCity; // Hafıza eski mi?
+
+      if (!window.selectedCity || isTitleGeneric || isCityMismatch) {
+          window.selectedCity = city; // Hafızayı güncelle
+          window.lastUserQuery = "Trip to " + city; // Başlığı güncelle
+          
           const tEl = document.getElementById("trip_title");
           if (tEl) tEl.textContent = window.lastUserQuery;
       }
 
-      console.log("📍 Start with Map: Otomatik AI tetikleniyor ->", city);
+      console.log("📍 Auto AI & Title Trigger ->", city);
       
-      // Buton beklemeden direkt fonksiyonu çağırıyoruz
       if (typeof insertTripAiInfo === "function") {
          insertTripAiInfo(false, null, city);
       }
     }
   })();
   // ============================================================
-
-  // ===================================
-
+  
   // EN SON: (Keep your existing trailing code)
   if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
       const div = document.createElement("div");
