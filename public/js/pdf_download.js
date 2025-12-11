@@ -152,7 +152,7 @@ function downloadTripPlanPDF(tripKey) {
         });
     }
 
-    // --- HARİTA OLUŞTURUCU (POSITRON & 1200x800) ---
+    // --- HARİTA ÜRETİCİ (3x2 ORAN & GENİŞ PADDING) ---
     async function generateHighResMap(day, dayItems, trip) {
         return new Promise((resolve) => {
             const validPoints = dayItems.filter(i => i.location && !isNaN(i.location.lat));
@@ -173,9 +173,9 @@ function downloadTripPlanPDF(tripKey) {
                 }
             }, 3500); 
 
-            // Gizli Konteyner (1200x800)
-            const width = 1200; 
-            const height = 800; // Yükseklik artırıldı
+            // 1. Gizli Konteyner (1500x1000 = Tam 3:2 Oran, Yüksek Çözünürlük)
+            const width = 1500; 
+            const height = 1000; 
             const container = document.createElement('div');
             container.id = `pdf-map-gen-day${day}`;
             container.style.width = width + 'px';
@@ -194,7 +194,7 @@ function downloadTripPlanPDF(tripKey) {
             try {
                 const map = new maplibregl.Map({
                     container: container,
-                    style: 'https://tiles.openfreemap.org/styles/positron', // POSITRON STİLİ
+                    style: 'https://tiles.openfreemap.org/styles/positron', // POSITRON
                     center: [centerLng, centerLat],
                     zoom: 12,
                     preserveDrawingBuffer: true,
@@ -250,7 +250,8 @@ function downloadTripPlanPDF(tripKey) {
                     validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
                     if (polyline) polyline.forEach(p => bounds.extend([p.lng, p.lat]));
                     
-                    map.fitBounds(bounds, { padding: 100, animate: false });
+                    // 2. Padding (ÖNEMLİ): Kenarlardan taşmayı önlemek için 150px boşluk
+                    map.fitBounds(bounds, { padding: 150, animate: false });
 
                     // Marker Boyama (idle tekrar beklenir)
                     map.once('idle', () => {
@@ -270,10 +271,10 @@ function downloadTripPlanPDF(tripKey) {
                              
                              const x = pos.x;
                              const y = pos.y;
-                             const r = 18; 
+                             const r = 24; // Yarıçapı biraz büyüttüm (Görünürlük için)
                              
                              ctx.beginPath();
-                             ctx.arc(x, y + 3, r, 0, 2 * Math.PI);
+                             ctx.arc(x, y + 4, r, 0, 2 * Math.PI);
                              ctx.fillStyle = 'rgba(0,0,0,0.3)';
                              ctx.fill();
                              
@@ -283,12 +284,12 @@ function downloadTripPlanPDF(tripKey) {
                              ctx.fill();
                              
                              ctx.beginPath();
-                             ctx.arc(x, y, r - 3, 0, 2 * Math.PI);
+                             ctx.arc(x, y, r - 4, 0, 2 * Math.PI);
                              ctx.fillStyle = '#d32f2f';
                              ctx.fill();
                              
                              ctx.fillStyle = '#ffffff';
-                             ctx.font = 'bold 16px Roboto, Arial, sans-serif';
+                             ctx.font = 'bold 20px Roboto, Arial, sans-serif';
                              ctx.textAlign = 'center';
                              ctx.textBaseline = 'middle';
                              ctx.fillText((index + 1).toString(), x, y + 1);
@@ -359,6 +360,7 @@ function downloadTripPlanPDF(tripKey) {
         doc.text(disclaimerLines, marginX, cursorY);
         
         cursorY += (disclaimerLines.length * 5) + 10;
+
         doc.setDrawColor('#e0e0e0');
         doc.setLineWidth(0.5);
         doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
@@ -381,14 +383,15 @@ function downloadTripPlanPDF(tripKey) {
             doc.text(`DAY ${day}`, marginX + 12, cursorY + 4, { align: 'center', baseline: 'middle' });
             cursorY += 12; 
 
-            // HARİTA RENDER
+            // HARİTA RENDER (3x2 Oran)
             if (dayItems.length > 0) {
                 showStatus(`Generating Map for Day ${day}...`);
                 const highResMapUrl = await generateHighResMap(day, dayItems, trip);
                 
                 if (highResMapUrl) {
                     const mapWidth = pageWidth - (marginX * 2);
-                    const mapHeight = 75; // Yüksekliği artırdım (800px kaynağa uygun olması için)
+                    const mapHeight = mapWidth / 1.5; // PDF'te de tam 3:2 (1.5) oranı koru
+                    
                     await addSmartImage(highResMapUrl, marginX, cursorY, mapWidth, mapHeight, 4);
                     cursorY += mapHeight + 15;
                 } else {
