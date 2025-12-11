@@ -52,22 +52,22 @@ function downloadTripPlanPDF(tripKey) {
         }
     }
 
-    // --- 1. LOGO İÇİN BASİT YÜKLEYİCİ (KALİTE BOZMAZ) ---
+    // --- 1. LOGO YÜKLEYİCİ ---
     async function addLogo(imgSrc, x, y, w, h) {
         return new Promise((resolve) => {
             const img = new window.Image();
             img.crossOrigin = "Anonymous";
             img.onload = () => {
-                // Logoyu direkt ekle, canvas'a sokma
                 try { doc.addImage(img, 'PNG', x, y, w, h); } catch(e){}
                 resolve();
             };
-            img.onerror = () => resolve(); // Logo yoksa sessizce geç
+            img.onerror = () => resolve();
             img.src = imgSrc;
         });
     }
 
-    // --- 2. THUMBNAIL İÇİN YÜKSEK KALİTE KIRPICI (OBJECT-FIT: COVER) ---
+    // --- 2. THUMBNAIL İÇİN PRO GÖRÜNTÜ İŞLEME ---
+    // (Orijinal resimden doğrudan kesim yaparak kaliteyi korur)
     async function addThumbnail(imgSrc, x, y, w, h) {
         return new Promise((resolve) => {
             const img = new window.Image();
@@ -75,44 +75,55 @@ function downloadTripPlanPDF(tripKey) {
             
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                // KALİTE AYARI: PDF için 4 kat büyük işle (Retina etkisi)
+                // PDF için 4x Süper Örnekleme (Retina Kalitesi)
                 const scale = 4; 
-                canvas.width = w * scale; 
-                canvas.height = h * scale;
+                const targetW = w * scale;
+                const targetH = h * scale;
+                
+                canvas.width = targetW; 
+                canvas.height = targetH;
                 const ctx = canvas.getContext('2d');
 
-                // Object-Fit: Cover Hesabı
-                const imgRatio = img.width / img.height;
-                const targetRatio = w / h;
-                let renderWidth, renderHeight, offsetX, offsetY;
-
-                if (imgRatio > targetRatio) {
-                    renderHeight = canvas.height;
-                    renderWidth = img.width * (canvas.height / img.height);
-                    offsetX = (canvas.width - renderWidth) / 2;
-                    offsetY = 0;
-                } else {
-                    renderWidth = canvas.width;
-                    renderHeight = img.height * (canvas.width / img.width);
-                    offsetX = 0;
-                    offsetY = (canvas.height - renderHeight) / 2;
-                }
-
-                // Yüksek kalitede çizim
+                // En iyi interpolasyon ayarları
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(img, offsetX, offsetY, renderWidth, renderHeight);
 
-                // Kenarlık (İsteğe bağlı, şık durur)
+                // Source Crop Hesabı (Resmin neresini alacağız?)
+                const sourceW = img.naturalWidth;
+                const sourceH = img.naturalHeight;
+                const targetRatio = w / h;
+                const sourceRatio = sourceW / sourceH;
+
+                let sx, sy, sWidth, sHeight;
+
+                if (sourceRatio > targetRatio) {
+                    // Resim çok geniş: Yüksekliği koru, kenarlardan kırp
+                    sHeight = sourceH;
+                    sWidth = sourceH * targetRatio;
+                    sx = (sourceW - sWidth) / 2;
+                    sy = 0;
+                } else {
+                    // Resim çok uzun: Genişliği koru, üstten/alttan kırp
+                    sWidth = sourceW;
+                    sHeight = sourceW / targetRatio;
+                    sx = 0;
+                    sy = (sourceH - sHeight) / 2;
+                }
+
+                // Kaynaktan Hedefe Çizim (Resize + Crop tek adımda)
+                // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+                ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetW, targetH);
+
+                // İnce Çerçeve
                 ctx.strokeStyle = "#e5e7eb";
                 ctx.lineWidth = 1 * scale; 
-                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeRect(0, 0, targetW, targetH);
 
                 try {
-                    // PNG formatında kayıpsız çıktı al
-                    const dataUrl = canvas.toDataURL('image/png'); 
-                    doc.addImage(dataUrl, 'PNG', x, y, w, h);
-                } catch (e) { console.warn("Image add error", e); }
+                    // Maksimum kalite JPEG (PNG bazen çok şişebilir, High Quality JPEG yeterlidir)
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.95); 
+                    doc.addImage(dataUrl, 'JPEG', x, y, w, h);
+                } catch (e) { console.warn("Img Error", e); }
                 resolve();
             };
 
@@ -138,8 +149,7 @@ function downloadTripPlanPDF(tripKey) {
     }
 
     (async function render() {
-        // --- HEADER ---
-        // Logoyu eski yöntemle (bozmadan) ekle
+        // HEADER
         await addLogo('img/triptime_pdf.png', marginX, cursorY, logoWidth, logoHeight);
         cursorY += logoHeight + 12;
 
@@ -171,7 +181,7 @@ function downloadTripPlanPDF(tripKey) {
         doc.setLineWidth(0.5);
         doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
 
-        // --- CONTENT ---
+        // İÇERİK
         const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
 
         for (let day = 1; day <= days; day++) {
@@ -185,7 +195,7 @@ function downloadTripPlanPDF(tripKey) {
             doc.setFont('Roboto', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(primaryColor);
-            doc.text(`DAY ${day}`, marginX + 12, cursorY + 5.5, { align: 'center' });
+            doc.text(`DAY ${day}`, marginX + 12, cursorY + 5.5, { align: 'center', baseline: 'middle' });
 
             cursorY += 16;
 
@@ -211,32 +221,37 @@ function downloadTripPlanPDF(tripKey) {
 
                 // Timeline Çizgisi
                 const isLastItem = (i === dayItems.length - 1);
+                const circleCenterY = cursorY + 5; // Dairenin tam ortası
+
                 if (!isLastItem) {
                     doc.setDrawColor(lineColor);
                     doc.setLineWidth(0.5);
-                    doc.line(timelineX, cursorY + 4, timelineX, cursorY + itemHeight);
+                    // Çizgiyi dairenin altından başlat
+                    doc.line(timelineX, circleCenterY, timelineX, cursorY + itemHeight);
                 }
 
-                // Badge
+                // Badge (Yuvarlak)
                 doc.setFillColor(primaryColor);
                 doc.setDrawColor('#ffffff');
                 doc.setLineWidth(1);
-                doc.circle(timelineX, cursorY + 4, 3.5, 'FD');
+                doc.circle(timelineX, circleCenterY, 3.5, 'FD');
 
+                // Badge Numarası (TAM ORTALAMA FIX)
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(7);
                 doc.setTextColor('#ffffff');
-                doc.text(String(i + 1), timelineX, cursorY + 6.5, { align: 'center' });
+                // baseline: 'middle' ile dikey ortalama, align: 'center' ile yatay ortalama
+                doc.text(String(i + 1), timelineX, circleCenterY, { align: 'center', baseline: 'middle' });
 
                 // --- GÖRSEL ---
                 const imgSize = 35;
                 if (item.image) {
-                    // YENİ YÜKSEK KALİTE KIRPICIYI KULLAN
+                    // Yüksek kaliteli crop fonksiyonu
                     await addThumbnail(item.image, contentX, cursorY, imgSize, imgSize);
                 }
 
                 const textStartX = contentX + imgSize + 6; 
-                let textCursorY = cursorY + 4; 
+                let textCursorY = cursorY + 5; // Yazıları da görselle hizalı başlat
 
                 // Mekan Adı
                 doc.setFont('Roboto', 'bold');
@@ -244,7 +259,9 @@ function downloadTripPlanPDF(tripKey) {
                 doc.setTextColor(accentColor);
                 const nameLines = doc.splitTextToSize(item.name || "Unknown Place", contentWidth - imgSize - 5);
                 doc.text(nameLines, textStartX, textCursorY);
-                textCursorY += (nameLines.length * 5) + 1;
+                
+                // Sonraki satıra geç
+                textCursorY += (nameLines.length * 5) + 2;
 
                 // Kategori
                 if (item.category) {
