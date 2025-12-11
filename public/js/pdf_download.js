@@ -500,8 +500,21 @@ function downloadTripPlanPDF(tripKey) {
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(12);
                 doc.setTextColor(accentColor);
-                const nameLines = doc.splitTextToSize(item.name || "Unknown Place", contentWidth - imgSize - 10);
+                
+                // --- DÜZELTME: İsim bulmak için alternatiflere bak ---
+                let displayName = item.name;
+                if (!displayName || displayName.trim() === "") {
+                    // Eğer name yoksa, sırasıyla title, properties.name veya adresi dene
+                    displayName = item.title || 
+                                  (item.properties && item.properties.name) || 
+                                  (item.properties && item.properties.address_line1) ||
+                                  "Unknown Place";
+                }
+                // ----------------------------------------------------
+
+                const nameLines = doc.splitTextToSize(displayName, contentWidth - imgSize - 10);
                 doc.text(nameLines, textStartX, textCursorY);
+
                 textCursorY += (nameLines.length * 5) + 2;
 
                 if (item.category) {
