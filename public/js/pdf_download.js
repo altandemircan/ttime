@@ -9,26 +9,33 @@ function downloadTripPlanPDF(tripKey) {
     doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
     
 
- const primaryColor = '#8a4af3';   // Triptime Moru
-    const accentColor = '#222222';    // Koyu Metin
-    const subTextColor = '#666666';   // Gri Metin
-    const lightGray = '#f3f4f6';      // Arkaplan kutuları için
-    const lineColor = '#e5e7eb';      // Timeline çizgisi rengi
-
-    // Sayfa ayarları
+ // --- RENK VE AYARLAR ---
+    const primaryColor = '#8a4af3';   // Triptime Moru
+    const accentColor = '#222222';    // Koyu Metin (Başlıklar)
+    const subTextColor = '#666666';   // Gri Metin (Adres vb.)
+    const lightGray = '#f3f4f6';      // Gün Arkaplanı
+    const lineColor = '#e5e7eb';      // Timeline Çizgisi
+    
+    // Sayfa Düzeni
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const marginX = 14;
-    const timelineX = 24; // Çizginin ve yuvarlakların x konumu
-    const contentX = 36;  // İçeriğin başladığı x konumu
-    const contentWidth = pageWidth - contentX - marginX;
     
-    let cursorY = 20; // Y ekseni takipçisi
+    const marginX = 14;           // Sol kenar boşluğu
+    const timelineX = 24;         // Çizginin geçtiği dikey hizalama
+    const contentX = 38;          // İçeriğin (Resim/Yazı) başladığı yer
+    const contentWidth = pageWidth - contentX - marginX;
+
+    let cursorY = 20; // Y ekseni takipçisi (İmleç)
+
+    // Logo Boyutları (Senin kodundan alındı)
+    const logoWidth = 61.35;
+    const logoHeight = 9.75;
 
     // --- YARDIMCI FONKSİYONLAR ---
 
-    // Sayfa sonu kontrolü
+    // Sayfa sonu kontrolü ve Yeni Sayfa Ekleme
     function checkPageBreak(neededHeight) {
+        // Alt kısımdan 20 birim boşluk kalınca yeni sayfaya geç
         if (cursorY + neededHeight > pageHeight - 20) {
             doc.addPage();
             cursorY = 20; // Yeni sayfa başı
@@ -37,7 +44,7 @@ function downloadTripPlanPDF(tripKey) {
         return false;
     }
 
-    // Footer ekleme
+    // Footer (Sayfa Numarası)
     function addFooter() {
         const pageCount = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
@@ -51,34 +58,32 @@ function downloadTripPlanPDF(tripKey) {
         }
     }
 
-    // Resim Yükleyici
+    // Resim Yükleyici (Hata korumalı)
     async function addImage(imgSrc, x, y, w, h) {
         return new Promise((resolve) => {
             const img = new window.Image();
             img.crossOrigin = "anonymous";
             img.onload = () => {
-                // Resmi hafif yuvarlatılmış dikdörtgen içine kırpmak (clip) karmaşık olduğu için 
-                // direkt basıyoruz, ama etrafına ince gri çerçeve çizebiliriz.
-                doc.addImage(img, 'PNG', x, y, w, h);
-                doc.setDrawColor('#ddd');
-                doc.setLineWidth(0.1);
-                doc.rect(x, y, w, h); // Çerçeve
+                try {
+                    doc.addImage(img, 'PNG', x, y, w, h);
+                    // Resim etrafına ince çerçeve (isteğe bağlı)
+                    doc.setDrawColor('#eeeeee');
+                    doc.setLineWidth(0.1);
+                    doc.rect(x, y, w, h);
+                } catch (e) { /* Hata olursa boş geç */ }
                 resolve();
             };
             img.onerror = () => {
-                // Resim yoksa gri kutu
-                doc.setFillColor(lightGray);
-                doc.roundedRect(x, y, w, h, 2, 2, 'F');
-                doc.setFontSize(8);
-                doc.setTextColor('#aaa');
-                doc.text("No Image", x + w/2, y + h/2, { align: 'center', baseline: 'middle' });
+                // Resim yüklenemezse gri kutu
+                doc.setFillColor('#f0f0f0');
+                doc.rect(x, y, w, h, 'F');
                 resolve();
             };
             img.src = imgSrc;
         });
     }
 
-    // --- ANA İŞLEM ---
+    // --- VERİYİ HAZIRLA ---
     let trip = null;
     if (tripKey) {
         const allTrips = (typeof getAllSavedTrips === 'function') ? getAllSavedTrips() : {};
@@ -89,162 +94,183 @@ function downloadTripPlanPDF(tripKey) {
         return;
     }
 
+    // --- PDF OLUŞTURMA BAŞLANGICI ---
     (async function render() {
-        // 1. BAŞLIK BÖLÜMÜ
-        // Logo (Varsa) veya Marka Adı
-        doc.setFont('Roboto', 'bold');
-        doc.setFontSize(24);
-        doc.setTextColor(primaryColor);
-        doc.text("Triptime AI", marginX, cursorY);
         
-        cursorY += 8;
-        doc.setFontSize(10);
-        doc.setTextColor(subTextColor);
-        doc.text("Your personalized travel itinerary", marginX, cursorY);
-
-        cursorY += 15;
+        // 1. HEADER BÖLÜMÜ (LOGO & BİLGİLER - İSTEDİĞİN GİBİ KORUNDU)
+        
+        // Logo
+        await addImage('img/triptime_pdf.png', marginX, cursorY, logoWidth, logoHeight);
+        cursorY += logoHeight + 12;
 
         // Gezi Başlığı
         doc.setFont('Roboto', 'bold');
-        doc.setFontSize(18);
-        doc.setTextColor(accentColor);
-        const title = trip.title || "My Trip Plan";
-        // Başlık çok uzunsa kaydır
+        doc.setFontSize(22);
+        doc.setTextColor(primaryColor);
+        const title = trip.title || "Trip Plan";
         const titleLines = doc.splitTextToSize(title, pageWidth - (marginX * 2));
         doc.text(titleLines, marginX, cursorY);
-        cursorY += (titleLines.length * 8) + 5;
+        cursorY += (titleLines.length * 10) + 2;
 
-        // 2. GÜNLERİ DÖNGÜYE AL
+        // Generated On & Disclaimer (Senin istediğin metinler)
+        doc.setFont('Roboto', 'bold'); // Label bold
+        doc.setFontSize(10);
+        doc.setTextColor(subTextColor);
+        
+        // Tarih
+        const dateStr = new Date().toLocaleDateString('en-US'); 
+        doc.text(`Generated on: ${dateStr}`, marginX, cursorY);
+        cursorY += 6;
+
+        // Uyarı Metni
+        doc.setFont('Roboto', 'normal'); // Metin normal
+        doc.setFontSize(9);
+        doc.setTextColor('#999'); // Biraz daha silik gri
+        const disclaimer = "Images were fetched from an API by keyword matching. They may not reflect reality.";
+        const disclaimerLines = doc.splitTextToSize(disclaimer, pageWidth - (marginX * 2));
+        doc.text(disclaimerLines, marginX, cursorY);
+        
+        cursorY += (disclaimerLines.length * 5) + 10; // Header ile içerik arasına boşluk
+
+        // Ayırıcı Çizgi (Header altı)
+        doc.setDrawColor('#e0e0e0');
+        doc.setLineWidth(0.5);
+        doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
+
+
+        // 2. GÜNLER DÖNGÜSÜ (MODERN TIMELINE TASARIMI)
         const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
 
         for (let day = 1; day <= days; day++) {
-            // Gün Başlığı için yer kontrolü
+            
+            // Gün Başlığı için yer kontrolü (40 birim yetmezse yeni sayfa)
             checkPageBreak(40);
 
-            // Gün Başlığı (Şık bir kapsül içinde)
+            // -- GÜN BAŞLIĞI (Kapsül Tasarım) --
             doc.setFillColor(lightGray);
             doc.setDrawColor(lightGray);
-            doc.roundedRect(marginX, cursorY, 25, 8, 2, 2, 'FD'); // Gün kutusu background
+            // Kapsül çizimi (Rounded Rect)
+            doc.roundedRect(marginX, cursorY, 24, 8, 3, 3, 'FD'); 
             
             doc.setFont('Roboto', 'bold');
             doc.setFontSize(11);
-            doc.setTextColor(primaryColor);
-            doc.text(`DAY ${day}`, marginX + 12.5, cursorY + 5.5, { align: 'center' });
+            doc.setTextColor(primaryColor); // Mor yazı
+            doc.text(`DAY ${day}`, marginX + 12, cursorY + 5.5, { align: 'center' });
 
-            // Günün Tarihi (Varsa)
-            /* doc.setFont('Roboto', 'normal');
-            doc.setTextColor(subTextColor);
-            doc.text("Date here if available", marginX + 30, cursorY + 5.5);
-            */
+            cursorY += 16; // İlk item için boşluk bırak
 
-            cursorY += 16;
-
+            // O günün mekanlarını filtrele
             const dayItems = trip.cart.filter(item => item.day === day);
             
-            // Eğer o gün boşsa
             if (dayItems.length === 0) {
                 doc.setFont('Roboto', 'normal');
                 doc.setFontSize(10);
                 doc.setTextColor(subTextColor);
-                doc.text("No plans for this day.", contentX, cursorY);
+                doc.text("No plans added for this day.", contentX, cursorY);
                 cursorY += 15;
                 continue;
             }
 
-            // MEKANLARI DÖNGÜYE AL
+            // -- MEKANLAR DÖNGÜSÜ --
             for (let i = 0; i < dayItems.length; i++) {
                 const item = dayItems[i];
                 
-                // İtem yüksekliğini tahmin et (Resim 35px + boşluklar)
-                // Adres uzunluğuna göre dinamik hesaplama
-                doc.setFontSize(10);
+                // İtem yüksekliğini hesapla (Sayfa sonu kontrolü için)
+                // Metin ne kadar yer kaplayacak?
+                doc.setFontSize(10); // Adres fontu baz alarak
                 const addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
-                const itemHeight = Math.max(40, 20 + (addressLines * 5)); 
+                // Minimum yükseklik 35px (Resim boyutu), her adres satırı için ekstra yer
+                const itemHeight = Math.max(38, 22 + (addressLines * 5)); 
 
-                // Sayfa sonu kontrolü
-                if (checkPageBreak(itemHeight)) {
-                    // Sayfa değiştiyse timeline çizgisini yukarıdan başlatmak için cursor ayarı
-                }
+                // Sayfaya sığmıyorsa yeni sayfaya geç
+                // (Timeline çizgisini kesmemek için checkPageBreak içinde cursorY sıfırlanır)
+                checkPageBreak(itemHeight);
 
-                // --- TIMELINE ÇİZİMİ ---
+                // 1. TIMELINE ÇİZGİSİ
                 const isLastItem = (i === dayItems.length - 1);
                 
-                // Dikey Çizgi (Eğer son item değilse veya sayfa sonuna gelmediysek)
+                // Dikey Çizgi (Son item değilse çiz)
                 if (!isLastItem) {
                     doc.setDrawColor(lineColor);
                     doc.setLineWidth(0.5);
-                    doc.line(timelineX, cursorY, timelineX, cursorY + itemHeight);
+                    // Yuvarlağın altından bir sonraki itemin başına kadar çizgi
+                    doc.line(timelineX, cursorY + 4, timelineX, cursorY + itemHeight);
                 }
 
-                // Yuvarlak Badge (Numara)
+                // 2. YUVARLAK BADGE (Numara)
                 doc.setFillColor(primaryColor);
-                doc.setDrawColor('#ffffff');
+                doc.setDrawColor('#ffffff'); // Beyaz kenarlık
                 doc.setLineWidth(1);
-                doc.circle(timelineX, cursorY + 4, 3.5, 'FD'); // 3.5 yarıçap
+                doc.circle(timelineX, cursorY + 4, 3.5, 'FD'); // 3.5 yarıçaplı daire
 
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(7);
                 doc.setTextColor('#ffffff');
-                // Numarayı ortala
+                // Numarayı dairenin ortasına hizala
                 doc.text(String(i + 1), timelineX, cursorY + 6.5, { align: 'center' });
 
-                // --- İÇERİK ---
-                const imgSize = 32;
+                // 3. İÇERİK (Resim + Metin)
+                const imgSize = 32; // Kare resim boyutu
+                
                 // Resim
                 if (item.image) {
                     await addImage(item.image, contentX, cursorY, imgSize, imgSize);
                 }
 
-                const textX = contentX + imgSize + 5;
-                let textY = cursorY + 4;
+                const textStartX = contentX + imgSize + 5; // Yazının başladığı X
+                let textCursorY = cursorY + 4; // Yazının başladığı Y
 
                 // Mekan Adı
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(12);
                 doc.setTextColor(accentColor);
                 const nameLines = doc.splitTextToSize(item.name || "Unknown Place", contentWidth - imgSize - 5);
-                doc.text(nameLines, textX, textY);
-                textY += (nameLines.length * 6);
+                doc.text(nameLines, textStartX, textCursorY);
+                
+                // İmleci ismin altına indir
+                textCursorY += (nameLines.length * 5) + 1;
 
-                // Kategori / Tür (Opsiyonel küçük etiket)
-                doc.setFont('Roboto', 'bold');
-                doc.setFontSize(8);
-                doc.setTextColor(primaryColor);
-                doc.text((item.category || "Place").toUpperCase(), textX, textY);
-                textY += 5;
+                // Kategori (Küçük, Mor)
+                if (item.category) {
+                    doc.setFont('Roboto', 'bold');
+                    doc.setFontSize(8);
+                    doc.setTextColor(primaryColor);
+                    doc.text(item.category.toUpperCase(), textStartX, textCursorY);
+                    textCursorY += 4;
+                }
 
-                // Adres
+                // Adres (Normal, Gri)
                 if (item.address) {
                     doc.setFont('Roboto', 'normal');
                     doc.setFontSize(9);
                     doc.setTextColor(subTextColor);
                     const addrText = doc.splitTextToSize(item.address, contentWidth - imgSize - 5);
-                    doc.text(addrText, textX, textY);
-                    textY += (addrText.length * 4.5);
+                    doc.text(addrText, textStartX, textCursorY);
+                    textCursorY += (addrText.length * 4.5);
                 }
 
-                // Saatler
+                // Çalışma Saatleri (İkonik görünüm yerine metin: "Open: ...")
                 if (item.opening_hours && item.opening_hours !== "No working hours info") {
                     doc.setFont('Roboto', 'normal');
                     doc.setFontSize(8);
                     doc.setTextColor('#888');
-                    // Saat ikonunu temsilen "🕒" yerine metin
-                    const hoursText = `Open: ${item.opening_hours}`;
-                    doc.text(hoursText, textX, textY + 2);
+                    // Uzun saatleri kısaltmak için substring veya split kullanılabilir ama sığdırıyoruz.
+                    const hoursLines = doc.splitTextToSize(`Open: ${item.opening_hours}`, contentWidth - imgSize - 5);
+                    doc.text(hoursLines, textStartX, textCursorY + 1);
                 }
 
-                // Bir sonraki item için Y'yi güncelle
+                // Bir sonraki item için ana cursor'ı güncelle
                 cursorY += itemHeight; 
             }
             
-            // Gün bitiminde ekstra boşluk
+            // Günler arası boşluk
             cursorY += 10;
         }
 
-        // Footer ekle
+        // Footer ekle (Sayfa numaraları)
         addFooter();
 
-        // Kaydet
+        // PDF'i İndir
         doc.save(`${trip.title || 'Trip_Plan'}.pdf`);
 
     })();
