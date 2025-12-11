@@ -40,6 +40,7 @@ function downloadTripPlanPDF(tripKey) {
         }
         const txt = document.getElementById('pdf-status-text');
         if (txt) txt.textContent = msg;
+        console.log(`[PDF Process] ${msg}`);
     }
 
     function hideStatus() {
@@ -70,9 +71,7 @@ function downloadTripPlanPDF(tripKey) {
         }
     }
 
-    // --- GEOMETRİ YARDIMCILARI ---
     function areAllPointsInTurkey(pts) {
-        // Basit Bounding Box kontrolü
         return pts.every(p => {
             const lat = p.location ? p.location.lat : p.lat;
             const lng = p.location ? p.location.lng : p.lng;
@@ -80,7 +79,6 @@ function downloadTripPlanPDF(tripKey) {
         });
     }
 
-    // İki nokta arasında yay (Bezier Arc) hesaplayan fonksiyon
     function getCurvedArcCoords(start, end) {
         const lon1 = start[0];
         const lat1 = start[1];
@@ -92,7 +90,6 @@ function downloadTripPlanPDF(tripKey) {
         const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
         const theta = Math.atan2(offsetY, offsetX);
         
-        // Kavis oranı (Haritadakiyle uyumlu)
         const thetaOffset = (Math.PI / 10); 
         const r2 = (r / 2.0) / Math.cos(thetaOffset);
         const theta2 = theta + thetaOffset;
@@ -190,7 +187,7 @@ function downloadTripPlanPDF(tripKey) {
         });
     }
 
-    // --- HARİTA ÜRETİCİ (YAY DESTEKLİ) ---
+    // --- HARİTA ÜRETİCİ (1200x800 & POSITRON) ---
     async function generateHighResMap(day, dayItems, trip) {
         return new Promise((resolve) => {
             const validPoints = dayItems.filter(i => i.location && !isNaN(i.location.lat));
@@ -210,7 +207,7 @@ function downloadTripPlanPDF(tripKey) {
                 }
             }, 3500); 
 
-            // 1. Konteyner (1500x1000 = 3:2)
+            // 1500x1000 = 3:2 Oran
             const width = 1500; 
             const height = 1000; 
             const container = document.createElement('div');
@@ -245,12 +242,8 @@ function downloadTripPlanPDF(tripKey) {
                     const isTurkey = areAllPointsInTurkey(validPoints);
                     const savedPolyline = (trip.directionsPolylines && trip.directionsPolylines[day]);
                     
-                    // Rota Çizgisi Mantığı
-                    // Eğer kayıtlı detaylı bir rota varsa ve Türkiye içindeysek -> Onu çiz
-                    // Aksi takdirde (Yurtdışı veya rota yoksa) -> YAY ÇİZ (Fly Mode)
-                    
                     if (savedPolyline && savedPolyline.length > validPoints.length * 2 && isTurkey) {
-                        // --- NORMAL ROTA (YOL) ---
+                        // Rota (Düzgün Yol)
                          map.addSource('pdf-route', {
                             type: 'geojson',
                             data: {
@@ -269,12 +262,11 @@ function downloadTripPlanPDF(tripKey) {
                             paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.8 }
                         });
                     } else if (validPoints.length > 1) {
-                        // --- YAY (ARC) ÇİZİMİ ---
+                        // Yay (Arc) Çizimi - Kesikli
                         let arcCoordinates = [];
                         for (let i = 0; i < validPoints.length - 1; i++) {
                             const start = [validPoints[i].location.lng, validPoints[i].location.lat];
                             const end = [validPoints[i+1].location.lng, validPoints[i+1].location.lat];
-                            // Yay hesapla
                             const segment = getCurvedArcCoords(start, end);
                             arcCoordinates = arcCoordinates.concat(segment);
                         }
@@ -297,20 +289,18 @@ function downloadTripPlanPDF(tripKey) {
                             paint: { 
                                 'line-color': '#1976d2', 
                                 'line-width': 6, 
-                                'line-dasharray': [2, 3], // Kesikli çizgi (Şık görünüm)
+                                'line-dasharray': [2, 3],
                                 'line-opacity': 0.7 
                             }
                         });
                     }
 
-                    // Bounds
+                    // Bounds & Padding
                     const bounds = new maplibregl.LngLatBounds();
                     validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
                     
-                    // Padding 150px
                     map.fitBounds(bounds, { padding: 150, animate: false });
 
-                    // Marker Boyama
                     map.once('idle', () => {
                          if (isResolved) return;
                          
@@ -328,7 +318,7 @@ function downloadTripPlanPDF(tripKey) {
                              
                              const x = pos.x;
                              const y = pos.y;
-                             const r = 24; 
+                             const r = 24;
                              
                              ctx.beginPath();
                              ctx.arc(x, y + 4, r, 0, 2 * Math.PI);
@@ -417,6 +407,7 @@ function downloadTripPlanPDF(tripKey) {
         doc.text(disclaimerLines, marginX, cursorY);
         
         cursorY += (disclaimerLines.length * 5) + 10;
+
         doc.setDrawColor('#e0e0e0');
         doc.setLineWidth(0.5);
         doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
@@ -439,14 +430,14 @@ function downloadTripPlanPDF(tripKey) {
             doc.text(`DAY ${day}`, marginX + 12, cursorY + 4, { align: 'center', baseline: 'middle' });
             cursorY += 12; 
 
-            // HARİTA RENDER (3x2)
+            // HARİTA RENDER (3x2 Oran)
             if (dayItems.length > 0) {
                 showStatus(`Generating Map for Day ${day}...`);
                 const highResMapUrl = await generateHighResMap(day, dayItems, trip);
                 
                 if (highResMapUrl) {
                     const mapWidth = pageWidth - (marginX * 2);
-                    const mapHeight = mapWidth / 1.5; // PDF 3:2 Oran
+                    const mapHeight = mapWidth / 1.5; 
                     await addSmartImage(highResMapUrl, marginX, cursorY, mapWidth, mapHeight, 4);
                     cursorY += mapHeight + 15;
                 } else {
@@ -479,7 +470,10 @@ function downloadTripPlanPDF(tripKey) {
 
                 if (!isLastItem) {
                     doc.setDrawColor(lineColor);
-                    doc.setLineWidth(0.5);
+                    
+                    // --- ÇİZGİ KALINLIĞI (1.0 olarak artırıldı) ---
+                    doc.setLineWidth(1.0); 
+                    
                     doc.line(timelineX, circleCenterY + 3.5, timelineX, cursorY + itemHeight);
                 }
 
@@ -536,13 +530,16 @@ function downloadTripPlanPDF(tripKey) {
                     textCursorY += 4.5;
                 }
 
+                // --- WEB SİTESİ (İKONLU) ---
                 if (item.website) {
                     doc.setFont('Roboto', 'normal');
                     doc.setFontSize(8);
                     doc.setTextColor(linkColor);
-                    const webText = doc.splitTextToSize(`Web: ${item.website}`, contentWidth - imgSize - 10);
+                    // "Web:" yerine "🔗" emojisi
+                    const webText = doc.splitTextToSize(`🔗 ${item.website}`, contentWidth - imgSize - 10);
                     doc.text(webText, textStartX, textCursorY + 1);
                 }
+
                 cursorY += itemHeight + 8; 
             }
             cursorY += 8; 
