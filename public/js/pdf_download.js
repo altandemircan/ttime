@@ -66,8 +66,7 @@ function downloadTripPlanPDF(tripKey) {
         });
     }
 
-    // --- 2. THUMBNAIL İÇİN PRO GÖRÜNTÜ İŞLEME ---
-    // (Orijinal resimden doğrudan kesim yaparak kaliteyi korur)
+    // --- 2. THUMBNAIL: MAX KALİTE & PNG ---
     async function addThumbnail(imgSrc, x, y, w, h) {
         return new Promise((resolve) => {
             const img = new window.Image();
@@ -75,8 +74,9 @@ function downloadTripPlanPDF(tripKey) {
             
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                // PDF için 4x Süper Örnekleme (Retina Kalitesi)
-                const scale = 4; 
+                // KALİTE ARTTIRIMI: 6x Süper Örnekleme
+                // (Küçük alana büyük veri sıkıştırarak keskinlik sağlar)
+                const scale = 6; 
                 const targetW = w * scale;
                 const targetH = h * scale;
                 
@@ -84,11 +84,11 @@ function downloadTripPlanPDF(tripKey) {
                 canvas.height = targetH;
                 const ctx = canvas.getContext('2d');
 
-                // En iyi interpolasyon ayarları
+                // En yüksek kalite interpolasyon
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
 
-                // Source Crop Hesabı (Resmin neresini alacağız?)
+                // Crop Hesabı (Resmin ortasını al)
                 const sourceW = img.naturalWidth;
                 const sourceH = img.naturalHeight;
                 const targetRatio = w / h;
@@ -97,32 +97,30 @@ function downloadTripPlanPDF(tripKey) {
                 let sx, sy, sWidth, sHeight;
 
                 if (sourceRatio > targetRatio) {
-                    // Resim çok geniş: Yüksekliği koru, kenarlardan kırp
                     sHeight = sourceH;
                     sWidth = sourceH * targetRatio;
                     sx = (sourceW - sWidth) / 2;
                     sy = 0;
                 } else {
-                    // Resim çok uzun: Genişliği koru, üstten/alttan kırp
                     sWidth = sourceW;
                     sHeight = sourceW / targetRatio;
                     sx = 0;
                     sy = (sourceH - sHeight) / 2;
                 }
 
-                // Kaynaktan Hedefe Çizim (Resize + Crop tek adımda)
-                // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+                // Resmi Tuvale Çiz
                 ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetW, targetH);
 
-                // İnce Çerçeve
+                // Kenarlık (Scale oranında kalınlık)
                 ctx.strokeStyle = "#e5e7eb";
                 ctx.lineWidth = 1 * scale; 
                 ctx.strokeRect(0, 0, targetW, targetH);
 
                 try {
-                    // Maksimum kalite JPEG (PNG bazen çok şişebilir, High Quality JPEG yeterlidir)
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.95); 
-                    doc.addImage(dataUrl, 'JPEG', x, y, w, h);
+                    // DEĞİŞİKLİK: PNG formatı (Kayıpsız/Lossless) kullanıyoruz.
+                    // JPEG artifact'larını yok eder. Dosya boyutu biraz artar ama kalite max olur.
+                    const dataUrl = canvas.toDataURL('image/png'); 
+                    doc.addImage(dataUrl, 'PNG', x, y, w, h);
                 } catch (e) { console.warn("Img Error", e); }
                 resolve();
             };
@@ -219,39 +217,43 @@ function downloadTripPlanPDF(tripKey) {
 
                 checkPageBreak(itemHeight);
 
-                // Timeline Çizgisi
-                const isLastItem = (i === dayItems.length - 1);
-                const circleCenterY = cursorY + 5; // Dairenin tam ortası
+                // --- HİZALAMA AYARLARI ---
+                // Tüm elementlerin referans alacağı orta nokta
+                const badgeCenterY = cursorY + 7; 
 
+                // Timeline Çizgisi (Dairenin altından başlar)
+                const isLastItem = (i === dayItems.length - 1);
                 if (!isLastItem) {
                     doc.setDrawColor(lineColor);
                     doc.setLineWidth(0.5);
-                    // Çizgiyi dairenin altından başlat
-                    doc.line(timelineX, circleCenterY, timelineX, cursorY + itemHeight);
+                    // Çizgiyi dairenin bittiği yerden başlat (Merkez + Yarıçap)
+                    doc.line(timelineX, badgeCenterY, timelineX, cursorY + itemHeight);
                 }
 
-                // Badge (Yuvarlak)
+                // Badge (Daire)
                 doc.setFillColor(primaryColor);
                 doc.setDrawColor('#ffffff');
                 doc.setLineWidth(1);
-                doc.circle(timelineX, circleCenterY, 3.5, 'FD');
+                doc.circle(timelineX, badgeCenterY, 3.5, 'FD');
 
-                // Badge Numarası (TAM ORTALAMA FIX)
+                // Badge Numarası (TAM ORTALA)
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(7);
                 doc.setTextColor('#ffffff');
-                // baseline: 'middle' ile dikey ortalama, align: 'center' ile yatay ortalama
-                doc.text(String(i + 1), timelineX, circleCenterY, { align: 'center', baseline: 'middle' });
+                // baseline: 'middle' metnin dikey merkezini Y koordinatına oturtur
+                doc.text(String(i + 1), timelineX, badgeCenterY, { align: 'center', baseline: 'middle' });
 
                 // --- GÖRSEL ---
                 const imgSize = 35;
                 if (item.image) {
-                    // Yüksek kaliteli crop fonksiyonu
+                    // Resmin üst kenarını badge'in üst kenarına hizalayalım veya biraz yukarı alalım
+                    // BadgeCenterY (7) - HalfImage (17.5) = -10.5 (çok yukarı kaçar)
+                    // Standart cursorY + 4 iyidir, görsel badge ile optik olarak hizalanır.
                     await addThumbnail(item.image, contentX, cursorY, imgSize, imgSize);
                 }
 
                 const textStartX = contentX + imgSize + 6; 
-                let textCursorY = cursorY + 5; // Yazıları da görselle hizalı başlat
+                let textCursorY = cursorY + 5; // Yazıyı görselin tepesinden biraz aşağıda başlat
 
                 // Mekan Adı
                 doc.setFont('Roboto', 'bold');
@@ -260,7 +262,6 @@ function downloadTripPlanPDF(tripKey) {
                 const nameLines = doc.splitTextToSize(item.name || "Unknown Place", contentWidth - imgSize - 5);
                 doc.text(nameLines, textStartX, textCursorY);
                 
-                // Sonraki satıra geç
                 textCursorY += (nameLines.length * 5) + 2;
 
                 // Kategori
