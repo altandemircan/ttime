@@ -4230,15 +4230,15 @@ cartDiv.appendChild(addNewDayButton);
   })();
 
 
-// === OTOMATİK AI INFO GENERATION & TITLE FIX ===
+// === OTOMATİK AI INFO GENERATION (Start With Map İçin) ===
   (function autoGenerateAiInfo() {
-    // 1. Zaten AI kutusu varsa çık
+    // 1. Eğer ekranda zaten AI kutusu varsa (veya yükleniyorsa) tekrar çalışma
     if (document.querySelector('.ai-info-section')) return;
 
-    // 2. Sepet boşsa çık
+    // 2. Sepet boşsa çalışma
     if (!window.cart || window.cart.length === 0) return;
 
-    // 3. İlk "gerçek" mekanı bul
+    // 3. İlk "gerçek" (start/placeholder olmayan) mekanı bul
     const first = window.cart.find(it =>
       it.location &&
       typeof it.location.lat === "number" &&
@@ -4248,49 +4248,44 @@ cartDiv.appendChild(addNewDayButton);
 
     if (!first) return;
 
-    // 4. ŞEHİR BULMA MANTIĞI (GÜNCELLENDİ)
-    // Önce mekanın adresinden şehri çekmeye çalış (En güvenilir yöntem)
-    let derivedCity = null;
-    if (first.address) {
-        const parts = first.address.split(",");
-        if (parts.length >= 2) {
-            // Genelde adresin sondan 2. parçası şehirdir
-            const rawCity = parts[parts.length - 2].trim();
-            // "8003 Barcelona" gibi posta kodlarını temizle
-            derivedCity = rawCity.replace(/^\d+\s*-?\s*/, '');
-        } else {
-            // Adres tek parça ise direkt temizle
-            derivedCity = first.address.trim().replace(/^\d+\s*-?\s*/, '');
-        }
+    // 4. Şehir bilgisini bul (Globalden veya adresten)
+    let city = window.selectedCity;
+
+    // Global seçili şehir yoksa, ilk markerın adresinden çekmeye çalış
+    if (!city && first.address) {
+      const parts = first.address.split(",");
+      if (parts.length >= 2) {
+        // Sondan 2. parça genellikle "PostaKodu Şehir" formatındadır (örn: "8003 Barcelona")
+        const rawCity = parts[parts.length - 2].trim();
+        // Baştaki sayıları (posta kodunu) temizle
+        city = rawCity.replace(/^\d+\s*-?\s*/, ''); 
+      } else {
+        city = parts[0].trim();
+      }
     }
 
-    // Eğer adresten şehir bulduysak onu kullan, yoksa global hafızadakini (selectedCity) kullan
-    let city = derivedCity || window.selectedCity;
-
-    // 5. BAŞLIĞI GÜNCELLE
+    // 5. Şehir bulunduysa -> OTOMATİK BAŞLAT
     if (city) {
-      // Eğer başlık "Trip Plan" ise, "Trip to 8003..." ise veya yanlış şehirde kalmışsa düzelt
-      const currentTitle = window.lastUserQuery || "";
-      const isTitleGeneric = currentTitle === "Trip Plan";
-      const isCityMismatch = derivedCity && window.selectedCity !== derivedCity; // Hafıza eski mi?
-
-      if (!window.selectedCity || isTitleGeneric || isCityMismatch) {
-          window.selectedCity = city; // Hafızayı güncelle
-          window.lastUserQuery = "Trip to " + city; // Başlığı güncelle
-          
+      // Eğer başlık "Trip Plan" olarak kaldıysa, "Trip to [City]" olarak güncelle
+      if (!window.selectedCity || window.lastUserQuery === "Trip Plan") {
+          window.selectedCity = city;
+          window.lastUserQuery = "Trip to " + city;
           const tEl = document.getElementById("trip_title");
           if (tEl) tEl.textContent = window.lastUserQuery;
       }
 
-      console.log("📍 Auto AI & Title Trigger ->", city);
+      console.log("📍 Start with Map: Otomatik AI tetikleniyor ->", city);
       
+      // Buton beklemeden direkt fonksiyonu çağırıyoruz
       if (typeof insertTripAiInfo === "function") {
          insertTripAiInfo(false, null, city);
       }
     }
   })();
   // ============================================================
-  
+
+  // ===================================
+
   // EN SON: (Keep your existing trailing code)
   if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
       const div = document.createElement("div");
@@ -10633,24 +10628,6 @@ function attachImLuckyEvents() {
   });
 }
 
-// Trip seçilince input-wrapper gizlensin
-document.addEventListener('click', function(e) {
-  if (e.target.closest('.trip-item')) {
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = 'none';
-  }
-});
-// "trip-main-box" veya "trip-info-box" tıklanınca input-wrapper'ı gizle
-document.addEventListener('click', function(e) {
-  if (
-    e.target.closest('.trip-main-box') ||
-    e.target.closest('.trip-info-box') ||
-    e.target.closest('.trip-title')
-  ) {
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = 'none';
-  }
-});
 
 function showLoadingPanel() {
   var loadingPanel = document.getElementById("loading-panel");
@@ -10809,3 +10786,62 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     `;
     document.head.appendChild(style);
 })();
+
+// Trip seçilince input-wrapper gizlensin
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.trip-item')) {
+    var iw = document.querySelector('.input-wrapper');
+    if (iw) iw.style.display = 'none';
+  }
+});
+// "trip-main-box" veya "trip-info-box" tıklanınca input-wrapper'ı gizle
+document.addEventListener('click', function(e) {
+  if (
+    e.target.closest('.trip-main-box') ||
+    e.target.closest('.trip-info-box') ||
+    e.target.closest('.trip-title')
+  ) {
+    var iw = document.querySelector('.input-wrapper');
+    if (iw) iw.style.display = 'none';
+  }
+});
+
+// === MY TRIPS TITLE FIX ===
+// My Trips listesinden bir geziye tıklandığında başlığı oradan alıp zorla düzeltir.
+document.addEventListener('click', function(e) {
+    // Tıklanan yer bir gezi kutusu mu?
+    const tripBox = e.target.closest('.mytrips-tripbox');
+    
+    // Eğer butonlara (sil, pdf, fav) tıklandıysa veya kutu değilse işlem yapma
+    if (!tripBox || e.target.closest('button')) return;
+
+    // Tıklanan kutunun içindeki doğru başlığı bul (örn: "Antalya trip plan")
+    const sidebarTitleEl = tripBox.querySelector('.trip-title');
+    
+    if (sidebarTitleEl) {
+        const correctTitle = sidebarTitleEl.textContent.trim();
+        
+        // Diğer yükleme fonksiyonları çalıştıktan hemen sonra devreye girsin diye ufak gecikme
+        setTimeout(() => {
+            // 1. Ana Başlığı Düzelt
+            const mainTitleEl = document.getElementById('trip_title');
+            if (mainTitleEl) {
+                mainTitleEl.textContent = correctTitle;
+            }
+
+            // 2. Global değişkenleri güncelle (PDF ve AI için önemli)
+            window.lastUserQuery = correctTitle;
+
+            // 3. Şehir ismini başlıktan ayıkla ("Antalya trip plan" -> "Antalya")
+            // Bu sayede "Trip to Barcelona" hafızası silinir.
+            const cityName = correctTitle.replace(/ trip plan$/i, '').replace(/ trip$/i, '').trim();
+            if (cityName) {
+                window.selectedCity = cityName;
+                
+                // Eğer ekranda yanlış şehre ait AI kutusu varsa kaldır
+                const oldAiInfo = document.querySelector('.ai-info-section');
+                if (oldAiInfo) oldAiInfo.remove();
+            }
+        }, 150); // 150ms gecikme ile son sözü bu kod söyler
+    }
+});
