@@ -10,11 +10,11 @@ function downloadTripPlanPDF(tripKey) {
     
 
  // --- RENK VE AYARLAR ---
-    const primaryColor = '#8a4af3';   // Triptime Moru
-    const accentColor = '#222222';    // Koyu Metin
-    const subTextColor = '#666666';   // Gri Metin
-    const lightGray = '#f3f4f6';      // Arkaplan
-    const lineColor = '#e5e7eb';      // Çizgi
+    const primaryColor = '#8a4af3';
+    const accentColor = '#222222';
+    const subTextColor = '#666666';
+    const lightGray = '#f3f4f6';
+    const lineColor = '#e5e7eb';
     
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -25,7 +25,6 @@ function downloadTripPlanPDF(tripKey) {
     const contentWidth = pageWidth - contentX - marginX;
 
     let cursorY = 20;
-
     const logoWidth = 61.35;
     const logoHeight = 9.75;
 
@@ -53,67 +52,73 @@ function downloadTripPlanPDF(tripKey) {
         }
     }
 
-    // --- [YENİ] GÖRSELİ ORTALAYIP KIRPAN (CSS COVER GİBİ) FONKSİYON ---
-    async function addImage(imgSrc, x, y, w, h) {
+    // --- 1. LOGO İÇİN BASİT YÜKLEYİCİ (KALİTE BOZMAZ) ---
+    async function addLogo(imgSrc, x, y, w, h) {
         return new Promise((resolve) => {
             const img = new window.Image();
-            img.crossOrigin = "Anonymous"; // CORS sorununu önlemek için
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                // Logoyu direkt ekle, canvas'a sokma
+                try { doc.addImage(img, 'PNG', x, y, w, h); } catch(e){}
+                resolve();
+            };
+            img.onerror = () => resolve(); // Logo yoksa sessizce geç
+            img.src = imgSrc;
+        });
+    }
+
+    // --- 2. THUMBNAIL İÇİN YÜKSEK KALİTE KIRPICI (OBJECT-FIT: COVER) ---
+    async function addThumbnail(imgSrc, x, y, w, h) {
+        return new Promise((resolve) => {
+            const img = new window.Image();
+            img.crossOrigin = "Anonymous";
             
             img.onload = () => {
-                // 1. Sanal bir canvas oluştur
                 const canvas = document.createElement('canvas');
-                // PDF'te kaliteli görünmesi için boyutu 2 katına çıkarıyoruz (Retina mantığı)
-                const scale = 2; 
+                // KALİTE AYARI: PDF için 4 kat büyük işle (Retina etkisi)
+                const scale = 4; 
                 canvas.width = w * scale; 
                 canvas.height = h * scale;
                 const ctx = canvas.getContext('2d');
 
-                // 2. Object-Fit: Cover Matematiği
+                // Object-Fit: Cover Hesabı
                 const imgRatio = img.width / img.height;
                 const targetRatio = w / h;
-                
                 let renderWidth, renderHeight, offsetX, offsetY;
 
                 if (imgRatio > targetRatio) {
-                    // Resim daha geniş -> Yüksekliğe göre sığdır, yanlardan kırp
                     renderHeight = canvas.height;
                     renderWidth = img.width * (canvas.height / img.height);
-                    offsetX = (canvas.width - renderWidth) / 2; // X ekseninde ortala
+                    offsetX = (canvas.width - renderWidth) / 2;
                     offsetY = 0;
                 } else {
-                    // Resim daha uzun -> Genişliğe göre sığdır, alttan/üstten kırp
                     renderWidth = canvas.width;
                     renderHeight = img.height * (canvas.width / img.width);
                     offsetX = 0;
-                    offsetY = (canvas.height - renderHeight) / 2; // Y ekseninde ortala
+                    offsetY = (canvas.height - renderHeight) / 2;
                 }
 
-                // 3. Canvas'a çiz
-                // ctx.drawImage(image, dx, dy, dWidth, dHeight)
+                // Yüksek kalitede çizim
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(img, offsetX, offsetY, renderWidth, renderHeight);
 
-                // 4. Kenarlık ekle (İsteğe bağlı, şık durur)
+                // Kenarlık (İsteğe bağlı, şık durur)
                 ctx.strokeStyle = "#e5e7eb";
-                ctx.lineWidth = 2; // Scale 2 olduğu için 2px aslında 1px görünür
+                ctx.lineWidth = 1 * scale; 
                 ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
                 try {
-                    // 5. Canvas'ı resme çevirip PDF'e bas (JPEG daha az yer kaplar)
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85); 
-                    doc.addImage(dataUrl, 'JPEG', x, y, w, h);
-                } catch (e) {
-                    console.warn("Canvas to DataURL failed", e);
-                }
+                    // PNG formatında kayıpsız çıktı al
+                    const dataUrl = canvas.toDataURL('image/png'); 
+                    doc.addImage(dataUrl, 'PNG', x, y, w, h);
+                } catch (e) { console.warn("Image add error", e); }
                 resolve();
             };
 
             img.onerror = () => {
-                // Resim yüklenemezse gri kutu bas
                 doc.setFillColor('#f3f4f6');
                 doc.roundedRect(x, y, w, h, 1, 1, 'F');
-                doc.setFontSize(8);
-                doc.setTextColor('#aaaaaa');
-                doc.text("No Image", x + w/2, y + h/2, { align: 'center', baseline: 'middle' });
                 resolve();
             };
 
@@ -134,7 +139,8 @@ function downloadTripPlanPDF(tripKey) {
 
     (async function render() {
         // --- HEADER ---
-        await addImage('img/triptime_pdf.png', marginX, cursorY, logoWidth, logoHeight);
+        // Logoyu eski yöntemle (bozmadan) ekle
+        await addLogo('img/triptime_pdf.png', marginX, cursorY, logoWidth, logoHeight);
         cursorY += logoHeight + 12;
 
         doc.setFont('Roboto', 'bold');
@@ -148,7 +154,6 @@ function downloadTripPlanPDF(tripKey) {
         doc.setFont('Roboto', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(subTextColor);
-        
         const dateStr = new Date().toLocaleDateString('en-US'); 
         doc.text(`Generated on: ${dateStr}`, marginX, cursorY);
         cursorY += 6;
@@ -200,7 +205,6 @@ function downloadTripPlanPDF(tripKey) {
                 
                 doc.setFontSize(10);
                 const addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
-                // Minimum yüksekliği 42'ye çektim ki resim rahat sığsın
                 const itemHeight = Math.max(42, 24 + (addressLines * 5)); 
 
                 checkPageBreak(itemHeight);
@@ -225,11 +229,10 @@ function downloadTripPlanPDF(tripKey) {
                 doc.text(String(i + 1), timelineX, cursorY + 6.5, { align: 'center' });
 
                 // --- GÖRSEL ---
-                // Boyutu 35x35 kare yaptık
                 const imgSize = 35;
                 if (item.image) {
-                    // YENİ FONKSİYON BURADA KULLANILIYOR
-                    await addImage(item.image, contentX, cursorY, imgSize, imgSize);
+                    // YENİ YÜKSEK KALİTE KIRPICIYI KULLAN
+                    await addThumbnail(item.image, contentX, cursorY, imgSize, imgSize);
                 }
 
                 const textStartX = contentX + imgSize + 6; 
