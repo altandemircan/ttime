@@ -9,19 +9,6 @@ function downloadTripPlanPDF(tripKey) {
     doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
     
 
- function downloadTripPlanPDF(tripKey) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // --- FONT YÜKLEME ---
-    // (Mevcut base64 kodlarınızı buraya aynen koyun)
-    doc.addFileToVFS("Roboto-Regular.ttf", "AAEAAAASAQAABAAgR0RF..."); 
-    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-    
-    doc.addFileToVFS("Roboto-Bold.ttf", "AAEAAAASAQAABAAgR0RF..."); 
-    doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
-    // ---------------------
-
     // --- AYARLAR ---
     const primaryColor = '#8a4af3';
     const accentColor = '#222222';
