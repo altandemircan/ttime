@@ -4144,9 +4144,7 @@ cartDiv.appendChild(addNewDayButton);
         pdfBtn.className = 'add-to-calendar-btn'; // Select Dates ile aynı stil
         pdfBtn.textContent = 'Download Offline Plan (PDF)';
         // Görsel ayarlar
-        pdfBtn.style.marginTop = '8px'; 
-        pdfBtn.style.marginBottom = '8px';
-        pdfBtn.style.backgroundColor = '#5c6bc0'; // İndigo renk
+               pdfBtn.style.backgroundColor = '#c05c9e'; // renk
         pdfBtn.style.color = '#fff';
         
         pdfBtn.onclick = function() {
