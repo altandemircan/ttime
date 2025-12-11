@@ -4255,7 +4255,10 @@ cartDiv.appendChild(addNewDayButton);
     if (!city && first.address) {
       const parts = first.address.split(",");
       if (parts.length >= 2) {
-        city = parts[parts.length - 2].trim(); // Genellikle sondan 2. parça şehirdir
+        // Sondan 2. parça genellikle "PostaKodu Şehir" formatındadır (örn: "8003 Barcelona")
+        const rawCity = parts[parts.length - 2].trim();
+        // Baştaki sayıları (posta kodunu) temizle
+        city = rawCity.replace(/^\d+\s*-?\s*/, ''); 
       } else {
         city = parts[0].trim();
       }
