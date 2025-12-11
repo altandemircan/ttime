@@ -151,8 +151,8 @@ function downloadTripPlanPDF(tripKey) {
             if (typeof maplibregl === 'undefined') { resolve(null); return; }
 
             // 2. Gizli Konteyner Oluştur (BÜYÜK BOYUT = YÜKSEK KALİTE)
-            const width = 1200; 
-            const height = 600;
+            const width = 400; 
+            const height = 300;
             const container = document.createElement('div');
             container.style.width = width + 'px';
             container.style.height = height + 'px';
