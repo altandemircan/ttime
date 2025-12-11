@@ -15,7 +15,7 @@ function downloadTripPlanPDF(tripKey) {
     const subTextColor = '#666666';
     const lightGray = '#f3f4f6';
     const lineColor = '#e5e7eb';
-    const linkColor = '#2977f5'; // Web sitesi için mavi
+    const linkColor = '#2977f5'; 
     
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -32,10 +32,9 @@ function downloadTripPlanPDF(tripKey) {
     // --- YARDIMCI FONKSİYONLAR ---
 
     function checkPageBreak(neededHeight) {
-        // Alt boşluk 15 birim kalsın
         if (cursorY + neededHeight > pageHeight - 15) {
             doc.addPage();
-            cursorY = 25; // Yeni sayfa üst boşluk
+            cursorY = 25; 
             return true;
         }
         return false;
@@ -54,7 +53,6 @@ function downloadTripPlanPDF(tripKey) {
         }
     }
 
-    // --- 1. LOGO YÜKLEYİCİ ---
     async function addLogo(imgSrc, x, y, targetWidth) {
         return new Promise((resolve) => {
             const img = new window.Image();
@@ -72,8 +70,10 @@ function downloadTripPlanPDF(tripKey) {
         });
     }
 
-    // --- 2. THUMBNAIL (BORDERSIZ & YUVARLAK) ---
-    async function addThumbnail(imgSrc, x, y, w, h) {
+    // --- AKILLI RESİM EKLEYİCİ (HEM THUMBNAIL HEM HARİTA İÇİN) ---
+    // w, h: Hedef genişlik ve yükseklik
+    // radius: Köşe yuvarlaklığı (px)
+    async function addSmartImage(imgSrc, x, y, w, h, radius = 0) {
         return new Promise((resolve) => {
             const img = new window.Image();
             img.crossOrigin = "Anonymous";
@@ -83,7 +83,7 @@ function downloadTripPlanPDF(tripKey) {
                 const scale = 4; // Retina Kalite
                 const targetW = w * scale;
                 const targetH = h * scale;
-                const radius = 6 * scale; // 6px border radius
+                const r = radius * scale;
                 
                 canvas.width = targetW; 
                 canvas.height = targetH;
@@ -92,22 +92,23 @@ function downloadTripPlanPDF(tripKey) {
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
 
-                // Yuvarlak Köşe Yolu
-                ctx.beginPath();
-                ctx.moveTo(radius, 0);
-                ctx.lineTo(targetW - radius, 0);
-                ctx.quadraticCurveTo(targetW, 0, targetW, radius);
-                ctx.lineTo(targetW, targetH - radius);
-                ctx.quadraticCurveTo(targetW, targetH, targetW - radius, targetH);
-                ctx.lineTo(radius, targetH);
-                ctx.quadraticCurveTo(0, targetH, 0, targetH - radius);
-                ctx.lineTo(0, radius);
-                ctx.quadraticCurveTo(0, 0, radius, 0);
-                ctx.closePath();
-                
-                ctx.clip(); // Kırpma
+                // Yuvarlak Köşe Yolu (Radius varsa)
+                if (r > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(r, 0);
+                    ctx.lineTo(targetW - r, 0);
+                    ctx.quadraticCurveTo(targetW, 0, targetW, r);
+                    ctx.lineTo(targetW, targetH - r);
+                    ctx.quadraticCurveTo(targetW, targetH, targetW - r, targetH);
+                    ctx.lineTo(r, targetH);
+                    ctx.quadraticCurveTo(0, targetH, 0, targetH - r);
+                    ctx.lineTo(0, r);
+                    ctx.quadraticCurveTo(0, 0, r, 0);
+                    ctx.closePath();
+                    ctx.clip();
+                }
 
-                // Object-Fit: Cover
+                // Object-Fit: Cover Hesabı
                 const sourceW = img.naturalWidth;
                 const sourceH = img.naturalHeight;
                 const targetRatio = w / h;
@@ -137,9 +138,10 @@ function downloadTripPlanPDF(tripKey) {
             };
 
             img.onerror = () => {
+                // Resim yoksa gri kutu
                 doc.setDrawColor('#f0f0f0');
                 doc.setFillColor('#f8f8f8');
-                doc.roundedRect(x, y, w, h, 2, 2, 'FD');
+                doc.roundedRect(x, y, w, h, radius, radius, 'FD');
                 resolve();
             };
 
@@ -195,10 +197,15 @@ function downloadTripPlanPDF(tripKey) {
         const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
 
         for (let day = 1; day <= days; day++) {
-            // Gün başlığı için yer kontrolü
-            checkPageBreak(50);
+            
+            // --- GÜN HARİTASI EKLEME ---
+            // Harita görseli var mı kontrol et (local_storage.js'den gelen)
+            const mapImage = trip.thumbnails && trip.thumbnails[day];
+            
+            // Başlık + Harita + Boşluk için yer kontrolü (Yaklaşık 80-90 birim)
+            checkPageBreak(mapImage ? 90 : 50);
 
-            // Gün Başlığı
+            // 1. Gün Başlığı
             doc.setFillColor(lightGray);
             doc.setDrawColor(lightGray);
             doc.roundedRect(marginX, cursorY, 24, 8, 3, 3, 'FD'); 
@@ -206,12 +213,24 @@ function downloadTripPlanPDF(tripKey) {
             doc.setFont('Roboto', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(primaryColor);
-            
-            // DÜZELTME: Orta hizalama için +4 (Yükseklik 8 olduğu için yarısı)
             doc.text(`DAY ${day}`, marginX + 12, cursorY + 4, { align: 'center', baseline: 'middle' });
 
-            cursorY += 15; // Başlık sonrası boşluk
+            cursorY += 12; // Başlık altı boşluk
 
+            // 2. Gün Haritası (Varsa)
+            if (mapImage && !mapImage.includes('placeholder')) {
+                const mapWidth = pageWidth - (marginX * 2);
+                const mapHeight = 55; // Harita yüksekliği
+                
+                // Haritayı ekle (6px radius)
+                await addSmartImage(mapImage, marginX, cursorY, mapWidth, mapHeight, 4);
+                
+                cursorY += mapHeight + 15; // Harita sonrası boşluk
+            } else {
+                cursorY += 5; // Harita yoksa az boşluk
+            }
+
+            // 3. Günün Mekanları
             const dayItems = trip.cart.filter(item => item.day === day);
             
             if (dayItems.length === 0) {
@@ -226,13 +245,10 @@ function downloadTripPlanPDF(tripKey) {
             for (let i = 0; i < dayItems.length; i++) {
                 const item = dayItems[i];
                 
-                // YÜKSEKLİK HESAPLAMA (Website satırı dahil)
                 doc.setFontSize(10);
                 const addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
-                // Website varsa ekstra satır ekle
                 const webLines = item.website ? doc.splitTextToSize(`Web: ${item.website}`, contentWidth - 45).length : 0;
                 
-                // 35px temel + her satır için pay
                 const itemHeight = Math.max(40, 24 + (addressLines * 5) + (webLines * 5)); 
 
                 checkPageBreak(itemHeight);
@@ -256,6 +272,7 @@ function downloadTripPlanPDF(tripKey) {
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(7);
                 doc.setTextColor('#ffffff');
+                // Numarayı ortala
                 doc.text(String(i + 1), timelineX, circleCenterY, { align: 'center', baseline: 'middle' });
 
                 // --- GÖRSEL ---
@@ -263,7 +280,8 @@ function downloadTripPlanPDF(tripKey) {
                 const imgY = cursorY; 
 
                 if (item.image) {
-                    await addThumbnail(item.image, contentX, imgY, imgSize, imgSize);
+                    // Item thumbnail (6px radius)
+                    await addSmartImage(item.image, contentX, imgY, imgSize, imgSize, 4);
                 }
 
                 const textStartX = contentX + imgSize + 8; 
@@ -281,7 +299,7 @@ function downloadTripPlanPDF(tripKey) {
                 // Kategori
                 if (item.category) {
                     doc.setFont('Roboto', 'bold');
-                    doc.setFontSize(11); // BÜYÜTÜLDÜ (İstek üzerine)
+                    doc.setFontSize(11);
                     doc.setTextColor(primaryColor);
                     doc.text(item.category.toUpperCase(), textStartX, textCursorY);
                     textCursorY += 5;
@@ -307,19 +325,21 @@ function downloadTripPlanPDF(tripKey) {
                     textCursorY += 4.5;
                 }
 
-                // Web Sitesi (EKLENDİ)
+                // Web Sitesi
                 if (item.website) {
                     doc.setFont('Roboto', 'normal');
                     doc.setFontSize(8);
-                    doc.setTextColor(linkColor); // Mavi link rengi
+                    doc.setTextColor(linkColor);
+                    // Uzun linkler taşmasın diye split
                     const webText = doc.splitTextToSize(`Web: ${item.website}`, contentWidth - imgSize - 10);
                     doc.text(webText, textStartX, textCursorY + 1);
+                    // İstersen linki tıklanabilir yapabilirsin:
+                    // doc.link(textStartX, textCursorY - 2, 50, 4, { url: item.website });
                 }
 
-                // Bir sonraki item için boşluk
                 cursorY += itemHeight + 8; 
             }
-            cursorY += 8; // Gün sonu boşluğu
+            cursorY += 15; // Gün sonu boşluğu
         }
 
         addFooter();
