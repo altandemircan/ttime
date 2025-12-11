@@ -9,7 +9,8 @@ function downloadTripPlanPDF(tripKey) {
     doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
     
 
- onst primaryColor = '#8a4af3';
+ // --- AYARLAR ---
+    const primaryColor = '#8a4af3';
     const accentColor = '#222222';
     const subTextColor = '#666666';
     const lightGray = '#f3f4f6';
@@ -25,11 +26,29 @@ function downloadTripPlanPDF(tripKey) {
     const contentWidth = pageWidth - contentX - marginX;
 
     let cursorY = 20;
-    
     const logoTargetWidth = 60; 
 
-    // --- YARDIMCI FONKSİYONLAR ---
+    // --- STATUS OVERLAY (İlerleme Çubuğu) ---
+    function showStatus(msg) {
+        let el = document.getElementById('pdf-status-overlay');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'pdf-status-overlay';
+            el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:15px 25px;border-radius:30px;z-index:99999;font-family:sans-serif;font-size:14px;box-shadow:0 4px 15px rgba(0,0,0,0.2);display:flex;align-items:center;gap:10px;';
+            el.innerHTML = '<div class="spinner" style="width:16px;height:16px;border:2px solid #fff;border-top:2px solid transparent;border-radius:50%;animation:spin 1s linear infinite;"></div><span id="pdf-status-text"></span><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>';
+            document.body.appendChild(el);
+        }
+        const txt = document.getElementById('pdf-status-text');
+        if (txt) txt.textContent = msg;
+        console.log(`[PDF Process] ${msg}`);
+    }
 
+    function hideStatus() {
+        const el = document.getElementById('pdf-status-overlay');
+        if (el) el.remove();
+    }
+
+    // --- YARDIMCI FONKSİYONLAR ---
     function checkPageBreak(neededHeight) {
         if (cursorY + neededHeight > pageHeight - 15) {
             doc.addPage();
@@ -59,9 +78,7 @@ function downloadTripPlanPDF(tripKey) {
             img.onload = () => {
                 const ratio = img.height / img.width;
                 const targetHeight = targetWidth * ratio;
-                try { 
-                    doc.addImage(img, 'PNG', x, y, targetWidth, targetHeight); 
-                } catch(e){}
+                try { doc.addImage(img, 'PNG', x, y, targetWidth, targetHeight); } catch(e){}
                 resolve(targetHeight);
             };
             img.onerror = () => resolve(15);
@@ -101,6 +118,7 @@ function downloadTripPlanPDF(tripKey) {
                     ctx.clip();
                 }
 
+                // Object-Fit: Cover
                 const sourceW = img.naturalWidth;
                 const sourceH = img.naturalHeight;
                 const targetRatio = w / h;
@@ -122,7 +140,7 @@ function downloadTripPlanPDF(tripKey) {
                 try {
                     const dataUrl = canvas.toDataURL('image/png'); 
                     doc.addImage(dataUrl, 'PNG', x, y, w, h);
-                } catch (e) { console.warn("Img Error", e); }
+                } catch (e) { }
                 resolve();
             };
             img.onerror = () => {
@@ -135,132 +153,125 @@ function downloadTripPlanPDF(tripKey) {
         });
     }
 
-    // --- [YENİ] YÜKSEK ÇÖZÜNÜRLÜKLÜ HARİTA OLUŞTURUCU ---
-    // Bu fonksiyon MapLibre/Leaflet mantığını kullanarak PDF'e özel HD harita çizer
+    // --- TIMEOUT & LOG KORUMALI HARİTA ÜRETİCİ ---
     async function generateHighResMap(day, dayItems, trip) {
         return new Promise((resolve) => {
-            // 1. Veri Hazırlığı
-            // Sadece geçerli koordinatı olan noktaları al
             const validPoints = dayItems.filter(i => i.location && !isNaN(i.location.lat));
-            if (validPoints.length === 0) { resolve(null); return; }
-
-            const lats = validPoints.map(p => p.location.lat);
-            const lngs = validPoints.map(p => p.location.lng);
             
-            // MapLibreGL varsa kullan (Daha iyi statik render), yoksa null dön
-            if (typeof maplibregl === 'undefined') { resolve(null); return; }
+            if (validPoints.length === 0 || typeof maplibregl === 'undefined') { 
+                console.log(`[PDF Map] Day ${day}: No points or MapLibre missing.`);
+                resolve(null); return; 
+            }
 
-            // 2. Gizli Konteyner Oluştur (BÜYÜK BOYUT = YÜKSEK KALİTE)
-            const width = 400; 
-            const height = 300;
+            // 1. Timeout Ayarı (3 Saniye)
+            let isResolved = false;
+            const timeoutID = setTimeout(() => {
+                if (!isResolved) {
+                    isResolved = true;
+                    console.warn(`[PDF Map] Day ${day}: Timeout reached! Skipping map.`);
+                    const el = document.getElementById(`pdf-map-gen-day${day}`);
+                    if(el) el.remove();
+                    resolve(null);
+                }
+            }, 3000); 
+
+            // 2. Gizli Konteyner
+            const width = 1200; 
+            const height = 600;
             const container = document.createElement('div');
+            container.id = `pdf-map-gen-day${day}`;
             container.style.width = width + 'px';
             container.style.height = height + 'px';
             container.style.position = 'fixed';
             container.style.left = '-9999px';
             container.style.top = '-9999px';
+            container.style.visibility = 'hidden'; // Fixed ama görünmez
             document.body.appendChild(container);
 
-            // 3. Haritayı Başlat
-            // Merkezi ve Zoom'u noktaların ortalamasına göre kabaca ayarla
+            const lats = validPoints.map(p => p.location.lat);
+            const lngs = validPoints.map(p => p.location.lng);
             const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
             const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
 
-            const map = new maplibregl.Map({
-                container: container,
-                style: 'https://tiles.openfreemap.org/styles/bright', // Veya positron
-                center: [centerLng, centerLat],
-                zoom: 12,
-                preserveDrawingBuffer: true, // Canvas çıktısı için şart
-                interactive: false,
-                attributionControl: false
-            });
-
-            map.on('load', () => {
-                // 4. Rota Çizgisi (Varsa)
-                // trip.directionsPolylines local_storage.js tarafından kaydedilmiş olmalı
-                const polyline = (trip.directionsPolylines && trip.directionsPolylines[day]);
-                
-                if (polyline && polyline.length > 1) {
-                    // GeoJSON formatına çevir
-                    const routeGeoJSON = {
-                        type: 'Feature',
-                        geometry: {
-                            type: 'LineString',
-                            coordinates: polyline.map(p => [p.lng, p.lat])
-                        }
-                    };
-                    map.addSource('pdf-route', { type: 'geojson', data: routeGeoJSON });
-                    map.addLayer({
-                        id: 'pdf-route-line',
-                        type: 'line',
-                        source: 'pdf-route',
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.8 }
-                    });
-                } else if (validPoints.length > 1) {
-                    // Rota yoksa düz çizgilerle bağla
-                    const straightGeoJSON = {
-                        type: 'Feature',
-                        geometry: {
-                            type: 'LineString',
-                            coordinates: validPoints.map(p => [p.location.lng, p.location.lat])
-                        }
-                    };
-                    map.addSource('pdf-straight', { type: 'geojson', data: straightGeoJSON });
-                    map.addLayer({
-                        id: 'pdf-straight-line',
-                        type: 'line',
-                        source: 'pdf-straight',
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-dasharray': [2, 4], 'line-opacity': 0.6 }
-                    });
-                }
-
-                // 5. Markerlar (Numaralı)
-                validPoints.forEach((pt, index) => {
-                    const el = document.createElement('div');
-                    el.style.width = '32px';
-                    el.style.height = '32px';
-                    el.style.backgroundColor = '#d32f2f'; // Kırmızı
-                    el.style.borderRadius = '50%';
-                    el.style.border = '2px solid white';
-                    el.style.color = 'white';
-                    el.style.display = 'flex';
-                    el.style.alignItems = 'center';
-                    el.style.justifyContent = 'center';
-                    el.style.fontSize = '16px';
-                    el.style.fontWeight = 'bold';
-                    el.style.fontFamily = 'Arial, sans-serif';
-                    el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
-                    el.innerText = (index + 1);
-
-                    new maplibregl.Marker({ element: el })
-                        .setLngLat([pt.location.lng, pt.location.lat])
-                        .addTo(map);
+            try {
+                const map = new maplibregl.Map({
+                    container: container,
+                    style: 'https://tiles.openfreemap.org/styles/bright',
+                    center: [centerLng, centerLat],
+                    zoom: 12,
+                    preserveDrawingBuffer: true,
+                    interactive: false,
+                    attributionControl: false
                 });
 
-                // 6. Fit Bounds (Hepsini kapsayacak şekilde odakla)
-                const bounds = new maplibregl.LngLatBounds();
-                validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
-                if (polyline) polyline.forEach(p => bounds.extend([p.lng, p.lat]));
+                map.once('load', () => {
+                    if (isResolved) return;
 
-                map.fitBounds(bounds, { padding: 80, animate: false });
-
-                // 7. Render Beklemesi ve Çıktı Alma
-                // map.once('idle') bazen tile yüklenmesini tam beklemez, kısa bir timeout güvenlidir
-                setTimeout(() => {
-                    try {
-                        const dataURL = map.getCanvas().toDataURL('image/png');
-                        map.remove();
-                        document.body.removeChild(container);
-                        resolve(dataURL);
-                    } catch (e) {
-                        console.error("PDF Map Generate Error", e);
-                        resolve(null);
+                    // Rota Çizgisi
+                    const polyline = (trip.directionsPolylines && trip.directionsPolylines[day]);
+                    if (polyline && polyline.length > 1) {
+                        map.addSource('pdf-route', {
+                            type: 'geojson',
+                            data: {
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'LineString',
+                                    coordinates: polyline.map(p => [p.lng, p.lat])
+                                }
+                            }
+                        });
+                        map.addLayer({
+                            id: 'pdf-route-line',
+                            type: 'line',
+                            source: 'pdf-route',
+                            layout: { 'line-join': 'round', 'line-cap': 'round' },
+                            paint: { 'line-color': '#1976d2', 'line-width': 10, 'line-opacity': 0.8 }
+                        });
                     }
-                }, 1500); // 1.5 saniye tile yüklenmesi için bekle
-            });
+
+                    // Markerlar
+                    validPoints.forEach((pt, index) => {
+                        const el = document.createElement('div');
+                        el.style.cssText = 'width:40px;height:40px;background:#d32f2f;border-radius:50%;border:3px solid white;color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold;font-family:Arial;box-shadow:0 4px 8px rgba(0,0,0,0.4);';
+                        el.innerText = (index + 1);
+                        new maplibregl.Marker({ element: el }).setLngLat([pt.location.lng, pt.location.lat]).addTo(map);
+                    });
+
+                    // Bounds
+                    const bounds = new maplibregl.LngLatBounds();
+                    validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
+                    if (polyline) polyline.forEach(p => bounds.extend([p.lng, p.lat]));
+                    
+                    map.fitBounds(bounds, { padding: 100, animate: false });
+
+                    // Render Beklemesi (Kısa tutuldu)
+                    setTimeout(() => {
+                        if (isResolved) return;
+                        clearTimeout(timeoutID);
+                        isResolved = true;
+                        
+                        try {
+                            const dataURL = map.getCanvas().toDataURL('image/png');
+                            map.remove();
+                            container.remove();
+                            console.log(`[PDF Map] Day ${day}: Success`);
+                            resolve(dataURL);
+                        } catch (e) {
+                            console.warn(e);
+                            container.remove();
+                            resolve(null);
+                        }
+                    }, 1000); 
+                });
+            } catch (err) {
+                console.error("[PDF Map] Error:", err);
+                if (!isResolved) {
+                    clearTimeout(timeoutID);
+                    isResolved = true;
+                    container.remove();
+                    resolve(null);
+                }
+            }
         });
     }
 
@@ -276,6 +287,8 @@ function downloadTripPlanPDF(tripKey) {
     }
 
     (async function render() {
+        showStatus("Preparing PDF Layout...");
+
         // --- HEADER ---
         const renderLogoH = await addLogo('img/triptime_pdf.png', marginX, cursorY, logoTargetWidth);
         cursorY += renderLogoH + 12;
@@ -303,7 +316,6 @@ function downloadTripPlanPDF(tripKey) {
         doc.text(disclaimerLines, marginX, cursorY);
         
         cursorY += (disclaimerLines.length * 5) + 10;
-
         doc.setDrawColor('#e0e0e0');
         doc.setLineWidth(0.5);
         doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
@@ -312,42 +324,33 @@ function downloadTripPlanPDF(tripKey) {
         const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
 
         for (let day = 1; day <= days; day++) {
-            
             const dayItems = trip.cart.filter(item => item.day === day);
             
-            // --- GÜN HARİTASI OLUŞTURMA (YÜKSEK KALİTE) ---
-            // Burası biraz zaman alabilir, kullanıcıya "Generating..." demek iyi olurdu ama şu anlık direkt yapalım.
-            // Önce sayfa sonu kontrolü (Başlık + Harita için)
             checkPageBreak(90);
 
-            // 1. Gün Başlığı
+            // GÜN BAŞLIĞI
             doc.setFillColor(lightGray);
             doc.setDrawColor(lightGray);
             doc.roundedRect(marginX, cursorY, 24, 8, 3, 3, 'FD'); 
-            
             doc.setFont('Roboto', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(primaryColor);
             doc.text(`DAY ${day}`, marginX + 12, cursorY + 4, { align: 'center', baseline: 'middle' });
-
             cursorY += 12; 
 
-            // 2. Harita Üret ve Ekle
+            // HARİTA RENDER (STATUS GÜNCELLEME İLE)
             if (dayItems.length > 0) {
-                // Yeni Yüksek Kalite Fonksiyonu Çağır
+                showStatus(`Generating Map for Day ${day}...`);
+                // Fonksiyon artık timeout korumalı. En fazla 3sn bekler.
                 const highResMapUrl = await generateHighResMap(day, dayItems, trip);
                 
                 if (highResMapUrl) {
                     const mapWidth = pageWidth - (marginX * 2);
-                    const mapHeight = 60; // Harita yüksekliği
-                    
-                    // Haritayı ekle (4px radius ile)
-                    // addSmartImage base64 url'yi de kabul edecek şekilde çalışır
+                    const mapHeight = 60; 
                     await addSmartImage(highResMapUrl, marginX, cursorY, mapWidth, mapHeight, 4);
                     cursorY += mapHeight + 15;
                 } else {
-                    // Harita oluşturulamazsa (örn offline) boş geç
-                    cursorY += 5;
+                    cursorY += 5; 
                 }
             }
             
@@ -360,14 +363,13 @@ function downloadTripPlanPDF(tripKey) {
                 continue;
             }
 
-            // 3. Mekanlar Listesi
+            // MEKANLAR
+            showStatus(`Processing Day ${day} Items...`);
             for (let i = 0; i < dayItems.length; i++) {
                 const item = dayItems[i];
-                
                 doc.setFontSize(10);
                 const addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
                 const webLines = item.website ? doc.splitTextToSize(`Web: ${item.website}`, contentWidth - 45).length : 0;
-                
                 const itemHeight = Math.max(40, 24 + (addressLines * 5) + (webLines * 5)); 
 
                 checkPageBreak(itemHeight);
@@ -391,7 +393,6 @@ function downloadTripPlanPDF(tripKey) {
                 doc.setTextColor('#ffffff');
                 doc.text(String(i + 1), timelineX, circleCenterY, { align: 'center', baseline: 'middle' });
 
-                // --- GÖRSEL ---
                 const imgSize = 35;
                 const imgY = cursorY; 
 
@@ -407,7 +408,6 @@ function downloadTripPlanPDF(tripKey) {
                 doc.setTextColor(accentColor);
                 const nameLines = doc.splitTextToSize(item.name || "Unknown Place", contentWidth - imgSize - 10);
                 doc.text(nameLines, textStartX, textCursorY);
-                
                 textCursorY += (nameLines.length * 5) + 2;
 
                 if (item.category) {
@@ -443,13 +443,14 @@ function downloadTripPlanPDF(tripKey) {
                     const webText = doc.splitTextToSize(`Web: ${item.website}`, contentWidth - imgSize - 10);
                     doc.text(webText, textStartX, textCursorY + 1);
                 }
-
                 cursorY += itemHeight + 8; 
             }
             cursorY += 8; 
         }
 
         addFooter();
+        showStatus("Finalizing PDF...");
         doc.save(`${trip.title || 'Trip_Plan'}.pdf`);
+        hideStatus();
     })();
 }
