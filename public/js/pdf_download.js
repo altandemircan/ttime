@@ -15,6 +15,7 @@ function downloadTripPlanPDF(tripKey) {
     const subTextColor = '#666666';
     const lightGray = '#f3f4f6';
     const lineColor = '#e5e7eb';
+    const linkColor = '#2977f5'; // Web sitesi için mavi
     
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -128,9 +129,6 @@ function downloadTripPlanPDF(tripKey) {
 
                 ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetW, targetH);
 
-                // BORDER KALDIRILDI (İstek üzerine)
-                // ctx.stroke(); 
-
                 try {
                     const dataUrl = canvas.toDataURL('image/png'); 
                     doc.addImage(dataUrl, 'PNG', x, y, w, h);
@@ -208,9 +206,11 @@ function downloadTripPlanPDF(tripKey) {
             doc.setFont('Roboto', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(primaryColor);
-            doc.text(`DAY ${day}`, marginX + 12, cursorY + 5.5, { align: 'center', baseline: 'middle' });
+            
+            // DÜZELTME: Orta hizalama için +4 (Yükseklik 8 olduğu için yarısı)
+            doc.text(`DAY ${day}`, marginX + 12, cursorY + 4, { align: 'center', baseline: 'middle' });
 
-            cursorY += 15; // Başlık sonrası boşluk (Sıkılaştırıldı)
+            cursorY += 15; // Başlık sonrası boşluk
 
             const dayItems = trip.cart.filter(item => item.day === day);
             
@@ -226,13 +226,14 @@ function downloadTripPlanPDF(tripKey) {
             for (let i = 0; i < dayItems.length; i++) {
                 const item = dayItems[i];
                 
+                // YÜKSEKLİK HESAPLAMA (Website satırı dahil)
                 doc.setFontSize(10);
                 const addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
+                // Website varsa ekstra satır ekle
+                const webLines = item.website ? doc.splitTextToSize(`Web: ${item.website}`, contentWidth - 45).length : 0;
                 
-                // YÜKSEKLİK HESABI (SIKIŞTIRILDI)
-                // Daha önce 55 idi, şimdi 40 taban + satır başına pay
-                // Bu sayede sayfaya 5-6 tane sığar.
-                const itemHeight = Math.max(40, 24 + (addressLines * 5)); 
+                // 35px temel + her satır için pay
+                const itemHeight = Math.max(40, 24 + (addressLines * 5) + (webLines * 5)); 
 
                 checkPageBreak(itemHeight);
 
@@ -258,7 +259,7 @@ function downloadTripPlanPDF(tripKey) {
                 doc.text(String(i + 1), timelineX, circleCenterY, { align: 'center', baseline: 'middle' });
 
                 // --- GÖRSEL ---
-                const imgSize = 35; // Görseli çok az küçülttüm (ferahlık için)
+                const imgSize = 35;
                 const imgY = cursorY; 
 
                 if (item.image) {
@@ -277,10 +278,10 @@ function downloadTripPlanPDF(tripKey) {
                 
                 textCursorY += (nameLines.length * 5) + 2;
 
-                // Kategori (BÜYÜTÜLDÜ: 11pt)
+                // Kategori
                 if (item.category) {
                     doc.setFont('Roboto', 'bold');
-                    doc.setFontSize(11); // İstek üzerine 8 -> 11 yapıldı
+                    doc.setFontSize(11); // BÜYÜTÜLDÜ (İstek üzerine)
                     doc.setTextColor(primaryColor);
                     doc.text(item.category.toUpperCase(), textStartX, textCursorY);
                     textCursorY += 5;
@@ -303,9 +304,19 @@ function downloadTripPlanPDF(tripKey) {
                     doc.setTextColor('#888');
                     const hoursText = doc.splitTextToSize(`Open: ${item.opening_hours}`, contentWidth - imgSize - 10);
                     doc.text(hoursText, textStartX, textCursorY + 2);
+                    textCursorY += 4.5;
                 }
 
-                // Bir sonraki item için boşluk (Azaltıldı: 8 birim)
+                // Web Sitesi (EKLENDİ)
+                if (item.website) {
+                    doc.setFont('Roboto', 'normal');
+                    doc.setFontSize(8);
+                    doc.setTextColor(linkColor); // Mavi link rengi
+                    const webText = doc.splitTextToSize(`Web: ${item.website}`, contentWidth - imgSize - 10);
+                    doc.text(webText, textStartX, textCursorY + 1);
+                }
+
+                // Bir sonraki item için boşluk
                 cursorY += itemHeight + 8; 
             }
             cursorY += 8; // Gün sonu boşluğu
