@@ -7207,6 +7207,7 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
     window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
   }
 }
+
 function getDayPoints(day) {
   return window.cart
     .filter(item =>
