@@ -6099,8 +6099,6 @@ async function expandMap(containerId, day) {
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
     if (opt.value === currentLayer) div.classList.add('selected');
-  // ... expandMap fonksiyonu içinde ...
-
     const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation();
 
@@ -6112,9 +6110,11 @@ async function expandMap(containerId, day) {
 
       // Seçimi güncelle
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+      // Tıklanan div'i bul (eğer target resimse parent'ı al)
       const targetDiv = e.target.closest('.map-type-option');
       if (targetDiv) targetDiv.classList.add('selected');
       
+      // Yeni katmanı ayarla
       const prevLayer = currentLayer;
       const newLayer = targetDiv ? targetDiv.getAttribute('data-value') : 'bright';
       currentLayer = newLayer;
@@ -6123,6 +6123,7 @@ async function expandMap(containerId, day) {
       const map3d = document.getElementById('maplibre-3d-view');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
 
+      // --- KONUMU HATIRLA VE TEKRAR ÇİZ ---
       const refreshLocationIfActive = () => {
           if (window.isLocationActiveByDay[day] && navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(pos => {
@@ -6131,52 +6132,33 @@ async function expandMap(containerId, day) {
           }
       };
 
-      // --- 3D Moduna Geçiş ---
+      // 3D Moduna Geçiş
       if (currentLayer === 'liberty') {
           expandedMapInstance.getContainer().style.display = "none";
           if (map3d) map3d.style.display = 'block';
           if (compassBtn) compassBtn.style.display = 'flex';
           openMapLibre3D(expandedMapInstance);
           
+          // Geçişten hemen sonra konumu yenile
           setTimeout(refreshLocationIfActive, 300);
       } 
-      // --- 2D Moduna Geçiş (DÜZELTİLEN KISIM) ---
+      // 2D Moduna Geçiş
       else {
           if (map3d) map3d.style.display = "none";
           if (compassBtn) compassBtn.style.display = 'none';
 
           const container = expandedMapInstance.getContainer();
-          
-          // 1. Önce container'ı görünür yap
           container.style.display = "block";
           
-          // 2. Leaflet boyutlarını güncelle (DOM render olduktan sonra)
-          expandedMapInstance.invalidateSize(true);
-
-          // 3. === KRİTİK FIX: Merkez Koordinatı NaN ise Düzelt ===
-          // 3D modunda arkada kalan Leaflet haritası bozulmuş olabilir.
-          const center = expandedMapInstance.getCenter();
-          if (!center || isNaN(center.lat) || isNaN(center.lng)) {
-              console.warn("Map center was NaN, resetting view safely...");
-              const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-              const validPts = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
-              
-              if (validPts.length > 0) {
-                  expandedMapInstance.setView([validPts[0].lat, validPts[0].lng], 14, { animate: false });
-              } else {
-                  expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-              }
-          }
-          // =======================================================
-
-          // 4. Tile Katmanını Ekle
           setExpandedMapTile(currentLayer);
-          
-          // 5. İçeriği güncelle
+          expandedMapInstance.invalidateSize(true);
           try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
 
+           // Geçişten hemen sonra konumu yenile
           setTimeout(refreshLocationIfActive, 300);
 
+          // --- 2D SEGMENT KONTROLÜ ---
+          // Eğer 3D'de bir segment seçiliyse, 2D'ye dönünce de çiz ve odakla
           if (
               window._lastSegmentDay === day && 
               typeof window._lastSegmentStartKm === 'number' && 
@@ -6186,10 +6168,12 @@ async function expandMap(containerId, day) {
                   highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
               }, 250);
           }
+          // ---------------------------
       }
 
       layersBar.classList.add('closed');
       
+      // 3D'den 2D'ye geçişte tek tile sorununu çözmek için auto-click fix
       if (prevLayer === 'liberty' && currentLayer !== 'liberty' && targetDiv && !targetDiv.__autoDouble) {
           targetDiv.__autoDouble = true;
           setTimeout(() => { layersBar.classList.remove('closed'); targetDiv.click(); targetDiv.__autoDouble = false; }, 50);
