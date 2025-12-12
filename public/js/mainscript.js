@@ -1,3 +1,31 @@
+function isValidLatLng(lat, lng) {
+  return Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+}
+
+function getValidDayLatLngs(day) {
+  const pts = (typeof getDayPoints === 'function' ? getDayPoints(day) : []) || [];
+  return pts
+    .map(p => ({ lat: Number(p.lat), lng: Number(p.lng) }))
+    .filter(p => isValidLatLng(p.lat, p.lng));
+}
+
+function safeFitOrCenter(map, day) {
+  if (!map) return;
+  const pts = getValidDayLatLngs(day);
+  try {
+    if (pts.length > 1) {
+      const b = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
+      if (b.isValid()) map.fitBounds(b, { padding: [40, 40], animate: false });
+      else map.setView([39.0, 35.0], 5, { animate: false });
+    } else if (pts.length === 1) {
+      map.setView([pts[0].lat, pts[0].lng], 14, { animate: false });
+    } else {
+      map.setView([39.0, 35.0], 5, { animate: false });
+    }
+  } catch (e) {
+    try { map.setView([39.0, 35.0], 5, { animate: false }); } catch(_) {}
+  }
+}
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
@@ -2856,15 +2884,28 @@ function saveDayName(day, newName) {
                 }
             });
             window.cart = [
-                ...window.cart.filter(item => item.day != day),
-                ...newOrder
-            ];
+    ...window.cart.filter(item => item.day != day),
+    ...newOrder
+];
 
-                if (window.expandedMaps) {
-                  clearRouteSegmentHighlight(day);
-                  fitExpandedMapToRoute(day);
-                }
-            }
+// NaN coords temizliği
+window.cart.forEach(it => {
+  if (it && it.location) {
+    const lat = Number(it.location.lat);
+    const lng = Number(it.location.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      it.location = null;
+    } else {
+      it.location.lat = lat;
+      it.location.lng = lng;
+    }
+  }
+});
+
+if (window.expandedMaps) {
+  clearRouteSegmentHighlight(day);
+  fitExpandedMapToRoute(day);
+}
 
 const INITIAL_EMPTY_MAP_CENTER = [0, 0];
 const INITIAL_EMPTY_MAP_ZOOM   = 2;
@@ -6099,8 +6140,6 @@ async function expandMap(containerId, day) {
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
     if (opt.value === currentLayer) div.classList.add('selected');
-  // ... expandMap fonksiyonu içinde ...
-
     const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation();
 
@@ -6112,9 +6151,11 @@ async function expandMap(containerId, day) {
 
       // Seçimi güncelle
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
+      // Tıklanan div'i bul (eğer target resimse parent'ı al)
       const targetDiv = e.target.closest('.map-type-option');
       if (targetDiv) targetDiv.classList.add('selected');
       
+      // Yeni katmanı ayarla
       const prevLayer = currentLayer;
       const newLayer = targetDiv ? targetDiv.getAttribute('data-value') : 'bright';
       currentLayer = newLayer;
@@ -6123,6 +6164,7 @@ async function expandMap(containerId, day) {
       const map3d = document.getElementById('maplibre-3d-view');
       const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
 
+      // --- KONUMU HATIRLA VE TEKRAR ÇİZ ---
       const refreshLocationIfActive = () => {
           if (window.isLocationActiveByDay[day] && navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(pos => {
@@ -6131,65 +6173,55 @@ async function expandMap(containerId, day) {
           }
       };
 
-      // --- 3D Moduna Geçiş ---
+      // 3D Moduna Geçiş
       if (currentLayer === 'liberty') {
           expandedMapInstance.getContainer().style.display = "none";
           if (map3d) map3d.style.display = 'block';
           if (compassBtn) compassBtn.style.display = 'flex';
           openMapLibre3D(expandedMapInstance);
           
+          // Geçişten hemen sonra konumu yenile
           setTimeout(refreshLocationIfActive, 300);
       } 
-      // --- 2D Moduna Geçiş (DÜZELTİLEN KISIM) ---
-      else {
-          if (map3d) map3d.style.display = "none";
-          if (compassBtn) compassBtn.style.display = 'none';
+      // 2D Moduna Geçiş
+     else {
+  if (map3d) map3d.style.display = "none";
+  if (compassBtn) compassBtn.style.display = 'none';
 
-          const container = expandedMapInstance.getContainer();
-          
-          // 1. Önce container'ı görünür yap
-          container.style.display = "block";
-          
-          // 2. Leaflet boyutlarını güncelle (DOM render olduktan sonra)
-          expandedMapInstance.invalidateSize(true);
+  const container = expandedMapInstance.getContainer();
+  container.style.display = "block";
 
-          // 3. === KRİTİK FIX: Merkez Koordinatı NaN ise Düzelt ===
-          // 3D modunda arkada kalan Leaflet haritası bozulmuş olabilir.
-          const center = expandedMapInstance.getCenter();
-          if (!center || isNaN(center.lat) || isNaN(center.lng)) {
-              console.warn("Map center was NaN, resetting view safely...");
-              const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-              const validPts = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
-              
-              if (validPts.length > 0) {
-                  expandedMapInstance.setView([validPts[0].lat, validPts[0].lng], 14, { animate: false });
-              } else {
-                  expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-              }
-          }
-          // =======================================================
+  setTimeout(() => {
+    try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
 
-          // 4. Tile Katmanını Ekle
-          setExpandedMapTile(currentLayer);
-          
-          // 5. İçeriği güncelle
-          try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
+    // kritik: önce geçerli merkez/bounds
+    safeFitOrCenter(expandedMapInstance, day);
 
-          setTimeout(refreshLocationIfActive, 300);
+    // sonra tile layer
+    setExpandedMapTile(currentLayer);
 
-          if (
-              window._lastSegmentDay === day && 
-              typeof window._lastSegmentStartKm === 'number' && 
-              typeof window._lastSegmentEndKm === 'number'
-          ) {
-              setTimeout(() => {
-                  highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-              }, 250);
-          }
-      }
+    setTimeout(() => {
+      try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
+      try { updateExpandedMap(expandedMapInstance, day); } catch(e){ console.warn('updateExpandedMap error', e); }
+    }, 60);
+
+    setTimeout(refreshLocationIfActive, 120);
+
+    if (
+      window._lastSegmentDay === day &&
+      typeof window._lastSegmentStartKm === 'number' &&
+      typeof window._lastSegmentEndKm === 'number'
+    ) {
+      setTimeout(() => {
+        highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+      }, 180);
+    }
+  }, 60);
+}
 
       layersBar.classList.add('closed');
       
+      // 3D'den 2D'ye geçişte tek tile sorununu çözmek için auto-click fix
       if (prevLayer === 'liberty' && currentLayer !== 'liberty' && targetDiv && !targetDiv.__autoDouble) {
           targetDiv.__autoDouble = true;
           setTimeout(() => { layersBar.classList.remove('closed'); targetDiv.click(); targetDiv.__autoDouble = false; }, 50);
@@ -6528,9 +6560,9 @@ function updateExpandedMap(expandedMap, day) {
 
     // --- EKLENEN KISIM: SCALE BAR GÜNCELLEMESİ ---
     const summary = window.lastRouteSummaries?.[containerId];
-    if (summary && typeof updateDistanceDurationUI === 'function') {
-        updateDistanceDurationUI(sum.distance, sum.duration);
-    }
+if (summary && typeof updateDistanceDurationUI === 'function') {
+    try { updateDistanceDurationUI(summary.distance, summary.duration); } catch(_) {}
+}
 
     // Scale Bar'ı bul ve güncelle
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
