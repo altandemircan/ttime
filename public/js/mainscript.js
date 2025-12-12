@@ -5961,6 +5961,21 @@ function openMapLibre3D(expandedMap) {
         refresh3DMapData(day);
     }
 
+    // --- SEGMENT KONTROLÜ: EĞER SEÇİLİ BİR YER VARSA 3D'DE DE GÖSTER ---
+    if (
+        window._lastSegmentDay === day && 
+        typeof window._lastSegmentStartKm === 'number' && 
+        typeof window._lastSegmentEndKm === 'number'
+    ) {
+        // Harita tam otursun diye ufak bir gecikme ile çizdiriyoruz
+        setTimeout(() => {
+            highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+        }, 200);
+    }
+    // --------------------------------------------------------------------
+
+    // Tıklama Eventi (Nearby Search)
+
     // Tıklama Eventi (Nearby Search)
     window._maplibre3DInstance.on('click', (e) => {
         const { lng, lat } = e.lngLat;
