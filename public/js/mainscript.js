@@ -6150,35 +6150,39 @@ async function expandMap(containerId, day) {
             // 2. Harita Boyutunu Sıfırla (Leaflet'i uyandır)
             expandedMapInstance.invalidateSize(false);
 
-            // 3. GÜVENLİ ODAKLAMA
-            const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-            const validPts = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+            // 3. GÜVENLİ ODAKLAMA (NaN Fix İçin Eklendi)
+            // Eğer harita merkezi bozulduysa (NaN), veriden hesaplayıp düzeltiyoruz
+            const currentCenter = expandedMapInstance.getCenter();
+            if (!currentCenter || isNaN(currentCenter.lat) || isNaN(currentCenter.lng)) {
+                const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+                const validPts = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+                
+                let targetCenter = [39.0, 35.0];
+                let targetZoom = 6;
 
-            let targetCenter = [39.0, 35.0];
-            let targetZoom = 6;
-
-            if (validPts.length > 0) {
-                const latSum = validPts.reduce((sum, p) => sum + p.lat, 0);
-                const lngSum = validPts.reduce((sum, p) => sum + p.lng, 0);
-                targetCenter = [latSum / validPts.length, lngSum / validPts.length];
-                targetZoom = (validPts.length === 1) ? 14 : 10;
+                if (validPts.length > 0) {
+                    const latSum = validPts.reduce((sum, p) => sum + p.lat, 0);
+                    const lngSum = validPts.reduce((sum, p) => sum + p.lng, 0);
+                    targetCenter = [latSum / validPts.length, lngSum / validPts.length];
+                    targetZoom = (validPts.length === 1) ? 14 : 10;
+                }
+                expandedMapInstance.setView(targetCenter, targetZoom, { animate: false });
             }
 
-            // 4. Haritayı Resetle
-            expandedMapInstance.setView(targetCenter, targetZoom, { animate: false });
+            // 4. Eski Katmanları Sil (Eski Dosyadaki Mantık)
+            if (expandedMapInstance._maplibreLayer) {
+                try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
+                expandedMapInstance._maplibreLayer = null;
+            }
+            if (expandedMapInstance._osmTileLayer) {
+                try { expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer); } catch(e){}
+                expandedMapInstance._osmTileLayer = null;
+            }
 
-            // 5. Eski Katmanları Sil
-            expandedMapInstance.eachLayer(layer => {
-                if (layer._maplibreGL || layer instanceof L.TileLayer) {
-                    try { expandedMapInstance.removeLayer(layer); } catch (e) {}
-                }
-            });
-            expandedMapInstance._maplibreLayer = null;
-
-            // 6. Yeni Katmanı Ekle
+            // 5. Yeni Katmanı Ekle (Eski Dosyadaki Basit Mantık)
             setExpandedMapTile(currentLayer);
 
-            // 7. Gecikmeli Render ve SEGMENT KONTROLÜ
+            // 6. Gecikmeli Render ve SEGMENT KONTROLÜ
             setTimeout(() => {
                 try {
                     updateExpandedMap(expandedMapInstance, day);
@@ -6193,10 +6197,8 @@ async function expandMap(containerId, day) {
                     typeof window._lastSegmentStartKm === 'number' &&
                     typeof window._lastSegmentEndKm === 'number'
                 ) {
-                    // A) Harita üzerindeki çizgiyi ve zoom'u ayarla
                     highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
 
-                    // B) Scale Bar Grafiğini Segment Moduna Güncelle!
                     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
                     if (scaleBarDiv && typeof fetchAndRenderSegmentElevation === 'function') {
                         fetchAndRenderSegmentElevation(
@@ -6207,7 +6209,6 @@ async function expandMap(containerId, day) {
                         );
                     }
                 }
-                // =================================================
             }, 100);
         }
 
@@ -6379,83 +6380,37 @@ async function expandMap(containerId, day) {
         dragging: true
     });
 
- function setExpandedMapTile(styleKey) {
-      // 1. Temizlik: Var olan tüm katmanları kaldır
-      if (expandedMapInstance._maplibreLayer) {
-          try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
-          expandedMapInstance._maplibreLayer = null;
-      }
-      if (expandedMapInstance._osmTileLayer) {
-          try { expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer); } catch(e){}
-          expandedMapInstance._osmTileLayer = null;
-      }
+    // --- ESKİ DOSYADAKİ setExpandedMapTile MANTIĞI (DÜZELTİLDİ) ---
+    function setExpandedMapTile(styleKey) {
+        // Önce temizle
+        if (expandedMapInstance._maplibreLayer) {
+            try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch (e) {}
+            expandedMapInstance._maplibreLayer = null;
+        }
+        if (expandedMapInstance._osmTileLayer) {
+            try { expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer); } catch (e) {}
+            expandedMapInstance._osmTileLayer = null;
+        }
 
-      console.log(`[Map Style] Switching to: ${styleKey}`);
-
-      // -----------------------------------------------------------
-      // SEÇENEK A: POSITRON (2D - Gri/Sade)
-      // -----------------------------------------------------------
-      if (styleKey === 'positron') {
-          try {
-              if (typeof L.maplibreGL === 'function') {
-                  // 1. Öncelik: Vektör Positron (OpenFreeMap)
-                  expandedMapInstance._maplibreLayer = L.maplibreGL({
-                      style: 'https://tiles.openfreemap.org/styles/positron',
-                      attribution: '',
-                      interactive: true
-                  }).addTo(expandedMapInstance);
-              } else { throw new Error("MapLibre missing"); }
-          } catch (e) {
-              console.warn("Positron Vector failed, switching to Raster Positron fallback.");
-              // 2. Öncelik (Yedek): Raster Positron (CartoDB) - Asla Bright açmaz!
-              expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                  attribution: '&copy; CARTO',
-                  subdomains: 'abcd',
-                  maxZoom: 20
-              }).addTo(expandedMapInstance);
-          }
-          return;
-      }
-
-      // -----------------------------------------------------------
-      // SEÇENEK B: 3D MODU (Liberty)
-      // -----------------------------------------------------------
-      // 3D seçildiğinde arkadaki 2D harita gizlenir ama yine de boş kalmasın diye Bright yükleriz.
-      if (styleKey === 'liberty') {
-          try {
-              if (typeof L.maplibreGL === 'function') {
-                  expandedMapInstance._maplibreLayer = L.maplibreGL({
-                      style: 'https://tiles.openfreemap.org/styles/bright', // Arkada Bright dursun
-                      attribution: '',
-                      interactive: true
-                  }).addTo(expandedMapInstance);
-              }
-          } catch(e) {} // Hata verirse de önemi yok, zaten gizli.
-          return;
-      }
-
-      // -----------------------------------------------------------
-      // SEÇENEK C: BRIGHT (2D - Renkli/Standart) - Varsayılan
-      // -----------------------------------------------------------
-      // styleKey 'bright' ise veya bilinmeyen bir şeyse burası çalışır.
-      try {
-          if (typeof L.maplibreGL === 'function') {
-              // 1. Öncelik: Vektör Bright (OpenFreeMap)
-              expandedMapInstance._maplibreLayer = L.maplibreGL({
-                  style: 'https://tiles.openfreemap.org/styles/bright',
-                  attribution: '',
-                  interactive: true
-              }).addTo(expandedMapInstance);
-          } else { throw new Error("MapLibre missing"); }
-      } catch (e) {
-          console.warn("Bright Vector failed, switching to OSM fallback.");
-          // 2. Öncelik (Yedek): Standart OSM (Raster)
-          expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 19,
-              attribution: '© OpenStreetMap'
-          }).addTo(expandedMapInstance);
-      }
-  }
+        // URL Yapısı (Eski dosyadan aynen alındı)
+        const url = `https://tiles.openfreemap.org/styles/${styleKey === 'liberty' ? 'bright' : styleKey}`;
+        
+        try {
+            if (typeof L.maplibreGL === 'function') {
+                expandedMapInstance._maplibreLayer = L.maplibreGL({
+                    style: url,
+                    attribution: '',
+                    interactive: true
+                }).addTo(expandedMapInstance);
+            } else {
+                // Fallback (MapLibre yoksa OSM)
+                expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(expandedMapInstance);
+            }
+        } catch (e) {
+            // Hata olursa Bright'a dön (Eski dosyadaki mantık)
+            if (styleKey !== 'bright') setExpandedMapTile('bright');
+        }
+    }
 
     setExpandedMapTile(currentLayer);
     updateExpandedMap(expandedMapInstance, day);
