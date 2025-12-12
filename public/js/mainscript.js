@@ -1,3 +1,31 @@
+function isValidLatLng(lat, lng) {
+  return Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+}
+
+function getValidDayLatLngs(day) {
+  const pts = (typeof getDayPoints === 'function' ? getDayPoints(day) : []) || [];
+  return pts
+    .map(p => ({ lat: Number(p.lat), lng: Number(p.lng) }))
+    .filter(p => isValidLatLng(p.lat, p.lng));
+}
+
+function safeFitOrCenter(map, day) {
+  if (!map) return;
+  const pts = getValidDayLatLngs(day);
+  try {
+    if (pts.length > 1) {
+      const b = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
+      if (b.isValid()) map.fitBounds(b, { padding: [40, 40], animate: false });
+      else map.setView([39.0, 35.0], 5, { animate: false });
+    } else if (pts.length === 1) {
+      map.setView([pts[0].lat, pts[0].lng], 14, { animate: false });
+    } else {
+      map.setView([39.0, 35.0], 5, { animate: false });
+    }
+  } catch (e) {
+    try { map.setView([39.0, 35.0], 5, { animate: false }); } catch(_) {}
+  }
+}
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
@@ -2856,15 +2884,28 @@ function saveDayName(day, newName) {
                 }
             });
             window.cart = [
-                ...window.cart.filter(item => item.day != day),
-                ...newOrder
-            ];
+    ...window.cart.filter(item => item.day != day),
+    ...newOrder
+];
 
-                if (window.expandedMaps) {
-                  clearRouteSegmentHighlight(day);
-                  fitExpandedMapToRoute(day);
-                }
-            }
+// NaN coords temizliği
+window.cart.forEach(it => {
+  if (it && it.location) {
+    const lat = Number(it.location.lat);
+    const lng = Number(it.location.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      it.location = null;
+    } else {
+      it.location.lat = lat;
+      it.location.lng = lng;
+    }
+  }
+});
+
+if (window.expandedMaps) {
+  clearRouteSegmentHighlight(day);
+  fitExpandedMapToRoute(day);
+}
 
 const INITIAL_EMPTY_MAP_CENTER = [0, 0];
 const INITIAL_EMPTY_MAP_ZOOM   = 2;
@@ -6143,33 +6184,40 @@ async function expandMap(containerId, day) {
           setTimeout(refreshLocationIfActive, 300);
       } 
       // 2D Moduna Geçiş
-      else {
-          if (map3d) map3d.style.display = "none";
-          if (compassBtn) compassBtn.style.display = 'none';
+     else {
+  if (map3d) map3d.style.display = "none";
+  if (compassBtn) compassBtn.style.display = 'none';
 
-          const container = expandedMapInstance.getContainer();
-          container.style.display = "block";
-          
-          setExpandedMapTile(currentLayer);
-          expandedMapInstance.invalidateSize(true);
-          try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
+  const container = expandedMapInstance.getContainer();
+  container.style.display = "block";
 
-           // Geçişten hemen sonra konumu yenile
-          setTimeout(refreshLocationIfActive, 300);
+  setTimeout(() => {
+    try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
 
-          // --- 2D SEGMENT KONTROLÜ ---
-          // Eğer 3D'de bir segment seçiliyse, 2D'ye dönünce de çiz ve odakla
-          if (
-              window._lastSegmentDay === day && 
-              typeof window._lastSegmentStartKm === 'number' && 
-              typeof window._lastSegmentEndKm === 'number'
-          ) {
-              setTimeout(() => {
-                  highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-              }, 250);
-          }
-          // ---------------------------
-      }
+    // kritik: önce geçerli merkez/bounds
+    safeFitOrCenter(expandedMapInstance, day);
+
+    // sonra tile layer
+    setExpandedMapTile(currentLayer);
+
+    setTimeout(() => {
+      try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
+      try { updateExpandedMap(expandedMapInstance, day); } catch(e){ console.warn('updateExpandedMap error', e); }
+    }, 60);
+
+    setTimeout(refreshLocationIfActive, 120);
+
+    if (
+      window._lastSegmentDay === day &&
+      typeof window._lastSegmentStartKm === 'number' &&
+      typeof window._lastSegmentEndKm === 'number'
+    ) {
+      setTimeout(() => {
+        highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+      }, 180);
+    }
+  }, 60);
+}
 
       layersBar.classList.add('closed');
       
@@ -6512,9 +6560,9 @@ function updateExpandedMap(expandedMap, day) {
 
     // --- EKLENEN KISIM: SCALE BAR GÜNCELLEMESİ ---
     const summary = window.lastRouteSummaries?.[containerId];
-    if (summary && typeof updateDistanceDurationUI === 'function') {
-        updateDistanceDurationUI(sum.distance, sum.duration);
-    }
+if (summary && typeof updateDistanceDurationUI === 'function') {
+    try { updateDistanceDurationUI(summary.distance, summary.duration); } catch(_) {}
+}
 
     // Scale Bar'ı bul ve güncelle
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
