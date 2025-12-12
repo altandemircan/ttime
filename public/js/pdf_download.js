@@ -546,23 +546,30 @@ function downloadTripPlanPDF(tripKey) {
 
                 // --- WEB SİTESİ (İKONLU) ---
             if (item.website) {
+                    // 8pt Metin Yüksekliğine yakın boyutlar
+                    const dotRadius = 1; // 1mm yarıçapında küçük daire (2mm genişlik/yükseklik)
+                    const dotX = textStartX + dotRadius;
                     
-                    // İkonu ekle. Y konumunu 8pt metin satırına (textCursorY) göre dikey olarak hizala.
-                    // textCursorY + 1.5, 8pt fontun baseline'ı ile ikonun üst kenarını hizalamayı amaçlar.
-                    await addSmartImage('https://dev.triptime.ai/img/website_link.svg', textStartX, textCursorY + 1.5, iconSize, iconSize);
+                    // Metin baseline'ına (4.5mm) göre dikeyde ortalama
+                    const dotCenterY = textCursorY + 4.5 - (1.5 * dotRadius); // Metin satırına dikey hizalama
+                    
+                    // 1. Mavi Daireyi Çiz
+                    doc.setFillColor(linkColor);
+                    doc.circle(dotX, dotCenterY, dotRadius, 'F'); 
 
-                    // Metni ikondan sonra hizala
+                    // 2. Metni Daireden sonra hizala
                     doc.setFont('Roboto', 'normal');
                     doc.setFontSize(8);
                     doc.setTextColor(linkColor);
                     
-                    const textAfterIconX = textStartX + iconSize + 1; // 1mm boşluk eklendi
-                    const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - iconSize);
+                    // Metin başlangıç X koordinatını daire genişliği kadar kaydır
+                    const textAfterDotX = dotX + dotRadius + 1; // 1mm boşluk eklendi
+                    const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - (2 * dotRadius));
                     
-                    // Metni yaz, metin başlangıcını (textCursorY) kullan
-                    doc.text(websiteText, textAfterIconX, textCursorY + 4.5); // 8pt metnin dikey konumu sabitlendi
-
-                    textCursorY += (websiteText.length * 4.5); // Bir sonraki öğe için imleci ayarla
+                    // Metni yaz
+                    doc.text(websiteText, textAfterDotX, textCursorY + 4.5);
+                    
+                    textCursorY += (websiteText.length * 4.5);
                 }
                 cursorY += itemHeight + 8; 
             }
