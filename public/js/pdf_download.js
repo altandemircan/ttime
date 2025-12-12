@@ -545,11 +545,17 @@ function downloadTripPlanPDF(tripKey) {
 
                 // --- WEB SİTESİ (İKONLU) ---
                 if (item.website) {
-                    doc.setFont('Roboto', 'normal');
-                    doc.setFontSize(8);
-                    doc.setTextColor(linkColor);
-                    // "Web:" yerine "🔗" emojisi
-const webText = doc.splitTextToSize(`\u26BF ${item.website}`, contentWidth - imgSize - 10);                    doc.text(webText, textStartX, textCursorY + 1);
+                  doc.setFont('Roboto', 'normal');
+doc.setFontSize(8);
+doc.setTextColor(linkColor);
+
+// SVG boyutu kadar metin başlangıcını kaydır
+const textAfterIconX = textStartX + iconSize + 1; // 1mm boşluk eklendi
+
+// "Web: " metnini SVG'nin hemen yanına metin olarak ekle (linki kopyalamayı kolaylaştırmak için)
+const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - iconSize);
+
+doc.text(websiteText, textAfterIconX, textCursorY + 4, { baseline: 'middle' }); // SVG ortasına hizalandı
                 }
 
                 cursorY += itemHeight + 8; 
