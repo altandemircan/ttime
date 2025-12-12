@@ -544,19 +544,23 @@ function downloadTripPlanPDF(tripKey) {
                 }
 
                 // --- WEB SİTESİ (İKONLU) ---
-                if (item.website) {
-                  doc.setFont('Roboto', 'normal');
-doc.setFontSize(8);
-doc.setTextColor(linkColor);
+               if (item.website) {
+    // 1. İkonu Ekle
+    await addSmartImage('https://dev.triptime.ai/img/website_link.svg', textStartX, textCursorY + 1, iconSize, iconSize);
 
-// SVG boyutu kadar metin başlangıcını kaydır
-const textAfterIconX = textStartX + iconSize + 1; // 1mm boşluk eklendi
-
-// "Web: " metnini SVG'nin hemen yanına metin olarak ekle (linki kopyalamayı kolaylaştırmak için)
-const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - iconSize);
-
-doc.text(websiteText, textAfterIconX, textCursorY + 4, { baseline: 'middle' }); // SVG ortasına hizalandı
-                }
+    // 2. Metni ikondan sonra hizala
+    doc.setFont('Roboto', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(linkColor);
+    
+    // SVG boyutu kadar metin başlangıcını kaydır
+    const textAfterIconX = textStartX + iconSize + 1; // 1mm boşluk eklendi
+    
+    // Web sitesi linkini metin olarak ekle
+    const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - iconSize);
+    
+    doc.text(websiteText, textAfterIconX, textCursorY + 4, { baseline: 'middle' }); // SVG ortasına hizalandı
+}
 
                 cursorY += itemHeight + 8; 
             }
