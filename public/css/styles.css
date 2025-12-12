@@ -4695,7 +4695,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     top: 15px;
     right: 15px;
     padding: 8px 15px;
-    background: #d32f2f;
+    background: #ff3b3b;
     color: white;
     border: none;
     border-radius: 4px;
@@ -4704,7 +4704,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .close-expanded-map:hover {
-    background: #f5f5f5;
+    background: #f84d4d;
 }
 
 
