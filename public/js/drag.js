@@ -511,6 +511,16 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
 
         window.cart = finalCart;
 
+        // === KRİTİK FIX: Arayüzü güncellemeden ÖNCE veriyi kaydet ===
+        // Bu sayede updateCart patlasa bile veri kaybolmaz.
+        if (typeof saveCurrentTripToStorage === "function") {
+            saveCurrentTripToStorage();
+        } else {
+            // Fonksiyon yoksa manuel olarak localStorage'a yaz (Yedek Plan)
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+        }
+        // ============================================================
+
         if (typeof updateCart === "function") updateCart();
 
         setTimeout(() => {
@@ -525,8 +535,6 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
                 }));
             }
         }, 50);
-
-        if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
     } catch (e) {
         console.error("Reorder error:", e);
