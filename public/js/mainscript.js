@@ -10020,7 +10020,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
           map3d.addLayer({
               id: layerId, type: 'line', source: sourceId,
               layout: { 'line-join': 'round', 'line-cap': 'round' },
-              paint: { 'line-color': '#8a4af3', 'line-width': 8 'line-opacity': 1.0 }
+              paint: { 'line-color': '#8a4af3', 'line-width': 8, 'line-opacity': 1.0 }
           });
       }
       if (map3d.getLayer(layerId)) map3d.moveLayer(layerId); // En üste
