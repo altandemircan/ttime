@@ -6148,54 +6148,63 @@ const handleLayerSelect = (e, forceSelect = false) => {
           
           setTimeout(refreshLocationIfActive, 300);
       } 
-      // --- 2D Moduna Geçiş (FIX: Markerlar ve Sürükle-Bırak için Sıralama Düzeltildi) ---
+      // --- 2D Moduna Geçiş (KESİN ÇÖZÜM) ---
       else {
           if (map3d) map3d.style.display = "none";
           if (compassBtn) compassBtn.style.display = 'none';
 
           const container = expandedMapInstance.getContainer();
           
-          // 1. Container görünür yap
+          // ADIM 1: Container'ı görünür yap
           container.style.display = "block";
           
-          // 2. Tile Katmanını değiştir
-          setExpandedMapTile(currentLayer);
-
-          // 3. Harita boyutlarını güncelle ve GECİKMELİ olarak markerları ekle
-          // Markerlar harita boyutu oturmadan eklenirse sürükle-bırak çalışmaz.
-          expandedMapInstance.invalidateSize(true);
-
-          // NaN kontrolü (Gri ekran fix'i burada korunuyor)
-          const center = expandedMapInstance.getCenter();
-          if (!center || isNaN(center.lat) || isNaN(center.lng)) {
+          // ADIM 2: Merkez Koordinatını Kurtar (Tile Layer eklenmeden ÖNCE yapılmalı)
+          // Harita gizliyken merkez NaN olmuş olabilir. Bu durumda Renderer.js çöker.
+          const currentCenter = expandedMapInstance.getCenter();
+          if (!currentCenter || isNaN(currentCenter.lat) || isNaN(currentCenter.lng)) {
+              console.warn("Map center is NaN, forcing reset before render...");
               const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
               const validPts = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+              
               if (validPts.length > 0) {
+                  // Animasyonsuz anında setView
                   expandedMapInstance.setView([validPts[0].lat, validPts[0].lng], 14, { animate: false });
               } else {
                   expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
               }
           }
 
-          // === ÖNEMLİ DEĞİŞİKLİK BURADA ===
-          // updateExpandedMap fonksiyonunu (markerları ekler) setTimeout içine aldık.
-          // Böylece harita render edildikten SONRA markerlar eklenir ve tıklanabilir/sürüklenebilir olur.
-          setTimeout(() => {
-              try { 
-                  updateExpandedMap(expandedMapInstance, day); 
-                  expandedMapInstance.invalidateSize(true); // Garanti olsun diye tekrar
-              } catch(e){ console.error(e); }
-              
-              refreshLocationIfActive();
+          // ADIM 3: Boyutları güncelle
+          expandedMapInstance.invalidateSize(false);
 
-              if (
-                  window._lastSegmentDay === day && 
-                  typeof window._lastSegmentStartKm === 'number' && 
-                  typeof window._lastSegmentEndKm === 'number'
-              ) {
-                  highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-              }
-          }, 100); // 100ms gecikme markerların doğru yere oturmasını sağlar
+          // ADIM 4: Tile Katmanını değiştir (Artık merkez sağlam)
+          setExpandedMapTile(currentLayer);
+
+          // ADIM 5: İçeriği ve Markerları Gecikmeli Ekle
+          // requestAnimationFrame kullanarak bir frame atlatıyoruz, böylece Leaflet DOM'a tam yerleşiyor.
+          requestAnimationFrame(() => {
+              setTimeout(() => {
+                  try {
+                      // Marker ve Rota çizimi burada yapılır
+                      updateExpandedMap(expandedMapInstance, day); 
+                      
+                      // Markerlar eklendikten sonra bir kez daha boyut kontrolü (Sürükle-bırak için kritik)
+                      expandedMapInstance.invalidateSize(true);
+                  } catch(e) { 
+                      console.error("2D Render Error:", e); 
+                  }
+                  
+                  refreshLocationIfActive();
+
+                  if (
+                      window._lastSegmentDay === day && 
+                      typeof window._lastSegmentStartKm === 'number' && 
+                      typeof window._lastSegmentEndKm === 'number'
+                  ) {
+                      highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+                  }
+              }, 50); // 50ms buffer yeterlidir
+          });
       }
 
       layersBar.classList.add('closed');
