@@ -6456,6 +6456,20 @@ async function expandMap(containerId, day) {
 function updateExpandedMap(expandedMap, day) {
     console.log("[updateExpandedMap] Safe Render Started. Day:", day);
 
+    // === FIX: EĞER 3D MODU AÇIKSA LEAFLET'E DOKUNMA ===
+    const is3DActive = document.getElementById('maplibre-3d-view') && 
+                       document.getElementById('maplibre-3d-view').style.display !== 'none';
+
+    if (is3DActive) {
+        console.log("3D Mode active, skipping 2D map update and refreshing 3D data only.");
+        // Sadece 3D haritayı güncelle ve fonksiyonu bitir.
+        if (typeof refresh3DMapData === 'function') {
+            refresh3DMapData(day);
+        }
+        return; // <--- KRİTİK NOKTA: Aşağıdaki Leaflet kodlarını çalıştırma!
+    }
+    // ===================================================
+
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons?.[containerId];
 
@@ -6559,27 +6573,24 @@ function updateExpandedMap(expandedMap, day) {
     
     if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // --- EKLENEN KISIM: SCALE BAR GÜNCELLEMESİ ---
+    // --- SCALE BAR GÜNCELLEMESİ ---
     const summary = window.lastRouteSummaries?.[containerId];
     if (summary && typeof updateDistanceDurationUI === 'function') {
-        updateDistanceDurationUI(sum.distance, sum.duration);
+        // sum -> summary düzeltmesi
+        updateDistanceDurationUI(summary.distance, summary.duration);
     }
 
-    // Scale Bar'ı bul ve güncelle
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBarDiv && typeof renderRouteScaleBar === 'function') {
-        // Eğer rota varsa ve mesafe > 0 ise
         if (summary && summary.distance > 0) {
             const totalKm = summary.distance / 1000;
             const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function') 
                 ? getRouteMarkerPositionsOrdered(day) 
                 : [];
             
-            // Loading sınıfını kaldır ve render et
             scaleBarDiv.innerHTML = ""; 
             renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
             
-            // Grid çizgilerini (ticks) ekle
             const track = scaleBarDiv.querySelector('.scale-bar-track');
             if (track) {
                 const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
@@ -6587,11 +6598,7 @@ function updateExpandedMap(expandedMap, day) {
                     createScaleElements(track, width, totalKm, 0, markerPositions);
                 }
             }
-        } else if (pts.length > 1) {
-            // Rota henüz yoksa ama noktalar varsa (örn. Fly Mode hesaplanıyor)
-            // Boş bırak veya loading koyma, bir sonraki update'i bekle
         } else {
-            // Nokta yoksa temizle
             scaleBarDiv.innerHTML = "";
         }
     }
