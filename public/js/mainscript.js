@@ -6109,6 +6109,8 @@ async function expandMap(containerId, day) {
     if (opt.value === currentLayer) div.classList.add('selected');
  // ... expandMap fonksiyonu içinde ...
 
+// ... expandMap fonksiyonu içinde ...
+
     const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation();
 
