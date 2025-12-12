@@ -551,7 +551,7 @@ function downloadTripPlanPDF(tripKey) {
                     const dotX = textStartX + dotRadius;
                     
                     // Metin baseline'ına (4.5mm) göre dikeyde ortalama
-                    const dotCenterY = textCursorY + 4.5 - (1.5 * dotRadius); // Metin satırına dikey hizalama
+                    const dotCenterY = textCursorY + 4.5 - (1 * dotRadius); // Metin satırına dikey hizalama
                     
                     // 1. Mavi Daireyi Çiz
                     doc.setFillColor(linkColor);
