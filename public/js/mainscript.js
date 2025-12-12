@@ -1,31 +1,3 @@
-function isValidLatLng(lat, lng) {
-  return Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
-}
-
-function getValidDayLatLngs(day) {
-  const pts = (typeof getDayPoints === 'function' ? getDayPoints(day) : []) || [];
-  return pts
-    .map(p => ({ lat: Number(p.lat), lng: Number(p.lng) }))
-    .filter(p => isValidLatLng(p.lat, p.lng));
-}
-
-function safeFitOrCenter(map, day) {
-  if (!map) return;
-  const pts = getValidDayLatLngs(day);
-  try {
-    if (pts.length > 1) {
-      const b = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
-      if (b.isValid()) map.fitBounds(b, { padding: [40, 40], animate: false });
-      else map.setView([39.0, 35.0], 5, { animate: false });
-    } else if (pts.length === 1) {
-      map.setView([pts[0].lat, pts[0].lng], 14, { animate: false });
-    } else {
-      map.setView([39.0, 35.0], 5, { animate: false });
-    }
-  } catch (e) {
-    try { map.setView([39.0, 35.0], 5, { animate: false }); } catch(_) {}
-  }
-}
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
@@ -2884,28 +2856,15 @@ function saveDayName(day, newName) {
                 }
             });
             window.cart = [
-    ...window.cart.filter(item => item.day != day),
-    ...newOrder
-];
+                ...window.cart.filter(item => item.day != day),
+                ...newOrder
+            ];
 
-// NaN coords temizliği
-window.cart.forEach(it => {
-  if (it && it.location) {
-    const lat = Number(it.location.lat);
-    const lng = Number(it.location.lng);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      it.location = null;
-    } else {
-      it.location.lat = lat;
-      it.location.lng = lng;
-    }
-  }
-});
-
-if (window.expandedMaps) {
-  clearRouteSegmentHighlight(day);
-  fitExpandedMapToRoute(day);
-}
+                if (window.expandedMaps) {
+                  clearRouteSegmentHighlight(day);
+                  fitExpandedMapToRoute(day);
+                }
+            }
 
 const INITIAL_EMPTY_MAP_CENTER = [0, 0];
 const INITIAL_EMPTY_MAP_ZOOM   = 2;
@@ -5425,21 +5384,29 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 
-       // Basit ve güvenli refit: sadece bir kez çalıştır
-    map.invalidateSize();
+    // [FIX] Harita Boyutlandırma ve Odaklama (Gecikmeli ve Garantili)
+    const refitMap = () => {
+        if (!map) return;
+        map.invalidateSize(); // Harita boyutunu tekrar hesapla
+        
+        if (points.length === 1) {
+            map.setView([points[0].lat, points[0].lng], 14, { animate: false });
+        } else if (bounds && bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [20, 20], animate: false });
+        }
+    };
 
-    if (points.length === 1) {
-        map.setView([points[0].lat, points[0].lng], 14, { animate: false });
-    } else if (bounds && bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [20, 20], animate: false });
-    }
-
-    // Küçük bir gecikmeyle ikinci kez invalidate (layout otursun)
-    setTimeout(() => {
-        try { 
-            map.invalidateSize(); 
-        } catch (e) {}
-    }, 200);
+    // Hemen çalıştır
+    refitMap();
+    // DOM güncellemeleri bitince tekrar çalıştır
+    setTimeout(refitMap, 250); 
+    
+    // Resize Observer ile izle
+    const ro = new ResizeObserver(() => { 
+        requestAnimationFrame(() => { refitMap(); }); 
+    });
+    ro.observe(sidebarContainer);
+    sidebarContainer._resizeObserver = ro;
 
    // ============================================================
     // --- 3D MAP FIX: DOUBLE-TAP UPDATE (KESİN ÇÖZÜM) ---
@@ -6553,9 +6520,9 @@ function updateExpandedMap(expandedMap, day) {
 
     // --- EKLENEN KISIM: SCALE BAR GÜNCELLEMESİ ---
     const summary = window.lastRouteSummaries?.[containerId];
-if (summary && typeof updateDistanceDurationUI === 'function') {
-    try { updateDistanceDurationUI(summary.distance, summary.duration); } catch(_) {}
-}
+    if (summary && typeof updateDistanceDurationUI === 'function') {
+        updateDistanceDurationUI(sum.distance, sum.duration);
+    }
 
     // Scale Bar'ı bul ve güncelle
     const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
