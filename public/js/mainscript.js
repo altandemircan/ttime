@@ -6379,8 +6379,8 @@ async function expandMap(containerId, day) {
         dragging: true
     });
 
-    function setExpandedMapTile(styleKey) {
-      // 1. Önceki Katmanları Temizle
+  function setExpandedMapTile(styleKey) {
+      // 1. Önceki Katmanları Temizle (Hem Vektör Hem Raster)
       if (expandedMapInstance._maplibreLayer) {
           try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
           expandedMapInstance._maplibreLayer = null;
@@ -6391,7 +6391,7 @@ async function expandMap(containerId, day) {
       }
 
       // 2. Hedef Vektör URL'ini Belirle
-      // Liberty seçildiyse 2D modunda 'bright' kullan, diğerleri kendi ismini kullansın.
+      // Liberty (3D) seçildiyse 2D modunda 'bright' kullan, diğerleri kendi ismini kullansın.
       let targetStyle = styleKey;
       if (styleKey === 'liberty') targetStyle = 'bright';
       
@@ -6414,6 +6414,7 @@ async function expandMap(containerId, day) {
 
           // 4. HATA DURUMUNDA YEDEK PLANLAR (FALLBACKS)
           if (styleKey === 'positron') {
+              console.log("Loading CartoDB Positron Fallback...");
               // Positron hata verirse: CartoDB Positron (Raster) kullan (Görünüm birebir aynıdır)
               expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                   attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -6422,7 +6423,7 @@ async function expandMap(containerId, day) {
               }).addTo(expandedMapInstance);
           } 
           else if (styleKey !== 'bright') {
-              // Diğer stiller hata verirse Bright'a dön
+              // Diğer stiller hata verirse Bright'a dön (Sonsuz döngüyü engeller)
               setExpandedMapTile('bright'); 
           } 
           else {
