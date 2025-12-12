@@ -5384,21 +5384,29 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 
-     // Basit ve güvenli refit: sadece bir kez çalıştır
-    map.invalidateSize();
+    // [FIX] Harita Boyutlandırma ve Odaklama (Gecikmeli ve Garantili)
+    const refitMap = () => {
+        if (!map) return;
+        map.invalidateSize(); // Harita boyutunu tekrar hesapla
+        
+        if (points.length === 1) {
+            map.setView([points[0].lat, points[0].lng], 14, { animate: false });
+        } else if (bounds && bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [20, 20], animate: false });
+        }
+    };
 
-    if (points.length === 1) {
-        map.setView([points[0].lat, points[0].lng], 14, { animate: false });
-    } else if (bounds && bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [20, 20], animate: false });
-    }
-
-    // Küçük bir gecikmeyle ikinci kez invalidate (layout otursun)
-    setTimeout(() => {
-        try { 
-            map.invalidateSize(); 
-        } catch (e) {}
-    }, 200);
+    // Hemen çalıştır
+    refitMap();
+    // DOM güncellemeleri bitince tekrar çalıştır
+    setTimeout(refitMap, 250); 
+    
+    // Resize Observer ile izle
+    const ro = new ResizeObserver(() => { 
+        requestAnimationFrame(() => { refitMap(); }); 
+    });
+    ro.observe(sidebarContainer);
+    sidebarContainer._resizeObserver = ro;
 
    // ============================================================
     // --- 3D MAP FIX: DOUBLE-TAP UPDATE (KESİN ÇÖZÜM) ---
