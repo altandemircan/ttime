@@ -6184,56 +6184,32 @@ async function expandMap(containerId, day) {
           setTimeout(refreshLocationIfActive, 300);
       } 
       // 2D Moduna Geçiş
-    // 2D Moduna Geçiş
-else {
+      else {
           if (map3d) map3d.style.display = "none";
           if (compassBtn) compassBtn.style.display = 'none';
 
           const container = expandedMapInstance.getContainer();
           container.style.display = "block";
+          
+          setExpandedMapTile(currentLayer);
+          expandedMapInstance.invalidateSize(true);
+          try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
 
-          setTimeout(function () {
-              try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
+           // Geçişten hemen sonra konumu yenile
+          setTimeout(refreshLocationIfActive, 300);
 
-              // güvenli center/bounds
-              try {
-                  const pts = (typeof getDayPoints === 'function' ? getDayPoints(day) : [])
-                      .filter(function(p){ return Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)); })
-                      .map(function(p){ return [Number(p.lat), Number(p.lng)]; });
-
-                  if (pts.length > 1) {
-                      const b = L.latLngBounds(pts);
-                      if (b.isValid()) expandedMapInstance.fitBounds(b, { padding: [40, 40], animate: false });
-                      else expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
-                  } else if (pts.length === 1) {
-                      expandedMapInstance.setView(pts[0], 14, { animate: false });
-                  } else {
-                      expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
-                  }
-              } catch(_) {
-                  try { expandedMapInstance.setView([39.0, 35.0], 5, { animate: false }); } catch(__){}
-              }
-
-              // tile sonra
-              setExpandedMapTile(currentLayer);
-
-              setTimeout(function () {
-                  try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
-                  try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
-              }, 60);
-
-              setTimeout(refreshLocationIfActive, 120);
-
-              if (
-                  window._lastSegmentDay === day &&
-                  typeof window._lastSegmentStartKm === 'number' &&
-                  typeof window._lastSegmentEndKm === 'number'
-              ) {
-                  setTimeout(function () {
-                      highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-                  }, 180);
-              }
-          }, 60);
+          // --- 2D SEGMENT KONTROLÜ ---
+          // Eğer 3D'de bir segment seçiliyse, 2D'ye dönünce de çiz ve odakla
+          if (
+              window._lastSegmentDay === day && 
+              typeof window._lastSegmentStartKm === 'number' && 
+              typeof window._lastSegmentEndKm === 'number'
+          ) {
+              setTimeout(() => {
+                  highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+              }, 250);
+          }
+          // ---------------------------
       }
 
       layersBar.classList.add('closed');
