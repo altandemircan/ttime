@@ -24,6 +24,7 @@ function downloadTripPlanPDF(tripKey) {
     const timelineX = 24;
     const contentX = 40; 
     const contentWidth = pageWidth - contentX - marginX;
+    const iconSize = 4; // Yeni ikon boyutu (mm)
 
     let cursorY = 20;
     const logoTargetWidth = 60; 
@@ -500,7 +501,7 @@ function downloadTripPlanPDF(tripKey) {
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(12);
                 doc.setTextColor(accentColor);
-                
+
                 // --- DÜZELTME: İsim bulmak için alternatiflere bak ---
                 let displayName = item.name;
                 if (!displayName || displayName.trim() === "") {
