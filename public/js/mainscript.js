@@ -6109,16 +6109,15 @@ async function expandMap(containerId, day) {
     if (opt.value === currentLayer) div.classList.add('selected');
  // ... expandMap fonksiyonu içinde ...
 
-const handleLayerSelect = (e, forceSelect = false) => {
+// FIX: Gri Ekran ve NaN Hatası İçin Kesin Çözüm
+    const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation();
 
-      // Menü kapalıysa önce aç
       if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
 
-      // Seçimi güncelle
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
       const targetDiv = e.target.closest('.map-type-option');
       if (targetDiv) targetDiv.classList.add('selected');
@@ -6145,66 +6144,65 @@ const handleLayerSelect = (e, forceSelect = false) => {
           if (map3d) map3d.style.display = 'block';
           if (compassBtn) compassBtn.style.display = 'flex';
           openMapLibre3D(expandedMapInstance);
-          
           setTimeout(refreshLocationIfActive, 300);
       } 
-      // --- 2D Moduna Geçiş (KESİN ÇÖZÜM) ---
+      // --- 2D Moduna Geçiş (Fix) ---
       else {
           if (map3d) map3d.style.display = "none";
           if (compassBtn) compassBtn.style.display = 'none';
 
           const container = expandedMapInstance.getContainer();
           
-          // ADIM 1: Container'ı görünür yap
+          // 1. Haritayı Görünür Yap
           container.style.display = "block";
           
-          // ADIM 2: Merkez Koordinatını Kurtar (Tile Layer eklenmeden ÖNCE yapılmalı)
-          // Harita gizliyken merkez NaN olmuş olabilir. Bu durumda Renderer.js çöker.
-          const currentCenter = expandedMapInstance.getCenter();
-          if (!currentCenter || isNaN(currentCenter.lat) || isNaN(currentCenter.lng)) {
-              console.warn("Map center is NaN, forcing reset before render...");
-              const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
-              const validPts = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
-              
-              if (validPts.length > 0) {
-                  // Animasyonsuz anında setView
-                  expandedMapInstance.setView([validPts[0].lat, validPts[0].lng], 14, { animate: false });
-              } else {
-                  expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-              }
-          }
-
-          // ADIM 3: Boyutları güncelle
+          // 2. Harita Boyutunu Sıfırla (Leaflet'i uyandır)
           expandedMapInstance.invalidateSize(false);
 
-          // ADIM 4: Tile Katmanını değiştir (Artık merkez sağlam)
+          // 3. GÜVENLİ ODAKLAMA (NaN riskine karşı haritadan okumuyoruz, veriden hesaplıyoruz)
+          const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
+          const validPts = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
+          
+          // Haritaya "merkezin burası" diye emret (getCenter kullanma!)
+          if (validPts.length > 0) {
+              // Basit bir orta nokta hesabı
+              const latSum = validPts.reduce((sum, p) => sum + p.lat, 0);
+              const lngSum = validPts.reduce((sum, p) => sum + p.lng, 0);
+              expandedMapInstance.setView([latSum / validPts.length, lngSum / validPts.length], 13, { animate: false });
+          } else {
+              expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
+          }
+
+          // 4. Eski Tile Layer'ı Temizle (MapLibre çökmesini önler)
+          if (expandedMapInstance._maplibreLayer) {
+              try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
+              expandedMapInstance._maplibreLayer = null;
+          }
+          // Diğer tüm layerları temizle (temiz sayfa)
+          expandedMapInstance.eachLayer(layer => {
+             try { expandedMapInstance.removeLayer(layer); } catch(e){}
+          });
+
+          // 5. Yeni Tile Layer'ı Ekle
           setExpandedMapTile(currentLayer);
 
-          // ADIM 5: İçeriği ve Markerları Gecikmeli Ekle
-          // requestAnimationFrame kullanarak bir frame atlatıyoruz, böylece Leaflet DOM'a tam yerleşiyor.
-          requestAnimationFrame(() => {
-              setTimeout(() => {
-                  try {
-                      // Marker ve Rota çizimi burada yapılır
-                      updateExpandedMap(expandedMapInstance, day); 
-                      
-                      // Markerlar eklendikten sonra bir kez daha boyut kontrolü (Sürükle-bırak için kritik)
-                      expandedMapInstance.invalidateSize(true);
-                  } catch(e) { 
-                      console.error("2D Render Error:", e); 
-                  }
-                  
-                  refreshLocationIfActive();
+          // 6. Marker ve Rota Çizimi (GECİKMELİ)
+          // Harita DOM'a tam yerleşmeden marker eklenirse sürükle-bırak bozulur.
+          setTimeout(() => {
+              expandedMapInstance.invalidateSize(true); // Bir kez daha boyut kontrolü
+              
+              try {
+                  updateExpandedMap(expandedMapInstance, day);
+              } catch (err) {
+                  console.error("2D Map Update Error:", err);
+              }
 
-                  if (
-                      window._lastSegmentDay === day && 
-                      typeof window._lastSegmentStartKm === 'number' && 
-                      typeof window._lastSegmentEndKm === 'number'
-                  ) {
-                      highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-                  }
-              }, 50); // 50ms buffer yeterlidir
-          });
+              refreshLocationIfActive();
+
+              if (window._lastSegmentDay === day) {
+                  highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+              }
+          }, 150); // 150ms gecikme, DOM'un oturması için hayati önem taşır.
       }
 
       layersBar.classList.add('closed');
