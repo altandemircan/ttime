@@ -6380,30 +6380,59 @@ async function expandMap(containerId, day) {
     });
 
     function setExpandedMapTile(styleKey) {
-        if (expandedMapInstance._maplibreLayer) {
-            try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch (e) {}
-            expandedMapInstance._maplibreLayer = null;
-        }
-        if (expandedMapInstance._osmTileLayer) {
-            try { expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer); } catch (e) {}
-            expandedMapInstance._osmTileLayer = null;
-        }
+      // 1. Önceki Katmanları Temizle
+      if (expandedMapInstance._maplibreLayer) {
+          try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
+          expandedMapInstance._maplibreLayer = null;
+      }
+      if (expandedMapInstance._osmTileLayer) {
+          try { expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer); } catch(e){}
+          expandedMapInstance._osmTileLayer = null;
+      }
 
-        const url = `https://tiles.openfreemap.org/styles/${styleKey === 'liberty' ? 'bright' : styleKey}`;
-        try {
-            if (typeof L.maplibreGL === 'function') {
-                expandedMapInstance._maplibreLayer = L.maplibreGL({
-                    style: url,
-                    attribution: '',
-                    interactive: true
-                }).addTo(expandedMapInstance);
-            } else {
-                expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(expandedMapInstance);
-            }
-        } catch (e) {
-            if (styleKey !== 'bright') setExpandedMapTile('bright');
-        }
-    }
+      // 2. Hedef Vektör URL'ini Belirle
+      // Liberty seçildiyse 2D modunda 'bright' kullan, diğerleri kendi ismini kullansın.
+      let targetStyle = styleKey;
+      if (styleKey === 'liberty') targetStyle = 'bright';
+      
+      const vectorUrl = `https://tiles.openfreemap.org/styles/${targetStyle}`;
+
+      try {
+          // 3. MapLibre (Vektör) Yüklemeyi Dene
+          if (typeof L.maplibreGL === 'function') {
+              expandedMapInstance._maplibreLayer = L.maplibreGL({
+                  style: vectorUrl,
+                  attribution: '',
+                  interactive: true
+              }).addTo(expandedMapInstance);
+          } else {
+              // Kütüphane yoksa hata fırlat ki catch bloğu yakalasın
+              throw new Error("MapLibre GL not loaded");
+          }
+      } catch (e) {
+          console.warn(`Vector tile load failed for ${styleKey}. Switching to fallback.`, e);
+
+          // 4. HATA DURUMUNDA YEDEK PLANLAR (FALLBACKS)
+          if (styleKey === 'positron') {
+              // Positron hata verirse: CartoDB Positron (Raster) kullan (Görünüm birebir aynıdır)
+              expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                  attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
+                  subdomains: 'abcd',
+                  maxZoom: 20
+              }).addTo(expandedMapInstance);
+          } 
+          else if (styleKey !== 'bright') {
+              // Diğer stiller hata verirse Bright'a dön
+              setExpandedMapTile('bright'); 
+          } 
+          else {
+              // Bright da hata verirse en son çare OSM
+              expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+                  maxZoom: 19 
+              }).addTo(expandedMapInstance);
+          }
+      }
+  }
 
     setExpandedMapTile(currentLayer);
     updateExpandedMap(expandedMapInstance, day);
