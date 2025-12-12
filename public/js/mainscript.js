@@ -6145,77 +6145,69 @@ const handleLayerSelect = (e, forceSelect = false) => {
           openMapLibre3D(expandedMapInstance);
           setTimeout(refreshLocationIfActive, 300);
       } 
-      // --- 2D Moduna Geçiş ---
+      // --- 2D Moduna Geçiş (KESİN ÇÖZÜM) ---
       else {
           if (map3d) map3d.style.display = "none";
           if (compassBtn) compassBtn.style.display = 'none';
 
           const container = expandedMapInstance.getContainer();
           
-          // 1. Haritayı Görünür Yap
+          // ADIM 1: KRİTİK - Önce çökme yapan katmanları SİLİYORUZ.
+          // Harita bozukken (NaN) üzerinde katman varsa invalidateSize hataya düşer.
+          expandedMapInstance.eachLayer(layer => {
+             // TileLayer veya MapLibre layerları temizle
+             if (layer._maplibreGL || layer instanceof L.TileLayer) {
+                 try { expandedMapInstance.removeLayer(layer); } catch(e){}
+             }
+          });
+          expandedMapInstance._maplibreLayer = null; // Referansı da temizle
+
+          // ADIM 2: Haritayı Görünür Yap
           container.style.display = "block";
           
-          // 2. Harita Boyutunu Sıfırla (Leaflet'i uyandır)
-          expandedMapInstance.invalidateSize(false);
-
-          // 3. GÜVENLİ ODAKLAMA
+          // ADIM 3: Harita Merkezini Veriden Hesapla (Haritadan sorma, veri ne diyorsa o!)
           const pts = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
           const validPts = pts.filter(p => isFinite(p.lat) && isFinite(p.lng));
           
-          let targetCenter = [39.0, 35.0]; 
+          let targetCenter = [39.0, 35.0]; // Default
           let targetZoom = 6;
 
           if (validPts.length > 0) {
+              // Basit orta nokta
               const latSum = validPts.reduce((sum, p) => sum + p.lat, 0);
               const lngSum = validPts.reduce((sum, p) => sum + p.lng, 0);
               targetCenter = [latSum / validPts.length, lngSum / validPts.length];
               targetZoom = (validPts.length === 1) ? 14 : 10;
           }
 
-          // 4. Haritayı Resetle
+          // ADIM 4: Haritayı Resetle (Animasyonsuz, sert geçiş)
+          // setView çağırmadan önce boyut güncellemesi yapma, önce koordinatı ver.
           expandedMapInstance.setView(targetCenter, targetZoom, { animate: false });
           
-          // 5. Eski Katmanları Sil
-          expandedMapInstance.eachLayer(layer => {
-             if (layer._maplibreGL || layer instanceof L.TileLayer) {
-                 try { expandedMapInstance.removeLayer(layer); } catch(e){}
-             }
-          });
-          expandedMapInstance._maplibreLayer = null;
+          // Şimdi harita "Ben buradayım" dediğine göre boyutunu hesaplasın.
+          expandedMapInstance.invalidateSize(false);
 
-          // 6. Yeni Katmanı Ekle
+          // ADIM 5: Artık Harita Sağlam, Katmanı Geri Ekle
           setExpandedMapTile(currentLayer);
 
-          // 7. Gecikmeli Render ve SEGMENT KONTROLÜ
+          // ADIM 6: İçerik ve Markerları Gecikmeli Ekle (Sürükle-Bırak için gerekli)
+          // setTimeout kullanarak DOM'un ve Leaflet'in tam oturmasını bekliyoruz.
           setTimeout(() => {
+              // Markerları ve rotayı çiz
               try {
                   updateExpandedMap(expandedMapInstance, day);
-              } catch (err) { console.error(err); }
+              } catch (err) {
+                  console.error("2D Update Error:", err);
+              }
 
+              // Markerlar eklendikten sonra son bir boyut kontrolü (Hitboxlar için)
               expandedMapInstance.invalidateSize(true);
+
               refreshLocationIfActive();
 
-              // === SEGMENT RESTORASYONU (BURASI DÜZELTİLDİ) ===
-              if (
-                  window._lastSegmentDay === day && 
-                  typeof window._lastSegmentStartKm === 'number' && 
-                  typeof window._lastSegmentEndKm === 'number'
-              ) {
-                  // A) Harita üzerindeki çizgiyi ve zoom'u ayarla
+              if (window._lastSegmentDay === day) {
                   highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-
-                  // B) Scale Bar Grafiğini Segment Moduna Güncelle!
-                  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-                  if (scaleBarDiv && typeof fetchAndRenderSegmentElevation === 'function') {
-                      fetchAndRenderSegmentElevation(
-                          scaleBarDiv, 
-                          day, 
-                          window._lastSegmentStartKm, 
-                          window._lastSegmentEndKm
-                      );
-                  }
               }
-              // =================================================
           }, 100); 
       }
 
@@ -6226,6 +6218,13 @@ const handleLayerSelect = (e, forceSelect = false) => {
           setTimeout(() => { layersBar.classList.remove('closed'); targetDiv.click(); targetDiv.__autoDouble = false; }, 50);
       }
   };
+
+    div.onclick = (e) => handleLayerSelect(e, false);
+    div.ondblclick = (e) => handleLayerSelect(e, true);
+
+   
+    layersBar.appendChild(div);
+  });
 
   headerDiv.appendChild(layersBar);
   
