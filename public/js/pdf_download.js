@@ -24,7 +24,7 @@ function downloadTripPlanPDF(tripKey) {
     const timelineX = 24;
     const contentX = 40; 
     const contentWidth = pageWidth - contentX - marginX;
-    const iconSize = 4; // Yeni ikon boyutu (mm)
+    const iconSize = 2; // Yeni ikon boyutu (mm)
 
     let cursorY = 20;
     const logoTargetWidth = 60; 
