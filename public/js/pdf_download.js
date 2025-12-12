@@ -24,7 +24,7 @@ function downloadTripPlanPDF(tripKey) {
     const timelineX = 24;
     const contentX = 40; 
     const contentWidth = pageWidth - contentX - marginX;
-    const iconSize = 2; // Yeni ikon boyutu (mm)
+    const iconSize = 3; // Yeni ikon boyutu (mm)
 
     let cursorY = 20;
     const logoTargetWidth = 60; 
@@ -545,24 +545,25 @@ function downloadTripPlanPDF(tripKey) {
                 }
 
                 // --- WEB SİTESİ (İKONLU) ---
-               if (item.website) {
-    // 1. İkonu Ekle
-    await addSmartImage('https://dev.triptime.ai/img/website_link.svg', textStartX, textCursorY + 1, iconSize, iconSize);
+            if (item.website) {
+                    
+                    // İkonu ekle. Y konumunu 8pt metin satırına (textCursorY) göre dikey olarak hizala.
+                    // textCursorY + 1.5, 8pt fontun baseline'ı ile ikonun üst kenarını hizalamayı amaçlar.
+                    await addSmartImage('https://dev.triptime.ai/img/website_link.svg', textStartX, textCursorY + 1.5, iconSize, iconSize);
 
-    // 2. Metni ikondan sonra hizala
-    doc.setFont('Roboto', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(linkColor);
-    
-    // SVG boyutu kadar metin başlangıcını kaydır
-    const textAfterIconX = textStartX + iconSize + 1; // 1mm boşluk eklendi
-    
-    // Web sitesi linkini metin olarak ekle
-    const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - iconSize);
-    
-    doc.text(websiteText, textAfterIconX, textCursorY + 4, { baseline: 'middle' }); // SVG ortasına hizalandı
-}
+                    // Metni ikondan sonra hizala
+                    doc.setFont('Roboto', 'normal');
+                    doc.setFontSize(8);
+                    doc.setTextColor(linkColor);
+                    
+                    const textAfterIconX = textStartX + iconSize + 1; // 1mm boşluk eklendi
+                    const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - iconSize);
+                    
+                    // Metni yaz, metin başlangıcını (textCursorY) kullan
+                    doc.text(websiteText, textAfterIconX, textCursorY + 4.5); // 8pt metnin dikey konumu sabitlendi
 
+                    textCursorY += (websiteText.length * 4.5); // Bir sonraki öğe için imleci ayarla
+                }
                 cursorY += itemHeight + 8; 
             }
             cursorY += 8; 
