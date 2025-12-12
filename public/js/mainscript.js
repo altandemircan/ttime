@@ -6243,7 +6243,7 @@ async function expandMap(containerId, day) {
           // Konumu al ve çiz
           if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(pos => {
-                  window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer);
+                  window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer, true //);
               }, () => {
                   // Hata olursa pasife çek
                   window.isLocationActiveByDay[day] = false;
@@ -10856,29 +10856,39 @@ document.addEventListener('click', function(e) {
     }
 });
 
-window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = 'bright') {
+// --- GÜNCELLENMİŞ KONUM FONKSİYONU (ZOOM KONTROLLÜ) ---
+window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = 'bright', shouldFly = false) {
     const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-ring-2"></div><div class="user-loc-dot"></div></div>`;
     
     // Eski markerları temizle
     if (window._userLocMarker3D) { try { window._userLocMarker3D.remove(); } catch(e){} window._userLocMarker3D = null; }
     if (window._userLocMarker2D && expandedMap) { try { expandedMap.removeLayer(window._userLocMarker2D); } catch(e){} window._userLocMarker2D = null; }
 
-    // Konum verisi yoksa (kapatma komutu geldiyse) çık
+    // Konum verisi yoksa çık
     if (typeof lat !== 'number') return;
 
-    // 3D Harita Modu mu?
+    // 3D Harita Modu
     if (layer === 'liberty' && window._maplibre3DInstance) {
         const el = document.createElement('div');
         el.innerHTML = locHtml; 
         window._userLocMarker3D = new maplibregl.Marker({ element: el })
             .setLngLat([lng, lat])
             .addTo(window._maplibre3DInstance);
-        window._maplibre3DInstance.flyTo({ center: [lng, lat], zoom: 14 });
+        
+        // Sadece istenirse uç
+        if (shouldFly) {
+            window._maplibre3DInstance.flyTo({ center: [lng, lat], zoom: 14 });
+        }
     } 
-    // 2D Harita Modu mu?
+    // 2D Harita Modu
     else if (expandedMap) {
         const customIcon = L.divIcon({ className: 'custom-loc-icon-leaflet', html: locHtml, iconSize: [20, 20], iconAnchor: [10, 10] });
         window._userLocMarker2D = L.marker([lat, lng], { icon: customIcon, zIndexOffset: 1000 }).addTo(expandedMap);
-        expandedMap.flyTo([lat, lng], 14);
+        
+        // Sadece istenirse uç
+        if (shouldFly) {
+            expandedMap.flyTo([lat, lng], 14);
+        }
     }
 };
+// ------------------------------------------------------
