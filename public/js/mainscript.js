@@ -6092,124 +6092,73 @@ async function expandMap(containerId, day) {
     div.innerHTML = `<img src="${opt.img}" alt="${opt.label}"><span>${opt.label}</span>`;
     
     if (opt.value === currentLayer) div.classList.add('selected');
-              const handleLayerSelect = (e, forceSelect = false) => {
+    const handleLayerSelect = (e, forceSelect = false) => {
       e.stopPropagation();
 
-      // Önceki layer 3D miydi?
-      const wasLiberty = (currentLayer === 'liberty');
-
-      // Menü kapalıysa önce açıp çık
+      // Menü kapalıysa önce aç
       if (!forceSelect && layersBar.classList.contains('closed')) {
           layersBar.classList.remove('closed');
           return;
       }
 
+      // Seçimi güncelle
       layersBar.querySelectorAll('.map-type-option').forEach(o => o.classList.remove('selected'));
-      div.classList.add('selected');
+      // Tıklanan div'i bul (eğer target resimse parent'ı al)
+      const targetDiv = e.target.closest('.map-type-option');
+      if (targetDiv) targetDiv.classList.add('selected');
       
-      currentLayer = opt.value;
+      // Yeni katmanı ayarla
+      const prevLayer = currentLayer;
+      const newLayer = targetDiv ? targetDiv.getAttribute('data-value') : 'bright';
+      currentLayer = newLayer;
       localStorage.setItem(`expanded-map-layer-day${day}`, currentLayer);
 
-      const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
       const map3d = document.getElementById('maplibre-3d-view');
+      const compassBtn = document.querySelector(`#custom-compass-btn-${day}`);
 
-      if (opt.value === 'liberty') {
-        // --- 3D MOD ---
-        expandedMapInstance.getContainer().style.display = "none";
-        if (map3d) map3d.style.display = 'block';
-        if (compassBtn) compassBtn.style.display = 'flex';
-        openMapLibre3D(expandedMapInstance); 
-      } else {
-        // --- 2D MOD (tek tile/gri fixleri) ---
-        if (map3d) map3d.style.display = "none";
-        if (compassBtn) compassBtn.style.display = 'none';
+      // --- KONUMU HATIRLA VE TEKRAR ÇİZ ---
+      const refreshLocationIfActive = () => {
+          if (window.isLocationActiveByDay[day] && navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(pos => {
+                  window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer);
+              });
+          }
+      };
 
-        const container = expandedMapInstance.getContainer();
-        container.style.display = "block"; 
-        void container.offsetWidth;
-        try { expandedMapInstance.stop(); } catch(e) {}
-        if (expandedMapInstance._maplibreLayer) {
-            try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
-            expandedMapInstance._maplibreLayer = null;
-        }
-        try {
-            const center = expandedMapInstance.getCenter();
-            if (!center || isNaN(center.lat) || isNaN(center.lng)) {
-                expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-            }
-        } catch(e) {
-            expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-        }
-        if (Array.isArray(window.cart)) {
-            window.cart.forEach(item => {
-                if (item.day == day && item.location) {
-                    let lat = parseFloat(item.location.lat);
-                    let lng = parseFloat(item.location.lng);
-                    if (isNaN(lat)) lat = parseFloat(item.lat) || 0;
-                    if (isNaN(lng)) lng = parseFloat(item.lon) || 0;
-                    item.location.lat = lat;
-                    item.location.lng = lng;
-                }
-            });
-        }
+      // 3D Moduna Geçiş
+      if (currentLayer === 'liberty') {
+          expandedMapInstance.getContainer().style.display = "none";
+          if (map3d) map3d.style.display = 'block';
+          if (compassBtn) compassBtn.style.display = 'flex';
+          openMapLibre3D(expandedMapInstance);
+          
+          // Geçişten hemen sonra konumu yenile
+          setTimeout(refreshLocationIfActive, 300);
+      } 
+      // 2D Moduna Geçiş
+      else {
+          if (map3d) map3d.style.display = "none";
+          if (compassBtn) compassBtn.style.display = 'none';
 
-        setExpandedMapTile(opt.value);
-        expandedMapInstance.invalidateSize(true);
-        try { updateExpandedMap(expandedMapInstance, day); } catch (e) { console.warn("Update error:", e); }
+          const container = expandedMapInstance.getContainer();
+          container.style.display = "block";
+          
+          setExpandedMapTile(currentLayer);
+          expandedMapInstance.invalidateSize(true);
+          try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
 
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                expandedMapInstance.invalidateSize(true); 
-                const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-                const validPts = currentPts.filter(p => !isNaN(p.lat) && !isNaN(p.lng) && p.lat !== 0);
-                if (validPts.length > 0) {
-                    const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-                    const containerId = `route-map-day${day}`;
-                    const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
-                    if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
-                        geojson.features[0].geometry.coordinates.forEach(c => {
-                            if (!isNaN(c[1]) && !isNaN(c[0])) bounds.extend([c[1], c[0]]);
-                        });
-                    }
-                    if (bounds.isValid()) {
-                        expandedMapInstance.fitBounds(bounds, { padding: [50, 50], animate: false });
-                    }
-                } else {
-                    expandedMapInstance.setView([39.0, 35.0], 6, { animate: false });
-                }
-            }, 250);
-        });
-      }
-      
-      if (
-          typeof window._lastSegmentDay === 'number' && 
-          window._lastSegmentDay === day &&
-          typeof window._lastSegmentStartKm === 'number' &&
-          typeof window._lastSegmentEndKm === 'number'
-      ) {
-          setTimeout(() => {
-              if (typeof highlightSegmentOnMap === 'function') {
-                  highlightSegmentOnMap(
-                      day, 
-                      window._lastSegmentStartKm, 
-                      window._lastSegmentEndKm
-                  );
-              }
-          }, 300); 
+          // Geçişten hemen sonra konumu yenile
+          setTimeout(refreshLocationIfActive, 300);
       }
 
       layersBar.classList.add('closed');
-
-      // 3D → 2D geçişinde tek tile fix: kod ikinci tıklamayı otomatik yapar
-      if (wasLiberty && opt.value !== 'liberty' && !div.__autoDouble) {
-        div.__autoDouble = true;
-        setTimeout(() => {
-          layersBar.classList.remove('closed');
-          div.click();
-          div.__autoDouble = false;
-        }, 0);
+      
+      // 3D'den 2D'ye geçişte tek tile sorununu çözmek için auto-click fix
+      if (prevLayer === 'liberty' && currentLayer !== 'liberty' && targetDiv && !targetDiv.__autoDouble) {
+          targetDiv.__autoDouble = true;
+          setTimeout(() => { layersBar.classList.remove('closed'); targetDiv.click(); targetDiv.__autoDouble = false; }, 50);
       }
-    };
+  };
 
     div.onclick = (e) => handleLayerSelect(e, false);
     div.ondblclick = (e) => handleLayerSelect(e, true);
@@ -6268,61 +6217,44 @@ async function expandMap(containerId, day) {
   window.isLocationActiveByDay = window.isLocationActiveByDay || {};
   
   // Loc Button Mantığı
+// Loc Button Mantığı (Revize Edilmiş)
+  // Harita açıldığında eğer konum zaten aktifse butonu 'aktif' (yeşil/dolu) ikonla başlat
+  if (window.isLocationActiveByDay[day]) {
+       locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
+  }
+
   locBtn.onclick = function() {
+      // 1. Durumu tersine çevir (Açıksa kapat, kapalıysa aç)
+      window.isLocationActiveByDay[day] = !window.isLocationActiveByDay[day];
       const isActive = window.isLocationActiveByDay[day];
-      if (!isActive) {
-          window.isLocationActiveByDay[day] = true;
+
+      // 2. Eğer Aktif Olduysa:
+      if (isActive) {
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
           
+          // CSS (Animasyonlu halka efekti) ekle
           if (!document.getElementById('tt-unified-loc-style')) {
               const s = document.createElement('style');
               s.id = 'tt-unified-loc-style';
-              s.innerHTML = `
-                @keyframes ttPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; } }
-                @keyframes ttColorCycle { 0% { background-color: #4285F4; } 50% { background-color: #34A853; } 100% { background-color: #4285F4; } }
-                @keyframes ttRingColorCycle { 0% { background-color: rgba(66, 133, 244, 0.6); } 50% { background-color: rgba(52, 168, 83, 0.6); } 100% { background-color: rgba(66, 133, 244, 0.6); } }
-                .user-loc-wrapper { position: relative; width: 20px; height: 20px; }
-                .user-loc-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: #4285F4; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 2; animation: ttColorCycle 2s infinite ease-in-out; }
-                .user-loc-ring-1 { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6); border-radius: 50%; z-index: 1; animation: ttPulse 2.5s infinite linear, ttRingColorCycle 2s infinite ease-in-out; }
-                .user-loc-ring-2 { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6); border-radius: 50%; z-index: 1; animation: ttPulse 2.5s infinite linear, ttRingColorCycle 2s infinite ease-in-out; animation-delay: 1.25s, 0s; }
-              `;
+              s.innerHTML = `@keyframes ttPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; } } @keyframes ttColorCycle { 0% { background-color: #4285F4; } 50% { background-color: #34A853; } 100% { background-color: #4285F4; } } .user-loc-wrapper { position: relative; width: 20px; height: 20px; } .user-loc-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: #4285F4; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 2; animation: ttColorCycle 2s infinite ease-in-out; } .user-loc-ring-1, .user-loc-ring-2 { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6); border-radius: 50%; z-index: 1; animation: ttPulse 2.5s infinite linear; } .user-loc-ring-2 { animation-delay: 1.25s; }`;
               document.head.appendChild(s);
           }
 
-          const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-ring-2"></div><div class="user-loc-dot"></div></div>`;
-
-          navigator.geolocation.getCurrentPosition(pos => {
-              const { latitude, longitude } = pos.coords;
-              if (currentLayer === 'liberty' && window._maplibre3DInstance) {
-                  window._maplibre3DInstance.flyTo({ center: [longitude, latitude], zoom: 14 });
-                  if (window._userLocMarker3D) window._userLocMarker3D.remove();
-                  const el = document.createElement('div');
-                  el.innerHTML = locHtml; 
-                  window._userLocMarker3D = new maplibregl.Marker({ element: el }).setLngLat([longitude, latitude]).addTo(window._maplibre3DInstance);
-              } 
-              else {
-                  if (expandedMapInstance) {
-                      expandedMapInstance.flyTo([latitude, longitude], 14);
-                      if (window._userLocMarker2D) expandedMapInstance.removeLayer(window._userLocMarker2D);
-                      const customIcon = L.divIcon({
-                          className: 'custom-loc-icon-leaflet',
-                          html: locHtml,
-                          iconSize: [20, 20],
-                          iconAnchor: [10, 10]
-                      });
-                      window._userLocMarker2D = L.marker([latitude, longitude], { icon: customIcon, zIndexOffset: 1000 }).addTo(expandedMapInstance);
-                  }
-              }
-          }, err => {
-              window.isLocationActiveByDay[day] = false;
-              locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
-          });
-
-      } else {
-          window.isLocationActiveByDay[day] = false;
+          // Konumu al ve çiz
+          if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(pos => {
+                  window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer);
+              }, () => {
+                  // Hata olursa pasife çek
+                  window.isLocationActiveByDay[day] = false;
+                  locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+              });
+          }
+      } 
+      // 3. Eğer Pasif Olduysa:
+      else {
           locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
-          if (window._userLocMarker3D) { window._userLocMarker3D.remove(); window._userLocMarker3D = null; }
-          if (window._userLocMarker2D && expandedMapInstance) { expandedMapInstance.removeLayer(window._userLocMarker2D); window._userLocMarker2D = null; }
+          window.updateUserLocationMarker(expandedMapInstance, day); // Parametresiz çağrı temizler
       }
   };
 
@@ -10787,6 +10719,84 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     document.head.appendChild(style);
 })();
 
+
+/**
+ * Kullanıcı konum markerını haritada günceller.
+ * Hem 2D (Leaflet) hem 3D (MapLibre) modlarını destekler.
+ */
+window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer) {
+    const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-ring-2"></div><div class="user-loc-dot"></div></div>`;
+    
+    // Eski markerları temizle
+    if (window._userLocMarker3D) { 
+        try { window._userLocMarker3D.remove(); } catch(e){} 
+        window._userLocMarker3D = null; 
+    }
+    if (window._userLocMarker2D && expandedMap) { 
+        try { expandedMap.removeLayer(window._userLocMarker2D); } catch(e){} 
+        window._userLocMarker2D = null; 
+    }
+
+    // Koordinat yoksa (kapatma durumu) çık
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
+
+    const is3D = (layer === 'liberty' && window._maplibre3DInstance);
+
+    if (is3D) {
+        // 3D Marker Ekle
+        const el = document.createElement('div');
+        el.innerHTML = locHtml; 
+        window._userLocMarker3D = new maplibregl.Marker({ element: el })
+            .setLngLat([lng, lat])
+            .addTo(window._maplibre3DInstance);
+    } else if (expandedMap) {
+        // 2D Marker Ekle
+        const customIcon = L.divIcon({
+            className: 'custom-loc-icon-leaflet',
+            html: locHtml,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        window._userLocMarker2D = L.marker([lat, lng], { icon: customIcon, zIndexOffset: 1000 })
+            .addTo(expandedMap);
+    }
+};
+
+/**
+ * Konum durumunu kontrol eder ve gerekirse haritayı odaklar.
+ */
+window.syncUserLocationState = function(day, expandedMapInstance, currentLayer) {
+    const isActive = window.isLocationActiveByDay && window.isLocationActiveByDay[day];
+    const btn = document.getElementById(`use-my-location-btn-day${day}`);
+    
+    if (!isActive) {
+        if(btn) btn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+        return;
+    }
+
+    // Aktifse konumu al ve çiz
+    if (navigator.geolocation) {
+        if(btn) btn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
+        
+        navigator.geolocation.getCurrentPosition(pos => {
+            const { latitude, longitude } = pos.coords;
+            
+            // Markerı çiz
+            window.updateUserLocationMarker(expandedMapInstance, day, latitude, longitude, currentLayer);
+            
+            // Haritayı uçur (isteğe bağlı, katman değişiminde odaklasın isteniyorsa)
+            if (currentLayer === 'liberty' && window._maplibre3DInstance) {
+                window._maplibre3DInstance.flyTo({ center: [longitude, latitude], zoom: 14 });
+            } else if (expandedMapInstance) {
+                expandedMapInstance.setView([latitude, longitude], 14);
+            }
+        }, () => {
+            // Hata olursa pasife çek
+            window.isLocationActiveByDay[day] = false;
+            if(btn) btn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+        });
+    }
+};
 // Trip seçilince input-wrapper gizlensin
 document.addEventListener('click', function(e) {
   if (e.target.closest('.trip-item')) {
@@ -10845,3 +10855,30 @@ document.addEventListener('click', function(e) {
         }, 150); // 150ms gecikme ile son sözü bu kod söyler
     }
 });
+
+window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = 'bright') {
+    const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-ring-2"></div><div class="user-loc-dot"></div></div>`;
+    
+    // Eski markerları temizle
+    if (window._userLocMarker3D) { try { window._userLocMarker3D.remove(); } catch(e){} window._userLocMarker3D = null; }
+    if (window._userLocMarker2D && expandedMap) { try { expandedMap.removeLayer(window._userLocMarker2D); } catch(e){} window._userLocMarker2D = null; }
+
+    // Konum verisi yoksa (kapatma komutu geldiyse) çık
+    if (typeof lat !== 'number') return;
+
+    // 3D Harita Modu mu?
+    if (layer === 'liberty' && window._maplibre3DInstance) {
+        const el = document.createElement('div');
+        el.innerHTML = locHtml; 
+        window._userLocMarker3D = new maplibregl.Marker({ element: el })
+            .setLngLat([lng, lat])
+            .addTo(window._maplibre3DInstance);
+        window._maplibre3DInstance.flyTo({ center: [lng, lat], zoom: 14 });
+    } 
+    // 2D Harita Modu mu?
+    else if (expandedMap) {
+        const customIcon = L.divIcon({ className: 'custom-loc-icon-leaflet', html: locHtml, iconSize: [20, 20], iconAnchor: [10, 10] });
+        window._userLocMarker2D = L.marker([lat, lng], { icon: customIcon, zIndexOffset: 1000 }).addTo(expandedMap);
+        expandedMap.flyTo([lat, lng], 14);
+    }
+};
