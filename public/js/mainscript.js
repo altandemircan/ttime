@@ -6243,7 +6243,7 @@ async function expandMap(containerId, day) {
           // Konumu al ve çiz
           if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(pos => {
-                  window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer, true //);
+                  window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer, true );
               }, () => {
                   // Hata olursa pasife çek
                   window.isLocationActiveByDay[day] = false;
