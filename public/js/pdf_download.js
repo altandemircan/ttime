@@ -549,8 +549,7 @@ function downloadTripPlanPDF(tripKey) {
                     doc.setFontSize(8);
                     doc.setTextColor(linkColor);
                     // "Web:" yerine "🔗" emojisi
-                    const webText = doc.splitTextToSize(`🔗 ${item.website}`, contentWidth - imgSize - 10);
-                    doc.text(webText, textStartX, textCursorY + 1);
+const webText = doc.splitTextToSize(`\u26BF ${item.website}`, contentWidth - imgSize - 10);                    doc.text(webText, textStartX, textCursorY + 1);
                 }
 
                 cursorY += itemHeight + 8; 
