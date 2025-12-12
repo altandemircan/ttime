@@ -6379,8 +6379,8 @@ async function expandMap(containerId, day) {
         dragging: true
     });
 
-  function setExpandedMapTile(styleKey) {
-      // 1. Önceki Katmanları Temizle (Hem Vektör Hem Raster)
+ function setExpandedMapTile(styleKey) {
+      // 1. Temizlik: Var olan tüm katmanları kaldır
       if (expandedMapInstance._maplibreLayer) {
           try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
           expandedMapInstance._maplibreLayer = null;
@@ -6390,48 +6390,70 @@ async function expandMap(containerId, day) {
           expandedMapInstance._osmTileLayer = null;
       }
 
-      // 2. Hedef Vektör URL'ini Belirle
-      // Liberty (3D) seçildiyse 2D modunda 'bright' kullan, diğerleri kendi ismini kullansın.
-      let targetStyle = styleKey;
-      if (styleKey === 'liberty') targetStyle = 'bright';
-      
-      const vectorUrl = `https://tiles.openfreemap.org/styles/${targetStyle}`;
+      console.log(`[Map Style] Switching to: ${styleKey}`);
 
-      try {
-          // 3. MapLibre (Vektör) Yüklemeyi Dene
-          if (typeof L.maplibreGL === 'function') {
-              expandedMapInstance._maplibreLayer = L.maplibreGL({
-                  style: vectorUrl,
-                  attribution: '',
-                  interactive: true
-              }).addTo(expandedMapInstance);
-          } else {
-              // Kütüphane yoksa hata fırlat ki catch bloğu yakalasın
-              throw new Error("MapLibre GL not loaded");
-          }
-      } catch (e) {
-          console.warn(`Vector tile load failed for ${styleKey}. Switching to fallback.`, e);
-
-          // 4. HATA DURUMUNDA YEDEK PLANLAR (FALLBACKS)
-          if (styleKey === 'positron') {
-              console.log("Loading CartoDB Positron Fallback...");
-              // Positron hata verirse: CartoDB Positron (Raster) kullan (Görünüm birebir aynıdır)
+      // -----------------------------------------------------------
+      // SEÇENEK A: POSITRON (2D - Gri/Sade)
+      // -----------------------------------------------------------
+      if (styleKey === 'positron') {
+          try {
+              if (typeof L.maplibreGL === 'function') {
+                  // 1. Öncelik: Vektör Positron (OpenFreeMap)
+                  expandedMapInstance._maplibreLayer = L.maplibreGL({
+                      style: 'https://tiles.openfreemap.org/styles/positron',
+                      attribution: '',
+                      interactive: true
+                  }).addTo(expandedMapInstance);
+              } else { throw new Error("MapLibre missing"); }
+          } catch (e) {
+              console.warn("Positron Vector failed, switching to Raster Positron fallback.");
+              // 2. Öncelik (Yedek): Raster Positron (CartoDB) - Asla Bright açmaz!
               expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                  attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
+                  attribution: '&copy; CARTO',
                   subdomains: 'abcd',
                   maxZoom: 20
               }).addTo(expandedMapInstance);
-          } 
-          else if (styleKey !== 'bright') {
-              // Diğer stiller hata verirse Bright'a dön (Sonsuz döngüyü engeller)
-              setExpandedMapTile('bright'); 
-          } 
-          else {
-              // Bright da hata verirse en son çare OSM
-              expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-                  maxZoom: 19 
-              }).addTo(expandedMapInstance);
           }
+          return;
+      }
+
+      // -----------------------------------------------------------
+      // SEÇENEK B: 3D MODU (Liberty)
+      // -----------------------------------------------------------
+      // 3D seçildiğinde arkadaki 2D harita gizlenir ama yine de boş kalmasın diye Bright yükleriz.
+      if (styleKey === 'liberty') {
+          try {
+              if (typeof L.maplibreGL === 'function') {
+                  expandedMapInstance._maplibreLayer = L.maplibreGL({
+                      style: 'https://tiles.openfreemap.org/styles/bright', // Arkada Bright dursun
+                      attribution: '',
+                      interactive: true
+                  }).addTo(expandedMapInstance);
+              }
+          } catch(e) {} // Hata verirse de önemi yok, zaten gizli.
+          return;
+      }
+
+      // -----------------------------------------------------------
+      // SEÇENEK C: BRIGHT (2D - Renkli/Standart) - Varsayılan
+      // -----------------------------------------------------------
+      // styleKey 'bright' ise veya bilinmeyen bir şeyse burası çalışır.
+      try {
+          if (typeof L.maplibreGL === 'function') {
+              // 1. Öncelik: Vektör Bright (OpenFreeMap)
+              expandedMapInstance._maplibreLayer = L.maplibreGL({
+                  style: 'https://tiles.openfreemap.org/styles/bright',
+                  attribution: '',
+                  interactive: true
+              }).addTo(expandedMapInstance);
+          } else { throw new Error("MapLibre missing"); }
+      } catch (e) {
+          console.warn("Bright Vector failed, switching to OSM fallback.");
+          // 2. Öncelik (Yedek): Standart OSM (Raster)
+          expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 19,
+              attribution: '© OpenStreetMap'
+          }).addTo(expandedMapInstance);
       }
   }
 
