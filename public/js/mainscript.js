@@ -6215,10 +6215,7 @@ async function expandMap(containerId, day) {
       setTimeout(() => {
         highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
       }, 180);
-    }
-  }, 60);
-}
-
+    
       layersBar.classList.add('closed');
       
       // 3D'den 2D'ye geçişte tek tile sorununu çözmek için auto-click fix
