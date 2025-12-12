@@ -6162,8 +6162,21 @@ async function expandMap(containerId, day) {
           expandedMapInstance.invalidateSize(true);
           try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
 
-          // Geçişten hemen sonra konumu yenile
+         // Geçişten hemen sonra konumu yenile
           setTimeout(refreshLocationIfActive, 300);
+
+          // --- 2D SEGMENT KONTROLÜ ---
+          // Eğer 3D'de bir segment seçiliyse, 2D'ye dönünce de çiz ve odakla
+          if (
+              window._lastSegmentDay === day && 
+              typeof window._lastSegmentStartKm === 'number' && 
+              typeof window._lastSegmentEndKm === 'number'
+          ) {
+              setTimeout(() => {
+                  highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+              }, 250);
+          }
+          // ---------------------------
       }
 
       layersBar.classList.add('closed');
