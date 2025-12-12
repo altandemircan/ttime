@@ -6184,38 +6184,62 @@ async function expandMap(containerId, day) {
           setTimeout(refreshLocationIfActive, 300);
       } 
       // 2D Moduna Geçiş
-     else {
-  if (map3d) map3d.style.display = "none";
-  if (compassBtn) compassBtn.style.display = 'none';
+    // 2D Moduna Geçiş
+else {
+    if (map3d) map3d.style.display = "none";
+    if (compassBtn) compassBtn.style.display = 'none';
 
-  const container = expandedMapInstance.getContainer();
-  container.style.display = "block";
+    const container = expandedMapInstance.getContainer();
+    container.style.display = "block";
 
-  setTimeout(() => {
-    try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
-
-    // kritik: önce geçerli merkez/bounds
-    safeFitOrCenter(expandedMapInstance, day);
-
-    // sonra tile layer
-    setExpandedMapTile(currentLayer);
-
+    // 2D'ye dönünce: önce size + center düzelt, sonra maplibre tile ekle
     setTimeout(() => {
-      try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
-      try { updateExpandedMap(expandedMapInstance, day); } catch(e){ console.warn('updateExpandedMap error', e); }
+        try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
+
+        // geçerli merkez/bounds ver (NaN engeli)
+        try {
+            const pts = (typeof getDayPoints === 'function' ? getDayPoints(day) : [])
+              .filter(p => Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
+              .map(p => [Number(p.lat), Number(p.lng)]);
+
+            if (pts.length > 1) {
+                const b = L.latLngBounds(pts);
+                if (b.isValid()) expandedMapInstance.fitBounds(b, { padding: [40, 40], animate: false });
+                else expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
+            } else if (pts.length === 1) {
+                expandedMapInstance.setView(pts[0], 14, { animate: false });
+            } else {
+                expandedMapInstance.setView([39.0, 35.0], 5, { animate: false });
+            }
+        } catch(_) {
+            try { expandedMapInstance.setView([39.0, 35.0], 5, { animate: false }); } catch(_){}
+        }
+
+        // tile layer'ı bundan sonra ekle
+        setExpandedMapTile(currentLayer);
+
+        // route/marker redraw
+        setTimeout(() => {
+            try { expandedMapInstance.invalidateSize({ pan:false, animate:false }); } catch(_) {}
+            try { updateExpandedMap(expandedMapInstance, day); } catch(e){}
+        }, 60);
+
+        // konum markerı
+        setTimeout(refreshLocationIfActive, 120);
+
+        // segment varsa geri çiz
+        if (
+            window._lastSegmentDay === day &&
+            typeof window._lastSegmentStartKm === 'number' &&
+            typeof window._lastSegmentEndKm === 'number'
+        ) {
+            setTimeout(() => {
+                highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
+            }, 180);
+        }
     }, 60);
+}
 
-    setTimeout(refreshLocationIfActive, 120);
-
-    if (
-      window._lastSegmentDay === day &&
-      typeof window._lastSegmentStartKm === 'number' &&
-      typeof window._lastSegmentEndKm === 'number'
-    ) {
-      setTimeout(() => {
-        highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-      }, 180);
-    
       layersBar.classList.add('closed');
       
       // 3D'den 2D'ye geçişte tek tile sorununu çözmek için auto-click fix
