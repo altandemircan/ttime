@@ -55,26 +55,29 @@ function injectDragStyles() {
             background-color: #fffdf0 !important;
         }
         
-        /* Gizleme Sınıfları */
-        body.hide-map-details .route-controls-bar,
-        body.hide-map-details .tt-travel-mode-set,
-        body.hide-map-details [id^="map-bottom-controls-wrapper"], 
-        body.hide-map-details .add-more-btn,
-        body.hide-map-details .add-new-day-btn,
-        body.hide-map-details #add-new-day-button,
-        body.hide-map-details .add-new-day-separator, 
-        body.hide-map-details .route-info, 
-        body.hide-map-details [id^="route-info-day"], 
-        body.hide-map-details .route-scale-bar,
-        body.hide-map-details .ai-info-section,
-        body.hide-map-details .ai-trip-info-box,
-        body.hide-map-details #generate-ai-info-btn,
-        body.hide-map-details .add-to-calendar-btn,
-        body.hide-map-details .date-range,
-        body.hide-map-details #newchat,
-        body.hide-map-details .trip-share-section
-        {
-            display: none !important;
+        /* --- GİZLEME SINIFLARI (SADECE MOBİLDE ÇALIŞSIN) --- */
+        @media (max-width: 768px) {
+            body.hide-map-details .route-controls-bar,
+            body.hide-map-details .tt-travel-mode-set,
+            body.hide-map-details [id^="map-bottom-controls-wrapper"], 
+            body.hide-map-details .add-more-btn,
+            body.hide-map-details .add-new-day-btn,
+            body.hide-map-details #add-new-day-button,
+            body.hide-map-details .add-new-day-separator, 
+            body.hide-map-details .route-info, 
+            body.hide-map-details [id^="route-info-day"], 
+            body.hide-map-details .route-scale-bar,
+            body.hide-map-details .ai-info-section,
+            body.hide-map-details .ai-trip-info-box,
+            body.hide-map-details #generate-ai-info-btn,
+            body.hide-map-details .add-to-calendar-btn,
+            body.hide-map-details .date-range,
+            body.hide-map-details #newchat,
+            body.hide-map-details .trip-share-section,
+            body.hide-map-details .expanded-map-panel /* Bunu da garanti olsun diye ekledim */
+            {
+                display: none !important;
+            }
         }
 
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
@@ -185,10 +188,10 @@ function cleanupDrag() {
 
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     document.querySelectorAll('.travel-item').forEach(item => {
-        item.classList.remove('dragging-source'); // <-- GRYSCALE KALKACAK
+        item.classList.remove('dragging-source'); 
         item.classList.remove('shake-error');
         item.style.opacity = '';
-        item.style.removeProperty('filter'); // Safety: Filter'ı temizle
+        item.style.removeProperty('filter'); 
     });
     if (placeholder && placeholder.parentNode) placeholder.remove();
     placeholder = null;
@@ -512,11 +515,9 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
         window.cart = finalCart;
 
         // === KRİTİK FIX: Arayüzü güncellemeden ÖNCE veriyi kaydet ===
-        // Bu sayede updateCart patlasa bile veri kaybolmaz.
         if (typeof saveCurrentTripToStorage === "function") {
             saveCurrentTripToStorage();
         } else {
-            // Fonksiyon yoksa manuel olarak localStorage'a yaz (Yedek Plan)
             localStorage.setItem('cart', JSON.stringify(window.cart));
         }
         // ============================================================
