@@ -6533,21 +6533,54 @@ async function expandMap(containerId, day) {
 function updateExpandedMap(expandedMap, day) {
     console.log("[updateExpandedMap] Safe Render Started. Day:", day);
 
-    // === FIX: EĞER 3D MODU AÇIKSA LEAFLET'E DOKUNMA ===
+    const containerId = `route-map-day${day}`;
+
+    // === 3D KONTROLÜ VE SCALE BAR FIX ===
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
 
     if (is3DActive) {
-        console.log("3D Mode active, skipping 2D map update and refreshing 3D data only.");
-        // Sadece 3D haritayı güncelle ve fonksiyonu bitir.
+        console.log("3D Mode active, updating 3D data and Scale Bar.");
+        
+        // 1. 3D Harita Verisini Güncelle
         if (typeof refresh3DMapData === 'function') {
             refresh3DMapData(day);
         }
-        return; // <--- KRİTİK NOKTA: Aşağıdaki Leaflet kodlarını çalıştırma!
+
+        // --- FIX BAŞLANGICI: Scale Bar'ı 3D Modunda Manuel Tetikle ---
+        const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        const summary = window.lastRouteSummaries?.[containerId];
+
+        if (scaleBarDiv && summary && summary.distance > 0) {
+            const totalKm = summary.distance / 1000;
+            
+            // Marker pozisyonlarını hesapla
+            const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function') 
+                ? getRouteMarkerPositionsOrdered(day) 
+                : [];
+            
+            // Grafiği çiz
+            if (typeof renderRouteScaleBar === 'function') {
+                scaleBarDiv.innerHTML = ""; 
+                renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+                
+                // Grafikteki sayıları (1, 2, 3...) ekle
+                const track = scaleBarDiv.querySelector('.scale-bar-track');
+                if (track) {
+                    const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+                    if (typeof createScaleElements === 'function') {
+                        createScaleElements(track, width, totalKm, 0, markerPositions);
+                    }
+                }
+            }
+        }
+        // --- FIX BİTİŞİ ---
+
+        return; // Leaflet 2D işlemlerini yapmadan çık
     }
     // ===================================================
 
-    const containerId = `route-map-day${day}`;
+    // --- BURADAN AŞAĞISI 2D (LEAFLET) KODLARIDIR ---
     const geojson = window.lastRouteGeojsons?.[containerId];
 
     // --- 1. GÜVENLİ KATMAN TEMİZLİĞİ ---
@@ -6650,10 +6683,9 @@ function updateExpandedMap(expandedMap, day) {
     
     if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // --- SCALE BAR GÜNCELLEMESİ ---
+    // --- SCALE BAR GÜNCELLEMESİ (2D MODU) ---
     const summary = window.lastRouteSummaries?.[containerId];
     if (summary && typeof updateDistanceDurationUI === 'function') {
-        // sum -> summary düzeltmesi
         updateDistanceDurationUI(summary.distance, summary.duration);
     }
 
