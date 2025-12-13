@@ -4883,7 +4883,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 [id^="map-bottom-controls-wrapper-day"] {
 
   transition: max-height 0.3s cubic-bezier(.4,0,.2,1), padding 0.3s cubic-bezier(.4,0,.2,1), opacity 0.3s;
-  max-height: 2000px;
+  /*max-height: 2000px;*/
 }
 
 .day-list.collapsed,
