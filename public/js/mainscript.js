@@ -5249,25 +5249,22 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
-    // 2. TEMİZLİK (Eski harita ve gözlemcileri temizle)
+    // 2. TEMİZLİK
     if (sidebarContainer._resizeObserver) {
         sidebarContainer._resizeObserver.disconnect();
         delete sidebarContainer._resizeObserver;
     }
 
-    // Eski harita instance'ını güvenli şekilde yok et
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
-        // MapLibre katmanı varsa önce onu temizlemeyi dene (Hata önleyici)
+        // MapLibre katmanı varsa temizle
         if (oldMap._maplibreLayer) {
             try { oldMap.removeLayer(oldMap._maplibreLayer); } catch (e) {}
         }
         try {
-            oldMap.off(); // Tüm eventleri kapat
-            oldMap.remove(); // Haritayı yok et
-        } catch (e) {
-            console.warn("Harita silinirken hata oluştu (önemsiz):", e);
-        }
+            oldMap.off();
+            oldMap.remove();
+        } catch (e) {}
         delete window.leafletMaps[containerId];
     }
 
@@ -5277,7 +5274,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.classList.remove("big-map", "full-screen-map");
     sidebarContainer.style.backgroundColor = "#eef0f5";
 
-    // 4. BOTTOM CONTROLS & SUMMARY (Aynen korundu)
+    // 4. BOTTOM CONTROLS & SUMMARY
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
     document.getElementById(controlsWrapperId)?.remove();
 
@@ -5307,47 +5304,31 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // 5. YENİ HARİTA OLUŞTURMA
-    // [CRITICAL] Animasyonları kapatmak, DOM hatalarını %90 azaltır.
+    // 5. HARİTA BAŞLATMA
     const map = L.map(containerId, {
         scrollWheelZoom: true,
         fadeAnimation: false,
         zoomAnimation: false,
         markerZoomAnimation: false,
-        inertia: false // Kaydırma eylemsizliğini kapat
+        inertia: false
     });
 
-    // Özel katman oluştur (Rota çizgisi her zaman markerların altında, haritanın üstünde kalsın)
     map.createPane('customRoutePane');
     map.getPane('customRoutePane').style.zIndex = 450;
 
-    // Altlık Harita (Tile Layer / OpenFreeMap)
-    try {
-        if (typeof L.maplibreGL === 'function') {
-            const glLayer = L.maplibreGL({
-                style: 'https://tiles.openfreemap.org/styles/bright',
-                attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-                interactive: true,
-                pane: 'tilePane'
-            });
-            glLayer.addTo(map);
-            map._maplibreLayer = glLayer; // Referansı sakla
-        } else {
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                pane: 'tilePane'
-            }).addTo(map);
-        }
-    } catch (e) {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            pane: 'tilePane'
-        }).addTo(map);
-    }
+    // --- DEĞİŞİKLİK BURADA: CARTO VOYAGER (HIZLI RASTER) KULLANIMI ---
+    // OpenFreeMap yerine CartoDB kullanıyoruz. Çok daha hızlıdır.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        pane: 'tilePane'
+    }).addTo(map);
+    // ----------------------------------------------------------------
 
     let bounds = L.latLngBounds();
     points = points.filter(p => isFinite(Number(p.lat)) && isFinite(Number(p.lng)));
 
-    // Rota Çizimi
     let routeCoords = [];
     let hasValidGeo = (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1);
     if (hasValidGeo) {
@@ -5418,44 +5399,29 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 
-    // --- [CRITICAL FIX] GÜVENLİ REFIT (DOM KONTROLLÜ) ---
-    // Bu fonksiyon, harita görünür değilse (display:none) işlem yapmayı reddeder.
-    // Böylece '_leaflet_pos' hatası alınmaz.
+    // --- GÜVENLİ ODAKLAMA ---
     const refitMap = () => {
         if (!map || !sidebarContainer) return;
-
-        // Harita görünür değilse (başka sekmedeyse) ÇALIŞTIRMA!
-        if (sidebarContainer.offsetParent === null) {
-            return;
-        }
+        if (sidebarContainer.offsetParent === null) return;
 
         try {
-            map.invalidateSize(); // Harita boyutunu düzelt
-
+            map.invalidateSize();
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, { animate: false });
             } else if (bounds && bounds.isValid()) {
                 map.fitBounds(bounds, { padding: [20, 20], animate: false });
             }
-        } catch (err) {
-            // Hata olursa sessiz kal, uygulama çökmesin
-        }
+        } catch (err) {}
     };
 
-    // 1. Hemen dene (Eğer açıksa çalışır)
     requestAnimationFrame(refitMap);
-
-    // 2. DOM'un oturması için biraz bekle ve tekrar dene
     setTimeout(refitMap, 250);
 
-    // 3. ResizeObserver: Harita ne zaman görünür olursa (akordiyon açılınca) o zaman çalıştır
-    const ro = new ResizeObserver(() => {
-        requestAnimationFrame(refitMap);
-    });
+    const ro = new ResizeObserver(() => { requestAnimationFrame(refitMap); });
     ro.observe(sidebarContainer);
     sidebarContainer._resizeObserver = ro;
 
-    // --- 3D MAP GÜNCELLEMESİ ---
+    // --- 3D MAP FIX ---
     const is3DActive = document.getElementById('maplibre-3d-view') &&
         document.getElementById('maplibre-3d-view').style.display !== 'none';
 
