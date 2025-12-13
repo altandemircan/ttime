@@ -5037,58 +5037,55 @@ async function getPlaceInfoFromLatLng(lat, lng) {
 }
 
 function toggleContent(arrowIcon) {
+    // Ok ikonuna (img) tıklandığında parent elemanları bul
     const cartItem = arrowIcon.closest('.cart-item');
     if (!cartItem) return;
     
     const contentDiv = cartItem.querySelector('.content');
     if (!contentDiv) return;
     
-    // Aç/Kapa işlemi
+    // --- 1. Ok Döndürme (Eski Basit Yöntem) ---
+    // Tıklanan element (this) doğrudan resim (img) olduğu için sınıfı onda değiştiriyoruz.
+    arrowIcon.classList.toggle('rotated');
+
+    // --- 2. İçeriği Aç/Kapa ---
     contentDiv.classList.toggle('open');
-    const arrowImg = arrowIcon.querySelector('img') || arrowIcon; // Eğer img'ye tıklandıysa kendisi, spana tıklandıysa child
     
     if (contentDiv.classList.contains('open')) {
         contentDiv.style.display = 'block';
-        if(arrowImg) arrowImg.classList.add('rotated');
+
+        // --- 3. Liste Kesilme Sorunu İçin JS Yaması ---
+        // İçerik açıldığında, ana gün listesinin (accordion-content) yüksekliğini serbest bırak
+        const parentAccordionContent = cartItem.closest('.accordion-content');
+        if (parentAccordionContent) {
+            parentAccordionContent.style.maxHeight = "none";
+            parentAccordionContent.style.overflow = "visible";
+        }
+
+        // --- 4. Harita Yükleme (OpenFreeMap) ---
+        const item = cartItem.closest('.travel-item');
+        if (item) {
+            const mapDiv = item.querySelector('.leaflet-map');
+            // Harita div'i varsa ve henüz yüklenmediyse
+            if (mapDiv) {
+                const mapId = mapDiv.id;
+                const lat = parseFloat(item.dataset.lat || item.getAttribute('data-lat'));
+                const lon = parseFloat(item.dataset.lon || item.getAttribute('data-lon'));
+                
+                const titleEl = item.querySelector('.toggle-title');
+                const name = titleEl ? titleEl.textContent : 'Location';
+                const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    // Harita renderı için ufak gecikme (display:block olduktan sonra)
+                    setTimeout(() => {
+                        createLeafletMapForItem(mapId, lat, lon, name, number);
+                    }, 50);
+                }
+            }
+        }
     } else {
         contentDiv.style.display = 'none';
-        if(arrowImg) arrowImg.classList.remove('rotated');
-    }
-
-    // --- DÜZELTME BAŞLANGICI: Yükseklik Sorunu Çözümü ---
-    // Bu kartın içinde bulunduğu ana gün konteynerini (accordion-content) buluyoruz.
-    const parentAccordionContent = cartItem.closest('.accordion-content');
-    if (parentAccordionContent) {
-        // Yüksekliği "none" yaparak içeriğin taşmasını engelliyoruz
-        parentAccordionContent.style.maxHeight = "none";
-        parentAccordionContent.style.overflow = "visible";
-    }
-    // --- DÜZELTME BİTİŞİ ---
-
-    // Leaflet haritayı başlat (Eğer harita varsa)
-    const item = cartItem.closest('.travel-item');
-    if (!item) return;
-    
-    const mapDiv = item.querySelector('.leaflet-map');
-    // Sadece içerik açıksa ve harita div'i varsa haritayı yükle
-    if (contentDiv.classList.contains('open') && mapDiv) {
-        const mapId = mapDiv.id;
-        // Dataset üzerinden verileri güvenli şekilde al
-        const lat = parseFloat(item.dataset.lat || item.getAttribute('data-lat'));
-        const lon = parseFloat(item.dataset.lon || item.getAttribute('data-lon'));
-        
-        // Başlık ve numara bulma
-        const titleEl = item.querySelector('.toggle-title');
-        const name = titleEl ? titleEl.textContent : 'Location';
-        const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
-
-        // Harita fonksiyonunu çağır (Bir önceki adımda verdiğim OpenFreeMap fonksiyonu)
-        if (!isNaN(lat) && !isNaN(lon)) {
-            // Harita render edilirken boyutun doğru hesaplanması için hafif bir gecikme
-            setTimeout(() => {
-                createLeafletMapForItem(mapId, lat, lon, name, number);
-            }, 50);
-        }
     }
 }
 
