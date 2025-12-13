@@ -5257,7 +5257,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
-        // Varsa eski zamanlayıcıyı kesinlikle temizle
+        // Eski zamanlayıcıyı ve eventleri temizle
         if (oldMap._fallbackTimer) clearTimeout(oldMap._fallbackTimer);
         
         if (oldMap._maplibreLayer) {
@@ -5320,14 +5320,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-    // --- TILE LAYER YÖNETİMİ ---
-    
+    // --- TILE LAYER YÖNETİMİ (AKILLI SİNYAL KONTROLÜ) ---
+    let layerSuccess = false;
+
     // Fallback Fonksiyonu (CartoDB)
     const loadCartoDB = () => {
         // Eğer OpenFreeMap zaten başarılı olduysa (bayrak true ise) ASLA çalıştırma
-        if (map._ofmSuccess || !map || !map._container) return;
+        if (layerSuccess || !map || !map._container) return;
 
-        console.warn(`[SmallMap] OpenFreeMap yanıt vermedi -> CartoDB açılıyor (${containerId}).`);
+        // console.warn(`[SmallMap] Timeout doldu -> CartoDB açılıyor (${containerId}).`);
         
         // Yarım kalan katmanı temizle
         if (map._maplibreLayer) {
@@ -5360,11 +5361,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
 
-            // --- DEĞİŞİKLİK BURADA: AGRESİF TAKİP ---
+            // --- BAŞARI SİNYALİ TAKİBİ ---
             const markSuccess = (source) => {
-                if (map._ofmSuccess) return; // Zaten başarılı işaretlendiyse çık
+                if (layerSuccess) return; // Zaten işaretlendiyse çık
                 
-                map._ofmSuccess = true; // BAŞARI BAYRAĞINI DİK
+                layerSuccess = true; // BAŞARI BAYRAĞINI DİK
                 // console.log(`[SmallMap] Sinyal alındı: ${source}. Fallback iptal.`);
                 
                 if (map._fallbackTimer) {
@@ -5380,7 +5381,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             // 2. MapLibre Core eventleri (Daha erken tetiklenir)
             const glMap = glLayer.getMaplibreMap();
             if (glMap) {
-                // "styledata": Stil dosyası indiği an
+                // "styledata": Stil dosyası indiği an (En hızlı sinyal)
                 glMap.once('styledata', () => markSuccess('styledata'));
                 // "data": Herhangi bir veri işlendiği an
                 glMap.once('data', () => markSuccess('data'));
@@ -5389,7 +5390,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             // 3000ms Zamanlayıcı
             map._fallbackTimer = setTimeout(() => {
                 // Süre dolduğunda bayrak hala false ise değiştir
-                if (!map._ofmSuccess) loadCartoDB();
+                if (!layerSuccess) loadCartoDB();
             }, 3000);
 
         } catch (e) {
