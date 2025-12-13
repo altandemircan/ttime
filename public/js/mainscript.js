@@ -1325,20 +1325,6 @@ document.querySelectorAll('.add_theme').forEach(btn => {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-// .addtotrip butonuna basıldığında day bilgisini stepsDiv'den veya window.currentDay'den al.
-// 1) Kategori/slider'dan sepete ekleme (.addtotrip handler)
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
         document.removeEventListener('click', window.__triptime_addtotrip_listener);
@@ -1384,18 +1370,28 @@ function initializeAddToTripListener() {
             website
         );
 
+        // Buton animasyonu
         btn.classList.add('added');
         setTimeout(() => btn.classList.remove('added'), 1000);
 
         if (typeof restoreSidebar === "function") restoreSidebar();
         if (typeof updateCart === "function") updateCart();
 
+        // --- YENİ EKLENEN KISIM: MOBİLDE SIDEBAR'I AÇ ---
+        if (window.innerWidth <= 768) {
+            // CSS yapınıza göre sidebar class'larını kontrol edip açıyoruz
+            const sidebarTrip = document.querySelector('.sidebar-trip');
+            const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
+
+            if (sidebarTrip) sidebarTrip.classList.add('open');
+            if (sidebarOverlay) sidebarOverlay.classList.add('open');
+        }
+        // -----------------------------------------------
     };
 
     document.addEventListener('click', listener);
     window.__triptime_addtotrip_listener = listener;
 }
-
 // Listener'ı başlat
 initializeAddToTripListener();
 
@@ -3533,6 +3529,78 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     }
 };
 
+function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
+    window._leafletMaps = window._leafletMaps || {};
+    
+    // Eski harita varsa temizle
+    if (window._leafletMaps[mapId]) {
+        try { window._leafletMaps[mapId].remove(); } catch(e){}
+        delete window._leafletMaps[mapId];
+    }
+
+    const el = document.getElementById(mapId);
+    if (!el) return;
+
+    var map = L.map(mapId, {
+        center: [lat, lon],
+        zoom: 16,
+        scrollWheelZoom: false,
+        zoomControl: true,
+        attributionControl: false
+    });
+
+    // --- DEĞİŞİKLİK BURADA: OpenFreeMap Kullanımı ---
+    const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
+
+    if (typeof L.maplibreGL === 'function') {
+        // MapLibreGL (Vektör) kullan
+        L.maplibreGL({
+            style: openFreeMapStyle,
+            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+            interactive: true
+        }).addTo(map);
+    } else {
+        // Eğer kütüphane yüklenmediyse OSM Fallback
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    }
+    // ------------------------------------------------
+
+    // ARTIK day VAR!
+    if (typeof getDayPoints === "function" && typeof day !== "undefined") {
+        const pts = getDayPoints(day).filter(
+            p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
+        );
+        // Eğer sadece 1 nokta varsa o noktaya odaklan
+        if (pts.length === 1) {
+            map.setView([pts[0].lat, pts[0].lng], 14);
+        }
+    }
+
+    // Marker
+    const icon = L.divIcon({
+        html: getPurpleRestaurantMarkerHtml(), // Bu fonksiyonun tanımlı olduğundan emin olun, yoksa standart icon kullanın
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+    
+    // Eğer getPurpleRestaurantMarkerHtml yoksa fallback için basit bir HTML string:
+    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
+    const finalIcon = typeof getPurpleRestaurantMarkerHtml === 'function' ? icon : L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
+
+    L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '').openPopup();
+
+    map.zoomControl.setPosition('topright');
+    window._leafletMaps[mapId] = map;
+    
+    // Harita boyutunu düzelt (render hatasını önler)
+    setTimeout(function() { map.invalidateSize(); }, 120);
+}
+
+
 async function updateCart() {
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 
@@ -5189,17 +5257,19 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
-        try { window.leafletMaps[containerId].remove(); } catch(e) {}
+        try {
+            window.leafletMaps[containerId].remove();
+        } catch (e) {}
         delete window.leafletMaps[containerId];
     }
 
     // 3. DOM HAZIRLIĞI
     sidebarContainer.innerHTML = "";
-    sidebarContainer.style.height = "285px"; 
+    sidebarContainer.style.height = "285px";
     sidebarContainer.classList.remove("big-map", "full-screen-map");
-    sidebarContainer.style.backgroundColor = "#eef0f5"; 
+    sidebarContainer.style.backgroundColor = "#eef0f5";
 
-    // Route Summary & Controls
+    // Route Summary & Controls (Aynı kalıyor)
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
     document.getElementById(controlsWrapperId)?.remove();
 
@@ -5230,15 +5300,18 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
     // --- HARİTA BAŞLATMA ---
-    const map = L.map(containerId, { 
-        scrollWheelZoom: true, fadeAnimation: false, zoomAnimation: false, markerZoomAnimation: false 
+    // [FIX] fadeAnimation ve zoomAnimation false yapılarak olası race conditionlar önlenir
+    const map = L.map(containerId, {
+        scrollWheelZoom: true,
+        fadeAnimation: false,
+        zoomAnimation: false,
+        markerZoomAnimation: false
     });
 
     // [FIX] Rota ve Markerlar için özel "Pane" (Katman) oluşturuyoruz.
-    // Bu sayede harita karoları ne yaparsa yapsın, rota çizgisini EN ÜSTTE tutuyoruz.
     map.createPane('customRoutePane');
-    map.getPane('customRoutePane').style.zIndex = 450; // TileLayer(200) üstünde, Marker(600) altında
-    
+    map.getPane('customRoutePane').style.zIndex = 450;
+
     // Altlık Harita (Tile Layer)
     try {
         if (typeof L.maplibreGL === 'function') {
@@ -5246,19 +5319,24 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 style: 'https://tiles.openfreemap.org/styles/bright',
                 attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
                 interactive: true,
-                pane: 'tilePane' // En altta kalmaya zorla
+                pane: 'tilePane'
             }).addTo(map);
         } else {
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, pane: 'tilePane' }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                pane: 'tilePane'
+            }).addTo(map);
         }
-    } catch(e) {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { pane: 'tilePane' }).addTo(map);
+    } catch (e) {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            pane: 'tilePane'
+        }).addTo(map);
     }
 
     let bounds = L.latLngBounds();
     // Noktaları temizle
     points = points.filter(p => isFinite(Number(p.lat)) && isFinite(Number(p.lng)));
-    
+
     // GeoJSON Koordinatlarını hazırla
     let routeCoords = [];
     let hasValidGeo = (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1);
@@ -5271,13 +5349,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         L.marker([points[0].lat, points[0].lng], {
             icon: L.divIcon({
                 html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
-                className: "", iconSize: [32,32], iconAnchor: [16,16]
+                className: "",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
             })
         }).addTo(map).bindPopup(points[0].name || "Point");
-    } 
-    else if (points.length >= 1) {
+    } else if (points.length >= 1) {
         const isFlyMode = !areAllPointsInTurkey(points);
-        
+
         if (isFlyMode) {
             window._curvedArcPointsByDay = window._curvedArcPointsByDay || {};
             let arcPoints = [];
@@ -5286,92 +5365,103 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 const end = [points[i + 1].lng, points[i + 1].lat];
                 const curve = getCurvedArcCoords(start, end);
                 arcPoints = arcPoints.concat(curve);
-                // [FIX] pane: 'customRoutePane' eklendi
                 drawCurvedLine(map, points[i], points[i + 1], {
-                    color: "#1976d2", weight: 5, opacity: 0.85, dashArray: "6,8", pane: 'customRoutePane'
+                    color: "#1976d2",
+                    weight: 5,
+                    opacity: 0.85,
+                    dashArray: "6,8",
+                    pane: 'customRoutePane'
                 });
             }
             points.forEach(p => bounds.extend([p.lat, p.lng]));
             window._curvedArcPointsByDay[day] = arcPoints;
-        } 
-        else if (hasValidGeo && routeCoords.length > 1) {
-            // [FIX] Rota çizgisini customRoutePane'e basıyoruz (görünürlük garantisi)
+        } else if (hasValidGeo && routeCoords.length > 1) {
             const routePoly = L.polyline(routeCoords, {
-                color: '#1976d2', weight: 8, opacity: 0.92, interactive: true, pane: 'customRoutePane'
+                color: '#1976d2',
+                weight: 8,
+                opacity: 0.92,
+                interactive: true,
+                pane: 'customRoutePane'
             }).addTo(map);
             bounds.extend(routePoly.getBounds());
         } else {
-            // Fallback Düz Çizgiler
             const fallbackCoords = points.map(p => [p.lat, p.lng]);
             const fallbackPoly = L.polyline(fallbackCoords, {
-                color: '#1976d2', weight: 6, opacity: 0.7, dashArray: "5, 10", pane: 'customRoutePane'
+                color: '#1976d2',
+                weight: 6,
+                opacity: 0.7,
+                dashArray: "5, 10",
+                pane: 'customRoutePane'
             }).addTo(map);
             bounds.extend(fallbackPoly.getBounds());
         }
 
-        // Markerları ekle
         addNumberedMarkers(map, points);
-        
-        // Bounds hala geçersizse noktalar üzerinden genişlet
+
         if (!bounds.isValid() && points.length > 0) {
             points.forEach(p => bounds.extend([p.lat, p.lng]));
         }
     } else {
-        map.setView([0, 0], 2, { animate: false });
+        map.setView([0, 0], 2, {
+            animate: false
+        });
     }
 
     wrapRouteControls(day);
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 
-    // [FIX] Harita Boyutlandırma ve Odaklama (Gecikmeli ve Garantili)
+    // --- [CRITICAL FIX] HARİTA BOYUTLANDIRMA VE ODAKLAMA ---
+    // Bu fonksiyonu güvenli hale getirdik. DOM'da yer yoksa veya harita hazır değilse patlamaz.
     const refitMap = () => {
-        if (!map) return;
-        map.invalidateSize(); // Harita boyutunu tekrar hesapla
+        if (!map || !sidebarContainer) return;
         
-        if (points.length === 1) {
-            map.setView([points[0].lat, points[0].lng], 14, { animate: false });
-        } else if (bounds && bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [20, 20], animate: false });
+        // Eğer container görünür değilse (display:none) işlem yapma
+        if (sidebarContainer.offsetParent === null) return;
+
+        try {
+            map.invalidateSize(); // Harita boyutunu tekrar hesapla
+
+            if (points.length === 1) {
+                map.setView([points[0].lat, points[0].lng], 14, {
+                    animate: false
+                });
+            } else if (bounds && bounds.isValid()) {
+                map.fitBounds(bounds, {
+                    padding: [20, 20],
+                    animate: false
+                });
+            }
+        } catch (err) {
+            console.warn("[Leaflet Refit Error] Retrying later...", err);
         }
     };
 
-    // Hemen çalıştır
-    refitMap();
-    // DOM güncellemeleri bitince tekrar çalıştır
-    setTimeout(refitMap, 250); 
-    
-    // Resize Observer ile izle
-    const ro = new ResizeObserver(() => { 
-        requestAnimationFrame(() => { refitMap(); }); 
+    // 1. Hemen Dene
+    requestAnimationFrame(refitMap);
+
+    // 2. DOM'un tam oturması için kısa bir süre sonra tekrar dene
+    setTimeout(refitMap, 300);
+
+    // 3. Resize Observer ile izle (Ekran boyutu değişirse veya container açılırsa)
+    const ro = new ResizeObserver(() => {
+        requestAnimationFrame(refitMap);
     });
     ro.observe(sidebarContainer);
     sidebarContainer._resizeObserver = ro;
 
-   // ============================================================
-    // --- 3D MAP FIX: DOUBLE-TAP UPDATE (KESİN ÇÖZÜM) ---
-    // ============================================================
-    const is3DActive = document.getElementById('maplibre-3d-view') && 
-                       document.getElementById('maplibre-3d-view').style.display !== 'none';
-    
-    if (is3DActive && window._maplibre3DInstance) {
-        
-        // window.currentDay, ekleme yaparken set edildiği için en güvenilir kaynaktır.
-        // Eğer şu an hesaplanan gün, aktif gün ise güncellemeyi zorla.
-        if (window.currentDay === day) {
-            
-            // 1. Hemen güncelle (İlk deneme)
-            refresh3DMapData(day);
+    // --- 3D MAP FIX: DOUBLE-TAP UPDATE ---
+    const is3DActive = document.getElementById('maplibre-3d-view') &&
+        document.getElementById('maplibre-3d-view').style.display !== 'none';
 
-            // 2. Gecikmeli güncelle (İkinci deneme - Sigorta)
-            // Bazen OSRM verisi global değişkene (window.lastRouteGeojsons) yazılmadan 
-            // hemen önceki satır çalışabiliyor. 150ms bekleyip tekrar deniyoruz.
+    if (is3DActive && window._maplibre3DInstance) {
+        if (window.currentDay === day) {
+            refresh3DMapData(day);
             setTimeout(() => {
                 refresh3DMapData(day);
             }, 150);
         }
     }
-    // ============================================================
 }
 
 // Harita durumlarını yönetmek için global değişken
@@ -6305,6 +6395,15 @@ async function expandMap(containerId, day) {
     expandedContainer.appendChild(mapDiv);
     document.body.appendChild(expandedContainer);
 
+    // --- YENİ EKLENEN: Sadece Mobilde (<=768px) Header'ı Gizle ---
+    if (window.innerWidth <= 768) {
+        const mainHeader = document.querySelector('.fixed-header'); 
+        if (mainHeader) {
+            mainHeader.style.display = 'none';
+        }
+    }
+    // -------------------------------------------------------------
+
     showRouteInfoBanner(day);
 
     // === MAP INITIALIZATION ===
@@ -6461,21 +6560,116 @@ async function expandMap(containerId, day) {
 function updateExpandedMap(expandedMap, day) {
     console.log("[updateExpandedMap] Safe Render Started. Day:", day);
 
-    // === FIX: EĞER 3D MODU AÇIKSA LEAFLET'E DOKUNMA ===
+    const containerId = `route-map-day${day}`;
+
+    // === 3D KONTROLÜ VE SCALE BAR FIX ===
     const is3DActive = document.getElementById('maplibre-3d-view') && 
                        document.getElementById('maplibre-3d-view').style.display !== 'none';
 
     if (is3DActive) {
-        console.log("3D Mode active, skipping 2D map update and refreshing 3D data only.");
-        // Sadece 3D haritayı güncelle ve fonksiyonu bitir.
-        if (typeof refresh3DMapData === 'function') {
+        console.log("3D Mode active, updating 3D data and Scale Bar.");
+        
+        // 1. 3D Harita Verisini Güncelle
+        if (typeof refresh3DMapData === 'function') {function showRouteInfoBanner(day) {
+  const expandedContainer = document.getElementById(`expanded-map-${day}`);
+  if (!expandedContainer) return;
+
+  let banner = expandedContainer.querySelector('#route-info-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'route-info-banner';
+    banner.className = 'route-info-banner';
+    banner.innerHTML = `
+      <span>Click the map to list nearby restaurants, cafes and bars.</span>
+    `;
+    expandedContainer.prepend(banner);
+  }
+  
+  // --- Stil ve Animasyon Ayarları ---
+  banner.style.display = 'flex';
+  banner.style.cursor = 'pointer';
+  banner.style.transition = 'opacity 1s ease-out'; // Geçiş süresi
+  
+  // Başlangıçta görünür olması için (browser render'ı yakalasın diye ufak gecikme)
+  banner.style.opacity = '0';
+  requestAnimationFrame(() => {
+      banner.style.opacity = '1';
+  });
+
+  // --- ORTAK KAPATMA FONKSİYONU ---
+  // Bu fonksiyon çağrıldığında banner yavaşça solar ve sonra yok olur.
+  const fadeOutBanner = () => {
+      // Zaten kapanıyorsa tekrar işlem yapma
+      if (banner.style.opacity === '0') return;
+
+      // 1. Opaklığı düşür (Fade out başlar)
+      banner.style.opacity = '0';
+
+      // 2. Animasyon bitince (1 saniye sonra) ekrandan tamamen kaldır
+      setTimeout(() => {
+          banner.style.display = 'none';
+      }, 1000); 
+  };
+
+  // --- TIKLAYINCA KAPAT (Yavaşça) ---
+  banner.onclick = function() {
+    fadeOutBanner();
+  };
+
+  // --- X BUTONU VARSA ONA DA EKLE ---
+  const closeBtn = banner.querySelector('#close-route-info');
+  if (closeBtn) {
+    closeBtn.onclick = function(e) {
+      e.stopPropagation();
+      fadeOutBanner();
+    };
+  }
+
+  // --- OTOMATİK KAPANMA (4 saniye sonra yavaşça) ---
+  setTimeout(function() {
+    // Eğer kullanıcı henüz kapatmadıysa otomatik kapat
+    if (banner.style.display !== 'none') {
+        fadeOutBanner();
+    }
+  }, 4000);
+}
             refresh3DMapData(day);
         }
-        return; // <--- KRİTİK NOKTA: Aşağıdaki Leaflet kodlarını çalıştırma!
+
+        // --- FIX BAŞLANGICI: Scale Bar'ı 3D Modunda Manuel Tetikle ---
+        const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        const summary = window.lastRouteSummaries?.[containerId];
+
+        if (scaleBarDiv && summary && summary.distance > 0) {
+            const totalKm = summary.distance / 1000;
+            
+            // Marker pozisyonlarını hesapla
+            const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function') 
+                ? getRouteMarkerPositionsOrdered(day) 
+                : [];
+            
+            // Grafiği çiz
+            if (typeof renderRouteScaleBar === 'function') {
+                scaleBarDiv.innerHTML = ""; 
+                renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+                
+                // Grafikteki sayıları (1, 2, 3...) ekle
+                const track = scaleBarDiv.querySelector('.scale-bar-track');
+                if (track) {
+                    const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+                    if (typeof createScaleElements === 'function') {
+                        createScaleElements(track, width, totalKm, 0, markerPositions);
+                    }
+                }
+            }
+        }
+        // --- FIX BİTİŞİ ---
+
+        return; // Leaflet 2D işlemlerini yapmadan çık
     }
     // ===================================================
 
-    const containerId = `route-map-day${day}`;
+    // --- BURADAN AŞAĞISI 2D (LEAFLET) KODLARIDIR ---
     const geojson = window.lastRouteGeojsons?.[containerId];
 
     // --- 1. GÜVENLİ KATMAN TEMİZLİĞİ ---
@@ -6578,10 +6772,9 @@ function updateExpandedMap(expandedMap, day) {
     
     if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // --- SCALE BAR GÜNCELLEMESİ ---
+    // --- SCALE BAR GÜNCELLEMESİ (2D MODU) ---
     const summary = window.lastRouteSummaries?.[containerId];
     if (summary && typeof updateDistanceDurationUI === 'function') {
-        // sum -> summary düzeltmesi
         updateDistanceDurationUI(summary.distance, summary.duration);
     }
 
@@ -6610,6 +6803,14 @@ function updateExpandedMap(expandedMap, day) {
 }
  
 function restoreMap(containerId, day) {
+
+    // --- YENİ EKLENEN: Harita kapanınca Header'ı geri getir (Temizlik) ---
+    const mainHeader = document.querySelector('.fixed-header'); 
+    if (mainHeader) {
+        mainHeader.style.display = ''; // Inline stili siler, CSS'e geri döner
+    }
+    // --------------------------------------------------------------------
+    
     // containerId'den expandedData'yı bulmaya çalış, yoksa day üzerinden manuel temizlik yap
     const expandedData = window.expandedMaps?.[containerId];
     
