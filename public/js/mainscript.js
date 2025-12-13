@@ -5257,7 +5257,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
-        // Varsa eski zamanlayıcıyı temizle
+        // Varsa eski zamanlayıcıyı kesinlikle temizle
         if (oldMap._fallbackTimer) clearTimeout(oldMap._fallbackTimer);
         
         if (oldMap._maplibreLayer) {
@@ -5321,14 +5321,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     } catch (e) {}
 
     // --- TILE LAYER YÖNETİMİ ---
-    let layerSuccess = false; // Başarı bayrağı
-
+    
+    // Fallback Fonksiyonu (CartoDB)
     const loadCartoDB = () => {
-        // Eğer OpenFreeMap zaten başarılı olduysa sakın CartoDB açma!
-        if (layerSuccess || !map || !map._container) return;
+        // Eğer OpenFreeMap zaten başarılı olduysa (bayrak true ise) ASLA çalıştırma
+        if (map._ofmSuccess || !map || !map._container) return;
 
-        console.warn(`[SmallMap] Timeout doldu -> CartoDB açılıyor (${containerId}).`);
+        console.warn(`[SmallMap] OpenFreeMap yanıt vermedi -> CartoDB açılıyor (${containerId}).`);
         
+        // Yarım kalan katmanı temizle
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
             map._maplibreLayer = null;
@@ -5355,24 +5356,41 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 pane: 'tilePane'
             });
 
-            // --- DEĞİŞİKLİK BURADA ---
-            // Sadece "ready" sinyali bile yeterli. Harita motoru başladı demektir.
-            glLayer.on('ready', () => {
-                layerSuccess = true;
-                if (map._fallbackTimer) {
-                    clearTimeout(map._fallbackTimer);
-                    map._fallbackTimer = null;
-                }
-            });
-
             // Layer'ı ekle
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
 
-            // 5 Saniyelik Güvenlik Zamanlayıcısı
+            // --- DEĞİŞİKLİK BURADA: AGRESİF TAKİP ---
+            const markSuccess = (source) => {
+                if (map._ofmSuccess) return; // Zaten başarılı işaretlendiyse çık
+                
+                map._ofmSuccess = true; // BAŞARI BAYRAĞINI DİK
+                // console.log(`[SmallMap] Sinyal alındı: ${source}. Fallback iptal.`);
+                
+                if (map._fallbackTimer) {
+                    clearTimeout(map._fallbackTimer);
+                    map._fallbackTimer = null;
+                }
+            };
+
+            // 1. Leaflet eventi
+            glLayer.on('ready', () => markSuccess('ready'));
+            glLayer.on('load', () => markSuccess('load'));
+
+            // 2. MapLibre Core eventleri (Daha erken tetiklenir)
+            const glMap = glLayer.getMaplibreMap();
+            if (glMap) {
+                // "styledata": Stil dosyası indiği an
+                glMap.once('styledata', () => markSuccess('styledata'));
+                // "data": Herhangi bir veri işlendiği an
+                glMap.once('data', () => markSuccess('data'));
+            }
+
+            // 3000ms Zamanlayıcı
             map._fallbackTimer = setTimeout(() => {
-                if (!layerSuccess) loadCartoDB();
-            }, 5000);
+                // Süre dolduğunda bayrak hala false ise değiştir
+                if (!map._ofmSuccess) loadCartoDB();
+            }, 3000);
 
         } catch (e) {
             loadCartoDB();
