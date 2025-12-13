@@ -5257,6 +5257,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
+        // Eski zamanlayıcıyı kesinlikle temizle
         if (oldMap._fallbackTimer) clearTimeout(oldMap._fallbackTimer);
         
         if (oldMap._maplibreLayer) {
@@ -5319,16 +5320,12 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-    // --- TILE LAYER YÖNETİMİ ---
-    
-    // Fallback: CartoDB Yükle (Güvenli)
+    // --- TILE LAYER YÖNETİMİ (KÜÇÜK HARİTA İÇİN) ---
     const loadCartoDB = () => {
-        // Harita yoksa veya container silindiyse iptal et (HATA ÖNLEYİCİ)
-        if (!map || !map._container || !sidebarContainer.isConnected) return;
-        
-        if (map._hasTileLayer) return;
+        // Harita zaten başarılıysa (OpenFreeMap geldiyse) dokunma
+        if (!map || !map._container || map._ofmSuccess) return;
 
-        console.log(`[Map] CartoDB yükleniyor (${containerId})...`);
+        console.warn(`[SmallMap] Timeout doldu veya hata -> CartoDB açılıyor (${containerId}).`);
         
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
@@ -5342,10 +5339,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 maxZoom: 20,
                 pane: 'tilePane'
             }).addTo(map);
-            map._hasTileLayer = true;
-        } catch (err) {
-            console.warn("[Map] CartoDB yükleme hatası (önemsiz):", err);
-        }
+        } catch (err) {}
     };
 
     let vectorSupported = (typeof L.maplibreGL === 'function');
@@ -5359,23 +5353,38 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 pane: 'tilePane'
             });
 
-            glLayer.on('ready', () => {
-                map._hasTileLayer = true;
-                if (map._fallbackTimer) clearTimeout(map._fallbackTimer);
-            });
-
-            // Pane kontrolü (Garanti olsun)
-            if (!map.getPane('tilePane')) map.createPane('tilePane');
-
+            // 1. Layer'ı ekle
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
 
-            // 5 Saniye Timeout
-            map._fallbackTimer = setTimeout(() => {
-                if (!map._hasTileLayer) {
-                    console.warn(`[Map] OpenFreeMap 3sn içinde yanıt vermedi. Fallback...`);
-                    loadCartoDB();
+            // 2. Sinyal Takibi (İptal Fonksiyonu)
+            const markSuccess = (source) => {
+                if (map._ofmSuccess) return; // Zaten başarılı işaretlendiyse çık
+                map._ofmSuccess = true; // BAŞARILI BAYRAĞINI DİK
+                // console.log(`[SmallMap] OpenFreeMap BAŞARILI (${source}). Zamanlayıcı iptal.`);
+                if (map._fallbackTimer) {
+                    clearTimeout(map._fallbackTimer);
+                    map._fallbackTimer = null;
                 }
+            };
+
+            // 3. Leaflet Eklentisi Üzerinden Dinle
+            glLayer.on('ready', () => markSuccess('layer-ready'));
+            glLayer.on('load', () => markSuccess('layer-load'));
+
+            // 4. MapLibre Core Üzerinden Dinle (Daha hassas)
+            const glMap = glLayer.getMaplibreMap();
+            if (glMap) {
+                glMap.once('styledata', () => markSuccess('styledata')); // Stil indiği an
+                glMap.once('sourcedata', () => markSuccess('sourcedata')); // Veri indiği an
+                glMap.once('data', () => markSuccess('data')); // Herhangi bir veri
+                glMap.once('load', () => markSuccess('core-load'));
+            }
+
+            // 5. Zamanlayıcı (3000ms)
+            map._fallbackTimer = setTimeout(() => {
+                // Eğer bayrak dikilmediyse değiştir
+                if (!map._ofmSuccess) loadCartoDB();
             }, 3000);
 
         } catch (e) {
