@@ -5373,10 +5373,10 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             // 5 Saniye Timeout
             map._fallbackTimer = setTimeout(() => {
                 if (!map._hasTileLayer) {
-                    console.warn(`[Map] OpenFreeMap 5sn içinde yanıt vermedi. Fallback...`);
+                    console.warn(`[Map] OpenFreeMap 3sn içinde yanıt vermedi. Fallback...`);
                     loadCartoDB();
                 }
-            }, 5000);
+            }, 3000);
 
         } catch (e) {
             loadCartoDB();
@@ -6836,7 +6836,7 @@ function restoreMap(containerId, day) {
         mainHeader.style.display = ''; // Inline stili siler, CSS'e geri döner
     }
     // --------------------------------------------------------------------
-    
+
     // containerId'den expandedData'yı bulmaya çalış, yoksa day üzerinden manuel temizlik yap
     const expandedData = window.expandedMaps?.[containerId];
     
