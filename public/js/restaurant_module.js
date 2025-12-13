@@ -1146,6 +1146,7 @@ function addRoutePolylineWithClick(map, coords) {
 
     return routeLine;
 }
+
 function showRouteInfoBanner(day) {
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
   if (!expandedContainer) return;
@@ -1161,40 +1162,53 @@ function showRouteInfoBanner(day) {
     expandedContainer.prepend(banner);
   }
   
-  // --- Stil Ayarları (Transition Eklendi) ---
+  // --- Stil ve Animasyon Ayarları ---
   banner.style.display = 'flex';
   banner.style.cursor = 'pointer';
+  banner.style.transition = 'opacity 1s ease-out'; // Geçiş süresi
   
-  // Geçiş efektinin çalışması için transition ekliyoruz
-  banner.style.transition = 'opacity 1s ease-out';
-  
-  // Başlangıçta görünür olması için (browser'ın algılaması için ufak gecikme)
+  // Başlangıçta görünür olması için (browser render'ı yakalasın diye ufak gecikme)
   banner.style.opacity = '0';
   requestAnimationFrame(() => {
       banner.style.opacity = '1';
   });
 
-  // --- TIKLAYINCA KAPAT (Hemen yok olsun) ---
-  banner.onclick = function() {
-    banner.style.display = 'none';
+  // --- ORTAK KAPATMA FONKSİYONU ---
+  // Bu fonksiyon çağrıldığında banner yavaşça solar ve sonra yok olur.
+  const fadeOutBanner = () => {
+      // Zaten kapanıyorsa tekrar işlem yapma
+      if (banner.style.opacity === '0') return;
+
+      // 1. Opaklığı düşür (Fade out başlar)
+      banner.style.opacity = '0';
+
+      // 2. Animasyon bitince (1 saniye sonra) ekrandan tamamen kaldır
+      setTimeout(() => {
+          banner.style.display = 'none';
+      }, 1000); 
   };
 
-  // --- OTOMATİK FADE OUT KAPANMA ---
-  // 4 saniye bekle, sonra solmaya başla
+  // --- TIKLAYINCA KAPAT (Yavaşça) ---
+  banner.onclick = function() {
+    fadeOutBanner();
+  };
+
+  // --- X BUTONU VARSA ONA DA EKLE ---
+  const closeBtn = banner.querySelector('#close-route-info');
+  if (closeBtn) {
+    closeBtn.onclick = function(e) {
+      e.stopPropagation();
+      fadeOutBanner();
+    };
+  }
+
+  // --- OTOMATİK KAPANMA (4 saniye sonra yavaşça) ---
   setTimeout(function() {
-    // 1. Opaklığı sıfıra çek (CSS transition sayesinde yavaşça olur)
+    // Eğer kullanıcı henüz kapatmadıysa otomatik kapat
     if (banner.style.display !== 'none') {
-        banner.style.opacity = '0';
+        fadeOutBanner();
     }
-
-    // 2. Animasyon süresi (1sn) bittikten sonra display: none yap
-    setTimeout(function() {
-      if (banner.style.display !== 'none') {
-        banner.style.display = 'none';
-      }
-    }, 1000); // CSS'teki 1s transition süresiyle aynı olmalı
-
-  }, 4000); // 4 saniye tam görünür kalır + 1 saniye solma süresi = Toplam 5 saniye
+  }, 4000);
 }
 
 async function getRestaurantPopupHTML(f, day) {

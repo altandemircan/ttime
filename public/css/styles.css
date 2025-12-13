@@ -7001,7 +7001,7 @@ position: absolute;
     top: 24px;
     left: 50%;
     transform: translateX(-50%);
-    color: #8a4af3;
+    color: #ffffff;
     box-shadow: 0 4px 24px #0006;
     z-index: 1008;
     opacity: 1;
@@ -7010,13 +7010,13 @@ position: absolute;
     align-items: center;
     gap: 0px;
     padding: 6px 12px;
-    background: #ffffff;
+    background: #8a4af3;
     border-radius: 30px;
-    transition: all 0.2s 
-ease;
+    transition: all 0.2s ease;
     font-size: 13px;
     font-weight: 600;
-            text-align: center;
+    text-align: center;
+    display: block;
 }
 .route-info-close {
         background: none;
@@ -7037,8 +7037,7 @@ ease;
   .route-info-banner {
    position: absolute;
         /* top: 10px; */
-        left: 15px;
-        color: #ffffff;
+        left: 15px;        
         box-shadow: 0 4px 24px #0000000a;
         /* z-index: 1008; */
         opacity: 1;
@@ -7057,7 +7056,7 @@ ease;
               margin: 0 auto;
         width: -webkit-fill-available;
         right: 15px;
-        background: #8a4af3;
+      
                 margin-top: -20px;
                         text-align: center;
   }
