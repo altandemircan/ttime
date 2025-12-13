@@ -1325,20 +1325,6 @@ document.querySelectorAll('.add_theme').forEach(btn => {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-// .addtotrip butonuna basıldığında day bilgisini stepsDiv'den veya window.currentDay'den al.
-// 1) Kategori/slider'dan sepete ekleme (.addtotrip handler)
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
         document.removeEventListener('click', window.__triptime_addtotrip_listener);
@@ -1384,18 +1370,28 @@ function initializeAddToTripListener() {
             website
         );
 
+        // Buton animasyonu
         btn.classList.add('added');
         setTimeout(() => btn.classList.remove('added'), 1000);
 
         if (typeof restoreSidebar === "function") restoreSidebar();
         if (typeof updateCart === "function") updateCart();
 
+        // --- YENİ EKLENEN KISIM: MOBİLDE SIDEBAR'I AÇ ---
+        if (window.innerWidth <= 768) {
+            // CSS yapınıza göre sidebar class'larını kontrol edip açıyoruz
+            const sidebarTrip = document.querySelector('.sidebar-trip');
+            const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
+
+            if (sidebarTrip) sidebarTrip.classList.add('open');
+            if (sidebarOverlay) sidebarOverlay.classList.add('open');
+        }
+        // -----------------------------------------------
     };
 
     document.addEventListener('click', listener);
     window.__triptime_addtotrip_listener = listener;
 }
-
 // Listener'ı başlat
 initializeAddToTripListener();
 
@@ -6552,7 +6548,69 @@ function updateExpandedMap(expandedMap, day) {
         console.log("3D Mode active, updating 3D data and Scale Bar.");
         
         // 1. 3D Harita Verisini Güncelle
-        if (typeof refresh3DMapData === 'function') {
+        if (typeof refresh3DMapData === 'function') {function showRouteInfoBanner(day) {
+  const expandedContainer = document.getElementById(`expanded-map-${day}`);
+  if (!expandedContainer) return;
+
+  let banner = expandedContainer.querySelector('#route-info-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'route-info-banner';
+    banner.className = 'route-info-banner';
+    banner.innerHTML = `
+      <span>Click the map to list nearby restaurants, cafes and bars.</span>
+    `;
+    expandedContainer.prepend(banner);
+  }
+  
+  // --- Stil ve Animasyon Ayarları ---
+  banner.style.display = 'flex';
+  banner.style.cursor = 'pointer';
+  banner.style.transition = 'opacity 1s ease-out'; // Geçiş süresi
+  
+  // Başlangıçta görünür olması için (browser render'ı yakalasın diye ufak gecikme)
+  banner.style.opacity = '0';
+  requestAnimationFrame(() => {
+      banner.style.opacity = '1';
+  });
+
+  // --- ORTAK KAPATMA FONKSİYONU ---
+  // Bu fonksiyon çağrıldığında banner yavaşça solar ve sonra yok olur.
+  const fadeOutBanner = () => {
+      // Zaten kapanıyorsa tekrar işlem yapma
+      if (banner.style.opacity === '0') return;
+
+      // 1. Opaklığı düşür (Fade out başlar)
+      banner.style.opacity = '0';
+
+      // 2. Animasyon bitince (1 saniye sonra) ekrandan tamamen kaldır
+      setTimeout(() => {
+          banner.style.display = 'none';
+      }, 1000); 
+  };
+
+  // --- TIKLAYINCA KAPAT (Yavaşça) ---
+  banner.onclick = function() {
+    fadeOutBanner();
+  };
+
+  // --- X BUTONU VARSA ONA DA EKLE ---
+  const closeBtn = banner.querySelector('#close-route-info');
+  if (closeBtn) {
+    closeBtn.onclick = function(e) {
+      e.stopPropagation();
+      fadeOutBanner();
+    };
+  }
+
+  // --- OTOMATİK KAPANMA (4 saniye sonra yavaşça) ---
+  setTimeout(function() {
+    // Eğer kullanıcı henüz kapatmadıysa otomatik kapat
+    if (banner.style.display !== 'none') {
+        fadeOutBanner();
+    }
+  }, 4000);
+}
             refresh3DMapData(day);
         }
 
