@@ -6471,6 +6471,13 @@ async function expandMap(containerId, day) {
                 subdomains: 'abcd',
                 maxZoom: 20
             }).addTo(expandedMapInstance);
+
+            // --- 3D SEÇENEĞİNİ GİZLE ---
+            // Eğer Bright (OpenFreeMap) çöktüyse, 3D de çalışmaz. Menüden gizle.
+            const btn3d = layersBar.querySelector('.map-type-option[data-value="liberty"]');
+            if (btn3d) {
+                btn3d.style.display = 'none';
+            }
         };
 
         // --- 2. STİL MANTIĞI ---
@@ -6507,18 +6514,31 @@ async function expandMap(containerId, day) {
                     interactive: true
                 });
 
-                let loaded = false;
-                glLayer.getMaplibreMap().on('load', () => {
-                    loaded = true;
-                    if (expandedMapInstance._tileTimeout) clearTimeout(expandedMapInstance._tileTimeout);
-                });
-
+                // ÖNCE HARİTAYA EKLE (Hata almamak için)
                 glLayer.addTo(expandedMapInstance);
                 expandedMapInstance._maplibreLayer = glLayer;
 
+                // SONRA DİNLE (Sıralama önemli)
+                const glMap = glLayer.getMaplibreMap();
+                
+                let isReady = false;
+                const markReady = () => {
+                    if (isReady) return;
+                    isReady = true;
+                    console.log("[ExpandedMap] OpenFreeMap SUCCESS (Signal Received).");
+                    if (expandedMapInstance._tileTimeout) clearTimeout(expandedMapInstance._tileTimeout);
+                };
+
+                if (glMap) {
+                    // "load" harita tam yüklendiğinde, "styledata" stil verisi geldiğinde tetiklenir.
+                    // "styledata" çok daha hızlıdır ve haritanın canlı olduğunu kanıtlar.
+                    glMap.once('styledata', markReady);
+                    glMap.once('load', markReady);
+                }
+
                 // 3 Saniye Kuralı (3000ms)
                 expandedMapInstance._tileTimeout = setTimeout(() => {
-                    if (!loaded) loadCartoFallback();
+                    if (!isReady) loadCartoFallback();
                 }, 3000);
 
             } else {
@@ -6533,21 +6553,31 @@ async function expandMap(containerId, day) {
     setExpandedMapTile(currentLayer);
     updateExpandedMap(expandedMapInstance, day);
 
-    setTimeout(() => {
-        expandedMapInstance.invalidateSize();
-        const container = expandedMapInstance.getContainer();
-        if (container) {
-            container.style.cursor = 'grab';
-            container.classList.remove('leaflet-interactive');
-        }
-        if (typeof attachClickNearbySearch === 'function') {
-            if (expandedMapInstance.__ttNearbyClickBound) {
-                expandedMapInstance.off('click', expandedMapInstance.__ttNearbyClickHandler);
-                expandedMapInstance.__ttNearbyClickBound = false;
+    // --- [CRITICAL FIX] HARİTA ODAKLAMA VE RENDER ---
+    const refitExpandedMap = () => {
+        // Harita containerı DOM'da yoksa işlem yapma
+        if (!expandedMapInstance || !document.getElementById(mapDivId)) return;
+        
+        try {
+            expandedMapInstance.invalidateSize();
+            const container = expandedMapInstance.getContainer();
+            if (container) {
+                container.style.cursor = 'grab';
+                container.classList.remove('leaflet-interactive');
             }
-            attachClickNearbySearch(expandedMapInstance, day);
+        } catch(e) {}
+    };
+
+    requestAnimationFrame(refitExpandedMap);
+    setTimeout(refitExpandedMap, 350);
+
+    if (typeof attachClickNearbySearch === 'function') {
+        if (expandedMapInstance.__ttNearbyClickBound) {
+            expandedMapInstance.off('click', expandedMapInstance.__ttNearbyClickHandler);
+            expandedMapInstance.__ttNearbyClickBound = false;
         }
-    }, 350);
+        attachClickNearbySearch(expandedMapInstance, day);
+    }
 
     window.expandedMaps = window.expandedMaps || {};
     window.expandedMaps[containerId] = {
