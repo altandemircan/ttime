@@ -5240,7 +5240,7 @@ function addNumberedMarkers(map, points) {
 }
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
-    // 1. KÜTÜPHANE KONTROLÜ (Leaflet Yoksa Bekle)
+    // 1. KÜTÜPHANE KONTROLÜ
     if (typeof L === 'undefined') {
         setTimeout(() => renderLeafletRoute(containerId, geojson, points, summary, day, missingPoints), 100);
         return;
@@ -5257,7 +5257,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
-        // Varsa timeout temizle
         if (oldMap._fallbackTimer) clearTimeout(oldMap._fallbackTimer);
         
         if (oldMap._maplibreLayer) {
@@ -5276,7 +5275,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.classList.remove("big-map", "full-screen-map");
     sidebarContainer.style.backgroundColor = "#eef0f5";
 
-    // 4. ALT KONTROLLER & SUMMARY
+    // 4. ALT KONTROLLER
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
     document.getElementById(controlsWrapperId)?.remove();
 
@@ -5315,41 +5314,42 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         inertia: false
     });
 
-    map.createPane('customRoutePane');
-    map.getPane('customRoutePane').style.zIndex = 450;
+    // Custom Pane Oluştur (Hata almamak için try-catch)
+    try {
+        map.createPane('customRoutePane');
+        map.getPane('customRoutePane').style.zIndex = 450;
+    } catch (e) { console.warn("Pane creation error", e); }
 
-    // --- TILE LAYER YÖNETİMİ (ÖNCELİK & FALLBACK) ---
-    
-    // Fallback Fonksiyonu: CartoDB Yükler
+    // --- FALLBACK MANTIĞI ---
     const loadCartoDB = () => {
-        // Eğer zaten bir tile layer varsa (örn: OpenFreeMap geldiyse) işlem yapma
+        // Harita yok edilmişse işlem yapma (GridLayer hatasını önler)
+        if (!map || !map._container) return;
         if (map._hasTileLayer) return;
 
         console.log(`[Map] CartoDB yükleniyor (${containerId})...`);
         
-        // Varsa yarım kalan GL layer'ı temizle
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
             map._maplibreLayer = null;
         }
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20,
-            pane: 'tilePane'
-        }).addTo(map);
-        
-        map._hasTileLayer = true; // Flag: Bir katman yüklendi
+        try {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20,
+                pane: 'tilePane' // tilePane yoksa default pane kullanır
+            }).addTo(map);
+            map._hasTileLayer = true;
+        } catch (err) {
+            console.error("[Map] CartoDB yükleme hatası:", err);
+        }
     };
 
-    // OpenFreeMap Denemesi
     let vectorSupported = (typeof L.maplibreGL === 'function');
     
     if (vectorSupported) {
         try {
-            console.log(`[Map] OpenFreeMap deneniyor (${containerId})...`);
-            
             const glLayer = L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/bright',
                 attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
@@ -5357,17 +5357,17 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 pane: 'tilePane'
             });
 
-            // "ready" veya "load" olduğunda başarılı say
             glLayer.on('ready', () => {
-                console.log(`[Map] OpenFreeMap BAŞARILI (${containerId})`);
                 map._hasTileLayer = true;
                 if (map._fallbackTimer) clearTimeout(map._fallbackTimer);
             });
 
+            // Tile pane kontrolü
+            if (!map.getPane('tilePane')) map.createPane('tilePane');
+
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
 
-            // 5 Saniye Zamanlayıcı
             map._fallbackTimer = setTimeout(() => {
                 if (!map._hasTileLayer) {
                     console.warn(`[Map] OpenFreeMap 5sn içinde yanıt vermedi. Fallback...`);
@@ -5376,14 +5376,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             }, 5000);
 
         } catch (e) {
-            console.warn("[Map] OpenFreeMap hata verdi:", e);
-            loadCartoDB(); // Hata varsa anında geç
+            loadCartoDB();
         }
     } else {
-        console.warn("[Map] MapLibre eklentisi yok. Direkt CartoDB.");
-        loadCartoDB(); // Kütüphane yoksa anında geç
+        loadCartoDB();
     }
-    // ------------------------------------------------
 
     let bounds = L.latLngBounds();
     points = points.filter(p => isFinite(Number(p.lat)) && isFinite(Number(p.lng)));
