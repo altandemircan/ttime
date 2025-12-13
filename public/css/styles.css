@@ -7054,11 +7054,11 @@ ease;
         font-weight: 600;
         transform: none;
         /* margin-top: -60px; */
-        display: block !important;
-        margin: 0 auto;
+              margin: 0 auto;
         width: -webkit-fill-available;
-        right: 16px;
+        right: 15px;
         background: #8a4af3;
+                margin-top: -20px;
   }
 }
 
