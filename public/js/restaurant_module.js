@@ -1146,7 +1146,6 @@ function addRoutePolylineWithClick(map, coords) {
 
     return routeLine;
 }
-
 function showRouteInfoBanner(day) {
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
   if (!expandedContainer) return;
@@ -1158,36 +1157,44 @@ function showRouteInfoBanner(day) {
     banner.className = 'route-info-banner';
     banner.innerHTML = `
       <span>Click the map to list nearby restaurants, cafes and bars.</span>
-    
     `;
     expandedContainer.prepend(banner);
   }
   
+  // --- Stil Ayarları (Transition Eklendi) ---
   banner.style.display = 'flex';
-  
-  // Tıklanabilir olduğunu göstermek için imleci değiştir
   banner.style.cursor = 'pointer';
+  
+  // Geçiş efektinin çalışması için transition ekliyoruz
+  banner.style.transition = 'opacity 1s ease-out';
+  
+  // Başlangıçta görünür olması için (browser'ın algılaması için ufak gecikme)
+  banner.style.opacity = '0';
+  requestAnimationFrame(() => {
+      banner.style.opacity = '1';
+  });
 
-  // --- TÜM KUTUYA TIKLAYINCA KAPAT ---
+  // --- TIKLAYINCA KAPAT (Hemen yok olsun) ---
   banner.onclick = function() {
     banner.style.display = 'none';
   };
 
-  // X butonuna basılınca da kapansın (Bubble etkisini beklemeden)
-  const closeBtn = banner.querySelector('#close-route-info');
-  if (closeBtn) {
-    closeBtn.onclick = function(e) {
-      e.stopPropagation(); // Banner click'ini tetiklemesin, direkt kapatsın
-      banner.style.display = 'none';
-    };
-  }
-
-  // Otomatik kapanma (5 saniye)
+  // --- OTOMATİK FADE OUT KAPANMA ---
+  // 4 saniye bekle, sonra solmaya başla
   setTimeout(function() {
+    // 1. Opaklığı sıfıra çek (CSS transition sayesinde yavaşça olur)
     if (banner.style.display !== 'none') {
-      banner.style.display = 'none';
+        banner.style.opacity = '0';
     }
-  }, 5000);
+
+    // 2. Animasyon süresi (1sn) bittikten sonra display: none yap
+    setTimeout(function() {
+      if (banner.style.display !== 'none') {
+        banner.style.display = 'none';
+      }
+    }, 1000); // CSS'teki 1s transition süresiyle aynı olmalı
+
+  }, 4000); // 4 saniye tam görünür kalır + 1 saniye solma süresi = Toplam 5 saniye
 }
 
 async function getRestaurantPopupHTML(f, day) {
