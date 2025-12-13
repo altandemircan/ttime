@@ -5756,14 +5756,14 @@ function saveArcPointsForDay(day, points) {
 }
 
 // 3D Harita Verisini (Rota ve Markerlar) Yenileme Fonksiyonu
+// 3D Harita Verisini (Rota ve Markerlar) Yenileme Fonksiyonu
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
     
     // Harita yoksa veya stil yüklenmediyse çık
     if (!map || !map.getStyle()) return;
 
-    // --- 1. VERİYİ DOĞRUDAN GLOBAL KAYNAKTAN ÇEK (Canlı Veri) ---
-    // Argüman beklemiyoruz, o an hafızada ne varsa en doğrusu odur.
+    // --- 1. VERİYİ DOĞRUDAN GLOBAL KAYNAKTAN ÇEK ---
     const points = (typeof getDayPoints === 'function' ? getDayPoints(day) : []);
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
@@ -5783,17 +5783,14 @@ function refresh3DMapData(day) {
     // --- 2. TEMİZLİK (ESKİ KATMANLARI SÖK AT) ---
     // ============================================================
     
-    // Markerları sil
     if (window._maplibreRouteMarkers) {
         window._maplibreRouteMarkers.forEach(m => m.remove());
     }
     window._maplibreRouteMarkers = [];
 
-    // Normal Rota katmanlarını ve kaynaklarını sil
     if (map.getLayer('route-line')) map.removeLayer('route-line');
     if (map.getSource('route-source-dynamic')) map.removeSource('route-source-dynamic');
     
-    // Fly Mode katmanlarını temizle
     const style = map.getStyle();
     if (style && style.layers) {
         style.layers.forEach(l => {
@@ -5805,24 +5802,31 @@ function refresh3DMapData(day) {
     }
 
     // ============================================================
-    // --- 3. ROTA ÇİZİMİ (SIFIRDAN EKLE) ---
+    // --- 3. ROTA ÇİZİMİ VE VERİ EŞİTLEME (FIX) ---
     // ============================================================
     
+    // Scale Bar Cache'ini kesinlikle temizle (Marker kaymasını önler)
+    const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (scaleBar) {
+        scaleBar._routeCache = null; 
+    }
+
     if (!isFlyMode) {
-        // --- NORMAL ROTA ---
+        // --- NORMAL ROTA (ROAD) ---
+        // Road modunda global curved verisini temizle ki scale bar GeoJSON kullansın
+        if (window._curvedArcPointsByDay) window._curvedArcPointsByDay[day] = null;
+
         let finalGeoJSON = {
             type: 'Feature',
             properties: {},
             geometry: { type: 'LineString', coordinates: routeCoords }
         };
 
-        // Fallback: Rota yoksa kuş uçuşu çiz
         if (routeCoords.length < 2 && validPoints.length > 1) {
              finalGeoJSON.geometry.coordinates = validPoints.map(p => [p.lng, p.lat]);
         }
 
         if (finalGeoJSON.geometry.coordinates.length > 1) {
-            // Kaynağı ve Layer'ı sıfırdan ekliyoruz (setData kullanmıyoruz, garanti olsun)
             map.addSource('route-source-dynamic', {
                 type: 'geojson',
                 data: finalGeoJSON
@@ -5832,19 +5836,16 @@ function refresh3DMapData(day) {
                 id: 'route-line',
                 type: 'line',
                 source: 'route-source-dynamic',
-                layout: {
-                    'line-join': 'round',
-                    'line-cap': 'round'
-                },
-                paint: {
-                    'line-color': '#1976d2',
-                    'line-width': 8,
-                    'line-opacity': 0.9
-                }
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
             });
         }
     } else {
-        // --- FLY MODE ---
+        // --- FLY MODE (KAVİSLİ ROTA) ---
+        // Markerların çizgi üzerinde gezmesi için, çizilen kavis noktalarını
+        // Scale Bar'ın okuduğu global değişkene kaydetmeliyiz.
+        let allCurvePoints = [];
+
         if (validPoints.length > 1) {
             for (let i = 0; i < validPoints.length - 1; i++) {
                 const start = [validPoints[i].lng, validPoints[i].lat];
@@ -5852,6 +5853,11 @@ function refresh3DMapData(day) {
                 const curveCoords = (typeof getCurvedArcCoords === 'function') 
                                     ? getCurvedArcCoords(start, end) 
                                     : [start, end];
+
+                // Global diziye ekle (Leaflet formatı için [Lat, Lng] çevirebiliriz ama
+                // getCurvedArcCoords [Lng, Lat] döner. ScaleBar helper'ı bunu yönetir.)
+                // Önemli olan verinin aynı olmasıdır.
+                allCurvePoints = allCurvePoints.concat(curveCoords);
 
                 const sId = `flyroute-${i}`;
                 const lId = `flyroute-line-${i}`;
@@ -5863,6 +5869,13 @@ function refresh3DMapData(day) {
                     paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
                 });
             }
+            
+            // FIX: 3D haritada görünen kavisli yolu Scale Bar'a bildir
+            if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
+            // Scale bar [Lat, Lng] bekleyebilir, formatı kontrol edelim. 
+            // Genelde [Lng, Lat] gelir. ScaleBar'da "fly_arc" kaynağı varsa çevrilir.
+            // Burada ham veriyi kaydediyoruz.
+            window._curvedArcPointsByDay[day] = allCurvePoints;
         }
     }
 
