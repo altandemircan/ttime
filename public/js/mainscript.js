@@ -5037,55 +5037,28 @@ async function getPlaceInfoFromLatLng(lat, lng) {
 }
 
 function toggleContent(arrowIcon) {
-    // Ok ikonuna (img) tıklandığında parent elemanları bul
     const cartItem = arrowIcon.closest('.cart-item');
     if (!cartItem) return;
-    
     const contentDiv = cartItem.querySelector('.content');
     if (!contentDiv) return;
-    
-    // --- 1. Ok Döndürme (Eski Basit Yöntem) ---
-    // Tıklanan element (this) doğrudan resim (img) olduğu için sınıfı onda değiştiriyoruz.
-    arrowIcon.classList.toggle('rotated');
-
-    // --- 2. İçeriği Aç/Kapa ---
     contentDiv.classList.toggle('open');
-    
     if (contentDiv.classList.contains('open')) {
         contentDiv.style.display = 'block';
-
-        // --- 3. Liste Kesilme Sorunu İçin JS Yaması ---
-        // İçerik açıldığında, ana gün listesinin (accordion-content) yüksekliğini serbest bırak
-        const parentAccordionContent = cartItem.closest('.accordion-content');
-        if (parentAccordionContent) {
-            parentAccordionContent.style.maxHeight = "none";
-            parentAccordionContent.style.overflow = "visible";
-        }
-
-        // --- 4. Harita Yükleme (OpenFreeMap) ---
-        const item = cartItem.closest('.travel-item');
-        if (item) {
-            const mapDiv = item.querySelector('.leaflet-map');
-            // Harita div'i varsa ve henüz yüklenmediyse
-            if (mapDiv) {
-                const mapId = mapDiv.id;
-                const lat = parseFloat(item.dataset.lat || item.getAttribute('data-lat'));
-                const lon = parseFloat(item.dataset.lon || item.getAttribute('data-lon'));
-                
-                const titleEl = item.querySelector('.toggle-title');
-                const name = titleEl ? titleEl.textContent : 'Location';
-                const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
-
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    // Harita renderı için ufak gecikme (display:block olduktan sonra)
-                    setTimeout(() => {
-                        createLeafletMapForItem(mapId, lat, lon, name, number);
-                    }, 50);
-                }
-            }
-        }
     } else {
         contentDiv.style.display = 'none';
+    }
+
+    // EK: Leaflet haritayı başlat
+    const item = cartItem.closest('.travel-item');
+    if (!item) return;
+    const mapDiv = item.querySelector('.leaflet-map');
+    if (mapDiv && mapDiv.offsetParent !== null) {
+        const mapId = mapDiv.id;
+        const lat = parseFloat(item.getAttribute('data-lat'));
+        const lon = parseFloat(item.getAttribute('data-lon'));
+        const name = item.querySelector('.toggle-title').textContent;
+        const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+        createLeafletMapForItem(mapId, lat, lon, name, number);
     }
 }
 

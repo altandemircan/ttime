@@ -4383,9 +4383,9 @@ input[type="checkbox"].accordion-toggle {
  
 }
 input[type="checkbox"].accordion-toggle:checked ~ .accordion-content {
-    max-height: none !important; /* Yükseklik sınırını kaldırır, listenin tamamı görünür */
+    max-height: 5000px;
     padding: 20px 0;
-    overflow: visible !important; /* Taşmalara izin verir */
+    overflow: visible;
 }
 input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-arrow {
     transform: rotate(180deg);
