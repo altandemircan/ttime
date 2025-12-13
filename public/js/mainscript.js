@@ -5037,30 +5037,6 @@ async function getPlaceInfoFromLatLng(lat, lng) {
 }
 
 function toggleContent(arrowIcon) {
-    const cartItem = arrowIcon.closest('.cart-item');
-    if (!cartItem) return;
-    const contentDiv = cartItem.querySelector('.content');
-    if (!contentDiv) return;
-    contentDiv.classList.toggle('open');
-    if (contentDiv.classList.contains('open')) {
-        contentDiv.style.display = 'block';
-    } else {
-        contentDiv.style.display = 'none';
-    }
-
-    // EK: Leaflet haritayı başlat
-    const item = cartItem.closest('.travel-item');
-    if (!item) return;
-    const mapDiv = item.querySelector('.leaflet-map');
-    if (mapDiv && mapDiv.offsetParent !== null) {
-        const mapId = mapDiv.id;
-        const lat = parseFloat(item.getAttribute('data-lat'));
-        const lon = parseFloat(item.getAttribute('data-lon'));
-        const name = item.querySelector('.toggle-title').textContent;
-        const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
-        createLeafletMapForItem(mapId, lat, lon, name, number);
-    }
-}
 
 
 
