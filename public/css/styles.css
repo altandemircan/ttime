@@ -5203,8 +5203,9 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   .expanded-map-container {
     z-index: 1005 !important;
     width: 100% !important;
-        max-height: calc(100vh - 60px);
+        /*max-height: calc(100vh - 60px);*/
            background-color: #ffffff;
+           top: 0;
   }
 }
 @keyframes spin {
