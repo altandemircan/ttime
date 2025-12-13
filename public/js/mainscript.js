@@ -5314,16 +5314,18 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         inertia: false
     });
 
-    // Custom Pane Oluştur (Hata almamak için try-catch)
     try {
         map.createPane('customRoutePane');
         map.getPane('customRoutePane').style.zIndex = 450;
-    } catch (e) { console.warn("Pane creation error", e); }
+    } catch (e) {}
 
-    // --- FALLBACK MANTIĞI ---
+    // --- TILE LAYER YÖNETİMİ ---
+    
+    // Fallback: CartoDB Yükle (Güvenli)
     const loadCartoDB = () => {
-        // Harita yok edilmişse işlem yapma (GridLayer hatasını önler)
-        if (!map || !map._container) return;
+        // Harita yoksa veya container silindiyse iptal et (HATA ÖNLEYİCİ)
+        if (!map || !map._container || !sidebarContainer.isConnected) return;
+        
         if (map._hasTileLayer) return;
 
         console.log(`[Map] CartoDB yükleniyor (${containerId})...`);
@@ -5338,11 +5340,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 20,
-                pane: 'tilePane' // tilePane yoksa default pane kullanır
+                pane: 'tilePane'
             }).addTo(map);
             map._hasTileLayer = true;
         } catch (err) {
-            console.error("[Map] CartoDB yükleme hatası:", err);
+            console.warn("[Map] CartoDB yükleme hatası (önemsiz):", err);
         }
     };
 
@@ -5362,12 +5364,13 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 if (map._fallbackTimer) clearTimeout(map._fallbackTimer);
             });
 
-            // Tile pane kontrolü
+            // Pane kontrolü (Garanti olsun)
             if (!map.getPane('tilePane')) map.createPane('tilePane');
 
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
 
+            // 5 Saniye Timeout
             map._fallbackTimer = setTimeout(() => {
                 if (!map._hasTileLayer) {
                     console.warn(`[Map] OpenFreeMap 5sn içinde yanıt vermedi. Fallback...`);
