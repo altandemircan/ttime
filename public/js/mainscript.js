@@ -5257,7 +5257,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
-        // Eski zamanlayıcıyı kesinlikle temizle
+        // Varsa eski zamanlayıcıyı temizle
         if (oldMap._fallbackTimer) clearTimeout(oldMap._fallbackTimer);
         
         if (oldMap._maplibreLayer) {
@@ -5320,12 +5320,14 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-    // --- TILE LAYER YÖNETİMİ (KÜÇÜK HARİTA İÇİN) ---
-    const loadCartoDB = () => {
-        // Harita zaten başarılıysa (OpenFreeMap geldiyse) dokunma
-        if (!map || !map._container || map._ofmSuccess) return;
+    // --- TILE LAYER YÖNETİMİ ---
+    let layerSuccess = false; // Başarı bayrağı
 
-        console.warn(`[SmallMap] Timeout doldu veya hata -> CartoDB açılıyor (${containerId}).`);
+    const loadCartoDB = () => {
+        // Eğer OpenFreeMap zaten başarılı olduysa sakın CartoDB açma!
+        if (layerSuccess || !map || !map._container) return;
+
+        console.warn(`[SmallMap] Timeout doldu -> CartoDB açılıyor (${containerId}).`);
         
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
@@ -5353,38 +5355,23 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 pane: 'tilePane'
             });
 
-            // 1. Layer'ı ekle
-            glLayer.addTo(map);
-            map._maplibreLayer = glLayer;
-
-            // 2. Sinyal Takibi (İptal Fonksiyonu)
-            const markSuccess = (source) => {
-                if (map._ofmSuccess) return; // Zaten başarılı işaretlendiyse çık
-                map._ofmSuccess = true; // BAŞARILI BAYRAĞINI DİK
-                // console.log(`[SmallMap] OpenFreeMap BAŞARILI (${source}). Zamanlayıcı iptal.`);
+            // --- DEĞİŞİKLİK BURADA ---
+            // Sadece "ready" sinyali bile yeterli. Harita motoru başladı demektir.
+            glLayer.on('ready', () => {
+                layerSuccess = true;
                 if (map._fallbackTimer) {
                     clearTimeout(map._fallbackTimer);
                     map._fallbackTimer = null;
                 }
-            };
+            });
 
-            // 3. Leaflet Eklentisi Üzerinden Dinle
-            glLayer.on('ready', () => markSuccess('layer-ready'));
-            glLayer.on('load', () => markSuccess('layer-load'));
+            // Layer'ı ekle
+            glLayer.addTo(map);
+            map._maplibreLayer = glLayer;
 
-            // 4. MapLibre Core Üzerinden Dinle (Daha hassas)
-            const glMap = glLayer.getMaplibreMap();
-            if (glMap) {
-                glMap.once('styledata', () => markSuccess('styledata')); // Stil indiği an
-                glMap.once('sourcedata', () => markSuccess('sourcedata')); // Veri indiği an
-                glMap.once('data', () => markSuccess('data')); // Herhangi bir veri
-                glMap.once('load', () => markSuccess('core-load'));
-            }
-
-            // 5. Zamanlayıcı (5000ms)
+            // 5 Saniyelik Güvenlik Zamanlayıcısı
             map._fallbackTimer = setTimeout(() => {
-                // Eğer bayrak dikilmediyse değiştir
-                if (!map._ofmSuccess) loadCartoDB();
+                if (!layerSuccess) loadCartoDB();
             }, 5000);
 
         } catch (e) {
