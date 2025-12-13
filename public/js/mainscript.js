@@ -5250,7 +5250,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     const sidebarContainer = document.getElementById(containerId);
     if (!sidebarContainer) return;
 
-    // 2. TEMİZLİK (Observer ve eski harita)
+    // 2. TEMİZLİK
     if (sidebarContainer._resizeObserver) {
         sidebarContainer._resizeObserver.disconnect();
         delete sidebarContainer._resizeObserver;
@@ -5269,7 +5269,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     sidebarContainer.classList.remove("big-map", "full-screen-map");
     sidebarContainer.style.backgroundColor = "#eef0f5";
 
-    // Route Summary & Controls (Aynı kalıyor)
+    // Route Summary & Controls (Aynen Kalıyor)
     const controlsWrapperId = `map-bottom-controls-wrapper-day${day}`;
     document.getElementById(controlsWrapperId)?.remove();
 
@@ -5300,7 +5300,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
     // --- HARİTA BAŞLATMA ---
-    // [FIX] fadeAnimation ve zoomAnimation false yapılarak olası race conditionlar önlenir
+    // [FIX] Animasyonları kapatmak, bu tür hataları azaltır
     const map = L.map(containerId, {
         scrollWheelZoom: true,
         fadeAnimation: false,
@@ -5308,11 +5308,10 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         markerZoomAnimation: false
     });
 
-    // [FIX] Rota ve Markerlar için özel "Pane" (Katman) oluşturuyoruz.
     map.createPane('customRoutePane');
     map.getPane('customRoutePane').style.zIndex = 450;
 
-    // Altlık Harita (Tile Layer)
+    // Altlık Harita
     try {
         if (typeof L.maplibreGL === 'function') {
             L.maplibreGL({
@@ -5334,14 +5333,12 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     }
 
     let bounds = L.latLngBounds();
-    // Noktaları temizle
     points = points.filter(p => isFinite(Number(p.lat)) && isFinite(Number(p.lng)));
 
-    // GeoJSON Koordinatlarını hazırla
     let routeCoords = [];
     let hasValidGeo = (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates?.length > 1);
     if (hasValidGeo) {
-        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]); // [Lng,Lat] -> [Lat,Lng]
+        routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     }
 
     // --- ÇİZİM İŞLEMLERİ ---
@@ -5411,16 +5408,18 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     map.zoomControl.setPosition('topright');
     window.leafletMaps[containerId] = map;
 
-    // --- [CRITICAL FIX] HARİTA BOYUTLANDIRMA VE ODAKLAMA ---
-    // Bu fonksiyonu güvenli hale getirdik. DOM'da yer yoksa veya harita hazır değilse patlamaz.
+    // --- [CRITICAL FIX] GÜVENLİ HARİTA ODAKLAMA ---
     const refitMap = () => {
         if (!map || !sidebarContainer) return;
-        
-        // Eğer container görünür değilse (display:none) işlem yapma
-        if (sidebarContainer.offsetParent === null) return;
+
+        // EĞER HARİTA GÖRÜNMÜYORSA (display:none ise), İŞLEM YAPMA!
+        // Bu satır hatayı önleyen ana çözümdür.
+        if (sidebarContainer.offsetParent === null) {
+            return;
+        }
 
         try {
-            map.invalidateSize(); // Harita boyutunu tekrar hesapla
+            map.invalidateSize(); // Harita boyutunu günceller
 
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, {
@@ -5433,24 +5432,25 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 });
             }
         } catch (err) {
-            console.warn("[Leaflet Refit Error] Retrying later...", err);
+            // Hata olursa konsola sessizce yaz, uygulamayı kırma
+            // console.warn("[Leaflet Safe Refit] Skipped due to render state.");
         }
     };
 
-    // 1. Hemen Dene
+    // 1. Hemen dene (Eğer görünürse çalışır)
     requestAnimationFrame(refitMap);
 
-    // 2. DOM'un tam oturması için kısa bir süre sonra tekrar dene
-    setTimeout(refitMap, 300);
+    // 2. DOM oturunca tekrar dene
+    setTimeout(refitMap, 250);
 
-    // 3. Resize Observer ile izle (Ekran boyutu değişirse veya container açılırsa)
+    // 3. Resize Observer: Harita görünür olduğunda veya boyutu değiştiğinde otomatik tetikler
     const ro = new ResizeObserver(() => {
         requestAnimationFrame(refitMap);
     });
     ro.observe(sidebarContainer);
     sidebarContainer._resizeObserver = ro;
 
-    // --- 3D MAP FIX: DOUBLE-TAP UPDATE ---
+    // --- 3D MAP FIX ---
     const is3DActive = document.getElementById('maplibre-3d-view') &&
         document.getElementById('maplibre-3d-view').style.display !== 'none';
 
