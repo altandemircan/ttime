@@ -5381,11 +5381,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 glMap.once('load', () => markSuccess('core-load'));
             }
 
-            // 5. Zamanlayıcı (3000ms)
+            // 5. Zamanlayıcı (5000ms)
             map._fallbackTimer = setTimeout(() => {
                 // Eğer bayrak dikilmediyse değiştir
                 if (!map._ofmSuccess) loadCartoDB();
-            }, 3000);
+            }, 5000);
 
         } catch (e) {
             loadCartoDB();
