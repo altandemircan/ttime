@@ -6141,7 +6141,7 @@ async function expandMap(containerId, day) {
     if (!originalContainer) ensureDayMapContainer(day);
     if (originalContainer) originalContainer.style.display = 'none';
 
-    // === HEADER & LAYERS ===
+    // === HEADER ===
     const headerDiv = document.createElement('div');
     headerDiv.className = 'expanded-map-header';
 
@@ -6465,19 +6465,12 @@ async function expandMap(containerId, day) {
                 try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
                 expandedMapInstance._maplibreLayer = null;
             }
-            // Voyager Yükle
+            // Voyager
             expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; CARTO',
                 subdomains: 'abcd',
                 maxZoom: 20
             }).addTo(expandedMapInstance);
-
-            // --- 3D SEÇENEĞİNİ GİZLE ---
-            // OpenFreeMap gelmediyse 3D de çalışmaz/verimsiz olur.
-            const btn3d = layersBar.querySelector('.map-type-option[data-value="liberty"]');
-            if (btn3d) {
-                btn3d.style.display = 'none';
-            }
         };
 
         // --- 2. STİL MANTIĞI ---
@@ -6540,31 +6533,21 @@ async function expandMap(containerId, day) {
     setExpandedMapTile(currentLayer);
     updateExpandedMap(expandedMapInstance, day);
 
-    // --- [CRITICAL FIX] HARİTA ODAKLAMA VE RENDER ---
-    const refitExpandedMap = () => {
-        // Eğer harita kapatıldıysa veya DOM'dan çıktıysa işlem yapma (Hata önleyici)
-        if (!expandedMapInstance || !document.getElementById(mapDivId)) return;
-        
-        try {
-            expandedMapInstance.invalidateSize();
-            const container = expandedMapInstance.getContainer();
-            if (container) {
-                container.style.cursor = 'grab';
-                container.classList.remove('leaflet-interactive');
-            }
-        } catch(e) {}
-    };
-
-    requestAnimationFrame(refitExpandedMap);
-    setTimeout(refitExpandedMap, 350);
-
-    if (typeof attachClickNearbySearch === 'function') {
-        if (expandedMapInstance.__ttNearbyClickBound) {
-            expandedMapInstance.off('click', expandedMapInstance.__ttNearbyClickHandler);
-            expandedMapInstance.__ttNearbyClickBound = false;
+    setTimeout(() => {
+        expandedMapInstance.invalidateSize();
+        const container = expandedMapInstance.getContainer();
+        if (container) {
+            container.style.cursor = 'grab';
+            container.classList.remove('leaflet-interactive');
         }
-        attachClickNearbySearch(expandedMapInstance, day);
-    }
+        if (typeof attachClickNearbySearch === 'function') {
+            if (expandedMapInstance.__ttNearbyClickBound) {
+                expandedMapInstance.off('click', expandedMapInstance.__ttNearbyClickHandler);
+                expandedMapInstance.__ttNearbyClickBound = false;
+            }
+            attachClickNearbySearch(expandedMapInstance, day);
+        }
+    }, 350);
 
     window.expandedMaps = window.expandedMaps || {};
     window.expandedMaps[containerId] = {
