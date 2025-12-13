@@ -6377,6 +6377,15 @@ async function expandMap(containerId, day) {
     expandedContainer.appendChild(mapDiv);
     document.body.appendChild(expandedContainer);
 
+    // --- YENİ EKLENEN: Sadece Mobilde (<=768px) Header'ı Gizle ---
+    if (window.innerWidth <= 768) {
+        const mainHeader = document.querySelector('.fixed-header'); 
+        if (mainHeader) {
+            mainHeader.style.display = 'none';
+        }
+    }
+    // -------------------------------------------------------------
+
     showRouteInfoBanner(day);
 
     // === MAP INITIALIZATION ===
@@ -6714,6 +6723,14 @@ function updateExpandedMap(expandedMap, day) {
 }
  
 function restoreMap(containerId, day) {
+
+    // --- YENİ EKLENEN: Harita kapanınca Header'ı geri getir (Temizlik) ---
+    const mainHeader = document.querySelector('.fixed-header'); 
+    if (mainHeader) {
+        mainHeader.style.display = ''; // Inline stili siler, CSS'e geri döner
+    }
+    // --------------------------------------------------------------------
+    
     // containerId'den expandedData'yı bulmaya çalış, yoksa day üzerinden manuel temizlik yap
     const expandedData = window.expandedMaps?.[containerId];
     
