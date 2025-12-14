@@ -5886,38 +5886,7 @@ function saveArcPointsForDay(day, points) {
 }
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
-    
     if (!map || !map.getStyle()) return;
-
-    // --- 0. DÖNME ANİMASYONU (2D ile Birebir Aynı) ---
-    if (!document.getElementById('tt-3d-spin-style')) {
-        const s = document.createElement('style');
-        s.id = 'tt-3d-spin-style';
-        s.innerHTML = `
-            @keyframes spin-visual {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            /* MapLibre Popup Stil Düzeltmeleri (Leaflet'e benzetme) */
-            .maplibregl-popup-content {
-                padding: 10px 10px 5px 10px !important;
-                border-radius: 12px !important;
-                box-shadow: 0 3px 14px rgba(0,0,0,0.2) !important;
-                font-family: "Satoshi", sans-serif !important;
-            }
-            .maplibregl-popup-close-button {
-                font-size: 16px !important;
-                color: #999 !important;
-                right: 4px !important;
-                top: 4px !important;
-            }
-            .maplibregl-popup-close-button:hover {
-                background: none !important;
-                color: #333 !important;
-            }
-        `;
-        document.head.appendChild(s);
-    }
 
     // --- 1. VERİ HAZIRLIĞI ---
     const points = (typeof getDayPoints === 'function' ? getDayPoints(day) : []);
@@ -5940,6 +5909,7 @@ function refresh3DMapData(day) {
     }
     window._maplibreRouteMarkers = [];
 
+    // Katmanları temizle
     ['route-line', 'missing-connectors-layer'].forEach(l => { if(map.getLayer(l)) map.removeLayer(l); });
     ['route-source-dynamic', 'missing-connectors-source'].forEach(s => { if(map.getSource(s)) map.removeSource(s); });
 
@@ -5984,6 +5954,7 @@ function refresh3DMapData(day) {
             }
         }
     } else {
+        // Fly Mode logic (kısa tutuldu)
         let allCurvePoints = [];
         if (validPoints.length > 1) {
             for (let i = 0; i < validPoints.length - 1; i++) {
@@ -6001,7 +5972,7 @@ function refresh3DMapData(day) {
     }
 
     // ============================================================
-    // --- 4. MARKER OLUŞTURMA VE STİL ---
+    // --- 4. MARKER EKLEME (2D YAPISIYLA BİREBİR AYNI) ---
     // ============================================================
     
     function findCartIndexByDayPosition(dayNum, positionIdx) {
@@ -6016,143 +5987,125 @@ function refresh3DMapData(day) {
         return -1;
     }
 
-    // Tüm markerları 2D'deki "Kırmızı" haline döndüren fonksiyon
-    function resetAll3DMarkersState() {
+    // Tüm markerları resetleyen fonksiyon
+    function resetAllMarkersToDefault() {
         window._maplibreRouteMarkers.forEach(m => {
-            m.setDraggable(false); 
-            const rootEl = m.getElement();
-            const visualEl = rootEl.querySelector('.marker-visual');
-            if (visualEl) {
-                // 2D Red Style: #d32f2f, box-shadow: 0 2px 8px rgba(0,0,0,0.2)
-                visualEl.style.backgroundColor = '#d32f2f'; 
-                visualEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-                visualEl.style.animation = 'none'; 
+            m.setDraggable(false); // Sürüklemeyi kapat
+            
+            const root = m.getElement();
+            const outer = root.querySelector('.custom-marker-outer');
+            const nameBubble = root.querySelector('.custom-marker-place-name');
+            
+            if (outer) {
+                // Kırmızıya dön, dönmeyi durdur, hintleri gizle
+                outer.classList.remove('green', 'spin', 'show-drag-hint');
+                outer.classList.add('red');
             }
-            rootEl.style.zIndex = '10';
+            if (nameBubble) {
+                // İsmi gizle
+                nameBubble.style.opacity = '0';
+            }
+            root.style.zIndex = '10';
         });
     }
 
     validPoints.forEach((p, idx) => {
-        // --- Root Element (Konum Tutucu) ---
+        // --- ROOT ELEMENT (MapLibre Konumlandırır) ---
         const rootEl = document.createElement('div');
         rootEl.className = 'maplibre-marker-root';
-        rootEl.style.width = '32px';
-        rootEl.style.height = '32px';
+        // Önemli: Root elemente animasyon verme, sadece kapsayıcı.
+        rootEl.style.width = '0px'; 
+        rootEl.style.height = '0px';
         rootEl.style.cursor = 'pointer';
         rootEl.style.zIndex = '10';
 
-        // --- Visual Element (Görsel - 2D ile Birebir) ---
-        const visualEl = document.createElement('div');
-        visualEl.className = 'marker-visual';
-        visualEl.style.cssText = `
-            width: 100%; height: 100%;
-            background-color: #d32f2f; 
-            border-radius: 50%;
-            border: 2px solid white;
-            color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-family: sans-serif; font-size: 14px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            transition: background-color 0.2s, box-shadow 0.2s;
+        // --- 2D HTML YAPISI ---
+        rootEl.innerHTML = `
+            <div class="custom-marker-outer red" data-idx="${idx}" style="position:relative;">
+                <span class="custom-marker-label">${idx + 1}</span>
+                <div class="drag-hint">
+                    <span class="arrow up"></span>
+                    <span class="arrow right"></span>
+                    <span class="arrow down"></span>
+                    <span class="arrow left"></span>
+                </div>
+            </div>
+            <div class="custom-marker-place-name" style="opacity:0; position:absolute; top:-40px; left:50%; transform:translateX(-50%); white-space:nowrap;">
+                ${p.name || "Point"}
+                <button class="marker-remove-x-btn" data-marker-idx="${idx}" style="
+                    margin-left: 6px; 
+                    border: none; 
+                    background: transparent; 
+                    color: red; 
+                    font-weight: bold; 
+                    cursor: pointer;
+                    font-size: 16px;">×</button>
+            </div>
         `;
-        visualEl.innerText = idx + 1;
-        rootEl.appendChild(visualEl);
 
-        // --- POPUP (2D Stilinde Buton) ---
-        const popupDiv = document.createElement('div');
-        popupDiv.style.minWidth = "130px";
-        
-        // Başlık
-        const titleDiv = document.createElement('div');
-        titleDiv.innerHTML = `<b>${p.name || "Point"}</b>`;
-        titleDiv.style.marginBottom = "8px";
-        titleDiv.style.fontSize = "0.95rem";
-        titleDiv.style.color = "#333";
-        popupDiv.appendChild(titleDiv);
-        
-        // Buton (styles.css'teki .remove-btn stiliyle aynı)
-        const removeBtn = document.createElement('button');
-        removeBtn.innerText = "Remove place";
-        removeBtn.style.cssText = `
-            width: 100%;
-            padding: 8px;
-            font-weight: 600;
-            border: none;
-            border-radius: 6px;
-            background: #f8f9fa;
-            color: #ff4444;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: background 0.2s;
-        `;
-        removeBtn.onmouseover = () => { removeBtn.style.background = "#ececec"; };
-        removeBtn.onmouseout = () => { removeBtn.style.background = "#f8f9fa"; };
-        
-        removeBtn.onclick = async function() {
+        // Element Referansları
+        const outerEl = rootEl.querySelector('.custom-marker-outer');
+        const nameBubble = rootEl.querySelector('.custom-marker-place-name');
+        const removeBtn = rootEl.querySelector('.marker-remove-x-btn');
+
+        // Remove Buton İşlevi
+        removeBtn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Haritaya veya markera tıklamayı engelle
             const cartIdx = findCartIndexByDayPosition(day, idx);
             if (cartIdx > -1) {
                 window.cart.splice(cartIdx, 1);
+                // AWAIT ile güncelleme
                 if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
                 if (typeof updateCart === "function") await updateCart();
                 if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
                 refresh3DMapData(day);
             }
-        };
-        popupDiv.appendChild(removeBtn);
-
-        const popup = new maplibregl.Popup({ offset: 18, closeButton: true, maxWidth: '200px' }).setDOMContent(popupDiv);
-
-        // --- MARKER OLUŞTURMA ---
-        const marker = new maplibregl.Marker({ element: rootEl, anchor: 'center', draggable: false })
-            .setLngLat([p.lng, p.lat])
-            .setPopup(popup)
-            .addTo(map);
-
-        // --- POPUP KAPATMA EVENTİ ---
-        popup.on('close', () => {
-            // Normale dön
-            visualEl.style.backgroundColor = '#d32f2f';
-            visualEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-            visualEl.style.animation = 'none';
-            rootEl.style.zIndex = '10';
-            marker.setDraggable(false);
         });
 
-        // --- CLICK EVENT (2D Green Style) ---
+        // --- MARKER OLUŞTUR (Başlangıçta kilitli) ---
+        const marker = new maplibregl.Marker({ element: rootEl, anchor: 'center', draggable: false })
+            .setLngLat([p.lng, p.lat])
+            .addTo(map);
+
+        // --- CLICK EVENT (Aktifleştirme) ---
         rootEl.addEventListener('click', (e) => {
-            e.stopPropagation(); 
+            e.stopPropagation();
             
-            if (visualEl.style.backgroundColor === 'rgb(56, 184, 53)' || visualEl.style.backgroundColor === '#38b835') return;
+            // Eğer zaten aktifse (yeşilse) işlem yapma
+            if (outerEl.classList.contains('green')) return;
 
-            resetAll3DMarkersState();
+            resetAllMarkersToDefault();
 
-            // Aktifleştir (Yeşil + Gölge + Dönme)
-            // 2D Green Style: #38b835, box-shadow: 0 2px 16px #38b835a5
-            visualEl.style.backgroundColor = '#38b835'; 
-            visualEl.style.boxShadow = '0 2px 16px rgba(56, 184, 53, 0.65)';
-            visualEl.style.animation = 'spin-visual 1s linear infinite';
+            // Aktifleştir
+            outerEl.classList.remove('red');
+            outerEl.classList.add('green', 'spin', 'show-drag-hint');
             
-            rootEl.style.zIndex = '999'; 
+            // İsim balonunu göster
+            nameBubble.style.opacity = '1';
+            
+            rootEl.style.zIndex = '999';
             rootEl.style.cursor = 'grab';
 
             marker.setDraggable(true);
-            marker.togglePopup();
+            
+            if ('vibrate' in navigator) navigator.vibrate(15);
         });
 
         // --- DRAG EVENTS ---
         marker.on('dragstart', () => {
-            marker.setPopup(null);
+            nameBubble.style.opacity = '0'; // Sürüklerken ismi gizle
             rootEl.style.cursor = 'grabbing';
         });
 
         marker.on('dragend', async () => {
             rootEl.style.cursor = 'grab';
-            marker.setPopup(popup);
+            nameBubble.style.opacity = '1'; // İsim geri gelsin
             
             const lngLat = marker.getLngLat();
             let finalLat = lngLat.lat;
             let finalLng = lngLat.lng;
 
+            // Snap
             try {
                 if (typeof snapPointToRoad === 'function') {
                     const snapped = await snapPointToRoad(lngLat.lat, lngLat.lng);
@@ -6160,6 +6113,7 @@ function refresh3DMapData(day) {
                 }
             } catch(_) {}
 
+            // Address
             let newName = p.name;
             let newAddress = "", newOpening = "";
             try {
@@ -6170,6 +6124,7 @@ function refresh3DMapData(day) {
                 }
             } catch(_) {}
 
+            // Cart Update
             const cartIdx = findCartIndexByDayPosition(day, idx);
             if (cartIdx > -1) {
                 const item = window.cart[cartIdx];
@@ -6184,6 +6139,7 @@ function refresh3DMapData(day) {
                 }
             }
 
+            // Sync Logic
             window._lastSegmentDay = undefined;
             if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
             if (typeof updateCart === "function") updateCart();
@@ -6191,6 +6147,7 @@ function refresh3DMapData(day) {
 
             refresh3DMapData(day);
             
+            // Grafik Update
             const sbContainer = document.getElementById(`expanded-route-scale-bar-day${day}`);
             const summary = window.lastRouteSummaries?.[containerId];
             if (sbContainer && summary && summary.distance > 0) {
@@ -6207,7 +6164,8 @@ function refresh3DMapData(day) {
         window._maplibreRouteMarkers.push(marker);
     });
 
-    map.once('click', () => { resetAll3DMarkersState(); });
+    // Harita boşluğuna tıklayınca resetle
+    map.once('click', () => { resetAllMarkersToDefault(); });
 }
 
 function openMapLibre3D(expandedMap) {
