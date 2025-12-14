@@ -5258,6 +5258,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
+        if (oldMap._fallbackTimer) clearTimeout(oldMap._fallbackTimer);
+        
         if (oldMap._maplibreLayer) {
             try { oldMap.removeLayer(oldMap._maplibreLayer); } catch (e) {}
         }
@@ -5310,7 +5312,16 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         fadeAnimation: true,
         zoomAnimation: true,
         markerZoomAnimation: true,
-        inertia: false
+        inertia: true,
+        
+        // Akışkan Zoom
+        zoomSnap: 0,
+        zoomDelta: 0.1,
+        wheelPxPerZoomLevel: 60,
+        wheelDebounceTime: 20,
+        
+        touchZoom: true,
+        bounceAtZoomLimits: false
     });
 
     try {
@@ -5318,12 +5329,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-    // --- TILE LAYER YÖNETİMİ (TIMEOUT YOK - SADECE HATA KONTROLÜ) ---
-    const loadCartoDB = () => {
-        // Harita silinmişse veya zaten katman varsa dur
-        if (!map || !map._container || map._hasTileLayer) return;
+    // --- TILE LAYER YÖNETİMİ ---
+    let layerSuccess = false;
 
-        console.warn(`[SmallMap] Hata oluştu -> CartoDB Fallback (${containerId}).`);
+    const loadCartoDB = () => {
+        if (layerSuccess || !map || !map._container) return;
         
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
@@ -5337,7 +5347,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 maxZoom: 20,
                 pane: 'tilePane'
             }).addTo(map);
-            map._hasTileLayer = true;
         } catch (err) {}
     };
 
@@ -5352,22 +5361,32 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 pane: 'tilePane'
             });
 
-            // Pane Kontrolü
-            if (!map.getPane('tilePane')) map.createPane('tilePane');
-
-            // Layer Ekleme
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
-            map._hasTileLayer = true; // Eklendi varsayıyoruz.
 
-            // Hata Dinleyicisi (Sadece hata olursa CartoDB'ye geç)
-            // Timeout kullanmıyoruz çünkü harita gizliyken yüklenmeyebilir.
-            glLayer.on('error', () => {
-                loadCartoDB();
-            });
+            const markSuccess = (source) => {
+                if (layerSuccess) return;
+                layerSuccess = true;
+                if (map._fallbackTimer) {
+                    clearTimeout(map._fallbackTimer);
+                    map._fallbackTimer = null;
+                }
+            };
+
+            glLayer.on('ready', () => markSuccess('ready'));
+            glLayer.on('load', () => markSuccess('load'));
+
+            const glMap = glLayer.getMaplibreMap();
+            if (glMap) {
+                glMap.once('styledata', () => markSuccess('styledata'));
+                glMap.once('data', () => markSuccess('data'));
+            }
+
+            map._fallbackTimer = setTimeout(() => {
+                if (!layerSuccess) loadCartoDB();
+            }, 3000);
 
         } catch (e) {
-            console.error("MapLibre init error:", e);
             loadCartoDB();
         }
     } else {
@@ -5414,6 +5433,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             points.forEach(p => bounds.extend([p.lat, p.lng]));
             window._curvedArcPointsByDay[day] = arcPoints;
         } else if (hasValidGeo && routeCoords.length > 1) {
+            // Ana rota (Mavi çizgi)
             const routePoly = L.polyline(routeCoords, {
                 color: '#1976d2',
                 weight: 8,
@@ -5422,6 +5442,40 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 pane: 'customRoutePane'
             }).addTo(map);
             bounds.extend(routePoly.getBounds());
+
+            // --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
+            if (missingPoints && missingPoints.length > 0) {
+                missingPoints.forEach(mp => {
+                    // En yakın rota noktasını bul
+                    let minDist = Infinity;
+                    let closestPoint = null;
+                    
+                    for (const rc of routeCoords) {
+                        // rc: [lat, lng]
+                        const d = Math.pow(rc[0] - mp.lat, 2) + Math.pow(rc[1] - mp.lng, 2);
+                        if (d < minDist) {
+                            minDist = d;
+                            closestPoint = rc;
+                        }
+                    }
+
+                    if (closestPoint) {
+                        // Kesik çizgi çiz
+                        L.polyline([
+                            [mp.lat, mp.lng], 
+                            closestPoint
+                        ], {
+                            color: '#d32f2f', // Kırmızı
+                            weight: 3,
+                            opacity: 0.7,
+                            dashArray: '5, 8', // Kesik çizgi efekti
+                            pane: 'customRoutePane'
+                        }).addTo(map);
+                    }
+                });
+            }
+            // -----------------------------------------------
+
         } else {
             const fallbackCoords = points.map(p => [p.lat, p.lng]);
             const fallbackPoly = L.polyline(fallbackCoords, {
