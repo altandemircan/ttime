@@ -7005,9 +7005,7 @@ position: absolute;
     box-shadow: 0 4px 24px #0006;
     z-index: 1008;
     opacity: 1;
-    min-width: 210px;
-    display: flex;
-    align-items: center;
+    min-width: 210px;   
     gap: 0px;
     padding: 6px 12px;
     background: #8a4af3;
@@ -7036,17 +7034,12 @@ position: absolute;
 @media (max-width: 768px) {
   .route-info-banner {
    position: absolute;
-        /* top: 10px; */
+
         left: 15px;        
-        box-shadow: 0 4px 24px #0000000a;
-        /* z-index: 1008; */
-        opacity: 1;
-        /* width: 185px; */
-        display: flex;
-        align-items: center;
+        box-shadow: 0 4px 24px #0000000a;  
+        opacity: 1; 
         gap: 0px;
-        padding: 12px 16px;
-       
+        padding: 12px 16px;       
         border-radius: 10px;
         transition: all 0.2s ease;
         font-size: 12px;
