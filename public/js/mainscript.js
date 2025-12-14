@@ -5434,58 +5434,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             bounds.extend(fallbackPoly.getBounds());
         }
 
-            addNumberedMarkers(map, points);
+        addNumberedMarkers(map, points);
 
-    // Eksik noktaları kesik çizgi ile bağla
-        // Eksik noktaları rotanın EN YAKIN noktasına kesik çizgi ile bağla
-    if (missingPoints && missingPoints.length) {
-        // Mevcut rota geometri seti (varsayılan: çizilmiş polyline, yoksa markers)
-        const baseLine = (routeCoords && routeCoords.length > 1)
-            ? routeCoords.map(c => [c[1], c[0]]) // [lat,lng]
-            : points.map(p => [p.lat, p.lng]).filter(ll => isFinite(ll[0]) && isFinite(ll[1]));
-
-        // En yakın segment projeksiyonu
-        const projectToLine = (pt) => {
-            if (!baseLine || baseLine.length < 2) return null;
-            let best = null, bestD = Infinity;
-            for (let i = 1; i < baseLine.length; i++) {
-                const a = baseLine[i - 1], b = baseLine[i];
-                // basit 2D projeksiyon
-                const ax = a[1], ay = a[0], bx = b[1], by = b[0], px = pt[1], py = pt[0];
-                const vx = bx - ax, vy = by - ay;
-                const wx = px - ax, wy = py - ay;
-                const c1 = vx * wx + vy * wy;
-                const c2 = vx * vx + vy * vy;
-                let t = c2 > 0 ? c1 / c2 : 0;
-                t = Math.max(0, Math.min(1, t));
-                const projLat = ay + t * vy;
-                const projLng = ax + t * vx;
-                const dLat = projLat - py, dLng = projLng - px;
-                const dist = dLat * dLat + dLng * dLng;
-                if (dist < bestD) { bestD = dist; best = [projLat, projLng]; }
-            }
-            return best;
-        };
-
-        missingPoints.forEach(mp => {
-            if (!mp || !isFinite(mp.lat) || !isFinite(mp.lng)) return;
-            const proj = projectToLine([mp.lat, mp.lng]);
-            if (proj) {
-                const dashed = [proj, [mp.lat, mp.lng]];
-                // küçük harita
-                L.polyline(dashed, { color: '#d32f2f', weight: 4, opacity: 0.75, dashArray: '6,6', pane: 'customRoutePane' }).addTo(map);
-                // expanded harita varsa
-                const exp = window.expandedMaps && window.expandedMaps[containerId] && window.expandedMaps[containerId].expandedMap;
-                if (exp) {
-                    L.polyline(dashed, { color: '#d32f2f', weight: 4, opacity: 0.75, dashArray: '6,6', pane: exp.getPane('customRoutePane') ? 'customRoutePane' : undefined }).addTo(exp);
-                }
-            }
-        });
-    }
-
-    if (!bounds.isValid() && points.length > 0) {
-        points.forEach(p => bounds.extend([p.lat, p.lng]));
-    }
+        if (!bounds.isValid() && points.length > 0) {
+            points.forEach(p => bounds.extend([p.lat, p.lng]));
+        }
     } else {
         map.setView([0, 0], 2, { animate: false });
     }
@@ -9960,7 +9913,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       // ÇİZİMİ BAŞLAT
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
-          // çizim bittikten sonra loader’ı gizle
           window.hideScaleBarLoading?.(container);
           track.classList.remove('loading');
       });
