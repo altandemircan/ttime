@@ -9913,6 +9913,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       // ÇİZİMİ BAŞLAT
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
+          // çizim bittikten sonra loader’ı gizle
           window.hideScaleBarLoading?.(container);
           track.classList.remove('loading');
       });
