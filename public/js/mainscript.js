@@ -5434,11 +5434,31 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             bounds.extend(fallbackPoly.getBounds());
         }
 
-        addNumberedMarkers(map, points);
+            addNumberedMarkers(map, points);
 
-        if (!bounds.isValid() && points.length > 0) {
-            points.forEach(p => bounds.extend([p.lat, p.lng]));
+    // Eksik noktaları kesik çizgi ile bağla
+    if (missingPoints && missingPoints.length) {
+        const dashedCoords = [];
+        const last = points && points.length ? points[points.length - 1] : null;
+        if (last && isFinite(last.lat) && isFinite(last.lng)) {
+            dashedCoords.push([last.lat, last.lng]);
         }
+        missingPoints.forEach(mp => {
+            if (mp && isFinite(mp.lat) && isFinite(mp.lng)) dashedCoords.push([mp.lat, mp.lng]);
+        });
+        if (dashedCoords.length > 1) {
+            L.polyline(dashedCoords, { color: '#d32f2f', weight: 4, opacity: 0.75, dashArray: '6,6', pane: 'customRoutePane' }).addTo(map);
+            const exp = window.expandedMaps && window.expandedMaps[containerId] && window.expandedMaps[containerId].expandedMap;
+            if (exp) {
+                // expanded map'te pane yoksa varsayılan pane'ı kullanır
+                L.polyline(dashedCoords, { color: '#d32f2f', weight: 4, opacity: 0.75, dashArray: '6,6', pane: exp.getPane('customRoutePane') ? 'customRoutePane' : undefined }).addTo(exp);
+            }
+        }
+    }
+
+    if (!bounds.isValid() && points.length > 0) {
+        points.forEach(p => bounds.extend([p.lat, p.lng]));
+    }
     } else {
         map.setView([0, 0], 2, { animate: false });
     }
