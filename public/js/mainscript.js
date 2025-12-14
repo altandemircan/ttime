@@ -6393,15 +6393,34 @@ async function expandMap(containerId, day) {
         startZoom = 10;
     }
 
-    const expandedMapInstance = L.map(mapDivId, {
+     // Desktop-only smooth zoom/fade settings
+  const isDesktop = window.innerWidth > 1024 && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  // Inject smooth transition CSS for expanded map (desktop only)
+  if (isDesktop && !document.getElementById('tt-expanded-soft-zoom')) {
+    const s = document.createElement('style');
+    s.id = 'tt-expanded-soft-zoom';
+    s.textContent = `
+      .expanded-map .leaflet-pane,
+      .expanded-map .leaflet-tile,
+      .expanded-map .leaflet-marker-icon,
+      .expanded-map .leaflet-tile-container,
+      .expanded-map .leaflet-zoom-animated {
+        transition: transform 0.25s ease-out !important;
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  const expandedMapInstance = L.map(mapDivId, {
         center: startCenter,
         zoom: startZoom,
         zoomControl: false,
         scrollWheelZoom: true,
-        fadeAnimation: false,
-        zoomAnimation: false,
-        markerZoomAnimation: false,
-        inertia: false,
+        fadeAnimation: isDesktop,
+        zoomAnimation: isDesktop,
+        markerZoomAnimation: isDesktop,
+        inertia: isDesktop,
         preferCanvas: true,
         renderer: L.canvas({ padding: 0.5 }),
         dragging: true
