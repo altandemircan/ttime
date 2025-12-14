@@ -9576,9 +9576,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
   
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-  const gjKey = day ? `route-map-day${day}` : null;
-  const gj = gjKey ? (window.lastRouteGeojsons?.[gjKey]) : null;
-  const coords = gj?.features?.[0]?.geometry?.coordinates;
+  const gjKey = day ? (window.lastRouteGeojsons && window.lastRouteGeojsons[`route-map-day${day}`]) : null;
+  const coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
   if (!container || isNaN(totalKm)) {
     if (container) { container.innerHTML = ""; container.style.display = 'block'; }
@@ -9616,9 +9615,20 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track = document.createElement('div');
     track.className = 'scale-bar-track';
     container.appendChild(track);
-  } 
-  
-  // Eski içeriği silme! Sadece loading sınıfı ekle (Opaklık düşer)
+  }
+
+  // Loader'ı her zaman oluştur ve görünür tut
+  let loader = track.querySelector('.tt-scale-loader');
+  if (!loader) {
+    loader = document.createElement('div');
+    loader.className = 'tt-scale-loader';
+    loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
+    track.appendChild(loader);
+  }
+  loader.style.display = 'flex';
+  window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
+
+  // Sadece loading sınıfı ekle (içerik kalsın)
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
