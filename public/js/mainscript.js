@@ -5258,7 +5258,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
-        // Varsa eski zamanlayıcıyı temizle
         if (oldMap._fallbackTimer) clearTimeout(oldMap._fallbackTimer);
         
         if (oldMap._maplibreLayer) {
@@ -5307,9 +5306,10 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // 5. HARİTA BAŞLATMA (Yumuşak Zoom Ayarları Dahil)
+    // 5. HARİTA BAŞLATMA
     const map = L.map(containerId, {
         scrollWheelZoom: true,
+        // Akışkan Zoom Ayarları
         fadeAnimation: true,
         zoomAnimation: true,
         markerZoomAnimation: true,
@@ -5327,17 +5327,28 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-    // --- TILE LAYER YÖNETİMİ (AKILLI SİNYAL TAKİBİ) ---
+    // --- TILE LAYER YÖNETİMİ ---
     let layerSuccess = false;
 
     // Fallback Fonksiyonu (CartoDB)
     const loadCartoDB = () => {
-        // Eğer OpenFreeMap zaten başarılı olduysa (bayrak true ise) ASLA çalıştırma
-        if (layerSuccess || !map || !map._container) return;
-
-        console.warn(`[SmallMap] OpenFreeMap yanıt vermedi -> CartoDB açılıyor (${containerId}).`);
+        // 1. Bayrak kontrolü
+        if (layerSuccess) return; 
         
-        // Yarım kalan katmanı temizle
+        // 2. DOM KONTROLÜ (KRİTİK): Harita container içinde 'canvas' var mı?
+        // OpenFreeMap (MapLibre) canvas kullanır. Varsa çalışıyor demektir.
+        const tilePane = map.getPane('tilePane');
+        if (tilePane && tilePane.querySelector('canvas')) {
+            // console.log("[SmallMap] Canvas detected inside DOM. Aborting fallback.");
+            layerSuccess = true; // Başarılı kabul et
+            return; 
+        }
+
+        // Harita instance yoksa çık
+        if (!map || !map._container) return;
+
+        console.warn(`[SmallMap] Fallback to CartoDB (${containerId}).`);
+        
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
             map._maplibreLayer = null;
@@ -5364,49 +5375,42 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 pane: 'tilePane'
             });
 
-            // Pane kontrolü (Garanti olsun)
+            // Pane kontrolü
             if (!map.getPane('tilePane')) map.createPane('tilePane');
 
-            // Layer'ı ekle
-            glLayer.addTo(map);
-            map._maplibreLayer = glLayer;
-
-            // --- DEĞİŞİKLİK BURADA: SIKI TAKİP VE İPTAL ---
-            const markSuccess = (source) => {
-                if (layerSuccess) return; // Zaten başarılı işaretlendiyse çık
-                
-                layerSuccess = true; // BAŞARI BAYRAĞINI DİK
-                // console.log(`[SmallMap] Sinyal alındı: ${source}. Zamanlayıcı iptal.`);
-                
-                // Zamanlayıcıyı derhal öldür
+            // --- BAŞARI SİNYALİ TAKİBİ ---
+            const markSuccess = () => {
+                if (layerSuccess) return;
+                layerSuccess = true;
                 if (map._fallbackTimer) {
                     clearTimeout(map._fallbackTimer);
                     map._fallbackTimer = null;
                 }
             };
 
-            // 1. Leaflet eklentisi üzerinden dinle
-            glLayer.on('ready', () => markSuccess('layer-ready'));
-            glLayer.on('load', () => markSuccess('layer-load'));
-
-            // 2. MapLibre Core üzerinden dinle (Çok daha hassas)
+            // 1. Leaflet Layer Eventleri
+            glLayer.on('ready', markSuccess);
+            glLayer.on('load', markSuccess);
+            
+            // 2. MapLibre Core Eventleri (Daha hızlı yakalar)
             const glMap = glLayer.getMaplibreMap();
             if (glMap) {
-                // "styledata": Stil dosyası indiği an (En hızlı sinyal)
-                glMap.once('styledata', () => markSuccess('styledata'));
-                // "sourcedata": Herhangi bir veri kaynağı yüklendiğinde
-                glMap.once('sourcedata', () => markSuccess('sourcedata'));
-                // "tileload": İlk tile indiğinde
-                glMap.once('tileload', () => markSuccess('tileload'));
+                glMap.once('styledata', markSuccess);
+                glMap.once('data', markSuccess);
             }
 
+            // Katmanı ekle
+            glLayer.addTo(map);
+            map._maplibreLayer = glLayer;
+
             // 3. Zamanlayıcı (3000ms)
-            // Eğer 3 saniye içinde yukarıdaki 'markSuccess' hiç çalışmazsa CartoDB'yi aç.
+            // Süre dolduğunda loadCartoDB çalışır, AMA önce DOM'da canvas var mı diye bakar.
             map._fallbackTimer = setTimeout(() => {
-                if (!layerSuccess) loadCartoDB();
+                loadCartoDB();
             }, 3000);
 
         } catch (e) {
+            console.error("MapLibre init error:", e);
             loadCartoDB();
         }
     } else {
@@ -5482,10 +5486,10 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                             [mp.lat, mp.lng], 
                             closestPoint
                         ], {
-                            color: '#d32f2f', // Kırmızı
+                            color: '#d32f2f', 
                             weight: 3,
                             opacity: 0.7,
-                            dashArray: '5, 8', // Kesik çizgi
+                            dashArray: '5, 8',
                             pane: 'customRoutePane'
                         }).addTo(map);
                     }
