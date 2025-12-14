@@ -5889,7 +5889,7 @@ function refresh3DMapData(day) {
     
     if (!map || !map.getStyle()) return;
 
-    // --- 0. DÖNME ANİMASYONU CSS (Sadece Dönme) ---
+    // --- 0. DÖNME ANİMASYONU CSS ---
     if (!document.getElementById('tt-3d-spin-style')) {
         const s = document.createElement('style');
         s.id = 'tt-3d-spin-style';
@@ -5980,13 +5980,13 @@ function refresh3DMapData(day) {
                 map.addSource(sId, { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } } });
                 map.addLayer({ id: lId, type: 'line', source: sId, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] } });
             }
-            if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
+            if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay[day] = {};
             window._curvedArcPointsByDay[day] = allCurvePoints;
         }
     }
 
     // ============================================================
-    // --- 4. MARKER EKLEME (İÇ İÇE DIV YAPISI - KESİN ÇÖZÜM) ---
+    // --- 4. MARKER EKLEME (DÜZELTİLDİ: ReferenceError Fix) ---
     // ============================================================
     
     function findCartIndexByDayPosition(dayNum, positionIdx) {
@@ -6001,15 +6001,11 @@ function refresh3DMapData(day) {
         return -1;
     }
 
-    // Tüm markerları resetleyen fonksiyon
     function resetAll3DMarkersState() {
         window._maplibreRouteMarkers.forEach(m => {
-            m.setDraggable(false); // Kilitle
-            
-            // Marker elementinin içindeki görsel div'i bul
+            m.setDraggable(false); 
             const rootEl = m.getElement();
             const visualEl = rootEl.querySelector('.marker-visual');
-            
             if (visualEl) {
                 visualEl.style.backgroundColor = '#d32f2f'; // Kırmızı
                 visualEl.style.animation = 'none'; // Durdur
@@ -6019,8 +6015,8 @@ function refresh3DMapData(day) {
     }
 
     validPoints.forEach((p, idx) => {
-        // --- HTML YAPISI ---
-        // rootEl: MapLibre tarafından konumlandırılır. Buna animasyon/transform VERME!
+        // --- HTML YAPISI (Root + Visual) ---
+        // rootEl: Haritada konumu tutar (Animasyon YOK)
         const rootEl = document.createElement('div');
         rootEl.className = 'maplibre-marker-root';
         rootEl.style.width = '32px';
@@ -6028,7 +6024,7 @@ function refresh3DMapData(day) {
         rootEl.style.cursor = 'pointer';
         rootEl.style.zIndex = '10';
 
-        // visualEl: İçindeki renkli yuvarlak. Animasyon buna verilecek.
+        // visualEl: Görsellik ve Animasyon (İçeride döner)
         const visualEl = document.createElement('div');
         visualEl.className = 'marker-visual';
         visualEl.style.cssText = `
@@ -6069,34 +6065,34 @@ function refresh3DMapData(day) {
 
         const popup = new maplibregl.Popup({ offset: 18, closeButton: true }).setDOMContent(popupDiv);
 
-        // Popup kapanınca resetle
-        popup.on('close', () => {
-            visualEl.style.backgroundColor = '#d32f2f';
-            visualEl.style.animation = 'none';
-            rootEl.style.zIndex = '10';
-            marker.setDraggable(false);
-        });
-
-        // --- MARKER ---
+        // --- [FIX] MARKER OLUŞTURMA SIRASI ---
+        // Önce marker'ı değişkene ata
         const marker = new maplibregl.Marker({ element: rootEl, anchor: 'center', draggable: false })
             .setLngLat([p.lng, p.lat])
             .setPopup(popup)
             .addTo(map);
 
+        // SONRA Popup eventini dinle (Artık marker tanımlı)
+        popup.on('close', () => {
+            visualEl.style.backgroundColor = '#d32f2f'; // Kırmızı
+            visualEl.style.animation = 'none';
+            rootEl.style.zIndex = '10';
+            marker.setDraggable(false); // Sürüklemeyi kapa
+        });
+
         // --- CLICK EVENT ---
         rootEl.addEventListener('click', (e) => {
             e.stopPropagation(); 
             
-            // Zaten aktifse çık
             if (visualEl.style.backgroundColor === 'rgb(56, 184, 53)' || visualEl.style.backgroundColor === '#38b835') return;
 
-            resetAll3DMarkersState(); // Diğerlerini kapat
+            resetAll3DMarkersState();
 
-            // Aktifleştir (Sadece visualEl animasyon yapar!)
+            // Aktifleştir
             visualEl.style.backgroundColor = '#38b835'; // Yeşil
             visualEl.style.animation = 'spin-visual 1s linear infinite';
             
-            rootEl.style.zIndex = '999'; // En öne al
+            rootEl.style.zIndex = '999'; 
             rootEl.style.cursor = 'grab';
 
             marker.setDraggable(true);
@@ -6117,7 +6113,6 @@ function refresh3DMapData(day) {
             let finalLat = lngLat.lat;
             let finalLng = lngLat.lng;
 
-            // Snap
             try {
                 if (typeof snapPointToRoad === 'function') {
                     const snapped = await snapPointToRoad(lngLat.lat, lngLat.lng);
@@ -6125,7 +6120,6 @@ function refresh3DMapData(day) {
                 }
             } catch(_) {}
 
-            // Address
             let newName = p.name;
             let newAddress = "", newOpening = "";
             try {
@@ -6136,7 +6130,6 @@ function refresh3DMapData(day) {
                 }
             } catch(_) {}
 
-            // Cart Update
             const cartIdx = findCartIndexByDayPosition(day, idx);
             if (cartIdx > -1) {
                 const item = window.cart[cartIdx];
@@ -6151,7 +6144,6 @@ function refresh3DMapData(day) {
                 }
             }
 
-            // Sync Logic
             window._lastSegmentDay = undefined;
             if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
             if (typeof updateCart === "function") updateCart();
@@ -6159,7 +6151,6 @@ function refresh3DMapData(day) {
 
             refresh3DMapData(day);
             
-            // Grafik Update
             const sbContainer = document.getElementById(`expanded-route-scale-bar-day${day}`);
             const summary = window.lastRouteSummaries?.[containerId];
             if (sbContainer && summary && summary.distance > 0) {
@@ -6176,6 +6167,7 @@ function refresh3DMapData(day) {
         window._maplibreRouteMarkers.push(marker);
     });
 
+    // Harita boşluğuna tıklayınca resetle
     map.once('click', () => { resetAll3DMarkersState(); });
 }
 
