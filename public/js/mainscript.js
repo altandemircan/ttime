@@ -6383,7 +6383,6 @@ async function expandMap(containerId, day) {
 
     showRouteInfoBanner(day);
 
-    // === MAP INITIALIZATION (GÜNCELLENDİ) ===
     const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
     const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
     let startCenter = validPtsInit.length === 1 ? [validPtsInit[0].lat, validPtsInit[0].lng] : [39.0, 35.0];
@@ -6399,13 +6398,10 @@ async function expandMap(containerId, day) {
         zoom: startZoom,
         zoomControl: false,
         scrollWheelZoom: true,
-        fadeAnimation: false,       // Animasyonları kapat
-        zoomAnimation: false,       // Animasyonları kapat
-        markerZoomAnimation: false, // Animasyonları kapat
+        fadeAnimation: false,
+        zoomAnimation: false,
+        markerZoomAnimation: false,
         inertia: false,
-        zoomSnap: 0,                // Daha yumuşak zoom seviyeleri
-        touchZoom: true,            // Mobilde pinch zoom açık
-        bounceAtZoomLimits: false,  // Sınıra gelince zıplamayı kapat
         preferCanvas: true,
         renderer: L.canvas({ padding: 0.5 }),
         dragging: true
