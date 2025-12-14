@@ -11004,25 +11004,24 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. Zoom/Pan animasyonlarını SADECE küçük haritalarda kapat; expanded-map animasyonlu kalsın */
-        .leaflet-container:not(.expanded-map) .leaflet-pane, 
-        .leaflet-container:not(.expanded-map) .leaflet-tile, 
-        .leaflet-container:not(.expanded-map) .leaflet-marker-icon, 
-        .leaflet-container:not(.expanded-map) .leaflet-marker-shadow, 
-        .leaflet-container:not(.expanded-map) .leaflet-tile-container, 
-        .leaflet-container:not(.expanded-map) .leaflet-zoom-animated {
+         /* 1. Zoom/Pan animasyonlarını sadece route-map VE expanded-map dışındaki haritalarda kapat */
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-pane, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-icon, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-shadow, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile-container, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-zoom-animated {
             transition: none !important;
             transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
         }
         
-        /* 2. Resimlerin animasyonunu SADECE küçük haritalarda engelle */
-        .leaflet-container:not(.expanded-map) img.leaflet-tile {
+        /* 2. Resimlerin animasyonunu sadece route-map VE expanded-map dışındaki haritalarda engelle */
+        .leaflet-container:not(.expanded-map):not(.route-map) img.leaflet-tile {
             max-width: none !important;
             width: 256px !important;
             height: 256px !important;
             transition: none !important; 
         }
-
         /* 3. İmleç Ayarları */
         .expanded-map.leaflet-container,
         .expanded-map .leaflet-grab,
