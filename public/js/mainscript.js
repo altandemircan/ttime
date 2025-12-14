@@ -6043,6 +6043,8 @@ function openMapLibre3D(expandedMap) {
     });
   }); 
 }
+
+
 async function expandMap(containerId, day) {
     forceCleanExpandedMap(day);
 
@@ -6051,7 +6053,7 @@ async function expandMap(containerId, day) {
 
     console.log('[expandMap] start →', containerId, 'day=', day);
 
-    // 1. STİL EKLEME (Aynı kalıyor)
+    // 1. STİL EKLEME
     if (!document.getElementById('tt-custom-map-controls-css')) {
         const style = document.createElement('style');
         style.id = 'tt-custom-map-controls-css';
@@ -6186,13 +6188,16 @@ async function expandMap(containerId, day) {
             }
         };
 
+        // --- 3D Moduna Geçiş ---
         if (currentLayer === 'liberty') {
             expandedMapInstance.getContainer().style.display = "none";
             if (map3d) map3d.style.display = 'block';
             if (compassBtn) compassBtn.style.display = 'flex';
             openMapLibre3D(expandedMapInstance);
             setTimeout(refreshLocationIfActive, 300);
-        } else {
+        }
+        // --- 2D Moduna Geçiş (Positron veya Bright) ---
+        else {
             if (map3d) map3d.style.display = "none";
             if (compassBtn) compassBtn.style.display = 'none';
 
@@ -6215,13 +6220,8 @@ async function expandMap(containerId, day) {
 
             expandedMapInstance.setView(targetCenter, targetZoom, { animate: false });
 
-            expandedMapInstance.eachLayer(layer => {
-                if (layer._maplibreGL || layer instanceof L.TileLayer) {
-                    try { expandedMapInstance.removeLayer(layer); } catch (e) {}
-                }
-            });
-            expandedMapInstance._maplibreLayer = null;
-
+            // [FIX] Eski katmanları silme işini setExpandedMapTile'a bıraktık.
+            // Burada tekrar manuel silmeye gerek yok, setExpandedMapTile bunu daha sağlam yapıyor.
             setExpandedMapTile(currentLayer);
 
             setTimeout(() => {
@@ -6250,6 +6250,7 @@ async function expandMap(containerId, day) {
         }
     };
 
+    // --- Butonları Ekleme ---
     layerOptions.forEach(opt => {
         const div = document.createElement('div');
         div.className = 'map-type-option';
@@ -6266,6 +6267,7 @@ async function expandMap(containerId, day) {
     const statsDiv = document.createElement('div');
     statsDiv.className = 'route-stats';
 
+    // === 2. CUSTOM CONTROLS ===
     const controlsDiv = document.createElement('div');
     controlsDiv.className = 'map-custom-controls';
 
@@ -6405,17 +6407,22 @@ async function expandMap(containerId, day) {
         dragging: true
     });
 
-    // === TILE LAYER YÖNETİMİ (AKILLI SİNYAL KONTROLÜ) ===
+    // === [CRITICAL FIX] TILE LAYER AYARLAMA VE AGRESİF TEMİZLİK ===
     function setExpandedMapTile(styleKey) {
-        // Temizlik
-        if (expandedMapInstance._maplibreLayer) {
-            try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
-            expandedMapInstance._maplibreLayer = null;
-        }
-        if (expandedMapInstance._osmTileLayer) {
-            try { expandedMapInstance.removeLayer(expandedMapInstance._osmTileLayer); } catch(e){}
-            expandedMapInstance._osmTileLayer = null;
-        }
+        // 1. ZORLU TEMİZLİK: Haritadaki tüm Tile/Vektör katmanlarını tarayıp sil.
+        // Bu, Positron'a geçildiğinde altta Bright'ın (vektörün) kalmasını engeller.
+        expandedMapInstance.eachLayer(layer => {
+            // L.TileLayer (Raster) veya getMaplibreMap fonksiyonu olan (Vektör) katmanları bul
+            if (layer instanceof L.TileLayer || (layer.getMaplibreMap && typeof layer.getMaplibreMap === 'function')) {
+                try { expandedMapInstance.removeLayer(layer); } catch(e){}
+            }
+        });
+
+        // Referansları sıfırla
+        expandedMapInstance._maplibreLayer = null;
+        expandedMapInstance._osmTileLayer = null;
+        
+        // Timeout varsa temizle
         if (expandedMapInstance._tileTimeout) {
             clearTimeout(expandedMapInstance._tileTimeout);
             expandedMapInstance._tileTimeout = null;
@@ -6426,6 +6433,7 @@ async function expandMap(containerId, day) {
         // --- 1. FALLBACK (CARTO) VE 3D GİZLEME ---
         const loadCartoFallback = () => {
             console.warn("[ExpandedMap] OpenFreeMap yanıt vermedi -> CartoDB açılıyor.");
+            // Bir kez daha temizle ki üst üste binmesin
             if (expandedMapInstance._maplibreLayer) {
                 try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
                 expandedMapInstance._maplibreLayer = null;
@@ -6437,7 +6445,6 @@ async function expandMap(containerId, day) {
                 maxZoom: 20
             }).addTo(expandedMapInstance);
 
-            // OpenFreeMap yoksa 3D de çalışmaz -> Menüden Gizle
             const btn3d = layersBar.querySelector('.map-type-option[data-value="liberty"]');
             if (btn3d) btn3d.style.display = 'none';
         };
@@ -6475,11 +6482,9 @@ async function expandMap(containerId, day) {
                     interactive: true
                 });
 
-                // Önce haritaya ekle
                 glLayer.addTo(expandedMapInstance);
                 expandedMapInstance._maplibreLayer = glLayer;
 
-                // Sonra "Herhangi Bir Yaşam Belirtisi" dinle
                 const glMap = glLayer.getMaplibreMap();
                 let isAlive = false;
 
@@ -6491,20 +6496,15 @@ async function expandMap(containerId, day) {
                 };
 
                 if (glMap) {
-                    // Bu eventlerin hepsi "Ben buradayım, veri indiriyorum" demektir.
                     glMap.once('styledata', markAlive);
                     glMap.once('sourcedata', markAlive);
                     glMap.once('tileload', markAlive); 
                     glMap.once('load', markAlive);
                 } else {
-                    // Leaflet katmanı üzerinden de dinle (Yedek)
                     glLayer.once('ready', markAlive);
                 }
 
-                // 3 Saniye Sonra Kontrol Et
                 expandedMapInstance._tileTimeout = setTimeout(() => {
-                    // Eğer 3 saniye içinde HİÇBİR veri gelmediyse değiştir.
-                    // Harita yüklenmiş olsa bile isAlive true olur, yani güvenli.
                     if (!isAlive) loadCartoFallback();
                 }, 3000);
 
@@ -6572,6 +6572,7 @@ async function expandMap(containerId, day) {
         ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
     }
 }
+
 function updateExpandedMap(expandedMap, day) {
     console.log("[updateExpandedMap] Safe Render Started. Day:", day);
 
