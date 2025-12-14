@@ -5258,6 +5258,9 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     if (window.leafletMaps && window.leafletMaps[containerId]) {
         const oldMap = window.leafletMaps[containerId];
+        // Varsa eski zamanlayıcıyı temizle
+        if (oldMap._fallbackTimer) clearTimeout(oldMap._fallbackTimer);
+        
         if (oldMap._maplibreLayer) {
             try { oldMap.removeLayer(oldMap._maplibreLayer); } catch (e) {}
         }
@@ -5304,10 +5307,9 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // 5. HARİTA BAŞLATMA
+    // 5. HARİTA BAŞLATMA (Yumuşak Zoom Ayarları Dahil)
     const map = L.map(containerId, {
         scrollWheelZoom: true,
-        // Akışkan Zoom Ayarları
         fadeAnimation: true,
         zoomAnimation: true,
         markerZoomAnimation: true,
@@ -5325,13 +5327,17 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-    // --- TILE LAYER YÖNETİMİ (ZAMANLAYICI YOK - SADECE HATA KONTROLÜ) ---
-    const loadCartoDB = () => {
-        // Harita silinmişse veya zaten bir katman yüklü ve çalışıyorsa dokunma
-        if (!map || !map._container || map._hasTileLayer) return;
+    // --- TILE LAYER YÖNETİMİ (AKILLI SİNYAL TAKİBİ) ---
+    let layerSuccess = false;
 
-        console.warn(`[SmallMap] Hata oluştu -> CartoDB Fallback (${containerId}).`);
+    // Fallback Fonksiyonu (CartoDB)
+    const loadCartoDB = () => {
+        // Eğer OpenFreeMap zaten başarılı olduysa (bayrak true ise) ASLA çalıştırma
+        if (layerSuccess || !map || !map._container) return;
+
+        console.warn(`[SmallMap] OpenFreeMap yanıt vermedi -> CartoDB açılıyor (${containerId}).`);
         
+        // Yarım kalan katmanı temizle
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
             map._maplibreLayer = null;
@@ -5344,7 +5350,6 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 maxZoom: 20,
                 pane: 'tilePane'
             }).addTo(map);
-            map._hasTileLayer = true;
         } catch (err) {}
     };
 
@@ -5359,23 +5364,49 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 pane: 'tilePane'
             });
 
-            // Pane Kontrolü
+            // Pane kontrolü (Garanti olsun)
             if (!map.getPane('tilePane')) map.createPane('tilePane');
 
-            // Layer Ekleme
+            // Layer'ı ekle
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
-            map._hasTileLayer = true; // Ekledik varsayıyoruz
 
-            // SADECE HATA OLURSA CartoDB'ye geç.
-            // Timeout kullanmıyoruz, böylece "yavaş ama sağlam" yüklenen haritayı bozmuyoruz.
-            glLayer.on('error', () => {
-                map._hasTileLayer = false; // Hata oldu, bayrağı indir
-                loadCartoDB();
-            });
+            // --- DEĞİŞİKLİK BURADA: SIKI TAKİP VE İPTAL ---
+            const markSuccess = (source) => {
+                if (layerSuccess) return; // Zaten başarılı işaretlendiyse çık
+                
+                layerSuccess = true; // BAŞARI BAYRAĞINI DİK
+                // console.log(`[SmallMap] Sinyal alındı: ${source}. Zamanlayıcı iptal.`);
+                
+                // Zamanlayıcıyı derhal öldür
+                if (map._fallbackTimer) {
+                    clearTimeout(map._fallbackTimer);
+                    map._fallbackTimer = null;
+                }
+            };
+
+            // 1. Leaflet eklentisi üzerinden dinle
+            glLayer.on('ready', () => markSuccess('layer-ready'));
+            glLayer.on('load', () => markSuccess('layer-load'));
+
+            // 2. MapLibre Core üzerinden dinle (Çok daha hassas)
+            const glMap = glLayer.getMaplibreMap();
+            if (glMap) {
+                // "styledata": Stil dosyası indiği an (En hızlı sinyal)
+                glMap.once('styledata', () => markSuccess('styledata'));
+                // "sourcedata": Herhangi bir veri kaynağı yüklendiğinde
+                glMap.once('sourcedata', () => markSuccess('sourcedata'));
+                // "tileload": İlk tile indiğinde
+                glMap.once('tileload', () => markSuccess('tileload'));
+            }
+
+            // 3. Zamanlayıcı (3000ms)
+            // Eğer 3 saniye içinde yukarıdaki 'markSuccess' hiç çalışmazsa CartoDB'yi aç.
+            map._fallbackTimer = setTimeout(() => {
+                if (!layerSuccess) loadCartoDB();
+            }, 3000);
 
         } catch (e) {
-            console.error("MapLibre init error:", e);
             loadCartoDB();
         }
     } else {
@@ -5437,6 +5468,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 missingPoints.forEach(mp => {
                     let minDist = Infinity;
                     let closestPoint = null;
+                    
                     for (const rc of routeCoords) {
                         const d = Math.pow(rc[0] - mp.lat, 2) + Math.pow(rc[1] - mp.lng, 2);
                         if (d < minDist) {
@@ -5444,12 +5476,16 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                             closestPoint = rc;
                         }
                     }
+
                     if (closestPoint) {
-                        L.polyline([[mp.lat, mp.lng], closestPoint], {
-                            color: '#d32f2f', 
+                        L.polyline([
+                            [mp.lat, mp.lng], 
+                            closestPoint
+                        ], {
+                            color: '#d32f2f', // Kırmızı
                             weight: 3,
                             opacity: 0.7,
-                            dashArray: '5, 8', 
+                            dashArray: '5, 8', // Kesik çizgi
                             pane: 'customRoutePane'
                         }).addTo(map);
                     }
