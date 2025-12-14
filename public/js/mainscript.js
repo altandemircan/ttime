@@ -6401,10 +6401,10 @@ async function expandMap(containerId, day) {
         zoom: startZoom,
         zoomControl: false,
         scrollWheelZoom: true,
-        fadeAnimation: isDesktop,
-        zoomAnimation: isDesktop,
-        markerZoomAnimation: isDesktop,
-        inertia: false, // keep stable zoom/pan without snap-back
+        fadeAnimation: isDesktop,       // smooth tiles
+        zoomAnimation: isDesktop,       // smooth zoom in/out
+        markerZoomAnimation: isDesktop, // smooth marker scaling
+        inertia: false,                 // avoid snap-back/bounce
         preferCanvas: true,
         renderer: L.canvas({ padding: 0.5 }),
         dragging: true
@@ -11004,19 +11004,19 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. Zoom/Pan Animasyonlarını Kapat (Kaymayı Önler) */
-        .leaflet-pane, 
-        .leaflet-tile, 
-        .leaflet-marker-icon, 
-        .leaflet-marker-shadow, 
-        .leaflet-tile-container, 
-        .leaflet-zoom-animated {
+        /* 1. Zoom/Pan animasyonlarını SADECE küçük haritalarda kapat; expanded-map animasyonlu kalsın */
+        .leaflet-container:not(.expanded-map) .leaflet-pane, 
+        .leaflet-container:not(.expanded-map) .leaflet-tile, 
+        .leaflet-container:not(.expanded-map) .leaflet-marker-icon, 
+        .leaflet-container:not(.expanded-map) .leaflet-marker-shadow, 
+        .leaflet-container:not(.expanded-map) .leaflet-tile-container, 
+        .leaflet-container:not(.expanded-map) .leaflet-zoom-animated {
             transition: none !important;
             transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
         }
         
-        /* 2. Resimlerin animasyonunu engelle */
-        .leaflet-container img.leaflet-tile {
+        /* 2. Resimlerin animasyonunu SADECE küçük haritalarda engelle */
+        .leaflet-container:not(.expanded-map) img.leaflet-tile {
             max-width: none !important;
             width: 256px !important;
             height: 256px !important;
