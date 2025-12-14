@@ -2961,22 +2961,25 @@ function initEmptyDayMap(day) {
   }
 
   // --- [GÜNCELLEME 1] YUMUŞAK ZOOM AYARLARI ---
+// --- [GÜNCELLEME: AKIŞKAN ZOOM AYARLARI] ---
   const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
     scrollWheelZoom: true,
     
-    // Animasyonları AÇ (Yumuşaklık için)
+    // Animasyonlar
     fadeAnimation: true,
     zoomAnimation: true,
     markerZoomAnimation: true,
-    inertia: true,
+    inertia: true,             // Savrulma efekti
 
-    // Hassas Zoom Ayarları
-    zoomSnap: 0.25,            // Küçük haritada ara değerler
-    wheelPxPerZoomLevel: 100,  // Tekerlek hassasiyeti
+    // Hassasiyet Ayarları (DÜZELTİLDİ)
+    zoomSnap: 0,               // 0 = Tamamen serbest zoom (Geri zıplamayı engeller)
+    zoomDelta: 0.1,            // Klavye/Butonla zoom adımı (Çok hassas)
+    wheelPxPerZoomLevel: 60,   // 60 = Standart hız (120 çok yavaştı, düşürdük)
+    wheelDebounceTime: 20,     // Tepki süresi (Daha seri)
     
-    touchZoom: true,           // Mobil uyum
+    touchZoom: true,
     bounceAtZoomLimits: false
   });
 
