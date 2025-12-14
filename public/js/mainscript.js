@@ -2927,7 +2927,6 @@ function initEmptyDayMap(day) {
   }
 
   if (!el.style.height) el.style.height = '285px';
-  // [FIX] Yükleme sırasında gri ekran yerine harita zemin rengi
   el.style.backgroundColor = "#eef0f5"; 
   
   // --- KONUM BELİRLEME MANTIĞI ---
@@ -2961,13 +2960,24 @@ function initEmptyDayMap(day) {
       }
   }
 
+  // --- [GÜNCELLEME 1] YUMUŞAK ZOOM AYARLARI ---
   const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
     scrollWheelZoom: true,
-    fadeAnimation: false,
-    zoomAnimation: false,
-    inertia: false
+    
+    // Animasyonları AÇ (Yumuşaklık için)
+    fadeAnimation: true,
+    zoomAnimation: true,
+    markerZoomAnimation: true,
+    inertia: true,
+
+    // Hassas Zoom Ayarları
+    zoomSnap: 0.25,            // Küçük haritada ara değerler
+    wheelPxPerZoomLevel: 100,  // Tekerlek hassasiyeti
+    
+    touchZoom: true,           // Mobil uyum
+    bounceAtZoomLimits: false
   });
 
   if (startBounds && startBounds.isValid()) {
@@ -2980,26 +2990,30 @@ function initEmptyDayMap(day) {
       if (currentPts.length === 0) {
           map.whenReady(function() {
             try {
-               map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: false });
+               map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true }); // animate: true yaptık
             } catch(e) {}
           });
       }
     }, function(err) {}, { timeout: 3000 });
   }
 
-  // --- [FIX] OSM YERİNE OPENFREEMAP ---
-  const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
-  if (typeof L.maplibreGL === 'function') {
-      L.maplibreGL({
-          style: openFreeMapStyle,
-          attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-          interactive: true
-      }).addTo(map);
-  } else {
-      // Sadece kütüphane yüklenemediyse OSM fallback
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
+  // --- [GÜNCELLEME 2] OPENFREEMAP + CARTODB FALLBACK ---
+  try {
+      const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
+      if (typeof L.maplibreGL === 'function') {
+          L.maplibreGL({
+              style: openFreeMapStyle,
+              attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+              interactive: true
+          }).addTo(map);
+      } else {
+          throw new Error("MapLibre not defined");
+      }
+  } catch (e) {
+      // Fallback: CartoDB Voyager (Diğer haritalarla uyumlu olsun)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20,
+        attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
       }).addTo(map);
   }
   // ------------------------------------
@@ -5304,13 +5318,17 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
     // 5. HARİTA BAŞLATMA (GÜNCELLENDİ)
+   // 5. HARİTA BAŞLATMA
     const map = L.map(containerId, {
         scrollWheelZoom: true,
-        fadeAnimation: false,
-        zoomAnimation: false,
-        markerZoomAnimation: false,
-        inertia: false,
-        zoomSnap: 0,
+        fadeAnimation: true,       // Açık
+        zoomAnimation: true,       // Açık
+        markerZoomAnimation: true, // Açık
+        inertia: true,
+        
+        zoomSnap: 0.25,            // Küçük haritada biraz daha kademeli olabilir
+        wheelPxPerZoomLevel: 100,
+        
         touchZoom: true,
         bounceAtZoomLimits: false
     });
