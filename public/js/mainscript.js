@@ -5854,8 +5854,6 @@ function saveArcPointsForDay(day, points) {
     window._curvedArcPointsByDay[day] = points;
 }
 
-// 3D Harita Verisini (Rota ve Markerlar) Yenileme Fonksiyonu
-// 3D Harita Verisini (Rota ve Markerlar) Yenileme Fonksiyonu
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
     
@@ -5887,9 +5885,15 @@ function refresh3DMapData(day) {
     }
     window._maplibreRouteMarkers = [];
 
+    // Ana rota temizliği
     if (map.getLayer('route-line')) map.removeLayer('route-line');
     if (map.getSource('route-source-dynamic')) map.removeSource('route-source-dynamic');
     
+    // Kesik çizgi (Missing connectors) temizliği
+    if (map.getLayer('missing-connectors-layer')) map.removeLayer('missing-connectors-layer');
+    if (map.getSource('missing-connectors-source')) map.removeSource('missing-connectors-source');
+
+    // Fly mode temizliği
     const style = map.getStyle();
     if (style && style.layers) {
         style.layers.forEach(l => {
@@ -5901,10 +5905,9 @@ function refresh3DMapData(day) {
     }
 
     // ============================================================
-    // --- 3. ROTA ÇİZİMİ VE VERİ EŞİTLEME (FIX) ---
+    // --- 3. ROTA ÇİZİMİ VE VERİ EŞİTLEME ---
     // ============================================================
     
-    // Scale Bar Cache'ini kesinlikle temizle (Marker kaymasını önler)
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (scaleBar) {
         scaleBar._routeCache = null; 
@@ -5912,7 +5915,6 @@ function refresh3DMapData(day) {
 
     if (!isFlyMode) {
         // --- NORMAL ROTA (ROAD) ---
-        // Road modunda global curved verisini temizle ki scale bar GeoJSON kullansın
         if (window._curvedArcPointsByDay) window._curvedArcPointsByDay[day] = null;
 
         let finalGeoJSON = {
@@ -5938,11 +5940,61 @@ function refresh3DMapData(day) {
                 layout: { 'line-join': 'round', 'line-cap': 'round' },
                 paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
             });
+
+            // --- [YENİ] MISSING POINTS CONNECTORS (KESİK ÇİZGİLER) ---
+            const connectorLines = [];
+            
+            validPoints.forEach(p => {
+                let minDist = Infinity;
+                let closestPoint = null;
+
+                // MapLibre coords formatı [lng, lat] şeklindedir.
+                for (const rc of finalGeoJSON.geometry.coordinates) {
+                    const dSq = (rc[1] - p.lat) ** 2 + (rc[0] - p.lng) ** 2;
+                    if (dSq < minDist) {
+                        minDist = dSq;
+                        closestPoint = rc;
+                    }
+                }
+
+                // 2D harita ile aynı eşik değer (yaklaşık 80m)
+                if (closestPoint && minDist > 0.0000005) {
+                    connectorLines.push([
+                        [p.lng, p.lat], // Marker konumu
+                        closestPoint    // Rota üzerindeki en yakın nokta
+                    ]);
+                }
+            });
+
+            if (connectorLines.length > 0) {
+                map.addSource('missing-connectors-source', {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'MultiLineString',
+                            coordinates: connectorLines
+                        }
+                    }
+                });
+
+                map.addLayer({
+                    id: 'missing-connectors-layer',
+                    type: 'line',
+                    source: 'missing-connectors-source',
+                    layout: { 'line-join': 'round', 'line-cap': 'round' },
+                    paint: {
+                        'line-color': '#d32f2f', // Kırmızı
+                        'line-width': 3,
+                        'line-dasharray': [2, 2], // Kesik çizgi efekti
+                        'line-opacity': 0.7
+                    }
+                });
+            }
+            // ---------------------------------------------------------
         }
     } else {
         // --- FLY MODE (KAVİSLİ ROTA) ---
-        // Markerların çizgi üzerinde gezmesi için, çizilen kavis noktalarını
-        // Scale Bar'ın okuduğu global değişkene kaydetmeliyiz.
         let allCurvePoints = [];
 
         if (validPoints.length > 1) {
@@ -5953,9 +6005,6 @@ function refresh3DMapData(day) {
                                     ? getCurvedArcCoords(start, end) 
                                     : [start, end];
 
-                // Global diziye ekle (Leaflet formatı için [Lat, Lng] çevirebiliriz ama
-                // getCurvedArcCoords [Lng, Lat] döner. ScaleBar helper'ı bunu yönetir.)
-                // Önemli olan verinin aynı olmasıdır.
                 allCurvePoints = allCurvePoints.concat(curveCoords);
 
                 const sId = `flyroute-${i}`;
@@ -5968,12 +6017,7 @@ function refresh3DMapData(day) {
                     paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
                 });
             }
-            
-            // FIX: 3D haritada görünen kavisli yolu Scale Bar'a bildir
             if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
-            // Scale bar [Lat, Lng] bekleyebilir, formatı kontrol edelim. 
-            // Genelde [Lng, Lat] gelir. ScaleBar'da "fly_arc" kaynağı varsa çevrilir.
-            // Burada ham veriyi kaydediyoruz.
             window._curvedArcPointsByDay[day] = allCurvePoints;
         }
     }
@@ -6002,6 +6046,7 @@ function refresh3DMapData(day) {
         window._maplibreRouteMarkers.push(marker);
     });
 }
+
 function openMapLibre3D(expandedMap) {
   // DOM Elementlerini Bul
   let mapDiv = expandedMap.getContainer();
