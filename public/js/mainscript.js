@@ -5915,13 +5915,13 @@ function refresh3DMapData(day) {
     }
     window._maplibreRouteMarkers = [];
 
-    // Rota temizliği
+    // Rota katmanları temizliği
     if (map.getLayer('route-line')) map.removeLayer('route-line');
     if (map.getSource('route-source-dynamic')) map.removeSource('route-source-dynamic');
     if (map.getLayer('missing-connectors-layer')) map.removeLayer('missing-connectors-layer');
     if (map.getSource('missing-connectors-source')) map.removeSource('missing-connectors-source');
 
-    // Fly Mode Temizliği
+    // Fly Mode temizliği
     const style = map.getStyle();
     if (style && style.layers) {
         style.layers.forEach(l => {
@@ -6004,13 +6004,13 @@ function refresh3DMapData(day) {
                     paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
                 });
             }
-            if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
+            if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay[day] = {};
             window._curvedArcPointsByDay[day] = allCurvePoints;
         }
     }
 
     // ============================================================
-    // --- 4. MARKERLARI EKLE (SAĞLAM KONUMLANDIRMA) ---
+    // --- 4. MARKER EKLEME VE DAVRANIŞ (Logic Here) ---
     // ============================================================
     
     function findCartIndexByDayPosition(dayNum, positionIdx) {
@@ -6025,37 +6025,31 @@ function refresh3DMapData(day) {
         return -1;
     }
 
-    // Haritadaki tüm 3D markerları resetleyen yardımcı (kırmızıya döndür)
-    function resetAll3DMarkersVisuals() {
-        document.querySelectorAll('.maplibre-marker-dynamic').forEach(el => {
-            el.style.background = '#d32f2f'; // Kırmızı
-            el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
-            el.style.animation = 'none'; // Dönmeyi durdur
-            el.style.zIndex = '10';
-        });
+    // Tüm markerları pasife çeken (kırmızı, durmuş, kilitli) fonksiyon
+    function resetAll3DMarkersState() {
+        if (window._maplibreRouteMarkers) {
+            window._maplibreRouteMarkers.forEach(m => {
+                // Sürüklemeyi kilitle
+                m.setDraggable(false);
+                // Görseli düzelt
+                const e = m.getElement();
+                e.classList.remove('green', 'spin');
+                e.classList.add('red');
+                e.style.cursor = 'grab';
+                e.style.zIndex = '10';
+            });
+        }
     }
 
     validPoints.forEach((p, idx) => {
-        // --- [FIX] CSS SINIFI KULLANMIYORUZ, DOĞRUDAN STİL VERİYORUZ ---
-        // Böylece Leaflet CSS'leri (custom-marker-outer) yüzünden kayma olmaz.
+        // 1. Element Oluştur (Başlangıç: Kırmızı, 2D CSS sınıflarını kullan)
         const el = document.createElement('div');
-        el.className = 'maplibre-marker-dynamic';
-        el.style.cssText = `
-            background: #d32f2f;
-            width: 32px; height: 32px; 
-            border-radius: 50%; 
-            border: 2px solid white;
-            color: white; 
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-family: sans-serif; font-size: 14px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
-            cursor: grab; 
-            z-index: 10;
-            transition: background 0.2s; 
-        `;
-        el.innerText = idx + 1;
+        // 'custom-marker-outer' ve 'red' -> styles.css'ten gelen sınıflar
+        el.className = 'maplibre-marker-dynamic custom-marker-outer red'; 
+        el.style.cursor = 'pointer'; 
+        el.innerHTML = `<span class="custom-marker-label">${idx + 1}</span>`;
 
-        // Popup İçeriği
+        // 2. Popup Oluştur
         const popupDiv = document.createElement('div');
         popupDiv.style.minWidth = "120px";
         popupDiv.innerHTML = `<b>${p.name || "Point"}</b><br>`;
@@ -6069,7 +6063,7 @@ function refresh3DMapData(day) {
             const cartIdx = findCartIndexByDayPosition(day, idx);
             if (cartIdx > -1) {
                 window.cart.splice(cartIdx, 1);
-                // Silme işleminden sonra BEKLE ve yenile
+                // AWAIT İLE GÜNCELLE
                 if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
                 if (typeof updateCart === "function") await updateCart();
                 if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
@@ -6079,57 +6073,55 @@ function refresh3DMapData(day) {
         
         popupDiv.appendChild(removeBtn);
 
-        const popup = new maplibregl.Popup({ offset: 20, closeButton: true }) // Offset ayarlandı
+        const popup = new maplibregl.Popup({ offset: 25, closeButton: true })
             .setDOMContent(popupDiv);
 
-        // Popup kapanınca markerı eski haline döndür
-        popup.on('close', () => {
-            el.style.background = '#d32f2f'; // Kırmızı
-            el.style.animation = 'none';
-            el.style.zIndex = '10';
-        });
-
-        // MARKER OLUŞTUR
-        // Anchor: 'center' daire olduğu için doğrudur.
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center', draggable: true })
+        // 3. Marker'ı Başlangıçta KİLİTLİ (draggable: false) oluştur
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center', draggable: false })
             .setLngLat([p.lng, p.lat])
             .setPopup(popup)
             .addTo(map);
 
-        // --- TIKLAMA ANİMASYONU ---
+        // 4. CLICK EVENT: Aktifleştirme
         el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            resetAll3DMarkersVisuals(); // Diğerlerini sıfırla
+            e.stopPropagation(); // Harita tıklamasını engelle
             
-            // Seçili olanı Yeşil yap ve Döndür
-            el.style.background = '#38b835'; // Yeşil
-            el.style.zIndex = '999'; // En öne getir
-            // styles.css'deki spin animasyonunu kullan
-            el.style.animation = 'spin 1s linear infinite';
+            // Eğer zaten aktifse (yeşilse) bir şey yapma (popup zaten açılır)
+            if (el.classList.contains('green')) return;
+
+            // Önce diğerlerini sıfırla
+            resetAll3DMarkersState();
+
+            // Bu markerı aktifleştir
+            el.classList.remove('red');
+            el.classList.add('green', 'spin');
+            el.style.zIndex = '999';
+            el.style.cursor = 'grab';
             
+            // Sürüklemeyi aç
+            marker.setDraggable(true);
+            
+            // Popup'ı manuel aç
+            marker.togglePopup();
+
             if ('vibrate' in navigator) navigator.vibrate(15);
         });
 
-        // --- SÜRÜKLEME OLAYLARI ---
+        // 5. DRAG EVENTS
         marker.on('dragstart', () => {
-            // Sürüklerken de yeşil ve dönüyor olsun
-            resetAll3DMarkersVisuals();
-            el.style.background = '#38b835';
-            el.style.animation = 'spin 1s linear infinite';
+            marker.setPopup(null); // Sürüklerken popup gizle
             el.style.cursor = 'grabbing';
-            el.style.zIndex = '999';
-            marker.setPopup(null); // Popup'ı gizle
         });
 
         marker.on('dragend', async () => {
             el.style.cursor = 'grab';
-            marker.setPopup(popup); // Popup'ı geri tak
+            marker.setPopup(popup); // Popup geri gelsin
             
             const lngLat = marker.getLngLat();
-            
-            // Snap to Road
             let finalLat = lngLat.lat;
             let finalLng = lngLat.lng;
+
+            // Snap
             try {
                 if (typeof snapPointToRoad === 'function') {
                     const snapped = await snapPointToRoad(lngLat.lat, lngLat.lng);
@@ -6138,7 +6130,7 @@ function refresh3DMapData(day) {
                 }
             } catch(_) {}
 
-            // Adres güncelleme
+            // Info
             let newName = p.name;
             let newAddress = "";
             let newOpening = "";
@@ -6151,7 +6143,7 @@ function refresh3DMapData(day) {
                 }
             } catch(_) {}
 
-            // Cart güncelleme
+            // Update Cart
             const cartIdx = findCartIndexByDayPosition(day, idx);
             if (cartIdx > -1) {
                 const item = window.cart[cartIdx];
@@ -6160,9 +6152,16 @@ function refresh3DMapData(day) {
                 item.name = newName;
                 item.address = newAddress || item.address;
                 item.opening_hours = newOpening || item.opening_hours;
+                
+                if (window.selectedCity) {
+                    try {
+                        const img = await getImageForPlace(item.name, "Place", window.selectedCity);
+                        if (img) item.image = img;
+                    } catch(_){}
+                }
             }
 
-            // Rota ve Grafik Güncelleme (Await ile)
+            // AWAIT VE RENDER
             window._lastSegmentDay = undefined;
             if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
             if (typeof updateCart === "function") updateCart();
@@ -6170,7 +6169,7 @@ function refresh3DMapData(day) {
 
             refresh3DMapData(day); // Çizgileri güncelle
             
-            // Grafik güncelleme
+            // Grafik
             const sbContainer = document.getElementById(`expanded-route-scale-bar-day${day}`);
             const summary = window.lastRouteSummaries?.[containerId];
             if (sbContainer && summary && summary.distance > 0) {
@@ -6187,9 +6186,9 @@ function refresh3DMapData(day) {
         window._maplibreRouteMarkers.push(marker);
     });
 
-    // Harita boşluğuna tıklayınca resetle
+    // Harita boşluğuna tıklayınca hepsini resetle
     map.once('click', () => {
-        resetAll3DMarkersVisuals();
+        resetAll3DMarkersState();
     });
 }
 
