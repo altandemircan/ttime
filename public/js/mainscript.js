@@ -5304,17 +5304,13 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
     // 5. HARİTA BAŞLATMA (GÜNCELLENDİ)
-   // 5. HARİTA BAŞLATMA
     const map = L.map(containerId, {
         scrollWheelZoom: true,
-        fadeAnimation: true,       // Açık
-        zoomAnimation: true,       // Açık
-        markerZoomAnimation: true, // Açık
-        inertia: true,
-        
-        zoomSnap: 0.25,            // Küçük haritada biraz daha kademeli olabilir
-        wheelPxPerZoomLevel: 100,
-        
+        fadeAnimation: false,
+        zoomAnimation: false,
+        markerZoomAnimation: false,
+        inertia: false,
+        zoomSnap: 0,
         touchZoom: true,
         bounceAtZoomLimits: false
     });
@@ -6391,7 +6387,6 @@ async function expandMap(containerId, day) {
     showRouteInfoBanner(day);
 
     // === MAP INITIALIZATION (GÜNCELLENDİ) ===
-// === MAP INITIALIZATION (YUMUŞAK ZOOM İÇİN GÜNCELLENDİ) ===
     const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
     const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
     let startCenter = validPtsInit.length === 1 ? [validPtsInit[0].lat, validPtsInit[0].lng] : [39.0, 35.0];
@@ -6407,22 +6402,17 @@ async function expandMap(containerId, day) {
         zoom: startZoom,
         zoomControl: false,
         scrollWheelZoom: true,
-        
-        // --- YUMUŞAK ZOOM AYARLARI ---
-        fadeAnimation: true,       // Geri açtık
-        zoomAnimation: true,       // Geri açtık
-        markerZoomAnimation: true, // Geri açtık
-        inertia: true,             // Savrulma efekti açık
-        
-        zoomSnap: 0.1,             // 1 yerine 0.1 (Ara değerlerde durabilir, çok daha akıcı)
-        wheelPxPerZoomLevel: 120,  // Tekerlek hassasiyeti (60'tan 120'ye çıkardık, daha yavaş ve kontrollü zoom)
-        
-        touchZoom: true,
-        bounceAtZoomLimits: false,
+        fadeAnimation: false,       // Animasyonları kapat
+        zoomAnimation: false,       // Animasyonları kapat
+        markerZoomAnimation: false, // Animasyonları kapat
+        inertia: false,
+        zoomSnap: 0,                // Daha yumuşak zoom seviyeleri
+        touchZoom: true,            // Mobilde pinch zoom açık
+        bounceAtZoomLimits: false,  // Sınıra gelince zıplamayı kapat
         preferCanvas: true,
         renderer: L.canvas({ padding: 0.5 }),
         dragging: true
-    });;
+    });
 
     // === [CRITICAL FIX] TILE LAYER AYARLAMA VE AGRESİF TEMİZLİK ===
     function setExpandedMapTile(styleKey) {
