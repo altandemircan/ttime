@@ -5884,28 +5884,25 @@ function saveArcPointsForDay(day, points) {
     }
     window._curvedArcPointsByDay[day] = points;
 }
-
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
     
-    // Harita yoksa çık
     if (!map || !map.getStyle()) return;
 
-    // --- 0. ANIMASYON STİLİNİ GARANTİLE ---
-    if (!document.getElementById('tt-3d-marker-anim')) {
+    // --- 0. DÖNME ANİMASYONU CSS (Sadece Dönme) ---
+    if (!document.getElementById('tt-3d-spin-style')) {
         const s = document.createElement('style');
-        s.id = 'tt-3d-marker-anim';
+        s.id = 'tt-3d-spin-style';
         s.innerHTML = `
-            @keyframes spin-marker-bg {
-                0% { transform: translate(-50%, -50%) rotate(0deg); }
-                100% { transform: translate(-50%, -50%) rotate(360deg); }
+            @keyframes spin-visual {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
             }
-            /* Marker'ın kendisi transform ile ortalandığı için animasyonda da translate korunmalı */
         `;
         document.head.appendChild(s);
     }
 
-    // --- 1. VERİYİ ÇEK ---
+    // --- 1. VERİ HAZIRLIĞI ---
     const points = (typeof getDayPoints === 'function' ? getDayPoints(day) : []);
     const containerId = `route-map-day${day}`;
     const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
@@ -5920,52 +5917,35 @@ function refresh3DMapData(day) {
 
     console.log(`[3D FORCE] Refreshing Day ${day}. Points: ${validPoints.length}`);
 
-    // ============================================================
     // --- 2. TEMİZLİK ---
-    // ============================================================
-    
     if (window._maplibreRouteMarkers) {
         window._maplibreRouteMarkers.forEach(m => m.remove());
     }
     window._maplibreRouteMarkers = [];
 
-    // Rota temizliği
-    if (map.getLayer('route-line')) map.removeLayer('route-line');
-    if (map.getSource('route-source-dynamic')) map.removeSource('route-source-dynamic');
-    if (map.getLayer('missing-connectors-layer')) map.removeLayer('missing-connectors-layer');
-    if (map.getSource('missing-connectors-source')) map.removeSource('missing-connectors-source');
+    // Katman temizliği
+    ['route-line', 'missing-connectors-layer'].forEach(l => { if(map.getLayer(l)) map.removeLayer(l); });
+    ['route-source-dynamic', 'missing-connectors-source'].forEach(s => { if(map.getSource(s)) map.removeSource(s); });
 
-    // Fly mode temizliği
     const style = map.getStyle();
     if (style && style.layers) {
-        style.layers.forEach(l => {
-            if (l.id.startsWith('flyroute-line-')) map.removeLayer(l.id);
-        });
-        Object.keys(style.sources).forEach(k => {
-            if (k.startsWith('flyroute-')) map.removeSource(k);
-        });
+        style.layers.forEach(l => { if (l.id.startsWith('flyroute-line-')) map.removeLayer(l.id); });
+        Object.keys(style.sources).forEach(k => { if (k.startsWith('flyroute-')) map.removeSource(k); });
     }
 
-    // ============================================================
-    // --- 3. ROTA ÇİZİMİ (DEĞİŞMEDİ) ---
-    // ============================================================
-    
+    // --- 3. ROTA ÇİZİMİ ---
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-    if (scaleBar) { scaleBar._routeCache = null; }
+    if (scaleBar) scaleBar._routeCache = null;
 
     if (!isFlyMode) {
         if (window._curvedArcPointsByDay) window._curvedArcPointsByDay[day] = null;
-
         let finalGeoJSON = {
-            type: 'Feature',
-            properties: {},
+            type: 'Feature', properties: {}, 
             geometry: { type: 'LineString', coordinates: routeCoords }
         };
-
         if (routeCoords.length < 2 && validPoints.length > 1) {
              finalGeoJSON.geometry.coordinates = validPoints.map(p => [p.lng, p.lat]);
         }
-
         if (finalGeoJSON.geometry.coordinates.length > 1) {
             map.addSource('route-source-dynamic', { type: 'geojson', data: finalGeoJSON });
             map.addLayer({
@@ -5973,35 +5953,22 @@ function refresh3DMapData(day) {
                 layout: { 'line-join': 'round', 'line-cap': 'round' },
                 paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.9 }
             });
-
             // Missing connectors
             const connectorLines = [];
             validPoints.forEach(p => {
-                let minDist = Infinity;
-                let closestPoint = null;
+                let minDist = Infinity; let closestPoint = null;
                 for (const rc of finalGeoJSON.geometry.coordinates) {
-                    const dSq = (rc[1] - p.lat) ** 2 + (rc[0] - p.lng) ** 2;
+                    const dSq = (rc[1] - p.lat)**2 + (rc[0] - p.lng)**2;
                     if (dSq < minDist) { minDist = dSq; closestPoint = rc; }
                 }
-                if (closestPoint && minDist > 0.0000005) {
-                    connectorLines.push([[p.lng, p.lat], closestPoint]);
-                }
+                if (closestPoint && minDist > 0.0000005) connectorLines.push([[p.lng, p.lat], closestPoint]);
             });
-
             if (connectorLines.length > 0) {
-                map.addSource('missing-connectors-source', {
-                    type: 'geojson',
-                    data: { type: 'Feature', geometry: { type: 'MultiLineString', coordinates: connectorLines } }
-                });
-                map.addLayer({
-                    id: 'missing-connectors-layer', type: 'line', source: 'missing-connectors-source',
-                    layout: { 'line-join': 'round', 'line-cap': 'round' },
-                    paint: { 'line-color': '#d32f2f', 'line-width': 3, 'line-dasharray': [2, 2], 'line-opacity': 0.7 }
-                });
+                map.addSource('missing-connectors-source', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'MultiLineString', coordinates: connectorLines } } });
+                map.addLayer({ id: 'missing-connectors-layer', type: 'line', source: 'missing-connectors-source', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#d32f2f', 'line-width': 3, 'line-dasharray': [2, 2], 'line-opacity': 0.7 } });
             }
         }
     } else {
-        // Fly Mode
         let allCurvePoints = [];
         if (validPoints.length > 1) {
             for (let i = 0; i < validPoints.length - 1; i++) {
@@ -6009,22 +5976,17 @@ function refresh3DMapData(day) {
                 const end = [validPoints[i+1].lng, validPoints[i+1].lat];
                 const curveCoords = (typeof getCurvedArcCoords === 'function') ? getCurvedArcCoords(start, end) : [start, end];
                 allCurvePoints = allCurvePoints.concat(curveCoords);
-                const sId = `flyroute-${i}`;
-                const lId = `flyroute-line-${i}`;
+                const sId = `flyroute-${i}`; const lId = `flyroute-line-${i}`;
                 map.addSource(sId, { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: curveCoords } } });
-                map.addLayer({
-                    id: lId, type: 'line', source: sId,
-                    layout: { 'line-cap': 'round', 'line-join': 'round' },
-                    paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] }
-                });
+                map.addLayer({ id: lId, type: 'line', source: sId, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-opacity': 0.8, 'line-dasharray': [1, 2] } });
             }
-            if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay[day] = {};
+            if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
             window._curvedArcPointsByDay[day] = allCurvePoints;
         }
     }
 
     // ============================================================
-    // --- 4. MARKER EKLEME (FIXED VISUALS) ---
+    // --- 4. MARKER EKLEME (İÇ İÇE DIV YAPISI - KESİN ÇÖZÜM) ---
     // ============================================================
     
     function findCartIndexByDayPosition(dayNum, positionIdx) {
@@ -6039,42 +6001,52 @@ function refresh3DMapData(day) {
         return -1;
     }
 
-    // Yardımcı: Tüm markerları pasif (kırmızı) hale getir
-    function resetAllMarkersToDefault() {
+    // Tüm markerları resetleyen fonksiyon
+    function resetAll3DMarkersState() {
         window._maplibreRouteMarkers.forEach(m => {
-            m.setDraggable(false); // Sürüklemeyi kilitle
-            const el = m.getElement();
-            if (el) {
-                // Kırmızıya dön, animasyonu durdur
-                el.style.backgroundColor = '#d32f2f';
-                el.style.animation = 'none';
-                el.style.zIndex = '10';
-                el.style.cursor = 'pointer';
+            m.setDraggable(false); // Kilitle
+            
+            // Marker elementinin içindeki görsel div'i bul
+            const rootEl = m.getElement();
+            const visualEl = rootEl.querySelector('.marker-visual');
+            
+            if (visualEl) {
+                visualEl.style.backgroundColor = '#d32f2f'; // Kırmızı
+                visualEl.style.animation = 'none'; // Durdur
             }
+            rootEl.style.zIndex = '10';
         });
     }
 
     validPoints.forEach((p, idx) => {
-        // --- MARKER HTML ELEMENTİ ---
-        const el = document.createElement('div');
-        el.className = 'maplibre-marker-custom';
-        // Inline stil ile kesin pozisyonlama ve görünüm
-        el.style.cssText = `
+        // --- HTML YAPISI ---
+        // rootEl: MapLibre tarafından konumlandırılır. Buna animasyon/transform VERME!
+        const rootEl = document.createElement('div');
+        rootEl.className = 'maplibre-marker-root';
+        rootEl.style.width = '32px';
+        rootEl.style.height = '32px';
+        rootEl.style.cursor = 'pointer';
+        rootEl.style.zIndex = '10';
+
+        // visualEl: İçindeki renkli yuvarlak. Animasyon buna verilecek.
+        const visualEl = document.createElement('div');
+        visualEl.className = 'marker-visual';
+        visualEl.style.cssText = `
+            width: 100%; height: 100%;
             background-color: #d32f2f;
-            width: 32px; height: 32px;
             border-radius: 50%;
             border: 2px solid white;
             color: white;
             display: flex; align-items: center; justify-content: center;
             font-weight: bold; font-family: sans-serif; font-size: 14px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            cursor: pointer;
-            z-index: 10;
             transition: background-color 0.2s;
         `;
-        el.innerText = idx + 1;
+        visualEl.innerText = idx + 1;
+        
+        rootEl.appendChild(visualEl);
 
-        // --- POPUP İÇERİĞİ ---
+        // --- POPUP ---
         const popupDiv = document.createElement('div');
         popupDiv.style.minWidth = "120px";
         popupDiv.innerHTML = `<b>${p.name || "Point"}</b><br>`;
@@ -6087,7 +6059,6 @@ function refresh3DMapData(day) {
             const cartIdx = findCartIndexByDayPosition(day, idx);
             if (cartIdx > -1) {
                 window.cart.splice(cartIdx, 1);
-                // Bekle ve Yenile
                 if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
                 if (typeof updateCart === "function") await updateCart();
                 if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
@@ -6096,93 +6067,82 @@ function refresh3DMapData(day) {
         };
         popupDiv.appendChild(removeBtn);
 
-        const popup = new maplibregl.Popup({ offset: 25, closeButton: true })
-            .setDOMContent(popupDiv);
+        const popup = new maplibregl.Popup({ offset: 18, closeButton: true }).setDOMContent(popupDiv);
 
-        // Popup kapanınca marker'ı resetle
+        // Popup kapanınca resetle
         popup.on('close', () => {
-            el.style.backgroundColor = '#d32f2f'; // Kırmızı
-            el.style.animation = 'none';
-            el.style.zIndex = '10';
-            marker.setDraggable(false); // Sürüklemeyi kapat
+            visualEl.style.backgroundColor = '#d32f2f';
+            visualEl.style.animation = 'none';
+            rootEl.style.zIndex = '10';
+            marker.setDraggable(false);
         });
 
-        // --- MARKER OLUŞTURMA (Başlangıçta draggable: false) ---
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center', draggable: false })
+        // --- MARKER ---
+        const marker = new maplibregl.Marker({ element: rootEl, anchor: 'center', draggable: false })
             .setLngLat([p.lng, p.lat])
             .setPopup(popup)
             .addTo(map);
 
-        // --- 1. TIKLAMA OLAYI (AKTİFLEŞTİRME) ---
-        el.addEventListener('click', (e) => {
-            e.stopPropagation(); // Haritaya tıklamayı engelle
+        // --- CLICK EVENT ---
+        rootEl.addEventListener('click', (e) => {
+            e.stopPropagation(); 
             
-            // Eğer zaten aktifse (yeşilse) işlem yapma
-            if (el.style.backgroundColor === 'rgb(56, 184, 53)' || el.style.backgroundColor === '#38b835') {
-                return; 
-            }
+            // Zaten aktifse çık
+            if (visualEl.style.backgroundColor === 'rgb(56, 184, 53)' || visualEl.style.backgroundColor === '#38b835') return;
 
-            // Diğerlerini sıfırla
-            resetAllMarkersToDefault();
+            resetAll3DMarkersState(); // Diğerlerini kapat
 
-            // Bu markerı yeşil yap ve döndür
-            el.style.backgroundColor = '#38b835'; // Yeşil
-            el.style.animation = 'spin 1s linear infinite'; // styles.css'teki animasyon veya yukarıdaki stil
-            el.style.zIndex = '999';
-            el.style.cursor = 'grab';
+            // Aktifleştir (Sadece visualEl animasyon yapar!)
+            visualEl.style.backgroundColor = '#38b835'; // Yeşil
+            visualEl.style.animation = 'spin-visual 1s linear infinite';
+            
+            rootEl.style.zIndex = '999'; // En öne al
+            rootEl.style.cursor = 'grab';
 
-            // Sürüklemeyi aç ve Popup'ı göster
             marker.setDraggable(true);
             marker.togglePopup();
         });
 
-        // --- 2. SÜRÜKLEME BAŞLANGICI ---
+        // --- DRAG EVENTS ---
         marker.on('dragstart', () => {
-            marker.setPopup(null); // Sürüklerken popup gizle
-            el.style.cursor = 'grabbing';
+            marker.setPopup(null);
+            rootEl.style.cursor = 'grabbing';
         });
 
-        // --- 3. SÜRÜKLEME BİTİŞİ (GÜNCELLEME) ---
         marker.on('dragend', async () => {
-            el.style.cursor = 'grab';
-            marker.setPopup(popup); // Popup geri gelsin
+            rootEl.style.cursor = 'grab';
+            marker.setPopup(popup);
             
             const lngLat = marker.getLngLat();
             let finalLat = lngLat.lat;
             let finalLng = lngLat.lng;
 
-            // Snap Point
+            // Snap
             try {
                 if (typeof snapPointToRoad === 'function') {
                     const snapped = await snapPointToRoad(lngLat.lat, lngLat.lng);
-                    finalLat = snapped.lat;
-                    finalLng = snapped.lng;
+                    finalLat = snapped.lat; finalLng = snapped.lng;
                 }
             } catch(_) {}
 
-            // Address Info
+            // Address
             let newName = p.name;
-            let newAddress = "";
-            let newOpening = "";
+            let newAddress = "", newOpening = "";
             try {
                 if (typeof getPlaceInfoFromLatLng === 'function') {
                     const info = await getPlaceInfoFromLatLng(lngLat.lat, lngLat.lng);
                     if (info.name) newName = info.name;
-                    newAddress = info.address;
-                    newOpening = info.opening_hours;
+                    newAddress = info.address; newOpening = info.opening_hours;
                 }
             } catch(_) {}
 
-            // Update Cart
+            // Cart Update
             const cartIdx = findCartIndexByDayPosition(day, idx);
             if (cartIdx > -1) {
                 const item = window.cart[cartIdx];
-                item.location.lat = lngLat.lat;
-                item.location.lng = lngLat.lng;
-                item.name = newName;
-                item.address = newAddress || item.address;
+                item.location.lat = lngLat.lat; item.location.lng = lngLat.lng;
+                item.name = newName; item.address = newAddress || item.address;
                 item.opening_hours = newOpening || item.opening_hours;
-                
                 if (window.selectedCity) {
                     try {
                         const img = await getImageForPlace(item.name, "Place", window.selectedCity);
@@ -6191,16 +6151,15 @@ function refresh3DMapData(day) {
                 }
             }
 
-            // AWAIT & RENDER
+            // Sync Logic
             window._lastSegmentDay = undefined;
             if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
             if (typeof updateCart === "function") updateCart();
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
-            // Haritayı Yenile
-            refresh3DMapData(day); 
+            refresh3DMapData(day);
             
-            // Grafiği Yenile
+            // Grafik Update
             const sbContainer = document.getElementById(`expanded-route-scale-bar-day${day}`);
             const summary = window.lastRouteSummaries?.[containerId];
             if (sbContainer && summary && summary.distance > 0) {
@@ -6217,10 +6176,7 @@ function refresh3DMapData(day) {
         window._maplibreRouteMarkers.push(marker);
     });
 
-    // Harita boşluğuna tıklayınca hepsini resetle
-    map.once('click', () => {
-        resetAllMarkersToDefault();
-    });
+    map.once('click', () => { resetAll3DMarkersState(); });
 }
 
 function openMapLibre3D(expandedMap) {
