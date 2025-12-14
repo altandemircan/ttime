@@ -5601,9 +5601,6 @@ function updateRouteStatsUI(day) {
 }
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (DEBUG MODU) ===
-// Scale Bar üzerinde gezinirken haritadaki marker'ı hareket ettiren fonksiyon
-// Scale Bar üzerinde gezinirken haritadaki marker'ı hareket ettiren fonksiyon (Segment Destekli)
-// Scale Bar Marker Fix: Fly Mode Kavis Desteği + Segment Zoom Desteği
 function setupScaleBarInteraction(day, map) {
     const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     
@@ -5617,23 +5614,18 @@ function setupScaleBarInteraction(day, map) {
         let source = "none";
 
         // A) ÖNCELİK 1: Fly Mode Kavisli Yol (Curved Arc)
-        // Eğer haritada kavisli çizgi çizildiyse, marker bunu takip etmeli.
-        // Düz GeoJSON yerine buna öncelik veriyoruz.
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 0) {
              const arcPts = window._curvedArcPointsByDay[day];
-             // Veri [Lng, Lat] formatında geliyor, Leaflet [Lat, Lng] ister. Çeviriyoruz:
+             // Veri [Lng, Lat] gelebilir, kontrol edip [Lat, Lng] yapıyoruz
              coordinates = arcPts.map(p => [p[1], p[0]]); 
              source = "fly_arc";
         }
 
         // B) ÖNCELİK 2: OSRM/VPS Detaylı Rota (GeoJSON)
-        // Fly mode değilse ve gerçek yol verisi varsa bunu kullan.
         if (coordinates.length === 0) {
             const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
             if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
                 const coords = geojson.features[0].geometry.coordinates;
-                // Sadece nokta sayısı 2'den fazlaysa (gerçek rota ise) al.
-                // Fly mode'daki dummy geojson genelde sadece 2 nokta (baş-son) içerir.
                 if (coords.length > 2) {
                     coordinates = coords.map(c => [c[1], c[0]]); // [Lat, Lng]
                     source = "geojson";
@@ -5641,7 +5633,7 @@ function setupScaleBarInteraction(day, map) {
             }
         }
 
-        // C) ÖNCELİK 3: Sepet (Cart) Düz Çizgi (En kötü senaryo)
+        // C) ÖNCELİK 3: Sepet (Cart) Düz Çizgi
         if (coordinates.length === 0 && window.cart) {
             const rawPts = window.cart
                 .filter(i => i.day == day && i.location && !isNaN(i.location.lat))
@@ -5657,7 +5649,7 @@ function setupScaleBarInteraction(day, map) {
 
     // --- 2. Mesafe Cache'i Oluştur ---
     function buildGeomCache() {
-        const { coordinates } = getRouteGeometry();
+        const { coordinates, source } = getRouteGeometry();
         if (!coordinates || coordinates.length < 2) return null;
 
         let totalDist = 0;
@@ -5674,7 +5666,8 @@ function setupScaleBarInteraction(day, map) {
         return {
             coords: coordinates,
             dists: distIndex,
-            totalLen: totalDist
+            totalLen: totalDist,
+            source: source // Kaynağı da sakla
         };
     }
 
@@ -5729,11 +5722,22 @@ function setupScaleBarInteraction(day, map) {
         const rect = scaleBar.getBoundingClientRect();
         const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
         
-        // Mouse'un bar üzerindeki yüzdesi (0.0 - 1.0)
         let percent = (clientX - rect.left) / rect.width;
         percent = Math.max(0, Math.min(1, percent));
 
         let targetMetre = 0;
+
+        // === [FIX] ORAN HESABI (FLY MODE SENKRONİZASYONU) ===
+        // Geometri uzunluğu (Eğri) / Özet uzunluğu (Düz)
+        let geometryRatio = 1.0;
+        const containerId = `route-map-day${day}`;
+        const summary = window.lastRouteSummaries && window.lastRouteSummaries[containerId];
+        
+        // Eğer Fly Mode ise veya geometri özeten büyükse oranı hesapla
+        if (cache.source === 'fly_arc' && summary && summary.distance > 0) {
+            geometryRatio = cache.totalLen / summary.distance; 
+        }
+        // ====================================================
 
         // === SEGMENT (ZOOM) KONTROLÜ ===
         if (
@@ -5743,9 +5747,15 @@ function setupScaleBarInteraction(day, map) {
         ) {
             const startKm = window._lastSegmentStartKm;
             const endKm = window._lastSegmentEndKm;
+            // Mevcut km (Özet verisine göre)
             const currentKm = startKm + (percent * (endKm - startKm));
-            targetMetre = currentKm * 1000; 
+            
+            // [FIX] Kilometreyi Metreye çevirip ORAN ile çarpıyoruz.
+            // Böylece 100km'lik düz yolun sonu, 120km'lik eğrinin sonuna denk gelir.
+            targetMetre = (currentKm * 1000) * geometryRatio; 
+
         } else {
+            // Segment yoksa direkt geometri üzerindeki yüzdeyi al (Zaten tam boy)
             targetMetre = percent * cache.totalLen;
         }
 
