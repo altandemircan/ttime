@@ -5303,16 +5303,13 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // 5. HARİTA BAŞLATMA (GÜNCELLENDİ)
+    // 5. HARİTA BAŞLATMA
     const map = L.map(containerId, {
         scrollWheelZoom: true,
         fadeAnimation: false,
         zoomAnimation: false,
         markerZoomAnimation: false,
-        inertia: false,
-        zoomSnap: 0,
-        touchZoom: true,
-        bounceAtZoomLimits: false
+        inertia: false
     });
 
     try {
