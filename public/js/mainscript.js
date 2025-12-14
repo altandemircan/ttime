@@ -6643,91 +6643,24 @@ function updateExpandedMap(expandedMap, day) {
     if (is3DActive) {
         console.log("3D Mode active, updating 3D data and Scale Bar.");
         
-        // 1. 3D Harita Verisini Güncelle
-        if (typeof refresh3DMapData === 'function') {function showRouteInfoBanner(day) {
-  const expandedContainer = document.getElementById(`expanded-map-${day}`);
-  if (!expandedContainer) return;
-
-  let banner = expandedContainer.querySelector('#route-info-banner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'route-info-banner';
-    banner.className = 'route-info-banner';
-    banner.innerHTML = `
-      <span>Click the map to list nearby restaurants, cafes and bars.</span>
-    `;
-    expandedContainer.prepend(banner);
-  }
-  
-  // --- Stil ve Animasyon Ayarları ---
-  banner.style.display = 'flex';
-  banner.style.cursor = 'pointer';
-  banner.style.transition = 'opacity 1s ease-out'; // Geçiş süresi
-  
-  // Başlangıçta görünür olması için (browser render'ı yakalasın diye ufak gecikme)
-  banner.style.opacity = '0';
-  requestAnimationFrame(() => {
-      banner.style.opacity = '1';
-  });
-
-  // --- ORTAK KAPATMA FONKSİYONU ---
-  // Bu fonksiyon çağrıldığında banner yavaşça solar ve sonra yok olur.
-  const fadeOutBanner = () => {
-      // Zaten kapanıyorsa tekrar işlem yapma
-      if (banner.style.opacity === '0') return;
-
-      // 1. Opaklığı düşür (Fade out başlar)
-      banner.style.opacity = '0';
-
-      // 2. Animasyon bitince (1 saniye sonra) ekrandan tamamen kaldır
-      setTimeout(() => {
-          banner.style.display = 'none';
-      }, 1000); 
-  };
-
-  // --- TIKLAYINCA KAPAT (Yavaşça) ---
-  banner.onclick = function() {
-    fadeOutBanner();
-  };
-
-  // --- X BUTONU VARSA ONA DA EKLE ---
-  const closeBtn = banner.querySelector('#close-route-info');
-  if (closeBtn) {
-    closeBtn.onclick = function(e) {
-      e.stopPropagation();
-      fadeOutBanner();
-    };
-  }
-
-  // --- OTOMATİK KAPANMA (4 saniye sonra yavaşça) ---
-  setTimeout(function() {
-    // Eğer kullanıcı henüz kapatmadıysa otomatik kapat
-    if (banner.style.display !== 'none') {
-        fadeOutBanner();
-    }
-  }, 4000);
-}
+        if (typeof refresh3DMapData === 'function') {
             refresh3DMapData(day);
         }
 
-        // --- FIX BAŞLANGICI: Scale Bar'ı 3D Modunda Manuel Tetikle ---
+        // Scale Bar Tetikleyici (3D)
         const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
         const summary = window.lastRouteSummaries?.[containerId];
 
         if (scaleBarDiv && summary && summary.distance > 0) {
             const totalKm = summary.distance / 1000;
-            
-            // Marker pozisyonlarını hesapla
             const markerPositions = (typeof getRouteMarkerPositionsOrdered === 'function') 
                 ? getRouteMarkerPositionsOrdered(day) 
                 : [];
             
-            // Grafiği çiz
             if (typeof renderRouteScaleBar === 'function') {
                 scaleBarDiv.innerHTML = ""; 
                 renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
                 
-                // Grafikteki sayıları (1, 2, 3...) ekle
                 const track = scaleBarDiv.querySelector('.scale-bar-track');
                 if (track) {
                     const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
@@ -6737,16 +6670,14 @@ function updateExpandedMap(expandedMap, day) {
                 }
             }
         }
-        // --- FIX BİTİŞİ ---
-
-        return; // Leaflet 2D işlemlerini yapmadan çık
+        return; 
     }
     // ===================================================
 
-    // --- BURADAN AŞAĞISI 2D (LEAFLET) KODLARIDIR ---
+    // --- 2D (LEAFLET) RENDER ---
     const geojson = window.lastRouteGeojsons?.[containerId];
 
-    // --- 1. GÜVENLİ KATMAN TEMİZLİĞİ ---
+    // 1. KATMAN TEMİZLİĞİ (Tile Layer Hariç)
     const layersToRemove = [];
     expandedMap.eachLayer(layer => {
         if (
@@ -6765,7 +6696,7 @@ function updateExpandedMap(expandedMap, day) {
     if (!window._curvedArcPointsByDay) window._curvedArcPointsByDay = {};
     window._curvedArcPointsByDay[day] = []; 
 
-    // --- 2. VERİ KONTROLÜ (NaN Fix) ---
+    // 2. NOKTA HAZIRLIĞI
     const rawPoints = (typeof getDayPoints === 'function') ? getDayPoints(day) : [];
     const pts = rawPoints.filter(p => {
         const lat = Number(p.lat);
@@ -6776,7 +6707,6 @@ function updateExpandedMap(expandedMap, day) {
     let bounds = L.latLngBounds(); 
     const isInTurkey = (typeof areAllPointsInTurkey === 'function') ? areAllPointsInTurkey(pts) : true;
 
-    // --- ROTA ÇİZİMİ ---
     let hasValidRoute = (
       isInTurkey && geojson && geojson.features && geojson.features[0] &&
       geojson.features[0].geometry &&
@@ -6784,9 +6714,10 @@ function updateExpandedMap(expandedMap, day) {
       geojson.features[0].geometry.coordinates.length > 1
     );
 
+    // --- ROTA ÇİZİMİ ---
     if (hasValidRoute) {
         const rawCoords = geojson.features[0].geometry.coordinates;
-        const routeCoords = [];
+        const routeCoords = []; // [Lat, Lng] formatında
         rawCoords.forEach(c => {
             if (Array.isArray(c) && c.length >= 2 && !isNaN(c[0]) && !isNaN(c[1])) {
                 routeCoords.push([c[1], c[0]]);
@@ -6799,9 +6730,41 @@ function updateExpandedMap(expandedMap, day) {
             }).addTo(expandedMap);
             bounds.extend(poly.getBounds());
             window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
+
+            // --- YENİ EKLENEN KISIM: EKSİK NOKTA BAĞLAYICILARI ---
+            // Markerlar ile rota çizgisi arasındaki mesafeyi kontrol et.
+            // Eğer marker rotaya oturmamışsa (Missing Point), kesik çizgi çek.
+            pts.forEach(p => {
+                let minDist = Infinity;
+                let closestPoint = null;
+
+                // En yakın rota noktasını bul (Basit Öklid hesabı yeterli)
+                for (const rc of routeCoords) {
+                    // rc: [lat, lng]
+                    const dSq = (rc[0] - p.lat) ** 2 + (rc[1] - p.lng) ** 2;
+                    if (dSq < minDist) {
+                        minDist = dSq;
+                        closestPoint = rc;
+                    }
+                }
+
+                // Eşik değer (Yaklaşık 50-80 metreye denk gelen derece farkı karesi)
+                // 0.0000005 derece karesi ~80m civarıdır.
+                if (closestPoint && minDist > 0.0000005) {
+                    L.polyline([[p.lat, p.lng], closestPoint], {
+                        color: '#d32f2f', // Kırmızı
+                        weight: 3,
+                        opacity: 0.6,
+                        dashArray: '5, 8', // Kesik çizgi
+                        interactive: false // Tıklanmasın
+                    }).addTo(expandedMap);
+                }
+            });
+            // -----------------------------------------------------
         }
     } 
     else if (pts.length > 1 && !isInTurkey) {
+        // Fly Mode (Yurtdışı)
         let allArcPoints = [];
         for (let i = 0; i < pts.length - 1; i++) {
             const start = [pts[i].lng, pts[i].lat];
@@ -6846,7 +6809,7 @@ function updateExpandedMap(expandedMap, day) {
     
     if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMap, day);
 
-    // --- SCALE BAR GÜNCELLEMESİ (2D MODU) ---
+    // --- SCALE BAR ---
     const summary = window.lastRouteSummaries?.[containerId];
     if (summary && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(summary.distance, summary.duration);
