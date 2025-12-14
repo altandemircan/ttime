@@ -4437,7 +4437,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .expanded-map, #maplibre-3d-view  {
     width: 100% !important;    
     min-height: 285px;
-     height: calc(100% - 180px) !important;
+     height: calc(100% - 120px) !important;
     bottom: 180px;
 }
 
