@@ -10994,16 +10994,14 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 
-// --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN - FINAL) ---
-// --- LEAFLET CSS FIX (KAYMA VE TIKLAMA SORUNU İÇİN - FINAL V2) ---
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v4'; // ID güncellendi
+    const styleId = 'tt-leaflet-fix-v5'; // Versiyonu güncelledik
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. Harita Kayma (Sliding) Sorunu Çözümü */
+        /* 1. Zoom/Pan Animasyonlarını Kapat (Kaymayı Önler) */
         .leaflet-pane, 
         .leaflet-tile, 
         .leaflet-marker-icon, 
@@ -11011,7 +11009,7 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
         .leaflet-tile-container, 
         .leaflet-zoom-animated {
             transition: none !important;
-            transform-origin: 50% 50%;
+            transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
         }
         
         /* 2. Resimlerin animasyonunu engelle */
@@ -11022,8 +11020,7 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
             transition: none !important; 
         }
 
-        /* 3. İmleç Sorunu: Pointer yerine Grab */
-        /* Harita container'ı ve içindeki etkileşimli alanlar için 'el' işareti */
+        /* 3. İmleç Ayarları */
         .expanded-map.leaflet-container,
         .expanded-map .leaflet-grab,
         .expanded-map .leaflet-interactive {
@@ -11034,32 +11031,34 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
             cursor: grabbing !important;
         }
         
-        /* Markerlar hariç! Markerlar pointer (parmak) kalmalı */
+        /* Markerlar için pointer */
         .expanded-map .leaflet-marker-icon,
         .expanded-map .leaflet-popup-close-button,
         .expanded-map a {
             cursor: pointer !important;
         }
 
-        /* 4. Tıklamayı Engelleyen Overlay Sorunu (Z-Index Temizliği) */
-        /* Z-Indexlerle oynamak yerine pointer-events ayarı yapıyoruz */
+        /* 4. Tıklama/Etkileşim Sorunları */
         .leaflet-pane { 
             pointer-events: auto; 
         }
         .leaflet-tile-pane {
-            z-index: 200; /* Standart */
+            z-index: 200; 
         }
         
-        /* 5. Custom Marker Animasyon Kontrolü */
+        /* 5. Custom Marker Animasyonu */
         .custom-marker-outer {
             transition: transform 0.1s ease !important;
             will-change: auto; 
         }
+
+        /* 6. Mobil Performans İyileştirmesi */
+        .leaflet-container {
+            touch-action: none; /* Tarayıcının varsayılan zoom'unu engelle */
+        }
     `;
     document.head.appendChild(style);
 })();
-
-
 /**
  * Kullanıcı konum markerını haritada günceller.
  * Hem 2D (Leaflet) hem 3D (MapLibre) modlarını destekler.
