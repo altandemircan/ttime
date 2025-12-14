@@ -11002,29 +11002,29 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v6'; // Versiyonu güncelledim
+    const styleId = 'tt-leaflet-fix-v5'; // Versiyonu güncelledik
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. Zoom Animasyonlarını Geri AÇ (Yumuşaklık için) */
+        /* 1. Zoom/Pan Animasyonlarını Kapat (Kaymayı Önler) */
         .leaflet-pane, 
         .leaflet-tile, 
         .leaflet-marker-icon, 
         .leaflet-marker-shadow, 
         .leaflet-tile-container, 
         .leaflet-zoom-animated {
-            /* transition: none !important;  <-- BU SATIRI SİLDİK, ARTIK YUMUŞAK */
-            transition: transform 0.25s cubic-bezier(0,0,0.25,1); /* Leaflet standart efekti */
-            transform-origin: 0 0 !important; /* Kaymayı önleyen kritik ayar */
+            transition: none !important;
+            transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
         }
         
-        /* 2. Resimlerin animasyonunu engelle (Titremeyi önler) */
+        /* 2. Resimlerin animasyonunu engelle */
         .leaflet-container img.leaflet-tile {
             max-width: none !important;
             width: 256px !important;
             height: 256px !important;
+            transition: none !important; 
         }
 
         /* 3. İmleç Ayarları */
@@ -11038,22 +11038,30 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
             cursor: grabbing !important;
         }
         
+        /* Markerlar için pointer */
         .expanded-map .leaflet-marker-icon,
         .expanded-map .leaflet-popup-close-button,
         .expanded-map a {
             cursor: pointer !important;
         }
 
-        .leaflet-pane { pointer-events: auto; }
-        .leaflet-tile-pane { z-index: 200; }
+        /* 4. Tıklama/Etkileşim Sorunları */
+        .leaflet-pane { 
+            pointer-events: auto; 
+        }
+        .leaflet-tile-pane {
+            z-index: 200; 
+        }
         
+        /* 5. Custom Marker Animasyonu */
         .custom-marker-outer {
             transition: transform 0.1s ease !important;
             will-change: auto; 
         }
 
+        /* 6. Mobil Performans İyileştirmesi */
         .leaflet-container {
-            touch-action: none;
+            touch-action: none; /* Tarayıcının varsayılan zoom'unu engelle */
         }
     `;
     document.head.appendChild(style);
