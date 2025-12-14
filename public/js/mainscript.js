@@ -6387,6 +6387,7 @@ async function expandMap(containerId, day) {
     showRouteInfoBanner(day);
 
     // === MAP INITIALIZATION (GÜNCELLENDİ) ===
+// === MAP INITIALIZATION (YUMUŞAK ZOOM İÇİN GÜNCELLENDİ) ===
     const ptsInit = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
     const validPtsInit = ptsInit.filter(p => isFinite(p.lat) && isFinite(p.lng));
     let startCenter = validPtsInit.length === 1 ? [validPtsInit[0].lat, validPtsInit[0].lng] : [39.0, 35.0];
@@ -6402,17 +6403,22 @@ async function expandMap(containerId, day) {
         zoom: startZoom,
         zoomControl: false,
         scrollWheelZoom: true,
-        fadeAnimation: false,       // Animasyonları kapat
-        zoomAnimation: false,       // Animasyonları kapat
-        markerZoomAnimation: false, // Animasyonları kapat
-        inertia: false,
-        zoomSnap: 0,                // Daha yumuşak zoom seviyeleri
-        touchZoom: true,            // Mobilde pinch zoom açık
-        bounceAtZoomLimits: false,  // Sınıra gelince zıplamayı kapat
+        
+        // --- YUMUŞAK ZOOM AYARLARI ---
+        fadeAnimation: true,       // Geri açtık
+        zoomAnimation: true,       // Geri açtık
+        markerZoomAnimation: true, // Geri açtık
+        inertia: true,             // Savrulma efekti açık
+        
+        zoomSnap: 0.1,             // 1 yerine 0.1 (Ara değerlerde durabilir, çok daha akıcı)
+        wheelPxPerZoomLevel: 120,  // Tekerlek hassasiyeti (60'tan 120'ye çıkardık, daha yavaş ve kontrollü zoom)
+        
+        touchZoom: true,
+        bounceAtZoomLimits: false,
         preferCanvas: true,
         renderer: L.canvas({ padding: 0.5 }),
         dragging: true
-    });
+    });;
 
     // === [CRITICAL FIX] TILE LAYER AYARLAMA VE AGRESİF TEMİZLİK ===
     function setExpandedMapTile(styleKey) {
@@ -11002,29 +11008,29 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v5'; // Versiyonu güncelledik
+    const styleId = 'tt-leaflet-fix-v6'; // Versiyonu güncelledim
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. Zoom/Pan Animasyonlarını Kapat (Kaymayı Önler) */
+        /* 1. Zoom Animasyonlarını Geri AÇ (Yumuşaklık için) */
         .leaflet-pane, 
         .leaflet-tile, 
         .leaflet-marker-icon, 
         .leaflet-marker-shadow, 
         .leaflet-tile-container, 
         .leaflet-zoom-animated {
-            transition: none !important;
-            transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
+            /* transition: none !important;  <-- BU SATIRI SİLDİK, ARTIK YUMUŞAK */
+            transition: transform 0.25s cubic-bezier(0,0,0.25,1); /* Leaflet standart efekti */
+            transform-origin: 0 0 !important; /* Kaymayı önleyen kritik ayar */
         }
         
-        /* 2. Resimlerin animasyonunu engelle */
+        /* 2. Resimlerin animasyonunu engelle (Titremeyi önler) */
         .leaflet-container img.leaflet-tile {
             max-width: none !important;
             width: 256px !important;
             height: 256px !important;
-            transition: none !important; 
         }
 
         /* 3. İmleç Ayarları */
@@ -11038,30 +11044,22 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
             cursor: grabbing !important;
         }
         
-        /* Markerlar için pointer */
         .expanded-map .leaflet-marker-icon,
         .expanded-map .leaflet-popup-close-button,
         .expanded-map a {
             cursor: pointer !important;
         }
 
-        /* 4. Tıklama/Etkileşim Sorunları */
-        .leaflet-pane { 
-            pointer-events: auto; 
-        }
-        .leaflet-tile-pane {
-            z-index: 200; 
-        }
+        .leaflet-pane { pointer-events: auto; }
+        .leaflet-tile-pane { z-index: 200; }
         
-        /* 5. Custom Marker Animasyonu */
         .custom-marker-outer {
             transition: transform 0.1s ease !important;
             will-change: auto; 
         }
 
-        /* 6. Mobil Performans İyileştirmesi */
         .leaflet-container {
-            touch-action: none; /* Tarayıcının varsayılan zoom'unu engelle */
+            touch-action: none;
         }
     `;
     document.head.appendChild(style);
