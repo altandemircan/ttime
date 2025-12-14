@@ -2961,12 +2961,13 @@ function initEmptyDayMap(day) {
       }
   }
 
-  const map = L.map(containerId, {
+const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
     scrollWheelZoom: true,
-    fadeAnimation: false,
-    zoomAnimation: false,
+    fadeAnimation: true,
+    zoomAnimation: true,
+    markerZoomAnimation: true,
     inertia: false
   });
 
@@ -5306,9 +5307,9 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // 5. HARİTA BAŞLATMA
     const map = L.map(containerId, {
         scrollWheelZoom: true,
-        fadeAnimation: false,
-        zoomAnimation: false,
-        markerZoomAnimation: false,
+        fadeAnimation: true,
+        zoomAnimation: true,
+        markerZoomAnimation: true,
         inertia: false
     });
 
