@@ -6837,17 +6837,41 @@ async function expandMap(containerId, day) {
                 };
 
                 if (glMap) {
-                    glMap.once('styledata', markAlive);
-                    glMap.once('sourcedata', markAlive);
-                    glMap.once('tileload', markAlive); 
-                    glMap.once('load', markAlive);
-                } else {
-                    glLayer.once('ready', markAlive);
+                // Sadece 'once' değil, 'on' kullanarak ilk veri akışını yakala
+                glMap.on('styledata', markAlive); 
+                glMap.on('sourcedata', markAlive);
+                glMap.on('tileload', markAlive); // En önemli sinyal: Bir kare bile yüklenirse harita canlıdır.
+                glMap.on('data', markAlive);     // Herhangi bir veri akışı
+                glMap.once('load', markAlive);
+            }
+            
+            // Layer seviyesinde de dinle (glMap henüz oluşmamışsa diye)
+            glLayer.on('ready', () => {
+                const mapInstance = glLayer.getMaplibreMap();
+                if (mapInstance) {
+                    mapInstance.on('styledata', markAlive);
+                    mapInstance.on('tileload', markAlive);
                 }
+                markAlive();
+            });
+            glLayer.on('load', markAlive);
 
-                expandedMapInstance._tileTimeout = setTimeout(() => {
-                    if (!isAlive) loadCartoFallback();
-                }, 3000);
+            // Zamanlayıcı (5000ms'ye çıkarıldı)
+            // Harita zaten OpenFreeMap gösteriyorsa (layerSuccess=true), asla CartoDB'ye dönmesin.
+            map._fallbackTimer = setTimeout(() => {
+                // Ekstra Güvenlik: Harita üzerinde canvas varsa ve görünürse fallback yapma
+                const canvas = map.getContainer().querySelector('canvas');
+                const seemsAlive = canvas && canvas.width > 0 && canvas.height > 0;
+                
+                if (!layerSuccess && !seemsAlive) {
+                    console.warn("Small map: OpenFreeMap signal timeout -> Switching to CartoDB.");
+                    loadCartoDB();
+                } else {
+                    // Eğer süre dolduğunda harita canlı gibiyse (canvas var) ama sinyal gelmediyse,
+                    // "Başarılı" kabul et ve zamanlayıcıyı temizle.
+                    markAlive();
+                }
+            }, 5000);
 
             } else {
                 throw new Error("MapLibre missing");
