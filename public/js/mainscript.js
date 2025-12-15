@@ -1263,13 +1263,43 @@ async function updateSuggestions(queryText) {
   showSuggestionsDiv && showSuggestionsDiv();
 }
 // Temaya tıklayınca sadece öneri paneli dolsun, hiçbirini otomatik seçme!
+// Temaya tıklayınca sadece öneri paneli dolsun, hiçbirini otomatik seçme!
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
-    // 1. Input alanı gizliyse görünür yap
+    
+    // --- 1. MEVCUT GEZİYİ KAYDET VE SIFIRLA (RESET LOGIC) ---
+    // Eğer halihazırda açık bir gezi varsa, önce onu kaydet
+    if (window.cart && window.cart.length > 0 && typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage();
+    }
+
+    // Global değişkenleri sıfırla (Yeni gezi için temiz sayfa)
+    window.cart = [];
+    window.latestTripPlan = [];
+    window.selectedCity = null;
+    window.selectedLocation = null;
+    window.selectedLocationLocked = false;
+    window.activeTripKey = null; // KRİTİK: Eski gezi ID'sini kopar, yeni ID oluşturacak.
+    window.lastUserQuery = "";
+    
+    // Chat ekranını temizle
+    const chatBox = document.getElementById('chat-box');
+    if (chatBox) chatBox.innerHTML = '';
+
+    // Harita ve Rota kalıntılarını temizle
+    if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+    window.routeElevStatsByDay = {};
+    window.__ttElevDayCache = {};
+    window._segmentHighlight = {};
+    document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg').forEach(el => el.remove());
+    // -------------------------------------------------------
+
+    // Chat input alanını görünür yap
     const inputWrapper = document.querySelector('.input-wrapper');
     if (inputWrapper) inputWrapper.style.display = '';
 
     const themeTitle = item.querySelector('.caption p').textContent.trim();
+    
     // PROGRAMATIK SET BAŞLIYOR
     window.__programmaticInput = true;
     document.getElementById('user-input').value = themeTitle;
@@ -1283,7 +1313,7 @@ document.querySelectorAll('.gallery-item').forEach(item => {
       window.__programmaticInput = false; // ARTIK kullanıcı yazıyor
     }, 0);
 
-    // --- MOBİL DÜZELTME: Seçim sonrası menüyü kapat ---
+    // Mobilde sidebar'ı kapat
     if (window.innerWidth <= 768) {
         const sidebarOverlay = document.getElementById('sidebar-overlay-gallery');
         if (sidebarOverlay) {
@@ -1291,7 +1321,6 @@ document.querySelectorAll('.gallery-item').forEach(item => {
             sidebarOverlay.classList.remove('show');
         }
     }
-    // --------------------------------------------------
 
     // DOM güncellendikten sonra hiçbir öneriyi otomatik seçme
     setTimeout(() => {
@@ -1312,11 +1341,34 @@ document.querySelectorAll('.gallery-item').forEach(item => {
 });
 
 // .add_theme için aynı mantık
+// .add_theme için aynı mantık
 document.querySelectorAll('.add_theme').forEach(btn => {
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
 
-    // 1. Input alanı gizliyse görünür yap
+    // --- 1. MEVCUT GEZİYİ KAYDET VE SIFIRLA (RESET LOGIC) ---
+    if (window.cart && window.cart.length > 0 && typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage();
+    }
+
+    window.cart = [];
+    window.latestTripPlan = [];
+    window.selectedCity = null;
+    window.selectedLocation = null;
+    window.selectedLocationLocked = false;
+    window.activeTripKey = null; // Yeni gezi ID'si için null yap
+    window.lastUserQuery = "";
+
+    const chatBox = document.getElementById('chat-box');
+    if (chatBox) chatBox.innerHTML = '';
+
+    if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+    window.routeElevStatsByDay = {};
+    window.__ttElevDayCache = {};
+    document.querySelectorAll('.expanded-map-container, .route-scale-bar').forEach(el => el.remove());
+    // -------------------------------------------------------
+
+    // Chat input alanını görünür yap
     const inputWrapper = document.querySelector('.input-wrapper');
     if (inputWrapper) inputWrapper.style.display = '';
 
@@ -1328,7 +1380,7 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     }
     document.getElementById('user-input').focus();
 
-    // --- MOBİL DÜZELTME: Seçim sonrası menüyü kapat ---
+    // Mobilde sidebar'ı kapat
     if (window.innerWidth <= 768) {
         const sidebarOverlay = document.getElementById('sidebar-overlay-gallery');
         if (sidebarOverlay) {
@@ -1336,7 +1388,6 @@ document.querySelectorAll('.add_theme').forEach(btn => {
             sidebarOverlay.classList.remove('show');
         }
     }
-    // --------------------------------------------------
 
     setTimeout(() => {
       const suggestionsDiv = document.getElementById("suggestions");
