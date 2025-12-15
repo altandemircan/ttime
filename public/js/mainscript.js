@@ -5407,84 +5407,70 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-    // --- TILE LAYER YÖNETİMİ ---
+   // --- TILE LAYER YÖNETİMİ (GÜNCELLENMİŞ - Büyük Harita Mantığı) ---
     let layerSuccess = false;
 
     // Fallback Fonksiyonu (CartoDB)
-    // Fallback Fonksiyonu (CartoDB)
     const loadCartoDB = () => {
-        // 1. Bayrak kontrolü
-        // Sadece event listener'lar (styledata, load, ready) layerSuccess'i true yapabilir.
-        // Canvas DOM'da olsa bile (boş olabilir) layerSuccess yoksa fallback çalışmalıdır.
-        if (layerSuccess) return; 
-        
-        // 2. DOM KONTROLÜ İPTAL EDİLDİ:
-        // MapLibre init anında canvas oluşturur ama veri gelmeyebilir.
-        // O yüzden canvas varlığına güvenmiyoruz.
+        // Eğer OpenFreeMap zaten başarılı olduysa (sinyal aldıysa) iptal et
+        if (layerSuccess) return;
 
-        // Harita instance yoksa çık
-        if (!map || !map._container) return;
-
-        console.warn(`[SmallMap] Fallback to CartoDB (${containerId}).`);
-        
+        // Varsa başarısız OpenFreeMap katmanını temizle
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
             map._maplibreLayer = null;
         }
 
+        // CartoDB Ekle
         try {
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                attribution: '&copy; CARTO',
                 subdomains: 'abcd',
-                maxZoom: 20,
-                pane: 'tilePane'
+                maxZoom: 20
             }).addTo(map);
         } catch (err) {}
     };
 
-    let vectorSupported = (typeof L.maplibreGL === 'function');
-    
-    if (vectorSupported) {
+    // OpenFreeMap (MapLibre) Başlatma
+    if (typeof L.maplibreGL === 'function') {
         try {
             const glLayer = L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/bright',
                 attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
-                interactive: true,
-                pane: 'tilePane'
+                interactive: true
             });
 
-            // Pane kontrolü
-            if (!map.getPane('tilePane')) map.createPane('tilePane');
+            glLayer.addTo(map);
+            map._maplibreLayer = glLayer;
 
-            // --- BAŞARI SİNYALİ TAKİBİ ---
-            const markSuccess = () => {
+            const glMap = glLayer.getMaplibreMap();
+
+            // Başarı Sinyali Takibi (Büyük haritadaki setExpandedMapTile mantığı)
+            const markAlive = () => {
                 if (layerSuccess) return;
                 layerSuccess = true;
+                // Sinyal geldiği an zamanlayıcıyı iptal et
                 if (map._fallbackTimer) {
                     clearTimeout(map._fallbackTimer);
                     map._fallbackTimer = null;
                 }
             };
 
-            // 1. Leaflet Layer Eventleri
-            glLayer.on('ready', markSuccess);
-            glLayer.on('load', markSuccess);
-            
-            // 2. MapLibre Core Eventleri (Daha hızlı yakalar)
-            const glMap = glLayer.getMaplibreMap();
+            // Event Listener'lar
             if (glMap) {
-                glMap.once('styledata', markSuccess);
-                glMap.once('data', markSuccess);
+                glMap.once('styledata', markAlive);
+                glMap.once('sourcedata', markAlive);
+                glMap.once('tileload', markAlive);
+                glMap.once('load', markAlive);
+            } else {
+                glLayer.once('ready', markAlive);
+                glLayer.once('load', markAlive);
             }
 
-            // Katmanı ekle
-            glLayer.addTo(map);
-            map._maplibreLayer = glLayer;
-
-            // 3. Zamanlayıcı (3000ms)
-            // Süre dolduğunda loadCartoDB çalışır, AMA önce DOM'da canvas var mı diye bakar.
+            // Zamanlayıcı (3000ms) - Eğer sinyal gelmezse fallback çalışır
+            // Canvas kontrolü YAPILMAZ, doğrudan sinyale bakılır.
             map._fallbackTimer = setTimeout(() => {
-                loadCartoDB();
+                if (!layerSuccess) loadCartoDB();
             }, 3000);
 
         } catch (e) {
@@ -5492,6 +5478,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             loadCartoDB();
         }
     } else {
+        // Kütüphane yoksa direkt fallback
         loadCartoDB();
     }
 
