@@ -35,10 +35,10 @@ function injectDragStyles() {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px; /* Ok boyutu */
+            font-size: 10px; /* Ok boyutu */
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             z-index: 1000;
-        opacity: 0.7;
+            opacity: 0.7;
         }
         .drag-arrow-top { top: -36px; }
         .drag-arrow-bottom { bottom: -36px; }
