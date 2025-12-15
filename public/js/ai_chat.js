@@ -67,25 +67,28 @@ document.addEventListener("DOMContentLoaded", function() {
             /* Geçmiş Listesi Alanı */
             #ai-history-list {
                 display: none; /* JS ile açılacak */
-                flex-direction: column;
+                    flex-direction: column;
                 width: 100%;
                 height: 100%;
                 overflow-y: auto;
                 padding-right: 4px;
                 gap: 10px;
-                order: 10; 
+                order: 10;
+                margin-top: 4px;
             }
             
             /* Geçmiş Kartı */
             .history-card {
-                background: #fff;
+                    background: #f9f9f9;
                 border: 1px solid #eee;
                 border-radius: 10px;
                 padding: 12px;
                 cursor: pointer;
                 position: relative;
                 transition: all 0.2s ease;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+                text-align: left;
+                margin-top: 1px;
             }
             .history-card:hover {
                 border-color: #8a4af3;
