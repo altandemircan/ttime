@@ -5832,10 +5832,7 @@ ease;
   line-height: 1.25;
   white-space: nowrap;
 }
-.leaflet-bottom {
-    width: 100%;
-    right: -26px;
-}
+
 /* Name bubble: appear-disappear animation (bottom one over marker) */
 .custom-marker-place-name.name-bubble-animate {
   animation: nameBubbleInOut 1s ease both;
