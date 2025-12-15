@@ -9141,7 +9141,7 @@ function wrapRouteControls(day) {
       expandBtn.style.background = '#f9f9f9';
       
       expandBtn.innerHTML = `
-        <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy" decoding="async" style="filter: grayscale(100%);">
+        <img class="tm-icon" src="/img/expand_animation.gif" alt="MAP" loading="lazy" decoding="async" style="filter: grayscale(100%);">
         <span class="tm-label" style="color: #888">Map Expanded</span>
       `;
   } else {
@@ -9156,7 +9156,7 @@ function wrapRouteControls(day) {
       expandBtn.onmouseout = function() { expandBtn.style.background = "#ffffff"; };
 
       expandBtn.innerHTML = `
-        <img class="tm-icon" src="https://cdn-icons-gif.flaticon.com/11201/11201877.gif" alt="MAP" loading="lazy" decoding="async">
+        <img class="tm-icon" src="/img/expand_animation.gif" alt="MAP" loading="lazy" decoding="async">
         <span class="tm-label" style="color: #297fd4">Expand map</span>
       `;
       
