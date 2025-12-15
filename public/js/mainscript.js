@@ -1265,14 +1265,20 @@ async function updateSuggestions(queryText) {
 // Temaya tıklayınca sadece öneri paneli dolsun, hiçbirini otomatik seçme!
 document.querySelectorAll('.gallery-item').forEach(item => {
   item.addEventListener('click', async function() {
+    // 1. Input alanı gizliyse görünür yap
+    const inputWrapper = document.querySelector('.input-wrapper');
+    if (inputWrapper) inputWrapper.style.display = '';
+
     const themeTitle = item.querySelector('.caption p').textContent.trim();
     // PROGRAMATIK SET BAŞLIYOR
     window.__programmaticInput = true;
     document.getElementById('user-input').value = themeTitle;
+    
     if (typeof updateSuggestions === 'function') {
       await updateSuggestions(themeTitle);
     }
     document.getElementById('user-input').focus();
+    
     setTimeout(() => {
       window.__programmaticInput = false; // ARTIK kullanıcı yazıyor
     }, 0);
@@ -1309,6 +1315,11 @@ document.querySelectorAll('.gallery-item').forEach(item => {
 document.querySelectorAll('.add_theme').forEach(btn => {
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
+
+    // 1. Input alanı gizliyse görünür yap
+    const inputWrapper = document.querySelector('.input-wrapper');
+    if (inputWrapper) inputWrapper.style.display = '';
+
     const themeTitle = btn.parentNode.querySelector('.caption p').textContent.trim();
     document.getElementById('user-input').value = themeTitle;
 
