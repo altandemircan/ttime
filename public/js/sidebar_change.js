@@ -38,23 +38,6 @@ window.toggleSidebarFeedback = function() {
 
 window.toggleSidebarTrip = function() {
     window.toggleSidebar('sidebar-overlay-trip');
-
-    // --- MOBİL HARİTA DÜZELTMESİ (Görünmeyen haritayı yeniden boyutlandır) ---
-    // CSS transition süresi (0.3s) kadar bekleyip haritayı tazeliyoruz.
-    setTimeout(() => {
-        // 1. Tüm açık haritaların boyutunu güncelle
-        if (window.leafletMaps) {
-            Object.values(window.leafletMaps).forEach(map => {
-                map.invalidateSize();
-            });
-        }
-        
-        // 2. Rotaları tekrar çizdir ki markerlar yerine otursun (Garanti Çözüm)
-        if (window.cart && window.cart.length > 0 && typeof renderRouteForDay === 'function') {
-             const days = [...new Set(window.cart.map(i => i.day))];
-             days.forEach(d => renderRouteForDay(d));
-        }
-    }, 350);
 };
 
 window.toggleSidebarMyTrips = function() {
