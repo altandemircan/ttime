@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // --- 1. AYARLAR VE DEĞİŞKENLER ---
     const STORAGE_KEY = 'triptime_ai_history_v1';
+    const MAX_MESSAGES_PER_CHAT = 10; // Chat başına limit
     let currentChatId = null;
     let chatHistory = [];
 
@@ -72,7 +73,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 overflow-y: auto;
                 padding-right: 4px;
                 gap: 10px;
-                /* form-container styles.css'deki column-reverse'den etkilenmemesi için */
                 order: 10; 
             }
             
@@ -135,9 +135,9 @@ document.addEventListener("DOMContentLoaded", function() {
         document.head.appendChild(style);
     }
 
-    // --- 3. UI YERLEŞTİRME (DOM Manipulation) ---
+    // --- 3. UI YERLEŞTİRME (Insert Logic) ---
 
-    // A) Kontrol Butonları (Title ile Container arasına)
+    // A) Kontrol Butonları (New Chat / History)
     const controlsDiv = document.createElement('div');
     controlsDiv.id = 'ai-chat-controls';
     controlsDiv.innerHTML = `
@@ -154,30 +154,18 @@ document.addEventListener("DOMContentLoaded", function() {
         sidebarTitle.insertAdjacentElement('afterend', controlsDiv);
     }
 
-    // B) Geçmiş Listesi Konteynerı
-    // İSTEK: login-form'un içinde değil, form-container içinde login-form'un kardeşi olsun.
+    // B) Geçmiş Listesi Konteynerı (Form container içine, formun kardeşi olarak)
     const historyListDiv = document.createElement('div');
     historyListDiv.id = 'ai-history-list';
-    
-    // formContainer içine ekle (login-form ile yan yana/alt alta)
-    // Eğer varsa en başa ekleyelim (flex-direction column-reverse olsa bile kontrol elimizde olsun)
     formContainer.appendChild(historyListDiv);
 
     // --- 4. DATA & LOGIC ---
 
-    function getDailyQuestionCount() {
-        const today = new Date().toISOString().slice(0, 10);
-        const key = "questionCount_" + today;
-        return parseInt(localStorage.getItem(key) || "0", 10);
-    }
-    function incrementQuestionCount() {
-        const today = new Date().toISOString().slice(0, 10);
-        const key = "questionCount_" + today;
-        let count = getDailyQuestionCount();
-        localStorage.setItem(key, count + 1);
-    }
+    // Chat başına limit kontrolü
     function canAskQuestion() {
-        return getDailyQuestionCount() < 10;
+        // Chat geçmişindeki 'user' mesajlarını say
+        const userMsgCount = chatHistory.filter(m => m.role === 'user').length;
+        return userMsgCount < MAX_MESSAGES_PER_CHAT;
     }
 
     function getAllChats() {
@@ -209,15 +197,15 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- 5. GÖRÜNÜM GEÇİŞLERİ ---
 
     function showChatScreen() {
-        // 1. Chat Formunu Göster
+        // Chat Formunu Göster
         formContent.classList.remove('view-hidden');
-        formContent.style.display = 'block'; // styles.css display:block varsayımı
+        formContent.style.display = 'block'; 
         
-        // 2. History Listesini Gizle
+        // History Listesini Gizle
         historyListDiv.classList.add('view-hidden');
         historyListDiv.style.display = 'none';
         
-        // Butonlar
+        // Buton durumları
         document.getElementById('btn-ai-new').classList.add('active');
         document.getElementById('btn-ai-history').classList.remove('active');
         
@@ -228,11 +216,11 @@ document.addEventListener("DOMContentLoaded", function() {
     function showHistoryScreen() {
         renderHistoryList();
         
-        // 1. Chat Formunu Gizle
+        // Chat Formunu Gizle
         formContent.classList.add('view-hidden');
         formContent.style.display = 'none';
 
-        // 2. History Listesini Göster
+        // History Listesini Göster
         historyListDiv.classList.remove('view-hidden');
         historyListDiv.style.display = 'flex';
         
@@ -246,9 +234,10 @@ document.addEventListener("DOMContentLoaded", function() {
         chatHistory = [];
         messagesDiv.innerHTML = '';
         
+        // Başlangıç Mesajı
         const infoDiv = document.createElement("div");
         infoDiv.className = "chat-info";
-        infoDiv.innerHTML = "<b>Mira AI:</b> Hello! Ask me anything about your trip plan. <br><span style='font-size:0.8rem;opacity:0.7'>(Daily limit: 10)</span>";
+        infoDiv.innerHTML = `<b>Mira AI:</b> Hello! Ask me anything about your trip plan. <br><span style='font-size:0.8rem;opacity:0.7'>(Limit: ${MAX_MESSAGES_PER_CHAT} messages per chat)</span>`;
         messagesDiv.appendChild(infoDiv);
 
         showChatScreen();
@@ -262,7 +251,7 @@ document.addEventListener("DOMContentLoaded", function() {
         currentChatId = chat.id;
         chatHistory = chat.messages || [];
         
-        messagesDiv.innerHTML = ''; 
+        messagesDiv.innerHTML = ''; // Temizle
 
         chatHistory.forEach(msg => {
             const div = document.createElement('div');
@@ -277,6 +266,18 @@ document.addEventListener("DOMContentLoaded", function() {
             
             messagesDiv.appendChild(div);
         });
+
+        // Eğer yüklenen chat limiti doldurmuşsa uyarı ekle (opsiyonel görsel bilgi)
+        if (!canAskQuestion()) {
+            const limitDiv = document.createElement('div');
+            limitDiv.className = 'chat-message ai-message';
+            limitDiv.style.background = "#fff3f3"; // Hafif kırmızı
+            limitDiv.style.color = "#d32f2f";
+            limitDiv.style.fontSize = "0.85rem";
+            limitDiv.style.border = "1px solid #ffcdd2";
+            limitDiv.innerHTML = "<b>Note:</b> This chat has reached its message limit.";
+            messagesDiv.appendChild(limitDiv);
+        }
 
         showChatScreen();
     }
@@ -335,11 +336,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // --- 7. MESAJ GÖNDERME ---
     async function sendAIChatMessage(userMessage) {
+        // LİMİT KONTROLÜ (Chat başına)
         if (!canAskQuestion()) {
             const limitDiv = document.createElement('div');
             limitDiv.className = 'chat-message ai-message';
             limitDiv.style.background = "#ffeaea";
-            limitDiv.innerHTML = "<b>Limit Reached:</b> See you tomorrow!";
+            limitDiv.style.border = "1px solid #ffcdd2";
+            limitDiv.innerHTML = `<b>Limit Reached:</b> You've hit the ${MAX_MESSAGES_PER_CHAT} message limit for this chat.<br>Please start a <b>New Chat</b> to continue!`;
             messagesDiv.appendChild(limitDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             return;
@@ -400,7 +403,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 chatHistory.push({ role: "assistant", content: fullText });
                 saveCurrentChat();
-                incrementQuestionCount();
+                // Not: Artık incrementQuestionCount() yok, limit chatHistory uzunluğundan hesaplanıyor.
 
                 if (aiDiv._typewriterStop) aiDiv._typewriterStop();
                 chunkQueue.length = 0;
