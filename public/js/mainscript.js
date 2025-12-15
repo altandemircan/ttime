@@ -6814,7 +6814,7 @@ async function expandMap(containerId, day) {
             return;
         }
 
-        // --- 4. BRIGHT (OpenFreeMap) + SIKI TAKİP ---
+        // --- 4. BRIGHT (OpenFreeMap) + HIZLI TIMEOUT ---
         try {
             if (typeof L.maplibreGL === 'function') {
                 const glLayer = L.maplibreGL({
@@ -6832,46 +6832,41 @@ async function expandMap(containerId, day) {
                 const markAlive = () => {
                     if (isAlive) return;
                     isAlive = true;
-                    console.log("[ExpandedMap] OpenFreeMap SİNYAL ALINDI. İptal durduruldu.");
-                    if (expandedMapInstance._tileTimeout) clearTimeout(expandedMapInstance._tileTimeout);
+                    // Sinyal geldiyse zamanlayıcıyı iptal et
+                    if (expandedMapInstance._tileTimeout) {
+                        clearTimeout(expandedMapInstance._tileTimeout);
+                        expandedMapInstance._tileTimeout = null;
+                    }
                 };
 
+                // --- DAHA HASSAS DİNLEME ---
                 if (glMap) {
-                // Sadece 'once' değil, 'on' kullanarak ilk veri akışını yakala
-                glMap.on('styledata', markAlive); 
-                glMap.on('sourcedata', markAlive);
-                glMap.on('tileload', markAlive); // En önemli sinyal: Bir kare bile yüklenirse harita canlıdır.
-                glMap.on('data', markAlive);     // Herhangi bir veri akışı
-                glMap.once('load', markAlive);
-            }
-            
-            // Layer seviyesinde de dinle (glMap henüz oluşmamışsa diye)
-            glLayer.on('ready', () => {
-                const mapInstance = glLayer.getMaplibreMap();
-                if (mapInstance) {
-                    mapInstance.on('styledata', markAlive);
-                    mapInstance.on('tileload', markAlive);
-                }
-                markAlive();
-            });
-            glLayer.on('load', markAlive);
-
-            // Zamanlayıcı (5000ms'ye çıkarıldı)
-            // Harita zaten OpenFreeMap gösteriyorsa (layerSuccess=true), asla CartoDB'ye dönmesin.
-            map._fallbackTimer = setTimeout(() => {
-                // Ekstra Güvenlik: Harita üzerinde canvas varsa ve görünürse fallback yapma
-                const canvas = map.getContainer().querySelector('canvas');
-                const seemsAlive = canvas && canvas.width > 0 && canvas.height > 0;
-                
-                if (!layerSuccess && !seemsAlive) {
-                    console.warn("Small map: OpenFreeMap signal timeout -> Switching to CartoDB.");
-                    loadCartoDB();
+                    // 'on' kullanarak sürekli dinle, ilk veride yakala
+                    glMap.on('styledata', markAlive);
+                    glMap.on('sourcedata', markAlive);
+                    glMap.on('tileload', markAlive); 
+                    glMap.on('data', markAlive); // Herhangi bir veri akışı
+                    glMap.once('load', markAlive);
                 } else {
-                    // Eğer süre dolduğunda harita canlı gibiyse (canvas var) ama sinyal gelmediyse,
-                    // "Başarılı" kabul et ve zamanlayıcıyı temizle.
-                    markAlive();
+                    glLayer.on('ready', markAlive);
+                    glLayer.on('load', markAlive);
                 }
-            }, 5000);
+
+                // --- 4 SANİYE KURALI ---
+                // 4 saniye içinde veri akışı başlamazsa acımadan CartoDB'ye geç.
+                expandedMapInstance._tileTimeout = setTimeout(() => {
+                    // Ekstra kontrol: Canvas var mı ve boyutu var mı?
+                    const canvas = expandedMapInstance.getContainer().querySelector('canvas');
+                    const hasVisuals = canvas && canvas.width > 0 && canvas.height > 0;
+
+                    if (!isAlive && !hasVisuals) {
+                        console.warn("[ExpandedMap] OpenFreeMap çok yavaş (4s). CartoDB'ye geçiliyor.");
+                        loadCartoFallback();
+                    } else {
+                        // Geç de olsa bir şeyler çizilmiş, elleme.
+                        markAlive();
+                    }
+                }, 4000);
 
             } else {
                 throw new Error("MapLibre missing");
