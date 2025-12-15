@@ -17,9 +17,31 @@ function injectDragStyles() {
             height: var(--ghost-height);
             
             margin: 0 !important;
-            will-change: left, top; 
+           will-change: left, top; 
             transition: none !important;
+            overflow: visible !important; /* Okların dışarı taşması için gerekli */
         }
+
+        /* --- SÜRÜKLEME OKLARI --- */
+        .drag-arrow-visual {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28px;
+            height: 28px;
+            background: #8a4af3; /* Tema Rengi */
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px; /* Ok boyutu */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        .drag-arrow-top { top: -36px; }
+        .drag-arrow-bottom { bottom: -36px; }
+
         .insertion-placeholder {
             height: 6px !important;
             background: linear-gradient(90deg, #8a4af3, #b388ff); 
@@ -278,12 +300,24 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.setProperty('--ghost-height', rect.height + 'px');
     
     // Konumu ayarla (sol üste yapışmayı önler)
+// Konumu ayarla (sol üste yapışmayı önler)
     ghost.style.left = (clientX - dragShiftX) + 'px';
     ghost.style.top = (clientY - dragShiftY) + 'px';
     
+    // --- OKLARI OLUŞTUR VE EKLE ---
+    const upArrow = document.createElement('div');
+    upArrow.className = 'drag-arrow-visual drag-arrow-top';
+    upArrow.innerHTML = '▲'; 
+    ghost.appendChild(upArrow);
+
+    const downArrow = document.createElement('div');
+    downArrow.className = 'drag-arrow-visual drag-arrow-bottom';
+    downArrow.innerHTML = '▼'; 
+    ghost.appendChild(downArrow);
+    // -----------------------------
+
     document.body.appendChild(ghost);
 }
-
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
     
