@@ -476,8 +476,9 @@ ease;
 
 }
 
-.info .address {
+.info .address, .info .opening_hours {
     font-weight: 500;
+    display: flex;
 }
 
 .info .address img, .info .opening_hours img {
