@@ -5407,22 +5407,23 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-   // --- TILE LAYER YÖNETİMİ (KESİN ÇÖZÜM) ---
+  // --- TILE LAYER YÖNETİMİ (FİNAL DÜZELTME) ---
     let layerSuccess = false;
 
     // Fallback Fonksiyonu: OpenFreeMap'i öldürür, CartoDB'yi açar
     const loadCartoDB = () => {
-        if (layerSuccess) return; // Başarılıysa dokunma
+        // Eğer başarılı işaretlendiyse asla Carto'ya geçme
+        if (layerSuccess) return;
 
-        // 1. Varsa MapLibre katmanını DOM'dan ve Leaflet'ten tamamen sök
+        // Varsa MapLibre katmanını temizle
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
             map._maplibreLayer = null;
         }
 
-        // 2. CartoDB (Resim) katmanını ekle
+        // CartoDB Ekle (Resim tabanlı)
         try {
-            // Eğer zaten ekliyse tekrar ekleme
+            // Zaten ekliyse tekrar ekleme
             let hasCarto = false;
             map.eachLayer(l => { if (l._url && l._url.includes('cartocdn')) hasCarto = true; });
             
@@ -5448,46 +5449,61 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
 
-            const glMap = glLayer.getMaplibreMap();
-
+            // Başarı fonksiyonu: Çağrıldığı an CartoDB ihtimalini yok eder
             const markAlive = () => {
                 if (layerSuccess) return;
                 layerSuccess = true;
-                // Veri geldiyse sayacı iptal et
                 if (map._fallbackTimer) {
                     clearTimeout(map._fallbackTimer);
                     map._fallbackTimer = null;
                 }
             };
 
-            // Hassas dinleme: İlk veri kırıntısında canlı kabul et
-            if (glMap) {
-                glMap.on('styledata', markAlive);
-                glMap.on('sourcedata', markAlive);
-                glMap.on('tileload', markAlive);
-                glMap.on('data', markAlive); 
-                glMap.once('load', markAlive);
-            } else {
-                glLayer.once('ready', markAlive);
-                glLayer.once('load', markAlive);
-            }
+            // Layer hazır olduğunda map instance'ını al ve dinle
+            glLayer.on('ready', () => {
+                const glMap = glLayer.getMaplibreMap();
+                if (glMap) {
+                    // Harita zaten yüklüyse (cache vb.) direkt işaretle
+                    if (glMap.loaded()) markAlive();
 
-            // --- ZAMAN AŞIMI (3.5 Saniye) ---
-            // Canvas var mı diye BAKMIYORUZ. Veri gelmediyse (layerSuccess=false) öldürüyoruz.
+                    // Veri akışını dinle
+                    glMap.on('load', markAlive);
+                    glMap.on('data', markAlive);      // Herhangi bir veri geldiğinde
+                    glMap.on('tileload', markAlive);  // Tile yüklendiğinde
+                    glMap.on('styledata', markAlive); // Stil yüklendiğinde
+                }
+            });
+
+            // --- ZAMAN AŞIMI KONTROLÜ (4 Saniye) ---
             map._fallbackTimer = setTimeout(() => {
-                if (!layerSuccess) {
-                    console.warn(`[SmallMap] OpenFreeMap timeout (3.5s). Switching to CartoDB.`);
+                // Süre doldu. Ama harita gerçekten başarısız mı?
+                const glMap = glLayer.getMaplibreMap();
+                
+                // KONTROL: MapLibre objesi var mı ve 'loaded' durumda mı?
+                // VEYA: Canvas dolu mu (pixel var mı)?
+                const canvas = map.getContainer().querySelector('canvas');
+                const visuallyLoaded = canvas && canvas.width > 0 && canvas.height > 0;
+                const internalLoaded = glMap && glMap.loaded();
+
+                if (internalLoaded || visuallyLoaded) {
+                    // Harita aslında çalışıyor, kod sinyali kaçırmış.
+                    // CartoDB'ye geçme, OpenFreeMap'te kal.
+                    markAlive();
+                } else {
+                    // Gerçekten yüklenmemiş.
+                    console.warn(`[SmallMap] OpenFreeMap failed to load (4s). Fallback to CartoDB.`);
                     loadCartoDB();
                 }
-            }, 3500);
+            }, 4000);
 
         } catch (e) {
+            console.error("MapLibre error:", e);
             loadCartoDB();
         }
     } else {
+        // Kütüphane yoksa direkt CartoDB
         loadCartoDB();
     }
-
     let bounds = L.latLngBounds();
     points = points.filter(p => isFinite(Number(p.lat)) && isFinite(Number(p.lng)));
 
