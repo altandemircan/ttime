@@ -1277,6 +1277,16 @@ document.querySelectorAll('.gallery-item').forEach(item => {
       window.__programmaticInput = false; // ARTIK kullanıcı yazıyor
     }, 0);
 
+    // --- MOBİL DÜZELTME: Seçim sonrası menüyü kapat ---
+    if (window.innerWidth <= 768) {
+        const sidebarOverlay = document.getElementById('sidebar-overlay-gallery');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('open');
+            sidebarOverlay.classList.remove('show');
+        }
+    }
+    // --------------------------------------------------
+
     // DOM güncellendikten sonra hiçbir öneriyi otomatik seçme
     setTimeout(() => {
       const suggestionsDiv = document.getElementById("suggestions");
@@ -1307,6 +1317,16 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     }
     document.getElementById('user-input').focus();
 
+    // --- MOBİL DÜZELTME: Seçim sonrası menüyü kapat ---
+    if (window.innerWidth <= 768) {
+        const sidebarOverlay = document.getElementById('sidebar-overlay-gallery');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('open');
+            sidebarOverlay.classList.remove('show');
+        }
+    }
+    // --------------------------------------------------
+
     setTimeout(() => {
       const suggestionsDiv = document.getElementById("suggestions");
       if (suggestionsDiv) {
@@ -1323,7 +1343,6 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     }, 120);
   });
 });
-
 
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
