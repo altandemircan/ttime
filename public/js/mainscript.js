@@ -1019,7 +1019,6 @@ function addCanonicalMessage(canonicalStr) {
   }
 }
 
-
 function sendMessage() {
       console.log("showLoadingPanel çağrıldı!");
 
