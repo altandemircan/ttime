@@ -1,44 +1,45 @@
 document.addEventListener("DOMContentLoaded", function() {
     
-    // --- 1. CONFIG & VARIABLES ---
+    // --- 1. AYARLAR VE DEĞİŞKENLER ---
     const STORAGE_KEY = 'triptime_ai_history_v1';
     let currentChatId = null;
     let chatHistory = [];
 
-    // --- DOM ELEMENTLERİNİ BUL ---
+    // --- DOM ELEMENTLERİNİ GÜVENLE SEÇ ---
     const sidebarLogin = document.getElementById('sidebar-login');
     const sidebarTitle = sidebarLogin ? sidebarLogin.querySelector('.sidebar_title') : null;
-    const formContainer = sidebarLogin ? sidebarLogin.querySelector('.form-container') : null;
-    const formContent = document.getElementById('login-form'); // Chat kutusunu kapsayan alan
+    const formContent = document.getElementById('login-form'); 
     const chatBox = document.getElementById('ai-chat-box');
     const messagesDiv = document.getElementById('ai-chat-messages');
     const chatInput = document.getElementById('ai-chat-input');
     const sendBtn = document.getElementById('ai-chat-send-btn');
 
-    if (!sidebarLogin || !chatBox) return;
+    // Eğer temel elementler yoksa çalışma
+    if (!sidebarLogin || !chatBox || !messagesDiv) return;
 
-    // --- 2. CSS STYLES (Arayüz Düzenlemeleri) ---
+    // --- 2. CSS STYLES (Mevcut Tasarıma Uyumlu) ---
+    // Bu stiller sadece yeni eklenen butonlar ve geçmiş listesi içindir.
+    // Mevcut sitenin yapısını bozmaz.
     const styleId = 'tt-ai-sidebar-styles';
     if (!document.getElementById(styleId)) {
         const css = `
-            /* Kontrol Butonları Alanı (Başlık ile Form Arası) */
+            /* Kontrol Butonları (Başlık Altı) */
             #ai-chat-controls {
                 display: flex;
-                justify-content: center;
-                gap: 10px;
-                padding: 10px 20px;
-                background: #fff;
+                gap: 8px;
+                padding: 0 0 15px 0; /* Alt boşluk */
+                margin-bottom: 10px;
                 border-bottom: 1px solid #f0f0f0;
-                margin-bottom: 5px;
             }
             .ai-nav-btn {
                 flex: 1;
-                padding: 8px;
-                border: 1px solid #e0e0e0;
-                background: #f9f9f9;
+                padding: 8px 12px;
+                border: 1px solid #eee;
+                background: #fff;
                 border-radius: 8px;
                 cursor: pointer;
-                font-size: 13px;
+                font-family: "Satoshi", sans-serif;
+                font-size: 0.85rem;
                 font-weight: 600;
                 color: #555;
                 transition: all 0.2s ease;
@@ -46,70 +47,82 @@ document.addEventListener("DOMContentLoaded", function() {
                 align-items: center;
                 justify-content: center;
                 gap: 6px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.03);
             }
-            .ai-nav-btn:hover { background: #f0f0f0; }
+            .ai-nav-btn:hover {
+                background: #faf8ff;
+                border-color: #8a4af3;
+                color: #8a4af3;
+            }
             .ai-nav-btn.active {
                 background: #8a4af3;
                 color: #fff;
                 border-color: #8a4af3;
+                box-shadow: 0 4px 10px rgba(138, 74, 243, 0.2);
             }
 
-            /* Geçmiş Listesi Görünümü */
+            /* Geçmiş Listesi Alanı */
             #ai-history-list {
-                display: none; /* Başlangıçta gizli */
+                display: none; /* JS ile açılacak */
                 flex-direction: column;
                 width: 100%;
                 height: 100%;
                 overflow-y: auto;
-                padding: 10px;
-                box-sizing: border-box;
+                padding-right: 4px; /* Scrollbar payı */
+                gap: 10px;
             }
+            
+            /* Geçmiş Kartı (Mevcut tripbox stiline benzer) */
             .history-card {
                 background: #fff;
                 border: 1px solid #eee;
                 border-radius: 10px;
                 padding: 12px;
-                margin-bottom: 10px;
                 cursor: pointer;
-                transition: transform 0.2s, box-shadow 0.2s;
                 position: relative;
-                text-align: left;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.02);
             }
             .history-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
                 border-color: #8a4af3;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             }
             .h-title {
-                font-weight: 700;
-                font-size: 14px;
-                color: #333;
+                font-weight: 600;
+                font-size: 0.9rem;
+                color: #1e293b;
                 margin-bottom: 4px;
                 display: block;
-                padding-right: 25px; /* Silme butonu için yer */
+                padding-right: 24px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
             .h-date {
-                font-size: 11px;
-                color: #999;
+                font-size: 0.75rem;
+                color: #959595;
             }
             .h-delete {
                 position: absolute;
-                right: 10px;
-                top: 12px;
+                right: 8px;
+                top: 8px;
                 background: transparent;
                 border: none;
                 color: #ffcccc;
                 font-size: 16px;
                 line-height: 1;
                 cursor: pointer;
-                transition: color 0.2s;
+                padding: 4px;
+                border-radius: 4px;
+                transition: all 0.2s;
             }
-            .h-delete:hover { color: #ff4444; }
+            .h-delete:hover {
+                color: #ff4444;
+                background: #fff5f5;
+            }
 
-            /* Görünürlük Sınıfları */
+            /* Gizleme Helper'ı */
             .view-hidden { display: none !important; }
         `;
         const style = document.createElement('style');
@@ -118,9 +131,9 @@ document.addEventListener("DOMContentLoaded", function() {
         document.head.appendChild(style);
     }
 
-    // --- 3. UI ELEMENTLERİNİ YERLEŞTİRME ---
+    // --- 3. UI YERLEŞTİRME (Insert Logic) ---
 
-    // A) Butonları Başlık ve Form Container arasına ekle
+    // A) Kontrol Butonları (New Chat / History)
     const controlsDiv = document.createElement('div');
     controlsDiv.id = 'ai-chat-controls';
     controlsDiv.innerHTML = `
@@ -131,22 +144,24 @@ document.addEventListener("DOMContentLoaded", function() {
             <span>📂 History</span>
         </button>
     `;
-    // Sidebar title'dan hemen sonraya ekle
+
+    // Sidebar başlığından hemen sonraya ekle (Title <-> Form arası)
     if (sidebarTitle && sidebarTitle.parentNode) {
-        sidebarTitle.parentNode.insertBefore(controlsDiv, sidebarTitle.nextSibling);
+        sidebarTitle.insertAdjacentElement('afterend', controlsDiv);
     } else {
-        // Fallback: Sidebar'ın en başına
+        // Fallback: Form'un en başına
         sidebarLogin.insertBefore(controlsDiv, sidebarLogin.firstChild);
     }
 
-    // B) History Listesini Chat Box ile aynı seviyeye (form-content içine) ekle
+    // B) Geçmiş Listesi Konteynerı
+    // Chat kutusunun (ai-chat-box) hemen yanına/yerine gelecek
     const historyListDiv = document.createElement('div');
     historyListDiv.id = 'ai-history-list';
-    if (formContent) {
-        formContent.appendChild(historyListDiv);
-    }
+    
+    // Chat box'ın parent'ına (muhtemelen form-content) ekleyelim ki chat-box ile yer değiştirebilsin
+    chatBox.parentNode.insertBefore(historyListDiv, chatBox);
 
-    // --- 4. YARDIMCI FONKSİYONLAR (Storage & Logic) ---
+    // --- 4. DATA & LOGIC ---
 
     function getDailyQuestionCount() {
         const today = new Date().toISOString().slice(0, 10);
@@ -170,15 +185,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function saveCurrentChat() {
         if (!chatHistory || chatHistory.length === 0) return;
+        
+        // Yeni ID oluştur
         if (!currentChatId) currentChatId = 'chat_' + Date.now();
 
         const allChats = getAllChats();
         
-        // Başlık belirleme (İlk kullanıcı mesajı)
+        // Başlık belirle (İlk kullanıcı mesajı)
         let title = "Conversation";
         const firstUserMsg = chatHistory.find(m => m.role === 'user');
         if (firstUserMsg) {
-            title = firstUserMsg.content.slice(0, 35);
+            title = firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? "..." : "");
         }
 
         allChats[currentChatId] = {
@@ -190,25 +207,33 @@ document.addEventListener("DOMContentLoaded", function() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allChats));
     }
 
-    // --- 5. GÖRÜNÜM YÖNETİMİ ---
+    // --- 5. GÖRÜNÜM GEÇİŞLERİ ---
 
     function showChatScreen() {
-        chatBox.classList.remove('view-hidden'); // Chat kutusunu göster
-        historyListDiv.classList.remove('active'); // CSS display none için değil, JS mantığı
-        historyListDiv.style.display = 'none';     // Listeyi gizle
+        // Chat'i göster
+        chatBox.classList.remove('view-hidden');
+        // History'yi gizle
+        historyListDiv.classList.add('view-hidden'); 
+        historyListDiv.style.display = 'none';
         
+        // Buton durumları
         document.getElementById('btn-ai-new').classList.add('active');
         document.getElementById('btn-ai-history').classList.remove('active');
         
-        // Scroll en alta
+        // Scroll
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
     function showHistoryScreen() {
-        renderHistoryList(); // Listeyi güncelle
-        chatBox.classList.add('view-hidden'); // Chat kutusunu gizle
-        historyListDiv.style.display = 'flex'; // Listeyi göster
+        renderHistoryList();
         
+        // Chat'i gizle
+        chatBox.classList.add('view-hidden');
+        // History'yi göster
+        historyListDiv.classList.remove('view-hidden');
+        historyListDiv.style.display = 'flex';
+        
+        // Buton durumları
         document.getElementById('btn-ai-new').classList.remove('active');
         document.getElementById('btn-ai-history').classList.add('active');
     }
@@ -218,10 +243,10 @@ document.addEventListener("DOMContentLoaded", function() {
         chatHistory = [];
         messagesDiv.innerHTML = '';
         
-        // Başlangıç mesajı
+        // Başlangıç Mesajı
         const infoDiv = document.createElement("div");
-        infoDiv.className = "chat-info";
-        infoDiv.innerHTML = "<b>Mira AI:</b> Hello! I can help you plan your trip. Ask me anything! <br><span style='font-size:11px;opacity:0.7'>(Daily limit: 10)</span>";
+        infoDiv.className = "chat-info"; // styles.css'deki stil
+        infoDiv.innerHTML = "<b>Mira AI:</b> Hello! Ask me anything about your trip plan. <br><span style='font-size:0.8rem;opacity:0.7'>(Daily limit: 10)</span>";
         messagesDiv.appendChild(infoDiv);
 
         showChatScreen();
@@ -239,9 +264,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
         chatHistory.forEach(msg => {
             const div = document.createElement('div');
+            // styles.css'deki user-message / ai-message sınıflarını kullan
             div.className = `chat-message ${msg.role === 'user' ? 'user-message' : 'ai-message'}`;
             
-            // Markdown render (varsa)
             const text = (typeof markdownToHtml === 'function' && msg.role === 'assistant')
                 ? markdownToHtml(msg.content)
                 : msg.content;
@@ -261,7 +286,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const sorted = Object.values(allChats).sort((a, b) => b.updatedAt - a.updatedAt);
 
         if (sorted.length === 0) {
-            historyListDiv.innerHTML = '<div style="text-align:center;color:#999;margin-top:40px;">No chat history found.<br>Start a new chat!</div>';
+            historyListDiv.innerHTML = '<div style="text-align:center;color:#959595;margin-top:40px;font-size:0.9rem;">No chat history found.<br>Start a new chat!</div>';
             return;
         }
 
@@ -269,15 +294,16 @@ document.addEventListener("DOMContentLoaded", function() {
             const card = document.createElement('div');
             card.className = 'history-card';
             
-            const dateStr = new Date(chat.updatedAt).toLocaleDateString() + ' ' + new Date(chat.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const d = new Date(chat.updatedAt);
+            const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
             card.innerHTML = `
                 <span class="h-title">${chat.title}</span>
                 <span class="h-date">${dateStr}</span>
-                <button class="h-delete" title="Delete Chat">✕</button>
+                <button class="h-delete" title="Delete">✕</button>
             `;
 
-            // Tıklayınca Yükle
+            // Kart Tıklama -> Sohbeti Yükle
             card.addEventListener('click', (e) => {
                 if (e.target.classList.contains('h-delete')) return;
                 loadChatFromHistory(chat.id);
@@ -292,9 +318,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
                     
                     if (currentChatId === chat.id) {
-                        startNewChat(); // Eğer açık olanı sildiyse yeniye geç
+                        startNewChat();
                     } else {
-                        renderHistoryList(); // Listeyi yenile
+                        renderHistoryList();
                     }
                 }
             });
@@ -308,37 +334,37 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('btn-ai-new').addEventListener('click', startNewChat);
     document.getElementById('btn-ai-history').addEventListener('click', showHistoryScreen);
 
-    // --- 7. MESAJ GÖNDERME MANTIĞI ---
+    // --- 7. MESAJ GÖNDERME ---
     async function sendAIChatMessage(userMessage) {
         if (!canAskQuestion()) {
             const limitDiv = document.createElement('div');
             limitDiv.className = 'chat-message ai-message';
             limitDiv.style.background = "#ffeaea";
-            limitDiv.textContent = "🤖 Daily limit reached (10). See you tomorrow!";
+            limitDiv.innerHTML = "<b>Limit Reached:</b> See you tomorrow!";
             messagesDiv.appendChild(limitDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             return;
         }
 
-        // User Mesajı
+        // 1. Kullanıcı Mesajını Bas
         const userDiv = document.createElement('div');
         userDiv.textContent = '🧑 ' + userMessage;
         userDiv.className = 'chat-message user-message';
         messagesDiv.appendChild(userDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-        // Geçmişe ekle ve kaydet
+        // 2. Kaydet
         chatHistory.push({ role: "user", content: userMessage });
         saveCurrentChat();
 
-        // AI Placeholder
+        // 3. AI Placeholder
         const aiDiv = document.createElement('div');
         aiDiv.innerHTML = '🤖 <span class="typing">...</span>';
         aiDiv.className = 'chat-message ai-message';
         messagesDiv.appendChild(aiDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-        // API İsteği
+        // 4. API İsteği (Stream)
         const eventSource = new EventSource(
             `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
         );
@@ -352,7 +378,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 const data = JSON.parse(event.data);
                 if (data.message && data.message.content) {
                     chunkQueue.push(data.message.content);
-                    // İlk chunk geldiğinde "..." sil
                     if (aiDiv.querySelector('.typing')) aiDiv.innerHTML = '🤖 ';
                     
                     if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
@@ -370,6 +395,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 chunkQueue.length = 0;
                 hasError = true;
                 eventSource.close();
+                aiDiv.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
             }
         };
 
@@ -384,10 +410,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if (aiDiv._typewriterStop) aiDiv._typewriterStop();
                 chunkQueue.length = 0;
-                hasError = true; // Loop bitsin
+                hasError = true;
                 eventSource.close();
 
-                // Markdown render
+                // Markdown varsa işle
                 if (typeof markdownToHtml === 'function') {
                     aiDiv.innerHTML = '🤖 ' + markdownToHtml(fullText);
                 } else {
@@ -410,6 +436,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Başlangıç
+    // Uygulama Başlangıcı
     startNewChat();
 });
