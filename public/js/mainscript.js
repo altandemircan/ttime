@@ -5411,18 +5411,16 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     let layerSuccess = false;
 
     // Fallback Fonksiyonu (CartoDB)
+    // Fallback Fonksiyonu (CartoDB)
     const loadCartoDB = () => {
         // 1. Bayrak kontrolü
+        // Sadece event listener'lar (styledata, load, ready) layerSuccess'i true yapabilir.
+        // Canvas DOM'da olsa bile (boş olabilir) layerSuccess yoksa fallback çalışmalıdır.
         if (layerSuccess) return; 
         
-        // 2. DOM KONTROLÜ (KRİTİK): Harita container içinde 'canvas' var mı?
-        // OpenFreeMap (MapLibre) canvas kullanır. Varsa çalışıyor demektir.
-        const tilePane = map.getPane('tilePane');
-        if (tilePane && tilePane.querySelector('canvas')) {
-            // console.log("[SmallMap] Canvas detected inside DOM. Aborting fallback.");
-            layerSuccess = true; // Başarılı kabul et
-            return; 
-        }
+        // 2. DOM KONTROLÜ İPTAL EDİLDİ:
+        // MapLibre init anında canvas oluşturur ama veri gelmeyebilir.
+        // O yüzden canvas varlığına güvenmiyoruz.
 
         // Harita instance yoksa çık
         if (!map || !map._container) return;
