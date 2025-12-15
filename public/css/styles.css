@@ -466,13 +466,13 @@ ease;
   /*  display: -webkit-box;
     /*max-width: 335px;*/
     
-    -webkit-box-orient: vertical;
+  /*  -webkit-box-orient: vertical;
     overflow: hidden;   
     align-items: baseline;
         overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 2;*/
+    -webkit-line-clamp: 2;*/*/
 
 }
 
