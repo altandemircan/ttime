@@ -5407,31 +5407,36 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-   // --- TILE LAYER YÖNETİMİ (GÜNCELLENMİŞ - Büyük Harita Mantığı) ---
+   // --- TILE LAYER YÖNETİMİ (KESİN ÇÖZÜM) ---
     let layerSuccess = false;
 
-    // Fallback Fonksiyonu (CartoDB)
+    // Fallback Fonksiyonu: OpenFreeMap'i öldürür, CartoDB'yi açar
     const loadCartoDB = () => {
-        // Eğer OpenFreeMap zaten başarılı olduysa (sinyal aldıysa) iptal et
-        if (layerSuccess) return;
+        if (layerSuccess) return; // Başarılıysa dokunma
 
-        // Varsa başarısız OpenFreeMap katmanını temizle
+        // 1. Varsa MapLibre katmanını DOM'dan ve Leaflet'ten tamamen sök
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
             map._maplibreLayer = null;
         }
 
-        // CartoDB Ekle
+        // 2. CartoDB (Resim) katmanını ekle
         try {
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 20
-            }).addTo(map);
+            // Eğer zaten ekliyse tekrar ekleme
+            let hasCarto = false;
+            map.eachLayer(l => { if (l._url && l._url.includes('cartocdn')) hasCarto = true; });
+            
+            if (!hasCarto) {
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; CARTO',
+                    subdomains: 'abcd',
+                    maxZoom: 20
+                }).addTo(map);
+            }
         } catch (err) {}
     };
 
-    // OpenFreeMap (MapLibre) Başlatma
+    // OpenFreeMap Başlatma
     if (typeof L.maplibreGL === 'function') {
         try {
             const glLayer = L.maplibreGL({
@@ -5445,40 +5450,41 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
             const glMap = glLayer.getMaplibreMap();
 
-            // Başarı Sinyali Takibi (Büyük haritadaki setExpandedMapTile mantığı)
             const markAlive = () => {
                 if (layerSuccess) return;
                 layerSuccess = true;
-                // Sinyal geldiği an zamanlayıcıyı iptal et
+                // Veri geldiyse sayacı iptal et
                 if (map._fallbackTimer) {
                     clearTimeout(map._fallbackTimer);
                     map._fallbackTimer = null;
                 }
             };
 
-            // Event Listener'lar
+            // Hassas dinleme: İlk veri kırıntısında canlı kabul et
             if (glMap) {
-                glMap.once('styledata', markAlive);
-                glMap.once('sourcedata', markAlive);
-                glMap.once('tileload', markAlive);
+                glMap.on('styledata', markAlive);
+                glMap.on('sourcedata', markAlive);
+                glMap.on('tileload', markAlive);
+                glMap.on('data', markAlive); 
                 glMap.once('load', markAlive);
             } else {
                 glLayer.once('ready', markAlive);
                 glLayer.once('load', markAlive);
             }
 
-            // Zamanlayıcı (3000ms) - Eğer sinyal gelmezse fallback çalışır
-            // Canvas kontrolü YAPILMAZ, doğrudan sinyale bakılır.
+            // --- ZAMAN AŞIMI (3.5 Saniye) ---
+            // Canvas var mı diye BAKMIYORUZ. Veri gelmediyse (layerSuccess=false) öldürüyoruz.
             map._fallbackTimer = setTimeout(() => {
-                if (!layerSuccess) loadCartoDB();
-            }, 3000);
+                if (!layerSuccess) {
+                    console.warn(`[SmallMap] OpenFreeMap timeout (3.5s). Switching to CartoDB.`);
+                    loadCartoDB();
+                }
+            }, 3500);
 
         } catch (e) {
-            console.error("MapLibre init error:", e);
             loadCartoDB();
         }
     } else {
-        // Kütüphane yoksa direkt fallback
         loadCartoDB();
     }
 
