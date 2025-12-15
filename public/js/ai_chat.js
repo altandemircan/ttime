@@ -58,9 +58,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 color: #8a4af3;
             }
             .ai-nav-btn.active {
-                background: #8a4af3;
+                background: #9868e8;
                 color: #fff;
-                border-color: #8a4af3;
+                border-color: #9868e8;
                 box-shadow: 0 4px 10px rgba(138, 74, 243, 0.2);
             }
 
