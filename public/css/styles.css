@@ -463,7 +463,7 @@ ease;
 }
 
 .info .description, .info .address, .info .opening_hours {
-    display: -webkit-box;
+  /*  display: -webkit-box;
     /*max-width: 335px;*/
     
     -webkit-box-orient: vertical;
@@ -472,7 +472,7 @@ ease;
         overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 2;*/
 
 }
 
@@ -480,6 +480,9 @@ ease;
     font-weight: 500;
 }
 
+.info .address img, .info .opening_hours img {
+    padding-top: 2px;
+} 
 
 /* Bot Mesajı */
 .bot-message {
