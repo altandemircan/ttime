@@ -6814,7 +6814,7 @@ async function expandMap(containerId, day) {
             return;
         }
 
-        // --- 4. BRIGHT (OpenFreeMap) + SIKI TAKİP ---
+        // --- 4. BRIGHT (OpenFreeMap) + HIZLI TIMEOUT ---
         try {
             if (typeof L.maplibreGL === 'function') {
                 const glLayer = L.maplibreGL({
@@ -6832,22 +6832,41 @@ async function expandMap(containerId, day) {
                 const markAlive = () => {
                     if (isAlive) return;
                     isAlive = true;
-                    console.log("[ExpandedMap] OpenFreeMap SİNYAL ALINDI. İptal durduruldu.");
-                    if (expandedMapInstance._tileTimeout) clearTimeout(expandedMapInstance._tileTimeout);
+                    // Sinyal geldiyse zamanlayıcıyı iptal et
+                    if (expandedMapInstance._tileTimeout) {
+                        clearTimeout(expandedMapInstance._tileTimeout);
+                        expandedMapInstance._tileTimeout = null;
+                    }
                 };
 
+                // --- DAHA HASSAS DİNLEME ---
                 if (glMap) {
-                    glMap.once('styledata', markAlive);
-                    glMap.once('sourcedata', markAlive);
-                    glMap.once('tileload', markAlive); 
+                    // 'on' kullanarak sürekli dinle, ilk veride yakala
+                    glMap.on('styledata', markAlive);
+                    glMap.on('sourcedata', markAlive);
+                    glMap.on('tileload', markAlive); 
+                    glMap.on('data', markAlive); // Herhangi bir veri akışı
                     glMap.once('load', markAlive);
                 } else {
-                    glLayer.once('ready', markAlive);
+                    glLayer.on('ready', markAlive);
+                    glLayer.on('load', markAlive);
                 }
 
+                // --- 4 SANİYE KURALI ---
+                // 4 saniye içinde veri akışı başlamazsa acımadan CartoDB'ye geç.
                 expandedMapInstance._tileTimeout = setTimeout(() => {
-                    if (!isAlive) loadCartoFallback();
-                }, 3000);
+                    // Ekstra kontrol: Canvas var mı ve boyutu var mı?
+                    const canvas = expandedMapInstance.getContainer().querySelector('canvas');
+                    const hasVisuals = canvas && canvas.width > 0 && canvas.height > 0;
+
+                    if (!isAlive && !hasVisuals) {
+                        console.warn("[ExpandedMap] OpenFreeMap çok yavaş (4s). CartoDB'ye geçiliyor.");
+                        loadCartoFallback();
+                    } else {
+                        // Geç de olsa bir şeyler çizilmiş, elleme.
+                        markAlive();
+                    }
+                }, 4000);
 
             } else {
                 throw new Error("MapLibre missing");
