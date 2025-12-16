@@ -11432,159 +11432,152 @@ async function getCityCollageImages(
 
   return images;
 }
-
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
-  if (!dayContainer) return;
+  if (!dayContainer) return;
 
-  // CAPTURE THE CURRENT TRIP TOKEN AT THE START
-  const tripTokenAtStart = window.__activeTripSessionToken;
+  const tripTokenAtStart = window.__activeTripSessionToken;
+  rebuildGlobalCollageUsed();
+  const TARGET_COUNT = 6;
 
-  rebuildGlobalCollageUsed(); // mevcut kayıtlı günlerden global seti kur
+  // 1) İskelet (Gri Kutu) - Senin CSS yapın birebir korunuyor
+  let collage = dayContainer.querySelector(".day-collage");
+  if (!collage) {
+    collage = document.createElement("div");
+    collage.className = "day-collage";
+    collage.style.cssText = "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
+    
+    const dayListEl = dayContainer.querySelector(".day-list");
+    if (dayListEl && dayListEl.parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
+    else dayContainer.appendChild(collage);
+  }
 
-  const TARGET_COUNT = 6;
+  // --- HELPER: Başlığı GRİ KUTUNUN İÇİNE, EN ÜSTE ekle (Object Fix ile) ---
+  const injectHeaderInside = (container, cityData) => {
+      // 1. İsim verisini düzgünleştir ([object Object] hatasını çözen kısım)
+      let finalName = "the location";
+      
+      if (typeof cityData === 'string') {
+          finalName = cityData;
+      } else if (cityData && typeof cityData === 'object') {
+          // Obje ise içindeki 'term', 'query' veya 'name' özelliğini al
+          finalName = cityData.term || cityData.query || cityData.name || window.selectedCity || "the location";
+      }
 
-  // 1) İskelet (Collage Kutusu)
-  let collage = dayContainer.querySelector(".day-collage");
-  if (!collage) {
-    collage = document.createElement("div");
-    collage.className = "day-collage";
-    // Senin orijinal CSS'in
-    collage.style.cssText =
-      "margin: 4px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
-    
-    const dayListEl = dayContainer.querySelector(".day-list");
-    if (dayListEl && dayListEl.parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
-    else dayContainer.appendChild(collage);
-  }
+      // 2. Başlık Divini Hazırla
+      let headerDiv = container.querySelector('.gallery-internal-header');
+      if (!headerDiv) {
+          headerDiv = document.createElement('div');
+          headerDiv.className = 'gallery-internal-header';
+          // Stil: Gri kutunun içinde, en üstte, şık bir başlık
+          headerDiv.style.cssText = "padding: 0 4px 8px 4px; font-size: 13px; font-weight: 600; color: #444; border-bottom: 1px solid #e0e0e0; margin-bottom: 8px;";
+          // Kutunun en başına (ilk sıraya) ekle
+          container.insertBefore(headerDiv, container.firstChild);
+      }
+      
+      // Eğer finalName hala bir obje ise stringe zorla
+      if (typeof finalName === 'object') finalName = "the location";
+      
+      headerDiv.textContent = `Photos related to ${finalName}`;
+      headerDiv.style.display = 'block';
+  };
+  // ----------------------------------------------------
 
-  // --- YENİ EKLENTİ: GALERİ ÜSTÜ BAŞLIK (BAĞIMSIZ) ---
-  // Collage div'inin hemen öncesine eklenir. İçindeki "Antalya" etiketine dokunmaz.
-  let headerDiv = dayContainer.querySelector(`.gallery-top-header-${day}`);
-  if (!headerDiv) {
-      headerDiv = document.createElement('div');
-      headerDiv.className = `gallery-top-header-${day}`;
-      // Tasarım: Hafif padding, collage'ın hemen üstü
-      headerDiv.style.cssText = "margin-top: 15px; margin-left: 4px; margin-bottom: 2px; font-size: 13px; font-weight: 600; color: #555;";
-      headerDiv.textContent = "Loading photos..."; // İlk açılışta
-      // Collage'dan hemen önceye yerleştir
-      if(collage.parentNode) {
-          collage.parentNode.insertBefore(headerDiv, collage);
-      }
-  }
-  // ----------------------------------------------------
+  // 2) Lokasyon Kontrolü
+  const firstWithLoc = (dayItemsArr || []).find(
+    (it) => it.location && isFinite(it.location.lat) && isFinite(it.location.lng)
+  );
+  
+  if (!firstWithLoc) {
+    collage.style.display = "none";
+    delete window.__dayCollagePhotosByDay[day];
+    rebuildGlobalCollageUsed();
+    return;
+  }
 
-  // 2) Lokasyon Bulma
-  const firstWithLoc = (dayItemsArr || []).find(
-    (it) => it.location && isFinite(it.location.lat) && isFinite(it.location.lng)
-  );
-  
-  if (!firstWithLoc) {
-    collage.style.display = "none";
-    if(headerDiv) headerDiv.style.display = "none"; // Lokasyon yoksa başlığı da gizle
-    delete window.__dayCollagePhotosByDay[day];
-    rebuildGlobalCollageUsed();
-    return;
-  }
+  collage.style.display = "block";
 
-  collage.style.display = "block";
-  if(headerDiv) headerDiv.style.display = "block";
+  // 3) CACHE DURUMU (Zaten yüklüyse)
+  const already = window.__dayCollagePhotosByDay[day];
+  if (Array.isArray(already) && already.length === TARGET_COUNT) {
+    if (window.__activeTripSessionToken !== tripTokenAtStart) return;
+    
+    // İsim verisini çek
+    const locNameObj = await fetchSmartLocationName(firstWithLoc.location.lat, firstWithLoc.location.lng, window.selectedCity || "");
+    
+    // Önce slaytları render et (İçerik silinip tekrar yapıldığı için başlık gidebilir)
+    renderCollageSlides(collage, already, locNameObj);
+    // SONRA başlığı içeriye, en üste tekrar ekle
+    injectHeaderInside(collage, locNameObj); 
+    return;
+  }
 
-  // Helper: Şehir ismini objeden veya stringden düzgün çekmek için
-  const getCityNameStr = (obj) => {
-      if (typeof obj === 'string') return obj;
-      if (obj && obj.query) return obj.query;
-      return window.selectedCity || "the location";
-  };
+  // Loading...
+  collage.innerHTML = '<div style="width: 100%;text-align:center;padding:20px;color:#607d8b;font-size: 13px;">Loading photos...</div>';
 
-  // 3) CACHE KONTROLÜ: Eğer bu gün daha önce 6 foto almışsa
-  const already = window.__dayCollagePhotosByDay[day];
-  if (Array.isArray(already) && already.length === TARGET_COUNT) {
-    if (window.__activeTripSessionToken !== tripTokenAtStart) return;
-    
-    // Lokasyon ismini al
-    const locData = await fetchSmartLocationName(firstWithLoc.location.lat, firstWithLoc.location.lng, window.selectedCity || "");
-    const cityName = getCityNameStr(locData);
+  // 4) YENİ FETCH DURUMU
+  const searchObj = await fetchSmartLocationName(
+    firstWithLoc.location.lat,
+    firstWithLoc.location.lng,
+    window.selectedCity || ""
+  );
 
-    // --- BAŞLIĞI GÜNCELLE ---
-    if(headerDiv) headerDiv.textContent = `Photos related to ${cityName}`;
-    // ------------------------
+  // Başlığı hemen göster (Loading aşamasında bile doğru isim yazsın)
+  // Not: innerHTML ile loading yazdığımız için bu fonksiyonu loading divinden sonraya koymak gerekebilir ama
+  // fetch süresi kısa ise sorun olmaz. Yine de fetch döngüsü öncesi başlığı set etmek iyidir.
+  // Ancak collage.innerHTML temizlendiği için injectHeaderInside çalışmayabilir veya silinir.
+  // O yüzden en sonda çağırmak en garantisi.
 
-    // Slider'ı render et (İçindeki etiket locData neyse o kalır, dokunulmaz)
-    renderCollageSlides(collage, already, locData);
-    return;
-  }
+  if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-  collage.innerHTML =
-    '<div style="width: 100%;text-align:center;padding:20px;color:#607d8b;font-size: 13px;">Loading photos...</div>';
+  const daySelections = [];
+  const localUsed = new Set();
+  const MAX_ATTEMPTS = 12;
+  let attempts = 0;
 
-  // 4) YENİ FOTOĞRAF ÇEKME (FETCH)
-  const searchObj = await fetchSmartLocationName(
-    firstWithLoc.location.lat,
-    firstWithLoc.location.lng,
-    window.selectedCity || ""
-  );
+  while (daySelections.length < TARGET_COUNT && attempts < MAX_ATTEMPTS) {
+    if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-  // --- FETCH BAŞLAMADAN BAŞLIĞI GÜNCELLE ---
-  const cityNameForTitle = getCityNameStr(searchObj);
-  if(headerDiv) headerDiv.textContent = `Photos related to ${cityNameForTitle}`;
-  // -----------------------------------------
+    // Görsel gelmeme sorununa karşı min değerini düşürdüm (50 -> 10)
+    // Böylece az sonuç dönse bile kabul edip gösterecek.
+    const pool = await getCityCollageImages(searchObj, {
+      skipCache: true,
+      min: 10, 
+      exclude: window.__globalCollageUsed,
+      salt: `day${day}-try${attempts}`,
+    });
 
-  // CHECK IF TRIP CHANGED AFTER LOCATION FETCH
-  if (window.__activeTripSessionToken !== tripTokenAtStart) {
-    console.log('[collage] Trip changed during location fetch, aborting');
-    return;
-  }
+    for (const src of pool) {
+      if (daySelections.length >= TARGET_COUNT) break;
+      if (window.__globalCollageUsed.has(src)) continue;
+      if (localUsed.has(src)) continue;
+      daySelections.push(src);
+      localUsed.add(src);
+      window.__globalCollageUsed.add(src);
+    }
+    attempts++;
+  }
 
-  const daySelections = [];
-  const localUsed = new Set();
-  const MAX_ATTEMPTS = 12;
-  let attempts = 0;
+  if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-  while (daySelections.length < TARGET_COUNT && attempts < MAX_ATTEMPTS) {
-    if (window.__activeTripSessionToken !== tripTokenAtStart) {
-      console.log('[collage] Trip changed during photo fetch, aborting');
-      return;
-    }
+  if (daySelections.length < TARGET_COUNT) {
+    console.warn(`[collage] ${day}. gün için yeterli foto yok.`);
+  }
 
-    const pool = await getCityCollageImages(searchObj, {
-      skipCache: true,
-      min: 50,
-      exclude: window.__globalCollageUsed,
-      salt: `day${day}-try${attempts}`,
-    });
+  if (!daySelections.length) {
+    collage.style.display = "none";
+    delete window.__dayCollagePhotosByDay[day];
+    rebuildGlobalCollageUsed();
+    return;
+  }
 
-    for (const src of pool) {
-      if (daySelections.length >= TARGET_COUNT) break;
-      if (window.__globalCollageUsed.has(src)) continue;
-      if (localUsed.has(src)) continue;
-      daySelections.push(src);
-      localUsed.add(src);
-      window.__globalCollageUsed.add(src);
-    }
-    attempts++;
-  }
-
-  // FINAL CHECK IF TRIP CHANGED BEFORE RENDERING
-  if (window.__activeTripSessionToken !== tripTokenAtStart) {
-    console.log('[collage] Trip changed before rendering, aborting');
-    return;
-  }
-
-  if (daySelections.length < TARGET_COUNT) {
-    console.warn(`[collage] ${day}. gün için yeterli benzersiz foto bulunamadı (${daySelections.length}/6).`);
-  }
-
-  if (!daySelections.length) {
-    collage.style.display = "none";
-    if(headerDiv) headerDiv.style.display = "none";
-    delete window.__dayCollagePhotosByDay[day];
-    rebuildGlobalCollageUsed();
-    return;
-  }
-
-  // Kaydet ve render et
-  window.__dayCollagePhotosByDay[day] = daySelections.slice();
-  renderCollageSlides(collage, daySelections, searchObj);
+  // Kaydet
+  window.__dayCollagePhotosByDay[day] = daySelections.slice();
+  
+  // Render (Bu fonksiyon içindeki slider başlığına DOKUNULMADI)
+  renderCollageSlides(collage, daySelections, searchObj);
+  
+  // Başlığı ekle (Gri kutunun içine, en tepeye)
+  injectHeaderInside(collage, searchObj);
 };
 // ==================== Slider renderer helper ====================
 function renderCollageSlides(collage, images, searchObj) {
