@@ -8806,14 +8806,7 @@ function wrapRouteControls(day) {
   const bar = document.createElement('div');
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
-  bar.style.display = 'flex';
-  bar.style.flexDirection = 'column';
-  bar.style.margin = '10px 0 20px 0';
-  bar.style.padding = '10px';
-  bar.style.borderRadius = '6px';
-  bar.style.background = '#fafafa';
-  bar.style.border = '1px solid #ddd';
-  bar.style.gap = '10px';
+  
 
   // Bar header
   const mapBarHeader = document.createElement('div');

@@ -6512,7 +6512,7 @@ border-bottom:1px solid #ddd;
  .route-controls-bar {
         display: flex;
     gap: 10px;
-    margin: 20px 0 20px 0;
+    margin: 20px 0;
     flex-direction: column;
     border-radius: 6px;
     }
