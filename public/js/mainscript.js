@@ -3474,19 +3474,33 @@ function attachMapClickAddMode(day) {
 window.AI_RESPONSE_CACHE = window.AI_RESPONSE_CACHE || {};
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // --- TEMİZLİK ---
-    // Önceki AI kutularını temizle ki üst üste binmesin
+    // Temizlik
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
-
+    
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // --- KİMLİK TESPİTİ ---
-    // Bu fonksiyon şu an HANGİ ŞEHİR için çalışıyor?
+    // --- GELİŞMİŞ ŞEHİR/ÜLKE ANALİZİ ---
     let rawCity = cityOverride || (window.selectedCity || '');
-    let targetCity = rawCity.replace(/ trip plan.*$/i, '').trim(); // "Paris", "Antalya" vs.
-    let country = (window.selectedLocation && window.selectedLocation.country) || "";
+    
+    // 1. Şehir ismini temizle ("Rome, Italy trip plan" -> "Rome, Italy")
+    let cleanTitle = rawCity.replace(/ trip plan.*$/i, '').trim();
+    
+    // 2. Şehri belirle (Virgül varsa öncesini al, yoksa tamamını)
+    let targetCity = cleanTitle.split(',')[0].trim();
 
+    // 3. Ülkeyi belirle (Kritik Nokta!)
+    // Önce Google verisine bak, yoksa başlıktan virgülden sonrasını almaya çalış
+    let country = (window.selectedLocation && window.selectedLocation.country) || "";
+    
+    if (!country && cleanTitle.includes(',')) {
+        // "Rome, Italy" -> ["Rome", " Italy"] -> "Italy"
+        let parts = cleanTitle.split(',');
+        country = parts[parts.length - 1].trim();
+        console.log(`[AI Recovery] Refresh sonrası ülke kurtarıldı: ${country}`);
+    }
+
+    // Backend'e gidecek veri yoksa çık
     if (!targetCity && !aiStaticInfo) return;
 
     // Helper: HTML temizleme
