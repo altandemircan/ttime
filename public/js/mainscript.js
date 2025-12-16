@@ -13,12 +13,22 @@ function isTripFav(item) {
     );
 }
 
+// === COLLAGE RACE CONDITION - TOKEN GENERATOR ===
+if (typeof window.__ttNewTripToken !== 'function') {
+  window.__ttNewTripToken = function() {
+    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  };
+}
 
-
-
-// --- Kolaj için yardımcı setleri güvenli başlat ---
+if (! window.__activeTripSessionToken) {
+  window.__activeTripSessionToken = window.__ttNewTripToken();
+}
 window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
 window.__globalCollageUsed = window.__globalCollageUsed || new Set();
+// === END COLLAGE RACE CONDITION ===
+
+
+
 
 // Global used set'ini yeniden kuran yardımcı
 function rebuildGlobalCollageUsed() {
@@ -1286,6 +1296,11 @@ document.querySelectorAll('.gallery-item').forEach(item => {
         saveCurrentTripToStorage();
     }
 
+    // Collage race condition fix - yeni token oluştur
+    window.__activeTripSessionToken = window.__ttNewTripToken();
+    window.__dayCollagePhotosByDay = {};
+    window.__globalCollageUsed = new Set();
+
     // Global değişkenleri sıfırla (Yeni gezi için temiz sayfa)
     window.cart = [];
     window.latestTripPlan = [];
@@ -1354,18 +1369,22 @@ document.querySelectorAll('.gallery-item').forEach(item => {
 });
 
 // .add_theme için aynı mantık
-// .add_theme için aynı mantık
-document.querySelectorAll('.add_theme').forEach(btn => {
+document.querySelectorAll('. add_theme').forEach(btn => {
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
 
     // --- 1. MEVCUT GEZİYİ KAYDET VE SIFIRLA (RESET LOGIC) ---
-    if (window.cart && window.cart.length > 0 && typeof saveCurrentTripToStorage === "function") {
+    if (window.cart && window.cart. length > 0 && typeof saveCurrentTripToStorage === "function") {
         saveCurrentTripToStorage();
     }
 
+    // Collage race condition fix - yeni token oluştur
+    window.__activeTripSessionToken = window.__ttNewTripToken();
+    window.__dayCollagePhotosByDay = {};
+    window.__globalCollageUsed = new Set();
+
     window.cart = [];
-    window.latestTripPlan = [];
+    window. latestTripPlan = [];
     window.selectedCity = null;
     window.selectedLocation = null;
     window.selectedLocationLocked = false;
@@ -4066,11 +4085,16 @@ cartDiv.appendChild(addNewDayButton);
       // Temizlik - global değişkenler
       window.selectedCity = null;
       window.selectedLocation = null;
-      window.selectedLocationLocked = false;
+      window. selectedLocationLocked = false;
       window.__locationPickedFromSuggestions = false;
       window.lastUserQuery = '';
       window.latestTripPlan = [];
       window.cart = [];
+
+      // Collage race condition fix - yeni token oluştur
+      window.__activeTripSessionToken = window.__ttNewTripToken();
+      window.__dayCollagePhotosByDay = {};
+      window.__globalCollageUsed = new Set();
 
       // Tüm harita ve overlay temizliği
       if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
@@ -11249,10 +11273,6 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     `;
     document.head.appendChild(style);
 })();
-/**
- * Kullanıcı konum markerını haritada günceller.
- * Hem 2D (Leaflet) hem 3D (MapLibre) modlarını destekler.
- */
 
 // === COLLAGE RACE CONDITION FIX (Trip Token) ===
 window.__ttNewTripToken = window.__ttNewTripToken || function () {

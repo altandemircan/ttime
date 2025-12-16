@@ -352,9 +352,15 @@ function loadTripFromStorage(tripKey) {
     // ============================================================
     // --- COLLAGE RACE CONDITION FIX ---
     // ============================================================
-    window.__activeTripSessionToken = window.__ttNewTripToken();
-    window.__dayCollagePhotosByDay = {};
-    window.__globalCollageUsed = new Set();
+ try {
+      if (typeof window.__ttNewTripToken === 'function') {
+        window.__activeTripSessionToken = window.__ttNewTripToken();
+      }
+      window.__dayCollagePhotosByDay = {};
+      window.__globalCollageUsed = new Set();
+    } catch(e) {
+      console.warn('[collage] Token reset error:', e);
+    }
 
     // ============================================================
     // --- AGRESİF TEMİZLİK (SCORCHED EARTH POLICY) ---
