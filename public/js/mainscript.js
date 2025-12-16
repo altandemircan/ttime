@@ -4614,7 +4614,7 @@ function isSupportedTravelMode(mode) {
   return ['car', 'bike', 'foot'].includes(mode);
 }
 
-
+ 
 
 
 // 2. renderRouteForDay Fonksiyonunu Güncelle (Türkiye içi fallback'i temizle)
@@ -4902,7 +4902,7 @@ async function renderRouteForDay(day) {
     }
 
     // [YENİ] Fotoğraf Kolajını Ekle (Normal Rota)
-    if (typeof addDayHeroCollage === 'function') addDayHeroCollage(day);
+addDayHeroCollage(day).catch(err => console.error("Collage Error:", err));
 }
 
 function forceCleanExpandedMap(day) {
