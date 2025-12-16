@@ -11260,13 +11260,22 @@ function renderCollageSlides(collage, images, searchObj) {
   const visible = isMobile ? 1 : 3;
   let index = 0;
 
-  const titleHtml = searchObj?.term
-    ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${searchObj.term}</div>`
+  const term = searchObj?.term || "";
+
+  // 1. YENİ BAŞLIK (En üstte, siyah yazı)
+  const topHeaderHtml = term
+    ? `<div style="padding: 0 4px 6px 4px; font-weight: 600; color: #333; font-size: 14px;">Photos related to ${term}</div>`
+    : "";
+
+  // 2. ESKİ ETİKET (Viewport içinde, resim üzerine binen yarı saydam badge)
+  const badgeHtml = term
+    ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${term}</div>`
     : "";
 
   collage.innerHTML = `
-    ${titleHtml}
+    ${topHeaderHtml}
     <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
+      ${badgeHtml}
       <div class="collage-track" style="display:flex; transition: transform 0.4s ease-out; will-change: transform;"></div>
     </div>
     <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
