@@ -11528,7 +11528,75 @@ async function getCityCollageImages(searchObj) {
 // --- 3. Collage Renderer (GÜNCELLENMİŞ) ---
 // ============================================================
 
+async function getCityCollageImages(searchObj, { skipCache = false } = {}) {
+  let searchTerm = "";
+  let context = "";
 
+  if (typeof searchObj === "string") {
+    searchTerm = searchObj;
+  } else {
+    searchTerm = searchObj.term;
+    context = searchObj.context || "";
+  }
+
+  if (!searchTerm) return [];
+
+  const cacheKey = searchTerm + "_" + context;
+
+  // Cache sadece skipCache=false iken kullanılsın
+  window.__dayCollageCache = window.__dayCollageCache || {};
+  if (!skipCache && window.__dayCollageCache[cacheKey]) {
+    return window.__dayCollageCache[cacheKey];
+  }
+
+  const cleanTerm = searchTerm
+    .replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "")
+    .trim();
+  const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
+
+  const queries = [
+    `${cleanTerm} ${cleanContext} tourism`,
+    `${cleanTerm} ${cleanContext} landmarks`,
+    `${cleanTerm} city center`,
+    `${cleanTerm} streets`,
+    `${cleanTerm} food`,
+    `${cleanTerm} night`,
+    `${cleanTerm} people`,
+    `${cleanTerm} nature`,
+    `${cleanTerm} architecture`,
+    `visit ${cleanTerm}`,
+  ];
+
+  if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
+    queries.push(`${cleanContext} travel`);
+    queries.push(`${cleanContext} landscape`);
+    queries.push(`${cleanContext} aerial`);
+  }
+
+  const images = [];
+  const seen = new Set();
+
+  for (const q of queries) {
+    if (images.length >= 20) break;
+    try {
+      const img = await getPhoto(q, "pexels");
+      if (img && !seen.has(img)) {
+        images.push(img);
+        seen.add(img);
+      }
+    } catch (_) {}
+  }
+
+  while (images.length < 6 && images.length > 0) {
+    images.push(...images);
+  }
+
+  if (!skipCache) {
+    window.__dayCollageCache[cacheKey] = images;
+  }
+
+  return images;
+}
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
