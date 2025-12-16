@@ -1,3 +1,19 @@
+
+// === COLLAGE RACE CONDITION - TOKEN GENERATOR (local_storage.js için de) ===
+if (typeof window.__ttNewTripToken !== 'function') {
+  window.__ttNewTripToken = function() {
+    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  };
+}
+
+if (! window.__activeTripSessionToken) {
+  window.__activeTripSessionToken = window.__ttNewTripToken();
+}
+
+window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+window.__globalCollageUsed = window.__globalCollageUsed || new Set();
+// === END COLLAGE RACE CONDITION ===
+
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
 
 window.cart = Array.isArray(window.cart) ? window.cart : [];
