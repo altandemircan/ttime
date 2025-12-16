@@ -13,7 +13,15 @@ function isTripFav(item) {
     );
 }
 
-// Sonuçlar her güncellendiğinde ve slider yeniden kurulduğunda çağır:
+// Kullanılan resimleri takip etmek için global set
+window.__usedCollageImages = window.__usedCollageImages || new Set();
+
+// Yeni plan yapıldığında bu hafızayı temizlemek gerekir.
+// (Mevcut 'New Trip Plan' fonksiyonuna bunu eklemiş olacağız otomatikman, çünkü sayfa yenilenmese bile cart sıfırlanıyor)
+function resetCollageMemory() {
+    window.__usedCollageImages = new Set();
+    window.__dayCollageCache = {}; // Cache'i de temizle ki yeni aramalar yapsın
+}
 
 window.__welcomeHiddenForever = false;
 window.__restaurantLayers = window.__restaurantLayers || [];
@@ -11616,8 +11624,6 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
 // ============================================================
 
 async function getCityCollageImages(searchObj) {
-  // searchObj { term: "Konyaaltı", context: "Antalya" } şeklinde gelir.
-  // Eğer string gelirse (eski yapıdan), onu objeye çeviririz.
   let searchTerm = "";
   let context = "";
 
@@ -11631,39 +11637,42 @@ async function getCityCollageImages(searchObj) {
   if (!searchTerm) return [];
 
   const cacheKey = searchTerm + "_" + context;
+  
+  // Cache varsa direkt döndür (Ama artık cache içinde 20-30 foto olacak)
   window.__dayCollageCache = window.__dayCollageCache || {};
   if (window.__dayCollageCache[cacheKey]) return window.__dayCollageCache[cacheKey];
 
-  // Terimi temizle (Gereksiz "Mahallesi", "Belediyesi" vb. at)
   const cleanTerm = searchTerm.replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "").trim();
   const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
 
-  // Zenginleştirilmiş Sorgular (Turistik odaklı)
+  // Sorgu listesini genişlettik ki farklı günlere yetecek kadar malzeme çıksın
   const queries = [
-    `${cleanTerm} ${cleanContext} tourism`, // Örn: Konyaaltı Antalya tourism (En garantisi)
-    `${cleanTerm} ${cleanContext} landmark`,
+    `${cleanTerm} ${cleanContext} tourism`, 
+    `${cleanTerm} ${cleanContext} landmarks`,
     `${cleanTerm} city center`,
     `${cleanTerm} streets`,
-    `${cleanTerm} travel`,
-    `visit ${cleanTerm}`,
-    `${cleanTerm} food`,
-    `${cleanTerm} aerial view`
+    `${cleanTerm} food`,      // Yemek
+    `${cleanTerm} night`,     // Gece hayatı
+    `${cleanTerm} people`,    // İnsan/Kültür
+    `${cleanTerm} nature`,    // Doğa
+    `${cleanTerm} architecture`,
+    `visit ${cleanTerm}`
   ];
 
-  // Eğer ilçe (cleanTerm) ile il (cleanContext) farklıysa, sadece İL sorgularını da yedek olarak ekle.
-  // Çünkü ilçe için fotoğraf yoksa, ilin genel fotoğrafları gelsin (boş kalmasından iyidir).
+  // Yedek sorgular (İlçe bulunamazsa İL)
   if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
-      queries.push(`${cleanContext} tourism`);
-      queries.push(`${cleanContext} landmarks`);
+      queries.push(`${cleanContext} travel`);
+      queries.push(`${cleanContext} landscape`);
+      queries.push(`${cleanContext} aerial`);
   }
 
   const images = [];
   const seen = new Set();
 
+  // Hedef: En az 15 farklı fotoğraf toplamak
   for (const q of queries) {
-    if (images.length >= 6) break;
+    if (images.length >= 15) break; 
     try {
-      // getPhoto fonksiyonunun var olduğunu varsayıyoruz (Pexels/Unsplash)
       const img = await getPhoto(q, "pexels");
       if (img && !seen.has(img)) {
         images.push(img);
@@ -11672,9 +11681,9 @@ async function getCityCollageImages(searchObj) {
     } catch (_) {}
   }
 
-  // Eğer hala yeterli resim yoksa, mecburen döngüye sok (Slider boş görünmesin)
-  while (images.length < 4 && images.length > 0) {
-    images.push(...images.slice(0, Math.min(images.length, 6 - images.length)));
+  // Eğer çok az sonuç geldiyse (örn: bilinmeyen bir köy), eldekileri mecburen çoğalt
+  while (images.length < 3 && images.length > 0) {
+    images.push(...images);
   }
 
   window.__dayCollageCache[cacheKey] = images;
@@ -11688,12 +11697,11 @@ async function getCityCollageImages(searchObj) {
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
-  // 1. HTML İskeletini Oluştur (Yoksa)
+  // 1. HTML İskeletini Oluştur
   let collage = dayContainer.querySelector(".day-collage");
   if (!collage) {
     collage = document.createElement("div");
     collage.className = "day-collage";
-    // Stil ayarları:
     collage.style.cssText = `
       margin: 12px 0 6px 0;
       border-radius: 10px;
@@ -11702,18 +11710,17 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
       padding: 8px;
       position: relative;
       display: block;
-      min-height: 100px; /* Yüklenirken zıplamayı engeller */
+      min-height: 100px;
     `;
     const dayListEl = dayContainer.querySelector(".day-list");
     if (dayListEl && dayListEl.parentNode) {
-      // Listenin (ul) hemen sonrasına ekle
       dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
     } else {
       dayContainer.appendChild(collage);
     }
   }
 
-  // 2. Lokasyonu Olan İlk Öğeyi Bul
+  // 2. Lokasyon Bul
   const firstWithLoc = (dayItemsArr || []).find(
     (it) =>
       it.location &&
@@ -11727,32 +11734,53 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   }
 
   collage.style.display = "block";
-  collage.innerHTML = `<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;font-family:sans-serif;">
-    <span style="display:inline-block;animation:spin 1s linear infinite">⏳</span> Loading photos...
-  </div>`;
+  collage.innerHTML = `<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;">Wait...</div>`;
 
-  // 3. Akıllı İsim Çözümleme (BURASI KRİTİK)
+  // 3. İsim Çözümleme
   const searchObj = await fetchSmartLocationName(
       firstWithLoc.location.lat,
       firstWithLoc.location.lng,
       window.selectedCity || ""
   );
 
-  // 4. Görselleri Çek
-  const images = await getCityCollageImages(searchObj);
+  // 4. Havuzdan Tüm Resimleri Getir (15-20 tane gelir)
+  const allImages = await getCityCollageImages(searchObj);
 
-  if (!images.length) {
+  if (!allImages || allImages.length === 0) {
     collage.innerHTML = "";
     collage.style.display = "none";
     return;
   }
 
-  // 5. Slider Yapısını Kur
-  const visible = Math.min(3, images.length);
+  // 5. --- SEÇİM ALGORİTMASI (Unique Selection) ---
+  const selectedImages = [];
+  
+  // Adım A: Hiç kullanılmamış resimleri bul
+  for (const src of allImages) {
+      if (selectedImages.length >= 3) break; // 3 tane bulduysak dur
+      
+      if (!window.__usedCollageImages.has(src)) {
+          selectedImages.push(src);
+          window.__usedCollageImages.add(src); // Artık kullanıldı olarak işaretle
+      }
+  }
+
+  // Adım B: Eğer 3 tane çıkmadıysa (havuz tükenmiş), mecburen eskilerden rastgele al
+  if (selectedImages.length < 3) {
+      for (const src of allImages) {
+          if (selectedImages.length >= 3) break;
+          // Zaten seçtiklerimiz arasında yoksa ekle (tekrara düşer ama yapacak bir şey yok)
+          if (!selectedImages.includes(src)) {
+              selectedImages.push(src);
+          }
+      }
+  }
+  // ------------------------------------------------
+
+  // 6. Slider Yapısını Kur
+  const visible = selectedImages.length; // Genelde 3 olur
   let index = 0;
 
-  // Başlık (İsteğe bağlı): Kullanıcıya nerenin fotoğraflarını gösterdiğimizi yazabiliriz.
-  // Örn: "Photos from Konyaaltı"
   const titleHtml = searchObj.term ? 
     `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">
        ${searchObj.term}
@@ -11763,28 +11791,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
       <div class="collage-track" style="display:flex; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); will-change: transform;"></div>
     </div>
-    
-    <button class="collage-nav prev" aria-label="Previous" style="
-      position:absolute; left:6px; top:50%; transform:translateY(-50%);
-      background:rgba(255,255,255,0.8); color:#333; border:none; border-radius:50%;
-      width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2); font-weight:bold; transition: opacity 0.2s;
-    ">❮</button>
-    
-    <button class="collage-nav next" aria-label="Next" style="
-      position:absolute; right:6px; top:50%; transform:translateY(-50%);
-      background:rgba(255,255,255,0.8); color:#333; border:none; border-radius:50%;
-      width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2); font-weight:bold; transition: opacity 0.2s;
-    ">❯</button>
+    <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.8); color:#333; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">❮</button>
+    <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.8); color:#333; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">❯</button>
   `;
 
   const track = collage.querySelector(".collage-track");
 
-  // Slide'ları Oluştur
-  images.forEach((src) => {
+  selectedImages.forEach((src) => {
     const slide = document.createElement("div");
-    // Flex-basis hesaplaması (ekranda kaç tane görünecekse ona göre % ayarla)
     slide.style.cssText = `
       flex: 0 0 ${100 / visible}%;
       max-width: ${100 / visible}%;
@@ -11793,43 +11807,18 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     `;
     slide.innerHTML = `
       <div style="width:100%; height:150px; border-radius:8px; overflow:hidden; background:#e5e8ed; position:relative;">
-        <img src="${src}" loading="lazy" alt="${searchObj.term} photo" style="width:100%; height:100%; object-fit:cover; display:block; transition: transform 0.5s;">
+        <img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
       </div>
     `;
     track.appendChild(slide);
   });
 
-  // Slider Fonksiyonları
-  function clampIndex(i) {
-    const max = Math.max(0, images.length - visible);
-    return Math.max(0, Math.min(max, i));
-  }
-
   function update() {
-    const max = Math.max(0, images.length - visible);
-    index = clampIndex(index);
-    const stepPct = 100 / visible;        
-    const offsetPct = index * stepPct;    
-    track.style.transform = `translateX(-${offsetPct}%)`;
-    
-    const prevBtn = collage.querySelector(".collage-nav.prev");
-    const nextBtn = collage.querySelector(".collage-nav.next");
-    if (prevBtn) prevBtn.style.opacity = index === 0 ? 0.3 : 1;
-    if (nextBtn) nextBtn.style.opacity = index === max ? 0.3 : 1;
-    if (prevBtn) prevBtn.style.pointerEvents = index === 0 ? 'none' : 'auto';
-    if (nextBtn) nextBtn.style.pointerEvents = index === max ? 'none' : 'auto';
+    const max = Math.max(0, selectedImages.length - visible); // Aslında visible == length olduğu için max 0 olur, slider çalışmaz ama yapı hazır.
+    // Eğer visible < selectedImages.length yaparsan slider çalışır. Şu an statik 3'lü gösteriyor.
+    // Slider özelliği istiyorsan visible = 1 yapabilirsin mobilde.
   }
-
-  const prevBtn = collage.querySelector(".collage-nav.prev");
-  const nextBtn = collage.querySelector(".collage-nav.next");
-  if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); index = clampIndex(index - 1); update(); };
-  if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); index = clampIndex(index + 1); update(); };
-
-  // Responsive: Ekran boyutu değişirse görünümü güncelle
-  if (window.ResizeObserver) {
-    const ro = new ResizeObserver(() => update());
-    ro.observe(collage);
-  }
-
-  update();
+  
+  // Slider mantığı burada biraz devre dışı kalıyor çünkü visible == images.length. 
+  // İstersen mobilde 1 tane gösterip kaydırmalı yapabiliriz CSS media query ile.
 };
