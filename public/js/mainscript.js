@@ -11638,28 +11638,28 @@ async function getCityCollageImages(searchObj) {
 
   const cacheKey = searchTerm + "_" + context;
   
-  // Cache varsa direkt döndür (Ama artık cache içinde 20-30 foto olacak)
+  // Return cached images if available
   window.__dayCollageCache = window.__dayCollageCache || {};
   if (window.__dayCollageCache[cacheKey]) return window.__dayCollageCache[cacheKey];
 
   const cleanTerm = searchTerm.replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "").trim();
   const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
 
-  // Sorgu listesini genişlettik ki farklı günlere yetecek kadar malzeme çıksın
+  // Expanded query list for better variety
   const queries = [
     `${cleanTerm} ${cleanContext} tourism`, 
     `${cleanTerm} ${cleanContext} landmarks`,
     `${cleanTerm} city center`,
     `${cleanTerm} streets`,
-    `${cleanTerm} food`,      // Yemek
-    `${cleanTerm} night`,     // Gece hayatı
-    `${cleanTerm} people`,    // İnsan/Kültür
-    `${cleanTerm} nature`,    // Doğa
+    `${cleanTerm} food`,
+    `${cleanTerm} night`,
+    `${cleanTerm} people`,
+    `${cleanTerm} nature`,
     `${cleanTerm} architecture`,
     `visit ${cleanTerm}`
   ];
 
-  // Yedek sorgular (İlçe bulunamazsa İL)
+  // Fallback queries (if district search yields few results)
   if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
       queries.push(`${cleanContext} travel`);
       queries.push(`${cleanContext} landscape`);
@@ -11669,9 +11669,9 @@ async function getCityCollageImages(searchObj) {
   const images = [];
   const seen = new Set();
 
-  // Hedef: En az 15 farklı fotoğraf toplamak
+  // Target: At least 20 unique images
   for (const q of queries) {
-    if (images.length >= 15) break; 
+    if (images.length >= 20) break;
     try {
       const img = await getPhoto(q, "pexels");
       if (img && !seen.has(img)) {
@@ -11681,8 +11681,8 @@ async function getCityCollageImages(searchObj) {
     } catch (_) {}
   }
 
-  // Eğer çok az sonuç geldiyse (örn: bilinmeyen bir köy), eldekileri mecburen çoğalt
-  while (images.length < 3 && images.length > 0) {
+  // Duplicate images if too few found to prevent broken slider
+  while (images.length < 6 && images.length > 0) {
     images.push(...images);
   }
 
@@ -11697,7 +11697,7 @@ async function getCityCollageImages(searchObj) {
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
-  // 1. HTML İskeletini Oluştur
+  // 1. Create HTML Structure
   let collage = dayContainer.querySelector(".day-collage");
   if (!collage) {
     collage = document.createElement("div");
@@ -11720,12 +11720,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
   }
 
-  // 2. Lokasyon Bul
+  // 2. Find Location
   const firstWithLoc = (dayItemsArr || []).find(
-    (it) =>
-      it.location &&
-      isFinite(it.location.lat) &&
-      isFinite(it.location.lng)
+    (it) => it.location && isFinite(it.location.lat) && isFinite(it.location.lng)
   );
 
   if (!firstWithLoc) {
@@ -11734,16 +11731,16 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   }
 
   collage.style.display = "block";
-  collage.innerHTML = `<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;">Wait...</div>`;
+  collage.innerHTML = `<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;">Loading...</div>`;
 
-  // 3. İsim Çözümleme
+  // 3. Smart Name Resolution
   const searchObj = await fetchSmartLocationName(
       firstWithLoc.location.lat,
       firstWithLoc.location.lng,
       window.selectedCity || ""
   );
 
-  // 4. Havuzdan Tüm Resimleri Getir (15-20 tane gelir)
+  // 4. Fetch Images
   const allImages = await getCityCollageImages(searchObj);
 
   if (!allImages || allImages.length === 0) {
@@ -11752,33 +11749,32 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     return;
   }
 
-  // 5. --- SEÇİM ALGORİTMASI (Unique Selection) ---
+  // 5. --- SELECTION ALGORITHM (Select 6 Unique Images) ---
   const selectedImages = [];
-  
-  // Adım A: Hiç kullanılmamış resimleri bul
+  const TARGET_COUNT = 6; // Select 6 images to allow scrolling
+
+  // A. Prioritize unused images
   for (const src of allImages) {
-      if (selectedImages.length >= 3) break; // 3 tane bulduysak dur
+      if (selectedImages.length >= TARGET_COUNT) break;
       
       if (!window.__usedCollageImages.has(src)) {
           selectedImages.push(src);
-          window.__usedCollageImages.add(src); // Artık kullanıldı olarak işaretle
+          window.__usedCollageImages.add(src);
       }
   }
 
-  // Adım B: Eğer 3 tane çıkmadıysa (havuz tükenmiş), mecburen eskilerden rastgele al
-  if (selectedImages.length < 3) {
+  // B. Reuse old images if pool is exhausted
+  if (selectedImages.length < TARGET_COUNT) {
       for (const src of allImages) {
-          if (selectedImages.length >= 3) break;
-          // Zaten seçtiklerimiz arasında yoksa ekle (tekrara düşer ama yapacak bir şey yok)
-          if (!selectedImages.includes(src)) {
-              selectedImages.push(src);
-          }
+          if (selectedImages.length >= TARGET_COUNT) break;
+          selectedImages.push(src);
       }
   }
-  // ------------------------------------------------
-
-  // 6. Slider Yapısını Kur
-  const visible = selectedImages.length; // Genelde 3 olur
+  
+  // 6. --- SLIDER SETUP ---
+  // Display 3 images on desktop, 1 on mobile
+  const isMobile = window.innerWidth < 600;
+  const visible = isMobile ? 1 : 3; 
   let index = 0;
 
   const titleHtml = searchObj.term ? 
@@ -11791,14 +11787,15 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
       <div class="collage-track" style="display:flex; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); will-change: transform;"></div>
     </div>
-    <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.8); color:#333; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">❮</button>
-    <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.8); color:#333; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">❯</button>
+    <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
+    <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
   `;
 
   const track = collage.querySelector(".collage-track");
 
   selectedImages.forEach((src) => {
     const slide = document.createElement("div");
+    // Flex width: 100 / visible count
     slide.style.cssText = `
       flex: 0 0 ${100 / visible}%;
       max-width: ${100 / visible}%;
@@ -11806,19 +11803,62 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
       box-sizing: border-box;
     `;
     slide.innerHTML = `
-      <div style="width:100%; height:150px; border-radius:8px; overflow:hidden; background:#e5e8ed; position:relative;">
+      <div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed; position:relative;">
         <img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
       </div>
     `;
     track.appendChild(slide);
   });
 
+  // Slider Update Function
   function update() {
-    const max = Math.max(0, selectedImages.length - visible); // Aslında visible == length olduğu için max 0 olur, slider çalışmaz ama yapı hazır.
-    // Eğer visible < selectedImages.length yaparsan slider çalışır. Şu an statik 3'lü gösteriyor.
-    // Slider özelliği istiyorsan visible = 1 yapabilirsin mobilde.
+    const total = selectedImages.length;
+    // Max index: Total - Visible
+    // Example: 6 images, 3 visible -> Max index = 3 (allowing shifts to 0, 1, 2, 3)
+    const max = Math.max(0, total - visible);
+    
+    // Clamp index
+    index = Math.max(0, Math.min(max, index));
+
+    const stepPct = 100 / visible;
+    const offsetPct = index * stepPct;
+    track.style.transform = `translateX(-${offsetPct}%)`;
+    
+    const prevBtn = collage.querySelector(".collage-nav.prev");
+    const nextBtn = collage.querySelector(".collage-nav.next");
+    
+    if (prevBtn) {
+        prevBtn.style.opacity = index === 0 ? 0.3 : 1;
+        prevBtn.style.pointerEvents = index === 0 ? 'none' : 'auto';
+    }
+    if (nextBtn) {
+        nextBtn.style.opacity = index === max ? 0.3 : 1;
+        nextBtn.style.pointerEvents = index === max ? 'none' : 'auto';
+    }
   }
+
+  const prevBtn = collage.querySelector(".collage-nav.prev");
+  const nextBtn = collage.querySelector(".collage-nav.next");
   
-  // Slider mantığı burada biraz devre dışı kalıyor çünkü visible == images.length. 
-  // İstersen mobilde 1 tane gösterip kaydırmalı yapabiliriz CSS media query ile.
+  if (prevBtn) prevBtn.onclick = (e) => { 
+      e.stopPropagation(); 
+      index--; 
+      update(); 
+  };
+  if (nextBtn) nextBtn.onclick = (e) => { 
+      e.stopPropagation(); 
+      index++; 
+      update(); 
+  };
+
+  // Resize Observer for Responsiveness
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => {
+        // Simple update call on resize to re-apply CSS transforms if needed
+        update();
+    });
+    ro.observe(collage);
+  }
+
+  update();
 };
