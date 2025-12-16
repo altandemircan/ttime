@@ -4616,92 +4616,45 @@ function isSupportedTravelMode(mode) {
 
  
 
-
-// ======================================================
-// 1. CSS STİLLERİ (Sayfaya otomatik eklenir, stil dosyasına gerek yok)
-// ======================================================
 (function injectCollageStyles() {
-    if (document.getElementById('tt-collage-css-injected')) return;
-    const css = `
-        .day-hero-collage {
-            display: grid;
-            gap: 6px;
-            height: 220px;
-            width: 100%;
-            margin: 15px 0;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            position: relative;
-            z-index: 5;
-        }
-        .collage-item { position: relative; width: 100%; height: 100%; background: #eee; overflow: hidden; }
-        .collage-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease; }
-        .collage-item:hover img { transform: scale(1.05); }
-        .collage-label {
-            position: absolute; bottom: 10px; left: 10px;
-            background: rgba(0,0,0,0.7); color: #fff;
-            padding: 5px 10px; border-radius: 6px;
-            font-size: 12px; font-weight: 600; pointer-events: none;
-            backdrop-filter: blur(2px);
-        }
-        /* Grid Layouts */
-        .day-hero-collage.grid-1 { grid-template-columns: 1fr; }
-        .day-hero-collage.grid-2 { grid-template-columns: 1fr 1fr; }
-        .day-hero-collage.grid-3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }
-        .day-hero-collage.grid-3 .item-0 { grid-column: 1; grid-row: 1 / -1; }
-        .day-hero-collage.grid-3 .item-1 { grid-column: 2; grid-row: 1; }
-        .day-hero-collage.grid-3 .item-2 { grid-column: 2; grid-row: 2; }
-    `;
-    const style = document.createElement('style');
-    style.id = 'tt-collage-css-injected';
-    style.innerHTML = css;
-    document.head.appendChild(style);
-})();
 
 // ======================================================
 // 2. KOLAJ EKLEME FONKSİYONU (RETRY MEKANİZMALI)
 // ======================================================
-async function addDayHeroCollage(day, attempt = 1) {
-    const logPrefix = `[COLLAGE Day ${day} - Deneme ${attempt}]`;
-    
-    // A. Hedef Elementi Bul: "route-controls-bar-dayX" (Haritanın ve kontrollerin olduğu gri kutu)
-    const targetId = `route-controls-bar-day${day}`;
-    const targetElement = document.getElementById(targetId);
+async function addDayHeroCollage(day) {
+    console.log(`[COLLAGE] Day ${day} için işlem başladı...`);
 
-    // B. Element yoksa ve deneme hakkımız varsa bekle ve tekrar dene
-    if (!targetElement) {
-        if (attempt < 10) { // 10 kereye kadar dene (toplam 1.5 sn)
-            // console.warn(`${logPrefix} Hedef element (${targetId}) bulunamadı. Tekrar deneniyor...`);
-            setTimeout(() => addDayHeroCollage(day, attempt + 1), 150);
-            return;
-        } else {
-            console.error(`${logPrefix} BAŞARISIZ! Hedef element sayfada yok.`);
-            return;
-        }
-    }
-
-    // C. Zaten eklenmiş mi?
-    if (document.getElementById(`day-collage-${day}`)) {
-        // console.log(`${logPrefix} Zaten ekli, çıkılıyor.`);
+    // 1. ANA KONTEYNERİ BUL (En güvenli element)
+    const dayContainer = document.getElementById(`day-container-${day}`);
+    if (!dayContainer) {
+        console.error(`[COLLAGE] Day Container (${day}) bulunamadı!`);
         return;
     }
 
-    // D. Verileri Çek
+    // 2. REFERANS NOKTASI BUL (Harita Kontrol Barı)
+    // Kolajı bu elementin hemen öncesine (üstüne) koyacağız.
+    const mapControlBar = document.getElementById(`route-controls-bar-day${day}`);
+    
+    // Eğer harita barı yoksa, list bitimini bulmaya çalış
+    const dayList = dayContainer.querySelector('.day-list');
+
+    // Eğer zaten ekliyse çık
+    if (document.getElementById(`day-collage-${day}`)) {
+        console.log(`[COLLAGE] Day ${day} zaten ekli.`);
+        return;
+    }
+
+    // 3. VERİLERİ ÇEK
     const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-    // User Location ve Starting Point hariç, ismi olan yerler
     const places = points.filter(p => p.name && !p.name.includes("User Location") && !p.name.includes("Starting Point"));
 
-    if (places.length === 0) {
-        console.log(`${logPrefix} Gösterilecek mekan yok.`);
-        return;
-    }
+    if (places.length === 0) return;
 
-    // E. İlk 3 Mekanın Resmini Al
+    // İlk 3 mekanı al
     const topPlaces = places.slice(0, 3);
     const city = window.selectedCity || "";
 
+    // Resimleri getir
     const imagePromises = topPlaces.map(async p => {
         let category = p.category || "tourist attraction";
         try {
@@ -4717,11 +4670,11 @@ async function addDayHeroCollage(day, attempt = 1) {
     const validData = results.filter(d => d);
 
     if (validData.length === 0) {
-        console.log(`${logPrefix} Geçerli resim bulunamadı.`);
+        console.log(`[COLLAGE] Day ${day} resim bulunamadı.`);
         return;
     }
 
-    // F. HTML Oluştur
+    // 4. HTML OLUŞTUR
     const count = Math.min(validData.length, 3);
     const gridClass = `grid-${count}`;
     
@@ -4736,9 +4689,19 @@ async function addDayHeroCollage(day, attempt = 1) {
     });
     html += `</div>`;
 
-    // G. EKLEME (INSERT) - Harita kutusunun hemen öncesine
-    targetElement.insertAdjacentHTML('beforebegin', html);
-    console.log(`${logPrefix} BAŞARIYLA EKLENDİ!`);
+    // 5. YERLEŞTİRME (Kritik Nokta)
+    // Eğer harita barı varsa onun üstüne, yoksa listenin altına koy.
+    if (mapControlBar) {
+        mapControlBar.insertAdjacentHTML('beforebegin', html);
+        console.log(`[COLLAGE] Harita barının üstüne eklendi (Day ${day}).`);
+    } else if (dayList) {
+        dayList.insertAdjacentHTML('afterend', html);
+        console.log(`[COLLAGE] Listenin altına eklendi (Day ${day}).`);
+    } else {
+        // Hiçbiri yoksa container'ın sonuna ekle
+        dayContainer.insertAdjacentHTML('beforeend', html);
+        console.log(`[COLLAGE] Container sonuna eklendi (Day ${day}).`);
+    }
 }
 
 // ======================================================
@@ -4849,7 +4812,9 @@ async function renderRouteForDay(day) {
     // [KOLAJI ÇAĞIR - BURASI ÖNEMLİ]
     // Fonksiyonun en sonunda, asenkron olarak çağırıyoruz.
     // DOM'un güncellenmesi için ufak bir gecikme olması iyidir, ama fonksiyon içindeki retry bunu halledecek.
-    addDayHeroCollage(day);
+ setTimeout(() => {
+        addDayHeroCollage(day);
+    }, 100);
 }
 
 
