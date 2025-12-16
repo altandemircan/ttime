@@ -4654,40 +4654,77 @@ function isSupportedTravelMode(mode) {
     `;
     document.head.appendChild(s);
 })();
-// --- KOLAJ EKLEME FONKSİYONU ---
+
+(function injectCollageStyles() {
+    if (document.getElementById('tt-collage-debug-style')) return;
+    const s = document.createElement('style');
+    s.id = 'tt-collage-debug-style';
+    s.innerHTML = `
+        /* Görünürlük Garantili Stil */
+        .day-hero-collage {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            width: 98%;
+            height: 140px;
+            margin: 15px auto;
+            border: 4px solid red !important; /* DEBUG İÇİN KIRMIZI ÇERÇEVE */
+            background: #ffe6e6;
+            border-radius: 8px;
+            padding: 5px;
+            box-sizing: border-box;
+            clear: both;
+            z-index: 999;
+            position: relative;
+        }
+        .collage-item { 
+            background: #ccc; 
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #333; font-size: 11px; text-align: center;
+            border: 1px dashed white; overflow: hidden; position: relative;
+        }
+        .collage-item img { width: 100%; height: 100%; object-fit: cover; }
+        .collage-label { 
+            position: absolute; bottom: 0; left: 0; right: 0; 
+            background: rgba(0,0,0,0.6); color: #fff; padding: 2px;
+        }
+    `;
+    document.head.appendChild(s);
+})();
+
 async function addDayHeroCollage(day) {
-    // 1. Zaten ekli mi kontrol et
+    // 1. Zaten ekli mi?
     if (document.getElementById(`day-collage-${day}`)) return;
 
-    // 2. Hedef Butonu Bul (+ Add Category)
-    const btnSelector = `.add-more-btn[data-day="${day}"]`;
-    const addMoreBtn = document.querySelector(btnSelector);
+    // 2. LİSTEYİ BUL (ul.day-list)
+    // Buton ul'nin içinde olduğu için, ul'nin sonuna eklemek butonun altına eklemek demektir.
+    const listSelector = `ul.day-list[data-day="${day}"]`;
+    const dayList = document.querySelector(listSelector);
 
-    // Buton yoksa işlem yapma (Poller tekrar deneyecek)
-    if (!addMoreBtn) return;
+    // Liste yoksa çık (Devriye sistemi tekrar dener)
+    if (!dayList) return;
 
-    console.log(`%c[COLLAGE] Buton bulundu (Day ${day}), ekleniyor...`, "color:green;font-weight:bold;");
+    console.log(`%c[COLLAGE] Liste bulundu (Day ${day}), ekleniyor...`, "color:green;font-weight:bold;font-size:14px;");
 
-    // 3. HTML Oluştur (İlk başta boş kutular)
+    // 3. HTML OLUŞTUR
     const html = `
         <div id="day-collage-${day}" class="day-hero-collage">
-            <div class="collage-item" id="col-img-${day}-0">Yükleniyor...</div>
-            <div class="collage-item" id="col-img-${day}-1">Yükleniyor...</div>
-            <div class="collage-item" id="col-img-${day}-2">Yükleniyor...</div>
+            <div class="collage-item" id="col-img-${day}-0">FOTO 1<br>(Yükleniyor)</div>
+            <div class="collage-item" id="col-img-${day}-1">FOTO 2<br>(Yükleniyor)</div>
+            <div class="collage-item" id="col-img-${day}-2">FOTO 3<br>(Yükleniyor)</div>
         </div>
     `;
 
-    // 4. EKLE (Butonun ALTINA)
-    addMoreBtn.insertAdjacentHTML('afterend', html);
+    // 4. EKLE: Listenin (</ul>) bitiminden hemen sonraya (afterend)
+    dayList.insertAdjacentHTML('afterend', html);
 
-    // 5. Resimleri Çek (Hata olsa bile kutu orada kalır)
+    // 5. RESİMLERİ ÇEK (Arkadan sessizce çalışsın)
     loadCollageImages(day);
 }
 
-// --- RESİM YÜKLEME YARDIMCISI ---
+// Resim Yükleyici
 async function loadCollageImages(day) {
     const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-    // User Location ve Start hariç yerleri al
     const places = points.filter(p => p.name && !p.name.includes("User") && !p.name.includes("Start"));
     
     if (places.length === 0) return;
@@ -4702,43 +4739,11 @@ async function loadCollageImages(day) {
         if (targetDiv) {
             try {
                 let cat = p.category || "landmark";
-                // Mevcut resim çekme fonksiyonunu kullan
-                const imgUrl = await getImageForPlace(p.name, cat, city);
-                
-                if (imgUrl && !imgUrl.includes('placeholder')) {
-                    targetDiv.innerHTML = `<img src="${imgUrl}"><div class="collage-label">${p.name}</div>`;
-                } else {
-                    targetDiv.innerHTML = `Resim Yok<br><small>${p.name}</small>`;
-                }
-            } catch(e) {
-                console.warn("Resim hatası:", e);
-                targetDiv.innerHTML = `Hata<br><small>${p.name}</small>`;
-            }
-        }
-    }
-}
-
-// Resim Yükleme Yardımcısı
-async function loadCollageImages(day) {
-    const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-    const places = points.filter(p => p.name && !p.name.includes("User") && !p.name.includes("Start"));
-    
-    if (places.length === 0) return;
-
-    const topPlaces = places.slice(0, 3);
-    const city = window.selectedCity || "";
-
-    for (let i = 0; i < topPlaces.length; i++) {
-        const p = topPlaces[i];
-        const targetDiv = document.getElementById(`col-img-${day}-${i}`);
-        if (targetDiv) {
-            try {
-                let cat = p.category || "landmark";
                 const imgUrl = await getImageForPlace(p.name, cat, city);
                 if (imgUrl && !imgUrl.includes('placeholder')) {
                     targetDiv.innerHTML = `<img src="${imgUrl}"><div class="collage-label">${p.name}</div>`;
                 } else {
-                    targetDiv.innerHTML = `Resim Yok<br><small>${p.name}</small>`;
+                    targetDiv.innerHTML = `Resim Yok<br>${p.name}`;
                 }
             } catch(e) {}
         }
@@ -4752,32 +4757,34 @@ async function renderRouteForDay(day) {
 
     // ============================================================
     // [GARANTİ ÇÖZÜM] DEVRİYE SİSTEMİ (POLLER)
-    // Butonu bulana kadar her 200ms'de bir kontrol eder (Max 3 saniye)
-    // Harita hatalarından etkilenmez çünkü ayrı bir thread gibi çalışır.
+    // Listeyi bulana kadar her 250ms'de bir kontrol eder.
+    // Harita hataları bu sistemi durduramaz.
     // ============================================================
     let attempts = 0;
     const collagePoller = setInterval(() => {
         attempts++;
-        const btn = document.querySelector(`.add-more-btn[data-day="${day}"]`);
+        const list = document.querySelector(`ul.day-list[data-day="${day}"]`);
         const exists = document.getElementById(`day-collage-${day}`);
         
-        // Buton var ve kutu yoksa -> EKLE
-        if (btn && !exists) {
+        // Liste var ve kutu yoksa -> EKLE ve BİTİR
+        if (list && !exists) {
             addDayHeroCollage(day); 
-            clearInterval(collagePoller); // Görev tamam
+            clearInterval(collagePoller);
         } 
-        // Kutu zaten varsa -> DURDUR
+        // Kutu zaten varsa -> BİTİR
         else if (exists) {
             clearInterval(collagePoller);
         }
         
-        // 15 deneme (3 saniye) sonra hala yoksa pes et
-        if (attempts > 15) clearInterval(collagePoller);
-    }, 200);
+        // 4 saniye boyunca bulamazsa pes et (4000ms / 250ms = 16)
+        if (attempts > 16) clearInterval(collagePoller);
+    }, 250);
     // ============================================================
 
 
-    // --- STANDART KONTROLLER ---
+    // --- KODUN GERİ KALANI (MEVCUT KODLARIN) ---
+    // Buradaki hatalar (MapLibre vb.) yukarıdaki poller'ı etkilemez.
+    
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) return;
     if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
         const pts0 = getDayPoints(day); if (!pts0 || pts0.length === 0) return;
@@ -4786,99 +4793,86 @@ async function renderRouteForDay(day) {
     const containerId = `route-map-day${day}`;
     const points = getDayPoints(day);
 
-    // --- Harita Konteynerini Garantiye Al ---
-    if (typeof ensureDayMapContainer === 'function') {
-        ensureDayMapContainer(day); 
-    }
+    if (typeof ensureDayMapContainer === 'function') ensureDayMapContainer(day); 
 
-    // 1. Durum: Nokta Yok
     if (!points || points.length === 0) {
         initEmptyDayMap(day);
         if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         return;
     }
 
-    // 2. Durum: Tek Nokta
-    if (points.length === 1) {
-        initEmptyDayMap(day);
-        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-        const map = window.leafletMaps?.[containerId];
-        if (map) {
-             map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
-             L.marker([points[0].lat, points[0].lng], {
-                icon: L.divIcon({
-                    html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
-                    className: "", iconSize: [32, 32], iconAnchor: [16, 16]
-                })
-            }).addTo(map).bindPopup(`<b>${points[0].name || 'Point'}</b>`);
-            map.setView([points[0].lat, points[0].lng], 14, { animate: true });
-        }
-        return;
-    }
-
-    // 3. Durum: Rota Çizimi (2+ Nokta)
-    // TRY-CATCH içine alıyoruz ki harita hatası tüm kodu durdurmasın
+    // Harita İşlemleri (Try-Catch ile sarılı)
     try {
-        initEmptyDayMap(day);
-        const snappedPoints = [];
-        for (const pt of points) {
-            const snapped = await snapPointToRoad(pt.lat, pt.lng);
-            snappedPoints.push({ ...snapped, name: pt.name });
-        }
-        const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
+        if (points.length === 1) {
+            initEmptyDayMap(day);
+            const map = window.leafletMaps?.[containerId];
+            if (map) {
+                 map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
+                 L.marker([points[0].lat, points[0].lng], {
+                    icon: L.divIcon({
+                        html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
+                        className: "", iconSize: [32, 32], iconAnchor: [16, 16]
+                    })
+                }).addTo(map).bindPopup(`<b>${points[0].name || 'Point'}</b>`);
+                map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+            }
+        } 
+        else {
+            // Rota Çizimi
+            initEmptyDayMap(day);
+            const snappedPoints = [];
+            for (const pt of points) {
+                const snapped = await snapPointToRoad(pt.lat, pt.lng);
+                snappedPoints.push({ ...snapped, name: pt.name });
+            }
+            const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
 
-        // Rota Verisi Çekme
-        async function fetchRoute() {
-            const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
-            const url = buildDirectionsUrl(coordParam, day);
-            const response = await fetch(url);
-            if (!response.ok) return null;
-            const data = await response.json();
-            if (!data.routes || !data.routes[0]) throw new Error('No route');
-            return {
-                geojson: { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: data.routes[0].geometry, properties: {} }] },
-                coords: data.routes[0].geometry.coordinates,
-                summary: { distance: data.routes[0].distance, duration: data.routes[0].duration },
-                legs: data.routes[0].legs
-            };
-        }
+            // Fetch Route
+            async function fetchRoute() {
+                const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
+                const url = buildDirectionsUrl(coordParam, day);
+                const response = await fetch(url);
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (!data.routes || !data.routes[0]) throw new Error('No route');
+                return {
+                    geojson: { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: data.routes[0].geometry, properties: {} }] },
+                    summary: { distance: data.routes[0].distance, duration: data.routes[0].duration }
+                };
+            }
 
-        let routeData;
-        if (!areAllPointsInTurkey(points)) {
-            // Fly Mode
-            let totalKm = 0;
-            for(let i=1; i<points.length; i++) totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng)/1000;
-            routeData = {
-                geojson: { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "LineString", coordinates: points.map(p=>[p.lng, p.lat]) }, properties: {} }] },
-                summary: { distance: totalKm*1000, duration: (totalKm/4)*3600 },
-                coords: points.map(p=>[p.lng, p.lat])
-            };
-        } else {
-            // Türkiye (OSRM)
-            routeData = await fetchRoute();
-        }
+            let routeData;
+            if (!areAllPointsInTurkey(points)) {
+                // Fly Mode
+                let totalKm = 0;
+                for(let i=1; i<points.length; i++) totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng)/1000;
+                routeData = {
+                    geojson: { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "LineString", coordinates: points.map(p=>[p.lng, p.lat]) }, properties: {} }] },
+                    summary: { distance: totalKm*1000, duration: (totalKm/4)*3600 }
+                };
+            } else {
+                routeData = await fetchRoute();
+            }
 
-        if (routeData) {
-            window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-            window.lastRouteGeojsons[containerId] = routeData.geojson;
-            window.lastRouteSummaries = window.lastRouteSummaries || {};
-            window.lastRouteSummaries[containerId] = routeData.summary;
+            if (routeData) {
+                window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+                window.lastRouteGeojsons[containerId] = routeData.geojson;
+                window.lastRouteSummaries = window.lastRouteSummaries || {};
+                window.lastRouteSummaries[containerId] = routeData.summary;
 
-            // Haritayı Çiz
-            renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day);
-            
-            if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-            const expandedMapObj = window.expandedMaps?.[containerId];
-            if (expandedMapObj?.expandedMap) updateExpandedMap(expandedMapObj.expandedMap, day);
+                renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day);
+            }
         }
+        
+        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+        const expandedMapObj = window.expandedMaps?.[containerId];
+        if (expandedMapObj?.expandedMap) updateExpandedMap(expandedMapObj.expandedMap, day);
+
     } catch (e) {
-        console.warn("[ROUTE] Harita hatası oluştu (Kolaj etkilenmez):", e);
+        console.warn("[ROUTE] Harita hatası (Kolaj etkilenmez):", e);
     }
 }
-
 
 function forceCleanExpandedMap(day) {
   const containerId = `route-map-day${day}`;
