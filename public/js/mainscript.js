@@ -1375,7 +1375,7 @@ document.querySelectorAll('.gallery-item').forEach(item => {
 });
 
 // .add_theme için aynı mantık
-document.querySelectorAll('. add_theme').forEach(btn => {
+document.querySelectorAll('.add_theme').forEach(btn => {
 
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
