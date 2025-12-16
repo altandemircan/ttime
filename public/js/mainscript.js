@@ -11145,13 +11145,11 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   if (!collage) {
     collage = document.createElement('div');
     collage.className = 'day-collage';
-    // Kullanıcının verdiği stil
     collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; background: rgb(247, 249, 252); padding: 8px; position: relative; display: block; min-height: 100px;";
     
-    // Listeden hemen önce ekle
+    // Listeden hemen SONRA (Haritanın üstüne) ekle
     const list = dayContainer.querySelector('.day-list');
     if (list) {
-      // DÜZELTME: 'beforebegin' yerine 'afterend' yaparak bloğu listenin altına alıyoruz.
       list.insertAdjacentElement('afterend', collage);
     } else {
       dayContainer.appendChild(collage);
@@ -11174,7 +11172,16 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     return;
   }
 
-  // --- 3. LOCAL STORAGE CACHE LOGIC ---
+  // --- 3. USED SET PREPARATION ---
+  // "Kullanılanlar" setini en başta hazırlıyoruz.
+  if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
+  if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
+    window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
+  }
+  const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
+
+
+  // --- 4. LOCAL STORAGE CACHE LOGIC ---
   const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}`;
   let images = [];
   let fromCache = false;
@@ -11186,6 +11193,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
           if (Array.isArray(parsed) && parsed.length > 0) {
               images = parsed;
               fromCache = true;
+              // DÜZELTME: Cache'den gelenleri de "kullanıldı" listesine ekle.
+              // Böylece sonraki günler (veya add new day) bu resimleri tekrar çekmez.
+              images.forEach(img => usedSet.add(img));
               console.log(`[Collage] Loaded from localStorage for Day ${day}:`, searchObj.term);
           }
       }
@@ -11193,18 +11203,13 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
       console.warn("[Collage] Storage read error:", e);
   }
 
-  // 4. Cache'de yoksa API'den çek
+  // 5. Cache'de yoksa API'den çek
   if (!fromCache || images.length === 0) {
       // Race condition check (Ağır işlemden önce)
       if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-      // Used set yönetimi
-      if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
-        window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
-      }
-      const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
-
       if (typeof getCityCollageImages === 'function') {
+          // exclude parametresi artık cache'den gelenleri de içeriyor
           images = await getCityCollageImages(searchObj, { 
             min: 6, 
             exclude: usedSet 
@@ -11215,6 +11220,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
       if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
       if (images.length > 0) {
+          // Yeni gelenleri de sete ekle
           images.forEach(img => usedSet.add(img));
           
           // --- KAYDET ---
@@ -11226,7 +11232,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
       }
   }
 
-  // 5. Render Et
+  // 6. Render Et
   if (images.length > 0 && typeof renderCollageSlides === 'function') {
     renderCollageSlides(collage, images, searchObj);
     collage.style.display = 'block';
