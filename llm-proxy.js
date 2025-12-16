@@ -1,13 +1,38 @@
 const express = require('express');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 
-// --- GLOBAL ÖNBELLEK (RAM) ---
-// Bu değişken sunucu çalıştığı sürece hafızada durur.
-// Yapısı: { "Rome, Italy": { status: "pending" | "done", data: {...}, promise: Promise } }
-const aiCache = {};
+// --- AYARLAR ---
+const CACHE_FILE = path.join(__dirname, 'ai_cache.json');
 
-// Plan summary endpoint
+// --- 1. BAŞLANGIÇTA VARSA ESKİ CACHE'İ YÜKLE ---
+let aiCache = {};
+if (fs.existsSync(CACHE_FILE)) {
+    try {
+        const rawData = fs.readFileSync(CACHE_FILE, 'utf8');
+        aiCache = JSON.parse(rawData);
+        console.log(`[Startup] ${Object.keys(aiCache).length} adet kayıt diskten yüklendi.`);
+    } catch (e) {
+        console.error("[Startup] Cache dosyası bozuktu, sıfırdan başlandı.");
+        aiCache = {};
+    }
+}
+
+// Helper: Diske Kaydetme Fonksiyonu
+function saveCacheToDisk() {
+    // Sadece tamamlanmış (done) verileri kaydet, promise'leri kaydetme
+    const dataToSave = {};
+    for (const key in aiCache) {
+        if (aiCache[key].status === 'done') {
+            dataToSave[key] = aiCache[key];
+        }
+    }
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(dataToSave, null, 2));
+}
+
+// --- ENDPOINT ---
 router.post('/plan-summary', async (req, res) => {
     const { city, country } = req.body;
     if (!city) {
@@ -15,51 +40,42 @@ router.post('/plan-summary', async (req, res) => {
         return;
     }
 
-    // Her şehir için benzersiz bir anahtar oluştur (örn: "Rome-Italy")
     const cacheKey = country ? `${city}-${country}` : city;
+    console.log(`[AI Request] ${cacheKey}`);
 
-    console.log(`[AI Request] ${cacheKey} için istek geldi.`);
-
-    // 1. SENARYO: ZATEN HAFIZADA VAR MI?
+    // 1. KONTROL: Zaten var mı?
     if (aiCache[cacheKey]) {
-        const cachedItem = aiCache[cacheKey];
-
-        // A) İşlem zaten bitmiş, direkt veriyi döndür.
-        if (cachedItem.status === 'done') {
-            console.log(`[AI Cache] ${cacheKey} hafızadan verildi.`);
-            return res.json(cachedItem.data);
+        // A) İşlem bitmiş (Disk'ten veya RAM'den geldi)
+        if (aiCache[cacheKey].status === 'done') {
+            console.log(`[Cache Hit] ${cacheKey} hazır.`);
+            return res.json(aiCache[cacheKey].data);
         }
 
-        // B) İşlem şu an devam ediyor (başka bir sekmede veya arka planda başlamış)
-        if (cachedItem.status === 'pending') {
-            console.log(`[AI Cache] ${cacheKey} şu an işleniyor, bitmesi bekleniyor...`);
+        // B) İşlem şu an sürüyor (RAM'de Promise var)
+        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
+            console.log(`[Cache Wait] ${cacheKey} bekleniyor...`);
             try {
-                // Mevcut çalışan işlemin bitmesini bekle
-                const data = await cachedItem.promise;
+                const data = await aiCache[cacheKey].promise;
                 return res.json(data);
             } catch (error) {
-                // Eğer önceki işlem patladıysa tekrar denemeye izin ver
-                delete aiCache[cacheKey];
+                delete aiCache[cacheKey]; // Hata varsa sil ki tekrar denensin
             }
         }
     }
 
-    // 2. SENARYO: YENİ İŞLEM BAŞLAT (Arka planda çalışacak görev)
-    // Bu Promise, req/res döngüsünden bağımsızdır. Kullanıcı gitse bile çalışır.
+    // 2. YENİ İŞLEM BAŞLAT (Arka Plan Görevi)
     const processingPromise = (async () => {
         const aiReqCity = country ? `${city}, ${country}` : city;
         const prompt = `
         You are an expert travel guide. 
         For the city "${aiReqCity}", provide specific travel insights ONLY in ENGLISH.
-        Respond ONLY with a valid JSON object (no markdown, no code blocks, just raw JSON) matching this structure:
-
+        Respond ONLY with a valid JSON object matching this structure:
         {
-          "summary": "A captivating 1-sentence overview of the city's vibe, history, and main appeal.",
-          "tip": "One specific, practical insider tip about local transport, etiquette, or safety.",
-          "highlight": "The single most unmissable landmark or unique experience in this city."
+          "summary": "A captivating 1-sentence overview.",
+          "tip": "One specific insider tip.",
+          "highlight": "The single most unmissable landmark."
         }
-
-        If you absolutely don't know the answer for a field, put "Info not available."
+        If unknown, put "Info not available."
         `.trim();
 
         console.log(`[AI Start] ${cacheKey} için Ollama'ya gidiliyor...`);
@@ -71,51 +87,48 @@ router.post('/plan-summary', async (req, res) => {
             max_tokens: 200
         });
 
-        // JSON Temizleme ve Parse İşlemleri
+        // JSON Parse
         let jsonText = '';
-        if (typeof response.data === 'object' && response.data.message && response.data.message.content) {
+        if (typeof response.data === 'object' && response.data.message) {
             jsonText = response.data.message.content;
         } else if (typeof response.data === 'string') {
             const match = response.data.match(/\{[\s\S]*?\}/);
             if (match) jsonText = match[0];
         }
 
-        const jsonResponse = JSON.parse(jsonText); // Hata verirse catch'e düşer
-        return jsonResponse;
+        return JSON.parse(jsonText);
     })();
 
-    // 3. İŞLEMİ HAFIZAYA KAYDET (PENDING)
+    // 3. PENDING OLARAK İŞARETLE
     aiCache[cacheKey] = {
         status: 'pending',
         promise: processingPromise
     };
 
-    // 4. SONUCU BEKLE VE YANITLA
+    // 4. SONUCU BEKLE VE DİSKE YAZ
     try {
         const result = await processingPromise;
         
-        // İşlem bitti, cache'i güncelle (status: done) ve promise'i sil (hafıza tasarrufu)
+        // Veriyi güncelle
         aiCache[cacheKey] = {
             status: 'done',
             data: result
         };
-        console.log(`[AI Success] ${cacheKey} tamamlandı ve kaydedildi.`);
+
+        // DİSKE KALICI OLARAK YAZ
+        saveCacheToDisk();
+        console.log(`[AI Saved] ${cacheKey} diske yazıldı.`);
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(result);
 
     } catch (error) {
-        // Hata durumunda cache'i temizle ki tekrar denenebilsin
-        console.error(`[AI Error] ${cacheKey} hatası:`, error.message);
-        delete aiCache[cacheKey];
-        
-        const errMsg = error?.response?.data || error?.message || String(error);
-        res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
+        console.error(`[AI Error] ${cacheKey}:`, error.message);
+        delete aiCache[cacheKey]; // Hatalı kaydı sil
+        res.status(500).json({ error: 'AI Error' });
     }
 });
-
-
 
 
 
