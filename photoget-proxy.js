@@ -46,12 +46,12 @@ router.get('/', async (req, res) => {
 
 
 // 2. YENİ SLIDER ENDPOINT (Çoklu resim için)
-// GET /photoget-proxy/slider?query=...&count=5
+// // 2. YENİ SLIDER ENDPOINT (Çoklu resim için - DÜZELTİLMİŞ HALİ)
 router.get('/slider', async (req, res) => {
-    const { query, source = 'pexels', count = 5 } = req.query;
+    // 1. "page" parametresini de alıyoruz (Varsayılan 1)
+    const { query, source = 'pexels', count = 5, page = 1 } = req.query;
     
-    // Debug için konsola basıyoruz
-    console.log(`[Proxy Slider] İstek geldi: ${query} (Kaynak: ${source})`);
+    console.log(`[Proxy Slider] İstek: ${query} | Kaynak: ${source} | Sayfa: ${page}`);
 
     if (!query) return res.status(400).json({ error: 'Query is required.' });
 
@@ -59,16 +59,15 @@ router.get('/slider', async (req, res) => {
         let images = [];
 
         if (source === 'pexels') {
-            const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count}`;
+            // 2. Pexels URL'ine "&page=${page}" ekliyoruz
+            const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count}&page=${page}`;
+            
             const response = await fetch(url, {
                 headers: { Authorization: PEXELS_API_KEY }
             });
             
-            // Eğer Key hatalıysa Pexels hata döner, onu yakalayalım
             if (!response.ok) {
-                console.error(`[Pexels Error] Status: ${response.status}`);
-                const errText = await response.text();
-                console.error(`[Pexels Error] Detail: ${errText}`);
+                // Hata detayı
                 return res.status(response.status).json({ error: 'Pexels API Error' });
             }
 
@@ -78,7 +77,9 @@ router.get('/slider', async (req, res) => {
             }
 
         } else if (source === 'pixabay') {
-            const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=${count}&safesearch=true`;
+            // 3. Pixabay URL'ine "&page=${page}" ekliyoruz
+            const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=${count}&page=${page}&safesearch=true`;
+            
             const response = await fetch(url);
             const data = await response.json();
 
@@ -86,8 +87,6 @@ router.get('/slider', async (req, res) => {
                 images = data.hits.map(hit => hit.largeImageURL || hit.webformatURL);
             }
         }
-
-        console.log(`[Proxy Slider] Bulunan resim sayısı: ${images.length}`);
         
         if (images.length > 0) {
             res.json({ images });

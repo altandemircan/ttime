@@ -11308,3 +11308,30 @@ function renderCollageSlides(collage, images, searchObj) {
   };
   update();
 }
+// mainscript.js içine ekleyin veya güncelleyin
+
+window.getCityCollageImages = async function(searchObj, options = {}) {
+    const term = searchObj.term;
+    if (!term) return [];
+
+    const limit = options.min || 6;
+    // Gönderilen sayfa numarasını al, yoksa 1 kabul et
+    const page = options.page || 1; 
+
+    // URL'e page parametresini ekliyoruz
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        
+        const data = await res.json();
+        if (data.images && Array.isArray(data.images)) {
+            return data.images;
+        }
+        return [];
+    } catch (e) {
+        console.warn("Slider fetch error:", e);
+        return [];
+    }
+};
