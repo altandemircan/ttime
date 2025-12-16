@@ -3470,34 +3470,35 @@ function attachMapClickAddMode(day) {
 
 // uploaded:mainscript.js
 
-// 1. Global Cache Tanımla (Sayfa yenilenmediği sürece hafızada tutar)
-// uploaded:mainscript.js
-
-// GLOBAL DEĞİŞKEN: En son kimin söz hakkı olduğunu tutar.
-window.LATEST_AI_REQUEST_ID = 0;
+// --- GLOBAL TOKEN KİLİDİ ---
+// Her yeni gezi açıldığında bu sayı değişecek.
+// Eski istekler bu sayıya bakıp "Aa numara değişmiş, ben eskiyim" diyip iptal olacak.
+window.CURRENT_TRIP_TOKEN = 0;
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // 1. YENİ İSTEK KİMLİĞİ OLUŞTUR
-    // Bu fonksiyon her çalıştığında (tıklandığında) benzersiz bir sayı üretir.
-    const myRequestId = Date.now();
+    // 1. BU İŞLEM İÇİN YENİ BİR KİMLİK OLUŞTUR
+    const myTransactionToken = Date.now(); // Örn: 1715431234567
     
-    // Global değişkeni güncelle: "Artık patron benim (myRequestId)"
-    window.LATEST_AI_REQUEST_ID = myRequestId;
+    // 2. GLOBAL KİLİDİ GÜNCELLE
+    // Artık geçerli olan tek işlem budur. Önceki tüm istekler geçersiz kılındı.
+    window.CURRENT_TRIP_TOKEN = myTransactionToken;
+
+    console.log(`[AI START] Yeni işlem başlatıldı. Token: ${myTransactionToken} - Şehir: ${cityOverride || window.selectedCity}`);
 
     // --- TEMİZLİK ---
-    // Önceki AI kutularını kesinlikle temizle
+    // Var olan tüm AI kutularını sil
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
 
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir ve Ülke Belirleme
+    // Şehir ve Ülke Belirleme (Güçlendirilmiş)
     let rawCity = cityOverride || (window.selectedCity || '');
-    let cleanTitle = rawCity.replace(/ trip plan.*$/i, '').trim();
+    let cleanTitle = rawCity.replace(/ trip plan.*$/i, '').trim(); 
+    // "Izmir, Turkey" -> Hedef: "Izmir"
     let targetCity = cleanTitle.split(',')[0].trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     
-    // Başlıktan ülke kurtarma (Google verisi yoksa)
     if (!country && cleanTitle.includes(',')) {
         let parts = cleanTitle.split(',');
         country = parts[parts.length - 1].trim();
@@ -3509,7 +3510,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
-    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between; cursor:pointer;">
+    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
       <span>AI Information</span>
       <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
         <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;">
@@ -3529,7 +3530,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    // Element Referansları
+    // Referanslar
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
@@ -3542,23 +3543,20 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
     }
 
-    // --- EKRANA BASMA VE GÜVENLİK ---
+    // --- POPULATE FUNCTION ---
     function populateAndShow(data, timeElapsed = null) {
-        // !!! EN ÖNEMLİ KONTROL !!!
-        // Eğer benim oluşturduğum ID, şu anki global ID ile eşleşmiyorsa,
-        // demek ki benden sonra başka bir geziye tıklanmış.
-        if (window.LATEST_AI_REQUEST_ID !== myRequestId) {
-            console.warn(`[AI-BLOCK] Bu veri (${targetCity}) eskidi. Şu an başka gezi (${window.selectedCity}) görüntüleniyor. İşlem iptal.`);
-            // Sadece bu isteğe ait div'i silmek zorundayız ama DOM değişmiş olabilir.
-            // Zaten yeni tıklanan gezi kendi div'ini oluşturdu, o yüzden bu div'i yok etmeye gerek yok,
-            // Sadece İÇİNİ DOLDURMA yeterli. Ama temizlik iyidir:
-            if (aiDiv && aiDiv.isConnected) aiDiv.remove(); 
-            return;
+        // !!! SON KONTROL NOKTASI !!!
+        // Ekrana yazı yazmadan hemen önce: "Hala patron ben miyim?"
+        if (window.CURRENT_TRIP_TOKEN !== myTransactionToken) {
+            console.error(`[AI BLOCKED] ${targetCity} verisi geldi ama ekran değiştiği için iptal edildi.`);
+            // Bu div artık geçersiz, ekrandan kaldır
+            if(aiDiv) aiDiv.remove();
+            return; 
         }
 
         if (aiSpinner) aiSpinner.style.display = "none";
         
-        // Toggle Butonu Ekle
+        // Header Click Event
         const header = aiDiv.querySelector('#ai-toggle-header');
         if (header && !header.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
@@ -3593,8 +3591,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         const txtTip = cleanText(data.tip) || "Info not available.";
         const txtHighlight = cleanText(data.highlight) || "Info not available.";
 
-        // Eğer statik değilse ve önbellekten gelmediyse daktilo efekti yap
-        if (typeof typeWriterEffect === 'function' && !aiStaticInfo && (!window.AI_RESPONSE_CACHE || !window.AI_RESPONSE_CACHE[targetCity])) {
+        if (typeof typeWriterEffect === 'function' && !aiStaticInfo && !window.AI_RESPONSE_CACHE?.[targetCity]) {
              typeWriterEffect(aiSummary, txtSummary, 18, function() {
                 typeWriterEffect(aiTip, txtTip, 18, function() {
                     typeWriterEffect(aiHighlight, txtHighlight, 18);
@@ -3609,28 +3606,23 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         if (timeElapsed) aiTime.textContent = `⏱️ ${timeElapsed} ms`;
     }
 
-    // --- SENARYO 1: ZATEN ELİMİZDE VAR ---
+    // --- SENARYO 1: ZATEN KAYITLI VERİ ---
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo);
         return;
     }
 
-    // --- SENARYO 2: CLIENT-SIDE CACHE KONTROLÜ ---
+    // --- SENARYO 2: FRONTEND CACHE ---
     window.AI_RESPONSE_CACHE = window.AI_RESPONSE_CACHE || {};
-    // Backend anahtar yapısına uygun key: "City-Country" veya sadece "City"
-    const cacheKey = country ? `${targetCity}-${country}` : targetCity;
-    
-    // Eğer basit key ile bulamazsa complex key dene (ya da tam tersi), basitlik için targetCity bakıyoruz önce
-    // Not: Backend cache key mantığı ile frontend uyumlu olmalı.
-    
-    if (window.AI_RESPONSE_CACHE[cacheKey]) {
-        console.log(`[AI-FAST] ${targetCity} cache'den alındı.`);
-        populateAndShow(window.AI_RESPONSE_CACHE[cacheKey]);
-        window.cart.aiData = window.AI_RESPONSE_CACHE[cacheKey]; 
+    // Basit cache key kullanıyoruz
+    if (window.AI_RESPONSE_CACHE[targetCity]) {
+        populateAndShow(window.AI_RESPONSE_CACHE[targetCity]);
+        // Global Cart'ı da güncelle ki tekrar kaybolmasın
+        window.cart.aiData = window.AI_RESPONSE_CACHE[targetCity];
         return;
     }
 
-    // --- SENARYO 3: FETCH İŞLEMİ ---
+    // --- SENARYO 3: FETCH (Kritik Kısım) ---
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
@@ -3639,11 +3631,10 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             body: JSON.stringify({ city: targetCity, country })
         });
 
-        // !!! ERKEN KONTROL !!!
-        // Fetch süresi boyunca kullanıcı başka geziye geçtiyse, JSON parse ile bile uğraşma.
-        if (window.LATEST_AI_REQUEST_ID !== myRequestId) {
-            console.log("Fetch bitti ama kullanıcı çoktan gitti. İptal.");
-            return;
+        // 1. Fetch biter bitmez kontrol et
+        if (window.CURRENT_TRIP_TOKEN !== myTransactionToken) {
+            console.warn(`[AI ABORT] ${targetCity} fetch bitti ama kullanıcı geziyi değiştirdi.`);
+            return; // JSON bile parse etme, direkt çık.
         }
 
         const ollamaData = await resp.json();
@@ -3657,29 +3648,32 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             time: elapsed
         };
 
-        // Cache'e kaydet
-        window.AI_RESPONSE_CACHE[cacheKey] = aiData;
+        // Cache'e at
+        window.AI_RESPONSE_CACHE[targetCity] = aiData;
 
-        // Gezi verisine (cart) kaydet - SADECE HALA BU SAYFADAYSAK
-        if (window.LATEST_AI_REQUEST_ID === myRequestId) {
+        // 2. Veriyi Cart'a ve Ekrana yazmadan önce TEKRAR kontrol et
+        if (window.CURRENT_TRIP_TOKEN === myTransactionToken) {
+            // Sadece şu anki gezi hala benim başlattığım geziyse kaydet
             window.cart.aiData = aiData; 
             window.lastTripAIInfo = aiData;
-            if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
             
-            // Ekrana bas
+            if (typeof saveCurrentTripToStorage === "function") {
+                saveCurrentTripToStorage();
+            }
             populateAndShow(aiData, elapsed);
         } else {
-            console.log("Veri alındı, Cache'e atıldı ama ekrana basılmadı (Gezi değişti).");
+            console.warn(`[AI PREVENT] ${targetCity} verisi geldi ama arayüz değişmiş. Cart güncellenmedi.`);
         }
 
     } catch (e) {
         console.error("AI Error:", e);
-        if (window.LATEST_AI_REQUEST_ID === myRequestId) {
-            if (aiTime) aiTime.innerHTML = "<span style='color:red'>Hata oluştu.</span>";
+        // Hata mesajını basarken bile kontrol et
+        if (window.CURRENT_TRIP_TOKEN === myTransactionToken) {
+            if (aiTime) aiTime.innerHTML = "<span style='color:red'>Unavailable</span>";
             if (aiSpinner) aiSpinner.style.display = "none";
             aiContent.style.maxHeight = "1200px";
             aiContent.style.opacity = "1";
-            aiSummary.textContent = "Bağlantı hatası.";
+            aiSummary.textContent = "AI service temporarily unavailable.";
         }
     }
 };
