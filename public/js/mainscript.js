@@ -4616,7 +4616,46 @@ function isSupportedTravelMode(mode) {
 
  
 
+// --- 0. CSS STİLLERİ (Görünürlük Garantili) ---
 (function injectCollageStyles() {
+    if (document.getElementById('tt-collage-styles-force')) return;
+    const s = document.createElement('style');
+    s.id = 'tt-collage-styles-force';
+    s.innerHTML = `
+        .day-hero-collage {
+            display: grid !important;
+            gap: 6px !important;
+            height: 220px !important;
+            width: 96% !important; /* Kenarlardan biraz boşluk */
+            margin: 20px auto 10px auto !important; /* Üstten ve alttan boşluk */
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            background: #f0f0f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 5;
+            min-height: 220px; /* Yükseklik garantisi */
+        }
+        .collage-item { position: relative; width: 100%; height: 100%; background: #ddd; overflow: hidden; }
+        .collage-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease; }
+        .collage-item:hover img { transform: scale(1.05); }
+        .collage-label {
+            position: absolute; bottom: 10px; left: 10px;
+            background: rgba(0,0,0,0.6); color: #fff;
+            padding: 5px 10px; border-radius: 6px;
+            font-size: 12px; font-weight: 600; pointer-events: none;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+        /* Grid Layouts */
+        .day-hero-collage.grid-1 { grid-template-columns: 1fr; }
+        .day-hero-collage.grid-2 { grid-template-columns: 1fr 1fr; }
+        .day-hero-collage.grid-3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }
+        .day-hero-collage.grid-3 .item-0 { grid-column: 1; grid-row: 1 / -1; }
+        .day-hero-collage.grid-3 .item-1 { grid-column: 2; grid-row: 1; }
+        .day-hero-collage.grid-3 .item-2 { grid-column: 2; grid-row: 2; }
+    `;
+    document.head.appendChild(s);
+})();
 
 // ======================================================
 // 2. KOLAJ EKLEME FONKSİYONU (RETRY MEKANİZMALI)
