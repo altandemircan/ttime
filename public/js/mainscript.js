@@ -11537,3 +11537,58 @@ async function renderDayCollage(day, dayContainer, dayItems) {
   dayContainer.appendChild(collage);
 }
 // ==================== Slider renderer helper ====================
+function renderCollageSlides(collage, images, searchObj) {
+  const isMobile = window.innerWidth < 600;
+  const visible = isMobile ? 1 : 3;
+  let index = 0;
+
+  const titleHtml = searchObj?.term
+    ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${searchObj.term}</div>`
+    : "";
+
+  collage.innerHTML = `
+    ${titleHtml}
+    <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
+      <div class="collage-track" style="display:flex; transition: transform 0.4s ease-out; will-change: transform;"></div>
+    </div>
+    <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
+    <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
+  `;
+
+  const track = collage.querySelector(".collage-track");
+  images.forEach((src) => {
+    const slide = document.createElement("div");
+    slide.style.cssText = `flex: 0 0 ${100 / visible}%; max-width: ${100 / visible}%; padding: 4px; box-sizing: border-box;`;
+    slide.innerHTML = `<div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed;"><img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
+    track.appendChild(slide);
+  });
+
+  const update = () => {
+    const max = Math.max(0, images.length - visible);
+    index = Math.max(0, Math.min(max, index));
+    track.style.transform = `translateX(-${index * (100 / visible)}%)`;
+
+    const prev = collage.querySelector(".prev");
+    const next = collage.querySelector(".next");
+    if (prev) {
+      prev.style.opacity = index === 0 ? 0.3 : 1;
+      prev.style.pointerEvents = index === 0 ? "none" : "auto";
+    }
+    if (next) {
+      next.style.opacity = index === max ? 0.3 : 1;
+      next.style.pointerEvents = index === max ? "none" : "auto";
+    }
+  };
+
+  collage.querySelector(".prev").onclick = (e) => {
+    e.stopPropagation();
+    index--;
+    update();
+  };
+  collage.querySelector(".next").onclick = (e) => {
+    e.stopPropagation();
+    index++;
+    update();
+  };
+  update();
+}
