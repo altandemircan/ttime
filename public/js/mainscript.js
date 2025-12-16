@@ -8806,14 +8806,7 @@ function wrapRouteControls(day) {
   const bar = document.createElement('div');
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
-  bar.style.display = 'flex';
-  bar.style.flexDirection = 'column';
-  bar.style.margin = '10px 0 20px 0';
-  bar.style.padding = '10px';
-  bar.style.borderRadius = '6px';
-  bar.style.background = '#fafafa';
-  bar.style.border = '1px solid #ddd';
-  bar.style.gap = '10px';
+  
 
   // Bar header
   const mapBarHeader = document.createElement('div');
@@ -11158,7 +11151,7 @@ let collage = dayContainer.querySelector(".day-collage");
     collage = document.createElement("div");
     collage.className = "day-collage";
     collage.style.cssText =
-      "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background:  #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
+      "    margin: 20px 0;    border-radius: 10px;    overflow: hidden;    position: relative;    display: block;    min-height: 100px;";
     const dayListEl = dayContainer.querySelector(".day-list");
     if (dayListEl && dayListEl.parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl. nextSibling);
     else dayContainer.appendChild(collage);
@@ -11264,7 +11257,9 @@ function renderCollageSlides(collage, images, searchObj) {
 
   // 1. YENİ BAŞLIK (En üstte, siyah yazı)
   const topHeaderHtml = term
-    ? `<div style="padding: 0 4px 6px 4px; font-weight: 600; color: #333; font-size: 14px;">Photos related to ${term}</div>`
+    ? `<div style="    font-weight: bold;
+    font-size: 0.95rem;
+    color: rgb(51, 51, 51);">Photos related to ${term}</div>`
     : "";
 
   // 2. ESKİ ETİKET (Viewport içinde, resim üzerine binen yarı saydam badge)
