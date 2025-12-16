@@ -6736,13 +6736,16 @@ function updateExpandedMap(expandedMap, day) {
         bounds.extend(marker.getLatLng());
     });
 
-    // --- ODAKLANMA ---
+   // --- ODAKLANMA ---
     try {
-        if (bounds.isValid()) {
+        // DÜZELTME: 1 item varken fitBounds yerine setView kullanıyoruz.
+        // Bu sayede marker kaybolmuyor ve tıklanabilir (nearby places vs.) kalıyor.
+        if (pts.length === 1) {
+             expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+        } else if (bounds.isValid()) {
             expandedMap.fitBounds(bounds, { padding: [50, 50] });
         } else {
-            if (pts.length === 1) expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-            else expandedMap.setView([39.0, 35.0], 6, { animate: false });
+            expandedMap.setView([39.0, 35.0], 6, { animate: false });
         }
     } catch(e) { console.warn("FitBounds error:", e); }
 
