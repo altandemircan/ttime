@@ -3470,34 +3470,30 @@ function attachMapClickAddMode(day) {
 
 // ... (mevcut kodlar)
 
+// uploaded:mainscript.js dosyasındaki insertTripAiInfo fonksiyonunu bu şekilde güncelle:
+
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // 1. Önce eski kutuları temizle
+    // Mevcut AI kutularını temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
     
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir bilgisini al
-    let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+    // Hedeflenen şehri belirle (İstek atmadan önceki anlık durum)
+    // replace ile " trip plan" yazısını temizliyoruz ki sadece şehir ismi kalsın
+    let rawCity = cityOverride || (window.selectedCity || '');
+    let city = rawCity.replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     
-    // Şehir yoksa ve statik veri de yoksa çık
+    // Şehir yoksa işlem yapma
     if (!city && !aiStaticInfo) return;
 
-    // --- BAĞLAM KONTROLÜ İÇİN DEĞİŞKENLERİ SAKLA ---
-    // İstek atılırken hangi gezideydik?
-    const requestingTripKey = window.activeTripKey;
-    const requestingCity = window.selectedCity;
-    // ------------------------------------------------
+    // --- KRİTİK DÜZELTME 1: BAĞLAMI SAKLA ---
+    // Bu fonksiyon çalıştığında hangi gezi aktifti? Bunu hafızaya alıyoruz.
+    const requestingContextCity = city; 
+    // ----------------------------------------
 
-    // --- TEMİZLEME FONKSİYONU (Robot ikonunu siler) ---
-    function cleanText(text) {
-        if (!text) return "";
-        // 🤖 ikonunu ve gereksiz boşlukları temizle
-        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
-    }
-
-    // HTML İskeleti (DOM oluşturma kodları aynı kalıyor...)
+    // HTML İskeletini Oluştur (Robot, Spinner vb.)
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -3520,22 +3516,40 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     `;
     
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
-    // ... (DOM element seçimleri ve populateAndShow fonksiyonu aynı kalıyor) ...
+    
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
     const aiTime = aiDiv.querySelector('.ai-info-time');
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
+
+    function cleanText(text) {
+        if (!text) return "";
+        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
+    }
     
+    // Veriyi Ekrana Basan Yardımcı Fonksiyon
     function populateAndShow(data, timeElapsed = null) {
-       // ... (mevcut içerik doldurma kodları) ...
+        // --- KRİTİK DÜZELTME 2: SON KONTROL ---
+        // Veriyi basmadan hemen önce: Kullanıcı hala aynı şehirde mi?
+        // Eğer kullanıcı Antalya'ya geçtiyse (window.selectedCity değiştiyse) işlemi durdur.
+        let currentCity = (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+        
+        // Eğer statik info değilse ve şehirler eşleşmiyorsa iptal et
+        if (!aiStaticInfo && currentCity !== requestingContextCity) {
+            console.warn(`[AI Info] İptal edildi. İstek: ${requestingContextCity}, Şu anki: ${currentCity}`);
+            // Yanlışlıkla eklenmiş div'i kaldır
+            if(aiDiv) aiDiv.remove(); 
+            return;
+        }
+        // --------------------------------------
+
         if (aiSpinner) aiSpinner.style.display = "none";
         
-        // Aç/Kapa butonu ekle (yoksa)
+        // Header'a tıklayınca aç/kapa yapma özelliği
         const header = aiDiv.querySelector('#ai-toggle-header');
         if (!header.querySelector('#ai-toggle-btn')) {
-             // ... (buton oluşturma kodları) ...
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
@@ -3544,20 +3558,22 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             header.appendChild(btn);
 
             const aiIcon = btn.querySelector('.arrow-icon');
-            let expanded = true;
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
+            let expanded = true; // Varsayılan açık
+            
+            // Header'a tıklama eventi
+            header.style.cursor = "pointer";
+            header.onclick = function() {
                 expanded = !expanded;
                 if (expanded) {
                     aiContent.style.maxHeight = "1200px";
                     aiContent.style.opacity = "1";
-                    aiIcon.classList.add('open');
+                    if(aiIcon) aiIcon.classList.add('open');
                 } else {
                     aiContent.style.maxHeight = "0";
                     aiContent.style.opacity = "0";
-                    aiIcon.classList.remove('open');
+                    if(aiIcon) aiIcon.classList.remove('open');
                 }
-            });
+            };
             if (aiIcon) aiIcon.classList.add('open');
         }
 
@@ -3581,19 +3597,19 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         }
 
         if (timeElapsed) {
-            aiTime.textContent = `⏱️ Generated in ${timeElapsed} ms`;
+            aiTime.textContent = `⏱️ AI yanıt süresi: ${timeElapsed} ms`;
         } else {
             aiTime.textContent = "";
         }
     }
 
-    // === SENARYO 1: KAYITLI VERİ VAR ===
+    // 1. DURUM: Zaten elimizde veri var (Örn: Antalya'ya geri dönüldüğünde)
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo);
         return;
     }
 
-    // === SENARYO 2: API'YE GİT ===
+    // 2. DURUM: API'ye gitmemiz lazım (Örn: Roma yeni oluşturuldu)
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
@@ -3603,20 +3619,18 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         });
 
         const ollamaData = await resp.json();
-        
-        // --- DÜZELTME BAŞLANGICI: CONTEXT KONTROLÜ ---
-        // Yanıt geldiğinde kullanıcı hala aynı gezide mi?
-        if (window.activeTripKey !== requestingTripKey) {
-            console.log(`[AI Info] Trip değiştiği için (${city}) yanıtı iptal edildi.`);
-            return;
-        }
-        if (window.selectedCity !== requestingCity) {
-            console.log(`[AI Info] Şehir seçimi değiştiği için (${city}) yanıtı iptal edildi.`);
-            return;
-        }
-        // --- DÜZELTME BİTİŞİ ---
-
         let elapsed = Math.round(performance.now() - t0);
+
+        // --- KRİTİK DÜZELTME 3: VERİYİ KAYDETMEDEN ÖNCE KONTROL ---
+        // Fetch bitti, veriyi aldık. Ama kullanıcı sayfayı değiştirdi mi?
+        let activeCityNow = (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+        
+        if (activeCityNow !== requestingContextCity) {
+            console.log(`[AI Race Condition Prevented] ${requestingContextCity} verisi geldi ama kullanıcı şu an ${activeCityNow} ekranında.`);
+            if(aiDiv) aiDiv.remove(); // Yanlış yere eklenen spinner divini sil
+            return; // Çık, hiçbir şeyi güncelleme.
+        }
+        // -----------------------------------------------------------
 
         const aiData = {
             city: city,
@@ -3626,10 +3640,11 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             time: elapsed
         };
 
-        // Kaydet
+        // Artık eminiz, doğru geziye yazıyoruz.
         window.cart.aiData = aiData; 
         window.lastTripAIInfo = aiData;
         
+        // LocalStorage güncelle
         if (typeof saveCurrentTripToStorage === "function") {
             saveCurrentTripToStorage();
         }
@@ -3638,7 +3653,6 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
     } catch (e) {
         console.error("AI Error:", e);
-        // Hata durumunda da context kontrolü iyi olabilir ama elementler silinmiş olabilir, try-catch zaten koruyor.
         if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
         if (aiSpinner) aiSpinner.style.display = "none";
         aiContent.style.maxHeight = "1200px";
