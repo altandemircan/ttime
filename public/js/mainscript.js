@@ -11435,7 +11435,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   const TARGET_COUNT = 6;
 
   // 1) İskelet
-  let collage = dayContainer.querySelector(". day-collage");
+let collage = dayContainer.querySelector(".day-collage");
   if (!collage) {
     collage = document.createElement("div");
     collage.className = "day-collage";
