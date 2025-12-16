@@ -11244,7 +11244,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 // ==================== Slider renderer helper ====================
 function renderCollageSlides(collage, images, searchObj) {
   const isMobile = window.innerWidth < 600;
-  const visible = isMobile ? 1 : 3;
+  const visible = isMobile ? 2 : 3;
   let index = 0;
 
   const term = searchObj?.term || "";
