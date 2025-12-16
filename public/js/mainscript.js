@@ -11596,92 +11596,45 @@ async function getCityCollageImages(city) {
   window.__dayCollageCache = window.__dayCollageCache || {};
   if (window.__dayCollageCache[city]) return window.__dayCollageCache[city];
 
+  // Get up to 6 images; broaden queries and fill if short
   const queries = [
-    `${city} city skyline`,
-    `${city} main attraction`,
-    `${city} street view`,
+    `${city} skyline`,
+    `${city} attractions`,
+    `${city} street`,
+    `${city} night`,
+    `${city} food`,
+    `${city} park`,
+    `travel ${city}`,
+    `${city} aerial`
   ];
-  const imgs = [];
+  const images = [];
+  const seen = new Set();
   for (const q of queries) {
+    if (images.length >= 6) break;
     try {
-      const img = await getPhoto(q, "pexels"); // uses existing proxy
-      if (img) imgs.push(img);
+      const img = await getPhoto(q, "pexels");
+      if (img && !seen.has(img)) {
+        images.push(img);
+        seen.add(img);
+      }
     } catch (_) {}
   }
-  window.__dayCollageCache[city] = imgs;
-  return imgs;
-}
-
-// --- Render collage between day list and route controls ---
-// --- Render collage between day list and route controls (updated to slider with 6 imgs, 3 visible) ---
-async function renderDayCollage(day, dayContainer, dayItemsArr) {
-  if (!dayContainer) return;
-
-  // Ensure a holder exists right after the day list; before controls bar
-  let collage = dayContainer.querySelector(".day-collage");
-  if (!collage) {
-    collage = document.createElement("div");
-    collage.className = "day-collage";
-    collage.style.cssText = `
-      margin: 12px 0 6px 0;
-      border-radius: 10px;
-      overflow: hidden;
-      background: #f7f9fc;
-      padding: 8px;
-      position: relative;
-    `;
-    const dayListEl = dayContainer.querySelector(".day-list");
-    if (dayListEl && dayListEl.parentNode) {
-      dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
-    } else {
-      dayContainer.appendChild(collage);
-    }
+  // If still short, duplicate existing to allow sliding
+  while (images.length < 4 && images.length > 0) {
+    images.push(...images.slice(0, Math.min(images.length, 6 - images.length)));
   }
-
-  // Find first item with valid location
-  const firstWithLoc = (dayItemsArr || []).find(
-    (it) =>
-      it.location &&
-      isFinite(it.location.lat) &&
-      isFinite(it.location.lng)
-  );
-  if (!firstWithLoc) {
-    collage.style.display = "none";
-    return;
-  }
-
-  collage.style.display = "block";
-  collage.innerHTML = `<div style="width:100%;text-align:center;padding:10px;color:#607d8b;font-size:13px;">Loading collage…</div>`;
-
-  const city =
-    (await fetchCityNameFromLocation(
-      firstWithLoc.location.lat,
-      firstWithLoc.location.lng,
-      window.selectedCity || ""
-    )) || (window.selectedCity || "");
-
-  if (!city) {
-    collage.innerHTML = "";
-    collage.style.display = "none";
-    return;
-  }
-
-  const images = (await getCityCollageImages(city))
-    .filter(Boolean)
-    .slice(0, 6); // 6 images
   if (!images.length) {
     collage.innerHTML = "";
     collage.style.display = "none";
     return;
   }
 
-  // Slider setup
-  const visible = 3;
+  const visible = Math.min(3, images.length); // 3 visible when possible
   let index = 0;
 
   collage.innerHTML = `
     <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
-      <div class="collage-track" style="display:flex; transition:transform 0.35s ease; will-change:transform;"></div>
+      <div class="collage-track" style="display:flex; transition: transform 0.35s ease; will-change: transform;"></div>
     </div>
     <button class="collage-nav prev" aria-label="Previous" style="
       position:absolute; left:6px; top:50%; transform:translateY(-50%);
@@ -11695,10 +11648,9 @@ async function renderDayCollage(day, dayContainer, dayItemsArr) {
     ">&gt;</button>
   `;
 
- 
-   const track = collage.querySelector(".collage-track");
+  const track = collage.querySelector(".collage-track");
 
-  // Build slides: each is exactly 1/visible of the viewport
+  // Slides: each exactly 1/visible of the viewport
   images.forEach((src) => {
     const slide = document.createElement("div");
     slide.style.cssText = `
@@ -11723,8 +11675,8 @@ async function renderDayCollage(day, dayContainer, dayItemsArr) {
   function update() {
     const max = Math.max(0, images.length - visible);
     index = clampIndex(index);
-    const stepPct = 100 / visible;           // one slide width in %
-    const offsetPct = index * stepPct;       // shift by slide width
+    const stepPct = 100 / visible;        // one slide width
+    const offsetPct = index * stepPct;    // shift by slide width
     track.style.transform = `translateX(-${offsetPct}%)`;
     const prevBtn = collage.querySelector(".collage-nav.prev");
     const nextBtn = collage.querySelector(".collage-nav.next");
@@ -11737,7 +11689,6 @@ async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); index = clampIndex(index - 1); update(); };
   if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); index = clampIndex(index + 1); update(); };
 
-  // Optional: keep layout responsive
   if (window.ResizeObserver) {
     const ro = new ResizeObserver(() => update());
     ro.observe(collage);
