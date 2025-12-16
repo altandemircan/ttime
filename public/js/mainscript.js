@@ -20,11 +20,18 @@ function isTripFav(item) {
 window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
 window.__globalCollageUsed = window.__globalCollageUsed || new Set();
 
-// Global used set'ini yeniden kuran yardımcı
-function rebuildGlobalCollageUsed() {
-  window.__globalCollageUsed = new Set(
-    Object.values(window.__dayCollagePhotosByDay || {}).flat()
+function rebuildGlobalCollageUsed(tripKey) {
+  const key = tripKey || window.activeTripKey || 'current_draft';
+  window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
+  window.__dayCollagePhotosByTrip[key] = window.__dayCollagePhotosByTrip[key] || {};
+
+  window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
+  window.__globalCollageUsedByTrip[key] = new Set(
+    Object.values(window.__dayCollagePhotosByTrip[key] || {}).flat()
   );
+
+  // geriye uyumluluk için
+  window.__globalCollageUsed = window.__globalCollageUsedByTrip[key];
 }
 
 
@@ -2692,48 +2699,88 @@ async function getOptimizedImage(properties) {
     return PLACEHOLDER_IMG;
 }
 
+// === TRIP CONTEXT GUARD (ASYNC RACE FIX) ===
+// Amaç: Bir trip yüklenirken diğer trip'e geçilirse eski async (foto/AI/kolaj) sonuçları yeni trip DOM'una yazamasın.
+window.__ttTripContextVersion = window.__ttTripContextVersion || 0;
+
+window.bumpTripContext = function(reason = '') {
+  window.__ttTripContextVersion = (window.__ttTripContextVersion || 0) + 1;
+  window.__ttTripContextReason = reason;
+  // İstersen debug:
+  // console.log('[TripContext] bumped ->', window.__ttTripContextVersion, reason);
+
+  // Devam eden fetch'leri iptal etme altyapısı (opsiyonel ama iyi)
+  try {
+    if (window.__ttAbortControllers && Array.isArray(window.__ttAbortControllers)) {
+      window.__ttAbortControllers.forEach(c => { try { c.abort(); } catch(_){} });
+    }
+  } catch(_) {}
+  window.__ttAbortControllers = [];
+  return window.__ttTripContextVersion;
+};
+
+window.getTripContextVersion = function() {
+  return window.__ttTripContextVersion || 0;
+};
+// === PATCH: enrichPlanWithWiki / enrichCategoryResults -> context safe ===
+// Bu fonksiyonlar async olduğu için, await sonrası trip değişmişse step'e image basmayacağız.
 async function enrichCategoryResults(places, city) {
-    await Promise.all(places.map(async (place) => {
-        // PATCH: Kiril adı koru, Latin adı .name'e yaz
-        if (typeof place.name_local === "undefined") {
-            place.name_local = place.name;
-        }
-        place.name = getDisplayName(place);
-        place.image = await getImageForPlace(
-            place.name || place.properties?.name,
-            place.category,
-            city
-        );
-    }));
-    return places;
+  const startCtx = window.getTripContextVersion?.() || 0;
+
+  await Promise.all(places.map(async (place) => {
+    if (typeof place.name_local === "undefined") place.name_local = place.name;
+    place.name = getDisplayName(place);
+
+    const img = await getImageForPlace(place.name || place.properties?.name, place.category, city);
+
+    // Trip değiştiyse update yapma
+    if ((window.getTripContextVersion?.() || 0) !== startCtx) return;
+    place.image = img;
+  }));
+
+  return places;
 }
 
 async function enrichPlanWithWiki(plan) {
-    for (const step of plan) {
-        // _noPlace step ise, image ve description ekleme!
-        if (step._noPlace) continue;
-        step.image = await getImageForPlace(step.name, step.category, step.city || selectedCity);
-        step.description = "No detailed description.";
-        // Orijinal ad (Kiril/yerel) kaybolmasın diye sakla:
-        if (typeof step.name_local === "undefined") {
-            step.name_local = step.name;
-        }
-        // Latin/İngilizce ad .name'e yaz!
-        step.name = getDisplayName(step);
-    }
-    return plan;
+  const startCtx = window.getTripContextVersion?.() || 0;
+
+  for (const step of plan) {
+    if (step._noPlace) continue;
+
+    const img = await getImageForPlace(step.name, step.category, step.city || selectedCity);
+
+    // Trip değiştiyse step'e yazma
+    if ((window.getTripContextVersion?.() || 0) !== startCtx) return plan;
+
+    step.image = img;
+    step.description = "No detailed description.";
+    if (typeof step.name_local === "undefined") step.name_local = step.name;
+    step.name = getDisplayName(step);
+  }
+  return plan;
 }
 // Proxy çağrısı
+// === PATCH: getPhoto -> trip context safe ===
+// Burada eski trip'ten gelen foto URL'i yeni trip'e yazılmasın diye guard ekliyoruz.
 async function getPhoto(query, source = 'pexels') {
-    const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=${source}`;
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.imageUrl) return data.imageUrl;
-    } catch (e) {
-        console.warn("Fotoğraf proxy hatası:", e);
-    }
-    return PLACEHOLDER_IMG;
+  const startCtx = window.getTripContextVersion?.() || 0;
+  const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=${source}`;
+  try {
+    // Eğer abort altyapısını kullanmak istersen:
+    const res = (window.fetchWithTripContext ? await window.fetchWithTripContext(url) : await fetch(url));
+    const data = await res.json();
+
+    // Trip değiştiyse -> sonucu DROP ET
+    const nowCtx = window.getTripContextVersion?.() || 0;
+    if (nowCtx !== startCtx) return PLACEHOLDER_IMG;
+
+    if (data.imageUrl) return data.imageUrl;
+  } catch (e) {
+    // Abort ise sessiz geç
+    if (e && (e.name === 'AbortError' || e.code === 20)) return PLACEHOLDER_IMG;
+    console.warn("Fotoğraf proxy hatası:", e);
+  }
+  return PLACEHOLDER_IMG;
 }
 
 
@@ -4058,6 +4105,8 @@ cartDiv.appendChild(addNewDayButton);
     newChat.style.cursor = 'pointer';
 
     newChat.onclick = function() {
+      window.__activeTripSessionToken = window.__ttNewTripToken(); // <-- COLLAGE async iptal/koruma
+
       const chatBox = document.getElementById('chat-box');
       if (chatBox) chatBox.innerHTML = '';
       const userInput = document.getElementById('user-input');
@@ -11254,7 +11303,17 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
  * Hem 2D (Leaflet) hem 3D (MapLibre) modlarını destekler.
  */
 
-// --- Collage helpers ---
+// === COLLAGE RACE CONDITION FIX (Trip Token) ===
+window.__ttNewTripToken = window.__ttNewTripToken || function () {
+  return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+};
+window.__activeTripSessionToken = window.__activeTripSessionToken || window.__ttNewTripToken();
+
+// Trip bazlı collage cache
+window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
+window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
+
+
 // ============================================================
 // --- 1. Hiyerarşi Analizi ve İsim Çıkarma (GELİŞTİRİLMİŞ) ---
 // ============================================================
@@ -11377,7 +11436,17 @@ async function getCityCollageImages(
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
-  rebuildGlobalCollageUsed(); // mevcut kayıtlı günlerden global seti kur
+  const tripKey = window.activeTripKey || 'current_draft';
+  const tokenAtStart = window.__activeTripSessionToken;
+
+  // trip cache objelerini garanti et
+  window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
+  window.__dayCollagePhotosByTrip[tripKey] = window.__dayCollagePhotosByTrip[tripKey] || {};
+  window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
+  window.__globalCollageUsedByTrip[tripKey] = window.__globalCollageUsedByTrip[tripKey] || new Set();
+
+  // global used set'i trip'e göre kur
+  rebuildGlobalCollageUsed(tripKey);
 
   const TARGET_COUNT = 6;
 
@@ -11393,35 +11462,44 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     else dayContainer.appendChild(collage);
   }
 
+  // Trip değiştiyse bu fonksiyon UI'ye dokunmasın
+  const stillSameTrip = () =>
+    window.__activeTripSessionToken === tokenAtStart &&
+    (window.activeTripKey || 'current_draft') === tripKey;
+
   // 2) Lokasyon
   const firstWithLoc = (dayItemsArr || []).find(
     (it) => it.location && isFinite(it.location.lat) && isFinite(it.location.lng)
   );
+
   if (!firstWithLoc) {
     collage.style.display = "none";
-    delete window.__dayCollagePhotosByDay[day];
-    rebuildGlobalCollageUsed();
+    delete window.__dayCollagePhotosByTrip[tripKey][day];
+    rebuildGlobalCollageUsed(tripKey);
     return;
   }
 
   collage.style.display = "block";
 
-  // 3) Eğer bu gün daha önce 6 foto almışsa, yeniden fetch etmeden render et ve çık
-  const already = window.__dayCollagePhotosByDay[day];
+  // 3) Eğer bu gün daha önce 6 foto almışsa tekrar fetch etme
+  const already = window.__dayCollagePhotosByTrip[tripKey][day];
   if (Array.isArray(already) && already.length === TARGET_COUNT) {
-    renderCollageSlides(collage, already, await fetchSmartLocationName(firstWithLoc.location.lat, firstWithLoc.location.lng, window.selectedCity || ""));
+    const searchObj = await fetchSmartLocationName(firstWithLoc.location.lat, firstWithLoc.location.lng, window.selectedCity || "");
+    if (!stillSameTrip()) return;
+    renderCollageSlides(collage, already, searchObj);
     return;
   }
 
   collage.innerHTML =
     '<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;">Loading photos...</div>';
 
-  // 4) Yeni seti çek: globalde kullanılmamış 6 foto zorunlu
+  // 4) Foto çek (token guard)
   const searchObj = await fetchSmartLocationName(
     firstWithLoc.location.lat,
     firstWithLoc.location.lng,
     window.selectedCity || ""
   );
+  if (!stillSameTrip()) return;
 
   const daySelections = [];
   const localUsed = new Set();
@@ -11432,35 +11510,34 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     const pool = await getCityCollageImages(searchObj, {
       skipCache: true,
       min: 50,
-      exclude: window.__globalCollageUsed,
-      salt: `day${day}-try${attempts}`,
+      exclude: window.__globalCollageUsedByTrip[tripKey],
+      salt: `trip:${tripKey}-day${day}-try${attempts}`,
     });
+
+    if (!stillSameTrip()) return;
 
     for (const src of pool) {
       if (daySelections.length >= TARGET_COUNT) break;
-      if (window.__globalCollageUsed.has(src)) continue;
+      if (window.__globalCollageUsedByTrip[tripKey].has(src)) continue;
       if (localUsed.has(src)) continue;
+
       daySelections.push(src);
       localUsed.add(src);
-      window.__globalCollageUsed.add(src);
+      window.__globalCollageUsedByTrip[tripKey].add(src);
     }
     attempts++;
   }
 
-  // Eğer hala 6 değilse, eksik kalanları gizle (tekrar istemiyoruz)
-  if (daySelections.length < TARGET_COUNT) {
-    console.warn(`[collage] ${day}. gün için yeterli benzersiz foto bulunamadı (${daySelections.length}/6).`);
-  }
-
   if (!daySelections.length) {
     collage.style.display = "none";
-    delete window.__dayCollagePhotosByDay[day];
-    rebuildGlobalCollageUsed();
+    delete window.__dayCollagePhotosByTrip[tripKey][day];
+    rebuildGlobalCollageUsed(tripKey);
     return;
   }
 
-  // Kaydet ve render et
-  window.__dayCollagePhotosByDay[day] = daySelections.slice();
+  // Kaydet + render (token guard)
+  window.__dayCollagePhotosByTrip[tripKey][day] = daySelections.slice();
+  if (!stillSameTrip()) return;
   renderCollageSlides(collage, daySelections, searchObj);
 };
 
