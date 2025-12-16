@@ -1295,6 +1295,8 @@ document.querySelectorAll('.gallery-item').forEach(item => {
 
     // Global değişkenleri sıfırla (Yeni gezi için temiz sayfa)
     window.cart = [];
+    window.bumpTripContext?.('newTripStart');
+
     window.latestTripPlan = [];
     window.selectedCity = null;
     window.selectedLocation = null;
@@ -1372,6 +1374,8 @@ document.querySelectorAll('.add_theme').forEach(btn => {
     }
 
     window.cart = [];
+    window.bumpTripContext?.('newTripStart');
+
     window.latestTripPlan = [];
     window.selectedCity = null;
     window.selectedLocation = null;
@@ -2095,7 +2099,10 @@ function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
   opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
 ) {
-  // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
+  // Trip context token (this add belongs to this context)
+  const __ctxToken = (typeof window.getTripContextToken === 'function')
+    ? window.getTripContextToken()
+    : 1;
 
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
@@ -2178,15 +2185,19 @@ function addToCart(
 
   window.cart.push(newItem);
 
-  // === skipRender fix ===
   if (typeof skipRender === "undefined") skipRender = false;
 
-  // Sonraki kodlar aynı, silent değişkeni başta false olmalı
   if (!silent) {
     if (typeof updateCart === "function") updateCart();
+
     if (!skipRender && typeof renderRouteForDay === "function") {
-      setTimeout(() => renderRouteForDay(resolvedDay), 0);
+      setTimeout(() => {
+        // Trip değiştiyse eski render'ı koşturma
+        if (typeof window.getTripContextToken === 'function' && window.getTripContextToken() !== __ctxToken) return;
+        renderRouteForDay(resolvedDay);
+      }, 0);
     }
+
     if (typeof openSidebar === 'function') {
       openSidebar();
       if (window.innerWidth <= 768) {
@@ -2194,15 +2205,25 @@ function addToCart(
         if (sidebar) sidebar.classList.add('open');
       }
     }
-   
+
     if (window.expandedMaps) {
       clearRouteSegmentHighlight(resolvedDay);
       fitExpandedMapToRoute(resolvedDay);
     }
+
+    // saveTripAfterRoutes async zincirinde eski trip sonuçları yeni trip'e yazmasın
     if (typeof saveTripAfterRoutes === "function") {
-      saveTripAfterRoutes();
+      (async () => {
+        try {
+          await saveTripAfterRoutes();
+        } finally {
+          // Trip token değiştiyse artık hiçbir şeye dokunma (bu fonksiyonun içi ayrıca tokene duyarlı olmalı)
+          if (typeof window.getTripContextToken === 'function' && window.getTripContextToken() !== __ctxToken) return;
+        }
+      })();
     }
   }
+
   return true;
 }
 function __dayIsEmpty(day){
@@ -3260,6 +3281,8 @@ function restoreLostDayMaps() {
 // Gün 1 için kullanılan global başlatıcıda da bayrağı set edin
 function startMapPlanning() {
   window.cart = [];
+  window.bumpTripContext?.('newTripStart');
+
   window.__startedWithMapFlag = true;
   window.activeTripKey = null; // <-- En kritik satır: yeni map planlamada key sıfırlanır.
 
@@ -4120,6 +4143,8 @@ cartDiv.appendChild(addNewDayButton);
       window.lastUserQuery = '';
       window.latestTripPlan = [];
       window.cart = [];
+      window.bumpTripContext?.('newTripStart');
+
 
       // Tüm harita ve overlay temizliği
       if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
