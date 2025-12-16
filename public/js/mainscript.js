@@ -11578,28 +11578,35 @@ window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = '
 // --- 1. Hiyerarşi Analizi ve İsim Çıkarma (GELİŞTİRİLMİŞ) ---
 // ============================================================
 
-// --- 1. Hiyerarşi Analizi ---
 function extractSmartSearchTerm(info, fallbackCity = "") {
-  if (!info) return { term: fallbackCity || "", context: "" };
+  if (!info) return fallbackCity || "";
 
   const props = info.properties || {};
-  const addr = props.address || {}; 
+  const addr = props.address || {}; // Bazı API'lerde address objesi ayrıdır, bazılarında root'tadır.
 
-  const district = addr.district || addr.county || props.district || "";
-  const city = addr.city || addr.town || props.city || "";
+  // Olası alanları normalize et (API farklarına karşı önlem)
+  const suburb = addr.suburb || addr.neighbourhood || props.suburb || "";
+  const district = addr.district || addr.county || props.district || props.county || "";
+  const city = addr.city || addr.town || addr.village || props.city || props.town || "";
   const state = addr.state || addr.province || props.state || "";
   const country = addr.country || props.country || "Turkey";
 
-  // İlçe varsa ve İl ile aynı değilse (Örn: Konyaaltı -> Antalya)
+  // LOGIC: En anlamlı turistik bölgeyi seç.
+  
+  // 1. KURAL: Eğer elimizde bir İLÇE (District) varsa ve bu ilçe ŞEHİR (State) ile aynı değilse (Merkez ilçe değilse), 
+  // fotoğraf araması için en iyi aday İLÇE'dir. (Örn: Altınkum -> Konyaaltı)
   if (district && district.toLowerCase() !== state.toLowerCase()) {
+      // "Merkez" kelimesi geçen ilçeleri filtrele (Antalya Merkez gibi), genelde il ismini kullanmak daha iyidir.
       if (!district.toLowerCase().includes("merkez")) {
-          return { term: district, context: state }; 
+          return { term: district, context: state }; // Döndür: Konyaaltı (Context: Antalya)
       }
   }
-  // Yoksa Şehir/İl kullan
+
+  // 2. KURAL: İlçe yoksa veya uygun değilse ŞEHİR/İL (City/State) kullan.
   if (city) return { term: city, context: country };
   if (state) return { term: state, context: country };
 
+  // 3. KURAL: Hiçbiri yoksa fallback
   return { term: fallbackCity, context: "" };
 }
 
@@ -11612,44 +11619,59 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
   }
 }
 
-// --- 2. Geniş Fotoğraf Havuzu (20+ Fotoğraf) ---
+// ============================================================
+// --- 2. Akıllı Görsel Arama (ZENGİNLEŞTİRİLMİŞ) ---
+// ============================================================
+
 async function getCityCollageImages(searchObj) {
-  let searchTerm = typeof searchObj === 'string' ? searchObj : searchObj.term;
-  let context = typeof searchObj === 'string' ? "" : (searchObj.context || "");
+  let searchTerm = "";
+  let context = "";
+
+  if (typeof searchObj === 'string') {
+      searchTerm = searchObj;
+  } else {
+      searchTerm = searchObj.term;
+      context = searchObj.context || "";
+  }
 
   if (!searchTerm) return [];
 
   const cacheKey = searchTerm + "_" + context;
+  
+  // Return cached images if available
+  window.__dayCollageCache = window.__dayCollageCache || {};
   if (window.__dayCollageCache[cacheKey]) return window.__dayCollageCache[cacheKey];
 
-  const cleanTerm = searchTerm.replace(/( district| province| city| municipality| mahallesi| belediyesi)/gi, "").trim();
+  const cleanTerm = searchTerm.replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "").trim();
   const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
 
-  // Çeşitlilik için sorgular
+  // Expanded query list for better variety
   const queries = [
     `${cleanTerm} ${cleanContext} tourism`, 
-    `${cleanTerm} landmarks`,
+    `${cleanTerm} ${cleanContext} landmarks`,
     `${cleanTerm} city center`,
     `${cleanTerm} streets`,
     `${cleanTerm} food`,
     `${cleanTerm} night`,
     `${cleanTerm} people`,
-    `${cleanTerm} beach`,
+    `${cleanTerm} nature`,
+    `${cleanTerm} architecture`,
     `visit ${cleanTerm}`
   ];
 
-  // Yedek sorgular (İl bazlı)
+  // Fallback queries (if district search yields few results)
   if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
       queries.push(`${cleanContext} travel`);
+      queries.push(`${cleanContext} landscape`);
       queries.push(`${cleanContext} aerial`);
   }
 
   const images = [];
   const seen = new Set();
 
-  // Hedef: En az 20 farklı fotoğraf
+  // Target: At least 20 unique images
   for (const q of queries) {
-    if (images.length >= 25) break;
+    if (images.length >= 20) break;
     try {
       const img = await getPhoto(q, "pexels");
       if (img && !seen.has(img)) {
@@ -11659,7 +11681,7 @@ async function getCityCollageImages(searchObj) {
     } catch (_) {}
   }
 
-  // Çok az sonuç varsa çoğalt (Slider bozulmasın diye)
+  // Duplicate images if too few found to prevent broken slider
   while (images.length < 6 && images.length > 0) {
     images.push(...images);
   }
