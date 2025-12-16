@@ -3468,32 +3468,34 @@ function attachMapClickAddMode(day) {
 }
 // uploaded:mainscript.js
 
-// ... (mevcut kodlar)
+// uploaded:mainscript.js
 
-// uploaded:mainscript.js dosyasındaki insertTripAiInfo fonksiyonunu bu şekilde güncelle:
+// 1. Global Cache Tanımla (Sayfa yenilenmediği sürece hafızada tutar)
+window.AI_RESPONSE_CACHE = window.AI_RESPONSE_CACHE || {};
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // Mevcut AI kutularını temizle
+    // --- TEMİZLİK ---
+    // Önceki AI kutularını temizle ki üst üste binmesin
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
-    
+
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Hedeflenen şehri belirle (İstek atmadan önceki anlık durum)
-    // replace ile " trip plan" yazısını temizliyoruz ki sadece şehir ismi kalsın
+    // --- KİMLİK TESPİTİ ---
+    // Bu fonksiyon şu an HANGİ ŞEHİR için çalışıyor?
     let rawCity = cityOverride || (window.selectedCity || '');
-    let city = rawCity.replace(/ trip plan.*$/i, '').trim();
+    let targetCity = rawCity.replace(/ trip plan.*$/i, '').trim(); // "Paris", "Antalya" vs.
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
-    
-    // Şehir yoksa işlem yapma
-    if (!city && !aiStaticInfo) return;
 
-    // --- KRİTİK DÜZELTME 1: BAĞLAMI SAKLA ---
-    // Bu fonksiyon çalıştığında hangi gezi aktifti? Bunu hafızaya alıyoruz.
-    const requestingContextCity = city; 
-    // ----------------------------------------
+    if (!targetCity && !aiStaticInfo) return;
 
-    // HTML İskeletini Oluştur (Robot, Spinner vb.)
+    // Helper: HTML temizleme
+    function cleanText(text) {
+        if (!text) return "";
+        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
+    }
+
+    // --- ARAYÜZ OLUŞTURMA (Henüz boş) ---
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -3515,8 +3517,10 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
     `;
     
+    // Spinner'ı hemen ekliyoruz, veri varsa aşağıda gizleyeceğiz
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
-    
+
+    // DOM Element Referansları
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
@@ -3524,32 +3528,24 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
 
-    function cleanText(text) {
-        if (!text) return "";
-        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
-    }
-    
-    // Veriyi Ekrana Basan Yardımcı Fonksiyon
+    // --- VERİYİ EKRANA BASAN FONKSİYON ---
     function populateAndShow(data, timeElapsed = null) {
-        // --- KRİTİK DÜZELTME 2: SON KONTROL ---
-        // Veriyi basmadan hemen önce: Kullanıcı hala aynı şehirde mi?
-        // Eğer kullanıcı Antalya'ya geçtiyse (window.selectedCity değiştiyse) işlemi durdur.
-        let currentCity = (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+        // GÜVENLİK KONTROLÜ: Ekrana basarken hala doğru şehirde miyiz?
+        let currentActiveCity = (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
         
-        // Eğer statik info değilse ve şehirler eşleşmiyorsa iptal et
-        if (!aiStaticInfo && currentCity !== requestingContextCity) {
-            console.warn(`[AI Info] İptal edildi. İstek: ${requestingContextCity}, Şu anki: ${currentCity}`);
-            // Yanlışlıkla eklenmiş div'i kaldır
-            if(aiDiv) aiDiv.remove(); 
-            return;
+        // Eğer statik info değilse (yani canlı geldiyse) ve şehir değişmişse DUR.
+        if (!aiStaticInfo && currentActiveCity !== targetCity) {
+            console.log(`[AI-SAFE] Veri geldi (${targetCity}) ama kullanıcı şu an (${currentActiveCity}) geziyor. Arayüz güncellenmedi.`);
+            // Spinner'ı içeren div'i güvenlice kaldır, çünkü yanlış yerdesin.
+            if(aiDiv && aiDiv.parentNode) aiDiv.remove();
+            return; 
         }
-        // --------------------------------------
 
         if (aiSpinner) aiSpinner.style.display = "none";
         
-        // Header'a tıklayınca aç/kapa yapma özelliği
+        // Toggle (Aç/Kapa) Mantığı
         const header = aiDiv.querySelector('#ai-toggle-header');
-        if (!header.querySelector('#ai-toggle-btn')) {
+        if (header && !header.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
@@ -3558,11 +3554,10 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             header.appendChild(btn);
 
             const aiIcon = btn.querySelector('.arrow-icon');
-            let expanded = true; // Varsayılan açık
-            
-            // Header'a tıklama eventi
+            let expanded = true;
             header.style.cursor = "pointer";
-            header.onclick = function() {
+            
+            header.onclick = function(e) {
                 expanded = !expanded;
                 if (expanded) {
                     aiContent.style.maxHeight = "1200px";
@@ -3584,67 +3579,80 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         const txtTip = cleanText(data.tip) || "Info not available.";
         const txtHighlight = cleanText(data.highlight) || "Info not available.";
 
-        if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
+        if (typeof typeWriterEffect === 'function' && !aiStaticInfo && !window.AI_RESPONSE_CACHE[targetCity]) {
+            // Sadece ilk defa yükleniyorsa daktilo efekti yap
              typeWriterEffect(aiSummary, txtSummary, 18, function() {
                 typeWriterEffect(aiTip, txtTip, 18, function() {
                     typeWriterEffect(aiHighlight, txtHighlight, 18);
                 });
             });
         } else {
+            // Cache'den geldiyse veya statikse direkt yaz
             aiSummary.textContent = txtSummary;
             aiTip.textContent = txtTip;
             aiHighlight.textContent = txtHighlight;
         }
 
-        if (timeElapsed) {
-            aiTime.textContent = `⏱️ AI yanıt süresi: ${timeElapsed} ms`;
-        } else {
-            aiTime.textContent = "";
+        if (data.time) {
+            aiTime.textContent = `⏱️ AI yanıt süresi: ${data.time} ms`;
         }
     }
 
-    // 1. DURUM: Zaten elimizde veri var (Örn: Antalya'ya geri dönüldüğünde)
+    // === SENARYO 1: BU GEZİ ZATEN KAYITLI MI? (Database'den gelen) ===
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo);
         return;
     }
 
-    // 2. DURUM: API'ye gitmemiz lazım (Örn: Roma yeni oluşturuldu)
+    // === SENARYO 2: ÖNBELLEKTE (CACHE) VAR MI? (Oturum sırasında gelen) ===
+    if (window.AI_RESPONSE_CACHE[targetCity]) {
+        console.log(`[AI-CACHE] ${targetCity} için veri hafızadan çekildi.`);
+        populateAndShow(window.AI_RESPONSE_CACHE[targetCity]);
+        
+        // Cache'deki veriyi mevcut sepetin (cart) verisi yap ki kaybolmasın
+        window.cart.aiData = window.AI_RESPONSE_CACHE[targetCity];
+        window.lastTripAIInfo = window.AI_RESPONSE_CACHE[targetCity];
+        return;
+    }
+
+    // === SENARYO 3: API'YE GİT (YENİ İSTEK) ===
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city, country })
+            body: JSON.stringify({ city: targetCity, country })
         });
 
         const ollamaData = await resp.json();
         let elapsed = Math.round(performance.now() - t0);
 
-        // --- KRİTİK DÜZELTME 3: VERİYİ KAYDETMEDEN ÖNCE KONTROL ---
-        // Fetch bitti, veriyi aldık. Ama kullanıcı sayfayı değiştirdi mi?
-        let activeCityNow = (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
-        
-        if (activeCityNow !== requestingContextCity) {
-            console.log(`[AI Race Condition Prevented] ${requestingContextCity} verisi geldi ama kullanıcı şu an ${activeCityNow} ekranında.`);
-            if(aiDiv) aiDiv.remove(); // Yanlış yere eklenen spinner divini sil
-            return; // Çık, hiçbir şeyi güncelleme.
-        }
-        // -----------------------------------------------------------
-
         const aiData = {
-            city: city,
+            city: targetCity,
             summary: ollamaData.summary,
             tip: ollamaData.tip,
             highlight: ollamaData.highlight,
             time: elapsed
         };
 
-        // Artık eminiz, doğru geziye yazıyoruz.
+        // --- KRİTİK NOKTA: VERİYİ ÖNCE CACHE'E AT ---
+        // Kullanıcı başka sayfada olsa bile bu veri artık "Paris" kutusunda saklanacak.
+        window.AI_RESPONSE_CACHE[targetCity] = aiData;
+
+        // --- GÜVENLİK KONTROLÜ ---
+        // Veri geldi ama kullanıcı hala aynı şehirde mi?
+        let activeCityNow = (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+        
+        if (activeCityNow !== targetCity) {
+            console.log(`[AI-BG-SAVE] ${targetCity} verisi arka planda alındı ve saklandı. Arayüz güncellenmedi.`);
+            if(aiDiv) aiDiv.remove(); // Yükleniyor ikonunu kaldır
+            return; // ÇIK!
+        }
+
+        // Eğer hala aynı sayfadaysak normal şekilde kaydet ve göster
         window.cart.aiData = aiData; 
         window.lastTripAIInfo = aiData;
         
-        // LocalStorage güncelle
         if (typeof saveCurrentTripToStorage === "function") {
             saveCurrentTripToStorage();
         }
@@ -3653,6 +3661,13 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
     } catch (e) {
         console.error("AI Error:", e);
+        // Hata durumunda da context kontrolü yap
+        let activeCityNow = (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
+        if (activeCityNow !== targetCity) {
+            if(aiDiv) aiDiv.remove();
+            return;
+        }
+
         if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
         if (aiSpinner) aiSpinner.style.display = "none";
         aiContent.style.maxHeight = "1200px";
