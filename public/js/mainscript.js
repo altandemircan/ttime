@@ -925,6 +925,12 @@ async function handleAnswer(answer) {
   if (window.isProcessing) return;
   window.isProcessing = true;
 
+  // YENİ GEZİ BAŞLATILIYORSA:  Eski key'i temizle ki yeni key üretilsin
+  if (! window.activeTripKey) {
+    window.directionsPolylines = {};
+    window.routeElevStatsByDay = {};
+  }
+
   const inputEl = document.getElementById("user-input");
   const raw = (answer || "").toString().trim();
 
@@ -1044,9 +1050,19 @@ function addCanonicalMessage(canonicalStr) {
 }
 
 function sendMessage() {
-      console.log("showLoadingPanel çağrıldı!");
+  console.log("showLoadingPanel çağrıldı!");
 
-    showLoadingPanel()
+  // Yeni plan başlatılıyorsa activeTripKey'i sıfırla
+  if (window.activeTripKey && window.cart && window.cart.length > 0) {
+    // Mevcut geziyi kaydet
+    if (typeof saveCurrentTripToStorage === "function") {
+      saveCurrentTripToStorage();
+    }
+  }
+  // Yeni gezi için key'i sıfırla
+  window.activeTripKey = null;
+
+  showLoadingPanel();
   if (window.isProcessing) return;
   const input = document.getElementById("user-input");
   if (!input) return;
@@ -1292,12 +1308,12 @@ document.querySelectorAll('.gallery-item').forEach(item => {
     
     // --- 1. MEVCUT GEZİYİ KAYDET VE SIFIRLA (RESET LOGIC) ---
     // Eğer halihazırda açık bir gezi varsa, önce onu kaydet
-    if (window.cart && window.cart.length > 0 && typeof saveCurrentTripToStorage === "function") {
-        saveCurrentTripToStorage();
+    if (window. cart && window.cart.length > 0 && window.activeTripKey && typeof saveCurrentTripToStorage === "function") {
+        await saveCurrentTripToStorage();
     }
 
     // Collage race condition fix - yeni token oluştur
- try {
+    try {
       if (typeof window.__ttNewTripToken === 'function') {
         window.__activeTripSessionToken = window.__ttNewTripToken();
       }
@@ -1312,9 +1328,10 @@ document.querySelectorAll('.gallery-item').forEach(item => {
     window.latestTripPlan = [];
     window.selectedCity = null;
     window.selectedLocation = null;
-    window.selectedLocationLocked = false;
+    window. selectedLocationLocked = false;
     window.activeTripKey = null; // KRİTİK: Eski gezi ID'sini kopar, yeni ID oluşturacak.
-    window.lastUserQuery = "";
+    window. lastUserQuery = "";
+    window.directionsPolylines = {}; // Polyline'ları da sıfırla
     
     // Chat ekranını temizle
     const chatBox = document.getElementById('chat-box');
