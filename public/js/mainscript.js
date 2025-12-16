@@ -4907,6 +4907,7 @@ async function renderRouteForDay(day) {
             );
         }, 150);
     }
+    addDayHeroCollage(day);
 }
 
 
@@ -11561,3 +11562,65 @@ window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = '
     }
 };
 // ------------------------------------------------------
+
+
+
+// O günün haritasının üzerine 3'lü fotoğraf kolajı ekler
+async function addDayHeroCollage(day) {
+    const mapContainer = document.getElementById(`route-map-day${day}`);
+    
+    // Harita yoksa veya zaten kolaj eklenmişse çık
+    if (!mapContainer || document.getElementById(`day-collage-${day}`)) return;
+
+    // 1. O günün rotasındaki noktaları al
+    // (getDayPoints fonksiyonunun mevcut olduğunu varsayıyoruz)
+    const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+    
+    // Sadece ismi olan geçerli yerleri filtrele (Kullanıcı konumu vs hariç)
+    const places = points.filter(p => p.name && p.name !== 'User Location' && p.name !== 'Starting Point');
+
+    if (places.length === 0) return;
+
+    // 2. İlk 3 yeri seç
+    const topPlaces = places.slice(0, 3);
+
+    // 3. Resimleri Çek (Mevcut getImageForPlace fonksiyonunu kullanarak)
+    const city = window.selectedCity || "";
+    
+    // Tüm resimleri paralel olarak iste
+    const imagePromises = topPlaces.map(p => {
+        // Kategori tahmini (Basitçe 'tourist attraction' diyoruz, varsa elindeki kategoriyi kullan)
+        let category = "tourist attraction";
+        return getImageForPlace(p.name, category, city).catch(() => null);
+    });
+
+    const images = await Promise.all(imagePromises);
+    
+    // Sadece resmi başarıyla gelenleri al
+    // (Resim ve mekan ismini obje olarak tutuyoruz ki etikete yazabilelim)
+    const validData = images.map((img, i) => ({ img: img, name: topPlaces[i].name })).filter(d => d.img);
+
+    if (validData.length === 0) return;
+
+    // 4. HTML Oluştur
+    const gridClass = `grid-${Math.min(validData.length, 3)}`; // grid-1, grid-2 veya grid-3
+    
+    let html = `<div id="day-collage-${day}" class="day-hero-collage ${gridClass}">`;
+    
+    validData.forEach((data, index) => {
+        // En fazla 3 tane göster
+        if (index > 2) return; 
+        
+        html += `
+            <div class="collage-item item-${index}">
+                <img src="${data.img}" alt="${data.name}" loading="lazy">
+                <div class="collage-label">${data.name}</div>
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+
+    // 5. Haritanın Üstüne Ekle (beforebegin: Harita div'inden hemen önce)
+    mapContainer.insertAdjacentHTML('beforebegin', html);
+}
