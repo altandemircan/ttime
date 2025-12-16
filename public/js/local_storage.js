@@ -343,6 +343,11 @@ function showTripAiInfo(aiInfo) {
 }
 
 function loadTripFromStorage(tripKey) {
+     // Trip context değişti: eski async sonuçlar drop edilmeli
+    if (typeof window.bumpTripContext === "function") {
+        window.bumpTripContext(`loadTripFromStorage:${tripKey}`);
+    }
+
     window.activeTripKey = tripKey;
 
     const trips = getAllSavedTrips();
