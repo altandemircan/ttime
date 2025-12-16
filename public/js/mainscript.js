@@ -11384,8 +11384,12 @@ async function getCityCollageImages(
 }
 
 // ==================== renderDayCollage ====================
+// ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
+
+  // CAPTURE THE CURRENT TRIP TOKEN AT THE START
+  const tripTokenAtStart = window.__activeTripSessionToken;
 
   rebuildGlobalCollageUsed(); // mevcut kayıtlı günlerden global seti kur
 
@@ -11398,9 +11402,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     collage.className = "day-collage";
     collage.style.cssText =
       "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
-    const dayListEl = dayContainer.querySelector(".day-list");
-    if (dayListEl && dayListEl.parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
-    else dayContainer.appendChild(collage);
+    const dayListEl = dayContainer.querySelector(". day-list");
+    if (dayListEl && dayListEl. parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
+    else dayContainer. appendChild(collage);
   }
 
   // 2) Lokasyon
@@ -11419,6 +11423,8 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   // 3) Eğer bu gün daha önce 6 foto almışsa, yeniden fetch etmeden render et ve çık
   const already = window.__dayCollagePhotosByDay[day];
   if (Array.isArray(already) && already.length === TARGET_COUNT) {
+    // CHECK IF TRIP CHANGED BEFORE RENDERING
+    if (window.__activeTripSessionToken !== tripTokenAtStart) return;
     renderCollageSlides(collage, already, await fetchSmartLocationName(firstWithLoc.location.lat, firstWithLoc.location.lng, window.selectedCity || ""));
     return;
   }
@@ -11429,9 +11435,15 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   // 4) Yeni seti çek: globalde kullanılmamış 6 foto zorunlu
   const searchObj = await fetchSmartLocationName(
     firstWithLoc.location.lat,
-    firstWithLoc.location.lng,
-    window.selectedCity || ""
+    firstWithLoc. location.lng,
+    window. selectedCity || ""
   );
+
+  // CHECK IF TRIP CHANGED AFTER LOCATION FETCH
+  if (window.__activeTripSessionToken !== tripTokenAtStart) {
+    console.log('[collage] Trip changed during location fetch, aborting');
+    return;
+  }
 
   const daySelections = [];
   const localUsed = new Set();
@@ -11439,6 +11451,12 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   let attempts = 0;
 
   while (daySelections.length < TARGET_COUNT && attempts < MAX_ATTEMPTS) {
+    // CHECK IF TRIP CHANGED DURING PHOTO FETCH LOOP
+    if (window.__activeTripSessionToken !== tripTokenAtStart) {
+      console.log('[collage] Trip changed during photo fetch, aborting');
+      return;
+    }
+
     const pool = await getCityCollageImages(searchObj, {
       skipCache: true,
       min: 50,
@@ -11457,12 +11475,18 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     attempts++;
   }
 
-  // Eğer hala 6 değilse, eksik kalanları gizle (tekrar istemiyoruz)
-  if (daySelections.length < TARGET_COUNT) {
-    console.warn(`[collage] ${day}. gün için yeterli benzersiz foto bulunamadı (${daySelections.length}/6).`);
+  // FINAL CHECK IF TRIP CHANGED BEFORE RENDERING
+  if (window.__activeTripSessionToken !== tripTokenAtStart) {
+    console.log('[collage] Trip changed before rendering, aborting');
+    return;
   }
 
-  if (!daySelections.length) {
+  // Eğer hala 6 değilse, eksik kalanları gizle (tekrar istemiyoruz)
+  if (daySelections.length < TARGET_COUNT) {
+    console.warn(`[collage] ${day}.  gün için yeterli benzersiz foto bulunamadı (${daySelections.length}/6).`);
+  }
+
+  if (! daySelections.length) {
     collage.style.display = "none";
     delete window.__dayCollagePhotosByDay[day];
     rebuildGlobalCollageUsed();
@@ -11470,10 +11494,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   }
 
   // Kaydet ve render et
-  window.__dayCollagePhotosByDay[day] = daySelections.slice();
+  window.__dayCollagePhotosByDay[day] = daySelections. slice();
   renderCollageSlides(collage, daySelections, searchObj);
 };
-
 // ==================== Slider renderer helper ====================
 function renderCollageSlides(collage, images, searchObj) {
   const isMobile = window.innerWidth < 600;
