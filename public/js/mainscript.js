@@ -11433,44 +11433,30 @@ async function getCityCollageImages(
   return images;
 }
 async function renderDayCollage(day, dayContainer, dayItems) {
-  // 1. Resimleri Topla (Cache veya Itemlardan)
+  // 1. Resimleri Topla
   let images = [];
   if (window.__dayCollagePhotosByDay && window.__dayCollagePhotosByDay[day] && window.__dayCollagePhotosByDay[day].length > 0) {
     images = window.__dayCollagePhotosByDay[day];
   } else {
-    // Itemların görsellerini al (placeholder ve notlar hariç)
+    // Placeholder ve not görsellerini hariç tut
     images = dayItems
       .map(i => i.image)
       .filter(img => img && !img.includes('placeholder') && !img.includes('added-note'));
     
-    // Eğer hiç görsel yoksa, fonksiyonu durdur (boş kutu basmasın)
     if (images.length === 0) return;
     
-    // Cache'e kaydet
     window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
     window.__dayCollagePhotosByDay[day] = images;
   }
 
-  // 2. Başlık Metnini Oluştur ("Photos of Antalya" vb.)
-  let cityLabel = window.selectedCity;
-  
-  // Eğer global şehir yoksa, itemların adresinden bulmaya çalış
-  if (!cityLabel && dayItems.length > 0) {
-      const itemWithAddress = dayItems.find(i => i.address && i.address.includes(','));
-      if (itemWithAddress) {
-          const parts = itemWithAddress.address.split(',');
-          // Genelde "Mahalle, İlçe, Şehir, Ülke" formatında sondan 2. veya 3. parça şehirdir
-          cityLabel = parts[parts.length - 2] ? parts[parts.length - 2].trim().replace(/\d/g, '') : "the City";
-      }
-  }
-  if (!cityLabel) cityLabel = "the City"; // Fallback
+  // 2. BAŞLIK AYARI (GENEL VE İNGİLİZCE)
+  // Fotoğraf ne olursa olsun (yanlış bile olsa) sırıtmayacak genel bir isim.
+  const titleText = "Trip Gallery"; 
 
-  const titleText = `Photos of ${cityLabel}`;
-
-  // 3. HTML Yapısını Oluştur
+  // 3. HTML Yapısını Oluştur (Senin attığın tasarımın aynısı)
   const collage = document.createElement("div");
   collage.className = "day-collage";
-  // Stil ayarları (Mevcut CSS ile uyumlu)
+  // Tasarım CSS'i (Senin kodunla birebir aynı)
   collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; background: rgb(247, 249, 252); padding: 8px; position: relative; display: block; min-height: 100px;";
 
   collage.innerHTML = `
@@ -11486,11 +11472,11 @@ async function renderDayCollage(day, dayContainer, dayItems) {
 
   // 4. Görselleri Yerleştir
   const track = collage.querySelector(".collage-track");
-  const visibleCount = 3; // Ekranda aynı anda görünen resim sayısı
+  const visibleCount = 3; 
   
   images.forEach((src) => {
     const slide = document.createElement("div");
-    // Genişlik %33.33 (3 resim sığacak şekilde)
+    // Genişlik %33.3333
     slide.style.cssText = `flex: 0 0 ${100 / visibleCount}%; max-width: ${100 / visibleCount}%; padding: 4px; box-sizing: border-box;`;
     slide.innerHTML = `<div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed;"><img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
     track.appendChild(slide);
@@ -11516,7 +11502,6 @@ async function renderDayCollage(day, dayContainer, dayItems) {
     }
   };
 
-  // Event Listener'lar
   collage.querySelector(".prev").addEventListener("click", (e) => {
       e.stopPropagation();
       if (index > 0) { index--; updateSlider(); }
@@ -11526,11 +11511,9 @@ async function renderDayCollage(day, dayContainer, dayItems) {
       if (index < maxIndex) { index++; updateSlider(); }
   });
 
-  // İlk render
   updateSlider();
 
-  // Container'a Ekle
-  // Eğer container içinde eski collage varsa temizle (güvenlik için)
+  // Container'a Ekle (Eskisini temizle)
   const oldCollage = dayContainer.querySelector('.day-collage');
   if (oldCollage) oldCollage.remove();
   
