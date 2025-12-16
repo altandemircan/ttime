@@ -350,6 +350,17 @@ function loadTripFromStorage(tripKey) {
     const t = trips[tripKey];
 
     // ============================================================
+    // --- COLLAGE RACE CONDITION FIX ---
+    // ============================================================
+    window.__activeTripSessionToken = window.__ttNewTripToken();
+    window.__dayCollagePhotosByDay = {};
+    window.__globalCollageUsed = new Set();
+
+    // ============================================================
+    // --- AGRESİF TEMİZLİK (SCORCHED EARTH POLICY) ---
+    // ============================================================
+
+    // ============================================================
     // --- AGRESİF TEMİZLİK (SCORCHED EARTH POLICY) ---
     // ============================================================
     
