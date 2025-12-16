@@ -4616,35 +4616,38 @@ function isSupportedTravelMode(mode) {
 
  
 
-// --- 0. CSS STİLLERİ (Görünürlük Garantili) ---
-(function injectCollageStyles() {
-    if (document.getElementById('tt-collage-styles-force')) return;
+(function injectDebugStyles() {
+    if (document.getElementById('tt-collage-debug-style')) return;
     const s = document.createElement('style');
-    s.id = 'tt-collage-styles-force';
+    s.id = 'tt-collage-debug-style';
     s.innerHTML = `
         .day-hero-collage {
-            display: grid !important;
-            gap: 6px !important;
-            height: 220px !important;
-            width: 96% !important; /* Kenarlardan biraz boşluk */
-            margin: 20px auto 10px auto !important; /* Üstten ve alttan boşluk */
-            border-radius: 12px !important;
-            overflow: hidden !important;
-            background: #f0f0f0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 5;
-            min-height: 220px; /* Yükseklik garantisi */
+            display: grid;
+            gap: 5px;
+            width: 98%;
+            height: 200px;
+            margin: 15px auto;
+            border: 2px dashed red; /* Debug çerçevesi: Kodu görmek için */
+            background: #ffe6e6;    /* Debug rengi */
+            border-radius: 8px;
+            overflow: hidden;
         }
-        .collage-item { position: relative; width: 100%; height: 100%; background: #ddd; overflow: hidden; }
-        .collage-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease; }
-        .collage-item:hover img { transform: scale(1.05); }
+        .collage-item { 
+            position: relative; 
+            width: 100%; height: 100%; 
+            background: #ccc; 
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #555;
+        }
+        .collage-item img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            position: absolute; top: 0; left: 0;
+        }
         .collage-label {
-            position: absolute; bottom: 10px; left: 10px;
-            background: rgba(0,0,0,0.6); color: #fff;
-            padding: 5px 10px; border-radius: 6px;
-            font-size: 12px; font-weight: 600; pointer-events: none;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            position: absolute; bottom: 5px; left: 5px;
+            background: rgba(0,0,0,0.7); color: #fff;
+            padding: 2px 6px; font-size: 11px; border-radius: 4px;
+            z-index: 2;
         }
         /* Grid Layouts */
         .day-hero-collage.grid-1 { grid-template-columns: 1fr; }
@@ -4656,93 +4659,88 @@ function isSupportedTravelMode(mode) {
     `;
     document.head.appendChild(s);
 })();
-
-// ======================================================
-// 2. KOLAJ EKLEME FONKSİYONU (RETRY MEKANİZMALI)
-// ======================================================
 async function addDayHeroCollage(day) {
-    console.log(`[COLLAGE] Day ${day} için işlem başladı...`);
+    console.log(`%c[COLLAGE DEBUG] Day ${day} Başladı`, "color:blue; font-weight:bold; font-size:14px;");
 
-    // 1. ANA KONTEYNERİ BUL (En güvenli element)
-    const dayContainer = document.getElementById(`day-container-${day}`);
-    if (!dayContainer) {
-        console.error(`[COLLAGE] Day Container (${day}) bulunamadı!`);
+    // 1. BUTONU BUL
+    // CSS Selector: class="add-more-btn" VE data-day="day"
+    const btnSelector = `.add-more-btn[data-day="${day}"]`;
+    const addMoreBtn = document.querySelector(btnSelector);
+
+    if (!addMoreBtn) {
+        console.error(`[COLLAGE ERROR] Buton bulunamadı! Selector: ${btnSelector}`);
+        // Buton yoksa işlem yapamayız
         return;
     }
+    console.log(`[COLLAGE] Buton bulundu:`, addMoreBtn);
 
-    // 2. REFERANS NOKTASI BUL (Harita Kontrol Barı)
-    // Kolajı bu elementin hemen öncesine (üstüne) koyacağız.
-    const mapControlBar = document.getElementById(`route-controls-bar-day${day}`);
-    
-    // Eğer harita barı yoksa, list bitimini bulmaya çalış
-    const dayList = dayContainer.querySelector('.day-list');
-
-    // Eğer zaten ekliyse çık
+    // 2. ZATEN EKLİ Mİ?
     if (document.getElementById(`day-collage-${day}`)) {
-        console.log(`[COLLAGE] Day ${day} zaten ekli.`);
+        console.log(`[COLLAGE] Zaten ekli, çıkılıyor.`);
         return;
     }
 
-    // 3. VERİLERİ ÇEK
+    // 3. VERİLERİ HAZIRLA
     const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-    const places = points.filter(p => p.name && !p.name.includes("User Location") && !p.name.includes("Starting Point"));
+    const places = points.filter(p => p.name && !p.name.includes("User") && !p.name.includes("Start"));
 
-    if (places.length === 0) return;
+    // 4. RESİMLERİ ÇEK (Placeholder Modu Dahil)
+    let validData = [];
+    
+    if (places.length > 0) {
+        const topPlaces = places.slice(0, 3);
+        const city = window.selectedCity || "";
 
-    // İlk 3 mekanı al
-    const topPlaces = places.slice(0, 3);
-    const city = window.selectedCity || "";
+        const promises = topPlaces.map(async p => {
+            try {
+                let cat = p.category || "landmark";
+                const img = await getImageForPlace(p.name, cat, city);
+                if (img) return { img: img, name: p.name };
+            } catch(e) {}
+            return null;
+        });
 
-    // Resimleri getir
-    const imagePromises = topPlaces.map(async p => {
-        let category = p.category || "tourist attraction";
-        try {
-            const img = await getImageForPlace(p.name, category, city);
-            if (img && !img.includes('placeholder')) {
-                return { img: img, name: p.name };
-            }
-        } catch (e) {}
-        return null;
-    });
-
-    const results = await Promise.all(imagePromises);
-    const validData = results.filter(d => d);
-
-    if (validData.length === 0) {
-        console.log(`[COLLAGE] Day ${day} resim bulunamadı.`);
-        return;
+        const results = await Promise.all(promises);
+        validData = results.filter(d => d);
     }
 
-    // 4. HTML OLUŞTUR
+    // --- DEBUG MODU ---
+    // Eğer resim bulamazsa (veya liste boşsa), sana kodu göstermek için SAHTE VERİ basıyorum.
+    // Fotoğraflar gelince bu if bloğu çalışmaz, gerçek fotolar gelir.
+    if (validData.length === 0) {
+        console.warn(`[COLLAGE] Resim bulunamadı. DEBUG placeholderları kullanılıyor.`);
+        validData = [
+            { img: "", name: "Debug Place 1 (No Image)" },
+            { img: "", name: "Debug Place 2 (No Image)" },
+            { img: "", name: "Debug Place 3 (No Image)" }
+        ];
+    }
+
+    console.log(`[COLLAGE] Kullanılacak Veri:`, validData);
+
+    // 5. HTML OLUŞTUR
     const count = Math.min(validData.length, 3);
     const gridClass = `grid-${count}`;
     
     let html = `<div id="day-collage-${day}" class="day-hero-collage ${gridClass}">`;
+    
     validData.slice(0, 3).forEach((data, index) => {
+        // Eğer resim URL'i varsa img etiketi, yoksa gri kutu
+        const imgTag = data.img ? `<img src="${data.img}" loading="lazy">` : `<div style="padding:20px; text-align:center;">RESİM YOK<br>${data.name}</div>`;
+        
         html += `
             <div class="collage-item item-${index}">
-                <img src="${data.img}" alt="${data.name}" loading="lazy">
+                ${imgTag}
                 <div class="collage-label">${data.name}</div>
             </div>
         `;
     });
     html += `</div>`;
 
-    // 5. YERLEŞTİRME (Kritik Nokta)
-    // Eğer harita barı varsa onun üstüne, yoksa listenin altına koy.
-    if (mapControlBar) {
-        mapControlBar.insertAdjacentHTML('beforebegin', html);
-        console.log(`[COLLAGE] Harita barının üstüne eklendi (Day ${day}).`);
-    } else if (dayList) {
-        dayList.insertAdjacentHTML('afterend', html);
-        console.log(`[COLLAGE] Listenin altına eklendi (Day ${day}).`);
-    } else {
-        // Hiçbiri yoksa container'ın sonuna ekle
-        dayContainer.insertAdjacentHTML('beforeend', html);
-        console.log(`[COLLAGE] Container sonuna eklendi (Day ${day}).`);
-    }
+    // 6. YERLEŞTİR: Butonun hemen sonrasına (afterend)
+    addMoreBtn.insertAdjacentHTML('afterend', html);
+    console.log(`%c[COLLAGE SUCCESS] HTML eklendi!`, "color:green; font-weight:bold;");
 }
-
 // ======================================================
 // 3. RENDER FONKSİYONU (RenderRouteForDay)
 // ======================================================
