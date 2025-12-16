@@ -13,15 +13,12 @@ function isTripFav(item) {
     );
 }
 
-// Kullanılan resimleri takip etmek için global set
+// --- KULLANILMIŞ FOTOĞRAF HAFIZASI ---
+// Sayfa yenilenene kadar hangi fotoların kullanıldığını hatırlar.
 window.__usedCollageImages = window.__usedCollageImages || new Set();
-
-// Yeni plan yapıldığında bu hafızayı temizlemek gerekir.
-// (Mevcut 'New Trip Plan' fonksiyonuna bunu eklemiş olacağız otomatikman, çünkü sayfa yenilenmese bile cart sıfırlanıyor)
-function resetCollageMemory() {
-    window.__usedCollageImages = new Set();
-    window.__dayCollageCache = {}; // Cache'i de temizle ki yeni aramalar yapsın
-}
+window.__dayCollageCache = window.__dayCollageCache || {};
+// Yeni: Gün bazlı fotoğraf atamaları (ayrı günler için farklı set)
+window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
 
 window.__welcomeHiddenForever = false;
 window.__restaurantLayers = window.__restaurantLayers || [];
@@ -11694,171 +11691,118 @@ async function getCityCollageImages(searchObj) {
 // --- 3. Collage Renderer (GÜNCELLENMİŞ) ---
 // ============================================================
 
+
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
-  // 1. Create HTML Structure
+  // 1. İskelet Oluştur
   let collage = dayContainer.querySelector(".day-collage");
   if (!collage) {
     collage = document.createElement("div");
     collage.className = "day-collage";
-    collage.style.cssText = `
-      margin: 12px 0 6px 0;
-      border-radius: 10px;
-      overflow: hidden;
-      background: #f7f9fc;
-      padding: 8px;
-      position: relative;
-      display: block;
-      min-height: 100px;
-    `;
+    collage.style.cssText = `margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;`;
     const dayListEl = dayContainer.querySelector(".day-list");
-    if (dayListEl && dayListEl.parentNode) {
-      dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
-    } else {
-      dayContainer.appendChild(collage);
-    }
+    if (dayListEl && dayListEl.parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
+    else dayContainer.appendChild(collage);
   }
 
-  // 2. Find Location
-  const firstWithLoc = (dayItemsArr || []).find(
-    (it) => it.location && isFinite(it.location.lat) && isFinite(it.location.lng)
-  );
-
+  // 2. Lokasyon Bul
+  const firstWithLoc = (dayItemsArr || []).find(it => it.location && isFinite(it.location.lat) && isFinite(it.location.lng));
   if (!firstWithLoc) {
     collage.style.display = "none";
+    // Gün için kayıtlı foto setini serbest bırak
+    delete window.__dayCollagePhotosByDay[day];
+    window.__usedCollageImages = new Set(Object.values(window.__dayCollagePhotosByDay || {}).flat());
     return;
   }
 
   collage.style.display = "block";
-  collage.innerHTML = `<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;">Loading...</div>`;
+  collage.innerHTML = `<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;">Loading photos...</div>`;
 
-  // 3. Smart Name Resolution
-  const searchObj = await fetchSmartLocationName(
-      firstWithLoc.location.lat,
-      firstWithLoc.location.lng,
-      window.selectedCity || ""
-  );
-
-  // 4. Fetch Images
+  // 3. Verileri Çek
+  const searchObj = await fetchSmartLocationName(firstWithLoc.location.lat, firstWithLoc.location.lng, window.selectedCity || "");
   const allImages = await getCityCollageImages(searchObj);
 
   if (!allImages || allImages.length === 0) {
-    collage.innerHTML = "";
     collage.style.display = "none";
+    delete window.__dayCollagePhotosByDay[day];
+    window.__usedCollageImages = new Set(Object.values(window.__dayCollagePhotosByDay || {}).flat());
     return;
   }
 
-  // 5. --- SELECTION ALGORITHM (Select 6 Unique Images) ---
-  const selectedImages = [];
-  const TARGET_COUNT = 6; // Select 6 images to allow scrolling
+  // 4. Gün bazlı benzersiz seçim
+  const TARGET_COUNT = 6;
+  const usedByOtherDays = new Set();
+  Object.entries(window.__dayCollagePhotosByDay || {}).forEach(([d, arr]) => {
+    if (Number(d) !== Number(day) && Array.isArray(arr)) arr.forEach(img => usedByOtherDays.add(img));
+  });
 
-  // A. Prioritize unused images
-  for (const src of allImages) {
-      if (selectedImages.length >= TARGET_COUNT) break;
-      
-      if (!window.__usedCollageImages.has(src)) {
-          selectedImages.push(src);
-          window.__usedCollageImages.add(src);
+  // Havuzdan kullanılmamışları topla
+  const pool = allImages.filter(src => !usedByOtherDays.has(src));
+  const daySelections = [];
+  const dayUsed = new Set();
+
+  // Yeterli foto varsa gün numarasına göre döndürerek seç (tekrarsız)
+  if (pool.length >= TARGET_COUNT) {
+    const offset = ((Number(day) - 1) * TARGET_COUNT) % pool.length;
+    for (let i = 0; daySelections.length < TARGET_COUNT; i++) {
+      const idx = (offset + i) % pool.length;
+      const src = pool[idx];
+      if (!dayUsed.has(src)) {
+        daySelections.push(src);
+        dayUsed.add(src);
       }
+    }
+  } else {
+    // Yetmeyen durumda önce havuz, sonra tüm liste (gün içi tekrarsız)
+    [...pool, ...allImages].forEach(src => {
+      if (daySelections.length >= TARGET_COUNT) return;
+      if (dayUsed.has(src)) return;
+      daySelections.push(src);
+      dayUsed.add(src);
+    });
   }
 
-  // B. Reuse old images if pool is exhausted
-  if (selectedImages.length < TARGET_COUNT) {
-      for (const src of allImages) {
-          if (selectedImages.length >= TARGET_COUNT) break;
-          selectedImages.push(src);
-      }
-  }
-  
-  // 6. --- SLIDER SETUP ---
-  // Display 3 images on desktop, 1 on mobile
+  // Günün seçimini kaydet ve global kullanılanları güncelle
+  window.__dayCollagePhotosByDay[day] = daySelections.slice();
+  window.__usedCollageImages = new Set(Object.values(window.__dayCollagePhotosByDay).flat());
+
+  // 5. Slider Render
   const isMobile = window.innerWidth < 600;
   const visible = isMobile ? 1 : 3; 
   let index = 0;
 
-  const titleHtml = searchObj.term ? 
-    `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">
-       ${searchObj.term}
-     </div>` : '';
+  const titleHtml = searchObj.term ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${searchObj.term}</div>` : '';
 
   collage.innerHTML = `
     ${titleHtml}
     <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
-      <div class="collage-track" style="display:flex; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); will-change: transform;"></div>
+      <div class="collage-track" style="display:flex; transition: transform 0.4s ease-out; will-change: transform;"></div>
     </div>
     <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
     <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
   `;
 
   const track = collage.querySelector(".collage-track");
-
-  selectedImages.forEach((src) => {
+  daySelections.forEach((src) => {
     const slide = document.createElement("div");
-    // Flex width: 100 / visible count
-    slide.style.cssText = `
-      flex: 0 0 ${100 / visible}%;
-      max-width: ${100 / visible}%;
-      padding: 4px;
-      box-sizing: border-box;
-    `;
-    slide.innerHTML = `
-      <div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed; position:relative;">
-        <img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
-      </div>
-    `;
+    slide.style.cssText = `flex: 0 0 ${100 / visible}%; max-width: ${100 / visible}%; padding: 4px; box-sizing: border-box;`;
+    slide.innerHTML = `<div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed;"><img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
     track.appendChild(slide);
   });
 
-  // Slider Update Function
   function update() {
-    const total = selectedImages.length;
-    // Max index: Total - Visible
-    // Example: 6 images, 3 visible -> Max index = 3 (allowing shifts to 0, 1, 2, 3)
-    const max = Math.max(0, total - visible);
-    
-    // Clamp index
+    const max = Math.max(0, daySelections.length - visible);
     index = Math.max(0, Math.min(max, index));
-
-    const stepPct = 100 / visible;
-    const offsetPct = index * stepPct;
-    track.style.transform = `translateX(-${offsetPct}%)`;
+    track.style.transform = `translateX(-${index * (100 / visible)}%)`;
     
-    const prevBtn = collage.querySelector(".collage-nav.prev");
-    const nextBtn = collage.querySelector(".collage-nav.next");
-    
-    if (prevBtn) {
-        prevBtn.style.opacity = index === 0 ? 0.3 : 1;
-        prevBtn.style.pointerEvents = index === 0 ? 'none' : 'auto';
-    }
-    if (nextBtn) {
-        nextBtn.style.opacity = index === max ? 0.3 : 1;
-        nextBtn.style.pointerEvents = index === max ? 'none' : 'auto';
-    }
+    const prev = collage.querySelector(".prev");
+    const next = collage.querySelector(".next");
+    if(prev) { prev.style.opacity = index === 0 ? 0.3 : 1; prev.style.pointerEvents = index === 0 ? 'none' : 'auto'; }
+    if(next) { next.style.opacity = index === max ? 0.3 : 1; next.style.pointerEvents = index === max ? 'none' : 'auto'; }
   }
 
-  const prevBtn = collage.querySelector(".collage-nav.prev");
-  const nextBtn = collage.querySelector(".collage-nav.next");
-  
-  if (prevBtn) prevBtn.onclick = (e) => { 
-      e.stopPropagation(); 
-      index--; 
-      update(); 
-  };
-  if (nextBtn) nextBtn.onclick = (e) => { 
-      e.stopPropagation(); 
-      index++; 
-      update(); 
-  };
-
-  // Resize Observer for Responsiveness
-  if (window.ResizeObserver) {
-    const ro = new ResizeObserver(() => {
-        // Simple update call on resize to re-apply CSS transforms if needed
-        update();
-    });
-    ro.observe(collage);
-  }
-
+  collage.querySelector(".prev").onclick = (e) => { e.stopPropagation(); index--; update(); };
+  collage.querySelector(".next").onclick = (e) => { e.stopPropagation(); index++; update(); };
   update();
 };
