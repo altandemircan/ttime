@@ -11432,122 +11432,110 @@ async function getCityCollageImages(
 
   return images;
 }
-
-// ==================== renderDayCollage ====================
-// ==================== renderDayCollage ====================
-// ==================== renderDayCollage ====================
-window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
-  if (! dayContainer) return;
-
-  // CAPTURE THE CURRENT TRIP TOKEN AT THE START
-  const tripTokenAtStart = window.__activeTripSessionToken;
-
-  rebuildGlobalCollageUsed(); // mevcut kayıtlı günlerden global seti kur
-
-  const TARGET_COUNT = 6;
-
-  // 1) İskelet
-let collage = dayContainer.querySelector(".day-collage");
-  if (!collage) {
-    collage = document.createElement("div");
-    collage.className = "day-collage";
-    collage.style.cssText =
-      "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background:  #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
-    const dayListEl = dayContainer.querySelector(".day-list");
-    if (dayListEl && dayListEl.parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl. nextSibling);
-    else dayContainer.appendChild(collage);
+async function renderDayCollage(day, dayContainer, dayItems) {
+  // 1. Resimleri Topla (Cache veya Itemlardan)
+  let images = [];
+  if (window.__dayCollagePhotosByDay && window.__dayCollagePhotosByDay[day] && window.__dayCollagePhotosByDay[day].length > 0) {
+    images = window.__dayCollagePhotosByDay[day];
+  } else {
+    // Itemların görsellerini al (placeholder ve notlar hariç)
+    images = dayItems
+      .map(i => i.image)
+      .filter(img => img && !img.includes('placeholder') && !img.includes('added-note'));
+    
+    // Eğer hiç görsel yoksa, fonksiyonu durdur (boş kutu basmasın)
+    if (images.length === 0) return;
+    
+    // Cache'e kaydet
+    window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+    window.__dayCollagePhotosByDay[day] = images;
   }
 
-  // 2) Lokasyon
-  const firstWithLoc = (dayItemsArr || []).find(
-    (it) => it.location && isFinite(it.location.lat) && isFinite(it.location.lng)
-  );
-  if (!firstWithLoc) {
-    collage.style.display = "none";
-    delete window.__dayCollagePhotosByDay[day];
-    rebuildGlobalCollageUsed();
-    return;
+  // 2. Başlık Metnini Oluştur ("Photos of Antalya" vb.)
+  let cityLabel = window.selectedCity;
+  
+  // Eğer global şehir yoksa, itemların adresinden bulmaya çalış
+  if (!cityLabel && dayItems.length > 0) {
+      const itemWithAddress = dayItems.find(i => i.address && i.address.includes(','));
+      if (itemWithAddress) {
+          const parts = itemWithAddress.address.split(',');
+          // Genelde "Mahalle, İlçe, Şehir, Ülke" formatında sondan 2. veya 3. parça şehirdir
+          cityLabel = parts[parts.length - 2] ? parts[parts.length - 2].trim().replace(/\d/g, '') : "the City";
+      }
   }
+  if (!cityLabel) cityLabel = "the City"; // Fallback
 
-  collage.style.display = "block";
+  const titleText = `Photos of ${cityLabel}`;
 
-  // 3) Eğer bu gün daha önce 6 foto almışsa, yeniden fetch etmeden render et ve çık
-  const already = window.__dayCollagePhotosByDay[day];
-  if (Array.isArray(already) && already.length === TARGET_COUNT) {
-    // CHECK IF TRIP CHANGED BEFORE RENDERING
-    if (window.__activeTripSessionToken !== tripTokenAtStart) return;
-    renderCollageSlides(collage, already, await fetchSmartLocationName(firstWithLoc.location. lat, firstWithLoc.location.lng, window. selectedCity || ""));
-    return;
-  }
+  // 3. HTML Yapısını Oluştur
+  const collage = document.createElement("div");
+  collage.className = "day-collage";
+  // Stil ayarları (Mevcut CSS ile uyumlu)
+  collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; background: rgb(247, 249, 252); padding: 8px; position: relative; display: block; min-height: 100px;";
 
-  collage.innerHTML =
-    '<div style="width: 100%;text-align:center;padding:20px;color:#607d8b;font-size: 13px;">Loading photos...</div>';
+  collage.innerHTML = `
+    <div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">
+        ${titleText}
+    </div>
+    <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
+      <div class="collage-track" style="display: flex; transition: transform 0.4s ease-out; will-change: transform;"></div>
+    </div>
+    <button class="collage-nav prev" style="position: absolute; left: 6px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: rgb(0, 0, 0); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 6px; z-index: 5; opacity: 0.3; pointer-events: none;">❮</button>
+    <button class="collage-nav next" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: rgb(0, 0, 0); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 6px; z-index: 5; opacity: 1; pointer-events: auto;">❯</button>
+  `;
 
-  // 4) Yeni seti çek:  globalde kullanılmamış 6 foto zorunlu
-  const searchObj = await fetchSmartLocationName(
-    firstWithLoc.location. lat,
-    firstWithLoc.location.lng,
-    window.selectedCity || ""
-  );
+  // 4. Görselleri Yerleştir
+  const track = collage.querySelector(".collage-track");
+  const visibleCount = 3; // Ekranda aynı anda görünen resim sayısı
+  
+  images.forEach((src) => {
+    const slide = document.createElement("div");
+    // Genişlik %33.33 (3 resim sığacak şekilde)
+    slide.style.cssText = `flex: 0 0 ${100 / visibleCount}%; max-width: ${100 / visibleCount}%; padding: 4px; box-sizing: border-box;`;
+    slide.innerHTML = `<div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed;"><img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
+    track.appendChild(slide);
+  });
 
-  // CHECK IF TRIP CHANGED AFTER LOCATION FETCH
-  if (window.__activeTripSessionToken !== tripTokenAtStart) {
-    console.log('[collage] Trip changed during location fetch, aborting');
-    return;
-  }
+  // 5. Slider Fonksiyonelliği
+  let index = 0;
+  const maxIndex = Math.max(0, images.length - visibleCount);
 
-  const daySelections = [];
-  const localUsed = new Set();
-  const MAX_ATTEMPTS = 12;
-  let attempts = 0;
+  const updateSlider = () => {
+    track.style.transform = `translateX(-${index * (100 / visibleCount)}%)`;
 
-  while (daySelections.length < TARGET_COUNT && attempts < MAX_ATTEMPTS) {
-    // CHECK IF TRIP CHANGED DURING PHOTO FETCH LOOP
-    if (window.__activeTripSessionToken !== tripTokenAtStart) {
-      console.log('[collage] Trip changed during photo fetch, aborting');
-      return;
+    const prev = collage.querySelector(".prev");
+    const next = collage.querySelector(".next");
+    
+    if (prev) {
+        prev.style.opacity = index <= 0 ? 0.3 : 1;
+        prev.style.pointerEvents = index <= 0 ? "none" : "auto";
     }
-
-    const pool = await getCityCollageImages(searchObj, {
-      skipCache: true,
-      min:  50,
-      exclude: window.__globalCollageUsed,
-      salt: `day${day}-try${attempts}`,
-    });
-
-    for (const src of pool) {
-      if (daySelections.length >= TARGET_COUNT) break;
-      if (window.__globalCollageUsed.has(src)) continue;
-      if (localUsed.has(src)) continue;
-      daySelections.push(src);
-      localUsed.add(src);
-      window.__globalCollageUsed.add(src);
+    if (next) {
+        next.style.opacity = index >= maxIndex ? 0.3 : 1;
+        next.style.pointerEvents = index >= maxIndex ? "none" : "auto";
     }
-    attempts++;
-  }
+  };
 
-  // FINAL CHECK IF TRIP CHANGED BEFORE RENDERING
-  if (window.__activeTripSessionToken !== tripTokenAtStart) {
-    console.log('[collage] Trip changed before rendering, aborting');
-    return;
-  }
+  // Event Listener'lar
+  collage.querySelector(".prev").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (index > 0) { index--; updateSlider(); }
+  });
+  collage.querySelector(".next").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (index < maxIndex) { index++; updateSlider(); }
+  });
 
-  // Eğer hala 6 değilse, eksik kalanları gizle (tekrar istemiyoruz)
-  if (daySelections.length < TARGET_COUNT) {
-    console.warn(`[collage] ${day}.  gün için yeterli benzersiz foto bulunamadı (${daySelections.length}/6).`);
-  }
+  // İlk render
+  updateSlider();
 
-  if (! daySelections.length) {
-    collage.style.display = "none";
-    delete window.__dayCollagePhotosByDay[day];
-    rebuildGlobalCollageUsed();
-    return;
-  }
-
-  // Kaydet ve render et
-  window.__dayCollagePhotosByDay[day] = daySelections. slice();
-  renderCollageSlides(collage, daySelections, searchObj);
-};
+  // Container'a Ekle
+  // Eğer container içinde eski collage varsa temizle (güvenlik için)
+  const oldCollage = dayContainer.querySelector('.day-collage');
+  if (oldCollage) oldCollage.remove();
+  
+  dayContainer.appendChild(collage);
+}
 // ==================== Slider renderer helper ====================
 function renderCollageSlides(collage, images, searchObj) {
   const isMobile = window.innerWidth < 600;
