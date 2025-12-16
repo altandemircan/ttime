@@ -1392,9 +1392,9 @@ document.querySelectorAll('. add_theme').forEach(btn => {
       }
       window.__dayCollagePhotosByDay = {};
       window.__globalCollageUsed = new Set();
-    } catch(e) {
+     } catch(e) {
       console.warn('[collage] Token reset error:', e);
-    }et();
+    }
 
    window.cart = [];
     window.latestTripPlan = [];
