@@ -3691,569 +3691,768 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 
 
 async function updateCart() {
-    // 1. RESİM HAFIZASINI SIFIRLA (Her render'da başa dönmesi için)
-    if (window.__usedCollageImages) window.__usedCollageImages.clear();
-    else window.__usedCollageImages = new Set();
-
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-    const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
-    // 2. Rotaları Hazırla
-    for (const d of days) {
-        await renderRouteForDay(d);
-    }
+  const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
 
-    console.log("updateCart başlatıldı");
-    
-    // Temizlik
-    document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
+  // ÖNCE route'ları HAZIRLA!
+  for (const d of days) {
+    await renderRouteForDay(d);
+    console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+  }
+  console.log("updateCart başlatıldı");
+  document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
 
-    if (window.expandedMaps) {
-        days.forEach(day => {
-            if (typeof clearRouteSegmentHighlight === 'function') clearRouteSegmentHighlight(day);
-        });
-        window._lastSegmentDay = undefined;
-        window._lastSegmentStartKm = undefined;
-        window._lastSegmentEndKm = undefined;
-    }
 
-    // Buton Gizlilik Kontrolü
+  if (window.expandedMaps) {
     days.forEach(day => {
-        const hasRealItem = window.cart.some(i =>
-            Number(i.day) === Number(day) &&
-            !i._starter &&
-            !i._placeholder &&
-            (i.name || i.category === "Note")
-        );
-        if (hasRealItem && window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day]) {
-            window.__hideAddCatBtnByDay[day] = false;
-        }
+      clearRouteSegmentHighlight(day);
     });
+    window._lastSegmentDay = undefined;
+    window._lastSegmentStartKm = undefined;
+    window._lastSegmentEndKm = undefined;
+  }
 
-    const oldStartDate = window.cart.startDate;
-    const oldEndDates  = window.cart.endDates;
-    
-    // Cart Filtreleme (Boş objeleri temizle)
-    window.cart = window.cart.filter(it =>
-        it && typeof it === "object" &&
-        (
-            (typeof it.day !== "undefined" && Object.keys(it).length === 1) ||
-            (it.name || it.location || it.category)
-        )
+  days.forEach(day => {
+    const hasRealItem = window.cart.some(i =>
+      Number(i.day) === Number(day) &&
+      !i._starter &&
+      !i._placeholder &&
+      (i.name || i.category === "Note")
     );
-    
-    if (oldStartDate) window.cart.startDate = oldStartDate;
-    if (oldEndDates)  window.cart.endDates  = oldEndDates;
-
-    const cartDiv = document.getElementById("cart-items");
-    const menuCount = document.getElementById("menu-count");
-    
-    if (!cartDiv) { console.warn("[updateCart] cartDiv yok!"); return; }
-
-    // --- SENARYO A: CART BOŞ ---
-    if (!window.cart || window.cart.length === 0) {
-        cartDiv.innerHTML = `
-            <div class="day-container" id="day-container-1" data-day="1">
-              <h4 class="day-header">
-                <div class="title-container"><span class="day-title">Day 1</span></div>
-              </h4>
-              <div class="confirmation-container" id="confirmation-container-1" style="display:none"></div>
-              <ul class="day-list" data-day="1">
-                <div class="empty-day-block">
-                  <p class="empty-day-message">
-                    No item has been added for this day yet.<br>
-                    Select a point on the map to start the trip!
-                  </p>
-                  <div><button id="start-map-btn" type="button">Start with map</button></div>
-                  <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
-                  <div class="empty-day-actions" style="display:block;text-align:center;">
-                    <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
-                      Import GPS File
-                    </button>
-                  </div>
-                </div>
-              </ul>
-            </div>
-            <hr class="add-new-day-separator">
-        `;
-
-        if (menuCount) {
-            menuCount.textContent = 0;
-            menuCount.style.display = "none";
-        }
-        
-        const addNewDayButton = document.getElementById("add-new-day-button");
-        if (addNewDayButton && typeof addNewDay === 'function') addNewDayButton.onclick = function () { addNewDay(this); };
-        const gpsBtn = document.querySelector(".gps-import");
-        if (gpsBtn && typeof handleGpsImport === 'function') gpsBtn.onclick = function () { handleGpsImport(); };
-        const startBtn = document.getElementById("start-map-btn");
-        if (startBtn && typeof startWithMap === 'function') startBtn.onclick = startWithMap;
-
-        return;
+    if (hasRealItem && window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day]) {
+      window.__hideAddCatBtnByDay[day] = false;
     }
+  });
 
-    // --- SENARYO B: CART DOLU ---
-    const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
-    cartDiv.innerHTML = "";
+  const oldStartDate = window.cart.startDate;
+  const oldEndDates  = window.cart.endDates;
+  window.cart = window.cart.filter(it =>
+    it && typeof it === "object" &&
+    (
+      (typeof it.day !== "undefined" && Object.keys(it).length === 1) ||
+      (it.name || it.location || it.category)
+    )
+  );
+  if (oldStartDate) window.cart.startDate = oldStartDate;
+  if (oldEndDates)  window.cart.endDates  = oldEndDates;
 
-    for (let day = 1; day <= totalDays; day++) {
-        const dayItemsArr = window.cart.filter(i =>
-            Number(i.day) === Number(day) &&
-            !i._starter &&
-            !i._placeholder &&
-            (i.name || i.category === "Note")
-        );
-        const isEmptyDay = dayItemsArr.length === 0;
+  const cartDiv = document.getElementById("cart-items");
 
-        let dayContainer = document.getElementById(`day-container-${day}`);
+  const menuCount = document.getElementById("menu-count");
+if (!cartDiv) { console.warn("[updateCart] cartDiv yok!"); return; }
 
-        if (!dayContainer) {
-            dayContainer = document.createElement("div");
-            dayContainer.className = "day-container";
-            dayContainer.id = `day-container-${day}`;
-            dayContainer.dataset.day = day;
-        } else {
-            // Harita konteynerini koru (re-render için)
-            const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
-            const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
-            dayContainer.innerHTML = "";
-            if (!isEmptyDay) {
-                if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
-                if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
-            }
-        }
+if (!window.cart || window.cart.length === 0) {
+  cartDiv.innerHTML = `
 
-        // Header
-        const dayHeader = document.createElement("h4");
-        dayHeader.className = "day-header";
-        const titleContainer = document.createElement("div");
-        titleContainer.className = "title-container";
-        const titleSpan = document.createElement("span");
-        titleSpan.className = "day-title";
-        if (!window.customDayNames) window.customDayNames = {};
-        titleSpan.textContent = window.customDayNames[day] || `Day ${day}`;
-        titleContainer.appendChild(titleSpan);
-        dayHeader.appendChild(titleContainer);
-        if (typeof createDayActionMenu === 'function') dayHeader.appendChild(createDayActionMenu(day));
-        dayContainer.appendChild(dayHeader);
+    <div class="day-container" id="day-container-1" data-day="1">
+      <h4 class="day-header">
+        <div class="title-container"><span class="day-title">Day 1</span></div>
+      </h4>
+      <div class="confirmation-container" id="confirmation-container-1" style="display:none"></div>
+      <ul class="day-list" data-day="1">
+        <div class="empty-day-block">
+          <p class="empty-day-message">
+            No item has been added for this day yet.<br>
+            Select a point on the map to start the trip!
+          </p>
+        <div>
+<button id="start-map-btn" type="button">Start with map</button>
+</div>
+          <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
+          <div class="empty-day-actions" style="display:block;text-align:center;">
+            <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
+              Import GPS File
+            </button>
+          </div>
+        </div>
+      </ul>
+    </div>
+    <hr class="add-new-day-separator">
+  `;
 
-        // Confirmation Container
-        const confirmationContainer = document.createElement("div");
-        confirmationContainer.className = "confirmation-container";
-        confirmationContainer.id = `confirmation-container-${day}`;
-        confirmationContainer.style.display = "none";
-        dayContainer.appendChild(confirmationContainer);
 
-        // List
-        const dayList = document.createElement("ul");
-        dayList.className = "day-list";
-        dayList.dataset.day = day;
+  if (menuCount) {
+    menuCount.textContent = 0;
+    menuCount.style.display = "none";
+  }
+  // buton eventleri
+  const addNewDayButton = document.getElementById("add-new-day-button");
+  if (addNewDayButton) addNewDayButton.onclick = function () { addNewDay(this); };
+  const gpsBtn = document.querySelector(".gps-import");
+  if (gpsBtn) gpsBtn.onclick = function () { /* GPS import fonksiyonun */ };
 
-        const containerId = `route-map-day${day}`;
-        const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
-        const travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "car";
-
-        // --- ITEM DÖNGÜSÜ ---
-        for (let idx = 0; idx < dayItemsArr.length; idx++) {
-            const item = dayItemsArr[idx];
-            const currIdx = window.cart.indexOf(item);
-
-            const li = document.createElement("li");
-            li.className = "travel-item";
-            li.dataset.index = currIdx;
-            
-            if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
-                li.setAttribute("data-lat", item.location.lat);
-                li.setAttribute("data-lon", item.location.lng);
-            }
-
-            const listMarkerHtml = `
-                <div class="custom-marker-outer red" style="flex-shrink: 0; transform: scale(0.70); position: absolute; left: 30px; top: 0px;">
-                    <span class="custom-marker-label" style="font-size: 14px;">${idx + 1}</span>
-                </div>
-            `;
-
-            if (item.category === "Note") {
-                li.innerHTML = `
-                  <div class="cart-item">
-                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        ${listMarkerHtml} 
-                        <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
-                        <div class="item-info"><p class="toggle-title">${item.name}</p></div>
-                      </div>
-                      <div style="display:flex; align-items:center; gap:5px;">
-                        <button class="remove-btn" onclick="removeFromCart(${currIdx})"><img src="img/remove-icon.svg" alt="Close"></button>
-                        <span class="arrow"><img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)"></span>
-                      </div>
-                    </div>
-                    <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
-                    <div class="content">
-                      <div class="info-section">
-                        <div class="note-details">
-                          <p>${item.noteDetails ? (typeof escapeHtml === 'function' ? escapeHtml(item.noteDetails) : item.noteDetails) : ""}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                `;
-            } else {
-                let openingHoursDisplay = "No working hours info";
-                if (item.opening_hours) {
-                    if (Array.isArray(item.opening_hours)) {
-                        const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
-                        if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
-                    } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
-                        openingHoursDisplay = item.opening_hours.trim();
-                    }
-                }
-                
-                const leafletMapId = "leaflet-map-" + currIdx;
-                const mapHtml = (item.location && typeof item.location.lat === "number")
-                    ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
-                    : '<div class="map-error">Location not available</div>';
-
-                let catIcon = 'https://www.svgrepo.com/show/522166/location.svg';
-                if (window.categoryIcons && window.categoryIcons[item.category]) catIcon = window.categoryIcons[item.category];
-
-                li.innerHTML = `
-                  <div class="cart-item">
-                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
-                        <div class="item-position">${listMarkerHtml}<img src="${item.image}" alt="${item.name}" class="cart-image"></div>
-                        <img src="${catIcon}" alt="${item.category}" class="category-icon">
-                        <div class="item-info"><p class="toggle-title">${item.name}</p></div>
-                      </div>
-                      <span class="arrow"><img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)"></span>
-                    </div>
-                    <div class="content">
-                      <div class="info-section">
-                        <div class="place-rating">${mapHtml}</div>
-                        <div class="contact"><p>📌 Address: ${item.address || 'Address not available'}</p></div>
-                        <p class="working-hours-title">🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span></p>
-                        ${item.location ? `<div class="coords-info" style="margin-top:8px;">📍 Coords: ${Number(item.location.lat).toFixed(7)}, ${Number(item.location.lng).toFixed(7)}</div>` : ''}
-                        <div class="google-search-info" style="margin-top:8px;">
-                            <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank" rel="noopener">🇬 Search images on Google</a>
-                        </div>
-                      </div>
-                      <button class="add-favorite-btn" data-name="${item.name}" data-category="${item.category}" data-lat="${item.location?.lat||''}" data-lon="${item.location?.lng||''}">
-                        <span class="fav-heart"><img class="fav-icon" src="${(typeof isTripFav==='function' && isTripFav(item))?'/img/like_on.svg':'/img/like_off.svg'}" style="width:18px;height:18px;"></span>
-                        <span class="fav-btn-text">${(typeof isTripFav==='function' && isTripFav(item))?"Remove":"Add to My Places"}</span>
-                      </button>
-                      <button class="remove-btn" onclick="showRemoveItemConfirmation(${currIdx}, this)">Remove place</button>
-                      <div class="confirmation-container" id="confirmation-item-${currIdx}" style="display:none;">
-                        <p>Are you sure you want to remove <strong>${item.name}</strong>?</p>
-                        <div class="modal-actions">
-                          <button class="confirm-remove-btn" onclick="confirmRemoveItem(${currIdx})">OK</button>
-                          <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${currIdx}')">Cancel</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                `;
-            }
-
-            dayList.appendChild(li);
-
-            // Separator
-            const nextItem = dayItemsArr[idx + 1];
-            if (item.location && nextItem && nextItem.location) {
-                let distanceStr = '', durationStr = '', prefix = '';
-                const isInTurkey = typeof areAllPointsInTurkey === 'function' ? areAllPointsInTurkey([item.location, nextItem.location]) : false;
-
-                if (!isInTurkey) {
-                    const distM = typeof haversine === 'function' ? haversine(item.location.lat, item.location.lng, nextItem.location.lat, nextItem.location.lng) : 0;
-                    const durSec = Math.round((distM / 1000) / 4 * 3600);
-                    distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
-                    durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
-                    prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
-                } else {
-                    const summary = pairwiseSummaries[idx];
-                    if (summary) {
-                        distanceStr = summary.distance >= 1000 ? (summary.distance / 1000).toFixed(2) + " km" : Math.round(summary.distance) + " m";
-                        durationStr = summary.duration >= 60 ? Math.round(summary.duration / 60) + " min" : Math.round(summary.duration) + " sec";
-                    }
-                }
-
-                if (travelMode === "driving") prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
-                else if (travelMode === "walking") prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
-                else if (travelMode === "cycling") prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
-
-                const distanceSeparator = document.createElement('div');
-                distanceSeparator.className = 'distance-separator';
-                distanceSeparator.innerHTML = `<div class="separator-line"></div><div class="distance-label">${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span></div><div class="separator-line"></div>`;
-                dayList.appendChild(distanceSeparator);
-            }
-        } // Item Loop
-
-        dayContainer.appendChild(dayList);
-
-        // --- HARİTA VE KOLAJ ---
-        if (typeof ensureDayMapContainer === 'function') ensureDayMapContainer(day);
-        if (typeof initEmptyDayMap === 'function') initEmptyDayMap(day);
-
-        // [FOTOĞRAF KOLAJI]
-        if (window.renderDayCollage) {
-            await window.renderDayCollage(day, dayContainer, dayItemsArr);
-        }
-
-        if (typeof wrapRouteControls === 'function') wrapRouteControls(day);
-        setTimeout(() => { if (typeof wrapRouteControls === 'function') wrapRouteControls(day); }, 0);
-
-        // Add Category
-        const anyDayHasRealItem = window.cart.some(i => !i._starter && !i._placeholder && i.category !== "Note" && i.name);
-        if (anyDayHasRealItem && (!window.__hideAddCatBtnByDay || !window.__hideAddCatBtnByDay[day])) {
-            const addMoreButton = document.createElement("button");
-            addMoreButton.className = "add-more-btn";
-            addMoreButton.textContent = "+ Add Category";
-            addMoreButton.dataset.day = day;
-            addMoreButton.onclick = function () {
-                const cDiv = document.getElementById("cart-items");
-                if (cDiv) cDiv.innerHTML = "";
-                if(typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
-            };
-            dayList.appendChild(addMoreButton);
-        }
-
-        cartDiv.appendChild(dayContainer);
-    } // Day Loop
-
-    // --- FOOTER ---
-    const addNewDayHr = document.createElement('hr');
-    addNewDayHr.className = 'add-new-day-separator';
-    cartDiv.appendChild(addNewDayHr);
-
-    const addNewDayButton = document.createElement("button");
-    addNewDayButton.className = "add-new-day-btn";
-    addNewDayButton.id = "add-new-day-button";
-    addNewDayButton.textContent = "+ Add New Day";
-    addNewDayButton.onclick = function () { if(typeof addNewDay === 'function') addNewDay(this); };
-    cartDiv.appendChild(addNewDayButton);
-
-    const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-    if (menuCount) {
-        menuCount.textContent = itemCount;
-        menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
-    }
-
-    days.forEach(d => { if(typeof initPlaceSearch === 'function') initPlaceSearch(d); });
-    if(typeof addCoordinatesToContent === 'function') addCoordinatesToContent();
-    days.forEach(d => {
-        const suppressing = window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[d];
-        const realPoints = typeof getDayPoints === 'function' ? getDayPoints(d) : [];
-        if (suppressing && realPoints.length === 0) return;
-        renderRouteForDay(d);
-    });
-    setTimeout(() => { if(typeof wrapRouteControlsForAllDays === 'function') wrapRouteControlsForAllDays(); }, 0);
-
-    if (window.expandedMaps) Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => { if (expandedMap) updateExpandedMap(expandedMap, day); });
-    
-    if (typeof interact !== 'undefined' && typeof setupMobileDragDrop === 'function') setupMobileDragDrop();
-    if (typeof setupSidebarAccordion === 'function') setupSidebarAccordion();
-    if (typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
-
-    // Select Dates Butonu
-    (function ensureSelectDatesButton() {
-        const hasRealItem = Array.isArray(window.cart) && window.cart.some(i => !i._starter && !i._placeholder && i.name && i.name.trim() !== '');
-        if (!hasRealItem) {
-            let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-            if (btn) btn.remove();
-            return;
-        }
-        let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-        if (!btn) {
-            btn = document.createElement('button');
-            btn.className = 'add-to-calendar-btn';
-            btn.setAttribute('data-role', 'trip-dates');
-            cartDiv.appendChild(btn);
-        }
-        btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
-        btn.onclick = () => { if (typeof openCalendar === 'function') openCalendar(1); };
-    })();
-
-    // New Trip Plan (Cart içi)
-    (function ensureNewChatInsideCart(){
-        const oldOutside = document.querySelector('#newchat');
-        if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
-        const cartRoot = document.getElementById('cart');
-        if (!cartRoot) return;
-        let newChat = cartRoot.querySelector('#newchat');
-        if (!newChat){
-            newChat = document.createElement('div');
-            newChat.id = 'newchat';
-            newChat.textContent = 'New Trip Plan';
-            newChat.style.cursor = 'pointer';
-            newChat.onclick = function() {
-                const chatBox = document.getElementById('chat-box');
-                if (chatBox) chatBox.innerHTML = '';
-                const userInput = document.getElementById('user-input');
-                if (userInput) userInput.value = '';
-                
-                // Temizlik
-                window.selectedCity = null;
-                window.selectedLocation = null;
-                window.selectedLocationLocked = false;
-                window.__locationPickedFromSuggestions = false;
-                window.lastUserQuery = '';
-                window.latestTripPlan = [];
-                window.cart = [];
-                
-                // [RESET] Collage Memory
-                window.__usedCollageImages = new Set();
-                window.__dayCollageCache = {};
-
-                if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-                window.routeElevStatsByDay = {};
-                window.__ttElevDayCache = {};
-                window._segmentHighlight = {};
-                window._lastSegmentDay = undefined;
-                window._lastSegmentStartKm = undefined;
-                window._lastSegmentEndKm = undefined;
-
-                document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
-
-                updateCart(); 
-                
-                document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
-                const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
-                if (sidebar) sidebar.classList.add('open');
-
-                if (chatBox) {
-                    let indicator = document.createElement('div');
-                    indicator.id = 'typing-indicator';
-                    indicator.className = 'typing-indicator';
-                    indicator.innerHTML = '<span></span><span></span><span></span>';
-                    chatBox.appendChild(indicator);
-                    const welcome = document.createElement('div');
-                    welcome.className = 'message bot-message';
-                    welcome.innerHTML = "<img src='img/avatar_aiio.png' class='profile-img'>Let's get started.";
-                    chatBox.appendChild(welcome);
-                }
-                
-                const iw = document.querySelector('.input-wrapper');
-                if (iw) iw.style.display = '';
-                
-                const tripDetailsSection = document.getElementById("tt-trip-details");
-                if (tripDetailsSection) tripDetailsSection.remove();
-                const chatScreen = document.getElementById("chat-screen");
-                if (chatScreen) chatScreen.innerHTML = "";
-            };
-        }
-        const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-        if (datesBtn && datesBtn.nextSibling !== newChat){
-            datesBtn.insertAdjacentElement('afterend', newChat);
-        } else if (!datesBtn && newChat.parentNode !== cartRoot){
-            cartRoot.appendChild(newChat);
-        }
-        const cnt = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-        newChat.style.display = cnt > 0 ? 'block' : 'none';
-    })();
-
-    // PDF Butonu
-    (function ensurePdfButtonAndOrder() {
-        const cartRoot = document.getElementById('cart');
-        if (!cartRoot) return;
-        let pdfBtn = document.getElementById('tt-pdf-dl-btn');
-        if (!pdfBtn) {
-            pdfBtn = document.createElement('button');
-            pdfBtn.id = 'tt-pdf-dl-btn';
-            pdfBtn.className = 'add-to-calendar-btn';
-            pdfBtn.textContent = 'Download Offline Plan (PDF)';
-            pdfBtn.style.backgroundColor = '#c05c9e';
-            pdfBtn.style.color = '#fff';
-            pdfBtn.onclick = function() {
-                if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-                if (typeof downloadTripPlanPDF === "function") {
-                    const key = window.activeTripKey || 'current_draft'; 
-                    downloadTripPlanPDF(key);
-                } else { alert("PDF module not ready."); }
-            };
-        }
-        const hReal = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
-        pdfBtn.style.display = hReal ? 'block' : 'none';
-
-        const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-        const newChatBtn = document.getElementById('newchat');
-
-        if (datesBtn && pdfBtn) datesBtn.insertAdjacentElement('afterend', pdfBtn);
-        else if (newChatBtn && pdfBtn && pdfBtn.parentNode !== cartRoot) cartRoot.insertBefore(pdfBtn, newChatBtn);
-        if (pdfBtn && newChatBtn && document.body.contains(pdfBtn)) pdfBtn.insertAdjacentElement('afterend', newChatBtn);
-    })();
-
-    // Post Date & Trip Details
-    (function ensurePostDateSections() {
-        if (!window.cart.startDate) return;
-        let share = document.getElementById('trip-share-section');
-        if (!share) {
-            share = document.createElement('div');
-            share.id = 'trip-share-section';
-            share.className = 'trip-share-section';
-            cartDiv.appendChild(share);
-        }
-        if (typeof buildShareSection === 'function') buildShareSection();
-        const oldAI = document.getElementById('ai-info-section');
-        if (oldAI) oldAI.remove();
-    })();
-
-    (function ensureTripDetailsBlock() {
-        if (!window.cart.startDate) {
-            const existing = cartDiv.querySelector('.date-range');
-            if (existing) existing.remove();
-            return;
-        }
-        let dateRangeDiv = cartDiv.querySelector('.date-range');
-        if (!dateRangeDiv) {
-            dateRangeDiv = document.createElement('div');
-            dateRangeDiv.className = 'date-range';
-            cartDiv.appendChild(dateRangeDiv);
-        }
-        const endDate = (window.cart.endDates && window.cart.endDates.length) ? window.cart.endDates[window.cart.endDates.length - 1] : window.cart.startDate;
-        dateRangeDiv.innerHTML = `
-            <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
-            <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
-        `;
-        const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
-        if (detailsBtn) {
-            detailsBtn.onclick = () => { if (typeof showTripDetails === 'function') showTripDetails(window.cart.startDate); };
-        }
-    })();
-
-    // Auto AI
-    (function autoGenerateAiInfo() {
-        if (document.querySelector('.ai-info-section')) return;
-        if (!window.cart || window.cart.length === 0) return;
-        const first = window.cart.find(it => it.location && typeof it.location.lat === "number" && !it._starter && !it._placeholder);
-        if (!first) return;
-
-        let city = window.selectedCity;
-        if (!city && first.address) {
-            const parts = first.address.split(",");
-            if (parts.length >= 2) {
-                const rawCity = parts[parts.length - 2].trim();
-                city = rawCity.replace(/^\d+\s*-?\s*/, ''); 
-            } else {
-                city = parts[0].trim();
-            }
-        }
-
-        if (city) {
-            if (!window.selectedCity || window.lastUserQuery === "Trip Plan") {
-                window.selectedCity = city;
-                window.lastUserQuery = "Trip to " + city;
-                const tEl = document.getElementById("trip_title");
-                if (tEl) tEl.textContent = window.lastUserQuery;
-            }
-            if (typeof insertTripAiInfo === "function") insertTripAiInfo(false, null, city);
-        }
-    })();
-
-    if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
-        const div = document.createElement("div");
-        div.innerHTML = window.latestAiInfoHtml;
-        cartDiv.appendChild(div.firstElementChild);
-    }
+  return;
 }
+
+  const totalDays = Math.max(1, ...window.cart.map(i => i.day || 1));
+cartDiv.innerHTML = "";
+for (let day = 1; day <= totalDays; day++) {
+    const dayItemsArr = window.cart.filter(i =>
+      Number(i.day) === Number(day) &&
+      !i._starter &&
+      !i._placeholder &&
+      (i.name || i.category === "Note")
+    );
+    const isEmptyDay = dayItemsArr.length === 0;
+
+    let dayContainer = document.getElementById(`day-container-${day}`);
+
+    if (!dayContainer) {
+      dayContainer = document.createElement("div");
+      dayContainer.className = "day-container";
+      dayContainer.id = `day-container-${day}`;
+      dayContainer.dataset.day = day;
+    } else {
+      const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
+      const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
+      dayContainer.innerHTML = "";
+      if (!isEmptyDay) {
+        if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
+        if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
+      }
+    }
+
+    const dayHeader = document.createElement("h4");
+    dayHeader.className = "day-header";
+    const titleContainer = document.createElement("div");
+    titleContainer.className = "title-container";
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "day-title";
+    if (!window.customDayNames) window.customDayNames = {};
+    titleSpan.textContent = window.customDayNames[day] || `Day ${day}`;
+    titleContainer.appendChild(titleSpan);
+    dayHeader.appendChild(titleContainer);
+    dayHeader.appendChild(createDayActionMenu(day));
+    dayContainer.appendChild(dayHeader);
+
+    const confirmationContainer = document.createElement("div");
+    confirmationContainer.className = "confirmation-container";
+    confirmationContainer.id = `confirmation-container-${day}`;
+    confirmationContainer.style.display = "none";
+    dayContainer.appendChild(confirmationContainer);
+
+    const dayList = document.createElement("ul");
+    dayList.className = "day-list";
+    dayList.dataset.day = day;
+
+  // PATCH: Eğer gün hiçbir travel-item göstermiyorsa ama en az bir gerçek marker (nokta) varsa, travel-item'ı zorla ekle!
+console.log("[PATCH ÖNÜ] isEmptyDay:", isEmptyDay, "day:", day, "window.cart:", window.cart);
+console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nodeName, "childCount:", dayList?.childElementCount);
+
+
+    
+const containerId = `route-map-day${day}`;
+const travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "driving";
+const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
+const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Boolean);
+
+// ... updateCart fonksiyonunun içi ...
+
+    for (let idx = 0; idx < dayItemsArr.length; idx++) {
+      const item = dayItemsArr[idx];
+      const currIdx = window.cart.indexOf(item);
+
+      const li = document.createElement("li");
+      li.className = "travel-item";
+      
+      li.dataset.index = currIdx;
+      if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+        li.setAttribute("data-lat", item.location.lat);
+        li.setAttribute("data-lon", item.location.lng);
+      }
+
+      // --- MARKER HTML YAPISI (Senin İstediğin) ---
+      // Ölçeklendirme (scale) ve margin ile listeye tam oturttuk
+      const listMarkerHtml = `
+        <div class="custom-marker-outer red" style="flex-shrink: 0;
+    transform: scale(0.70);
+    position: absolute;
+    left: 30px;
+    top: 0px;">
+            <span class="custom-marker-label" style="font-size: 14px;">${idx + 1}</span>
+        </div>
+      `;
+      // -------------------------------------------
+
+      if (item.category === "Note") {
+        li.innerHTML = `
+          <div class="cart-item">
+             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                ${listMarkerHtml} 
+                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                <div class="item-info">
+                  <p class="toggle-title">${item.name}</p>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:5px;">
+                <button class="remove-btn" onclick="removeFromCart(${currIdx})">
+                  <img src="img/remove-icon.svg" alt="Close">
+                </button>
+                <span class="arrow">
+                  <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                </span>
+              </div>
+            </div>
+            <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
+            <div class="content">
+              <div class="info-section">
+                <div class="note-details">
+                  <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        // --- NORMAL YERLER (Places) ---
+        let openingHoursDisplay = "No working hours info";
+        if (item.opening_hours) {
+          if (Array.isArray(item.opening_hours)) {
+            const cleaned = item.opening_hours.map(h => (h || '').trim()).filter(Boolean);
+            if (cleaned.length) openingHoursDisplay = cleaned.join(" | ");
+          } else if (typeof item.opening_hours === "string" && item.opening_hours.trim()) {
+            openingHoursDisplay = item.opening_hours.trim();
+          }
+        }
+        const leafletMapId = "leaflet-map-" + currIdx;
+        const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
+          ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
+          : '<div class="map-error">Location not available</div>';
+
+        li.innerHTML = `
+          <div class="cart-item">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+
+                <div class="item-position">${listMarkerHtml}                
+                  <img src="${item.image}" alt="${item.name}" class="cart-image">
+                </div>
+
+                <img src="${categoryIcons[item.category] || 'https://www.svgrepo.com/show/522166/location.svg'}" alt="${item.category}" class="category-icon">
+                <div class="item-info">
+                  <p class="toggle-title">${item.name}</p>
+                </div>
+              </div>
+              <span class="arrow">
+                <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+              </span>
+            </div>
+            <div class="content">
+              <div class="info-section">
+                <div class="place-rating">${mapHtml}</div>
+                <div class="contact">
+                  <p>📌 Address: ${item.address || 'Address not available'}</p>
+                </div>
+                <p class="working-hours-title">
+                  🕔 Working hours: <span class="working-hours-value">${openingHoursDisplay}</span>
+                </p>
+                ${
+                  item.location ? `
+                    <div class="coords-info" style="margin-top:8px;">
+                      📍 Coords: Lat: ${Number(item.location.lat).toFixed(7).replace('.', ',')},
+                      Lng: ${Number(item.location.lng).toFixed(7).replace('.', ',')}
+                    </div>
+                    ${item.website ? `
+                      <div class="website-info" style="margin-top:8px;">
+                        🔗 <a href="${item.website}" target="_blank" rel="noopener">
+                          ${item.website.replace(/^https?:\/\//, '')}
+                        </a>
+                      </div>
+                    ` : ''}
+                    <div class="google-search-info" style="margin-top:8px;">
+                      <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(item.name + ' ' + (window.selectedCity || ''))}" target="_blank" rel="noopener">
+                        🇬 Search images on Google
+                      </a>
+                    </div>
+                  ` : ''
+                }
+              </div>
+              <button class="add-favorite-btn"
+                data-name="${item.name}"
+                data-category="${item.category}"
+                data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                <span class="fav-heart"
+                  data-name="${item.name}"
+                  data-category="${item.category}"
+                  data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                  data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                  <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                </span>
+                <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
+              </button>
+              <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
+                Remove place
+              </button>
+              <div class="confirmation-container" id="confirmation-item-${li.dataset.index}" style="display:none;">
+                <p>Are you sure you want to remove <strong>${item.name}</strong> from your trip?</p>
+                <div class="modal-actions">
+                  <button class="confirm-remove-btn" onclick="confirmRemoveItem(${li.dataset.index})">OK</button>
+                  <button class="cancel-action-btn" onclick="hideItemConfirmation('confirmation-item-${li.dataset.index}')">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      dayList.appendChild(li);
+      
+      // ... (Mesafe/Süre separator kodları devam eder) ...
+
+  // travelMode'yi doğru al:
+// Separator (mesafe/süre) ayraçlarını doğru ekle!
+const nextItem = dayItemsArr[idx + 1];
+const hasNextLoc =
+  item.location &&
+  typeof item.location.lat === "number" &&
+  typeof item.location.lng === "number" &&
+  nextItem &&
+  nextItem.location &&
+  typeof nextItem.location.lat === "number" &&
+  typeof nextItem.location.lng === "number";
+
+// Travel mode kesin al
+const travelMode =
+  typeof getTravelModeForDay === "function"
+    ? String(getTravelModeForDay(day)).trim().toLowerCase()
+    : "car"; // fallback
+
+if (hasNextLoc) {
+  let distanceStr = '';
+  let durationStr = '';
+  let prefix = '';
+
+  // Noktaları al
+  // Sadece şu iki noktanın Türkiye'de olup olmadığını kontrol etmek ideal
+  const isInTurkey = areAllPointsInTurkey([item.location, nextItem.location]);
+
+  if (!isInTurkey) {
+    // --- TÜRKİYE DIŞI: Auto generated ---
+    const ptA = item.location;
+    const ptB = nextItem.location;
+    const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
+    const durSec = Math.round((distM / 1000) / 4 * 3600);
+    distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
+    durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
+    prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
+  } else {
+    // --- TÜRKİYE İÇİ: Icon modları ---
+    const summary = pairwiseSummaries[idx];
+    if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
+      distanceStr = summary.distance >= 1000
+        ? (summary.distance / 1000).toFixed(2) + " km"
+        : Math.round(summary.distance) + " m";
+      durationStr = summary.duration >= 60
+        ? Math.round(summary.duration / 60) + " min"
+        : Math.round(summary.duration) + " sec";
+    } else {
+      const ptA = item.location;
+      const ptB = nextItem.location;
+      const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
+      const durSec = Math.round((distM / 1000) / 4 * 3600);
+      distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
+      durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
+    }
+
+    // --- İKONLAR ---
+    if (travelMode === "driving") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
+    } else if (travelMode === "bike" || travelMode === "cycling") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
+    } else if (travelMode === "walk" || travelMode === "walking") {
+      prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
+    } else {
+      prefix = ''; // Diğer tiplerde ikon gösterme
+    }
+  }
+
+  // DOM separator ekle
+  const distanceSeparator = document.createElement('div');
+  distanceSeparator.className = 'distance-separator';
+  distanceSeparator.innerHTML = `
+    <div class="separator-line"></div>
+    <div class="distance-label">
+      ${prefix}<span class="distance-value">${distanceStr}</span> · <span class="duration-value">${durationStr}</span>
+    </div>
+    <div class="separator-line"></div>
+  `;
+  dayList.appendChild(distanceSeparator);
+}
+}
+
+
+
+dayContainer.appendChild(dayList);
+// PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
+ensureDayMapContainer(day);
+initEmptyDayMap(day);
+
+await renderDayCollage(day, dayContainer, dayItemsArr);
+
+wrapRouteControls(day);
+setTimeout(() => wrapRouteControls(day), 0);
+
+
+
+// --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
+const anyDayHasRealItem = window.cart.some(i =>
+  !i._starter && !i._placeholder && i.category !== "Note" && i.name
+);
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+
+
+if (anyDayHasRealItem && !hideAddCat) {
+  // 2. ADD CATEGORY BUTONU
+  const addMoreButton = document.createElement("button");
+  addMoreButton.className = "add-more-btn";
+  addMoreButton.textContent = "+ Add Category";
+  addMoreButton.dataset.day = day;
+  addMoreButton.onclick = function () {
+    // Önce eski içeriği temizle!
+    const cartDiv = document.getElementById("cart-items");
+    if (cartDiv) cartDiv.innerHTML = "";
+    showCategoryList(this.dataset.day);
+  };
+  dayList.appendChild(addMoreButton);
+}
+
+  cartDiv.appendChild(dayContainer);
+  }
+
+
+  // Tüm günler eklendikten sonra, EN ALTA ekle:
+const addNewDayHr = document.createElement('hr');
+addNewDayHr.className = 'add-new-day-separator';
+cartDiv.appendChild(addNewDayHr);
+
+const addNewDayButton = document.createElement("button");
+addNewDayButton.className = "add-new-day-btn";
+addNewDayButton.id = "add-new-day-button";
+addNewDayButton.textContent = "+ Add New Day";
+addNewDayButton.onclick = function () { addNewDay(this); };
+cartDiv.appendChild(addNewDayButton);
+
+
+
+  // --- Diğer kalan işlemler ---
+  const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+  if (menuCount) {
+    menuCount.textContent = itemCount;
+    menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
+  }
+
+  days.forEach(d => initPlaceSearch(d));
+  addCoordinatesToContent();
+  days.forEach(d => {
+    const suppressing = window.__suppressMiniUntilFirstPoint &&
+                        window.__suppressMiniUntilFirstPoint[d];
+    const realPoints = getDayPoints ? getDayPoints(d) : [];
+    if (suppressing && realPoints.length === 0) {
+      return;
+    }
+    renderRouteForDay(d);
+  });
+  setTimeout(wrapRouteControlsForAllDays, 0);
+  
+
+  if (window.expandedMaps) {
+    Object.values(window.expandedMaps).forEach(({ expandedMap, day }) => {
+      if (expandedMap) updateExpandedMap(expandedMap, day);
+    });
+  }
+
+  // initDragDropSystem();
+  if (typeof interact !== 'undefined') setupMobileDragDrop();
+  setupSidebarAccordion();
+
+  renderTravelModeControlsForAllDays();
+
+  (function ensureSelectDatesButton() {
+    const hasRealItem = Array.isArray(window.cart) && window.cart.some(i =>
+      !i._starter && !i._placeholder && i.name && i.name.trim() !== ''
+    );
+    if (!hasRealItem) {
+      let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+      if (btn) btn.remove();
+      return;
+    }
+    let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.className = 'add-to-calendar-btn';
+      btn.setAttribute('data-role', 'trip-dates');
+      cartDiv.appendChild(btn);
+    }
+    btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
+    btn.onclick = () => {
+      if (typeof openCalendar === 'function') {
+        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
+        openCalendar(maxDay);
+      }
+    };
+  })();
+
+(function ensureNewChatInsideCart(){
+  const oldOutside = document.querySelector('#newchat');
+  if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
+  const cartRoot = document.getElementById('cart');
+  if (!cartRoot) return;
+  let newChat = cartRoot.querySelector('#newchat');
+  if (!newChat){
+    newChat = document.createElement('div');
+    newChat.id = 'newchat';
+    newChat.textContent = 'New Trip Plan';
+    newChat.style.cursor = 'pointer';
+
+    newChat.onclick = function() {
+      const chatBox = document.getElementById('chat-box');
+      if (chatBox) chatBox.innerHTML = '';
+      const userInput = document.getElementById('user-input');
+      if (userInput) userInput.value = '';
+
+      // Temizlik - global değişkenler
+      window.selectedCity = null;
+      window.selectedLocation = null;
+      window.selectedLocationLocked = false;
+      window.__locationPickedFromSuggestions = false;
+      window.lastUserQuery = '';
+      window.latestTripPlan = [];
+      window.cart = [];
+
+      // Tüm harita ve overlay temizliği
+      if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+      window.routeElevStatsByDay = {};
+      window.__ttElevDayCache = {};
+      window._segmentHighlight = {};
+      window._lastSegmentDay = undefined;
+      window._lastSegmentStartKm = undefined;
+      window._lastSegmentEndKm = undefined;
+
+      document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
+
+      if (typeof updateCart === "function") updateCart();
+      document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+      const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+      if (sidebar) sidebar.classList.add('open');
+
+      // Welcome mesajı ekle
+     if (chatBox) {
+        let indicator = document.getElementById('typing-indicator');
+        if (!indicator) {
+          indicator = document.createElement('div');
+          indicator.id = 'typing-indicator';
+          indicator.className = 'typing-indicator';
+          indicator.innerHTML = '<span></span><span></span><span></span>';
+          chatBox.appendChild(indicator);
+        } else {
+          indicator.style.display = 'block';
+          indicator.innerHTML = '<span></span><span></span><span></span>';
+        }
+
+        const welcome = document.createElement('div');
+        welcome.className = 'message bot-message';
+        welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
+        chatBox.appendChild(welcome);
+
+        if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}      }
+
+      // input-wrapper tekrar görünür olsun
+      var iw = document.querySelector('.input-wrapper');
+      if (iw) iw.style.display = '';
+
+      // Tüm seçili suggestionları temizle
+      document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function(el) {
+        el.classList.remove('selected-suggestion');
+      });
+
+      // Trip Details ekranını tamamen kaldır (mobil ve desktop için)
+  const tripDetailsSection = document.getElementById("tt-trip-details");
+  if (tripDetailsSection) tripDetailsSection.remove();
+
+  // Eğer chat-screen içinde de bir şey varsa (mobilde), onu da temizle:
+  const chatScreen = document.getElementById("chat-screen");
+  if (chatScreen) chatScreen.innerHTML = "";
+
+    };
+  }
+  const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+  if (datesBtn && datesBtn.nextSibling !== newChat){
+    datesBtn.insertAdjacentElement('afterend', newChat);
+  } else if (!datesBtn && newChat.parentNode !== cartRoot){
+    cartRoot.appendChild(newChat);
+  }
+  const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+  newChat.style.display = itemCount > 0 ? 'block' : 'none';
+})();
+
+// === PDF DOWNLOAD BUTTON & ORDERING (FIXED ORDER) ===
+  (function ensurePdfButtonAndOrder() {
+    const cartRoot = document.getElementById('cart');
+    if (!cartRoot) return;
+
+    // 1. PDF Butonunu Oluştur veya Bul
+    let pdfBtn = document.getElementById('tt-pdf-dl-btn');
+    if (!pdfBtn) {
+        pdfBtn = document.createElement('button');
+        pdfBtn.id = 'tt-pdf-dl-btn';
+        pdfBtn.className = 'add-to-calendar-btn'; // Select Dates ile aynı stil
+        pdfBtn.textContent = 'Download Offline Plan (PDF)';
+        // Görsel ayarlar
+               pdfBtn.style.backgroundColor = '#c05c9e'; // renk
+        pdfBtn.style.color = '#fff';
+        
+        pdfBtn.onclick = function() {
+            if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+            if (typeof downloadTripPlanPDF === "function") {
+                const key = window.activeTripKey || 'current_draft'; 
+                downloadTripPlanPDF(key);
+            } else {
+                alert("PDF module not ready.");
+            }
+        };
+    }
+
+    // 2. Görünürlük (Boşsa gizle)
+    const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
+    pdfBtn.style.display = hasRealItem ? 'block' : 'none';
+
+    // 3. DOM SIRALAMASI (DÜZELTİLDİ)
+    // Hedef Sıra: [Select Dates] -> [PDF] -> [New Trip Plan]
+    
+    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    const newChatBtn = document.getElementById('newchat');
+
+    // Adım A: PDF butonunu "Select Dates" butonunun HEMEN ALTINA yerleştir
+    if (datesBtn && pdfBtn) {
+        datesBtn.insertAdjacentElement('afterend', pdfBtn);
+    } 
+    // Eğer Select Dates butonu henüz yoksa ama New Chat varsa, onun üstüne koy (Fallback)
+    else if (newChatBtn && pdfBtn && pdfBtn.parentNode !== cartRoot) {
+        cartRoot.insertBefore(pdfBtn, newChatBtn);
+    }
+
+    // Adım B: "New Trip Plan" butonunu PDF butonunun ALTINA taşı
+    // Bu işlem New Chat butonunu zincirin en sonuna iter.
+    if (pdfBtn && newChatBtn && document.body.contains(pdfBtn)) {
+        pdfBtn.insertAdjacentElement('afterend', newChatBtn);
+    }
+
+  })();
+  // ========================================================
+
+  (function ensurePostDateSections() {
+    if (!window.cart.startDate) return;
+    let share = document.getElementById('trip-share-section');
+    if (!share) {
+      share = document.createElement('div');
+      share.id = 'trip-share-section';
+      share.className = 'trip-share-section';
+      cartDiv.appendChild(share);
+    }
+    if (typeof buildShareSection === 'function') buildShareSection();
+    const oldAI = document.getElementById('ai-info-section');
+    if (oldAI) oldAI.remove();
+  })();
+
+  (function ensureTripDetailsBlock() {
+    if (!window.cart.startDate) {
+      const existing = cartDiv.querySelector('.date-range');
+      if (existing) existing.remove();
+      return;
+    }
+    let dateRangeDiv = cartDiv.querySelector('.date-range');
+    if (!dateRangeDiv) {
+      dateRangeDiv = document.createElement('div');
+      dateRangeDiv.className = 'date-range';
+      cartDiv.appendChild(dateRangeDiv);
+    }
+    const endDate = (window.cart.endDates && window.cart.endDates.length)
+      ? window.cart.endDates[window.cart.endDates.length - 1]
+      : window.cart.startDate;
+    dateRangeDiv.innerHTML = `
+      <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
+      <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
+    `;
+    const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
+    if (detailsBtn) {
+      detailsBtn.onclick = () => {
+        if (typeof showTripDetails === 'function') {
+          showTripDetails(window.cart.startDate);
+        }
+      };
+    }
+  })();
+
+
+// === OTOMATİK AI INFO GENERATION (Start With Map İçin) ===
+  (function autoGenerateAiInfo() {
+    // 1. Eğer ekranda zaten AI kutusu varsa (veya yükleniyorsa) tekrar çalışma
+    if (document.querySelector('.ai-info-section')) return;
+
+    // 2. Sepet boşsa çalışma
+    if (!window.cart || window.cart.length === 0) return;
+
+    // 3. İlk "gerçek" (start/placeholder olmayan) mekanı bul
+    const first = window.cart.find(it =>
+      it.location &&
+      typeof it.location.lat === "number" &&
+      typeof it.location.lng === "number" &&
+      !it._starter && !it._placeholder
+    );
+
+    if (!first) return;
+
+    // 4. Şehir bilgisini bul (Globalden veya adresten)
+    let city = window.selectedCity;
+
+    // Global seçili şehir yoksa, ilk markerın adresinden çekmeye çalış
+    if (!city && first.address) {
+      const parts = first.address.split(",");
+      if (parts.length >= 2) {
+        // Sondan 2. parça genellikle "PostaKodu Şehir" formatındadır (örn: "8003 Barcelona")
+        const rawCity = parts[parts.length - 2].trim();
+        // Baştaki sayıları (posta kodunu) temizle
+        city = rawCity.replace(/^\d+\s*-?\s*/, ''); 
+      } else {
+        city = parts[0].trim();
+      }
+    }
+
+    // 5. Şehir bulunduysa -> OTOMATİK BAŞLAT
+    if (city) {
+      // Eğer başlık "Trip Plan" olarak kaldıysa, "Trip to [City]" olarak güncelle
+      if (!window.selectedCity || window.lastUserQuery === "Trip Plan") {
+          window.selectedCity = city;
+          window.lastUserQuery = "Trip to " + city;
+          const tEl = document.getElementById("trip_title");
+          if (tEl) tEl.textContent = window.lastUserQuery;
+      }
+
+      console.log("📍 Start with Map: Otomatik AI tetikleniyor ->", city);
+      
+      // Buton beklemeden direkt fonksiyonu çağırıyoruz
+      if (typeof insertTripAiInfo === "function") {
+         insertTripAiInfo(false, null, city);
+      }
+    }
+  })();
+  // ============================================================
+
+  // ===================================
+
+  // EN SON: (Keep your existing trailing code)
+  if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
+      const div = document.createElement("div");
+      div.innerHTML = window.latestAiInfoHtml;
+      cartDiv.appendChild(div.firstElementChild);
+  }
+} 
 
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
