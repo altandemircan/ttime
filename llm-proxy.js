@@ -5,24 +5,23 @@ const path = require('path');
 const router = express.Router();
 
 // --- AYARLAR ---
-const CACHE_FILE = path.join(__dirname, 'ai_cache.json');
+const CACHE_FILE = path.join(__dirname, 'ai_cache_db.json');
 
-// --- 1. BAŞLANGIÇTA VARSA ESKİ CACHE'İ YÜKLE ---
+// --- BAŞLANGIÇTA VARSA ESKİ CACHE'İ YÜKLE ---
 let aiCache = {};
 if (fs.existsSync(CACHE_FILE)) {
     try {
         const rawData = fs.readFileSync(CACHE_FILE, 'utf8');
         aiCache = JSON.parse(rawData);
-        console.log(`[Startup] ${Object.keys(aiCache).length} adet kayıt diskten yüklendi.`);
+        console.log(`[AI SERVER] ${Object.keys(aiCache).length} kayıt diskten yüklendi.`);
     } catch (e) {
-        console.error("[Startup] Cache dosyası bozuktu, sıfırdan başlandı.");
         aiCache = {};
     }
 }
 
-// Helper: Diske Kaydetme Fonksiyonu
+// Helper: Diske Kaydet
 function saveCacheToDisk() {
-    // Sadece tamamlanmış (done) verileri kaydet, promise'leri kaydetme
+    // Sadece tamamlanmış verileri kaydet
     const dataToSave = {};
     for (const key in aiCache) {
         if (aiCache[key].status === 'done') {
@@ -40,30 +39,28 @@ router.post('/plan-summary', async (req, res) => {
         return;
     }
 
+    // Anahtar oluştur (Örn: "Rome-Italy")
     const cacheKey = country ? `${city}-${country}` : city;
-    console.log(`[AI Request] ${cacheKey}`);
+    console.log(`[AI REQ] ${cacheKey}`);
 
-    // 1. KONTROL: Zaten var mı?
+    // 1. KONTROL: Cache'de var mı?
     if (aiCache[cacheKey]) {
-        // A) İşlem bitmiş (Disk'ten veya RAM'den geldi)
+        // A) Hazırsa hemen ver
         if (aiCache[cacheKey].status === 'done') {
-            console.log(`[Cache Hit] ${cacheKey} hazır.`);
             return res.json(aiCache[cacheKey].data);
         }
-
-        // B) İşlem şu an sürüyor (RAM'de Promise var)
+        // B) Şu an başkası için hazırlanıyorsa bekle
         if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
-            console.log(`[Cache Wait] ${cacheKey} bekleniyor...`);
             try {
                 const data = await aiCache[cacheKey].promise;
                 return res.json(data);
             } catch (error) {
-                delete aiCache[cacheKey]; // Hata varsa sil ki tekrar denensin
+                delete aiCache[cacheKey];
             }
         }
     }
 
-    // 2. YENİ İŞLEM BAŞLAT (Arka Plan Görevi)
+    // 2. YENİ İŞLEM BAŞLAT
     const processingPromise = (async () => {
         const aiReqCity = country ? `${city}, ${country}` : city;
         const prompt = `
@@ -78,8 +75,6 @@ router.post('/plan-summary', async (req, res) => {
         If unknown, put "Info not available."
         `.trim();
 
-        console.log(`[AI Start] ${cacheKey} için Ollama'ya gidiliyor...`);
-
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
             model: "gemma:2b",
             messages: [{ role: "user", content: prompt }],
@@ -87,7 +82,7 @@ router.post('/plan-summary', async (req, res) => {
             max_tokens: 200
         });
 
-        // JSON Parse
+        // JSON Temizleme
         let jsonText = '';
         if (typeof response.data === 'object' && response.data.message) {
             jsonText = response.data.message.content;
@@ -105,31 +100,27 @@ router.post('/plan-summary', async (req, res) => {
         promise: processingPromise
     };
 
-    // 4. SONUCU BEKLE VE DİSKE YAZ
+    // 4. BEKLE VE KAYDET
     try {
         const result = await processingPromise;
         
-        // Veriyi güncelle
         aiCache[cacheKey] = {
             status: 'done',
             data: result
         };
-
-        // DİSKE KALICI OLARAK YAZ
-        saveCacheToDisk();
-        console.log(`[AI Saved] ${cacheKey} diske yazıldı.`);
+        saveCacheToDisk(); // Kalıcı kaydet
+        console.log(`[AI DONE] ${cacheKey} tamamlandı.`);
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(result);
 
     } catch (error) {
-        console.error(`[AI Error] ${cacheKey}:`, error.message);
-        delete aiCache[cacheKey]; // Hatalı kaydı sil
+        console.error(`[AI ERROR] ${cacheKey}:`, error.message);
+        delete aiCache[cacheKey];
         res.status(500).json({ error: 'AI Error' });
     }
 });
-
 
 
 // Chat stream (SSE) endpoint
