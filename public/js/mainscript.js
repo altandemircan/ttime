@@ -11259,7 +11259,7 @@ function renderCollageSlides(collage, images, searchObj) {
   const topHeaderHtml = term
     ? `<div style="    font-weight: bold;
     font-size: 0.95rem;
-    color: rgb(51, 51, 51);">Photos related to ${term}</div>`
+    color: rgb(51, 51, 51);     margin-bottom: 10px;">Photos related to ${term}</div>`
     : "";
 
   // 2. ESKİ ETİKET (Viewport içinde, resim üzerine binen yarı saydam badge)
