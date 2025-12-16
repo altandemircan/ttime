@@ -5113,7 +5113,7 @@ function hideConfirmation(confirmationContainerId) {
 // Kullanıcı yeni gün oluşturduğunda, oluşturulan günü currentDay olarak ata.
 function addNewDay(button) {
     // 1. Mevcut en yüksek gün sayısını bul
-    let maxDay = 0;
+    let maxDay = 1;
     if (Array.isArray(window.cart) && window.cart.length > 0) {
         window.cart.forEach(item => {
             if (typeof item.day === "number" && item.day > maxDay) {
@@ -5121,170 +5121,75 @@ function addNewDay(button) {
             }
         });
     }
-    const newDayIndex = maxDay + 1;
 
-    // Global sayacı güncelle
-    if (typeof dayCount !== 'undefined') dayCount = newDayIndex;
+    const newDay = maxDay + 1;
 
-    // --- TAB BUTONU OLUŞTURMA ---
-    const tabBtn = document.createElement('button');
-    tabBtn.className = 'tab-button';
-    tabBtn.innerText = `Day ${newDayIndex}`;
-    tabBtn.onclick = () => switchTab(newDayIndex);
-    
-    // "Add Day" butonundan önceye ekle
-    const tabsHeader = document.querySelector('.tabs-header');
-    const addDayBtn = document.querySelector('.add-day-btn');
-    if (tabsHeader && addDayBtn) {
-        tabsHeader.insertBefore(tabBtn, addDayBtn);
-    }
-
-    // --- İÇERİK ALANI OLUŞTURMA (GÜNCELLENEN KISIM) ---
-    const contentDiv = document.createElement('div');
-    contentDiv.id = `day-content-${newDayIndex}`;
-    contentDiv.className = 'day-content';
-    contentDiv.style.display = 'none'; 
-
-    // BURASI TAMAMEN SENİN İSTEDİĞİN HTML YAPISI
-    // Başlangıçta display:none verdim, harita yüklenince updateMapForDay açacak.
-    contentDiv.innerHTML = `
-      <div class="day-header">
-          <h3 contenteditable="true">Day ${newDayIndex}</h3>
-          <span class="day-date-label">Date not set</span>
-      </div>
-      
-      <div id="itinerary-list-day${newDayIndex}" class="itinerary-list" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${newDayIndex})">
-        <div class="empty-message">Drag places here from the sidebar</div>
-      </div>
-      
-      <div class="route-controls-bar" id="route-controls-bar-day${newDayIndex}" style="display: none; gap: 10px;">
-          <div class="map-bar-header" style="display: flex; align-items: center; gap: 12px; justify-content: space-between; cursor: pointer;" onclick="toggleMap(${newDayIndex})">
-              <div class="map-functions" style="display: flex; align-items: center;">
-                  <div style="font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51);">Route Information</div>
-                  <span class="arrow" style="position: initial; cursor: pointer; padding: 0px; margin-top: 6px;">
-                      <img class="arrow-icon" src="https://www.svgrepo.com/show/520912/right-arrow.svg" style="transform: rotate(90deg); transition: transform 0.18s;">
-                  </span>
-              </div>
-              <button type="button" class="expand-map-btn" aria-label="Expand Map" style="background: rgb(255, 255, 255); border-color: rgb(43, 129, 213); color: rgb(0, 128, 255); cursor: pointer;" onclick="expandMap(event, ${newDayIndex})">
-                  <img class="tm-icon" src="/img/expand_animation.gif" alt="MAP" loading="lazy">
-                  <span class="tm-label" style="color: #297fd4">Expand map</span>
-              </button>
-          </div>
-      </div>
-  
-      <div class="map-content-wrap" id="map-content-wrap-day${newDayIndex}" style="transition: max-height 0.3s, opacity 0.3s; overflow: hidden; max-height: 0px; opacity: 0;">
-          <div id="route-map-day${newDayIndex}" class="route-map" style="min-height: 285px; height: 285px; background-color: rgb(238, 240, 245); position: relative; display: block;"></div>
-      </div>
-  
-      <div id="tt-travel-mode-set-day${newDayIndex}" class="tt-travel-mode-set" data-day="${newDayIndex}" style="display: none;">
-          <div class="travel-modes">
-              <button type="button" data-mode="driving" class="active" onclick="setTravelMode(${newDayIndex}, 'driving')">
-                  <img class="tm-icon" src="/img/way_car.svg" alt="CAR"> <span class="tm-label">CAR</span>
-              </button>
-              <button type="button" data-mode="cycling" onclick="setTravelMode(${newDayIndex}, 'cycling')">
-                  <img class="tm-icon" src="/img/way_bike.svg" alt="BIKE"> <span class="tm-label">BIKE</span>
-              </button>
-              <button type="button" data-mode="walking" onclick="setTravelMode(${newDayIndex}, 'walking')">
-                  <img class="tm-icon" src="/img/way_walk.svg" alt="WALK"> <span class="tm-label">WALK</span>
-              </button>
-          </div>
-      </div>
-  
-      <div id="map-bottom-controls-wrapper-day${newDayIndex}" style="display: none;">
-          <div id="map-bottom-controls-day${newDayIndex}" class="map-bottom-controls">
-              <span class="route-summary-control">
-                  <span class="stat stat-distance">
-                      <img class="icon" src="/img/way_distance.svg"> <span class="badge" id="route-dist-day${newDayIndex}">0 km</span>
-                  </span>
-                  <span class="stat stat-duration">
-                      <img class="icon" src="/img/way_time.svg"> <span class="badge" id="route-time-day${newDayIndex}">0 min</span>
-                  </span>
-              </span>
-          </div>
-      </div>
-      
-      <div id="day-collage-day${newDayIndex}" class="day-collage" style="display:none; margin-top:12px;"></div>
-    `;
-  
-    document.getElementById('itinerary-content').appendChild(contentDiv);
-
-    // --- 2. ÖNCEKİ GÜNÜN SON NOKTASINI BUL ---
+    // 2. Önceki günün son geçerli lokasyonunu bul
     let lastMarkerOfPrevDay = null;
     for (let i = window.cart.length - 1; i >= 0; i--) {
         const item = window.cart[i];
-        if (item.day <= maxDay && item.location && 
-           (typeof item.location.lat === 'number' || typeof item.location.lat === 'string')) {
+        if (item.day === maxDay && item.location && 
+            typeof item.location.lat === 'number' && 
+            !isNaN(item.location.lat)) {
             lastMarkerOfPrevDay = item;
             break; 
         }
     }
 
-    // --- 3. KOPYALAMA VE CART'A EKLEME ---
+    // 3. Kopyalama ve Ekleme
     if (lastMarkerOfPrevDay) {
         const newItem = JSON.parse(JSON.stringify(lastMarkerOfPrevDay));
-        newItem.day = newDayIndex;
+        newItem.day = newDay;
         newItem.addedAt = new Date().toISOString();
-        delete newItem._starter; 
-        
-        // Koordinatları float yap (garanti olsun)
-        if(newItem.location) {
-            newItem.location.lat = parseFloat(newItem.location.lat);
-            newItem.location.lon = parseFloat(newItem.location.lon || newItem.location.lng);
-        }
+        delete newItem._starter; // Starter flag'ini temizle
         window.cart.push(newItem);
     } else {
-        window.cart.push({ day: newDayIndex });
+        window.cart.push({ day: newDay });
     }
 
-    window.currentDay = newDayIndex;
+    window.currentDay = newDay;
     
-    // --- 4. ARAYÜZ GÜNCELLEME VE ODAKLAMA ---
+    // Arayüzü güncelle
     if (typeof updateCart === "function") updateCart();
 
-    switchTab(newDayIndex);
-
-    // Harita odaklama ve panelleri açma
-    if (lastMarkerOfPrevDay && lastMarkerOfPrevDay.location) {
+    // 4. HARİTA ODAKLAMA DÜZELTMESİ (Konya Sorunu Çözümü)
+    if (lastMarkerOfPrevDay) {
         setTimeout(() => {
-            // A) Panelleri CSS ile görünür yap (Yedek olarak, updateMapForDay zaten yapmalı)
-            const controlsBar = document.getElementById(`route-controls-bar-day${newDayIndex}`);
-            if(controlsBar) controlsBar.style.display = 'flex'; // Flex önemli
+            const mapId = `route-map-day${newDay}`;
+            const mapDiv = document.getElementById(mapId);
             
-            const modeSet = document.getElementById(`tt-travel-mode-set-day${newDayIndex}`);
-            if(modeSet) modeSet.style.display = 'block';
-
-            const bottomCtrl = document.getElementById(`map-bottom-controls-wrapper-day${newDayIndex}`);
-            if(bottomCtrl) bottomCtrl.style.display = 'block';
-
-            const mapWrap = document.getElementById(`map-content-wrap-day${newDayIndex}`);
-            if(mapWrap) {
-                mapWrap.style.maxHeight = '700px';
-                mapWrap.style.opacity = '1';
+            // A) Haritayı görünür yap
+            if (mapDiv) {
+                mapDiv.style.display = 'block';
+                mapDiv.style.height = '285px';
             }
 
-            // B) Haritayı Çizdir
-            if (typeof updateMapForDay === 'function') {
-                updateMapForDay(newDayIndex);
-            } else if (typeof renderRouteForDay === 'function') {
-                renderRouteForDay(newDayIndex);
+            // B) Kontrolleri aç
+            const controlsWrapper = document.getElementById(`map-bottom-controls-wrapper-day${newDay}`);
+            if (controlsWrapper) controlsWrapper.style.display = 'block';
+
+            // C) Haritayı çizdir
+            if (typeof renderRouteForDay === 'function') {
+                renderRouteForDay(newDay);
             }
 
-            // C) Leaflet Odaklama (Gri alan sorununu çözer)
+            // D) GARANTİ ODAKLAMA: Harita objesini bul ve manuel setView yap
             setTimeout(() => {
-                const mapId = `route-map-day${newDayIndex}`;
-                // Harita instance'ını bul
-                const mapInstance = (window.dayMaps && window.dayMaps[newDayIndex]) || (window.leafletMaps && window.leafletMaps[mapId]);
-                
-                if (mapInstance) {
-                    mapInstance.invalidateSize(); // Boyutları yeniden hesapla
+                const mapInstance = window.leafletMaps && window.leafletMaps[mapId];
+                if (mapInstance && lastMarkerOfPrevDay.location) {
+                    // Leaflet'in "invalidateSize" fonksiyonu, harita boyutu değişimini algılar
+                    mapInstance.invalidateSize(); 
+                    
+                    // Doğrudan Konya koordinatına uçur
                     mapInstance.setView(
-                        [lastMarkerOfPrevDay.location.lat, lastMarkerOfPrevDay.location.lon], 
-                        13, 
+                        [lastMarkerOfPrevDay.location.lat, lastMarkerOfPrevDay.location.lng], 
+                        14, 
                         { animate: false }
                     );
                 }
-            }, 300);
-        }, 100); 
+            }, 150); // renderRouteForDay çalıştıktan hemen sonra
+
+        }, 250); 
     }
 }
 function addCoordinatesToContent() {
