@@ -11612,12 +11612,8 @@ function renderCollageSlides(collage, images, searchObj) {
   const visible = isMobile ? 1 : 3;
   let index = 0;
 
-  const titleHtml = searchObj?.term
-    ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${searchObj.term}</div>`
-    : "";
-
+  // Ana şablondan başlığı çıkardık, sadece track ve butonlar kaldı
   collage.innerHTML = `
-    ${titleHtml}
     <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
       <div class="collage-track" style="display:flex; transition: transform 0.4s ease-out; will-change: transform;"></div>
     </div>
@@ -11626,10 +11622,24 @@ function renderCollageSlides(collage, images, searchObj) {
   `;
 
   const track = collage.querySelector(".collage-track");
-  images.forEach((src) => {
+
+  images.forEach((src, i) => {
     const slide = document.createElement("div");
     slide.style.cssText = `flex: 0 0 ${100 / visible}%; max-width: ${100 / visible}%; padding: 4px; box-sizing: border-box;`;
-    slide.innerHTML = `<div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed;"><img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
+
+    // SADECE İLK RESİM İÇİN ETİKET OLUŞTUR (i === 0)
+    let labelHtml = "";
+    if (i === 0 && searchObj?.term) {
+      labelHtml = `<div style="position:absolute; top:8px; left:8px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${searchObj.term}</div>`;
+    }
+
+    // Kapsayıcıya 'position: relative' ekledik ki etiket içinde kalsın
+    slide.innerHTML = `
+      <div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed; position:relative;">
+        ${labelHtml}
+        <img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+      </div>
+    `;
     track.appendChild(slide);
   });
 
