@@ -3468,48 +3468,40 @@ function attachMapClickAddMode(day) {
 }
 // uploaded:mainscript.js
 
-// uploaded:mainscript.js
-
-// GLOBAL KİLİT SİSTEMİ
-// Bu sayaç her tıklandığında artacak.
-// Eski isteklerin "bilet numarası" küçük kalacağı için hepsi kapıdan dönecek.
-window.AI_REQUEST_COUNTER = window.AI_REQUEST_COUNTER || 0;
+// ... (mevcut kodlar)
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // 1. GİŞEDEN SIRA NUMARASI AL
-    window.AI_REQUEST_COUNTER++;
-    const myTicketNumber = window.AI_REQUEST_COUNTER;
-
-    console.log(`[AI START] İşlem Başladı. Bilet No: ${myTicketNumber}`);
-
-    // --- TEMİZLİK ---
-    // Önceki AI kutularını temizle
+    // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
-
+    
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir ve Ülke Belirleme
-    let rawCity = cityOverride || (window.selectedCity || '');
-    let cleanTitle = rawCity.replace(/ trip plan.*$/i, '').trim(); 
-    let targetCity = cleanTitle.split(',')[0].trim();
+    // Şehir bilgisini al
+    let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     
-    if (!country && cleanTitle.includes(',')) {
-        let parts = cleanTitle.split(',');
-        country = parts[parts.length - 1].trim();
+    // Şehir yoksa ve statik veri de yoksa çık
+    if (!city && !aiStaticInfo) return;
+
+    // --- BAĞLAM KONTROLÜ İÇİN DEĞİŞKENLERİ SAKLA ---
+    // İstek atılırken hangi gezideydik?
+    const requestingTripKey = window.activeTripKey;
+    const requestingCity = window.selectedCity;
+    // ------------------------------------------------
+
+    // --- TEMİZLEME FONKSİYONU (Robot ikonunu siler) ---
+    function cleanText(text) {
+        if (!text) return "";
+        // 🤖 ikonunu ve gereksiz boşlukları temizle
+        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
     }
 
-    if (!targetCity && !aiStaticInfo) return;
-
-    // Cache Anahtarı
-    const cacheKey = country ? `${targetCity}-${country}` : targetCity;
-
-    // --- HTML İSKELETİ ---
+    // HTML İskeleti (DOM oluşturma kodları aynı kalıyor...)
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
-    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
       <span>AI Information</span>
       <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
         <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;">
@@ -3528,37 +3520,22 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     `;
     
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
-
-    // Referanslar
+    // ... (DOM element seçimleri ve populateAndShow fonksiyonu aynı kalıyor) ...
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
     const aiTime = aiDiv.querySelector('.ai-info-time');
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
-
-    function cleanText(text) {
-        if (!text) return "";
-        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
-    }
-
-    // --- GÖSTERME FONKSİYONU ---
+    
     function populateAndShow(data, timeElapsed = null) {
-        // !!! KESİN KORUMA !!!
-        // Eğer şu anki global sayaç, benim bilet numaramdan büyükse,
-        // demek ki benden sonra başka bir geziye tıklanmış.
-        if (window.AI_REQUEST_COUNTER !== myTicketNumber) {
-            console.warn(`[AI BLOCKED] ${targetCity} verisi geldi ama sıra numarası değişmiş. (Benimki: ${myTicketNumber}, Şu anki: ${window.AI_REQUEST_COUNTER})`);
-            // Ekranda yanlış spinner kalmasın diye div'i siliyoruz.
-            if(aiDiv) aiDiv.remove();
-            return; 
-        }
-
+       // ... (mevcut içerik doldurma kodları) ...
         if (aiSpinner) aiSpinner.style.display = "none";
         
-        // Toggle Buton
+        // Aç/Kapa butonu ekle (yoksa)
         const header = aiDiv.querySelector('#ai-toggle-header');
-        if (header && !header.querySelector('#ai-toggle-btn')) {
+        if (!header.querySelector('#ai-toggle-btn')) {
+             // ... (buton oluşturma kodları) ...
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
@@ -3568,18 +3545,19 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
             const aiIcon = btn.querySelector('.arrow-icon');
             let expanded = true;
-            header.onclick = function() {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
                 expanded = !expanded;
                 if (expanded) {
                     aiContent.style.maxHeight = "1200px";
                     aiContent.style.opacity = "1";
-                    if(aiIcon) aiIcon.classList.add('open');
+                    aiIcon.classList.add('open');
                 } else {
                     aiContent.style.maxHeight = "0";
                     aiContent.style.opacity = "0";
-                    if(aiIcon) aiIcon.classList.remove('open');
+                    aiIcon.classList.remove('open');
                 }
-            };
+            });
             if (aiIcon) aiIcon.classList.add('open');
         }
 
@@ -3590,7 +3568,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         const txtTip = cleanText(data.tip) || "Info not available.";
         const txtHighlight = cleanText(data.highlight) || "Info not available.";
 
-        if (typeof typeWriterEffect === 'function' && !aiStaticInfo && !window.AI_RESPONSE_CACHE?.[cacheKey]) {
+        if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
              typeWriterEffect(aiSummary, txtSummary, 18, function() {
                 typeWriterEffect(aiTip, txtTip, 18, function() {
                     typeWriterEffect(aiHighlight, txtHighlight, 18);
@@ -3602,81 +3580,70 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             aiHighlight.textContent = txtHighlight;
         }
 
-        if (timeElapsed) aiTime.textContent = `⏱️ ${timeElapsed} ms`;
+        if (timeElapsed) {
+            aiTime.textContent = `⏱️ Generated in ${timeElapsed} ms`;
+        } else {
+            aiTime.textContent = "";
+        }
     }
 
-    // --- SENARYO 1: VERİ ZATEN VAR (Database'den) ---
+    // === SENARYO 1: KAYITLI VERİ VAR ===
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo);
         return;
     }
 
-    // --- SENARYO 2: ÖNBELLEKTE VAR (RAM) ---
-    window.AI_RESPONSE_CACHE = window.AI_RESPONSE_CACHE || {};
-    if (window.AI_RESPONSE_CACHE[cacheKey]) {
-        console.log(`[AI CACHE] ${targetCity} cache'den alındı.`);
-        populateAndShow(window.AI_RESPONSE_CACHE[cacheKey]);
-        
-        // Cart verisini SADECE bilet numarası tutuyorsa güncelle
-        if (window.AI_REQUEST_COUNTER === myTicketNumber) {
-            window.cart.aiData = window.AI_RESPONSE_CACHE[cacheKey];
-        }
-        return;
-    }
-
-    // --- SENARYO 3: FETCH İSTEĞİ ---
+    // === SENARYO 2: API'YE GİT ===
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city: targetCity, country })
+            body: JSON.stringify({ city, country })
         });
 
-        // ERKEN KONTROL: Fetch sürerken kullanıcı kaçtı mı?
-        if (window.AI_REQUEST_COUNTER !== myTicketNumber) {
-            console.log(`[AI ABORT] Fetch bitti ama kullanıcı gitmiş. JSON parse bile yapılmayacak.`);
+        const ollamaData = await resp.json();
+        
+        // --- DÜZELTME BAŞLANGICI: CONTEXT KONTROLÜ ---
+        // Yanıt geldiğinde kullanıcı hala aynı gezide mi?
+        if (window.activeTripKey !== requestingTripKey) {
+            console.log(`[AI Info] Trip değiştiği için (${city}) yanıtı iptal edildi.`);
             return;
         }
+        if (window.selectedCity !== requestingCity) {
+            console.log(`[AI Info] Şehir seçimi değiştiği için (${city}) yanıtı iptal edildi.`);
+            return;
+        }
+        // --- DÜZELTME BİTİŞİ ---
 
-        const ollamaData = await resp.json();
         let elapsed = Math.round(performance.now() - t0);
 
         const aiData = {
-            city: targetCity,
+            city: city,
             summary: ollamaData.summary,
             tip: ollamaData.tip,
             highlight: ollamaData.highlight,
             time: elapsed
         };
 
-        // Cache'e at (Zararı yok, hafızada dursun)
-        window.AI_RESPONSE_CACHE[cacheKey] = aiData;
-
-        // !!! EN ÖNEMLİ YER !!!
-        // window.cart verisini güncellemeden önce SON KEZ kontrol et.
-        // Eğer bunu yapmazsak, ekrana yazmasak bile hafızadaki İzmir verisini Roma verisiyle bozabiliriz.
-        if (window.AI_REQUEST_COUNTER === myTicketNumber) {
-            window.cart.aiData = aiData; 
-            window.lastTripAIInfo = aiData;
-            
-            if (typeof saveCurrentTripToStorage === "function") {
-                saveCurrentTripToStorage();
-            }
-            populateAndShow(aiData, elapsed);
-        } else {
-            console.log(`[AI SAFETY] Veri geldi ama bilet numarası geçersiz. window.cart güncellenmedi.`);
+        // Kaydet
+        window.cart.aiData = aiData; 
+        window.lastTripAIInfo = aiData;
+        
+        if (typeof saveCurrentTripToStorage === "function") {
+            saveCurrentTripToStorage();
         }
+
+        populateAndShow(aiData, elapsed);
 
     } catch (e) {
         console.error("AI Error:", e);
-        if (window.AI_REQUEST_COUNTER === myTicketNumber) {
-            if (aiTime) aiTime.innerHTML = "<span style='color:red'>Unavailable</span>";
-            if (aiSpinner) aiSpinner.style.display = "none";
-            aiContent.style.maxHeight = "1200px";
-            aiContent.style.opacity = "1";
-            aiSummary.textContent = "AI servisi yanıt vermedi.";
-        }
+        // Hata durumunda da context kontrolü iyi olabilir ama elementler silinmiş olabilir, try-catch zaten koruyor.
+        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
+        if (aiSpinner) aiSpinner.style.display = "none";
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity = "1";
+        aiSummary.textContent = "AI service temporarily unavailable.";
     }
 };
 
