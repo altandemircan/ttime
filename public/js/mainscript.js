@@ -4820,6 +4820,15 @@ async function loadCollageImages(day) {
 async function renderRouteForDay(day) {
     console.log("[ROUTE] renderRouteForDay ÇALIŞTI -> Day:", day);
 
+    // ============================================================
+    // [YENİ] KOLAJI EN BAŞTA ÇAĞIR (Harita hatasından etkilenmesin)
+    // 600ms bekle ki HTML (butonlar) oluşsun
+    // ============================================================
+    setTimeout(() => {
+        addDayHeroCollage(day);
+    }, 600);
+    // ============================================================
+
     // --- Standart Kontroller ---
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) return;
     if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
@@ -4859,8 +4868,6 @@ async function renderRouteForDay(day) {
             }).addTo(map).bindPopup(`<b>${points[0].name || 'Point'}</b>`);
             map.setView([points[0].lat, points[0].lng], 14, { animate: true });
         }
-        // [KOLAJI ÇAĞIR]
-        addDayHeroCollage(day); 
         return;
     }
 
@@ -4918,16 +4925,6 @@ async function renderRouteForDay(day) {
         const expandedMapObj = window.expandedMaps?.[containerId];
         if (expandedMapObj?.expandedMap) updateExpandedMap(expandedMapObj.expandedMap, day);
     }
-
-    // [KOLAJI ÇAĞIR - BURASI ÖNEMLİ]
-    // Fonksiyonun en sonunda, asenkron olarak çağırıyoruz.
-    // DOM'un güncellenmesi için ufak bir gecikme olması iyidir, ama fonksiyon içindeki retry bunu halledecek.
-console.log("[DEBUG] renderRouteForDay bitti. Kolajı çağırmak için bekleniyor...");
-    
-    // 1 saniye sonra çalıştır (DOM'un oturduğundan emin olmak için)
-    setTimeout(() => {
-        addDayHeroCollage(day);
-    }, 1000);
 }
 
 
