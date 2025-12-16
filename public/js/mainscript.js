@@ -4355,7 +4355,7 @@ async function updateCart() {
         // İŞLEM BİTİNCE KİLİDİ AÇ
         isCartUpdating = false;
     }
-}
+} 
 
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
