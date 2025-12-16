@@ -11365,9 +11365,9 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
 // ============================================================
 
 // ==================== getCityCollageImages ====================
+// ==================== getCityCollageImages (GÜNCELLENMİŞ) ====================
 async function getCityCollageImages(
-  searchObj,
-  { skipCache = false, min = 40, exclude = new Set(), salt = "" } = {}
+  searchObj, { skipCache = false, min = 40, exclude = new Set(), salt = "" } = {}
 ) {
   let searchTerm = "";
   let context = "";
@@ -11383,15 +11383,18 @@ async function getCityCollageImages(
 
   const cacheKey = `${searchTerm}_${context}_${salt}`;
   window.__dayCollageCache = window.__dayCollageCache || {};
+
   if (!skipCache && window.__dayCollageCache[cacheKey]) {
     return window.__dayCollageCache[cacheKey];
   }
 
+  // Terim temizliği
   const cleanTerm = searchTerm
     .replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "")
     .trim();
   const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
 
+  // Sorgu varyasyonları
   const queries = [
     `${cleanTerm} ${cleanContext} tourism ${salt}`,
     `${cleanTerm} ${cleanContext} landmarks ${salt}`,
@@ -11414,18 +11417,42 @@ async function getCityCollageImages(
   const images = [];
   const seen = new Set();
 
+  // --- YENİ PROXY MANTIĞI: Toplu Çekim ---
   for (const q of queries) {
+    // Hedeflenen sayıya ulaştıysak döngüyü kır
     if (images.length >= min) break;
+
     try {
-      const img = await getPhoto(q, "pexels");
-      if (img && !seen.has(img) && !exclude.has(img)) {
-        images.push(img);
-        seen.add(img);
+      // Hala kaç resme ihtiyacımız var? (En az 5'er 5'er isteyelim)
+      const remaining = min - images.length;
+      const countToFetch = Math.max(5, remaining);
+
+      // Yeni slider endpoint'ini çağırıyoruz
+      const url = `/photoget-proxy/slider?query=${encodeURIComponent(q)}&source=pexels&count=${countToFetch}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) continue; // Hata varsa sonraki sorguya geç
+
+      const data = await response.json();
+
+      // Backend { images: [...] } formatında dizi döner
+      if (data.images && Array.isArray(data.images)) {
+        for (const imgUrl of data.images) {
+          if (images.length >= min) break;
+          
+          // Duplicate ve exclude kontrolü
+          if (imgUrl && !seen.has(imgUrl) && !exclude.has(imgUrl)) {
+            images.push(imgUrl);
+            seen.add(imgUrl);
+          }
+        }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn(`[Collage] Slider fetch error for "${q}":`, err);
+    }
   }
 
-  // min sayıya ulaşamadıysak, bir sonraki turda daha fazla sorgu denenir.
+  // Cache'e kaydet
   if (!skipCache) {
     window.__dayCollageCache[cacheKey] = images;
   }
