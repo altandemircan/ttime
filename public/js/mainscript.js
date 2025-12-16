@@ -11637,38 +11637,41 @@ async function getCityCollageImages(searchObj) {
   if (!searchTerm) return [];
 
   const cacheKey = searchTerm + "_" + context;
+  
+  // Cache varsa direkt döndür (Ama artık cache içinde 20-30 foto olacak)
   window.__dayCollageCache = window.__dayCollageCache || {};
   if (window.__dayCollageCache[cacheKey]) return window.__dayCollageCache[cacheKey];
 
   const cleanTerm = searchTerm.replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "").trim();
   const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
 
-  // Sorguları çeşitlendir (Bol bol resim lazım)
+  // Sorgu listesini genişlettik ki farklı günlere yetecek kadar malzeme çıksın
   const queries = [
     `${cleanTerm} ${cleanContext} tourism`, 
-    `${cleanTerm} city`,
-    `${cleanTerm} street`,
-    `${cleanTerm} food`,
-    `${cleanTerm} people`,
-    `${cleanTerm} night`,
-    `${cleanTerm} nature`,
-    `${cleanTerm} beach`,
-    `${cleanTerm} landmark`,
-    `visit ${cleanTerm} ${cleanContext}`
+    `${cleanTerm} ${cleanContext} landmarks`,
+    `${cleanTerm} city center`,
+    `${cleanTerm} streets`,
+    `${cleanTerm} food`,      // Yemek
+    `${cleanTerm} night`,     // Gece hayatı
+    `${cleanTerm} people`,    // İnsan/Kültür
+    `${cleanTerm} nature`,    // Doğa
+    `${cleanTerm} architecture`,
+    `visit ${cleanTerm}`
   ];
 
-  // Yedek (İl bazlı)
+  // Yedek sorgular (İlçe bulunamazsa İL)
   if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
       queries.push(`${cleanContext} travel`);
-      queries.push(`${cleanContext} life`);
+      queries.push(`${cleanContext} landscape`);
+      queries.push(`${cleanContext} aerial`);
   }
 
   const images = [];
   const seen = new Set();
 
-  // Hedef: En az 20 fotoğraf topla
+  // Hedef: En az 15 farklı fotoğraf toplamak
   for (const q of queries) {
-    if (images.length >= 20) break;
+    if (images.length >= 15) break; 
     try {
       const img = await getPhoto(q, "pexels");
       if (img && !seen.has(img)) {
@@ -11678,8 +11681,8 @@ async function getCityCollageImages(searchObj) {
     } catch (_) {}
   }
 
-  // Eğer çok az varsa (örn: 2 tane), bunları çoğalt ki slider bozulmasın
-  while (images.length < 6 && images.length > 0) {
+  // Eğer çok az sonuç geldiyse (örn: bilinmeyen bir köy), eldekileri mecburen çoğalt
+  while (images.length < 3 && images.length > 0) {
     images.push(...images);
   }
 
