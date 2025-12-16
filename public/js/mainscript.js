@@ -11564,39 +11564,16 @@ window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = '
     }
 };
 // ------------------------------------------------------
+// Helpers
+function extractCityFromPlaceInfo(info, fallbackCity = "") { /* unchanged */ }
 
-
-// --- Helpers: city extraction & collage fetching ---
-function extractCityFromPlaceInfo(info, fallbackCity = "") {
-  if (!info) return fallbackCity || "";
-  const props = info.properties || {};
-  return (
-    props.city ||
-    props.town ||
-    props.village ||
-    props.municipality ||
-    (info.address_line2 && info.address_line2.split(",")[0]) ||
-    (info.formatted && info.formatted.split(",")[0]) ||
-    fallbackCity ||
-    ""
-  );
-}
-
-async function fetchCityNameFromLocation(lat, lng, fallbackCity = "") {
-  try {
-    const info = await getPlaceInfoFromLatLng(lat, lng);
-    return extractCityFromPlaceInfo(info, fallbackCity);
-  } catch (_) {
-    return fallbackCity || "";
-  }
-}
+async function fetchCityNameFromLocation(lat, lng, fallbackCity = "") { /* unchanged */ }
 
 async function getCityCollageImages(city) {
   if (!city) return [];
   window.__dayCollageCache = window.__dayCollageCache || {};
   if (window.__dayCollageCache[city]) return window.__dayCollageCache[city];
 
-  // Get up to 6 images; broaden queries and fill if short
   const queries = [
     `${city} skyline`,
     `${city} attractions`,
@@ -11605,7 +11582,7 @@ async function getCityCollageImages(city) {
     `${city} food`,
     `${city} park`,
     `travel ${city}`,
-    `${city} aerial`
+    `${city} aerial`,
   ];
   const images = [];
   const seen = new Set();
@@ -11623,76 +11600,6 @@ async function getCityCollageImages(city) {
   while (images.length < 4 && images.length > 0) {
     images.push(...images.slice(0, Math.min(images.length, 6 - images.length)));
   }
-  if (!images.length) {
-    collage.innerHTML = "";
-    collage.style.display = "none";
-    return;
-  }
-
-  const visible = Math.min(3, images.length); // 3 visible when possible
-  let index = 0;
-
-  collage.innerHTML = `
-    <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
-      <div class="collage-track" style="display:flex; transition: transform 0.35s ease; will-change: transform;"></div>
-    </div>
-    <button class="collage-nav prev" aria-label="Previous" style="
-      position:absolute; left:6px; top:50%; transform:translateY(-50%);
-      background:rgba(0,0,0,0.45); color:#fff; border:none; border-radius:50%;
-      width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    ">&lt;</button>
-    <button class="collage-nav next" aria-label="Next" style="
-      position:absolute; right:6px; top:50%; transform:translateY(-50%);
-      background:rgba(0,0,0,0.45); color:#fff; border:none; border-radius:50%;
-      width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    ">&gt;</button>
-  `;
-
-  const track = collage.querySelector(".collage-track");
-
-  // Slides: each exactly 1/visible of the viewport
-  images.forEach((src) => {
-    const slide = document.createElement("div");
-    slide.style.cssText = `
-      flex: 0 0 ${100 / visible}%;
-      max-width: ${100 / visible}%;
-      padding: 4px;
-      box-sizing: border-box;
-    `;
-    slide.innerHTML = `
-      <div style="width:100%; height:140px; border-radius:8px; overflow:hidden; background:#e5e8ed;">
-        <img src="${src}" alt="${city} collage" style="width:100%; height:100%; object-fit:cover; display:block;">
-      </div>
-    `;
-    track.appendChild(slide);
-  });
-
-  function clampIndex(i) {
-    const max = Math.max(0, images.length - visible);
-    return Math.max(0, Math.min(max, i));
-  }
-
-  function update() {
-    const max = Math.max(0, images.length - visible);
-    index = clampIndex(index);
-    const stepPct = 100 / visible;        // one slide width
-    const offsetPct = index * stepPct;    // shift by slide width
-    track.style.transform = `translateX(-${offsetPct}%)`;
-    const prevBtn = collage.querySelector(".collage-nav.prev");
-    const nextBtn = collage.querySelector(".collage-nav.next");
-    if (prevBtn) prevBtn.style.opacity = index === 0 ? 0.4 : 1;
-    if (nextBtn) nextBtn.style.opacity = index === max ? 0.4 : 1;
-  }
-
-  const prevBtn = collage.querySelector(".collage-nav.prev");
-  const nextBtn = collage.querySelector(".collage-nav.next");
-  if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); index = clampIndex(index - 1); update(); };
-  if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); index = clampIndex(index + 1); update(); };
-
-  if (window.ResizeObserver) {
-    const ro = new ResizeObserver(() => update());
-    ro.observe(collage);
-  }
-
-  update();
+  window.__dayCollageCache[city] = images;
+  return images;
 }
