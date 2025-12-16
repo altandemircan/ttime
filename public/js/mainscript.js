@@ -7802,6 +7802,12 @@ async function renderRouteForDay(day) {
         eMap.setView([p.lat, p.lng], 15, { animate: true });
         setTimeout(() => eMap.invalidateSize(), 120);
     }
+
+    // EKLENEN SATIR: Kontrol çubuğunu (Expand butonu dahil) oluştur
+        if (typeof wrapRouteControls === 'function') {
+            wrapRouteControls(day);
+        }
+        
     return;
 }
 
