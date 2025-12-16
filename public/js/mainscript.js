@@ -16,17 +16,16 @@ function isTripFav(item) {
 
 
 
-// --- KULLANILMIŞ FOTOĞRAF HAFIZASI ---
-// Sayfa yenilenene kadar hangi fotoların kullanıldığını hatırlar.
-window.__usedCollageImages = window.__usedCollageImages || new Set();
-window.__dayCollageCache = window.__dayCollageCache || {};
-// Yeni: Gün bazlı fotoğraf atamaları (ayrı günler için farklı set)
+// --- Kolaj için yardımcı setleri güvenli başlat ---
 window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
-// Global: Tüm günler arası benzersiz set
 window.__globalCollageUsed = window.__globalCollageUsed || new Set();
 
-
-
+// Global used set'ini yeniden kuran yardımcı
+function rebuildGlobalCollageUsed() {
+  window.__globalCollageUsed = new Set(
+    Object.values(window.__dayCollagePhotosByDay || {}).flat()
+  );
+}
 
 
 
@@ -11462,12 +11461,11 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
 // --- 2. Akıllı Görsel Arama (ZENGİNLEŞTİRİLMİŞ) ---
 // ============================================================
 
-async function getCityCollageImages(searchObj, {
-  skipCache = false,
-  min = 20,
-  exclude = new Set(),
-  salt = ""
-} = {}) {
+// ==================== getCityCollageImages ====================
+async function getCityCollageImages(
+  searchObj,
+  { skipCache = false, min = 40, exclude = new Set(), salt = "" } = {}
+) {
   let searchTerm = "";
   let context = "";
 
@@ -11480,98 +11478,7 @@ async function getCityCollageImages(searchObj, {
 
   if (!searchTerm) return [];
 
-  const cacheKey = searchTerm + "_" + context;
-
-  // Cache sadece skipCache=false iken kullanılsın
-  window.__dayCollageCache = window.__dayCollageCache || {};
-  if (!skipCache && window.__dayCollageCache[cacheKey]) {
-    return window.__dayCollageCache[cacheKey];
-  }
-
-  const cleanTerm = searchTerm
-    .replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "")
-    .trim();
-  const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
-
-  const baseQueries = [
-    `${cleanTerm} ${cleanContext} tourism`,
-    `${cleanTerm} ${cleanContext} landmarks`,
-    `${cleanTerm} city center`,
-    `${cleanTerm} streets`,
-    `${cleanTerm} food`,
-    `${cleanTerm} night`,
-    `${cleanTerm} people`,
-    `${cleanTerm} nature`,
-    `${cleanTerm} architecture`,
-    `visit ${cleanTerm}`,
-  ];
-
-  if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
-    baseQueries.push(`${cleanContext} travel`);
-    baseQueries.push(`${cleanContext} landscape`);
-    baseQueries.push(`${cleanContext} aerial`);
-  }
-
-  // Daha fazla çeşitlilik için tuzlanmış ek sorgular
-  for (let i = 0; i < 40; i++) {
-    baseQueries.push(`${cleanTerm} ${cleanContext} travel ${salt} ${i}`);
-    baseQueries.push(`${cleanTerm} ${salt} ${i}`);
-  }
-
-  const images = [];
-  const seen = new Set();
-
-  for (const q of baseQueries) {
-    if (images.length >= min) break;
-    try {
-      const img = await getPhoto(q, "pexels");
-      if (img && !seen.has(img) && !exclude.has(img)) {
-        images.push(img);
-        seen.add(img);
-      }
-    } catch (_) {}
-  }
-
-  // Eğer hâlâ yetersizse, pixabay ile dene
-  for (const q of baseQueries) {
-    if (images.length >= min) break;
-    try {
-      const img = await window.getPixabayImage(q);
-      if (img && !seen.has(img) && !exclude.has(img)) {
-        images.push(img);
-        seen.add(img);
-      }
-    } catch (_) {}
-  }
-
-  // Yeterli yoksa yine de eldeki benzersizleri döndür
-  if (!skipCache) {
-    window.__dayCollageCache[cacheKey] = images;
-  }
-
-  return images;
-}
-
-// ============================================================
-// --- 3. Collage Renderer (GÜNCELLENMİŞ) ---
-// ============================================================
-
-async function getCityCollageImages(searchObj, { skipCache = false } = {}) {
-  let searchTerm = "";
-  let context = "";
-
-  if (typeof searchObj === "string") {
-    searchTerm = searchObj;
-  } else {
-    searchTerm = searchObj.term;
-    context = searchObj.context || "";
-  }
-
-  if (!searchTerm) return [];
-
-  const cacheKey = searchTerm + "_" + context;
-
-  // Cache sadece skipCache=false iken kullanılsın
+  const cacheKey = `${searchTerm}_${context}_${salt}`;
   window.__dayCollageCache = window.__dayCollageCache || {};
   if (!skipCache && window.__dayCollageCache[cacheKey]) {
     return window.__dayCollageCache[cacheKey];
@@ -11583,136 +11490,146 @@ async function getCityCollageImages(searchObj, { skipCache = false } = {}) {
   const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
 
   const queries = [
-    `${cleanTerm} ${cleanContext} tourism`,
-    `${cleanTerm} ${cleanContext} landmarks`,
-    `${cleanTerm} city center`,
-    `${cleanTerm} streets`,
-    `${cleanTerm} food`,
-    `${cleanTerm} night`,
-    `${cleanTerm} people`,
-    `${cleanTerm} nature`,
-    `${cleanTerm} architecture`,
-    `visit ${cleanTerm}`,
+    `${cleanTerm} ${cleanContext} tourism ${salt}`,
+    `${cleanTerm} ${cleanContext} landmarks ${salt}`,
+    `${cleanTerm} city center ${salt}`,
+    `${cleanTerm} streets ${salt}`,
+    `${cleanTerm} food ${salt}`,
+    `${cleanTerm} night ${salt}`,
+    `${cleanTerm} people ${salt}`,
+    `${cleanTerm} nature ${salt}`,
+    `${cleanTerm} architecture ${salt}`,
+    `visit ${cleanTerm} ${salt}`,
   ];
 
   if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
-    queries.push(`${cleanContext} travel`);
-    queries.push(`${cleanContext} landscape`);
-    queries.push(`${cleanContext} aerial`);
+    queries.push(`${cleanContext} travel ${salt}`);
+    queries.push(`${cleanContext} landscape ${salt}`);
+    queries.push(`${cleanContext} aerial ${salt}`);
   }
 
   const images = [];
   const seen = new Set();
 
   for (const q of queries) {
-    if (images.length >= 20) break;
+    if (images.length >= min) break;
     try {
       const img = await getPhoto(q, "pexels");
-      if (img && !seen.has(img)) {
+      if (img && !seen.has(img) && !exclude.has(img)) {
         images.push(img);
         seen.add(img);
       }
     } catch (_) {}
   }
 
-  while (images.length < 6 && images.length > 0) {
-    images.push(...images);
-  }
-
+  // min sayıya ulaşamadıysak, bir sonraki turda daha fazla sorgu denenir.
   if (!skipCache) {
     window.__dayCollageCache[cacheKey] = images;
   }
 
   return images;
 }
+
+// ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
-  // 1. İskelet Oluştur
+  rebuildGlobalCollageUsed(); // mevcut kayıtlı günlerden global seti kur
+
+  const TARGET_COUNT = 6;
+
+  // 1) İskelet
   let collage = dayContainer.querySelector(".day-collage");
   if (!collage) {
     collage = document.createElement("div");
     collage.className = "day-collage";
-    collage.style.cssText = `margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;`;
+    collage.style.cssText =
+      "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
     const dayListEl = dayContainer.querySelector(".day-list");
     if (dayListEl && dayListEl.parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
     else dayContainer.appendChild(collage);
   }
 
-  // 2. Lokasyon Bul
-  const firstWithLoc = (dayItemsArr || []).find(it => it.location && isFinite(it.location.lat) && isFinite(it.location.lng));
+  // 2) Lokasyon
+  const firstWithLoc = (dayItemsArr || []).find(
+    (it) => it.location && isFinite(it.location.lat) && isFinite(it.location.lng)
+  );
   if (!firstWithLoc) {
     collage.style.display = "none";
-    // Gün için kayıtlı foto setini serbest bırak
     delete window.__dayCollagePhotosByDay[day];
-    window.__usedCollageImages = new Set(Object.values(window.__dayCollagePhotosByDay || {}).flat());
-    window.__globalCollageUsed = new Set(Object.values(window.__dayCollagePhotosByDay || {}).flat());
+    rebuildGlobalCollageUsed();
     return;
   }
 
   collage.style.display = "block";
-  collage.innerHTML = `<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;">Loading photos...</div>`;
 
-  // 3. Verileri Çek
-  const searchObj = await fetchSmartLocationName(firstWithLoc.location.lat, firstWithLoc.location.lng, window.selectedCity || "");
+  // 3) Eğer bu gün daha önce 6 foto almışsa, yeniden fetch etmeden render et ve çık
+  const already = window.__dayCollagePhotosByDay[day];
+  if (Array.isArray(already) && already.length === TARGET_COUNT) {
+    renderCollageSlides(collage, already, await fetchSmartLocationName(firstWithLoc.location.lat, firstWithLoc.location.lng, window.selectedCity || ""));
+    return;
+  }
 
-  // Global benzersiz set
-  window.__globalCollageUsed = window.__globalCollageUsed || new Set();
+  collage.innerHTML =
+    '<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;">Loading photos...</div>';
 
-  // Havuzdan 6 benzersiz fotoğraf al
-  const TARGET_COUNT = 6;
-  let daySelections = [];
+  // 4) Yeni seti çek: globalde kullanılmamış 6 foto zorunlu
+  const searchObj = await fetchSmartLocationName(
+    firstWithLoc.location.lat,
+    firstWithLoc.location.lng,
+    window.selectedCity || ""
+  );
+
+  const daySelections = [];
+  const localUsed = new Set();
+  const MAX_ATTEMPTS = 12;
   let attempts = 0;
-  const MAX_ATTEMPTS = 8; // Her attempt ~çoklu sorgu
 
   while (daySelections.length < TARGET_COUNT && attempts < MAX_ATTEMPTS) {
     const pool = await getCityCollageImages(searchObj, {
-      skipCache: true,               // her denemede taze çağrı
-      min: 40,                       // daha geniş havuz
+      skipCache: true,
+      min: 50,
       exclude: window.__globalCollageUsed,
-      salt: `day${day}-try${attempts}` // sorguları çeşitlendir
+      salt: `day${day}-try${attempts}`,
     });
 
-    const localUsed = new Set(daySelections);
     for (const src of pool) {
       if (daySelections.length >= TARGET_COUNT) break;
-      if (window.__globalCollageUsed.has(src)) continue; // başka günlerde kullanılmış
-      if (localUsed.has(src)) continue;                  // gün içi tekrar yok
+      if (window.__globalCollageUsed.has(src)) continue;
+      if (localUsed.has(src)) continue;
       daySelections.push(src);
       localUsed.add(src);
+      window.__globalCollageUsed.add(src);
     }
     attempts++;
   }
 
-  // Yine de 6'yı bulamazsak, kalan slotlar için elimizdeki benzersizleri kullan (tekrar etmeden)
+  // Eğer hala 6 değilse, eksik kalanları gizle (tekrar istemiyoruz)
   if (daySelections.length < TARGET_COUNT) {
-    const fillerPool = Array.from(window.__globalCollageUsed);
-    for (const src of fillerPool) {
-      if (daySelections.length >= TARGET_COUNT) break;
-      if (daySelections.includes(src)) continue;
-      // gün içi tekrar yok; ancak globalde daha önce kullanılmış olsa bile son çare
-      daySelections.push(src);
-    }
+    console.warn(`[collage] ${day}. gün için yeterli benzersiz foto bulunamadı (${daySelections.length}/6).`);
   }
 
-  // Eğer hâlâ yoksa gösterme
   if (!daySelections.length) {
     collage.style.display = "none";
     delete window.__dayCollagePhotosByDay[day];
-    window.__globalCollageUsed = new Set(Object.values(window.__dayCollagePhotosByDay || {}).flat());
+    rebuildGlobalCollageUsed();
     return;
   }
 
-  // Günün seçimini kaydet ve global kullanılanları güncelle
+  // Kaydet ve render et
   window.__dayCollagePhotosByDay[day] = daySelections.slice();
-  daySelections.forEach(src => window.__globalCollageUsed.add(src));
+  renderCollageSlides(collage, daySelections, searchObj);
+};
 
-  // 5. Slider Render
+// ==================== Slider renderer helper ====================
+function renderCollageSlides(collage, images, searchObj) {
   const isMobile = window.innerWidth < 600;
   const visible = isMobile ? 1 : 3;
   let index = 0;
 
-  const titleHtml = searchObj.term ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${searchObj.term}</div>` : '';
+  const titleHtml = searchObj?.term
+    ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${searchObj.term}</div>`
+    : "";
 
   collage.innerHTML = `
     ${titleHtml}
@@ -11724,51 +11641,39 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   `;
 
   const track = collage.querySelector(".collage-track");
-  daySelections.forEach((src) => {
+  images.forEach((src) => {
     const slide = document.createElement("div");
     slide.style.cssText = `flex: 0 0 ${100 / visible}%; max-width: ${100 / visible}%; padding: 4px; box-sizing: border-box;`;
     slide.innerHTML = `<div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed;"><img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
     track.appendChild(slide);
   });
 
-  function update() {
-    const max = Math.max(0, daySelections.length - visible);
+  const update = () => {
+    const max = Math.max(0, images.length - visible);
     index = Math.max(0, Math.min(max, index));
     track.style.transform = `translateX(-${index * (100 / visible)}%)`;
 
     const prev = collage.querySelector(".prev");
     const next = collage.querySelector(".next");
-    if (prev) { prev.style.opacity = index === 0 ? 0.3 : 1; prev.style.pointerEvents = index === 0 ? 'none' : 'auto'; }
-    if (next) { next.style.opacity = index === max ? 0.3 : 1; next.style.pointerEvents = index === max ? 'none' : 'auto'; }
-  }
+    if (prev) {
+      prev.style.opacity = index === 0 ? 0.3 : 1;
+      prev.style.pointerEvents = index === 0 ? "none" : "auto";
+    }
+    if (next) {
+      next.style.opacity = index === max ? 0.3 : 1;
+      next.style.pointerEvents = index === max ? "none" : "auto";
+    }
+  };
 
-  collage.querySelector(".prev").onclick = (e) => { e.stopPropagation(); index--; update(); };
-  collage.querySelector(".next").onclick = (e) => { e.stopPropagation(); index++; update(); };
+  collage.querySelector(".prev").onclick = (e) => {
+    e.stopPropagation();
+    index--;
+    update();
+  };
+  collage.querySelector(".next").onclick = (e) => {
+    e.stopPropagation();
+    index++;
+    update();
+  };
   update();
-};
-// Gün bazlı collage fotoğraflarını garanti altına al
-async function ensureDayCollagePhotos(day) {
-    if (window.__dayCollagePhotosByDay[day]?.length === 6) {
-        return window.__dayCollagePhotosByDay[day];
-    }
-
-    const city = (window.selectedCity || "").trim() || "travel";
-    const photos = [];
-    const seen = new Set();
-
-    // 6 farklı fotoğraf topla (pexels + pixabay karışık dene)
-    for (let i = 0; i < 12 && photos.length < 6; i++) {
-        const query = `${city} travel day ${day} ${i}`;
-        let url = await getPexelsImage(query);
-        if (!url || url === PLACEHOLDER_IMG) {
-            url = await window.getPixabayImage(query);
-        }
-        if (url && url !== PLACEHOLDER_IMG && !seen.has(url)) {
-            photos.push(url);
-            seen.add(url);
-        }
-    }
-
-    window.__dayCollagePhotosByDay[day] = photos;
-    return photos;
 }
