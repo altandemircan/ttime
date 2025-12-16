@@ -11561,50 +11561,65 @@ window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = '
 
 // O günün haritasının üzerine 3'lü fotoğraf kolajı ekler
 async function addDayHeroCollage(day) {
-    const mapContainer = document.getElementById(`route-map-day${day}`);
-    
-    // Harita yoksa veya zaten kolaj eklenmişse çık
-    if (!mapContainer || document.getElementById(`day-collage-${day}`)) return;
+    console.log(`[COLLAGE] Day ${day} için kolaj başlatılıyor...`);
 
-    // 1. O günün rotasındaki noktaları al
-    // (getDayPoints fonksiyonunun mevcut olduğunu varsayıyoruz)
-    const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+    // 1. Hedef Elementi Bul (Harita paneli veya kontrol barı)
+    // Haritanın olduğu "map-content-wrap" div'ini bulup ONUN ÜSTÜNE ekleyeceğiz.
+    const mapContentWrap = document.querySelector(`#day-container-${day} .map-content-wrap`);
     
-    // Sadece ismi olan geçerli yerleri filtrele (Kullanıcı konumu vs hariç)
+    if (!mapContentWrap) {
+        console.warn(`[COLLAGE] Day ${day} için map-content-wrap bulunamadı!`);
+        return;
+    }
+
+    // Zaten ekli mi diye kontrol et
+    if (document.getElementById(`day-collage-${day}`)) {
+        console.log(`[COLLAGE] Day ${day} için kolaj zaten var.`);
+        return;
+    }
+
+    // 2. Noktaları Al
+    const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
     const places = points.filter(p => p.name && p.name !== 'User Location' && p.name !== 'Starting Point');
+
+    console.log(`[COLLAGE] Day ${day} için bulunan mekanlar:`, places.length);
 
     if (places.length === 0) return;
 
-    // 2. İlk 3 yeri seç
+    // 3. İlk 3 yeri seç
     const topPlaces = places.slice(0, 3);
 
-    // 3. Resimleri Çek (Mevcut getImageForPlace fonksiyonunu kullanarak)
+    // 4. Resimleri Çek (Parallel Request)
     const city = window.selectedCity || "";
     
-    // Tüm resimleri paralel olarak iste
     const imagePromises = topPlaces.map(p => {
-        // Kategori tahmini (Basitçe 'tourist attraction' diyoruz, varsa elindeki kategoriyi kullan)
+        // Kategori tahmini (Basitçe 'tourist attraction' diyoruz)
         let category = "tourist attraction";
-        return getImageForPlace(p.name, category, city).catch(() => null);
+        // Eğer kategori verisi varsa onu kullan
+        if(p.category) category = p.category; 
+        
+        return getImageForPlace(p.name, category, city)
+            .then(img => ({ img: img, name: p.name }))
+            .catch(err => {
+                console.error(`[COLLAGE] Resim hatası (${p.name}):`, err);
+                return null;
+            });
     });
 
-    const images = await Promise.all(imagePromises);
-    
-    // Sadece resmi başarıyla gelenleri al
-    // (Resim ve mekan ismini obje olarak tutuyoruz ki etikete yazabilelim)
-    const validData = images.map((img, i) => ({ img: img, name: topPlaces[i].name })).filter(d => d.img);
+    const results = await Promise.all(imagePromises);
+    const validData = results.filter(d => d && d.img);
+
+    console.log(`[COLLAGE] Day ${day} için geçerli resim sayısı:`, validData.length);
 
     if (validData.length === 0) return;
 
-    // 4. HTML Oluştur
-    const gridClass = `grid-${Math.min(validData.length, 3)}`; // grid-1, grid-2 veya grid-3
+    // 5. HTML Oluştur
+    const gridClass = `grid-${Math.min(validData.length, 3)}`;
     
-    let html = `<div id="day-collage-${day}" class="day-hero-collage ${gridClass}">`;
+    let html = `<div id="day-collage-${day}" class="day-hero-collage ${gridClass}" style="margin: 10px 0 15px 0;">`;
     
     validData.forEach((data, index) => {
-        // En fazla 3 tane göster
-        if (index > 2) return; 
-        
+        if (index > 2) return;
         html += `
             <div class="collage-item item-${index}">
                 <img src="${data.img}" alt="${data.name}" loading="lazy">
@@ -11612,9 +11627,8 @@ async function addDayHeroCollage(day) {
             </div>
         `;
     });
-    
     html += `</div>`;
 
-    // 5. Haritanın Üstüne Ekle (beforebegin: Harita div'inden hemen önce)
-    mapContainer.insertAdjacentHTML('beforebegin', html);
+    // 6. DOM'a Ekle (Harita alanının hemen öncesine)
+    mapContentWrap.insertAdjacentHTML('beforebegin', html);
 }
