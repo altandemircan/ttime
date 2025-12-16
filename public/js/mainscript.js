@@ -3470,35 +3470,38 @@ function attachMapClickAddMode(day) {
 
 // uploaded:mainscript.js
 
-// --- GLOBAL TOKEN KİLİDİ ---
-// Her yeni gezi açıldığında bu sayı değişecek.
-// Eski istekler bu sayıya bakıp "Aa numara değişmiş, ben eskiyim" diyip iptal olacak.
-window.CURRENT_TRIP_TOKEN = 0;
+// GLOBAL KİLİT MEKANİZMASI
+// Bu değişken, kullanıcının o an baktığı en son geziyi temsil eder.
+window.CURRENT_AI_SESSION_ID = 0;
+
+// Global Cache (Hafıza) - Sayfa yenilenmediği sürece verileri hatırlar
+window.AI_RESPONSE_CACHE = window.AI_RESPONSE_CACHE || {};
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // 1. BU İŞLEM İÇİN YENİ BİR KİMLİK OLUŞTUR
-    const myTransactionToken = Date.now(); // Örn: 1715431234567
+    // 1. ADIM: YENİ OTURUM KİMLİĞİ OLUŞTUR
+    // Bu fonksiyon her çalıştığında (tıklandığında) benzersiz bir numara üretir.
+    const mySessionId = Date.now() + Math.random(); 
     
-    // 2. GLOBAL KİLİDİ GÜNCELLE
-    // Artık geçerli olan tek işlem budur. Önceki tüm istekler geçersiz kılındı.
-    window.CURRENT_TRIP_TOKEN = myTransactionToken;
+    // Global değişkeni güncelle: "Artık geçerli olan tek gezi budur."
+    window.CURRENT_AI_SESSION_ID = mySessionId;
 
-    console.log(`[AI START] Yeni işlem başlatıldı. Token: ${myTransactionToken} - Şehir: ${cityOverride || window.selectedCity}`);
+    console.log(`[AI START] Yeni işlem başlatıldı. ID: ${mySessionId}`);
 
     // --- TEMİZLİK ---
-    // Var olan tüm AI kutularını sil
+    // Önceki AI kutularını temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
 
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir ve Ülke Belirleme (Güçlendirilmiş)
+    // Şehir ve Ülke Ayrıştırma (Güçlendirilmiş)
     let rawCity = cityOverride || (window.selectedCity || '');
     let cleanTitle = rawCity.replace(/ trip plan.*$/i, '').trim(); 
-    // "Izmir, Turkey" -> Hedef: "Izmir"
+    // Örn: "Rome, Italy" -> targetCity: "Rome", country: "Italy"
     let targetCity = cleanTitle.split(',')[0].trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     
+    // Google verisi yoksa başlıktan ülkeyi kurtar
     if (!country && cleanTitle.includes(',')) {
         let parts = cleanTitle.split(',');
         country = parts[parts.length - 1].trim();
@@ -3506,7 +3509,10 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
     if (!targetCity && !aiStaticInfo) return;
 
-    // --- HTML İSKELETİ ---
+    // Cache Anahtarı: Şehir+Ülke (Çakışmayı önlemek için)
+    const cacheKey = country ? `${targetCity}-${country}` : targetCity;
+
+    // --- TASARIM (Senin tasarımın aynısı) ---
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -3530,7 +3536,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    // Referanslar
+    // Element Referansları
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
@@ -3543,20 +3549,19 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
     }
 
-    // --- POPULATE FUNCTION ---
+    // --- VERİYİ EKRANA BASAN FONKSİYON ---
     function populateAndShow(data, timeElapsed = null) {
-        // !!! SON KONTROL NOKTASI !!!
-        // Ekrana yazı yazmadan hemen önce: "Hala patron ben miyim?"
-        if (window.CURRENT_TRIP_TOKEN !== myTransactionToken) {
-            console.error(`[AI BLOCKED] ${targetCity} verisi geldi ama ekran değiştiği için iptal edildi.`);
-            // Bu div artık geçersiz, ekrandan kaldır
-            if(aiDiv) aiDiv.remove();
+        // !!! KRİTİK KONTROL !!! 
+        // Veriyi basmadan hemen önce: "Kullanıcı hala başlattığım gezide mi?"
+        if (window.CURRENT_AI_SESSION_ID !== mySessionId) {
+            console.warn(`[AI BLOCKED] ${targetCity} verisi geldi ama kullanıcı başka geziye geçti. İPTAL.`);
+            if(aiDiv) aiDiv.remove(); // Yanlış kutuyu sil
             return; 
         }
 
         if (aiSpinner) aiSpinner.style.display = "none";
         
-        // Header Click Event
+        // Toggle Butonu (Aç/Kapa)
         const header = aiDiv.querySelector('#ai-toggle-header');
         if (header && !header.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
@@ -3568,7 +3573,6 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
             const aiIcon = btn.querySelector('.arrow-icon');
             let expanded = true;
-            
             header.onclick = function() {
                 expanded = !expanded;
                 if (expanded) {
@@ -3591,7 +3595,8 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         const txtTip = cleanText(data.tip) || "Info not available.";
         const txtHighlight = cleanText(data.highlight) || "Info not available.";
 
-        if (typeof typeWriterEffect === 'function' && !aiStaticInfo && !window.AI_RESPONSE_CACHE?.[targetCity]) {
+        // Daktilo Efekti (Sadece yeni yüklenenlerde)
+        if (typeof typeWriterEffect === 'function' && !aiStaticInfo && !window.AI_RESPONSE_CACHE[cacheKey]) {
              typeWriterEffect(aiSummary, txtSummary, 18, function() {
                 typeWriterEffect(aiTip, txtTip, 18, function() {
                     typeWriterEffect(aiHighlight, txtHighlight, 18);
@@ -3606,23 +3611,22 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         if (timeElapsed) aiTime.textContent = `⏱️ ${timeElapsed} ms`;
     }
 
-    // --- SENARYO 1: ZATEN KAYITLI VERİ ---
+    // --- SENARYO 1: VERİ ZATEN ELİMİZDE (DATABASE) ---
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo);
         return;
     }
 
-    // --- SENARYO 2: FRONTEND CACHE ---
-    window.AI_RESPONSE_CACHE = window.AI_RESPONSE_CACHE || {};
-    // Basit cache key kullanıyoruz
-    if (window.AI_RESPONSE_CACHE[targetCity]) {
-        populateAndShow(window.AI_RESPONSE_CACHE[targetCity]);
-        // Global Cart'ı da güncelle ki tekrar kaybolmasın
-        window.cart.aiData = window.AI_RESPONSE_CACHE[targetCity];
+    // --- SENARYO 2: ÖNBELLEKTE (RAM) VAR ---
+    if (window.AI_RESPONSE_CACHE[cacheKey]) {
+        console.log(`[AI FAST] ${cacheKey} önbellekten yüklendi.`);
+        populateAndShow(window.AI_RESPONSE_CACHE[cacheKey]);
+        // Global Cart'ı güncelle
+        window.cart.aiData = window.AI_RESPONSE_CACHE[cacheKey];
         return;
     }
 
-    // --- SENARYO 3: FETCH (Kritik Kısım) ---
+    // --- SENARYO 3: BACKEND'E GİT (FETCH) ---
     let t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
@@ -3631,10 +3635,10 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             body: JSON.stringify({ city: targetCity, country })
         });
 
-        // 1. Fetch biter bitmez kontrol et
-        if (window.CURRENT_TRIP_TOKEN !== myTransactionToken) {
-            console.warn(`[AI ABORT] ${targetCity} fetch bitti ama kullanıcı geziyi değiştirdi.`);
-            return; // JSON bile parse etme, direkt çık.
+        // KONTROL 1: Fetch bittiğinde hala aynı yerde miyiz?
+        if (window.CURRENT_AI_SESSION_ID !== mySessionId) {
+            console.log("Kullanıcı fetch sırasında ayrıldı. İşlem durduruldu.");
+            return;
         }
 
         const ollamaData = await resp.json();
@@ -3648,12 +3652,11 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             time: elapsed
         };
 
-        // Cache'e at
-        window.AI_RESPONSE_CACHE[targetCity] = aiData;
+        // Cache'e Kaydet (Arka planda dursa da sorun değil, gelecek sefer işe yarar)
+        window.AI_RESPONSE_CACHE[cacheKey] = aiData;
 
-        // 2. Veriyi Cart'a ve Ekrana yazmadan önce TEKRAR kontrol et
-        if (window.CURRENT_TRIP_TOKEN === myTransactionToken) {
-            // Sadece şu anki gezi hala benim başlattığım geziyse kaydet
+        // KONTROL 2: Ekrana yazmadan önceki son çıkış
+        if (window.CURRENT_AI_SESSION_ID === mySessionId) {
             window.cart.aiData = aiData; 
             window.lastTripAIInfo = aiData;
             
@@ -3661,19 +3664,17 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
                 saveCurrentTripToStorage();
             }
             populateAndShow(aiData, elapsed);
-        } else {
-            console.warn(`[AI PREVENT] ${targetCity} verisi geldi ama arayüz değişmiş. Cart güncellenmedi.`);
         }
 
     } catch (e) {
         console.error("AI Error:", e);
-        // Hata mesajını basarken bile kontrol et
-        if (window.CURRENT_TRIP_TOKEN === myTransactionToken) {
-            if (aiTime) aiTime.innerHTML = "<span style='color:red'>Unavailable</span>";
+        // Hata mesajı basarken bile kontrol et
+        if (window.CURRENT_AI_SESSION_ID === mySessionId) {
+            if (aiTime) aiTime.innerHTML = "<span style='color:red'>Hata.</span>";
             if (aiSpinner) aiSpinner.style.display = "none";
             aiContent.style.maxHeight = "1200px";
             aiContent.style.opacity = "1";
-            aiSummary.textContent = "AI service temporarily unavailable.";
+            aiSummary.textContent = "AI bağlantı hatası.";
         }
     }
 };
