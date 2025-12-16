@@ -4722,7 +4722,118 @@ async function loadRealImages(day) {
 // ======================================================
 // 3. RENDER FONKSİYONU (RenderRouteForDay)
 // ======================================================
+async function renderRouteForDay(day) {
+    console.log("[ROUTE] renderRouteForDay ÇALIŞTI -> Day:", day);
 
+    // --- Standart Kontroller ---
+    if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) return;
+    if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
+        const pts0 = getDayPoints(day); if (!pts0 || pts0.length === 0) return;
+    }
+
+    const containerId = `route-map-day${day}`;
+    const points = getDayPoints(day);
+
+    // --- Harita Konteynerini Garantiye Al ---
+    if (typeof ensureDayMapContainer === 'function') {
+        ensureDayMapContainer(day); 
+    }
+
+    // 1. Durum: Nokta Yok
+    if (!points || points.length === 0) {
+        initEmptyDayMap(day);
+        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
+        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
+        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+        return;
+    }
+
+    // 2. Durum: Tek Nokta
+    if (points.length === 1) {
+        initEmptyDayMap(day);
+        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
+        const map = window.leafletMaps?.[containerId];
+        if (map) {
+             map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
+             L.marker([points[0].lat, points[0].lng], {
+                icon: L.divIcon({
+                    html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
+                    className: "", iconSize: [32, 32], iconAnchor: [16, 16]
+                })
+            }).addTo(map).bindPopup(`<b>${points[0].name || 'Point'}</b>`);
+            map.setView([points[0].lat, points[0].lng], 14, { animate: true });
+        }
+        // [KOLAJI ÇAĞIR]
+        addDayHeroCollage(day); 
+        return;
+    }
+
+    // 3. Durum: Rota Çizimi (2+ Nokta)
+    initEmptyDayMap(day);
+    const snappedPoints = [];
+    for (const pt of points) {
+        const snapped = await snapPointToRoad(pt.lat, pt.lng);
+        snappedPoints.push({ ...snapped, name: pt.name });
+    }
+    const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
+
+    // Rota Verisi Çekme Fonksiyonu
+    async function fetchRoute() {
+        const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
+        const url = buildDirectionsUrl(coordParam, day);
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (!data.routes || !data.routes[0]) throw new Error('No route');
+        return {
+            geojson: { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: data.routes[0].geometry, properties: {} }] },
+            coords: data.routes[0].geometry.coordinates,
+            summary: { distance: data.routes[0].distance, duration: data.routes[0].duration },
+            legs: data.routes[0].legs
+        };
+    }
+
+    let routeData;
+    try {
+        if (!areAllPointsInTurkey(points)) {
+            // Fly Mode (Düz Çizgi)
+            let totalKm = 0;
+            for(let i=1; i<points.length; i++) totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng)/1000;
+            routeData = {
+                geojson: { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "LineString", coordinates: points.map(p=>[p.lng, p.lat]) }, properties: {} }] },
+                summary: { distance: totalKm*1000, duration: (totalKm/4)*3600 },
+                coords: points.map(p=>[p.lng, p.lat])
+            };
+        } else {
+            // Türkiye (OSRM)
+            routeData = await fetchRoute();
+        }
+    } catch (e) { console.warn("Rota hatası:", e); }
+
+    if (routeData) {
+        window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+        window.lastRouteGeojsons[containerId] = routeData.geojson;
+        window.lastRouteSummaries = window.lastRouteSummaries || {};
+        window.lastRouteSummaries[containerId] = routeData.summary;
+
+        renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day);
+        
+        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+        const expandedMapObj = window.expandedMaps?.[containerId];
+        if (expandedMapObj?.expandedMap) updateExpandedMap(expandedMapObj.expandedMap, day);
+    }
+
+    // [KOLAJI ÇAĞIR - BURASI ÖNEMLİ]
+    // Fonksiyonun en sonunda, asenkron olarak çağırıyoruz.
+    // DOM'un güncellenmesi için ufak bir gecikme olması iyidir, ama fonksiyon içindeki retry bunu halledecek.
+console.log("[DEBUG] renderRouteForDay bitti. Kolajı çağırmak için bekleniyor...");
+    
+    // 1 saniye sonra çalıştır (DOM'un oturduğundan emin olmak için)
+    setTimeout(() => {
+        addDayHeroCollage(day);
+    }, 1000);
+}
 
 
 function forceCleanExpandedMap(day) {
