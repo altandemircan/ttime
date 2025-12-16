@@ -3466,6 +3466,10 @@ function attachMapClickAddMode(day) {
   map.on('dblclick', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
+// uploaded:mainscript.js
+
+// ... (mevcut kodlar)
+
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
     // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
@@ -3480,6 +3484,12 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     // Şehir yoksa ve statik veri de yoksa çık
     if (!city && !aiStaticInfo) return;
 
+    // --- BAĞLAM KONTROLÜ İÇİN DEĞİŞKENLERİ SAKLA ---
+    // İstek atılırken hangi gezideydik?
+    const requestingTripKey = window.activeTripKey;
+    const requestingCity = window.selectedCity;
+    // ------------------------------------------------
+
     // --- TEMİZLEME FONKSİYONU (Robot ikonunu siler) ---
     function cleanText(text) {
         if (!text) return "";
@@ -3487,7 +3497,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
     }
 
-    // HTML İskeleti
+    // HTML İskeleti (DOM oluşturma kodları aynı kalıyor...)
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -3510,7 +3520,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     `;
     
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
-
+    // ... (DOM element seçimleri ve populateAndShow fonksiyonu aynı kalıyor) ...
     const aiSummary = aiDiv.querySelector('#ai-summary');
     const aiTip = aiDiv.querySelector('#ai-tip');
     const aiHighlight = aiDiv.querySelector('#ai-highlight');
@@ -3518,13 +3528,14 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     const aiSpinner = aiDiv.querySelector('#ai-spinner');
     const aiContent = aiDiv.querySelector('.ai-info-content');
     
-    // İçerik Gösterme Yardımcısı
     function populateAndShow(data, timeElapsed = null) {
+       // ... (mevcut içerik doldurma kodları) ...
         if (aiSpinner) aiSpinner.style.display = "none";
         
         // Aç/Kapa butonu ekle (yoksa)
         const header = aiDiv.querySelector('#ai-toggle-header');
         if (!header.querySelector('#ai-toggle-btn')) {
+             // ... (buton oluşturma kodları) ...
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
@@ -3553,7 +3564,6 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         aiContent.style.maxHeight = "1200px";
         aiContent.style.opacity = "1";
 
-        // --- ROBOT İKONU TEMİZLİĞİ BURADA YAPILIYOR ---
         const txtSummary = cleanText(data.summary) || "Info not available.";
         const txtTip = cleanText(data.tip) || "Info not available.";
         const txtHighlight = cleanText(data.highlight) || "Info not available.";
@@ -3593,9 +3603,21 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         });
 
         const ollamaData = await resp.json();
+        
+        // --- DÜZELTME BAŞLANGICI: CONTEXT KONTROLÜ ---
+        // Yanıt geldiğinde kullanıcı hala aynı gezide mi?
+        if (window.activeTripKey !== requestingTripKey) {
+            console.log(`[AI Info] Trip değiştiği için (${city}) yanıtı iptal edildi.`);
+            return;
+        }
+        if (window.selectedCity !== requestingCity) {
+            console.log(`[AI Info] Şehir seçimi değiştiği için (${city}) yanıtı iptal edildi.`);
+            return;
+        }
+        // --- DÜZELTME BİTİŞİ ---
+
         let elapsed = Math.round(performance.now() - t0);
 
-        // Veriyi alırken temizlemiyoruz, ekrana basarken cleanText ile temizliyoruz.
         const aiData = {
             city: city,
             summary: ollamaData.summary,
@@ -3616,6 +3638,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
     } catch (e) {
         console.error("AI Error:", e);
+        // Hata durumunda da context kontrolü iyi olabilir ama elementler silinmiş olabilir, try-catch zaten koruyor.
         if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
         if (aiSpinner) aiSpinner.style.display = "none";
         aiContent.style.maxHeight = "1200px";
