@@ -14,11 +14,16 @@ function isTripFav(item) {
 }
 
 // --- KULLANILMIŞ FOTOĞRAF HAFIZASI ---
-// Sayfa yenilenene kadar hangi fotoların kullanıldığını hatırlar.
 window.__usedCollageImages = window.__usedCollageImages || new Set();
 window.__dayCollageCache = window.__dayCollageCache || {};
 // Yeni: Gün bazlı fotoğraf atamaları (ayrı günler için farklı set)
 window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+
+function resetCollageMemory() {
+    window.__usedCollageImages = new Set();
+    window.__dayCollageCache = {};
+    window.__dayCollagePhotosByDay = {}; // gün bazlı fotoğrafları da sıfırla
+}
 
 window.__welcomeHiddenForever = false;
 window.__restaurantLayers = window.__restaurantLayers || [];
@@ -11401,175 +11406,7 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
  * Kullanıcı konum markerını haritada günceller.
  * Hem 2D (Leaflet) hem 3D (MapLibre) modlarını destekler.
  */
-window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer) {
-    const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-ring-2"></div><div class="user-loc-dot"></div></div>`;
-    
-    // Eski markerları temizle
-    if (window._userLocMarker3D) { 
-        try { window._userLocMarker3D.remove(); } catch(e){} 
-        window._userLocMarker3D = null; 
-    }
-    if (window._userLocMarker2D && expandedMap) { 
-        try { expandedMap.removeLayer(window._userLocMarker2D); } catch(e){} 
-        window._userLocMarker2D = null; 
-    }
 
-    // Koordinat yoksa (kapatma durumu) çık
-    if (typeof lat !== 'number' || typeof lng !== 'number') return;
-
-    const is3D = (layer === 'liberty' && window._maplibre3DInstance);
-
-    if (is3D) {
-        // 3D Marker Ekle
-        const el = document.createElement('div');
-        el.innerHTML = locHtml; 
-        window._userLocMarker3D = new maplibregl.Marker({ element: el })
-            .setLngLat([lng, lat])
-            .addTo(window._maplibre3DInstance);
-    } else if (expandedMap) {
-        // 2D Marker Ekle
-        const customIcon = L.divIcon({
-            className: 'custom-loc-icon-leaflet',
-            html: locHtml,
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
-        window._userLocMarker2D = L.marker([lat, lng], { icon: customIcon, zIndexOffset: 1000 })
-            .addTo(expandedMap);
-    }
-};
-
-/**
- * Konum durumunu kontrol eder ve gerekirse haritayı odaklar.
- */
-window.syncUserLocationState = function(day, expandedMapInstance, currentLayer) {
-    const isActive = window.isLocationActiveByDay && window.isLocationActiveByDay[day];
-    const btn = document.getElementById(`use-my-location-btn-day${day}`);
-    
-    if (!isActive) {
-        if(btn) btn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
-        return;
-    }
-
-    // Aktifse konumu al ve çiz
-    if (navigator.geolocation) {
-        if(btn) btn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
-        
-        navigator.geolocation.getCurrentPosition(pos => {
-            const { latitude, longitude } = pos.coords;
-            
-            // Markerı çiz
-            window.updateUserLocationMarker(expandedMapInstance, day, latitude, longitude, currentLayer);
-            
-            // Haritayı uçur (isteğe bağlı, katman değişiminde odaklasın isteniyorsa)
-            if (currentLayer === 'liberty' && window._maplibre3DInstance) {
-                window._maplibre3DInstance.flyTo({ center: [longitude, latitude], zoom: 14 });
-            } else if (expandedMapInstance) {
-                expandedMapInstance.setView([latitude, longitude], 14);
-            }
-        }, () => {
-            // Hata olursa pasife çek
-            window.isLocationActiveByDay[day] = false;
-            if(btn) btn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
-        });
-    }
-};
-// Trip seçilince input-wrapper gizlensin
-document.addEventListener('click', function(e) {
-  if (e.target.closest('.trip-item')) {
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = 'none';
-  }
-});
-// "trip-main-box" veya "trip-info-box" tıklanınca input-wrapper'ı gizle
-document.addEventListener('click', function(e) {
-  if (
-    e.target.closest('.trip-main-box') ||
-    e.target.closest('.trip-info-box') ||
-    e.target.closest('.trip-title')
-  ) {
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = 'none';
-  }
-});
-
-// === MY TRIPS TITLE FIX ===
-// My Trips listesinden bir geziye tıklandığında başlığı oradan alıp zorla düzeltir.
-document.addEventListener('click', function(e) {
-    // Tıklanan yer bir gezi kutusu mu?
-    const tripBox = e.target.closest('.mytrips-tripbox');
-    
-    // Eğer butonlara (sil, pdf, fav) tıklandıysa veya kutu değilse işlem yapma
-    if (!tripBox || e.target.closest('button')) return;
-
-    // Tıklanan kutunun içindeki doğru başlığı bul (örn: "Antalya trip plan")
-    const sidebarTitleEl = tripBox.querySelector('.trip-title');
-    
-    if (sidebarTitleEl) {
-        const correctTitle = sidebarTitleEl.textContent.trim();
-        
-        // Diğer yükleme fonksiyonları çalıştıktan hemen sonra devreye girsin diye ufak gecikme
-        setTimeout(() => {
-            // 1. Ana Başlığı Düzelt
-            const mainTitleEl = document.getElementById('trip_title');
-            if (mainTitleEl) {
-                mainTitleEl.textContent = correctTitle;
-            }
-
-            // 2. Global değişkenleri güncelle (PDF ve AI için önemli)
-            window.lastUserQuery = correctTitle;
-
-            // 3. Şehir ismini başlıktan ayıkla ("Antalya trip plan" -> "Antalya")
-            // Bu sayede "Trip to Barcelona" hafızası silinir.
-            const cityName = correctTitle.replace(/ trip plan$/i, '').replace(/ trip$/i, '').trim();
-            if (cityName) {
-                window.selectedCity = cityName;
-                
-                // Eğer ekranda yanlış şehre ait AI kutusu varsa kaldır
-                const oldAiInfo = document.querySelector('.ai-info-section');
-                if (oldAiInfo) oldAiInfo.remove();
-            }
-        }, 150); // 150ms gecikme ile son sözü bu kod söyler
-    }
-});
-
-// --- GÜNCELLENMİŞ KONUM FONKSİYONU (ZOOM KONTROLLÜ) ---
-window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = 'bright', shouldFly = false) {
-    const locHtml = `<div class="user-loc-wrapper"><div class="user-loc-ring-1"></div><div class="user-loc-ring-2"></div><div class="user-loc-dot"></div></div>`;
-    
-    // Eski markerları temizle
-    if (window._userLocMarker3D) { try { window._userLocMarker3D.remove(); } catch(e){} window._userLocMarker3D = null; }
-    if (window._userLocMarker2D && expandedMap) { try { expandedMap.removeLayer(window._userLocMarker2D); } catch(e){} window._userLocMarker2D = null; }
-
-    // Konum verisi yoksa çık
-    if (typeof lat !== 'number') return;
-
-    // 3D Harita Modu
-    if (layer === 'liberty' && window._maplibre3DInstance) {
-        const el = document.createElement('div');
-        el.innerHTML = locHtml; 
-        window._userLocMarker3D = new maplibregl.Marker({ element: el })
-            .setLngLat([lng, lat])
-            .addTo(window._maplibre3DInstance);
-        
-        // Sadece istenirse uç
-        if (shouldFly) {
-            window._maplibre3DInstance.flyTo({ center: [lng, lat], zoom: 14 });
-        }
-    } 
-    // 2D Harita Modu
-    else if (expandedMap) {
-        const customIcon = L.divIcon({ className: 'custom-loc-icon-leaflet', html: locHtml, iconSize: [20, 20], iconAnchor: [10, 10] });
-        window._userLocMarker2D = L.marker([lat, lng], { icon: customIcon, zIndexOffset: 1000 }).addTo(expandedMap);
-        
-        // Sadece istenirse uç
-        if (shouldFly) {
-            expandedMap.flyTo([lat, lng], 14);
-        }
-    }
-};
-// ------------------------------------------------------
-// Helpers
 // --- Collage helpers ---
 // ============================================================
 // --- 1. Hiyerarşi Analizi ve İsim Çıkarma (GELİŞTİRİLMİŞ) ---
@@ -11806,3 +11643,29 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   collage.querySelector(".next").onclick = (e) => { e.stopPropagation(); index++; update(); };
   update();
 };
+// Gün bazlı collage fotoğraflarını garanti altına al
+async function ensureDayCollagePhotos(day) {
+    if (window.__dayCollagePhotosByDay[day]?.length === 6) {
+        return window.__dayCollagePhotosByDay[day];
+    }
+
+    const city = (window.selectedCity || "").trim() || "travel";
+    const photos = [];
+    const seen = new Set();
+
+    // 6 farklı fotoğraf topla (pexels + pixabay karışık dene)
+    for (let i = 0; i < 12 && photos.length < 6; i++) {
+        const query = `${city} travel day ${day} ${i}`;
+        let url = await getPexelsImage(query);
+        if (!url || url === PLACEHOLDER_IMG) {
+            url = await window.getPixabayImage(query);
+        }
+        if (url && url !== PLACEHOLDER_IMG && !seen.has(url)) {
+            photos.push(url);
+            seen.add(url);
+        }
+    }
+
+    window.__dayCollagePhotosByDay[day] = photos;
+    return photos;
+}
