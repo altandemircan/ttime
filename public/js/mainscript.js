@@ -13,14 +13,14 @@ function isTripFav(item) {
     );
 }
 
-// --- KULLANILMIŞ FOTOĞRAF HAFIZASI ---
-// Sayfa yenilenene kadar hangi fotoların kullanıldığını hatırlar.
+// Kullanılan resimleri takip etmek için global set
 window.__usedCollageImages = window.__usedCollageImages || new Set();
-window.__dayCollageCache = window.__dayCollageCache || {};
 
+// Yeni plan yapıldığında bu hafızayı temizlemek gerekir.
+// (Mevcut 'New Trip Plan' fonksiyonuna bunu eklemiş olacağız otomatikman, çünkü sayfa yenilenmese bile cart sıfırlanıyor)
 function resetCollageMemory() {
     window.__usedCollageImages = new Set();
-    window.__dayCollageCache = {};
+    window.__dayCollageCache = {}; // Cache'i de temizle ki yeni aramalar yapsın
 }
 
 window.__welcomeHiddenForever = false;
