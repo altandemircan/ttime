@@ -1297,9 +1297,15 @@ document.querySelectorAll('.gallery-item').forEach(item => {
     }
 
     // Collage race condition fix - yeni token oluştur
-    window.__activeTripSessionToken = window.__ttNewTripToken();
-    window.__dayCollagePhotosByDay = {};
-    window.__globalCollageUsed = new Set();
+ try {
+      if (typeof window.__ttNewTripToken === 'function') {
+        window.__activeTripSessionToken = window.__ttNewTripToken();
+      }
+      window.__dayCollagePhotosByDay = {};
+      window.__globalCollageUsed = new Set();
+    } catch(e) {
+      console.warn('[collage] Token reset error:', e);
+    }
 
     // Global değişkenleri sıfırla (Yeni gezi için temiz sayfa)
     window.cart = [];
@@ -1379,9 +1385,15 @@ document.querySelectorAll('. add_theme').forEach(btn => {
     }
 
     // Collage race condition fix - yeni token oluştur
-    window.__activeTripSessionToken = window.__ttNewTripToken();
-    window.__dayCollagePhotosByDay = {};
-    window.__globalCollageUsed = new Set();
+ try {
+      if (typeof window.__ttNewTripToken === 'function') {
+        window.__activeTripSessionToken = window.__ttNewTripToken();
+      }
+      window.__dayCollagePhotosByDay = {};
+      window.__globalCollageUsed = new Set();
+    } catch(e) {
+      console.warn('[collage] Token reset error:', e);
+    }et();
 
     window.cart = [];
     window. latestTripPlan = [];
@@ -4092,10 +4104,15 @@ cartDiv.appendChild(addNewDayButton);
       window.cart = [];
 
       // Collage race condition fix - yeni token oluştur
-      window.__activeTripSessionToken = window.__ttNewTripToken();
+ try {
+      if (typeof window.__ttNewTripToken === 'function') {
+        window.__activeTripSessionToken = window.__ttNewTripToken();
+      }
       window.__dayCollagePhotosByDay = {};
       window.__globalCollageUsed = new Set();
-
+    } catch(e) {
+      console.warn('[collage] Token reset error:', e);
+    }
       // Tüm harita ve overlay temizliği
       if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
       window.routeElevStatsByDay = {};
@@ -11422,7 +11439,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     collage.className = "day-collage";
     collage.style.cssText =
       "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
-    const dayListEl = dayContainer.querySelector(". day-list");
+const dayListEl = dayContainer.querySelector(".day-list");
     if (dayListEl && dayListEl. parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
     else dayContainer. appendChild(collage);
   }
