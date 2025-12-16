@@ -2,6 +2,11 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
+// --- GLOBAL ÖNBELLEK (RAM) ---
+// Bu değişken sunucu çalıştığı sürece hafızada durur.
+// Yapısı: { "Rome, Italy": { status: "pending" | "done", data: {...}, promise: Promise } }
+const aiCache = {};
+
 // Plan summary endpoint
 router.post('/plan-summary', async (req, res) => {
     const { city, country } = req.body;
@@ -9,26 +14,56 @@ router.post('/plan-summary', async (req, res) => {
         res.status(400).send('City is required');
         return;
     }
-    const aiReqCity = country ? `${city}, ${country}` : city;
 
-    // DEBUG: Her sorguda şehir ne gidiyor görün
-    console.log("AIReqCity:", aiReqCity);
+    // Her şehir için benzersiz bir anahtar oluştur (örn: "Rome-Italy")
+    const cacheKey = country ? `${city}-${country}` : city;
 
-    const prompt = `
-    You are an expert travel guide. 
-    For the city "${aiReqCity}", provide specific travel insights ONLY in ENGLISH.
-    Respond ONLY with a valid JSON object (no markdown, no code blocks, just raw JSON) matching this structure:
+    console.log(`[AI Request] ${cacheKey} için istek geldi.`);
 
-    {
-      "summary": "A captivating 1-sentence overview of the city's vibe, history, and main appeal.",
-      "tip": "One specific, practical insider tip about local transport, etiquette, or safety.",
-      "highlight": "The single most unmissable landmark or unique experience in this city."
+    // 1. SENARYO: ZATEN HAFIZADA VAR MI?
+    if (aiCache[cacheKey]) {
+        const cachedItem = aiCache[cacheKey];
+
+        // A) İşlem zaten bitmiş, direkt veriyi döndür.
+        if (cachedItem.status === 'done') {
+            console.log(`[AI Cache] ${cacheKey} hafızadan verildi.`);
+            return res.json(cachedItem.data);
+        }
+
+        // B) İşlem şu an devam ediyor (başka bir sekmede veya arka planda başlamış)
+        if (cachedItem.status === 'pending') {
+            console.log(`[AI Cache] ${cacheKey} şu an işleniyor, bitmesi bekleniyor...`);
+            try {
+                // Mevcut çalışan işlemin bitmesini bekle
+                const data = await cachedItem.promise;
+                return res.json(data);
+            } catch (error) {
+                // Eğer önceki işlem patladıysa tekrar denemeye izin ver
+                delete aiCache[cacheKey];
+            }
+        }
     }
 
-    If you absolutely don't know the answer for a field, put "Info not available."
-`.trim();
+    // 2. SENARYO: YENİ İŞLEM BAŞLAT (Arka planda çalışacak görev)
+    // Bu Promise, req/res döngüsünden bağımsızdır. Kullanıcı gitse bile çalışır.
+    const processingPromise = (async () => {
+        const aiReqCity = country ? `${city}, ${country}` : city;
+        const prompt = `
+        You are an expert travel guide. 
+        For the city "${aiReqCity}", provide specific travel insights ONLY in ENGLISH.
+        Respond ONLY with a valid JSON object (no markdown, no code blocks, just raw JSON) matching this structure:
 
-    try {
+        {
+          "summary": "A captivating 1-sentence overview of the city's vibe, history, and main appeal.",
+          "tip": "One specific, practical insider tip about local transport, etiquette, or safety.",
+          "highlight": "The single most unmissable landmark or unique experience in this city."
+        }
+
+        If you absolutely don't know the answer for a field, put "Info not available."
+        `.trim();
+
+        console.log(`[AI Start] ${cacheKey} için Ollama'ya gidiliyor...`);
+
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
             model: "gemma:2b",
             messages: [{ role: "user", content: prompt }],
@@ -36,36 +71,46 @@ router.post('/plan-summary', async (req, res) => {
             max_tokens: 200
         });
 
-        // Yanıtı debug et!
-        console.log("Ollama response:", response.data);
-
-        // Gemma yanıtı şu formatta gelir:
-        // { model: ..., message: { role: 'assistant', content: '{...}' }, ... }
+        // JSON Temizleme ve Parse İşlemleri
         let jsonText = '';
         if (typeof response.data === 'object' && response.data.message && response.data.message.content) {
             jsonText = response.data.message.content;
         } else if (typeof response.data === 'string') {
             const match = response.data.match(/\{[\s\S]*?\}/);
-            if (match) {
-                jsonText = match[0];
-            }
+            if (match) jsonText = match[0];
         }
 
-        let jsonResponse;
-        try {
-            jsonResponse = JSON.parse(jsonText);
-        } catch (e) {
-            console.error('Yanıt JSON değil:', response.data);
-            res.status(500).send('AI geçersiz yanıt verdi.');
-            return;
-        }
+        const jsonResponse = JSON.parse(jsonText); // Hata verirse catch'e düşer
+        return jsonResponse;
+    })();
+
+    // 3. İŞLEMİ HAFIZAYA KAYDET (PENDING)
+    aiCache[cacheKey] = {
+        status: 'pending',
+        promise: processingPromise
+    };
+
+    // 4. SONUCU BEKLE VE YANITLA
+    try {
+        const result = await processingPromise;
+        
+        // İşlem bitti, cache'i güncelle (status: done) ve promise'i sil (hafıza tasarrufu)
+        aiCache[cacheKey] = {
+            status: 'done',
+            data: result
+        };
+        console.log(`[AI Success] ${cacheKey} tamamlandı ve kaydedildi.`);
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.json(jsonResponse);
+        res.json(result);
+
     } catch (error) {
+        // Hata durumunda cache'i temizle ki tekrar denenebilsin
+        console.error(`[AI Error] ${cacheKey} hatası:`, error.message);
+        delete aiCache[cacheKey];
+        
         const errMsg = error?.response?.data || error?.message || String(error);
-        console.error('LLM Proxy Error:', errMsg);
         res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
     }
 });
