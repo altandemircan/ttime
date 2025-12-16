@@ -6510,14 +6510,11 @@ border-bottom:1px solid #ddd;
 
 
  .route-controls-bar {
-    display: flex;
-    gap: 8px;
-    margin: 10px 0 20px 0;
+        display: flex;
+    gap: 10px;
+    margin: 20px 0 20px 0;
     flex-direction: column;
-    padding: 10px;
     border-radius: 6px;
-    background: #fafafa;
-    border: 1px solid #ddd;
     }
     .route-controls-bar .tt-travel-mode-set { margin: 0; }
     @media (max-width: 560px) {
