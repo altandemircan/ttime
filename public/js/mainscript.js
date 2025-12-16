@@ -11566,50 +11566,104 @@ window.updateUserLocationMarker = function(expandedMap, day, lat, lng, layer = '
 // ------------------------------------------------------
 // Helpers
 // --- Collage helpers ---
-function extractCityFromPlaceInfo(info, fallbackCity = "") {
+// ============================================================
+// --- 1. Hiyerarşi Analizi ve İsim Çıkarma (GELİŞTİRİLMİŞ) ---
+// ============================================================
+
+function extractSmartSearchTerm(info, fallbackCity = "") {
   if (!info) return fallbackCity || "";
+
   const props = info.properties || {};
-  return (
-    props.city ||
-    props.town ||
-    props.village ||
-    props.municipality ||
-    (info.address_line2 && info.address_line2.split(",")[0]) ||
-    (info.formatted && info.formatted.split(",")[0]) ||
-    fallbackCity ||
-    ""
-  );
+  const addr = props.address || {}; // Bazı API'lerde address objesi ayrıdır, bazılarında root'tadır.
+
+  // Olası alanları normalize et (API farklarına karşı önlem)
+  const suburb = addr.suburb || addr.neighbourhood || props.suburb || "";
+  const district = addr.district || addr.county || props.district || props.county || "";
+  const city = addr.city || addr.town || addr.village || props.city || props.town || "";
+  const state = addr.state || addr.province || props.state || "";
+  const country = addr.country || props.country || "Turkey";
+
+  // LOGIC: En anlamlı turistik bölgeyi seç.
+  
+  // 1. KURAL: Eğer elimizde bir İLÇE (District) varsa ve bu ilçe ŞEHİR (State) ile aynı değilse (Merkez ilçe değilse), 
+  // fotoğraf araması için en iyi aday İLÇE'dir. (Örn: Altınkum -> Konyaaltı)
+  if (district && district.toLowerCase() !== state.toLowerCase()) {
+      // "Merkez" kelimesi geçen ilçeleri filtrele (Antalya Merkez gibi), genelde il ismini kullanmak daha iyidir.
+      if (!district.toLowerCase().includes("merkez")) {
+          return { term: district, context: state }; // Döndür: Konyaaltı (Context: Antalya)
+      }
+  }
+
+  // 2. KURAL: İlçe yoksa veya uygun değilse ŞEHİR/İL (City/State) kullan.
+  if (city) return { term: city, context: country };
+  if (state) return { term: state, context: country };
+
+  // 3. KURAL: Hiçbiri yoksa fallback
+  return { term: fallbackCity, context: "" };
 }
 
-async function fetchCityNameFromLocation(lat, lng, fallbackCity = "") {
+async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
   try {
     const info = await getPlaceInfoFromLatLng(lat, lng);
-    return extractCityFromPlaceInfo(info, fallbackCity);
+    return extractSmartSearchTerm(info, fallbackCity);
   } catch (_) {
-    return fallbackCity || "";
+    return { term: fallbackCity, context: "" };
   }
 }
 
-async function getCityCollageImages(city) {
-  if (!city) return [];
-  window.__dayCollageCache = window.__dayCollageCache || {};
-  if (window.__dayCollageCache[city]) return window.__dayCollageCache[city];
+// ============================================================
+// --- 2. Akıllı Görsel Arama (ZENGİNLEŞTİRİLMİŞ) ---
+// ============================================================
 
+async function getCityCollageImages(searchObj) {
+  // searchObj { term: "Konyaaltı", context: "Antalya" } şeklinde gelir.
+  // Eğer string gelirse (eski yapıdan), onu objeye çeviririz.
+  let searchTerm = "";
+  let context = "";
+
+  if (typeof searchObj === 'string') {
+      searchTerm = searchObj;
+  } else {
+      searchTerm = searchObj.term;
+      context = searchObj.context || "";
+  }
+
+  if (!searchTerm) return [];
+
+  const cacheKey = searchTerm + "_" + context;
+  window.__dayCollageCache = window.__dayCollageCache || {};
+  if (window.__dayCollageCache[cacheKey]) return window.__dayCollageCache[cacheKey];
+
+  // Terimi temizle (Gereksiz "Mahallesi", "Belediyesi" vb. at)
+  const cleanTerm = searchTerm.replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "").trim();
+  const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
+
+  // Zenginleştirilmiş Sorgular (Turistik odaklı)
   const queries = [
-    `${city} skyline`,
-    `${city} attractions`,
-    `${city} street`,
-    `${city} night`,
-    `${city} food`,
-    `${city} park`,
-    `travel ${city}`,
-    `${city} aerial`,
+    `${cleanTerm} ${cleanContext} tourism`, // Örn: Konyaaltı Antalya tourism (En garantisi)
+    `${cleanTerm} ${cleanContext} landmark`,
+    `${cleanTerm} city center`,
+    `${cleanTerm} streets`,
+    `${cleanTerm} travel`,
+    `visit ${cleanTerm}`,
+    `${cleanTerm} food`,
+    `${cleanTerm} aerial view`
   ];
+
+  // Eğer ilçe (cleanTerm) ile il (cleanContext) farklıysa, sadece İL sorgularını da yedek olarak ekle.
+  // Çünkü ilçe için fotoğraf yoksa, ilin genel fotoğrafları gelsin (boş kalmasından iyidir).
+  if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
+      queries.push(`${cleanContext} tourism`);
+      queries.push(`${cleanContext} landmarks`);
+  }
+
   const images = [];
   const seen = new Set();
+
   for (const q of queries) {
     if (images.length >= 6) break;
     try {
+      // getPhoto fonksiyonunun var olduğunu varsayıyoruz (Pexels/Unsplash)
       const img = await getPhoto(q, "pexels");
       if (img && !seen.has(img)) {
         images.push(img);
@@ -11617,23 +11671,29 @@ async function getCityCollageImages(city) {
       }
     } catch (_) {}
   }
-  // If still short, duplicate to enable sliding
+
+  // Eğer hala yeterli resim yoksa, mecburen döngüye sok (Slider boş görünmesin)
   while (images.length < 4 && images.length > 0) {
     images.push(...images.slice(0, Math.min(images.length, 6 - images.length)));
   }
-  window.__dayCollageCache[city] = images;
+
+  window.__dayCollageCache[cacheKey] = images;
   return images;
 }
 
-// --- Collage renderer (attach to window so updateCart can call it) ---
+// ============================================================
+// --- 3. Collage Renderer (GÜNCELLENMİŞ) ---
+// ============================================================
+
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
-  // Ensure holder exists after the day list
+  // 1. HTML İskeletini Oluştur (Yoksa)
   let collage = dayContainer.querySelector(".day-collage");
   if (!collage) {
     collage = document.createElement("div");
     collage.className = "day-collage";
+    // Stil ayarları:
     collage.style.cssText = `
       margin: 12px 0 6px 0;
       border-radius: 10px;
@@ -11642,67 +11702,89 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
       padding: 8px;
       position: relative;
       display: block;
+      min-height: 100px; /* Yüklenirken zıplamayı engeller */
     `;
     const dayListEl = dayContainer.querySelector(".day-list");
     if (dayListEl && dayListEl.parentNode) {
+      // Listenin (ul) hemen sonrasına ekle
       dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
     } else {
       dayContainer.appendChild(collage);
     }
   }
 
+  // 2. Lokasyonu Olan İlk Öğeyi Bul
   const firstWithLoc = (dayItemsArr || []).find(
     (it) =>
       it.location &&
       isFinite(it.location.lat) &&
       isFinite(it.location.lng)
   );
+
   if (!firstWithLoc) {
     collage.style.display = "none";
     return;
   }
 
   collage.style.display = "block";
-  collage.innerHTML = `<div style="width:100%;text-align:center;padding:10px;color:#607d8b;font-size:13px;">Loading collage…</div>`;
+  collage.innerHTML = `<div style="width:100%;text-align:center;padding:20px;color:#607d8b;font-size:13px;font-family:sans-serif;">
+    <span style="display:inline-block;animation:spin 1s linear infinite">⏳</span> Loading photos...
+  </div>`;
 
-  const city =
-    (await fetchCityNameFromLocation(
+  // 3. Akıllı İsim Çözümleme (BURASI KRİTİK)
+  const searchObj = await fetchSmartLocationName(
       firstWithLoc.location.lat,
       firstWithLoc.location.lng,
       window.selectedCity || ""
-    )) || (window.selectedCity || "");
+  );
 
-  const images = await getCityCollageImages(city);
+  // 4. Görselleri Çek
+  const images = await getCityCollageImages(searchObj);
+
   if (!images.length) {
     collage.innerHTML = "";
     collage.style.display = "none";
     return;
   }
 
+  // 5. Slider Yapısını Kur
   const visible = Math.min(3, images.length);
   let index = 0;
 
+  // Başlık (İsteğe bağlı): Kullanıcıya nerenin fotoğraflarını gösterdiğimizi yazabiliriz.
+  // Örn: "Photos from Konyaaltı"
+  const titleHtml = searchObj.term ? 
+    `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">
+       ${searchObj.term}
+     </div>` : '';
+
   collage.innerHTML = `
+    ${titleHtml}
     <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
-      <div class="collage-track" style="display:flex; transition: transform 0.35s ease; will-change: transform;"></div>
+      <div class="collage-track" style="display:flex; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); will-change: transform;"></div>
     </div>
+    
     <button class="collage-nav prev" aria-label="Previous" style="
       position:absolute; left:6px; top:50%; transform:translateY(-50%);
-      background:rgba(0,0,0,0.45); color:#fff; border:none; border-radius:50%;
-      width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    ">&lt;</button>
+      background:rgba(255,255,255,0.8); color:#333; border:none; border-radius:50%;
+      width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2); font-weight:bold; transition: opacity 0.2s;
+    ">❮</button>
+    
     <button class="collage-nav next" aria-label="Next" style="
       position:absolute; right:6px; top:50%; transform:translateY(-50%);
-      background:rgba(0,0,0,0.45); color:#fff; border:none; border-radius:50%;
-      width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    ">&gt;</button>
+      background:rgba(255,255,255,0.8); color:#333; border:none; border-radius:50%;
+      width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2); font-weight:bold; transition: opacity 0.2s;
+    ">❯</button>
   `;
 
   const track = collage.querySelector(".collage-track");
 
-  // Slides: each exactly 1/visible of the viewport
+  // Slide'ları Oluştur
   images.forEach((src) => {
     const slide = document.createElement("div");
+    // Flex-basis hesaplaması (ekranda kaç tane görünecekse ona göre % ayarla)
     slide.style.cssText = `
       flex: 0 0 ${100 / visible}%;
       max-width: ${100 / visible}%;
@@ -11710,13 +11792,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
       box-sizing: border-box;
     `;
     slide.innerHTML = `
-      <div style="width:100%; height:140px; border-radius:8px; overflow:hidden; background:#e5e8ed;">
-        <img src="${src}" alt="${city} collage" style="width:100%; height:100%; object-fit:cover; display:block;">
+      <div style="width:100%; height:150px; border-radius:8px; overflow:hidden; background:#e5e8ed; position:relative;">
+        <img src="${src}" loading="lazy" alt="${searchObj.term} photo" style="width:100%; height:100%; object-fit:cover; display:block; transition: transform 0.5s;">
       </div>
     `;
     track.appendChild(slide);
   });
 
+  // Slider Fonksiyonları
   function clampIndex(i) {
     const max = Math.max(0, images.length - visible);
     return Math.max(0, Math.min(max, i));
@@ -11725,13 +11808,16 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   function update() {
     const max = Math.max(0, images.length - visible);
     index = clampIndex(index);
-    const stepPct = 100 / visible;        // one slide width
-    const offsetPct = index * stepPct;    // shift by slide width
+    const stepPct = 100 / visible;        
+    const offsetPct = index * stepPct;    
     track.style.transform = `translateX(-${offsetPct}%)`;
+    
     const prevBtn = collage.querySelector(".collage-nav.prev");
     const nextBtn = collage.querySelector(".collage-nav.next");
-    if (prevBtn) prevBtn.style.opacity = index === 0 ? 0.4 : 1;
-    if (nextBtn) nextBtn.style.opacity = index === max ? 0.4 : 1;
+    if (prevBtn) prevBtn.style.opacity = index === 0 ? 0.3 : 1;
+    if (nextBtn) nextBtn.style.opacity = index === max ? 0.3 : 1;
+    if (prevBtn) prevBtn.style.pointerEvents = index === 0 ? 'none' : 'auto';
+    if (nextBtn) nextBtn.style.pointerEvents = index === max ? 'none' : 'auto';
   }
 
   const prevBtn = collage.querySelector(".collage-nav.prev");
@@ -11739,6 +11825,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); index = clampIndex(index - 1); update(); };
   if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); index = clampIndex(index + 1); update(); };
 
+  // Responsive: Ekran boyutu değişirse görünümü güncelle
   if (window.ResizeObserver) {
     const ro = new ResizeObserver(() => update());
     ro.observe(collage);
