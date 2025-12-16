@@ -1376,11 +1376,12 @@ document.querySelectorAll('.gallery-item').forEach(item => {
 
 // .add_theme için aynı mantık
 document.querySelectorAll('. add_theme').forEach(btn => {
+
   btn.addEventListener('click', async function(e) {
     e.stopPropagation();
 
     // --- 1. MEVCUT GEZİYİ KAYDET VE SIFIRLA (RESET LOGIC) ---
-    if (window.cart && window.cart. length > 0 && typeof saveCurrentTripToStorage === "function") {
+    if (window.cart && window.cart.length > 0 && typeof saveCurrentTripToStorage === "function") {
         saveCurrentTripToStorage();
     }
 
@@ -1395,8 +1396,8 @@ document.querySelectorAll('. add_theme').forEach(btn => {
       console.warn('[collage] Token reset error:', e);
     }et();
 
-    window.cart = [];
-    window. latestTripPlan = [];
+   window.cart = [];
+    window.latestTripPlan = [];
     window.selectedCity = null;
     window.selectedLocation = null;
     window.selectedLocationLocked = false;
@@ -11439,7 +11440,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     collage.className = "day-collage";
     collage.style.cssText =
       "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
-const dayListEl = dayContainer.querySelector(".day-list");
+    const dayListEl = dayContainer.querySelector(". day-list");
     if (dayListEl && dayListEl. parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
     else dayContainer. appendChild(collage);
   }
@@ -11523,7 +11524,7 @@ const dayListEl = dayContainer.querySelector(".day-list");
     console.warn(`[collage] ${day}.  gün için yeterli benzersiz foto bulunamadı (${daySelections.length}/6).`);
   }
 
-  if (! daySelections.length) {
+  if (!daySelections.length) {
     collage.style.display = "none";
     delete window.__dayCollagePhotosByDay[day];
     rebuildGlobalCollageUsed();
