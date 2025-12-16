@@ -4628,8 +4628,6 @@ async function renderRouteForDay(day) {
 
     // ... (GPS Import logic buradaki gibi kalabilir, değiştirmiyoruz) ...
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
-        // ... (GPS Import kodu aynı kalıyor) ...
-        // GPS bloğu bitişi
         return;
     }
 
@@ -4645,6 +4643,7 @@ async function renderRouteForDay(day) {
         window.importedTrackByDay[day].drawRaw = false;
     }
 
+    // 0 Nokta Varsa
     if (!points || points.length === 0) {
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
@@ -4655,8 +4654,8 @@ async function renderRouteForDay(day) {
         return;
     }
 
+    // 1 Nokta Varsa
     if (points.length === 1) {
-        // Tek nokta işlemleri (değişiklik yok)
         if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
         if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
         ensureDayMapContainer(day);
@@ -4682,10 +4681,10 @@ async function renderRouteForDay(day) {
             map.setView([p.lat, p.lng], 14, { animate: true });
             setTimeout(() => map.invalidateSize(), 120);
         }
+        // [YENİ] Fotoğraf Kolajını Ekle
+        if (typeof addDayHeroCollage === 'function') addDayHeroCollage(day);
         return;
     }
-
-    // ... (GPS Import Track Raw logic aynı kalıyor) ...
 
     ensureDayMapContainer(day);
     initEmptyDayMap(day);
@@ -4704,11 +4703,9 @@ async function renderRouteForDay(day) {
     if (!hasRealRoute) {
         if (isInTurkey) {
             // TÜRKİYE'DE: HAVERSINE İPTAL!
-            // Rota verisi yoksa scale bar'ı ve özetleri temizle, uydurma çizgi çekme.
             window.lastRouteSummaries = window.lastRouteSummaries || {};
-            window.lastRouteSummaries[containerId] = {}; // Boş bırak!
+            window.lastRouteSummaries[containerId] = {}; 
             
-            // Geojson'u temizle veya sadece noktaları koy
             window.lastRouteGeojsons = window.lastRouteGeojsons || {};
             window.lastRouteGeojsons[containerId] = {
                 type: "FeatureCollection",
@@ -4722,7 +4719,6 @@ async function renderRouteForDay(day) {
                 }]
             };
 
-            // renderLeafletRoute'a boş summary gönder, böylece düz çizgi yerine nokta gösterir
             renderLeafletRoute(containerId, window.lastRouteGeojsons[containerId], points, {}, day);
             if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
 
@@ -4731,14 +4727,13 @@ async function renderRouteForDay(day) {
                 let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
                 if (expandedScaleBar) {
                     expandedScaleBar.style.display = "block";
-                    expandedScaleBar.innerHTML = '<div class="spinner"></div>'; // Loading veya boş
-                    // renderRouteScaleBar'a 0 km ve BOŞ marker dizisi gönderiyoruz ki Haversine hesaplamasın
+                    expandedScaleBar.innerHTML = '<div class="spinner"></div>';
                     renderRouteScaleBar(expandedScaleBar, 0, []); 
                 }
             }
             // Rota çekme işlemine devam et...
         } else {
-            // YURTDIŞI/Fly Mode: Haversine kullanmaya devam et (değişiklik yok)
+            // YURTDIŞI/Fly Mode
             let totalKm = 0;
             let markerPositions = [];
             for (let i = 0; i < points.length; i++) {
@@ -4761,8 +4756,6 @@ async function renderRouteForDay(day) {
                 ascent: 0, 
                 descent: 0
             };
-            
-            // ... (Fly mode elevation estimation logic) ...
             
             window.lastRouteSummaries = window.lastRouteSummaries || {};
             window.lastRouteSummaries[containerId] = summary;
@@ -4794,11 +4787,13 @@ async function renderRouteForDay(day) {
                 expandedScaleBar.innerHTML = "";
                 renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
             }
+            // [YENİ] Fotoğraf Kolajını Ekle (Fly Mode)
+            if (typeof addDayHeroCollage === 'function') addDayHeroCollage(day);
             return;
         }
     }
 
-    // FETCH ROUTE (Değişiklik yok, sadece hata yakalama aynı)
+    // FETCH ROUTE
     async function fetchRoute() {
         const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
         const url = buildDirectionsUrl(coordParam, day);
@@ -4844,7 +4839,6 @@ async function renderRouteForDay(day) {
         return;
     }
     
-    // ... (Kalan standart render işlemleri) ...
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (missingPoints.length > 0) {
         if (infoPanel) {
@@ -4874,7 +4868,6 @@ async function renderRouteForDay(day) {
         updateExpandedMap(expandedMapObj.expandedMap, day);
     }
 
-    // ... (Pairwise ve diğer stat güncellemeleri) ...
     const pairwiseSummaries = [];
     if (typeof routeData !== "undefined" && Array.isArray(routeData.legs)) {
         for (let i = 0; i < routeData.legs.length; i++) {
@@ -4907,9 +4900,10 @@ async function renderRouteForDay(day) {
             );
         }, 150);
     }
-    addDayHeroCollage(day);
-}
 
+    // [YENİ] Fotoğraf Kolajını Ekle (Normal Rota)
+    if (typeof addDayHeroCollage === 'function') addDayHeroCollage(day);
+}
 
 function forceCleanExpandedMap(day) {
   const containerId = `route-map-day${day}`;
