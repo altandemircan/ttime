@@ -5152,6 +5152,17 @@ function addNewDay(button) {
     // Arayüzü güncelle
     if (typeof updateCart === "function") updateCart();
 
+      // --- EKLE ---
+  // Yeni günün map container’ını ve kontrol barını hemen oluştur
+  try {
+    ensureDayMapContainer(newDay);
+    initEmptyDayMap(newDay);
+    wrapRouteControls(newDay);              // Route Information + Expand map bar’ını kurar
+    renderTravelModeControlsForAllDays?.(); // Travel mode butonlarını günceller
+  } catch (e) {
+    console.warn('[addNewDay] map/bar init error:', e);
+  }
+
     // 4. HARİTA ODAKLAMA DÜZELTMESİ (Konya Sorunu Çözümü)
     if (lastMarkerOfPrevDay) {
         setTimeout(() => {
