@@ -11464,7 +11464,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   if (!collage) {
     collage = document.createElement("div");
     collage.className = "day-collage";
-    collage.style.cssText = "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
+    collage.style.cssText = "    margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
     
     const dayListEl = dayContainer.querySelector(".day-list");
     if (dayListEl && dayListEl.parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
@@ -11489,7 +11489,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
           headerDiv = document.createElement('div');
           headerDiv.className = 'gallery-internal-header';
           // Stil: Gri kutunun içinde, en üstte, şık bir başlık
-          headerDiv.style.cssText = "padding: 0 4px 8px 4px; font-size: 13px; font-weight: 600; color: #444; border-bottom: 1px solid #e0e0e0; margin-bottom: 8px;";
+          headerDiv.style.cssText = "margin-bottom: 8px; display: block; font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51);";
           // Kutunun en başına (ilk sıraya) ekle
           container.insertBefore(headerDiv, container.firstChild);
       }
