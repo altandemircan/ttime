@@ -11696,17 +11696,14 @@ async function renderDayCollage(day, dayContainer, dayItemsArr) {
   `;
 
  
-  const track = collage.querySelector(".collage-track");
-  // Track width proportional to item count vs visible count
-  track.style.width = `${(images.length / visible) * 100}%`;
+   const track = collage.querySelector(".collage-track");
 
+  // Build slides: each is exactly 1/visible of the viewport
   images.forEach((src) => {
     const slide = document.createElement("div");
-    // Each slide is 1/N of the track; with track width = (N/visible)*100%,
-    // this yields (1/visible) of the container.
     slide.style.cssText = `
-      flex: 0 0 ${100 / images.length}%;
-      max-width: ${100 / images.length}%;
+      flex: 0 0 ${100 / visible}%;
+      max-width: ${100 / visible}%;
       padding: 4px;
       box-sizing: border-box;
     `;
@@ -11726,8 +11723,8 @@ async function renderDayCollage(day, dayContainer, dayItemsArr) {
   function update() {
     const max = Math.max(0, images.length - visible);
     index = clampIndex(index);
-    // Shift by one slide (percent of track)
-    const offsetPct = index * (100 / images.length);
+    const stepPct = 100 / visible;           // one slide width in %
+    const offsetPct = index * stepPct;       // shift by slide width
     track.style.transform = `translateX(-${offsetPct}%)`;
     const prevBtn = collage.querySelector(".collage-nav.prev");
     const nextBtn = collage.querySelector(".collage-nav.next");
