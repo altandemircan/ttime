@@ -4202,13 +4202,13 @@ cartDiv.appendChild(addNewDayButton);
   const cartRoot = document.getElementById('cart');
   if (!cartRoot) return;
   let newChat = cartRoot.querySelector('#newchat');
-  if (!newChat){  
+  if (!newChat){
     newChat = document.createElement('div');
     newChat.id = 'newchat';
     newChat.textContent = 'New Trip Plan';
     newChat.style.cursor = 'pointer';
 
-      
+    newChat.onclick = function() {
       const chatBox = document.getElementById('chat-box');
       if (chatBox) chatBox.innerHTML = '';
       const userInput = document.getElementById('user-input');
