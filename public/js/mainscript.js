@@ -1050,9 +1050,19 @@ function addCanonicalMessage(canonicalStr) {
 }
 
 function sendMessage() {
-      console.log("showLoadingPanel çağrıldı!");
+  console.log("showLoadingPanel çağrıldı!");
 
-    showLoadingPanel()
+  // Yeni plan başlatılıyorsa activeTripKey'i sıfırla
+  if (window.activeTripKey && window.cart && window.cart.length > 0) {
+    // Mevcut geziyi kaydet
+    if (typeof saveCurrentTripToStorage === "function") {
+      saveCurrentTripToStorage();
+    }
+  }
+  // Yeni gezi için key'i sıfırla
+  window.activeTripKey = null;
+
+  showLoadingPanel();
   if (window.isProcessing) return;
   const input = document.getElementById("user-input");
   if (!input) return;
