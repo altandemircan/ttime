@@ -11440,7 +11440,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     collage.className = "day-collage";
     collage.style.cssText =
       "margin: 12px 0 6px 0; border-radius: 10px; overflow: hidden; background: #f7f9fc; padding: 8px; position: relative; display: block; min-height: 100px;";
-    const dayListEl = dayContainer.querySelector(". day-list");
+const dayListEl = dayContainer.querySelector(".day-list");
     if (dayListEl && dayListEl. parentNode) dayListEl.parentNode.insertBefore(collage, dayListEl.nextSibling);
     else dayContainer. appendChild(collage);
   }
