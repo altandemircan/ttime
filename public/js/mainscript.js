@@ -4528,12 +4528,6 @@ function isSupportedTravelMode(mode) {
   return ['car', 'bike', 'foot'].includes(mode);
 }
 
-
-
-
-
-
-
 function forceCleanExpandedMap(day) {
   const containerId = `route-map-day${day}`;
   // 1. Expanded map instance ve DOM temizliği
