@@ -11151,9 +11151,10 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     // Listeden hemen önce ekle
     const list = dayContainer.querySelector('.day-list');
     if (list) {
-      list.insertAdjacentElement('beforebegin', collage);
+      // DÜZELTME: 'beforebegin' yerine 'afterend' yaparak bloğu listenin altına alıyoruz.
+      list.insertAdjacentElement('afterend', collage);
     } else {
-      dayContainer.insertBefore(collage, dayContainer.firstChild);
+      dayContainer.appendChild(collage);
     }
   }
 
