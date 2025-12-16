@@ -3468,81 +3468,72 @@ function attachMapClickAddMode(day) {
 }
 // uploaded:mainscript.js
 
-// ... (mevcut kodlar)
+// insertTripAiInfo başına ek: global token
+window.__aiInfoRequestToken = window.__aiInfoRequestToken || null;
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
-    // 1. Önce eski kutuları temizle
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
-    
+
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    // Şehir bilgisini al
+    const currentTripKey = window.activeTripKey;           // aktif gezi
+    const currentCity    = window.selectedCity;
+
     let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
-    
-    // Şehir yoksa ve statik veri de yoksa çık
     if (!city && !aiStaticInfo) return;
 
-    // --- BAĞLAM KONTROLÜ İÇİN DEĞİŞKENLERİ SAKLA ---
-    // İstek atılırken hangi gezideydik?
-    const requestingTripKey = window.activeTripKey;
-    const requestingCity = window.selectedCity;
-    // ------------------------------------------------
+    // Yeni istek için token üret
+    const token = `${Date.now()}_${Math.random()}`;
+    window.__aiInfoRequestToken = token;
 
-    // --- TEMİZLEME FONKSİYONU (Robot ikonunu siler) ---
-    function cleanText(text) {
-        if (!text) return "";
-        // 🤖 ikonunu ve gereksiz boşlukları temizle
-        return text.replace(/🤖/g, '').replace(/AI:/g, '').trim();
-    }
-
-    // HTML İskeleti (DOM oluşturma kodları aynı kalıyor...)
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
-    <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>AI Information</span>
-      <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
-        <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;">
+      <h3 id="ai-toggle-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>AI Information</span>
+        <span id="ai-spinner" style="margin-left:10px;display:inline-block;">
+          <svg width="22" height="22" viewBox="0 0 40 40" style="vertical-align:middle;">
             <circle cx="20" cy="20" r="16" fill="none" stroke="#888" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60">
-                <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/>
+              <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 20 20;360 20 20"/>
             </circle>
-        </svg>
-      </span>
-    </h3>
-    <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
-      <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
-      <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
-      <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
-    </div>
-    <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
+          </svg>
+        </span>
+      </h3>
+      <div class="ai-info-content" style="max-height:0;opacity:0;overflow:hidden;transition:max-height 0.2s,opacity 0.2s;">
+        <p><b>🧳 Summary:</b> <span id="ai-summary"></span></p>
+        <p><b>👉 Tip:</b> <span id="ai-tip"></span></p>
+        <p><b>🔆 Highlight:</b> <span id="ai-highlight"></span></p>
+      </div>
+      <div class="ai-info-time" style="opacity:.6;font-size:13px;"></div>
     `;
-    
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
-    // ... (DOM element seçimleri ve populateAndShow fonksiyonu aynı kalıyor) ...
-    const aiSummary = aiDiv.querySelector('#ai-summary');
-    const aiTip = aiDiv.querySelector('#ai-tip');
-    const aiHighlight = aiDiv.querySelector('#ai-highlight');
-    const aiTime = aiDiv.querySelector('.ai-info-time');
-    const aiSpinner = aiDiv.querySelector('#ai-spinner');
-    const aiContent = aiDiv.querySelector('.ai-info-content');
-    
+
+    const aiSummary  = aiDiv.querySelector('#ai-summary');
+    const aiTip      = aiDiv.querySelector('#ai-tip');
+    const aiHighlight= aiDiv.querySelector('#ai-highlight');
+    const aiTime     = aiDiv.querySelector('.ai-info-time');
+    const aiSpinner  = aiDiv.querySelector('#ai-spinner');
+    const aiContent  = aiDiv.querySelector('.ai-info-content');
+
+    function cleanText(text) { return (text || "").replace(/🤖/g, '').replace(/AI:/g, '').trim(); }
+
     function populateAndShow(data, timeElapsed = null) {
-       // ... (mevcut içerik doldurma kodları) ...
+        // Yanıt geldiğinde hâlâ aynı trip ve aynı token mı?
+        if (token !== window.__aiInfoRequestToken) return;
+        if (currentTripKey && window.activeTripKey !== currentTripKey) return;
+
         if (aiSpinner) aiSpinner.style.display = "none";
-        
-        // Aç/Kapa butonu ekle (yoksa)
-        const header = aiDiv.querySelector('#ai-toggle-header');
-        if (!header.querySelector('#ai-toggle-btn')) {
-             // ... (buton oluşturma kodları) ...
+
+        // toggle butonu ekle (mevcut kod aynen)
+        if (!aiDiv.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
             btn.className = "arrow-btn";
             btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
             btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
-            header.appendChild(btn);
-
+            aiDiv.querySelector('#ai-toggle-header').appendChild(btn);
             const aiIcon = btn.querySelector('.arrow-icon');
             let expanded = true;
             btn.addEventListener('click', function(e) {
@@ -3562,88 +3553,59 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         }
 
         aiContent.style.maxHeight = "1200px";
-        aiContent.style.opacity = "1";
+        aiContent.style.opacity   = "1";
 
-        const txtSummary = cleanText(data.summary) || "Info not available.";
-        const txtTip = cleanText(data.tip) || "Info not available.";
+        const txtSummary   = cleanText(data.summary)   || "Info not available.";
+        const txtTip       = cleanText(data.tip)       || "Info not available.";
         const txtHighlight = cleanText(data.highlight) || "Info not available.";
 
-        if (typeof typeWriterEffect === 'function' && !aiStaticInfo) {
-             typeWriterEffect(aiSummary, txtSummary, 18, function() {
-                typeWriterEffect(aiTip, txtTip, 18, function() {
-                    typeWriterEffect(aiHighlight, txtHighlight, 18);
-                });
-            });
-        } else {
-            aiSummary.textContent = txtSummary;
-            aiTip.textContent = txtTip;
-            aiHighlight.textContent = txtHighlight;
-        }
+        aiSummary.textContent   = txtSummary;
+        aiTip.textContent       = txtTip;
+        aiHighlight.textContent = txtHighlight;
+        aiTime.textContent      = timeElapsed ? `⏱️ Generated in ${timeElapsed} ms` : "";
 
-        if (timeElapsed) {
-            aiTime.textContent = `⏱️ Generated in ${timeElapsed} ms`;
-        } else {
-            aiTime.textContent = "";
+        // Sonuçları sadece doğru trip için kaydet
+        if (currentTripKey && window.activeTripKey === currentTripKey) {
+            window.cart = window.cart || [];
+            window.cart.aiData = data;
+            window.lastTripAIInfo = data;
+            if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
         }
     }
 
-    // === SENARYO 1: KAYITLI VERİ VAR ===
+    // Statik veri varsa doğrudan bas
     if (aiStaticInfo) {
-        populateAndShow(aiStaticInfo);
+        populateAndShow(aiStaticInfo, null);
         return;
     }
 
-    // === SENARYO 2: API'YE GİT ===
-    let t0 = performance.now();
+    // API çağrısı
+    const t0 = performance.now();
     try {
         const resp = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city, country })
         });
-
         const ollamaData = await resp.json();
-        
-        // --- DÜZELTME BAŞLANGICI: CONTEXT KONTROLÜ ---
-        // Yanıt geldiğinde kullanıcı hala aynı gezide mi?
-        if (window.activeTripKey !== requestingTripKey) {
-            console.log(`[AI Info] Trip değiştiği için (${city}) yanıtı iptal edildi.`);
-            return;
-        }
-        if (window.selectedCity !== requestingCity) {
-            console.log(`[AI Info] Şehir seçimi değiştiği için (${city}) yanıtı iptal edildi.`);
-            return;
-        }
-        // --- DÜZELTME BİTİŞİ ---
-
-        let elapsed = Math.round(performance.now() - t0);
+        const elapsed = Math.round(performance.now() - t0);
 
         const aiData = {
-            city: city,
+            city,
             summary: ollamaData.summary,
             tip: ollamaData.tip,
             highlight: ollamaData.highlight,
             time: elapsed
         };
 
-        // Kaydet
-        window.cart.aiData = aiData; 
-        window.lastTripAIInfo = aiData;
-        
-        if (typeof saveCurrentTripToStorage === "function") {
-            saveCurrentTripToStorage();
-        }
-
         populateAndShow(aiData, elapsed);
-
     } catch (e) {
+        // Hata olursa, token kontrolü yine de gerekli
+        if (token === window.__aiInfoRequestToken && aiTime) {
+            aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
+            if (aiSpinner) aiSpinner.style.display = "none";
+        }
         console.error("AI Error:", e);
-        // Hata durumunda da context kontrolü iyi olabilir ama elementler silinmiş olabilir, try-catch zaten koruyor.
-        if (aiTime) aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
-        if (aiSpinner) aiSpinner.style.display = "none";
-        aiContent.style.maxHeight = "1200px";
-        aiContent.style.opacity = "1";
-        aiSummary.textContent = "AI service temporarily unavailable.";
     }
 };
 
