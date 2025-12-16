@@ -11613,6 +11613,7 @@ async function getCityCollageImages(city) {
 }
 
 // --- Render collage between day list and route controls ---
+// --- Render collage between day list and route controls (updated to slider with 6 imgs, 3 visible) ---
 async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
@@ -11622,8 +11623,12 @@ async function renderDayCollage(day, dayContainer, dayItemsArr) {
     collage = document.createElement("div");
     collage.className = "day-collage";
     collage.style.cssText = `
-      display:flex; gap:10px; margin:12px 0 6px 0; border-radius:10px;
-      overflow:hidden; background:#f7f9fc; padding:8px; align-items:stretch;
+      margin: 12px 0 6px 0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f7f9fc;
+      padding: 8px;
+      position: relative;
     `;
     const dayListEl = dayContainer.querySelector(".day-list");
     if (dayListEl && dayListEl.parentNode) {
@@ -11645,7 +11650,7 @@ async function renderDayCollage(day, dayContainer, dayItemsArr) {
     return;
   }
 
-  collage.style.display = "flex";
+  collage.style.display = "block";
   collage.innerHTML = `<div style="width:100%;text-align:center;padding:10px;color:#607d8b;font-size:13px;">Loading collage…</div>`;
 
   const city =
@@ -11661,20 +11666,72 @@ async function renderDayCollage(day, dayContainer, dayItemsArr) {
     return;
   }
 
-  const images = (await getCityCollageImages(city)).filter(Boolean).slice(0, 3);
+  const images = (await getCityCollageImages(city))
+    .filter(Boolean)
+    .slice(0, 6); // 6 images
   if (!images.length) {
     collage.innerHTML = "";
     collage.style.display = "none";
     return;
   }
 
-  collage.innerHTML = images
-    .map(
-      (src, idx) => `
-      <div style="flex:1; min-height:120px; position:relative; overflow:hidden; border-radius:8px;">
-        <img src="${src}" alt="${city} collage ${idx + 1}"
-             style="width:100%; height:100%; object-fit:cover; display:block;">
-      </div>`
-    )
-    .join("");
+  // Slider setup
+  const visible = 3;
+  let index = 0;
+
+  collage.innerHTML = `
+    <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
+      <div class="collage-track" style="display:flex; transition:transform 0.35s ease; will-change:transform;"></div>
+    </div>
+    <button class="collage-nav prev" aria-label="Previous" style="
+      position:absolute; left:6px; top:50%; transform:translateY(-50%);
+      background:rgba(0,0,0,0.45); color:#fff; border:none; border-radius:50%;
+      width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    ">&lt;</button>
+    <button class="collage-nav next" aria-label="Next" style="
+      position:absolute; right:6px; top:50%; transform:translateY(-50%);
+      background:rgba(0,0,0,0.45); color:#fff; border:none; border-radius:50%;
+      width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    ">&gt;</button>
+  `;
+
+  const track = collage.querySelector(".collage-track");
+  images.forEach((src) => {
+    const slide = document.createElement("div");
+    slide.style.cssText = `
+      flex: 0 0 ${100 / visible}%;
+      max-width: ${100 / visible}%;
+      padding: 4px;
+      box-sizing: border-box;
+    `;
+    slide.innerHTML = `
+      <div style="width:100%; height:140px; border-radius:8px; overflow:hidden; background:#e5e8ed;">
+        <img src="${src}" alt="${city} collage" style="width:100%; height:100%; object-fit:cover; display:block;">
+      </div>
+    `;
+    track.appendChild(slide);
+  });
+
+  function clampIndex(i) {
+    const max = Math.max(0, images.length - visible);
+    return Math.max(0, Math.min(max, i));
+  }
+
+  function update() {
+    const max = Math.max(0, images.length - visible);
+    index = clampIndex(index);
+    const offsetPct = (100 / visible) * index;
+    track.style.transform = `translateX(-${offsetPct}%)`;
+    const prevBtn = collage.querySelector(".collage-nav.prev");
+    const nextBtn = collage.querySelector(".collage-nav.next");
+    if (prevBtn) prevBtn.style.opacity = index === 0 ? 0.4 : 1;
+    if (nextBtn) nextBtn.style.opacity = index === max ? 0.4 : 1;
+  }
+
+  const prevBtn = collage.querySelector(".collage-nav.prev");
+  const nextBtn = collage.querySelector(".collage-nav.next");
+  if (prevBtn) prevBtn.onclick = () => { index = clampIndex(index - 1); update(); };
+  if (nextBtn) nextBtn.onclick = () => { index = clampIndex(index + 1); update(); };
+
+  update();
 }
