@@ -4617,129 +4617,107 @@ function isSupportedTravelMode(mode) {
  
 
 (function injectDebugStyles() {
-    if (document.getElementById('tt-collage-debug-style')) return;
+    // Varsa sil, yenisini ekle
+    const old = document.getElementById('tt-collage-debug-style');
+    if (old) old.remove();
+
     const s = document.createElement('style');
     s.id = 'tt-collage-debug-style';
     s.innerHTML = `
         .day-hero-collage {
             display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* 3'lü yan yana */
             gap: 5px;
-            width: 98%;
-            height: 200px;
-            margin: 15px auto;
-            border: 2px dashed red; /* Debug çerçevesi: Kodu görmek için */
-            background: #ffe6e6;    /* Debug rengi */
+            width: 96%;
+            height: 150px;
+            margin: 10px auto;
+            border: 4px solid red !important; /* KESİN GÖRÜNSÜN */
+            background: #ffe6e6 !important;
             border-radius: 8px;
-            overflow: hidden;
+            padding: 5px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 9999;
         }
         .collage-item { 
-            position: relative; 
-            width: 100%; height: 100%; 
-            background: #ccc; 
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; color: #555;
+            background: #999; 
+            color: #fff;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold;
+            font-size: 20px;
+            border: 1px dashed white;
         }
-        .collage-item img { 
-            width: 100%; height: 100%; object-fit: cover; 
-            position: absolute; top: 0; left: 0;
-        }
-        .collage-label {
-            position: absolute; bottom: 5px; left: 5px;
-            background: rgba(0,0,0,0.7); color: #fff;
-            padding: 2px 6px; font-size: 11px; border-radius: 4px;
-            z-index: 2;
-        }
-        /* Grid Layouts */
-        .day-hero-collage.grid-1 { grid-template-columns: 1fr; }
-        .day-hero-collage.grid-2 { grid-template-columns: 1fr 1fr; }
-        .day-hero-collage.grid-3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }
-        .day-hero-collage.grid-3 .item-0 { grid-column: 1; grid-row: 1 / -1; }
-        .day-hero-collage.grid-3 .item-1 { grid-column: 2; grid-row: 1; }
-        .day-hero-collage.grid-3 .item-2 { grid-column: 2; grid-row: 2; }
     `;
     document.head.appendChild(s);
 })();
-async function addDayHeroCollage(day) {
-    console.log(`%c[COLLAGE DEBUG] Day ${day} Başladı`, "color:blue; font-weight:bold; font-size:14px;");
+function addDayHeroCollage(day) {
+    console.log(`%c[DEBUG] Day ${day} için Kolaj Fonksiyonu ÇALIŞTI!`, "background:yellow; color:black; font-size:16px;");
 
     // 1. BUTONU BUL
-    // CSS Selector: class="add-more-btn" VE data-day="day"
     const btnSelector = `.add-more-btn[data-day="${day}"]`;
     const addMoreBtn = document.querySelector(btnSelector);
 
     if (!addMoreBtn) {
-        console.error(`[COLLAGE ERROR] Buton bulunamadı! Selector: ${btnSelector}`);
-        // Buton yoksa işlem yapamayız
+        console.error(`[DEBUG] HATA: '${btnSelector}' butonu bulunamadı! DOM'da yok.`);
         return;
     }
-    console.log(`[COLLAGE] Buton bulundu:`, addMoreBtn);
 
-    // 2. ZATEN EKLİ Mİ?
+    console.log(`[DEBUG] Buton bulundu. ID:`, addMoreBtn);
+
+    // 2. KUTU ZATEN VAR MI?
     if (document.getElementById(`day-collage-${day}`)) {
-        console.log(`[COLLAGE] Zaten ekli, çıkılıyor.`);
+        console.log(`[DEBUG] Kutu zaten var, tekrar eklemiyorum.`);
         return;
     }
 
-    // 3. VERİLERİ HAZIRLA
+    // 3. HTML OLUŞTUR (SABİT DEBUG İÇERİĞİ)
+    const debugHTML = `
+        <div id="day-collage-${day}" class="day-hero-collage">
+            <div class="collage-item">FOTO 1</div>
+            <div class="collage-item">FOTO 2</div>
+            <div class="collage-item">FOTO 3</div>
+        </div>
+    `;
+
+    // 4. EKLE (Butonun sonrasına)
+    addMoreBtn.insertAdjacentHTML('afterend', debugHTML);
+    console.log(`%c[DEBUG] Kutu başarıyla eklendi!`, "color:green; font-weight:bold; font-size:14px;");
+    
+    // 5. ŞİMDİ RESİMLERİ ARKADAN YÜKLE (Opsiyonel)
+    // Kutu göründükten sonra resim çekmeyi deneriz.
+    loadRealImages(day);
+}
+
+// Resimleri sonradan yükleyen yardımcı fonksiyon
+async function loadRealImages(day) {
     const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
     const places = points.filter(p => p.name && !p.name.includes("User") && !p.name.includes("Start"));
-
-    // 4. RESİMLERİ ÇEK (Placeholder Modu Dahil)
-    let validData = [];
     
-    if (places.length > 0) {
-        const topPlaces = places.slice(0, 3);
-        const city = window.selectedCity || "";
+    if (places.length === 0) return;
 
-        const promises = topPlaces.map(async p => {
-            try {
-                let cat = p.category || "landmark";
-                const img = await getImageForPlace(p.name, cat, city);
-                if (img) return { img: img, name: p.name };
-            } catch(e) {}
-            return null;
-        });
+    const container = document.getElementById(`day-collage-${day}`);
+    if (!container) return;
 
-        const results = await Promise.all(promises);
-        validData = results.filter(d => d);
+    const topPlaces = places.slice(0, 3);
+    const city = window.selectedCity || "";
+
+    for (let i = 0; i < topPlaces.length; i++) {
+        const p = topPlaces[i];
+        try {
+            const cat = p.category || "landmark";
+            const imgUrl = await getImageForPlace(p.name, cat, city);
+            
+            if (imgUrl && !imgUrl.includes('placeholder')) {
+                // Kutunun içeriğini güncelle
+                const itemDiv = container.children[i];
+                if (itemDiv) {
+                    itemDiv.innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+                }
+            }
+        } catch(e) { console.log("Resim hatası", e); }
     }
-
-    // --- DEBUG MODU ---
-    // Eğer resim bulamazsa (veya liste boşsa), sana kodu göstermek için SAHTE VERİ basıyorum.
-    // Fotoğraflar gelince bu if bloğu çalışmaz, gerçek fotolar gelir.
-    if (validData.length === 0) {
-        console.warn(`[COLLAGE] Resim bulunamadı. DEBUG placeholderları kullanılıyor.`);
-        validData = [
-            { img: "", name: "Debug Place 1 (No Image)" },
-            { img: "", name: "Debug Place 2 (No Image)" },
-            { img: "", name: "Debug Place 3 (No Image)" }
-        ];
-    }
-
-    console.log(`[COLLAGE] Kullanılacak Veri:`, validData);
-
-    // 5. HTML OLUŞTUR
-    const count = Math.min(validData.length, 3);
-    const gridClass = `grid-${count}`;
-    
-    let html = `<div id="day-collage-${day}" class="day-hero-collage ${gridClass}">`;
-    
-    validData.slice(0, 3).forEach((data, index) => {
-        // Eğer resim URL'i varsa img etiketi, yoksa gri kutu
-        const imgTag = data.img ? `<img src="${data.img}" loading="lazy">` : `<div style="padding:20px; text-align:center;">RESİM YOK<br>${data.name}</div>`;
-        
-        html += `
-            <div class="collage-item item-${index}">
-                ${imgTag}
-                <div class="collage-label">${data.name}</div>
-            </div>
-        `;
-    });
-    html += `</div>`;
-
-    // 6. YERLEŞTİR: Butonun hemen sonrasına (afterend)
-    addMoreBtn.insertAdjacentHTML('afterend', html);
-    console.log(`%c[COLLAGE SUCCESS] HTML eklendi!`, "color:green; font-weight:bold;");
 }
 // ======================================================
 // 3. RENDER FONKSİYONU (RenderRouteForDay)
@@ -4849,9 +4827,12 @@ async function renderRouteForDay(day) {
     // [KOLAJI ÇAĞIR - BURASI ÖNEMLİ]
     // Fonksiyonun en sonunda, asenkron olarak çağırıyoruz.
     // DOM'un güncellenmesi için ufak bir gecikme olması iyidir, ama fonksiyon içindeki retry bunu halledecek.
- setTimeout(() => {
+console.log("[DEBUG] renderRouteForDay bitti. Kolajı çağırmak için bekleniyor...");
+    
+    // 1 saniye sonra çalıştır (DOM'un oturduğundan emin olmak için)
+    setTimeout(() => {
         addDayHeroCollage(day);
-    }, 100);
+    }, 1000);
 }
 
 
