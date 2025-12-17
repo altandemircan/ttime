@@ -2579,10 +2579,10 @@ cartDiv.appendChild(addFavBtn);
 
     basicPlanCategories.forEach(cat => {
     const subCategoryItem = document.createElement("li");
-    subCategoryItem. classList.add("subcategory-item");
+    subCategoryItem.classList.add("subcategory-item");
     const iconSpan = document.createElement("span");
     iconSpan.classList.add("subcategory-icon");
-    iconSpan.textContent = cat.icon;
+    iconSpan.textContent = cat. icon;
     const nameSpan = document.createElement("span");
     nameSpan.classList.add("subcategory-name");
     nameSpan.textContent = cat.name;
@@ -2591,20 +2591,16 @@ cartDiv.appendChild(addFavBtn);
     toggleBtn.classList.add("toggle-subcategory-btn");
     toggleBtn.textContent = "View";
     subCategoryItem.appendChild(iconSpan);
-    subCategoryItem.appendChild(nameSpan);
+    subCategoryItem. appendChild(nameSpan);
     subCategoryItem.appendChild(toggleBtn);
     basicList.appendChild(subCategoryItem);
 
-    // DÜZELTİLMİŞ:  Önce updateCart çağır, sonra önerileri göster
+    // DÜZELTİLMİŞ:  updateCart çağırmadan sadece önerileri göster
     subCategoryItem.addEventListener("click", (e) => {
         e.stopPropagation();
         if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-        // restoreSidebar yerine doğrudan updateCart çağır
-        if (typeof updateCart === "function") updateCart();
-        // Biraz gecikme ile önerileri göster (DOM güncellemesi tamamlansın)
-        setTimeout(() => {
-            showSuggestionsInChat(cat.name, day, cat.code);
-        }, 50);
+        // updateCart ÇAĞIRMA - sadece önerileri göster
+        showSuggestionsInChat(cat.name, day, cat.code);
     });
 });
     basicPlanItem.appendChild(basicList);
@@ -2625,22 +2621,22 @@ cartDiv.appendChild(addFavBtn);
     subCategoryItem.classList.add("subcategory-item", "premium-category-bg");
     const iconSpan = document.createElement("span");
     iconSpan.classList.add("subcategory-icon");
-    iconSpan.textContent = cat.icon;
+    iconSpan.textContent = cat. icon;
     const nameSpan = document.createElement("span");
     nameSpan.classList.add("subcategory-name");
     nameSpan.textContent = cat.name;
 
-    // Buton class'ı toggle-subcategory-btn, yazısı List, event yok!
     const toggleBtn = document.createElement("button");
-    toggleBtn.classList.add("toggle-subcategory-btn");
+    toggleBtn.classList. add("toggle-subcategory-btn");
     toggleBtn.textContent = "View";
     subCategoryItem.appendChild(iconSpan);
     subCategoryItem.appendChild(nameSpan);
     subCategoryItem.appendChild(toggleBtn);
     travelerList.appendChild(subCategoryItem);
 
-    // Sadece kategoriye tıklama eventini bırak
-    subCategoryItem.addEventListener("click", async (e) => {
+    // DÜZELTİLMİŞ: updateCart çağırmadan sadece önerileri göster
+    subCategoryItem.addEventListener("click", (e) => {
+        e.stopPropagation();
         showSuggestionsInChat(cat.name, day, cat.code);
     });
 });
@@ -2934,7 +2930,13 @@ function getUniqueResults(suggestions, max) {
 }
 
 function restoreSidebar() {
-    updateCart();
+    // Sadece UI'ı güncelle, döngüye girmesin
+    const cartDiv = document.getElementById("cart-items");
+    if (cartDiv && cartDiv.querySelector('. category-item')) {
+        // Kategori listesi açıksa updateCart çağır
+        updateCart();
+    }
+    // Aksi halde hiçbir şey yapma
 }
 
 // Gün isimlerini saklamak için ayrı bir obje
@@ -3694,16 +3696,22 @@ cartDiv.innerHTML = ""; // Her zaman temizle ve yeniden oluştur
 for (let day = 1; day <= totalDays; day++) {
     const dayItemsArr = window.cart.filter(i =>
       Number(i.day) === Number(day) &&
-      ! i._starter &&
+      !i._starter &&
       !i._placeholder &&
       (i.name || i.category === "Note")
     );
     const isEmptyDay = dayItemsArr.length === 0;
 
-    // Her zaman yeni container oluştur (innerHTML zaten temizlendi)
+    // ÖNEMLİ: Önce varolan container'ı DOM'dan tamamen kaldır
+    const existingContainer = document.getElementById(`day-container-${day}`);
+    if (existingContainer) {
+      existingContainer.remove();
+    }
+
+    // Her zaman yeni container oluştur
     const dayContainer = document.createElement("div");
     dayContainer.className = "day-container";
-    dayContainer.id = `day-container-${day}`;
+    dayContainer. id = `day-container-${day}`;
     dayContainer.dataset.day = day;
 
     const dayHeader = document.createElement("h4");
