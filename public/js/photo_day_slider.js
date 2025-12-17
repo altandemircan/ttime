@@ -70,7 +70,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     if (!term) return [];
 
     // İstenen görsel sayısı (Varsayılan 6)
-    const limit = options.min || 6; 
+    const limit = options.min || 4; 
     const page = options.page || 1; 
 
     // URL Parametreleri:
