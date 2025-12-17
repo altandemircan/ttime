@@ -11126,71 +11126,48 @@ async function saveCollageToStorage(day, images) {
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj?.term;
     if (!term) return [];
-
     const limit = Number(options.min || 6);
     const page = Number(options.page || 1);
     const day = Number(options.day || window.currentDay || 1);
 
-    // 1) Cache'ten kontrol et - AMA Pexels URL'leri varsa temizle
-    if (! window.__dayCollagePhotosByDay) window.__dayCollagePhotosByDay = {};
-    
+    // 1) Cache kontrol - Pexels varsa temizle (Pixabay istiyoruz)
+    if (!window.__dayCollagePhotosByDay) window.__dayCollagePhotosByDay = {};
     const cached = window.__dayCollagePhotosByDay[day];
     if (Array.isArray(cached) && cached.length > 0) {
-        // Pexels URL'leri varsa cache'i geçersiz say
         const hasPexels = cached.some(u => typeof u === "string" && /pexels\.com/i.test(u));
-        if (!hasPexels) {
-            return cached;
-        }
-        // Pexels varsa cache'i temizle, yeniden çek
-        console.log(`[Collage] Day ${day} cache has Pexels URLs, clearing and refetching from Pixabay...`);
-        window.__dayCollagePhotosByDay[day] = [];
+        if (!hasPexels) return cached; 
+        window.__dayCollagePhotosByDay[day] = []; // Pexels varsa cache'i boşalt
     }
 
-    // 2) SADECE Pixabay slider endpoint - /photoget-proxy/slider
+    // 2) SADECE Pixabay Slider Endpoint'ini Çağır
+    // (/photoget-proxy/slider endpoint'i sunucu tarafında Pixabay'a ayarlıdır)
     const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
-    console.log(`[Collage] Fetching from Pixabay:  ${url}`);
 
     try {
         const res = await fetch(url);
-        if (!res.ok) {
-            console.warn(`[Collage] Pixabay fetch failed: ${res.status}`);
-            return [];
-        }
+        if (!res.ok) return [];
         const data = await res.json();
         
-        // API yanıtını kontrol et
         let images = [];
-        if (Array.isArray(data.images)) {
-            images = data. images;
-        } else if (Array.isArray(data)) {
-            images = data;
-        }
-        
-        // Pexels URL'lerini filtrele (ekstra güvenlik)
-        images = images.filter(u => typeof u === "string" && ! (/pexels\.com/i. test(u)));
-        
-        console.log(`[Collage] Got ${images.length} Pixabay images for day ${day}`);
+        if (Array.isArray(data.images)) images = data.images;
+        else if (Array.isArray(data)) images = data;
 
-        // 3) Cache'e yaz
+        // Pexels kaçarsa filtrele
+        images = images.filter(u => typeof u === "string" && !/pexels\.com/i.test(u));
+
         if (images.length > 0) {
             window.__dayCollagePhotosByDay[day] = images;
-
-            // Global used set güncelle
-            if (window.__globalCollageUsed && typeof window.__globalCollageUsed. add === "function") {
+            if (window.__globalCollageUsed && typeof window.__globalCollageUsed.add === "function") {
                 images.forEach(u => window.__globalCollageUsed.add(u));
             }
-
-            // localStorage'a kaydet
+            // LocalStorage güncelle
             if (typeof saveCurrentTripToStorage === "function") {
-                setTimeout(() => { 
-                    try { saveCurrentTripToStorage(); } catch(_) {} 
-                }, 50);
+                setTimeout(() => { try { saveCurrentTripToStorage(); } catch(_) {} }, 50);
             }
         }
-
         return images;
     } catch (e) {
-        console.error("[Collage] Fetch error:", e);
+        console.error("Collage fetch error:", e);
         return [];
     }
 };
