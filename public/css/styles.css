@@ -5739,7 +5739,9 @@ ease;
     transition: all 0.2s ease;
     font-size: 13px;
     font-weight: 600;
+        cursor: pointer;
 }
+
 
 .expand-map-btn img {
     width: 20px;
