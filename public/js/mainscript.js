@@ -2818,6 +2818,7 @@ async function getPhoto(query, source = 'pexels') {
     return PLACEHOLDER_IMG;
 }
 
+
 function initPlaceSearch(day) {
     const input = document.getElementById(`place-input-${day}`);
     const detailsDiv = document.getElementById(`place-details-${day}`);
@@ -11103,49 +11104,30 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
   }
 }
 
+// ==================== getCityCollageImages ====================
+// ==================== TEK getCityCollageImages (Pixabay-only) ====================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-  const term = searchObj?.term;
-  if (!term) return [];
+    const term = searchObj?.term;
+    if (!term) return [];
 
-  const limit = Number(options.min || 6);
-  const page = Number(options.page || 1);
-  const day = Number(options.day || searchObj?.day || window.currentDay || 1);
+    const limit = Number(options.min || 6);
+    const page = Number(options.page || 1);
 
-  // SADECE Pixabay slider endpoint
-  const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+    // SADECE Pixabay slider endpoint
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
 
-  try {
-    // 1) Önce local cache varsa onu dön
-    window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
-    const cached = window.__dayCollagePhotosByDay[day];
-    if (Array.isArray(cached) && cached.length) {
-      return cached.slice(0, limit);
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+
+        // Debug: data.source === "pixabay" gelmeli
+        return Array.isArray(data.images) ? data.images : [];
+    } catch (e) {
+        console.error("Collage fetch error:", e);
+        return [];
     }
-
-    // 2) Yoksa Pixabay'dan çek
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-
-    const images = Array.isArray(data.images) ? data.images : [];
-
-    // 3) Cache'e yaz (localStorage'a kaydedilecek kaynak)
-    if (images.length) {
-      window.__dayCollagePhotosByDay[day] = images;
-
-      // 4) Hemen trip storage'a bas (yenileyince kaybolmasın)
-      if (typeof saveCurrentTripToStorage === "function") {
-        try { await saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 }); } catch (_) {}
-      }
-    }
-
-    return images;
-  } catch (e) {
-    console.error("Collage fetch error:", e);
-    return [];
-  }
 };
-
 // ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
