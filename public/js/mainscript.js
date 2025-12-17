@@ -11109,7 +11109,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj?.term;
     if (!term) return [];
 
-    const limit = Number(options.min || 6);
+    const limit = Number(options.min || 4);
     const page = Number(options.page || 1);
 
     // SADECE Pixabay slider endpoint
