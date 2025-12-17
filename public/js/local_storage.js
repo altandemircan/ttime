@@ -1,6 +1,12 @@
+// ============================================================
+// local_storage.js
+// ============================================================
 
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
 const PLACEHOLDER_IMG_URL = "https://www.svgrepo.com/show/381286/map-navigation-location-gps-directions.svg";
+
+// NOT: Token oluşturucu ve Collage Cache tanımları artık 'photo_day_slider.js' içinden geliyor.
+// Burada tekrar tanımlamaya gerek yok.
 
 window.cart = Array.isArray(window.cart) ? window.cart : [];
 if (!window.areAllPointsInTurkey) {
@@ -21,6 +27,7 @@ function toLatin(str) {
     .replace(/[^A-Za-z0-9_ ]/g, "")
     .trim();
 }
+
 async function saveTripAfterRoutes() {
   const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
   for (let day = 1; day <= maxDay; day++) {
@@ -42,6 +49,7 @@ async function saveTripAfterRoutes() {
   await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
   if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
+
 // Helper: how many valid points does this day have?
 function countPointsForDay(day, trip = null) {
   const useTrip = trip || { cart: window.cart || [] };
