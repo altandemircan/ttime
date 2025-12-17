@@ -11848,3 +11848,100 @@ function renderCollageSlides(collage, images, searchObj) {
 
   log('Final override v2 applied (Pixabay-only).');
 })();
+
+// ===============================
+// COLLAGE FINAL OVERRIDE v3 (Pixabay-only, strict {images:[]} parsing + debug)
+// Put this at the VERY END of mainscript.js
+// ===============================
+(function collageFinalOverride_v3() {
+  if (window.__ttCollageFinalOverrideApplied_v3) return;
+  window.__ttCollageFinalOverrideApplied_v3 = true;
+
+  const log = (...a) => console.log('[collage]', ...a);
+  const warn = (...a) => console.warn('[collage]', ...a);
+
+  function isPexelsUrl(u) {
+    return typeof u === "string" && /pexels\.com/i.test(u);
+  }
+
+  function normalizeUrl(u) {
+    if (typeof u !== 'string') return '';
+    const s = u.trim();
+    if (!s) return '';
+    // Some APIs might return http - force https to avoid mixed content in prod
+    if (s.startsWith('http://')) return 'https://' + s.slice('http://'.length);
+    return s;
+  }
+
+  async function fetchPixabaySlider(term, limit, page) {
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+    const res = await fetch(url, { cache: 'no-store' });
+
+    if (!res.ok) {
+      throw new Error(`slider http ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    // STRICT: backend returns { images: [...] }
+    const rawImages = Array.isArray(data?.images) ? data.images : null;
+    if (!rawImages) {
+      warn('Unexpected slider payload (expected {images:[]})', data);
+      return [];
+    }
+
+    const images = rawImages
+      .map(normalizeUrl)
+      .filter(u => u.length > 10)
+      .filter(u => !isPexelsUrl(u));
+
+    return images;
+  }
+
+  window.getCityCollageImages = async function getCityCollageImages(searchObj, options = {}) {
+    const day = Math.max(1, Number(options.day || window.currentDay || 1));
+    const min = Math.max(3, Number(options.min || 6));
+    const page = Math.max(1, Number(options.page || 1));
+
+    const rawTerm = (searchObj && searchObj.term) ? String(searchObj.term) : (window.selectedCity || 'Turkey');
+    const term = rawTerm.trim() || 'Turkey';
+
+    window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+
+    // If cached and non-empty, use it
+    const cached = window.__dayCollagePhotosByDay[day];
+    if (Array.isArray(cached) && cached.length >= 3) {
+      log('cache hit', { day, term, count: cached.length });
+      return cached;
+    }
+
+    // Try term + some fallbacks
+    const queries = [
+      term,
+      `${term} Turkey`,
+      `${term} city`,
+      `${term} travel`,
+      `${term} old town`,
+    ];
+
+    for (const q of queries) {
+      try {
+        const imgs = await fetchPixabaySlider(q, min, page);
+        log('slider result', { day, q, count: imgs.length, sample: imgs[0] || null });
+        if (imgs.length) {
+          window.__dayCollagePhotosByDay[day] = imgs;
+          return imgs;
+        }
+      } catch (e) {
+        warn('fetch error', { day, q, err: e?.message || e });
+      }
+    }
+
+    window.__dayCollagePhotosByDay[day] = [];
+    return [];
+  };
+
+  // Keep your existing renderDayCollage if it works, but ensure it uses getCityCollageImages
+  // If you want, we can also harden renderDayCollage similarly.
+  log('Final override v3 applied (Pixabay-only).');
+})();
