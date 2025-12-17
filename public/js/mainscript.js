@@ -8924,7 +8924,7 @@ function wrapRouteControls(day) {
       expandBtn.onmouseout = function() { expandBtn.style.background = "#ffffff"; };
 
       expandBtn.innerHTML = `
-        <img class="tm-icon" src="/img/expand_animation.gif" alt="MAP" loading="lazy" decoding="async">
+        <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async">
         <span class="tm-label" style="color: #297fd4">Expand map</span>
       `;
       
