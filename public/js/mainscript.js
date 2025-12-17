@@ -2214,10 +2214,14 @@ function addToCart(
   if (typeof skipRender === "undefined") skipRender = false;
 
   // Sonraki kodlar aynı, silent değişkeni başta false olmalı
-  if (!silent) {
-    if (typeof updateCart === "function") updateCart();
-    if (!skipRender && typeof renderRouteForDay === "function") {
+    if (!silent) {
+    // Önce render, sonra updateCart - sıralama önemli
+    if (! skipRender && typeof renderRouteForDay === "function") {
       setTimeout(() => renderRouteForDay(resolvedDay), 0);
+    }
+    // updateCart'ı biraz geciktir ki render tamamlansın
+    if (typeof updateCart === "function") {
+      setTimeout(() => updateCart(), 50);
     }
     if (typeof openSidebar === 'function') {
       openSidebar();
@@ -2482,6 +2486,11 @@ function showCategoryList(day) {
     console.log("showCategoryList ÇAĞRILDI, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
+    
+    // ÖNEMLİ:  Kategori listesi gösterilmeden önce mevcut içeriği temizle
+    if (cartDiv) {
+        cartDiv.innerHTML = "";
+    }
    
     // --- Üstteki otomatik plan ve custom note bölümleri aynı ---
     const autoPlanContainer = document.createElement("div");
@@ -2586,10 +2595,15 @@ cartDiv.appendChild(addFavBtn);
     subCategoryItem.appendChild(toggleBtn);
     basicList.appendChild(subCategoryItem);
 
-    // Sadece kategoriye tıklama eventini bırak
+   // Sadece kategoriye tıklama eventini bırak
     subCategoryItem.addEventListener("click", (e) => {
+        e.stopPropagation(); // Event bubbling'i engelle
         if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-        showSuggestionsInChat(cat.name, day, cat.code);
+        // Önce sidebar'ı restore et, sonra önerileri göster
+        if (typeof restoreSidebar === "function") restoreSidebar();
+        setTimeout(() => {
+            showSuggestionsInChat(cat.name, day, cat.code);
+        }, 100);
     });
 });
     basicPlanItem.appendChild(basicList);
@@ -3684,22 +3698,17 @@ for (let day = 1; day <= totalDays; day++) {
     );
     const isEmptyDay = dayItemsArr.length === 0;
 
-    let dayContainer = document.getElementById(`day-container-${day}`);
-
-    if (!dayContainer) {
-      dayContainer = document.createElement("div");
-      dayContainer.className = "day-container";
-      dayContainer.id = `day-container-${day}`;
-      dayContainer.dataset.day = day;
-    } else {
-      const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
-      const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
-      dayContainer.innerHTML = "";
-      if (!isEmptyDay) {
-        if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
-        if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
-      }
+    // ÖNEMLİ: Önce varolan container'ı DOM'dan tamamen kaldır
+    const existingContainer = document.getElementById(`day-container-${day}`);
+    if (existingContainer) {
+      existingContainer.remove();
     }
+
+    // Her zaman yeni container oluştur
+    const dayContainer = document.createElement("div");
+    dayContainer.className = "day-container";
+    dayContainer. id = `day-container-${day}`;
+    dayContainer.dataset.day = day;
 
     const dayHeader = document.createElement("h4");
     dayHeader.className = "day-header";
