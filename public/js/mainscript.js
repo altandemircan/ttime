@@ -2214,10 +2214,14 @@ function addToCart(
   if (typeof skipRender === "undefined") skipRender = false;
 
   // Sonraki kodlar aynı, silent değişkeni başta false olmalı
-  if (!silent) {
-    if (typeof updateCart === "function") updateCart();
-    if (!skipRender && typeof renderRouteForDay === "function") {
+    if (!silent) {
+    // Önce render, sonra updateCart - sıralama önemli
+    if (! skipRender && typeof renderRouteForDay === "function") {
       setTimeout(() => renderRouteForDay(resolvedDay), 0);
+    }
+    // updateCart'ı biraz geciktir ki render tamamlansın
+    if (typeof updateCart === "function") {
+      setTimeout(() => updateCart(), 50);
     }
     if (typeof openSidebar === 'function') {
       openSidebar();
@@ -2482,6 +2486,11 @@ function showCategoryList(day) {
     console.log("showCategoryList ÇAĞRILDI, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
+    
+    // ÖNEMLİ:  Kategori listesi gösterilmeden önce mevcut içeriği temizle
+    if (cartDiv) {
+        cartDiv.innerHTML = "";
+    }
    
     // --- Üstteki otomatik plan ve custom note bölümleri aynı ---
     const autoPlanContainer = document.createElement("div");
@@ -2586,10 +2595,15 @@ cartDiv.appendChild(addFavBtn);
     subCategoryItem.appendChild(toggleBtn);
     basicList.appendChild(subCategoryItem);
 
-    // Sadece kategoriye tıklama eventini bırak
+   // Sadece kategoriye tıklama eventini bırak
     subCategoryItem.addEventListener("click", (e) => {
+        e.stopPropagation(); // Event bubbling'i engelle
         if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-        showSuggestionsInChat(cat.name, day, cat.code);
+        // Önce sidebar'ı restore et, sonra önerileri göster
+        if (typeof restoreSidebar === "function") restoreSidebar();
+        setTimeout(() => {
+            showSuggestionsInChat(cat.name, day, cat.code);
+        }, 100);
     });
 });
     basicPlanItem.appendChild(basicList);
@@ -3684,22 +3698,17 @@ for (let day = 1; day <= totalDays; day++) {
     );
     const isEmptyDay = dayItemsArr.length === 0;
 
-    let dayContainer = document.getElementById(`day-container-${day}`);
-
-    if (!dayContainer) {
-      dayContainer = document.createElement("div");
-      dayContainer.className = "day-container";
-      dayContainer.id = `day-container-${day}`;
-      dayContainer.dataset.day = day;
-    } else {
-      const savedRouteMap = dayContainer.querySelector(`#route-map-day${day}`);
-      const savedRouteInfo = dayContainer.querySelector(`#route-info-day${day}`);
-      dayContainer.innerHTML = "";
-      if (!isEmptyDay) {
-        if (savedRouteMap) dayContainer.appendChild(savedRouteMap);
-        if (savedRouteInfo) dayContainer.appendChild(savedRouteInfo);
-      }
+    // ÖNEMLİ: Önce varolan container'ı DOM'dan tamamen kaldır
+    const existingContainer = document.getElementById(`day-container-${day}`);
+    if (existingContainer) {
+      existingContainer.remove();
     }
+
+    // Her zaman yeni container oluştur
+    const dayContainer = document.createElement("div");
+    dayContainer.className = "day-container";
+    dayContainer. id = `day-container-${day}`;
+    dayContainer.dataset.day = day;
 
     const dayHeader = document.createElement("h4");
     dayHeader.className = "day-header";
@@ -11114,7 +11123,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     collage.className = 'day-collage';
     collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; background: rgb(247, 249, 252); padding: 8px; position: relative; display: block; min-height: 100px;";
     
-    // Konumlandırma: Listenin altına (Haritanın hemen üzerine)
+    // Listenin altına ekle
     const list = dayContainer.querySelector('.day-list');
     if (list) {
       list.insertAdjacentElement('afterend', collage);
@@ -11139,15 +11148,16 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     return;
   }
 
-  // 3. Kullanılan Görseller Seti (Global Takip)
+  // 3. Kullanılan Görseller Seti
   if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
   if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
     window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
   }
   const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-  // 4. Local Storage Anahtarı
-  const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}`;
+  // --- DÜZELTME 1: Cache Key'i değiştirdik (_v2) ki eski hatalı kayıtları okumasın ---
+  const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_v2`;
+  
   let images = [];
   let fromCache = false;
 
@@ -11159,42 +11169,50 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
           if (Array.isArray(parsed) && parsed.length > 0) {
               images = parsed;
               fromCache = true;
-              // Cache'den gelenleri de "kullanıldı" olarak işaretle
               images.forEach(img => usedSet.add(img));
-              console.log(`[Collage] Loaded from localStorage for Day ${day}:`, searchObj.term);
+              console.log(`[Collage] Loaded from localStorage (v2) for Day ${day}:`, searchObj.term);
           }
       }
   } catch (e) {
       console.warn("[Collage] Storage read error:", e);
   }
 
-  // 5. API'den Çekme İşlemi (Cache'de yoksa)
+  // 4. API'den Çekme
   if (!fromCache || images.length === 0) {
       if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-     if (typeof getCityCollageImages === 'function') {
-          // Gün numarasını integer'a çevirip gönderiyoruz
-          let pageNum = parseInt(day);
-          // Eğer day 'Day 1' gibi string geliyorsa parse etsin, sayı geliyorsa aynen kalsın.
-          if (isNaN(pageNum) && typeof day === 'string') {
-             pageNum = parseInt(day.replace(/\D/g, ''));
+      if (typeof getCityCollageImages === 'function') {
+          // --- DÜZELTME 2: Gün sayısını metinden ("Day 2") söküp alma ---
+          let pageNum = 1;
+          
+          // Eğer day bir sayıysa (örn: 2)
+          if (typeof day === 'number') {
+              pageNum = day;
+          } 
+          // Eğer day bir metinse (örn: "Day 2", "2. Gün")
+          else if (typeof day === 'string') {
+              const match = day.match(/\d+/); // İçindeki ilk sayıyı bul
+              if (match) {
+                  pageNum = parseInt(match[0], 10);
+              }
           }
+
+          // Güvenlik: Sayfa 0 veya negatif olamaz
           if (!pageNum || pageNum < 1) pageNum = 1;
+
+          console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Gün: ${day}, Sayfa: ${pageNum}`);
 
           images = await getCityCollageImages(searchObj, { 
             min: 6, 
             exclude: usedSet,
-            page: pageNum // <-- Burası çok önemli
+            page: pageNum // Doğru hesaplanmış sayfa numarası
           });
       }
 
       if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
       if (images.length > 0) {
-          // Yeni gelenleri sete ekle
           images.forEach(img => usedSet.add(img));
-          
-          // Local Storage'a kaydet
           try {
               localStorage.setItem(cacheKey, JSON.stringify(images));
           } catch (e) {
@@ -11203,7 +11221,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
       }
   }
 
-  // 6. Ekrana Bas
+  // 5. Render
   if (images.length > 0 && typeof renderCollageSlides === 'function') {
     renderCollageSlides(collage, images, searchObj);
     collage.style.display = 'block';
