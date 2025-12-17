@@ -11664,6 +11664,10 @@ function renderCollageSlides(collage, images, searchObj) {
 // COLLAGE FINAL OVERRIDE v2 (Pixabay-only, robust parsing + fallback queries)
 // Put this at the VERY END of mainscript.js
 // ===============================
+// ===============================
+// COLLAGE FINAL OVERRIDE v2 (Pixabay-only, robust parsing + fallback queries)
+// Put this at the VERY END of mainscript.js
+// ===============================
 (function collageFinalOverride_v2() {
   if (window.__ttCollageFinalOverrideApplied_v2) return;
   window.__ttCollageFinalOverrideApplied_v2 = true;
