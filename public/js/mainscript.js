@@ -11529,50 +11529,62 @@ function renderCollageSlides(collage, images, searchObj) {
 // Put this at the VERY END of mainscript.js
 // ===============================
 // ===============================
-// COLLAGE FINAL OVERRIDE v2 (Pixabay-only, robust parsing + fallback queries)
+// COLLAGE FINAL OVERRIDE v3 (Pixabay-only, correct parsing of /slider {images:[...]})
 // Put this at the VERY END of mainscript.js
 // ===============================
-(function collageFinalOverride_v2() {
-  if (window.__ttCollageFinalOverrideApplied_v2) return;
-  window.__ttCollageFinalOverrideApplied_v2 = true;
+(function collageFinalOverride_v3() {
+  if (window.__ttCollageFinalOverrideApplied_v3) return;
+  window.__ttCollageFinalOverrideApplied_v3 = true;
 
   const log = (...a) => console.log('[collage]', ...a);
   const warn = (...a) => console.warn('[collage]', ...a);
 
-  function uniq(arr) {
-    const out = [];
-    const s = new Set();
-    (arr || []).forEach(x => {
-      if (typeof x !== 'string') return;
-      if (s.has(x)) return;
-      s.add(x);
-      out.push(x);
-    });
-    return out;
-  }
+  const isPexelsUrl = (u) => typeof u === 'string' && /pexels\.com/i.test(u);
 
-  // Proxy already returns Pixabay URLs, but keep a safety filter anyway
-  function isPexelsUrl(u) {
-    return typeof u === 'string' && /pexels\.com/i.test(u);
+  function uniq(arr) {
+    const s = new Set();
+    const out = [];
+    for (const x of (arr || [])) {
+      const v = (x || '').toString().trim();
+      if (!v) continue;
+      if (s.has(v)) continue;
+      s.add(v);
+      out.push(v);
+    }
+    return out;
   }
 
   async function fetchPixabaySlider(term, limit, page) {
     const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
     const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`slider http ${res.status}`);
-    }
-    const data = await res.json();
+    const status = res.status;
+    const data = await res.json().catch(() => ({}));
 
-    // IMPORTANT: backend returns {images:[...]}
-    const images = Array.isArray(data?.images) ? data.images : [];
+    // PROXY FORMAT: { images: [...] }
+    let images = Array.isArray(data?.images) ? data.images : [];
 
-    return images
-      .filter(u => typeof u === 'string' && u.trim().length > 10)
+    // Safety: allow also direct array (just in case)
+    if (!images.length && Array.isArray(data)) images = data;
+
+    // Normalize + filter only obvious junk
+    images = images
+      .filter(u => typeof u === 'string')
+      .map(u => u.trim())
+      .filter(u => u.length > 10)
       .filter(u => !isPexelsUrl(u));
+
+    log('slider parsed', {
+      term,
+      status,
+      url: res.url,
+      rawKeys: Object.keys(data || {}),
+      parsedLen: images.length,
+      sample: images.slice(0, 2),
+    });
+
+    return images;
   }
 
-  // Single source of truth: always use /photoget-proxy/slider
   window.getCityCollageImages = async function getCityCollageImages(searchObj, options = {}) {
     const day = Math.max(1, Number(options.day || window.currentDay || 1));
     const min = Math.max(3, Number(options.min || 6));
@@ -11582,14 +11594,9 @@ function renderCollageSlides(collage, images, searchObj) {
     const term = rawTerm.trim() || 'Turkey';
 
     window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
-
-    // If we already have good cached data for the day, use it
     const cached = window.__dayCollagePhotosByDay[day];
-    if (Array.isArray(cached) && cached.length >= 3) {
-      return cached;
-    }
+    if (Array.isArray(cached) && cached.length >= 3) return cached;
 
-    // Fallback queries (Pixabay can be picky depending on term)
     const queries = uniq([
       term,
       `${term} Turkey`,
@@ -11605,20 +11612,18 @@ function renderCollageSlides(collage, images, searchObj) {
           window.__dayCollagePhotosByDay[day] = imgs;
           log('images ok', { day, q, count: imgs.length });
           return imgs;
-        } else {
-          log('0 images', { day, q });
         }
+        log('0 images AFTER PARSE', { day, q });
       } catch (e) {
         warn('fetch error', { day, q, err: e?.message || e });
       }
     }
 
-    // Cache empty so render can show message consistently
     window.__dayCollagePhotosByDay[day] = [];
     return [];
   };
 
-  window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
+  window.renderDayCollage = async function renderDayCollage(day, dayContainer) {
     if (!dayContainer) return;
 
     let collage = dayContainer.querySelector('.day-collage');
@@ -11630,7 +11635,6 @@ function renderCollageSlides(collage, images, searchObj) {
       else dayContainer.appendChild(collage);
     }
 
-    // Force visible (your DOM had display:none)
     collage.style.display = 'block';
     collage.style.margin = '12px 0 6px';
     collage.style.borderRadius = '10px';
@@ -11640,8 +11644,6 @@ function renderCollageSlides(collage, images, searchObj) {
     collage.style.background = '#f9f9f9';
 
     const cityName = (window.selectedCity || 'Turkey').trim() || 'Turkey';
-
-    // Try fetch (or cache)
     const images = await window.getCityCollageImages({ term: cityName }, { min: 9, page: 1, day });
 
     if (!images || images.length === 0) {
@@ -11710,5 +11712,5 @@ function renderCollageSlides(collage, images, searchObj) {
     update();
   };
 
-  log('Final override v2 applied (Pixabay-only).');
+  log('Final override v3 applied (Pixabay-only).');
 })();
