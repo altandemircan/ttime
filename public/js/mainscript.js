@@ -1,29 +1,6 @@
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 
-
-
-
-// === COLLAGE RACE CONDITION - TOKEN GENERATOR (local_storage. js için de) ===
-if (typeof window.__ttNewTripToken !== 'function') {
-  window.__ttNewTripToken = function() {
-    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-  };
-}
-
-if (!  window.__activeTripSessionToken) {
-  window.__activeTripSessionToken = window.__ttNewTripToken();
-}
-
-window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
-window.__globalCollageUsed = window.__globalCollageUsed || new Set();
-// === END COLLAGE RACE CONDITION ===
-
-
-
-
-
-
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
@@ -39,6 +16,29 @@ function isTripFav(item) {
     );
 }
 
+// === COLLAGE RACE CONDITION - TOKEN GENERATOR ===
+if (typeof window.__ttNewTripToken !== 'function') {
+  window.__ttNewTripToken = function() {
+    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  };
+}
+
+if (! window.__activeTripSessionToken) {
+  window.__activeTripSessionToken = window.__ttNewTripToken();
+}
+window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+window.__globalCollageUsed = window.__globalCollageUsed || new Set();
+// === END COLLAGE RACE CONDITION ===
+
+
+
+
+// Global used set'ini yeniden kuran yardımcı
+function rebuildGlobalCollageUsed() {
+  window.__globalCollageUsed = new Set(
+    Object.values(window.__dayCollagePhotosByDay || {}).flat()
+  );
+}
 
 
 
@@ -2719,24 +2719,18 @@ async function geoapifyAutocomplete(query) {
 }
 
 
-
-
-async function getPixabayCategoryImage(category) {
-    return await getPhoto(category, "pexels");
-}
-
-window.getPixabayImage = async function(query) {
-    return await getPhoto(query, "pexels");
-};
+// Sadece photoget-proxy ile çalışıyor!
 async function getPexelsImage(query) {
     return await getPhoto(query, "pexels");
 }
 
+async function getPixabayCategoryImage(category) {
+    return await getPhoto(category, "pixabay");
+}
 
-
-
-
-
+window.getPixabayImage = async function(query) {
+    return await getPhoto(query, "pixabay");
+};
 
 async function getImageForPlace(placeName, category, cityName) {
     const queries = [
@@ -2811,27 +2805,7 @@ async function enrichPlanWithWiki(plan) {
     return plan;
 }
 // Proxy çağrısı
-// Proxy çağrısı
 async function getPhoto(query, source = 'pexels') {
-    // COLLAGE ve SLIDER için:  SADECE Pixabay
-    if (source === 'slider' || source === 'collage') {
-        const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&count=6&page=1`;
-        try {
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data && Array.isArray(data.images)) {
-                // Pexels'i filtrele
-                const filtered = data.images.filter(u => typeof u === "string" && !/pexels\.com/i.test(u));
-                if (source === 'slider') return filtered[0] || PLACEHOLDER_IMG;
-                return filtered; // collage için array döndür
-            }
-        } catch (e) {
-            console.warn("Slider/Collage fotoğraf proxy hatası:", e);
-        }
-        return source === 'slider' ? PLACEHOLDER_IMG : [];
-    }
-
-    // DİĞER HER ŞEY:  mevcut davranış
     const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=${source}`;
     try {
         const res = await fetch(url);
@@ -11073,213 +11047,6 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     document.head.appendChild(style);
 })();
 
-
-
-
-
-// ==================== COLLAGE (DAY SLIDER) HELPERS ====================
-// Slider kesin Pixabay olacak + cache (localStorage) çalışacak.
-window.__collagePageByTerm = window.__collagePageByTerm || {};
-
-
-// Pexels URL'lerini tespit eden yardımcı fonksiyon
-function isLikelyPexelsUrl(u) {
-  return typeof u === "string" && /pexels\.com/i.test(u);
-}
-
-
-function normalizeCollageKeyDay(day) {
-  return String(day);
-}
-
-function loadCollageFromStorage(day) {
-  try {
-    const trips = JSON.parse(localStorage.getItem("triptime_user_trips_v2") || "{}");
-    const key = window.activeTripKey;
-    if (!key || !trips[key]) return [];
-    const d = normalizeCollageKeyDay(day);
-    const arr = trips[key].dayCollageData && trips[key].dayCollageData[d];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-async function saveCollageToStorage(day, images) {
-  try {
-    const trips = JSON.parse(localStorage.getItem("triptime_user_trips_v2") || "{}");
-    const key = window.activeTripKey;
-    if (!key || !trips[key]) return;
-
-    trips[key].dayCollageData = trips[key].dayCollageData || {};
-    const d = normalizeCollageKeyDay(day);
-    trips[key].dayCollageData[d] = Array.isArray(images) ? images : [];
-
-    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(trips));
-  } catch {}
-}
-
-// ==================== getCityCollageImages (Pixabay-only) ====================
-// ==================== getCityCollageImages (Pixabay-only - DÜZELTME) ====================
-// ==================== getCityCollageImages (Pixabay-only - FIXED) ====================
-// ====================================================================
-// ==================== SLIDER & COLLAGE DÜZELTMESİ ====================
-// ====================================================================
-
-// 1. Görsel Çekme Fonksiyonu (SADECE PIXABAY KULLANIR)
-window.getCityCollageImages = async function(searchObj, options = {}) {
-    // Şehir ismini garantiye al
-    const term = searchObj?.term || window.selectedCity || "Turkey";
-    const limit = Number(options.min || 6);
-    const page = Number(options.page || 1);
-    const day = Number(options.day || window.currentDay || 1);
-
-    // Cache kontrolü (Pexels varsa temizle)
-    if (!window.__dayCollagePhotosByDay) window.__dayCollagePhotosByDay = {};
-    const cached = window.__dayCollagePhotosByDay[day];
-    if (Array.isArray(cached) && cached.length > 0) {
-        const hasPexels = cached.some(u => typeof u === "string" && /pexels\.com/i.test(u));
-        if (!hasPexels) return cached; 
-        window.__dayCollagePhotosByDay[day] = []; // Pexels varsa önbelleği temizle
-    }
-
-    // Proxy üzerinden Pixabay isteği (/slider endpoint'i Pixabay'a zorlar)
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) return [];
-        const data = await res.json();
-        
-        let images = [];
-        if (Array.isArray(data.images)) images = data.images;
-        else if (Array.isArray(data)) images = data;
-
-        // Pexels kaçarsa yine de filtrele
-images = images.filter(u => typeof u === "string" && /pixabay\.com|cdn\.pixabay\.com/i.test(u));
-
-        if (images.length > 0) {
-            window.__dayCollagePhotosByDay[day] = images;
-            // LocalStorage güncelle
-            if (typeof saveCurrentTripToStorage === "function") {
-                setTimeout(() => { try { saveCurrentTripToStorage(); } catch(_) {} }, 50);
-            }
-        }
-        return images;
-    } catch (e) {
-        console.error("Collage fetch error:", e);
-        return [];
-    }
-};
-
-// 2. Slider Render Fonksiyonu (GÖRÜNÜRLÜK GARANTİLİ)
-window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
-    if (!dayContainer) return;
-
-    // 1) Collage Elementini Bul veya Oluştur
-    let collage = dayContainer.querySelector('.day-collage');
-    if (!collage) {
-        collage = document.createElement('div');
-        collage.className = 'day-collage';
-        const list = dayContainer.querySelector('.day-list');
-        if (list) list.insertAdjacentElement('afterend', collage);
-        else dayContainer.appendChild(collage);
-    }
-
-    // ÖNEMLİ: Görünürlüğü inline style ile zorla (display: block !important)
-    collage.setAttribute('style', "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block !important; min-height: 100px; background: #f9f9f9;");
-
-    // 2) Şehir İsmini Belirle (Hata korumalı)
-    const cityName = window.selectedCity || "Turkey";
-    
-    // 3) Görselleri Getir
-    const searchObj = { term: cityName };
-    let images = await window.getCityCollageImages(searchObj, { min: 6, page: 1, day: day });
-
-    // Son kez Pexels kontrolü
-    images = images.filter(u => typeof u === "string" && !(/pexels\.com/i.test(u)));
-
-    // Eğer görsel yoksa uyarı göster ama alanı gizleme
-    if (!images || images.length === 0) {
-        collage.innerHTML = `<div style="padding: 30px; text-align: center; color: #888; font-size: 13px;">No photos available for ${cityName}</div>`;
-        return;
-    }
-
-    // 4) Slider HTML Yapısını Oluştur
-    const perSlide = 3; // Her slaytta 3 resim
-    let trackHtml = '';
-    images.forEach((imgUrl) => {
-        trackHtml += `
-            <div style="flex: 0 0 ${100/perSlide}%; max-width: ${100/perSlide}%; padding: 4px; box-sizing: border-box;">
-                <div style="width:100%; height:160px; border-radius: 8px; overflow:hidden; background:#e5e8ed; cursor: pointer;">
-                    <img src="${imgUrl}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;" onclick="window.open('${imgUrl}', '_blank')">
-                </div>
-            </div>
-        `;
-    });
-
-    collage.innerHTML = `
-        <div style="font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin: 0 0 10px 4px;">Photos related to ${cityName}</div>
-        <div class="collage-viewport" style="overflow: hidden; width:100%; position:relative; border-radius:8px;">
-            <div style="position:absolute; top:12px; left:12px; z-index:2; background: rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size: 11px; font-weight:600; pointer-events:none;">${cityName}</div>
-            <div class="collage-track" style="display: flex; transition: transform 0.4s ease-out; will-change: transform; transform: translateX(0%);">
-                ${trackHtml}
-            </div>
-        </div>
-        <button class="collage-nav prev" style="position: absolute; left: 6px; top: 60%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: #000; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 5;">❮</button>
-        <button class="collage-nav next" style="position: absolute; right: 6px; top: 60%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: #000; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 5;">❯</button>
-    `;
-
-    // 5) Slider Hareket Mantığı
-    const track = collage.querySelector(".collage-track");
-    const prevBtn = collage.querySelector(".prev");
-    const nextBtn = collage.querySelector(".next");
-    let index = 0;
-    const maxIndex = Math.max(0, images.length - perSlide);
-
-    const updateSlider = () => {
-        track.style.transform = `translateX(-${index * (100 / perSlide)}%)`;
-        prevBtn.style.opacity = index === 0 ? 0.3 : 1;
-        prevBtn.style.pointerEvents = index === 0 ? "none" : "auto";
-        nextBtn.style.opacity = index >= maxIndex ? 0.3 : 1;
-        nextBtn.style.pointerEvents = index >= maxIndex ? "none" : "auto";
-    };
-
-    prevBtn.onclick = (e) => { e.stopPropagation(); if(index > 0) index--; updateSlider(); };
-    nextBtn.onclick = (e) => { e.stopPropagation(); if(index < maxIndex) index++; updateSlider(); };
-    
-    // İlk durum güncellemesi
-    updateSlider();
-};
-
-// Pixabay'dan direkt fotoğraf çeken yardımcı fonksiyon
-async function fetchPixabayDirect(query, count = 6, page = 1) {
-     const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&count=${count}&page=1`;
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data && Array.isArray(data.images) && data.images.length > 0) {
-            // Pexels URL'lerini filtrele (sadece Pixabay kalsın)
-            return data.images.filter(u => typeof u === "string" && !/pexels\.com/i.test(u));
-        }
-    } catch (e) {
-        console.warn("Collage foto hatası:", e);
-    }
-    return [];
-}
-
-// Pexels URL kontrolü
-function isLikelyPexelsUrl(u) {
-    return typeof u === "string" && /pexels\.com/i.test(u);
-}
-
-// Pixabay URL kontrolü (doğrulama için)
-function isPixabayUrl(u) {
-    return typeof u === "string" && /pixabay\.com/i.test(u);
-}
-
-
-
 // === COLLAGE RACE CONDITION FIX (Trip Token) ===
 window.__ttNewTripToken = window.__ttNewTripToken || function () {
   return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -11336,20 +11103,50 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
   }
 }
 
+// ============================================================
+// --- 2. Akıllı Görsel Arama (ZENGİNLEŞTİRİLMİŞ) ---
+// ============================================================
 
-// ==================== renderDayCollage (Pixabay-only DÜZELTME) ====================
+// ==================== getCityCollageImages ====================
+// ==================== YENİ ve TEK getCityCollageImages ====================
+window.getCityCollageImages = async function(searchObj, options = {}) {
+    const term = searchObj.term;
+    if (!term) return [];
+
+    const limit = options.min || 6;
+    const page = options.page || 1; 
+
+    // URL'de source=pixabay olarak güncellendi
+const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&source=pixabay&count=${limit}&page=${page}`;
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        
+        if (data.images && Array.isArray(data.images)) {
+            return data.images;
+        }
+        return [];
+    } catch (err) {
+        console.warn("Slider fetch error:", err);
+        return [];
+    }
+};
+
+// ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
 
   const tripTokenAtStart = window.__activeTripSessionToken;
 
-  // 1. Collage Alanını Oluştur
-  let collage = dayContainer. querySelector('.day-collage');
+  // 1. Collage Alanını Oluştur (Listeden sonra, Haritadan önce)
+  let collage = dayContainer.querySelector('.day-collage');
   if (!collage) {
     collage = document.createElement('div');
     collage.className = 'day-collage';
     collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
     
+    // Listenin altına ekle
     const list = dayContainer.querySelector('.day-list');
     if (list) {
       list.insertAdjacentElement('afterend', collage);
@@ -11374,86 +11171,86 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     return;
   }
 
-  // 3. Trip değiştiyse çık
-  if (tripTokenAtStart !== window.__activeTripSessionToken) return;
-
-  // 4. Fotoğrafları Çek (SADECE PIXABAY)
-  let images = await window.getCityCollageImages(searchObj, { min: 6, page: 1, day: day });
-
-  // Pexels URL'leri filtrele (ek güvenlik)
-  images = images.filter(u => !isLikelyPexelsUrl(u));
-
-  if (tripTokenAtStart !== window.__activeTripSessionToken) return;
-
-  if (! images || images.length === 0) {
-    collage.style.display = 'none';
-    return;
+  // 3. Kullanılan Görseller Seti
+  if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
+  if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
+    window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
   }
+  const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-  collage.style.display = 'block';
-
-  // 5. Slider HTML Oluştur
-  const cityLabel = searchObj.term;
-  const perSlide = 3;
-  const slideWidthPercent = 100 / perSlide;
-
-  let trackHtml = '';
-  images.forEach((imgUrl) => {
-    trackHtml += `
-      <div style="flex: 0 0 ${slideWidthPercent}%; max-width: ${slideWidthPercent}%; padding: 4px; box-sizing: border-box;">
-        <div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed;">
-          <img src="${imgUrl}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.parentElement.style.display='none';">
-        </div>
-      </div>
-    `;
-  });
-
-  collage.innerHTML = `
-    <div style="font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin-bottom: 10px;">Photos related to ${cityLabel}</div>
-    <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
-      <div style="position:absolute; top: 12px; left:12px; z-index:2; background: rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events: none;">${cityLabel}</div>
-      <div class="collage-track" style="display: flex; transition: transform 0.4s ease-out; will-change: transform; transform: translateX(0%);">
-        ${trackHtml}
-      </div>
-    </div>
-    <button class="collage-nav prev" style="position: absolute; left: 6px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: rgb(0, 0, 0); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 6px; z-index:  5;">❮</button>
-    <button class="collage-nav next" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: rgb(0, 0, 0); border: none; border-radius: 50%; width: 32px; height: 32px; cursor:  pointer; display: flex; align-items: center; justify-content:  center; box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 6px; z-index: 5;">❯</button>
-  `;
-
-  // 6. Slider Navigasyonu
-  const track = collage.querySelector('.collage-track');
-  const prevBtn = collage.querySelector('.collage-nav. prev');
-  const nextBtn = collage.querySelector('.collage-nav.next');
+  // --- DÜZELTME 1: Cache Key'i değiştirdik (_v2) ki eski hatalı kayıtları okumasın ---
+  const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_v2`;
   
-  let currentIndex = 0;
-  const maxIndex = Math.max(0, images.length - perSlide);
+  let images = [];
+  let fromCache = false;
 
-  function updateSlider() {
-    const offset = -(currentIndex * slideWidthPercent);
-    track.style.transform = `translateX(${offset}%)`;
-    
-    // Buton durumları
-    prevBtn.style.opacity = currentIndex === 0 ? '0.3' : '1';
-    prevBtn.style.pointerEvents = currentIndex === 0 ? 'none' : 'auto';
-    nextBtn.style.opacity = currentIndex >= maxIndex ? '0.3' : '1';
-    nextBtn.style.pointerEvents = currentIndex >= maxIndex ? 'none' : 'auto';
+  // Local Storage Kontrolü
+  try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+          const parsed = JSON.parse(cachedData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+              images = parsed;
+              fromCache = true;
+              images.forEach(img => usedSet.add(img));
+              console.log(`[Collage] Loaded from localStorage (v2) for Day ${day}:`, searchObj.term);
+          }
+      }
+  } catch (e) {
+      console.warn("[Collage] Storage read error:", e);
   }
 
-  prevBtn.addEventListener('click', () => {
-    if (currentIndex > 0) {
-      currentIndex--;
-      updateSlider();
-    }
-  });
+  // 4. API'den Çekme
+  if (!fromCache || images.length === 0) {
+      if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-  nextBtn.addEventListener('click', () => {
-    if (currentIndex < maxIndex) {
-      currentIndex++;
-      updateSlider();
-    }
-  });
+      if (typeof getCityCollageImages === 'function') {
+          // --- DÜZELTME 2: Gün sayısını metinden ("Day 2") söküp alma ---
+          let pageNum = 1;
+          
+          // Eğer day bir sayıysa (örn: 2)
+          if (typeof day === 'number') {
+              pageNum = day;
+          } 
+          // Eğer day bir metinse (örn: "Day 2", "2. Gün")
+          else if (typeof day === 'string') {
+              const match = day.match(/\d+/); // İçindeki ilk sayıyı bul
+              if (match) {
+                  pageNum = parseInt(match[0], 10);
+              }
+          }
 
-  updateSlider();
+          // Güvenlik: Sayfa 0 veya negatif olamaz
+          if (!pageNum || pageNum < 1) pageNum = 1;
+
+          console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Gün: ${day}, Sayfa: ${pageNum}`);
+
+          images = await getCityCollageImages(searchObj, { 
+            min: 6, 
+            exclude: usedSet,
+            page: pageNum // Doğru hesaplanmış sayfa numarası
+          });
+      }
+
+      if (window.__activeTripSessionToken !== tripTokenAtStart) return;
+
+      if (images.length > 0) {
+          images.forEach(img => usedSet.add(img));
+          try {
+              localStorage.setItem(cacheKey, JSON.stringify(images));
+          } catch (e) {
+              console.warn("[Collage] Storage write error:", e);
+          }
+      }
+  }
+
+  // 5. Render
+  if (images.length > 0 && typeof renderCollageSlides === 'function') {
+    renderCollageSlides(collage, images, searchObj);
+    collage.style.display = 'block';
+  } else {
+    collage.style.display = 'none';
+  }
 };
 // ==================== Slider renderer helper ====================
 function renderCollageSlides(collage, images, searchObj) {
@@ -11522,218 +11319,30 @@ function renderCollageSlides(collage, images, searchObj) {
   };
   update();
 }
+// mainscript.js içine ekleyin veya güncelleyin
 
+window.getCityCollageImages = async function(searchObj, options = {}) {
+    const term = searchObj.term;
+    if (!term) return [];
 
-// ===============================
-// COLLAGE FINAL OVERRIDE v3 (Pixabay-only, strict {images:[]} parsing + debug)
-// Put this at the VERY END of mainscript.js
-// ===============================
-// ===============================
-// COLLAGE FINAL OVERRIDE v4 (Pixabay-only, FIXED PARSER)
-// Put this at the VERY END of mainscript.js
-// ===============================
-(function collageFinalOverride_v4() {
-  if (window.__ttCollageFinalOverrideApplied_v4) return;
-  window.__ttCollageFinalOverrideApplied_v4 = true;
+    const limit = options.min || 6;
+    // Gönderilen sayfa numarasını al, yoksa 1 kabul et
+    const page = options.page || 1; 
 
-  const log = (...a) => console.log('[collage]', ...a);
-  const warn = (...a) => console.warn('[collage]', ...a);
-
-  function isPexelsUrl(u) {
-    return typeof u === 'string' && /pexels\.com/i.test(u);
-  }
-
-  function normalizeImages(data) {
-    // Proxy expected: { images: [...] }
-    let arr = [];
-
-    if (Array.isArray(data?.images)) arr = data.images;
-    else if (Array.isArray(data?.hits)) {
-      // direct pixabay api format fallback
-      arr = data.hits.map(h => h?.webformatURL || h?.largeImageURL).filter(Boolean);
-    } else if (Array.isArray(data?.data)) arr = data.data;
-    else if (Array.isArray(data?.results)) arr = data.results;
-    else if (Array.isArray(data)) arr = data;
-
-    // sanitize
-    arr = arr
-      .filter(u => typeof u === 'string')
-      .map(u => u.trim())
-      .filter(u => u.length > 10)
-      .filter(u => !isPexelsUrl(u));
-
-    // unique
-    const seen = new Set();
-    arr = arr.filter(u => (seen.has(u) ? false : (seen.add(u), true)));
-
-    return arr;
-  }
-
-  async function fetchPixabaySlider(term, limit, page) {
+    // URL'e page parametresini ekliyoruz
     const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
-    const res = await fetch(url);
-    const status = res.status;
 
-    if (!res.ok) {
-      throw new Error(`slider http ${status}`);
-    }
-
-    const data = await res.json();
-    const images = normalizeImages(data);
-
-    log('slider parsed', {
-      term,
-      status,
-      url: res.url,
-      rawKeys: data && typeof data === 'object' ? Object.keys(data) : [],
-      parsedLen: images.length,
-      sample: images.slice(0, 2)
-    });
-
-    return images;
-  }
-
-  function uniq(arr) {
-    const out = [];
-    const s = new Set();
-    (arr || []).forEach(x => {
-      if (typeof x !== 'string') return;
-      const v = x.trim();
-      if (!v) return;
-      if (s.has(v)) return;
-      s.add(v);
-      out.push(v);
-    });
-    return out;
-  }
-
-  window.getCityCollageImages = async function getCityCollageImages(searchObj, options = {}) {
-    const day = Math.max(1, Number(options.day || window.currentDay || 1));
-    const min = Math.max(3, Number(options.min || 6));
-    const page = Math.max(1, Number(options.page || 1));
-
-    const rawTerm = (searchObj && searchObj.term) ? String(searchObj.term) : (window.selectedCity || 'Turkey');
-    const term = rawTerm.trim() || 'Turkey';
-
-    window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
-
-    // cache (only if non-empty)
-    const cached = window.__dayCollagePhotosByDay[day];
-    if (Array.isArray(cached) && cached.length >= 3) return cached;
-
-    const queries = uniq([
-      term,
-      `${term} Turkey`,
-      `${term} city`,
-      `${term} travel`,
-      `${term} old town`,
-      `${term} skyline`,
-      `${term} beach`,
-    ]);
-
-    for (const q of queries) {
-      try {
-        const imgs = await fetchPixabaySlider(q, min, page);
-        if (imgs.length) {
-          window.__dayCollagePhotosByDay[day] = imgs;
-          return imgs;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        
+        const data = await res.json();
+        if (data.images && Array.isArray(data.images)) {
+            return data.images;
         }
-        log('0 images AFTER PARSE', { day, q });
-      } catch (e) {
-        warn('fetch error', { day, q, err: e?.message || e });
-      }
+        return [];
+    } catch (e) {
+        console.warn("Slider fetch error:", e);
+        return [];
     }
-
-    window.__dayCollagePhotosByDay[day] = [];
-    return [];
-  };
-
-  window.renderDayCollage = async function renderDayCollage(day, dayContainer) {
-    if (!dayContainer) return;
-
-    let collage = dayContainer.querySelector('.day-collage');
-    if (!collage) {
-      collage = document.createElement('div');
-      collage.className = 'day-collage';
-      const list = dayContainer.querySelector('.day-list');
-      if (list) list.insertAdjacentElement('afterend', collage);
-      else dayContainer.appendChild(collage);
-    }
-
-    collage.style.display = 'block';
-    collage.style.margin = '12px 0 6px';
-    collage.style.borderRadius = '10px';
-    collage.style.overflow = 'hidden';
-    collage.style.position = 'relative';
-    collage.style.minHeight = '100px';
-    collage.style.background = '#f9f9f9';
-
-    const cityName = (window.selectedCity || 'Turkey').trim() || 'Turkey';
-    const images = await window.getCityCollageImages({ term: cityName }, { min: 9, page: 1, day });
-
-    if (!images || images.length === 0) {
-      collage.innerHTML = `
-        <div style="padding:22px; text-align:center; color:#777; font-size:13px;">
-          No photos available for <b>${cityName}</b> (Pixabay).
-        </div>`;
-      return;
-    }
-
-    const perSlide = 3;
-    let index = 0;
-    const maxIndex = Math.max(0, images.length - perSlide);
-
-    const slidesHtml = images.map((imgUrl) => `
-      <div style="flex:0 0 ${100 / perSlide}%; max-width:${100 / perSlide}%; padding:4px; box-sizing:border-box;">
-        <div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed; cursor:pointer;">
-          <img src="${imgUrl}" loading="lazy"
-               style="width:100%; height:100%; object-fit:cover; display:block;"
-               onclick="window.open('${imgUrl}', '_blank')"
-               onerror="this.closest('div').style.display='none';">
-        </div>
-      </div>
-    `).join('');
-
-    collage.innerHTML = `
-      <div style="font-weight:700; font-size:0.95rem; color:#333; margin:0 0 10px 4px;">
-        Photos related to ${cityName}
-      </div>
-      <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
-        <div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff;
-                    padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">
-          ${cityName}
-        </div>
-        <div class="collage-track" style="display:flex; transition:transform .4s ease-out; will-change:transform; transform:translateX(0%);">
-          ${slidesHtml}
-        </div>
-      </div>
-      <button class="collage-nav prev"
-        style="position:absolute; left:6px; top:60%; transform:translateY(-50%); background:rgba(255,255,255,0.9);
-               border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center;
-               justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
-      <button class="collage-nav next"
-        style="position:absolute; right:6px; top:60%; transform:translateY(-50%); background:rgba(255,255,255,0.9);
-               border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center;
-               justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
-    `;
-
-    const track = collage.querySelector('.collage-track');
-    const prevBtn = collage.querySelector('.collage-nav.prev');
-    const nextBtn = collage.querySelector('.collage-nav.next');
-
-    const update = () => {
-      const offset = index * (100 / perSlide);
-      track.style.transform = `translateX(-${offset}%)`;
-      prevBtn.style.opacity = index === 0 ? '0.3' : '1';
-      prevBtn.style.pointerEvents = index === 0 ? 'none' : 'auto';
-      nextBtn.style.opacity = index >= maxIndex ? '0.3' : '1';
-      nextBtn.style.pointerEvents = index >= maxIndex ? 'none' : 'auto';
-    };
-
-    prevBtn.onclick = (e) => { e.stopPropagation(); if (index > 0) { index--; update(); } };
-    nextBtn.onclick = (e) => { e.stopPropagation(); if (index < maxIndex) { index++; update(); } };
-    update();
-  };
-
-  log('Final override v4 applied (Pixabay-only).');
-})();
+};

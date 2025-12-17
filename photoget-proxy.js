@@ -45,33 +45,76 @@ router.get('/', async (req, res) => {
 });
 
 
-// 2. SLIDER ENDPOINT (SADECE PIXABAY ZORLAMALI)
+// 2. YENİ SLIDER ENDPOINT (Çoklu resim için)
+// // 2. YENİ SLIDER ENDPOINT (Çoklu resim için - DÜZELTİLMİŞ HALİ)
+// 2. YENİ SLIDER ENDPOINT (Öncelik: Pixabay -> Yedek: Pexels)
+// 2. SLIDER ENDPOINT (Pixabay Öncelikli - Hata Ayıklama Modu)
 router.get('/slider', async (req, res) => {
-    const { query, count = 6, page = 1 } = req.query; 
-    if (!query) return res.status(400).json({ error: 'Query is required.' });
+    let { query, source = 'pixabay', count = 5, page = 1 } = req.query;
+    
+    // API KEY KONTROLÜ
+    if (!PIXABAY_API_KEY) {
+        console.error("[Proxy Error] PIXABAY_API_KEY tanımlı değil!");
+        return res.status(500).json({ error: 'Server config error: API Key missing' });
+    }
+
+    console.log(`[Proxy Slider] İstek: ${query} | Kaynak: ${source}`);
+
+    // Yardımcı: Pixabay İsteği
+    const fetchFromPixabay = async () => {
+        try {
+            // URL'i konsola basalım ki hatayı görelim
+            const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=${count}&page=${page}&safesearch=true`;
+            console.log(`[Pixabay Req] URL: ${url}`);
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                const errText = await response.text();
+                console.error(`[Pixabay API Error] Status: ${response.status} - ${errText}`);
+                return null;
+            }
+
+            const data = await response.json();
+            console.log(`[Pixabay Res] Bulunan görsel sayısı: ${data.totalHits}`);
+            
+            return (data.hits || []).map(hit => hit.largeImageURL || hit.webformatURL);
+        } catch (e) {
+            console.error("[Pixabay Network Error]:", e.message);
+            return null;
+        }
+    };
 
     try {
-        const pixabayUrl = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=${count}&page=${page}&safesearch=true`;
-        const response = await fetch(pixabayUrl);
-
-        if (!response.ok) {
-            throw new Error(`Pixabay API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-
         let images = [];
-        if (data.hits && data.hits.length > 0) {
-            images = data.hits.map(hit => hit.webformatURL || hit.largeImageURL);
+
+        // SADECE PIXABAY DENE (Hata varsa Pexels'e geçme, hatayı görelim)
+        if (source === 'pixabay') {
+            const pixabayResult = await fetchFromPixabay();
+            
+            if (pixabayResult === null) {
+                // API hatası döndü
+                return res.status(500).json({ error: 'Pixabay API failed. Check server console.' });
+            }
+            
+            if (pixabayResult.length === 0) {
+                console.log("[Pixabay] Sonuç boş döndü.");
+                // Burada Pexels fallback'i devreye alabilirsiniz ama şimdilik kapalı kalsın
+            }
+            
+            images = pixabayResult;
+
+        } else if (source === 'pexels') {
+             // ... Pexels kodlarınız buraya ...
+             // (Mevcut Pexels kodunuzu buraya koyabilirsiniz)
         }
         
-        res.json({ images, source: "pixabay" });
+        res.json({ images });
 
     } catch (err) {
-        console.error("[Pixabay Slider Error]:", err.message);
-        res.status(500).json({ error: 'Proxy error', details: err.message });
+        console.error("Slider Proxy Fatal Error:", err);
+        res.status(500).json({ error: err.message });
     }
 });
-
 
 module.exports = router;
