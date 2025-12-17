@@ -99,7 +99,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         collage = document.createElement('div');
         collage.className = 'day-collage';
         // Min-height ile alanın çökmesini önle
-        collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
+        collage.style.cssText = "margin: 30px 0 10px 0;    border-radius: 10px;    overflow: hidden;    position: relative;    display: block;    min-height: 100px;";
     }
 
     // B. DOM'a Yerleştirme (UL -> Mevcut Buton -> Collage)
