@@ -11110,40 +11110,26 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
 // ==================== getCityCollageImages ====================
 // ==================== YENİ ve TEK getCityCollageImages ====================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    // Arama terimi yoksa çık
-    const term = searchObj?.term;
+    const term = searchObj.term;
     if (!term) return [];
 
-    // Parametreleri ayarla
-    const limit = options.min || 6; 
-    const page = options.page || 1; // Gün numarasını buraya alıyoruz
-    const excludeSet = options.exclude || new Set();
+    const limit = options.min || 6;
+    const page = options.page || 1; 
 
-    console.log(`[Frontend Collage] Fetching: ${term} | Page: ${page}`);
-
-    // Backend'e page parametresiyle istek atıyoruz
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+    // Backend artık zorunlu olarak Pixabay çalışıyor
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`; 
 
     try {
         const res = await fetch(url);
-        if (!res.ok) {
-            console.warn("[Frontend Collage] API Error:", res.status);
-            return [];
-        }
-        
+        if (!res.ok) return [];
         const data = await res.json();
-        if (data.images && Array.isArray(data.images)) {
-            // Varsa, daha önce kullanılmış (exclude) resimleri çıkar
-            const uniqueImages = data.images.filter(img => !excludeSet.has(img));
-            return uniqueImages;
-        }
-        return [];
+        // Dönen resim listesi (Sadece Pixabay kaynaklı)
+        return data.images || [];
     } catch (e) {
-        console.warn("[Frontend Collage] Network error:", e);
+        console.error("Collage fetch error:", e);
         return [];
     }
-};
-
+}
 
 // ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
