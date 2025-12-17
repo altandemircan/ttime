@@ -11179,19 +11179,20 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   const tripTokenAtStart = window.__activeTripSessionToken;
 
   // 1. Collage Alanını Oluştur
-  let collage = dayContainer. querySelector('.day-collage');
-  if (!collage) {
-    collage = document.createElement('div');
-    collage.className = 'day-collage';
-    collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
-    
-    const list = dayContainer.querySelector('.day-list');
-    if (list) {
-      list.insertAdjacentElement('afterend', collage);
-    } else {
-      dayContainer.appendChild(collage);
+ let collage = dayContainer.querySelector('.day-collage');
+    if (!collage) {
+        collage = document.createElement('div');
+        collage.className = 'day-collage';
+        collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
+        const list = dayContainer.querySelector('.day-list');
+        if (list) {
+            list.insertAdjacentElement('afterend', collage);
+        } else {
+            dayContainer.appendChild(collage);
+        }
     }
-  }
+    // GİZLENMİŞSE GÖRÜNÜR YAP:
+    collage.style.display = 'block';
 
   // 2. Şehir İsmini Bul
   let firstLoc = null;
