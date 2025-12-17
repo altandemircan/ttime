@@ -2803,20 +2803,25 @@ async function enrichPlanWithWiki(plan) {
 // Proxy çağrısı
 // Proxy çağrısı
 async function getPhoto(query, source = 'pexels') {
-    // SLIDER İÇİ: her zaman Pixabay (tekli foto)
-       if (source === 'slider') {
-        const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&count=1&page=1`;
-       try {
+    // COLLAGE ve SLIDER için:  SADECE Pixabay
+    if (source === 'slider' || source === 'collage') {
+        const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&count=6&page=1`;
+        try {
             const res = await fetch(url);
             const data = await res.json();
-            if (data && Array.isArray(data.images) && data.images[0]) return data.images[0];
+            if (data && Array.isArray(data.images)) {
+                // Pexels'i filtrele
+                const filtered = data.images.filter(u => typeof u === "string" && !/pexels\.com/i.test(u));
+                if (source === 'slider') return filtered[0] || PLACEHOLDER_IMG;
+                return filtered; // collage için array döndür
+            }
         } catch (e) {
-            console.warn("Slider fotoğraf proxy hatası:", e);
+            console.warn("Slider/Collage fotoğraf proxy hatası:", e);
         }
-        return PLACEHOLDER_IMG;
+        return source === 'slider' ? PLACEHOLDER_IMG : [];
     }
 
-    // DİĞER HER ŞEY: mevcut davranış (pexels -> pixabay vs.)
+    // DİĞER HER ŞEY:  mevcut davranış
     const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=${source}`;
     try {
         const res = await fetch(url);
@@ -2827,7 +2832,6 @@ async function getPhoto(query, source = 'pexels') {
     }
     return PLACEHOLDER_IMG;
 }
-
 
 
 function initPlaceSearch(day) {
@@ -11328,33 +11332,18 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
 // Pixabay'dan direkt fotoğraf çeken yardımcı fonksiyon
 async function fetchPixabayDirect(query, count = 6, page = 1) {
+     const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&count=${count}&page=1`;
     try {
-        // Backend proxy üzerinden Pixabay
-        const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=pixabay&count=${count}&page=${page}`;
         const res = await fetch(url);
-        if (!res.ok) return [];
-        
         const data = await res.json();
-        
-        // Tek görsel döndüyse array'e çevir
-        if (data. imageUrl && typeof data.imageUrl === 'string') {
-            return [data. imageUrl];
+        if (data && Array.isArray(data.images) && data.images.length > 0) {
+            // Pexels URL'lerini filtrele (sadece Pixabay kalsın)
+            return data.images.filter(u => typeof u === "string" && !/pexels\.com/i.test(u));
         }
-        
-        // Birden fazla görsel döndüyse
-        if (Array.isArray(data. images)) {
-            return data.images. filter(u => !isLikelyPexelsUrl(u));
-        }
-        
-        if (Array.isArray(data.hits)) {
-            return data.hits.map(h => h.webformatURL || h.largeImageURL).filter(Boolean);
-        }
-        
-        return [];
     } catch (e) {
-        console.error("Pixabay direct fetch error:", e);
-        return [];
+        console.warn("Collage foto hatası:", e);
     }
+    return [];
 }
 
 // Pexels URL kontrolü
