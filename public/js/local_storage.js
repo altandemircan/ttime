@@ -380,6 +380,8 @@ function showTripAiInfo(aiInfo) {
 
 // local_storage.js dosyasında loadTripFromStorage fonksiyonunu bulun ve şu şekilde GÜNCELLEYİN:
 
+// === local_storage.js içindeki loadTripFromStorage fonksiyonunu BU HALİYLE değiştirin ===
+
 function loadTripFromStorage(tripKey) {
     // 1. ARKA PLAN İŞLEMLERİNİ İPTAL ET
     window.__planGenerationId = Date.now(); 
@@ -428,6 +430,8 @@ function loadTripFromStorage(tripKey) {
         window.cart.aiData = null;
         window.lastTripAIInfo = null;
     }
+    
+    // AI Panelini Güncelle
     const aiSection = document.querySelector('.ai-info-section');
     if (t.aiInfo) {
         if (!aiSection) { if (typeof window.insertTripAiInfo === "function") window.insertTripAiInfo(null, t.aiInfo); } 
@@ -453,16 +457,24 @@ function loadTripFromStorage(tripKey) {
     window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
     window.selectedCity = t.selectedCity || "";
     
-    // === BAŞLIK DÜZELTME (KESİN ÇÖZÜM) ===
-    // "My Trips" listesindeki başlık (t.title) neyse onu kullan!
-    // Asla selectedCity'den yeniden üretme, çünkü veri bozuk olabilir.
+    // === BAŞLIK DÜZELTME (KESİN VE DOĞRUDAN ÇÖZÜM) ===
+    let finalTitle = "Trip Plan";
     if (t.title && t.title.trim().length > 0) {
-        window.lastUserQuery = t.title;
+        finalTitle = t.title;
     } else {
-        // Yedek: Eğer title yoksa eskilere bak
-        window.lastUserQuery = t.lastUserQuery || (window.selectedCity ? window.selectedCity + " trip plan" : "Trip Plan");
+        finalTitle = t.lastUserQuery || (window.selectedCity ? window.selectedCity + " trip plan" : "Trip Plan");
     }
-    // =====================================
+    
+    // 1. Global değişkeni güncelle
+    window.lastUserQuery = finalTitle;
+
+    // 2. DOM ELEMENTİNİ ZORLA GÜNCELLE (Bu satır sorunu çözer!)
+    // updateTripTitle() fonksiyonunun ne yaptığına bakmaksızın, biz burada işi bitiriyoruz.
+    const titleEl = document.getElementById("trip_title");
+    if (titleEl) {
+        titleEl.textContent = finalTitle;
+    }
+    // ===================================================
 
     // UI Güncellemeleri
     const chatBox = document.getElementById("chat-box");
@@ -470,7 +482,7 @@ function loadTripFromStorage(tripKey) {
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
 
-    // updateTripTitle() fonksiyonu window.lastUserQuery değerini ekrana basar.
+    // updateTripTitle yine de kalsın, diğer UI elementlerini tetikliyorsa diye.
     if (typeof updateTripTitle === "function") updateTripTitle(); 
     if (typeof updateCart === "function") updateCart();
     if (typeof showResults === "function") showResults();
