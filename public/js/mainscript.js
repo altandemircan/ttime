@@ -11122,24 +11122,28 @@ async function saveCollageToStorage(day, images) {
 // ==================== getCityCollageImages (Pixabay-only) ====================
 // ==================== getCityCollageImages (Pixabay-only - DÜZELTME) ====================
 // ==================== getCityCollageImages (Pixabay-only - FIXED) ====================
+// ====================================================================
+// ==================== SLIDER & COLLAGE DÜZELTMESİ ====================
+// ====================================================================
+
+// 1. Görsel Çekme Fonksiyonu (SADECE PIXABAY KULLANIR)
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    const term = searchObj?.term;
-    if (!term) return [];
+    // Şehir ismini garantiye al
+    const term = searchObj?.term || window.selectedCity || "Turkey";
     const limit = Number(options.min || 6);
     const page = Number(options.page || 1);
     const day = Number(options.day || window.currentDay || 1);
 
-    // 1) Cache kontrol - Pexels varsa temizle (Pixabay istiyoruz)
+    // Cache kontrolü (Pexels varsa temizle)
     if (!window.__dayCollagePhotosByDay) window.__dayCollagePhotosByDay = {};
     const cached = window.__dayCollagePhotosByDay[day];
     if (Array.isArray(cached) && cached.length > 0) {
         const hasPexels = cached.some(u => typeof u === "string" && /pexels\.com/i.test(u));
         if (!hasPexels) return cached; 
-        window.__dayCollagePhotosByDay[day] = []; // Pexels varsa cache'i boşalt
+        window.__dayCollagePhotosByDay[day] = []; // Pexels varsa önbelleği temizle
     }
 
-    // 2) SADECE Pixabay Slider Endpoint'ini Çağır
-    // (/photoget-proxy/slider endpoint'i sunucu tarafında Pixabay'a ayarlıdır)
+    // Proxy üzerinden Pixabay isteği (/slider endpoint'i Pixabay'a zorlar)
     const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
 
     try {
@@ -11151,14 +11155,11 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         if (Array.isArray(data.images)) images = data.images;
         else if (Array.isArray(data)) images = data;
 
-        // Pexels kaçarsa filtrele
+        // Pexels kaçarsa yine de filtrele
         images = images.filter(u => typeof u === "string" && !/pexels\.com/i.test(u));
 
         if (images.length > 0) {
             window.__dayCollagePhotosByDay[day] = images;
-            if (window.__globalCollageUsed && typeof window.__globalCollageUsed.add === "function") {
-                images.forEach(u => window.__globalCollageUsed.add(u));
-            }
             // LocalStorage güncelle
             if (typeof saveCurrentTripToStorage === "function") {
                 setTimeout(() => { try { saveCurrentTripToStorage(); } catch(_) {} }, 50);
@@ -11171,134 +11172,84 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     }
 };
 
-// ==================== renderDayCollage (FIXED - Pixabay only) ====================
+// 2. Slider Render Fonksiyonu (GÖRÜNÜRLÜK GARANTİLİ)
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
-  if (!dayContainer) return;
+    if (!dayContainer) return;
 
-  const tripTokenAtStart = window.__activeTripSessionToken;
-
-  // 1. Collage Alanını Oluştur
- let collage = dayContainer.querySelector('.day-collage');
+    // 1) Collage Elementini Bul veya Oluştur
+    let collage = dayContainer.querySelector('.day-collage');
     if (!collage) {
         collage = document.createElement('div');
         collage.className = 'day-collage';
-        collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
         const list = dayContainer.querySelector('.day-list');
-        if (list) {
-            list.insertAdjacentElement('afterend', collage);
-        } else {
-            dayContainer.appendChild(collage);
-        }
+        if (list) list.insertAdjacentElement('afterend', collage);
+        else dayContainer.appendChild(collage);
     }
-    // GİZLENMİŞSE GÖRÜNÜR YAP:
-    collage.style.display = 'block';
 
-  // 2. Şehir İsmini Bul
-  let firstLoc = null;
-  if (dayItemsArr && dayItemsArr.length > 0) {
-    firstLoc = dayItemsArr.find(i => i.location && i.location.lat);
-  }
+    // ÖNEMLİ: Görünürlüğü inline style ile zorla (display: block !important)
+    collage.setAttribute('style', "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block !important; min-height: 100px; background: #f9f9f9;");
 
-  let searchObj = { term: window.selectedCity || "", context: "" };
-  if (firstLoc && typeof fetchSmartLocationName === 'function') {
-    searchObj = await fetchSmartLocationName(
-      firstLoc.location.lat, 
-      firstLoc. location.lng, 
-      window.selectedCity || ""
-    );
-  }
+    // 2) Şehir İsmini Belirle (Hata korumalı)
+    const cityName = window.selectedCity || "Turkey";
+    
+    // 3) Görselleri Getir
+    const searchObj = { term: cityName };
+    let images = await window.getCityCollageImages(searchObj, { min: 6, page: 1, day: day });
 
-  const cityName = searchObj.term || window.selectedCity || "Travel";
-  
-  // Trip değiştiyse çık
-  if (window.__activeTripSessionToken !== tripTokenAtStart) {
-    console.log(`[Collage] Trip changed during fetch, aborting day ${day}`);
-    return;
-  }
-
-  // 3. Fotoğrafları Çek (SADECE Pixabay)
-  let images = await window.getCityCollageImages(searchObj, { min: 6, page: 1, day:  day });
-  
-  // Trip değiştiyse çık
-  if (window.__activeTripSessionToken !== tripTokenAtStart) {
-    console.log(`[Collage] Trip changed after fetch, aborting day ${day}`);
-    return;
-  }
-
- // Pexels kalıntılarını son kez filtrele
+    // Son kez Pexels kontrolü
     images = images.filter(u => typeof u === "string" && !(/pexels\.com/i.test(u)));
 
+    // Eğer görsel yoksa uyarı göster ama alanı gizleme
     if (!images || images.length === 0) {
-        collage.innerHTML = `<div style="padding: 20px;text-align:center;color:#888;font-size:13px;">No photos available for ${cityName}</div>`;
-        collage.style.display = 'block'; // Uyarıyı göstermek için aç
+        collage.innerHTML = `<div style="padding: 30px; text-align: center; color: #888; font-size: 13px;">No photos available for ${cityName}</div>`;
         return;
     }
 
-    // GİZLİYSE GÖRÜNÜR YAP (ÖNEMLİ)
-    collage.style.display = 'block';
+    // 4) Slider HTML Yapısını Oluştur
+    const perSlide = 3; // Her slaytta 3 resim
+    let trackHtml = '';
+    images.forEach((imgUrl) => {
+        trackHtml += `
+            <div style="flex: 0 0 ${100/perSlide}%; max-width: ${100/perSlide}%; padding: 4px; box-sizing: border-box;">
+                <div style="width:100%; height:160px; border-radius: 8px; overflow:hidden; background:#e5e8ed; cursor: pointer;">
+                    <img src="${imgUrl}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;" onclick="window.open('${imgUrl}', '_blank')">
+                </div>
+            </div>
+        `;
+    });
 
-    // 4. Slider HTML'i Oluştur
-  const perSlide = 3;
-  const totalSlides = Math.ceil(images.length / perSlide);
-  
-  let trackHtml = '';
-  images.forEach((imgUrl, idx) => {
-    trackHtml += `
-      <div style="flex: 0 0 ${100/perSlide}%; max-width:  ${100/perSlide}%; padding: 4px; box-sizing: border-box;">
-        <div style="width:100%; height:160px; border-radius: 8px; overflow:hidden; background:#e5e8ed;">
-          <img src="${imgUrl}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;" 
-               onerror="this.parentElement.innerHTML='<div style=\\'height:100%;display:flex;align-items:center;justify-content:center;color:#aaa;\\'>📷</div>'">
+    collage.innerHTML = `
+        <div style="font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin: 0 0 10px 4px;">Photos related to ${cityName}</div>
+        <div class="collage-viewport" style="overflow: hidden; width:100%; position:relative; border-radius:8px;">
+            <div style="position:absolute; top:12px; left:12px; z-index:2; background: rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size: 11px; font-weight:600; pointer-events:none;">${cityName}</div>
+            <div class="collage-track" style="display: flex; transition: transform 0.4s ease-out; will-change: transform; transform: translateX(0%);">
+                ${trackHtml}
+            </div>
         </div>
-      </div>
+        <button class="collage-nav prev" style="position: absolute; left: 6px; top: 60%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: #000; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 5;">❮</button>
+        <button class="collage-nav next" style="position: absolute; right: 6px; top: 60%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: #000; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 5;">❯</button>
     `;
-  });
 
-  collage.innerHTML = `
-    <div style="font-weight:  bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin-bottom: 10px;">Photos related to ${cityName}</div>
-    <div class="collage-viewport" style="overflow: hidden; width:100%; position:relative; border-radius:8px;">
-      <div style="position:absolute; top:12px; left:12px; z-index:2; background: rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size: 11px; font-weight:600; pointer-events:none;">${cityName}</div>
-      <div class="collage-track" style="display:  flex; transition: transform 0.4s ease-out; will-change: transform; transform: translateX(0%);">
-        ${trackHtml}
-      </div>
-    </div>
-    <button class="collage-nav prev" style="position: absolute; left:  6px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: rgb(0, 0, 0); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 6px; z-index: 5; opacity: 0.3; pointer-events: none;">❮</button>
-    <button class="collage-nav next" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: rgb(0, 0, 0); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow:  rgba(0, 0, 0, 0.3) 0px 2px 6px; z-index: 5; opacity: 1; pointer-events: auto;">❯</button>
-  `;
+    // 5) Slider Hareket Mantığı
+    const track = collage.querySelector(".collage-track");
+    const prevBtn = collage.querySelector(".prev");
+    const nextBtn = collage.querySelector(".next");
+    let index = 0;
+    const maxIndex = Math.max(0, images.length - perSlide);
 
-  // 5. Slider Navigasyonu
-  const track = collage.querySelector('.collage-track');
-  const prevBtn = someElement.querySelector('. collage-nav.prev');
-  const nextBtn = collage.querySelector('.collage-nav.next');
-  
-  let currentSlide = 0;
-  
-  function updateSlider() {
-    const offset = currentSlide * (100 / perSlide) * perSlide;
-    track.style.transform = `translateX(-${offset}%)`;
+    const updateSlider = () => {
+        track.style.transform = `translateX(-${index * (100 / perSlide)}%)`;
+        prevBtn.style.opacity = index === 0 ? 0.3 : 1;
+        prevBtn.style.pointerEvents = index === 0 ? "none" : "auto";
+        nextBtn.style.opacity = index >= maxIndex ? 0.3 : 1;
+        nextBtn.style.pointerEvents = index >= maxIndex ? "none" : "auto";
+    };
+
+    prevBtn.onclick = (e) => { e.stopPropagation(); if(index > 0) index--; updateSlider(); };
+    nextBtn.onclick = (e) => { e.stopPropagation(); if(index < maxIndex) index++; updateSlider(); };
     
-    // Buton durumları
-    prevBtn.style.opacity = currentSlide === 0 ? '0.3' : '1';
-    prevBtn.style.pointerEvents = currentSlide === 0 ?  'none' : 'auto';
-    
-    nextBtn. style.opacity = currentSlide >= totalSlides - 1 ?  '0.3' : '1';
-    nextBtn.style. pointerEvents = currentSlide >= totalSlides - 1 ?  'none' : 'auto';
-  }
-  
-  prevBtn.addEventListener('click', () => {
-    if (currentSlide > 0) {
-      currentSlide--;
-      updateSlider();
-    }
-  });
-  
-  nextBtn.addEventListener('click', () => {
-    if (currentSlide < totalSlides - 1) {
-      currentSlide++;
-      updateSlider();
-    }
-  });
-  
-  updateSlider();
+    // İlk durum güncellemesi
+    updateSlider();
 };
 
 // Pixabay'dan direkt fotoğraf çeken yardımcı fonksiyon
