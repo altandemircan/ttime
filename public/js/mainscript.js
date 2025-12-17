@@ -11110,40 +11110,29 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
 // ==================== getCityCollageImages ====================
 // ==================== YENİ ve TEK getCityCollageImages ====================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    // Arama terimi yoksa çık
-    const term = searchObj?.term;
+    const term = searchObj.term;
     if (!term) return [];
 
-    // Parametreleri ayarla
-    const limit = options.min || 6; 
-    const page = options.page || 1; // Gün numarasını buraya alıyoruz
-    const excludeSet = options.exclude || new Set();
+    const limit = options.min || 6;
+    const page = options.page || 1; 
 
-    console.log(`[Frontend Collage] Fetching: ${term} | Page: ${page}`);
-
-    // Backend'e page parametresiyle istek atıyoruz
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+    // URL'de source=pixabay olarak güncellendi
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&source=pixabay&count=${limit}&page=${page}`;
 
     try {
-        const res = await fetch(url);
-        if (!res.ok) {
-            console.warn("[Frontend Collage] API Error:", res.status);
-            return [];
-        }
+        const resp = await fetch(url);
+        if (!resp.ok) return [];
+        const data = await resp.json();
         
-        const data = await res.json();
         if (data.images && Array.isArray(data.images)) {
-            // Varsa, daha önce kullanılmış (exclude) resimleri çıkar
-            const uniqueImages = data.images.filter(img => !excludeSet.has(img));
-            return uniqueImages;
+            return data.images;
         }
         return [];
-    } catch (e) {
-        console.warn("[Frontend Collage] Network error:", e);
+    } catch (err) {
+        console.warn("Slider fetch error:", err);
         return [];
     }
 };
-
 
 // ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
