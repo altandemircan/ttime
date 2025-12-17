@@ -11163,8 +11163,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     // --- DEĞİŞİKLİK BURADA: Cache Key'i değiştirdik (_pixabay_v1) ---
     // Böylece LocalStorage'daki eski Pexels kayıtlarını okumayacak.
-    const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_pixabay_v1`;
-    
+const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_pixabay_v1`;    
     let images = [];
     let fromCache = false;
 
