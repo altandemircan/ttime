@@ -228,11 +228,31 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     await new Promise(res => setTimeout(res, delayMs));
   }
 
+  // === YENİ EKLENEN KISIM: OTOMATİK AYRIŞTIRMA (AUTO-FORK) ===
+  // Eğer aktif bir gezi var ama şehir tamamen değişmişse (Örn: Rome -> Antalya),
+  // eski geziyi ezmemek için 'activeTripKey'i sıfırla ve yeni gezi başlat.
+  if (window.activeTripKey && window.selectedCity) {
+      const allSaved = getAllSavedTrips(); // Mevcut kayıtları çek
+      const currentSavedTrip = allSaved[window.activeTripKey];
+      
+      if (currentSavedTrip && currentSavedTrip.selectedCity) {
+           const oldCity = toLatin(currentSavedTrip.selectedCity).toLowerCase().trim();
+           const newCity = toLatin(window.selectedCity).toLowerCase().trim();
+           
+           // Şehirler farklıysa ve her ikisi de doluysa
+           if (oldCity && newCity && oldCity !== newCity) {
+               console.log(`[Auto-Fork] City changed from ${oldCity} to ${newCity}. Creating new trip ID to prevent overwrite.`);
+               window.activeTripKey = null; // BU SATIR HAYAT KURTARIR: Rome ile bağı koparır.
+           }
+      }
+  }
+  // ============================================================
+
   let tripTitle;
   if (window.__startedWithMapFlag) {
     tripTitle = getNextTripTitle();
-    window.__startedWithMapFlag = false; // Sıfırla (sadece ilk kayıtta çalışacak)
-    window.activeTripKey = null; // Kritik: yeni trip başlatılırken key sıfırlansın
+    window.__startedWithMapFlag = false; 
+    window.activeTripKey = null; 
   } else {
     tripTitle = (
       (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
@@ -259,15 +279,15 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   let tripKey;
 
-  // --- En önemli blok ---
+  // --- Key Belirleme Bloğu ---
   if (window.activeTripKey) {
-    // Zaten aktif bir trip varsa, ona ekle
+    // Zaten aktif bir trip varsa (ve şehir değişmediyse), ona ekle
     tripKey = window.activeTripKey;
   } else {
-    // Yeni bir trip başlatılıyorsa (ör: Start with map veya yeni chat)
+    // Yeni bir trip başlatılıyorsa
     let timestamp = Date.now();
     tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
-    window.activeTripKey = tripKey; // Sadece ilk defa trip oluşturulurken atanır
+    window.activeTripKey = tripKey; 
   }
   // --------------------------------
 
@@ -285,13 +305,11 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
     
-    // --- DEĞİŞEN KISIM BURASI ---
-    // window.cart.aiData varsa onu kaydet, yoksa global değişkeni dene
+    // AI Info
     aiInfo: (window.cart && window.cart.aiData) ? window.cart.aiData : (window.lastTripAIInfo || null),
     
-    // YENİ EKLENEN SATIR: FOTOĞRAFLARI KAYDET
+    // FOTOĞRAFLARI KAYDET (Bir önceki adımdaki düzenleme)
     dayCollageData: window.__dayCollagePhotosByDay || {},
-    // ----------------------------
     
     elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
   };
