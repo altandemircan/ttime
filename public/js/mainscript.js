@@ -11156,7 +11156,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         else if (Array.isArray(data)) images = data;
 
         // Pexels kaçarsa yine de filtrele
-        images = images.filter(u => typeof u === "string" && !/pexels\.com/i.test(u));
+images = images.filter(u => typeof u === "string" && /pixabay\.com|cdn\.pixabay\.com/i.test(u));
 
         if (images.length > 0) {
             window.__dayCollagePhotosByDay[day] = images;
