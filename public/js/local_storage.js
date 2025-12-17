@@ -381,10 +381,9 @@ function showTripAiInfo(aiInfo) {
 // local_storage.js dosyasında loadTripFromStorage fonksiyonunu bulun ve şu şekilde GÜNCELLEYİN:
 
 function loadTripFromStorage(tripKey) {
-    // === KİLİT NOKTASI: Eski tüm planlama işlemlerini iptal et ===
-    window.__planGenerationId = Date.now(); // Bu satır, arkadaki İzmir işlemini "eski" ilan eder.
-    window.isProcessing = false; // İşlem bayrağını indir.
-    // ==============================================================
+    // 1. ARKA PLAN İŞLEMLERİNİ İPTAL ET
+    window.__planGenerationId = Date.now(); 
+    window.isProcessing = false; 
 
     window.activeTripKey = tripKey;
     const trips = getAllSavedTrips();
@@ -408,7 +407,7 @@ function loadTripFromStorage(tripKey) {
       console.warn('[collage] Token reset error:', e);
     }
 
-    // Harita temizlikleri... (Aynen kalsın)
+    // Harita temizlikleri...
     if (window._maplibre3DInstance) { try { window._maplibre3DInstance.remove(); } catch(e) {} window._maplibre3DInstance = null; }
     const map3DElement = document.getElementById('maplibre-3d-view');
     if (map3DElement) map3DElement.remove();
@@ -440,7 +439,7 @@ function loadTripFromStorage(tripKey) {
 
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
-    // Data normalizasyonu (Aynen kalsın)
+    // Data normalizasyonu
     window.cart = window.cart.map(item => {
         item.day = (item.day == null || isNaN(Number(item.day))) ? 1 : Number(item.day);
         if (item.location) {
@@ -452,20 +451,18 @@ function loadTripFromStorage(tripKey) {
     patchCartLocations();
 
     window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
-    
-    // === BAŞLIK DÜZELTME (FIX) ===
-    // Kayıtlı başlık bozuk olsa bile (örn: İzmir yazsa bile), 
-    // seçili şehir (Antalya) üzerinden başlığı zorla düzeltiyoruz.
     window.selectedCity = t.selectedCity || "";
     
-    if (window.selectedCity && window.selectedCity.trim().length > 0) {
-        // Format: "Antalya trip plan" (Her zaman şehre sadık kal)
-        window.lastUserQuery = toLatin(window.selectedCity) + " trip plan";
+    // === BAŞLIK DÜZELTME (KESİN ÇÖZÜM) ===
+    // "My Trips" listesindeki başlık (t.title) neyse onu kullan!
+    // Asla selectedCity'den yeniden üretme, çünkü veri bozuk olabilir.
+    if (t.title && t.title.trim().length > 0) {
+        window.lastUserQuery = t.title;
     } else {
-        // Şehir yoksa eski başlığı kullan
-        window.lastUserQuery = t.lastUserQuery || t.title || "Trip Plan";
+        // Yedek: Eğer title yoksa eskilere bak
+        window.lastUserQuery = t.lastUserQuery || (window.selectedCity ? window.selectedCity + " trip plan" : "Trip Plan");
     }
-    // =============================
+    // =====================================
 
     // UI Güncellemeleri
     const chatBox = document.getElementById("chat-box");
@@ -473,12 +470,13 @@ function loadTripFromStorage(tripKey) {
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
 
-    if (typeof updateTripTitle === "function") updateTripTitle(); // Düzeltilmiş başlığı basar
+    // updateTripTitle() fonksiyonu window.lastUserQuery değerini ekrana basar.
+    if (typeof updateTripTitle === "function") updateTripTitle(); 
     if (typeof updateCart === "function") updateCart();
     if (typeof showResults === "function") showResults();
     if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
 
-    // Rota Çizimi (Aynen kalsın)
+    // Rota Çizimi
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
     setTimeout(async () => {
