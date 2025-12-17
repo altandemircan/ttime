@@ -11103,6 +11103,31 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
   }
 }
 
+// ==================== getCityCollageImages ====================
+// ==================== TEK getCityCollageImages (Pixabay-only) ====================
+window.getCityCollageImages = async function(searchObj, options = {}) {
+    const term = searchObj?.term;
+    if (!term) return [];
+
+    const limit = Number(options.min || 6);
+    const page = Number(options.page || 1);
+
+    // SADECE Pixabay slider endpoint
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+
+        // Debug: data.source === "pixabay" gelmeli
+        return Array.isArray(data.images) ? data.images : [];
+    } catch (e) {
+        console.error("Collage fetch error:", e);
+        return [];
+    }
+};
+
 // ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
@@ -11289,30 +11314,3 @@ function renderCollageSlides(collage, images, searchObj) {
   };
   update();
 }
-// mainscript.js içine ekleyin veya güncelleyin
-
-window.getCityCollageImages = async function(searchObj, options = {}) {
-    const term = searchObj.term;
-    if (!term) return [];
-
-    const limit = options.min || 6;
-    // Gönderilen sayfa numarasını al, yoksa 1 kabul et
-    const page = options.page || 1; 
-
-    // URL'e page parametresini ekliyoruz
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) return [];
-        
-        const data = await res.json();
-        if (data.images && Array.isArray(data.images)) {
-            return data.images;
-        }
-        return [];
-    } catch (e) {
-        console.warn("Slider fetch error:", e);
-        return [];
-    }
-};
