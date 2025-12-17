@@ -392,49 +392,30 @@ function loadTripFromStorage(tripKey) {
       if (typeof window.__ttNewTripToken === 'function') {
         window.__activeTripSessionToken = window.__ttNewTripToken();
       }
-      // window.__dayCollagePhotosByDay = {}; // ESKİ KOD BUYDU, ARTIK BUNU KALDIRIYORUZ
-      
-      // YENİ KOD: Kayıtlı fotoğraflar varsa onları yükle, yoksa boş başlat
+      // FOTOĞRAF YÜKLEME KISMI
       if (t.dayCollageData) {
           window.__dayCollagePhotosByDay = t.dayCollageData;
       } else {
           window.__dayCollagePhotosByDay = {};
       }
-
       window.__globalCollageUsed = new Set();
     } catch(e) {
       console.warn('[collage] Token reset error:', e);
     }
 
     // ============================================================
-    // --- AGRESİF TEMİZLİK (SCORCHED EARTH POLICY) ---
+    // --- HARİTA TEMİZLİĞİ ---
     // ============================================================
-    
-    // 1. MapLibre 3D Instance'ını bellekten sil
     if (window._maplibre3DInstance) {
-        try { 
-            window._maplibre3DInstance.remove(); 
-        } catch(e) { 
-            console.warn("MapLibre remove error:", e); 
-        }
+        try { window._maplibre3DInstance.remove(); } catch(e) {}
         window._maplibre3DInstance = null;
     }
-
-    // 2. 3D Harita DOM Elementini sayfadan söküp at
     const map3DElement = document.getElementById('maplibre-3d-view');
-    if (map3DElement) {
-        map3DElement.remove();
-    }
-    // (Yedek: ID farklıysa diye class veya query ile hepsini sil)
+    if (map3DElement) map3DElement.remove();
     document.querySelectorAll('#maplibre-3d-view').forEach(el => el.remove());
-
-    // 3. Genişletilmiş Harita Konteynerlerini (Overlay) sil
-    // Bunlar body'ye append edildiği için manuel silinmeli
     document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
 
-    // 4. Global Harita State'ini Sıfırla
     if (window.expandedMaps) {
-        // Varsa leaflet instance'larını da temizle
         Object.values(window.expandedMaps).forEach(obj => {
             if (obj && obj.expandedMap) {
                 try { obj.expandedMap.remove(); } catch(_) {}
@@ -442,32 +423,41 @@ function loadTripFromStorage(tripKey) {
         });
         window.expandedMaps = {};
     }
-
-    // 5. 3D'ye ait pusula vs. butonları gizle
     document.querySelectorAll('.ctrl-compass').forEach(el => el.style.display = 'none');
 
     // ============================================================
-
-    // --- 1. Veri Yükleme ---
+    // --- VERİ YÜKLEME VE AI FIX ---
+    // ============================================================
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
 
-    // AI Verisi
+    // --- KRİTİK DÜZELTME BAŞLANGICI ---
+    // Eğer yüklenen gezide AI bilgisi varsa yükle, YOKSA ESKİYİ SİL (İzmir verisi kalmasın)
     if (t.aiInfo) {
         window.cart.aiData = t.aiInfo;
         window.lastTripAIInfo = t.aiInfo;
+    } else {
+        window.cart.aiData = null;
+        window.lastTripAIInfo = null; // Eski gezi verisini temizle
     }
 
-    // AI Paneli Güncelleme
+    // AI Panelini Güncelle veya Temizle
+    const aiSection = document.querySelector('.ai-info-section');
     if (t.aiInfo) {
-        window.lastTripAIInfo = t.aiInfo;
-        let aiDiv = document.querySelector('.ai-info-section');
-        if (!aiDiv) {
+        if (!aiSection) {
             if (typeof window.insertTripAiInfo === "function") window.insertTripAiInfo(null, t.aiInfo);
         } else {
             if (typeof window.showTripAiInfo === "function") window.showTripAiInfo(t.aiInfo);
+            aiSection.style.display = 'block';
         }
+    } else {
+        // AI verisi yoksa paneli temizle/gizle
+        if (typeof window.showTripAiInfo === "function") {
+             window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
+        }
+        if (aiSection) aiSection.style.display = 'none';
     }
+    // --- KRİTİK DÜZELTME BİTİŞİ ---
 
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
@@ -487,49 +477,35 @@ function loadTripFromStorage(tripKey) {
     window.lastUserQuery = t.lastUserQuery || t.title || "";
     window.selectedCity = t.selectedCity || "";
 
-    // --- 2. Panel Temizliği ---
+    // --- UI Güncellemeleri ---
     const chatBox = document.getElementById("chat-box");
     if (chatBox) chatBox.innerHTML = "";
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
 
-    // --- 3. UI Güncellemeleri ---
     if (typeof updateTripTitle === "function") updateTripTitle();
     if (typeof updateCart === "function") updateCart();
     if (typeof showResults === "function") showResults();
     if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
 
-    // --- 4. Rota Çizimi (Normal 2D) ---
-    // Sadece 1. günü hemen çizelim, diğerleri arkadan gelsin
+    // --- Rota Çizimi ---
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
 
     setTimeout(async () => {
-        // Harita boyutlarını düzelt
         Object.values(window.leafletMaps || {}).forEach(map => {
-            if (map && typeof map.invalidateSize === 'function') {
-                map.invalidateSize();
-            }
+            if (map && typeof map.invalidateSize === 'function') map.invalidateSize();
         });
 
-        // 1. Günü Render Et
-        if (maxDay > 0) {
-            await renderRouteForDay(1); 
-        }
-        
-        // Diğer günleri işle
-        for (let day = 2; day <= maxDay; day++) {
-             renderRouteForDay(day);
-        }
+        if (maxDay > 0) await renderRouteForDay(1); 
+        for (let day = 2; day <= maxDay; day++) { renderRouteForDay(day); }
         saveTripAfterRoutes();
     }, 100);
 
-    // --- 5. Slider vb. Düzeltmeleri ---
     setTimeout(function() {
         document.querySelectorAll('.scale-bar-track').forEach(track => {
             if (typeof track.handleResize === "function") track.handleResize();
         });
-
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
                 sliderElem._splideInstance.refresh();
@@ -931,6 +907,19 @@ window.startNewChat = function() {
     window.lastUserQuery = "";
     window.selectedCity = "";
     window.activeTripKey = null;
+    
+    // --- EKLENEN KISIM: AI Verisini Sıfırla ---
+    window.lastTripAIInfo = null; 
+    if (window.cart) window.cart.aiData = null;
+    
+    // UI'daki AI yazısını da temizle
+    const aiSection = document.querySelector('.ai-info-section');
+    if (aiSection) aiSection.style.display = 'none';
+    if (typeof window.showTripAiInfo === "function") {
+        window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
+    }
+    // ------------------------------------------
+
     saveTripAfterRoutes();
 };
 

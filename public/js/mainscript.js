@@ -1,3 +1,6 @@
+// === mainscript.js dosyasının en tepesine eklenecek global değişken ===
+window.__planGenerationId = 0; 
+
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
@@ -919,13 +922,18 @@ chatInput.addEventListener("input", function() {
     disableSendButton && disableSendButton();
 });
 
-async function handleAnswer(answer) {
 
+
+// === handleAnswer Fonksiyonunun Tam ve Güncel Hali ===
+async function handleAnswer(answer) {
   // Concurrency guard: aynı anda ikinci isteği engelle
   if (window.isProcessing) return;
   window.isProcessing = true;
 
-  // YENİ GEZİ BAŞLATILIYORSA:  Eski key'i temizle ki yeni key üretilsin
+  // YENİ: Bu işlemin kimliğini al (Her tıklamada +1 artar)
+  const currentGenId = ++window.__planGenerationId;
+
+  // YENİ GEZİ BAŞLATILIYORSA: Eski key'i temizle ki yeni key üretilsin
   if (! window.activeTripKey) {
     window.directionsPolylines = {};
     window.routeElevStatsByDay = {};
@@ -941,7 +949,7 @@ async function handleAnswer(answer) {
     return;
   }
 
-  // Input'u temizle (kullanıcı hemen yeni şey yazabilsin)
+  // Input'u temizle
   if (inputEl) inputEl.value = "";
 
   // Çok kısa veya tamamen boş ise
@@ -978,19 +986,35 @@ async function handleAnswer(answer) {
       return;
     }
 
-    // EKLENDİ: Şehir koordinatı kontrolü
+    // Şehir koordinatı kontrolü
     const coords = await getCityCoordinates(location);
     if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
       addMessage("Could not find a valid location for your selection. Please select a valid city from the suggestions.", "bot-message");
-      window.isProcessing = false;
       return;
     }
 
-    window.selectedCity = location; // Diğer kodların beklentisini bozmuyoruz  
+    window.selectedCity = location; 
 
-    // OTOMATİK PLAN ÜRETİMİ (mevcut davranışı koru)
-    latestTripPlan = await buildPlan(location, days);
-    latestTripPlan = await enrichPlanWithWiki(latestTripPlan);
+    // OTOMATİK PLAN ÜRETİMİ
+    // global değişkeni hemen kirletmemek için yerel değişken kullanıyoruz
+    let planResult = await buildPlan(location, days);
+
+    // KONTROL 1: buildPlan sürerken kullanıcı başka geziye tıkladı mı?
+    if (currentGenId !== window.__planGenerationId) {
+        console.log("Plan iptal edildi: Kullanıcı başka geziye geçti.");
+        return; // Sessizce çık
+    }
+
+    planResult = await enrichPlanWithWiki(planResult);
+
+    // KONTROL 2: Wiki zenginleştirme sürerken kullanıcı başka geziye tıkladı mı?
+    if (currentGenId !== window.__planGenerationId) {
+        console.log("Plan iptal edildi (Enrich sonrası).");
+        return; // Sessizce çık
+    }
+
+    // İşlem başarıyla tamamlandı, artık global değişkeni güncelleyebiliriz
+    latestTripPlan = planResult;
 
     if (latestTripPlan && latestTripPlan.length > 0) {
       window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
@@ -1015,10 +1039,12 @@ async function handleAnswer(answer) {
     console.error("Plan creation error:", error);
     addMessage("Please specify a valid location and number of days (e.g. 'Rome 2 days', 'Paris 3 days').", "bot-message");
   } finally {
+    // İşlem bitti veya iptal edildi, her durumda arayüzü serbest bırak
     hideTypingIndicator();
     window.isProcessing = false;
   }
 }
+
 document.addEventListener('DOMContentLoaded', () => {
   const inp = document.getElementById('user-input');
   if (!inp) return;
