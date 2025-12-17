@@ -2805,6 +2805,7 @@ async function enrichPlanWithWiki(plan) {
     return plan;
 }
 // Proxy çağrısı
+// Proxy çağrısı
 async function getPhoto(query, source = 'pexels') {
     const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=${source}`;
     try {
@@ -2817,6 +2818,48 @@ async function getPhoto(query, source = 'pexels') {
     return PLACEHOLDER_IMG;
 }
 
+/* ==================== COLLAGE (SLIDER) - PIXABAY ONLY + CACHE + PERSIST ==================== */
+window.getCityCollageImages = async function(searchObj, options = {}) {
+    const term = searchObj?.term;
+    if (!term) return [];
+
+    const limit = Number(options.min || 6);
+    const page = Number(options.page || 1);
+    const day = Number(options.day || options.dayIndex || 1);
+
+    // 1) Önce memory cache
+    window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+    if (Array.isArray(window.__dayCollagePhotosByDay[day]) && window.__dayCollagePhotosByDay[day].length) {
+        return window.__dayCollagePhotosByDay[day];
+    }
+
+    // 2) Sadece Pixabay slider endpoint
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+
+        const data = await res.json();
+        const images = Array.isArray(data.images) ? data.images.filter(Boolean) : [];
+
+        // 3) Cache’e yaz
+        if (images.length) {
+            window.__dayCollagePhotosByDay[day] = images;
+
+            // 4) LocalStorage’a kaydet (trip objesine)
+            if (typeof saveCurrentTripToStorage === "function") {
+                try { await saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 }); } catch (_) {}
+            }
+        }
+
+        return images;
+    } catch (e) {
+        console.error("Collage fetch error:", e);
+        return [];
+    }
+};
+/* ==================== END COLLAGE ==================== */
 
 function initPlaceSearch(day) {
     const input = document.getElementById(`place-input-${day}`);
@@ -11103,30 +11146,7 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
   }
 }
 
-// ==================== getCityCollageImages ====================
-// ==================== TEK getCityCollageImages (Pixabay-only) ====================
-window.getCityCollageImages = async function(searchObj, options = {}) {
-    const term = searchObj?.term;
-    if (!term) return [];
 
-    const limit = Number(options.min || 6);
-    const page = Number(options.page || 1);
-
-    // SADECE Pixabay slider endpoint
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) return [];
-        const data = await res.json();
-
-        // Debug: data.source === "pixabay" gelmeli
-        return Array.isArray(data.images) ? data.images : [];
-    } catch (e) {
-        console.error("Collage fetch error:", e);
-        return [];
-    }
-};
 // ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
