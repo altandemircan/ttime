@@ -11145,29 +11145,58 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     if (!dayContainer) return;
     const tripTokenAtStart = window.__activeTripSessionToken;
 
-    // ... (Collage oluşturma kodları aynı kalacak) ...
+    // 1. Collage Alanını Oluştur veya Bul
     let collage = dayContainer.querySelector('.day-collage');
     if (!collage) {
-        // ... (Collage DOM oluşturma kodları) ...
+        collage = document.createElement('div');
+        collage.className = 'day-collage';
+        // Stil: min-height vererek düzenin bozulmasını önle
+        collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
+        
+        const list = dayContainer.querySelector('.day-list');
+        if (list) {
+            list.insertAdjacentElement('afterend', collage);
+        } else {
+            dayContainer.appendChild(collage);
+        }
     }
 
-    // ... (Şehir ismi bulma kodları aynı kalacak) ...
-    // ...
+    // 2. Şehir İsmini ve Arama Terimini Bul (searchObj Tanımı)
+    // BU KISIM ÇOK ÖNEMLİ: CacheKey oluşturulmadan önce yapılmalı!
+    let firstLoc = null;
+    if (dayItemsArr && dayItemsArr.length > 0) {
+        firstLoc = dayItemsArr.find(i => i.location && i.location.lat);
+    }
 
-    // 3. Kullanılan Görseller Seti
+    let searchObj = { term: window.selectedCity || "", context: "" };
+    
+    // Akıllı konum ismi bulucu varsa kullan
+    if (firstLoc && typeof fetchSmartLocationName === 'function') {
+        searchObj = await fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
+    }
+
+    // Eğer aranacak bir kelime bulunamadıysa collage'ı gizle ve çık
+    if (!searchObj || !searchObj.term) {
+        collage.style.display = 'none';
+        return;
+    }
+
+    // 3. Kullanılan Görseller Seti (Tekrar eden resimleri önlemek için)
     if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
     if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
         window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // --- DEĞİŞİKLİK BURADA: Cache Key'i değiştirdik (_pixabay_v1) ---
-    // Böylece LocalStorage'daki eski Pexels kayıtlarını okumayacak.
-const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_pixabay_v1`;    
+    // 4. Cache Key Oluşturma (Pixabay için özel key)
+    // searchObj burada kesinlikle tanımlı olduğu için hata vermez.
+    const safeTerm = searchObj.term.replace(/\s+/g, '_');
+    const cacheKey = `tt_day_collage_${day}_${safeTerm}_pixabay_v1`;
+    
     let images = [];
     let fromCache = false;
 
-    // Local Storage Kontrolü
+    // 5. Local Storage'dan Kontrol Et
     try {
         const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) {
@@ -11183,11 +11212,13 @@ const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_p
         console.warn("[Collage] Storage read error:", e);
     }
 
-    // 4. API'den Çekme
+    // 6. API'den Çekme (Eğer cache boşsa)
     if (!fromCache || images.length === 0) {
+        // Token değiştiyse (yeni gezi başladıysa) işlemi durdur
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
         if (typeof getCityCollageImages === 'function') {
+            // Sayfa numarasını günden türet
             let pageNum = 1;
             if (typeof day === 'number') {
                 pageNum = day;
@@ -11199,7 +11230,7 @@ const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_p
 
             console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Kaynak: Pixabay`);
             
-            // Pixabay'dan çek
+            // Pixabay API çağrısı
             images = await getCityCollageImages(searchObj, {
                 min: 6,
                 exclude: usedSet,
@@ -11209,10 +11240,10 @@ const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_p
 
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
+        // Yeni gelen resimleri kaydet
         if (images.length > 0) {
             images.forEach(img => usedSet.add(img));
             try {
-                // Yeni key ile kaydet
                 localStorage.setItem(cacheKey, JSON.stringify(images));
             } catch (e) {
                 console.warn("[Collage] Storage write error:", e);
@@ -11220,7 +11251,7 @@ const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_p
         }
     }
 
-    // 5. Render
+    // 7. Ekrana Çizme (Render)
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
         renderCollageSlides(collage, images, searchObj);
         collage.style.display = 'block';
