@@ -399,12 +399,16 @@ function loadTripFromStorage(tripKey) {
       if (typeof window.__ttNewTripToken === 'function') {
         window.__activeTripSessionToken = window.__ttNewTripToken();
       }
-      if (t.dayCollageData) {
+           if (t.dayCollageData) {
           window.__dayCollagePhotosByDay = t.dayCollageData;
       } else {
           window.__dayCollagePhotosByDay = {};
       }
-      window.__globalCollageUsed = new Set();
+
+      // Kaydedilmiş collage URL'lerinden global used set'i tekrar kur
+      window.__globalCollageUsed = new Set(
+        Object.values(window.__dayCollagePhotosByDay || {}).flat()
+      );
     } catch(e) {
       console.warn('[collage] Token reset error:', e);
     }
