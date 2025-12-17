@@ -381,13 +381,12 @@ function showTripAiInfo(aiInfo) {
 // local_storage.js dosyasında loadTripFromStorage fonksiyonunu bulun ve şu şekilde GÜNCELLEYİN:
 
 function loadTripFromStorage(tripKey) {
-    // 1. ARKA PLAN İŞLEMLERİNİ İPTAL ET (Race Condition Fix)
-    if (typeof window.__planGenerationId !== "undefined") {
-        window.__planGenerationId++; 
-    }
-    
-    window.activeTripKey = tripKey;
+    // === KİLİT NOKTASI: Eski tüm planlama işlemlerini iptal et ===
+    window.__planGenerationId = Date.now(); // Bu satır, arkadaki İzmir işlemini "eski" ilan eder.
+    window.isProcessing = false; // İşlem bayrağını indir.
+    // ==============================================================
 
+    window.activeTripKey = tripKey;
     const trips = getAllSavedTrips();
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
