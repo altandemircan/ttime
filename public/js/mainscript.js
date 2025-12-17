@@ -11064,73 +11064,41 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
 // ============================================================
 
 // ==================== getCityCollageImages ====================
-async function getCityCollageImages(
-  searchObj,
-  { skipCache = false, min = 40, exclude = new Set(), salt = "" } = {}
-) {
-  let searchTerm = "";
-  let context = "";
+// ==================== YENİ ve TEK getCityCollageImages ====================
+window.getCityCollageImages = async function(searchObj, options = {}) {
+    // Arama terimi yoksa çık
+    const term = searchObj?.term;
+    if (!term) return [];
 
-  if (typeof searchObj === "string") {
-    searchTerm = searchObj;
-  } else {
-    searchTerm = searchObj.term;
-    context = searchObj.context || "";
-  }
+    // Parametreleri ayarla
+    const limit = options.min || 6; 
+    const page = options.page || 1; // Gün numarasını buraya alıyoruz
+    const excludeSet = options.exclude || new Set();
 
-  if (!searchTerm) return [];
+    console.log(`[Frontend Collage] Fetching: ${term} | Page: ${page}`);
 
-  const cacheKey = `${searchTerm}_${context}_${salt}`;
-  window.__dayCollageCache = window.__dayCollageCache || {};
-  if (!skipCache && window.__dayCollageCache[cacheKey]) {
-    return window.__dayCollageCache[cacheKey];
-  }
+    // Backend'e page parametresiyle istek atıyoruz
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
 
-  const cleanTerm = searchTerm
-    .replace(/( district| province| city| municipality| mahallesi| belediyesi| valiliği)/gi, "")
-    .trim();
-  const cleanContext = context.replace(/( district| province| city)/gi, "").trim();
-
-  const queries = [
-    `${cleanTerm} ${cleanContext} tourism ${salt}`,
-    `${cleanTerm} ${cleanContext} landmarks ${salt}`,
-    `${cleanTerm} city center ${salt}`,
-    `${cleanTerm} streets ${salt}`,
-    `${cleanTerm} food ${salt}`,
-    `${cleanTerm} night ${salt}`,
-    `${cleanTerm} people ${salt}`,
-    `${cleanTerm} nature ${salt}`,
-    `${cleanTerm} architecture ${salt}`,
-    `visit ${cleanTerm} ${salt}`,
-  ];
-
-  if (cleanContext && cleanTerm.toLowerCase() !== cleanContext.toLowerCase()) {
-    queries.push(`${cleanContext} travel ${salt}`);
-    queries.push(`${cleanContext} landscape ${salt}`);
-    queries.push(`${cleanContext} aerial ${salt}`);
-  }
-
-  const images = [];
-  const seen = new Set();
-
-  for (const q of queries) {
-    if (images.length >= min) break;
     try {
-      const img = await getPhoto(q, "pexels");
-      if (img && !seen.has(img) && !exclude.has(img)) {
-        images.push(img);
-        seen.add(img);
-      }
-    } catch (_) {}
-  }
-
-  // min sayıya ulaşamadıysak, bir sonraki turda daha fazla sorgu denenir.
-  if (!skipCache) {
-    window.__dayCollageCache[cacheKey] = images;
-  }
-
-  return images;
-}
+        const res = await fetch(url);
+        if (!res.ok) {
+            console.warn("[Frontend Collage] API Error:", res.status);
+            return [];
+        }
+        
+        const data = await res.json();
+        if (data.images && Array.isArray(data.images)) {
+            // Varsa, daha önce kullanılmış (exclude) resimleri çıkar
+            const uniqueImages = data.images.filter(img => !excludeSet.has(img));
+            return uniqueImages;
+        }
+        return [];
+    } catch (e) {
+        console.warn("[Frontend Collage] Network error:", e);
+        return [];
+    }
+};
 
 
 // ==================== renderDayCollage ====================
@@ -11204,17 +11172,19 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   if (!fromCache || images.length === 0) {
       if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-      if (typeof getCityCollageImages === 'function') {
-          // KRİTİK NOKTA: Gün numarasını sayfa numarası olarak kullanıyoruz.
-          // Day 1 -> Page 1, Day 5 -> Page 5.
-          // Böylece her gün için API farklı sonuçlar döndürür.
+     if (typeof getCityCollageImages === 'function') {
+          // Gün numarasını integer'a çevirip gönderiyoruz
           let pageNum = parseInt(day);
-          if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
+          // Eğer day 'Day 1' gibi string geliyorsa parse etsin, sayı geliyorsa aynen kalsın.
+          if (isNaN(pageNum) && typeof day === 'string') {
+             pageNum = parseInt(day.replace(/\D/g, ''));
+          }
+          if (!pageNum || pageNum < 1) pageNum = 1;
 
           images = await getCityCollageImages(searchObj, { 
             min: 6, 
             exclude: usedSet,
-            page: pageNum // <-- Bu parametre 180 farklı fotoğrafı garanti eder.
+            page: pageNum // <-- Burası çok önemli
           });
       }
 
