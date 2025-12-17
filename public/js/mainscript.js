@@ -11109,7 +11109,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj?.term;
     if (!term) return [];
 
-    const limit = Number(options.min || 4);
+    const limit = Number(options.min || 6);
     const page = Number(options.page || 1);
 
     // SADECE Pixabay slider endpoint
@@ -11127,7 +11127,6 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         return [];
     }
 };
-
 // ==================== renderDayCollage ====================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
   if (!dayContainer) return;
