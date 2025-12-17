@@ -62,23 +62,28 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
+// ============================================================
 // 3. GÖRSEL ARAMA (API İSTEĞİ - PIXABAY)
 // ============================================================
-// TEK VE NİHAİ TANIMLAMA
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;
     if (!term) return [];
 
-    const limit = options.min || 4; // Slider için varsayılan 4 görsel
+    // İstenen görsel sayısı (Varsayılan 6)
+    const limit = options.min || 6; 
     const page = options.page || 1; 
 
-    // URL (Pixabay kaynaklı)
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&limit=${limit}&page=${page}&source=pixabay`;
+    // URL Parametreleri:
+    // limit: Bizim proxy'nin beklediği olası parametre
+    // per_page: Pexels/Pixabay'ın orijinal parametresi (Proxy paslıyorsa diye)
+    // count: Bazı proxy yapılarında kullanılan miktar parametresi
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&limit=${limit}&per_page=${limit}&count=${limit}&page=${page}&source=pixabay`;
 
     try {
         const res = await fetch(url);
         if (!res.ok) return [];
         const data = await res.json();
+        // Dönen veriyi normalize et (images dizisi veya direkt dizi)
         return data.images || data || [];
     } catch (e) {
         console.warn("Collage fetch error:", e);
@@ -89,15 +94,21 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 
 // 4. RENDER İŞLEMLERİ (Collage & Slider)
 // ============================================================
+// ============================================================
+// 4. RENDER İŞLEMLERİ (Collage & Slider)
+// ============================================================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
     if (!dayContainer) return;
+    
+    // Token kontrolü: Eski gezinin resimleri yeni geziye karışmasın
     const tripTokenAtStart = window.__activeTripSessionToken;
 
-    // A. Collage Alanını DOM'a Ekle
+    // A. Collage Alanını DOM'a Ekle (Yoksa oluştur)
     let collage = dayContainer.querySelector('.day-collage');
     if (!collage) {
         collage = document.createElement('div');
         collage.className = 'day-collage';
+        // Min-height, görsel yüklenene kadar alanın çökmesini engeller
         collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
         
         const list = dayContainer.querySelector('.day-list');
@@ -108,7 +119,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         }
     }
 
-    // B. Arama Terimini Belirle
+    // B. Arama Terimini Belirle (Akıllı Konum)
     let firstLoc = null;
     if (dayItemsArr && dayItemsArr.length > 0) {
         firstLoc = dayItemsArr.find(i => i.location && i.location.lat);
@@ -116,22 +127,25 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     let searchObj = { term: window.selectedCity || "", context: "" };
     
+    // fetchSmartLocationName fonksiyonu photo_day_slider.js içinde tanımlı olmalı
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
     }
 
+    // Terim yoksa gizle
     if (!searchObj || !searchObj.term) {
         collage.style.display = 'none';
         return;
     }
 
-    // C. Cache Kontrolü
+    // C. Cache Kontrolü (Aynı resimleri tekrar çekmemek için)
     if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
     if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
         window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
+    // Cache Key: Pixabay'a özel key kullanıyoruz
     const safeTerm = searchObj.term.replace(/\s+/g, '_');
     const cacheKey = `tt_day_collage_${day}_${safeTerm}_pixabay_v1`;
     
@@ -153,12 +167,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         console.warn("[Collage] Storage read error:", e);
     }
 
-    // D. API'den Çek (Cache yoksa)
+    // D. API'den Çek (Eğer cache boşsa)
     if (!fromCache || images.length === 0) {
+        // Kullanıcı bu sırada geziyi değiştirdiyse işlemi durdur
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
         if (typeof window.getCityCollageImages === 'function') {
             let pageNum = 1;
+            // Sayfa numarasını günden türet (Day 1 -> Page 1, Day 2 -> Page 2)
             if (typeof day === 'number') {
                 pageNum = day;
             } else if (typeof day === 'string') {
@@ -169,6 +185,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
             console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Kaynak: Pixabay`);
             
+            // 6 Adet görsel istiyoruz
             images = await window.getCityCollageImages(searchObj, {
                 min: 6,
                 exclude: usedSet,
@@ -176,6 +193,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             });
         }
 
+        // Tekrar token kontrolü (API cevabı gelene kadar gezi değişmiş olabilir)
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
         if (images.length > 0) {
@@ -188,7 +206,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         }
     }
 
-    // E. Render
+    // E. Render (Ekrana Çiz)
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
         renderCollageSlides(collage, images, searchObj);
         collage.style.display = 'block';
