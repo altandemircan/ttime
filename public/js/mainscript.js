@@ -2764,13 +2764,17 @@ async function getImageForPlace(placeName, category, cityName) {
 async function getOptimizedImage(properties) {
     let query = properties.name || properties.city || properties.category || "travel";
     if (!query || typeof query !== "string" || query.trim() === "") query = "travel";
-const img = await getPhoto(query, "pixabay"); // burada pexels yazıyorsa pixabay yap
-    if (pexelsImg && pexelsImg !== PLACEHOLDER_IMG) {
-        return pexelsImg;
-    }
+
+    // 1. Try Pixabay FIRST
     const pixabayImg = await window.getPixabayImage(query);
     if (pixabayImg && pixabayImg !== PLACEHOLDER_IMG) {
         return pixabayImg;
+    }
+
+    // 2. Fallback to Pexels (optional, can be removed if strictly Pixabay only)
+    const pexelsImg = await getPexelsImage(query);
+    if (pexelsImg && pexelsImg !== PLACEHOLDER_IMG) {
+        return pexelsImg;
     }
     return PLACEHOLDER_IMG;
 }
@@ -2807,7 +2811,7 @@ async function enrichPlanWithWiki(plan) {
     return plan;
 }
 // Proxy çağrısı
-async function getPhoto(query, source = 'pexels') {
+async function getPhoto(query, source = 'pixabay') {
     const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=${source}`;
     try {
         const res = await fetch(url);
@@ -2818,7 +2822,6 @@ async function getPhoto(query, source = 'pexels') {
     }
     return PLACEHOLDER_IMG;
 }
-
 
 function initPlaceSearch(day) {
     const input = document.getElementById(`place-input-${day}`);
@@ -11111,6 +11114,8 @@ async function fetchSmartLocationName(lat, lng, fallbackCity = "") {
 
 // ==================== getCityCollageImages ====================
 // ==================== YENİ ve TEK getCityCollageImages ====================
+// In mainscript.js
+
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;
     if (!term) return [];
@@ -11118,19 +11123,17 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     const limit = options.min || 6;
     const page = options.page || 1; 
 
-    // URL'de source=pixabay olarak güncellendi
-const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&source=pixabay&count=${limit}&page=${page}`;
+    // CHANGED: Added &source=pixabay to the URL
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&limit=${limit}&page=${page}&source=pixabay`;
+
     try {
-        const resp = await fetch(url);
-        if (!resp.ok) return [];
-        const data = await resp.json();
-        
-        if (data.images && Array.isArray(data.images)) {
-            return data.images;
-        }
-        return [];
-    } catch (err) {
-        console.warn("Slider fetch error:", err);
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+        // Return images array (supports {images: [...]} or [...])
+        return data.images || data || [];
+    } catch (e) {
+        console.warn("Collage fetch error:", e);
         return [];
     }
 };
