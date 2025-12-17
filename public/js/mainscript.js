@@ -11526,6 +11526,10 @@ function renderCollageSlides(collage, images, searchObj) {
 // COLLAGE FINAL OVERRIDE (Pixabay-only, single source of truth)
 // Put this at the VERY END of mainscript.js to override older duplicates.
 // ===============================
+// ===============================
+// COLLAGE FINAL OVERRIDE (Pixabay-only, single source of truth)
+// Put this at the VERY END of mainscript.js to override older duplicates.
+// ===============================
 (function collageFinalOverride(){
   // Prevent double-apply
   if (window.__ttCollageFinalOverrideApplied) return;
