@@ -11117,8 +11117,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     const page = options.page || 1; 
 
     // URL'de source=pixabay olarak güncellendi
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&source=pixabay&count=${limit}&page=${page}`;
-
+const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&source=pixabay&count=${limit}&page=${page}`;
     try {
         const resp = await fetch(url);
         if (!resp.ok) return [];
