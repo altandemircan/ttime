@@ -1,20 +1,8 @@
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 
-function haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371000, toRad = x => x * Math.PI / 180;
-    const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
-    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-    return 2 * R * Math.asin(Math.sqrt(a));
-}
-function isTripFav(item) {
-    return window.favTrips && window.favTrips.some(f =>
-        f.name === item.name &&
-        f.category === item.category &&
-        String(f.lat) === String(item.lat) &&
-        String(f.lon) === String(item.lon)
-    );
-}
+
+
 
 // === COLLAGE RACE CONDITION - TOKEN GENERATOR (local_storage. js için de) ===
 if (typeof window.__ttNewTripToken !== 'function') {
@@ -32,12 +20,25 @@ window.__globalCollageUsed = window.__globalCollageUsed || new Set();
 // === END COLLAGE RACE CONDITION ===
 
 
-// Global used set'ini yeniden kuran yardımcı
-function rebuildGlobalCollageUsed() {
-  window.__globalCollageUsed = new Set(
-    Object.values(window.__dayCollagePhotosByDay || {}).flat()
-  );
+
+
+
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000, toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(a));
 }
+function isTripFav(item) {
+    return window.favTrips && window.favTrips.some(f =>
+        f.name === item.name &&
+        f.category === item.category &&
+        String(f.lat) === String(item.lat) &&
+        String(f.lon) === String(item.lon)
+    );
+}
+
 
 
 
@@ -2721,12 +2722,22 @@ async function geoapifyAutocomplete(query) {
 
 
 async function getPixabayCategoryImage(category) {
-    return await getPhoto(category, "pixabay");
+    return await getPhoto(category, "pexels");
 }
 
 window.getPixabayImage = async function(query) {
-    return await getPhoto(query, "pixabay");
+    return await getPhoto(query, "pexels");
 };
+
+async function getPexelsImage(query) {
+    return await getPhoto(query, "pexels");
+}
+
+
+
+
+
+
 
 async function getImageForPlace(placeName, category, cityName) {
     const queries = [
@@ -11067,10 +11078,6 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 
-async function getPexelsImage(query) {
-    return null;
-}
-
 // ==================== COLLAGE (DAY SLIDER) HELPERS ====================
 // Slider kesin Pixabay olacak + cache (localStorage) çalışacak.
 window.__collagePageByTerm = window.__collagePageByTerm || {};
@@ -11081,24 +11088,7 @@ function isLikelyPexelsUrl(u) {
   return typeof u === "string" && /pexels\.com/i.test(u);
 }
 
-// Pexels kalıntılarını temizleyen fonksiyon
-function cleanPexelsFromCollageCache() {
-  if (! window.__dayCollagePhotosByDay) return;
-  Object.keys(window.__dayCollagePhotosByDay).forEach(k => {
-    const arr = window.__dayCollagePhotosByDay[k];
-    if (Array.isArray(arr)) {
-      window.__dayCollagePhotosByDay[k] = arr.filter(u => ! isLikelyPexelsUrl(u));
-    }
-  });
-  // Global used set'i de temizle
-  if (window.__globalCollageUsed && window.__globalCollageUsed.size > 0) {
-    const newSet = new Set();
-    window.__globalCollageUsed.forEach(u => {
-      if (! isLikelyPexelsUrl(u)) newSet.add(u);
-    });
-    window.__globalCollageUsed = newSet;
-  }
-}
+
 function normalizeCollageKeyDay(day) {
   return String(day);
 }
