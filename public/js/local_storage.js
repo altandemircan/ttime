@@ -395,33 +395,38 @@ function loadTripFromStorage(tripKey) {
     // ============================================================
     // --- COLLAGE RACE CONDITION FIX ---
     // ============================================================
-    try {
+  try {
       if (typeof window.__ttNewTripToken === 'function') {
         window.__activeTripSessionToken = window.__ttNewTripToken();
       }
-       
 
-
-           if (t.dayCollageData) {
-          window.__dayCollagePhotosByDay = t.dayCollageData;
+      if (t. dayCollageData) {
+          window.__dayCollagePhotosByDay = JSON.parse(JSON.stringify(t.dayCollageData));
       } else {
           window.__dayCollagePhotosByDay = {};
       }
 
-      // Eski Pexels kalıntılarını temizle (Pixabay-only slider için)
+      // *** PEXELS KALINTILARI TEMİZLİĞİ (GÜÇLENDİRİLMİŞ) ***
       Object.keys(window.__dayCollagePhotosByDay || {}).forEach(k => {
         const arr = window.__dayCollagePhotosByDay[k];
         if (Array.isArray(arr)) {
-          window.__dayCollagePhotosByDay[k] = arr.filter(u => !(typeof u === "string" && /pexels\.com/i.test(u)));
+          // Pexels URL'lerini tamamen filtrele
+          const filtered = arr.filter(u => !(typeof u === "string" && /pexels\.com/i.test(u)));
+          window.__dayCollagePhotosByDay[k] = filtered;
+          
+          // Eğer tüm görseller Pexels ise, cache'i boşalt ki yeniden Pixabay'dan çeksin
+          if (filtered.length === 0 && arr.length > 0) {
+            console.log(`[Collage] Day ${k} had only Pexels images, clearing cache for Pixabay refresh`);
+          }
         }
       });
 
-      // Kaydedilmiş collage URL'lerinden global used set'i tekrar kur
+      // Kaydedilmiş collage URL'lerinden global used set'i tekrar kur (sadece non-Pexels)
       window.__globalCollageUsed = new Set(
-        Object.values(window.__dayCollagePhotosByDay || {}).flat()
+        Object.values(window.__dayCollagePhotosByDay || {})
+          .flat()
+          .filter(u => typeof u === "string" && ! (/pexels\.com/i.test(u)))
       );
-
-
 
     } catch(e) {
       console.warn('[collage] Token reset error:', e);
