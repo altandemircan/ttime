@@ -3706,12 +3706,6 @@ for (let day = 1; day <= totalDays; day++) {
     dayContainer.id = `day-container-${day}`;
     dayContainer.dataset.day = day;
 
-    // Her zaman yeni container oluştur
-    const dayContainer = document.createElement("div");
-    dayContainer.className = "day-container";
-    dayContainer. id = `day-container-${day}`;
-    dayContainer.dataset.day = day;
-
     const dayHeader = document.createElement("h4");
     dayHeader.className = "day-header";
     const titleContainer = document.createElement("div");
