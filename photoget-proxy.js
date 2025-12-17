@@ -45,23 +45,15 @@ router.get('/', async (req, res) => {
 });
 
 
-// 2. YENİ SLIDER ENDPOINT (Çoklu resim için)
-// // 2. YENİ SLIDER ENDPOINT (Çoklu resim için - DÜZELTİLMİŞ HALİ)
-// === photoget-proxy.js İÇİNDEKİ SLIDER ENDPOINT'İ ===
-
 // 2. SLIDER ENDPOINT (SADECE PIXABAY ZORLAMALI)
 router.get('/slider', async (req, res) => {
-    // Frontend ne gönderirse göndersin, burada Pexels'i devre dışı bırakıyoruz.
     const { query, count = 6, page = 1 } = req.query; 
-
     if (!query) return res.status(400).json({ error: 'Query is required.' });
 
     try {
-        // Sadece Pixabay API URL'i
         const pixabayUrl = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=${count}&page=${page}&safesearch=true`;
-        
         const response = await fetch(pixabayUrl);
-        
+
         if (!response.ok) {
             throw new Error(`Pixabay API error: ${response.status}`);
         }
@@ -70,19 +62,19 @@ router.get('/slider', async (req, res) => {
 
         let images = [];
         if (data.hits && data.hits.length > 0) {
-            // Pixabay'dan gelen resimleri al
             images = data.hits.map(hit => hit.webformatURL || hit.largeImageURL);
         } else {
             console.log(`[Pixabay Slider] No images found for: ${query}`);
         }
         
-        // Pexels fallback YOK. Bulamazsa boş döner.
-        res.json({ images });
+        // Debug için source eklendi
+        res.json({ images, source: "pixabay" });
 
     } catch (err) {
         console.error("[Pixabay Slider Error]:", err.message);
         res.status(500).json({ error: 'Proxy error', details: err.message });
     }
 });
+
 
 module.exports = router;
