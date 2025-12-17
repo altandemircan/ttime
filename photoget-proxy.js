@@ -63,11 +63,8 @@ router.get('/slider', async (req, res) => {
         let images = [];
         if (data.hits && data.hits.length > 0) {
             images = data.hits.map(hit => hit.webformatURL || hit.largeImageURL);
-        } else {
-            console.log(`[Pixabay Slider] No images found for: ${query}`);
         }
         
-        // Debug için source eklendi
         res.json({ images, source: "pixabay" });
 
     } catch (err) {

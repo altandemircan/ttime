@@ -2818,47 +2818,55 @@ async function getPhoto(query, source = 'pexels') {
     return PLACEHOLDER_IMG;
 }
 
-/* ==================== COLLAGE (SLIDER) - PIXABAY ONLY + CACHE + PERSIST ==================== */
+// ==================== getCityCollageImages (Pixabay-only + persist) ====================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    const term = searchObj?.term;
-    if (!term) return [];
+  const term = searchObj?.term;
+  if (!term) return [];
 
-    const limit = Number(options.min || 6);
-    const page = Number(options.page || 1);
-    const day = Number(options.day || options.dayIndex || 1);
+  const dayKey = String(options.dayKey || options.day || "global"); // çağıran yer day gönderiyorsa kullan
+  const limit = Number(options.min || options.count || 6);
+  const page = Number(options.page || 1);
 
-    // 1) Önce memory cache
-    window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
-    if (Array.isArray(window.__dayCollagePhotosByDay[day]) && window.__dayCollagePhotosByDay[day].length) {
-        return window.__dayCollagePhotosByDay[day];
+  // 1) Önce cache (local trip state)
+  window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+  if (Array.isArray(window.__dayCollagePhotosByDay[dayKey]) && window.__dayCollagePhotosByDay[dayKey].length) {
+    return window.__dayCollagePhotosByDay[dayKey];
+  }
+
+  // 2) HER ZAMAN Pixabay slider endpoint
+  const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    const images = Array.isArray(data.images) ? data.images.filter(Boolean) : [];
+
+    // 3) Cache'e yaz
+    if (images.length) {
+      window.__dayCollagePhotosByDay[dayKey] = images;
+
+      // global used set'i de güncelle (varsa kullanıyorsun)
+      window.__globalCollageUsed = new Set(
+        Object.values(window.__dayCollagePhotosByDay || {}).flat()
+      );
+
+      // 4) LocalStorage'a persist et (trip kaydı)
+      if (typeof saveCurrentTripToStorage === "function") {
+        // küçük gecikme: aktifTripKey oluşsun diye
+        setTimeout(() => {
+          try { saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 }); } catch(_) {}
+        }, 50);
+      }
     }
 
-    // 2) Sadece Pixabay slider endpoint
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) return [];
-
-        const data = await res.json();
-        const images = Array.isArray(data.images) ? data.images.filter(Boolean) : [];
-
-        // 3) Cache’e yaz
-        if (images.length) {
-            window.__dayCollagePhotosByDay[day] = images;
-// 4) LocalStorage’a kaydet (trip objesine) - thumbnail üretmeden kaydet
-if (typeof saveCurrentTripToStorage === "function") {
-    try { await saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 }); } catch (_) {}
-}
-        }
-
-        return images;
-    } catch (e) {
-        console.error("Collage fetch error:", e);
-        return [];
-    }
+    return images;
+  } catch (e) {
+    console.error("Collage fetch error:", e);
+    return [];
+  }
 };
-/* ==================== END COLLAGE ==================== */
 
 function initPlaceSearch(day) {
     const input = document.getElementById(`place-input-${day}`);
