@@ -8913,12 +8913,7 @@ function wrapRouteControls(day) {
         <span class="tm-label" style="color: #888">Map Expanded</span>
       `;
   } else {
-      // --- DURUM 2: KAPALI (AKTİF) ---
-      expandBtn.style.background = '#ffffff';
-      expandBtn.style.borderColor = 'rgb(43 129 213)';
-      expandBtn.style.color = '#0080ff';
-      expandBtn.style.cursor = 'pointer';
-      
+  
       // Hover efektleri sadece aktifken
       expandBtn.onmouseover = function() { expandBtn.style.background = "#fafafa"; };
       expandBtn.onmouseout = function() { expandBtn.style.background = "#ffffff"; };
