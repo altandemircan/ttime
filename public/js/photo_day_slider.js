@@ -68,7 +68,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;
     if (!term) return [];
 
-    // İstenen görsel sayısı (GÜNCELLENDİ: 4)
+    // İstenen görsel sayısı: 4
     const limit = options.min || 4; 
     const page = options.page || 1; 
 
@@ -87,28 +87,52 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 };
 
 
-// 4. RENDER İŞLEMLERİ (Collage & Slider)
+// 4. RENDER İŞLEMLERİ (Collage & Slider & Add Category Button)
 // ============================================================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
     if (!dayContainer) return;
     const tripTokenAtStart = window.__activeTripSessionToken;
 
-    // A. Collage Alanını DOM'a Ekle
+    // --- A. DOM ELEMENTLERİNİ HAZIRLA ---
+
+    // 1. Collage Alanını Oluştur (Henüz Ekleme)
     let collage = dayContainer.querySelector('.day-collage');
     if (!collage) {
         collage = document.createElement('div');
         collage.className = 'day-collage';
         collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
-        
-        const list = dayContainer.querySelector('.day-list');
-        if (list) {
-            list.insertAdjacentElement('afterend', collage);
-        } else {
-            dayContainer.appendChild(collage);
-        }
     }
 
-    // B. Arama Terimini Belirle
+    // 2. Add Category Butonunu Oluştur (YENİ EKLEME)
+    let addCatBtn = dayContainer.querySelector('.add-more-btn');
+    if (!addCatBtn) {
+        addCatBtn = document.createElement('button');
+        addCatBtn.className = 'add-more-btn';
+        addCatBtn.textContent = '+ Add Category';
+        // Stil class ile gelmiyorsa buraya eklenebilir, şimdilik temiz bırakıyorum.
+    }
+    // Butona doğru gün numarasını ata
+    addCatBtn.setAttribute('data-day', day);
+
+    // 3. DOM'a Yerleştirme Sıralaması: List -> Button -> Collage
+    const list = dayContainer.querySelector('.day-list');
+    if (list) {
+        // Listeden hemen sonra Buton gelsin
+        if (addCatBtn.previousElementSibling !== list) {
+            list.insertAdjacentElement('afterend', addCatBtn);
+        }
+        // Butondan hemen sonra Collage gelsin
+        if (collage.previousElementSibling !== addCatBtn) {
+            addCatBtn.insertAdjacentElement('afterend', collage);
+        }
+    } else {
+        // Liste bulunamazsa (fallback) sırayla ekle
+        dayContainer.appendChild(addCatBtn);
+        dayContainer.appendChild(collage);
+    }
+
+    // --- B. Arama Terimi ve Resim Mantığı ---
+
     let firstLoc = null;
     if (dayItemsArr && dayItemsArr.length > 0) {
         firstLoc = dayItemsArr.find(i => i.location && i.location.lat);
@@ -171,7 +195,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             
             // 4 ADET GÖRSEL İSTENİYOR
             images = await window.getCityCollageImages(searchObj, {
-                min: 4, // GÜNCELLENDİ: 4
+                min: 4, 
                 exclude: usedSet,
                 page: pageNum
             });
