@@ -2728,7 +2728,6 @@ async function getPixabayCategoryImage(category) {
 window.getPixabayImage = async function(query) {
     return await getPhoto(query, "pexels");
 };
-
 async function getPexelsImage(query) {
     return await getPhoto(query, "pexels");
 }
