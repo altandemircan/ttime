@@ -11125,7 +11125,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
   if (!collage) {
     collage = document.createElement('div');
     collage.className = 'day-collage';
-    collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; background: rgb(247, 249, 252); padding: 8px; position: relative; display: block; min-height: 100px;";
+    collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
     
     // Listenin altına ekle
     const list = dayContainer.querySelector('.day-list');
