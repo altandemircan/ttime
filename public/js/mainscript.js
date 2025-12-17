@@ -2741,11 +2741,13 @@ async function getImageForPlace(placeName, category, cityName) {
     ];
     for (let q of queries) {
         if (!q || !q.trim()) continue;
-        const pexelsImg = await getPexelsImage(q);
-        if (pexelsImg && pexelsImg !== PLACEHOLDER_IMG) {
-            return pexelsImg;
+        // !! SADECE PIXABAY ÇAĞIR !!
+        const pixabayImg = await getPixabayCategoryImage(q);
+        if (pixabayImg && pixabayImg !== PLACEHOLDER_IMG) {
+            return pixabayImg;
         }
     }
+    // Kategori bazlı
     if (category) {
         const pixabayImg = await getPixabayCategoryImage(category);
         if (pixabayImg && pixabayImg !== PLACEHOLDER_IMG) {
@@ -2762,7 +2764,7 @@ async function getImageForPlace(placeName, category, cityName) {
 async function getOptimizedImage(properties) {
     let query = properties.name || properties.city || properties.category || "travel";
     if (!query || typeof query !== "string" || query.trim() === "") query = "travel";
-    const pexelsImg = await getPexelsImage(query);
+const img = await getPhoto(query, "pixabay"); // burada pexels yazıyorsa pixabay yap
     if (pexelsImg && pexelsImg !== PLACEHOLDER_IMG) {
         return pexelsImg;
     }
