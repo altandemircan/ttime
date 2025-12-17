@@ -16,21 +16,20 @@ function isTripFav(item) {
     );
 }
 
-// === COLLAGE RACE CONDITION - TOKEN GENERATOR ===
+// === COLLAGE RACE CONDITION - TOKEN GENERATOR (local_storage. js için de) ===
 if (typeof window.__ttNewTripToken !== 'function') {
   window.__ttNewTripToken = function() {
     return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
   };
 }
 
-if (! window.__activeTripSessionToken) {
+if (!  window.__activeTripSessionToken) {
   window.__activeTripSessionToken = window.__ttNewTripToken();
 }
+
 window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
 window.__globalCollageUsed = window.__globalCollageUsed || new Set();
 // === END COLLAGE RACE CONDITION ===
-
-
 
 
 // Global used set'ini yeniden kuran yardımcı
@@ -2805,9 +2804,9 @@ async function enrichPlanWithWiki(plan) {
 // Proxy çağrısı
 async function getPhoto(query, source = 'pexels') {
     // SLIDER İÇİ: her zaman Pixabay (tekli foto)
-    if (source === 'slider') {
+       if (source === 'slider') {
         const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&count=1&page=1`;
-        try {
+       try {
             const res = await fetch(url);
             const data = await res.json();
             if (data && Array.isArray(data.images) && data.images[0]) return data.images[0];
@@ -11072,10 +11071,30 @@ async function getPexelsImage(query) {
 // Slider kesin Pixabay olacak + cache (localStorage) çalışacak.
 window.__collagePageByTerm = window.__collagePageByTerm || {};
 
+
+// Pexels URL'lerini tespit eden yardımcı fonksiyon
 function isLikelyPexelsUrl(u) {
   return typeof u === "string" && /pexels\.com/i.test(u);
 }
 
+// Pexels kalıntılarını temizleyen fonksiyon
+function cleanPexelsFromCollageCache() {
+  if (! window.__dayCollagePhotosByDay) return;
+  Object.keys(window.__dayCollagePhotosByDay).forEach(k => {
+    const arr = window.__dayCollagePhotosByDay[k];
+    if (Array.isArray(arr)) {
+      window.__dayCollagePhotosByDay[k] = arr.filter(u => ! isLikelyPexelsUrl(u));
+    }
+  });
+  // Global used set'i de temizle
+  if (window.__globalCollageUsed && window.__globalCollageUsed.size > 0) {
+    const newSet = new Set();
+    window.__globalCollageUsed.forEach(u => {
+      if (! isLikelyPexelsUrl(u)) newSet.add(u);
+    });
+    window.__globalCollageUsed = newSet;
+  }
+}
 function normalizeCollageKeyDay(day) {
   return String(day);
 }
@@ -11109,68 +11128,202 @@ async function saveCollageToStorage(day, images) {
 
 // ==================== getCityCollageImages (Pixabay-only) ====================
 // ==================== getCityCollageImages (Pixabay-only - DÜZELTME) ====================
+// ==================== getCityCollageImages (Pixabay-only - FIXED) ====================
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj?.term;
-    if (! term) return [];
+    if (!term) return [];
 
     const limit = Number(options.min || 6);
     const page = Number(options.page || 1);
-
-    // hangi gün için isteniyor? 
     const day = Number(options.day || window.currentDay || 1);
 
-    // 1) önce cache'ten ver
-    if (!window.__dayCollagePhotosByDay) window.__dayCollagePhotosByDay = {};
-    if (Array.isArray(window.__dayCollagePhotosByDay[day]) && window.__dayCollagePhotosByDay[day].length) {
-        // Pexels URL'lerini filtrele (eski cache temizliği)
-        const cached = window.__dayCollagePhotosByDay[day]. filter(u => ! isLikelyPexelsUrl(u));
-        if (cached.length >= limit) {
+    // 1) Cache'ten kontrol et - AMA Pexels URL'leri varsa temizle
+    if (! window.__dayCollagePhotosByDay) window.__dayCollagePhotosByDay = {};
+    
+    const cached = window.__dayCollagePhotosByDay[day];
+    if (Array.isArray(cached) && cached.length > 0) {
+        // Pexels URL'leri varsa cache'i geçersiz say
+        const hasPexels = cached.some(u => typeof u === "string" && /pexels\.com/i.test(u));
+        if (!hasPexels) {
             return cached;
         }
+        // Pexels varsa cache'i temizle, yeniden çek
+        console.log(`[Collage] Day ${day} cache has Pexels URLs, clearing and refetching from Pixabay...`);
+        window.__dayCollagePhotosByDay[day] = [];
     }
 
-    // 2) SADECE Pixabay - source parametresini açıkça belirt
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}&source=pixabay`;
+    // 2) SADECE Pixabay slider endpoint - /photoget-proxy/slider
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+    console.log(`[Collage] Fetching from Pixabay:  ${url}`);
 
     try {
         const res = await fetch(url);
         if (!res.ok) {
-            // Fallback:  Direkt pixabay endpoint'i dene
-            return await fetchPixabayDirect(term, limit, page);
+            console.warn(`[Collage] Pixabay fetch failed: ${res.status}`);
+            return [];
         }
         const data = await res.json();
-        let images = Array.isArray(data.images) ? data.images : [];
-
-        // Pexels URL'lerini filtrele (backend yanlışlıkla Pexels döndürürse)
-        images = images.filter(u => ! isLikelyPexelsUrl(u));
-
-        // Yeterli görsel yoksa direkt Pixabay'dan çek
-        if (images.length < limit) {
-            const pixabayImages = await fetchPixabayDirect(term, limit - images.length, page);
-            images = [... images, ...pixabayImages];
+        
+        // API yanıtını kontrol et
+        let images = [];
+        if (Array.isArray(data.images)) {
+            images = data. images;
+        } else if (Array.isArray(data)) {
+            images = data;
         }
+        
+        // Pexels URL'lerini filtrele (ekstra güvenlik)
+        images = images.filter(u => typeof u === "string" && ! (/pexels\.com/i. test(u)));
+        
+        console.log(`[Collage] Got ${images.length} Pixabay images for day ${day}`);
 
-        // 3) cache'e yaz
-        if (images.length) {
+        // 3) Cache'e yaz
+        if (images.length > 0) {
             window.__dayCollagePhotosByDay[day] = images;
 
-            try {
-                if (window.__globalCollageUsed && typeof window.__globalCollageUsed.add === "function") {
-                    images.forEach(u => window.__globalCollageUsed.add(u));
-                }
-            } catch (_) {}
+            // Global used set güncelle
+            if (window.__globalCollageUsed && typeof window.__globalCollageUsed. add === "function") {
+                images.forEach(u => window.__globalCollageUsed.add(u));
+            }
 
+            // localStorage'a kaydet
             if (typeof saveCurrentTripToStorage === "function") {
-                setTimeout(() => { try { saveCurrentTripToStorage(); } catch(_) {} }, 50);
+                setTimeout(() => { 
+                    try { saveCurrentTripToStorage(); } catch(_) {} 
+                }, 50);
             }
         }
 
         return images;
     } catch (e) {
-        console.error("Collage fetch error:", e);
-        // Fallback: Direkt Pixabay
-        return await fetchPixabayDirect(term, limit, page);
+        console.error("[Collage] Fetch error:", e);
+        return [];
     }
+};
+
+// ==================== renderDayCollage (FIXED - Pixabay only) ====================
+window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
+  if (!dayContainer) return;
+
+  const tripTokenAtStart = window.__activeTripSessionToken;
+
+  // 1. Collage Alanını Oluştur
+  let collage = dayContainer. querySelector('.day-collage');
+  if (!collage) {
+    collage = document.createElement('div');
+    collage.className = 'day-collage';
+    collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
+    
+    const list = dayContainer.querySelector('.day-list');
+    if (list) {
+      list.insertAdjacentElement('afterend', collage);
+    } else {
+      dayContainer.appendChild(collage);
+    }
+  }
+
+  // 2. Şehir İsmini Bul
+  let firstLoc = null;
+  if (dayItemsArr && dayItemsArr.length > 0) {
+    firstLoc = dayItemsArr.find(i => i.location && i.location.lat);
+  }
+
+  let searchObj = { term: window.selectedCity || "", context: "" };
+  if (firstLoc && typeof fetchSmartLocationName === 'function') {
+    searchObj = await fetchSmartLocationName(
+      firstLoc.location.lat, 
+      firstLoc. location.lng, 
+      window.selectedCity || ""
+    );
+  }
+
+  const cityName = searchObj.term || window.selectedCity || "Travel";
+  
+  // Trip değiştiyse çık
+  if (window.__activeTripSessionToken !== tripTokenAtStart) {
+    console.log(`[Collage] Trip changed during fetch, aborting day ${day}`);
+    return;
+  }
+
+  // 3. Fotoğrafları Çek (SADECE Pixabay)
+  let images = await window.getCityCollageImages(searchObj, { min: 6, page: 1, day:  day });
+  
+  // Trip değiştiyse çık
+  if (window.__activeTripSessionToken !== tripTokenAtStart) {
+    console.log(`[Collage] Trip changed after fetch, aborting day ${day}`);
+    return;
+  }
+
+  // Pexels kalıntılarını son kez filtrele
+  images = images. filter(u => typeof u === "string" && !(/pexels\.com/i.test(u)));
+
+  if (! images || images.length === 0) {
+    collage.innerHTML = `<div style="padding: 20px;text-align:center;color:#888;font-size:13px;">No photos available for ${cityName}</div>`;
+    return;
+  }
+
+  // 4. Slider HTML'i Oluştur
+  const perSlide = 3;
+  const totalSlides = Math.ceil(images.length / perSlide);
+  
+  let trackHtml = '';
+  images.forEach((imgUrl, idx) => {
+    trackHtml += `
+      <div style="flex: 0 0 ${100/perSlide}%; max-width:  ${100/perSlide}%; padding: 4px; box-sizing: border-box;">
+        <div style="width:100%; height:160px; border-radius: 8px; overflow:hidden; background:#e5e8ed;">
+          <img src="${imgUrl}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;" 
+               onerror="this.parentElement.innerHTML='<div style=\\'height:100%;display:flex;align-items:center;justify-content:center;color:#aaa;\\'>📷</div>'">
+        </div>
+      </div>
+    `;
+  });
+
+  collage.innerHTML = `
+    <div style="font-weight:  bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin-bottom: 10px;">Photos related to ${cityName}</div>
+    <div class="collage-viewport" style="overflow: hidden; width:100%; position:relative; border-radius:8px;">
+      <div style="position:absolute; top:12px; left:12px; z-index:2; background: rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size: 11px; font-weight:600; pointer-events:none;">${cityName}</div>
+      <div class="collage-track" style="display:  flex; transition: transform 0.4s ease-out; will-change: transform; transform: translateX(0%);">
+        ${trackHtml}
+      </div>
+    </div>
+    <button class="collage-nav prev" style="position: absolute; left:  6px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: rgb(0, 0, 0); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 6px; z-index: 5; opacity: 0.3; pointer-events: none;">❮</button>
+    <button class="collage-nav next" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: rgb(0, 0, 0); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow:  rgba(0, 0, 0, 0.3) 0px 2px 6px; z-index: 5; opacity: 1; pointer-events: auto;">❯</button>
+  `;
+
+  // 5. Slider Navigasyonu
+  const track = collage.querySelector('.collage-track');
+  const prevBtn = someElement.querySelector('. collage-nav.prev');
+  const nextBtn = collage.querySelector('.collage-nav.next');
+  
+  let currentSlide = 0;
+  
+  function updateSlider() {
+    const offset = currentSlide * (100 / perSlide) * perSlide;
+    track.style.transform = `translateX(-${offset}%)`;
+    
+    // Buton durumları
+    prevBtn.style.opacity = currentSlide === 0 ? '0.3' : '1';
+    prevBtn.style.pointerEvents = currentSlide === 0 ?  'none' : 'auto';
+    
+    nextBtn. style.opacity = currentSlide >= totalSlides - 1 ?  '0.3' : '1';
+    nextBtn.style. pointerEvents = currentSlide >= totalSlides - 1 ?  'none' : 'auto';
+  }
+  
+  prevBtn.addEventListener('click', () => {
+    if (currentSlide > 0) {
+      currentSlide--;
+      updateSlider();
+    }
+  });
+  
+  nextBtn.addEventListener('click', () => {
+    if (currentSlide < totalSlides - 1) {
+      currentSlide++;
+      updateSlider();
+    }
+  });
+  
+  updateSlider();
 };
 
 // Pixabay'dan direkt fotoğraf çeken yardımcı fonksiyon
