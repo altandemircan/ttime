@@ -72,7 +72,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     const limit = options.min || 4; 
     const page = options.page || 1; 
 
-    // URL (limit, per_page ve count parametrelerinin hepsini 4 gönderiyoruz)
+    // URL
     const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&limit=${limit}&per_page=${limit}&count=${limit}&page=${page}&source=pixabay`;
 
     try {
@@ -87,51 +87,44 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 };
 
 
-// 4. RENDER İŞLEMLERİ (Collage & Slider & Add Category Button)
+// 4. RENDER İŞLEMLERİ (Collage & Slider)
 // ============================================================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
     if (!dayContainer) return;
     const tripTokenAtStart = window.__activeTripSessionToken;
 
-    // --- A. DOM ELEMENTLERİNİ HAZIRLA ---
-
-    // 1. Collage Alanını Oluştur (Henüz Ekleme)
+    // A. Collage Alanını Hazırla (DOM'da henüz yerleştirme)
     let collage = dayContainer.querySelector('.day-collage');
     if (!collage) {
         collage = document.createElement('div');
         collage.className = 'day-collage';
+        // Min-height ile alanın çökmesini önle
         collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
     }
 
-    // 2. Add Category Butonunu Oluştur (YENİ EKLEME)
-    let addCatBtn = dayContainer.querySelector('.add-more-btn');
-    if (!addCatBtn) {
-        addCatBtn = document.createElement('button');
-        addCatBtn.className = 'add-more-btn';
-        addCatBtn.textContent = '+ Add Category';
-        // Stil class ile gelmiyorsa buraya eklenebilir, şimdilik temiz bırakıyorum.
-    }
-    // Butona doğru gün numarasını ata
-    addCatBtn.setAttribute('data-day', day);
-
-    // 3. DOM'a Yerleştirme Sıralaması: List -> Button -> Collage
+    // B. DOM'a Yerleştirme (UL -> Mevcut Buton -> Collage)
     const list = dayContainer.querySelector('.day-list');
     if (list) {
-        // Listeden hemen sonra Buton gelsin
-        if (addCatBtn.previousElementSibling !== list) {
-            list.insertAdjacentElement('afterend', addCatBtn);
-        }
-        // Butondan hemen sonra Collage gelsin
-        if (collage.previousElementSibling !== addCatBtn) {
-            addCatBtn.insertAdjacentElement('afterend', collage);
+        // Listenin içindeki mevcut "Add Category" butonunu bul
+        const addBtn = list.querySelector('.add-more-btn');
+        
+        if (addBtn) {
+            // Buton varsa, collage'ı butonun hemen sonrasına ekle
+            if (addBtn.nextElementSibling !== collage) {
+                addBtn.insertAdjacentElement('afterend', collage);
+            }
+        } else {
+            // Buton yoksa listenin en sonuna ekle (Fallback)
+            if (list.lastElementChild !== collage) {
+                list.appendChild(collage);
+            }
         }
     } else {
-        // Liste bulunamazsa (fallback) sırayla ekle
-        dayContainer.appendChild(addCatBtn);
+        // Liste hiç yoksa container'a ekle (Fallback)
         dayContainer.appendChild(collage);
     }
 
-    // --- B. Arama Terimi ve Resim Mantığı ---
+    // --- C. Arama Terimi ve Resim Mantığı ---
 
     let firstLoc = null;
     if (dayItemsArr && dayItemsArr.length > 0) {
@@ -149,7 +142,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         return;
     }
 
-    // C. Cache Kontrolü
+    // D. Cache Kontrolü
     if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
     if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
         window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
@@ -177,7 +170,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         console.warn("[Collage] Storage read error:", e);
     }
 
-    // D. API'den Çek (Cache yoksa)
+    // E. API'den Çek (Cache yoksa)
     if (!fromCache || images.length === 0) {
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
@@ -193,7 +186,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
             console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Kaynak: Pixabay`);
             
-            // 4 ADET GÖRSEL İSTENİYOR
+            // 4 ADET GÖRSEL
             images = await window.getCityCollageImages(searchObj, {
                 min: 4, 
                 exclude: usedSet,
@@ -213,7 +206,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         }
     }
 
-    // E. Render
+    // F. Render
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
         renderCollageSlides(collage, images, searchObj);
         collage.style.display = 'block';
