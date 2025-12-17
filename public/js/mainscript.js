@@ -11522,3 +11522,137 @@ function renderCollageSlides(collage, images, searchObj) {
   };
   update();
 }
+// ===============================
+// COLLAGE FINAL OVERRIDE (Pixabay-only, single source of truth)
+// Put this at the VERY END of mainscript.js to override older duplicates.
+// ===============================
+(function collageFinalOverride(){
+  // Prevent double-apply
+  if (window.__ttCollageFinalOverrideApplied) return;
+  window.__ttCollageFinalOverrideApplied = true;
+
+  function isPexelsUrl(u){ return typeof u === "string" && /pexels\.com/i.test(u); }
+
+  // Always fetch via photoget-proxy/slider (Pixabay-only by your backend rule)
+  window.getCityCollageImages = async function(searchObj, options = {}) {
+    const term = (searchObj && searchObj.term) ? String(searchObj.term) : (window.selectedCity || "Turkey");
+    const limit = Math.max(3, Number(options.min || 6));
+    const page  = Math.max(1, Number(options.page || 1));
+    const day   = Math.max(1, Number(options.day || window.currentDay || 1));
+
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const data = await res.json();
+
+      let images = [];
+      if (Array.isArray(data?.images)) images = data.images;
+      else if (Array.isArray(data)) images = data;
+
+      // Hard filter Pexels
+      images = images.filter(u => typeof u === "string" && !isPexelsUrl(u));
+
+      // Cache per day (optional)
+      window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+      window.__dayCollagePhotosByDay[day] = images;
+
+      return images;
+    } catch (e) {
+      console.warn("[collage] fetch error:", e);
+      return [];
+    }
+  };
+
+  window.renderDayCollage = async function(day, dayContainer, dayItemsArr){
+    if (!dayContainer) return;
+
+    // Find/create collage container
+    let collage = dayContainer.querySelector('.day-collage');
+    if (!collage) {
+      collage = document.createElement('div');
+      collage.className = 'day-collage';
+      const list = dayContainer.querySelector('.day-list');
+      if (list) list.insertAdjacentElement('afterend', collage);
+      else dayContainer.appendChild(collage);
+    }
+
+    // Force visible (your current DOM shows display:none)
+    collage.style.display = 'block';
+    collage.style.margin = '12px 0 6px';
+    collage.style.borderRadius = '10px';
+    collage.style.overflow = 'hidden';
+    collage.style.position = 'relative';
+    collage.style.minHeight = '100px';
+    collage.style.background = '#f9f9f9';
+
+    const cityName = window.selectedCity || "Turkey";
+    const images = await window.getCityCollageImages({ term: cityName }, { min: 9, page: 1, day });
+
+    // Never hide the block; show message instead
+    if (!images || images.length === 0) {
+      collage.innerHTML = `<div style="padding:22px; text-align:center; color:#777; font-size:13px;">
+        No photos available for <b>${cityName}</b> (Pixabay).
+      </div>`;
+      return;
+    }
+
+    const perSlide = 3;
+    let index = 0;
+    const maxIndex = Math.max(0, images.length - perSlide);
+
+    const slides = images.map((imgUrl) => `
+      <div style="flex:0 0 ${100/perSlide}%; max-width:${100/perSlide}%; padding:4px; box-sizing:border-box;">
+        <div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed; cursor:pointer;">
+          <img src="${imgUrl}" loading="lazy"
+               style="width:100%; height:100%; object-fit:cover; display:block;"
+               onclick="window.open('${imgUrl}', '_blank')"
+               onerror="this.closest('div').style.display='none';">
+        </div>
+      </div>
+    `).join('');
+
+    collage.innerHTML = `
+      <div style="font-weight:700; font-size:0.95rem; color:#333; margin:0 0 10px 4px;">
+        Photos related to ${cityName}
+      </div>
+      <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
+        <div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff;
+                    padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">
+          ${cityName}
+        </div>
+        <div class="collage-track" style="display:flex; transition:transform .4s ease-out; will-change:transform; transform:translateX(0%);">
+          ${slides}
+        </div>
+      </div>
+      <button class="collage-nav prev"
+        style="position:absolute; left:6px; top:60%; transform:translateY(-50%); background:rgba(255,255,255,0.9);
+               border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center;
+               justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
+      <button class="collage-nav next"
+        style="position:absolute; right:6px; top:60%; transform:translateY(-50%); background:rgba(255,255,255,0.9);
+               border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center;
+               justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
+    `;
+
+    const track = collage.querySelector('.collage-track');
+    const prevBtn = collage.querySelector('.collage-nav.prev');
+    const nextBtn = collage.querySelector('.collage-nav.next');
+
+    const update = () => {
+      const offset = index * (100 / perSlide);
+      track.style.transform = `translateX(-${offset}%)`;
+      prevBtn.style.opacity = index === 0 ? '0.3' : '1';
+      prevBtn.style.pointerEvents = index === 0 ? 'none' : 'auto';
+      nextBtn.style.opacity = index >= maxIndex ? '0.3' : '1';
+      nextBtn.style.pointerEvents = index >= maxIndex ? 'none' : 'auto';
+    };
+
+    prevBtn.onclick = (e) => { e.stopPropagation(); if (index > 0) { index--; update(); } };
+    nextBtn.onclick = (e) => { e.stopPropagation(); if (index < maxIndex) { index++; update(); } };
+    update();
+  };
+
+  console.log("[collage] Final override applied (Pixabay-only).");
+})();
