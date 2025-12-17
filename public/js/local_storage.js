@@ -399,16 +399,30 @@ function loadTripFromStorage(tripKey) {
       if (typeof window.__ttNewTripToken === 'function') {
         window.__activeTripSessionToken = window.__ttNewTripToken();
       }
+       
+
+
            if (t.dayCollageData) {
           window.__dayCollagePhotosByDay = t.dayCollageData;
       } else {
           window.__dayCollagePhotosByDay = {};
       }
 
+      // Eski Pexels kalıntılarını temizle (Pixabay-only slider için)
+      Object.keys(window.__dayCollagePhotosByDay || {}).forEach(k => {
+        const arr = window.__dayCollagePhotosByDay[k];
+        if (Array.isArray(arr)) {
+          window.__dayCollagePhotosByDay[k] = arr.filter(u => !(typeof u === "string" && /pexels\.com/i.test(u)));
+        }
+      });
+
       // Kaydedilmiş collage URL'lerinden global used set'i tekrar kur
       window.__globalCollageUsed = new Set(
         Object.values(window.__dayCollagePhotosByDay || {}).flat()
       );
+
+
+
     } catch(e) {
       console.warn('[collage] Token reset error:', e);
     }
@@ -1308,3 +1322,18 @@ function updateFavoriteBtnText(favHeartEl) {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
