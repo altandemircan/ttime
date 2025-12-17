@@ -11139,123 +11139,95 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 };
 
 // ==================== renderDayCollage ====================
+// mainscript.js dosyasında window.renderDayCollage fonksiyonunu bulun
+
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
-  if (!dayContainer) return;
+    if (!dayContainer) return;
+    const tripTokenAtStart = window.__activeTripSessionToken;
 
-  const tripTokenAtStart = window.__activeTripSessionToken;
-
-  // 1. Collage Alanını Oluştur (Listeden sonra, Haritadan önce)
-  let collage = dayContainer.querySelector('.day-collage');
-  if (!collage) {
-    collage = document.createElement('div');
-    collage.className = 'day-collage';
-    collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
-    
-    // Listenin altına ekle
-    const list = dayContainer.querySelector('.day-list');
-    if (list) {
-      list.insertAdjacentElement('afterend', collage);
-    } else {
-      dayContainer.appendChild(collage);
+    // ... (Collage oluşturma kodları aynı kalacak) ...
+    let collage = dayContainer.querySelector('.day-collage');
+    if (!collage) {
+        // ... (Collage DOM oluşturma kodları) ...
     }
-  }
 
-  // 2. Şehir İsmini Bul
-  let firstLoc = null;
-  if (dayItemsArr && dayItemsArr.length > 0) {
-    firstLoc = dayItemsArr.find(i => i.location && i.location.lat);
-  }
+    // ... (Şehir ismi bulma kodları aynı kalacak) ...
+    // ...
 
-  let searchObj = { term: window.selectedCity || "", context: "" };
-  if (firstLoc && typeof fetchSmartLocationName === 'function') {
-    searchObj = await fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
-  }
+    // 3. Kullanılan Görseller Seti
+    if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
+    if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
+        window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
+    }
+    const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-  if (!searchObj.term) {
-    collage.style.display = 'none';
-    return;
-  }
+    // --- DEĞİŞİKLİK BURADA: Cache Key'i değiştirdik (_pixabay_v1) ---
+    // Böylece LocalStorage'daki eski Pexels kayıtlarını okumayacak.
+    const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_pixabay_v1`;
+    
+    let images = [];
+    let fromCache = false;
 
-  // 3. Kullanılan Görseller Seti
-  if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
-  if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
-    window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
-  }
-  const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
+    // Local Storage Kontrolü
+    try {
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+            const parsed = JSON.parse(cachedData);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                images = parsed;
+                fromCache = true;
+                images.forEach(img => usedSet.add(img));
+                console.log(`[Collage] Loaded from localStorage (Pixabay) for Day ${day}:`, searchObj.term);
+            }
+        }
+    } catch (e) {
+        console.warn("[Collage] Storage read error:", e);
+    }
 
-  // --- DÜZELTME 1: Cache Key'i değiştirdik (_v2) ki eski hatalı kayıtları okumasın ---
-  const cacheKey = `tt_day_collage_${day}_${searchObj.term.replace(/\s+/g, '_')}_v2`;
-  
-  let images = [];
-  let fromCache = false;
+    // 4. API'den Çekme
+    if (!fromCache || images.length === 0) {
+        if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-  // Local Storage Kontrolü
-  try {
-      const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-          const parsed = JSON.parse(cachedData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-              images = parsed;
-              fromCache = true;
-              images.forEach(img => usedSet.add(img));
-              console.log(`[Collage] Loaded from localStorage (v2) for Day ${day}:`, searchObj.term);
-          }
-      }
-  } catch (e) {
-      console.warn("[Collage] Storage read error:", e);
-  }
+        if (typeof getCityCollageImages === 'function') {
+            let pageNum = 1;
+            if (typeof day === 'number') {
+                pageNum = day;
+            } else if (typeof day === 'string') {
+                const match = day.match(/\d+/);
+                if (match) pageNum = parseInt(match[0], 10);
+            }
+            if (!pageNum || pageNum < 1) pageNum = 1;
 
-  // 4. API'den Çekme
-  if (!fromCache || images.length === 0) {
-      if (window.__activeTripSessionToken !== tripTokenAtStart) return;
+            console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Kaynak: Pixabay`);
+            
+            // Pixabay'dan çek
+            images = await getCityCollageImages(searchObj, {
+                min: 6,
+                exclude: usedSet,
+                page: pageNum
+            });
+        }
 
-      if (typeof getCityCollageImages === 'function') {
-          // --- DÜZELTME 2: Gün sayısını metinden ("Day 2") söküp alma ---
-          let pageNum = 1;
-          
-          // Eğer day bir sayıysa (örn: 2)
-          if (typeof day === 'number') {
-              pageNum = day;
-          } 
-          // Eğer day bir metinse (örn: "Day 2", "2. Gün")
-          else if (typeof day === 'string') {
-              const match = day.match(/\d+/); // İçindeki ilk sayıyı bul
-              if (match) {
-                  pageNum = parseInt(match[0], 10);
-              }
-          }
+        if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
-          // Güvenlik: Sayfa 0 veya negatif olamaz
-          if (!pageNum || pageNum < 1) pageNum = 1;
+        if (images.length > 0) {
+            images.forEach(img => usedSet.add(img));
+            try {
+                // Yeni key ile kaydet
+                localStorage.setItem(cacheKey, JSON.stringify(images));
+            } catch (e) {
+                console.warn("[Collage] Storage write error:", e);
+            }
+        }
+    }
 
-          console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Gün: ${day}, Sayfa: ${pageNum}`);
-
-          images = await getCityCollageImages(searchObj, { 
-            min: 6, 
-            exclude: usedSet,
-            page: pageNum // Doğru hesaplanmış sayfa numarası
-          });
-      }
-
-      if (window.__activeTripSessionToken !== tripTokenAtStart) return;
-
-      if (images.length > 0) {
-          images.forEach(img => usedSet.add(img));
-          try {
-              localStorage.setItem(cacheKey, JSON.stringify(images));
-          } catch (e) {
-              console.warn("[Collage] Storage write error:", e);
-          }
-      }
-  }
-
-  // 5. Render
-  if (images.length > 0 && typeof renderCollageSlides === 'function') {
-    renderCollageSlides(collage, images, searchObj);
-    collage.style.display = 'block';
-  } else {
-    collage.style.display = 'none';
-  }
+    // 5. Render
+    if (images.length > 0 && typeof renderCollageSlides === 'function') {
+        renderCollageSlides(collage, images, searchObj);
+        collage.style.display = 'block';
+    } else {
+        collage.style.display = 'none';
+    }
 };
 // ==================== Slider renderer helper ====================
 function renderCollageSlides(collage, images, searchObj) {
@@ -11331,23 +11303,18 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     if (!term) return [];
 
     const limit = options.min || 6;
-    // Gönderilen sayfa numarasını al, yoksa 1 kabul et
     const page = options.page || 1; 
 
-    // URL'e page parametresini ekliyoruz
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+    // URL'de &source=pixabay parametresi OLMAK ZORUNDA
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&limit=${limit}&page=${page}&source=pixabay`;
 
     try {
         const res = await fetch(url);
         if (!res.ok) return [];
-        
         const data = await res.json();
-        if (data.images && Array.isArray(data.images)) {
-            return data.images;
-        }
-        return [];
+        return data.images || data || [];
     } catch (e) {
-        console.warn("Slider fetch error:", e);
+        console.warn("Collage fetch error:", e);
         return [];
     }
 };
