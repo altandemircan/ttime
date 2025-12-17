@@ -11529,186 +11529,74 @@ function renderCollageSlides(collage, images, searchObj) {
 // Put this at the VERY END of mainscript.js
 // ===============================
 // ===============================
-// COLLAGE FINAL OVERRIDE v2 (Pixabay-only, robust parsing + fallback queries)
+// COLLAGE FINAL OVERRIDE v3 (fix endpoint path + debug)
 // Put this at the VERY END of mainscript.js
 // ===============================
-(function collageFinalOverride_v2() {
-  if (window.__ttCollageFinalOverrideApplied_v2) return;
-  window.__ttCollageFinalOverrideApplied_v2 = true;
+(function collageFinalOverride_v3() {
+  if (window.__ttCollageFinalOverrideApplied_v3) return;
+  window.__ttCollageFinalOverrideApplied_v3 = true;
 
   const log = (...a) => console.log('[collage]', ...a);
   const warn = (...a) => console.warn('[collage]', ...a);
 
-  function uniq(arr) {
-    const out = [];
-    const s = new Set();
-    (arr || []).forEach(x => {
-      if (typeof x !== 'string') return;
-      if (s.has(x)) return;
-      s.add(x);
-      out.push(x);
-    });
-    return out;
+  function isPexelsUrl(u) {
+    return typeof u === "string" && /pexels\.com/i.test(u);
   }
 
-  // Proxy already returns Pixabay URLs, but keep a safety filter anyway
-  function isPexelsUrl(u) {
-    return typeof u === 'string' && /pexels\.com/i.test(u);
+  function normalizeImagesPayload(data) {
+    // expected: { images: [...] }
+    if (Array.isArray(data?.images)) return data.images;
+    // fallback shapes
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data?.images)) return data.data.images;
+    return [];
   }
 
   async function fetchPixabaySlider(term, limit, page) {
+    // IMPORTANT: this is the exact URL you tested and it returns 6 images
     const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`slider http ${res.status}`);
-    }
-    const data = await res.json();
 
-    // IMPORTANT: backend returns {images:[...]}
-    const images = Array.isArray(data?.images) ? data.images : [];
+    const res = await fetch(url, { cache: 'no-store' });
+    const data = await res.json().catch(() => ({}));
 
-    return images
+    log('slider response', { term, status: res.status, url: res.url, keys: Object.keys(data || {}), imagesLen: (data?.images || []).length });
+
+    if (!res.ok) return [];
+
+    let images = normalizeImagesPayload(data);
+
+    images = images
       .filter(u => typeof u === 'string' && u.trim().length > 10)
       .filter(u => !isPexelsUrl(u));
+
+    return images;
   }
 
-  // Single source of truth: always use /photoget-proxy/slider
-  window.getCityCollageImages = async function getCityCollageImages(searchObj, options = {}) {
+  window.getCityCollageImages = async function(searchObj, options = {}) {
     const day = Math.max(1, Number(options.day || window.currentDay || 1));
     const min = Math.max(3, Number(options.min || 6));
     const page = Math.max(1, Number(options.page || 1));
-
-    const rawTerm = (searchObj && searchObj.term) ? String(searchObj.term) : (window.selectedCity || 'Turkey');
-    const term = rawTerm.trim() || 'Turkey';
+    const term = String(searchObj?.term || window.selectedCity || 'Turkey').trim() || 'Turkey';
 
     window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
 
-    // If we already have good cached data for the day, use it
+    // Use cache if good
     const cached = window.__dayCollagePhotosByDay[day];
-    if (Array.isArray(cached) && cached.length >= 3) {
-      return cached;
-    }
+    if (Array.isArray(cached) && cached.length >= 3) return cached;
 
-    // Fallback queries (Pixabay can be picky depending on term)
-    const queries = uniq([
-      term,
-      `${term} Turkey`,
-      `${term} city`,
-      `${term} travel`,
-      `${term} old town`,
-    ]);
+    // Just 2 attempts (keep it simple)
+    const queries = [term, `${term} Turkey`];
 
     for (const q of queries) {
-      try {
-        const imgs = await fetchPixabaySlider(q, min, page);
-        if (imgs.length) {
-          window.__dayCollagePhotosByDay[day] = imgs;
-          log('images ok', { day, q, count: imgs.length });
-          return imgs;
-        } else {
-          log('0 images', { day, q });
-        }
-      } catch (e) {
-        warn('fetch error', { day, q, err: e?.message || e });
+      const imgs = await fetchPixabaySlider(q, min, page);
+      if (imgs.length) {
+        window.__dayCollagePhotosByDay[day] = imgs;
+        return imgs;
       }
+      log('0 images', { day, q });
     }
 
-    // Cache empty so render can show message consistently
     window.__dayCollagePhotosByDay[day] = [];
     return [];
   };
-
-  window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
-    if (!dayContainer) return;
-
-    let collage = dayContainer.querySelector('.day-collage');
-    if (!collage) {
-      collage = document.createElement('div');
-      collage.className = 'day-collage';
-      const list = dayContainer.querySelector('.day-list');
-      if (list) list.insertAdjacentElement('afterend', collage);
-      else dayContainer.appendChild(collage);
-    }
-
-    // Force visible (your DOM had display:none)
-    collage.style.display = 'block';
-    collage.style.margin = '12px 0 6px';
-    collage.style.borderRadius = '10px';
-    collage.style.overflow = 'hidden';
-    collage.style.position = 'relative';
-    collage.style.minHeight = '100px';
-    collage.style.background = '#f9f9f9';
-
-    const cityName = (window.selectedCity || 'Turkey').trim() || 'Turkey';
-
-    // Try fetch (or cache)
-    const images = await window.getCityCollageImages({ term: cityName }, { min: 9, page: 1, day });
-
-    if (!images || images.length === 0) {
-      collage.innerHTML = `
-        <div style="padding:22px; text-align:center; color:#777; font-size:13px;">
-          No photos available for <b>${cityName}</b> (Pixabay).
-        </div>
-      `;
-      return;
-    }
-
-    const perSlide = 3;
-    let index = 0;
-    const maxIndex = Math.max(0, images.length - perSlide);
-
-    const slidesHtml = images.map((imgUrl) => `
-      <div style="flex:0 0 ${100 / perSlide}%; max-width:${100 / perSlide}%; padding:4px; box-sizing:border-box;">
-        <div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed; cursor:pointer;">
-          <img src="${imgUrl}" loading="lazy"
-               style="width:100%; height:100%; object-fit:cover; display:block;"
-               onclick="window.open('${imgUrl}', '_blank')"
-               onerror="this.closest('div').style.display='none';">
-        </div>
-      </div>
-    `).join('');
-
-    collage.innerHTML = `
-      <div style="font-weight:700; font-size:0.95rem; color:#333; margin:0 0 10px 4px;">
-        Photos related to ${cityName}
-      </div>
-      <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
-        <div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff;
-                    padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">
-          ${cityName}
-        </div>
-        <div class="collage-track"
-             style="display:flex; transition:transform .4s ease-out; will-change:transform; transform:translateX(0%);">
-          ${slidesHtml}
-        </div>
-      </div>
-      <button class="collage-nav prev"
-        style="position:absolute; left:6px; top:60%; transform:translateY(-50%); background:rgba(255,255,255,0.9);
-               border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center;
-               justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
-      <button class="collage-nav next"
-        style="position:absolute; right:6px; top:60%; transform:translateY(-50%); background:rgba(255,255,255,0.9);
-               border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center;
-               justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
-    `;
-
-    const track = collage.querySelector('.collage-track');
-    const prevBtn = collage.querySelector('.collage-nav.prev');
-    const nextBtn = collage.querySelector('.collage-nav.next');
-
-    const update = () => {
-      const offset = index * (100 / perSlide);
-      track.style.transform = `translateX(-${offset}%)`;
-      prevBtn.style.opacity = index === 0 ? '0.3' : '1';
-      prevBtn.style.pointerEvents = index === 0 ? 'none' : 'auto';
-      nextBtn.style.opacity = index >= maxIndex ? '0.3' : '1';
-      nextBtn.style.pointerEvents = index >= maxIndex ? 'none' : 'auto';
-    };
-
-    prevBtn.onclick = (e) => { e.stopPropagation(); if (index > 0) { index--; update(); } };
-    nextBtn.onclick = (e) => { e.stopPropagation(); if (index < maxIndex) { index++; update(); } };
-    update();
-  };
-
-  log('Final override v2 applied (Pixabay-only).');
 })();
