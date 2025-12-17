@@ -11225,15 +11225,19 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     return;
   }
 
-  // Pexels kalıntılarını son kez filtrele
-  images = images. filter(u => typeof u === "string" && !(/pexels\.com/i.test(u)));
+ // Pexels kalıntılarını son kez filtrele
+    images = images.filter(u => typeof u === "string" && !(/pexels\.com/i.test(u)));
 
-  if (! images || images.length === 0) {
-    collage.innerHTML = `<div style="padding: 20px;text-align:center;color:#888;font-size:13px;">No photos available for ${cityName}</div>`;
-    return;
-  }
+    if (!images || images.length === 0) {
+        collage.innerHTML = `<div style="padding: 20px;text-align:center;color:#888;font-size:13px;">No photos available for ${cityName}</div>`;
+        collage.style.display = 'block'; // Uyarıyı göstermek için aç
+        return;
+    }
 
-  // 4. Slider HTML'i Oluştur
+    // GİZLİYSE GÖRÜNÜR YAP (ÖNEMLİ)
+    collage.style.display = 'block';
+
+    // 4. Slider HTML'i Oluştur
   const perSlide = 3;
   const totalSlides = Math.ceil(images.length / perSlide);
   
