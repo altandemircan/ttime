@@ -222,31 +222,42 @@ function safeParse(jsonStr) {
   if (!jsonStr || jsonStr === "undefined" || jsonStr === undefined || jsonStr === null) return null;
   try { return JSON.parse(jsonStr); } catch { return null; }
 }
+// === local_storage.js içindeki saveCurrentTripToStorage fonksiyonunu bununla değiştirin ===
+
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
   window.directionsPolylines = window.directionsPolylines || {};
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
   }
 
-  // === YENİ EKLENEN KISIM: OTOMATİK AYRIŞTIRMA (AUTO-FORK) ===
-  // Eğer aktif bir gezi var ama şehir tamamen değişmişse (Örn: Rome -> Antalya),
-  // eski geziyi ezmemek için 'activeTripKey'i sıfırla ve yeni gezi başlat.
+  // === GÜÇLENDİRİLMİŞ AUTO-FORK (OVERWRITE KORUMASI) ===
   if (window.activeTripKey && window.selectedCity) {
-      const allSaved = getAllSavedTrips(); // Mevcut kayıtları çek
+      const allSaved = getAllSavedTrips();
       const currentSavedTrip = allSaved[window.activeTripKey];
       
-      if (currentSavedTrip && currentSavedTrip.selectedCity) {
-           const oldCity = toLatin(currentSavedTrip.selectedCity).toLowerCase().trim();
+      if (currentSavedTrip) {
+           // 1. Kayıtlı şehri bulmaya çalış
+           let oldCity = currentSavedTrip.selectedCity 
+                 ? toLatin(currentSavedTrip.selectedCity).toLowerCase().trim()
+                 : "";
+           
+           // 2. Eğer kayıtlı şehir yoksa (eski sürüm data), başlıktan tahmin et
+           if (!oldCity && currentSavedTrip.title) {
+               // "Rome trip plan" -> "rome"
+               oldCity = toLatin(currentSavedTrip.title).toLowerCase()
+                         .replace(" trip plan", "").replace(" trip", "").trim();
+           }
+
            const newCity = toLatin(window.selectedCity).toLowerCase().trim();
            
-           // Şehirler farklıysa ve her ikisi de doluysa
+           // Şehirler belirgin şekilde farklıysa -> YENİ KEY OLUŞTUR
            if (oldCity && newCity && oldCity !== newCity) {
-               console.log(`[Auto-Fork] City changed from ${oldCity} to ${newCity}. Creating new trip ID to prevent overwrite.`);
-               window.activeTripKey = null; // BU SATIR HAYAT KURTARIR: Rome ile bağı koparır.
+               console.log(`[Auto-Fork] Prevent overwrite! ${oldCity} != ${newCity}. Forcing new trip key.`);
+               window.activeTripKey = null; 
            }
       }
   }
-  // ============================================================
+  // =======================================================
 
   let tripTitle;
   if (window.__startedWithMapFlag) {
@@ -254,6 +265,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     window.__startedWithMapFlag = false; 
     window.activeTripKey = null; 
   } else {
+    // Başlık belirleme: Eğer key varsa ve yeni değilse eskisini koru, yoksa yenisini üret
     tripTitle = (
       (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
         ? getAllSavedTrips()[window.activeTripKey].title
@@ -265,7 +277,6 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     );
   }
 
-  // TRIP TITLE HER ZAMAN LATIN OLSUN
   tripTitle = toLatin(tripTitle);
 
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
@@ -279,24 +290,18 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   let tripKey;
 
-  // --- Key Belirleme Bloğu ---
   if (window.activeTripKey) {
-    // Zaten aktif bir trip varsa (ve şehir değişmediyse), ona ekle
     tripKey = window.activeTripKey;
   } else {
-    // Yeni bir trip başlatılıyorsa
     let timestamp = Date.now();
     tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
     window.activeTripKey = tripKey; 
   }
-  // --------------------------------
 
  const tripObj = {
     title: tripTitle,
     date: tripDate,
-    days: window.cart && window.cart.length > 0
-      ? Math.max(...window.cart.map(item => item.day || 1))
-      : 1,
+    days: window.cart && window.cart.length > 0 ? Math.max(...window.cart.map(item => item.day || 1)) : 1,
     cart: window.cart ? JSON.parse(JSON.stringify(window.cart)) : [],
     customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
     lastUserQuery: window.lastUserQuery || "",
@@ -304,17 +309,12 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
-    
-    // AI Info
     aiInfo: (window.cart && window.cart.aiData) ? window.cart.aiData : (window.lastTripAIInfo || null),
-    
-    // FOTOĞRAFLARI KAYDET (Bir önceki adımdaki düzenleme)
-    dayCollageData: window.__dayCollagePhotosByDay || {},
-    
+    dayCollageData: window.__dayCollagePhotosByDay || {}, // FOTOĞRAFLAR KORUNDU
     elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
   };
 
-  // Thumbnail üretimi
+  // Thumbnail logic...
   const thumbnails = {};
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
@@ -378,7 +378,14 @@ function showTripAiInfo(aiInfo) {
   if (aiHighlight) aiHighlight.textContent = aiInfo.highlight || "";
 }
 
+// local_storage.js dosyasında loadTripFromStorage fonksiyonunu bulun ve şu şekilde GÜNCELLEYİN:
+
 function loadTripFromStorage(tripKey) {
+    // 1. ARKA PLAN İŞLEMLERİNİ İPTAL ET (Race Condition Fix)
+    if (typeof window.__planGenerationId !== "undefined") {
+        window.__planGenerationId++; 
+    }
+    
     window.activeTripKey = tripKey;
 
     const trips = getAllSavedTrips();
@@ -392,7 +399,6 @@ function loadTripFromStorage(tripKey) {
       if (typeof window.__ttNewTripToken === 'function') {
         window.__activeTripSessionToken = window.__ttNewTripToken();
       }
-      // FOTOĞRAF YÜKLEME KISMI
       if (t.dayCollageData) {
           window.__dayCollagePhotosByDay = t.dayCollageData;
       } else {
@@ -403,65 +409,39 @@ function loadTripFromStorage(tripKey) {
       console.warn('[collage] Token reset error:', e);
     }
 
-    // ============================================================
-    // --- HARİTA TEMİZLİĞİ ---
-    // ============================================================
-    if (window._maplibre3DInstance) {
-        try { window._maplibre3DInstance.remove(); } catch(e) {}
-        window._maplibre3DInstance = null;
-    }
+    // Harita temizlikleri... (Aynen kalsın)
+    if (window._maplibre3DInstance) { try { window._maplibre3DInstance.remove(); } catch(e) {} window._maplibre3DInstance = null; }
     const map3DElement = document.getElementById('maplibre-3d-view');
     if (map3DElement) map3DElement.remove();
     document.querySelectorAll('#maplibre-3d-view').forEach(el => el.remove());
     document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
-
-    if (window.expandedMaps) {
-        Object.values(window.expandedMaps).forEach(obj => {
-            if (obj && obj.expandedMap) {
-                try { obj.expandedMap.remove(); } catch(_) {}
-            }
-        });
-        window.expandedMaps = {};
-    }
+    if (window.expandedMaps) { Object.values(window.expandedMaps).forEach(obj => { if (obj && obj.expandedMap) { try { obj.expandedMap.remove(); } catch(_) {} } }); window.expandedMaps = {}; }
     document.querySelectorAll('.ctrl-compass').forEach(el => el.style.display = 'none');
 
-    // ============================================================
-    // --- VERİ YÜKLEME VE AI FIX ---
-    // ============================================================
+    // --- VERİ YÜKLEME ---
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
 
-    // --- KRİTİK DÜZELTME BAŞLANGICI ---
-    // Eğer yüklenen gezide AI bilgisi varsa yükle, YOKSA ESKİYİ SİL (İzmir verisi kalmasın)
+    // AI Info Fix
     if (t.aiInfo) {
         window.cart.aiData = t.aiInfo;
         window.lastTripAIInfo = t.aiInfo;
     } else {
         window.cart.aiData = null;
-        window.lastTripAIInfo = null; // Eski gezi verisini temizle
+        window.lastTripAIInfo = null;
     }
-
-    // AI Panelini Güncelle veya Temizle
     const aiSection = document.querySelector('.ai-info-section');
     if (t.aiInfo) {
-        if (!aiSection) {
-            if (typeof window.insertTripAiInfo === "function") window.insertTripAiInfo(null, t.aiInfo);
-        } else {
-            if (typeof window.showTripAiInfo === "function") window.showTripAiInfo(t.aiInfo);
-            aiSection.style.display = 'block';
-        }
+        if (!aiSection) { if (typeof window.insertTripAiInfo === "function") window.insertTripAiInfo(null, t.aiInfo); } 
+        else { if (typeof window.showTripAiInfo === "function") window.showTripAiInfo(t.aiInfo); aiSection.style.display = 'block'; }
     } else {
-        // AI verisi yoksa paneli temizle/gizle
-        if (typeof window.showTripAiInfo === "function") {
-             window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
-        }
+        if (typeof window.showTripAiInfo === "function") window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
         if (aiSection) aiSection.style.display = 'none';
     }
-    // --- KRİTİK DÜZELTME BİTİŞİ ---
 
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
-    // Data normalizasyonu
+    // Data normalizasyonu (Aynen kalsın)
     window.cart = window.cart.map(item => {
         item.day = (item.day == null || isNaN(Number(item.day))) ? 1 : Number(item.day);
         if (item.location) {
@@ -470,47 +450,48 @@ function loadTripFromStorage(tripKey) {
         }
         return item;
     });
-
     patchCartLocations();
 
     window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
-    window.lastUserQuery = t.lastUserQuery || t.title || "";
+    
+    // === BAŞLIK DÜZELTME (FIX) ===
+    // Kayıtlı başlık bozuk olsa bile (örn: İzmir yazsa bile), 
+    // seçili şehir (Antalya) üzerinden başlığı zorla düzeltiyoruz.
     window.selectedCity = t.selectedCity || "";
+    
+    if (window.selectedCity && window.selectedCity.trim().length > 0) {
+        // Format: "Antalya trip plan" (Her zaman şehre sadık kal)
+        window.lastUserQuery = toLatin(window.selectedCity) + " trip plan";
+    } else {
+        // Şehir yoksa eski başlığı kullan
+        window.lastUserQuery = t.lastUserQuery || t.title || "Trip Plan";
+    }
+    // =============================
 
-    // --- UI Güncellemeleri ---
+    // UI Güncellemeleri
     const chatBox = document.getElementById("chat-box");
     if (chatBox) chatBox.innerHTML = "";
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
 
-    if (typeof updateTripTitle === "function") updateTripTitle();
+    if (typeof updateTripTitle === "function") updateTripTitle(); // Düzeltilmiş başlığı basar
     if (typeof updateCart === "function") updateCart();
     if (typeof showResults === "function") showResults();
     if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
 
-    // --- Rota Çizimi ---
+    // Rota Çizimi (Aynen kalsın)
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
-
     setTimeout(async () => {
-        Object.values(window.leafletMaps || {}).forEach(map => {
-            if (map && typeof map.invalidateSize === 'function') map.invalidateSize();
-        });
-
+        Object.values(window.leafletMaps || {}).forEach(map => { if (map && typeof map.invalidateSize === 'function') map.invalidateSize(); });
         if (maxDay > 0) await renderRouteForDay(1); 
         for (let day = 2; day <= maxDay; day++) { renderRouteForDay(day); }
         saveTripAfterRoutes();
     }, 100);
 
     setTimeout(function() {
-        document.querySelectorAll('.scale-bar-track').forEach(track => {
-            if (typeof track.handleResize === "function") track.handleResize();
-        });
-        document.querySelectorAll('.splide').forEach(sliderElem => {
-            if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
-                sliderElem._splideInstance.refresh();
-            }
-        });
+        document.querySelectorAll('.scale-bar-track').forEach(track => { if (typeof track.handleResize === "function") track.handleResize(); });
+        document.querySelectorAll('.splide').forEach(sliderElem => { if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') sliderElem._splideInstance.refresh(); });
     }, 350);
 
     return true;
