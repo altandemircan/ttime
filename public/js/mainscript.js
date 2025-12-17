@@ -11321,28 +11321,26 @@ function renderCollageSlides(collage, images, searchObj) {
 }
 // mainscript.js içine ekleyin veya güncelleyin
 
+// === mainscript.js GÜNCELLEMESİ (Day X Slider için Pixabay Zorlaması) ===
+
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;
     if (!term) return [];
 
     const limit = options.min || 6;
-    // Gönderilen sayfa numarasını al, yoksa 1 kabul et
+    // Sayfa numarası varsa kullan, yoksa 1
     const page = options.page || 1; 
 
-    // URL'e page parametresini ekliyoruz
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
+    // ÖNEMLİ: URL'e '&source=pixabay' ekleyerek backend'e Pixabay kullanmasını söylüyoruz.
+    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&source=pixabay&count=${limit}&page=${page}`; 
 
     try {
         const res = await fetch(url);
         if (!res.ok) return [];
-        
         const data = await res.json();
-        if (data.images && Array.isArray(data.images)) {
-            return data.images;
-        }
-        return [];
+        return data.images || [];
     } catch (e) {
-        console.warn("Slider fetch error:", e);
+        console.error("Collage image fetch error:", e);
         return [];
     }
-};
+}
