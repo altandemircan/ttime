@@ -11529,60 +11529,82 @@ function renderCollageSlides(collage, images, searchObj) {
 // Put this at the VERY END of mainscript.js
 // ===============================
 // ===============================
-// COLLAGE FINAL OVERRIDE v3 (Pixabay-only, correct parsing of /slider {images:[...]})
+// COLLAGE FINAL OVERRIDE v4 (Pixabay-only, FIXED PARSER)
 // Put this at the VERY END of mainscript.js
 // ===============================
-(function collageFinalOverride_v3() {
-  if (window.__ttCollageFinalOverrideApplied_v3) return;
-  window.__ttCollageFinalOverrideApplied_v3 = true;
+(function collageFinalOverride_v4() {
+  if (window.__ttCollageFinalOverrideApplied_v4) return;
+  window.__ttCollageFinalOverrideApplied_v4 = true;
 
   const log = (...a) => console.log('[collage]', ...a);
   const warn = (...a) => console.warn('[collage]', ...a);
 
-  const isPexelsUrl = (u) => typeof u === 'string' && /pexels\.com/i.test(u);
+  function isPexelsUrl(u) {
+    return typeof u === 'string' && /pexels\.com/i.test(u);
+  }
 
-  function uniq(arr) {
-    const s = new Set();
-    const out = [];
-    for (const x of (arr || [])) {
-      const v = (x || '').toString().trim();
-      if (!v) continue;
-      if (s.has(v)) continue;
-      s.add(v);
-      out.push(v);
-    }
-    return out;
+  function normalizeImages(data) {
+    // Proxy expected: { images: [...] }
+    let arr = [];
+
+    if (Array.isArray(data?.images)) arr = data.images;
+    else if (Array.isArray(data?.hits)) {
+      // direct pixabay api format fallback
+      arr = data.hits.map(h => h?.webformatURL || h?.largeImageURL).filter(Boolean);
+    } else if (Array.isArray(data?.data)) arr = data.data;
+    else if (Array.isArray(data?.results)) arr = data.results;
+    else if (Array.isArray(data)) arr = data;
+
+    // sanitize
+    arr = arr
+      .filter(u => typeof u === 'string')
+      .map(u => u.trim())
+      .filter(u => u.length > 10)
+      .filter(u => !isPexelsUrl(u));
+
+    // unique
+    const seen = new Set();
+    arr = arr.filter(u => (seen.has(u) ? false : (seen.add(u), true)));
+
+    return arr;
   }
 
   async function fetchPixabaySlider(term, limit, page) {
     const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&count=${limit}&page=${page}`;
     const res = await fetch(url);
     const status = res.status;
-    const data = await res.json().catch(() => ({}));
 
-    // PROXY FORMAT: { images: [...] }
-    let images = Array.isArray(data?.images) ? data.images : [];
+    if (!res.ok) {
+      throw new Error(`slider http ${status}`);
+    }
 
-    // Safety: allow also direct array (just in case)
-    if (!images.length && Array.isArray(data)) images = data;
-
-    // Normalize + filter only obvious junk
-    images = images
-      .filter(u => typeof u === 'string')
-      .map(u => u.trim())
-      .filter(u => u.length > 10)
-      .filter(u => !isPexelsUrl(u));
+    const data = await res.json();
+    const images = normalizeImages(data);
 
     log('slider parsed', {
       term,
       status,
       url: res.url,
-      rawKeys: Object.keys(data || {}),
+      rawKeys: data && typeof data === 'object' ? Object.keys(data) : [],
       parsedLen: images.length,
-      sample: images.slice(0, 2),
+      sample: images.slice(0, 2)
     });
 
     return images;
+  }
+
+  function uniq(arr) {
+    const out = [];
+    const s = new Set();
+    (arr || []).forEach(x => {
+      if (typeof x !== 'string') return;
+      const v = x.trim();
+      if (!v) return;
+      if (s.has(v)) return;
+      s.add(v);
+      out.push(v);
+    });
+    return out;
   }
 
   window.getCityCollageImages = async function getCityCollageImages(searchObj, options = {}) {
@@ -11594,6 +11616,8 @@ function renderCollageSlides(collage, images, searchObj) {
     const term = rawTerm.trim() || 'Turkey';
 
     window.__dayCollagePhotosByDay = window.__dayCollagePhotosByDay || {};
+
+    // cache (only if non-empty)
     const cached = window.__dayCollagePhotosByDay[day];
     if (Array.isArray(cached) && cached.length >= 3) return cached;
 
@@ -11603,6 +11627,8 @@ function renderCollageSlides(collage, images, searchObj) {
       `${term} city`,
       `${term} travel`,
       `${term} old town`,
+      `${term} skyline`,
+      `${term} beach`,
     ]);
 
     for (const q of queries) {
@@ -11610,7 +11636,6 @@ function renderCollageSlides(collage, images, searchObj) {
         const imgs = await fetchPixabaySlider(q, min, page);
         if (imgs.length) {
           window.__dayCollagePhotosByDay[day] = imgs;
-          log('images ok', { day, q, count: imgs.length });
           return imgs;
         }
         log('0 images AFTER PARSE', { day, q });
@@ -11650,8 +11675,7 @@ function renderCollageSlides(collage, images, searchObj) {
       collage.innerHTML = `
         <div style="padding:22px; text-align:center; color:#777; font-size:13px;">
           No photos available for <b>${cityName}</b> (Pixabay).
-        </div>
-      `;
+        </div>`;
       return;
     }
 
@@ -11679,8 +11703,7 @@ function renderCollageSlides(collage, images, searchObj) {
                     padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">
           ${cityName}
         </div>
-        <div class="collage-track"
-             style="display:flex; transition:transform .4s ease-out; will-change:transform; transform:translateX(0%);">
+        <div class="collage-track" style="display:flex; transition:transform .4s ease-out; will-change:transform; transform:translateX(0%);">
           ${slidesHtml}
         </div>
       </div>
@@ -11712,5 +11735,5 @@ function renderCollageSlides(collage, images, searchObj) {
     update();
   };
 
-  log('Final override v3 applied (Pixabay-only).');
+  log('Final override v4 applied (Pixabay-only).');
 })();
