@@ -5729,16 +5729,14 @@ ease;
 }
 
 .expand-map-btn {
-    box-shadow: 0 0px 6px rgba(0, 0, 0, 0.00), 0 3px 6px rgba(0, 0, 0, 0.05);
-    display: flex;
+        display: flex;
     align-items: center;
     gap: 8px;
     padding: 6px 12px;
-    background: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    transition: all 0.2s 
-ease;
+    background: #f3f3f3;
+    border: none;
+    border-radius: 21px;
+    transition: all 0.2s ease;
     font-size: 13px;
     font-weight: 600;
 }
