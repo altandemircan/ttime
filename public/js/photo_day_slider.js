@@ -16,12 +16,10 @@ if (!window.__activeTripSessionToken) {
 // Global Cache ve Takip Objeleri
 window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
 window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
-
-// YENİ: Hangi kelimenin kaçıncı sayfasında kaldığımızı tutar (Antalya: 1, Antalya: 2...)
 window.__apiPageTracker = window.__apiPageTracker || {}; 
 
 
-// 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
+// 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA (DAHA GÜÇLÜ)
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
     if (!info) return { term: fallbackCity, context: "", country: "" };
@@ -29,30 +27,48 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const props = info.properties || {};
     const addr = info.address || props.address || {}; 
 
+    // Adres bileşenlerini normalize et
+    const suburb = addr.suburb || addr.neighbourhood || props.suburb || "";
     const district = addr.district || addr.county || props.district || props.county || "";
     const city = addr.city || addr.town || addr.village || props.city || props.town || "";
     const state = addr.state || addr.province || props.state || "";
-    const country = addr.country || props.country || "Turkey"; 
+    const country = addr.country || props.country || "Turkey";
 
-    // İlçe varsa
-    if (district && district.toLowerCase() !== state.toLowerCase()) {
+    // 1. ADIM: İLÇE TESPİTİ (District)
+    // Şehir ismiyle aynı değilse ve "Merkez" değilse ilçedir.
+    let term = "";
+    if (district && district.toLowerCase() !== state.toLowerCase() && district.toLowerCase() !== city.toLowerCase()) {
         if (!district.toLowerCase().includes("merkez")) {
-            return { term: district, context: state || city, country: country }; 
+            term = district;
         }
     }
-    // Şehir varsa
-    if (city) return { term: city, context: state, country: country };
-    if (state) return { term: state, context: "", country: country };
 
-    // Fallback
-    return { term: fallbackCity, context: "", country: country || "Turkey" };
+    // 2. ADIM: ŞEHİR TESPİTİ (Context)
+    // Şehir bilgisi city veya state içinde olabilir.
+    // Türkiye'de genellikle 'province' (state) il adıdır.
+    let context = city;
+    if (!context && state) context = state;
+    
+    // Eğer hiçbiri yoksa fallback kullan
+    if (!term && !context) {
+        term = fallbackCity;
+    } else if (!term) {
+        // İlçe yoksa, terim şehirdir
+        term = context;
+    }
+
+    return { 
+        term: term || context || fallbackCity, 
+        context: context || term || "", 
+        country: country 
+    };
 }
 
 // ŞEHİR İSMİNİ CACHE'LEME
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v4_${latKey}_${lngKey}`; // v4 yaptık, temizlensin
+    const storageKey = `tt_loc_name_v5_${latKey}_${lngKey}`; // v5 yaptık, temizlensin
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -64,7 +80,7 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            if (result && result.term && result.term !== fallbackCity) {
+            if (result && result.term) {
                 try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
             return result;
@@ -77,11 +93,11 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA (SAYFA TAKİP SİSTEMİ ENTEGRELİ)
+// 3. GÖRSEL ARAMA (YANLIŞ SONUÇ FİLTRESİ)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    const baseTerm = searchObj.term;
-    const context = searchObj.context || "";
+    const baseTerm = searchObj.term; // Örn: Kepez
+    const context = searchObj.context; // Örn: Antalya
     const country = searchObj.country || "Turkey";
 
     if (!baseTerm) return [];
@@ -95,30 +111,42 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         options.exclude.forEach(u => seenUrls.add(u));
     }
 
-    // Arama Sorguları
+    // --- SORGULARI OLUŞTUR ---
     const queries = [];
     const buildQuery = (...parts) => {
         return [...new Set(parts.map(p => (p || "").trim()).filter(Boolean))].join(" ");
     };
 
-    // 1. Antalya Turkey tourism landmark (En güçlü)
-    queries.push(buildQuery(baseTerm, context, country, "tourism landmark"));
-    // 2. Antalya Turkey (Genel)
-    queries.push(buildQuery(baseTerm, country));
-    // 3. Turkey tourism (Fallback)
-    if (country) {
+    // 1. ÖNCELİK: İlçe + Şehir + Ülke (Kepez Antalya Turkey tourism)
+    queries.push(buildQuery(baseTerm, context, country, "tourism"));
+
+    // 2. ÖNCELİK: Şehir + Ülke (Antalya Turkey landmark)
+    // Eğer ilçe bulunamazsa, hemen ülkeye düşme! Şehri ara.
+    if (context && context !== baseTerm) {
+        queries.push(buildQuery(context, country, "tourism landmark"));
+        queries.push(buildQuery(context, country, "travel")); // Şehir yedeği
+    } else {
+        // Eğer ilçe ile şehir aynıysa (Merkez), "Antalya Turkey" ara
+        queries.push(buildQuery(baseTerm, country, "travel"));
+    }
+
+    // 3. SON ÇARE: Sadece Ülke (AMA DİKKAT!)
+    // Eğer elimizde geçerli bir ŞEHİR (Context) varsa, sadece ülke araması yapma!
+    // Çünkü "Turkey travel" ararsan İstanbul gelir.
+    // Sadece şehir bilgimiz HİÇ yoksa ülke ara.
+    if (!context) {
         queries.push(buildQuery(country, "tourism travel"));
     }
 
+    // --- ARAMA DÖNGÜSÜ ---
     for (const query of queries) {
         if (accumulatedImages.length >= limit) break;
 
-        // --- SAYFA TAKİP SİSTEMİ (FIX BURADA) ---
-        // Bu sorgu daha önce kullanıldıysa bir sonraki sayfayı iste
+        // Sayfa Takip: Bu sorguyu daha önce kaç kere yaptık?
         const trackerKey = query.replace(/\s+/g, '_').toLowerCase();
         let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
 
-        // Biraz bol iste (duplicate çıkarsa eleriz)
+        // İstek sayısı
         const needed = limit - accumulatedImages.length;
         const fetchCount = Math.max(needed + 2, 4);
 
@@ -130,18 +158,18 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                 const data = await res.json();
                 const fetchedImages = data.images || data || [];
 
-                let foundNew = false;
+                let foundNewForThisPage = false;
                 for (const imgUrl of fetchedImages) {
                     if (accumulatedImages.length >= limit) break;
-                    // Global olarak daha önce kullanıldı mı?
+                    
                     if (!seenUrls.has(imgUrl)) {
                         accumulatedImages.push(imgUrl);
                         seenUrls.add(imgUrl);
-                        foundNew = true;
+                        foundNewForThisPage = true;
                     }
                 }
 
-                // Eğer bu sayfadan veri geldiyse, bir sonraki sefer için sayfa sayısını artır
+                // Eğer bu sayfadan resim geldiyse, bir sonraki sefere sayfa numarasını artır
                 if (fetchedImages.length > 0) {
                     window.__apiPageTracker[trackerKey] = pageToFetch + 1;
                 }
@@ -211,9 +239,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // Cache Key (v4 - temizlensin diye)
+    // Cache Key (v5)
     const safeTerm = searchObj.term.replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v4_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v5_${day}_${safeTerm}_pixabay`;
     
     let images = [];
     let fromCache = false;
@@ -230,17 +258,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         }
     } catch (e) {}
 
-    // E. API'den Çek (Cache yoksa)
+    // E. API'den Çek
     if (!fromCache || images.length === 0) {
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
         if (typeof window.getCityCollageImages === 'function') {
             
-            // Sayfa numarası artık getCityCollageImages içinde
-            // window.__apiPageTracker tarafından dinamik yönetiliyor.
-            // Buradan parametre göndermeye gerek yok veya boş gönderebiliriz.
-            
-            console.log(`[Collage] API Çekiliyor: Gün ${day} -> ${searchObj.term}`);
+            // Sayfa numarası artık getCityCollageImages içinde dinamik
+            console.log(`[Collage] API: ${searchObj.term}, ${searchObj.context}, ${searchObj.country}`);
             
             images = await window.getCityCollageImages(searchObj, {
                 min: 4, 
@@ -270,7 +295,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (INFO ICON & TOOLTIP DAHİL)
+// 5. SLIDER RENDERER (INFO ICON & TOOLTIP)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
