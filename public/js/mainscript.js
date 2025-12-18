@@ -5381,27 +5381,34 @@ function updateRouteStatsUI(day) {
 }
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (DEBUG MODU) ===
+// ============================================================
+// SCALE BAR DRAG GLOBAL HANDLERLARI (MOBİL FIX)
+// ============================================================
 function setupScaleBarInteraction(day, map) {
-    const scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    // Mobilde Expanded Map içindeki scale barı hedefle
+    let scaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     
-    // Güvenlik kontrolleri
+    // Bulamazsa normal (küçük) haritadakini dene
+    if (!scaleBar) {
+        scaleBar = document.getElementById(`route-scale-bar-day${day}`);
+    }
+    
     if (!scaleBar || !map) return;
 
-    // --- 1. Rota Verisini (Geometriyi) Al ---
+    // --- 1. Rota Verisini (Geometriyi) Canlı Al ---
     function getRouteGeometry() {
         const containerId = `route-map-day${day}`;
         let coordinates = [];
         let source = "none";
 
-        // A) ÖNCELİK 1: Fly Mode Kavisli Yol (Curved Arc)
+        // A) Fly Mode (Kavisli)
         if (window._curvedArcPointsByDay && window._curvedArcPointsByDay[day] && window._curvedArcPointsByDay[day].length > 0) {
              const arcPts = window._curvedArcPointsByDay[day];
-             // Veri [Lng, Lat] gelebilir, kontrol edip [Lat, Lng] yapıyoruz
-             coordinates = arcPts.map(p => [p[1], p[0]]); 
+             coordinates = arcPts.map(p => [p[1], p[0]]); // [Lat, Lng]
              source = "fly_arc";
         }
 
-        // B) ÖNCELİK 2: OSRM/VPS Detaylı Rota (GeoJSON)
+        // B) GeoJSON (OSRM/VPS)
         if (coordinates.length === 0) {
             const geojson = window.lastRouteGeojsons && window.lastRouteGeojsons[containerId];
             if (geojson && geojson.features && geojson.features[0]?.geometry?.coordinates) {
@@ -5413,7 +5420,7 @@ function setupScaleBarInteraction(day, map) {
             }
         }
 
-        // C) ÖNCELİK 3: Sepet (Cart) Düz Çizgi
+        // C) Düz Çizgi (Fallback)
         if (coordinates.length === 0 && window.cart) {
             const rawPts = window.cart
                 .filter(i => i.day == day && i.location && !isNaN(i.location.lat))
@@ -5423,7 +5430,6 @@ function setupScaleBarInteraction(day, map) {
                 source = "straight";
             }
         }
-
         return { coordinates, source };
     }
 
@@ -5431,10 +5437,8 @@ function setupScaleBarInteraction(day, map) {
     function buildGeomCache() {
         const { coordinates, source } = getRouteGeometry();
         if (!coordinates || coordinates.length < 2) return null;
-
         let totalDist = 0;
-        const distIndex = [0]; // Kümülatif mesafeler
-
+        const distIndex = [0];
         for (let i = 1; i < coordinates.length; i++) {
             const prev = coordinates[i - 1];
             const curr = coordinates[i];
@@ -5442,24 +5446,16 @@ function setupScaleBarInteraction(day, map) {
             totalDist += d;
             distIndex.push(totalDist);
         }
-
-        return {
-            coords: coordinates,
-            dists: distIndex,
-            totalLen: totalDist,
-            source: source // Kaynağı da sakla
-        };
+        return { coords: coordinates, dists: distIndex, totalLen: totalDist, source: source };
     }
 
-    scaleBar._routeCache = null;
-    
-    // --- 3. Marker Oluşturma/Güncelleme ---
+    // --- 3. Marker Güncelleme ---
     const updateMarkerPosition = (lat, lng) => {
-        const is3DMode = document.getElementById('maplibre-3d-view') && 
-                         document.getElementById('maplibre-3d-view').style.display !== 'none';
+        // 3D Kontrolü
+        const is3DMode = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
         
         if (is3DMode && window._maplibre3DInstance) {
-            if (!window._hoverMarker3D) {
+           if (!window._hoverMarker3D) {
                 const el = document.createElement('div');
                 el.className = 'hover-marker-3d';
                 el.style.cssText = 'background: #8a4af3; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(138, 74, 243, 0.8); pointer-events: none;';
@@ -5470,32 +5466,29 @@ function setupScaleBarInteraction(day, map) {
                 window._hoverMarker3D.setLngLat([lng, lat]);
             }
         } else {
-            let marker = window._hoverMarkersByDay ? window._hoverMarkersByDay[day] : null;
+            // 2D Marker (Expanded veya Normal harita ayrımı için map ID kullanıyoruz)
+            const markerKey = map._container.id || `map_day_${day}`; 
+            
+            window._hoverMarkersMap = window._hoverMarkersMap || {}; 
+            
+            let marker = window._hoverMarkersMap[markerKey];
+
             if (!marker || !map.hasLayer(marker)) {
                 const iconHtml = `<div style="background:#8a4af3;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>`;
-                const icon = L.divIcon({ 
-                    className: 'tt-hover-marker-icon', 
-                    html: iconHtml, 
-                    iconSize: [18, 18], 
-                    iconAnchor: [9, 9] 
-                });
-                marker = L.marker([lat, lng], { 
-                    icon: icon, 
-                    zIndexOffset: 9999, 
-                    interactive: false 
-                }).addTo(map);
-                window._hoverMarkersByDay = window._hoverMarkersByDay || {};
-                window._hoverMarkersByDay[day] = marker;
+                const icon = L.divIcon({ className: 'tt-hover-marker-icon', html: iconHtml, iconSize: [18, 18], iconAnchor: [9, 9] });
+                marker = L.marker([lat, lng], { icon: icon, zIndexOffset: 9999, interactive: false }).addTo(map);
+                window._hoverMarkersMap[markerKey] = marker;
             }
             marker.setLatLng([lat, lng]);
         }
     };
 
-    // --- 4. Mouse Event Handler ---
+    // --- 4. Hareket Handler (DÜZELTİLDİ: Her harekette cache yenile) ---
     const handleMove = (e) => {
-        if (!scaleBar._routeCache) {
-            scaleBar._routeCache = buildGeomCache();
-        }
+        // [MOBİL FIX]: Her 'move' olayında rotayı yeniden alıyoruz.
+        // Bu sayede rota değiştiyse anında yansır, "eski rota" sorunu çözülür.
+        scaleBar._routeCache = buildGeomCache();
+        
         const cache = scaleBar._routeCache;
         if (!cache) return;
 
@@ -5504,51 +5497,34 @@ function setupScaleBarInteraction(day, map) {
         
         let percent = (clientX - rect.left) / rect.width;
         percent = Math.max(0, Math.min(1, percent));
-
+        
         let targetMetre = 0;
-
-        // === [FIX] ORAN HESABI (FLY MODE SENKRONİZASYONU) ===
-        // Geometri uzunluğu (Eğri) / Özet uzunluğu (Düz)
+        
+        // Ratio ve Segment hesabı
         let geometryRatio = 1.0;
         const containerId = `route-map-day${day}`;
         const summary = window.lastRouteSummaries && window.lastRouteSummaries[containerId];
         
-        // Eğer Fly Mode ise veya geometri özeten büyükse oranı hesapla
         if (cache.source === 'fly_arc' && summary && summary.distance > 0) {
-            geometryRatio = cache.totalLen / summary.distance; 
+            geometryRatio = cache.totalLen / summary.distance;
         }
-        // ====================================================
 
-        // === SEGMENT (ZOOM) KONTROLÜ ===
-        if (
-            window._lastSegmentDay === day && 
-            typeof window._lastSegmentStartKm === 'number' && 
-            typeof window._lastSegmentEndKm === 'number'
-        ) {
+        if ( window._lastSegmentDay === day && typeof window._lastSegmentStartKm === 'number' && typeof window._lastSegmentEndKm === 'number' ) {
             const startKm = window._lastSegmentStartKm;
             const endKm = window._lastSegmentEndKm;
-            // Mevcut km (Özet verisine göre)
             const currentKm = startKm + (percent * (endKm - startKm));
-            
-            // [FIX] Kilometreyi Metreye çevirip ORAN ile çarpıyoruz.
-            // Böylece 100km'lik düz yolun sonu, 120km'lik eğrinin sonuna denk gelir.
-            targetMetre = (currentKm * 1000) * geometryRatio; 
-
+            targetMetre = (currentKm * 1000) * geometryRatio;
         } else {
-            // Segment yoksa direkt geometri üzerindeki yüzdeyi al (Zaten tam boy)
             targetMetre = percent * cache.totalLen;
         }
 
         if (targetMetre > cache.totalLen) targetMetre = cache.totalLen;
         if (targetMetre < 0) targetMetre = 0;
 
-        // Koordinat bulma (Interpolasyon)
+        // Koordinat bulma
         let idx = 0;
         for (let i = 0; i < cache.dists.length; i++) {
-            if (cache.dists[i] >= targetMetre) {
-                idx = i;
-                break;
-            }
+            if (cache.dists[i] >= targetMetre) { idx = i; break; }
         }
 
         let lat, lng;
@@ -5558,11 +5534,10 @@ function setupScaleBarInteraction(day, map) {
             const d1 = cache.dists[idx - 1];
             const d2 = cache.dists[idx];
             const segmentDist = d2 - d1;
-            const segmentRatio = (segmentDist > 0) ? (targetMetre - d1) / segmentDist : 0;
-
+            const segmentRatio = (segmentDist > 0.0001) ? (targetMetre - d1) / segmentDist : 0;
+            
             const p1 = cache.coords[idx - 1];
             const p2 = cache.coords[idx];
-
             lat = p1[0] + (p2[0] - p1[0]) * segmentRatio;
             lng = p1[1] + (p2[1] - p1[1]) * segmentRatio;
         }
@@ -5572,10 +5547,12 @@ function setupScaleBarInteraction(day, map) {
         }
     };
 
+    // Temizlik
     const cleanup = () => {
-        if (window._hoverMarkersByDay && window._hoverMarkersByDay[day]) {
-            try { map.removeLayer(window._hoverMarkersByDay[day]); } catch(e){}
-            delete window._hoverMarkersByDay[day];
+        const markerKey = map._container.id || `map_day_${day}`;
+        if (window._hoverMarkersMap && window._hoverMarkersMap[markerKey]) {
+            try { map.removeLayer(window._hoverMarkersMap[markerKey]); } catch(e){}
+            delete window._hoverMarkersMap[markerKey];
         }
         if (window._hoverMarker3D) {
             try { window._hoverMarker3D.remove(); } catch(e){}
@@ -5583,6 +5560,7 @@ function setupScaleBarInteraction(day, map) {
         }
     };
 
+    // Event Listener Yönetimi
     if (scaleBar._activeHandler) {
         scaleBar.removeEventListener('mousemove', scaleBar._activeHandler);
         scaleBar.removeEventListener('touchmove', scaleBar._activeHandler);
@@ -5592,11 +5570,9 @@ function setupScaleBarInteraction(day, map) {
 
     scaleBar.addEventListener('mousemove', handleMove);
     scaleBar.addEventListener('touchmove', handleMove, { passive: true });
+    
     scaleBar.addEventListener('mouseleave', cleanup);
     scaleBar.addEventListener('touchend', cleanup);
-    scaleBar.addEventListener('mouseenter', () => {
-         scaleBar._routeCache = buildGeomCache();
-    });
 
     scaleBar._activeHandler = handleMove;
     scaleBar._activeCleanup = cleanup;
