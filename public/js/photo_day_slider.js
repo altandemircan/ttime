@@ -18,7 +18,7 @@ window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
 window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
 
 
-// 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA (GÜNCELLENDİ)
+// 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
     if (!info) return { term: fallbackCity, context: "", country: "" };
@@ -32,11 +32,9 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const state = addr.state || addr.province || props.state || "";
     const country = addr.country || props.country || "";
 
-    // 1. KURAL: İlçe (District) var mı? (Örn: Miraflores, Kadıköy)
-    // Şehir ile ilçe aynı değilse ilçeyi al
+    // 1. KURAL: İlçe (District) var mı? (Örn: Kaş, Alanya)
     if (district && district.toLowerCase() !== state.toLowerCase()) {
         if (!district.toLowerCase().includes("merkez")) {
-            // Dönüş objesine 'country' eklendi
             return { term: district, context: state || city, country: country }; 
         }
     }
@@ -49,7 +47,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     return { term: fallbackCity, context: "", country: "" };
 }
 
-// GÜNCELLENDİ: ŞEHİR İSMİNİ DE CACHE'LİYORUZ
+// GÜNCELLENDİ: ŞEHİR İSMİNİ DE CACHE'LİYORUZ (Limit Aşımını Önler)
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     // A. Önce LocalStorage Cache'ine Bak
     const latKey = Number(lat).toFixed(4);
@@ -88,9 +86,9 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 // 3. GÖRSEL ARAMA (AKILLI SORGULAMA ZİNCİRİ)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    const baseTerm = searchObj.term; // Örn: Miraflores
-    const context = searchObj.context || ""; // Örn: Lima
-    const country = searchObj.country || ""; // Örn: Peru
+    const baseTerm = searchObj.term;
+    const context = searchObj.context || "";
+    const country = searchObj.country || "";
 
     if (!baseTerm) return [];
 
@@ -104,42 +102,37 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         options.exclude.forEach(u => seenUrls.add(u));
     }
 
-    // --- SORGULARI OLUŞTUR (District + City + Country) ---
-    // Bu liste sırasıyla denenecek.
+    // --- ARAMA STRATEJİLERİ LİSTESİ ---
     const queries = [];
 
-    // Yardımcı: Kelimeleri birleştir, tekrar edenleri temizle (Örn: Lima Peru Peru -> Lima Peru)
+    // Yardımcı: Kelimeleri birleştir
     const buildQuery = (...parts) => {
         return [...new Set(parts.map(p => (p || "").trim()).filter(Boolean))].join(" ");
     };
 
     // 1. EN KAPSAMLI: "Miraflores Lima Peru tourism landmark"
-    // Bu en isabetli sonucu verir.
     queries.push(buildQuery(baseTerm, context, country, "tourism landmark"));
 
-    // 2. SADECE YER VE ÜLKE: "Miraflores Peru" veya "Lima Peru"
-    // (Turizm kelimesi bazen sonucu çok daraltabilir, bunu da deneyelim)
+    // 2. SADECE YER VE ÜLKE: "Miraflores Peru"
     queries.push(buildQuery(baseTerm, country));
 
-    // 3. FALLBACK: Sadece Bağlam (Eğer ilçe bulunamazsa şehri dene)
-    // Örn: "Lima Peru tourism"
+    // 3. FALLBACK: Şehir + Ülke (İlçe yoksa)
     if (context && context !== baseTerm) {
         queries.push(buildQuery(context, country, "tourism"));
     }
 
-    // 4. SON ÇARE: Sadece Ülke (Hiçbir şey yoksa boş kalmasın)
+    // 4. SON ÇARE: Sadece Ülke
     if (country) {
         queries.push(buildQuery(country, "travel"));
     }
 
     // --- DÖNGÜ ---
     for (const query of queries) {
-        if (accumulatedImages.length >= limit) break; // Yeterince bulduysak çık
+        if (accumulatedImages.length >= limit) break;
 
         const needed = limit - accumulatedImages.length;
-        const fetchCount = Math.max(needed + 2, 4); 
+        const fetchCount = Math.max(needed + 2, 4);
 
-        // image_type=photo ve category=travel ile filtrele
         const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${page}&source=pixabay&image_type=photo&category=travel`;
 
         try {
@@ -176,6 +169,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     if (!collage) {
         collage = document.createElement('div');
         collage.className = 'day-collage';
+        // Min-height, görsel yüklenene kadar alanın çökmesini engeller
         collage.style.cssText = "margin: 30px 0 10px 0; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
     }
 
@@ -184,15 +178,18 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     if (list) {
         const addBtn = list.querySelector('.add-more-btn');
         if (addBtn) {
+            // Buton varsa, collage'ı butonun hemen sonrasına (altına) ekle
             if (addBtn.nextElementSibling !== collage) {
                 addBtn.insertAdjacentElement('afterend', collage);
             }
         } else {
+            // Buton yoksa listenin en sonuna ekle (Fallback)
             if (list.lastElementChild !== collage) {
                 list.appendChild(collage);
             }
         }
     } else {
+        // Liste hiç yoksa container'a ekle (Fallback)
         dayContainer.appendChild(collage);
     }
 
@@ -221,7 +218,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // İsim sabitlendiği için bu KEY de artık sabit kalacak.
     const safeTerm = searchObj.term.replace(/\s+/g, '_');
     const cacheKey = `tt_day_collage_${day}_${safeTerm}_pixabay_v1`;
     
@@ -236,9 +232,12 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
                 images = parsed;
                 fromCache = true;
                 images.forEach(img => usedSet.add(img));
+                console.log(`[Collage] Loaded from localStorage (Pixabay) for Day ${day}:`, searchObj.term);
             }
         }
-    } catch (e) {}
+    } catch (e) {
+        console.warn("[Collage] Storage read error:", e);
+    }
 
     // E. API'den Çek (Cache yoksa)
     if (!fromCache || images.length === 0) {
@@ -254,7 +253,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             }
             if (!pageNum || pageNum < 1) pageNum = 1;
 
-            console.log(`[Collage] API: ${searchObj.term} ${searchObj.country} -> Pixabay`);
+            console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Kaynak: Pixabay`);
             
             // 4 ADET GÖRSEL
             images = await window.getCityCollageImages(searchObj, {
@@ -270,7 +269,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             images.forEach(img => usedSet.add(img));
             try {
                 localStorage.setItem(cacheKey, JSON.stringify(images));
-            } catch (e) {}
+            } catch (e) {
+                console.warn("[Collage] Storage write error:", e);
+            }
         }
     }
 
@@ -284,7 +285,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER
+// 5. SLIDER RENDERER (INFO ICON VE TOOLTIP EKLENDİ)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
@@ -303,6 +304,24 @@ function renderCollageSlides(collage, images, searchObj) {
     const badgeHtml = displayTerm
       ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${displayTerm}</div>`
       : "";
+
+    // --- YENİ EKLENEN KISIM: Info İkonu ve Tooltip ---
+    // Konum: Sağ Alt Köşe (bottom: 10px, right: 10px)
+    // Tooltip: Üstte açılacak şekilde (bottom: 100%)
+    const infoIconHtml = `
+    <span class="info-icon-wrapper" style="position: absolute; right: 10px; bottom: 10px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: help; z-index: 10;">
+        <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info" style="width: 18px; height: 18px; opacity: 0.7;">
+        
+        <div class="info-tooltip" style="display: none; position: absolute; bottom: 100%; right: 0; width: 220px; background: #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;">
+            Photos associated with this place are matched by analyzing search results and may not reflect reality.
+            <div style="position: absolute; bottom: -6px; right: 10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #333;"></div>
+        </div>
+    </span>
+    <style>
+        /* Sadece bu wrapper üzerindeyken tooltip görünsün */
+        .info-icon-wrapper:hover .info-tooltip { display: block !important; }
+    </style>
+    `;
   
     collage.innerHTML = `
       ${topHeaderHtml}
@@ -312,6 +331,7 @@ function renderCollageSlides(collage, images, searchObj) {
       </div>
       <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
       <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
+      ${infoIconHtml}
     `;
   
     const track = collage.querySelector(".collage-track");
