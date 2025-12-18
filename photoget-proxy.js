@@ -1,15 +1,22 @@
+require('dotenv').config(); // .env dosyasını okumak için gerekli
 const express = require('express');
 const fetch = require('node-fetch');
 const router = express.Router();
 
-// API anahtarlarını buraya göm, kodda görünmez!
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY || "6ImCnE5JqwodPohCUGrjLidyyay3nVxBNs8cfTWmM4QxhotFpIORSgkJ";
-const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY || "5665396-cecac079f1dc817f19e65bb40";
+// API anahtarlarını artık process.env üzerinden alıyoruz
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY;
 
 // GET /photoget-proxy?query=...&source=pexels|pixabay
 router.get('/', async (req, res) => {
     const { query, source = 'pexels' } = req.query;
     if (!query) return res.status(400).json({ error: 'Query is required.' });
+
+    // Anahtarlar yoksa hata ver
+    if (!PEXELS_API_KEY || !PIXABAY_API_KEY) {
+        console.error("API Keys missing in .env file");
+        return res.status(500).json({ error: 'Server configuration error.' });
+    }
 
     try {
         let imageUrl = null;
@@ -45,16 +52,13 @@ router.get('/', async (req, res) => {
 });
 
 
-// 2. YENİ SLIDER ENDPOINT (Çoklu resim için)
-// // 2. YENİ SLIDER ENDPOINT (Çoklu resim için - DÜZELTİLMİŞ HALİ)
-// 2. YENİ SLIDER ENDPOINT (Öncelik: Pixabay -> Yedek: Pexels)
-// 2. SLIDER ENDPOINT (Pixabay Öncelikli - Hata Ayıklama Modu)
+// 2. SLIDER ENDPOINT (Pixabay Öncelikli)
 router.get('/slider', async (req, res) => {
     let { query, source = 'pixabay', count = 5, page = 1 } = req.query;
     
     // API KEY KONTROLÜ
     if (!PIXABAY_API_KEY) {
-        console.error("[Proxy Error] PIXABAY_API_KEY tanımlı değil!");
+        console.error("[Proxy Error] PIXABAY_API_KEY tanımlı değil! .env dosyasını kontrol edin.");
         return res.status(500).json({ error: 'Server config error: API Key missing' });
     }
 
@@ -63,9 +67,8 @@ router.get('/slider', async (req, res) => {
     // Yardımcı: Pixabay İsteği
     const fetchFromPixabay = async () => {
         try {
-            // URL'i konsola basalım ki hatayı görelim
             const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=${count}&page=${page}&safesearch=true`;
-            console.log(`[Pixabay Req] URL: ${url}`);
+            console.log(`[Pixabay Req] URL: ${url.replace(PIXABAY_API_KEY, 'HIDDEN_KEY')}`); // Loglarda key gizli kalsın
             
             const response = await fetch(url);
             
@@ -88,25 +91,23 @@ router.get('/slider', async (req, res) => {
     try {
         let images = [];
 
-        // SADECE PIXABAY DENE (Hata varsa Pexels'e geçme, hatayı görelim)
+        // SADECE PIXABAY DENE
         if (source === 'pixabay') {
             const pixabayResult = await fetchFromPixabay();
             
             if (pixabayResult === null) {
-                // API hatası döndü
                 return res.status(500).json({ error: 'Pixabay API failed. Check server console.' });
             }
             
             if (pixabayResult.length === 0) {
                 console.log("[Pixabay] Sonuç boş döndü.");
-                // Burada Pexels fallback'i devreye alabilirsiniz ama şimdilik kapalı kalsın
             }
             
             images = pixabayResult;
 
         } else if (source === 'pexels') {
-             // ... Pexels kodlarınız buraya ...
-             // (Mevcut Pexels kodunuzu buraya koyabilirsiniz)
+             // Pexels kodları buraya eklenebilir
+             // Şimdilik boş bırakıldı
         }
         
         res.json({ images });
