@@ -15,7 +15,12 @@ if (!window.__activeTripSessionToken) {
 
 window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
 window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
+
+// Sayfa Takip Sistemi (Hangi kelimede kaçıncı sayfadayız)
 window.__apiPageTracker = window.__apiPageTracker || {}; 
+
+// YENİ: Tükenmiş Sorgu Takibi (Hangi kelimenin görselleri bitti)
+window.__apiExhaustedQueries = window.__apiExhaustedQueries || new Set();
 
 
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
@@ -64,7 +69,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v22_${latKey}_${lngKey}`;
+    const storageKey = `tt_loc_name_v23_${latKey}_${lngKey}`; // v23
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -89,7 +94,7 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA (KADEMELİ DÜŞÜŞ MANTIĞI)
+// 3. GÖRSEL ARAMA (KADEMELİ DÜŞÜŞ VE TÜKENME KONTROLÜ)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;    
@@ -106,65 +111,54 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         options.exclude.forEach(u => seenUrls.add(u));
     }
 
-    // --- ARAMA ADAYLARI LİSTESİ (ÖNCELİK SIRASI) ---
-    // Her adayın bir sorgusu (query) ve ekranda görünecek ismi (label) var.
+    // --- ADAYLARI BELİRLE ---
     const candidates = [];
 
-    // 1. Aday: İlçe + İl (Örn: "Kepez Antalya") -> Label: "Kepez"
+    // 1. ÖNCELİK: İlçe + İl (Örn: "Kepez Antalya")
     if (term && context && term !== context) {
-        candidates.push({ 
-            query: `${term} ${context}`, 
-            label: term // Ekranda sadece "Kepez" yazsın
-        });
+        candidates.push({ query: `${term} ${context}`, label: term });
     }
 
-    // 2. Aday: Sadece İlçe (Örn: "Kepez") -> Label: "Kepez"
+    // 2. ÖNCELİK: Sadece İlçe (Örn: "Kepez")
     if (term) {
-        candidates.push({ 
-            query: term, 
-            label: term 
-        });
+        candidates.push({ query: term, label: term });
     }
 
-    // 3. Aday: Sadece İl (Örn: "Antalya") -> Label: "Antalya"
+    // 3. ÖNCELİK: Sadece İl (Örn: "Antalya") -> İlçe biterse buraya düşecek
     if (context && context !== term) {
-        candidates.push({ 
-            query: context, 
-            label: context 
-        });
+        candidates.push({ query: context, label: context });
     }
 
-    // 4. Aday: Ülke (Örn: "Turkey") -> Label: "Turkey"
-    // Sadece yukarıdakiler sonuç vermezse veya sayfaları biterse buraya düşecek.
+    // 4. SON ÇARE: Ülke (Örn: "Turkey") -> İl biterse buraya düşecek
+    // (Senin isteğin üzerine en son ihtimal olarak ekliyorum)
     if (country) {
-        candidates.push({ 
-            query: country, 
-            label: country 
-        });
+        candidates.push({ query: country, label: country });
     }
 
-    // --- ADAYLARI SIRAYLA DENE ---
     let finalLabel = "";
 
+    // --- ADAYLARI SIRAYLA DENE ---
     for (const candidate of candidates) {
-        // Eğer yeterli resim toplandıysa döngüyü kır
         if (accumulatedImages.length >= limit) break;
 
         const query = candidate.query;
         const trackerKey = query.replace(/\s+/g, '_').toLowerCase();
-        
-        // Sayfayı al ve PEŞİN ARTIR (Race condition çözümü)
-        let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
-        
-        // Burası önemli: Eğer bir query'i deniyorsak ve o sayfadan sonuç alamazsak
-        // tracker'ı artırmaya gerek yok, çünkü o sayfa boştur.
-        // Ama şimdilik basit mantıkla artırıyoruz, boşsa bir sonraki adaya geçeceğiz.
-        
-        // Hindi Sorunu Önlemi: Eğer query sadece "Turkey" ise ve API bunu yanlış anlıyorsa
-        // yapacak bir şey yok, kullanıcı ülke fallback'i istedi. 
-        // Ama 'cleanQuery' ile manipüle etmiyoruz artık, doğrudan candidate.query gidiyor.
 
+        // [KONTROL]: Eğer bu sorgu daha önce "bitti" olarak işaretlendiyse, PAS GEÇ.
+        // Böylece bitmiş kelimeyi (Kemer) boşuna aramaz, direkt bir sonrakine (Antalya) geçer.
+        if (window.__apiExhaustedQueries.has(trackerKey)) {
+            // console.log(`Skipping exhausted query: ${query}`);
+            continue;
+        }
+
+        // Sayfayı belirle ve PEŞİN ARTIR (Yarış durumu çözümü)
+        let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
+        // Şimdilik artırıyoruz, eğer boş çıkarsa aşağıda telafi edeceğiz veya exhausted listesine alacağız.
+        window.__apiPageTracker[trackerKey] = pageToFetch + 1;
+
+        // Fetch sayısı (Biraz bol iste)
         const fetchCount = Math.max(limit + 2, 4);
+        
         const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${pageToFetch}&source=pixabay&image_type=photo`;
 
         try {
@@ -173,32 +167,31 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                 const data = await res.json();
                 const fetchedImages = data.images || data || [];
 
-                // Bu sorgudan gelen resimleri kontrol et
-                let foundAnyNew = false;
+                // --- KRİTİK NOKTA: SONUÇ KONTROLÜ ---
+                if (fetchedImages.length === 0) {
+                    // Bu sorgu (örn: Kemer page 5) boş döndü. Demek ki Kemer bitti.
+                    // Bunu kara listeye al.
+                    window.__apiExhaustedQueries.add(trackerKey);
+                    // Döngü devam eder -> Bir sonraki adaya (Antalya) geçer.
+                    continue; 
+                }
+
+                let foundAnyNewForThisCandidate = false;
                 for (const imgUrl of fetchedImages) {
                     if (accumulatedImages.length >= limit) break;
                     
                     if (!seenUrls.has(imgUrl)) {
                         accumulatedImages.push(imgUrl);
                         seenUrls.add(imgUrl);
-                        foundAnyNew = true;
+                        foundAnyNewForThisCandidate = true;
                     }
                 }
 
-                // Eğer bu adaydan en az 1 tane *yeni* veya *geçerli* resim bulduysak:
-                // 1. Bu adayı (label'ı) kazanan ilan et.
-                // 2. Sayfasını artır.
-                // 3. Döngüyü durdur (Diğer genel adaylara düşme).
-                if (fetchedImages.length > 0) {
-                    window.__apiPageTracker[trackerKey] = pageToFetch + 1;
-                    finalLabel = candidate.label; // Ekranda görünecek isim güncellenir
-                    
-                    // Eğer limit dolduysa aramayı kes. 
-                    // Dolmadıysa aynı query'nin sonraki sayfasına mı bakmalı yoksa fallback mi?
-                    // Basitlik için: Bir seviye (örn: İlçe) sonuç verdiyse, o seviyede kalırız.
-                    // Yeterince çıkmadıysa bile "Kepez" başlığı altında az resim görünür,
-                    // bir sonraki "Add New Day"de sayfa ilerlediği için veya bittiği için diğerine düşer.
-                    break; 
+                // Eğer bu adaydan resim bulduysak, bu adayı "kazanan" ilan et ve çık.
+                // (Yani Kemer bulduysa Antalya arama)
+                if (foundAnyNewForThisCandidate || accumulatedImages.length > 0) {
+                    finalLabel = candidate.label;
+                    break;
                 }
             }
         } catch (e) {
@@ -206,9 +199,14 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         }
     }
 
+    // Eğer hiçbir şey bulunamadıysa (tüm adaylar bittiyse) son çare fallback ismini kullan
+    if (!finalLabel && candidates.length > 0) {
+        finalLabel = candidates[candidates.length - 1].label;
+    }
+
     return { 
         images: accumulatedImages, 
-        activeLabel: finalLabel // Hangi kelimeyi kullandıysak onu döndür
+        activeLabel: finalLabel 
     };
 };
 
@@ -252,9 +250,12 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     let searchObj = { term: "", context: "", country: "" };
     
+    // DURUM 1: Gün içinde gezi noktası varsa
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
-    } else {
+    } 
+    // DURUM 2: Gün boşsa (Add New Day)
+    else {
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
@@ -278,32 +279,20 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v22_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v23_${day}_${safeTerm}_pixabay`;
     
     let images = [];
-    let activeLabel = ""; // Hangi ismin gösterileceği (Cache veya API'den gelir)
+    let activeLabel = ""; 
     let fromCache = false;
 
     try {
         const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) {
             const parsed = JSON.parse(cachedData);
-            // Cache yapısını kontrol et: Eski format array idi, yeni format {images:[], label:""}
-            if (Array.isArray(parsed)) {
-                // Eski cache formatıysa, label'ı searchObj'den uydur
-                if (parsed.length > 0) {
-                    images = parsed;
-                    activeLabel = searchObj.term || searchObj.context;
-                    fromCache = true;
-                }
-            } else if (parsed && parsed.images && parsed.images.length > 0) {
-                // Yeni format
+            if (parsed && parsed.images && parsed.images.length > 0) {
                 images = parsed.images;
-                activeLabel = parsed.activeLabel;
+                activeLabel = parsed.activeLabel || searchObj.term;
                 fromCache = true;
-            }
-            
-            if (fromCache) {
                 images.forEach(img => usedSet.add(img));
             }
         }
@@ -317,14 +306,13 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             
             console.log(`[Collage] API Req Loop for: ${searchObj.term}`);
             
-            // DİKKAT: Artık obje dönüyor { images: [], activeLabel: "..." }
             const result = await window.getCityCollageImages(searchObj, {
                 min: 4, 
                 exclude: usedSet
             });
 
             images = result.images || [];
-            activeLabel = result.activeLabel || searchObj.term; // Dönen label'ı al
+            activeLabel = result.activeLabel || searchObj.term; 
         }
 
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
@@ -332,7 +320,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         if (images.length > 0) {
             images.forEach(img => usedSet.add(img));
             try {
-                // Cache'e label ile birlikte kaydet
                 localStorage.setItem(cacheKey, JSON.stringify({
                     images: images,
                     activeLabel: activeLabel
@@ -345,7 +332,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     // F. Render
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
-        // activeLabel'ı render fonksiyonuna gönderiyoruz
         renderCollageSlides(collage, images, activeLabel);
         collage.style.display = 'block';
     } else {
@@ -354,16 +340,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (DİNAMİK BAŞLIK)
+// 5. SLIDER RENDERER (LABEL ARTIK OTOMATİK GELİYOR)
 // ============================================================
 function renderCollageSlides(collage, images, displayLabel) {
     const isMobile = window.innerWidth < 600;
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // --- BAŞLIK KISMI ---
-    // Artık 'displayLabel' API'den gelen gerçek sonuç (Örn: Kepez bittiyse "Antalya")
-    // O yüzden karmaşık deduplication işlemlerine gerek yok, direkt onu yazıyoruz.
+    // API'den dönen "activeLabel" (Örn: Kepez tükendiyse Antalya) başlık olarak kullanılır.
     let displayTerm = displayLabel;
 
     const topHeaderHtml = displayTerm
