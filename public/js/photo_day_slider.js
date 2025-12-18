@@ -16,10 +16,10 @@ if (!window.__activeTripSessionToken) {
 window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
 window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
 
-// Sayfa Takip Sistemi (Her kaynak için ayrı tutulmalı: kemer_pixabay, kemer_pexels)
+// Sayfa Takip Sistemi
 window.__apiPageTracker = window.__apiPageTracker || {}; 
 
-// Tükenmiş Sorgu Takibi (Kaynak bazlı)
+// Tükenmiş Sorgu Takibi
 window.__apiExhaustedQueries = window.__apiExhaustedQueries || new Set();
 
 // GEZİ BAĞLAMI HAFIZASI
@@ -89,7 +89,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v30_${latKey}_${lngKey}`; // v30
+    const storageKey = `tt_loc_name_v31_${latKey}_${lngKey}`; // v31
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -157,26 +157,20 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         const sources = ['pixabay', 'pexels'];
 
         for (const source of sources) {
-            // Havuz dolduysa iç döngüyü de kır
             if (accumulatedImages.length >= limit) break;
 
-            // Her kaynak için ayrı takip anahtarı (örn: "kemer_pixabay", "kemer_pexels")
             const trackerKey = `${query.replace(/\s+/g, '_').toLowerCase()}_${source}`;
 
-            // Bu kaynak bu kelime için tükendiyse pas geç
             if (window.__apiExhaustedQueries.has(trackerKey)) {
                 continue;
             }
 
-            // Sayfa yönetimi
             let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
-            window.__apiPageTracker[trackerKey] = pageToFetch + 1; // Peşin artır
+            window.__apiPageTracker[trackerKey] = pageToFetch + 1; 
 
-            // Eksik kalan kadar iste
             const needed = limit - accumulatedImages.length;
-            const fetchCount = Math.max(needed + 2, 4); // En az 4 iste
+            const fetchCount = Math.max(needed + 2, 4); 
 
-            // API İsteği (source parametresini ekle)
             const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${pageToFetch}&source=${source}&image_type=photo`;
 
             try {
@@ -185,14 +179,11 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                     const data = await res.json();
                     const fetchedImages = data.images || data || [];
 
-                    // --- BOŞ GELDİYSE ---
                     if (fetchedImages.length === 0) {
-                        // Bu kaynaktan bu kelime bitti.
                         window.__apiExhaustedQueries.add(trackerKey);
-                        continue; // Diğer kaynağa (Pexels'e) veya diğer adaya geç
+                        continue; 
                     }
 
-                    // Gelen resimleri havuza at
                     let addedFromThisBatch = false;
                     for (const imgUrl of fetchedImages) {
                         if (accumulatedImages.length >= limit) break;
@@ -204,7 +195,6 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                         }
                     }
 
-                    // Eğer bu adaydan ve bu kaynaktan resim geldiyse etiketi belirle
                     if (addedFromThisBatch && !finalLabel) {
                         finalLabel = candidate.label;
                     }
@@ -212,10 +202,9 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
             } catch (e) {
                 console.warn(`Collage fetch error (${source}): "${query}"`, e);
             }
-        } // End of Sources Loop
-    } // End of Candidates Loop
+        } 
+    } 
 
-    // Fallback Label
     if (!finalLabel && candidates.length > 0) {
         finalLabel = candidates[candidates.length - 1].label;
     }
@@ -233,7 +222,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     if (!dayContainer) return;
     const tripTokenAtStart = window.__activeTripSessionToken;
 
-    // A. Collage Alanını Hazırla
     let collage = dayContainer.querySelector('.day-collage');
     if (!collage) {
         collage = document.createElement('div');
@@ -241,7 +229,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         collage.style.cssText = "margin: 30px 0 10px 0; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
     }
 
-    // B. DOM'a Yerleştirme
     const list = dayContainer.querySelector('.day-list');
     if (list) {
         const addBtn = list.querySelector('.add-more-btn');
@@ -266,28 +253,23 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     let searchObj = { term: "", context: "", country: "" };
     
-    // DURUM 1: Gün içinde gezi noktası varsa
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
         
-        // [HAFIZA]: Bulduğumuz bilgileri kaydet
         if (searchObj.context) window.__lastKnownContext = searchObj.context;
         if (searchObj.country) window.__lastKnownCountry = searchObj.country;
     } 
-    // DURUM 2: Gün boşsa (Add New Day)
     else {
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
             searchObj.term = parts[0].trim(); 
-            // Ülkeyi çek
             let ctry = parts[parts.length - 1].trim();
             if (ctry) searchObj.country = ctry;
         } else {
             searchObj.term = rawCity;
         }
 
-        // [HAFIZA KULLANIMI]: Eksikleri tamamla
         if (!searchObj.context && window.__lastKnownContext) searchObj.context = window.__lastKnownContext;
         if (!searchObj.country && window.__lastKnownCountry) searchObj.country = window.__lastKnownCountry;
     }
@@ -305,10 +287,11 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v30_${day}_${safeTerm}_combined`;
+    const cacheKey = `tt_day_collage_v31_${day}_${safeTerm}_combined`;
     
     let images = [];
-    let activeLabel = ""; 
+    // Cache'de activeLabel olsa bile, başlık yapısını (Location) değiştireceğiz
+    // O yüzden cache'den sadece images'ı alıyoruz
     let fromCache = false;
 
     try {
@@ -317,7 +300,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             const parsed = JSON.parse(cachedData);
             if (parsed && parsed.images && parsed.images.length > 0) {
                 images = parsed.images;
-                activeLabel = parsed.activeLabel || searchObj.term;
                 fromCache = true;
                 images.forEach(img => usedSet.add(img));
             }
@@ -329,16 +311,11 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
         if (typeof window.getCityCollageImages === 'function') {
-            
-            console.log(`[Collage] Searching for: ${searchObj.term} (Ctx: ${searchObj.context}, Cnt: ${searchObj.country})`);
-            
             const result = await window.getCityCollageImages(searchObj, {
                 min: 4, 
                 exclude: usedSet
             });
-
             images = result.images || [];
-            activeLabel = result.activeLabel || searchObj.term; 
         }
 
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
@@ -347,8 +324,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             images.forEach(img => usedSet.add(img));
             try {
                 localStorage.setItem(cacheKey, JSON.stringify({
-                    images: images,
-                    activeLabel: activeLabel
+                    images: images
                 }));
             } catch (e) {
                 console.warn("[Collage] Storage write error:", e);
@@ -356,9 +332,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         }
     }
 
-    // F. Render
+    // F. Render (searchObj'nin tamamını gönderiyoruz ki tam başlığı oluştursun)
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
-        renderCollageSlides(collage, images, activeLabel);
+        renderCollageSlides(collage, images, searchObj);
         collage.style.display = 'block';
     } else {
         collage.style.display = 'none';
@@ -366,23 +342,40 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER
+// 5. SLIDER RENDERER (BAŞLIK & ALT YAZI GÜNCELLEMESİ)
 // ============================================================
-function renderCollageSlides(collage, images, displayLabel) {
+function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // Başlık
-    let displayTerm = displayLabel;
+    // --- BAŞLIK (LOCATION STRING) ---
+    // İlçe, İl, Ülke hepsini alıyoruz. Tekrarları siliyoruz.
+    let rawParts = [searchObj.term, searchObj.context, searchObj.country];
+    
+    // Virgüllerle ayır, temizle
+    let allParts = rawParts.join(",").split(",");
+    let cleanParts = allParts.map(s => s.trim()).filter(s => s.length > 0);
+    
+    // Set ile deduplicate (Örn: "Turkey", "Turkey" -> "Turkey")
+    let uniqueParts = [...new Set(cleanParts)];
+    let displayTerm = uniqueParts.join(", ");
 
     const topHeaderHtml = displayTerm
       ? `<div style="font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin-bottom: 10px;">Photos related to ${displayTerm}</div>`
       : "";
   
+    // Badge (Resim üzerindeki) - İstersen kaldırabilirsin, şimdilik bıraktım
     const badgeHtml = displayTerm
       ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${displayTerm}</div>`
       : "";
+
+    // Alt Yazı (Footer)
+    const footerHtml = `
+      <div style="font-size: 0.8rem; color: #666; margin-top: 8px; text-align: left; font-style: italic;">
+        Inspiring visuals for your trip
+      </div>
+    `;
 
     // Info İkonu
     const infoIconHtml = `
@@ -405,7 +398,7 @@ function renderCollageSlides(collage, images, displayLabel) {
       <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
       <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
       ${infoIconHtml}
-    `;
+      ${footerHtml} `;
   
     const track = collage.querySelector(".collage-track");
     images.forEach((src) => {
