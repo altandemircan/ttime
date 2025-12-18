@@ -58,8 +58,7 @@ function generateStepHtml(step, day, category, idx = 0) {
             </span>
 
             <span class="info-icon-wrapper">
-                <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info">
-                
+                <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info">                
                 <div class="info-tooltip" style="display: none; position: absolute; top: 100%; right: 0; width: 220px; background: #fff; color: #000; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;">
                     Photos associated with this place are matched by analyzing search results and may not reflect reality.
                     <div style="position: absolute; top: -6px; right: 10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #333;"></div>

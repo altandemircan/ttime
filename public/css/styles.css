@@ -5746,6 +5746,11 @@ ease;
     width: 20px !important;
     height: 20px !important;
     }
+.collage-viewport .info-icon-wrapper {
+    right: 10px;
+    top: 42px;
+}
+    
 .expand-map-btn {
     display: flex;
     align-items: center;
