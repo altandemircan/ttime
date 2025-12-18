@@ -3,7 +3,7 @@
 // Gün bazlı fotoğraf kolajı (slider) ve akıllı konum bulma modülü
 // ============================================================
 
-// 1. TOKEN VE GLOBAL DEĞİŞKENLER (Race Condition Fix)
+// 1. TOKEN VE GLOBAL DEĞİŞKENLER
 // ============================================================
 window.__ttNewTripToken = window.__ttNewTripToken || function () {
     return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -26,13 +26,12 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const props = info.properties || {};
     const addr = info.address || props.address || {}; 
 
-    const suburb = addr.suburb || addr.neighbourhood || props.suburb || "";
     const district = addr.district || addr.county || props.district || props.county || "";
     const city = addr.city || addr.town || addr.village || props.city || props.town || "";
     const state = addr.state || addr.province || props.state || "";
-    const country = addr.country || props.country || "Turkey";
+    const country = addr.country || props.country || "Turkey"; // Varsayılan ülke
 
-    // 1. KURAL: İlçe (District) var mı? (Örn: Kaş, Alanya)
+    // 1. KURAL: İlçe
     if (district && district.toLowerCase() !== state.toLowerCase()) {
         if (!district.toLowerCase().includes("merkez")) {
             return { term: district, context: state || city, country: country }; 
@@ -44,35 +43,28 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     if (state) return { term: state, context: "", country: country };
 
     // 3. KURAL: Fallback
-    return { term: fallbackCity, context: "", country: "" };
+    return { term: fallbackCity, context: "", country: country || "Turkey" };
 }
 
-// GÜNCELLENDİ: ŞEHİR İSMİNİ DE CACHE'LİYORUZ (Limit Aşımını Önler)
+// GÜNCELLENDİ: ŞEHİR İSMİNİ DE CACHE'LİYORUZ
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
-    // A. Önce LocalStorage Cache'ine Bak
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    // Cache key versiyonunu v2 yaptık ki eski hatalı isimler temizlensin
-    const storageKey = `tt_loc_name_v2_${latKey}_${lngKey}`;
+    // Cache versiyonunu değiştirdik (v3) ki eski hatalı isimler silinsin
+    const storageKey = `tt_loc_name_v3_${latKey}_${lngKey}`;
 
     try {
         const cachedName = localStorage.getItem(storageKey);
-        if (cachedName) {
-            return JSON.parse(cachedName);
-        }
+        if (cachedName) return JSON.parse(cachedName);
     } catch(e) {}
 
-    // B. Cache Yoksa API'den Çek
     try {
         if (typeof window.getPlaceInfoFromLatLng === 'function') {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            // C. Sonucu Kaydet
             if (result && result.term && result.term !== fallbackCity) {
-                try {
-                    localStorage.setItem(storageKey, JSON.stringify(result));
-                } catch(e) {}
+                try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
             return result;
         } else {
@@ -84,12 +76,12 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA (AKILLI SORGULAMA ZİNCİRİ - Zenginleştirilmiş)
+// 3. GÖRSEL ARAMA (AKILLI SORGULAMA ZİNCİRİ)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    const baseTerm = searchObj.term;
-    const context = searchObj.context || "";
-    const country = searchObj.country || "";
+    const baseTerm = searchObj.term; // Örn: Kale
+    const context = searchObj.context || ""; // Örn: Antalya
+    const country = searchObj.country || "Turkey"; // Örn: Turkey
 
     if (!baseTerm) return [];
 
@@ -103,7 +95,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         options.exclude.forEach(u => seenUrls.add(u));
     }
 
-    // --- ARAMA STRATEJİLERİ LİSTESİ ---
+    // --- SORGULARI OLUŞTUR ---
     const queries = [];
 
     // Yardımcı: Kelimeleri birleştir
@@ -111,20 +103,23 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         return [...new Set(parts.map(p => (p || "").trim()).filter(Boolean))].join(" ");
     };
 
-    // 1. EN KAPSAMLI: "Miraflores Lima Peru tourism landmark"
-    queries.push(buildQuery(baseTerm, context, country, "tourism landmark"));
+    // 1. EN İYİ: "Kale Antalya Turkey tourism"
+    // (Ülke adı MUTLAKA ekleniyor ki Almanya gelmesin)
+    queries.push(buildQuery(baseTerm, context, country, "tourism"));
 
-    // 2. SADECE YER VE ÜLKE: "Miraflores Peru"
-    queries.push(buildQuery(baseTerm, country));
+    // 2. YER VE ÜLKE: "Kale Turkey" 
+    // (Eğer ilçe ismi çok genel ise ülke onu kurtarır)
+    queries.push(buildQuery(baseTerm, country, "landmark"));
 
-    // 3. FALLBACK: Şehir + Ülke (İlçe yoksa)
+    // 3. BAĞLAM + ÜLKE: "Antalya Turkey travel"
+    // (Eğer ilçe bulunamazsa şehrin fotoları gelir)
     if (context && context !== baseTerm) {
-        queries.push(buildQuery(context, country, "tourism"));
+        queries.push(buildQuery(context, country, "travel"));
     }
 
-    // 4. SON ÇARE: Sadece Ülke
+    // 4. SON ÇARE: "Turkey tourism"
     if (country) {
-        queries.push(buildQuery(country, "travel"));
+        queries.push(buildQuery(country, "tourism travel"));
     }
 
     // --- DÖNGÜ ---
@@ -132,6 +127,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         if (accumulatedImages.length >= limit) break;
 
         const needed = limit - accumulatedImages.length;
+        // Biraz bol isteyelim ki duplicate varsa elensin
         const fetchCount = Math.max(needed + 2, 4);
 
         const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${page}&source=pixabay&image_type=photo&category=travel`;
@@ -144,6 +140,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 
                 for (const imgUrl of fetchedImages) {
                     if (accumulatedImages.length >= limit) break;
+                    // Global olarak daha önce kullanıldı mı kontrol et
                     if (!seenUrls.has(imgUrl)) {
                         accumulatedImages.push(imgUrl);
                         seenUrls.add(imgUrl);
@@ -170,41 +167,36 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     if (!collage) {
         collage = document.createElement('div');
         collage.className = 'day-collage';
-        // Min-height, görsel yüklenene kadar alanın çökmesini engeller
         collage.style.cssText = "margin: 30px 0 10px 0; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
     }
 
-    // B. DOM'a Yerleştirme (UL -> Mevcut Buton -> Collage)
+    // B. DOM'a Yerleştirme
     const list = dayContainer.querySelector('.day-list');
     if (list) {
         const addBtn = list.querySelector('.add-more-btn');
         if (addBtn) {
-            // Buton varsa, collage'ı butonun hemen sonrasına (altına) ekle
             if (addBtn.nextElementSibling !== collage) {
                 addBtn.insertAdjacentElement('afterend', collage);
             }
         } else {
-            // Buton yoksa listenin en sonuna ekle (Fallback)
             if (list.lastElementChild !== collage) {
                 list.appendChild(collage);
             }
         }
     } else {
-        // Liste hiç yoksa container'a ekle (Fallback)
         dayContainer.appendChild(collage);
     }
 
-    // --- C. Arama Terimi ve Resim Mantığı ---
-
+    // --- C. KONUM BELİRLEME (GÜNÜN İLK ÖĞESİ) ---
     let firstLoc = null;
     if (dayItemsArr && dayItemsArr.length > 0) {
-        // İlgili günün listesinden koordinatı olan ilk öğeyi bul
+        // Koordinatı olan ilk geçerli öğeyi bul
         firstLoc = dayItemsArr.find(i => i.location && i.location.lat && !i._starter && !i._placeholder);
     }
 
     let searchObj = { term: window.selectedCity || "", context: "", country: "" };
     
-    // Eğer o günün ilk öğesi varsa, onun koordinatından ismini bul (Örn: Isparta)
+    // Eğer günün ilk öğesi varsa onun koordinatını kullan (Şehir değişirse algılar)
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
     }
@@ -221,10 +213,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // İsim sabitlendiği için bu KEY de artık sabit kalacak ve eski resimleri hep bulacak.
-    // KEY'i v2 yaptık ki eski cache'leri kullanmasın.
+    // Cache Key: Gün + Terim (v3)
     const safeTerm = searchObj.term.replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v2_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v3_${day}_${safeTerm}_pixabay`;
     
     let images = [];
     let fromCache = false;
@@ -237,31 +228,36 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
                 images = parsed;
                 fromCache = true;
                 images.forEach(img => usedSet.add(img));
-                console.log(`[Collage] Loaded from cache for Day ${day}:`, searchObj.term);
+                console.log(`[Collage] Cache'den yüklendi (Gün ${day}):`, searchObj.term);
             }
         }
-    } catch (e) {
-        console.warn("[Collage] Storage read error:", e);
-    }
+    } catch (e) {}
 
     // E. API'den Çek (Cache yoksa)
     if (!fromCache || images.length === 0) {
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
         if (typeof window.getCityCollageImages === 'function') {
-            let pageNum = 1;
-            // Sayfa numarası olarak günü kullanmak çeşitlilik sağlar (Day 1 -> Page 1, Day 2 -> Page 2)
-            // Ama farklı şehirler söz konusuysa Page 1'den başlamak daha güvenlidir.
-            // Şehir değiştiği için Page 1 yapalım:
-            pageNum = 1; 
-
-            console.log(`[Collage] API Çağırılıyor -> Şehir: ${searchObj.term}, Kaynak: Pixabay`);
             
-            // 4 ADET GÖRSEL
+            // --- KRİTİK DÜZELTME: SAYFALAMA (PAGINATION) ---
+            // Her gün için farklı sayfa iste ki aynı resimler gelmesin.
+            // Gün 1 -> Sayfa 1
+            // Gün 2 -> Sayfa 2
+            let pageNum = 1;
+            if (typeof day === 'number') {
+                pageNum = day;
+            } else if (typeof day === 'string') {
+                const match = day.match(/\d+/);
+                if (match) pageNum = parseInt(match[0], 10);
+            }
+            if (!pageNum || pageNum < 1) pageNum = 1;
+
+            console.log(`[Collage] API İsteği: ${searchObj.term} (${searchObj.country}) - Sayfa: ${pageNum}`);
+            
             images = await window.getCityCollageImages(searchObj, {
                 min: 4, 
                 exclude: usedSet,
-                page: pageNum
+                page: pageNum // Sayfa numarasını gönderiyoruz
             });
         }
 
@@ -272,7 +268,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             try {
                 localStorage.setItem(cacheKey, JSON.stringify(images));
             } catch (e) {
-                console.warn("[Collage] Storage write error:", e);
+                console.warn("[Collage] Storage hatası:", e);
             }
         }
     }
@@ -287,14 +283,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (INFO ICON VE TOOLTIP EKLENDİ)
+// 5. SLIDER RENDERER (INFO ICON & TOOLTIP)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // Başlıkta tam konumu göster (Örn: Miraflores, Lima, Peru)
+    // Başlık
     let displayTerm = searchObj.term;
     if (searchObj.context && !displayTerm.includes(searchObj.context)) displayTerm += `, ${searchObj.context}`;
     if (searchObj.country && !displayTerm.includes(searchObj.country)) displayTerm += `, ${searchObj.country}`;
@@ -307,9 +303,7 @@ function renderCollageSlides(collage, images, searchObj) {
       ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${displayTerm}</div>`
       : "";
 
-    // --- YENİ EKLENEN KISIM: Info İkonu ve Tooltip ---
-    // Konum: Sağ Alt Köşe (bottom: 10px, right: 10px)
-    // Tooltip: Üstte açılacak şekilde (bottom: 100%)
+    // Info İkonu ve Tooltip (Sağ Alt Köşe)
     const infoIconHtml = `
     <span class="info-icon-wrapper" style="position: absolute; right: 10px; bottom: 10px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: help; z-index: 10;">
         <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info" style="width: 18px; height: 18px; opacity: 0.7;">
@@ -320,7 +314,6 @@ function renderCollageSlides(collage, images, searchObj) {
         </div>
     </span>
     <style>
-        /* Sadece bu wrapper üzerindeyken tooltip görünsün */
         .info-icon-wrapper:hover .info-tooltip { display: block !important; }
     </style>
     `;
