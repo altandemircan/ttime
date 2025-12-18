@@ -2710,6 +2710,8 @@ window.getPixabayImage = async function(query) {
     return await getPhoto(query, "pixabay");
 };
 
+// mainscript.js içinde bu fonksiyonu bulun ve değiştirin:
+
 async function getImageForPlace(placeName, category, cityName) {
     const queries = [
         [placeName, category, cityName].filter(Boolean).join(" "),
@@ -2717,24 +2719,29 @@ async function getImageForPlace(placeName, category, cityName) {
         [placeName, category].filter(Boolean).join(" "),
         placeName
     ];
+
     for (let q of queries) {
         if (!q || !q.trim()) continue;
-        // !! SADECE PIXABAY ÇAĞIR !!
-        const pixabayImg = await getPixabayCategoryImage(q);
-        if (pixabayImg && pixabayImg !== PLACEHOLDER_IMG) {
-            return pixabayImg;
+        
+        // ÖNCE PEXELS DENE (Chat ve Listeler için)
+        const pexelsImg = await getPexelsImage(q);
+        if (pexelsImg && pexelsImg !== PLACEHOLDER_IMG) {
+            return pexelsImg;
         }
     }
-    // Kategori bazlı
+
+    // Kategori bazlı fallback (Pexels)
     if (category) {
-        const pixabayImg = await getPixabayCategoryImage(category);
-        if (pixabayImg && pixabayImg !== PLACEHOLDER_IMG) {
-            return pixabayImg;
+        const pexelsImg = await getPexelsImage(category);
+        if (pexelsImg && pexelsImg !== PLACEHOLDER_IMG) {
+            return pexelsImg;
         }
     }
-    const fallbackPixabayImg = await getPixabayCategoryImage("travel");
-    if (fallbackPixabayImg && fallbackPixabayImg !== PLACEHOLDER_IMG) {
-        return fallbackPixabayImg;
+
+    // En son çare (Pexels 'travel' araması)
+    const fallbackImg = await getPexelsImage("travel");
+    if (fallbackImg && fallbackImg !== PLACEHOLDER_IMG) {
+        return fallbackImg;
     }
     return PLACEHOLDER_IMG;
 }
@@ -2743,17 +2750,18 @@ async function getOptimizedImage(properties) {
     let query = properties.name || properties.city || properties.category || "travel";
     if (!query || typeof query !== "string" || query.trim() === "") query = "travel";
 
-    // 1. Try Pixabay FIRST
+    // 1. ÖNCE PEXELS (Site Geneli)
+    const pexelsImg = await getPexelsImage(query);
+    if (pexelsImg && pexelsImg !== PLACEHOLDER_IMG) {
+        return pexelsImg;
+    }
+
+    // 2. Bulamazsa Pixabay (Yedek)
     const pixabayImg = await window.getPixabayImage(query);
     if (pixabayImg && pixabayImg !== PLACEHOLDER_IMG) {
         return pixabayImg;
     }
 
-    // 2. Fallback to Pexels (optional, can be removed if strictly Pixabay only)
-    const pexelsImg = await getPexelsImage(query);
-    if (pexelsImg && pexelsImg !== PLACEHOLDER_IMG) {
-        return pexelsImg;
-    }
     return PLACEHOLDER_IMG;
 }
 
@@ -2789,7 +2797,7 @@ async function enrichPlanWithWiki(plan) {
     return plan;
 }
 // Proxy çağrısı
-async function getPhoto(query, source = 'pixabay') {
+async function getPhoto(query, source = 'pexels') { // Varsayılan: Pexels
     const url = `/photoget-proxy?query=${encodeURIComponent(query)}&source=${source}`;
     try {
         const res = await fetch(url);
