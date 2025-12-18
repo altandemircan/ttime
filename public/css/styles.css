@@ -6876,6 +6876,7 @@ ease;
     padding: 2px;
     user-select: none;
     border-radius: 10px;
+    cursor: pointer;
 }
 .visual .fav-heart.is-fav .fav-icon {
  
