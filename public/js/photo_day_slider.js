@@ -317,8 +317,8 @@ function renderCollageSlides(collage, images, searchObj) {
 
     // Info İkonu
     const infoIconHtml = `
-    <span class="info-icon-wrapper" style="position: absolute; right: 10px; bottom: 10px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: help; z-index: 10;">
-        <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info" style="width: 18px; height: 18px; opacity: 0.7;">
+    <span class="info-icon-wrapper">
+        <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info">
         <div class="info-tooltip" style="display: none; position: absolute; bottom: 100%; right: 0; width: 220px; background: #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;">
             Photos associated with this place are matched by analyzing search results and may not reflect reality.
             <div style="position: absolute; bottom: -6px; right: 10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #333;"></div>
