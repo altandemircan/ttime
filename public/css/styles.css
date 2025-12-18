@@ -5730,6 +5730,22 @@ ease;
     object-fit: unset;
 }
 
+
+.info-icon-wrapper {
+    position: absolute;
+    right: 16px;
+    top: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    z-index: 5;
+}
+.info-icon-wrapper img {
+    width: 20px !important;
+    height: 20px !important;
+    }
 .expand-map-btn {
     display: flex;
     align-items: center;
