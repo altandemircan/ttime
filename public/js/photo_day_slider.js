@@ -32,16 +32,17 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const state = addr.state || addr.province || props.state || "";
     const country = addr.country || props.country || "Turkey";
 
-    // 1. KURAL: İlçe (District) var mı? (Örn: Kaş, Alanya)
+    // 1. KURAL: İlçe (District) var mı?
     if (district && district.toLowerCase() !== state.toLowerCase()) {
         if (!district.toLowerCase().includes("merkez")) {
-            return { term: district, context: state }; 
+            // Örn: "Miraflores" yerine "Miraflores Peru" döndür
+            return { term: `${district} ${country}`, context: state }; 
         }
     }
 
     // 2. KURAL: Şehir/İl
-    if (city) return { term: city, context: country };
-    if (state) return { term: state, context: country };
+    if (city) return { term: `${city} ${country}`, context: country }; // "Lima Peru"
+    if (state) return { term: `${state} ${country}`, context: country };
 
     // 3. KURAL: Fallback
     return { term: fallbackCity, context: "" };
@@ -86,28 +87,83 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA (API İSTEĞİ - PIXABAY)
+// ============================================================
+// 3. GÖRSEL ARAMA (AKILLI FALLBACK MEKANİZMASI)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    const term = searchObj.term;
-    if (!term) return [];
+    const baseTerm = searchObj.term;
+    if (!baseTerm) return [];
 
-    // İstenen görsel sayısı: 4
-    const limit = options.min || 4; 
+    const limit = options.min || 4; // Hedeflenen sayı
     const page = options.page || 1; 
+    
+    // Toplanan resimleri ve mükerrer kontrolü için seti hazırla
+    let accumulatedImages = [];
+    const seenUrls = new Set(); 
 
-    // URL
-    const url = `/photoget-proxy/slider?query=${encodeURIComponent(term)}&limit=${limit}&per_page=${limit}&count=${limit}&page=${page}&source=pixabay`;
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) return [];
-        const data = await res.json();
-        return data.images || data || [];
-    } catch (e) {
-        console.warn("Collage fetch error:", e);
-        return [];
+    // Daha önce kullanılmış (exclude) resimleri de set'e ekle ki aynısı gelmesin
+    if (options.exclude && options.exclude instanceof Set) {
+        options.exclude.forEach(u => seenUrls.add(u));
     }
+
+    // --- ARAMA STRATEJİLERİ LİSTESİ ---
+    // Sırayla bunları deneyecek
+    const queries = [];
+
+    // 1. Öncelik: Şehir + Turistik Kelimeler (En kaliteli sonuç)
+    // Eğer kelime çok uzun değilse ekle (Örn: "Machu Picchu..." zaten uzundur, bozmayalım)
+    if (baseTerm.split(' ').length < 4) {
+        queries.push(`${baseTerm} tourism travel landmark`);
+    }
+
+    // 2. Öncelik: Sadece Şehir Adı (Geniş arama)
+    queries.push(baseTerm);
+
+    // 3. Öncelik: Ülke + Turizm (Şehirde resim yoksa ülkeyi göster)
+    if (searchObj.context && searchObj.context.trim() !== "") {
+        // Eğer şehir ve ülke aynıysa (örn: Singapore) tekrar ekleme
+        if (searchObj.context.toLowerCase() !== baseTerm.toLowerCase()) {
+            queries.push(`${searchObj.context} tourism travel`);
+        }
+    }
+
+    // --- DÖNGÜ: YETERLİ SAYIYA ULAŞANA KADAR ÇEK ---
+    for (const query of queries) {
+        // Eğer hedef sayıya (limit) ulaştıysak döngüyü bitir
+        if (accumulatedImages.length >= limit) break;
+
+        // Eksik kalan miktar kadar (veya biraz fazlasını) iste
+        const needed = limit - accumulatedImages.length;
+        // API'den biraz bol isteyelim ki duplikeleri elerken sayı düşmesin
+        const fetchCount = Math.max(needed + 2, 4);
+
+        const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${page}&source=pixabay&image_type=photo&category=travel`;
+
+        try {
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                const fetchedImages = data.images || data || [];
+
+                // Gelen resimleri kontrol et ve listeye ekle
+                for (const imgUrl of fetchedImages) {
+                    if (accumulatedImages.length >= limit) break; // Kota dolduysa dur
+
+                    // Eğer bu resim daha önce eklenmemişse ekle
+                    if (!seenUrls.has(imgUrl)) {
+                        accumulatedImages.push(imgUrl);
+                        seenUrls.add(imgUrl);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn(`Collage fetch failed for query: "${query}"`, e);
+            // Hata olsa bile döngü devam eder, bir sonraki stratejiye geçer
+        }
+    }
+
+    // Eğer tüm çabalara rağmen hiç resim yoksa veya eksikse, yapacak bir şey yok eldekini dön
+    return accumulatedImages;
 };
 
 
