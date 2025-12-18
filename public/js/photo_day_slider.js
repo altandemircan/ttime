@@ -15,12 +15,11 @@ if (!window.__activeTripSessionToken) {
 
 window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
 window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
-
-// Sayfa Takip Sistemi (Hangi kelimede kaçıncı sayfadayız)
 window.__apiPageTracker = window.__apiPageTracker || {}; 
-
-// YENİ: Tükenmiş Sorgu Takibi (Hangi kelimenin görselleri bitti)
 window.__apiExhaustedQueries = window.__apiExhaustedQueries || new Set();
+
+// YENİ: Gezinin genel bağlamını (İl/Eyalet) hafızada tutmak için
+window.__lastKnownContext = window.__lastKnownContext || ""; 
 
 
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
@@ -69,7 +68,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v23_${latKey}_${lngKey}`; // v23
+    const storageKey = `tt_loc_name_v24_${latKey}_${lngKey}`; // v24
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -124,13 +123,12 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         candidates.push({ query: term, label: term });
     }
 
-    // 3. ÖNCELİK: Sadece İl (Örn: "Antalya") -> İlçe biterse buraya düşecek
+    // 3. ÖNCELİK: Sadece İl (Örn: "Antalya") -> Kemer biterse buraya düşecek!
     if (context && context !== term) {
         candidates.push({ query: context, label: context });
     }
 
-    // 4. SON ÇARE: Ülke (Örn: "Turkey") -> İl biterse buraya düşecek
-    // (Senin isteğin üzerine en son ihtimal olarak ekliyorum)
+    // 4. SON ÇARE: Ülke (Örn: "Turkey")
     if (country) {
         candidates.push({ query: country, label: country });
     }
@@ -145,18 +143,15 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         const trackerKey = query.replace(/\s+/g, '_').toLowerCase();
 
         // [KONTROL]: Eğer bu sorgu daha önce "bitti" olarak işaretlendiyse, PAS GEÇ.
-        // Böylece bitmiş kelimeyi (Kemer) boşuna aramaz, direkt bir sonrakine (Antalya) geçer.
         if (window.__apiExhaustedQueries.has(trackerKey)) {
-            // console.log(`Skipping exhausted query: ${query}`);
             continue;
         }
 
         // Sayfayı belirle ve PEŞİN ARTIR (Yarış durumu çözümü)
         let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
-        // Şimdilik artırıyoruz, eğer boş çıkarsa aşağıda telafi edeceğiz veya exhausted listesine alacağız.
         window.__apiPageTracker[trackerKey] = pageToFetch + 1;
 
-        // Fetch sayısı (Biraz bol iste)
+        // Fetch sayısı
         const fetchCount = Math.max(limit + 2, 4);
         
         const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${pageToFetch}&source=pixabay&image_type=photo`;
@@ -167,12 +162,10 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                 const data = await res.json();
                 const fetchedImages = data.images || data || [];
 
-                // --- KRİTİK NOKTA: SONUÇ KONTROLÜ ---
+                // --- SONUÇ KONTROLÜ ---
                 if (fetchedImages.length === 0) {
-                    // Bu sorgu (örn: Kemer page 5) boş döndü. Demek ki Kemer bitti.
-                    // Bunu kara listeye al.
+                    // Kemer bitti -> Listeye al -> Döngü Antalya'ya geçer
                     window.__apiExhaustedQueries.add(trackerKey);
-                    // Döngü devam eder -> Bir sonraki adaya (Antalya) geçer.
                     continue; 
                 }
 
@@ -187,8 +180,6 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                     }
                 }
 
-                // Eğer bu adaydan resim bulduysak, bu adayı "kazanan" ilan et ve çık.
-                // (Yani Kemer bulduysa Antalya arama)
                 if (foundAnyNewForThisCandidate || accumulatedImages.length > 0) {
                     finalLabel = candidate.label;
                     break;
@@ -199,7 +190,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         }
     }
 
-    // Eğer hiçbir şey bulunamadıysa (tüm adaylar bittiyse) son çare fallback ismini kullan
+    // Eğer hiçbir şey bulunamadıysa fallback
     if (!finalLabel && candidates.length > 0) {
         finalLabel = candidates[candidates.length - 1].label;
     }
@@ -250,19 +241,30 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     let searchObj = { term: "", context: "", country: "" };
     
-    // DURUM 1: Gün içinde gezi noktası varsa
+    // DURUM 1: Gün içinde gezi noktası varsa (Koordinattan bul)
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
+        
+        // [HAFIZA]: Bulduğumuz "Antalya" (context) bilgisini globale kaydet.
+        if (searchObj.context) {
+            window.__lastKnownContext = searchObj.context;
+        }
     } 
     // DURUM 2: Gün boşsa (Add New Day)
     else {
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
-            searchObj.term = parts[0].trim(); 
-            searchObj.country = parts[parts.length - 1].trim(); 
+            searchObj.term = parts[0].trim(); // "Kemer"
+            searchObj.country = parts[parts.length - 1].trim(); // "Turkey"
         } else {
             searchObj.term = rawCity;
+        }
+
+        // [HAFIZA KULLANIMI]: Eğer boş gündeysek ve "Antalya"yı önceden öğrendiysek
+        // searchObj'ye ekle. Böylece Kemer biterse Antalya'ya düşebilir.
+        if (!searchObj.context && window.__lastKnownContext) {
+            searchObj.context = window.__lastKnownContext;
         }
     }
 
@@ -279,7 +281,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v23_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v24_${day}_${safeTerm}_pixabay`;
     
     let images = [];
     let activeLabel = ""; 
@@ -304,7 +306,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
         if (typeof window.getCityCollageImages === 'function') {
             
-            console.log(`[Collage] API Req Loop for: ${searchObj.term}`);
+            console.log(`[Collage] Searching for: ${searchObj.term} (Context: ${searchObj.context})`);
             
             const result = await window.getCityCollageImages(searchObj, {
                 min: 4, 
@@ -340,14 +342,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (LABEL ARTIK OTOMATİK GELİYOR)
+// 5. SLIDER RENDERER
 // ============================================================
 function renderCollageSlides(collage, images, displayLabel) {
     const isMobile = window.innerWidth < 600;
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // API'den dönen "activeLabel" (Örn: Kepez tükendiyse Antalya) başlık olarak kullanılır.
+    // Başlık
     let displayTerm = displayLabel;
 
     const topHeaderHtml = displayTerm
