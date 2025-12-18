@@ -1,6 +1,5 @@
 // ============================================================
 // photo_day_slider.js
-// Gün bazlı fotoğraf kolajı (slider) ve akıllı konum bulma modülü
 // ============================================================
 
 // 1. GLOBAL DEĞİŞKENLER VE TAKİP SİSTEMİ
@@ -13,50 +12,45 @@ if (!window.__activeTripSessionToken) {
     window.__activeTripSessionToken = window.__ttNewTripToken();
 }
 
-// Global Cache ve Takip Objeleri
 window.__dayCollagePhotosByTrip = window.__dayCollagePhotosByTrip || {};
 window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
+// Sayfa Takip Sistemi (Aynı fotoları engellemek için)
 window.__apiPageTracker = window.__apiPageTracker || {}; 
 
 
-// 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA (DAHA GÜÇLÜ)
+// 2. HİYERARŞİ ANALİZİ (İlçe ve İl Ayrımı)
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
-    if (!info) return { term: fallbackCity, context: "", country: "" };
+    if (!info) return { term: fallbackCity, context: "" };
 
     const props = info.properties || {};
     const addr = info.address || props.address || {}; 
 
-    // Adres bileşenlerini normalize et
-    const suburb = addr.suburb || addr.neighbourhood || props.suburb || "";
     const district = addr.district || addr.county || props.district || props.county || "";
     const city = addr.city || addr.town || addr.village || props.city || props.town || "";
     const state = addr.state || addr.province || props.state || "";
-    const country = addr.country || props.country || "Turkey";
 
-    // 1. ADIM: İLÇE TESPİTİ (District)
-    let term = "";
+    let term = "";     // İlçe
+    let context = "";  // İl
+
+    // İlçe Tespiti
     if (district && district.toLowerCase() !== state.toLowerCase() && district.toLowerCase() !== city.toLowerCase()) {
         if (!district.toLowerCase().includes("merkez")) {
             term = district;
         }
     }
 
-    // 2. ADIM: ŞEHİR TESPİTİ (Context)
-    let context = city;
-    if (!context && state) context = state;
-    
+    // İl Tespiti (Context)
+    context = city || state || "";
+
     // Fallback
     if (!term && !context) {
         term = fallbackCity;
-    } else if (!term) {
-        term = context;
     }
 
     return { 
-        term: term || context || fallbackCity, 
-        context: context || term || "", 
-        country: country 
+        term: term, 
+        context: context
     };
 }
 
@@ -64,7 +58,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v10_${latKey}_${lngKey}`; // Versiyonu değiştirdim (v10) temizlensin diye
+    const storageKey = `tt_loc_name_v11_${latKey}_${lngKey}`; // v11 yaptık temizlensin
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -76,25 +70,24 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            if (result && result.term) {
+            if (result && (result.term || result.context)) {
                 try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
             return result;
         } else {
-            return { term: fallbackCity, context: "", country: "" };
+            return { term: fallbackCity, context: "" };
         }
     } catch (_) {
-        return { term: fallbackCity, context: "", country: "" };
+        return { term: fallbackCity, context: "" };
     }
 };
 
 
-// 3. GÖRSEL ARAMA (YANLIŞ SONUÇ FİLTRESİ + SAYFA TAKİBİ)
+// 3. GÖRSEL ARAMA (SADECE: İLÇE+İL veya İL veya İLÇE)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    const term = searchObj.term;    // İlçe (Varsa)
-    const context = searchObj.context; // İl (Varsa)
-    const country = searchObj.country || "Turkey";
+    const term = searchObj.term;    // İlçe
+    const context = searchObj.context; // İl
 
     if (!term && !context) return [];
 
@@ -106,43 +99,39 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         options.exclude.forEach(u => seenUrls.add(u));
     }
 
-    // --- SORGULARI OLUŞTUR (DEDİĞİN SIRA) ---
+    // --- SORGULARI OLUŞTUR (ÜLKE YOK, TRAVEL YOK) ---
     const queries = [];
     const buildQuery = (...parts) => {
         return [...new Set(parts.map(p => (p || "").trim()).filter(Boolean))].join(" ");
     };
 
-    // 1. ÖNCELİK: İlçe + İl (Örn: "Muratpaşa Antalya")
+    // 1. ÖNCELİK: İlçe + İl (Örn: "Kepez Antalya")
     if (term && context && term !== context) {
         queries.push(buildQuery(term, context));
     }
 
-    // 2. ÖNCELİK: İlçe + Ülke (Örn: "Muratpaşa Turkey")
-    if (term) {
-        queries.push(buildQuery(term, country));
+    // 2. ÖNCELİK: Sadece İl (Örn: "Antalya") -> Şehir adı yazıldıysa şehir getir.
+    if (context) {
+        queries.push(context);
     }
 
-    // 3. SON ÇARE: İl + Ülke (Örn: "Antalya Turkey")
-    // (Travel, History, Landmark kelimeleri YOK. Sadece yer ismi.)
-    if (context) {
-        queries.push(buildQuery(context, country));
-    } else if (term && !context) {
-        queries.push(buildQuery(term, country));
+    // 3. SON ÇARE: Sadece İlçe (Örn: "Kepez") -> İl bulunamadıysa
+    if (term) {
+        queries.push(term);
     }
 
     // --- ARAMA DÖNGÜSÜ ---
     for (const query of queries) {
         if (accumulatedImages.length >= limit) break;
 
-        // --- SAYFA TAKİP (AYNI FOTO SORUNUNU ÇÖZEN KISIM) ---
-        // Bu sorgu daha önce kaçıncı sayfada kaldıysa oradan devam et.
+        // Sayfa Takip
         const trackerKey = query.replace(/\s+/g, '_').toLowerCase();
         let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
 
-        // İstek sayısı
         const needed = limit - accumulatedImages.length;
         const fetchCount = Math.max(needed + 2, 4);
 
+        // Ülke yok, sadece kelimeler
         const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${pageToFetch}&source=pixabay&image_type=photo`;
 
         try {
@@ -151,19 +140,15 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                 const data = await res.json();
                 const fetchedImages = data.images || data || [];
 
-                let foundNewForThisPage = false;
                 for (const imgUrl of fetchedImages) {
                     if (accumulatedImages.length >= limit) break;
                     
                     if (!seenUrls.has(imgUrl)) {
                         accumulatedImages.push(imgUrl);
                         seenUrls.add(imgUrl);
-                        foundNewForThisPage = true;
                     }
                 }
 
-                // Eğer bu sayfadan resim geldiyse, sayfa numarasını artır.
-                // (Böylece bir dahaki sefere aynı fotolar gelmez)
                 if (fetchedImages.length > 0) {
                     window.__apiPageTracker[trackerKey] = pageToFetch + 1;
                 }
@@ -208,19 +193,19 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         dayContainer.appendChild(collage);
     }
 
-    // --- C. KONUM BELİRLEME ---
+    // --- C. KONUM BELİRLEME (GÜNÜN İLK ÖĞESİ) ---
     let firstLoc = null;
     if (dayItemsArr && dayItemsArr.length > 0) {
         firstLoc = dayItemsArr.find(i => i.location && i.location.lat && !i._starter && !i._placeholder);
     }
 
-    let searchObj = { term: window.selectedCity || "", context: "", country: "" };
+    let searchObj = { term: window.selectedCity || "", context: "" };
     
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
     }
 
-    if (!searchObj || !searchObj.term) {
+    if ((!searchObj.term && !searchObj.context)) {
         collage.style.display = 'none';
         return;
     }
@@ -232,9 +217,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // Cache Key (v10 - temizlensin diye)
+    // Cache Key (v11)
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v10_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v11_${day}_${safeTerm}_pixabay`;
     
     let images = [];
     let fromCache = false;
@@ -257,8 +242,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
         if (typeof window.getCityCollageImages === 'function') {
             
-            // Sayfa numarası artık getCityCollageImages içinde dinamik
-            console.log(`[Collage] API: ${searchObj.term} ${searchObj.context} ${searchObj.country}`);
+            console.log(`[Collage] API: ${searchObj.term} ${searchObj.context}`);
             
             images = await window.getCityCollageImages(searchObj, {
                 min: 4, 
@@ -288,7 +272,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (INFO ICON & TOOLTIP)
+// 5. SLIDER RENDERER
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
@@ -297,8 +281,7 @@ function renderCollageSlides(collage, images, searchObj) {
   
     // Başlık
     let displayTerm = searchObj.term;
-    if (searchObj.context && !displayTerm.includes(searchObj.context)) displayTerm += `, ${searchObj.context}`;
-    if (searchObj.country && !displayTerm.includes(searchObj.country)) displayTerm += `, ${searchObj.country}`;
+    if (searchObj.context && displayTerm !== searchObj.context) displayTerm += `, ${searchObj.context}`;
 
     const topHeaderHtml = displayTerm
       ? `<div style="font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin-bottom: 10px;">Photos related to ${displayTerm}</div>`
@@ -310,14 +293,17 @@ function renderCollageSlides(collage, images, searchObj) {
 
     // Info İkonu
     const infoIconHtml = `
-    <span class="info-icon-wrapper">
-        <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info">
-        <div class="info-tooltip" >
+    <span class="info-icon-wrapper" 
+          onmouseenter="this.querySelector('.info-tooltip').style.display='block'" 
+          onmouseleave="this.querySelector('.info-tooltip').style.display='none'"
+          style="position: absolute; right: 10px; bottom: 10px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: help; z-index: 10;">
+        <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info" style="width: 18px; height: 18px; opacity: 0.7;">
+        
+        <div class="info-tooltip" style="display: none; position: absolute; bottom: 100%; right: 0; width: 220px; background: #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;">
             Photos associated with this place are matched by analyzing search results and may not reflect reality.
             <div style="position: absolute; bottom: -6px; right: 10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #333;"></div>
         </div>
     </span>
-    <style> .info-icon-wrapper:hover .info-tooltip { display: block !important; } </style>
     `;
   
     collage.innerHTML = `
