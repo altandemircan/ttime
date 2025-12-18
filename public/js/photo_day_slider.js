@@ -29,20 +29,21 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const district = addr.district || addr.county || props.district || props.county || "";
     const city = addr.city || addr.town || addr.village || props.city || props.town || "";
     const state = addr.state || addr.province || props.state || "";
-    const country = addr.country || props.country || "Turkey";
+    const country = addr.country || props.country || "";
 
-    // 1. ADIM: İLÇE TESPİTİ
-    let term = "";
+    let term = "";     // İlçe
+    let context = "";  // İl
+
+    // İlçe Tespiti
     if (district && district.toLowerCase() !== state.toLowerCase() && district.toLowerCase() !== city.toLowerCase()) {
         if (!district.toLowerCase().includes("merkez")) {
             term = district;
         }
     }
 
-    // 2. ADIM: ŞEHİR TESPİTİ
-    let context = city;
-    if (!context && state) context = state;
-    
+    // İl Tespiti (Context)
+    context = city || state || "";
+
     // Fallback
     if (!term && !context) {
         term = fallbackCity;
@@ -51,8 +52,8 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     }
 
     return { 
-        term: term || context || fallbackCity, 
-        context: context || term || "", 
+        term: term, 
+        context: context, 
         country: country 
     };
 }
@@ -61,7 +62,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v17_${latKey}_${lngKey}`; // v17
+    const storageKey = `tt_loc_name_v19_${latKey}_${lngKey}`; // v19
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -73,7 +74,7 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            if (result && result.term) {
+            if (result && (result.term || result.context)) {
                 try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
             return result;
@@ -86,11 +87,12 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA (HINDI FOTOĞRAFLARINI ENGELLEYEN MOD)
+// 3. GÖRSEL ARAMA (API SORGUSUNDA ÜLKE YOK - HİNDİ SORUNU ÇÖZÜMÜ)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;    // İlçe
     const context = searchObj.context; // İl
+    // country değişkenini API sorgusuna dahil ETMİYORUZ.
 
     if (!term && !context) return [];
 
@@ -102,7 +104,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         options.exclude.forEach(u => seenUrls.add(u));
     }
 
-    // --- SORGULARI OLUŞTUR ---
+    // --- SORGULARI OLUŞTUR (SADECE YEREL İSİMLER) ---
     const queries = [];
     const buildQuery = (...parts) => {
         return [...new Set(parts.map(p => (p || "").trim()).filter(Boolean))].join(" ");
@@ -134,15 +136,8 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         const needed = limit - accumulatedImages.length;
         const fetchCount = Math.max(needed + 2, 4);
 
-        // --- GÜVENLİK DUVARI ---
-        // Sorgunun içinden "Turkey" kelimesini SİLİYORUZ.
-        // Böylece "Bodrum, Turkey" gelse bile API'ye "Bodrum" gider.
-        let cleanQuery = encodeURIComponent(query.replace(/Turkey/gi, "").replace(/Türkiye/gi, "").trim());
-        
-        // Eğer query boşaldıysa (sadece Turkey yazıyorsa) devam etme
-        if(!cleanQuery || cleanQuery.length < 2) continue;
-
-        const url = `/photoget-proxy/slider?query=${cleanQuery}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${pageToFetch}&source=pixabay&image_type=photo`;
+        // API'ye giden query'de ülke ismi YOK.
+        const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${pageToFetch}&source=pixabay&image_type=photo`;
 
         try {
             const res = await fetch(url);
@@ -211,22 +206,25 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         firstLoc = dayItemsArr.find(i => i.location && i.location.lat && !i._starter && !i._placeholder);
     }
 
-    // Varsayılan değerler
+    // Varsayılan Arama Nesnesi
     let searchObj = { term: "", context: "", country: "" };
     
-    // Durum 1: Gün içinde gezi noktası varsa
+    // DURUM 1: Gün içinde gezi noktası varsa
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
     } 
-    // Durum 2: Gün boşsa (Add New Day) -> selectedCity'den çek
+    // DURUM 2: Gün boşsa (Add New Day) -> Global seçili şehri kullan
     else {
         let rawCity = window.selectedCity || "";
-        // "Bodrum, Turkey" gelirse virgülden sonrasını atıp sadece "Bodrum" alıyoruz.
-        // Bu sayede arama terimine Turkey bulaşmıyor.
-        let safeCity = rawCity.split(',')[0].trim(); 
-        
-        searchObj.term = safeCity;
-        // searchObj.country boş kalıyor.
+        // Sadece "Bodrum" kısmını alıyoruz, Turkey'i almıyoruz
+        // searchObj.term'e sadece şehir ismini koyuyoruz.
+        if (rawCity.includes(',')) {
+            let parts = rawCity.split(',');
+            searchObj.term = parts[0].trim(); // "Bodrum"
+            searchObj.country = parts[parts.length - 1].trim(); // "Turkey" (Sadece UI için)
+        } else {
+            searchObj.term = rawCity;
+        }
     }
 
     if (!searchObj.term && !searchObj.context) {
@@ -242,7 +240,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v17_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v19_${day}_${safeTerm}_pixabay`;
     
     let images = [];
     let fromCache = false;
@@ -265,7 +263,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
         if (typeof window.getCityCollageImages === 'function') {
             
-            console.log(`[Collage] API Req: ${searchObj.term} ${searchObj.context}`);
+            console.log(`[Collage] API Req: ${searchObj.term} ${searchObj.context} (No Country)`);
             
             images = await window.getCityCollageImages(searchObj, {
                 min: 4, 
@@ -295,24 +293,31 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (Turkey Yazısını Gizlemek İçin)
+// 5. SLIDER RENDERER (BAŞLIKTA TEKRARLAMAYAN TEMİZ YAZI)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // --- BAŞLIK KISMI ---
-    let displayParts = [];
-    if (searchObj.term) displayParts.push(searchObj.term);
-    if (searchObj.context && searchObj.context !== searchObj.term) displayParts.push(searchObj.context);
+    // --- BAŞLIK DÜZELTMESİ (DEDUPLICATION) ---
+    // Gelen tüm terimleri (term, context, country) tek bir havuzda topla.
+    // Virgüllerle parçala, boşlukları temizle.
+    let rawParts = [searchObj.term, searchObj.context, searchObj.country];
+    let splitParts = [];
     
-    // Country'i başlığa eklerken de kontrol edelim, eğer istiyorsan ekleyebilirsin
-    // Ama "Turkey" tekrarını istemiyorsan ve sade olsun diyorsan eklemeyebiliriz.
-    // Şimdilik ekliyorum ama yukarıdaki mantıkla "Bodrum, Turkey" gelir, "Turkey, Turkey" gelmez.
-    if (searchObj.country) displayParts.push(searchObj.country);
+    rawParts.forEach(p => {
+        if (p) {
+            // "Bodrum, Turkey" gibi gelenleri ayır
+            p.split(',').forEach(sub => {
+                let clean = sub.trim();
+                if (clean) splitParts.push(clean);
+            });
+        }
+    });
 
-    let uniqueParts = [...new Set(displayParts)];
+    // Set kullanarak aynı kelimelerin (Turkey, Turkey) tekrarını sil
+    let uniqueParts = [...new Set(splitParts)];
     let displayTerm = uniqueParts.join(", ");
 
     const topHeaderHtml = displayTerm
