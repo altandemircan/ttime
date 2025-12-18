@@ -2946,7 +2946,7 @@ function getUniqueResults(suggestions, max) {
 function restoreSidebar() {
     // Sadece UI'ı güncelle, döngüye girmesin
     const cartDiv = document.getElementById("cart-items");
-    if (cartDiv && cartDiv.querySelector('. category-item')) {
+    if (cartDiv && cartDiv.querySelector('.category-item')) {
         // Kategori listesi açıksa updateCart çağır
         updateCart();
     }
