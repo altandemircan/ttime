@@ -26,16 +26,14 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const props = info.properties || {};
     const addr = info.address || props.address || {}; 
 
+    // Adres verileri
     const district = addr.district || addr.county || props.district || props.county || "";
     const city = addr.city || addr.town || addr.village || props.city || props.town || "";
     const state = addr.state || addr.province || props.state || "";
-    
-    // --- DÜZELTME BURADA: Varsayılan "Turkey" KALDIRILDI ---
-    // Eğer ülke verisi yoksa boş kalsın, zorla Turkey yazmasın.
     const country = addr.country || props.country || ""; 
 
-    let term = "";     // İlçe
-    let context = "";  // İl
+    let term = "";     // İlçe/Semt
+    let context = "";  // Şehir/İl
 
     // İlçe Tespiti
     if (district && district.toLowerCase() !== state.toLowerCase() && district.toLowerCase() !== city.toLowerCase()) {
@@ -44,14 +42,16 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
         }
     }
 
-    // İl Tespiti (Context)
+    // İl Tespiti
     context = city || state || "";
 
-    // Fallback
+    // Veri yoksa Fallback
     if (!term && !context) {
-        term = fallbackCity;
-    } else if (!term) {
-        term = context;
+        if (fallbackCity.includes(',')) {
+            term = fallbackCity.split(',')[0].trim();
+        } else {
+            term = fallbackCity;
+        }
     }
 
     return { 
@@ -65,7 +65,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v20_${latKey}_${lngKey}`; // v20
+    const storageKey = `tt_loc_name_v21_${latKey}_${lngKey}`; // v21
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -77,7 +77,7 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            if (result && result.term) {
+            if (result && (result.term || result.context)) {
                 try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
             return result;
@@ -90,13 +90,12 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA
+// 3. GÖRSEL ARAMA (RACE CONDITION FIX - PEŞİN ARTIRMA)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
-    const term = searchObj.term;    // İlçe
-    const context = searchObj.context; // İl
-    const country = searchObj.country; // Ülke (Varsa)
-
+    const term = searchObj.term;    
+    const context = searchObj.context; 
+    
     if (!term && !context) return [];
 
     const limit = options.min || 4; 
@@ -118,32 +117,30 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         queries.push(buildQuery(term, context));
     }
 
-    // 2. ÖNCELİK: İlçe + Ülke (Örn: "Bodrum Turkey" veya "Chung Pakistan")
-    if (term && country) {
-        queries.push(buildQuery(term, country));
+    // 2. ÖNCELİK: Sadece İlçe (Örn: "Bodrum")
+    if (term) {
+        queries.push(term);
     }
 
-    // 3. YEDEK: İl + Ülke (Örn: "Mugla Turkey")
-    if (context && country) {
-        queries.push(buildQuery(context, country));
-    } 
-    // 4. SON ÇARE: Sadece İlçe (Eğer ülke yoksa)
-    else if (term) {
-        queries.push(term);
+    // 3. YEDEK: Sadece İl (Örn: "Mugla")
+    if (context && context !== term) {
+        queries.push(context);
     }
 
     // --- ARAMA DÖNGÜSÜ ---
     for (const query of queries) {
         if (accumulatedImages.length >= limit) break;
 
-        // Sayfa Takip
         const trackerKey = query.replace(/\s+/g, '_').toLowerCase();
+        
+        // [CRITICAL FIX]: Sayfayı PEŞİN al ve artır.
+        // Böylece 2. gün kodu çalıştığında hemen bir sonraki sayfayı (2) görür.
         let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
+        window.__apiPageTracker[trackerKey] = pageToFetch + 1; // Hemen artırıyoruz!
 
         const needed = limit - accumulatedImages.length;
         const fetchCount = Math.max(needed + 2, 4);
 
-        // API'ye sorguyu gönder (Ülke ismi query içinde varsa gider, yoksa gitmez)
         const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${pageToFetch}&source=pixabay&image_type=photo`;
 
         try {
@@ -152,19 +149,13 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                 const data = await res.json();
                 const fetchedImages = data.images || data || [];
 
-                let foundNewForThisPage = false;
                 for (const imgUrl of fetchedImages) {
                     if (accumulatedImages.length >= limit) break;
                     
                     if (!seenUrls.has(imgUrl)) {
                         accumulatedImages.push(imgUrl);
                         seenUrls.add(imgUrl);
-                        foundNewForThisPage = true;
                     }
-                }
-
-                if (fetchedImages.length > 0) {
-                    window.__apiPageTracker[trackerKey] = pageToFetch + 1;
                 }
             }
         } catch (e) {
@@ -222,12 +213,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     // DURUM 2: Gün boşsa (Add New Day)
     else {
         let rawCity = window.selectedCity || "";
-        // "Bodrum, Turkey" veya "Chung, Pakistan" gelirse ayırıyoruz.
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
-            // İlk kısım şehir/ilçe
             searchObj.term = parts[0].trim(); 
-            // Son kısım Ülke
             searchObj.country = parts[parts.length - 1].trim(); 
         } else {
             searchObj.term = rawCity;
@@ -246,9 +234,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // Cache Key (v20)
+    // Cache Key (v21)
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v20_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v21_${day}_${safeTerm}_pixabay`;
     
     let images = [];
     let fromCache = false;
@@ -271,7 +259,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
         if (typeof window.getCityCollageImages === 'function') {
             
-            console.log(`[Collage] API Req: ${searchObj.term}, ${searchObj.country}`);
+            console.log(`[Collage] API Req: ${searchObj.term} ${searchObj.context}`);
             
             images = await window.getCityCollageImages(searchObj, {
                 min: 4, 
@@ -301,7 +289,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (TEKRAR EDEN KELİMELERİ TEMİZLEME)
+// 5. SLIDER RENDERER (BAŞLIKTA TEKRARLAMAYAN TEMİZ YAZI)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
@@ -309,17 +297,10 @@ function renderCollageSlides(collage, images, searchObj) {
     let index = 0;
   
     // --- BAŞLIK DÜZELTME KISMI ---
-    // searchObj.term, searchObj.context, searchObj.country parçalarını al
     let rawParts = [searchObj.term, searchObj.context, searchObj.country];
-    
-    // Hepsini birleştirip virgülle ayır (bazıları kendi içinde virgüllü olabilir)
     let joined = rawParts.filter(Boolean).join(",");
     let splitParts = joined.split(",");
-
-    // Trim yap ve boşları at
     let cleanParts = splitParts.map(s => s.trim()).filter(s => s.length > 0);
-
-    // Set ile aynı olanları (Deduplicate) sil
     let uniqueParts = [...new Set(cleanParts)];
     let displayTerm = uniqueParts.join(", ");
 
