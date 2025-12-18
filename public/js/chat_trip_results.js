@@ -1,4 +1,5 @@
-// Gezi itemı HTML fonksiyonu (sadece fav özelliğiyle)
+// chat_trip_results.js
+
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
     const localName = getLocalName(step);
@@ -23,54 +24,61 @@ function generateStepHtml(step, day, category, idx = 0) {
         catIcon = "/img/museum_icon.svg";
     else if (category === "Touristic attraction")
         catIcon = "/img/touristic_icon.svg";
-    else if (category === "Restaurant" || category === "Restaurants")
+    else if (category === "Restaurant" || category === "Lunch" || category === "Dinner")
         catIcon = "/img/restaurant_icon.svg";
     else if (category === "Accommodation")
         catIcon = "/img/accommodation_icon.svg";
+    else if (category === "Parks")
+        catIcon = "/img/park_icon.svg"; // Varsa
 
-    // Favori mi?
-    const favClass = isTripFav({ name, category, lat, lon }) ? "is-fav" : "";
-    const favIcon = isTripFav({ name, category, lat, lon }) ? "/img/like_on.svg" : "/img/like_off.svg";
+    // Favori durumu (örnek fonksiyon)
+    const isFav = (typeof isTripFav === 'function') 
+        ? isTripFav({ name, category, lat, lon }) 
+        : false;
+    const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
 
-    if (step._noPlace && (!step.name || step.name === null)) {
-        return `
-        <div class="steps no-place-step" data-day="${day}" data-category="${category}">
-            <div class="no-place-msg">No place found!</div>
-            <button class="im-lucky-btn">I'm lucky!</button>
-        </div>
-        `;
-    }
-
+    // --- HTML ÇIKTISI (Info İkonu Eklendi) ---
     return `
-    <div class="steps" 
-        data-day="${day}" 
-        data-category="${category}"
-        ${lat && lon ? ` data-lat="${lat}" data-lon="${lon}"` : ""}
-        data-step='${JSON.stringify(step)}'>
+    <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
+         data-step="${encodeURIComponent(JSON.stringify(step))}">
         <div class="visual">
             <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+            
+            ${tagsHtml ? `
             <div class="geoapify-tags-section">
                 <div class="geoapify-tags">${tagsHtml}</div>
-            </div>
-        <div class="cats cats${idx % 5 + 1}">
+            </div>` : ''}
+
+            <div class="cats cats1">
                 <img src="${catIcon}" alt="${category}"> ${category}
             </div>
-            <span class="fav-heart ${favClass}"
-                data-name="${name}"
-                data-category="${category}"
-                data-lat="${lat}"
-                data-lon="${lon}">
-                <img class="fav-icon" src="${favIcon}" alt="Favorite">
+            
+            <span class="fav-heart" data-name="${name}" data-category="${category}" data-lat="${lat}" data-lon="${lon}">
+                <img class="fav-icon" src="${favIconSrc}" alt="Favorite">
             </span>
+
+            <span class="info-icon-wrapper" style="position: absolute; right: 10px; top: 51px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: help; z-index: 5;">
+                <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info" style="width: 18px; height: 18px; opacity: 0.7;">
+                
+                <div class="info-tooltip" style="display: none; position: absolute; top: 100%; right: 0; width: 220px; background: #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;">
+                    Photos associated with this place are matched by analyzing search results and may not reflect reality.
+                    <div style="position: absolute; top: -6px; right: 10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #333;"></div>
+                </div>
+            </span>
+            <style>
+                /* Tooltip Hover Efekti */
+                .info-icon-wrapper:hover .info-tooltip { display: block !important; }
+            </style>
+
         </div>
         <div class="info day_cats item-info-view">
             <div class="title">${name}</div>
-            ${localName ? `<div class="local-name">${localName}</div>` : ""}
+            
             <div class="address">
-                <img src="img/address_icon.svg"><span>${address && address.trim().length > 2 ? address : "Address information not found"}</span>
+                <img src="img/address_icon.svg"><span>${address || 'Address not found'}</span>
             </div>
             <div class="opening_hours">
-                <img src="img/hours_icon.svg"><span>${opening ? opening : "Working hours not found."}</span>
+                <img src="img/hours_icon.svg"><span>${opening || 'Working hours not found.'}</span>
             </div>
         </div>
         <div class="item_action">
@@ -81,19 +89,14 @@ function generateStepHtml(step, day, category, idx = 0) {
                 <span onclick="window.showMap && window.showMap(this)">
                     <img src="img/map_icon.svg">
                 </span>
-                ${website ? `
-                <span onclick="window.openWebsite && window.openWebsite(this, '${website}')">
-                    <img src="img/website_link.svg">
-                </span>
-                ` : ""}
+                
             </div>
             
             <a class="addtotrip"><span>Add to trip</span>
                 <img src="img/addtotrip-icon.svg">
             </a>
         </div>
-    </div>
-    `;
+    </div>`;
 }
 
 
