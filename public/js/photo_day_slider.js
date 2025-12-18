@@ -26,22 +26,25 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const props = info.properties || {};
     const addr = info.address || props.address || {}; 
 
-    const suburb = addr.suburb || addr.neighbourhood || props.suburb || "";
     const district = addr.district || addr.county || props.district || props.county || "";
     const city = addr.city || addr.town || addr.village || props.city || props.town || "";
     const state = addr.state || addr.province || props.state || "";
-    const country = addr.country || props.country || "Turkey";
+    const country = addr.country || props.country || "";
 
-    let term = "";
+    let term = "";     // İlçe
+    let context = "";  // İl
+
+    // İlçe Tespiti
     if (district && district.toLowerCase() !== state.toLowerCase() && district.toLowerCase() !== city.toLowerCase()) {
         if (!district.toLowerCase().includes("merkez")) {
             term = district;
         }
     }
 
-    let context = city;
-    if (!context && state) context = state;
-    
+    // İl Tespiti (Context)
+    context = city || state || "";
+
+    // Fallback
     if (!term && !context) {
         term = fallbackCity;
     } else if (!term) {
@@ -59,7 +62,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v14_${latKey}_${lngKey}`; // v14 yaptık
+    const storageKey = `tt_loc_name_v15_${latKey}_${lngKey}`; // v15 (temizlensin)
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -84,12 +87,12 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA (PIXABAY'A GİDEN SORGUDAN ÜLKEYİ KALDIRDIK)
+// 3. GÖRSEL ARAMA (ÜLKE ADI KESİNLİKLE YOK)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;    // İlçe (Varsa)
     const context = searchObj.context; // İl (Varsa)
-    // const country = searchObj.country; // Ülkeyi aramada KULLANMIYORUZ.
+    // const country = searchObj.country; // Ülkeyi kullanmıyoruz (Hindi sorunu için)
 
     if (!term && !context) return [];
 
@@ -107,18 +110,17 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         return [...new Set(parts.map(p => (p || "").trim()).filter(Boolean))].join(" ");
     };
 
-    // 1. ÖNCELİK: İlçe + İl (Örn: "Bodrum Mugla") -> EN İYİSİ
+    // 1. ÖNCELİK: İlçe + İl (Örn: "Bodrum Mugla")
     if (term && context && term !== context) {
         queries.push(buildQuery(term, context));
     }
 
     // 2. ÖNCELİK: Sadece İl (Örn: "Mugla")
-    // (İlçe+Ülke veya İl+Ülke YAPMIYORUZ, İstanbul gelmesin diye)
     if (context) {
         queries.push(context);
     }
 
-    // 3. YEDEK: Sadece İlçe/Yer (Örn: "Bodrum")
+    // 3. YEDEK: Sadece İlçe (Örn: "Bodrum")
     if (term && term !== context) {
         queries.push(term);
     }
@@ -134,7 +136,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         const needed = limit - accumulatedImages.length;
         const fetchCount = Math.max(needed + 2, 4);
 
-        // API'ye sadece query gidiyor, country YOK.
+        // API'ye giden query'de ülke yok.
         const url = `/photoget-proxy/slider?query=${encodeURIComponent(query)}&limit=${fetchCount}&per_page=${fetchCount}&count=${fetchCount}&page=${pageToFetch}&source=pixabay&image_type=photo`;
 
         try {
@@ -222,9 +224,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // Cache Key (v14)
+    // Cache Key (v15)
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v14_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v15_${day}_${safeTerm}_pixabay`;
     
     let images = [];
     let fromCache = false;
@@ -277,7 +279,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (YAZIDA ÜLKE VAR, GÖRSELDE YOK)
+// 5. SLIDER RENDERER (YAZIDAN DA ÜLKEYİ KALDIRDIK)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
@@ -285,10 +287,14 @@ function renderCollageSlides(collage, images, searchObj) {
     let index = 0;
   
     // --- BAŞLIK (UI) KISMI ---
-    // Burada ülke adını EKLEMEYE devam ediyoruz (Görünüm için)
-    let displayTerm = searchObj.term;
-    if (searchObj.context && displayTerm !== searchObj.context) displayTerm += `, ${searchObj.context}`;
-    if (searchObj.country) displayTerm += `, ${searchObj.country}`; // <-- BURASI KALIYOR
+    // Ülkeyi (Turkey) BURAYA DA EKLEMİYORUZ artık.
+    // Sadece "Bodrum" veya "Bodrum, Mugla" yazacak.
+    let displayParts = [];
+    if (searchObj.term) displayParts.push(searchObj.term);
+    if (searchObj.context && searchObj.context !== searchObj.term) displayParts.push(searchObj.context);
+    
+    // Set ile tekrarı önle (örn: Mugla, Mugla olmasın)
+    let displayTerm = [...new Set(displayParts)].join(", ");
 
     const topHeaderHtml = displayTerm
       ? `<div style="font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin-bottom: 10px;">Photos related to ${displayTerm}</div>`
