@@ -47,12 +47,36 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     return { term: fallbackCity, context: "" };
 }
 
+// GÜNCELLENDİ: ŞEHİR İSMİNİ DE CACHE'LİYORUZ (Sorunun Çözümü Burada)
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
+    // A. Önce LocalStorage Cache'ine Bak (Koordinat bazlı)
+    // Koordinatları yuvarla ki ufak sapmalarda da aynı yeri hatırlasın
+    const latKey = Number(lat).toFixed(4);
+    const lngKey = Number(lng).toFixed(4);
+    const storageKey = `tt_loc_name_${latKey}_${lngKey}`;
+
     try {
-        // mainscript.js içindeki fonksiyonu kullanır
+        const cachedName = localStorage.getItem(storageKey);
+        if (cachedName) {
+            // Cache varsa API'ye gitme, direkt hafızadan kullan
+            // Bu sayede "Tokyo" ismi asla kaybolmaz.
+            return JSON.parse(cachedName);
+        }
+    } catch(e) {}
+
+    // B. Cache Yoksa API'den Çek
+    try {
         if (typeof window.getPlaceInfoFromLatLng === 'function') {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
-            return extractSmartSearchTerm(info, fallbackCity);
+            const result = extractSmartSearchTerm(info, fallbackCity);
+            
+            // C. Sonucu Kaydet (Gelecek sefer için)
+            if (result && result.term && result.term !== fallbackCity) {
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(result));
+                } catch(e) {}
+            }
+            return result;
         } else {
             return { term: fallbackCity, context: "" };
         }
@@ -93,13 +117,13 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     if (!dayContainer) return;
     const tripTokenAtStart = window.__activeTripSessionToken;
 
-    // A. Collage Alanını Hazırla (DOM'da henüz yerleştirme)
+    // A. Collage Alanını Hazırla
     let collage = dayContainer.querySelector('.day-collage');
     if (!collage) {
         collage = document.createElement('div');
         collage.className = 'day-collage';
-        // Min-height ile alanın çökmesini önle
-        collage.style.cssText = "margin: 30px 0 10px 0;    border-radius: 10px;    overflow: hidden;    position: relative;    display: block;    min-height: 100px;";
+        // Min-height, görsel yüklenene kadar alanın çökmesini engeller
+        collage.style.cssText = "margin: 12px 0px 6px; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
     }
 
     // B. DOM'a Yerleştirme (UL -> Mevcut Buton -> Collage)
@@ -133,6 +157,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     let searchObj = { term: window.selectedCity || "", context: "" };
     
+    // fetchSmartLocationName artık cache'li çalışıyor, isim değişmeyecek.
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
     }
@@ -142,13 +167,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         return;
     }
 
-    // D. Cache Kontrolü
+    // D. Cache Kontrolü (Resim Cache'i)
     if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
     if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
         window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
+    // İsim sabitlendiği için bu KEY de artık sabit kalacak ve eski resimleri hep bulacak.
     const safeTerm = searchObj.term.replace(/\s+/g, '_');
     const cacheKey = `tt_day_collage_${day}_${safeTerm}_pixabay_v1`;
     
