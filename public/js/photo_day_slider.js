@@ -18,15 +18,28 @@ window.__globalCollageUsedByTrip = window.__globalCollageUsedByTrip || {};
 window.__apiPageTracker = window.__apiPageTracker || {}; 
 window.__apiExhaustedQueries = window.__apiExhaustedQueries || new Set();
 
-// GEZİ BAĞLAMI HAFIZASI
+// GEZİ BAĞLAMI HAFIZASI (Örn: Antalya, Turkey)
 window.__lastKnownContext = window.__lastKnownContext || ""; 
-window.__lastKnownCountry = window.__lastKnownCountry || ""; // Ülkeyi de hatırlayalım
+window.__lastKnownCountry = window.__lastKnownCountry || ""; 
+
+// [YENİ] BAŞLANGIÇTA ÜLKEYİ ZORLA HAFIZAYA AL
+// Kullanıcı "Manisa, Turkey" yazdıysa, Turkey'i hemen cebe atalım.
+try {
+    if (window.selectedCity && window.selectedCity.includes(',')) {
+        let parts = window.selectedCity.split(',');
+        let possibleCountry = parts[parts.length - 1].trim();
+        if (possibleCountry && !window.__lastKnownCountry) {
+            window.__lastKnownCountry = possibleCountry;
+            console.log("[Collage] Ülke hafızaya alındı:", window.__lastKnownCountry);
+        }
+    }
+} catch(e) {}
 
 
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
-    if (!info) return { term: fallbackCity, context: "", country: "" };
+    if (!info) return { term: fallbackCity, context: "", country: window.__lastKnownCountry || "" };
 
     const props = info.properties || {};
     const addr = info.address || props.address || {}; 
@@ -34,7 +47,9 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const district = addr.district || addr.county || props.district || props.county || "";
     const city = addr.city || addr.town || addr.village || props.city || props.town || "";
     const state = addr.state || addr.province || props.state || "";
-    const country = addr.country || props.country || ""; 
+    
+    // Ülkeyi bulamazsa hafızadakini kullan, o da yoksa boş dön.
+    const country = addr.country || props.country || window.__lastKnownCountry || "";
 
     let term = "";     
     let context = "";  
@@ -56,25 +71,24 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
         context = city;
     }
 
-    // Fallback'ten Ülke Çıkarma (Önemli Düzeltme)
-    let fallbackCountry = "";
-    if (fallbackCity && fallbackCity.includes(',')) {
-        const parts = fallbackCity.split(',');
-        // "Manisa, Turkey" -> Son parça ülkedir.
-        fallbackCountry = parts[parts.length - 1].trim();
-        
-        // Eğer term boşsa ilk parçayı term yap
-        if (!term) {
+    // Fallback'ten Veri Kurtarma
+    if (!term) {
+        if (fallbackCity.includes(',')) {
+            let parts = fallbackCity.split(',');
             term = parts[0].trim();
+            // Eğer ülke hala boşsa buradan al
+            if (!country) {
+                // country değişkeni const olduğu için return objesinde kullanacağız
+            }
+        } else {
+            term = fallbackCity;
         }
-    } else if (!term) {
-        term = fallbackCity;
     }
 
     return { 
         term: term, 
         context: context, 
-        country: country || fallbackCountry 
+        country: country 
     };
 }
 
@@ -82,7 +96,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v26_${latKey}_${lngKey}`; // v26
+    const storageKey = `tt_loc_name_v27_${latKey}_${lngKey}`; // v27
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -94,25 +108,30 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
+            // Bulunan ülke bilgisini hemen hafızaya yedekle (Garanti olsun)
+            if (result.country) window.__lastKnownCountry = result.country;
+            if (result.context) window.__lastKnownContext = result.context;
+
             if (result && (result.term || result.context)) {
                 try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
             return result;
         } else {
-            return { term: fallbackCity, context: "", country: "" };
+            return { term: fallbackCity, context: "", country: window.__lastKnownCountry };
         }
     } catch (_) {
-        return { term: fallbackCity, context: "", country: "" };
+        return { term: fallbackCity, context: "", country: window.__lastKnownCountry };
     }
 };
 
 
-// 3. GÖRSEL ARAMA (KESİNTİSİZ GEÇİŞ)
+// 3. GÖRSEL ARAMA (KESİNTİSİZ GEÇİŞ - LOOP DEVAM EDER)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;    
     const context = searchObj.context; 
-    const country = searchObj.country; // Artık ülkeyi de aday olarak alıyoruz
+    // Ülkeyi searchObj'den al, yoksa hafızadan al.
+    const country = searchObj.country || window.__lastKnownCountry;
 
     if (!term && !context && !country) return { images: [], activeLabel: "" };
 
@@ -128,7 +147,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
     const candidates = [];
 
     // 1. Aday: İlçe + İl (Örn: "Kemer Antalya")
-    if (term && context) {
+    if (term && context && term !== context) {
         candidates.push({ query: `${term} ${context}`, label: term });
     }
 
@@ -137,12 +156,12 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         candidates.push({ query: term, label: term });
     }
 
-    // 3. Aday: Sadece İl (Örn: "Antalya") -> Kemer biterse
+    // 3. Aday: Sadece İl (Örn: "Antalya")
     if (context && context !== term) {
         candidates.push({ query: context, label: context });
     }
 
-    // 4. Aday: Ülke (Örn: "Turkey") -> İl biterse veya yoksa
+    // 4. Aday: Ülke (Örn: "Turkey") - ARTIK GARANTİ LİSTEDE
     if (country) {
         candidates.push({ query: country, label: country });
     }
@@ -162,15 +181,12 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
             continue;
         }
 
-        // Sayfa yönetimi
+        // Sayfa yönetimi (Peşin Artırma)
         let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
-        
-        // Bir sonraki çağrı için şimdiden artırıyoruz (Race condition önlemi)
         window.__apiPageTracker[trackerKey] = pageToFetch + 1;
 
         // Kaç tane eksiğimiz var?
         const needed = limit - accumulatedImages.length;
-        // Biraz bol isteyelim
         const fetchCount = Math.max(needed + 2, 4);
         
         // API İsteği
@@ -186,7 +202,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                 if (fetchedImages.length === 0) {
                     // Bu kelime bitti. İşaretle.
                     window.__apiExhaustedQueries.add(trackerKey);
-                    // DÖNGÜYÜ KISMA! (break yok). Continue ile bir sonraki adaya (örn: Turkey'e) geç.
+                    // Manisa bitti -> Hemen döngünün başına dön ve sıradaki (Turkey) adayı işle.
                     continue; 
                 }
 
@@ -198,19 +214,15 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
                         accumulatedImages.push(imgUrl);
                         seenUrls.add(imgUrl);
                         
-                        // Eğer hala final bir etiket belirlemediysek, ilk bulduğumuz kaynağın adını ver
-                        // Örn: Manisa'dan bulduysak Manisa, Manisa bitip Turkey'den bulduysak Turkey.
+                        // Etiket belirleme (İlk bulduğumuz kaynağın adını ver)
                         if (!finalLabel) {
                             finalLabel = candidate.label;
                         }
                     }
                 }
                 
-                // Eğer limit dolmadıysa ve bu sorgudan veri geldiyse, 
-                // belki bir sonraki sayfada daha vardır ama şimdilik diğer adaya geçmek yerine
-                // bu adayda kalıp kalmamak strateji meselesi. 
-                // Şimdilik "Bir sonraki adaya geç" mantığı (continue) zaten döngü gereği işliyor.
-                // Eğer limit dolmadıysa for döngüsü dönmeye devam eder ve sıradaki adaydan (Turkey) tamamlar.
+                // Eğer bu adayın fotoğrafları geldiyse ama limit hala dolmadıysa,
+                // döngü devam edip bir sonraki adaydan (Turkey) tamamlayacak.
             }
         } catch (e) {
             console.warn(`Collage fetch error: "${query}"`, e);
@@ -271,24 +283,22 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     // DURUM 1: Gün içinde gezi noktası varsa
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
-        
-        // [HAFIZA]: Bulduğumuz bilgileri kaydet
-        if (searchObj.context) window.__lastKnownContext = searchObj.context;
-        if (searchObj.country) window.__lastKnownCountry = searchObj.country;
     } 
     // DURUM 2: Gün boşsa (Add New Day)
     else {
         let rawCity = window.selectedCity || "";
-        // "Manisa, Turkey" parsing
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
-            searchObj.term = parts[0].trim(); // "Manisa"
-            searchObj.country = parts[parts.length - 1].trim(); // "Turkey"
+            searchObj.term = parts[0].trim(); 
+            // Ülkeyi buradan al ve kaydet
+            let ctry = parts[parts.length - 1].trim();
+            searchObj.country = ctry;
+            if (ctry) window.__lastKnownCountry = ctry;
         } else {
             searchObj.term = rawCity;
         }
 
-        // [HAFIZA KULLANIMI]: Eksikleri tamamla
+        // Hafızadaki bilgileri kullan
         if (!searchObj.context && window.__lastKnownContext) searchObj.context = window.__lastKnownContext;
         if (!searchObj.country && window.__lastKnownCountry) searchObj.country = window.__lastKnownCountry;
     }
@@ -306,7 +316,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v26_${day}_${safeTerm}_pixabay`;
+    const cacheKey = `tt_day_collage_v27_${day}_${safeTerm}_pixabay`;
     
     let images = [];
     let activeLabel = ""; 
@@ -331,7 +341,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
         if (typeof window.getCityCollageImages === 'function') {
             
-            console.log(`[Collage] Searching for: ${searchObj.term} (Ctx: ${searchObj.context}, Cnt: ${searchObj.country})`);
+            console.log(`[Collage] Searching for: ${searchObj.term}, Ctx: ${searchObj.context}, Cnt: ${searchObj.country}`);
             
             const result = await window.getCityCollageImages(searchObj, {
                 min: 4, 
@@ -374,7 +384,7 @@ function renderCollageSlides(collage, images, displayLabel) {
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // Başlık: API'den dönen aktif etiket (Örn: Manisa bittiyse "Turkey")
+    // Başlık
     let displayTerm = displayLabel;
 
     const topHeaderHtml = displayTerm
