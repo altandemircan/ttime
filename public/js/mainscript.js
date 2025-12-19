@@ -94,54 +94,58 @@ function renderSuggestions(results = []) {
         return;
     }
 
-    // --- [YENİ] AKILLI SIRALAMA (SORTING) ---
-    // Kullanıcının ne aradığını bulmak için inputu temizle (Süreleri at)
+    // --- [YENİ] AGRESİF TEMİZLİK VE PUANLAMA ---
     const rawInput = chatInput.value.toLowerCase();
-    // "1 day Kemer" -> "kemer" kalacak şekilde temizle
-    const searchLayout = rawInput.replace(/(\d+)\s*-?\s*(day|days|gün)/gi, "").trim();
+    
+    // Rakamları, 'day/gün' kelimelerini ve tireleri tamamen sil. 
+    // "1-day Kemer" -> "kemer" kalır.
+    const searchTerm = rawInput
+        .replace(/[0-9]/g, '')               // Sayıları sil
+        .replace(/(day|days|gün|gun)/gi, '') // Süre ifadelerini sil
+        .replace(/[-]/g, '')                 // Tireleri sil
+        .trim();                             // Boşlukları temizle
 
-    if (searchLayout.length > 0) {
+    // Sıralama Fonksiyonu
+    if (searchTerm.length > 0) {
         results.sort((a, b) => {
             const nameA = (a.properties.name || "").toLowerCase();
             const nameB = (b.properties.name || "").toLowerCase();
-
-            // Kural 1: Tam Eşleşme (Exact Match) En Üste!
-            // Örn: Aranan "Kemer", Sonuç "Kemer" -> En tepeye.
-            const exactA = nameA === searchLayout;
-            const exactB = nameB === searchLayout;
-            if (exactA && !exactB) return -1;
-            if (!exactA && exactB) return 1;
-
-            // Kural 2: İle Başlayanlar (Starts With) İkinci Sıraya
-            // Örn: "Kemerovo" -> "Seydikemer"den önce gelsin.
-            const startsA = nameA.startsWith(searchLayout);
-            const startsB = nameB.startsWith(searchLayout);
-            if (startsA && !startsB) return -1;
-            if (!startsA && startsB) return 1;
-
-            // Kural 3: İkisi de aynıysa (örneğin ikisi de ile başlıyorsa) kısa olanı öne al
-            // (Genelde kısa olan ana yerdir)
-            if (startsA && startsB) {
-                return nameA.length - nameB.length;
+            
+            // Puanlama (Düşük puan daha iyidir)
+            function getScore(name) {
+                if (name === searchTerm) return 1;          // Tam Eşleşme (Kemer) -> Kral
+                if (name.startsWith(searchTerm)) return 2;  // İle Başlayan (Kemerovo) -> Vezir
+                if (name.includes(searchTerm)) return 3;    // İçinde Geçen (Seydikemer) -> Asker
+                return 4;                                   // Alakasız -> Halk
             }
 
-            return 0; // Eşitse sıralamayı bozma (API sırasına güven)
+            const scoreA = getScore(nameA);
+            const scoreB = getScore(nameB);
+
+            // Önce puana göre sırala
+            if (scoreA !== scoreB) {
+                return scoreA - scoreB;
+            }
+
+            // Puanlar eşitse (örneğin ikisi de "Kemer" ile başlıyorsa) kısa olanı öne al
+            // Çünkü "Kemer" (5 harf), "Kemerburgaz" (11 harf)'dan daha muhtemeldir.
+            return nameA.length - nameB.length;
         });
     }
 
-    // --- Mükerrer Kayıt Kontrolü (Deduplication) ---
+    // --- RENDER VE DEDUPLICATION ---
     const seenSuggestions = new Set();
 
     results.forEach((result, idx) => {
         const props = result.properties || {};
         
-        // 1. HAM VERİLER
+        // 1. VERİLER
         const name = props.name || "";       
         const city = props.city || "";       
         const county = props.county || "";   
         const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
-        // 2. KATI HİYERARŞİ (KÜÇÜK -> BÜYÜK)
+        // 2. HİYERARŞİ (Küçük -> Büyük)
         let parts = [];
 
         // A. İSİM
@@ -157,7 +161,7 @@ function renderSuggestions(results = []) {
             parts.push(county);
         }
 
-        // D. ÜLKE KODU
+        // D. ÜLKE KODU (TR)
         if (countryCode) {
             parts.push(countryCode);
         }
@@ -165,22 +169,19 @@ function renderSuggestions(results = []) {
         // 3. GÖRÜNTÜLEME
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-        
-        // Sonuç: "Kemer, Antalya, TR 🇹🇷"
         const displayText = uniqueParts.join(", ") + flag;
 
-        // [KRİTİK] Tekilleştirme Kontrolü
+        // TEKİLLEŞTİRME (Aynı sonucu tekrar basma)
         if (seenSuggestions.has(displayText)) {
             return; 
         }
         seenSuggestions.add(displayText);
 
-        // --- DOM ELEMENTİ ---
+        // --- DOM OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // Sıralamayı biz yaptığımız için artık ilk eleman kesinlikle en alakalı olandır.
-        // Listede görünen ilk elemana 'selected' sınıfı verelim.
+        // Listenin ilk elemanı artık en yüksek puanlı (en alakalı) olandır.
         if (suggestionsDiv.children.length === 0) {
             div.classList.add("selected-suggestion");
         }
@@ -195,7 +196,6 @@ function renderSuggestions(results = []) {
             
             window.selectedSuggestion = { displayText, props };
             
-            // Lokasyon objesi
             window.selectedLocation = {
                 name: name,
                 city: county || city || name,
