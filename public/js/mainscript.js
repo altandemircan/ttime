@@ -556,18 +556,29 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         const others = [];         // Diğerleri (Biga vb.)
 
         originalResults.forEach(item => {
-            const name = (item.properties.name || "").toLocaleLowerCase('tr');
-            
-            if (name === targetTerm) {
-                exactMatches.push(item);
-            } else if (name.startsWith(targetTerm)) {
-                startMatches.push(item);
-            } else if (name.includes(targetTerm)) {
-                containMatches.push(item);
-            } else {
-                others.push(item);
-            }
-        });
+    // city veya county fallback, name boşsa city'yi kullan
+    let name = "";
+    if (item.properties.name && item.properties.name.trim() !== "") {
+        name = item.properties.name.toLocaleLowerCase('tr');
+    } else if (item.properties.city && item.properties.city.trim() !== "") {
+        name = item.properties.city.toLocaleLowerCase('tr');
+    } else {
+        // county bile yoksa "other"
+        name = "";
+    }
+
+    if (!name) {
+        others.push(item);
+    } else if (name === targetTerm) {
+        exactMatches.push(item);
+    } else if (name.startsWith(targetTerm)) {
+        startMatches.push(item);
+    } else if (name.includes(targetTerm)) {
+        containMatches.push(item);
+    } else {
+        others.push(item);
+    }
+});
 
         // Kutuları sırayla birleştir: Önce Tam, Sonra Başlayan, Sonra İçeren
         finalSortedResults = [
