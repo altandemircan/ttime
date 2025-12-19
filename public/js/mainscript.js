@@ -86,6 +86,7 @@ function renderSuggestions(results = []) {
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
+    
     suggestionsDiv.innerHTML = "";
 
     if (!results.length) {
@@ -93,72 +94,60 @@ function renderSuggestions(results = []) {
         return;
     }
 
+    results.forEach((result, idx) => {
+        const props = result.properties || {};
+        
+        // --- 1. VERİLERİ ÇEK ---
+        const name = props.name || "";       // Örn: Altınkum, Kemer
+        const county = props.county || "";   // Örn: Konyaaltı
+        const city = props.city || "";       // Örn: Antalya
+        const state = props.state || "";     // Örn: Mediterranean Region
+        const country = props.country || ""; // Örn: Turkey
 
+        // --- 2. HİYERARŞİK PARÇALARI OLUŞTUR ---
+        let parts = [];
 
+        // A. İsim (En özel yer)
+        if (name) parts.push(name);
 
-    
-
-    // mainscript.js içinde renderSuggestions fonksiyonunun içi:
-
-results.forEach(result => {
-    const props = result.properties || {};
-    
-    // 1. En özel isim (İlçe veya Yer adı)
-    const name = props.name || ""; 
-    
-    // 2. Ülke
-    const country = props.country || "";
-    
-    // 3. İl (Province) Bulma Mantığı
-    let province = "";
-
-    // Geoapify Türkiye verisinde:
-    // props.city -> Genellikle "Antalya" (İl) bilgisini tutar.
-    // props.state -> Genellikle "Mediterranean Region" (Bölge) bilgisini tutar.
-    
-    // A. Önce 'city' alanına bak. Eğer 'name'den farklıysa (yani Kemer != Antalya ise), bu İldir.
-    if (props.city && props.city !== name) {
-        province = props.city;
-    } 
-    // B. Eğer city yoksa 'state'e bak. Ama içinde "Region" veya "Bölgesi" geçiyorsa KULLANMA.
-    else if (props.state && props.state !== name) {
-        if (!props.state.includes("Region") && !props.state.includes("Bölge")) {
-            province = props.state;
+        // B. İlçe (County) - Eğer isimden farklıysa ekle
+        // (Örn: Altınkum arandıysa, Konyaaltı ilçesi buraya gelir)
+        if (county && county !== name) {
+            parts.push(county);
         }
-    }
-    // C. Bazen il bilgisi 'county' içinde gelebilir (Nadir ama kontrol edelim)
-    else if (props.county && props.county !== name) {
-        province = props.county;
-    }
 
-    const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+        // C. İl (Province) Belirleme
+        let province = "";
+        
+        // Öncelik 1: City alanı (Genellikle il adıdır)
+        if (city && city !== name && city !== county) {
+            province = city;
+        }
+        
+        // Öncelik 2: State alanı (City boşsa buraya bak, ama Region/Bölge filtrele)
+        if (!province && state && state !== name && state !== county) {
+             if (!state.includes("Region") && !state.includes("Bölge")) {
+                 province = state;
+             }
+        }
 
-    // --- PARÇALARI BİRLEŞTİR ---
-    // Hedef: [Kemer, Antalya, Turkey]
-    let parts = [];
-    
-    // 1. İsim (Kemer)
-    if (name) parts.push(name);
-    
-    // 2. İl (Antalya) - Eğer varsa ve İsim'den farklıysa ekle
-    if (province && province !== name) parts.push(province);
-    
-    // 3. Ülke (Turkey) - Eğer İl'den ve İsim'den farklıysa ekle
-    if (country && country !== province && country !== name) parts.push(country);
+        if (province) parts.push(province);
 
-    // Filter(Boolean) boş değerleri temizler
-    const displayText = parts.filter(Boolean).join(", ") + flag;
+        // D. Ülke
+        if (country) parts.push(country);
 
-    // ... kodun kalanı aynı ...
-    const div = document.createElement("div");
-    div.className = "category-area-option";
-    // ...
+        // --- 3. BİRLEŞTİR VE TEMİZLE ---
+        // Set kullanarak mükerrerleri temizle (Örn: Antalya, Antalya olmasın)
+        const uniqueParts = [...new Set(parts)].filter(Boolean);
+        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+        const displayText = uniqueParts.join(", ") + flag;
 
-
-
-
-
-
+        // --- DOM ELEMENTİ OLUŞTUR ---
+        const div = document.createElement("div");
+        div.className = "category-area-option";
+        
+        // İlk sıradakini varsayılan seçili yap
+        if (idx === 0) div.classList.add("selected-suggestion");
 
         div.textContent = displayText;
         div.dataset.displayText = displayText;
@@ -168,37 +157,51 @@ results.forEach(result => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
+            
             window.selectedSuggestion = { displayText, props };
+            
+            // Seçilen lokasyon objesi
             window.selectedLocation = {
                 name: props.name || city,
-                city: city,
+                city: city || province, // Şehir yoksa bulduğumuz ili kullan
                 country: country,
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
             };
+
             // Gün sayısı inputtan (veya 2 default)
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
-            let canonicalStr = `Plan a ${days}-day tour for ${window.selectedLocation.city}`;
+
+            // Canonical Plan Stringini oluştur
+            // window.selectedLocation.city boşsa name'i kullan
+            let targetName = window.selectedLocation.city || window.selectedLocation.name;
+            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+
             if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${window.selectedLocation.city} ${days} days`);
+                const c = formatCanonicalPlan(`${targetName} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
             }
+
             if (typeof setChatInputValue === "function") {
                 setChatInputValue(canonicalStr);
             } else {
                 chatInput.value = canonicalStr;
             }
+
             window.selectedLocationLocked = true;
             window.__locationPickedFromSuggestions = true;
+            
             enableSendButton?.();
             showSuggestionsDiv?.();
+            
             if (typeof updateCanonicalPreview === "function") {
                 updateCanonicalPreview();
             }
+
             setTimeout(() => { window.__programmaticInput = false; }, 0); // ARTIK kullanıcı yazıyor
         };
 
@@ -211,7 +214,6 @@ results.forEach(result => {
         hideSuggestionsDiv?.(true);
     }
 }
-
 
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
