@@ -94,11 +94,23 @@ function renderSuggestions(results = []) {
     }
 
     results.forEach(result => {
-        const props = result.properties || {};
-        const city = props.city || props.name || "";
-        const country = props.country || "";
-        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-        const displayText = [city, country].filter(Boolean).join(", ") + flag;
+    const props = result.properties || {};
+    const city = props.city || props.name || "";
+    const country = props.country || "";
+    // YENİ: İl (state) veya İlçe (county) bilgisini al
+    const state = props.state || props.county || ""; 
+    
+    const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+
+    // YENİ KOD: Şehir, İl ve Ülke'yi birleştir
+    // Eğer şehir ve il aynıysa (örn: İstanbul, İstanbul) tekrar etmemesi için kontrol ekliyoruz.
+    let parts = [city];
+    if (state && state !== city) {
+        parts.push(state);
+    }
+    parts.push(country);
+
+    const displayText = parts.filter(Boolean).join(", ") + flag;
 
         const div = document.createElement("div");
         div.className = "category-area-option";
