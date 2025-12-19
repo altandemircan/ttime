@@ -528,9 +528,7 @@ if (typeof hideSuggestionsDiv !== "function") {
 // 3. RENDER SUGGESTIONS (KESİN GRUPLAMA YÖNTEMİ)
 // ============================================================
 function renderSuggestions(originalResults = [], manualQuery = "") {
-  const canonicalPreview = document.getElementById("canonical-preview");
-    if (canonicalPreview) canonicalPreview.style.display = "none";
-    
+  
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
