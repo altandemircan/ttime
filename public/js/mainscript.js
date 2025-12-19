@@ -531,7 +531,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
-    
+
     suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
@@ -539,25 +539,22 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // A. HEDEF KELİMEYİ BELİRLE
     let targetTerm = manualQuery 
         ? manualQuery.toLocaleLowerCase('tr') 
         : extractLocationQuery(chatInput.value);
 
-    // console.log(`[Render] Hedef: "${targetTerm}"`); // Debug
-
     let finalSortedResults = [];
 
-    // B. GRUPLAMA (BUCKETING) - KESİN SIRALAMA İÇİN
+    // B. GRUPLAMA (BUCKETING)
     if (targetTerm.length > 0) {
-        const exactMatches = [];   // Tam Eşleşen (Kemer)
-        const startMatches = [];   // İle Başlayan (Kemerovo)
-        const containMatches = []; // İçinde Geçen (Seydikemer)
-        const others = [];         // Diğerleri (Biga vb.)
+        const exactMatches = [];   
+        const startMatches = [];   
+        const containMatches = []; 
+        const others = [];         
 
         originalResults.forEach(item => {
             const name = (item.properties.name || "").toLocaleLowerCase('tr');
-            
+
             if (name === targetTerm) {
                 exactMatches.push(item);
             } else if (name.startsWith(targetTerm)) {
@@ -569,7 +566,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             }
         });
 
-        // Kutuları sırayla birleştir: Önce Tam, Sonra Başlayan, Sonra İçeren
         finalSortedResults = [
             ...exactMatches,
             ...startMatches,
@@ -577,43 +573,47 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             ...others
         ];
     } else {
-        // Hedef kelime yoksa API sırasını bozma
         finalSortedResults = [...originalResults];
     }
 
-    // --- C. LİSTELEME ---
+    // =======>> BURADA KONSOLA YAZDIR <<=======
+    console.log("[SIRALI SUGGESTIONS]:",
+        finalSortedResults.map(r => {
+            const p = r.properties || {};
+            let txt = `${p.name || ""}`;
+            if (p.city && p.city !== p.name) txt += `, ${p.city}`;
+            if (p.county && p.county !== p.name && p.county !== p.city) txt += `, ${p.county}`;
+            if (p.country_code) txt += `, ${p.country_code.toUpperCase()}`
+            return txt;
+        })
+    );
+    // =========================================
+
     const seenSuggestions = new Set();
 
     finalSortedResults.forEach((result) => {
         const props = result.properties || {};
-        
-        // Verileri Çek
+
         const name = props.name || "";       
         const city = props.city || "";       
         const county = props.county || "";   
         const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
-        // Hiyerarşi Parçaları
         let parts = [];
         if (name) parts.push(name); 
         if (city && city !== name) parts.push(city); 
         if (county && county !== name && county !== city) parts.push(county); 
         if (countryCode) parts.push(countryCode); 
 
-        // Birleştir
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = uniqueParts.join(", ") + flag;
 
-        // Tekrarları Engelle
         if (seenSuggestions.has(displayText)) return; 
         seenSuggestions.add(displayText);
 
-        // HTML Elementi
         const div = document.createElement("div");
         div.className = "category-area-option";
-        
-        // Listenin ilk elemanı (Zorla en başa aldığımız) seçili olsun
         if (suggestionsDiv.children.length === 0) {
             div.classList.add("selected-suggestion");
         }
@@ -654,7 +654,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
             window.selectedLocationLocked = true;
             window.__locationPickedFromSuggestions = true;
-            
+
             if(window.enableSendButton) enableSendButton();
             showSuggestionsDiv();
             if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
@@ -671,55 +671,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         hideSuggestionsDiv(true);
     }
 }
-
-// ============================================================
-// 4. INPUT EVENT LISTENER
-// ============================================================
-if (typeof chatInput !== 'undefined' && chatInput) {
-    chatInput.addEventListener("input", debounce(async function () {
-        if (window.__programmaticInput) return;
-
-        const rawText = this.value.trim();
-        const locationQuery = extractLocationQuery(rawText);
-        
-        console.log(`Input: "${rawText}" -> API Query: "${locationQuery}"`);
-
-        if (locationQuery.length < 2) {
-            if (rawText.length < 2) showSuggestions();
-            return;
-        }
-
-        let suggestions = [];
-        try {
-            if (window.geoapify && window.geoapify.autocomplete) {
-                suggestions = await window.geoapify.autocomplete(locationQuery);
-            } else if (typeof geoapifyLocationAutocomplete === 'function') {
-                suggestions = await geoapifyLocationAutocomplete(locationQuery);
-            }
-        } catch (err) {
-            if (err.name === "AbortError") return;
-            suggestions = [];
-        }
-
-        window.lastResults = suggestions;
-        
-        // Temizlenmiş sorguyu (locationQuery) RENDER'a gönder
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(suggestions, locationQuery);
-        }
-
-    }, 400));
-
-    chatInput.addEventListener("focus", function () {
-        if (window.lastResults && window.lastResults.length) {
-            const currentQuery = extractLocationQuery(this.value);
-            renderSuggestions(window.lastResults, currentQuery);
-        } else {
-             showSuggestions();
-        }
-    });
-}
-
 
 
 
