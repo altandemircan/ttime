@@ -98,46 +98,56 @@ function renderSuggestions(results = []) {
         const props = result.properties || {};
         
         // --- 1. VERİLERİ ÇEK ---
-        const name = props.name || "";       // Örn: Altınkum, Kemer
+        const name = props.name || "";       // Örn: Kemer, Altınkum
         const county = props.county || "";   // Örn: Konyaaltı
         const city = props.city || "";       // Örn: Antalya
         const state = props.state || "";     // Örn: Mediterranean Region
         const country = props.country || ""; // Örn: Turkey
 
-        // --- 2. HİYERARŞİK PARÇALARI OLUŞTUR ---
+        // --- 2. İL (PROVINCE) BELİRLE ---
+        // İl verisini netleştir (Region'ları temizle)
+        let province = "";
+        
+        // Öncelik A: City alanı (Genellikle il adıdır)
+        if (city) {
+            province = city;
+        }
+        // Öncelik B: State alanı (City yoksa buraya bak, Region'ları at)
+        else if (state && !state.includes("Region") && !state.includes("Bölge")) {
+            province = state;
+        }
+
+        // --- 3. SIRALAMA (KÜÇÜKTEN BÜYÜĞE) ---
+        // Hedef: İlçe, İl, Ülke (Kemer, Antalya, Turkey)
         let parts = [];
 
-        // A. İsim (En özel yer)
-        if (name) parts.push(name);
+        // ADIM 1: En Özel İsim (İlçe, Mahalle veya Yer)
+        // Örn: "Kemer" veya "Altınkum"
+        if (name) {
+            parts.push(name);
+        }
 
-        // B. İlçe (County) - Eğer isimden farklıysa ekle
-        // (Örn: Altınkum arandıysa, Konyaaltı ilçesi buraya gelir)
+        // ADIM 2: İlçe (County) - (Ara Katman)
+        // Eğer aranan yer bir mahalle ise (Altınkum), ilçesi (Konyaaltı) buraya gelir.
+        // Eğer aranan yer ilçe ise (Kemer), county genellikle name ile aynıdır, eklenmez.
         if (county && county !== name) {
             parts.push(county);
         }
 
-        // C. İl (Province) Belirleme
-        let province = "";
-        
-        // Öncelik 1: City alanı (Genellikle il adıdır)
-        if (city && city !== name && city !== county) {
-            province = city;
-        }
-        
-        // Öncelik 2: State alanı (City boşsa buraya bak, ama Region/Bölge filtrele)
-        if (!province && state && state !== name && state !== county) {
-             if (!state.includes("Region") && !state.includes("Bölge")) {
-                 province = state;
-             }
+        // ADIM 3: İl (Province)
+        // Eğer İl ismi, yukarıdaki isimden veya ilçeden farklıysa ekle.
+        // (Örn: "Antalya"yı ekle. Ama aranan zaten "Antalya" ise ekleme)
+        if (province && province !== name && province !== county) {
+            parts.push(province);
         }
 
-        if (province) parts.push(province);
+        // ADIM 4: Ülke
+        if (country) {
+            parts.push(country);
+        }
 
-        // D. Ülke
-        if (country) parts.push(country);
-
-        // --- 3. BİRLEŞTİR VE TEMİZLE ---
-        // Set kullanarak mükerrerleri temizle (Örn: Antalya, Antalya olmasın)
+        // --- 4. BİRLEŞTİR ---
+        // Set kullanarak olası tekrarları (Antalya, Antalya gibi) temizle
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = uniqueParts.join(", ") + flag;
@@ -146,38 +156,34 @@ function renderSuggestions(results = []) {
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // İlk sıradakini varsayılan seçili yap
         if (idx === 0) div.classList.add("selected-suggestion");
 
         div.textContent = displayText;
         div.dataset.displayText = displayText;
 
         div.onclick = () => {
-            // TIKLAMADA PROGRAMATIK SET
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
             
             window.selectedSuggestion = { displayText, props };
             
-            // Seçilen lokasyon objesi
+            // Lokasyon objesini güncelle
             window.selectedLocation = {
                 name: props.name || city,
-                city: city || province, // Şehir yoksa bulduğumuz ili kullan
+                city: province || city, // Bulduğumuz temiz il ismini kullan
                 country: country,
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
             };
 
-            // Gün sayısı inputtan (veya 2 default)
+            // Input işlemleri
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
 
-            // Canonical Plan Stringini oluştur
-            // window.selectedLocation.city boşsa name'i kullan
             let targetName = window.selectedLocation.city || window.selectedLocation.name;
             let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
 
@@ -202,7 +208,7 @@ function renderSuggestions(results = []) {
                 updateCanonicalPreview();
             }
 
-            setTimeout(() => { window.__programmaticInput = false; }, 0); // ARTIK kullanıcı yazıyor
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
         };
 
         suggestionsDiv.appendChild(div);
