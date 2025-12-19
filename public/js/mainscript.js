@@ -484,7 +484,7 @@ async function geoapifyLocationAutocomplete(query) {
 
 
 // ============================================================
-// 1. SORGULAMA TEMİZLEYİCİ
+// 1. SORGULAMA TEMİZLEYİCİ (Global)
 // ============================================================
 function extractLocationQuery(input) {
     if (!input) return "";
@@ -493,12 +493,13 @@ function extractLocationQuery(input) {
     let cleaned = input.toLocaleLowerCase('tr');
 
     // B. "1 day", "3 gün", "2-night" gibi ifadeleri sil
+    // Regex mantığı: Rakam + boşluk + gün/gece kelimesi
     cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
-    // C. Gereksiz karakterleri temizle
+    // C. Kalan rakam ve noktalama işaretlerini sil
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
 
-    // D. Yasaklı kelimeler
+    // D. Yasaklı kelimeler (Stop Words)
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
@@ -508,12 +509,14 @@ function extractLocationQuery(input) {
     let words = cleaned.split(/\s+/);
     words = words.filter(w => !stopWords.includes(w) && w.length > 1);
 
+    // E. Birleştir ve döndür
     let finalQuery = words.join(" ").trim();
+
     return finalQuery.length < 2 ? "" : finalQuery;
 }
 
 // ============================================================
-// 2. SUGGESTIONS GÖSTER/GİZLE
+// 2. SUGGESTIONS GÖSTER/GİZLE YARDIMCILARI
 // ============================================================
 if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
@@ -533,7 +536,7 @@ if (typeof hideSuggestionsDiv !== "function") {
 }
 
 // ============================================================
-// 3. RENDER SUGGESTIONS (Sıralama + Render)
+// 3. RENDER SUGGESTIONS (SIRALAMA MANTIĞI BURADA)
 // ============================================================
 function renderSuggestions(originalResults = [], manualQuery = "") {
     const suggestionsDiv = document.getElementById("suggestions");
@@ -547,45 +550,47 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // Listeyi kopyalayalım (Referans sorunlarını önlemek için)
+    // Listeyi kopyala (Referans hatasını önle)
     let results = [...originalResults];
 
-    // --- A. SIRALAMA ALGORİTMASI ---
-    // Hangi kelimeye göre sıralayacağız?
+    // --- A. SIRALAMA HEDEFİNİ BELİRLE ---
+    // Eğer manualQuery ("kemer") geldiyse onu kullan.
+    // Gelmediyse inputtan ("1 day kemer") temizle ("kemer").
+    // ASLA ham inputu ("1 day kemer") kullanma!
     let targetTerm = manualQuery 
         ? manualQuery.toLocaleLowerCase('tr') 
         : extractLocationQuery(chatInput.value);
-    
-    // Eğer hala boşsa inputun kendisine bak (Son çare)
-    if (!targetTerm && chatInput.value.length > 1) {
-        targetTerm = chatInput.value.trim().toLocaleLowerCase('tr');
-    }
 
-    console.log(`[Sort] Hedef Kelime: "${targetTerm}"`);
+    // Debug: Konsola basıp kontrol edebilirsiniz
+    console.log(`[Sort] Sıralama şu kelimeye göre yapılıyor: "${targetTerm}"`);
 
     if (targetTerm.length > 0) {
         results.sort((a, b) => {
             const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
             const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
             
+            // --- PUANLAMA SİSTEMİ ---
             function getScore(name) {
-                // 1. TAM EŞLEŞME (Kemer === kemer) -> 1 Puan
+                // 1. TAM EŞLEŞME (Kemer === kemer) -> 1 Puan (En Tepe)
                 if (name === targetTerm) return 1;
-                // 2. İLE BAŞLAYAN (Kemerovo) -> 2 Puan
+                
+                // 2. İLE BAŞLAYAN (Kemerovo -> kemer...) -> 2 Puan
                 if (name.startsWith(targetTerm)) return 2;
-                // 3. İÇİNDE GEÇEN (Seydikemer) -> 3 Puan
+                
+                // 3. İÇİNDE GEÇEN (Seydikemer -> ...kemer...) -> 3 Puan
                 if (name.includes(targetTerm)) return 3;
-                // 4. ALAKASIZ -> 4 Puan
+                
+                // 4. ALAKASIZ (Biga, Bozdoğan vb.) -> 4 Puan (En Alt)
                 return 4;
             }
 
             const scoreA = getScore(nameA);
             const scoreB = getScore(nameB);
 
-            // Loglayalım ki ne olduğunu görelim
-            // console.log(`${nameA} (${scoreA}) vs ${nameB} (${scoreB})`);
-
+            // Puan farkına göre sırala (Küçük puan yukarı çıkar)
             if (scoreA !== scoreB) return scoreA - scoreB;
+            
+            // Puanlar eşitse kısa olanı öne al
             return nameA.length - nameB.length;
         });
     }
@@ -622,7 +627,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // İlk elemanı seçili yap
+        // Listenin ilk elemanı (En yüksek puanlı olan) seçili olsun
         if (suggestionsDiv.children.length === 0) {
             div.classList.add("selected-suggestion");
         }
@@ -657,7 +662,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
                 const c = formatCanonicalPlan(`${targetName} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
             } else {
-                // Fallback (setChatInputValue yoksa)
                 chatInput.value = canonicalStr;
             }
             if (typeof setChatInputValue === "function") setChatInputValue(canonicalStr);
@@ -690,10 +694,12 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         if (window.__programmaticInput) return;
 
         const rawText = this.value.trim();
+        // 1. Temiz Sorguyu Al ("1 day Kemer" -> "kemer")
         const locationQuery = extractLocationQuery(rawText);
         
-        console.log(`Input: "${rawText}" -> API Query: "${locationQuery}"`);
+        console.log(`Input: "${rawText}" -> API & Sıralama Sorgusu: "${locationQuery}"`);
 
+        // Eğer temizlendikten sonra boşsa (sadece "1 day" yazıldıysa) çık
         if (locationQuery.length < 2) {
             if (rawText.length < 2) showSuggestions();
             return;
@@ -701,7 +707,6 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
         let suggestions = [];
         try {
-            // Geoapify çağrısı
             if (window.geoapify && window.geoapify.autocomplete) {
                 suggestions = await window.geoapify.autocomplete(locationQuery);
             } else if (typeof geoapifyLocationAutocomplete === 'function') {
@@ -714,7 +719,8 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
         window.lastResults = suggestions;
         
-        // Temizlenmiş sorguyu (locationQuery) sıralama için gönderiyoruz
+        // 2. renderSuggestions'a TEMİZLENMİŞ sorguyu manuel olarak gönderiyoruz.
+        // Böylece sıralama "1 day kemer"e göre değil, "kemer"e göre yapılıyor.
         if (typeof renderSuggestions === 'function') {
             renderSuggestions(suggestions, locationQuery);
         }
@@ -723,8 +729,9 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
     chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
-            const q = extractLocationQuery(this.value);
-            renderSuggestions(window.lastResults, q);
+            // Focus anında da temizlenmiş sorguya göre sırala
+            const currentQuery = extractLocationQuery(this.value);
+            renderSuggestions(window.lastResults, currentQuery);
         } else {
              showSuggestions();
         }
