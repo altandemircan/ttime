@@ -97,48 +97,41 @@ function renderSuggestions(results = []) {
     results.forEach((result, idx) => {
         const props = result.properties || {};
         
-        // 1. HAM VERİLERİ AL
-        const name = props.name || "";       
-        const county = props.county || "";   
-        const city = props.city || "";       
-        const state = props.state || "";     
-        const country = props.country || ""; 
+        // 1. HAM VERİLER
+        const name = props.name || "";       // Yer Adı (Örn: Kemer)
+        const city = props.city || "";       // İlçe (Örn: Kemer veya boş)
+        const county = props.county || "";   // İl (Örn: Antalya) - Geoapify TR'de İli 'county'de tutuyor.
+        const country = props.country || ""; // Ülke (Turkey) - Sadece veri için, ekranda göstermeyeceğiz.
 
-        // 2. İL (PROVINCE) BELİRLE
-        let parentCity = "";
-        
-        if (city && city !== name) {
-            parentCity = city;
-        } 
-        else if (state && state !== name && !state.includes("Region") && !state.includes("Bölge")) {
-            parentCity = state;
-        }
-
-        // 3. GÖRÜNÜM SIRALAMASI (Ülke İsmi Çıkarıldı)
-        // Sıra: [İsim] -> [İlçe] -> [İl] -> [Bayrak]
+        // 2. KATI HİYERARŞİ (KÜÇÜK -> BÜYÜK)
         let parts = [];
 
-        // A. İSİM
+        // A. İSİM (Her zaman ekle)
         if (name) parts.push(name);
 
-        // B. İLÇE
-        if (county && county !== name && county !== parentCity) {
+        // B. İLÇE / ŞEHİR (City)
+        // Eğer isimden farklıysa ekle. (Örn: Altınkum arandı, City: Didim -> Ekle)
+        // (Örn: Kemer arandı, City: Kemer -> Ekleme)
+        if (city && city !== name) {
+            parts.push(city);
+        }
+
+        // C. İL (County)
+        // Eğer isimden ve şehirden farklıysa ekle. (Örn: Antalya)
+        // Kemer(Name) != Antalya(County) -> Ekle.
+        if (county && county !== name && county !== city) {
             parts.push(county);
         }
 
-        // C. İL (BÜYÜK ŞEHİR)
-        if (parentCity) {
-            parts.push(parentCity);
-        }
+        // NOT: State (Bölge) bilgisini bilerek almıyoruz, kafa karıştırıyor.
+        // NOT: Country (Ülke) ismini isteğiniz üzerine almıyoruz.
 
-        // D. ÜLKE İSMİNİ EKMİYORUZ (Sadece bayrak eklenecek aşağıda)
-        // if (country) parts.push(country); // <-- İPTAL EDİLDİ
-
-        // 4. BİRLEŞTİR VE GÖSTER
+        // 3. GÖRÜNTÜLEME METNİ
+        // Set ile mükerrerleri temizle
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         
-        // Örn: "Kemer, Antalya 🇹🇷"
+        // SONUÇ: "Kemer, Antalya 🇹🇷"
         const displayText = uniqueParts.join(", ") + flag;
 
         // --- DOM ELEMENTİ ---
@@ -157,11 +150,12 @@ function renderSuggestions(results = []) {
             
             window.selectedSuggestion = { displayText, props };
             
-            // Lokasyon objesi (Arka plan için country bilgisini hala tutuyoruz)
+            // Veri tabanı ve API işlemleri için gerekli 'Country' bilgisini burada saklıyoruz
+            // Ekranda yazmasa bile arka planda bilmemiz gerek.
             window.selectedLocation = {
-                name: props.name || name,
-                city: parentCity || city, 
-                country: country, // <-- Veri tabanına gidecek veri hala burada, silinmedi.
+                name: name,
+                city: county || city || name, // Öncelik İl (County)
+                country: country, 
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
@@ -172,8 +166,8 @@ function renderSuggestions(results = []) {
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
 
-            // Inputa yazılacak metin (Bayraksız)
-            let targetName = displayText.replace(flag, ""); 
+            // Inputa bayraksız metni yaz
+            let targetName = displayText.replace(flag, "").trim(); 
             let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
 
             if (typeof formatCanonicalPlan === "function") {
