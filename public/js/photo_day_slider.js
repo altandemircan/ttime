@@ -41,10 +41,10 @@ try {
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
-    // Info varsa (koordinat geldiyse) hafızadaki ülkeyi dayatma, veriden çekmeye çalış.
-    // Eğer veride ülke yoksa o zaman hafızayı düşünürüz.
-    
-    if (!info) return { term: fallbackCity, context: "", country: window.__lastKnownCountry || "" };
+    // Koordinat verisi yoksa hafızaya bak, varsa hafızayı karıştırma.
+    let defaultCountry = info ? "" : (window.__lastKnownCountry || "");
+
+    if (!info) return { term: fallbackCity, context: "", country: defaultCountry };
 
     const props = info.properties || {};
     const addr = info.address || props.address || {}; 
@@ -92,7 +92,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v36_${latKey}_${lngKey}`; // v36
+    const storageKey = `tt_loc_name_v37_${latKey}_${lngKey}`; // v37
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -104,7 +104,6 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            // Veriyi kaydetmeden önce hafızayı güncellemiyoruz, render içinde yapacağız.
             if (result && (result.term || result.context)) {
                 try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
@@ -118,7 +117,7 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA
+// 3. GÖRSEL ARAMA (PIXABAY -> PEXELS)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;    
@@ -154,7 +153,6 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         if (accumulatedImages.length >= limit) break;
 
         const query = candidate.query;
-        // Kaynakları (Pixabay ve Pexels) sırayla dene
         const sources = ['pixabay', 'pexels'];
 
         for (const source of sources) {
@@ -162,9 +160,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 
             const trackerKey = `${query.replace(/\s+/g, '_').toLowerCase()}_${source}`;
 
-            if (window.__apiExhaustedQueries.has(trackerKey)) {
-                continue;
-            }
+            if (window.__apiExhaustedQueries.has(trackerKey)) continue;
 
             let pageToFetch = window.__apiPageTracker[trackerKey] || 1;
             window.__apiPageTracker[trackerKey] = pageToFetch + 1; 
@@ -217,7 +213,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 };
 
 
-// 4. RENDER İŞLEMLERİ (DÜZELTİLMİŞ HAFIZA MANTIĞI)
+// 4. RENDER İŞLEMLERİ (SORUN ÇÖZÜCÜ MANTIK)
 // ============================================================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
     if (!dayContainer) return;
@@ -254,31 +250,28 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     let searchObj = { term: "", context: "", country: "" };
     
-    // =========================================================================
-    // [KRİTİK DÜZELTME]: HAFIZA YÖNETİMİ
-    // =========================================================================
+    // =====================================================================
+    // [FIX] HAFIZA İZOLASYONU (ISPARTA VARKEN ANTALYA BULAŞMASIN)
+    // =====================================================================
     
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
-        // DURUM 1: KOORDİNAT VAR.
-        // Veriyi çek. Hafızayı ASLA araya karıştırma.
-        // Gelen veri neyse odur.
+        // DURUM 1: GÜN DOLU (Koordinat var)
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
         
-        // ŞİMDİ hafızayı güncelle (Gelecek boş günler için)
-        if (searchObj.context) window.__lastKnownContext = searchObj.context;
-        if (searchObj.country) window.__lastKnownCountry = searchObj.country;
-        
-        // Eğer koordinattan ülke gelmediyse (nadir), ancak o zaman hafızadaki ülkeyi ekleyebiliriz
-        // ama Context'i ASLA eklemeyin. Çünkü Isparta'nın contexti boşsa boş kalsın, Antalya olmasın.
-        if (!searchObj.country && window.__lastKnownCountry) {
-            searchObj.country = window.__lastKnownCountry;
+        // BURADA ESKİ HAFIZAYI (Antalya) ASLA KULLANMA.
+        // Gelen veride ne varsa onu kullan.
+        // Isparta geldiyse ve context boşsa, context'i de Isparta yap.
+        if (!searchObj.context && searchObj.term) {
+            searchObj.context = searchObj.term; // Isparta, Isparta olsun. Antalya olmasın.
         }
 
+        // Yeni bilgiyi hafızaya kaydet (Sadece Context ve Country)
+        if (searchObj.context) window.__lastKnownContext = searchObj.context;
+        if (searchObj.country) window.__lastKnownCountry = searchObj.country;
     } 
     else {
-        // DURUM 2: KOORDİNAT YOK (BOŞ GÜN).
-        // Sadece bu durumda hafızadaki son bilgiyi kullanabiliriz.
-        
+        // DURUM 2: GÜN BOŞ (Add New Day)
+        // Sadece bu durumda eski hafızayı kullanabiliriz.
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
@@ -292,8 +285,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             searchObj.term = rawCity;
         }
 
-        // Boş gün olduğu için hafızadaki son şehri (Context) kullan.
-        // Örn: 1. Gün Isparta idi, 2. Gün boş. O zaman 2. Gün Isparta sayılır.
         if (!searchObj.context && window.__lastKnownContext) searchObj.context = window.__lastKnownContext;
         if (!searchObj.country && window.__lastKnownCountry) searchObj.country = window.__lastKnownCountry;
     }
@@ -304,6 +295,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
 
     // --- DEĞİŞİKLİK KONTROLÜ ---
+    // Kimlik: Isparta_Isparta_Turkey
     const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_'); 
     const previousIdentifier = collage.getAttribute('data-collage-id');
 
@@ -314,14 +306,12 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // Cache Key
-    const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v36_${day}_${currentIdentifier}_combined`;
+    const cacheKey = `tt_day_collage_v37_${day}_${currentIdentifier}_combined`;
     
     let images = [];
     let fromCache = false;
 
-    // Eğer konum değişmediyse cache kullan, değiştiyse SİL.
+    // Konum değiştiyse cache'i kullanma
     if (currentIdentifier === previousIdentifier) {
         try {
             const cachedData = localStorage.getItem(cacheKey);
@@ -335,7 +325,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             }
         } catch (e) {}
     } else {
-        console.log(`[Collage] Location Changed: ${previousIdentifier} -> ${currentIdentifier}. Refreshing...`);
+        console.log(`[Collage] Location Change Detected: ${previousIdentifier} -> ${currentIdentifier}`);
         collage.innerHTML = ""; 
         fromCache = false; 
     }
@@ -377,16 +367,17 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (BAŞLIK & ALT YAZI & DEDUPLICATION)
+// 5. SLIDER RENDERER (BAŞLIK & ALT YAZI)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // --- BAŞLIK OLUŞTURMA ---
+    // --- BAŞLIK ---
     let rawParts = [searchObj.term, searchObj.context, searchObj.country];
     
+    // Ülke boşsa hafızadakini ekleyebiliriz (Görünüm için güvenli)
     if (!searchObj.country && window.__lastKnownCountry) {
         rawParts.push(window.__lastKnownCountry);
     }
