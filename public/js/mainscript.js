@@ -527,83 +527,97 @@ if (typeof hideSuggestionsDiv !== "function") {
 // ============================================================
 // 3. RENDER SUGGESTIONS (KESİN GRUPLAMA YÖNTEMİ)
 // ============================================================
-function renderSuggestions(results = []) {
+function renderSuggestions(originalResults = [], manualQuery = "") {
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
-
+    
     suggestionsDiv.innerHTML = "";
 
-    if (!results.length) {
-        if (typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
+    if (!originalResults || !originalResults.length) {
+        hideSuggestionsDiv(true);
         return;
     }
 
-    // --- 1. Sorgulanan kelimeyi temizle/normalize et ---
-    let searchTerm = extractLocationQuery(chatInput.value).toLocaleLowerCase('tr');
+    // A. HEDEF KELİMEYİ BELİRLE
+    let targetTerm = manualQuery 
+        ? manualQuery.toLocaleLowerCase('tr') 
+        : extractLocationQuery(chatInput.value);
 
-    // --- 2. Akıllı sıralama algoritması ---
-    if (searchTerm.length > 0) {
-        results.sort((a, b) => {
-            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
-            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
+    // console.log(`[Render] Hedef: "${targetTerm}"`); // Debug
 
-            function getScore(name) {
-                if (name === searchTerm) return 1;
-                if (name.startsWith(searchTerm)) return 2;
-                if (name.includes(searchTerm)) return 3;
-                return 4;
+    let finalSortedResults = [];
+
+    // B. GRUPLAMA (BUCKETING) - KESİN SIRALAMA İÇİN
+    if (targetTerm.length > 0) {
+        const exactMatches = [];   // Tam Eşleşen (Kemer)
+        const startMatches = [];   // İle Başlayan (Kemerovo)
+        const containMatches = []; // İçinde Geçen (Seydikemer)
+        const others = [];         // Diğerleri (Biga vb.)
+
+        originalResults.forEach(item => {
+            const name = (item.properties.name || "").toLocaleLowerCase('tr');
+            
+            if (name === targetTerm) {
+                exactMatches.push(item);
+            } else if (name.startsWith(targetTerm)) {
+                startMatches.push(item);
+            } else if (name.includes(targetTerm)) {
+                containMatches.push(item);
+            } else {
+                others.push(item);
             }
-
-            const scoreA = getScore(nameA);
-            const scoreB = getScore(nameB);
-
-            if (scoreA !== scoreB) return scoreA - scoreB;
-            return nameA.length - nameB.length;
         });
 
-        // ---- SIRALANMIŞ suggestionları konsola yazdır -----
-        const debugList = results.map(item => {
-            const p = item.properties || {};
-            let txt = `${p.name || ""}`;
-            if (p.city && p.city !== p.name) txt += `, ${p.city}`;
-            if (p.county && p.county !== p.name && p.county !== p.city) txt += `, ${p.county}`;
-            if (p.country_code) txt += `, ${p.country_code.toUpperCase()}`
-            return txt;
-        });
-        console.log('[SIRALI SUGGESTIONS]', debugList);
-        // ---------------------------------------------------
+        // Kutuları sırayla birleştir: Önce Tam, Sonra Başlayan, Sonra İçeren
+        finalSortedResults = [
+            ...exactMatches,
+            ...startMatches,
+            ...containMatches,
+            ...others
+        ];
+    } else {
+        // Hedef kelime yoksa API sırasını bozma
+        finalSortedResults = [...originalResults];
     }
 
-    // --- 3. Render ---
+    // --- C. LİSTELEME ---
     const seenSuggestions = new Set();
 
-    results.forEach((result) => {
+    finalSortedResults.forEach((result) => {
         const props = result.properties || {};
-        const name = props.name || "";
-        const city = props.city || "";
-        const county = props.county || "";
-        const countryCode = props.country_code ? props.country_code.toUpperCase() : "";
+        
+        // Verileri Çek
+        const name = props.name || "";       
+        const city = props.city || "";       
+        const county = props.county || "";   
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
+        // Hiyerarşi Parçaları
         let parts = [];
-        if (name) parts.push(name);
-        if (city && city !== name) parts.push(city);
-        if (county && county !== name && county !== city) parts.push(county);
-        if (countryCode) parts.push(countryCode);
+        if (name) parts.push(name); 
+        if (city && city !== name) parts.push(city); 
+        if (county && county !== name && county !== city) parts.push(county); 
+        if (countryCode) parts.push(countryCode); 
 
+        // Birleştir
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = uniqueParts.join(", ") + flag;
 
-        if (seenSuggestions.has(displayText)) return;
+        // Tekrarları Engelle
+        if (seenSuggestions.has(displayText)) return; 
         seenSuggestions.add(displayText);
 
+        // HTML Elementi
         const div = document.createElement("div");
         div.className = "category-area-option";
-
+        
+        // Listenin ilk elemanı (Zorla en başa aldığımız) seçili olsun
         if (suggestionsDiv.children.length === 0) {
             div.classList.add("selected-suggestion");
         }
+
         div.textContent = displayText;
         div.dataset.displayText = displayText;
 
@@ -611,12 +625,12 @@ function renderSuggestions(results = []) {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
-
+            
             window.selectedSuggestion = { displayText, props };
             window.selectedLocation = {
                 name: name,
                 city: county || city || name,
-                country: props.country || "",
+                country: props.country || "", 
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
@@ -627,25 +641,22 @@ function renderSuggestions(results = []) {
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
 
-            let targetName = displayText.replace(flag, "").trim();
+            let targetName = displayText.replace(flag, "").trim(); 
             let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
 
             if (typeof formatCanonicalPlan === "function") {
                 const c = formatCanonicalPlan(`${targetName} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
-            }
-
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
             } else {
                 chatInput.value = canonicalStr;
             }
+            if (typeof setChatInputValue === "function") setChatInputValue(canonicalStr);
 
             window.selectedLocationLocked = true;
             window.__locationPickedFromSuggestions = true;
-
-            if (typeof enableSendButton === "function") enableSendButton();
-            if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+            
+            if(window.enableSendButton) enableSendButton();
+            showSuggestionsDiv();
             if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
 
             setTimeout(() => { window.__programmaticInput = false; }, 0);
@@ -655,11 +666,60 @@ function renderSuggestions(results = []) {
     });
 
     if (suggestionsDiv.children.length > 0) {
-        if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+        showSuggestionsDiv();
     } else {
-        if (typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
+        hideSuggestionsDiv(true);
     }
 }
+
+// ============================================================
+// 4. INPUT EVENT LISTENER
+// ============================================================
+if (typeof chatInput !== 'undefined' && chatInput) {
+    chatInput.addEventListener("input", debounce(async function () {
+        if (window.__programmaticInput) return;
+
+        const rawText = this.value.trim();
+        const locationQuery = extractLocationQuery(rawText);
+        
+        console.log(`Input: "${rawText}" -> API Query: "${locationQuery}"`);
+
+        if (locationQuery.length < 2) {
+            if (rawText.length < 2) showSuggestions();
+            return;
+        }
+
+        let suggestions = [];
+        try {
+            if (window.geoapify && window.geoapify.autocomplete) {
+                suggestions = await window.geoapify.autocomplete(locationQuery);
+            } else if (typeof geoapifyLocationAutocomplete === 'function') {
+                suggestions = await geoapifyLocationAutocomplete(locationQuery);
+            }
+        } catch (err) {
+            if (err.name === "AbortError") return;
+            suggestions = [];
+        }
+
+        window.lastResults = suggestions;
+        
+        // Temizlenmiş sorguyu (locationQuery) RENDER'a gönder
+        if (typeof renderSuggestions === 'function') {
+            renderSuggestions(suggestions, locationQuery);
+        }
+
+    }, 400));
+
+    chatInput.addEventListener("focus", function () {
+        if (window.lastResults && window.lastResults.length) {
+            const currentQuery = extractLocationQuery(this.value);
+            renderSuggestions(window.lastResults, currentQuery);
+        } else {
+             showSuggestions();
+        }
+    });
+}
+
 
 
 
