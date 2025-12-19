@@ -97,62 +97,59 @@ function renderSuggestions(results = []) {
     results.forEach((result, idx) => {
         const props = result.properties || {};
         
-        // --- 1. VERİLERİ ÇEK ---
-        const name = props.name || "";       // Örn: Kemer, Altınkum
-        const county = props.county || "";   // Örn: Konyaaltı
-        const city = props.city || "";       // Örn: Antalya
+        // --- 1. HAM VERİLERİ AL ---
+        const name = props.name || "";       // Örn: Biga, Kemer
+        const county = props.county || "";   // Örn: Konyaaltı (Altınkum aramasında)
+        const city = props.city || "";       // Örn: Çanakkale, Antalya
         const state = props.state || "";     // Örn: Mediterranean Region
         const country = props.country || ""; // Örn: Turkey
 
-        // --- 2. İL (PROVINCE) BELİRLE ---
-        // İl verisini netleştir (Region'ları temizle)
+        // --- 2. İL (PROVINCE) BİLGİSİNİ NETLEŞTİR ---
+        // Şehir varsa şehirdir, yoksa state'dir (Region değilse).
         let province = "";
         
-        // Öncelik A: City alanı (Genellikle il adıdır)
         if (city) {
             province = city;
-        }
-        // Öncelik B: State alanı (City yoksa buraya bak, Region'ları at)
-        else if (state && !state.includes("Region") && !state.includes("Bölge")) {
+        } else if (state && !state.includes("Region") && !state.includes("Bölge")) {
             province = state;
         }
 
-        // --- 3. SIRALAMA (KÜÇÜKTEN BÜYÜĞE) ---
-        // Hedef: İlçe, İl, Ülke (Kemer, Antalya, Turkey)
+        // --- 3. SIRALAMA (STRICT ORDER) ---
+        // Sıralama Kesinlikle: [Yer Adı] -> [İlçe] -> [İl] -> [Ülke]
         let parts = [];
 
-        // ADIM 1: En Özel İsim (İlçe, Mahalle veya Yer)
-        // Örn: "Kemer" veya "Altınkum"
+        // 1. Yer Adı (Zorunlu Başlangıç)
+        // Örn: "Biga"
         if (name) {
             parts.push(name);
         }
 
-        // ADIM 2: İlçe (County) - (Ara Katman)
-        // Eğer aranan yer bir mahalle ise (Altınkum), ilçesi (Konyaaltı) buraya gelir.
-        // Eğer aranan yer ilçe ise (Kemer), county genellikle name ile aynıdır, eklenmez.
+        // 2. İlçe (Opsiyonel - Ara Katman)
+        // Eğer aranan yer bir mahalle ise ve county farklıysa ekle.
+        // Biga aramasında Biga ilçesi ismiyle aynı olduğu için buraya girmez.
         if (county && county !== name) {
             parts.push(county);
         }
 
-        // ADIM 3: İl (Province)
+        // 3. İl (Zorunlu Orta)
         // Eğer İl ismi, yukarıdaki isimden veya ilçeden farklıysa ekle.
-        // (Örn: "Antalya"yı ekle. Ama aranan zaten "Antalya" ise ekleme)
+        // Örn: "Çanakkale". Biga != Çanakkale olduğu için eklenir.
         if (province && province !== name && province !== county) {
             parts.push(province);
         }
 
-        // ADIM 4: Ülke
+        // 4. Ülke (Son)
         if (country) {
             parts.push(country);
         }
 
         // --- 4. BİRLEŞTİR ---
-        // Set kullanarak olası tekrarları (Antalya, Antalya gibi) temizle
+        // Set ile mükerrerleri temizle
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = uniqueParts.join(", ") + flag;
 
-        // --- DOM ELEMENTİ OLUŞTUR ---
+        // --- DOM ELEMENTİ ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
@@ -171,14 +168,13 @@ function renderSuggestions(results = []) {
             // Lokasyon objesini güncelle
             window.selectedLocation = {
                 name: props.name || city,
-                city: province || city, // Bulduğumuz temiz il ismini kullan
+                city: province || city, 
                 country: country,
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
             };
 
-            // Input işlemleri
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
