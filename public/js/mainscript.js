@@ -645,7 +645,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         div.textContent = displayText;
         div.dataset.displayText = displayText;
 
-       div.onclick = () => {
+div.onclick = () => {
     window.__programmaticInput = true;
     Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
     div.classList.add("selected-suggestion");
@@ -654,37 +654,40 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     window.selectedLocation = {
         name: name,
         city: county || city || name,
-        country: props.country || "", 
+        country: props.country || "",
         lat: props.lat ?? props.latitude ?? null,
         lon: props.lon ?? props.longitude ?? null,
         country_code: props.country_code || ""
     };
 
-    // Mevcut input değerinden gün sayısını bul
     const raw = chatInput.value.trim();
-    // 1 day veya 2 gün gibi patternleri bul
     const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
-    let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
-    if (!days || days < 1) days = 2;
+    let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
+    if (!days || days < 1) days = 1;
 
-    // Input değerini suggestion displayText ile güncelle!
-    let newInputValue = `${days} day ${displayText}`;
+    // flag hariç temiz şehir adı
+    let targetNameWithFlag = displayText.trim();
+    let targetName = targetNameWithFlag.replace(flag, '').trim();
 
-    // Eğer gün ifadesi Türkçe ise, ona göre ayarla
-    if (/gün/i.test(raw)) newInputValue = `${days} gün ${displayText}`;
-
-    if (typeof setChatInputValue === "function") {
-        setChatInputValue(newInputValue);
-    } else {
-        chatInput.value = newInputValue;
+    // Plan a 1-day tour for {city,il}
+    let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+    if (typeof formatCanonicalPlan === "function") {
+        // Örneğin şehir inputunda "Seydikemer, Muğla" gibi
+        const c = formatCanonicalPlan(`${targetName} ${days} days`);
+        if (c && c.canonical) canonicalStr = c.canonical;
     }
 
+    // inputa flag’siz hali set et
+    if (typeof setChatInputValue === "function") {
+        setChatInputValue(canonicalStr);
+    } else {
+        chatInput.value = canonicalStr;
+    }
     window.selectedLocationLocked = true;
     window.__locationPickedFromSuggestions = true;
 
-    if(enableSendButton) enableSendButton();
-    showSuggestionsDiv();
-
+    if (enableSendButton) enableSendButton();
+    if (showSuggestionsDiv) showSuggestionsDiv();
     if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
 
     setTimeout(() => { window.__programmaticInput = false; }, 0);
