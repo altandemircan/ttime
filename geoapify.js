@@ -18,7 +18,6 @@ async function geoapifyGet(endpoint, params = {}) {
 async function autocomplete(query, limit = 6) {
   return geoapifyGet("/v1/geocode/autocomplete", {
     text: query,
-    type: "city", // <--- BURASI EKLENDİ: Sadece şehirleri getirir, işletmeleri engeller.
     limit
   });
 }
