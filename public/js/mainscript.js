@@ -98,40 +98,37 @@ function renderSuggestions(results = []) {
         const props = result.properties || {};
         
         // 1. HAM VERİLER
-        const name = props.name || "";       // Yer Adı (Örn: Kemer)
-        const city = props.city || "";       // İlçe (Örn: Kemer veya boş)
-        const county = props.county || "";   // İl (Örn: Antalya) - Geoapify TR'de İli 'county'de tutuyor.
-        const country = props.country || ""; // Ülke (Turkey) - Sadece veri için, ekranda göstermeyeceğiz.
+        const name = props.name || "";       
+        const city = props.city || "";       
+        const county = props.county || "";   
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; // Örn: TR
 
         // 2. KATI HİYERARŞİ (KÜÇÜK -> BÜYÜK)
         let parts = [];
 
-        // A. İSİM (Her zaman ekle)
+        // A. İSİM (Zorunlu)
         if (name) parts.push(name);
 
         // B. İLÇE / ŞEHİR (City)
-        // Eğer isimden farklıysa ekle. (Örn: Altınkum arandı, City: Didim -> Ekle)
-        // (Örn: Kemer arandı, City: Kemer -> Ekleme)
         if (city && city !== name) {
             parts.push(city);
         }
 
         // C. İL (County)
-        // Eğer isimden ve şehirden farklıysa ekle. (Örn: Antalya)
-        // Kemer(Name) != Antalya(County) -> Ekle.
         if (county && county !== name && county !== city) {
             parts.push(county);
         }
 
-        // NOT: State (Bölge) bilgisini bilerek almıyoruz, kafa karıştırıyor.
-        // NOT: Country (Ülke) ismini isteğiniz üzerine almıyoruz.
+        // D. ÜLKE KODU (TR) - İsim olarak değil kod olarak ekle
+        if (countryCode) {
+            parts.push(countryCode);
+        }
 
-        // 3. GÖRÜNTÜLEME METNİ
-        // Set ile mükerrerleri temizle
+        // 3. GÖRÜNTÜLEME
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         
-        // SONUÇ: "Kemer, Antalya 🇹🇷"
+        // SONUÇ: "Kemer, Antalya, TR 🇹🇷"
         const displayText = uniqueParts.join(", ") + flag;
 
         // --- DOM ELEMENTİ ---
@@ -150,12 +147,11 @@ function renderSuggestions(results = []) {
             
             window.selectedSuggestion = { displayText, props };
             
-            // Veri tabanı ve API işlemleri için gerekli 'Country' bilgisini burada saklıyoruz
-            // Ekranda yazmasa bile arka planda bilmemiz gerek.
+            // Lokasyon objesi (Arka plan için country tam adını tutuyoruz)
             window.selectedLocation = {
                 name: name,
-                city: county || city || name, // Öncelik İl (County)
-                country: country, 
+                city: county || city || name,
+                country: props.country || "", // Veri tabanı için tam isim kalsın
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
@@ -166,7 +162,7 @@ function renderSuggestions(results = []) {
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
 
-            // Inputa bayraksız metni yaz
+            // Inputa yazılacak metin (Bayraksız, TR kodlu)
             let targetName = displayText.replace(flag, "").trim(); 
             let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
 
