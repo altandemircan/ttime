@@ -41,6 +41,9 @@ try {
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
+    // Info varsa (koordinat geldiyse) hafızadaki ülkeyi dayatma, veriden çekmeye çalış.
+    // Eğer veride ülke yoksa o zaman hafızayı düşünürüz.
+    
     if (!info) return { term: fallbackCity, context: "", country: window.__lastKnownCountry || "" };
 
     const props = info.properties || {};
@@ -49,7 +52,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
     const district = addr.district || addr.county || props.district || props.county || "";
     const city = addr.city || addr.town || addr.village || props.city || props.town || "";
     const state = addr.state || addr.province || props.state || "";
-    const country = addr.country || props.country || window.__lastKnownCountry || "";
+    const country = addr.country || props.country || "";
 
     let term = "";     
     let context = "";  
@@ -89,7 +92,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v35_${latKey}_${lngKey}`; // v35
+    const storageKey = `tt_loc_name_v36_${latKey}_${lngKey}`; // v36
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -101,23 +104,21 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            if (result.country) window.__lastKnownCountry = result.country;
-            if (result.context) window.__lastKnownContext = result.context;
-
+            // Veriyi kaydetmeden önce hafızayı güncellemiyoruz, render içinde yapacağız.
             if (result && (result.term || result.context)) {
                 try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
             return result;
         } else {
-            return { term: fallbackCity, context: "", country: window.__lastKnownCountry };
+            return { term: fallbackCity, context: "", country: "" };
         }
     } catch (_) {
-        return { term: fallbackCity, context: "", country: window.__lastKnownCountry };
+        return { term: fallbackCity, context: "", country: "" };
     }
 };
 
 
-// 3. GÖRSEL ARAMA (PIXABAY -> PEXELS FALLBACK)
+// 3. GÖRSEL ARAMA
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;    
@@ -216,7 +217,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 };
 
 
-// 4. RENDER İŞLEMLERİ (CACHE ÇAKIŞMA ÖNLEMİ EKLENDİ)
+// 4. RENDER İŞLEMLERİ (DÜZELTİLMİŞ HAFIZA MANTIĞI)
 // ============================================================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
     if (!dayContainer) return;
@@ -253,13 +254,31 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     let searchObj = { term: "", context: "", country: "" };
     
+    // =========================================================================
+    // [KRİTİK DÜZELTME]: HAFIZA YÖNETİMİ
+    // =========================================================================
+    
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
+        // DURUM 1: KOORDİNAT VAR.
+        // Veriyi çek. Hafızayı ASLA araya karıştırma.
+        // Gelen veri neyse odur.
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
         
+        // ŞİMDİ hafızayı güncelle (Gelecek boş günler için)
         if (searchObj.context) window.__lastKnownContext = searchObj.context;
         if (searchObj.country) window.__lastKnownCountry = searchObj.country;
+        
+        // Eğer koordinattan ülke gelmediyse (nadir), ancak o zaman hafızadaki ülkeyi ekleyebiliriz
+        // ama Context'i ASLA eklemeyin. Çünkü Isparta'nın contexti boşsa boş kalsın, Antalya olmasın.
+        if (!searchObj.country && window.__lastKnownCountry) {
+            searchObj.country = window.__lastKnownCountry;
+        }
+
     } 
     else {
+        // DURUM 2: KOORDİNAT YOK (BOŞ GÜN).
+        // Sadece bu durumda hafızadaki son bilgiyi kullanabiliriz.
+        
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
@@ -273,6 +292,8 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             searchObj.term = rawCity;
         }
 
+        // Boş gün olduğu için hafızadaki son şehri (Context) kullan.
+        // Örn: 1. Gün Isparta idi, 2. Gün boş. O zaman 2. Gün Isparta sayılır.
         if (!searchObj.context && window.__lastKnownContext) searchObj.context = window.__lastKnownContext;
         if (!searchObj.country && window.__lastKnownCountry) searchObj.country = window.__lastKnownCountry;
     }
@@ -282,12 +303,8 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         return;
     }
 
-    // --- [YENİ] BENZERSİZ KİMLİK OLUŞTURMA ---
-    // Artık sadece "Merkez" değil, "Merkez_Isparta_Turkey" gibi tam bir kimlik oluşturuyoruz.
-    // Böylece Isparta Merkez ile Antalya Merkez karışmaz.
+    // --- DEĞİŞİKLİK KONTROLÜ ---
     const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_'); 
-    
-    // Eski identifier ile karşılaştır
     const previousIdentifier = collage.getAttribute('data-collage-id');
 
     // D. Cache Kontrolü
@@ -297,13 +314,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // Cache Key de artık benzersiz (v35)
-    const cacheKey = `tt_day_collage_v35_${day}_${currentIdentifier}_combined`;
+    // Cache Key
+    const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
+    const cacheKey = `tt_day_collage_v36_${day}_${currentIdentifier}_combined`;
     
     let images = [];
     let fromCache = false;
 
-    // Eğer konum değişmediyse cache'e bak, DEĞİŞTİYSE CACHE'İ ATLA
+    // Eğer konum değişmediyse cache kullan, değiştiyse SİL.
     if (currentIdentifier === previousIdentifier) {
         try {
             const cachedData = localStorage.getItem(cacheKey);
@@ -317,12 +335,12 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             }
         } catch (e) {}
     } else {
-        console.log(`[Collage] Location Change Detected on Day ${day}: ${previousIdentifier} -> ${currentIdentifier}. Refreshing...`);
+        console.log(`[Collage] Location Changed: ${previousIdentifier} -> ${currentIdentifier}. Refreshing...`);
         collage.innerHTML = ""; 
         fromCache = false; 
     }
 
-    // E. API'den Çek (Eğer cache yoksa veya KONUM DEĞİŞTİYSE)
+    // E. API'den Çek
     if (!fromCache || images.length === 0) {
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
@@ -350,9 +368,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     // F. Render
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
-        // Yeni konumu ID olarak etikete yapıştır
         collage.setAttribute('data-collage-id', currentIdentifier);
-        
         renderCollageSlides(collage, images, searchObj);
         collage.style.display = 'block';
     } else {
@@ -361,7 +377,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER
+// 5. SLIDER RENDERER (BAŞLIK & ALT YAZI & DEDUPLICATION)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
