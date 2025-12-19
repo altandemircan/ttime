@@ -93,43 +93,73 @@ function renderSuggestions(results = []) {
         return;
     }
 
-    results.forEach(result => {
+
+
+
+    
+
+    // mainscript.js içinde renderSuggestions fonksiyonunun içi:
+
+results.forEach(result => {
     const props = result.properties || {};
-    const name = props.name || ""; // Örn: Kemer
-    let city = props.city || "";   // Bazen ilçe, bazen il olabilir
-    let state = props.state || props.province || ""; 
+    
+    // 1. En özel isim (İlçe veya Yer adı)
+    const name = props.name || ""; 
+    
+    // 2. Ülke
     const country = props.country || "";
     
-    // YENİ MANTIK: Bölge isimlerini (Mediterranean Region vb.) filtrele
-    if (state.includes("Region")) {
-        state = ""; // Bölge ismini temizle
-    }
+    // 3. İl (Province) Bulma Mantığı
+    let province = "";
 
-    // Eğer state boşsa ve city, name'den farklıysa, city'yi il olarak kullanabiliriz
-    // Örn: name="Kemer", city="Antalya" olabilir
-    let locationPart = "";
+    // Geoapify Türkiye verisinde:
+    // props.city -> Genellikle "Antalya" (İl) bilgisini tutar.
+    // props.state -> Genellikle "Mediterranean Region" (Bölge) bilgisini tutar.
     
-    if (state && state !== name) {
-        locationPart = state;
-    } else if (city && city !== name) {
-        locationPart = city;
+    // A. Önce 'city' alanına bak. Eğer 'name'den farklıysa (yani Kemer != Antalya ise), bu İldir.
+    if (props.city && props.city !== name) {
+        province = props.city;
+    } 
+    // B. Eğer city yoksa 'state'e bak. Ama içinde "Region" veya "Bölgesi" geçiyorsa KULLANMA.
+    else if (props.state && props.state !== name) {
+        if (!props.state.includes("Region") && !props.state.includes("Bölge")) {
+            province = props.state;
+        }
+    }
+    // C. Bazen il bilgisi 'county' içinde gelebilir (Nadir ama kontrol edelim)
+    else if (props.county && props.county !== name) {
+        province = props.county;
     }
 
     const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
 
-    // Parçaları birleştir: [İlçe, İl, Ülke]
-    let parts = [name];
-    if (locationPart) parts.push(locationPart);
-    if (country) parts.push(country);
-
-    // Tekrarları önle (Set kullanarak) ve boşlukları temizle
-    const uniqueParts = [...new Set(parts)].filter(Boolean);
-    const displayText = uniqueParts.join(", ") + flag;
+    // --- PARÇALARI BİRLEŞTİR ---
+    // Hedef: [Kemer, Antalya, Turkey]
+    let parts = [];
     
-    // ... geri kalan kodlar ...
+    // 1. İsim (Kemer)
+    if (name) parts.push(name);
+    
+    // 2. İl (Antalya) - Eğer varsa ve İsim'den farklıysa ekle
+    if (province && province !== name) parts.push(province);
+    
+    // 3. Ülke (Turkey) - Eğer İl'den ve İsim'den farklıysa ekle
+    if (country && country !== province && country !== name) parts.push(country);
 
-        const div = document.createElement("div");
-        div.className = "category-area-option";
+    // Filter(Boolean) boş değerleri temizler
+    const displayText = parts.filter(Boolean).join(", ") + flag;
+
+    // ... kodun kalanı aynı ...
+    const div = document.createElement("div");
+    div.className = "category-area-option";
+    // ...
+
+
+
+
+
+
+
         div.textContent = displayText;
         div.dataset.displayText = displayText;
 
