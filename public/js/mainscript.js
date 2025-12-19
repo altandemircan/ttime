@@ -646,47 +646,49 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         div.dataset.displayText = displayText;
 
         div.onclick = () => {
+    window.__programmaticInput = true;
+    Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+    div.classList.add("selected-suggestion");
 
+    window.selectedSuggestion = { displayText, props };
+    window.selectedLocation = {
+        name: name,
+        city: county || city || name,
+        country: props.country || "", 
+        lat: props.lat ?? props.latitude ?? null,
+        lon: props.lon ?? props.longitude ?? null,
+        country_code: props.country_code || ""
+    };
 
-            window.__programmaticInput = true;
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            div.classList.add("selected-suggestion");
-            
-            window.selectedSuggestion = { displayText, props };
-            window.selectedLocation = {
-                name: name,
-                city: county || city || name,
-                country: props.country || "", 
-                lat: props.lat ?? props.latitude ?? null,
-                lon: props.lon ?? props.longitude ?? null,
-                country_code: props.country_code || ""
-            };
+    // Mevcut input değerinden gün sayısını bul
+    const raw = chatInput.value.trim();
+    // 1 day veya 2 gün gibi patternleri bul
+    const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+    let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+    if (!days || days < 1) days = 2;
 
-            const raw = chatInput.value.trim();
-            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
-            let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
-            if (!days || days < 1) days = 2;
+    // Input değerini suggestion displayText ile güncelle!
+    let newInputValue = `${days} day ${displayText}`;
 
-            let targetName = displayText.replace(flag, "").trim(); 
-            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+    // Eğer gün ifadesi Türkçe ise, ona göre ayarla
+    if (/gün/i.test(raw)) newInputValue = `${days} gün ${displayText}`;
 
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${targetName} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            } else {
-                chatInput.value = canonicalStr;
-            }
-            if (typeof setChatInputValue === "function") setChatInputValue(canonicalStr);
+    if (typeof setChatInputValue === "function") {
+        setChatInputValue(newInputValue);
+    } else {
+        chatInput.value = newInputValue;
+    }
 
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
-            
-            if(window.enableSendButton) enableSendButton();
-            showSuggestionsDiv();
-            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
+    window.selectedLocationLocked = true;
+    window.__locationPickedFromSuggestions = true;
 
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
-        };
+    if(enableSendButton) enableSendButton();
+    showSuggestionsDiv();
+
+    if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
+
+    setTimeout(() => { window.__programmaticInput = false; }, 0);
+};
 
         suggestionsDiv.appendChild(div);
     });
