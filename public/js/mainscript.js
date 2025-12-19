@@ -97,62 +97,59 @@ function renderSuggestions(results = []) {
     results.forEach((result, idx) => {
         const props = result.properties || {};
         
-        // --- 1. VERİLERİ ÇEK ---
-        const name = props.name || "";       // Örn: Kemer, Altınkum
-        const county = props.county || "";   // Örn: Konyaaltı
+        // 1. HAM VERİLERİ AL
+        const name = props.name || "";       // Örn: Kemer
+        const county = props.county || "";   // Örn: Kemer (veya boş)
         const city = props.city || "";       // Örn: Antalya
         const state = props.state || "";     // Örn: Mediterranean Region
         const country = props.country || ""; // Örn: Turkey
 
-        // --- 2. İL (PROVINCE) BELİRLE ---
-        // İl verisini netleştir (Region'ları temizle)
-        let province = "";
+        // 2. "İL" (PROVINCE) KAVRAMINI BELİRLE
+        // Name (Kemer) dışındaki "Büyük Şehir" bilgisini buluyoruz.
+        let parentCity = "";
         
-        // Öncelik A: City alanı (Genellikle il adıdır)
-        if (city) {
-            province = city;
-        }
-        // Öncelik B: State alanı (City yoksa buraya bak, Region'ları at)
-        else if (state && !state.includes("Region") && !state.includes("Bölge")) {
-            province = state;
+        // City varsa ve Name'den farklıysa, o ildir. (Antalya != Kemer)
+        if (city && city !== name) {
+            parentCity = city;
+        } 
+        // City yoksa State'e bak (Region/Bölge değilse ve Name'den farklıysa)
+        else if (state && state !== name && !state.includes("Region") && !state.includes("Bölge")) {
+            parentCity = state;
         }
 
-        // --- 3. SIRALAMA (KÜÇÜKTEN BÜYÜĞE) ---
-        // Hedef: İlçe, İl, Ülke (Kemer, Antalya, Turkey)
+        // 3. KATI SIRALAMA (STRICT ORDER)
+        // Sıra: [İsim] -> [İlçe] -> [İl] -> [Ülke]
         let parts = [];
 
-        // ADIM 1: En Özel İsim (İlçe, Mahalle veya Yer)
-        // Örn: "Kemer" veya "Altınkum"
-        if (name) {
-            parts.push(name);
-        }
+        // A. İSİM (ZORUNLU - EN BAŞA)
+        // Örn: "Kemer"
+        if (name) parts.push(name);
 
-        // ADIM 2: İlçe (County) - (Ara Katman)
-        // Eğer aranan yer bir mahalle ise (Altınkum), ilçesi (Konyaaltı) buraya gelir.
-        // Eğer aranan yer ilçe ise (Kemer), county genellikle name ile aynıdır, eklenmez.
-        if (county && county !== name) {
+        // B. İLÇE (ARA KATMAN)
+        // Eğer county varsa, name'den farklıysa ve parentCity'den farklıysa ekle.
+        // Örn: "Altınkum" arandıysa county "Konyaaltı" olabilir. Eklenir.
+        // Örn: "Kemer" arandıysa county "Kemer"dir. Eşit olduğu için EKLENMEZ.
+        if (county && county !== name && county !== parentCity) {
             parts.push(county);
         }
 
-        // ADIM 3: İl (Province)
-        // Eğer İl ismi, yukarıdaki isimden veya ilçeden farklıysa ekle.
-        // (Örn: "Antalya"yı ekle. Ama aranan zaten "Antalya" ise ekleme)
-        if (province && province !== name && province !== county) {
-            parts.push(province);
+        // C. İL (BÜYÜK ŞEHİR)
+        // Örn: "Antalya". (Kemer != Antalya olduğu için eklenir)
+        if (parentCity) {
+            parts.push(parentCity);
         }
 
-        // ADIM 4: Ülke
+        // D. ÜLKE
         if (country) {
             parts.push(country);
         }
 
-        // --- 4. BİRLEŞTİR ---
-        // Set kullanarak olası tekrarları (Antalya, Antalya gibi) temizle
+        // 4. BİRLEŞTİR VE GÖSTER
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = uniqueParts.join(", ") + flag;
 
-        // --- DOM ELEMENTİ OLUŞTUR ---
+        // --- DOM ELEMENTİ ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
@@ -168,22 +165,22 @@ function renderSuggestions(results = []) {
             
             window.selectedSuggestion = { displayText, props };
             
-            // Lokasyon objesini güncelle
+            // Lokasyon objesi
             window.selectedLocation = {
-                name: props.name || city,
-                city: province || city, // Bulduğumuz temiz il ismini kullan
+                name: props.name || name,
+                city: parentCity || city, // Bulduğumuz büyük şehri (Antalya) kullan
                 country: country,
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
             };
 
-            // Input işlemleri
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
 
+            // Canonical planda kullanılacak isim
             let targetName = window.selectedLocation.city || window.selectedLocation.name;
             let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
 
