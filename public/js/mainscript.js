@@ -94,11 +94,45 @@ function renderSuggestions(results = []) {
         return;
     }
 
-    // [YENİ] Mükerrer sonuçları engellemek için bir küme (Set) oluşturuyoruz.
-    // Ekrana bastığımız 'displayText'leri burada tutacağız.
+    // --- [YENİ] AKILLI SIRALAMA (SORTING) ---
+    // Kullanıcının ne aradığını bulmak için inputu temizle (Süreleri at)
+    const rawInput = chatInput.value.toLowerCase();
+    // "1 day Kemer" -> "kemer" kalacak şekilde temizle
+    const searchLayout = rawInput.replace(/(\d+)\s*-?\s*(day|days|gün)/gi, "").trim();
+
+    if (searchLayout.length > 0) {
+        results.sort((a, b) => {
+            const nameA = (a.properties.name || "").toLowerCase();
+            const nameB = (b.properties.name || "").toLowerCase();
+
+            // Kural 1: Tam Eşleşme (Exact Match) En Üste!
+            // Örn: Aranan "Kemer", Sonuç "Kemer" -> En tepeye.
+            const exactA = nameA === searchLayout;
+            const exactB = nameB === searchLayout;
+            if (exactA && !exactB) return -1;
+            if (!exactA && exactB) return 1;
+
+            // Kural 2: İle Başlayanlar (Starts With) İkinci Sıraya
+            // Örn: "Kemerovo" -> "Seydikemer"den önce gelsin.
+            const startsA = nameA.startsWith(searchLayout);
+            const startsB = nameB.startsWith(searchLayout);
+            if (startsA && !startsB) return -1;
+            if (!startsA && startsB) return 1;
+
+            // Kural 3: İkisi de aynıysa (örneğin ikisi de ile başlıyorsa) kısa olanı öne al
+            // (Genelde kısa olan ana yerdir)
+            if (startsA && startsB) {
+                return nameA.length - nameB.length;
+            }
+
+            return 0; // Eşitse sıralamayı bozma (API sırasına güven)
+        });
+    }
+
+    // --- Mükerrer Kayıt Kontrolü (Deduplication) ---
     const seenSuggestions = new Set();
 
-    results.forEach((result) => {
+    results.forEach((result, idx) => {
         const props = result.properties || {};
         
         // 1. HAM VERİLER
@@ -132,23 +166,21 @@ function renderSuggestions(results = []) {
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         
-        // Sonuç: "Paris, FR 🇫🇷"
+        // Sonuç: "Kemer, Antalya, TR 🇹🇷"
         const displayText = uniqueParts.join(", ") + flag;
 
-        // [KRİTİK KONTROL] BU METİN DAHA ÖNCE EKLENDİ Mİ?
-        // Eğer "Paris, FR 🇫🇷" daha önce listeye girdiyse, bunu atla.
+        // [KRİTİK] Tekilleştirme Kontrolü
         if (seenSuggestions.has(displayText)) {
-            return; // Döngünün bu adımını sonlandır, sonrakine geç.
+            return; 
         }
-        
-        // Eklenmediyse listeye kaydet ve oluşturmaya devam et.
         seenSuggestions.add(displayText);
 
         // --- DOM ELEMENTİ ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // İlk sıradaki (veya görünür olan ilk) elemanı seçili yap
+        // Sıralamayı biz yaptığımız için artık ilk eleman kesinlikle en alakalı olandır.
+        // Listede görünen ilk elemana 'selected' sınıfı verelim.
         if (suggestionsDiv.children.length === 0) {
             div.classList.add("selected-suggestion");
         }
