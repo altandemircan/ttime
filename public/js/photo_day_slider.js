@@ -296,39 +296,15 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     // --- DEĞİŞİKLİK KONTROLÜ ---
     // Kimlik: Isparta_Isparta_Turkey
-    const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_'); 
-    const previousIdentifier = collage.getAttribute('data-collage-id');
+const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_');
+const previousIdentifier = collage.getAttribute('data-collage-id');
 
-    // D. Cache Kontrolü
-    if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
-    if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
-        window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
-    }
-    const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
-
-    const cacheKey = `tt_day_collage_v37_${day}_${currentIdentifier}_combined`;
-    
-    let images = [];
-    let fromCache = false;
-
-    // Konum değiştiyse cache'i kullanma
-    if (currentIdentifier === previousIdentifier) {
-        try {
-            const cachedData = localStorage.getItem(cacheKey);
-            if (cachedData) {
-                const parsed = JSON.parse(cachedData);
-                if (parsed && parsed.images && parsed.images.length > 0) {
-                    images = parsed.images;
-                    fromCache = true;
-                    images.forEach(img => usedSet.add(img));
-                }
-            }
-        } catch (e) {}
-    } else {
-        console.log(`[Collage] Location Change Detected: ${previousIdentifier} -> ${currentIdentifier}`);
-        collage.innerHTML = ""; 
-        fromCache = false; 
-    }
+// === FİX: Collage ID değiştiyse hem attribute'u hem içeriği temizle! ===
+if (currentIdentifier !== previousIdentifier) {
+    collage.setAttribute('data-collage-id', currentIdentifier);   // Önemli: attribute'u güncelle
+    collage.innerHTML = "";                                       // içeriği temizle
+    fromCache = false;                                            // yeni şehir için tekrar fotoğraf çek
+}
 
     // E. API'den Çek
     if (!fromCache || images.length === 0) {
