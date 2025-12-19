@@ -246,27 +246,23 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         dayContainer.appendChild(collage);
     }
 
-    // --- Konum belirleme ---
+    // --- 1. O günün ilk gerçek lokasyonunu bul ---
     let firstLoc = null;
     if (dayItemsArr && dayItemsArr.length > 0) {
         firstLoc = dayItemsArr.find(i => i.location && i.location.lat && !i._starter && !i._placeholder);
     }
 
+    // --- 2. Arama objesini sadece o günün güncel item'ına göre hazırla (Hafıza YOK!) ---
     let searchObj = { term: "", context: "", country: "" };
-
-    // ===== Hafıza ve konum yönetimi =====
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
-        // 1) Gerçek koordinatlı bir item var → o şehir (ve il, ülke) kullanılmalı.
+        // Daima sadece anlık güncel context/country kullan!
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
-        // Hafızayı güncelle (son context/country)
-        if (searchObj.context) window.__lastKnownContext = searchObj.context;
+
+        // Hafıza sadece "gelecekte" boş günler için güncellensin, burası asla fallback olmasın!
+        if (searchObj.context) window.__lastKnownContext = searchObj.context; // posterior update
         if (searchObj.country) window.__lastKnownCountry = searchObj.country;
-        // Sadece ülke eksikse hafızayı fallback olarak ekle (ama context asla!)
-        if (!searchObj.country && window.__lastKnownCountry) {
-            searchObj.country = window.__lastKnownCountry;
-        }
     } else {
-        // 2) Gün tamamen boşsa: Hafızadakiler kullanılabilir
+        // Tamamen boş bir gün; sadece burada hafıza kullanılır
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
@@ -279,7 +275,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         } else {
             searchObj.term = rawCity;
         }
-        // Context/country'yi hafızadan doldur (sadece boş günlerde)
+        // Sadece burada context/country'yi hafızadan doldur!
         if (!searchObj.context && window.__lastKnownContext) searchObj.context = window.__lastKnownContext;
         if (!searchObj.country && window.__lastKnownCountry) searchObj.country = window.__lastKnownCountry;
     }
@@ -289,31 +285,29 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         return;
     }
 
-    // --- Benzersiz identifier ---
+    // --- 3. Benzersiz kimlik (sadece ANLIK değerler!) ---
     const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_');
     const previousIdentifier = collage.getAttribute('data-collage-id');
 
-    // --- Kullanılmış link set/cache kontrolü ---
+    // --- 4. Kullanılmış set & cache key yönetimi ---
     if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
     if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
         window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
-
-    // --- Cache Key (gün + kimlik) ---
     const cacheKey = `tt_day_collage_v37_${day}_${currentIdentifier}_combined`;
 
     let images = [];
     let fromCache = false;
 
-    // --- Bul-değiştir logiği: Eğer konum değiştiyse hem attribute'u hem içeriği güncelle ---
+    // --- 5. Eğer konum değiştiyse eski sliderı/tüm içeriği tamamen sıfırla !!!
     if (currentIdentifier !== previousIdentifier) {
         collage.setAttribute('data-collage-id', currentIdentifier);
         collage.innerHTML = "";
         fromCache = false;
     }
 
-    // --- Cache varsa ve kullanılmalıysa oku ---
+    // --- 6. Cache ancak kimlikler EŞİTSE ve cache'ten doluyorsa kullanılır ---
     if (currentIdentifier === collage.getAttribute('data-collage-id')) {
         try {
             const cachedData = localStorage.getItem(cacheKey);
@@ -328,10 +322,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         } catch (e) {}
     }
 
-    // --- API'den çağır (cache yoksa veya sıfırsa) ---
+    // --- 7. Cache yoksa, doğrudan arama yap ---
     if (!fromCache || images.length === 0) {
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
-
         if (typeof window.getCityCollageImages === 'function') {
             const result = await window.getCityCollageImages(searchObj, {
                 min: 4,
@@ -339,22 +332,18 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             });
             images = result.images || [];
         }
-
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
-
         if (images.length > 0) {
             images.forEach(img => usedSet.add(img));
             try {
-                localStorage.setItem(cacheKey, JSON.stringify({
-                    images: images
-                }));
+                localStorage.setItem(cacheKey, JSON.stringify({ images: images }));
             } catch (e) {
                 console.warn("[Collage] Storage write error:", e);
             }
         }
     }
 
-    // --- Render ---
+    // --- 8. Render ---
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
         collage.setAttribute('data-collage-id', currentIdentifier);
         renderCollageSlides(collage, images, searchObj);
