@@ -645,6 +645,10 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         div.dataset.displayText = displayText;
 
         div.onclick = () => {
+
+            const canonicalPreview = document.getElementById("canonical-preview");
+  if (canonicalPreview) canonicalPreview.style.display = "none";
+  
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
