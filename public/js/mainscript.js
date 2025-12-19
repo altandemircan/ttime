@@ -15,7 +15,13 @@ function isTripFav(item) {
         String(f.lon) === String(item.lon)
     );
 }
-
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
 
 
 
@@ -646,6 +652,9 @@ async function geoapifyLocationAutocomplete(query) {
 }
  
 
+
+
+
 // --- 1. GELİŞMİŞ SORGULAMA TEMİZLEYİCİ ---
 // Kullanıcının yazdığı cümleden (Örn: "Plan a 3-day trip to New York")
 // sadece lokasyon ismini ("New York") çekip çıkarır.
@@ -663,7 +672,6 @@ function extractLocationQuery(input) {
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
 
     // D. Gezi ile ilgili "Dolgu Kelimeleri"ni (Stop Words) sil
-    // Bu liste genişletilebilir ama şu an en yaygınları içeriyor.
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
@@ -687,6 +695,7 @@ function extractLocationQuery(input) {
 }
 
 // --- SUGGESTIONS GÖSTER/GİZLE ---
+// (Global fonksiyonlar)
 let __autoAbort = null;
 
 if (typeof showSuggestionsDiv !== "function") {
@@ -711,7 +720,7 @@ if (typeof hideSuggestionsDiv !== "function") {
 
 
 // --- 2. INPUT EVENT LISTENER (GÜNCELLENDİ) ---
-const chatInput = document.getElementById("user-input"); // chatInput değişkenini tanımladık
+// HATA DÜZELTME: 'const chatInput = ...' satırı buradan kaldırıldı çünkü yukarıda zaten tanımlı.
 
 if (chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
@@ -721,9 +730,9 @@ if (chatInput) {
         const rawText = this.value.trim();
         console.log("Kullanıcı ham input:", rawText);
 
-        // A. Input çok kısaysa varsayılan önerileri göster (boşaltma)
+        // A. Input çok kısaysa varsayılan önerileri göster
         if (rawText.length < 2) {
-            showSuggestions(); // <-- Varsayılan anket önerileri
+            showSuggestions(); 
             return;
         }
 
@@ -731,19 +740,17 @@ if (chatInput) {
         const locationQuery = extractLocationQuery(rawText);
         console.log("API'ye Gidecek Temiz Sorgu:", locationQuery);
 
-        // C. Eğer temizlendikten sonra eldeki kelime çok kısaysa sorgu atma
+        // C. Temizlendikten sonra anlamlı kelime kalmadıysa sorgu atma
         if (locationQuery.length < 2) {
-            // hideSuggestionsDiv(true); // İsteğe bağlı: Sonuçları gizle
             return;
         }
 
         let suggestions = [];
         try {
-            // window.geoapify üzerinden çağırıyoruz (geoapify.js yüklüyse)
+            // API Çağrısı
             if (window.geoapify && window.geoapify.autocomplete) {
                 suggestions = await window.geoapify.autocomplete(locationQuery);
             } else if (typeof geoapifyLocationAutocomplete === 'function') {
-                // Alternatif fonksiyon varsa
                 suggestions = await geoapifyLocationAutocomplete(locationQuery);
             }
             
@@ -757,13 +764,12 @@ if (chatInput) {
         // D. Sonuçları işle ve ekrana bas
         window.lastResults = suggestions;
         
-        // Render fonksiyonumuz sonuç varsa gösterir, yoksa gizler
         if (typeof renderSuggestions === 'function') {
             renderSuggestions(suggestions);
             if (suggestions.length > 0) showSuggestionsDiv();
         }
 
-    }, 400)); // 400ms bekleme süresi
+    }, 400)); 
 
     // Focus olduğunda eski sonuçları göster
     chatInput.addEventListener("focus", function () {
@@ -771,10 +777,15 @@ if (chatInput) {
             renderSuggestions(window.lastResults);
             showSuggestionsDiv();
         } else {
-             showSuggestions(); // Hiç sonuç yoksa varsayılanları göster
+             showSuggestions();
         }
     });
 }
+
+
+
+
+
 
 
 // --- DİĞER FONKSİYONLAR ---
@@ -3086,13 +3097,7 @@ const detailsDiv = document.getElementById(`place-details-${day}`);
 }
 
 
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
+
 
 function formatLocationDetails(properties) {
   const parts = [];
