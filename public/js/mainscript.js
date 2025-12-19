@@ -94,22 +94,26 @@ function renderSuggestions(results = []) {
         return;
     }
 
-    results.forEach((result, idx) => {
+    // [YENİ] Mükerrer sonuçları engellemek için bir küme (Set) oluşturuyoruz.
+    // Ekrana bastığımız 'displayText'leri burada tutacağız.
+    const seenSuggestions = new Set();
+
+    results.forEach((result) => {
         const props = result.properties || {};
         
         // 1. HAM VERİLER
         const name = props.name || "";       
         const city = props.city || "";       
         const county = props.county || "";   
-        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; // Örn: TR
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
         // 2. KATI HİYERARŞİ (KÜÇÜK -> BÜYÜK)
         let parts = [];
 
-        // A. İSİM (Zorunlu)
+        // A. İSİM
         if (name) parts.push(name);
 
-        // B. İLÇE / ŞEHİR (City)
+        // B. İLÇE / ŞEHİR
         if (city && city !== name) {
             parts.push(city);
         }
@@ -119,7 +123,7 @@ function renderSuggestions(results = []) {
             parts.push(county);
         }
 
-        // D. ÜLKE KODU (TR) - İsim olarak değil kod olarak ekle
+        // D. ÜLKE KODU
         if (countryCode) {
             parts.push(countryCode);
         }
@@ -128,14 +132,26 @@ function renderSuggestions(results = []) {
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         
-        // SONUÇ: "Kemer, Antalya, TR 🇹🇷"
+        // Sonuç: "Paris, FR 🇫🇷"
         const displayText = uniqueParts.join(", ") + flag;
+
+        // [KRİTİK KONTROL] BU METİN DAHA ÖNCE EKLENDİ Mİ?
+        // Eğer "Paris, FR 🇫🇷" daha önce listeye girdiyse, bunu atla.
+        if (seenSuggestions.has(displayText)) {
+            return; // Döngünün bu adımını sonlandır, sonrakine geç.
+        }
+        
+        // Eklenmediyse listeye kaydet ve oluşturmaya devam et.
+        seenSuggestions.add(displayText);
 
         // --- DOM ELEMENTİ ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        if (idx === 0) div.classList.add("selected-suggestion");
+        // İlk sıradaki (veya görünür olan ilk) elemanı seçili yap
+        if (suggestionsDiv.children.length === 0) {
+            div.classList.add("selected-suggestion");
+        }
 
         div.textContent = displayText;
         div.dataset.displayText = displayText;
@@ -147,11 +163,11 @@ function renderSuggestions(results = []) {
             
             window.selectedSuggestion = { displayText, props };
             
-            // Lokasyon objesi (Arka plan için country tam adını tutuyoruz)
+            // Lokasyon objesi
             window.selectedLocation = {
                 name: name,
                 city: county || city || name,
-                country: props.country || "", // Veri tabanı için tam isim kalsın
+                country: props.country || "", 
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
                 country_code: props.country_code || ""
@@ -162,7 +178,6 @@ function renderSuggestions(results = []) {
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
 
-            // Inputa yazılacak metin (Bayraksız, TR kodlu)
             let targetName = displayText.replace(flag, "").trim(); 
             let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
 
