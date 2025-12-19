@@ -97,54 +97,54 @@ function renderSuggestions(results = []) {
     results.forEach((result, idx) => {
         const props = result.properties || {};
         
-        // --- 1. HAM VERİLERİ AL ---
-        const name = props.name || "";       // Örn: Biga, Kemer
-        const county = props.county || "";   // Örn: Konyaaltı (Altınkum aramasında)
-        const city = props.city || "";       // Örn: Çanakkale, Antalya
+        // 1. HAM VERİLERİ AL
+        const name = props.name || "";       // Örn: Kemer
+        const county = props.county || "";   // Örn: Kemer (veya boş)
+        const city = props.city || "";       // Örn: Antalya
         const state = props.state || "";     // Örn: Mediterranean Region
         const country = props.country || ""; // Örn: Turkey
 
-        // --- 2. İL (PROVINCE) BİLGİSİNİ NETLEŞTİR ---
-        // Şehir varsa şehirdir, yoksa state'dir (Region değilse).
-        let province = "";
+        // 2. "İL" (PROVINCE) KAVRAMINI BELİRLE
+        // Name (Kemer) dışındaki "Büyük Şehir" bilgisini buluyoruz.
+        let parentCity = "";
         
-        if (city) {
-            province = city;
-        } else if (state && !state.includes("Region") && !state.includes("Bölge")) {
-            province = state;
+        // City varsa ve Name'den farklıysa, o ildir. (Antalya != Kemer)
+        if (city && city !== name) {
+            parentCity = city;
+        } 
+        // City yoksa State'e bak (Region/Bölge değilse ve Name'den farklıysa)
+        else if (state && state !== name && !state.includes("Region") && !state.includes("Bölge")) {
+            parentCity = state;
         }
 
-        // --- 3. SIRALAMA (STRICT ORDER) ---
-        // Sıralama Kesinlikle: [Yer Adı] -> [İlçe] -> [İl] -> [Ülke]
+        // 3. KATI SIRALAMA (STRICT ORDER)
+        // Sıra: [İsim] -> [İlçe] -> [İl] -> [Ülke]
         let parts = [];
 
-        // 1. Yer Adı (Zorunlu Başlangıç)
-        // Örn: "Biga"
-        if (name) {
-            parts.push(name);
-        }
+        // A. İSİM (ZORUNLU - EN BAŞA)
+        // Örn: "Kemer"
+        if (name) parts.push(name);
 
-        // 2. İlçe (Opsiyonel - Ara Katman)
-        // Eğer aranan yer bir mahalle ise ve county farklıysa ekle.
-        // Biga aramasında Biga ilçesi ismiyle aynı olduğu için buraya girmez.
-        if (county && county !== name) {
+        // B. İLÇE (ARA KATMAN)
+        // Eğer county varsa, name'den farklıysa ve parentCity'den farklıysa ekle.
+        // Örn: "Altınkum" arandıysa county "Konyaaltı" olabilir. Eklenir.
+        // Örn: "Kemer" arandıysa county "Kemer"dir. Eşit olduğu için EKLENMEZ.
+        if (county && county !== name && county !== parentCity) {
             parts.push(county);
         }
 
-        // 3. İl (Zorunlu Orta)
-        // Eğer İl ismi, yukarıdaki isimden veya ilçeden farklıysa ekle.
-        // Örn: "Çanakkale". Biga != Çanakkale olduğu için eklenir.
-        if (province && province !== name && province !== county) {
-            parts.push(province);
+        // C. İL (BÜYÜK ŞEHİR)
+        // Örn: "Antalya". (Kemer != Antalya olduğu için eklenir)
+        if (parentCity) {
+            parts.push(parentCity);
         }
 
-        // 4. Ülke (Son)
+        // D. ÜLKE
         if (country) {
             parts.push(country);
         }
 
-        // --- 4. BİRLEŞTİR ---
-        // Set ile mükerrerleri temizle
+        // 4. BİRLEŞTİR VE GÖSTER
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = uniqueParts.join(", ") + flag;
@@ -165,10 +165,10 @@ function renderSuggestions(results = []) {
             
             window.selectedSuggestion = { displayText, props };
             
-            // Lokasyon objesini güncelle
+            // Lokasyon objesi
             window.selectedLocation = {
-                name: props.name || city,
-                city: province || city, 
+                name: props.name || name,
+                city: parentCity || city, // Bulduğumuz büyük şehri (Antalya) kullan
                 country: country,
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
@@ -180,6 +180,7 @@ function renderSuggestions(results = []) {
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
 
+            // Canonical planda kullanılacak isim
             let targetName = window.selectedLocation.city || window.selectedLocation.name;
             let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
 
