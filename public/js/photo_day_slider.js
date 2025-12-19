@@ -89,7 +89,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v34_${latKey}_${lngKey}`; // v34
+    const storageKey = `tt_loc_name_v35_${latKey}_${lngKey}`; // v35
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -101,8 +101,6 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            // Eğer koordinattan yeni bir bağlam (Isparta vb.) bulduysak hafızayı güncelle
-            // Ama dikkat: Sadece context (İl) değiştiyse güncelle, term (İlçe) değil.
             if (result.country) window.__lastKnownCountry = result.country;
             if (result.context) window.__lastKnownContext = result.context;
 
@@ -119,7 +117,7 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
 };
 
 
-// 3. GÖRSEL ARAMA
+// 3. GÖRSEL ARAMA (PIXABAY -> PEXELS FALLBACK)
 // ============================================================
 window.getCityCollageImages = async function(searchObj, options = {}) {
     const term = searchObj.term;    
@@ -218,7 +216,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 };
 
 
-// 4. RENDER İŞLEMLERİ (DEĞİŞİKLİK DEDEKTÖRÜ EKLENDİ)
+// 4. RENDER İŞLEMLERİ (CACHE ÇAKIŞMA ÖNLEMİ EKLENDİ)
 // ============================================================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
     if (!dayContainer) return;
@@ -284,13 +282,13 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         return;
     }
 
-    // --- [YENİ ÖZELLİK] DEĞİŞİKLİK KONTROLÜ ---
-    // Mevcut slider'ın hangi konum için olduğunu kontrol et
-    // Eğer yeni hesapladığımız konum (Örn: Isparta) ile eskisinin (Örn: Antalya) alakası yoksa,
-    // CACHE KULLANMA, HER ŞEYİ SİL VE YENİDEN ÇEK.
+    // --- [YENİ] BENZERSİZ KİMLİK OLUŞTURMA ---
+    // Artık sadece "Merkez" değil, "Merkez_Isparta_Turkey" gibi tam bir kimlik oluşturuyoruz.
+    // Böylece Isparta Merkez ile Antalya Merkez karışmaz.
+    const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_'); 
     
-    const currentIdentifier = `${searchObj.term}_${searchObj.context}`; // Yeni ID: "Isparta_Isparta"
-    const previousIdentifier = collage.getAttribute('data-collage-id'); // Eski ID: "Kemer_Antalya"
+    // Eski identifier ile karşılaştır
+    const previousIdentifier = collage.getAttribute('data-collage-id');
 
     // D. Cache Kontrolü
     if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
@@ -299,8 +297,8 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v34_${day}_${safeTerm}_combined`;
+    // Cache Key de artık benzersiz (v35)
+    const cacheKey = `tt_day_collage_v35_${day}_${currentIdentifier}_combined`;
     
     let images = [];
     let fromCache = false;
@@ -320,7 +318,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         } catch (e) {}
     } else {
         console.log(`[Collage] Location Change Detected on Day ${day}: ${previousIdentifier} -> ${currentIdentifier}. Refreshing...`);
-        // Konum değişti, eski resimleri temizlemiş gibi davranalım
         collage.innerHTML = ""; 
         fromCache = false; 
     }
@@ -353,7 +350,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     // F. Render
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
-        // Yeni konumu ID olarak etikete yapıştır ki bir sonraki kontrolde bilelim
+        // Yeni konumu ID olarak etikete yapıştır
         collage.setAttribute('data-collage-id', currentIdentifier);
         
         renderCollageSlides(collage, images, searchObj);
