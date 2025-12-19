@@ -41,10 +41,11 @@ try {
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
-    const props = info ? (info.properties || {}) : {};
-    const addr = info && info.address ? info.address : {};
-    // Akıllı fallback
-    let term = 
+    if (!info) return { term: fallbackCity, context: "", country: "" };
+    const props = info.properties || {};
+    const addr = info.address || {};
+    // En yaygın şehir alanları
+    let term =
         props.city ||
         props.town ||
         props.village ||
@@ -55,31 +56,30 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
         addr.county ||
         "";
 
-    // Eğer yukarıdakiler yoksa ve state *hiçbiri* country adını veya "region/area/province" içeriyorsa, 
-    // fakat state “şehire benziyorsa” (örneğin “California”, “London”, “Tokyo”), kullan, 
-    // içermiyorsa kullanma!
     if (
-      !term &&
-      props.state &&
-      typeof props.state === "string"
+        !term &&
+        props.state &&
+        typeof props.state === "string"
     ) {
-        // discard if state includes country name or is very generic
+        // World-wide: state türü bir alan "region", "province", "area", "zone" gibi jenerikse kullanma
         const country = (props.country || "").toLowerCase();
-        const stateLower = props.state.toLowerCase();
+        const s = props.state.toLowerCase();
+
+        // region/province/area/state vurgusu dil-bazlı değil, evrensel altlık
         if (
-            stateLower !== country &&                           // state ülke ile aynı olmasın
-            !/region|bölge|province|area|zone|district|departamento|state|province/i.test(stateLower)
+            !/region|bölge|province|area|zone|district|departamento|departement|state|provincia|il|ile|county|depar/i.test(s) &&
+            s !== country // ülkenin kendisi değil
         ) {
             term = props.state;
         }
     }
+
     if (!term && fallbackCity) term = fallbackCity;
 
     let country = props.country || addr.country || "";
 
     return { term: (term || "").trim(), context: "", country: country.trim() };
 }
-
 // ŞEHİR İSMİNİ CACHE'LEME
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
