@@ -95,22 +95,38 @@ function renderSuggestions(results = []) {
 
     results.forEach(result => {
     const props = result.properties || {};
-    const city = props.city || props.name || "";
+    const name = props.name || ""; // Örn: Kemer
+    let city = props.city || "";   // Bazen ilçe, bazen il olabilir
+    let state = props.state || props.province || ""; 
     const country = props.country || "";
-    // YENİ: İl (state) veya İlçe (county) bilgisini al
-    const state = props.state || props.county || ""; 
     
+    // YENİ MANTIK: Bölge isimlerini (Mediterranean Region vb.) filtrele
+    if (state.includes("Region")) {
+        state = ""; // Bölge ismini temizle
+    }
+
+    // Eğer state boşsa ve city, name'den farklıysa, city'yi il olarak kullanabiliriz
+    // Örn: name="Kemer", city="Antalya" olabilir
+    let locationPart = "";
+    
+    if (state && state !== name) {
+        locationPart = state;
+    } else if (city && city !== name) {
+        locationPart = city;
+    }
+
     const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
 
-    // YENİ KOD: Şehir, İl ve Ülke'yi birleştir
-    // Eğer şehir ve il aynıysa (örn: İstanbul, İstanbul) tekrar etmemesi için kontrol ekliyoruz.
-    let parts = [city];
-    if (state && state !== city) {
-        parts.push(state);
-    }
-    parts.push(country);
+    // Parçaları birleştir: [İlçe, İl, Ülke]
+    let parts = [name];
+    if (locationPart) parts.push(locationPart);
+    if (country) parts.push(country);
 
-    const displayText = parts.filter(Boolean).join(", ") + flag;
+    // Tekrarları önle (Set kullanarak) ve boşlukları temizle
+    const uniqueParts = [...new Set(parts)].filter(Boolean);
+    const displayText = uniqueParts.join(", ") + flag;
+    
+    // ... geri kalan kodlar ...
 
         const div = document.createElement("div");
         div.className = "category-area-option";
