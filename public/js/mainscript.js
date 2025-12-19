@@ -489,16 +489,16 @@ async function geoapifyLocationAutocomplete(query) {
 function extractLocationQuery(input) {
     if (!input) return "";
 
-    // A. Tüm harfleri Türkçe uyumlu küçült (i/I sorununu çözer)
+    // A. Küçük harfe çevir (Türkçe karakter destekli)
     let cleaned = input.toLocaleLowerCase('tr');
 
-    // B. Rakamları ve süreleri sil ("1 day", "3 gün", "2-night")
+    // B. "1 day", "3 gün", "2-night" gibi ifadeleri sil
     cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
-    // C. Kalan rakam ve noktalama işaretlerini sil
+    // C. Gereksiz karakterleri temizle
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
 
-    // D. Yasaklı kelimeler (Stop Words)
+    // D. Yasaklı kelimeler
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
@@ -509,13 +509,11 @@ function extractLocationQuery(input) {
     words = words.filter(w => !stopWords.includes(w) && w.length > 1);
 
     let finalQuery = words.join(" ").trim();
-
-    if (finalQuery.length < 2) return ""; // Çok kısaysa boş dön
-    return finalQuery;
+    return finalQuery.length < 2 ? "" : finalQuery;
 }
 
 // ============================================================
-// 2. SUGGESTIONS GÖSTER/GİZLE YARDIMCILARI
+// 2. SUGGESTIONS GÖSTER/GİZLE
 // ============================================================
 if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
@@ -535,29 +533,35 @@ if (typeof hideSuggestionsDiv !== "function") {
 }
 
 // ============================================================
-// 3. RENDER SUGGESTIONS (Sıralama Parametreli)
+// 3. RENDER SUGGESTIONS (Sıralama + Render)
 // ============================================================
-// DİKKAT: Artık 'manualQuery' parametresi alıyor!
-function renderSuggestions(results = [], manualQuery = "") {
+function renderSuggestions(originalResults = [], manualQuery = "") {
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
     
     suggestionsDiv.innerHTML = "";
 
-    if (!results.length) {
+    if (!originalResults || !originalResults.length) {
         hideSuggestionsDiv(true);
         return;
     }
 
+    // Listeyi kopyalayalım (Referans sorunlarını önlemek için)
+    let results = [...originalResults];
+
     // --- A. SIRALAMA ALGORİTMASI ---
-    // Eğer manualQuery geldiyse onu kullan, yoksa inputtan hesapla
+    // Hangi kelimeye göre sıralayacağız?
     let targetTerm = manualQuery 
         ? manualQuery.toLocaleLowerCase('tr') 
         : extractLocationQuery(chatInput.value);
+    
+    // Eğer hala boşsa inputun kendisine bak (Son çare)
+    if (!targetTerm && chatInput.value.length > 1) {
+        targetTerm = chatInput.value.trim().toLocaleLowerCase('tr');
+    }
 
-    // Debug için konsola yazalım (F12'de görebilirsiniz)
-    // console.log("Sıralama Hedefi:", targetTerm); 
+    console.log(`[Sort] Hedef Kelime: "${targetTerm}"`);
 
     if (targetTerm.length > 0) {
         results.sort((a, b) => {
@@ -565,31 +569,31 @@ function renderSuggestions(results = [], manualQuery = "") {
             const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
             
             function getScore(name) {
-                // 1. TAM EŞLEŞME (Kemer === kemer) -> En Üst (1)
+                // 1. TAM EŞLEŞME (Kemer === kemer) -> 1 Puan
                 if (name === targetTerm) return 1;
-                // 2. İLE BAŞLAYAN (Kemerovo -> kemer...) -> İkinci (2)
+                // 2. İLE BAŞLAYAN (Kemerovo) -> 2 Puan
                 if (name.startsWith(targetTerm)) return 2;
-                // 3. İÇİNDE GEÇEN (Seydikemer -> ...kemer...) -> Üçüncü (3)
+                // 3. İÇİNDE GEÇEN (Seydikemer) -> 3 Puan
                 if (name.includes(targetTerm)) return 3;
-                // 4. DİĞER (Biga vs.) -> Son (4)
+                // 4. ALAKASIZ -> 4 Puan
                 return 4;
             }
 
             const scoreA = getScore(nameA);
             const scoreB = getScore(nameB);
 
-            // Puan farkı varsa ona göre sırala
+            // Loglayalım ki ne olduğunu görelim
+            // console.log(`${nameA} (${scoreA}) vs ${nameB} (${scoreB})`);
+
             if (scoreA !== scoreB) return scoreA - scoreB;
-            
-            // Puanlar eşitse (ikisi de 4 ise veya ikisi de 2 ise) kısa olanı öne al
             return nameA.length - nameB.length;
         });
     }
 
-    // --- B. LİSTELEME VE DEDUPLICATION ---
+    // --- B. LİSTELEME ---
     const seenSuggestions = new Set();
 
-    results.forEach((result, idx) => {
+    results.forEach((result) => {
         const props = result.properties || {};
         
         // Verileri Çek
@@ -652,13 +656,11 @@ function renderSuggestions(results = [], manualQuery = "") {
             if (typeof formatCanonicalPlan === "function") {
                 const c = formatCanonicalPlan(`${targetName} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
-            }
-
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
             } else {
+                // Fallback (setChatInputValue yoksa)
                 chatInput.value = canonicalStr;
             }
+            if (typeof setChatInputValue === "function") setChatInputValue(canonicalStr);
 
             window.selectedLocationLocked = true;
             window.__locationPickedFromSuggestions = true;
@@ -688,13 +690,10 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         if (window.__programmaticInput) return;
 
         const rawText = this.value.trim();
-        
-        // Temiz sorguyu al (1 day Kemer -> kemer)
         const locationQuery = extractLocationQuery(rawText);
         
-        console.log(`API Sorgusu: "${locationQuery}"`);
+        console.log(`Input: "${rawText}" -> API Query: "${locationQuery}"`);
 
-        // Sorgu boşsa veya çok kısaysa varsayılanı göster
         if (locationQuery.length < 2) {
             if (rawText.length < 2) showSuggestions();
             return;
@@ -702,6 +701,7 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
         let suggestions = [];
         try {
+            // Geoapify çağrısı
             if (window.geoapify && window.geoapify.autocomplete) {
                 suggestions = await window.geoapify.autocomplete(locationQuery);
             } else if (typeof geoapifyLocationAutocomplete === 'function') {
@@ -710,25 +710,21 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         } catch (err) {
             if (err.name === "AbortError") return;
             suggestions = [];
-            console.error("API Error:", err);
         }
 
         window.lastResults = suggestions;
         
-        // [ÖNEMLİ] renderSuggestions'a temizlediğimiz sorguyu (locationQuery) parametre olarak gönderiyoruz!
-        // Böylece "Kemer" arattıysak, içeride de "Kemer"e göre sıralama yapıyor.
+        // Temizlenmiş sorguyu (locationQuery) sıralama için gönderiyoruz
         if (typeof renderSuggestions === 'function') {
             renderSuggestions(suggestions, locationQuery);
         }
 
     }, 400));
 
-    // Focus olduğunda eski sonuçları tekrar göster
     chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
-            // Focus durumunda inputtaki yazı değişmiş olabilir, tekrar hesaplatalım
-            const currentQuery = extractLocationQuery(this.value);
-            renderSuggestions(window.lastResults, currentQuery);
+            const q = extractLocationQuery(this.value);
+            renderSuggestions(window.lastResults, q);
         } else {
              showSuggestions();
         }
