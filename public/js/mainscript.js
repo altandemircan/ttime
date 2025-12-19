@@ -608,93 +608,107 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     // --- C. LİSTELEME ---
     const seenSuggestions = new Set();
 
-    finalSortedResults.forEach((result) => {
-        const props = result.properties || {};
-        
-        // Verileri Çek
-        const name = props.name || "";       
-        const city = props.city || "";       
-        const county = props.county || "";   
-        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
+    // 1) En başta sadece şehir/kasaba/village tipini filtrele, spam isimleri at
+const allowedTypes = [
+  'city', 'town', 'village', 'municipality', 'county', 'district', 'borough', 'suburb'
+];
 
-        // Hiyerarşi Parçaları
-        let parts = [];
-        if (name) parts.push(name); 
-        if (city && city !== name) parts.push(city); 
-        if (county && county !== name && county !== city) parts.push(county); 
-        if (countryCode) parts.push(countryCode); 
+finalSortedResults = finalSortedResults.filter(item => {
+  const p = item.properties || {};
+  const type = (p.result_type || p.place_type || '').toLowerCase();
+  // Bana şehir/kasaba/village ilçe lazim, website veya tur şirketi içeren name'leri at
+  if (/tours?in|excursion|\.com\b|\bhotel|apart|residence|resort|booking|trip(s)?\b/i.test(p.name || "")) return false;
+  return allowedTypes.includes(type);
+});
 
-        // Birleştir
-        const uniqueParts = [...new Set(parts)].filter(Boolean);
-        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-        const displayText = uniqueParts.join(", ") + flag;
+// Devamı senin kodun:
+finalSortedResults.forEach((result) => {
+    const props = result.properties || {};
+    
+    // Verileri Çek
+    const name = props.name || "";       
+    const city = props.city || "";       
+    const county = props.county || "";   
+    const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
-        // Tekrarları Engelle
-        if (seenSuggestions.has(displayText)) return; 
-        seenSuggestions.add(displayText);
+    // Hiyerarşi Parçaları
+    let parts = [];
+    if (name) parts.push(name); 
+    if (city && city !== name) parts.push(city); 
+    if (county && county !== name && county !== city) parts.push(county); 
+    if (countryCode) parts.push(countryCode); 
 
-        // HTML Elementi
-        const div = document.createElement("div");
-        div.className = "category-area-option";
-        
-        // Listenin ilk elemanı (Zorla en başa aldığımız) seçili olsun
-        if (suggestionsDiv.children.length === 0) {
-            div.classList.add("selected-suggestion");
+    // Birleştir
+    const uniqueParts = [...new Set(parts)].filter(Boolean);
+    const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+    const displayText = uniqueParts.join(", ") + flag;
+
+    // Tekrarları Engelle
+    if (seenSuggestions.has(displayText)) return; 
+    seenSuggestions.add(displayText);
+
+    // HTML Elementi
+    const div = document.createElement("div");
+    div.className = "category-area-option";
+    
+    // Listenin ilk elemanı (Zorla en başa aldığımız) seçili olsun
+    if (suggestionsDiv.children.length === 0) {
+        div.classList.add("selected-suggestion");
+    }
+
+    div.textContent = displayText;
+    div.dataset.displayText = displayText;
+
+    div.onclick = () => {
+        window.__programmaticInput = true;
+        Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+        div.classList.add("selected-suggestion");
+
+        window.selectedSuggestion = { displayText, props };
+        window.selectedLocation = {
+            name: name,
+            city: county || city || name,
+            country: props.country || "",
+            lat: props.lat ?? props.latitude ?? null,
+            lon: props.lon ?? props.longitude ?? null,
+            country_code: props.country_code || ""
+        };
+
+        const raw = chatInput.value.trim();
+        const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+        let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
+        if (!days || days < 1) days = 1;
+
+        // flag hariç temiz şehir adı
+        let targetNameWithFlag = displayText.trim();
+        let targetName = targetNameWithFlag.replace(flag, '').trim();
+
+        // Plan a 1-day tour for {city,il}
+        let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+        if (typeof formatCanonicalPlan === "function") {
+            // Örneğin şehir inputunda "Seydikemer, Muğla" gibi
+            const c = formatCanonicalPlan(`${targetName} ${days} days`);
+            if (c && c.canonical) canonicalStr = c.canonical;
         }
 
-        div.textContent = displayText;
-        div.dataset.displayText = displayText;
+        // inputa flag’siz hali set et
+        if (typeof setChatInputValue === "function") {
+            setChatInputValue(canonicalStr);
+        } else {
+            chatInput.value = canonicalStr;
+        }
+        window.selectedLocationLocked = true;
+        window.__locationPickedFromSuggestions = true;
 
-div.onclick = () => {
-    window.__programmaticInput = true;
-    Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-    div.classList.add("selected-suggestion");
+        if (enableSendButton) enableSendButton();
+        if (showSuggestionsDiv) showSuggestionsDiv();
+        if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
 
-    window.selectedSuggestion = { displayText, props };
-    window.selectedLocation = {
-        name: name,
-        city: county || city || name,
-        country: props.country || "",
-        lat: props.lat ?? props.latitude ?? null,
-        lon: props.lon ?? props.longitude ?? null,
-        country_code: props.country_code || ""
+        setTimeout(() => { window.__programmaticInput = false; }, 0);
     };
 
-    const raw = chatInput.value.trim();
-    const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
-    let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
-    if (!days || days < 1) days = 1;
-
-    // flag hariç temiz şehir adı
-    let targetNameWithFlag = displayText.trim();
-    let targetName = targetNameWithFlag.replace(flag, '').trim();
-
-    // Plan a 1-day tour for {city,il}
-    let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
-    if (typeof formatCanonicalPlan === "function") {
-        // Örneğin şehir inputunda "Seydikemer, Muğla" gibi
-        const c = formatCanonicalPlan(`${targetName} ${days} days`);
-        if (c && c.canonical) canonicalStr = c.canonical;
-    }
-
-    // inputa flag’siz hali set et
-    if (typeof setChatInputValue === "function") {
-        setChatInputValue(canonicalStr);
-    } else {
-        chatInput.value = canonicalStr;
-    }
-    window.selectedLocationLocked = true;
-    window.__locationPickedFromSuggestions = true;
-
-    if (enableSendButton) enableSendButton();
-    if (showSuggestionsDiv) showSuggestionsDiv();
-    if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
-
-    setTimeout(() => { window.__programmaticInput = false; }, 0);
-};
-
-        suggestionsDiv.appendChild(div);
-    });
+    suggestionsDiv.appendChild(div);
+});
 
     if (suggestionsDiv.children.length > 0) {
         showSuggestionsDiv();
