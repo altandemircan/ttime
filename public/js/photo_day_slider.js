@@ -41,51 +41,43 @@ try {
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
-    // Info varsa (koordinat geldiyse) hafızadaki ülkeyi dayatma, veriden çekmeye çalış.
-    // Eğer veride ülke yoksa o zaman hafızayı düşünürüz.
-    
-    if (!info) return { term: fallbackCity, context: "", country: window.__lastKnownCountry || "" };
+    const props = info ? (info.properties || {}) : {};
+    const addr = info && info.address ? info.address : {};
+    // Akıllı fallback
+    let term = 
+        props.city ||
+        props.town ||
+        props.village ||
+        props.county ||
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.county ||
+        "";
 
-    const props = info.properties || {};
-    const addr = info.address || props.address || {}; 
-
-    const district = addr.district || addr.county || props.district || props.county || "";
-    const city = addr.city || addr.town || addr.village || props.city || props.town || "";
-    const state = addr.state || addr.province || props.state || "";
-    const country = addr.country || props.country || "";
-
-    let term = "";     
-    let context = "";  
-
-    if (district && district.toLowerCase() !== state.toLowerCase() && district.toLowerCase() !== city.toLowerCase()) {
-        if (!district.toLowerCase().includes("merkez")) {
-            term = district;
+    // Eğer yukarıdakiler yoksa ve state *hiçbiri* country adını veya "region/area/province" içeriyorsa, 
+    // fakat state “şehire benziyorsa” (örneğin “California”, “London”, “Tokyo”), kullan, 
+    // içermiyorsa kullanma!
+    if (
+      !term &&
+      props.state &&
+      typeof props.state === "string"
+    ) {
+        // discard if state includes country name or is very generic
+        const country = (props.country || "").toLowerCase();
+        const stateLower = props.state.toLowerCase();
+        if (
+            stateLower !== country &&                           // state ülke ile aynı olmasın
+            !/region|bölge|province|area|zone|district|departamento|state|province/i.test(stateLower)
+        ) {
+            term = props.state;
         }
     }
-    if (!term && city) {
-        term = city;
-    }
+    if (!term && fallbackCity) term = fallbackCity;
 
-    if (state && state.toLowerCase() !== term.toLowerCase()) {
-        context = state;
-    } else if (city && city.toLowerCase() !== term.toLowerCase()) {
-        context = city;
-    }
+    let country = props.country || addr.country || "";
 
-    if (!term) {
-        if (fallbackCity.includes(',')) {
-            let parts = fallbackCity.split(',');
-            term = parts[0].trim();
-        } else {
-            term = fallbackCity;
-        }
-    }
-
-    return { 
-        term: term, 
-        context: context, 
-        country: country 
-    };
+    return { term: (term || "").trim(), context: "", country: country.trim() };
 }
 
 // ŞEHİR İSMİNİ CACHE'LEME
