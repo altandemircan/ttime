@@ -94,61 +94,70 @@ function renderSuggestions(results = []) {
         return;
     }
 
-    // --- [YENİ] AGRESİF TEMİZLİK VE PUANLAMA ---
-    const rawInput = chatInput.value.toLowerCase();
+    // --- 1. İNPUT TEMİZLİĞİ VE ARAMA TERİMİNİ BULMA ---
+    // Kullanıcı "1 day Kemer" yazsa bile biz sadece "kemer" kelimesini alacağız.
+    let rawInput = chatInput.value.toLowerCase();
     
-    // Rakamları, 'day/gün' kelimelerini ve tireleri tamamen sil. 
-    // "1-day Kemer" -> "kemer" kalır.
+    // Rakamları, 'day/gün' gibi süre ifadelerini ve tireleri siliyoruz.
+    // Geriye sadece lokasyon ismi kalsın.
     const searchTerm = rawInput
-        .replace(/[0-9]/g, '')               // Sayıları sil
-        .replace(/(day|days|gün|gun)/gi, '') // Süre ifadelerini sil
-        .replace(/[-]/g, '')                 // Tireleri sil
-        .trim();                             // Boşlukları temizle
+        .replace(/[0-9]/g, '')                // Sayıları sil
+        .replace(/\b(day|days|gün|gun)\b/gi, '') // Kelime bazlı süreleri sil
+        .replace(/[-]/g, ' ')                 // Tireleri boşluk yap
+        .trim();                              // Baştaki sondaki boşlukları at
 
-    // Sıralama Fonksiyonu
+    // --- 2. SIRALAMA ALGORİTMASI (SENİN İSTEDİĞİN MANTIK) ---
     if (searchTerm.length > 0) {
         results.sort((a, b) => {
+            // İsimleri al ve küçült
             const nameA = (a.properties.name || "").toLowerCase();
             const nameB = (b.properties.name || "").toLowerCase();
-            
-            // Puanlama (Düşük puan daha iyidir)
+
+            // Puanlama Fonksiyonu (Düşük puan = Üst sıra)
             function getScore(name) {
-                if (name === searchTerm) return 1;          // Tam Eşleşme (Kemer) -> Kral
-                if (name.startsWith(searchTerm)) return 2;  // İle Başlayan (Kemerovo) -> Vezir
-                if (name.includes(searchTerm)) return 3;    // İçinde Geçen (Seydikemer) -> Asker
-                return 4;                                   // Alakasız -> Halk
+                // 1. SIRA: Birebir Eşleşme (Kemer === kemer)
+                if (name === searchTerm) return 1;
+                
+                // 2. SIRA: İle Başlayan (Kemerovo -> kemer...)
+                if (name.startsWith(searchTerm)) return 2;
+                
+                // 3. SIRA: İçinde Geçen (Seydikemer -> ...kemer...)
+                if (name.includes(searchTerm)) return 3;
+                
+                // 4. SIRA: Diğerleri
+                return 4;
             }
 
             const scoreA = getScore(nameA);
             const scoreB = getScore(nameB);
 
-            // Önce puana göre sırala
+            // Puana göre sırala (Küçükten büyüğe)
             if (scoreA !== scoreB) {
                 return scoreA - scoreB;
             }
 
-            // Puanlar eşitse (örneğin ikisi de "Kemer" ile başlıyorsa) kısa olanı öne al
-            // Çünkü "Kemer" (5 harf), "Kemerburgaz" (11 harf)'dan daha muhtemeldir.
+            // Puanlar eşitse (mesela ikisi de ile başlıyorsa) kısa olanı öne al
+            // (Kemerovo vs Kemerburgaz -> Kısa olan daha muhtemeldir)
             return nameA.length - nameB.length;
         });
     }
 
-    // --- RENDER VE DEDUPLICATION ---
+    // --- 3. LİSTEYİ OLUŞTURMA ---
     const seenSuggestions = new Set();
 
     results.forEach((result, idx) => {
         const props = result.properties || {};
         
-        // 1. VERİLER
+        // Verileri Çek
         const name = props.name || "";       
         const city = props.city || "";       
         const county = props.county || "";   
         const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
-        // 2. HİYERARŞİ (Küçük -> Büyük)
+        // Hiyerarşi Parçaları
         let parts = [];
 
-        // A. İSİM
+        // A. İSİM (Zorunlu)
         if (name) parts.push(name);
 
         // B. İLÇE / ŞEHİR
@@ -166,22 +175,22 @@ function renderSuggestions(results = []) {
             parts.push(countryCode);
         }
 
-        // 3. GÖRÜNTÜLEME
+        // Birleştir
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = uniqueParts.join(", ") + flag;
 
-        // TEKİLLEŞTİRME (Aynı sonucu tekrar basma)
+        // Deduplication (Aynı şeyi tekrar yazma)
         if (seenSuggestions.has(displayText)) {
             return; 
         }
         seenSuggestions.add(displayText);
 
-        // --- DOM OLUŞTURMA ---
+        // --- DOM ELEMENTİ ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // Listenin ilk elemanı artık en yüksek puanlı (en alakalı) olandır.
+        // Listenin en tepesindeki eleman (artık Kemer) seçili olsun
         if (suggestionsDiv.children.length === 0) {
             div.classList.add("selected-suggestion");
         }
@@ -189,6 +198,7 @@ function renderSuggestions(results = []) {
         div.textContent = displayText;
         div.dataset.displayText = displayText;
 
+        // Tıklama Olayı
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
