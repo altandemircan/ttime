@@ -6449,7 +6449,7 @@ ease;
   border: 1px solid #e1e4e8;
   padding: 6px 8px;
   border-radius: 6px;
-  display: none;
+  display: none !important;
   white-space: nowrap;
   overflow: auto;
 }
