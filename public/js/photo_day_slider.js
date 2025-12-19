@@ -245,7 +245,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     }
 
     // --- 2. Arama objesini sadece o günün güncel item'ına göre hazırla (Hafıza YOK!) ---
-    let searchObj = { term: "", context: "", country: "" };
+let searchObj = extractSmartSearchTerm(apiObj, fallbackCity);
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
     searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, "");
     // Console log ile bak:
