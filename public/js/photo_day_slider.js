@@ -255,13 +255,20 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     // --- 2. Arama objesini sadece o günün güncel item'ına göre hazırla (Hafıza YOK!) ---
     let searchObj = { term: "", context: "", country: "" };
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
-        // Daima sadece anlık güncel context/country kullan!
-        searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
-
-        // Hafıza sadece "gelecekte" boş günler için güncellensin, burası asla fallback olmasın!
-        if (searchObj.context) window.__lastKnownContext = searchObj.context; // posterior update
-        if (searchObj.country) window.__lastKnownCountry = searchObj.country;
-    } else {
+    searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, "");
+    // Hafıza Fallback'ını kaldır
+    // if (!searchObj.country && window.__lastKnownCountry) <-- SIL
+    //     searchObj.country = window.__lastKnownCountry;
+    // Sadece gelen değeri kullan
+    // Debug için logla:
+    console.log('fetchSmartLocationName for collage', searchObj, firstLoc.location.lat, firstLoc.location.lng);
+    // Eğer term halen eski şehir ise, Kolajı asla render etme (veya warning göster)
+    if (!searchObj.term || searchObj.term.toLowerCase() === "antalya") {
+        collage.innerHTML = "<div style='padding:16px;color:#c00'>⚠️ Fotoğraf konumu belirlenemedi</div>";
+        collage.style.display = 'block';
+        return;
+    }
+}else {
         // Tamamen boş bir gün; sadece burada hafıza kullanılır
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
