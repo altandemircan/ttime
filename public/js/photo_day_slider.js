@@ -256,14 +256,10 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     let searchObj = { term: "", context: "", country: "" };
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
     searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, "");
-    // Hafıza Fallback'ını kaldır
-    // if (!searchObj.country && window.__lastKnownCountry) <-- SIL
-    //     searchObj.country = window.__lastKnownCountry;
-    // Sadece gelen değeri kullan
-    // Debug için logla:
-    console.log('fetchSmartLocationName for collage', searchObj, firstLoc.location.lat, firstLoc.location.lng);
-    // Eğer term halen eski şehir ise, Kolajı asla render etme (veya warning göster)
-    if (!searchObj.term || searchObj.term.toLowerCase() === "antalya") {
+    // Console log ile bak:
+    console.log("fetchSmartLocationName result", searchObj, firstLoc.location);
+    // Halen eski city geliyorsa burada warning ver!
+    if (searchObj.term?.toLowerCase() === "antalya" && firstLoc.location.lat > 37.7) {
         collage.innerHTML = "<div style='padding:16px;color:#c00'>⚠️ Fotoğraf konumu belirlenemedi</div>";
         collage.style.display = 'block';
         return;
