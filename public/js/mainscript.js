@@ -484,22 +484,14 @@ async function geoapifyLocationAutocomplete(query) {
 
 
 // ============================================================
-// 1. SORGULAMA TEMİZLEYİCİ (Global)
+// 1. SORGULAMA TEMİZLEYİCİ
 // ============================================================
 function extractLocationQuery(input) {
     if (!input) return "";
-
-    // A. Küçük harfe çevir (Türkçe karakter destekli)
     let cleaned = input.toLocaleLowerCase('tr');
-
-    // B. "1 day", "3 gün", "2-night" gibi ifadeleri sil
-    // Regex mantığı: Rakam + boşluk + gün/gece kelimesi
     cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
-    
-    // C. Kalan rakam ve noktalama işaretlerini sil
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
-
-    // D. Yasaklı kelimeler (Stop Words)
+    
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
@@ -508,15 +500,12 @@ function extractLocationQuery(input) {
     
     let words = cleaned.split(/\s+/);
     words = words.filter(w => !stopWords.includes(w) && w.length > 1);
-
-    // E. Birleştir ve döndür
     let finalQuery = words.join(" ").trim();
-
     return finalQuery.length < 2 ? "" : finalQuery;
 }
 
 // ============================================================
-// 2. SUGGESTIONS GÖSTER/GİZLE YARDIMCILARI
+// 2. GÖRÜNÜM YARDIMCILARI
 // ============================================================
 if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
@@ -536,7 +525,7 @@ if (typeof hideSuggestionsDiv !== "function") {
 }
 
 // ============================================================
-// 3. RENDER SUGGESTIONS (SIRALAMA MANTIĞI BURADA)
+// 3. RENDER SUGGESTIONS (KESİN GRUPLAMA YÖNTEMİ)
 // ============================================================
 function renderSuggestions(originalResults = [], manualQuery = "") {
     const suggestionsDiv = document.getElementById("suggestions");
@@ -550,55 +539,52 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // Listeyi kopyala (Referans hatasını önle)
-    let results = [...originalResults];
-
-    // --- A. SIRALAMA HEDEFİNİ BELİRLE ---
-    // Eğer manualQuery ("kemer") geldiyse onu kullan.
-    // Gelmediyse inputtan ("1 day kemer") temizle ("kemer").
-    // ASLA ham inputu ("1 day kemer") kullanma!
+    // A. HEDEF KELİMEYİ BELİRLE
     let targetTerm = manualQuery 
         ? manualQuery.toLocaleLowerCase('tr') 
         : extractLocationQuery(chatInput.value);
 
-    // Debug: Konsola basıp kontrol edebilirsiniz
-    console.log(`[Sort] Sıralama şu kelimeye göre yapılıyor: "${targetTerm}"`);
+    // console.log(`[Render] Hedef: "${targetTerm}"`); // Debug
 
+    let finalSortedResults = [];
+
+    // B. GRUPLAMA (BUCKETING) - KESİN SIRALAMA İÇİN
     if (targetTerm.length > 0) {
-        results.sort((a, b) => {
-            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
-            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
+        const exactMatches = [];   // Tam Eşleşen (Kemer)
+        const startMatches = [];   // İle Başlayan (Kemerovo)
+        const containMatches = []; // İçinde Geçen (Seydikemer)
+        const others = [];         // Diğerleri (Biga vb.)
+
+        originalResults.forEach(item => {
+            const name = (item.properties.name || "").toLocaleLowerCase('tr');
             
-            // --- PUANLAMA SİSTEMİ ---
-            function getScore(name) {
-                // 1. TAM EŞLEŞME (Kemer === kemer) -> 1 Puan (En Tepe)
-                if (name === targetTerm) return 1;
-                
-                // 2. İLE BAŞLAYAN (Kemerovo -> kemer...) -> 2 Puan
-                if (name.startsWith(targetTerm)) return 2;
-                
-                // 3. İÇİNDE GEÇEN (Seydikemer -> ...kemer...) -> 3 Puan
-                if (name.includes(targetTerm)) return 3;
-                
-                // 4. ALAKASIZ (Biga, Bozdoğan vb.) -> 4 Puan (En Alt)
-                return 4;
+            if (name === targetTerm) {
+                exactMatches.push(item);
+            } else if (name.startsWith(targetTerm)) {
+                startMatches.push(item);
+            } else if (name.includes(targetTerm)) {
+                containMatches.push(item);
+            } else {
+                others.push(item);
             }
-
-            const scoreA = getScore(nameA);
-            const scoreB = getScore(nameB);
-
-            // Puan farkına göre sırala (Küçük puan yukarı çıkar)
-            if (scoreA !== scoreB) return scoreA - scoreB;
-            
-            // Puanlar eşitse kısa olanı öne al
-            return nameA.length - nameB.length;
         });
+
+        // Kutuları sırayla birleştir: Önce Tam, Sonra Başlayan, Sonra İçeren
+        finalSortedResults = [
+            ...exactMatches,
+            ...startMatches,
+            ...containMatches,
+            ...others
+        ];
+    } else {
+        // Hedef kelime yoksa API sırasını bozma
+        finalSortedResults = [...originalResults];
     }
 
-    // --- B. LİSTELEME ---
+    // --- C. LİSTELEME ---
     const seenSuggestions = new Set();
 
-    results.forEach((result) => {
+    finalSortedResults.forEach((result) => {
         const props = result.properties || {};
         
         // Verileri Çek
@@ -627,7 +613,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // Listenin ilk elemanı (En yüksek puanlı olan) seçili olsun
+        // Listenin ilk elemanı (Zorla en başa aldığımız) seçili olsun
         if (suggestionsDiv.children.length === 0) {
             div.classList.add("selected-suggestion");
         }
@@ -694,12 +680,10 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         if (window.__programmaticInput) return;
 
         const rawText = this.value.trim();
-        // 1. Temiz Sorguyu Al ("1 day Kemer" -> "kemer")
         const locationQuery = extractLocationQuery(rawText);
         
-        console.log(`Input: "${rawText}" -> API & Sıralama Sorgusu: "${locationQuery}"`);
+        console.log(`Input: "${rawText}" -> API Query: "${locationQuery}"`);
 
-        // Eğer temizlendikten sonra boşsa (sadece "1 day" yazıldıysa) çık
         if (locationQuery.length < 2) {
             if (rawText.length < 2) showSuggestions();
             return;
@@ -719,8 +703,7 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
         window.lastResults = suggestions;
         
-        // 2. renderSuggestions'a TEMİZLENMİŞ sorguyu manuel olarak gönderiyoruz.
-        // Böylece sıralama "1 day kemer"e göre değil, "kemer"e göre yapılıyor.
+        // Temizlenmiş sorguyu (locationQuery) RENDER'a gönder
         if (typeof renderSuggestions === 'function') {
             renderSuggestions(suggestions, locationQuery);
         }
@@ -729,139 +712,12 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
     chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
-            // Focus anında da temizlenmiş sorguya göre sırala
             const currentQuery = extractLocationQuery(this.value);
             renderSuggestions(window.lastResults, currentQuery);
         } else {
              showSuggestions();
         }
     });
-}
-
-function renderSuggestions(results = []) {
-    const suggestionsDiv = document.getElementById("suggestions");
-    const chatInput = document.getElementById("user-input");
-    if (!suggestionsDiv || !chatInput) return;
-
-    suggestionsDiv.innerHTML = "";
-
-    if (!results.length) {
-        if (typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
-        return;
-    }
-
-    // --- 1. Sorgulanan kelimeyi temizle/normalize et ---
-    // "Kemer" kelimesi için mesela "1 day Kemer" -> "kemer"
-    let searchTerm = extractLocationQuery(chatInput.value).toLocaleLowerCase('tr');
-
-    // --- 2. Akıllı sıralama algoritması (tam baş eşleşme / başta geçiyor / içinde geçiyor / alakasız) ---
-    if (searchTerm.length > 0) {
-        results.sort((a, b) => {
-            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
-            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
-
-            function getScore(name) {
-                if (name === searchTerm) return 1;                      // Tam eşleşme
-                if (name.startsWith(searchTerm)) return 2;               // Başta geçiyor
-                if (name.includes(searchTerm)) return 3;                 // İçinde geçiyor
-                return 4;                                                // Diğerleri
-            }
-
-            const scoreA = getScore(nameA);
-            const scoreB = getScore(nameB);
-
-            if (scoreA !== scoreB) return scoreA - scoreB;
-            return nameA.length - nameB.length; // Eşitse kısa olanı öncele
-        });
-    }
-
-    // --- 3. Görüntüle / Render ---
-    const seenSuggestions = new Set();
-
-    results.forEach((result) => {
-        const props = result.properties || {};
-        const name = props.name || "";
-        const city = props.city || "";
-        const county = props.county || "";
-        const countryCode = props.country_code ? props.country_code.toUpperCase() : "";
-
-        // Hiyerarşi Parçaları
-        let parts = [];
-        if (name) parts.push(name);
-        if (city && city !== name) parts.push(city);
-        if (county && county !== name && county !== city) parts.push(county);
-        if (countryCode) parts.push(countryCode);
-
-        const uniqueParts = [...new Set(parts)].filter(Boolean);
-        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-        const displayText = uniqueParts.join(", ") + flag;
-
-        // Aynı sonucu tekrar göstermemek için
-        if (seenSuggestions.has(displayText)) return;
-        seenSuggestions.add(displayText);
-
-        const div = document.createElement("div");
-        div.className = "category-area-option";
-
-        if (suggestionsDiv.children.length === 0) {
-            div.classList.add("selected-suggestion");
-        }
-        div.textContent = displayText;
-        div.dataset.displayText = displayText;
-
-        div.onclick = () => {
-            window.__programmaticInput = true;
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            div.classList.add("selected-suggestion");
-
-            window.selectedSuggestion = { displayText, props };
-            window.selectedLocation = {
-                name: name,
-                city: county || city || name,
-                country: props.country || "",
-                lat: props.lat ?? props.latitude ?? null,
-                lon: props.lon ?? props.longitude ?? null,
-                country_code: props.country_code || ""
-            };
-
-            // Input içerisinden gün değeri bul
-            const raw = chatInput.value.trim();
-            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
-            let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
-            if (!days || days < 1) days = 2;
-
-            let targetName = displayText.replace(flag, "").trim();
-            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
-
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${targetName} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            }
-
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
-            } else {
-                chatInput.value = canonicalStr;
-            }
-
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
-
-            if (typeof enableSendButton === "function") enableSendButton();
-            if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
-
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
-        };
-
-        suggestionsDiv.appendChild(div);
-    });
-
-    if (suggestionsDiv.children.length > 0) {
-        if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-    } else {
-        if (typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
-    }
 }
 
 
