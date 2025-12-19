@@ -97,54 +97,45 @@ function renderSuggestions(results = []) {
     results.forEach((result, idx) => {
         const props = result.properties || {};
         
-        // 1. HAM VERİLERİ AL
-        const name = props.name || "";       // Örn: Kemer
-        const county = props.county || "";   // Örn: Kemer (veya boş)
-        const city = props.city || "";       // Örn: Antalya
-        const state = props.state || "";     // Örn: Mediterranean Region
-        const country = props.country || ""; // Örn: Turkey
+        // 1. VERİLERİ ÇEK
+        const name = props.name || "";       // Yer Adı (Kemer)
+        const city = props.city || "";       // İlçe/Şehir (Kemer)
+        const county = props.county || "";   // İl/Province (Antalya) -> Geoapify TR'de İli burada tutuyor!
+        const state = props.state || "";     // Bölge (Mediterranean Region)
+        const country = props.country || ""; // Ülke (Turkey)
 
-        // 2. "İL" (PROVINCE) KAVRAMINI BELİRLE
-        // Name (Kemer) dışındaki "Büyük Şehir" bilgisini buluyoruz.
-        let parentCity = "";
-        
-        // City varsa ve Name'den farklıysa, o ildir. (Antalya != Kemer)
-        if (city && city !== name) {
-            parentCity = city;
-        } 
-        // City yoksa State'e bak (Region/Bölge değilse ve Name'den farklıysa)
-        else if (state && state !== name && !state.includes("Region") && !state.includes("Bölge")) {
-            parentCity = state;
-        }
-
-        // 3. KATI SIRALAMA (STRICT ORDER)
-        // Sıra: [İsim] -> [İlçe] -> [İl] -> [Ülke]
+        // 2. KATI HİYERARŞİ OLUŞTUR
+        // Sıra: İsim -> Şehir(İlçe) -> County(İl) -> Ülke
         let parts = [];
 
-        // A. İSİM (ZORUNLU - EN BAŞA)
-        // Örn: "Kemer"
+        // A. İSİM (Her zaman ekle)
         if (name) parts.push(name);
 
-        // B. İLÇE (ARA KATMAN)
-        // Eğer county varsa, name'den farklıysa ve parentCity'den farklıysa ekle.
-        // Örn: "Altınkum" arandıysa county "Konyaaltı" olabilir. Eklenir.
-        // Örn: "Kemer" arandıysa county "Kemer"dir. Eşit olduğu için EKLENMEZ.
-        if (county && county !== name && county !== parentCity) {
+        // B. ŞEHİR / İLÇE (City)
+        // Eğer isimden farklıysa ekle. (Altınkum arandığında city Didim gelir, eklenir.)
+        // (Kemer arandığında city Kemer gelir, isimle aynı olduğu için EKLENMEZ.)
+        if (city && city !== name) {
+            parts.push(city);
+        }
+
+        // C. İL / PROVINCE (County)
+        // Eğer isimden ve şehirden farklıysa ekle. 
+        // (Kemer örneği: county Antalya'dır. Kemer'den farklıdır -> EKLENİR.)
+        if (county && county !== name && county !== city) {
             parts.push(county);
         }
 
-        // C. İL (BÜYÜK ŞEHİR)
-        // Örn: "Antalya". (Kemer != Antalya olduğu için eklenir)
-        if (parentCity) {
-            parts.push(parentCity);
+        // D. STATE (Yedek)
+        // Eğer hiç il (county) veya ilçe (city) bulunamadıysa ve state "Region" değilse ekle.
+        if (parts.length === 1 && state && !state.includes("Region") && !state.includes("Bölge")) {
+             parts.push(state);
         }
 
-        // D. ÜLKE
-        if (country) {
-            parts.push(country);
-        }
+        // E. ÜLKE
+        if (country) parts.push(country);
 
-        // 4. BİRLEŞTİR VE GÖSTER
+        // 3. GÖRÜNTÜLEME METNİ
+        // Set ile olası tekrarları temizle
         const uniqueParts = [...new Set(parts)].filter(Boolean);
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
         const displayText = uniqueParts.join(", ") + flag;
@@ -165,10 +156,11 @@ function renderSuggestions(results = []) {
             
             window.selectedSuggestion = { displayText, props };
             
-            // Lokasyon objesi
+            // Lokasyon objesini güncelle (Arka plan mantığı için önemli)
+            // City olarak öncelikle County'i (Antalya'yı) veriyoruz ki fotoğraf aramalarında İl kullanılsın.
             window.selectedLocation = {
-                name: props.name || name,
-                city: parentCity || city, // Bulduğumuz büyük şehri (Antalya) kullan
+                name: name,
+                city: county || city || name, // Öncelik İl (County), yoksa İlçe (City)
                 country: country,
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
@@ -180,8 +172,8 @@ function renderSuggestions(results = []) {
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
             if (!days || days < 1) days = 2;
 
-            // Canonical planda kullanılacak isim
-            let targetName = window.selectedLocation.city || window.selectedLocation.name;
+            // Canonical inputa yazılacak metin
+            let targetName = displayText.replace(flag, ""); // Bayraksız tam metni al
             let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
 
             if (typeof formatCanonicalPlan === "function") {
