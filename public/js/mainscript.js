@@ -484,12 +484,12 @@ async function geoapifyLocationAutocomplete(query) {
 
 
 // ============================================================
-// 1. SORGULAMA TEMİZLEYİCİ (Global)
+// 1. SORGULAMA TEMİZLEYİCİ
 // ============================================================
 function extractLocationQuery(input) {
     if (!input) return "";
 
-    // A. Tüm harfleri Türkçe uyumlu küçült
+    // A. Tüm harfleri Türkçe uyumlu küçült (i/I sorununu çözer)
     let cleaned = input.toLocaleLowerCase('tr');
 
     // B. Rakamları ve süreleri sil ("1 day", "3 gün", "2-night")
@@ -505,69 +505,203 @@ function extractLocationQuery(input) {
         "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
     ];
     
-    // Kelimeleri ayır ve filtrele
     let words = cleaned.split(/\s+/);
     words = words.filter(w => !stopWords.includes(w) && w.length > 1);
 
-    // E. Birleştir ve döndür
     let finalQuery = words.join(" ").trim();
 
-    // F. Eğer her şey silindiyse (örn: sadece "1 day" yazıldıysa) boş dön
-    if (finalQuery.length < 2) return "";
-
+    if (finalQuery.length < 2) return ""; // Çok kısaysa boş dön
     return finalQuery;
 }
 
 // ============================================================
-// 2. SUGGESTIONS GÖSTER/GİZLE
+// 2. SUGGESTIONS GÖSTER/GİZLE YARDIMCILARI
 // ============================================================
-let __autoAbort = null;
-
 if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
         const el = document.getElementById('suggestions');
-        if (!el) return;
-        el.hidden = false;
-        el.style.removeProperty('display');
+        if (el) { el.hidden = false; el.style.removeProperty('display'); }
     }
 }
 if (typeof hideSuggestionsDiv !== "function") {
     window.hideSuggestionsDiv = function(clear = false) {
         const el = document.getElementById('suggestions');
-        if (!el) return;
-        el.hidden = true;
-        el.style.removeProperty('display');
-        if (clear) el.innerHTML = "";
+        if (el) { 
+            el.hidden = true; 
+            el.style.removeProperty('display');
+            if (clear) el.innerHTML = "";
+        }
     }
 }
 
 // ============================================================
-// 3. INPUT EVENT LISTENER (API Çağrısı)
+// 3. RENDER SUGGESTIONS (Sıralama Parametreli)
 // ============================================================
-// Not: chatInput değişkeni sayfanın başında tanımlı olduğu varsayılıyor.
+// DİKKAT: Artık 'manualQuery' parametresi alıyor!
+function renderSuggestions(results = [], manualQuery = "") {
+    const suggestionsDiv = document.getElementById("suggestions");
+    const chatInput = document.getElementById("user-input");
+    if (!suggestionsDiv || !chatInput) return;
+    
+    suggestionsDiv.innerHTML = "";
+
+    if (!results.length) {
+        hideSuggestionsDiv(true);
+        return;
+    }
+
+    // --- A. SIRALAMA ALGORİTMASI ---
+    // Eğer manualQuery geldiyse onu kullan, yoksa inputtan hesapla
+    let targetTerm = manualQuery 
+        ? manualQuery.toLocaleLowerCase('tr') 
+        : extractLocationQuery(chatInput.value);
+
+    // Debug için konsola yazalım (F12'de görebilirsiniz)
+    // console.log("Sıralama Hedefi:", targetTerm); 
+
+    if (targetTerm.length > 0) {
+        results.sort((a, b) => {
+            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
+            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
+            
+            function getScore(name) {
+                // 1. TAM EŞLEŞME (Kemer === kemer) -> En Üst (1)
+                if (name === targetTerm) return 1;
+                // 2. İLE BAŞLAYAN (Kemerovo -> kemer...) -> İkinci (2)
+                if (name.startsWith(targetTerm)) return 2;
+                // 3. İÇİNDE GEÇEN (Seydikemer -> ...kemer...) -> Üçüncü (3)
+                if (name.includes(targetTerm)) return 3;
+                // 4. DİĞER (Biga vs.) -> Son (4)
+                return 4;
+            }
+
+            const scoreA = getScore(nameA);
+            const scoreB = getScore(nameB);
+
+            // Puan farkı varsa ona göre sırala
+            if (scoreA !== scoreB) return scoreA - scoreB;
+            
+            // Puanlar eşitse (ikisi de 4 ise veya ikisi de 2 ise) kısa olanı öne al
+            return nameA.length - nameB.length;
+        });
+    }
+
+    // --- B. LİSTELEME VE DEDUPLICATION ---
+    const seenSuggestions = new Set();
+
+    results.forEach((result, idx) => {
+        const props = result.properties || {};
+        
+        // Verileri Çek
+        const name = props.name || "";       
+        const city = props.city || "";       
+        const county = props.county || "";   
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
+
+        // Hiyerarşi Parçaları
+        let parts = [];
+        if (name) parts.push(name); 
+        if (city && city !== name) parts.push(city); 
+        if (county && county !== name && county !== city) parts.push(county); 
+        if (countryCode) parts.push(countryCode); 
+
+        // Birleştir
+        const uniqueParts = [...new Set(parts)].filter(Boolean);
+        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+        const displayText = uniqueParts.join(", ") + flag;
+
+        // Tekrarları Engelle
+        if (seenSuggestions.has(displayText)) return; 
+        seenSuggestions.add(displayText);
+
+        // HTML Elementi
+        const div = document.createElement("div");
+        div.className = "category-area-option";
+        
+        // İlk elemanı seçili yap
+        if (suggestionsDiv.children.length === 0) {
+            div.classList.add("selected-suggestion");
+        }
+
+        div.textContent = displayText;
+        div.dataset.displayText = displayText;
+
+        div.onclick = () => {
+            window.__programmaticInput = true;
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            div.classList.add("selected-suggestion");
+            
+            window.selectedSuggestion = { displayText, props };
+            window.selectedLocation = {
+                name: name,
+                city: county || city || name,
+                country: props.country || "", 
+                lat: props.lat ?? props.latitude ?? null,
+                lon: props.lon ?? props.longitude ?? null,
+                country_code: props.country_code || ""
+            };
+
+            const raw = chatInput.value.trim();
+            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+            let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+            if (!days || days < 1) days = 2;
+
+            let targetName = displayText.replace(flag, "").trim(); 
+            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+
+            if (typeof formatCanonicalPlan === "function") {
+                const c = formatCanonicalPlan(`${targetName} ${days} days`);
+                if (c && c.canonical) canonicalStr = c.canonical;
+            }
+
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
+
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
+            
+            if(window.enableSendButton) enableSendButton();
+            showSuggestionsDiv();
+            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
+
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
+        };
+
+        suggestionsDiv.appendChild(div);
+    });
+
+    if (suggestionsDiv.children.length > 0) {
+        showSuggestionsDiv();
+    } else {
+        hideSuggestionsDiv(true);
+    }
+}
+
+// ============================================================
+// 4. INPUT EVENT LISTENER
+// ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
-        // Tıklama ile doldurulduysa çalışma
         if (window.__programmaticInput) return;
 
         const rawText = this.value.trim();
         
-        // Temizlenmiş sorguyu al (Örn: "1 day Kemer" -> "kemer")
+        // Temiz sorguyu al (1 day Kemer -> kemer)
         const locationQuery = extractLocationQuery(rawText);
         
-        // Konsola yaz ki ne gittiğini gör
-        console.log(`Ham: "${rawText}" -> Temiz: "${locationQuery}"`);
+        console.log(`API Sorgusu: "${locationQuery}"`);
 
-        // Eğer anlamlı bir kelime yoksa önerileri gizle ve çık
+        // Sorgu boşsa veya çok kısaysa varsayılanı göster
         if (locationQuery.length < 2) {
-            // Eğer input tamamen boşsa veya sadece "1 day" ise varsayılan anket önerilerini göster
-            if(rawText.length < 2) showSuggestions(); 
+            if (rawText.length < 2) showSuggestions();
             return;
         }
 
         let suggestions = [];
         try {
-            // API ÇAĞRISI
             if (window.geoapify && window.geoapify.autocomplete) {
                 suggestions = await window.geoapify.autocomplete(locationQuery);
             } else if (typeof geoapifyLocationAutocomplete === 'function') {
@@ -581,19 +715,20 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
         window.lastResults = suggestions;
         
-        // Sonuçları Render Et
+        // [ÖNEMLİ] renderSuggestions'a temizlediğimiz sorguyu (locationQuery) parametre olarak gönderiyoruz!
+        // Böylece "Kemer" arattıysak, içeride de "Kemer"e göre sıralama yapıyor.
         if (typeof renderSuggestions === 'function') {
-            renderSuggestions(suggestions);
-            if (suggestions.length > 0) showSuggestionsDiv();
+            renderSuggestions(suggestions, locationQuery);
         }
 
     }, 400));
 
-    // Focus olduğunda
+    // Focus olduğunda eski sonuçları tekrar göster
     chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
-            renderSuggestions(window.lastResults);
-            showSuggestionsDiv();
+            // Focus durumunda inputtaki yazı değişmiş olabilir, tekrar hesaplatalım
+            const currentQuery = extractLocationQuery(this.value);
+            renderSuggestions(window.lastResults, currentQuery);
         } else {
              showSuggestions();
         }
