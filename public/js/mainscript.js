@@ -88,7 +88,131 @@ function disableSendButton() {
       btn.classList.add("disabled");
     }
 
+function renderSuggestions(results = []) {
+    const suggestionsDiv = document.getElementById("suggestions");
+    const chatInput = document.getElementById("user-input");
+    if (!suggestionsDiv || !chatInput) return;
 
+    suggestionsDiv.innerHTML = "";
+
+    if (!results.length) {
+        if (typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
+        return;
+    }
+
+    // --- 1. Sorgulanan kelimeyi temizle/normalize et ---
+    // "Kemer" kelimesi için mesela "1 day Kemer" -> "kemer"
+    let searchTerm = extractLocationQuery(chatInput.value).toLocaleLowerCase('tr');
+
+    // --- 2. Akıllı sıralama algoritması (tam baş eşleşme / başta geçiyor / içinde geçiyor / alakasız) ---
+    if (searchTerm.length > 0) {
+        results.sort((a, b) => {
+            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
+            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
+
+            function getScore(name) {
+                if (name === searchTerm) return 1;                      // Tam eşleşme
+                if (name.startsWith(searchTerm)) return 2;               // Başta geçiyor
+                if (name.includes(searchTerm)) return 3;                 // İçinde geçiyor
+                return 4;                                                // Diğerleri
+            }
+
+            const scoreA = getScore(nameA);
+            const scoreB = getScore(nameB);
+
+            if (scoreA !== scoreB) return scoreA - scoreB;
+            return nameA.length - nameB.length; // Eşitse kısa olanı öncele
+        });
+    }
+
+    // --- 3. Görüntüle / Render ---
+    const seenSuggestions = new Set();
+
+    results.forEach((result) => {
+        const props = result.properties || {};
+        const name = props.name || "";
+        const city = props.city || "";
+        const county = props.county || "";
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : "";
+
+        // Hiyerarşi Parçaları
+        let parts = [];
+        if (name) parts.push(name);
+        if (city && city !== name) parts.push(city);
+        if (county && county !== name && county !== city) parts.push(county);
+        if (countryCode) parts.push(countryCode);
+
+        const uniqueParts = [...new Set(parts)].filter(Boolean);
+        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+        const displayText = uniqueParts.join(", ") + flag;
+
+        // Aynı sonucu tekrar göstermemek için
+        if (seenSuggestions.has(displayText)) return;
+        seenSuggestions.add(displayText);
+
+        const div = document.createElement("div");
+        div.className = "category-area-option";
+
+        if (suggestionsDiv.children.length === 0) {
+            div.classList.add("selected-suggestion");
+        }
+        div.textContent = displayText;
+        div.dataset.displayText = displayText;
+
+        div.onclick = () => {
+            window.__programmaticInput = true;
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            div.classList.add("selected-suggestion");
+
+            window.selectedSuggestion = { displayText, props };
+            window.selectedLocation = {
+                name: name,
+                city: county || city || name,
+                country: props.country || "",
+                lat: props.lat ?? props.latitude ?? null,
+                lon: props.lon ?? props.longitude ?? null,
+                country_code: props.country_code || ""
+            };
+
+            // Input içerisinden gün değeri bul
+            const raw = chatInput.value.trim();
+            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+            let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+            if (!days || days < 1) days = 2;
+
+            let targetName = displayText.replace(flag, "").trim();
+            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+
+            if (typeof formatCanonicalPlan === "function") {
+                const c = formatCanonicalPlan(`${targetName} ${days} days`);
+                if (c && c.canonical) canonicalStr = c.canonical;
+            }
+
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
+
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
+
+            if (typeof enableSendButton === "function") enableSendButton();
+            if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
+
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
+        };
+
+        suggestionsDiv.appendChild(div);
+    });
+
+    if (suggestionsDiv.children.length > 0) {
+        if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+    } else {
+        if (typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
+    }
+}
 
 function clearRouteSegmentHighlight(day) {
   if (window._segmentHighlight && window._segmentHighlight[day]) {
@@ -600,144 +724,7 @@ if (typeof chatInput !== 'undefined' && chatInput) {
     });
 }
 
-// ============================================================
-// 4. RENDER SUGGESTIONS (Sıralama + Görünüm)
-// ============================================================
-function renderSuggestions(results = []) {
-    const suggestionsDiv = document.getElementById("suggestions");
-    const chatInput = document.getElementById("user-input");
-    if (!suggestionsDiv || !chatInput) return;
-    
-    suggestionsDiv.innerHTML = "";
 
-    if (!results.length) {
-        hideSuggestionsDiv?.(true);
-        return;
-    }
-
-    // --- A. SIRALAMA İÇİN HEDEF KELİMEYİ BUL ---
-    // Inputtaki değeri alıp temizliyoruz ki karşılaştırma yapabilelim.
-    // toLocaleLowerCase('tr') İLE HARF DUYARLILIĞINI KALDIRIYORUZ!
-    const targetTerm = extractLocationQuery(chatInput.value).toLocaleLowerCase('tr');
-
-    if (targetTerm.length > 0) {
-        results.sort((a, b) => {
-            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
-            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
-            
-            function getScore(name) {
-                // 1. TAM EŞLEŞME (Kemer === kemer) -> EN ÜST
-                if (name === targetTerm) return 1;
-                // 2. İLE BAŞLAYAN (Kemerovo)
-                if (name.startsWith(targetTerm)) return 2;
-                // 3. İÇİNDE GEÇEN (Seydikemer)
-                if (name.includes(targetTerm)) return 3;
-                // 4. DİĞER
-                return 4;
-            }
-
-            const scoreA = getScore(nameA);
-            const scoreB = getScore(nameB);
-
-            if (scoreA !== scoreB) return scoreA - scoreB;
-            return nameA.length - nameB.length; // Eşitse kısa olanı öne al
-        });
-    }
-
-    // --- B. LİSTELEME ---
-    const seenSuggestions = new Set();
-
-    results.forEach((result, idx) => {
-        const props = result.properties || {};
-        
-        // Verileri Çek
-        const name = props.name || "";       
-        const city = props.city || "";       
-        const county = props.county || "";   
-        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
-
-        // Hiyerarşi Oluştur
-        let parts = [];
-        if (name) parts.push(name); // İsim
-        if (city && city !== name) parts.push(city); // İlçe
-        if (county && county !== name && county !== city) parts.push(county); // İl
-        if (countryCode) parts.push(countryCode); // Ülke Kodu
-
-        // Birleştir
-        const uniqueParts = [...new Set(parts)].filter(Boolean);
-        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-        const displayText = uniqueParts.join(", ") + flag;
-
-        // Tekrarları Engelle
-        if (seenSuggestions.has(displayText)) return; 
-        seenSuggestions.add(displayText);
-
-        // HTML Elementi
-        const div = document.createElement("div");
-        div.className = "category-area-option";
-        
-        // İlk elemanı seçili yap
-        if (suggestionsDiv.children.length === 0) {
-            div.classList.add("selected-suggestion");
-        }
-
-        div.textContent = displayText;
-        div.dataset.displayText = displayText;
-
-        div.onclick = () => {
-            window.__programmaticInput = true;
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            div.classList.add("selected-suggestion");
-            
-            window.selectedSuggestion = { displayText, props };
-            window.selectedLocation = {
-                name: name,
-                city: county || city || name,
-                country: props.country || "", 
-                lat: props.lat ?? props.latitude ?? null,
-                lon: props.lon ?? props.longitude ?? null,
-                country_code: props.country_code || ""
-            };
-
-            // Inputa yazılacak metni hazırla
-            const raw = chatInput.value.trim();
-            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
-            let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
-            if (!days || days < 1) days = 2;
-
-            let targetName = displayText.replace(flag, "").trim(); 
-            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
-
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${targetName} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            }
-
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
-            } else {
-                chatInput.value = canonicalStr;
-            }
-
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
-            
-            if(enableSendButton) enableSendButton();
-            if(showSuggestionsDiv) showSuggestionsDiv();
-            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
-
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
-        };
-
-        suggestionsDiv.appendChild(div);
-    });
-
-    if (suggestionsDiv.children.length > 0) {
-        showSuggestionsDiv();
-    } else {
-        hideSuggestionsDiv(true);
-    }
-}
 
 
 
