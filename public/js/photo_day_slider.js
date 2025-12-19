@@ -89,7 +89,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v31_${latKey}_${lngKey}`; // v31
+    const storageKey = `tt_loc_name_v32_${latKey}_${lngKey}`; // v32
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -265,7 +265,10 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             let parts = rawCity.split(',');
             searchObj.term = parts[0].trim(); 
             let ctry = parts[parts.length - 1].trim();
-            if (ctry) searchObj.country = ctry;
+            if (ctry) {
+                searchObj.country = ctry;
+                window.__lastKnownCountry = ctry;
+            }
         } else {
             searchObj.term = rawCity;
         }
@@ -287,11 +290,9 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
-    const cacheKey = `tt_day_collage_v31_${day}_${safeTerm}_combined`;
+    const cacheKey = `tt_day_collage_v32_${day}_${safeTerm}_combined`;
     
     let images = [];
-    // Cache'de activeLabel olsa bile, başlık yapısını (Location) değiştireceğiz
-    // O yüzden cache'den sadece images'ı alıyoruz
     let fromCache = false;
 
     try {
@@ -332,7 +333,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         }
     }
 
-    // F. Render (searchObj'nin tamamını gönderiyoruz ki tam başlığı oluştursun)
+    // F. Render
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
         renderCollageSlides(collage, images, searchObj);
         collage.style.display = 'block';
@@ -342,35 +343,42 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (BAŞLIK & ALT YAZI GÜNCELLEMESİ)
+// 5. SLIDER RENDERER (BAŞLIK & ALT YAZI & DEDUPLICATION)
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // --- BAŞLIK (LOCATION STRING) ---
-    // İlçe, İl, Ülke hepsini alıyoruz. Tekrarları siliyoruz.
+    // --- BAŞLIK OLUŞTURMA (AKILLI BİRLEŞTİRME) ---
+    // searchObj'den gelenleri topla: [Akhisar, Manisa, Turkey] gibi
     let rawParts = [searchObj.term, searchObj.context, searchObj.country];
     
-    // Virgüllerle ayır, temizle
-    let allParts = rawParts.join(",").split(",");
-    let cleanParts = allParts.map(s => s.trim()).filter(s => s.length > 0);
+    // Eğer ülkemiz varsa ama searchObj.country boşsa (nadiren olur), hafızadakini ekle
+    if (!searchObj.country && window.__lastKnownCountry) {
+        rawParts.push(window.__lastKnownCountry);
+    }
+
+    // Virgülleri temizle, boşlukları sil, diziyi düzleştir
+    let allParts = rawParts
+        .join(",")
+        .split(",")
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
     
-    // Set ile deduplicate (Örn: "Turkey", "Turkey" -> "Turkey")
-    let uniqueParts = [...new Set(cleanParts)];
+    // Set ile mükerrerleri sil (Manisa, Manisa -> Manisa)
+    let uniqueParts = [...new Set(allParts)];
     let displayTerm = uniqueParts.join(", ");
 
     const topHeaderHtml = displayTerm
       ? `<div style="font-weight: bold; font-size: 0.95rem; color: rgb(51, 51, 51); margin-bottom: 10px;">Photos related to ${displayTerm}</div>`
       : "";
   
-    // Badge (Resim üzerindeki) - İstersen kaldırabilirsin, şimdilik bıraktım
     const badgeHtml = displayTerm
       ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${displayTerm}</div>`
       : "";
 
-    // Alt Yazı (Footer)
+    // Alt Yazı (İsteğin üzerine eklendi)
     const footerHtml = `
       <div style="font-size: 0.8rem; color: #666; margin-top: 8px; text-align: left; font-style: italic;">
         Inspiring visuals for your trip
@@ -398,7 +406,8 @@ function renderCollageSlides(collage, images, searchObj) {
       <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
       <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
       ${infoIconHtml}
-      ${footerHtml} `;
+      ${footerHtml}
+    `;
   
     const track = collage.querySelector(".collage-track");
     images.forEach((src) => {
