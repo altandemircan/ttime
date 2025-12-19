@@ -41,45 +41,53 @@ try {
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
-    if (!info) return { term: fallbackCity, context: "", country: "" };
+    // Info varsa (koordinat geldiyse) hafızadaki ülkeyi dayatma, veriden çekmeye çalış.
+    // Eğer veride ülke yoksa o zaman hafızayı düşünürüz.
+    
+    if (!info) return { term: fallbackCity, context: "", country: window.__lastKnownCountry || "" };
+
     const props = info.properties || {};
-    const addr = info.address || {};
-    // En yaygın şehir alanları
-    let term =
-        props.city ||
-        props.town ||
-        props.village ||
-        props.county ||
-        addr.city ||
-        addr.town ||
-        addr.village ||
-        addr.county ||
-        "";
+    const addr = info.address || props.address || {}; 
 
-    if (
-        !term &&
-        props.state &&
-        typeof props.state === "string"
-    ) {
-        // World-wide: state türü bir alan "region", "province", "area", "zone" gibi jenerikse kullanma
-        const country = (props.country || "").toLowerCase();
-        const s = props.state.toLowerCase();
+    const district = addr.district || addr.county || props.district || props.county || "";
+    const city = addr.city || addr.town || addr.village || props.city || props.town || "";
+    const state = addr.state || addr.province || props.state || "";
+    const country = addr.country || props.country || "";
 
-        // region/province/area/state vurgusu dil-bazlı değil, evrensel altlık
-        if (
-            !/region|bölge|province|area|zone|district|departamento|departement|state|provincia|il|ile|county|depar/i.test(s) &&
-            s !== country // ülkenin kendisi değil
-        ) {
-            term = props.state;
+    let term = "";     
+    let context = "";  
+
+    if (district && district.toLowerCase() !== state.toLowerCase() && district.toLowerCase() !== city.toLowerCase()) {
+        if (!district.toLowerCase().includes("merkez")) {
+            term = district;
+        }
+    }
+    if (!term && city) {
+        term = city;
+    }
+
+    if (state && state.toLowerCase() !== term.toLowerCase()) {
+        context = state;
+    } else if (city && city.toLowerCase() !== term.toLowerCase()) {
+        context = city;
+    }
+
+    if (!term) {
+        if (fallbackCity.includes(',')) {
+            let parts = fallbackCity.split(',');
+            term = parts[0].trim();
+        } else {
+            term = fallbackCity;
         }
     }
 
-    if (!term && fallbackCity) term = fallbackCity;
-
-    let country = props.country || addr.country || "";
-
-    return { term: (term || "").trim(), context: "", country: country.trim() };
+    return { 
+        term: term, 
+        context: context, 
+        country: country 
+    };
 }
+
 // ŞEHİR İSMİNİ CACHE'LEME
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
@@ -238,30 +246,43 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         dayContainer.appendChild(collage);
     }
 
-    // --- 1. O günün ilk gerçek lokasyonunu bul ---
+    // --- C. KONUM BELİRLEME ---
     let firstLoc = null;
     if (dayItemsArr && dayItemsArr.length > 0) {
         firstLoc = dayItemsArr.find(i => i.location && i.location.lat && !i._starter && !i._placeholder);
     }
 
-    // --- 2. Arama objesini sadece o günün güncel item'ına göre hazırla (Hafıza YOK!) ---
-let searchObj = extractSmartSearchTerm(apiObj, fallbackCity);
+    let searchObj = { term: "", context: "", country: "" };
+    
+    // =========================================================================
+    // [KRİTİK DÜZELTME]: HAFIZA YÖNETİMİ
+    // =========================================================================
+    
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
-    searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, "");
-    // Console log ile bak:
-    console.log("fetchSmartLocationName result", searchObj, firstLoc.location);
-    // Halen eski city geliyorsa burada warning ver!
-    if (searchObj.term?.toLowerCase() === "antalya" && firstLoc.location.lat > 37.7) {
-        collage.innerHTML = "<div style='padding:16px;color:#c00'>⚠️ Fotoğraf konumu belirlenemedi</div>";
-        collage.style.display = 'block';
-        return;
-    }
-}else {
-        // Tamamen boş bir gün; sadece burada hafıza kullanılır
+        // DURUM 1: KOORDİNAT VAR.
+        // Veriyi çek. Hafızayı ASLA araya karıştırma.
+        // Gelen veri neyse odur.
+        searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
+        
+        // ŞİMDİ hafızayı güncelle (Gelecek boş günler için)
+        if (searchObj.context) window.__lastKnownContext = searchObj.context;
+        if (searchObj.country) window.__lastKnownCountry = searchObj.country;
+        
+        // Eğer koordinattan ülke gelmediyse (nadir), ancak o zaman hafızadaki ülkeyi ekleyebiliriz
+        // ama Context'i ASLA eklemeyin. Çünkü Isparta'nın contexti boşsa boş kalsın, Antalya olmasın.
+        if (!searchObj.country && window.__lastKnownCountry) {
+            searchObj.country = window.__lastKnownCountry;
+        }
+
+    } 
+    else {
+        // DURUM 2: KOORDİNAT YOK (BOŞ GÜN).
+        // Sadece bu durumda hafızadaki son bilgiyi kullanabiliriz.
+        
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
-            searchObj.term = parts[0].trim();
+            searchObj.term = parts[0].trim(); 
             let ctry = parts[parts.length - 1].trim();
             if (ctry) {
                 searchObj.country = ctry;
@@ -270,7 +291,9 @@ let searchObj = extractSmartSearchTerm(apiObj, fallbackCity);
         } else {
             searchObj.term = rawCity;
         }
-        // Sadece burada context/country'yi hafızadan doldur!
+
+        // Boş gün olduğu için hafızadaki son şehri (Context) kullan.
+        // Örn: 1. Gün Isparta idi, 2. Gün boş. O zaman 2. Gün Isparta sayılır.
         if (!searchObj.context && window.__lastKnownContext) searchObj.context = window.__lastKnownContext;
         if (!searchObj.country && window.__lastKnownCountry) searchObj.country = window.__lastKnownCountry;
     }
@@ -280,30 +303,26 @@ let searchObj = extractSmartSearchTerm(apiObj, fallbackCity);
         return;
     }
 
-    // --- 3. Benzersiz kimlik (sadece ANLIK değerler!) ---
-    const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_');
+    // --- DEĞİŞİKLİK KONTROLÜ ---
+    const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_'); 
     const previousIdentifier = collage.getAttribute('data-collage-id');
 
-    // --- 4. Kullanılmış set & cache key yönetimi ---
+    // D. Cache Kontrolü
     if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
     if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
         window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
-    const cacheKey = `tt_day_collage_v37_${day}_${currentIdentifier}_combined`;
 
+    // Cache Key
+    const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
+    const cacheKey = `tt_day_collage_v36_${day}_${currentIdentifier}_combined`;
+    
     let images = [];
     let fromCache = false;
 
-    // --- 5. Eğer konum değiştiyse eski sliderı/tüm içeriği tamamen sıfırla !!!
-    if (currentIdentifier !== previousIdentifier) {
-        collage.setAttribute('data-collage-id', currentIdentifier);
-        collage.innerHTML = "";
-        fromCache = false;
-    }
-
-    // --- 6. Cache ancak kimlikler EŞİTSE ve cache'ten doluyorsa kullanılır ---
-    if (currentIdentifier === collage.getAttribute('data-collage-id')) {
+    // Eğer konum değişmediyse cache kullan, değiştiyse SİL.
+    if (currentIdentifier === previousIdentifier) {
         try {
             const cachedData = localStorage.getItem(cacheKey);
             if (cachedData) {
@@ -315,30 +334,39 @@ let searchObj = extractSmartSearchTerm(apiObj, fallbackCity);
                 }
             }
         } catch (e) {}
+    } else {
+        console.log(`[Collage] Location Changed: ${previousIdentifier} -> ${currentIdentifier}. Refreshing...`);
+        collage.innerHTML = ""; 
+        fromCache = false; 
     }
 
-    // --- 7. Cache yoksa, doğrudan arama yap ---
+    // E. API'den Çek
     if (!fromCache || images.length === 0) {
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
+
         if (typeof window.getCityCollageImages === 'function') {
             const result = await window.getCityCollageImages(searchObj, {
-                min: 4,
+                min: 4, 
                 exclude: usedSet
             });
             images = result.images || [];
         }
+
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
+
         if (images.length > 0) {
             images.forEach(img => usedSet.add(img));
             try {
-                localStorage.setItem(cacheKey, JSON.stringify({ images: images }));
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    images: images
+                }));
             } catch (e) {
                 console.warn("[Collage] Storage write error:", e);
             }
         }
     }
 
-    // --- 8. Render ---
+    // F. Render
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
         collage.setAttribute('data-collage-id', currentIdentifier);
         renderCollageSlides(collage, images, searchObj);
