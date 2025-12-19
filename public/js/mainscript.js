@@ -654,124 +654,113 @@ async function geoapifyLocationAutocomplete(query) {
 
 
 
-
-// --- 1. GELİŞMİŞ SORGULAMA TEMİZLEYİCİ ---
-// Kullanıcının yazdığı cümleden (Örn: "Plan a 3-day trip to New York")
-// sadece lokasyon ismini ("New York") çekip çıkarır.
+// ============================================================
+// 1. SORGULAMA TEMİZLEYİCİ (Global)
+// ============================================================
 function extractLocationQuery(input) {
     if (!input) return "";
 
-    // A. Tüm harfleri küçült ve gereksiz karakterleri temizle
-    let cleaned = input.toLowerCase();
+    // A. Tüm harfleri Türkçe uyumlu küçült
+    let cleaned = input.toLocaleLowerCase('tr');
 
-    // B. Rakamları ve "day/gün/gece" gibi zaman ifadelerini sil
-    // Örn: "3 days", "1 gün", "2-night" -> ""
+    // B. Rakamları ve süreleri sil ("1 day", "3 gün", "2-night")
     cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
-    // C. Kalan tek tük rakamları ve noktalama işaretlerini sil
+    // C. Kalan rakam ve noktalama işaretlerini sil
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
 
-    // D. Gezi ile ilgili "Dolgu Kelimeleri"ni (Stop Words) sil
+    // D. Yasaklı kelimeler (Stop Words)
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
         "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
     ];
     
-    // Kelimeleri tek tek kontrol et ve yasaklıysa sil
+    // Kelimeleri ayır ve filtrele
     let words = cleaned.split(/\s+/);
     words = words.filter(w => !stopWords.includes(w) && w.length > 1);
 
-    // E. Kalan kelimeleri birleştir
+    // E. Birleştir ve döndür
     let finalQuery = words.join(" ").trim();
 
-    // F. Eğer hiçbir şey kalmadıysa veya çok kısaysa, orijinal inputu (temizlenmiş haliyle) dene
-    if (finalQuery.length < 2) {
-        // Son çare: Sadece rakamları silip gönderelim
-        return input.replace(/[0-9]/g, "").trim(); 
-    }
+    // F. Eğer her şey silindiyse (örn: sadece "1 day" yazıldıysa) boş dön
+    if (finalQuery.length < 2) return "";
 
     return finalQuery;
 }
 
-// --- SUGGESTIONS GÖSTER/GİZLE ---
-// (Global fonksiyonlar)
+// ============================================================
+// 2. SUGGESTIONS GÖSTER/GİZLE
+// ============================================================
 let __autoAbort = null;
 
 if (typeof showSuggestionsDiv !== "function") {
-    function showSuggestionsDiv() {
+    window.showSuggestionsDiv = function() {
         const el = document.getElementById('suggestions');
         if (!el) return;
         el.hidden = false;
         el.style.removeProperty('display');
-        if (!el.getAttribute('style')) el.removeAttribute('style');
     }
 }
 if (typeof hideSuggestionsDiv !== "function") {
-    function hideSuggestionsDiv(clear = false) {
+    window.hideSuggestionsDiv = function(clear = false) {
         const el = document.getElementById('suggestions');
         if (!el) return;
         el.hidden = true;
         el.style.removeProperty('display');
-        if (!el.getAttribute('style')) el.removeAttribute('style');
         if (clear) el.innerHTML = "";
     }
 }
 
-
-// --- 2. INPUT EVENT LISTENER (GÜNCELLENDİ) ---
-// HATA DÜZELTME: 'const chatInput = ...' satırı buradan kaldırıldı çünkü yukarıda zaten tanımlı.
-
-if (chatInput) {
+// ============================================================
+// 3. INPUT EVENT LISTENER (API Çağrısı)
+// ============================================================
+// Not: chatInput değişkeni sayfanın başında tanımlı olduğu varsayılıyor.
+if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
-        // Programatik (tıklama ile) girişlerde API sorgusu yapma
+        // Tıklama ile doldurulduysa çalışma
         if (window.__programmaticInput) return;
 
         const rawText = this.value.trim();
-        console.log("Kullanıcı ham input:", rawText);
-
-        // A. Input çok kısaysa varsayılan önerileri göster
-        if (rawText.length < 2) {
-            showSuggestions(); 
-            return;
-        }
-
-        // B. Temizlenmiş sorguyu al
+        
+        // Temizlenmiş sorguyu al (Örn: "1 day Kemer" -> "kemer")
         const locationQuery = extractLocationQuery(rawText);
-        console.log("API'ye Gidecek Temiz Sorgu:", locationQuery);
+        
+        // Konsola yaz ki ne gittiğini gör
+        console.log(`Ham: "${rawText}" -> Temiz: "${locationQuery}"`);
 
-        // C. Temizlendikten sonra anlamlı kelime kalmadıysa sorgu atma
+        // Eğer anlamlı bir kelime yoksa önerileri gizle ve çık
         if (locationQuery.length < 2) {
+            // Eğer input tamamen boşsa veya sadece "1 day" ise varsayılan anket önerilerini göster
+            if(rawText.length < 2) showSuggestions(); 
             return;
         }
 
         let suggestions = [];
         try {
-            // API Çağrısı
+            // API ÇAĞRISI
             if (window.geoapify && window.geoapify.autocomplete) {
                 suggestions = await window.geoapify.autocomplete(locationQuery);
             } else if (typeof geoapifyLocationAutocomplete === 'function') {
                 suggestions = await geoapifyLocationAutocomplete(locationQuery);
             }
-            
-            console.log("API'dan gelen ham suggestions:", suggestions);
         } catch (err) {
             if (err.name === "AbortError") return;
             suggestions = [];
-            console.error("Autocomplete API hatası:", err);
+            console.error("API Error:", err);
         }
 
-        // D. Sonuçları işle ve ekrana bas
         window.lastResults = suggestions;
         
+        // Sonuçları Render Et
         if (typeof renderSuggestions === 'function') {
             renderSuggestions(suggestions);
             if (suggestions.length > 0) showSuggestionsDiv();
         }
 
-    }, 400)); 
+    }, 400));
 
-    // Focus olduğunda eski sonuçları göster
+    // Focus olduğunda
     chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
             renderSuggestions(window.lastResults);
@@ -780,6 +769,145 @@ if (chatInput) {
              showSuggestions();
         }
     });
+}
+
+// ============================================================
+// 4. RENDER SUGGESTIONS (Sıralama + Görünüm)
+// ============================================================
+function renderSuggestions(results = []) {
+    const suggestionsDiv = document.getElementById("suggestions");
+    const chatInput = document.getElementById("user-input");
+    if (!suggestionsDiv || !chatInput) return;
+    
+    suggestionsDiv.innerHTML = "";
+
+    if (!results.length) {
+        hideSuggestionsDiv?.(true);
+        return;
+    }
+
+    // --- A. SIRALAMA İÇİN HEDEF KELİMEYİ BUL ---
+    // Inputtaki değeri alıp temizliyoruz ki karşılaştırma yapabilelim.
+    // toLocaleLowerCase('tr') İLE HARF DUYARLILIĞINI KALDIRIYORUZ!
+    const targetTerm = extractLocationQuery(chatInput.value).toLocaleLowerCase('tr');
+
+    if (targetTerm.length > 0) {
+        results.sort((a, b) => {
+            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
+            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
+            
+            function getScore(name) {
+                // 1. TAM EŞLEŞME (Kemer === kemer) -> EN ÜST
+                if (name === targetTerm) return 1;
+                // 2. İLE BAŞLAYAN (Kemerovo)
+                if (name.startsWith(targetTerm)) return 2;
+                // 3. İÇİNDE GEÇEN (Seydikemer)
+                if (name.includes(targetTerm)) return 3;
+                // 4. DİĞER
+                return 4;
+            }
+
+            const scoreA = getScore(nameA);
+            const scoreB = getScore(nameB);
+
+            if (scoreA !== scoreB) return scoreA - scoreB;
+            return nameA.length - nameB.length; // Eşitse kısa olanı öne al
+        });
+    }
+
+    // --- B. LİSTELEME ---
+    const seenSuggestions = new Set();
+
+    results.forEach((result, idx) => {
+        const props = result.properties || {};
+        
+        // Verileri Çek
+        const name = props.name || "";       
+        const city = props.city || "";       
+        const county = props.county || "";   
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
+
+        // Hiyerarşi Oluştur
+        let parts = [];
+        if (name) parts.push(name); // İsim
+        if (city && city !== name) parts.push(city); // İlçe
+        if (county && county !== name && county !== city) parts.push(county); // İl
+        if (countryCode) parts.push(countryCode); // Ülke Kodu
+
+        // Birleştir
+        const uniqueParts = [...new Set(parts)].filter(Boolean);
+        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+        const displayText = uniqueParts.join(", ") + flag;
+
+        // Tekrarları Engelle
+        if (seenSuggestions.has(displayText)) return; 
+        seenSuggestions.add(displayText);
+
+        // HTML Elementi
+        const div = document.createElement("div");
+        div.className = "category-area-option";
+        
+        // İlk elemanı seçili yap
+        if (suggestionsDiv.children.length === 0) {
+            div.classList.add("selected-suggestion");
+        }
+
+        div.textContent = displayText;
+        div.dataset.displayText = displayText;
+
+        div.onclick = () => {
+            window.__programmaticInput = true;
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            div.classList.add("selected-suggestion");
+            
+            window.selectedSuggestion = { displayText, props };
+            window.selectedLocation = {
+                name: name,
+                city: county || city || name,
+                country: props.country || "", 
+                lat: props.lat ?? props.latitude ?? null,
+                lon: props.lon ?? props.longitude ?? null,
+                country_code: props.country_code || ""
+            };
+
+            // Inputa yazılacak metni hazırla
+            const raw = chatInput.value.trim();
+            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+            let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+            if (!days || days < 1) days = 2;
+
+            let targetName = displayText.replace(flag, "").trim(); 
+            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+
+            if (typeof formatCanonicalPlan === "function") {
+                const c = formatCanonicalPlan(`${targetName} ${days} days`);
+                if (c && c.canonical) canonicalStr = c.canonical;
+            }
+
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
+
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
+            
+            if(enableSendButton) enableSendButton();
+            if(showSuggestionsDiv) showSuggestionsDiv();
+            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
+
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
+        };
+
+        suggestionsDiv.appendChild(div);
+    });
+
+    if (suggestionsDiv.children.length > 0) {
+        showSuggestionsDiv();
+    } else {
+        hideSuggestionsDiv(true);
+    }
 }
 
 
