@@ -545,57 +545,68 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     const targetTerm = manualQuery.toLowerCase();
     
     // 1. ÖNCE TÜM SONUÇLARI PUANLA
-    const scoredResults = originalResults.map(item => {
-        const p = item.properties || {};
-        let score = 0;
+    // renderSuggestions fonksiyonunun içinde, puanlama kısmı (~satır 20-60 arası)
+
+const scoredResults = originalResults.map(item => {
+    const p = item.properties || {};
+    let score = 0;
+    
+    // İsim alanları (küçük harfe çevir)
+    const name = (p.name || "").toLowerCase();
+    const city = (p.city || "").toLowerCase();
+    const county = (p.county || "").toLowerCase();
+    
+    // --- PUANLAMA SİSTEMİ - GÜNCELLENMİŞ ---
+    
+    // 1. TAM EŞLEŞME (EN YÜKSEK): "Kemer" -> "Kemer"
+    if (name === targetTerm || city === targetTerm || county === targetTerm) {
+        score += 1500; // Daha da yüksek
+    }
+    
+    // 2. BAŞLANGIÇ EŞLEŞMESİ: "Kemer" -> "Kemerovo"
+    if (name.startsWith(targetTerm)) {
+        score += 800;
+    } else if (city.startsWith(targetTerm)) {
+        score += 600;
+    } else if (county.startsWith(targetTerm)) {
+        score += 400;
+    }
+    
+    // 3. TAM KELİME İÇERME (ÖNEMLİ DÜZELTME): "Kemer" -> "Seydikemer"
+    // "Seydikemer" içinde "kemer" kelimesi geçiyor mu?
+    // Sadece includes() değil, tam kelime olarak içeriyor mu?
+    if (name.includes(targetTerm) || city.includes(targetTerm) || county.includes(targetTerm)) {
+        // Kelimeleri ayır ve tam kelime eşleşmesi var mı kontrol et
+        const nameWords = name.split(/[\s,\-]+/);
+        const cityWords = city.split(/[\s,\-]+/);
+        const countyWords = county.split(/[\s,\-]+/);
         
-        // İsim alanları (küçük harfe çevir)
-        const name = (p.name || "").toLowerCase();
-        const city = (p.city || "").toLowerCase();
-        const county = (p.county || "").toLowerCase();
+        const allWords = [...nameWords, ...cityWords, ...countyWords];
         
-        // --- PUANLAMA SİSTEMİ ---
-        
-        // Tam eşleşme: EN YÜKSEK PUAN
-        if (name === targetTerm || city === targetTerm) {
-            score += 1000;
+        // Tam kelime eşleşmesi varsa (ör: "Seydikemer" içinde "kemer" kelimesi)
+        if (allWords.some(word => word === targetTerm)) {
+            score += 700; // Yüksek puan - başlangıç eşleşmesine yakın
+        } else {
+            // Sadece parçalı eşleşme (ör: "Kemer" -> "Kemerovsky")
+            score += 100;
         }
-        
-        // Başlangıç eşleşmesi (ör: "Kemer" → "Kemer, Antalya")
-        if (name.startsWith(targetTerm)) {
-            score += 500;
-        } else if (city.startsWith(targetTerm)) {
-            score += 300;
-        }
-        
-        // İçerme (ör: "Kemer" → "Seydikemer")
-        if (name.includes(targetTerm)) {
-            // Eğer kelime tam olarak başlıyorsa daha yüksek puan
-            const words = name.split(/[,\s]+/);
-            if (words.some(w => w === targetTerm)) {
-                score += 200; // Tam kelime eşleşmesi
-            } else {
-                score += 50; // Parçalı eşleşme
-            }
-        }
-        
-        // TÜM ülkelere eşit davran - türkiye önceliği YOK
-        
-        // Tür bazlı puanlar
-        const type = (p.result_type || p.place_type || '').toLowerCase();
-        if (type === 'city') score += 80;
-        else if (type === 'town') score += 60;
-        else if (type === 'village') score += 40;
-        else if (type === 'county') score += 30;
-        
-        // "Finance Center" gibi ticari sonuçları CEZA
-        const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
-        if (commercialWords.some(word => name.includes(word))) {
-            score -= 1000; // Büyük ceza
-        }
-        
-        return { item, score, name: p.name, city: p.city, country_code: p.country_code };
-    });
+    }
+    
+    // 4. TÜR BAZLI PUANLAR
+    const type = (p.result_type || p.place_type || '').toLowerCase();
+    if (type === 'city') score += 80;
+    else if (type === 'town') score += 60;
+    else if (type === 'village') score += 40;
+    else if (type === 'county') score += 30;
+    
+    // 5. TİCARİ SONUÇ CEZASI
+    const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
+    if (commercialWords.some(word => name.includes(word))) {
+        score -= 2000; // Daha büyük ceza
+    }
+    
+    return { item, score, name: p.name, city: p.city, country_code: p.country_code };
+});
     
     // 2. PUANA GÖRE SIRALA (yüksek puan üstte)
     scoredResults.sort((a, b) => b.score - a.score);
