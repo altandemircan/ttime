@@ -541,7 +541,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // --- YARDIMCI: Karakter Normalizasyonu ---
+    // --- YARDIMCI: Karakter Düzeltme ---
     function normalizeLoc(str) {
         if (!str) return "";
         return str.toLocaleLowerCase('tr')
@@ -552,14 +552,16 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     }
 
     let rawQuery = manualQuery || extractLocationQuery(chatInput.value);
-    let targetTerm = normalizeLoc(rawQuery);
+    
+    // 3 Harf Kuralı (İsteğin üzerine): Eğer 3 harften azsa ve sonuç azsa gösterme (Opsiyonel ama güvenlik için iyi)
+    // Ama sen "listelemeye başla" dediğin için burayı gevşek bırakıyorum, API ne verirse basıyorum.
 
+    let targetTerm = normalizeLoc(rawQuery);
     let finalSortedResults = [];
 
-    // --- 1. SIRALAMA ---
+    // --- 1. SIRALAMA (Mantık aynı, İstanbul en üste) ---
     if (targetTerm.length > 0) {
         const exactMatches = [];   
-        const cityMatches = [];    
         const startMatches = [];   
         const otherMatches = [];   
 
@@ -568,66 +570,65 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const name = normalizeLoc(p.name);
             const city = normalizeLoc(p.city);
             
-            if (name === targetTerm) exactMatches.push(item);
-            else if (city === targetTerm) cityMatches.push(item);
-            else if (name.startsWith(targetTerm)) startMatches.push(item);
-            else otherMatches.push(item);
+            // İsmi veya Şehri arananla birebir aynı olanlar
+            if (name === targetTerm || city === targetTerm) {
+                exactMatches.push(item);
+            } else if (name.startsWith(targetTerm)) {
+                startMatches.push(item);
+            } else {
+                otherMatches.push(item);
+            }
         });
-        finalSortedResults = [...exactMatches, ...startMatches, ...otherMatches, ...cityMatches];
+        finalSortedResults = [...exactMatches, ...startMatches, ...otherMatches];
     } else {
         finalSortedResults = [...originalResults];
     }
 
-    // --- 2. FİLTRELEME (BLACKLIST - GÜVENLİ MOD) ---
-    // Sıkı tip kontrolünü kaldırdık. Artık her şey gelir, sadece blacklist engellenir.
-    
+    // --- 2. FİLTRELEME (ÇOK GEVŞEK MOD) ---
     const seenSuggestions = new Set();
-    const bannedKeywords = /hotel|otel|apart|residence|resort|booking|trip|tour|excursion|pansiyon|konaklama|center|merkezi|mall|avm|airport|havalimanı|beach|park|station|campus/i;
+    
+    // Sadece bunları engelle, geri kalan her yer (il, ilçe, kasaba, semt) gelsin.
+    const bannedKeywords = /hotel|otel|apart|residence|resort|booking|trip|tour|excursion|pansiyon|konaklama|center|merkezi|mall|avm|airport|havalimanı|station|campus/i;
 
     finalSortedResults.filter(item => {
         const p = item.properties || {};
         const name = p.name || "";
         const countryCode = (p.country_code || '').toUpperCase();
 
-        // İsim yoksa veya sadece ülke koduysa (TR) geç
+        // İsimsiz veya sadece "TR" olanları at
         if (!name || name.length < 2) return false;
-        if (name.toUpperCase() === countryCode) return false; 
+        if (name.toUpperCase() === countryCode) return false;
 
-        // Yasaklı kelime varsa (Otel vs.) geç
+        // Yasaklı kelime varsa at (Finans Merkezi vs.)
         if (bannedKeywords.test(name)) return false;
 
-        // Diğer her şeyi kabul et (Suggestion'ın boş gelmesini önler)
+        // Kalan HEPSİNİ kabul et. Tip (City/State vs) kontrolü YOK.
         return true;
 
     }).forEach((result) => {
         const props = result.properties || {};
         
-        // --- 3. FORMATLAMA (İlçe, İl, TR) ---
+        // --- 3. FORMATLAMA (İstediğin Gibi: İlçe, İl, TR) ---
         const name = props.name || "";       
-        const city = props.city || "";     // Şehir
-        const county = props.county || ""; // İlçe
-        const state = props.state || "";   // Eyalet/İl
+        const city = props.city || "";       
+        const state = props.state || "";     
         const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
         let parts = [];
         
-        // 1. Kısım: Yer Adı
+        // 1. İSİM (Örn: Kemer)
         parts.push(name);
 
-        // 2. Kısım: İl/Şehir
-        // Hiyerarşi: Önce County(İlçe) varsa bak, yoksa City(Şehir), yoksa State(İl)
-        // Ama ekleyeceğimiz şey İsim(name) ile aynıysa ekleme.
-        let regionPart = "";
-        
-        if (county && normalizeLoc(county) !== normalizeLoc(name)) regionPart = county;
-        else if (city && normalizeLoc(city) !== normalizeLoc(name)) regionPart = city;
-        else if (state && normalizeLoc(state) !== normalizeLoc(name)) regionPart = state;
+        // 2. ÜST BÖLGE (Örn: Antalya)
+        // Eğer isim zaten şehirle aynıysa ekleme (İstanbul, İstanbul olmasın)
+        // Ama farklıysa ekle (Kemer, Antalya olsun)
+        let region = "";
+        if (city && normalizeLoc(city) !== normalizeLoc(name)) region = city;
+        else if (state && normalizeLoc(state) !== normalizeLoc(name)) region = state;
 
-        if (regionPart) {
-            parts.push(regionPart);
-        }
+        if (region) parts.push(region);
         
-        // 3. Kısım: Ülke
+        // 3. ÜLKE (TR)
         if (countryCode && name !== countryCode) parts.push(countryCode); 
 
         const displayText = parts.join(", ");
@@ -653,10 +654,10 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
             window.selectedSuggestion = { displayText, props };
             
-            // Veriyi kaydet: İlçe seçildiyse city olarak üst bölgeyi al, yoksa kendini al
+            // Kayıt mantığı
             window.selectedLocation = {
                 name: name,
-                city: regionPart || name, // Varsa bölgeyi, yoksa ismin kendisini kullan
+                city: region || name, // İlçe ise ilini al, il ise kendini al
                 country: props.country || "",
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
