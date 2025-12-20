@@ -541,47 +541,57 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // --- A. SIRALAMA MANTIĞI (Türkçe Karakter Uyumlu) ---
-    // Kullanıcının aradığı kelimeyi Türkçe kuralına göre küçült
+    // --- 1. ARAMA TERİMİNİ HAZIRLA ---
     let rawQuery = manualQuery || extractLocationQuery(chatInput.value);
-    let targetTerm = rawQuery.toLocaleLowerCase('tr');
+    // Türkçe karakterlere dikkat ederek küçült (İ -> i, I -> ı sorunu için)
+    let targetTerm = rawQuery.toLocaleLowerCase('tr').trim();
 
     let finalSortedResults = [];
 
+    // --- 2. KESİN SIRALAMA (Burayı değiştirdim) ---
     if (targetTerm.length > 0) {
-        const exactMatches = [];   // Tam Eşleşen (İstanbul)
-        const startMatches = [];   // İle Başlayan (İstanbul Havalimanı)
-        const containMatches = []; // İçinde Geçen
-        const others = [];
+        const priorityMatches = []; // İsmi tam eşleşenler (Örn: "İstanbul") - EN ÜST
+        const cityMatches = [];     // İsmi değil ama Şehri tam eşleşenler (Örn: "Finans Mrk") - ORTA
+        const startMatches = [];    // İsmi arananla başlayanlar - ALT
+        const otherMatches = [];    // Diğerleri - EN ALT
 
         originalResults.forEach(item => {
             const p = item.properties || {};
-            // API'den gelen ismi de Türkçe kurallara göre küçült
-            const n = (p.name || "").toLocaleLowerCase('tr');
-            const c = (p.city || "").toLocaleLowerCase('tr');
+            const name = (p.name || "").toLocaleLowerCase('tr'); // İsim
+            const city = (p.city || "").toLocaleLowerCase('tr'); // Şehir
             
-            // İsim VEYA Şehir aranan kelimeye eşitse en üste al
-            if (n === targetTerm || c === targetTerm) {
-                exactMatches.push(item);
-            } else if (n.startsWith(targetTerm)) {
+            // 1. KURAL: İsim birebir aranan kelimeyse (Örn: Name="İstanbul" == Query="istanbul")
+            if (name === targetTerm) {
+                priorityMatches.push(item);
+            }
+            // 2. KURAL: İsim farklı ama Şehir birebir eşleşiyorsa (Örn: Name="Mekan", City="İstanbul")
+            else if (city === targetTerm) {
+                // Şehir eşleşmesi güzel ama isim eşleşmesi kadar değerli değil
+                cityMatches.push(item);
+            }
+            // 3. KURAL: İsim aranan kelimeyle başlıyorsa
+            else if (name.startsWith(targetTerm)) {
                 startMatches.push(item);
-            } else if (n.includes(targetTerm)) {
-                containMatches.push(item);
-            } else {
-                others.push(item);
+            }
+            // 4. KURAL: Diğerleri
+            else {
+                otherMatches.push(item);
             }
         });
 
-        finalSortedResults = [...exactMatches, ...startMatches, ...containMatches, ...others];
+        // Listeleri önem sırasına göre birleştir
+        finalSortedResults = [
+            ...priorityMatches, 
+            ...startMatches, // Başlayanları, sadece şehri tutanların önüne aldım (Tercih meselesi)
+            ...cityMatches, 
+            ...otherMatches
+        ];
     } else {
         finalSortedResults = [...originalResults];
     }
 
-    // --- B. FİLTRELEME (SORUN BURADAYDI) ---
+    // --- 3. TİP FİLTRELEME (Genişletilmiş) ---
     const seenSuggestions = new Set();
-    
-    // Büyük şehirler API'de bazen 'city' değil 'state' veya 'political' olarak geçer.
-    // Bu listeyi genişlettik:
     const allowedTypes = [
       'city', 'town', 'village', 'municipality', 
       'county', 'district', 'borough', 'suburb',
@@ -592,41 +602,39 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
       const p = item.properties || {};
       const type = (p.result_type || p.place_type || '').toLowerCase();
       
-      // Otel, tur şirketi vb. isimleri ele
+      // Spam filtreleme
       if (/tours?in|excursion|\.com\b|\bhotel|apart|residence|resort|booking|trip(s)?\b/i.test(p.name || "")) return false;
       
-      // Tip listesinde varsa VEYA tip boşsa kabul et
+      // Tip kontrolü
       return allowedTypes.includes(type) || !type;
     }).forEach((result) => {
         const props = result.properties || {};
         
-        // --- C. GÖRÜNTÜLEME METNİ ---
+        // --- 4. GÖRÜNTÜ METNİ (Display Text) ---
         const name = props.name || "";       
         const city = props.city || "";       
         const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
         let parts = [];
-        if (name) parts.push(name); 
+        if (name) parts.push(name);
         
-        // Eğer isim zaten şehir ismisyle aynıysa (Örn: Name: İstanbul, City: İstanbul) ikinciyi yazma
+        // Eğer isim zaten şehir ile aynıysa tekrar yazdırma
+        // Örn: Name: İstanbul, City: İstanbul -> Sadece "İstanbul" yazsın
         if (city && city.toLocaleLowerCase('tr') !== name.toLocaleLowerCase('tr')) {
             parts.push(city);
         }
         
-        // İlçe/Eyalet bilgisini de ekleyebiliriz ama UI sade olsun diye countryCode ekliyoruz
         if (countryCode) parts.push(countryCode); 
 
         const displayText = parts.join(", ");
         
-        // Tekrar edenleri gizle
         if (seenSuggestions.has(displayText)) return; 
         seenSuggestions.add(displayText);
 
-        // --- DOM OLUŞTURMA (UI AYNI) ---
+        // --- DOM ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // İlk sıradakini otomatik seçili yap
         if (suggestionsDiv.children.length === 0) {
             div.classList.add("selected-suggestion");
         }
@@ -642,7 +650,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             window.selectedSuggestion = { displayText, props };
             window.selectedLocation = {
                 name: name,
-                city: props.county || city || name, // Fallback sıralaması
+                city: props.county || city || name,
                 country: props.country || "",
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
@@ -654,7 +662,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
             if (!days || days < 1) days = 1;
 
-            // Inputa yazılacak temiz metin
             const cleanName = name || city;
             let canonicalStr = `Plan a ${days}-day tour for ${cleanName}`;
             
@@ -680,7 +687,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     } else {
         if (typeof hideSuggestionsDiv === 'function') hideSuggestionsDiv(true);
     }
-}
+}s
 
 // ============================================================
 // 4. INPUT EVENT LISTENER
