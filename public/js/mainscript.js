@@ -847,13 +847,7 @@ function parsePlanRequest(text) {
     if (window.selectedSuggestion && window.selectedSuggestion.props) {
         const props = window.selectedSuggestion.props;
         // city + country varsa birleştir, yoksa name kullan
-        // city + country varsa birleştir, yoksa name kullan
-        // Eğer city yoksa state veya name kullan (Antalya gibi hem il hem merkez durumlari icin)
-        let mainName = props.city || props.name;
-        // Eğer mainName hala boşsa veya sadece ülke ise state'i dene
-        if (!mainName && props.state) mainName = props.state;
-        
-        location = [mainName, props.country].filter(Boolean).join(', ');
+        location = [props.city || props.name, props.country].filter(Boolean).join(', ');
     } else if (window.selectedLocation && typeof window.selectedLocation === "object") {
         location = [window.selectedLocation.city || window.selectedLocation.name, window.selectedLocation.country].filter(Boolean).join(', ');
     }
@@ -1141,23 +1135,8 @@ async function handleAnswer(answer) {
 
     window.selectedCity = location; 
 
- // 1. AŞAMA: Plan Oluşturma
-    // Seçili lokasyonun koordinatlarını al
-    let explicitCoords = null;
-    if (window.selectedLocation && 
-        typeof window.selectedLocation.lat === 'number' && 
-        typeof window.selectedLocation.lon === 'number') {
-        explicitCoords = { 
-            lat: window.selectedLocation.lat, 
-            lon: window.selectedLocation.lon 
-        };
-    } else if (window.selectedLocation && window.selectedLocation.props) {
-         // Props içinden de bak (geoapify yapısı)
-         const p = window.selectedLocation.props;
-         if (p.lat && p.lon) explicitCoords = { lat: p.lat, lon: p.lon };
-    }
-
-    let planResult = await buildPlan(location, days, explicitCoords);
+    // 1. AŞAMA: Plan Oluşturma
+    let planResult = await buildPlan(location, days);
 
     // KONTROL 1: Kullanıcı bu sırada "My Trips"ten başka geziye tıkladı mı?
     // Eğer tıkladıysa loadTripFromStorage çalışmış ve __planGenerationId değişmiştir.
@@ -2040,22 +2019,15 @@ const MAX_INITIAL_ROUTE_KM = 12;
 const MAX_ROUTE_KM = 30; // En fazla bu kadar genişlet
 const STEP_KM = 3;
 
-async function buildPlan(city, days, explicitCoords = null) {
+async function buildPlan(city, days) {
   const categories = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
   let plan = [];
   let categoryResults = {};
-  
-  // Eğer dışarıdan net koordinat geldiyse onu kullan, yoksa isme göre bul
-  const cityCoords = explicitCoords || await getCityCoordinates(city);
-
-  // Mekan araması için "lat,lon" formatında string oluştur
-  // Bu sayede getPlacesForCategory isim karmaşası yaşamaz, nokta atışı yapar.
-  const searchLocation = cityCoords ? `${cityCoords.lat},${cityCoords.lon}` : city;
+  const cityCoords = await getCityCoordinates(city);
 
   for (const cat of categories) {
     let radius = 3;
-    // Şehir ismi yerine koordinat gönderiyoruz
-    let places = await getPlacesForCategory(searchLocation, cat, 12, radius * 1000);
+    let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
     let attempt = 0;
     const maxAttempts = 5;
     const triedNames = new Set();
@@ -3816,7 +3788,6 @@ async function updateCart() {
         aiInfoSection.style.display = ''; // Varsayılan görünümüne döndürür
     }
     // === EKLENECEK KOD SONU ===
-    
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 
     const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
