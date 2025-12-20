@@ -2000,99 +2000,109 @@ const placeCategories = {
 
 // mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu tamamen değiştirin:
 
-// mainscript.js
-
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     // --- DEBUG LOG START ---
     console.log(`%c[showSuggestionsInChat] Called`, "color: cyan; font-weight: bold;");
     
-    // 1. ŞEHİR / MERKEZ NOKTA BELİRLEME
-    let city = window.selectedCity || document.getElementById("city-input")?.value;
+    // 1. LOKASYON BELİRLEME (Sırasıyla en garantili yöntemler)
+    let searchLocation = null;
+    let locationSource = "";
 
-    // --- ÖNCELİKLİ YÖNTEM: HTML DOM (Senin paylaştığın yapı) ---
-    // En son eklenen "travel-item"ı buluyoruz.
-    const allTravelItems = document.querySelectorAll('.travel-item');
-    if (allTravelItems.length > 0) {
-        const lastItem = allTravelItems[allTravelItems.length - 1];
+    // ADIM 1: window.cart verisini kontrol et (EN HIZLI VE DOĞRU YÖNTEM)
+    // Veri yapısında 'lon' veya 'lng' olabilir, ikisine de bakıyoruz.
+    if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
+        // Önce o güne ait itemları filtrele
+        const dayItems = window.cart.filter(item => item.day == day);
         
-        // 1. Seçenek: Doğrudan koordinatları al (En garantisi)
-        const lat = lastItem.getAttribute('data-lat');
-        const lon = lastItem.getAttribute('data-lon');
+        // O günün son itemını al, yoksa genel listenin sonuncusunu al
+        const targetItem = dayItems.length > 0 
+            ? dayItems[dayItems.length - 1] 
+            : window.cart[window.cart.length - 1];
         
-        if (lat && lon) {
-            // Geoapify ve çoğu servis "lat,lon" formatını string olarak kabul eder
-            city = `${lat},${lon}`;
-            console.log(`✅ Reference found via DOM Attributes (Lat/Lon): "${city}"`);
-        } 
-        // 2. Seçenek: Koordinat yoksa, tam adresi al
-        else {
-            const addressEl = lastItem.querySelector('.contact p'); // Adres paragrafı
-            if (addressEl) {
-                // "📌 Address: ..." kısmını temizle
-                let addressText = addressEl.innerText.replace(/📌|Address:/gi, '').trim();
-                if (addressText.length > 5) {
-                    city = addressText;
-                    console.log(`✅ Reference found via DOM Address: "${city}"`);
-                }
-            }
-        }
-        
-        // 3. Seçenek: Hala boşsa başlığı al (toggle-title)
-        if (!city || city.includes("undefined")) {
-            const titleEl = lastItem.querySelector('.toggle-title');
-            if (titleEl) {
-                city = titleEl.innerText.trim();
-                console.log(`⚠️ Reference fallback to Title: "${city}"`);
+        if (targetItem) {
+            // Koordinat kontrolü (lng vs lon hatasını çözen kısım)
+            const lat = targetItem.lat;
+            const lon = targetItem.lon || targetItem.lng; // Hem lon hem lng kontrolü
+
+            if (lat && lon) {
+                searchLocation = `${lat},${lon}`;
+                locationSource = `window.cart (Variable) -> Item: ${targetItem.name}`;
+            } else if (targetItem.name) {
+                // Koordinat yoksa isme razı ol
+                searchLocation = targetItem.name;
+                locationSource = `window.cart (Name Only) -> Item: ${targetItem.name}`;
             }
         }
     }
 
-    // --- YEDEK YÖNTEMLER (Eğer ekranda travel-item yoksa) ---
-    
-    // YÖNTEM A: window.cart verisine bak
-    if (!city) {
-        if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
-            const dayItems = window.cart.filter(item => item.day == day);
-            const targetItem = dayItems.length > 0 
-                ? dayItems[dayItems.length - 1] 
-                : window.cart[window.cart.length - 1];
+    // ADIM 2: HTML DOM üzerinden son eklenen item'ı oku (Yedek Yöntem)
+    if (!searchLocation) {
+        // .travel-item class'ına sahip tüm elemanları al
+        const allTravelItems = document.querySelectorAll('.travel-item');
+        
+        if (allTravelItems.length > 0) {
+            // Sonuncusunu seç
+            const lastItem = allTravelItems[allTravelItems.length - 1];
             
-            if (targetItem) {
-                // Varsa koordinat, yoksa isim
-                if (targetItem.lat && targetItem.lon) {
-                    city = `${targetItem.lat},${targetItem.lon}`;
-                    console.log(`✅ Reference found via window.cart (Coords): "${city}"`);
-                } else {
-                    city = targetItem.name;
-                    console.log(`✅ Reference found via window.cart (Name): "${city}"`);
+            // Attribute'lardan oku (data-lat, data-lon)
+            const domLat = lastItem.getAttribute('data-lat');
+            const domLon = lastItem.getAttribute('data-lon');
+            
+            if (domLat && domLon) {
+                searchLocation = `${domLat},${domLon}`;
+                locationSource = "HTML DOM (.travel-item attributes)";
+            } 
+            // Attribute yoksa adres satırını oku
+            else {
+                const addressEl = lastItem.querySelector('.contact p');
+                if (addressEl) {
+                    // "📌 Address:" kısmını temizle
+                    let addressText = addressEl.innerText.replace(/📌|Address:/gi, '').trim();
+                    if (addressText.length > 5) {
+                        searchLocation = addressText;
+                        locationSource = "HTML DOM (Address text)";
+                    }
                 }
             }
         }
     }
 
-    // YÖNTEM B: generatedTrip verisine bak
-    if (!city) {
+    // ADIM 3: generatedTrip yedeği
+    if (!searchLocation) {
         if (typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1] && window.generatedTrip[day - 1].length > 0) {
             const currentDayTrip = window.generatedTrip[day - 1];
             const lastTripItem = currentDayTrip[currentDayTrip.length - 1];
             
-            if (lastTripItem.lat && lastTripItem.lon) {
-                 city = `${lastTripItem.lat},${lastTripItem.lon}`;
+            const gLat = lastTripItem.lat;
+            const gLon = lastTripItem.lon || lastTripItem.lng;
+
+            if (gLat && gLon) {
+                 searchLocation = `${gLat},${gLon}`;
+                 locationSource = "generatedTrip (Variable)";
             } else {
-                 city = lastTripItem.name;
+                 searchLocation = lastTripItem.name;
+                 locationSource = "generatedTrip (Name)";
             }
-            console.log(`✅ Reference found via generatedTrip: "${city}"`);
         }
     }
 
-    // 2. KONTROL SONUCU
-    if (!city) {
-        console.error("⛔ ERROR: Could not find any city or reference point.");
+    // ADIM 4: Hiçbir şey bulunamazsa Input veya Şehir Seçimi
+    if (!searchLocation) {
+        searchLocation = window.selectedCity || document.getElementById("city-input")?.value;
+        locationSource = "User Input / Selected City";
+    }
+
+    // --- SONUÇ VE HATA KONTROLÜ ---
+    console.log(`📍 Determined Location: "${searchLocation}"`);
+    console.log(`ℹ️ Source: ${locationSource}`);
+
+    if (!searchLocation) {
+        console.error("⛔ ERROR: Could not determine any location.");
         addMessage("Please select a city or make sure a trip is generated first.", "bot-message");
         return;
     }
 
-    // Sidebar kontrolü
+    // Sidebar kapatma (Mobil)
     if (window.innerWidth <= 768) {
         var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
         if (sidebar) sidebar.classList.remove('open');
@@ -2110,10 +2120,10 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
 
     try {
         const radius = Math.round(radiusKm * 1000);
-        console.log(`🔎 Searching nearby: "${city}", Radius: ${radius}m`);
-
-        // Arama yap
-        const places = await getPlacesForCategory(city, category, limit, radius, realCode);
+        
+        // ARAMA FONKSİYONU ÇAĞRISI
+        // Not: searchLocation artık koordinat ("36.87,30.75") veya adres metni olabilir.
+        const places = await getPlacesForCategory(searchLocation, category, limit, radius, realCode);
 
         if (!places.length) {
             hideTypingIndicator();
@@ -2143,7 +2153,13 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         }
 
         // Resimleri getir
-        await enrichCategoryResults(places, city);
+        // Not: enrich fonksiyonu şehir ismine ihtiyaç duyabilir, koordinat gelirse "Antalya" gibi genel bir isim gönderelim
+        let cityForImages = window.selectedCity || "Turkey";
+        if (searchLocation && !searchLocation.includes(",")) {
+            cityForImages = searchLocation;
+        }
+        
+        await enrichCategoryResults(places, cityForImages);
 
         hideTypingIndicator();
 
@@ -2157,7 +2173,6 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         addMessage("An error occurred while fetching suggestions.", "bot-message");
     }
 };
- 
 // 2. Butonla şehir seçildiğinde de güncelle
 window.handleCitySelection = async function(city, days) {
     if (window.isProcessing) return;
