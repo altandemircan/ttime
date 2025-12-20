@@ -2004,70 +2004,75 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     // --- DEBUG LOG START ---
     console.log(`%c[showSuggestionsInChat] Called`, "color: cyan; font-weight: bold;");
     
-    // 1. LOKASYON BELİRLEME (Sırasıyla en garantili yöntemler)
+    // 1. LOKASYON BELİRLEME
     let searchLocation = null;
     let locationSource = "";
 
-    // ADIM 1: window.cart verisini kontrol et (EN HIZLI VE DOĞRU YÖNTEM)
-    // Veri yapısında 'lon' veya 'lng' olabilir, ikisine de bakıyoruz.
-    if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
-        // Önce o güne ait itemları filtrele
-        const dayItems = window.cart.filter(item => item.day == day);
+    // =========================================================================
+    // ÖNCELİK 1: HTML DOM (Kullanıcının Gördüğü Ekran) - EN GÜVENİLİR
+    // =========================================================================
+    // Çünkü paylaştığın HTML'de data-lat ve data-lon'un dolu olduğunu görüyoruz.
+    const allTravelItems = document.querySelectorAll('.travel-item');
+    
+    if (allTravelItems.length > 0) {
+        // En son eklenen öğeyi al
+        const lastItem = allTravelItems[allTravelItems.length - 1];
         
-        // O günün son itemını al, yoksa genel listenin sonuncusunu al
-        const targetItem = dayItems.length > 0 
-            ? dayItems[dayItems.length - 1] 
-            : window.cart[window.cart.length - 1];
+        // Attribute'lardan oku
+        const domLat = lastItem.getAttribute('data-lat');
+        const domLon = lastItem.getAttribute('data-lon'); // HTML'de lon yazar
         
-        if (targetItem) {
-            // Koordinat kontrolü (lng vs lon hatasını çözen kısım)
-            const lat = targetItem.lat;
-            const lon = targetItem.lon || targetItem.lng; // Hem lon hem lng kontrolü
-
-            if (lat && lon) {
-                searchLocation = `${lat},${lon}`;
-                locationSource = `window.cart (Variable) -> Item: ${targetItem.name}`;
-            } else if (targetItem.name) {
-                // Koordinat yoksa isme razı ol
-                searchLocation = targetItem.name;
-                locationSource = `window.cart (Name Only) -> Item: ${targetItem.name}`;
-            }
-        }
-    }
-
-    // ADIM 2: HTML DOM üzerinden son eklenen item'ı oku (Yedek Yöntem)
-    if (!searchLocation) {
-        // .travel-item class'ına sahip tüm elemanları al
-        const allTravelItems = document.querySelectorAll('.travel-item');
-        
-        if (allTravelItems.length > 0) {
-            // Sonuncusunu seç
-            const lastItem = allTravelItems[allTravelItems.length - 1];
-            
-            // Attribute'lardan oku (data-lat, data-lon)
-            const domLat = lastItem.getAttribute('data-lat');
-            const domLon = lastItem.getAttribute('data-lon');
-            
-            if (domLat && domLon) {
-                searchLocation = `${domLat},${domLon}`;
-                locationSource = "HTML DOM (.travel-item attributes)";
-            } 
-            // Attribute yoksa adres satırını oku
-            else {
-                const addressEl = lastItem.querySelector('.contact p');
-                if (addressEl) {
-                    // "📌 Address:" kısmını temizle
-                    let addressText = addressEl.innerText.replace(/📌|Address:/gi, '').trim();
-                    if (addressText.length > 5) {
-                        searchLocation = addressText;
-                        locationSource = "HTML DOM (Address text)";
-                    }
+        if (domLat && domLon) {
+            searchLocation = `${domLat},${domLon}`;
+            locationSource = `HTML DOM (.travel-item attributes) -> Index: ${allTravelItems.length}`;
+        } 
+        // Attribute yoksa, içindeki adres yazısını oku
+        else {
+            const addressEl = lastItem.querySelector('.contact p');
+            if (addressEl) {
+                let addressText = addressEl.innerText.replace(/📌|Address:/gi, '').trim();
+                if (addressText.length > 5) {
+                    searchLocation = addressText;
+                    locationSource = "HTML DOM (Address text)";
                 }
             }
         }
     }
 
-    // ADIM 3: generatedTrip yedeği
+    // =========================================================================
+    // ÖNCELİK 2: window.cart (Değişken)
+    // =========================================================================
+    if (!searchLocation) {
+        if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
+            // Önce o güne ait itemları filtrele
+            const dayItems = window.cart.filter(item => item.day == day);
+            
+            // O günün son itemını al, yoksa genel listenin sonuncusunu al
+            const targetItem = dayItems.length > 0 
+                ? dayItems[dayItems.length - 1] 
+                : window.cart[window.cart.length - 1];
+            
+            if (targetItem) {
+                // Koordinat kontrolü (Çok kapsamlı kontrol)
+                const lat = targetItem.lat || targetItem.latitude;
+                const lon = targetItem.lon || targetItem.lng || targetItem.longitude; 
+
+                // Lat/Lon sayı veya dolu string ise kabul et
+                if (lat && lon) {
+                    searchLocation = `${lat},${lon}`;
+                    locationSource = `window.cart (Variable) -> Item: ${targetItem.name}`;
+                } else if (targetItem.name) {
+                    // Koordinat yoksa mecburen isim
+                    searchLocation = targetItem.name;
+                    locationSource = `window.cart (Name Only - WARN) -> Item: ${targetItem.name}`;
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // ÖNCELİK 3: generatedTrip yedeği
+    // =========================================================================
     if (!searchLocation) {
         if (typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1] && window.generatedTrip[day - 1].length > 0) {
             const currentDayTrip = window.generatedTrip[day - 1];
@@ -2086,7 +2091,9 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         }
     }
 
-    // ADIM 4: Hiçbir şey bulunamazsa Input veya Şehir Seçimi
+    // =========================================================================
+    // ÖNCELİK 4: Input veya Şehir Seçimi
+    // =========================================================================
     if (!searchLocation) {
         searchLocation = window.selectedCity || document.getElementById("city-input")?.value;
         locationSource = "User Input / Selected City";
@@ -2121,8 +2128,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     try {
         const radius = Math.round(radiusKm * 1000);
         
-        // ARAMA FONKSİYONU ÇAĞRISI
-        // Not: searchLocation artık koordinat ("36.87,30.75") veya adres metni olabilir.
+        // ARAMA YAP
         const places = await getPlacesForCategory(searchLocation, category, limit, radius, realCode);
 
         if (!places.length) {
@@ -2153,7 +2159,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         }
 
         // Resimleri getir
-        // Not: enrich fonksiyonu şehir ismine ihtiyaç duyabilir, koordinat gelirse "Antalya" gibi genel bir isim gönderelim
+        // Not: Şehir ismi gerekiyorsa, koordinat yerine genel bir isim verelim.
         let cityForImages = window.selectedCity || "Turkey";
         if (searchLocation && !searchLocation.includes(",")) {
             cityForImages = searchLocation;
@@ -2173,6 +2179,8 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         addMessage("An error occurred while fetching suggestions.", "bot-message");
     }
 };
+
+
 // 2. Butonla şehir seçildiğinde de güncelle
 window.handleCitySelection = async function(city, days) {
     if (window.isProcessing) return;
