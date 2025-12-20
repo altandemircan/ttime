@@ -541,22 +541,27 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // --- 1. NORMALİZASYON ---
+    // --- YARDIMCI: Karakter Normalizasyonu (I-İ, ı-i sorununu çözer) ---
     function normalizeLoc(str) {
         if (!str) return "";
         return str.toLocaleLowerCase('tr')
-                  .replace(/ı/g, "i").replace(/İ/g, "i")
-                  .replace(/ğ/g, "g").replace(/ü/g, "u")
-                  .replace(/ş/g, "s").replace(/ö/g, "o")
-                  .replace(/ç/g, "c").trim();
+                  .replace(/ı/g, "i")
+                  .replace(/İ/g, "i")
+                  .replace(/ğ/g, "g")
+                  .replace(/ü/g, "u")
+                  .replace(/ş/g, "s")
+                  .replace(/ö/g, "o")
+                  .replace(/ç/g, "c")
+                  .trim();
     }
 
+    // 1. Arama terimini al ve normalize et
     let rawQuery = manualQuery || extractLocationQuery(chatInput.value);
     let targetTerm = normalizeLoc(rawQuery);
 
     let finalSortedResults = [];
 
-    // --- 2. SIRALAMA (Önceki mantık gayet iyiydi, koruyoruz) ---
+    // 2. SIRALAMA (Normalize edilmiş değerlerle kıyasla)
     if (targetTerm.length > 0) {
         const exactMatches = [];   
         const cityMatches = [];    
@@ -568,73 +573,63 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const name = normalizeLoc(p.name);
             const city = normalizeLoc(p.city);
             
-            if (name === targetTerm) exactMatches.push(item);
-            else if (city === targetTerm) cityMatches.push(item);
-            else if (name.startsWith(targetTerm)) startMatches.push(item);
-            else otherMatches.push(item);
+            if (name === targetTerm) {
+                exactMatches.push(item); // Adı "istanbul" olan -> EN TEPE
+            } else if (city === targetTerm) {
+                cityMatches.push(item); // Şehri "istanbul" olan (Mekanlar)
+            } else if (name.startsWith(targetTerm)) {
+                startMatches.push(item);
+            } else {
+                otherMatches.push(item);
+            }
         });
+
+        // Mekanları (cityMatches) en sona at ki şehir ismi (exactMatches) öne çıksın
         finalSortedResults = [...exactMatches, ...startMatches, ...otherMatches, ...cityMatches];
     } else {
         finalSortedResults = [...originalResults];
     }
 
-    // --- 3. FİLTRELEME (WHITELIST - SADECE İDARİ BÖLGELER) ---
-    const seenSuggestions = new Set();
+    // --- 3. FİLTRELEME (BLACKLIST MANTIĞI) ---
+    // Artık tip kontrolü yapmıyoruz, sadece İSTENMEYENLERİ eliyoruz.
+    // Böylece "place", "unknown" vb. gelse bile İstanbul görünecek.
     
-    // Burası "Finance Center" gibi mekanları engelleyecek olan liste:
-    const administrativeTypes = [
-      'city', 'town', 'village', 'municipality', // Yerleşim
-      'county', 'district', 'borough', 'suburb', // İlçe/Semt
-      'state', 'province', 'administrative', // İl/Eyalet
-      'regional_center', 'political', 'country' // İdari Merkez
-    ];
+    const seenSuggestions = new Set();
+    const bannedKeywords = /hotel|otel|apart|residence|resort|booking|trip|tour|excursion|pansiyon|konaklama/i;
 
     finalSortedResults.filter(item => {
         const p = item.properties || {};
-        // Tip verisini al, yoksa boş string
-        const type = (p.result_type || p.place_type || '').toLowerCase();
         const name = p.name || "";
+        
+        // 1. Yasaklı kelime var mı? (Otel vs.)
+        if (bannedKeywords.test(name)) return false;
 
-        // A) İsim kontrolü: İsim yoksa veya sadece ülke koduysa (TR gibi) gösterme
-        if (!name || name.length < 2) return false;
-        if (name.toLowerCase() === (p.country_code || '').toLowerCase()) return false;
-
-        // B) Yasaklı kelimeler (Garanti olsun diye)
-        if (/center|merkezi|mall|airport|havalimanı|hotel|beach|park|station/i.test(name)) return false;
-
-        // C) TİP KONTROLÜ: Sadece yukarıdaki idari tiplere izin ver
-        // type boş gelirse bazen İstanbul olabilir diye 'type === ""' izni veriyoruz
-        // ama name kontrolü (B şıkkı) "Finance Center"ı tutacak.
-        if (administrativeTypes.includes(type) || type === "") return true;
-
-        return false;
+        // 2. Çok spesifik (sokak, bina) tipleri eleyebiliriz ama
+        // İstanbul sonucunu kaçırmamak için tip filtresini kaldırıyoruz.
+        return true; 
 
     }).forEach((result) => {
         const props = result.properties || {};
         
-        // --- 4. GÖRÜNTÜ ---
+        // --- GÖRÜNTÜ METNİ ---
         const name = props.name || "";       
         const city = props.city || "";       
         const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
         let parts = [];
         if (name) parts.push(name);
-        
-        // Şehir ismi zaten ana isimle aynıysa tekrar yazma (İstanbul, İstanbul olmasın)
-        // Ama ilçe ise (Kadıköy, İstanbul) yazsın.
+        // İsim ve şehir aynıysa ikinciyi yazma
         if (city && normalizeLoc(city) !== normalizeLoc(name)) {
             parts.push(city);
         }
-        
-        // TR gibi ülke kodunu sona ekle
-        if (countryCode && name !== countryCode) parts.push(countryCode); 
+        if (countryCode) parts.push(countryCode); 
 
         const displayText = parts.join(", ");
         
         if (seenSuggestions.has(displayText)) return; 
         seenSuggestions.add(displayText);
 
-        // --- DOM ---
+        // --- HTML ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
@@ -651,6 +646,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.classList.add("selected-suggestion");
 
             window.selectedSuggestion = { displayText, props };
+            // API bazen 'city' vermez, name'i kullanırız
             window.selectedLocation = {
                 name: name,
                 city: props.county || city || name,
