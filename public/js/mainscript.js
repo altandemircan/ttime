@@ -776,39 +776,38 @@ const finalResults = scoredResults
 // 4. INPUT EVENT LISTENER
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
-    chatInput.addEventListener("input", debounce(async function () {
-        if (window.__programmaticInput) return;
+    // mainscript.js'de (~satır 668 civarı)
+chatInput.addEventListener("input", debounce(async function () {
+    if (window.__programmaticInput) return;
 
-        const rawText = this.value.trim();
-        const locationQuery = extractLocationQuery(rawText);
-        
-        console.log(`Input: "${rawText}" -> API Query: "${locationQuery}"`);
+    const rawText = this.value.trim();
+    const locationQuery = extractLocationQuery(rawText);
+    
+    console.log(`Input: "${rawText}" -> API Query: "${locationQuery}"`);
 
-        if (locationQuery.length < 2) {
-            if (rawText.length < 2) showSuggestions();
-            return;
+    if (locationQuery.length < 2) {
+        if (rawText.length < 2) showSuggestions();
+        return;
+    }
+
+    let suggestions = [];
+    try {
+        if (window.geoapify && window.geoapify.autocomplete) {
+            suggestions = await window.geoapify.autocomplete(locationQuery);
+        } else if (typeof geoapifyLocationAutocomplete === 'function') {
+            suggestions = await geoapifyLocationAutocomplete(locationQuery);
         }
+    } catch (err) {
+        if (err.name === "AbortError") return;
+        suggestions = [];
+    }
 
-        let suggestions = [];
-        try {
-            if (window.geoapify && window.geoapify.autocomplete) {
-                suggestions = await window.geoapify.autocomplete(locationQuery);
-            } else if (typeof geoapifyLocationAutocomplete === 'function') {
-                suggestions = await geoapifyLocationAutocomplete(locationQuery);
-            }
-        } catch (err) {
-            if (err.name === "AbortError") return;
-            suggestions = [];
-        }
-
-        window.lastResults = suggestions;
-        
-        // Temizlenmiş sorguyu (locationQuery) RENDER'a gönder
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(suggestions, locationQuery);
-        }
-
-    }, 400));
+    window.lastResults = suggestions;
+    
+    if (typeof renderSuggestions === 'function') {
+        renderSuggestions(suggestions, locationQuery);
+    }
+}, 200)); // 400ms'den 300ms'ye düşür (veya 250ms)
 
     chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
