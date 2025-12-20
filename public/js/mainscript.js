@@ -1998,19 +1998,17 @@ const placeCategories = {
     
 };
 
-// mainscript.js dosyasında mevcut window.showSuggestionsInChat fonksiyonunu bununla değiştirin:
+// 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
+// mainscript.js
 
-// mainscript.js içinde mevcut showSuggestionsInChat fonksiyonunu bununla değiştirin:
-
-window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3) {
+window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     const city = window.selectedCity || document.getElementById("city-input")?.value;
     if (!city) {
         addMessage("Please select a city first.", "bot-message");
         return;
     }
 
-    // 1. ÖNCE SIDEBAR'I KAPAT (Mobilde Loading'i görebilmek için)
-    // Kullanıcının "kaldırma" dediği özellik buraya, en başa alındı.
+    // 1. ÖNCE SIDEBAR'I KAPAT
     if (window.innerWidth <= 768) {
         var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
         if (sidebar) sidebar.classList.remove('open');
@@ -2031,11 +2029,11 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         // Yarıçapı metre cinsine çevir
         const radius = Math.round(radiusKm * 1000);
 
-        // Arama yap (Veri çekme işlemi)
-        const places = await getPlacesForCategory(city, category, 5, radius, realCode);
+        // Arama yap (Limit parametresini kullanıyoruz)
+        const places = await getPlacesForCategory(city, category, limit, radius, realCode);
 
         if (!places.length) {
-            hideTypingIndicator(); // Sonuç yoksa loading gizle
+            hideTypingIndicator(); 
 
             // Sonuç yoksa slider barı göster
             addMessage(`
@@ -2059,7 +2057,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
                     slider.addEventListener("change", async () => {
                         // Yeniden arama yap!
                         const newRadius = Number(slider.value);
-                        await window.showSuggestionsInChat(category, day, code, newRadius);
+                        await window.showSuggestionsInChat(category, day, code, newRadius, limit);
                     });
                 }
             }, 200);
@@ -2072,7 +2070,8 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
 
         // 3. SONUÇLAR HAZIR, LOADING GİZLE VE LİSTEYİ BAS
         hideTypingIndicator();
-        displayPlacesInChat(places, category, day);
+        // Limit ve diğer parametreleri display fonksiyonuna iletiyoruz
+        displayPlacesInChat(places, category, day, code, radiusKm, limit);
 
     } catch (error) {
         console.error("Hata:", error);
@@ -2611,11 +2610,14 @@ function safeCoords(lat, lon) {
 }
 
 
-function displayPlacesInChat(places, category, day) {
+// mainscript.js
+
+function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, limit = 5) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     const sliderId = `splide-slider-${uniqueId}`;
 
+    // Eski sonuçları temizle (aynı kategori ve gün için)
     chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
         el.closest('.survey-results')?.remove();
     });
@@ -2634,6 +2636,7 @@ function displayPlacesInChat(places, category, day) {
                             <ul class="splide__list">
     `;
 
+    // Mevcut mekanları listele
     places.forEach((place, idx) => {
         html += `
             <li class="splide__slide">
@@ -2641,6 +2644,22 @@ function displayPlacesInChat(places, category, day) {
             </li>
         `;
     });
+
+    // --- LOAD MORE KARTI (Yeni Özellik) ---
+    // Eğer gelen sonuç sayısı limite eşitse, muhtemelen daha fazla sonuç vardır.
+    if (places.length >= limit) {
+         html += `
+            <li class="splide__slide">
+                <div class="visual step-item load-more-card" 
+                     onclick="window.showSuggestionsInChat('${category}', ${day}, ${code ? "'" + code + "'" : 'null'}, ${radiusKm}, ${limit + 5})"
+                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8f9fa; border: 2px dashed #cbd5e1; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                    <div style="font-size: 32px; color: #64748b; margin-bottom: 8px;">+</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #64748b;">Load More</div>
+                </div>
+            </li>
+        `;
+    }
+    // --------------------------------------
 
     html += `
                             </ul>
@@ -2651,23 +2670,26 @@ function displayPlacesInChat(places, category, day) {
         </div>`;
 
     chatBox.innerHTML += html;
+    
+    // Scroll ayarı
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    
     attachFavEvents();
 
+    // Slider'ı başlat
     setTimeout(() => {
-        // Tüm .splide sliderları için instance mount et
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (!sliderElem._splideInstance) {
                 const splideInstance = new Splide(sliderElem, {
-  type: 'slide',
-  perPage: 5, // veya perPage: 1 (her seferinde bir item gözüksün)
-  gap: '18px',
-  arrows: true,
-  pagination: false,
+                    type: 'slide',
+                    perPage: 5,
+                    gap: '18px',
+                    arrows: true,
+                    pagination: false,
                     drag: true,
-                      breakpoints: {
+                    breakpoints: {
                         575: { perPage: 1 },
                         768: { perPage: 2 },
                         1000: { perPage: 1 },
@@ -2681,7 +2703,6 @@ function displayPlacesInChat(places, category, day) {
             }
         });
     }, 1);
-
 }
 
 // Website açma fonksiyonu
