@@ -2000,6 +2000,8 @@ const placeCategories = {
 
 // mainscript.js dosyasında showSuggestionsInChat fonksiyonunu tamamen değiştir:
 
+// mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu bununla değiştirin:
+
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     // --- DEBUG LOG START ---
     console.log(`%c[showSuggestionsInChat] Called`, "color: cyan; font-weight: bold;");
@@ -2007,27 +2009,54 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     // 1. ŞEHİR / MERKEZ NOKTA BELİRLEME
     let city = window.selectedCity || document.getElementById("city-input")?.value;
 
-    // YÖNTEM A: Input boşsa, kayıtlı gezi verisine (Variable) bak
+    // YÖNTEM A: Input boşsa, window.cart verisine bak (EN GÜVENİLİR YÖNTEM)
+    // Kayıtlı gezilerde veriler burada durur.
     if (!city) {
-        if (typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1] && window.generatedTrip[day - 1].length > 0) {
-            city = window.generatedTrip[day - 1][0].name;
-            console.log(`✅ Reference found via Variable: "${city}"`);
+        if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
+            // İlgili güne ait ilk mekanı bulmaya çalış
+            const dayItem = window.cart.find(item => item.day == day);
+            
+            // Eğer o güne ait mekan varsa onu, yoksa listedeki ilk mekanı al
+            const targetItem = dayItem || window.cart[0];
+            
+            if (targetItem && targetItem.name) {
+                city = targetItem.name;
+                console.log(`✅ Reference found via window.cart: "${city}"`);
+            }
         }
     }
 
-    // YÖNTEM B: Variable da boşsa, HTML DOM üzerinden ekrandaki ilk mekanı oku (EN GARANTİ YÖNTEM)
+    // YÖNTEM B: generatedTrip verisine bak (Yeni oluşturulan geziler için)
     if (!city) {
-        // Ekranda .step-item class'ına sahip elemanların içindeki başlıklara bakar
-        // Not: Sitenizdeki class yapısına göre .title, h3, h4 veya strong etiketlerini dener.
-        const firstVisiblePlace = document.querySelector('.step-item .title, .step-item h3, .step-item h4, .place-card-title, .accordion-content strong');
+        if (typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1] && window.generatedTrip[day - 1].length > 0) {
+            city = window.generatedTrip[day - 1][0].name;
+            console.log(`✅ Reference found via generatedTrip: "${city}"`);
+        }
+    }
+
+    // YÖNTEM C: HTML DOM üzerinden ekrandaki ilk mekanı oku
+    if (!city) {
+        // Seçicileri genişlettik: step-item, place-title, veya herhangi bir input value
+        const selectors = [
+            '.step-item .title', 
+            '.step-item h3', 
+            '.step-item h4', 
+            '.place-card-title',
+            '.accordion-content strong',
+            '.leaflet-popup-content b' // Haritada açık popup varsa
+        ];
         
-        if (firstVisiblePlace && firstVisiblePlace.innerText.trim().length > 0) {
-            city = firstVisiblePlace.innerText.trim();
-            console.log(`✅ Reference found via HTML (DOM): "${city}"`);
+        for (let sel of selectors) {
+            const el = document.querySelector(sel);
+            if (el && el.innerText.trim().length > 0) {
+                city = el.innerText.trim();
+                console.log(`✅ Reference found via HTML (${sel}): "${city}"`);
+                break;
+            }
         }
     }
     
-    // YÖNTEM C: Hala yoksa window.destination değişkenine bak
+    // YÖNTEM D: Hala yoksa window.destination
     if (!city && window.destination) {
         city = window.destination;
         console.log(`✅ Reference found via window.destination: "${city}"`);
@@ -2036,6 +2065,8 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     // 2. KONTROL SONUCU
     if (!city) {
         console.error("⛔ ERROR: Could not find any city or reference point on screen or variables.");
+        // Debug için cart durumunu yazdıralım
+        console.log("Debug window.cart:", window.cart);
         addMessage("Please select a city or make sure a trip is generated first.", "bot-message");
         return;
     }
