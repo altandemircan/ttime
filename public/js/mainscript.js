@@ -687,7 +687,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     } else {
         if (typeof hideSuggestionsDiv === 'function') hideSuggestionsDiv(true);
     }
-}s
+}
 
 // ============================================================
 // 4. INPUT EVENT LISTENER
