@@ -530,44 +530,179 @@ if (typeof hideSuggestionsDiv !== "function") {
 }
 
 function renderSuggestions(originalResults = [], manualQuery = "") {
-    console.log("RAW API DATA for", manualQuery, ":", originalResults);
-    
+
     const suggestionsDiv = document.getElementById("suggestions");
-    if (!suggestionsDiv) return;
+    const chatInput = document.getElementById("user-input");
+    if (!suggestionsDiv || !chatInput) return;
     
     suggestionsDiv.innerHTML = "";
-    
+
     if (!originalResults || !originalResults.length) {
         hideSuggestionsDiv(true);
         return;
     }
-    
-    // TÜM FİLTRELEMEYİ KALDIR - sadece ilk 10 sonucu göster
-    const displayResults = originalResults.slice(0, 10);
-    
-    displayResults.forEach((result, index) => {
+
+    // A. HEDEF KELİMEYİ BELİRLE (Sıralama için küçük harfe çeviriyoruz)
+    let rawQuery = manualQuery || extractLocationQuery(chatInput.value);
+    let targetTerm = rawQuery.toLocaleLowerCase('tr');
+
+    let finalSortedResults = [];
+
+    // B. GRUPLAMA (BUCKETING)
+    if (targetTerm.length > 0) {
+        const exactMatches = [];
+        const startMatches = [];
+        const containMatches = [];
+        const others = [];
+
+        originalResults.forEach(item => {
+            let name = "";
+            if (item.properties.name && item.properties.name.trim() !== "") {
+                name = item.properties.name.toLocaleLowerCase('tr');
+            } else if (item.properties.city && item.properties.city.trim() !== "") {
+                name = item.properties.city.toLocaleLowerCase('tr');
+            } else {
+                name = "";
+            }
+
+            if (!name) {
+                others.push(item);
+            } else if (name === targetTerm) {
+                exactMatches.push(item);
+            } else if (name.startsWith(targetTerm)) {
+                startMatches.push(item);
+            } else if (name.includes(targetTerm)) {
+                containMatches.push(item);
+            } else {
+                others.push(item);
+            }
+        });
+
+        finalSortedResults = [
+            ...exactMatches,
+            ...startMatches,
+            ...containMatches,
+            ...others
+        ];
+    } else {
+        finalSortedResults = [...originalResults];
+    }
+
+    // --- C. LİSTELEME ---
+    const seenSuggestions = new Set();
+
+    // --- GÜNCELLEME BURADA: TİP FİLTRESİNİ GENİŞLETTİK ---
+    // 'state', 'province', 'administrative' ekledik.
+    const allowedTypes = [
+      'city', 'town', 'village', 'municipality', 
+      'county', 'district', 'borough', 'suburb',
+      'state', 'province', 'administrative', 'regional_center'
+    ];
+
+    // renderSuggestions fonksiyonu içinde, filtreleme kısmı (yaklaşık satır 563)
+finalSortedResults = finalSortedResults.filter(item => {
+  const p = item.properties || {};
+  const type = (p.result_type || p.place_type || '').toLowerCase();
+  
+  // Sadece istenmeyen ticari listeleri engelleyin
+  if (/tours?in|excursion|\.com\b|\bhotel|apart|residence|resort|booking|trip(s)?\b/i.test(p.name || "")) return false;
+  
+  // TİP FİLTRESİNİ KALDIRIN veya GENİŞLETİN
+  // return true; // Tüm sonuçları göster (test için)
+  // VEYA: Büyük şehirler için gelen 'county', 'region' gibi tipleri de ekleyin
+  const extendedAllowedTypes = [...allowedTypes, 'county', 'region'];
+  return extendedAllowedTypes.includes(type) || !type;
+});
+
+    // UI KISMI (ORİJİNAL KODUNLA AYNI)
+    finalSortedResults.forEach((result) => {
         const props = result.properties || {};
         
-        // Basit görüntüleme
-        const displayText = [
-            props.name || props.city || "",
-            props.county && props.county !== props.city ? props.county : "",
-            props.country || ""
-        ].filter(Boolean).join(", ") + (props.country_code ? " " + countryFlag(props.country_code) : "");
-        
+        // Verileri Çek
+        const name = props.name || "";       
+        const city = props.city || "";       
+        const county = props.county || "";   
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
+
+        // Hiyerarşi Parçaları
+        let parts = [];
+        if (name) parts.push(name); 
+        if (city && city !== name) parts.push(city); 
+        if (county && county !== name && county !== city) parts.push(county); 
+        if (countryCode) parts.push(countryCode); 
+
+        // Birleştir
+        const uniqueParts = [...new Set(parts)].filter(Boolean);
+        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
+        const displayText = uniqueParts.join(", ") + flag;
+
+        // Tekrarları Engelle
+        if (seenSuggestions.has(displayText)) return; 
+        seenSuggestions.add(displayText);
+
+        // HTML Elementi
         const div = document.createElement("div");
         div.className = "category-area-option";
-        if (index === 0) div.classList.add("selected-suggestion");
+        
+        if (suggestionsDiv.children.length === 0) {
+            div.classList.add("selected-suggestion");
+        }
+
         div.textContent = displayText;
-        
+        div.dataset.displayText = displayText;
+
         div.onclick = () => {
-            // ... mevcut onclick kodu
+            window.__programmaticInput = true;
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            div.classList.add("selected-suggestion");
+
+            window.selectedSuggestion = { displayText, props };
+            window.selectedLocation = {
+                name: name,
+                city: county || city || name,
+                country: props.country || "",
+                lat: props.lat ?? props.latitude ?? null,
+                lon: props.lon ?? props.longitude ?? null,
+                country_code: props.country_code || ""
+            };
+
+            const raw = chatInput.value.trim();
+            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+            let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
+            if (!days || days < 1) days = 1;
+
+            let targetNameWithFlag = displayText.trim();
+            let targetName = targetNameWithFlag.replace(flag, '').trim();
+
+            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+            if (typeof formatCanonicalPlan === "function") {
+                const c = formatCanonicalPlan(`${targetName} ${days} days`);
+                if (c && c.canonical) canonicalStr = c.canonical;
+            }
+
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
+
+            if (enableSendButton) enableSendButton();
+            if (showSuggestionsDiv) showSuggestionsDiv();
+            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
+
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
         };
-        
+
         suggestionsDiv.appendChild(div);
     });
-    
-    showSuggestionsDiv();
+
+    if (suggestionsDiv.children.length > 0) {
+        showSuggestionsDiv();
+    } else {
+        hideSuggestionsDiv(true);
+    }
 }
 
 // ============================================================
