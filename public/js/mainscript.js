@@ -486,24 +486,25 @@ async function geoapifyLocationAutocomplete(query) {
 function extractLocationQuery(input) {
     if (!input) return "";
     
-    // Orijinal girdiyi al
+    // Orijinal inputu al
     let cleaned = input; 
     
-    // Sadece rakamları ve zaman ifadelerini (1 day, 2 gün) sil
+    // Sadece "1 day", "3 gün" gibi zaman ifadelerini sil.
+    // Şehir isminin kendisine (büyük/küçük harf) dokunma.
     cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
-    // Noktalama işaretlerini sil
+    // Özel karakterleri temizle
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
     
-    // Stop words temizliği
+    // Gereksiz kelimeleri (stop words) temizle
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
         "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
     ];
     
+    // Kelimeleri ayır ve stop word'leri temizle
     let words = cleaned.split(/\s+/);
-    // Kelimeyi filtrele ama harf büyüklüğüne dokunma (API için önemli)
     words = words.filter(w => !stopWords.includes(w.toLowerCase()) && w.length > 1);
     
     return words.join(" ").trim();
