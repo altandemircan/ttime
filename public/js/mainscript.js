@@ -2002,38 +2002,70 @@ const placeCategories = {
 // mainscript.js
 // mainscript.js dosyasında bu fonksiyonu bulup tamamen değiştirin:
 
+// mainscript.js
+
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
-    const city = window.selectedCity || document.getElementById("city-input")?.value;
+    // --- DEBUG LOG START ---
+    console.log(`%c[showSuggestionsInChat] Called`, "color: cyan; font-weight: bold;");
+    console.log("Parameters:", { category, day, code, radiusKm, limit });
+    // --- DEBUG LOG END ---
+
+    // 1. Şehir/Lokasyon Belirleme (GÜNCELLENDİ)
+    let city = window.selectedCity || document.getElementById("city-input")?.value;
+
+    // Eğer inputtan şehir gelmediyse ama rota verisi varsa, 1. noktayı baz al
     if (!city) {
+        console.log("⚠️ City variable is empty. Checking saved trip data (generatedTrip)...");
+        
+        if (typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1] && window.generatedTrip[day - 1].length > 0) {
+            // O günün ilk durağını al
+            const firstStop = window.generatedTrip[day - 1][0];
+            
+            // İlk durağın ismini 'city' olarak atıyoruz. 
+            // Geoapify/Google servisi bu ismi geocode edip koordinatını bulacak ve çevresini tarayacaktır.
+            city = firstStop.name; 
+            
+            console.log(`✅ Reference point found: "${firstStop.name}" (based on 1st stop of the day)`);
+        } else {
+            console.warn("❌ Saved trip data or stop for that day not found.");
+        }
+    }
+
+    if (!city) {
+        console.error("⛔ ERROR: No city or reference point found. Aborting operation.");
         addMessage("Please select a city first.", "bot-message");
         return;
     }
 
-    // 1. Sidebar kontrolü
+    // Sidebar kontrolü
     if (window.innerWidth <= 768) {
         var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
         if (sidebar) sidebar.classList.remove('open');
     }
 
-    // 2. Loading göster
     showTypingIndicator();
 
     // Kategori kodu
     let realCode = code || geoapifyCategoryMap[category] || placeCategories[category];
     if (!realCode) {
         hideTypingIndicator();
+        console.error("⛔ ERROR: Invalid category code for:", category);
         addMessage("Invalid category.", "bot-message");
         return;
     }
 
     try {
         const radius = Math.round(radiusKm * 1000);
+        console.log(`🔎 Searching... Center: "${city}", Radius: ${radius}m, Limit: ${limit}`);
 
-        // Arama yap (limit parametresini kullanıyoruz)
+        // Arama yap
         const places = await getPlacesForCategory(city, category, limit, radius, realCode);
+
+        console.log("📩 Results received:", places);
 
         if (!places.length) {
             hideTypingIndicator();
+            console.warn("⚠️ No results found. Showing radius slider.");
             addMessage(`
                 <div class="radius-slider-bar">
                     <p>No places found for this category in "${city}".</p>
@@ -2051,6 +2083,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
                     slider.addEventListener("input", () => { valueLabel.textContent = slider.value; });
                     slider.addEventListener("change", async () => {
                         const newRadius = Number(slider.value);
+                        console.log(`🔄 Radius changed to: ${newRadius}km. Searching again...`);
                         await window.showSuggestionsInChat(category, day, code, newRadius, limit);
                     });
                 }
@@ -2063,17 +2096,14 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
 
         hideTypingIndicator();
 
-        // --- UX İYİLEŞTİRMESİ ---
-        // Eğer limit 5'ten büyükse, kullanıcı "Load More" yapmıştır.
-        // Yeni slider'ın başlangıç pozisyonunu, önceki limitin olduğu yere (yeni itemlerin başına) ayarla.
-        // Örn: Limit 10 ise, 0-4 arası eski, 5. index yeni gelenin başıdır.
+        // Slider başlangıç noktası (Daha önce yaptığımız load more ayarı)
         const startIndex = limit > 5 ? limit - 5 : 0;
 
-        // displayPlacesInChat fonksiyonuna startIndex'i de gönderiyoruz
+        console.log(`🖥️ Rendering to screen. StartIndex: ${startIndex}`);
         displayPlacesInChat(places, category, day, code, radiusKm, limit, startIndex);
 
     } catch (error) {
-        console.error("Hata:", error);
+        console.error("💥 CRITICAL ERROR:", error);
         hideTypingIndicator();
         addMessage("An error occurred while fetching suggestions.", "bot-message");
     }
