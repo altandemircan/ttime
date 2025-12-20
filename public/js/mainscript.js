@@ -1999,6 +1999,9 @@ const placeCategories = {
 };
 
 // 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
+// mainscript.js dosyasında showSuggestionsInChat fonksiyonunu bulun (yaklaşık 1476. satır)
+// ve aşağıdaki gibi showTypingIndicator() ve hideTypingIndicator() eklemelerini yapın.
+
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3) {
     const city = window.selectedCity || document.getElementById("city-input")?.value;
     if (!city) {
@@ -2014,11 +2017,19 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     // Yarıçapı metre cinsine çevir
     const radius = Math.round(radiusKm * 1000);
 
+    // --- DEĞİŞİKLİK BAŞLANGICI: Loading Göster ---
+    showTypingIndicator();
+    // --- DEĞİŞİKLİK SONU ---
+
     // Arama yap
     //Kategori sonuç limiti
     const places = await getPlacesForCategory(city, category, 5, radius, realCode);
 
     if (!places.length) {
+        // --- DEĞİŞİKLİK BAŞLANGICI: Loading Gizle (Sonuç yoksa) ---
+        hideTypingIndicator();
+        // --- DEĞİŞİKLİK SONU ---
+
         // Sonuç yoksa slider barı göster
         addMessage(`
             <div class="radius-slider-bar">
@@ -2050,6 +2061,11 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     }
 
     await enrichCategoryResults(places, city);
+
+    // --- DEĞİŞİKLİK BAŞLANGICI: Loading Gizle (Sonuçlar hazır) ---
+    hideTypingIndicator();
+    // --- DEĞİŞİKLİK SONU ---
+
     displayPlacesInChat(places, category, day);
     if (window.innerWidth <= 768) {
         var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
