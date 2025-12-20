@@ -2000,6 +2000,7 @@ const placeCategories = {
 
 // 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
 // mainscript.js
+// mainscript.js dosyasında bu fonksiyonu bulup tamamen değiştirin:
 
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     const city = window.selectedCity || document.getElementById("city-input")?.value;
@@ -2008,16 +2009,16 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         return;
     }
 
-    // 1. ÖNCE SIDEBAR'I KAPAT
+    // 1. Sidebar kontrolü
     if (window.innerWidth <= 768) {
         var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
         if (sidebar) sidebar.classList.remove('open');
     }
 
-    // 2. HEMEN LOADING GÖSTER
+    // 2. Loading göster
     showTypingIndicator();
 
-    // Kategori kodunu belirle
+    // Kategori kodu
     let realCode = code || geoapifyCategoryMap[category] || placeCategories[category];
     if (!realCode) {
         hideTypingIndicator();
@@ -2026,16 +2027,13 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     }
 
     try {
-        // Yarıçapı metre cinsine çevir
         const radius = Math.round(radiusKm * 1000);
 
-        // Arama yap (Limit parametresini kullanıyoruz)
+        // Arama yap (limit parametresini kullanıyoruz)
         const places = await getPlacesForCategory(city, category, limit, radius, realCode);
 
         if (!places.length) {
-            hideTypingIndicator(); 
-
-            // Sonuç yoksa slider barı göster
+            hideTypingIndicator();
             addMessage(`
                 <div class="radius-slider-bar">
                     <p>No places found for this category in "${city}".</p>
@@ -2046,32 +2044,33 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
                 </div>
             `, "bot-message");
 
-            // Slider event'ini bekle
             setTimeout(() => {
                 const slider = document.getElementById("radius-slider");
                 const valueLabel = document.getElementById("radius-value");
                 if (slider && valueLabel) {
-                    slider.addEventListener("input", () => {
-                        valueLabel.textContent = slider.value;
-                    });
+                    slider.addEventListener("input", () => { valueLabel.textContent = slider.value; });
                     slider.addEventListener("change", async () => {
-                        // Yeniden arama yap!
                         const newRadius = Number(slider.value);
                         await window.showSuggestionsInChat(category, day, code, newRadius, limit);
                     });
                 }
             }, 200);
-
             return;
         }
 
         // Resimleri getir
         await enrichCategoryResults(places, city);
 
-        // 3. SONUÇLAR HAZIR, LOADING GİZLE VE LİSTEYİ BAS
         hideTypingIndicator();
-        // Limit ve diğer parametreleri display fonksiyonuna iletiyoruz
-        displayPlacesInChat(places, category, day, code, radiusKm, limit);
+
+        // --- UX İYİLEŞTİRMESİ ---
+        // Eğer limit 5'ten büyükse, kullanıcı "Load More" yapmıştır.
+        // Yeni slider'ın başlangıç pozisyonunu, önceki limitin olduğu yere (yeni itemlerin başına) ayarla.
+        // Örn: Limit 10 ise, 0-4 arası eski, 5. index yeni gelenin başıdır.
+        const startIndex = limit > 5 ? limit - 5 : 0;
+
+        // displayPlacesInChat fonksiyonuna startIndex'i de gönderiyoruz
+        displayPlacesInChat(places, category, day, code, radiusKm, limit, startIndex);
 
     } catch (error) {
         console.error("Hata:", error);
@@ -2612,12 +2611,14 @@ function safeCoords(lat, lon) {
 
 // mainscript.js
 
-function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, limit = 5) {
+// mainscript.js dosyasında bu fonksiyonu bulup tamamen değiştirin:
+
+function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, limit = 5, startIndex = 0) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     const sliderId = `splide-slider-${uniqueId}`;
 
-    // Eski sonuçları temizle (aynı kategori ve gün için)
+    // Eski sonuçları temizle
     chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
         el.closest('.survey-results')?.remove();
     });
@@ -2636,7 +2637,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
                             <ul class="splide__list">
     `;
 
-    // Mevcut mekanları listele
+    // Mekanları listele
     places.forEach((place, idx) => {
         html += `
             <li class="splide__slide">
@@ -2645,8 +2646,8 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
         `;
     });
 
-    // --- LOAD MORE KARTI (Yeni Özellik) ---
-    // Eğer gelen sonuç sayısı limite eşitse, muhtemelen daha fazla sonuç vardır.
+    // --- LOAD MORE KARTI ---
+    // Eğer gelen sonuç sayısı limite eşitse, muhtemelen devamı vardır.
     if (places.length >= limit) {
          html += `
             <li class="splide__slide">
@@ -2659,7 +2660,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
             </li>
         `;
     }
-    // --------------------------------------
+    // -----------------------
 
     html += `
                             </ul>
@@ -2671,7 +2672,6 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
 
     chatBox.innerHTML += html;
     
-    // Scroll ayarı
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -2682,8 +2682,14 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
     setTimeout(() => {
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (!sliderElem._splideInstance) {
+                // Sadece yeni oluşturduğumuz slider'a özel start ayarını uygulayalım
+                // Eğer bu slider bizim oluşturduğumuz slider ise startIndex'i kullan
+                const isTargetSlider = sliderElem.id === sliderId;
+                const initialIndex = isTargetSlider ? startIndex : 0;
+
                 const splideInstance = new Splide(sliderElem, {
                     type: 'slide',
+                    start: initialIndex, // <--- KRİTİK NOKTA: Slider buradan başlar
                     perPage: 5,
                     gap: '18px',
                     arrows: true,
