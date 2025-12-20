@@ -776,39 +776,63 @@ const finalResults = scoredResults
 // 4. INPUT EVENT LISTENER
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
-    chatInput.addEventListener("input", debounce(async function () {
-        if (window.__programmaticInput) return;
+    let lastDisplayedResults = [];
+let apiCallInProgress = false;
 
-        const rawText = this.value.trim();
-        const locationQuery = extractLocationQuery(rawText);
+chatInput.addEventListener("input", async function () {
+    if (window.__programmaticInput) return;
+
+    const rawText = this.value.trim();
+    const locationQuery = extractLocationQuery(rawText);
+    
+    // 1. HEMEN: Önceki sonuçları filtrele ve göster
+    if (lastDisplayedResults.length > 0 && locationQuery.length >= 1) {
+        // Mevcut sonuçları anında filtrele
+        const filtered = lastDisplayedResults.filter(item => {
+            const p = item.properties || {};
+            const name = (p.name || "").toLowerCase();
+            const city = (p.city || "").toLowerCase();
+            return name.includes(locationQuery.toLowerCase()) || 
+                   city.includes(locationQuery.toLowerCase());
+        });
         
-        console.log(`Input: "${rawText}" -> API Query: "${locationQuery}"`);
-
+        if (filtered.length > 0) {
+            renderSuggestions(filtered, locationQuery);
+        }
+    }
+    
+    // 2. DEBOUNCE ile API'ye git
+    clearTimeout(window.inputTimeout);
+    window.inputTimeout = setTimeout(async () => {
         if (locationQuery.length < 2) {
             if (rawText.length < 2) showSuggestions();
             return;
         }
-
-        let suggestions = [];
+        
+        if (apiCallInProgress) return;
+        apiCallInProgress = true;
+        
         try {
+            let suggestions = [];
             if (window.geoapify && window.geoapify.autocomplete) {
                 suggestions = await window.geoapify.autocomplete(locationQuery);
             } else if (typeof geoapifyLocationAutocomplete === 'function') {
                 suggestions = await geoapifyLocationAutocomplete(locationQuery);
             }
+            
+            window.lastResults = suggestions;
+            lastDisplayedResults = suggestions;
+            
+            if (typeof renderSuggestions === 'function') {
+                renderSuggestions(suggestions, locationQuery);
+            }
         } catch (err) {
-            if (err.name === "AbortError") return;
-            suggestions = [];
+            if (err.name !== "AbortError") console.error(err);
+        } finally {
+            apiCallInProgress = false;
         }
-
-        window.lastResults = suggestions;
-        
-        // Temizlenmiş sorguyu (locationQuery) RENDER'a gönder
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(suggestions, locationQuery);
-        }
-
-    }, 150));
+    }, 200); // Daha kısa debounce
+});
 
     chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
