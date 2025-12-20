@@ -530,211 +530,44 @@ if (typeof hideSuggestionsDiv !== "function") {
 }
 
 function renderSuggestions(originalResults = [], manualQuery = "") {
+    console.log("RAW API DATA for", manualQuery, ":", originalResults);
+    
     const suggestionsDiv = document.getElementById("suggestions");
-    const chatInput = document.getElementById("user-input");
-    if (!suggestionsDiv || !chatInput) return;
+    if (!suggestionsDiv) return;
     
     suggestionsDiv.innerHTML = "";
-
+    
     if (!originalResults || !originalResults.length) {
         hideSuggestionsDiv(true);
         return;
     }
-
-    // 1. ÖNEMLİ: API sonuçlarını TEMİZLE
-    const cleanedResults = originalResults.filter(item => {
-        const p = item.properties || {};
-        const name = (p.name || "").toLowerCase();
-        
-        // Ticari/ticari olmayan sonuçları engelle
-        const blacklist = [
-            "finance center", "business", "commercial", "shopping",
-            "mall", "plaza", "center", "merkezi", "avm", "residence"
-        ];
-        
-        if (blacklist.some(term => name.includes(term))) {
-            return false;
-        }
-        
-        // "building", "commercial", "amenity" gibi türleri filtrele
-        const type = (p.result_type || p.place_type || '').toLowerCase();
-        const allowedTypes = [
-            'city', 'town', 'village', 'municipality', 
-            'county', 'district', 'borough', 'suburb',
-            'state', 'province', 'administrative', 'regional_center',
-            'region', 'area'
-        ];
-        
-        return allowedTypes.includes(type) || !type;
-    });
-
-    if (!cleanedResults.length) {
-        hideSuggestionsDiv(true);
-        return;
-    }
-
-    // 2. GELİŞMİŞ SIRALAMA ALGORİTMASI
-    const targetTerm = manualQuery.toLowerCase();
-    const scoredResults = cleanedResults.map(item => {
-        const p = item.properties || {};
-        let score = 0;
-        
-        // İsim alanları
-        const name = (p.name || "").toLowerCase();
-        const city = (p.city || "").toLowerCase();
-        const county = (p.county || "").toLowerCase();
-        
-        // Tam eşleşme: +100 puan
-        if (name === targetTerm || city === targetTerm || county === targetTerm) {
-            score += 100;
-        }
-        
-        // Başlangıç eşleşmesi: +50 puan
-        if (name.startsWith(targetTerm) || city.startsWith(targetTerm)) {
-            score += 50;
-        }
-        
-        // İçerme: +20 puan
-        if (name.includes(targetTerm) || city.includes(targetTerm)) {
-            score += 20;
-        }
-        
-        // Öncelikli türler: +30 puan (city > town > village > county)
-        const type = (p.result_type || p.place_type || '').toLowerCase();
-        if (type === 'city') score += 30;
-        else if (type === 'town') score += 20;
-        else if (type === 'village') score += 10;
-        else if (type === 'county') score += 5;
-        
-        // "İstanbul" gibi büyük şehirler için city alanı doluysa bonus
-        if (city && city.includes(targetTerm)) score += 40;
-        
-        return { item, score, name: p.name, city: p.city, type };
-    });
     
-    // Puanına göre sırala (yüksek puan üstte)
-    scoredResults.sort((a, b) => b.score - a.score);
+    // TÜM FİLTRELEMEYİ KALDIR - sadece ilk 10 sonucu göster
+    const displayResults = originalResults.slice(0, 10);
     
-    // En iyi 10 sonucu al
-    const finalResults = scoredResults.slice(0, 10).map(sr => sr.item);
-
-    // 3. GÖRÜNÜM - ÖZELLEŞTİRİLMİŞ FORMAT
-    const seenSuggestions = new Set();
-    
-    finalResults.forEach((result, index) => {
+    displayResults.forEach((result, index) => {
         const props = result.properties || {};
         
-        // EN ÖNEMLİ: Doğru isim seçimi
-        let displayName = "";
+        // Basit görüntüleme
+        const displayText = [
+            props.name || props.city || "",
+            props.county && props.county !== props.city ? props.county : "",
+            props.country || ""
+        ].filter(Boolean).join(", ") + (props.country_code ? " " + countryFlag(props.country_code) : "");
         
-        // Öncelik sırası:
-        // 1. city alanı (genellikle en doğru)
-        // 2. name alanı (temizlenmiş)
-        // 3. county alanı
-        
-        if (props.city && props.city.trim()) {
-            displayName = props.city;
-        } else if (props.name && props.name.trim()) {
-            // Name alanından virgül sonrasını temizle
-            displayName = props.name.split(',')[0].trim();
-        } else if (props.county && props.county.trim()) {
-            displayName = props.county;
-        }
-        
-        // Eğer displayName hala boşsa veya çok kısayla atla
-        if (!displayName || displayName.length < 2) return;
-        
-        // Bölge bilgileri
-        const regionParts = [];
-        if (props.county && props.county !== displayName) {
-            regionParts.push(props.county);
-        }
-        if (props.country) {
-            regionParts.push(props.country);
-        }
-        
-        const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-        const displayText = regionParts.length > 0 
-            ? `${displayName}, ${regionParts.join(', ')}${flag}`
-            : `${displayName}${flag}`;
-        
-        // Tekrarları engelle
-        if (seenSuggestions.has(displayText)) return;
-        seenSuggestions.add(displayText);
-        
-        // HTML oluştur
         const div = document.createElement("div");
         div.className = "category-area-option";
-        if (index === 0) {
-            div.classList.add("selected-suggestion");
-        }
-        
+        if (index === 0) div.classList.add("selected-suggestion");
         div.textContent = displayText;
-        div.dataset.displayText = displayText;
-        div.dataset.originalName = props.name || "";
-        div.dataset.city = props.city || "";
         
         div.onclick = () => {
-            window.__programmaticInput = true;
-            Array.from(suggestionsDiv.children).forEach(d => 
-                d.classList.remove("selected-suggestion")
-            );
-            div.classList.add("selected-suggestion");
-
-            window.selectedSuggestion = { 
-                displayText, 
-                props,
-                // ÖNEMLİ: Tüm gerekli alanları kaydet
-                selectedLocation: {
-                    name: displayName,
-                    city: props.city || displayName,
-                    country: props.country || "",
-                    lat: props.lat ?? props.latitude ?? null,
-                    lon: props.lon ?? props.longitude ?? null,
-                    country_code: props.country_code || ""
-                }
-            };
-            
-            window.selectedLocation = window.selectedSuggestion.selectedLocation;
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
-
-            // Günleri çıkar
-            const raw = chatInput.value.trim();
-            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || 
-                           raw.match(/(\d+)\s*-?\s*gün/i);
-            let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
-            if (!days || days < 1) days = 1;
-
-            let targetName = displayText.replace(flag, '').trim();
-            
-            let canonicalStr = `Plan a ${days}-day tour for ${displayName}`;
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${displayName} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            }
-
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
-            } else {
-                chatInput.value = canonicalStr;
-            }
-
-            if (enableSendButton) enableSendButton();
-            if (showSuggestionsDiv) showSuggestionsDiv();
-            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
-
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
+            // ... mevcut onclick kodu
         };
-
+        
         suggestionsDiv.appendChild(div);
     });
-
-    if (suggestionsDiv.children.length > 0) {
-        showSuggestionsDiv();
-    } else {
-        hideSuggestionsDiv(true);
-    }
+    
+    showSuggestionsDiv();
 }
 
 // ============================================================
