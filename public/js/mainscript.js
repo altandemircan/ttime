@@ -1998,42 +1998,45 @@ const placeCategories = {
     
 };
 
-// 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
-// mainscript.js
-// mainscript.js dosyasında bu fonksiyonu bulup tamamen değiştirin:
-
-// mainscript.js
+// mainscript.js dosyasında showSuggestionsInChat fonksiyonunu tamamen değiştir:
 
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     // --- DEBUG LOG START ---
     console.log(`%c[showSuggestionsInChat] Called`, "color: cyan; font-weight: bold;");
-    console.log("Parameters:", { category, day, code, radiusKm, limit });
-    // --- DEBUG LOG END ---
-
-    // 1. Şehir/Lokasyon Belirleme (GÜNCELLENDİ)
+    
+    // 1. ŞEHİR / MERKEZ NOKTA BELİRLEME
     let city = window.selectedCity || document.getElementById("city-input")?.value;
 
-    // Eğer inputtan şehir gelmediyse ama rota verisi varsa, 1. noktayı baz al
+    // YÖNTEM A: Input boşsa, kayıtlı gezi verisine (Variable) bak
     if (!city) {
-        console.log("⚠️ City variable is empty. Checking saved trip data (generatedTrip)...");
-        
         if (typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1] && window.generatedTrip[day - 1].length > 0) {
-            // O günün ilk durağını al
-            const firstStop = window.generatedTrip[day - 1][0];
-            
-            // İlk durağın ismini 'city' olarak atıyoruz. 
-            // Geoapify/Google servisi bu ismi geocode edip koordinatını bulacak ve çevresini tarayacaktır.
-            city = firstStop.name; 
-            
-            console.log(`✅ Reference point found: "${firstStop.name}" (based on 1st stop of the day)`);
-        } else {
-            console.warn("❌ Saved trip data or stop for that day not found.");
+            city = window.generatedTrip[day - 1][0].name;
+            console.log(`✅ Reference found via Variable: "${city}"`);
         }
     }
 
+    // YÖNTEM B: Variable da boşsa, HTML DOM üzerinden ekrandaki ilk mekanı oku (EN GARANTİ YÖNTEM)
     if (!city) {
-        console.error("⛔ ERROR: No city or reference point found. Aborting operation.");
-        addMessage("Please select a city first.", "bot-message");
+        // Ekranda .step-item class'ına sahip elemanların içindeki başlıklara bakar
+        // Not: Sitenizdeki class yapısına göre .title, h3, h4 veya strong etiketlerini dener.
+        const firstVisiblePlace = document.querySelector('.step-item .title, .step-item h3, .step-item h4, .place-card-title, .accordion-content strong');
+        
+        if (firstVisiblePlace && firstVisiblePlace.innerText.trim().length > 0) {
+            city = firstVisiblePlace.innerText.trim();
+            console.log(`✅ Reference found via HTML (DOM): "${city}"`);
+        }
+    }
+    
+    // YÖNTEM C: Hala yoksa window.destination değişkenine bak
+    if (!city && window.destination) {
+        city = window.destination;
+        console.log(`✅ Reference found via window.destination: "${city}"`);
+    }
+
+    // 2. KONTROL SONUCU
+    if (!city) {
+        console.error("⛔ ERROR: Could not find any city or reference point on screen or variables.");
+        addMessage("Please select a city or make sure a trip is generated first.", "bot-message");
         return;
     }
 
@@ -2049,26 +2052,23 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     let realCode = code || geoapifyCategoryMap[category] || placeCategories[category];
     if (!realCode) {
         hideTypingIndicator();
-        console.error("⛔ ERROR: Invalid category code for:", category);
         addMessage("Invalid category.", "bot-message");
         return;
     }
 
     try {
         const radius = Math.round(radiusKm * 1000);
-        console.log(`🔎 Searching... Center: "${city}", Radius: ${radius}m, Limit: ${limit}`);
+        console.log(`🔎 Searching nearby: "${city}", Radius: ${radius}m`);
 
         // Arama yap
         const places = await getPlacesForCategory(city, category, limit, radius, realCode);
 
-        console.log("📩 Results received:", places);
-
         if (!places.length) {
             hideTypingIndicator();
-            console.warn("⚠️ No results found. Showing radius slider.");
+            console.warn("⚠️ No results found.");
             addMessage(`
                 <div class="radius-slider-bar">
-                    <p>No places found for this category in "${city}".</p>
+                    <p>No places found for ${category} near "${city}".</p>
                     <label for="radius-slider">
                       🔎 Widen search area: <span id="radius-value">${radiusKm}</span> km
                     </label>
@@ -2083,7 +2083,6 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
                     slider.addEventListener("input", () => { valueLabel.textContent = slider.value; });
                     slider.addEventListener("change", async () => {
                         const newRadius = Number(slider.value);
-                        console.log(`🔄 Radius changed to: ${newRadius}km. Searching again...`);
                         await window.showSuggestionsInChat(category, day, code, newRadius, limit);
                     });
                 }
@@ -2096,14 +2095,12 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
 
         hideTypingIndicator();
 
-        // Slider başlangıç noktası (Daha önce yaptığımız load more ayarı)
+        // Slider başlangıç noktası
         const startIndex = limit > 5 ? limit - 5 : 0;
-
-        console.log(`🖥️ Rendering to screen. StartIndex: ${startIndex}`);
         displayPlacesInChat(places, category, day, code, radiusKm, limit, startIndex);
 
     } catch (error) {
-        console.error("💥 CRITICAL ERROR:", error);
+        console.error("💥 Error:", error);
         hideTypingIndicator();
         addMessage("An error occurred while fetching suggestions.", "bot-message");
     }
