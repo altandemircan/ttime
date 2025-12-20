@@ -552,14 +552,10 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     }
 
     let rawQuery = manualQuery || extractLocationQuery(chatInput.value);
-    
-    // 3 Harf Kuralı (İsteğin üzerine): Eğer 3 harften azsa ve sonuç azsa gösterme (Opsiyonel ama güvenlik için iyi)
-    // Ama sen "listelemeye başla" dediğin için burayı gevşek bırakıyorum, API ne verirse basıyorum.
-
     let targetTerm = normalizeLoc(rawQuery);
     let finalSortedResults = [];
 
-    // --- 1. SIRALAMA (Mantık aynı, İstanbul en üste) ---
+    // --- 1. SIRALAMA (Aynı Mantık) ---
     if (targetTerm.length > 0) {
         const exactMatches = [];   
         const startMatches = [];   
@@ -570,7 +566,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const name = normalizeLoc(p.name);
             const city = normalizeLoc(p.city);
             
-            // İsmi veya Şehri arananla birebir aynı olanlar
+            // İsim veya Şehir eşleşmesi
             if (name === targetTerm || city === targetTerm) {
                 exactMatches.push(item);
             } else if (name.startsWith(targetTerm)) {
@@ -584,10 +580,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         finalSortedResults = [...originalResults];
     }
 
-    // --- 2. FİLTRELEME (ÇOK GEVŞEK MOD) ---
+    // --- 2. FİLTRELEME (BLACKLIST) ---
     const seenSuggestions = new Set();
-    
-    // Sadece bunları engelle, geri kalan her yer (il, ilçe, kasaba, semt) gelsin.
     const bannedKeywords = /hotel|otel|apart|residence|resort|booking|trip|tour|excursion|pansiyon|konaklama|center|merkezi|mall|avm|airport|havalimanı|station|campus/i;
 
     finalSortedResults.filter(item => {
@@ -595,40 +589,54 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         const name = p.name || "";
         const countryCode = (p.country_code || '').toUpperCase();
 
-        // İsimsiz veya sadece "TR" olanları at
         if (!name || name.length < 2) return false;
         if (name.toUpperCase() === countryCode) return false;
-
-        // Yasaklı kelime varsa at (Finans Merkezi vs.)
         if (bannedKeywords.test(name)) return false;
 
-        // Kalan HEPSİNİ kabul et. Tip (City/State vs) kontrolü YOK.
         return true;
 
     }).forEach((result) => {
         const props = result.properties || {};
         
-        // --- 3. FORMATLAMA (İstediğin Gibi: İlçe, İl, TR) ---
+        // --- 3. KRİTİK DÜZELTME: FORMATLAMA ---
         const name = props.name || "";       
-        const city = props.city || "";       
-        const state = props.state || "";     
         const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
 
+        // İkinci Parçayı (Şehir/İl) Bul
+        // Geoapify bazen şehri 'city', bazen 'state' içinde gönderir.
+        // Önemli olan "Region" içeren saçma veriyi almamak.
+        
+        let parentLocation = "";
+
+        // Önce City'ye bak, yoksa State'e bak
+        let candidate = props.city || props.state || "";
+
+        // Eğer gelen veri "Region" veya "Bölge" içeriyorsa (Mediterranean Region gibi) YOK SAY.
+        if (/region|bölge/i.test(candidate)) {
+            candidate = ""; 
+            // Eğer state region ise ve city boşsa, yapacak bir şey yok, parent boş kalır.
+            // Ama genelde city doğru gelir.
+            if (props.city && !/region|bölge/i.test(props.city)) {
+                candidate = props.city;
+            }
+        }
+
+        parentLocation = candidate;
+
+        // PARÇALARI BİRLEŞTİR
         let parts = [];
         
-        // 1. İSİM (Örn: Kemer)
+        // 1. Kısım: Yer Adı (Kemer, Antalya)
         parts.push(name);
 
-        // 2. ÜST BÖLGE (Örn: Antalya)
-        // Eğer isim zaten şehirle aynıysa ekleme (İstanbul, İstanbul olmasın)
-        // Ama farklıysa ekle (Kemer, Antalya olsun)
-        let region = "";
-        if (city && normalizeLoc(city) !== normalizeLoc(name)) region = city;
-        else if (state && normalizeLoc(state) !== normalizeLoc(name)) region = state;
-
-        if (region) parts.push(region);
+        // 2. Kısım: İl Adı
+        // Eğer İlçe adı (Kemer) ile İl adı (Antalya) farklıysa ekle.
+        // Eğer İl adı (Antalya) ile İl adı (Antalya) aynıysa ekleme.
+        if (parentLocation && normalizeLoc(parentLocation) !== normalizeLoc(name)) {
+            parts.push(parentLocation);
+        }
         
-        // 3. ÜLKE (TR)
+        // 3. Kısım: Ülke
         if (countryCode && name !== countryCode) parts.push(countryCode); 
 
         const displayText = parts.join(", ");
@@ -654,10 +662,11 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
             window.selectedSuggestion = { displayText, props };
             
-            // Kayıt mantığı
+            // Seçim verisini kaydet
             window.selectedLocation = {
                 name: name,
-                city: region || name, // İlçe ise ilini al, il ise kendini al
+                // Eğer parentLocation varsa (Antalya), onu city yap. Yoksa kendisini city yap.
+                city: parentLocation || name,
                 country: props.country || "",
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
