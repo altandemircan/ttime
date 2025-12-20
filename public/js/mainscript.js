@@ -486,9 +486,19 @@ async function geoapifyLocationAutocomplete(query) {
 // ============================================================
 // 1. SORGULAMA TEMİZLEYİCİ
 // ============================================================
+// ============================================================
+// 1. SORGULAMA TEMİZLEYİCİ
+// ============================================================
 function extractLocationQuery(input) {
     if (!input) return "";
-    let cleaned = input.toLocaleLowerCase('tr');
+    
+    // NOT: Zorla kucultme yapmiyoruz (toLocaleLowerCase yok).
+    // Sadece "1 day", "plan" gibi kelimeleri temizliyoruz.
+    // API orijinal Buyuk/Kucuk harfle daha iyi calisiyor.
+    
+    let cleaned = input; 
+    
+    // Gün, Plan vb. kelimeleri temizle (Case Insensitive)
     cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
     
@@ -498,9 +508,11 @@ function extractLocationQuery(input) {
         "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
     ];
     
-    let words = cleaned.split(/\s+/);
-    words = words.filter(w => !stopWords.includes(w) && w.length > 1);
-    let finalQuery = words.join(" ").trim();
+    // Stop words temizligi (Case Insensitive Regex ile)
+    const stopWordsRegex = new RegExp(`\\b(${stopWords.join('|')})\\b`, 'gi');
+    cleaned = cleaned.replace(stopWordsRegex, " ");
+    
+    let finalQuery = cleaned.replace(/\s+/g, " ").trim();
     return finalQuery.length < 2 ? "" : finalQuery;
 }
 
