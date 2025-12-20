@@ -483,51 +483,6 @@ async function geoapifyLocationAutocomplete(query) {
 
 
 
-function extractLocationQuery(input) {
-    if (!input) return "";
-    
-    // Orijinal girdiyi al
-    let cleaned = input; 
-    
-    // Sadece rakamları ve zaman ifadelerini (1 day, 2 gün) sil
-    cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
-    
-    // Noktalama işaretlerini sil
-    cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
-    
-    // Stop words temizliği
-    const stopWords = [
-        "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
-        "create", "make", "build", "generate", "show", "give", "please", 
-        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
-    ];
-    
-    let words = cleaned.split(/\s+/);
-    // Kelimeyi filtrele ama harf büyüklüğüne dokunma (API için önemli)
-    words = words.filter(w => !stopWords.includes(w.toLowerCase()) && w.length > 1);
-    
-    return words.join(" ").trim();
-}
-// ============================================================
-// 2. GÖRÜNÜM YARDIMCILARI
-// ============================================================
-if (typeof showSuggestionsDiv !== "function") {
-    window.showSuggestionsDiv = function() {
-        const el = document.getElementById('suggestions');
-        if (el) { el.hidden = false; el.style.removeProperty('display'); }
-    }
-}
-if (typeof hideSuggestionsDiv !== "function") {
-    window.hideSuggestionsDiv = function(clear = false) {
-        const el = document.getElementById('suggestions');
-        if (el) { 
-            el.hidden = true; 
-            el.style.removeProperty('display');
-            if (clear) el.innerHTML = "";
-        }
-    }
-}
-
 function renderSuggestions(originalResults = [], manualQuery = "") {
 
     const suggestionsDiv = document.getElementById("suggestions");
@@ -704,6 +659,29 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         if (typeof hideSuggestionsDiv === 'function') hideSuggestionsDiv(true);
     }
 }
+
+
+// ============================================================
+// 2. GÖRÜNÜM YARDIMCILARI
+// ============================================================
+if (typeof showSuggestionsDiv !== "function") {
+    window.showSuggestionsDiv = function() {
+        const el = document.getElementById('suggestions');
+        if (el) { el.hidden = false; el.style.removeProperty('display'); }
+    }
+}
+if (typeof hideSuggestionsDiv !== "function") {
+    window.hideSuggestionsDiv = function(clear = false) {
+        const el = document.getElementById('suggestions');
+        if (el) { 
+            el.hidden = true; 
+            el.style.removeProperty('display');
+            if (clear) el.innerHTML = "";
+        }
+    }
+}
+
+
 
 // ============================================================
 // 4. INPUT EVENT LISTENER
