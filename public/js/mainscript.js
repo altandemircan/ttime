@@ -481,8 +481,6 @@ async function geoapifyLocationAutocomplete(query) {
 }
  
 
-
-
 function renderSuggestions(originalResults = [], manualQuery = "") {
 
     const suggestionsDiv = document.getElementById("suggestions");
@@ -491,26 +489,29 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     
     suggestionsDiv.innerHTML = "";
 
+    // Sonuç yoksa gizle
     if (!originalResults || !originalResults.length) {
         if (typeof hideSuggestionsDiv === 'function') hideSuggestionsDiv(true);
         return;
     }
 
-    // Karakter düzeltme
+    // --- YARDIMCI: Karakter Düzeltme ---
     function normalizeLoc(str) {
         if (!str) return "";
         return str.toLocaleLowerCase('tr')
                   .replace(/ı/g, "i").replace(/İ/g, "i")
-                  .replace(/ğ/g, "g").replace(/ü/g, "u")
-                  .replace(/ş/g, "s").replace(/ö/g, "o")
-                  .replace(/ç/g, "c").trim();
+                  .trim();
     }
 
-    let rawQuery = manualQuery || extractLocationQuery(chatInput.value);
+    // --- 1. SIRALAMA (İsmi tam uyanı en üste al) ---
+    // Bu kısım "istanbul" yazınca İstanbul şehrini en tepeye getirir.
+    let rawQuery = manualQuery || (chatInput.value ? chatInput.value : "");
+    // Rakamları temizle
+    rawQuery = rawQuery.replace(/(\d+)\s*(day|days|gün)/gi, "").trim();
+    
     let targetTerm = normalizeLoc(rawQuery);
     let finalSortedResults = [];
 
-    // --- SIRALAMA ---
     if (targetTerm.length > 0) {
         const exactMatches = [];   
         const startMatches = [];   
@@ -521,74 +522,65 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const name = normalizeLoc(p.name);
             const city = normalizeLoc(p.city);
             
-            // İsmi veya Şehri arananla aynıysa
-            if (name === targetTerm || city === targetTerm) {
-                exactMatches.push(item);
-            } else if (name.startsWith(targetTerm)) {
-                startMatches.push(item);
-            } else {
-                otherMatches.push(item);
-            }
+            if (name === targetTerm || city === targetTerm) exactMatches.push(item);
+            else if (name.startsWith(targetTerm)) startMatches.push(item);
+            else otherMatches.push(item);
         });
         finalSortedResults = [...exactMatches, ...startMatches, ...otherMatches];
     } else {
         finalSortedResults = [...originalResults];
     }
 
-    // --- FİLTRELEME & FORMATLAMA ---
+    // --- 2. LİSTELEME ---
     const seenSuggestions = new Set();
-    const bannedKeywords = /hotel|otel|apart|residence|resort|booking|trip|tour|excursion|pansiyon|konaklama|mall|avm|airport|havalimanı|station|campus/i;
 
     finalSortedResults.forEach((result) => {
         const props = result.properties || {};
         const name = props.name || "";
         const countryCode = props.country_code ? props.country_code.toUpperCase() : "";
 
-        // Temel kontroller
+        // İsimsiz veya hatalı verileri atla
         if (!name || name.length < 2) return;
-        if (name.toUpperCase() === countryCode) return;
-        if (bannedKeywords.test(name)) return;
-
-        // --- FORMAT MANTIĞI ---
-        let parentLocation = "";
         
-        // City yoksa State'e bak (Geoapify bazen İstanbul'u State olarak verir)
-        let candidate = props.city || props.state || "";
+        // Basit blacklist (Otelleri temizle)
+        if (/hotel|otel|apart|residence|booking/i.test(name)) return;
 
-        // "Region" veya "Bölge" içeren veriyi asla alma
-        if (/region|bölge/i.test(candidate)) {
-            candidate = "";
-            // Eğer city temizse onu geri yükle
-            if (props.city && !/region|bölge/i.test(props.city)) candidate = props.city;
+        // --- GÖRÜNTÜ METNİ OLUŞTURMA (FORMATLAMA) ---
+        
+        // 1. Parent adayı bul (City veya State)
+        let parent = props.city || props.state || "";
+
+        // 2. "Region" veya "Bölge" ise sil (Akdeniz Bölgesi yazmasın)
+        if (/region|bölge/i.test(parent)) parent = "";
+
+        // 3. EĞER Parent ismi, Yer ismini içeriyorsa PARENT'I SİL.
+        // Örn: Name="İstanbul", Parent="İstanbul Province" -> Parent silinir -> "İstanbul, TR" kalır.
+        // Örn: Name="Kemer", Parent="Antalya" -> Parent kalır -> "Kemer, Antalya, TR" olur.
+        if (parent) {
+            let nName = normalizeLoc(name);
+            let nParent = normalizeLoc(parent);
+            // Parent, ismi kapsıyorsa (İstanbul Province -> İstanbul) veya eşitse sil.
+            if (nParent.includes(nName) || nParent === nName) {
+                parent = "";
+            }
         }
 
-        // --- KRİTİK DÜZELTME BURADA ---
-        // Eğer aday parent (Antalya), ismi (Kemer) İÇERMİYORSA -> Ekle (Kemer, Antalya, TR)
-        // Eğer aday parent (İstanbul Province), ismi (İstanbul) İÇERİYORSA -> Ekleme (İstanbul, TR)
-        let nName = normalizeLoc(name);
-        let nCand = normalizeLoc(candidate);
-
-        if (candidate && !nCand.includes(nName)) {
-            parentLocation = candidate;
-        }
-
-        // Parçaları Birleştir
-        let parts = [];
-        parts.push(name); // 1. İsim
-        
-        if (parentLocation) parts.push(parentLocation); // 2. İl (Varsa)
-        
-        if (countryCode && name !== countryCode) parts.push(countryCode); // 3. Ülke
+        // Parçaları birleştir
+        let parts = [name];
+        if (parent) parts.push(parent);
+        if (countryCode && name !== countryCode) parts.push(countryCode);
 
         const displayText = parts.join(", ");
-        
-        if (seenSuggestions.has(displayText)) return; 
+
+        // Tekrarları engelle
+        if (seenSuggestions.has(displayText)) return;
         seenSuggestions.add(displayText);
 
-        // --- HTML ---
+        // --- DOM OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
+        // İlk elemanı seçili yap
         if (suggestionsDiv.children.length === 0) div.classList.add("selected-suggestion");
         
         const flag = (typeof countryFlag === 'function' && props.country_code) ? " " + countryFlag(props.country_code) : "";
@@ -602,15 +594,15 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             window.selectedSuggestion = { displayText, props };
             window.selectedLocation = {
                 name: name,
-                city: parentLocation || name,
+                city: parent || name, // Parent varsa (Antalya) onu, yoksa ismin kendisini kullan
                 country: props.country || "",
-                lat: props.lat ?? props.latitude ?? null,
-                lon: props.lon ?? props.longitude ?? null,
+                lat: props.lat,
+                lon: props.lon,
                 country_code: props.country_code || ""
             };
 
-            const raw = chatInput.value.trim();
-            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+            // Inputa temiz ismi yaz
+            const dayMatch = chatInput.value.match(/(\d+)\s*-?\s*day/i) || chatInput.value.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
             
             let canonicalStr = `Plan a ${days}-day tour for ${name}`;
