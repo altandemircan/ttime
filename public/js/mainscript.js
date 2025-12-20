@@ -506,8 +506,7 @@ function extractLocationQuery(input) {
     
     let finalQuery = words.join(" ").trim();
     return finalQuery.length < 2 ? "" : finalQuery;
-}return finalQuery.length < 2 ? "" : finalQuery;
-
+}
 
 // ============================================================
 // 2. GÖRÜNÜM YARDIMCILARI
@@ -529,9 +528,6 @@ if (typeof hideSuggestionsDiv !== "function") {
     }
 }
 
-// ============================================================
-// 3. RENDER SUGGESTIONS (KESİN GRUPLAMA YÖNTEMİ)
-// ============================================================
 function renderSuggestions(originalResults = [], manualQuery = "") {
 
     const suggestionsDiv = document.getElementById("suggestions");
@@ -703,7 +699,9 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     }
 }
 
-
+// ============================================================
+// 4. INPUT EVENT LISTENER
+// ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
         if (window.__programmaticInput) return;
