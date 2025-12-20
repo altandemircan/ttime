@@ -483,8 +483,24 @@ async function geoapifyLocationAutocomplete(query) {
 
 
 
-function renderSuggestions(originalResults = [], manualQuery = "") {
+// 1. GİRDİYİ TEMİZLEME (Sadece rakamları ve "gün" kelimesini temizler)
+function extractLocationQuery(input) {
+    if (!input) return "";
+    let cleaned = input;
+    // Rakam ve zaman ifadelerini sil
+    cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
+    // Gereksiz karakterleri sil
+    cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
+    // Stop words
+    const stopWords = ["plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide", "create", "make", "for", "in", "to", "at", "a", "the", "city"];
+    
+    let words = cleaned.split(/\s+/);
+    words = words.filter(w => !stopWords.includes(w.toLowerCase()) && w.length > 1);
+    return words.join(" ").trim();
+}
 
+// 2. LİSTELEME VE FORMATLAMA (KESİN ÇÖZÜM)
+function renderSuggestions(originalResults = [], manualQuery = "") {
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
@@ -496,21 +512,17 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // --- YARDIMCI: Karakter Düzeltme ---
+    // Karakter temizleme (I-İ sorunları için)
     function normalizeLoc(str) {
         if (!str) return "";
-        return str.toLocaleLowerCase('tr')
-                  .replace(/ı/g, "i").replace(/İ/g, "i")
-                  .replace(/ğ/g, "g").replace(/ü/g, "u")
-                  .replace(/ş/g, "s").replace(/ö/g, "o")
-                  .replace(/ç/g, "c").trim();
+        return str.toLocaleLowerCase('tr').replace(/ı/g, "i").replace(/İ/g, "i").replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ö/g, "o").replace(/ç/g, "c").trim();
     }
 
     let rawQuery = manualQuery || extractLocationQuery(chatInput.value);
     let targetTerm = normalizeLoc(rawQuery);
     let finalSortedResults = [];
 
-    // --- 1. SIRALAMA (Aynı Mantık) ---
+    // --- SIRALAMA ---
     if (targetTerm.length > 0) {
         const exactMatches = [];   
         const startMatches = [];   
@@ -521,21 +533,16 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const name = normalizeLoc(p.name);
             const city = normalizeLoc(p.city);
             
-            // İsim veya Şehir eşleşmesi
-            if (name === targetTerm || city === targetTerm) {
-                exactMatches.push(item);
-            } else if (name.startsWith(targetTerm)) {
-                startMatches.push(item);
-            } else {
-                otherMatches.push(item);
-            }
+            if (name === targetTerm || city === targetTerm) exactMatches.push(item);
+            else if (name.startsWith(targetTerm)) startMatches.push(item);
+            else otherMatches.push(item);
         });
         finalSortedResults = [...exactMatches, ...startMatches, ...otherMatches];
     } else {
         finalSortedResults = [...originalResults];
     }
 
-    // --- 2. FİLTRELEME (BLACKLIST) ---
+    // --- FİLTRELEME ---
     const seenSuggestions = new Set();
     const bannedKeywords = /hotel|otel|apart|residence|resort|booking|trip|tour|excursion|pansiyon|konaklama|center|merkezi|mall|avm|airport|havalimanı|station|campus/i;
 
@@ -547,52 +554,36 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         if (!name || name.length < 2) return false;
         if (name.toUpperCase() === countryCode) return false;
         if (bannedKeywords.test(name)) return false;
-
         return true;
-
     }).forEach((result) => {
         const props = result.properties || {};
+        const name = props.name || "";
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : "";
+
+        // --- FORMATLAMA MANTIĞI (Region Temizliği Dahil) ---
         
-        // --- 3. KRİTİK DÜZELTME: FORMATLAMA ---
-        const name = props.name || "";       
-        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
+        // 1. Aday Parent'ları sırayla kontrol et: County -> City -> State
+        const candidates = [props.county, props.city, props.state];
+        let parentPart = "";
 
-        // İkinci Parçayı (Şehir/İl) Bul
-        // Geoapify bazen şehri 'city', bazen 'state' içinde gönderir.
-        // Önemli olan "Region" içeren saçma veriyi almamak.
-        
-        let parentLocation = "";
+        for (let c of candidates) {
+            if (!c) continue; // Boşsa geç
+            
+            // "Region", "Bölge" içeriyorsa ASLA alma (Mediterranean Region burada eleniyor)
+            if (/region|bölge|area/i.test(c)) continue;
 
-        // Önce City'ye bak, yoksa State'e bak
-        let candidate = props.city || props.state || "";
+            // Eğer aday isim, yerin kendi adıyla aynıysa alma (İstanbul, İstanbul olmasın)
+            if (normalizeLoc(c) === normalizeLoc(name)) continue;
 
-        // Eğer gelen veri "Region" veya "Bölge" içeriyorsa (Mediterranean Region gibi) YOK SAY.
-        if (/region|bölge/i.test(candidate)) {
-            candidate = ""; 
-            // Eğer state region ise ve city boşsa, yapacak bir şey yok, parent boş kalır.
-            // Ama genelde city doğru gelir.
-            if (props.city && !/region|bölge/i.test(props.city)) {
-                candidate = props.city;
-            }
+            // İlk geçerli adayı bulduk (Örn: Antalya), bunu kullan ve döngüden çık
+            parentPart = c;
+            break;
         }
 
-        parentLocation = candidate;
-
-        // PARÇALARI BİRLEŞTİR
-        let parts = [];
-        
-        // 1. Kısım: Yer Adı (Kemer, Antalya)
-        parts.push(name);
-
-        // 2. Kısım: İl Adı
-        // Eğer İlçe adı (Kemer) ile İl adı (Antalya) farklıysa ekle.
-        // Eğer İl adı (Antalya) ile İl adı (Antalya) aynıysa ekleme.
-        if (parentLocation && normalizeLoc(parentLocation) !== normalizeLoc(name)) {
-            parts.push(parentLocation);
-        }
-        
-        // 3. Kısım: Ülke
-        if (countryCode && name !== countryCode) parts.push(countryCode); 
+        // Parçaları Birleştir
+        let parts = [name];
+        if (parentPart) parts.push(parentPart); // Varsa İl/İlçe
+        if (countryCode && name !== countryCode) parts.push(countryCode); // Varsa TR
 
         const displayText = parts.join(", ");
         
@@ -603,10 +594,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        if (suggestionsDiv.children.length === 0) {
-            div.classList.add("selected-suggestion");
-        }
-
+        if (suggestionsDiv.children.length === 0) div.classList.add("selected-suggestion");
+        
         const flag = (typeof countryFlag === 'function' && props.country_code) ? " " + countryFlag(props.country_code) : "";
         div.textContent = displayText + flag;
         
@@ -616,12 +605,10 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.classList.add("selected-suggestion");
 
             window.selectedSuggestion = { displayText, props };
-            
-            // Seçim verisini kaydet
             window.selectedLocation = {
                 name: name,
-                // Eğer parentLocation varsa (Antalya), onu city yap. Yoksa kendisini city yap.
-                city: parentLocation || name,
+                // parentPart varsa (Antalya) onu city yap, yoksa ismin kendisini
+                city: parentPart || name, 
                 country: props.country || "",
                 lat: props.lat ?? props.latitude ?? null,
                 lon: props.lon ?? props.longitude ?? null,
@@ -631,22 +618,16 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
-            if (!days || days < 1) days = 1;
-
-            const cleanName = name; 
-            let canonicalStr = `Plan a ${days}-day tour for ${cleanName}`;
             
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
-            } else {
-                chatInput.value = canonicalStr;
-            }
+            let canonicalStr = `Plan a ${days}-day tour for ${name}`;
+            if (typeof setChatInputValue === "function") setChatInputValue(canonicalStr);
+            else chatInput.value = canonicalStr;
+
             window.selectedLocationLocked = true;
             window.__locationPickedFromSuggestions = true;
 
             if (typeof enableSendButton === 'function') enableSendButton();
             if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
-
             setTimeout(() => { window.__programmaticInput = false; }, 0);
         };
 
