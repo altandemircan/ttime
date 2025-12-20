@@ -528,7 +528,6 @@ if (typeof hideSuggestionsDiv !== "function") {
 // 3. RENDER SUGGESTIONS (KESİN GRUPLAMA YÖNTEMİ)
 // ============================================================
 function renderSuggestions(originalResults = [], manualQuery = "") {
-
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
@@ -536,184 +535,107 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
-        hideSuggestionsDiv(true);
+        if (typeof hideSuggestionsDiv === 'function') hideSuggestionsDiv(true);
         return;
     }
 
-    // A. HEDEF KELİMEYİ BELİRLE
+    // Arama terimini temizle
     let targetTerm = manualQuery 
         ? manualQuery.toLocaleLowerCase('tr') 
-        : extractLocationQuery(chatInput.value);
+        : (chatInput.value ? chatInput.value.toLocaleLowerCase('tr') : "");
+    targetTerm = targetTerm.replace(/1|2|3|4|5|6|7|8|9|0|day|days|gün|tour|plan/gi, "").trim();
 
-    // console.log(`[Render] Hedef: "${targetTerm}"`); // Debug
-
+    // Sonuçları alakalılık sırasına göre düzenle
     let finalSortedResults = [];
-
-    // B. GRUPLAMA (BUCKETING) - KESİN SIRALAMA İÇİN
     if (targetTerm.length > 0) {
-        const exactMatches = [];   // Tam Eşleşen (Kemer)
-        const startMatches = [];   // İle Başlayan (Kemerovo)
-        const containMatches = []; // İçinde Geçen (Seydikemer)
-        const others = [];         // Diğerleri (Biga vb.)
+        const exactMatches = [];
+        const startMatches = [];
+        const containMatches = [];
+        const others = [];
 
         originalResults.forEach(item => {
-    // city veya county fallback, name boşsa city'yi kullan
-    let name = "";
-    if (item.properties.name && item.properties.name.trim() !== "") {
-        name = item.properties.name.toLocaleLowerCase('tr');
-    } else if (item.properties.city && item.properties.city.trim() !== "") {
-        name = item.properties.city.toLocaleLowerCase('tr');
-    } else {
-        // county bile yoksa "other"
-        name = "";
-    }
-
-    if (!name) {
-        others.push(item);
-    } else if (name === targetTerm) {
-        exactMatches.push(item);
-    } else if (name.startsWith(targetTerm)) {
-        startMatches.push(item);
-    } else if (name.includes(targetTerm)) {
-        containMatches.push(item);
-    } else {
-        others.push(item);
-    }
-});
-
-        // Kutuları sırayla birleştir: Önce Tam, Sonra Başlayan, Sonra İçeren
-        finalSortedResults = [
-            ...exactMatches,
-            ...startMatches,
-            ...containMatches,
-            ...others
-        ];
-
-        // ======= SADECE BURASI EKLENDİ =======
-        console.log("[SIRALI SUGGESTIONS]", finalSortedResults.map(item => {
             const p = item.properties || {};
-            let txt = `${p.name || ""}`;
-            if (p.city && p.city !== p.name) txt += `, ${p.city}`;
-            if (p.county && p.county !== p.name && p.county !== p.city) txt += `, ${p.county}`;
-            if (p.country_code) txt += `, ${p.country_code.toUpperCase()}`;
-            return txt;
-        }));
-        // ======================================
-
+            const n = (p.name || p.city || "").toLocaleLowerCase('tr');
+            
+            if (n === targetTerm) exactMatches.push(item);
+            else if (n.startsWith(targetTerm)) startMatches.push(item);
+            else if (n.includes(targetTerm)) containMatches.push(item);
+            else others.push(item);
+        });
+        finalSortedResults = [...exactMatches, ...startMatches, ...containMatches, ...others];
     } else {
-        // Hedef kelime yoksa API sırasını bozma
         finalSortedResults = [...originalResults];
     }
 
-    // --- C. LİSTELEME ---
     const seenSuggestions = new Set();
+    const validTypes = ['city', 'town', 'village', 'municipality', 'county', 'district', 'administrative'];
 
-    // 1) En başta sadece şehir/kasaba/village tipini filtrele, spam isimleri at
-const allowedTypes = [
-  'city', 'town', 'village', 'municipality', 'county', 'district', 'borough', 'suburb'
-];
+    finalSortedResults.filter(item => {
+        const p = item.properties || {};
+        const type = (p.result_type || p.place_type || '').toLowerCase();
+        // Otel, apart vb. filtrele
+        if (/hotel|apart|residence|resort/i.test(p.name || "")) return false;
+        return validTypes.includes(type) || !type;
+    }).forEach((result) => {
+        const props = result.properties || {};
+        
+        // Görüntülenecek ismi oluştur
+        const name = props.name || "";
+        const city = props.city || "";
+        const countryCode = props.country_code ? props.country_code.toUpperCase() : "";
 
-finalSortedResults = finalSortedResults.filter(item => {
-  const p = item.properties || {};
-  const type = (p.result_type || p.place_type || '').toLowerCase();
-  // Bana şehir/kasaba/village ilçe lazim, website veya tur şirketi içeren name'leri at
-  if (/tours?in|excursion|\.com\b|\bhotel|apart|residence|resort|booking|trip(s)?\b/i.test(p.name || "")) return false;
-  return allowedTypes.includes(type);
-});
+        let parts = [];
+        if (name) parts.push(name);
+        if (city && city !== name) parts.push(city);
+        if (countryCode) parts.push(countryCode);
 
-// Devamı senin kodun:
-finalSortedResults.forEach((result) => {
-    const props = result.properties || {};
-    
-    // Verileri Çek
-    const name = props.name || "";       
-    const city = props.city || "";       
-    const county = props.county || "";   
-    const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
+        const displayText = parts.join(", ");
+        
+        if (seenSuggestions.has(displayText)) return;
+        seenSuggestions.add(displayText);
 
-    // Hiyerarşi Parçaları
-    let parts = [];
-    if (name) parts.push(name); 
-    if (city && city !== name) parts.push(city); 
-    if (county && county !== name && county !== city) parts.push(county); 
-    if (countryCode) parts.push(countryCode); 
+        const div = document.createElement("div");
+        div.className = "category-area-option";
+        // Bayrak ekleme fonksiyonu varsa kullan, yoksa boş geç
+        const flag = (typeof countryFlag === 'function' && props.country_code) ? " " + countryFlag(props.country_code) : "";
+        div.textContent = displayText + flag;
+        
+        // --- TIKLAMA OLAYI ---
+        div.onclick = () => {
+            // Seçilen veriyi global değişkene kaydet
+            window.selectedSuggestion = { displayText, props };
+            
+            // Inputu güncelle
+            const dayMatch = chatInput.value.match(/(\d+)/);
+            const days = dayMatch ? dayMatch[0] : "1";
+            const cleanName = name || city; // Flag olmadan temiz isim
+            
+            const newVal = `Plan a ${days}-day tour for ${cleanName}`;
+            
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(newVal);
+            } else {
+                chatInput.value = newVal;
+            }
 
-    // Birleştir
-    const uniqueParts = [...new Set(parts)].filter(Boolean);
-    const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-    const displayText = uniqueParts.join(", ") + flag;
+            // Seçimi kilitle
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
 
-    // Tekrarları Engelle
-    if (seenSuggestions.has(displayText)) return; 
-    seenSuggestions.add(displayText);
+            // Görsel güncelleme
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            div.classList.add("selected-suggestion");
 
-    // HTML Elementi
-    const div = document.createElement("div");
-    div.className = "category-area-option";
-    
-    // Listenin ilk elemanı (Zorla en başa aldığımız) seçili olsun
-    if (suggestionsDiv.children.length === 0) {
-        div.classList.add("selected-suggestion");
-    }
-
-    div.textContent = displayText;
-    div.dataset.displayText = displayText;
-
-    div.onclick = () => {
-        window.__programmaticInput = true;
-        Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-        div.classList.add("selected-suggestion");
-
-        window.selectedSuggestion = { displayText, props };
-        window.selectedLocation = {
-            name: name,
-            city: county || city || name,
-            country: props.country || "",
-            lat: props.lat ?? props.latitude ?? null,
-            lon: props.lon ?? props.longitude ?? null,
-            country_code: props.country_code || ""
+            if (typeof enableSendButton === 'function') enableSendButton();
         };
 
-        const raw = chatInput.value.trim();
-        const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
-        let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
-        if (!days || days < 1) days = 1;
-
-        // flag hariç temiz şehir adı
-        let targetNameWithFlag = displayText.trim();
-        let targetName = targetNameWithFlag.replace(flag, '').trim();
-
-        // Plan a 1-day tour for {city,il}
-        let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
-        if (typeof formatCanonicalPlan === "function") {
-            // Örneğin şehir inputunda "Seydikemer, Muğla" gibi
-            const c = formatCanonicalPlan(`${targetName} ${days} days`);
-            if (c && c.canonical) canonicalStr = c.canonical;
-        }
-
-        // inputa flag’siz hali set et
-        if (typeof setChatInputValue === "function") {
-            setChatInputValue(canonicalStr);
-        } else {
-            chatInput.value = canonicalStr;
-        }
-        window.selectedLocationLocked = true;
-        window.__locationPickedFromSuggestions = true;
-
-        if (enableSendButton) enableSendButton();
-        if (showSuggestionsDiv) showSuggestionsDiv();
-        if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
-
-        setTimeout(() => { window.__programmaticInput = false; }, 0);
-    };
-
-    suggestionsDiv.appendChild(div);
-});
+        suggestionsDiv.appendChild(div);
+    });
 
     if (suggestionsDiv.children.length > 0) {
-        showSuggestionsDiv();
+        if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
     } else {
-        hideSuggestionsDiv(true);
+        if (typeof hideSuggestionsDiv === 'function') hideSuggestionsDiv(true);
     }
 }
 
@@ -843,41 +765,44 @@ function parsePlanRequest(text) {
     let days = null;
     let location = null;
 
-    // 1. Eğer seçili öneri varsa, doğrudan onu kullan
+    // 1. ÖNCELİK: Kullanıcı listeden bir öneri seçtiyse (Suggestion Click)
     if (window.selectedSuggestion && window.selectedSuggestion.props) {
         const props = window.selectedSuggestion.props;
-        // city + country varsa birleştir, yoksa name kullan
-        location = [props.city || props.name, props.country].filter(Boolean).join(', ');
-    } else if (window.selectedLocation && typeof window.selectedLocation === "object") {
-        location = [window.selectedLocation.city || window.selectedLocation.name, window.selectedLocation.country].filter(Boolean).join(', ');
+        
+        // --- KRİTİK DÜZELTME ---
+        // Geoapify bazen 'city' alanında 'Mediterranean Region' gibi bölge isimleri döndürür.
+        // Bu yüzden öncelikle daha spesifik olan 'name' (örn: "Antalya") alanını kullanmalıyız.
+        const mainName = props.name || props.city || props.county;
+        
+        // Ülke bilgisini de ekleyerek tam konum stringini oluştur
+        location = [mainName, props.country].filter(Boolean).join(', ');
+
+    } 
+    // 2. ÖNCELİK: window.selectedLocation nesnesi varsa (Manual input veya eski yapı)
+    else if (window.selectedLocation && typeof window.selectedLocation === "object") {
+        const sl = window.selectedLocation;
+        // Burada da aynı mantıkla 'name' öncelikli olmalı
+        const mainName = sl.name || sl.city;
+        location = [mainName, sl.country].filter(Boolean).join(', ');
     }
 
-    // 2. Gün sayısını yine inputtan çek
-    let dayMatch = text.match(/(\d+)[- ]*day/);
+    // 3. GÜN PARSE ETME (Türkçe ve İngilizce uyumlu)
+    let dayMatch = text.match(/(\d+)[- ]*day/i);
+    if (!dayMatch) dayMatch = text.match(/(\d+)[- ]*gün/i);
+    
     if (dayMatch) {
         days = parseInt(dayMatch[1]);
     }
-    // Türkçe "2 gün" vs.
-    if (!days) {
-        let trMatch = text.match(/(\d+)[, ]*gün/i);
-        if (trMatch) {
-            days = parseInt(trMatch[1]);
-        }
-    }
+
+    // Default gün sayısı: Bulunamazsa veya 1'den küçükse 2 yap
     if (!days || isNaN(days) || days < 1) days = 2;
 
-    // Eğer hala location yoksa, eski regexlerle dene (fallback)
+    // Eğer location hala boşsa metinden son bir çabayla bulmaya çalış (Fallback)
     if (!location) {
-        let wordMatch = text.match(/\b([A-Z][a-z'’]+)\b/);
+        // Büyük harfle başlayan kelimeyi yakala
+        let wordMatch = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü'’]+)\b/);
         if (wordMatch) location = wordMatch[1];
     }
-
-    // Default gün sayısı (sıfır veya geçersizse 2 yap)
-    if (!days || isNaN(days) || days < 1) days = 2;
-    if (!location) throw new Error("Invalid city name");
-
-    // Debug için log
-    console.log("parsePlanRequest result:", { location, days });
 
     return { location, days };
 }
