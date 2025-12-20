@@ -553,7 +553,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         const name = (p.name || "").toLowerCase();
         const city = (p.city || "").toLowerCase();
         const county = (p.county || "").toLowerCase();
-        const country = (p.country || "").toLowerCase();
         
         // --- PUANLAMA SİSTEMİ ---
         
@@ -580,10 +579,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             }
         }
         
-        // Türkiye'ye öncelik (country_code: tr)
-        if (p.country_code === 'tr') {
-            score += 100;
-        }
+        // TÜM ülkelere eşit davran - türkiye önceliği YOK
         
         // Tür bazlı puanlar
         const type = (p.result_type || p.place_type || '').toLowerCase();
@@ -613,91 +609,75 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     finalResults.forEach((result, index) => {
         const props = result.properties || {};
         
-        // 1. İSİM TEMİZLEME - DÜZELTMELİ HALİ
-        let displayName = props.name || props.city || props.county || "";
-
-        // Eğer hala boşsa, orijinal ismi kullan
-        if (!displayName.trim()) {
-            displayName = props.name || "";
-        }
-
-        // "Finance Center, Istanbul" gibi ticari isimleri temizle
-        if (displayName.includes(",")) {
-            const parts = displayName.split(",").map(p => p.trim());
-            const firstPart = parts[0].toLowerCase();
+        // === 1. İSİM BELİRLEME ===
+        let displayName = "";
+        
+        // Öncelik: city > name > county
+        if (props.city && props.city.trim()) {
+            displayName = props.city;
+        } else if (props.name && props.name.trim()) {
+            // Virgül varsa ilk kısmı al
+            const nameParts = props.name.split(",").map(p => p.trim());
+            const firstPart = nameParts[0].toLowerCase();
             
-            // Ticari kelimeleri kontrol et
-            const commercialWords = ['finance center', 'business', 'commercial', 'mall', 'plaza', 'avm', 'merkezi'];
+            // Ticari isimleri filtrele (finance center vs.)
+            const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
             const isCommercial = commercialWords.some(word => firstPart.includes(word));
             
-            if (isCommercial && parts.length > 1) {
-                // Ticari isimse, şehir kısmını kullan (ör: "Istanbul")
-                displayName = parts[1];
+            if (isCommercial && nameParts.length > 1) {
+                displayName = nameParts[1]; // Ticari değilse şehir kısmı
             } else {
-                // Normal isimse, sadece ilk kısmı kullan (ör: "Kemer, Antalya" → "Kemer")
-                displayName = parts[0];
+                displayName = nameParts[0]; // Normal isim
             }
-        }
-
-        // displayName hala boşsa, city'yi kullan
-        if (!displayName.trim() && props.city) {
-            displayName = props.city;
+        } else if (props.county && props.county.trim()) {
+            displayName = props.county;
         }
         
-        // 2. BÖLGE BİLGİLERİ
+        // Minimum 2 karakter kontrolü
+        if (!displayName || displayName.trim().length < 2) return;
+        
+        // === 2. BÖLGE BİLGİLERİ ===
         const regionParts = [];
         
-        // Şehir bilgisi (eğer displayName ile aynı değilse ekle)
-        if (props.city && props.city !== displayName) {
+        // Şehir bilgisi (farklıysa ekle)
+        if (props.city && props.city.trim() && props.city !== displayName) {
             regionParts.push(props.city);
         }
         
-        // İlçe/County bilgisi
-        if (props.county && props.county !== displayName && props.county !== props.city) {
+        // İlçe bilgisi (farklıysa ekle)
+        if (props.county && props.county.trim() && 
+            props.county !== displayName && 
+            props.county !== props.city) {
             regionParts.push(props.county);
         }
         
-        // 3. ÜLKE FORMATI: "Turkey" yerine "TR"
-        let countryCode = props.country_code || "";
-        let countryDisplay = countryCode.toUpperCase(); // "TR"
-        
-        // Eğer country_code yoksa, ülke adını kısalt
-        if (!countryCode && props.country) {
-            if (props.country.toLowerCase() === 'turkey' || 
-                props.country.toLowerCase() === 'türkiye') {
-                countryDisplay = "TR";
-                countryCode = "tr";
-            } else if (props.country.toLowerCase() === 'united states') {
-                countryDisplay = "US";
-                countryCode = "us";
-            } else if (props.country.toLowerCase() === 'germany') {
-                countryDisplay = "DE";
-                countryCode = "de";
-            } else {
-                countryDisplay = props.country.substring(0, 2).toUpperCase();
-            }
-        }
-        
-        // 4. BAYRAK
+        // === 3. ÜLKE VE BAYRAK (EVRENSEL) ===
+        const countryCode = props.country_code || "";
         const flag = countryCode ? " " + countryFlag(countryCode) : "";
         
-        // 5. SON FORMAT: "Kemer, Antalya, TR 🇹🇷"
+        // === 4. SON FORMAT ===
         let displayText = displayName;
+        
         if (regionParts.length > 0) {
             displayText += ", " + regionParts.join(', ');
         }
-        if (countryDisplay) {
-            displayText += ", " + countryDisplay + flag;
-        } else if (flag) {
-            displayText += flag;
+        
+        // SADECE country_code varsa ekle
+        if (countryCode) {
+            displayText += ", " + countryCode.toUpperCase() + flag;
         }
         
-        // Tekrarları engelle
+        // Baştaki gereksiz virgülleri temizle
+        displayText = displayText.replace(/^,\s*/, "").trim();
+        
+        // === 5. TEKRAR KONTROLÜ ===
         const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (seenSuggestions.has(normalizedText)) return;
+        if (seenSuggestions.has(normalizedText) || displayText.startsWith(",")) {
+            return;
+        }
         seenSuggestions.add(normalizedText);
         
-        // C. HTML OLUŞTUR
+        // === 6. HTML OLUŞTURMA ===
         const div = document.createElement("div");
         div.className = "category-area-option";
         if (index === 0) {
@@ -706,11 +686,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         div.textContent = displayText;
         div.dataset.displayText = displayText;
-        div.dataset.originalName = props.name || "";
-        div.dataset.city = props.city || "";
-        div.dataset.countryCode = countryCode || "";
         
-        // Tıklama olayı (mevcut kodunu koru, sadece formatı güncelle)
+        // === 7. TIKLAMA OLAYI ===
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => 
@@ -735,15 +712,12 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             window.selectedLocationLocked = true;
             window.__locationPickedFromSuggestions = true;
 
-            // Günleri çıkar
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || 
                            raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
             if (!days || days < 1) days = 1;
 
-            let targetName = displayText.replace(flag, '').trim();
-            
             let canonicalStr = `Plan a ${days}-day tour for ${displayName}`;
             if (typeof formatCanonicalPlan === "function") {
                 const c = formatCanonicalPlan(`${displayName} ${days} days`);
