@@ -814,7 +814,7 @@ if (typeof chatInput !== 'undefined' && chatInput) {
             renderSuggestions(suggestions, locationQuery);
         }
 
-    }, 300));
+    }, 150));
 
     chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
