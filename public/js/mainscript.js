@@ -528,7 +528,7 @@ if (typeof hideSuggestionsDiv !== "function") {
 // 3. RENDER SUGGESTIONS (KESİN GRUPLAMA YÖNTEMİ)
 // ============================================================
 function renderSuggestions(originalResults = [], manualQuery = "") {
-  
+
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
@@ -2650,6 +2650,15 @@ const geoapifyCategoryMap = {
 };
 
 function showCategoryList(day) {
+
+    // === EKLENECEK KOD BAŞLANGICI: AI Bölümünü Gizle ===
+    const aiInfoSection = document.querySelector('.ai-info-section');
+    if (aiInfoSection) {
+        aiInfoSection.style.display = 'none';
+    }
+    // === EKLENECEK KOD SONU ===
+
+
     window.currentDay = day;
     console.log("showCategoryList ÇAĞRILDI, day=", day);
 
@@ -3772,6 +3781,14 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 // mainscript.js içine (mevcut updateCart'ın yerine) yapıştırın
 
 async function updateCart() {
+
+    // === EKLENECEK KOD BAŞLANGICI: AI Bölümünü Göster ===
+    const aiInfoSection = document.querySelector('.ai-info-section');
+    if (aiInfoSection) {
+        aiInfoSection.style.display = ''; // Varsayılan görünümüne döndürür
+    }
+    // === EKLENECEK KOD SONU ===
+    
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 
     const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
