@@ -613,19 +613,35 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     finalResults.forEach((result, index) => {
         const props = result.properties || {};
         
-        // 1. İSİM TEMİZLEME
-        let displayName = props.name || "";
-        
-        // Eğer "Finance Center, Istanbul" gibi bir şeyse, sadece şehir kısmını al
+        // 1. İSİM TEMİZLEME - DÜZELTMELİ HALİ
+        let displayName = props.name || props.city || props.county || "";
+
+        // Eğer hala boşsa, orijinal ismi kullan
+        if (!displayName.trim()) {
+            displayName = props.name || "";
+        }
+
+        // "Finance Center, Istanbul" gibi ticari isimleri temizle
         if (displayName.includes(",")) {
             const parts = displayName.split(",").map(p => p.trim());
-            // Eğer ilk kısım ticari bir kelime içeriyorsa, şehir kısmını kullan
-            const commercialFirstPart = ['finance center', 'business', 'commercial', 'mall']
-                .some(word => parts[0].toLowerCase().includes(word));
+            const firstPart = parts[0].toLowerCase();
             
-            if (commercialFirstPart && parts.length > 1) {
-                displayName = parts[1]; // Şehir kısmını al
+            // Ticari kelimeleri kontrol et
+            const commercialWords = ['finance center', 'business', 'commercial', 'mall', 'plaza', 'avm', 'merkezi'];
+            const isCommercial = commercialWords.some(word => firstPart.includes(word));
+            
+            if (isCommercial && parts.length > 1) {
+                // Ticari isimse, şehir kısmını kullan (ör: "Istanbul")
+                displayName = parts[1];
+            } else {
+                // Normal isimse, sadece ilk kısmı kullan (ör: "Kemer, Antalya" → "Kemer")
+                displayName = parts[0];
             }
+        }
+
+        // displayName hala boşsa, city'yi kullan
+        if (!displayName.trim() && props.city) {
+            displayName = props.city;
         }
         
         // 2. BÖLGE BİLGİLERİ
