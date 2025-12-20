@@ -599,15 +599,20 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
       'state', 'province', 'administrative', 'regional_center'
     ];
 
-    finalSortedResults = finalSortedResults.filter(item => {
-      const p = item.properties || {};
-      const type = (p.result_type || p.place_type || '').toLowerCase();
-      
-      if (/tours?in|excursion|\.com\b|\bhotel|apart|residence|resort|booking|trip(s)?\b/i.test(p.name || "")) return false;
-      
-      // Type boşsa veya listedeyse kabul et
-      return allowedTypes.includes(type) || !type;
-    });
+    // renderSuggestions fonksiyonu içinde, filtreleme kısmı (yaklaşık satır 563)
+finalSortedResults = finalSortedResults.filter(item => {
+  const p = item.properties || {};
+  const type = (p.result_type || p.place_type || '').toLowerCase();
+  
+  // Sadece istenmeyen ticari listeleri engelleyin
+  if (/tours?in|excursion|\.com\b|\bhotel|apart|residence|resort|booking|trip(s)?\b/i.test(p.name || "")) return false;
+  
+  // TİP FİLTRESİNİ KALDIRIN veya GENİŞLETİN
+  // return true; // Tüm sonuçları göster (test için)
+  // VEYA: Büyük şehirler için gelen 'county', 'region' gibi tipleri de ekleyin
+  const extendedAllowedTypes = [...allowedTypes, 'county', 'region'];
+  return extendedAllowedTypes.includes(type) || !type;
+});
 
     // UI KISMI (ORİJİNAL KODUNLA AYNI)
     finalSortedResults.forEach((result) => {
