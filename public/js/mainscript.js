@@ -2005,114 +2005,119 @@ const placeCategories = {
 // mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu tamamen değiştirin:
 
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
-    console.log(`%c[showSuggestionsInChat] v3.0 Started`, "color: magenta; font-weight: bold;");
+    // --- YARDIMCI FONKSİYON: Objenin içinden koordinat söküp al ---
+    // Bu fonksiyon objenin içine girer, lat/lng/lon ne varsa bulur getirir.
+    function extractCoords(item) {
+        if (!item) return null;
+        
+        // 1. Standart İsimler
+        let lat = item.lat || item.latitude || item._lat;
+        let lon = item.lon || item.lng || item.longitude || item._lon || item._lng;
 
-    // 1. ŞEHİR BİLGİSİNİ GARANTİYE AL (Yedek Plan İçin)
-    let fallbackCity = window.selectedCity || document.getElementById("city-input")?.value || "Turkey";
-    // Eğer window.destination varsa onu da kullanabiliriz
-    if (window.destination) fallbackCity = window.destination;
+        // 2. Eğer bulamadıysa Dataset kontrolü (HTML element objesi ise)
+        if ((!lat || !lon) && item.dataset) {
+            lat = item.dataset.lat;
+            lon = item.dataset.lon || item.dataset.lng;
+        }
 
+        // 3. String ise sayıya çevir
+        if (lat) lat = parseFloat(lat);
+        if (lon) lon = parseFloat(lon);
+
+        // 4. Geçerli mi? (Sıfır olmayan, mantıklı koordinat aralığı)
+        // Antalya ~36 enlem, ~30 boylam. 
+        if (typeof lat === 'number' && !isNaN(lat) && typeof lon === 'number' && !isNaN(lon)) {
+            if (lat !== 0 && lon !== 0) {
+                return `${lat},${lon}`;
+            }
+        }
+        return null;
+    }
+
+    console.log(`%c[showSuggestionsInChat] v4.0 (Coordinate Hunter)`, "color: lime; font-weight: bold; font-size: 14px;");
+    
     let searchLocation = null;
     let locationSource = "";
 
     // =========================================================================
-    // ADIM 1: HTML DOM (Genişletilmiş Arama)
+    // ADIM 1: window.cart (En Sağlam Kaynak)
     // =========================================================================
-    // Sadece .travel-item değil, .cart-item ve .place-card da aranıyor
-    const domSelectors = ['.travel-item', '.cart-item', '.place-card', 'li[data-lat]'];
-    let lastDomItem = null;
-
-    for (let sel of domSelectors) {
-        const items = document.querySelectorAll(sel);
-        if (items.length > 0) {
-            lastDomItem = items[items.length - 1];
-            break; 
-        }
-    }
-
-    if (lastDomItem) {
-        // Dataset (data-lat) veya getAttribute ile zorla oku
-        const domLat = lastDomItem.getAttribute('data-lat') || lastDomItem.dataset.lat;
-        // lon, lng, longitude hepsini dene
-        const domLon = lastDomItem.getAttribute('data-lon') || lastDomItem.getAttribute('data-lng') || lastDomItem.dataset.lon || lastDomItem.dataset.lng;
-
-        if (domLat && domLon) {
-            searchLocation = `${domLat},${domLon}`;
-            locationSource = `DOM (${lastDomItem.className})`;
-        } else {
-            // Attribute yoksa adres textini dene
-            const addressEl = lastDomItem.querySelector('.contact p, .address, .place-address');
-            if (addressEl) {
-                let txt = addressEl.innerText.replace(/📌|Address:/gi, '').trim();
-                if (txt.length > 10) {
-                    searchLocation = txt;
-                    locationSource = "DOM Address Text";
-                }
+    // HTML'in yüklenmesini beklemeden doğrudan veriye bakıyoruz.
+    if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
+        // İlgili güne ait itemları bul
+        const dayItems = window.cart.filter(item => item.day == day);
+        
+        // O günün sonuncusu, yoksa genel listenin sonuncusu
+        const targetItem = dayItems.length > 0 
+            ? dayItems[dayItems.length - 1] 
+            : window.cart[window.cart.length - 1];
+        
+        if (targetItem) {
+            // Debug için objenin içini görelim
+            console.log("🔎 İncelenen Cart Item:", targetItem);
+            
+            const coords = extractCoords(targetItem);
+            if (coords) {
+                searchLocation = coords;
+                locationSource = `window.cart (Item: ${targetItem.name})`;
+            } else {
+                console.warn("⚠️ Cart item bulundu ama extractCoords koordinat çıkaramadı!");
             }
         }
     }
 
     // =========================================================================
-    // ADIM 2: Generated Trip & Cart (Değişkenler)
+    // ADIM 2: generatedTrip (Alternatif Kaynak)
+    // =========================================================================
+    if (!searchLocation && typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1]) {
+        const dt = window.generatedTrip[day - 1];
+        if (dt && dt.length > 0) {
+            const targetItem = dt[dt.length - 1];
+            const coords = extractCoords(targetItem);
+            if (coords) {
+                searchLocation = coords;
+                locationSource = "window.generatedTrip";
+            }
+        }
+    }
+
+    // =========================================================================
+    // ADIM 3: HTML DOM (Son Çare)
     // =========================================================================
     if (!searchLocation) {
-        // window.cart veya window.generatedTrip içinden veri bulmaya çalış
-        let targetItem = null;
-
-        // A. generatedTrip (Genelde rota çizilirken bu doludur)
-        if (typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1] && window.generatedTrip[day - 1].length > 0) {
-            const dt = window.generatedTrip[day - 1];
-            targetItem = dt[dt.length - 1]; // Son item
-            locationSource = "generatedTrip";
-        }
-        // B. window.cart (Yedek)
-        else if (window.cart && window.cart.length > 0) {
-            const dayItems = window.cart.filter(item => item.day == day);
-            targetItem = dayItems.length > 0 ? dayItems[dayItems.length - 1] : window.cart[window.cart.length - 1];
-            locationSource = "window.cart";
-        }
-
-        if (targetItem) {
-            console.log("🔎 İncelenen Item:", targetItem);
+        // Sayfada görünen marker, kart vs ne varsa bak
+        const possibleElements = document.querySelectorAll('.travel-item, .cart-item, li[data-lat]');
+        if (possibleElements.length > 0) {
+            const el = possibleElements[possibleElements.length - 1];
+            // Elementin attribute'larından okumayı dene
+            let lat = el.getAttribute('data-lat');
+            let lon = el.getAttribute('data-lon') || el.getAttribute('data-lng');
             
-            // Koordinat yakalama (lat/latitude - lon/lng/longitude)
-            const lat = targetItem.lat || targetItem.latitude;
-            const lon = targetItem.lon || targetItem.lng || targetItem.longitude;
-
             if (lat && lon) {
                 searchLocation = `${lat},${lon}`;
-                locationSource += " (Coords)";
-            } else if (targetItem.name) {
-                // KOORDİNAT YOKSA: Şehir ismini başa ekle! (FIX)
-                // Örn: "Camii" -> "Antalya Camii"
-                // Bu sayede İstanbul'a gitmez.
-                
-                // İsim zaten şehir içeriyorsa ekleme
-                if (targetItem.name.toLowerCase().includes(fallbackCity.toLowerCase())) {
-                    searchLocation = targetItem.name;
-                } else {
-                    searchLocation = `${fallbackCity} ${targetItem.name}`;
-                }
-                locationSource += " (Name + City Fallback)";
+                locationSource = "HTML DOM Attributes";
             }
         }
     }
 
     // =========================================================================
-    // ADIM 3: Hala yoksa ŞEHİR MERKEZİ
+    // SONUÇ
     // =========================================================================
+    console.log(`📍 HEDEF LOKASYON: "${searchLocation}"`);
+    console.log(`ℹ️ KAYNAK: ${locationSource}`);
+
+    // Hâlâ bulunamadıysa kullanıcıyı uyar ama "İstanbul"a gönderme.
     if (!searchLocation) {
-        searchLocation = fallbackCity;
-        locationSource = "City Center Fallback";
-    }
-
-    // --- SONUÇ ---
-    console.log(`📍 FINAL LOCATION: "${searchLocation}"`);
-    console.log(`ℹ️ SOURCE: ${locationSource}`);
-
-    if (!searchLocation || searchLocation === "Turkey") {
-         addMessage("Please select a city first.", "bot-message");
-         return;
+        console.error("⛔ HATA: Hiçbir yerde koordinat bulunamadı.");
+        // Son çare: Şehir ismi varsa onu kullan ama ismin başına ekle
+        let city = window.selectedCity || document.getElementById("city-input")?.value;
+        if (city) {
+            console.warn("⚠️ Koordinat yok, şehir merkezine fallback yapılıyor: " + city);
+            searchLocation = city;
+        } else {
+            addMessage("Could not identify the location. Please verify your trip plan.", "bot-message");
+            return;
+        }
     }
 
     // Sidebar kapatma
@@ -2133,7 +2138,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     try {
         const radius = Math.round(radiusKm * 1000);
         
-        // ARAMA YAP
+        // ARAMA YAP (searchLocation artık kesinlikle "36.xxxx,30.xxxx" formatında)
         const places = await getPlacesForCategory(searchLocation, category, limit, radius, realCode);
 
         if (!places.length) {
@@ -2162,13 +2167,9 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
             return;
         }
 
-        let cityForImages = fallbackCity;
-        // Eğer location koordinat ise ve elimizde şehir ismi varsa onu kullan
-        if (searchLocation.includes(",")) {
-             // cityForImages zaten fallbackCity
-        } else {
-             cityForImages = searchLocation; 
-        }
+        // Resimler için şehir ismi (API için gerekli olabilir ama koordinat varsa çok şart değil)
+        let cityForImages = window.selectedCity || "Turkey";
+        if (searchLocation && !searchLocation.includes(",")) cityForImages = searchLocation;
 
         await enrichCategoryResults(places, cityForImages);
 
