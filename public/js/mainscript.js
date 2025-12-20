@@ -530,7 +530,6 @@ if (typeof hideSuggestionsDiv !== "function") {
 }
 
 function renderSuggestions(originalResults = [], manualQuery = "") {
-
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
@@ -542,141 +541,176 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // A. HEDEF KELİMEYİ BELİRLE (Sıralama için küçük harfe çeviriyoruz)
-    let rawQuery = manualQuery || extractLocationQuery(chatInput.value);
-    let targetTerm = rawQuery.toLocaleLowerCase('tr');
-
-    let finalSortedResults = [];
-
-    // B. GRUPLAMA (BUCKETING)
-    if (targetTerm.length > 0) {
-        const exactMatches = [];
-        const startMatches = [];
-        const containMatches = [];
-        const others = [];
-
-        originalResults.forEach(item => {
-            let name = "";
-            if (item.properties.name && item.properties.name.trim() !== "") {
-                name = item.properties.name.toLocaleLowerCase('tr');
-            } else if (item.properties.city && item.properties.city.trim() !== "") {
-                name = item.properties.city.toLocaleLowerCase('tr');
-            } else {
-                name = "";
-            }
-
-            if (!name) {
-                others.push(item);
-            } else if (name === targetTerm) {
-                exactMatches.push(item);
-            } else if (name.startsWith(targetTerm)) {
-                startMatches.push(item);
-            } else if (name.includes(targetTerm)) {
-                containMatches.push(item);
-            } else {
-                others.push(item);
-            }
-        });
-
-        finalSortedResults = [
-            ...exactMatches,
-            ...startMatches,
-            ...containMatches,
-            ...others
+    // 1. ÖNEMLİ: API sonuçlarını TEMİZLE
+    const cleanedResults = originalResults.filter(item => {
+        const p = item.properties || {};
+        const name = (p.name || "").toLowerCase();
+        
+        // Ticari/ticari olmayan sonuçları engelle
+        const blacklist = [
+            "finance center", "business", "commercial", "shopping",
+            "mall", "plaza", "center", "merkezi", "avm", "residence"
         ];
-    } else {
-        finalSortedResults = [...originalResults];
+        
+        if (blacklist.some(term => name.includes(term))) {
+            return false;
+        }
+        
+        // "building", "commercial", "amenity" gibi türleri filtrele
+        const type = (p.result_type || p.place_type || '').toLowerCase();
+        const allowedTypes = [
+            'city', 'town', 'village', 'municipality', 
+            'county', 'district', 'borough', 'suburb',
+            'state', 'province', 'administrative', 'regional_center',
+            'region', 'area'
+        ];
+        
+        return allowedTypes.includes(type) || !type;
+    });
+
+    if (!cleanedResults.length) {
+        hideSuggestionsDiv(true);
+        return;
     }
 
-    // --- C. LİSTELEME ---
+    // 2. GELİŞMİŞ SIRALAMA ALGORİTMASI
+    const targetTerm = manualQuery.toLowerCase();
+    const scoredResults = cleanedResults.map(item => {
+        const p = item.properties || {};
+        let score = 0;
+        
+        // İsim alanları
+        const name = (p.name || "").toLowerCase();
+        const city = (p.city || "").toLowerCase();
+        const county = (p.county || "").toLowerCase();
+        
+        // Tam eşleşme: +100 puan
+        if (name === targetTerm || city === targetTerm || county === targetTerm) {
+            score += 100;
+        }
+        
+        // Başlangıç eşleşmesi: +50 puan
+        if (name.startsWith(targetTerm) || city.startsWith(targetTerm)) {
+            score += 50;
+        }
+        
+        // İçerme: +20 puan
+        if (name.includes(targetTerm) || city.includes(targetTerm)) {
+            score += 20;
+        }
+        
+        // Öncelikli türler: +30 puan (city > town > village > county)
+        const type = (p.result_type || p.place_type || '').toLowerCase();
+        if (type === 'city') score += 30;
+        else if (type === 'town') score += 20;
+        else if (type === 'village') score += 10;
+        else if (type === 'county') score += 5;
+        
+        // "İstanbul" gibi büyük şehirler için city alanı doluysa bonus
+        if (city && city.includes(targetTerm)) score += 40;
+        
+        return { item, score, name: p.name, city: p.city, type };
+    });
+    
+    // Puanına göre sırala (yüksek puan üstte)
+    scoredResults.sort((a, b) => b.score - a.score);
+    
+    // En iyi 10 sonucu al
+    const finalResults = scoredResults.slice(0, 10).map(sr => sr.item);
+
+    // 3. GÖRÜNÜM - ÖZELLEŞTİRİLMİŞ FORMAT
     const seenSuggestions = new Set();
-
-    // --- GÜNCELLEME BURADA: TİP FİLTRESİNİ GENİŞLETTİK ---
-    // 'state', 'province', 'administrative' ekledik.
-    const allowedTypes = [
-      'city', 'town', 'village', 'municipality', 
-      'county', 'district', 'borough', 'suburb',
-      'state', 'province', 'administrative', 'regional_center'
-    ];
-
-    // renderSuggestions fonksiyonu içinde, filtreleme kısmı (yaklaşık satır 563)
-finalSortedResults = finalSortedResults.filter(item => {
-  const p = item.properties || {};
-  const type = (p.result_type || p.place_type || '').toLowerCase();
-  
-  // Sadece istenmeyen ticari listeleri engelleyin
-  if (/tours?in|excursion|\.com\b|\bhotel|apart|residence|resort|booking|trip(s)?\b/i.test(p.name || "")) return false;
-  
-  // TİP FİLTRESİNİ KALDIRIN veya GENİŞLETİN
-  // return true; // Tüm sonuçları göster (test için)
-  // VEYA: Büyük şehirler için gelen 'county', 'region' gibi tipleri de ekleyin
-  const extendedAllowedTypes = [...allowedTypes, 'county', 'region'];
-  return extendedAllowedTypes.includes(type) || !type;
-});
-
-    // UI KISMI (ORİJİNAL KODUNLA AYNI)
-    finalSortedResults.forEach((result) => {
+    
+    finalResults.forEach((result, index) => {
         const props = result.properties || {};
         
-        // Verileri Çek
-        const name = props.name || "";       
-        const city = props.city || "";       
-        const county = props.county || "";   
-        const countryCode = props.country_code ? props.country_code.toUpperCase() : ""; 
-
-        // Hiyerarşi Parçaları
-        let parts = [];
-        if (name) parts.push(name); 
-        if (city && city !== name) parts.push(city); 
-        if (county && county !== name && county !== city) parts.push(county); 
-        if (countryCode) parts.push(countryCode); 
-
-        // Birleştir
-        const uniqueParts = [...new Set(parts)].filter(Boolean);
+        // EN ÖNEMLİ: Doğru isim seçimi
+        let displayName = "";
+        
+        // Öncelik sırası:
+        // 1. city alanı (genellikle en doğru)
+        // 2. name alanı (temizlenmiş)
+        // 3. county alanı
+        
+        if (props.city && props.city.trim()) {
+            displayName = props.city;
+        } else if (props.name && props.name.trim()) {
+            // Name alanından virgül sonrasını temizle
+            displayName = props.name.split(',')[0].trim();
+        } else if (props.county && props.county.trim()) {
+            displayName = props.county;
+        }
+        
+        // Eğer displayName hala boşsa veya çok kısayla atla
+        if (!displayName || displayName.length < 2) return;
+        
+        // Bölge bilgileri
+        const regionParts = [];
+        if (props.county && props.county !== displayName) {
+            regionParts.push(props.county);
+        }
+        if (props.country) {
+            regionParts.push(props.country);
+        }
+        
         const flag = props.country_code ? " " + countryFlag(props.country_code) : "";
-        const displayText = uniqueParts.join(", ") + flag;
-
-        // Tekrarları Engelle
-        if (seenSuggestions.has(displayText)) return; 
+        const displayText = regionParts.length > 0 
+            ? `${displayName}, ${regionParts.join(', ')}${flag}`
+            : `${displayName}${flag}`;
+        
+        // Tekrarları engelle
+        if (seenSuggestions.has(displayText)) return;
         seenSuggestions.add(displayText);
-
-        // HTML Elementi
+        
+        // HTML oluştur
         const div = document.createElement("div");
         div.className = "category-area-option";
-        
-        if (suggestionsDiv.children.length === 0) {
+        if (index === 0) {
             div.classList.add("selected-suggestion");
         }
-
+        
         div.textContent = displayText;
         div.dataset.displayText = displayText;
-
+        div.dataset.originalName = props.name || "";
+        div.dataset.city = props.city || "";
+        
         div.onclick = () => {
             window.__programmaticInput = true;
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            Array.from(suggestionsDiv.children).forEach(d => 
+                d.classList.remove("selected-suggestion")
+            );
             div.classList.add("selected-suggestion");
 
-            window.selectedSuggestion = { displayText, props };
-            window.selectedLocation = {
-                name: name,
-                city: county || city || name,
-                country: props.country || "",
-                lat: props.lat ?? props.latitude ?? null,
-                lon: props.lon ?? props.longitude ?? null,
-                country_code: props.country_code || ""
+            window.selectedSuggestion = { 
+                displayText, 
+                props,
+                // ÖNEMLİ: Tüm gerekli alanları kaydet
+                selectedLocation: {
+                    name: displayName,
+                    city: props.city || displayName,
+                    country: props.country || "",
+                    lat: props.lat ?? props.latitude ?? null,
+                    lon: props.lon ?? props.longitude ?? null,
+                    country_code: props.country_code || ""
+                }
             };
+            
+            window.selectedLocation = window.selectedSuggestion.selectedLocation;
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
 
+            // Günleri çıkar
             const raw = chatInput.value.trim();
-            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
+            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || 
+                           raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
             if (!days || days < 1) days = 1;
 
-            let targetNameWithFlag = displayText.trim();
-            let targetName = targetNameWithFlag.replace(flag, '').trim();
-
-            let canonicalStr = `Plan a ${days}-day tour for ${targetName}`;
+            let targetName = displayText.replace(flag, '').trim();
+            
+            let canonicalStr = `Plan a ${days}-day tour for ${displayName}`;
             if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${targetName} ${days} days`);
+                const c = formatCanonicalPlan(`${displayName} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
             }
 
@@ -685,8 +719,6 @@ finalSortedResults = finalSortedResults.filter(item => {
             } else {
                 chatInput.value = canonicalStr;
             }
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
 
             if (enableSendButton) enableSendButton();
             if (showSuggestionsDiv) showSuggestionsDiv();
