@@ -2000,6 +2000,8 @@ const placeCategories = {
 
 // mainscript.js dosyasında mevcut window.showSuggestionsInChat fonksiyonunu bununla değiştirin:
 
+// mainscript.js içinde mevcut showSuggestionsInChat fonksiyonunu bununla değiştirin:
+
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3) {
     const city = window.selectedCity || document.getElementById("city-input")?.value;
     if (!city) {
@@ -2007,19 +2009,20 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         return;
     }
 
-    // 1. Mobildeyken Sidebar'ı hemen kapat ki kullanıcı Chat ekranındaki Loading'i görebilsin
+    // 1. ÖNCE SIDEBAR'I KAPAT (Mobilde Loading'i görebilmek için)
+    // Kullanıcının "kaldırma" dediği özellik buraya, en başa alındı.
     if (window.innerWidth <= 768) {
         var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
         if (sidebar) sidebar.classList.remove('open');
     }
 
-    // 2. İşlem başlarken Loading göster (Chat'in en altına ekler)
+    // 2. HEMEN LOADING GÖSTER
     showTypingIndicator();
 
     // Kategori kodunu belirle
     let realCode = code || geoapifyCategoryMap[category] || placeCategories[category];
     if (!realCode) {
-        hideTypingIndicator(); // Hata durumunda gizle
+        hideTypingIndicator();
         addMessage("Invalid category.", "bot-message");
         return;
     }
@@ -2028,11 +2031,11 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         // Yarıçapı metre cinsine çevir
         const radius = Math.round(radiusKm * 1000);
 
-        // Arama yap (Bu işlem sürebilir)
+        // Arama yap (Veri çekme işlemi)
         const places = await getPlacesForCategory(city, category, 5, radius, realCode);
 
         if (!places.length) {
-            hideTypingIndicator(); // Sonuç yoksa gizle
+            hideTypingIndicator(); // Sonuç yoksa loading gizle
 
             // Sonuç yoksa slider barı göster
             addMessage(`
@@ -2064,17 +2067,16 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
             return;
         }
 
-        // Resimleri getir (Bu işlem de sürebilir)
+        // Resimleri getir
         await enrichCategoryResults(places, city);
 
-        // 3. Her şey hazır, listeyi basmadan önce Loading'i gizle
+        // 3. SONUÇLAR HAZIR, LOADING GİZLE VE LİSTEYİ BAS
         hideTypingIndicator();
-
         displayPlacesInChat(places, category, day);
 
     } catch (error) {
-        console.error("Error in showSuggestionsInChat:", error);
-        hideTypingIndicator(); // Hata olsa bile loading'i kaldır
+        console.error("Hata:", error);
+        hideTypingIndicator();
         addMessage("An error occurred while fetching suggestions.", "bot-message");
     }
 };
