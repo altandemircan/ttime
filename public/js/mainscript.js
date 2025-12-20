@@ -2006,26 +2006,34 @@ const placeCategories = {
 
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     // --- YARDIMCI FONKSİYON: Objenin içinden koordinat söküp al ---
-    // Bu fonksiyon objenin içine girer, lat/lng/lon ne varsa bulur getirir.
     function extractCoords(item) {
         if (!item) return null;
         
-        // 1. Standart İsimler
-        let lat = item.lat || item.latitude || item._lat;
-        let lon = item.lon || item.lng || item.longitude || item._lon || item._lng;
+        let lat, lon;
 
-        // 2. Eğer bulamadıysa Dataset kontrolü (HTML element objesi ise)
+        // 1. NESTED 'location' OBJESİ KONTROLÜ (Senin verindeki yapı bu!)
+        if (item.location && typeof item.location === 'object') {
+            lat = item.location.lat || item.location.latitude;
+            lon = item.location.lon || item.location.lng || item.location.longitude;
+        }
+
+        // 2. Eğer nested'da yoksa, objenin köküne bak (Diğer item tipleri için)
+        if (!lat || !lon) {
+            lat = item.lat || item.latitude || item._lat;
+            lon = item.lon || item.lng || item.longitude || item._lon || item._lng;
+        }
+
+        // 3. Hala yoksa Dataset kontrolü (HTML element objesi ise)
         if ((!lat || !lon) && item.dataset) {
             lat = item.dataset.lat;
             lon = item.dataset.lon || item.dataset.lng;
         }
 
-        // 3. String ise sayıya çevir
+        // 4. String ise sayıya çevir
         if (lat) lat = parseFloat(lat);
         if (lon) lon = parseFloat(lon);
 
-        // 4. Geçerli mi? (Sıfır olmayan, mantıklı koordinat aralığı)
-        // Antalya ~36 enlem, ~30 boylam. 
+        // 5. Geçerli mi?
         if (typeof lat === 'number' && !isNaN(lat) && typeof lon === 'number' && !isNaN(lon)) {
             if (lat !== 0 && lon !== 0) {
                 return `${lat},${lon}`;
@@ -2034,7 +2042,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         return null;
     }
 
-    console.log(`%c[showSuggestionsInChat] v4.0 (Coordinate Hunter)`, "color: lime; font-weight: bold; font-size: 14px;");
+    console.log(`%c[showSuggestionsInChat] v5.0 (Nested Location Fix)`, "color: lime; font-weight: bold; font-size: 14px;");
     
     let searchLocation = null;
     let locationSource = "";
@@ -2042,18 +2050,14 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     // =========================================================================
     // ADIM 1: window.cart (En Sağlam Kaynak)
     // =========================================================================
-    // HTML'in yüklenmesini beklemeden doğrudan veriye bakıyoruz.
     if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
-        // İlgili güne ait itemları bul
         const dayItems = window.cart.filter(item => item.day == day);
         
-        // O günün sonuncusu, yoksa genel listenin sonuncusu
         const targetItem = dayItems.length > 0 
             ? dayItems[dayItems.length - 1] 
             : window.cart[window.cart.length - 1];
         
         if (targetItem) {
-            // Debug için objenin içini görelim
             console.log("🔎 İncelenen Cart Item:", targetItem);
             
             const coords = extractCoords(targetItem);
@@ -2061,7 +2065,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
                 searchLocation = coords;
                 locationSource = `window.cart (Item: ${targetItem.name})`;
             } else {
-                console.warn("⚠️ Cart item bulundu ama extractCoords koordinat çıkaramadı!");
+                console.warn("⚠️ Cart item bulundu ama koordinat çıkarılamadı.");
             }
         }
     }
@@ -2085,11 +2089,9 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     // ADIM 3: HTML DOM (Son Çare)
     // =========================================================================
     if (!searchLocation) {
-        // Sayfada görünen marker, kart vs ne varsa bak
         const possibleElements = document.querySelectorAll('.travel-item, .cart-item, li[data-lat]');
         if (possibleElements.length > 0) {
             const el = possibleElements[possibleElements.length - 1];
-            // Elementin attribute'larından okumayı dene
             let lat = el.getAttribute('data-lat');
             let lon = el.getAttribute('data-lon') || el.getAttribute('data-lng');
             
@@ -2106,10 +2108,8 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     console.log(`📍 HEDEF LOKASYON: "${searchLocation}"`);
     console.log(`ℹ️ KAYNAK: ${locationSource}`);
 
-    // Hâlâ bulunamadıysa kullanıcıyı uyar ama "İstanbul"a gönderme.
     if (!searchLocation) {
         console.error("⛔ HATA: Hiçbir yerde koordinat bulunamadı.");
-        // Son çare: Şehir ismi varsa onu kullan ama ismin başına ekle
         let city = window.selectedCity || document.getElementById("city-input")?.value;
         if (city) {
             console.warn("⚠️ Koordinat yok, şehir merkezine fallback yapılıyor: " + city);
@@ -2138,7 +2138,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     try {
         const radius = Math.round(radiusKm * 1000);
         
-        // ARAMA YAP (searchLocation artık kesinlikle "36.xxxx,30.xxxx" formatında)
+        // ARAMA YAP
         const places = await getPlacesForCategory(searchLocation, category, limit, radius, realCode);
 
         if (!places.length) {
@@ -2167,7 +2167,6 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
             return;
         }
 
-        // Resimler için şehir ismi (API için gerekli olabilir ama koordinat varsa çok şart değil)
         let cityForImages = window.selectedCity || "Turkey";
         if (searchLocation && !searchLocation.includes(",")) cityForImages = searchLocation;
 
