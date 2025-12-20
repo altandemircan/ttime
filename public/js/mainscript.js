@@ -2000,6 +2000,8 @@ const placeCategories = {
 
 // mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu tamamen değiştirin:
 
+// mainscript.js
+
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     // --- DEBUG LOG START ---
     console.log(`%c[showSuggestionsInChat] Called`, "color: cyan; font-weight: bold;");
@@ -2007,72 +2009,85 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     // 1. ŞEHİR / MERKEZ NOKTA BELİRLEME
     let city = window.selectedCity || document.getElementById("city-input")?.value;
 
-    // YÖNTEM A: window.cart verisine bak (EN GÜVENİLİR YÖNTEM)
-    // Değişiklik: Artık listedeki SON elemanı baz alıyoruz.
+    // --- ÖNCELİKLİ YÖNTEM: HTML DOM (Senin paylaştığın yapı) ---
+    // En son eklenen "travel-item"ı buluyoruz.
+    const allTravelItems = document.querySelectorAll('.travel-item');
+    if (allTravelItems.length > 0) {
+        const lastItem = allTravelItems[allTravelItems.length - 1];
+        
+        // 1. Seçenek: Doğrudan koordinatları al (En garantisi)
+        const lat = lastItem.getAttribute('data-lat');
+        const lon = lastItem.getAttribute('data-lon');
+        
+        if (lat && lon) {
+            // Geoapify ve çoğu servis "lat,lon" formatını string olarak kabul eder
+            city = `${lat},${lon}`;
+            console.log(`✅ Reference found via DOM Attributes (Lat/Lon): "${city}"`);
+        } 
+        // 2. Seçenek: Koordinat yoksa, tam adresi al
+        else {
+            const addressEl = lastItem.querySelector('.contact p'); // Adres paragrafı
+            if (addressEl) {
+                // "📌 Address: ..." kısmını temizle
+                let addressText = addressEl.innerText.replace(/📌|Address:/gi, '').trim();
+                if (addressText.length > 5) {
+                    city = addressText;
+                    console.log(`✅ Reference found via DOM Address: "${city}"`);
+                }
+            }
+        }
+        
+        // 3. Seçenek: Hala boşsa başlığı al (toggle-title)
+        if (!city || city.includes("undefined")) {
+            const titleEl = lastItem.querySelector('.toggle-title');
+            if (titleEl) {
+                city = titleEl.innerText.trim();
+                console.log(`⚠️ Reference fallback to Title: "${city}"`);
+            }
+        }
+    }
+
+    // --- YEDEK YÖNTEMLER (Eğer ekranda travel-item yoksa) ---
+    
+    // YÖNTEM A: window.cart verisine bak
     if (!city) {
         if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
-            // 1. Önce sadece o güne ait olanları bul
             const dayItems = window.cart.filter(item => item.day == day);
-            
-            // 2. Eğer o güne ait item varsa onun SONUNCUSUNU al
-            // Yoksa, genel sepetin (window.cart) SONUNCUSUNU al
             const targetItem = dayItems.length > 0 
                 ? dayItems[dayItems.length - 1] 
                 : window.cart[window.cart.length - 1];
             
-            if (targetItem && targetItem.name) {
-                city = targetItem.name;
-                console.log(`✅ Reference found via window.cart (Last Item): "${city}"`);
+            if (targetItem) {
+                // Varsa koordinat, yoksa isim
+                if (targetItem.lat && targetItem.lon) {
+                    city = `${targetItem.lat},${targetItem.lon}`;
+                    console.log(`✅ Reference found via window.cart (Coords): "${city}"`);
+                } else {
+                    city = targetItem.name;
+                    console.log(`✅ Reference found via window.cart (Name): "${city}"`);
+                }
             }
         }
     }
 
     // YÖNTEM B: generatedTrip verisine bak
-    // Değişiklik: Array'in son elemanını alıyoruz.
     if (!city) {
         if (typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1] && window.generatedTrip[day - 1].length > 0) {
             const currentDayTrip = window.generatedTrip[day - 1];
-            // Son durağı al
-            city = currentDayTrip[currentDayTrip.length - 1].name;
-            console.log(`✅ Reference found via generatedTrip (Last Item): "${city}"`);
-        }
-    }
-
-    // YÖNTEM C: HTML DOM (Fallback)
-    // Değişiklik: querySelectorAll ile hepsini alıp SONUNCUSUNU seçiyoruz.
-    if (!city) {
-        const selectors = [
-            '.step-item .title', 
-            '.step-item h3', 
-            '.step-item h4', 
-            '.place-card-title',
-            '.accordion-content strong',
-            '.leaflet-popup-content b'
-        ];
-        
-        for (let sel of selectors) {
-            const els = document.querySelectorAll(sel);
-            if (els.length > 0) {
-                // Listeden son elemanı seç
-                const lastEl = els[els.length - 1];
-                if (lastEl.innerText.trim().length > 0) {
-                    city = lastEl.innerText.trim();
-                    console.log(`✅ Reference found via HTML (Last Element of ${sel}): "${city}"`);
-                    break;
-                }
+            const lastTripItem = currentDayTrip[currentDayTrip.length - 1];
+            
+            if (lastTripItem.lat && lastTripItem.lon) {
+                 city = `${lastTripItem.lat},${lastTripItem.lon}`;
+            } else {
+                 city = lastTripItem.name;
             }
+            console.log(`✅ Reference found via generatedTrip: "${city}"`);
         }
-    }
-    
-    // YÖNTEM D: Hala yoksa window.destination
-    if (!city && window.destination) {
-        city = window.destination;
-        console.log(`✅ Reference found via window.destination: "${city}"`);
     }
 
     // 2. KONTROL SONUCU
     if (!city) {
-        console.error("⛔ ERROR: Could not find any city or reference point on screen or variables.");
+        console.error("⛔ ERROR: Could not find any city or reference point.");
         addMessage("Please select a city or make sure a trip is generated first.", "bot-message");
         return;
     }
@@ -2105,7 +2120,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
             console.warn("⚠️ No results found.");
             addMessage(`
                 <div class="radius-slider-bar">
-                    <p>No places found for ${category} near "${city}".</p>
+                    <p>No places found for ${category}.</p>
                     <label for="radius-slider">
                       🔎 Widen search area: <span id="radius-value">${radiusKm}</span> km
                     </label>
@@ -2142,7 +2157,6 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         addMessage("An error occurred while fetching suggestions.", "bot-message");
     }
 };
-
  
 // 2. Butonla şehir seçildiğinde de güncelle
 window.handleCitySelection = async function(city, days) {
