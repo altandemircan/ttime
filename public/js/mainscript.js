@@ -1998,9 +1998,7 @@ const placeCategories = {
     
 };
 
-// 1) Kategori sonuçlarını gösteren fonksiyon (slider entegre!)
-// mainscript.js dosyasında showSuggestionsInChat fonksiyonunu bulun (yaklaşık 1476. satır)
-// ve aşağıdaki gibi showTypingIndicator() ve hideTypingIndicator() eklemelerini yapın.
+// mainscript.js dosyasında mevcut window.showSuggestionsInChat fonksiyonunu bununla değiştirin:
 
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3) {
     const city = window.selectedCity || document.getElementById("city-input")?.value;
@@ -2008,68 +2006,76 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         addMessage("Please select a city first.", "bot-message");
         return;
     }
-    // Kategori kodunu belirle
-    let realCode = code || geoapifyCategoryMap[category] || placeCategories[category];
-    if (!realCode) {
-        addMessage("Invalid category.", "bot-message");
-        return;
-    }
-    // Yarıçapı metre cinsine çevir
-    const radius = Math.round(radiusKm * 1000);
 
-    // --- DEĞİŞİKLİK BAŞLANGICI: Loading Göster ---
-    showTypingIndicator();
-    // --- DEĞİŞİKLİK SONU ---
-
-    // Arama yap
-    //Kategori sonuç limiti
-    const places = await getPlacesForCategory(city, category, 5, radius, realCode);
-
-    if (!places.length) {
-        // --- DEĞİŞİKLİK BAŞLANGICI: Loading Gizle (Sonuç yoksa) ---
-        hideTypingIndicator();
-        // --- DEĞİŞİKLİK SONU ---
-
-        // Sonuç yoksa slider barı göster
-        addMessage(`
-            <div class="radius-slider-bar">
-                <p>No places found for this category in "${city}".</p>
-                <label for="radius-slider">
-                  🔎 Widen search area: <span id="radius-value">${radiusKm}</span> km
-                </label>
-                <input type="range" min="1" max="20" value="${radiusKm}" id="radius-slider" style="width:180px;">
-            </div>
-        `, "bot-message");
-
-        // Slider event'ini bekle
-        setTimeout(() => {
-            const slider = document.getElementById("radius-slider");
-            const valueLabel = document.getElementById("radius-value");
-            if (slider && valueLabel) {
-                slider.addEventListener("input", () => {
-                    valueLabel.textContent = slider.value;
-                });
-                slider.addEventListener("change", async () => {
-                    // Yeniden arama yap!
-                    const newRadius = Number(slider.value);
-                    await window.showSuggestionsInChat(category, day, code, newRadius);
-                });
-            }
-        }, 200);
-
-        return;
-    }
-
-    await enrichCategoryResults(places, city);
-
-    // --- DEĞİŞİKLİK BAŞLANGICI: Loading Gizle (Sonuçlar hazır) ---
-    hideTypingIndicator();
-    // --- DEĞİŞİKLİK SONU ---
-
-    displayPlacesInChat(places, category, day);
+    // 1. Mobildeyken Sidebar'ı hemen kapat ki kullanıcı Chat ekranındaki Loading'i görebilsin
     if (window.innerWidth <= 768) {
         var sidebar = document.querySelector('.sidebar-overlay.sidebar-trip');
         if (sidebar) sidebar.classList.remove('open');
+    }
+
+    // 2. İşlem başlarken Loading göster (Chat'in en altına ekler)
+    showTypingIndicator();
+
+    // Kategori kodunu belirle
+    let realCode = code || geoapifyCategoryMap[category] || placeCategories[category];
+    if (!realCode) {
+        hideTypingIndicator(); // Hata durumunda gizle
+        addMessage("Invalid category.", "bot-message");
+        return;
+    }
+
+    try {
+        // Yarıçapı metre cinsine çevir
+        const radius = Math.round(radiusKm * 1000);
+
+        // Arama yap (Bu işlem sürebilir)
+        const places = await getPlacesForCategory(city, category, 5, radius, realCode);
+
+        if (!places.length) {
+            hideTypingIndicator(); // Sonuç yoksa gizle
+
+            // Sonuç yoksa slider barı göster
+            addMessage(`
+                <div class="radius-slider-bar">
+                    <p>No places found for this category in "${city}".</p>
+                    <label for="radius-slider">
+                      🔎 Widen search area: <span id="radius-value">${radiusKm}</span> km
+                    </label>
+                    <input type="range" min="1" max="20" value="${radiusKm}" id="radius-slider" style="width:180px;">
+                </div>
+            `, "bot-message");
+
+            // Slider event'ini bekle
+            setTimeout(() => {
+                const slider = document.getElementById("radius-slider");
+                const valueLabel = document.getElementById("radius-value");
+                if (slider && valueLabel) {
+                    slider.addEventListener("input", () => {
+                        valueLabel.textContent = slider.value;
+                    });
+                    slider.addEventListener("change", async () => {
+                        // Yeniden arama yap!
+                        const newRadius = Number(slider.value);
+                        await window.showSuggestionsInChat(category, day, code, newRadius);
+                    });
+                }
+            }, 200);
+
+            return;
+        }
+
+        // Resimleri getir (Bu işlem de sürebilir)
+        await enrichCategoryResults(places, city);
+
+        // 3. Her şey hazır, listeyi basmadan önce Loading'i gizle
+        hideTypingIndicator();
+
+        displayPlacesInChat(places, category, day);
+
+    } catch (error) {
+        console.error("Error in showSuggestionsInChat:", error);
+        hideTypingIndicator(); // Hata olsa bile loading'i kaldır
+        addMessage("An error occurred while fetching suggestions.", "bot-message");
     }
 };
 
