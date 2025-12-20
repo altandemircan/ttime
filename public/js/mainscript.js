@@ -547,20 +547,33 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     // 1. ÖNCE TÜM SONUÇLARI PUANLA
     // renderSuggestions fonksiyonunun içinde, puanlama kısmı (~satır 20-60 arası)
 
+// 1. ÖNCE TÜM SONUÇLARI PUANLA - DEĞİŞTİRİLMİŞ
 const scoredResults = originalResults.map(item => {
     const p = item.properties || {};
-    let score = 0;
     
     // İsim alanları (küçük harfe çevir)
     const name = (p.name || "").toLowerCase();
     const city = (p.city || "").toLowerCase();
     const county = (p.county || "").toLowerCase();
     
+    // === ÖNEMLİ: "kemer" İÇERMEYENLERİ ELE ===
+    // Eğer hiçbir alanda targetTerm geçmiyorsa, bu sonucu tamamen atla
+    const containsTarget = name.includes(targetTerm) || 
+                          city.includes(targetTerm) || 
+                          county.includes(targetTerm);
+    
+    if (!containsTarget) {
+        // "kemer" içermiyorsa, bu sonucu tamamen atlayalım
+        return { item, score: -9999, name: p.name, city: p.city, country_code: p.country_code };
+    }
+    
+    let score = 0;
+    
     // --- PUANLAMA SİSTEMİ - GÜNCELLENMİŞ ---
     
     // 1. TAM EŞLEŞME (EN YÜKSEK): "Kemer" -> "Kemer"
     if (name === targetTerm || city === targetTerm || county === targetTerm) {
-        score += 1500; // Daha da yüksek
+        score += 1500;
     }
     
     // 2. BAŞLANGIÇ EŞLEŞMESİ: "Kemer" -> "Kemerovo"
@@ -572,10 +585,8 @@ const scoredResults = originalResults.map(item => {
         score += 400;
     }
     
-    // 3. TAM KELİME İÇERME (ÖNEMLİ DÜZELTME): "Kemer" -> "Seydikemer"
-    // "Seydikemer" içinde "kemer" kelimesi geçiyor mu?
-    // Sadece includes() değil, tam kelime olarak içeriyor mu?
-    if (name.includes(targetTerm) || city.includes(targetTerm) || county.includes(targetTerm)) {
+    // 3. TAM KELİME İÇERME: "Kemer" -> "Seydikemer"
+    if (containsTarget) {
         // Kelimeleri ayır ve tam kelime eşleşmesi var mı kontrol et
         const nameWords = name.split(/[\s,\-]+/);
         const cityWords = city.split(/[\s,\-]+/);
@@ -585,7 +596,7 @@ const scoredResults = originalResults.map(item => {
         
         // Tam kelime eşleşmesi varsa (ör: "Seydikemer" içinde "kemer" kelimesi)
         if (allWords.some(word => word === targetTerm)) {
-            score += 700; // Yüksek puan - başlangıç eşleşmesine yakın
+            score += 700;
         } else {
             // Sadece parçalı eşleşme (ör: "Kemer" -> "Kemerovsky")
             score += 100;
@@ -602,17 +613,20 @@ const scoredResults = originalResults.map(item => {
     // 5. TİCARİ SONUÇ CEZASI
     const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
     if (commercialWords.some(word => name.includes(word))) {
-        score -= 2000; // Daha büyük ceza
+        score -= 2000;
     }
     
     return { item, score, name: p.name, city: p.city, country_code: p.country_code };
 });
-    
-    // 2. PUANA GÖRE SIRALA (yüksek puan üstte)
-    scoredResults.sort((a, b) => b.score - a.score);
-    
-    // 3. EN İYİ 8 SONUCU AL
-    const finalResults = scoredResults.slice(0, 8).map(sr => sr.item);
+
+// 2. PUANA GÖRE SIRALA (yüksek puan üstte) ve NEGATİF PUANLARI FİLTRELE
+scoredResults.sort((a, b) => b.score - a.score);
+
+// 3. EN İYİ 8 SONUCU AL, ama negatif puanlıları (içermeyenleri) ATLA
+const finalResults = scoredResults
+    .filter(sr => sr.score > 0) // Sadece pozitif puanlıları al
+    .slice(0, 8)
+    .map(sr => sr.item);
 
     // B. GÖRÜNÜM - FORMATLAYALIM
     const seenSuggestions = new Set();
