@@ -2000,122 +2000,66 @@ const placeCategories = {
 
 // mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu tamamen değiştirin:
 
-// mainscript.js
-
-// mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu tamamen değiştirin:
-
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     // --- YARDIMCI FONKSİYON: Objenin içinden koordinat söküp al ---
     function extractCoords(item) {
         if (!item) return null;
-        
         let lat, lon;
-
-        // 1. NESTED 'location' OBJESİ KONTROLÜ (Senin verindeki yapı bu!)
+        // 1. Nested location objesi
         if (item.location && typeof item.location === 'object') {
             lat = item.location.lat || item.location.latitude;
             lon = item.location.lon || item.location.lng || item.location.longitude;
         }
-
-        // 2. Eğer nested'da yoksa, objenin köküne bak (Diğer item tipleri için)
+        // 2. Kök özellikler
         if (!lat || !lon) {
             lat = item.lat || item.latitude || item._lat;
             lon = item.lon || item.lng || item.longitude || item._lon || item._lng;
         }
-
-        // 3. Hala yoksa Dataset kontrolü (HTML element objesi ise)
+        // 3. Dataset
         if ((!lat || !lon) && item.dataset) {
             lat = item.dataset.lat;
             lon = item.dataset.lon || item.dataset.lng;
         }
-
-        // 4. String ise sayıya çevir
+        // 4. Parse
         if (lat) lat = parseFloat(lat);
         if (lon) lon = parseFloat(lon);
 
-        // 5. Geçerli mi?
         if (typeof lat === 'number' && !isNaN(lat) && typeof lon === 'number' && !isNaN(lon)) {
-            if (lat !== 0 && lon !== 0) {
-                return `${lat},${lon}`;
-            }
+            if (lat !== 0 && lon !== 0) return `${lat},${lon}`;
         }
         return null;
     }
 
-    console.log(`%c[showSuggestionsInChat] v5.0 (Nested Location Fix)`, "color: lime; font-weight: bold; font-size: 14px;");
+    // Konsol Takibi
+    console.log(`%c[Smart Search] Radius: ${radiusKm}km, Limit: ${limit}`, "color: orange; font-weight: bold;");
     
     let searchLocation = null;
-    let locationSource = "";
 
-    // =========================================================================
-    // ADIM 1: window.cart (En Sağlam Kaynak)
-    // =========================================================================
+    // --- LOKASYON BELİRLEME (Önceki sağlam mantığımız) ---
     if (window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
         const dayItems = window.cart.filter(item => item.day == day);
-        
-        const targetItem = dayItems.length > 0 
-            ? dayItems[dayItems.length - 1] 
-            : window.cart[window.cart.length - 1];
-        
-        if (targetItem) {
-            console.log("🔎 İncelenen Cart Item:", targetItem);
-            
-            const coords = extractCoords(targetItem);
-            if (coords) {
-                searchLocation = coords;
-                locationSource = `window.cart (Item: ${targetItem.name})`;
-            } else {
-                console.warn("⚠️ Cart item bulundu ama koordinat çıkarılamadı.");
-            }
-        }
+        const targetItem = dayItems.length > 0 ? dayItems[dayItems.length - 1] : window.cart[window.cart.length - 1];
+        if (targetItem) searchLocation = extractCoords(targetItem);
     }
-
-    // =========================================================================
-    // ADIM 2: generatedTrip (Alternatif Kaynak)
-    // =========================================================================
     if (!searchLocation && typeof window.generatedTrip !== 'undefined' && window.generatedTrip[day - 1]) {
         const dt = window.generatedTrip[day - 1];
-        if (dt && dt.length > 0) {
-            const targetItem = dt[dt.length - 1];
-            const coords = extractCoords(targetItem);
-            if (coords) {
-                searchLocation = coords;
-                locationSource = "window.generatedTrip";
-            }
-        }
+        if (dt && dt.length > 0) searchLocation = extractCoords(dt[dt.length - 1]);
     }
-
-    // =========================================================================
-    // ADIM 3: HTML DOM (Son Çare)
-    // =========================================================================
     if (!searchLocation) {
         const possibleElements = document.querySelectorAll('.travel-item, .cart-item, li[data-lat]');
         if (possibleElements.length > 0) {
             const el = possibleElements[possibleElements.length - 1];
             let lat = el.getAttribute('data-lat');
             let lon = el.getAttribute('data-lon') || el.getAttribute('data-lng');
-            
-            if (lat && lon) {
-                searchLocation = `${lat},${lon}`;
-                locationSource = "HTML DOM Attributes";
-            }
+            if (lat && lon) searchLocation = `${lat},${lon}`;
         }
     }
 
-    // =========================================================================
-    // SONUÇ
-    // =========================================================================
-    console.log(`📍 HEDEF LOKASYON: "${searchLocation}"`);
-    console.log(`ℹ️ KAYNAK: ${locationSource}`);
-
     if (!searchLocation) {
-        console.error("⛔ HATA: Hiçbir yerde koordinat bulunamadı.");
         let city = window.selectedCity || document.getElementById("city-input")?.value;
-        if (city) {
-            console.warn("⚠️ Koordinat yok, şehir merkezine fallback yapılıyor: " + city);
-            searchLocation = city;
-        } else {
-            addMessage("Could not identify the location. Please verify your trip plan.", "bot-message");
+        if (city) searchLocation = city;
+        else {
+            addMessage("Location not found. Please add a place to your trip first.", "bot-message");
             return;
         }
     }
@@ -2136,46 +2080,40 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
     }
 
     try {
-        const radius = Math.round(radiusKm * 1000);
+        const radiusMeters = Math.round(radiusKm * 1000);
         
-        // ARAMA YAP
-        const places = await getPlacesForCategory(searchLocation, category, limit, radius, realCode);
-
-        if (!places.length) {
+        // Arama yap
+        const places = await getPlacesForCategory(searchLocation, category, limit, radiusMeters, realCode);
+        
+        // Sonuç yoksa ve hala genişletme payımız varsa
+        if (places.length === 0 && radiusKm < 20) {
             hideTypingIndicator();
-            addMessage(`
-                <div class="radius-slider-bar">
-                    <p>No places found for ${category}.</p>
-                    <label for="radius-slider">
-                      🔎 Widen search area: <span id="radius-value">${radiusKm}</span> km
-                    </label>
-                    <input type="range" min="1" max="20" value="${radiusKm}" id="radius-slider" style="width:180px;">
-                </div>
-            `, "bot-message");
-            
-            setTimeout(() => {
-                const slider = document.getElementById("radius-slider");
-                const valueLabel = document.getElementById("radius-value");
-                if (slider && valueLabel) {
-                    slider.addEventListener("input", () => { valueLabel.textContent = slider.value; });
-                    slider.addEventListener("change", async () => {
-                        const newRadius = Number(slider.value);
-                        await window.showSuggestionsInChat(category, day, code, newRadius, limit);
-                    });
-                }
-            }, 200);
+            // Otomatik genişletme teklifi (Hemen genişletmek yerine kullanıcıya soruyoruz)
+            // Ama UX akıcı olsun diye displayPlacesInChat fonksiyonuna boş array gönderip orada butonu çizeceğiz.
+             displayPlacesInChat([], category, day, code, radiusKm, limit, 0, true); 
+             return;
+        }
+
+        // Eğer 20km'ye geldik ve hala sonuç yoksa
+        if (places.length === 0 && radiusKm >= 20) {
+            hideTypingIndicator();
+            addMessage(`No ${category} found even within 20km. Please try searching on the map or choose a different category.`, "bot-message");
             return;
         }
 
+        // Resimleri getir
         let cityForImages = window.selectedCity || "Turkey";
         if (searchLocation && !searchLocation.includes(",")) cityForImages = searchLocation;
-
         await enrichCategoryResults(places, cityForImages);
 
         hideTypingIndicator();
 
         const startIndex = limit > 5 ? limit - 5 : 0;
-        displayPlacesInChat(places, category, day, code, radiusKm, limit, startIndex);
+        
+        // Display fonksiyonuna 'hasMoreResults' mantığını gönderiyoruz
+        // Eğer gelen sonuç sayısı limite eşitse 'Load More' (pagination) var demektir.
+        // Eğer sonuç azsa ve radius < 20 ise 'Widen Search' (genişletme) var demektir.
+        displayPlacesInChat(places, category, day, code, radiusKm, limit, startIndex, false);
 
     } catch (error) {
         console.error("💥 Error:", error);
@@ -2183,7 +2121,6 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         addMessage("An error occurred.", "bot-message");
     }
 };
-
 // 2. Butonla şehir seçildiğinde de güncelle
 window.handleCitySelection = async function(city, days) {
     if (window.isProcessing) return;
@@ -2717,12 +2654,14 @@ function safeCoords(lat, lon) {
 
 // mainscript.js dosyasında bu fonksiyonu bulup tamamen değiştirin:
 
-function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, limit = 5, startIndex = 0) {
+// mainscript.js dosyasında bu fonksiyonu bulun ve değiştirin:
+
+function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, limit = 5, startIndex = 0, forceWidenOption = false) {
     const chatBox = document.getElementById("chat-box");
     const uniqueId = `suggestion-${day}-${category.replace(/\s+/g, '-').toLowerCase()}`;
     const sliderId = `splide-slider-${uniqueId}`;
 
-    // Eski sonuçları temizle
+    // Eski sonuçları temizle (Yeniden çizim yapıyoruz)
     chatBox.querySelectorAll(`#${sliderId}`).forEach(el => {
         el.closest('.survey-results')?.remove();
     });
@@ -2732,7 +2671,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
             <div class="accordion-container">
                 <input type="checkbox" id="${uniqueId}" class="accordion-toggle" checked>
                 <label for="${uniqueId}" class="accordion-label">
-                    Suggestions for ${category}
+                    ${places.length > 0 ? `Suggestions for ${category} (${radiusKm}km)` : `No results in ${radiusKm}km`}
                     <img src="img/arrow_down.svg" class="accordion-arrow">
                 </label>
                 <div class="accordion-content">
@@ -2750,8 +2689,10 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
         `;
     });
 
-    // --- LOAD MORE KARTI ---
-    // Eğer gelen sonuç sayısı limite eşitse, muhtemelen devamı vardır.
+    // --- AKILLI BUTON MANTIĞI ---
+    
+    // DURUM 1: Liste doldu (limit kadar geldi) -> Sayfalama yap (Load More)
+    // Sadece radius değiştirmeden daha fazla veri çek.
     if (places.length >= limit) {
          html += `
             <li class="splide__slide">
@@ -2759,11 +2700,51 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
                      onclick="window.showSuggestionsInChat('${category}', ${day}, ${code ? "'" + code + "'" : 'null'}, ${radiusKm}, ${limit + 5})"
                      style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8f9fa; border: 2px dashed #cbd5e1; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div style="font-size: 32px; color: #64748b; margin-bottom: 8px;">+</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #64748b;">Load More</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #64748b;">Load More Results</div>
+                    <div style="font-size: 12px; color: #94a3b8;">(Same Area)</div>
                 </div>
             </li>
         `;
     }
+    
+    // DURUM 2: Liste az geldi (veya hiç gelmedi) VE Max Radius'a gelmedik -> Genişlet (Widen Area)
+    // Eğer limit 5 istedik ama 2 geldiyse, o alanda başka yok demektir. Alanı genişletelim.
+    else if (radiusKm < 20) {
+        // Yeni yarıçapı belirle (Kademeli artış: 3 -> 8 -> 15 -> 20)
+        let nextRadius = 20;
+        if (radiusKm < 5) nextRadius = 8;
+        else if (radiusKm < 10) nextRadius = 15;
+        
+        html += `
+            <li class="splide__slide">
+                <div class="visual step-item widen-area-card" 
+                     onclick="window.showSuggestionsInChat('${category}', ${day}, ${code ? "'" + code + "'" : 'null'}, ${nextRadius}, ${limit})"
+                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #eff6ff; border: 2px dashed #60a5fa; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                    <div style="font-size: 32px; color: #3b82f6; margin-bottom: 8px;">🔭</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #3b82f6;">Search Further</div>
+                    <div style="font-size: 12px; color: #60a5fa;">Expand to ${nextRadius}km</div>
+                    ${places.length === 0 ? '<div style="margin-top:5px; font-size:11px; color:#ef4444;">(No places found nearby)</div>' : ''}
+                </div>
+            </li>
+        `;
+    }
+    
+    // DURUM 3: Max Radius (20km) doldu ve hala kullanıcı tatmin olmadıysa
+    else if (radiusKm >= 20 && places.length < limit) {
+         html += `
+            <li class="splide__slide">
+                <div class="visual step-item end-search-card" 
+                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff1f2; border: 2px dashed #fda4af; border-radius: 12px;">
+                    <div style="font-size: 32px; color: #e11d48; margin-bottom: 8px;">📍</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #e11d48;">That's all!</div>
+                    <div style="font-size: 12px; color: #fb7185; text-align:center; padding:0 10px;">
+                        We searched up to 20km.<br>Try searching on the map manually.
+                    </div>
+                </div>
+            </li>
+        `;
+    }
+
     // -----------------------
 
     html += `
@@ -2776,6 +2757,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
 
     chatBox.innerHTML += html;
     
+    // Scroll ayarı (Eğer forceWidenOption varsa yani hiç sonuç yoksa scroll yapmasın daha iyi olabilir ama genelde iyidir)
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -2786,14 +2768,12 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
     setTimeout(() => {
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (!sliderElem._splideInstance) {
-                // Sadece yeni oluşturduğumuz slider'a özel start ayarını uygulayalım
-                // Eğer bu slider bizim oluşturduğumuz slider ise startIndex'i kullan
                 const isTargetSlider = sliderElem.id === sliderId;
                 const initialIndex = isTargetSlider ? startIndex : 0;
 
                 const splideInstance = new Splide(sliderElem, {
                     type: 'slide',
-                    start: initialIndex, // <--- KRİTİK NOKTA: Slider buradan başlar
+                    start: initialIndex,
                     perPage: 5,
                     gap: '18px',
                     arrows: true,
