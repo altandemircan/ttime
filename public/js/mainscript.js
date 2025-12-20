@@ -831,7 +831,7 @@ chatInput.addEventListener("input", async function () {
         } finally {
             apiCallInProgress = false;
         }
-    }, 200); // Daha kısa debounce
+    }, 100); // Daha kısa debounce
 });
 
     chatInput.addEventListener("focus", function () {
