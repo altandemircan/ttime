@@ -7965,27 +7965,20 @@ async function renderRouteForDay(day) {
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
 
-    // <--- 1. ADIM: Segment Hafızasını ve Seçimi SIFIRLA --->
-    // Bu kısım çok önemli. Herhangi bir rota değişikliğinde (item ekleme/çıkarma)
-    // sistemin "bir segment seçiliydi" bilgisini unutmasını sağlıyoruz.
+    // 1. ADIM: Sadece değişkenleri sıfırla (Henüz event fırlatma!)
+    // Segment modundan çıkıldığını sisteme bildiriyoruz.
     window.selectedSegmentIndex = -1;
     window.selectedSegment = null;
-    
-    // Hafızadaki son segment koordinatlarını da siliyoruz ki başka bir script bunları kullanmasın.
     window._lastSegmentDay = null;
     window._lastSegmentStartKm = null;
     window._lastSegmentEndKm = null;
 
-    // 3D harita ve diğer bileşenlere "Güncelleme oldu, kendini resetle" sinyali gönderiyoruz.
-    document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
-    // <--- 1. ADIM SONU --->
-
-
     const pts = getDayPoints(day).filter(
         p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
     );
-    
-    // Güvenlik kontrolü
+    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
+
+    // --- GPS / KİLİTLİ ROTA ÇİZİMİ ---
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         const points = getDayPoints(day);
@@ -8047,11 +8040,15 @@ async function renderRouteForDay(day) {
         window.lastRouteGeojsons[containerId] = finalGeojson;
         window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
         window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
-
+        
         window.lastRouteSummaries = window.lastRouteSummaries || {};
         window.lastRouteSummaries[containerId] = { distance: totalDistance, duration: totalDuration };
 
         renderLeafletRoute(containerId, finalGeojson, points, { distance: totalDistance, duration: totalDuration }, day);
+
+        // 2. ADIM (GPS KISMI İÇİN): 3D Haritaya "Ben hazırım, çiz" sinyalini BURADA veriyoruz.
+        // Veri hazırlandıktan hemen sonra.
+        document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
 
         const infoPanel = document.getElementById(`route-info-day${day}`);
         if (infoPanel) {
@@ -8112,6 +8109,8 @@ async function renderRouteForDay(day) {
         return;
     }
 
+    // --- NORMAL ROTA AKIŞI ---
+
     if (window.__suppressMiniUntilFirstPoint && window.__suppressMiniUntilFirstPoint[day]) {
         const pts0 = getDayPoints(day);
         if (!pts0 || pts0.length === 0) return;
@@ -8136,6 +8135,8 @@ async function renderRouteForDay(day) {
         if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
         if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+        // Data boşaldı, 3D haritaya da boşalması gerektiğini söyle
+        document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
         return;
     }
 
@@ -8189,6 +8190,8 @@ async function renderRouteForDay(day) {
             eMap.setView([p.lat, p.lng], 15, { animate: true });
             setTimeout(() => eMap.invalidateSize(), 120);
         }
+        // Tek nokta var, 3D haritaya bildir
+        document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
         return;
     }
 
@@ -8313,6 +8316,9 @@ async function renderRouteForDay(day) {
                 L.circleMarker(latlngs[0], { radius: 9, color: '#2e7d32', fillColor: '#2e7d32', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
                 L.circleMarker(latlngs[latlngs.length - 1], { radius: 9, color: '#c62828', fillColor: '#c62828', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
             }
+            
+            // 3D Haritaya bildirim (Raw data durumu için)
+            document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
             return;
         }
     }
@@ -8365,6 +8371,8 @@ async function renderRouteForDay(day) {
                 expandedScaleBar.innerHTML = "";
                 renderRouteScaleBar(expandedScaleBar, 0, []);
             }
+            // Hata/Boş rota durumunda bile 3D haritaya bildirmeliyiz
+            document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
             return;
         } else {
             let totalKm = 0;
@@ -8442,6 +8450,8 @@ async function renderRouteForDay(day) {
                 expandedScaleBar.innerHTML = "";
                 renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
             }
+            // Yurtdışı/fallback durumunda bildirim
+            document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
             return;
         }
     }
@@ -8544,17 +8554,6 @@ async function renderRouteForDay(day) {
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
     window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
 
-    console.log(
-        "[PAIRWISE SUMMARY]",
-        "GÜN:", day,
-        "TravelMode:", typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
-        "pairwiseRouteSummaries:",
-        window.pairwiseRouteSummaries?.[containerId]
-    );
-    console.log("pairwise summary", pairwiseSummaries.length, pairwiseSummaries);
-
-
-
     if (routeData.summary && typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(routeData.summary.distance, routeData.summary.duration);
     }
@@ -8565,8 +8564,13 @@ async function renderRouteForDay(day) {
     setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 200);
     if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
-    // <--- SON ADIM: Burada eskiden duran setTimeout bloğu TAMAMEN SİLİNDİ. --->
-    // Artık highlightSegmentOnMap() otomatik çağrılmıyor.
+    // <--- ÇÖZÜM: 3. ADIM (NORMAL AKIŞ İÇİN) --->
+    // Artık data (routeData) tamamen hazır ve global değişkene (window.lastRouteGeojsons) yazıldı.
+    // 2D harita (renderLeafletRoute) çizimini bitirdi.
+    // ŞİMDİ 3D haritaya "Datayı oku ve kendini güncelle" diyoruz.
+    // selectedSegmentIndex = -1 olduğu için 3D harita genel görünümü çizecektir.
+    console.log(`[MainScript] Route data ready for Day ${day}. Firing tripUpdated for 3D Map.`);
+    document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
 }
 
 function clearDistanceLabels(day) {
