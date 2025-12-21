@@ -25,6 +25,7 @@ function debounce(func, wait) {
 
 
 
+
 window.__welcomeHiddenForever = false;
 window.__restaurantLayers = window.__restaurantLayers || [];
 
@@ -4785,7 +4786,7 @@ async function updateCart() {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-
+    
 }
 
 function showRemoveItemConfirmation(index, btn) {
@@ -9944,30 +9945,42 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-  // Değişiklik: Eğer track yoksa ve ilk render ise, hem spinner hem de yükleniyor-animasyonunu barın içinde göster.
-let track = container.querySelector('.scale-bar-track');
+  let track = container.querySelector('.scale-bar-track');
 if (!track) {
   container.innerHTML = '';
   track = document.createElement('div');
   track.className = 'scale-bar-track';
+  // Yüklemeye başlarken spinnerı/loaderı ortada göster.
+  const loader = document.createElement('div');
+  loader.className = 'tt-scale-loader';
+  loader.innerHTML = `<div class="spinner"></div><div class="txt">Loading elevation...</div>`;
+  track.appendChild(loader);
   container.appendChild(track);
 }
+
+  // Elevation yükleniyor kısmına kadar loader hep açık kalsın, track üzerine overlay gibi.
 let loader = track.querySelector('.tt-scale-loader');
 if (!loader) {
   loader = document.createElement('div');
   loader.className = 'tt-scale-loader';
-  loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
+  loader.innerHTML = `<div class="spinner"></div><div class="txt">Loading elevation...</div>`;
   track.appendChild(loader);
 }
-loader.style.display = 'flex';
+loader.style.display = 'flex'; // Mutlaka görünsün
+loader.style.position = 'absolute';
+loader.style.left = '0';
+loader.style.right = '0';
+loader.style.top = '0';
+loader.style.bottom = '0';
+loader.style.justifyContent = 'center';
+loader.style.alignItems = 'center';
+loader.style.background = 'rgba(255,255,255,0.95)';
+loader.style.zIndex = '5';
   window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
 
   // Sadece loading sınıfı ekle (içerik kalsın)
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
-
-  track.style.minHeight = '210px'; // veya mevcut grafik yüksekliği ile uyumlu bir değer!
-track.style.background = '#17232e'; // Koyu veya açık harita zeminine uygun
 
   window.showScaleBarLoading?.(container, 'Loading elevation...');
 
@@ -10015,14 +10028,10 @@ track.style.background = '#17232e'; // Koyu veya açık harita zeminine uygun
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
       
       // --- VERİ HAZIR, ŞİMDİ ESKİSİNİ SİL VE YENİSİNİ KOY ---
-     const oldLoader = track.querySelector('.tt-scale-loader');
-Array.from(track.children).forEach(child => {
-  if (!child.classList.contains('tt-scale-loader')) child.remove();
-});
-// Loader kalsın (SVG'den önce spinner ve text)
-if (oldLoader) track.appendChild(oldLoader);
-track.style.minHeight = '210px';
-track.style.background = '#17232e';
+      const oldLoader = track.querySelector('.tt-scale-loader');
+      track.innerHTML = ''; // Temizlik
+      if (oldLoader) track.appendChild(oldLoader); // Loader kalsın (henüz bitmedi)
+
       // Selection Div
       const selDiv = document.createElement('div');
       selDiv.className = 'scale-bar-selection';
@@ -10253,10 +10262,12 @@ track.style.background = '#17232e';
 
       // ÇİZİMİ BAŞLAT
       requestAnimationFrame(() => {
-          container._redrawElevation(container._elevationData);
-          window.hideScaleBarLoading?.(container);
-          track.classList.remove('loading');
-      });
+  container._redrawElevation(container._elevationData);
+  // Loader/spinner'ı kapat
+  const loader = track.querySelector('.tt-scale-loader');
+  if(loader) loader.style.display = 'none';
+  track.classList.remove('loading');
+});
 
       if (typeof day !== "undefined") {
         let ascent = 0, descent = 0;
