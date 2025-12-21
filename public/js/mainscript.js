@@ -7964,6 +7964,24 @@ async function renderRouteForDay(day) {
 
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
+
+    // <--- YENİ EKLENEN KISIM BAŞLANGICI --->
+  console.log(`[MainScript] Route updating for Day ${day}. Resetting views...`);
+
+  // 3D Harita tarafında segment seçimini sıfırlamak için global değişkenleri temizle
+  if (typeof window.selectedSegmentIndex !== 'undefined') {
+      window.selectedSegmentIndex = -1;
+  }
+  if (typeof window.selectedSegment !== 'undefined') {
+      window.selectedSegment = null;
+  }
+
+  // 3D Harita scriptinin dinlemesi için event fırlat (En temiz yöntem)
+  // 3D harita kodunda: document.addEventListener('tripUpdated', () => { ...resetLogic... }) olmalı
+  document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
+  // <--- YENİ EKLENEN KISIM SONU --->
+
+  
    const pts = getDayPoints(day).filter(
   p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
 );
