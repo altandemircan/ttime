@@ -9947,13 +9947,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    container.innerHTML = '<div class="spinner"></div>';
+    container.innerHTML = '';
     track = document.createElement('div');
     track.className = 'scale-bar-track';
     container.appendChild(track);
   }
 
-  // Loader'ı her zaman oluştur ve görünür tut
+  // Loader her zaman var ve visible olmalı
   let loader = track.querySelector('.tt-scale-loader');
   if (!loader) {
     loader = document.createElement('div');
