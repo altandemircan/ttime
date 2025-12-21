@@ -9945,38 +9945,41 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-   let track = container.querySelector('.scale-bar-track');
+    let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    // ÖNCE BOŞ BİR GRAFİK OLUŞTUR
-    container.innerHTML = `
-      <div class="scale-bar-track">
-        <div class="elevation-placeholder" style="
-          width: 100%;
-          height: 220px;
-          background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-          border-radius: 8px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #6c757d;
-          font-size: 14px;
-        ">
-          <div class="spinner" style="margin-bottom: 10px;"></div>
-          <div>Loading elevation profile...</div>
-        </div>
-      </div>
+    track = document.createElement('div');
+    track.className = 'scale-bar-track';
+    
+    // HEMEN BOŞ BİR KONTEYNER OLUŞTUR (beyaz kalmasın)
+    const placeholder = document.createElement('div');
+    placeholder.className = 'elevation-placeholder';
+    placeholder.style.cssText = `
+      width: 100%;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     `;
-    track = container.querySelector('.scale-bar-track');
+    
+    track.appendChild(placeholder);
+    container.appendChild(track);
   }
 
-  // Loader'ı her zaman oluştur ve görünür tut
+   // Loader'ı her zaman oluştur ve görünür tut
   let loader = track.querySelector('.tt-scale-loader');
   if (!loader) {
     loader = document.createElement('div');
     loader.className = 'tt-scale-loader';
-    loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
-    track.appendChild(loader);
+    loader.innerHTML = `<div class="spinner"></div><div class="txt">Loading elevation profile...</div>`;
+    
+    // Loader'ı placeholder içine ekle
+    const placeholder = track.querySelector('.elevation-placeholder');
+    if (placeholder) {
+      placeholder.innerHTML = '';
+      placeholder.appendChild(loader);
+    } else {
+      track.appendChild(loader);
+    }
   }
   loader.style.display = 'flex';
   window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
@@ -10026,16 +10029,16 @@ function renderRouteScaleBar(container, totalKm, markers) {
   container._elevStartKm = 0;
   container._elevKmSpan = totalKm;
 
-    (async () => {
+     (async () => {
     try {
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
       
-      // --- VERİ HAZIR, ESKİ PLACEHOLDER'İ SİL VE YENİSİNİ KOY ---
+      // --- VERİ HAZIR, PLACEHOLDER'İ SİL ---
       const placeholder = track.querySelector('.elevation-placeholder');
-      if (placeholder) placeholder.remove(); // Sadece placeholder'ı sil
+      if (placeholder) placeholder.remove();
       
       const oldLoader = track.querySelector('.tt-scale-loader');
-      if (oldLoader) oldLoader.remove(); // Loader'ı temizle
+      if (oldLoader) oldLoader.remove();
       
       // Selection Div oluştur
       const selDiv = document.createElement('div');
@@ -10282,23 +10285,26 @@ function renderRouteScaleBar(container, totalKm, markers) {
         window.routeElevStatsByDay[day] = { ascent: Math.round(ascent), descent: Math.round(descent) };
         if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
       }
-     } catch (err) {
+       } catch (err) {
       console.warn("Elevation fetch error:", err);
-      window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       
-      // Placeholder'ı güncelle
-      const placeholder = track.querySelector('.elevation-placeholder');
-      if (placeholder) {
-        placeholder.innerHTML = `
-          <div style="text-align:center;padding:20px;color:#dc3545;">
-            <div>⚠️ Elevation unavailable</div>
-            <small style="font-size:12px;">Using approximate profile</small>
-          </div>
-        `;
+      // Loader'ı güncelle
+      const loader = track.querySelector('.tt-scale-loader');
+      if (loader) {
+        const txt = loader.querySelector('.txt');
+        if (txt) txt.textContent = 'Elevation temporarily unavailable';
       }
       
+      // Placeholder'ı kaldır, boş grafik göster
+      const placeholder = track.querySelector('.elevation-placeholder');
+      if (placeholder) placeholder.remove();
+      
+      const oldLoader = track.querySelector('.tt-scale-loader');
+      if (oldLoader) oldLoader.remove();
+      
       track.classList.remove('loading');
-      // Boş da olsa grafik çizmeye devam et
+      
+      // Boş da olsa grafik çiz
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
       createScaleElements(track, width, totalKm, 0, markers);
     }
