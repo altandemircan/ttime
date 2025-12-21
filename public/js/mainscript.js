@@ -155,6 +155,17 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
     return;
   }
+  // Loader zaten var mı kontrol et, yoksa ekle
+let loader = track.querySelector('.tt-scale-loader');
+if (!loader) {
+  loader = document.createElement('div');
+  loader.className = 'tt-scale-loader';
+  loader.innerHTML = `
+    <div class="spinner"></div>
+    <span>Loading elevation</span>
+  `;
+  track.appendChild(loader);
+}
   if (!track) return;
 
   track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
@@ -4786,7 +4797,7 @@ async function updateCart() {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-    
+
 }
 
 function showRemoveItemConfirmation(index, btn) {
