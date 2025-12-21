@@ -139,9 +139,10 @@ function niceStep(total, target) {
 }
 // DÜZELTİLMİŞ FONKSİYON 2
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
-  if (track && track.classList.contains('loading')) {
+   if (track && track.classList.contains('loading')) {
+      // Sadece marker badge'leri temizle ama fonksiyondan ÇIKMA
       track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-      return; 
+      // return; // BU SATIRI KALDIR!
   }
 
   const container = track?.parentElement;
@@ -9918,16 +9919,29 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const gjKey = day ? (window.lastRouteGeojsons && window.lastRouteGeojsons[`route-map-day${day}`]) : null;
   const coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
-  if (!container || isNaN(totalKm)) {
-    if (container) { container.innerHTML = ""; container.style.display = 'block'; }
+   if (!container || isNaN(totalKm)) {
+    if (container) { 
+      // container.innerHTML = ""; // BU SATIRI KALDIR
+      // Bunun yerine loader göster
+      if (!container.querySelector('.tt-scale-loader')) {
+        container.innerHTML = `<div class="tt-scale-loader" style="display:flex;"><div class="spinner"></div><div class="txt">Invalid data</div></div>`;
+      }
+      container.style.display = 'block'; 
+    }
     return;
   }
-
   delete container._elevationData;
   delete container._elevationDataFull;
 
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-    container.innerHTML = '<div class="spinner"></div>';
+    // container.innerHTML = '<div class="spinner"></div>'; // KALDIR
+    // Bunun yerine mevcut içeriği koru, sadece loader ekle
+    if (!container.querySelector('.tt-scale-loader')) {
+      const loader = document.createElement('div');
+      loader.className = 'tt-scale-loader';
+      loader.innerHTML = `<div class="spinner"></div><div class="txt">Loading...</div>`;
+      container.appendChild(loader);
+    }
     return;
   }
 
@@ -10165,18 +10179,19 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.addEventListener('mousemove', onMoveTooltip);
       track.addEventListener('touchmove', onMoveTooltip);
 
-            if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
-        // track.innerHTML = ... BU SATIRI KALDIR
-        
-        // Bunun yerine placeholder veya loader'ı güncelle
+         if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
+        // HATA: placeholder'a hata mesajını ekle
         const placeholder = track.querySelector('.elevation-placeholder');
         if (placeholder) {
           placeholder.innerHTML = `<div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div>`;
         } else {
-          // Yeni bir hata mesajı div'i oluştur
+          // Eğer placeholder yoksa, önce SVG'yi temizle
+          track.querySelectorAll('svg.tt-elev-svg, .scale-bar-selection, .scale-bar-vertical-line').forEach(el => el.remove());
+          
+          // Sonra hata mesajını ekle
           const errorDiv = document.createElement('div');
-          errorDiv.style.cssText = 'text-align:center;padding:12px;font-size:13px;color:#c62828;';
-          errorDiv.textContent = 'Elevation profile unavailable';
+          errorDiv.style.cssText = 'text-align:center;padding:20px;font-size:13px;color:#c62828;';
+          errorDiv.innerHTML = '<div>Elevation profile unavailable</div>';
           track.appendChild(errorDiv);
         }
         return;
@@ -10329,8 +10344,17 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.classList.remove('loading');
       
       // Boş da olsa grafik çiz
+            track.classList.remove('loading'); // ÖNCE loading class'ını kaldır
+      
+      // Boş da olsa grafik çiz
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
       createScaleElements(track, width, totalKm, 0, markers);
+      
+      // Hata mesajını da göster
+      const errorMsg = document.createElement('div');
+      errorMsg.style.cssText = 'text-align:center;padding:10px;font-size:12px;color:#ff9800;';
+      errorMsg.textContent = 'Elevation data could not be loaded';
+      track.appendChild(errorMsg);
     }
   })();
 }
