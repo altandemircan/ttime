@@ -9945,37 +9945,27 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-  let track = container.querySelector('.scale-bar-track');
-if (!track) {
-  container.innerHTML = '';
-  track = document.createElement('div');
-  track.className = 'scale-bar-track';
-  // Yüklemeye başlarken spinnerı/loaderı ortada göster.
-  const loader = document.createElement('div');
-  loader.className = 'tt-scale-loader';
-  loader.innerHTML = `<div class="spinner"></div><div class="txt">Loading elevation...</div>`;
-  track.appendChild(loader);
-  container.appendChild(track);
+  if (!track) {
+  container.innerHTML = `
+    <div class="scale-bar-track">
+      <div class="tt-scale-loader" style="display:flex;justify-content:center;align-items:center;width:100%;height:180px;min-height:120px;position:relative;">
+        <div class="spinner"></div>
+        <div class="txt">Loading elevation…</div>
+      </div>
+    </div>
+  `;
+  track = container.querySelector('.scale-bar-track');
 }
 
-  // Elevation yükleniyor kısmına kadar loader hep açık kalsın, track üzerine overlay gibi.
-let loader = track.querySelector('.tt-scale-loader');
-if (!loader) {
-  loader = document.createElement('div');
-  loader.className = 'tt-scale-loader';
-  loader.innerHTML = `<div class="spinner"></div><div class="txt">Loading elevation...</div>`;
-  track.appendChild(loader);
-}
-loader.style.display = 'flex'; // Mutlaka görünsün
-loader.style.position = 'absolute';
-loader.style.left = '0';
-loader.style.right = '0';
-loader.style.top = '0';
-loader.style.bottom = '0';
-loader.style.justifyContent = 'center';
-loader.style.alignItems = 'center';
-loader.style.background = 'rgba(255,255,255,0.95)';
-loader.style.zIndex = '5';
+  // Loader'ı her zaman oluştur ve görünür tut
+  let loader = track.querySelector('.tt-scale-loader');
+  if (!loader) {
+    loader = document.createElement('div');
+    loader.className = 'tt-scale-loader';
+    loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
+    track.appendChild(loader);
+  }
+  loader.style.display = 'flex';
   window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
 
   // Sadece loading sınıfı ekle (içerik kalsın)
@@ -10262,12 +10252,10 @@ loader.style.zIndex = '5';
 
       // ÇİZİMİ BAŞLAT
       requestAnimationFrame(() => {
-  container._redrawElevation(container._elevationData);
-  // Loader/spinner'ı kapat
-  const loader = track.querySelector('.tt-scale-loader');
-  if(loader) loader.style.display = 'none';
-  track.classList.remove('loading');
-});
+          container._redrawElevation(container._elevationData);
+          window.hideScaleBarLoading?.(container);
+          track.classList.remove('loading');
+      });
 
       if (typeof day !== "undefined") {
         let ascent = 0, descent = 0;
