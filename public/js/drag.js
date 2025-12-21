@@ -333,55 +333,29 @@ function getDragAfterElement(container, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// [drag.js] dosyasında updatePlaceholder fonksiyonunu bulup bu şekilde değiştirin:
-
 function updatePlaceholder(clientX, clientY) {
-    if (!draggedItem) return;
+    const elementBelow = document.elementFromPoint(clientX, clientY);
+    if (!elementBelow) return;
+    
+    const dropZone = elementBelow.closest('.day-list');
+    if (!dropZone) return;
 
-    // 1. Mouse'un üzerinde olduğu listeyi bul
-    // (Helper fonksiyon varsa onu kullan, yoksa manuel bul)
-    let listContainer = null;
-    if (typeof getHoveredListContainer === 'function') {
-        listContainer = getHoveredListContainer(clientX, clientY);
-    } else {
-        const el = document.elementFromPoint(clientX, clientY);
-        if (el) listContainer = el.closest('.day-list');
-    }
-
-    // Liste bulunamadıysa placeholder'ı kaldır
-    if (!listContainer) {
-        if (placeholder && placeholder.parentNode) placeholder.remove();
-        return;
-    }
-
-    // 2. Placeholder elementini oluştur (Eğer henüz yoksa)
     if (!placeholder) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
     }
-
-    // 3. İmlecin konumuna göre referans elementi (afterElement) bul
-    const afterElement = getDragAfterElement(listContainer, clientY);
-
-    if (afterElement.element == null) {
-        // --- KRİTİK DÜZELTME BAŞLANGICI ---
-        // İmleç listenin sonundaysa, placeholder'ı direkt container'ın en sonuna (appendChild) eklemek yerine;
-        // son 'travel-item'ı bulup onun arkasına (slider'ın önüne) ekliyoruz.
-        
-        const allItems = listContainer.querySelectorAll('.travel-item:not(.dragging-source)');
-        const lastItem = allItems.length > 0 ? allItems[allItems.length - 1] : null;
-
-        if (lastItem) {
-            // Son item varsa, placeholder'ı onun bir sonraki kardeşinin (varsa slider'ın) önüne ekle
-            listContainer.insertBefore(placeholder, lastItem.nextSibling);
+    
+    const afterElement = getDragAfterElement(dropZone, clientY);
+    
+    if (afterElement == null) {
+        const addBtn = dropZone.querySelector('.add-more-btn');
+        if (addBtn && getComputedStyle(addBtn).display !== 'none') {
+             dropZone.insertBefore(placeholder, addBtn);
         } else {
-            // Eğer hiç item yoksa (liste boşsa), en başa ekle (böylece slider'ın üstünde durur)
-            listContainer.prepend(placeholder);
+             dropZone.appendChild(placeholder);
         }
-        // --- KRİTİK DÜZELTME SONU ---
     } else {
-        // İmleç aradaysa, ilgili elementin önüne ekle
-        listContainer.insertBefore(placeholder, afterElement.element);
+        dropZone.insertBefore(placeholder, afterElement);
     }
 }
 
