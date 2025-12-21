@@ -23,24 +23,6 @@ function debounce(func, wait) {
     };
 }
 
-if (!document.getElementById('tt-scale-bar-css2')) {
-  const style = document.createElement('style');
-  style.id = 'tt-scale-bar-css2';
-  style.textContent = `
-    .scale-bar-track.loading { 
-      min-height: 210px !important;
-      background: #17232e !important;
-      position: relative;
-    }
-    .scale-bar-track .tt-scale-loader {
-      position: absolute;
-      left: 50%; top: 66px; transform: translate(-50%,0);
-      z-index: 10;
-      display: flex; align-items:center; gap:12px;
-    }
-  `;
-  document.head.appendChild(style);
-}
 
 
 window.__welcomeHiddenForever = false;
