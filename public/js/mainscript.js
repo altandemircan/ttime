@@ -7961,24 +7961,25 @@ if (imported) {
 }
 
 async function renderRouteForDay(day) {
+
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
 
-    // <--- DÜZELTME BURADA: 3D MAP SEGMENT SORUNU İÇİN --->
-    console.log(`[MainScript] Route updating for Day ${day}. Clearing 3D segment memory...`);
+    // <--- ÇÖZÜM BURASI: Segment Hafızasını Temizle --->
+    // Herhangi bir ekleme/çıkarma/güncelleme olduğunda:
+    // 1. Seçili segment indexini boşa düşür.
+    window.selectedSegmentIndex = -1;
+    window.selectedSegment = null;
 
-    // 1. Segment seçim indexlerini ve HAFIZADAKİ SEGMENT BİLGİLERİNİ sıfırla.
-    // Bunu yapmazsak, fonksiyonun en altındaki setTimeout bu değerleri görüp segmenti tekrar çizer!
-    if (typeof window.selectedSegmentIndex !== 'undefined') window.selectedSegmentIndex = -1;
-    if (typeof window.selectedSegment !== 'undefined') window.selectedSegment = null;
-    
+    // 2. EN ÖNEMLİSİ: Fonksiyonun en altında çalışan "tekrar boyama" kodunu engellemek için
+    // hafızadaki son segment koordinatlarını siliyoruz.
     window._lastSegmentDay = null;
     window._lastSegmentStartKm = null;
     window._lastSegmentEndKm = null;
 
-    // 2. 3D Haritaya temizlik sinyali gönder
+    // 3. 3D haritaya da "ben güncellendim, üzerindeki boyaları sil" sinyali gönder.
     document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
-    // <--- DÜZELTME SONU --->
+    // <--- ÇÖZÜM SONU --->
 
 
     const pts = getDayPoints(day).filter(
@@ -8138,10 +8139,8 @@ async function renderRouteForDay(day) {
     }
 
     if (!points || points.length === 0) {
-        // Harita DOM'u silmek yerine, hep gösterilecek şekilde:
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
-        // Tüm route/stat/cache/state temizliği gene olsun
         if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
         if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
         if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
@@ -8159,7 +8158,6 @@ async function renderRouteForDay(day) {
         if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
         if (map) {
             map.eachLayer(l => {
-                // Sadece marker, polyline, circle ve circleMarker layerlarını sil
                 if (
                     l instanceof L.Marker ||
                     l instanceof L.Polyline ||
@@ -8171,7 +8169,6 @@ async function renderRouteForDay(day) {
             });
 
             const p = points[0];
-            // DAİMA leaflet marker/divIcon kullanarak ekle (SVG/path yerine)
             L.marker([p.lat, p.lng], {
                 icon: L.divIcon({
                     html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
@@ -8186,7 +8183,6 @@ async function renderRouteForDay(day) {
         const expandedMapObj = window.expandedMaps?.[containerId];
         if (expandedMapObj?.expandedMap) {
             const eMap = expandedMapObj.expandedMap;
-            // Burada da, sadece marker ve polyline'ları sil
             eMap.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) eMap.removeLayer(l); });
 
             const p = points[0];
@@ -8346,9 +8342,8 @@ async function renderRouteForDay(day) {
 
     if (!hasRealRoute) {
         if (isInTurkey) {
-            // TÜRKİYE'DE: HAVERSINE İLE Fallback summary/bar YOK, DOM'a badge/bar BOŞ!
             window.lastRouteSummaries = window.lastRouteSummaries || {};
-            window.lastRouteSummaries[containerId] = {}; // Boş bırak!
+            window.lastRouteSummaries[containerId] = {};
             window.lastRouteGeojsons = window.lastRouteGeojsons || {};
             window.lastRouteGeojsons[containerId] = {
                 type: "FeatureCollection",
@@ -8377,11 +8372,10 @@ async function renderRouteForDay(day) {
                 }
                 expandedScaleBar.style.display = "block";
                 expandedScaleBar.innerHTML = "";
-                renderRouteScaleBar(expandedScaleBar, 0, []); // Mesafe yok, scale bar boş
+                renderRouteScaleBar(expandedScaleBar, 0, []);
             }
             return;
         } else {
-            // YURTDIŞI/Fly Mode: HAVERSINE ile mesafe ve süre dolsun!
             let totalKm = 0;
             let markerPositions = [];
             for (let i = 0; i < points.length; i++) {
@@ -8471,7 +8465,7 @@ async function renderRouteForDay(day) {
         }
         const data = await response.json();
         if (!data.routes || !data.routes[0] || !data.routes[0].geometry) throw new Error('No route found');
-        // --- DÜZELTMELİ ---
+
         return {
             geojson: {
                 type: 'FeatureCollection',
@@ -8492,7 +8486,7 @@ async function renderRouteForDay(day) {
                 distance: data.routes[0].distance,
                 duration: data.routes[0].duration
             },
-            legs: data.routes[0].legs    // <---- BURAYI EKLE!
+            legs: data.routes[0].legs
         };
     }
 
