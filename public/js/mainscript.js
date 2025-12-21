@@ -10344,8 +10344,17 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.classList.remove('loading');
       
       // Boş da olsa grafik çiz
+            track.classList.remove('loading'); // ÖNCE loading class'ını kaldır
+      
+      // Boş da olsa grafik çiz
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
       createScaleElements(track, width, totalKm, 0, markers);
+      
+      // Hata mesajını da göster
+      const errorMsg = document.createElement('div');
+      errorMsg.style.cssText = 'text-align:center;padding:10px;font-size:12px;color:#ff9800;';
+      errorMsg.textContent = 'Elevation data could not be loaded';
+      track.appendChild(errorMsg);
     }
   })();
 }
