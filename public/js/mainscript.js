@@ -9947,22 +9947,39 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    container.innerHTML = '';
-    track = document.createElement('div');
-    track.className = 'scale-bar-track';
-    container.appendChild(track);
-  }
+  container.innerHTML = '';
+  track = document.createElement('div');
+  track.className = 'scale-bar-track';
+  container.appendChild(track);
+}
 
-  // Loader her zaman var ve visible olmalı
-  let loader = track.querySelector('.tt-scale-loader');
-  if (!loader) {
-    loader = document.createElement('div');
-    loader.className = 'tt-scale-loader';
-    loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
-    track.appendChild(loader);
-  }
-  loader.style.display = 'flex';
-  window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
+// -- LOADER HER ZAMAN OLMALI (EN ÜSTE Z-INDEX) --
+let loader = track.querySelector('.tt-scale-loader');
+if (!loader) {
+  loader = document.createElement('div');
+  loader.className = 'tt-scale-loader';
+  loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
+  track.appendChild(loader);
+}
+loader.style.display = 'flex';
+// FORCE yukarıda kalması ve üstte overlay olması için
+loader.style.position = 'absolute';
+loader.style.top = '0';
+loader.style.left = '0';
+loader.style.width = '100%';
+loader.style.height = '100%';
+loader.style.alignItems = 'center';
+loader.style.justifyContent = 'center';
+loader.style.background = 'rgba(255,255,255,0.7)'; // biraz opak zemin (isteğe bağlı)
+loader.style.zIndex = '20000'; // en üstte
+// - Mobilde daha yüksek zIndex ve background kullanılabilir -
+// Mobilde boş kalmasını önle (ekstra stil)
+if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+  loader.style.background = 'rgba(255,255,255,0.9)';
+  loader.style.minHeight = '150px';
+}
+loader.style.opacity = '1';
+window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
 
   // Sadece loading sınıfı ekle (içerik kalsın)
   track.classList.add('loading');
