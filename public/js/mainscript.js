@@ -9907,8 +9907,11 @@ function renderRouteScaleBar(container, totalKm, markers) {
     document.head.appendChild(style);
   }
 
+// spinner'ı kaldırmak yerine sadece görünmez yap
   const spinner = container.querySelector('.spinner');
-  if (spinner) spinner.remove();
+  if (spinner) {
+    spinner.style.display = 'none';
+  }
   
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
@@ -9929,8 +9932,17 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
 
   if (!Array.isArray(coords) || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
-    container.style.display = 'block';
+    // track'i bul veya oluştur
+        let track = container.querySelector('.scale-bar-track');
+        if (!track) {
+          track = document.createElement('div');
+          track.className = 'scale-bar-track';
+          container.appendChild(track);
+        }
+        
+        // Hata mesajını ekle
+        track.innerHTML = `<div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div>`;
+        container.style.display = 'block';
     return;
   }
   const mid = coords[Math.floor(coords.length / 2)];
@@ -10153,8 +10165,20 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.addEventListener('mousemove', onMoveTooltip);
       track.addEventListener('touchmove', onMoveTooltip);
 
-      if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
-        track.innerHTML = `<div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div>`;
+            if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
+        // track.innerHTML = ... BU SATIRI KALDIR
+        
+        // Bunun yerine placeholder veya loader'ı güncelle
+        const placeholder = track.querySelector('.elevation-placeholder');
+        if (placeholder) {
+          placeholder.innerHTML = `<div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div>`;
+        } else {
+          // Yeni bir hata mesajı div'i oluştur
+          const errorDiv = document.createElement('div');
+          errorDiv.style.cssText = 'text-align:center;padding:12px;font-size:13px;color:#c62828;';
+          errorDiv.textContent = 'Elevation profile unavailable';
+          track.appendChild(errorDiv);
+        }
         return;
       }
 
