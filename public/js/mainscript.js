@@ -4770,6 +4770,23 @@ async function updateCart() {
         div.innerHTML = window.latestAiInfoHtml;
         cartDiv.appendChild(div.firstElementChild);
     }
+
+     if (window._maplibre3DInstance) {
+        if (window._maplibre3DInstance.getLayer && window._maplibre3DInstance.getLayer('segment-highlight-layer')) {
+            window._maplibre3DInstance.removeLayer('segment-highlight-layer');
+        }
+        if (window._maplibre3DInstance.getSource && window._maplibre3DInstance.getSource('segment-highlight-source')) {
+            window._maplibre3DInstance.removeSource('segment-highlight-source');
+        }
+        if (window._segment3DMarkers && Array.isArray(window._segment3DMarkers)) {
+            window._segment3DMarkers.forEach(m => m.remove && m.remove());
+            window._segment3DMarkers = [];
+        }
+        window._lastSegmentDay = undefined;
+        window._lastSegmentStartKm = undefined;
+        window._lastSegmentEndKm = undefined;
+    }
+    
 }
 
 function showRemoveItemConfirmation(index, btn) {
