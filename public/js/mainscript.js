@@ -7961,39 +7961,24 @@ if (imported) {
 }
 
 async function renderRouteForDay(day) {
-
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
 
-    // <--- YENİ EKLENEN/GÜNCELLENEN KISIM BAŞLANGICI --->
-    console.log(`[MainScript] Route updating for Day ${day}. Resetting views & clearing segments...`);
+    // <--- DÜZELTME BURADA: 3D MAP SEGMENT SORUNU İÇİN --->
+    console.log(`[MainScript] Route updating for Day ${day}. Clearing 3D segment memory...`);
 
-    // 1. Segment seçim indexlerini sıfırla
+    // 1. Segment seçim indexlerini ve HAFIZADAKİ SEGMENT BİLGİLERİNİ sıfırla.
+    // Bunu yapmazsak, fonksiyonun en altındaki setTimeout bu değerleri görüp segmenti tekrar çizer!
     if (typeof window.selectedSegmentIndex !== 'undefined') window.selectedSegmentIndex = -1;
     if (typeof window.selectedSegment !== 'undefined') window.selectedSegment = null;
-
-    // 2. KRİTİK DÜZELTME: Fonksiyonun en altındaki "highlightSegmentOnMap" çağrısını engellemek için
-    // hafızadaki son segment bilgilerini siliyoruz.
+    
     window._lastSegmentDay = null;
     window._lastSegmentStartKm = null;
     window._lastSegmentEndKm = null;
 
-    // 3. Varsa 3D haritadaki highlight layerlarını manuel temizlemeyi dene (Mapbox/MapLibre için genel temizlik)
-    if (window.map && typeof window.map.getLayer === 'function') {
-        try {
-            if (window.map.getLayer('highlight-line')) window.map.removeLayer('highlight-line');
-            if (window.map.getSource('highlight-line')) window.map.removeSource('highlight-line');
-            // Eğer global marker dizisi varsa temizle (Genel isimlendirme tahmini)
-            if (window.segmentMarkers && Array.isArray(window.segmentMarkers)) {
-                window.segmentMarkers.forEach(m => m.remove());
-                window.segmentMarkers = [];
-            }
-        } catch (e) { console.log("Segment temizleme hatası:", e); }
-    }
-
-    // 4. Diğer scriptlerin dinlemesi için event fırlat
+    // 2. 3D Haritaya temizlik sinyali gönder
     document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
-    // <--- YENİ EKLENEN KISIM SONU --->
+    // <--- DÜZELTME SONU --->
 
 
     const pts = getDayPoints(day).filter(
