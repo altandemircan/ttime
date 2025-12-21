@@ -23,7 +23,24 @@ function debounce(func, wait) {
     };
 }
 
-
+if (!document.getElementById('tt-scale-bar-css2')) {
+  const style = document.createElement('style');
+  style.id = 'tt-scale-bar-css2';
+  style.textContent = `
+    .scale-bar-track.loading { 
+      min-height: 210px !important;
+      background: #17232e !important;
+      position: relative;
+    }
+    .scale-bar-track .tt-scale-loader {
+      position: absolute;
+      left: 50%; top: 66px; transform: translate(-50%,0);
+      z-index: 10;
+      display: flex; align-items:center; gap:12px;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 
 window.__welcomeHiddenForever = false;
@@ -4786,7 +4803,7 @@ async function updateCart() {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-    
+
 }
 
 function showRemoveItemConfirmation(index, btn) {
@@ -9945,28 +9962,30 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-  let track = container.querySelector('.scale-bar-track');
-  if (!track) {
-    container.innerHTML = '<div class="spinner"></div>';
-    track = document.createElement('div');
-    track.className = 'scale-bar-track';
-    container.appendChild(track);
-  }
-
-  // Loader'ı her zaman oluştur ve görünür tut
-  let loader = track.querySelector('.tt-scale-loader');
-  if (!loader) {
-    loader = document.createElement('div');
-    loader.className = 'tt-scale-loader';
-    loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
-    track.appendChild(loader);
-  }
-  loader.style.display = 'flex';
+  // Değişiklik: Eğer track yoksa ve ilk render ise, hem spinner hem de yükleniyor-animasyonunu barın içinde göster.
+let track = container.querySelector('.scale-bar-track');
+if (!track) {
+  container.innerHTML = '';
+  track = document.createElement('div');
+  track.className = 'scale-bar-track';
+  container.appendChild(track);
+}
+let loader = track.querySelector('.tt-scale-loader');
+if (!loader) {
+  loader = document.createElement('div');
+  loader.className = 'tt-scale-loader';
+  loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
+  track.appendChild(loader);
+}
+loader.style.display = 'flex';
   window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
 
   // Sadece loading sınıfı ekle (içerik kalsın)
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
+
+  track.style.minHeight = '210px'; // veya mevcut grafik yüksekliği ile uyumlu bir değer!
+track.style.background = '#17232e'; // Koyu veya açık harita zeminine uygun
 
   window.showScaleBarLoading?.(container, 'Loading elevation...');
 
@@ -10014,10 +10033,14 @@ function renderRouteScaleBar(container, totalKm, markers) {
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
       
       // --- VERİ HAZIR, ŞİMDİ ESKİSİNİ SİL VE YENİSİNİ KOY ---
-      const oldLoader = track.querySelector('.tt-scale-loader');
-      track.innerHTML = ''; // Temizlik
-      if (oldLoader) track.appendChild(oldLoader); // Loader kalsın (henüz bitmedi)
-
+     const oldLoader = track.querySelector('.tt-scale-loader');
+Array.from(track.children).forEach(child => {
+  if (!child.classList.contains('tt-scale-loader')) child.remove();
+});
+// Loader kalsın (SVG'den önce spinner ve text)
+if (oldLoader) track.appendChild(oldLoader);
+track.style.minHeight = '210px';
+track.style.background = '#17232e';
       // Selection Div
       const selDiv = document.createElement('div');
       selDiv.className = 'scale-bar-selection';
