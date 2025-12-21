@@ -10265,10 +10265,13 @@ window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
 
       // ÇİZİMİ BAŞLAT
       requestAnimationFrame(() => {
-          container._redrawElevation(container._elevationData);
-          window.hideScaleBarLoading?.(container);
-          track.classList.remove('loading');
-      });
+    container._redrawElevation(container._elevationData);
+    // loader asla DOM'dan silinmesin - yalnızca görünmez yap!
+    loader.style.display = 'none';
+    loader.style.opacity = '0';
+    window.hideScaleBarLoading?.(container);
+    track.classList.remove('loading');
+});
 
       if (typeof day !== "undefined") {
         let ascent = 0, descent = 0;
@@ -10286,8 +10289,10 @@ window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
       
-      track.classList.remove('loading');
-      createScaleElements(track, width || 400, totalKm, 0, markers);
+      loader.style.display = 'none';
+loader.style.opacity = '0';
+track.classList.remove('loading');
+createScaleElements(track, width || 400, totalKm, 0, markers);
     }
   })();
 }
