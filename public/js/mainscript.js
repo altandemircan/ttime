@@ -9880,24 +9880,34 @@ function setupScaleBarEvents(track, selDiv) {
       }
   });
 }
+// === YALNIZCA AŞAĞIDAKİ renderRouteScaleBar fonksiyonunu BUL ve DEĞİŞTİR ===
+
 function renderRouteScaleBar(container, totalKm, markers) {
   // 1. CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
     style.id = 'tt-scale-bar-css';
     style.innerHTML = `
-        .scale-bar-track.loading > *:not(.tt-scale-loader) {
+        .scale-bar-track.loading > *:not(.tt-scale-loader):not(.tt-scale-bar-loading-svg) {
             opacity: 0.4; 
             pointer-events: none;
             transition: opacity 0.2s ease;
         }
-        .scale-bar-track.loading .tt-scale-loader {
+        .scale-bar-track.loading .tt-scale-loader,
+        .scale-bar-track.loading .tt-scale-bar-loading-svg {
             opacity: 1 !important;
         }
         .scale-bar-track.loading {
             min-height: 200px; 
             width: 100%;
             position: relative;
+        }
+        .tt-scale-bar-loading-svg {
+            position: absolute;
+            left: 0; top: 0; width: 100%; height: 100%; min-height:200px;
+            z-index: 20;
+            pointer-events: none;
+            background: #f5f8ff;
         }
         /* TOOLTIP VE LINE HER ZAMAN EN ÜSTTE */
         .tt-elev-tooltip { z-index: 9999 !important; }
@@ -9945,17 +9955,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
+  let track = container.querySelector('.scale-bar-track');
   if (!track) {
-  container.innerHTML = `
-    <div class="scale-bar-track">
-      <div class="tt-scale-loader" style="display:flex;justify-content:center;align-items:center;width:100%;height:180px;min-height:120px;position:relative;">
-        <div class="spinner"></div>
-        <div class="txt">Loading elevation…</div>
-      </div>
-    </div>
-  `;
-  track = container.querySelector('.scale-bar-track');
-}
+    container.innerHTML = '<div class="spinner"></div>';
+    track = document.createElement('div');
+    track.className = 'scale-bar-track';
+    container.appendChild(track);
+  }
 
   // Loader'ı her zaman oluştur ve görünür tut
   let loader = track.querySelector('.tt-scale-loader');
@@ -9967,6 +9973,46 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
   loader.style.display = 'flex';
   window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
+
+  // YENİ: Loading Elevation SKELETON SVG GRAFİĞİ EKLE/SAKLI TUT!
+  let fakeSvg = track.querySelector('.tt-scale-bar-loading-svg');
+  if (!fakeSvg) {
+    fakeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    fakeSvg.classList.add("tt-scale-bar-loading-svg");
+    fakeSvg.setAttribute("viewBox", "0 0 400 170");
+    fakeSvg.setAttribute("preserveAspectRatio", "none");
+    fakeSvg.innerHTML = `
+      <defs>
+        <linearGradient id="sb-elev-loading-shine" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#bfcbe7" />
+          <stop offset="33%" stop-color="#e0e8f7" />
+          <stop offset="66%" stop-color="#bfcbe7" />
+          <stop offset="100%" stop-color="#bfcbe7" />
+        </linearGradient>
+        <animate attributeName="x1" values="0;1;0" dur="1.8s" repeatCount="indefinite"/>
+      </defs>
+      <g>
+        <rect x="0" y="0" width="400" height="170" rx="16" fill="#f5f8ff"/>
+        <rect x="7" y="45" width="386" height="65" rx="16" fill="#deeaf7" />
+        <path d="M7,110 
+          C25,95 70,85 110,98
+          S180,135 210,110
+          S300,60 330,130
+          S393,116 393,116"
+          stroke="url(#sb-elev-loading-shine)" stroke-width="5" fill="none">
+          <animate attributeName="d"
+            values="
+              M7,110 C25,95 70,85 110,98 S180,135 210,110 S300,60 330,130 S393,116 393,116;
+              M7,124 C25,140 70,120 110,128 S180,105 210,110 S300,125 330,104 S393,136 393,136;
+              M7,110 C25,95 70,85 110,98 S180,135 210,110 S300,60 330,130 S393,116 393,116"
+            dur="1.8s" repeatCount="indefinite" />
+        </path>
+        <text x="50%" y="26" text-anchor="middle" fill="#647495" font-size="18" font-family="sans-serif" style="opacity:0.92;">Loading elevation…</text>
+      </g>
+    `;
+    track.appendChild(fakeSvg);
+  }
+  fakeSvg.style.display = "block";
 
   // Sadece loading sınıfı ekle (içerik kalsın)
   track.classList.add('loading');
@@ -10017,15 +10063,20 @@ function renderRouteScaleBar(container, totalKm, markers) {
     try {
       const elevations = await window.getElevationsForRoute(samples, container, routeKey);
       
+      // === LOADING BİTTİ: Loading skeleton SVG'yi kaldır (!) ===
+      if(track.querySelector('.tt-scale-bar-loading-svg')) {
+        track.querySelector('.tt-scale-bar-loading-svg').style.display = "none";
+      }
       // --- VERİ HAZIR, ŞİMDİ ESKİSİNİ SİL VE YENİSİNİ KOY ---
       const oldLoader = track.querySelector('.tt-scale-loader');
-      track.innerHTML = ''; // Temizlik
+      track.innerHTML = '';
       if (oldLoader) track.appendChild(oldLoader); // Loader kalsın (henüz bitmedi)
+      // YENİ: Kullanıcı reload ederse, skeleton SVG tekrar eklensin (ama şu anda gizli)
+      if(fakeSvg) track.appendChild(fakeSvg);
 
       // Selection Div
       const selDiv = document.createElement('div');
       selDiv.className = 'scale-bar-selection';
-      // Z-Index CSS'de verildi ama garanti olsun
       selDiv.style.cssText = `position:absolute; top:0; bottom:0; background: rgba(138,74,243,0.16); border: 1px solid rgba(138,74,243,0.45); display:none; z-index: 9000;`;
       track.appendChild(selDiv);
       window.__scaleBarDragTrack = track;
@@ -10075,7 +10126,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       tooltip.className = 'tt-elev-tooltip';
       tooltip.style.left = '0px';
       tooltip.style.display = 'none';
-      tooltip.style.zIndex = '9999'; // Garanti
+      tooltip.style.zIndex = '9999'; 
       track.appendChild(tooltip);
 
       // Tooltip Hareket Listener'ı
@@ -10250,7 +10301,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       ro.observe(track);
       container._elevResizeObserver = ro;
 
-      // ÇİZİMİ BAŞLAT
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
           window.hideScaleBarLoading?.(container);
@@ -10269,10 +10319,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
         if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
       }
     } catch (err) {
-      console.warn("Elevation fetch error:", err);
+      // YANLIŞ: skeleton SVG'yi kaldırma. Hata da olsa görünmeye devam etsin!
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       try { delete container.dataset.elevLoadedKey; } catch(_) {}
-      
       track.classList.remove('loading');
       createScaleElements(track, width || 400, totalKm, 0, markers);
     }
