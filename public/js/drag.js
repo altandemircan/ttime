@@ -336,7 +336,7 @@ function getDragAfterElement(container, y) {
 function updatePlaceholder(clientX, clientY) {
     const elementBelow = document.elementFromPoint(clientX, clientY);
     if (!elementBelow) return;
-
+    
     const dropZone = elementBelow.closest('.day-list');
     if (!dropZone) return;
 
@@ -344,33 +344,17 @@ function updatePlaceholder(clientX, clientY) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
     }
-
-    // "add-more-btn" veya diğer non-item elemanlar varsa, onları "son .travel-item"dan sonra ekleyelim!
-    // 1. Tüm .travel-item'ları sırayla al
-    const allItems = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging-source)'));
-
-    if (allItems.length === 0) {
-        // Boş gün -> en başa ekle
-        dropZone.insertBefore(placeholder, dropZone.firstChild);
-        return;
-    }
-
-    // 2. Mouse ile üstünde olduğun travel-item hangisi?
+    
     const afterElement = getDragAfterElement(dropZone, clientY);
-
+    
     if (afterElement == null) {
-        // Kullanıcı listenin altına sürüklüyor
-        // Doğru davranış: Son .travel-item'in hemen altına eklemek
-        // (Yani .add-more-btn'den, slider'dan vb. ÖNCE)
-        const lastItem = allItems[allItems.length - 1];
-        if (lastItem.nextSibling) {
-            dropZone.insertBefore(placeholder, lastItem.nextSibling);
+        const addBtn = dropZone.querySelector('.add-more-btn');
+        if (addBtn && getComputedStyle(addBtn).display !== 'none') {
+             dropZone.insertBefore(placeholder, addBtn);
         } else {
-            dropZone.appendChild(placeholder);
+             dropZone.appendChild(placeholder);
         }
     } else {
-        // Kullanıcı bir travel-item'ın üstüne getiriyorsa,
-        // o item'dan hemen ÖNCE ekle
         dropZone.insertBefore(placeholder, afterElement);
     }
 }
