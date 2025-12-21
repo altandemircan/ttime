@@ -410,8 +410,8 @@ function renderCollageSlides(collage, images, searchObj) {
 
     // Alt Yazı
     const footerHtml = `
-      <div style="font-size: 0.8rem; color: #666; margin-top: 8px; text-align: left; font-style: italic;">
-        Inspiring visuals for your trip
+      <div style="font-size: 0.8rem; color: #666; margin-top: 8px; text-align: left; font-weight: 400;">
+        ✨ Inspiring visuals for your trip
       </div>
     `;
 
