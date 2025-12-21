@@ -4786,7 +4786,7 @@ async function updateCart() {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-    
+
 }
 
 function showRemoveItemConfirmation(index, btn) {
@@ -9964,13 +9964,7 @@ if (!loader) {
 loader.style.display = 'flex';
 // FORCE yukarıda kalması ve üstte overlay olması için
 loader.style.position = 'absolute';
-loader.style.top = '0';
-loader.style.left = '0';
-loader.style.width = '100%';
-loader.style.height = '100%';
-loader.style.alignItems = 'center';
-loader.style.justifyContent = 'center';
-loader.style.background = 'rgba(255,255,255,0.7)'; // biraz opak zemin (isteğe bağlı)
+
 loader.style.zIndex = '20000'; // en üstte
 // - Mobilde daha yüksek zIndex ve background kullanılabilir -
 // Mobilde boş kalmasını önle (ekstra stil)
