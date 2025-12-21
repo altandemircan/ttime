@@ -139,37 +139,46 @@ function niceStep(total, target) {
 }
 // DÜZELTİLMİŞ FONKSİYON 2
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
+  // LOADER - EN BAŞTA GÖSTER!
+  let loader = track.querySelector('.tt-scale-loader');
+  if (!loader) {
+    loader = document.createElement('div');
+    loader.className = 'tt-scale-loader';
+    loader.innerHTML = `
+      <div class="spinner"></div>
+      <span>Loading elevation</span>
+    `;
+    track.appendChild(loader);
+  }
+
   if (track && track.classList.contains('loading')) {
-      track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-      return; 
+    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+    return; 
   }
 
   const container = track?.parentElement;
   if ((!spanKm || spanKm < 0.01) && !customElevData) {
-      if (Array.isArray(markers) && markers.length > 1) {
-         spanKm = getTotalKmFromMarkers(markers);
-      }
+    if (Array.isArray(markers) && markers.length > 1) {
+       spanKm = getTotalKmFromMarkers(markers);
+    }
   }
-  
+
   if (!spanKm || spanKm < 0.01) {
     track.querySelectorAll('.marker-badge').forEach(el => el.remove());
     return;
   }
-  // Loader zaten var mı kontrol et, yoksa ekle
-let loader = track.querySelector('.tt-scale-loader');
-if (!loader) {
-  loader = document.createElement('div');
-  loader.className = 'tt-scale-loader';
-  loader.innerHTML = `
-    <div class="spinner"></div>
-    <span>Loading elevation</span>
-  `;
-  track.appendChild(loader);
-}
+
   if (!track) return;
 
-  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
-
+  // Loader ekle (varsa çıkar, yeniden ekle)
+track.querySelectorAll('.tt-scale-loader').forEach(e => e.remove());
+// Yalnızca loader zaten yoksa ekle
+if (!track.querySelector('.tt-scale-loader')) {
+  const loaderDiv = document.createElement('div');
+  loaderDiv.className = 'tt-scale-loader';
+  loaderDiv.innerHTML = '<div class="spinner"></div> Loading elevation...';
+  track.appendChild(loaderDiv);
+}
   // --- Ticks & Labels ---
   const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
   let stepKm = niceStep(spanKm, targetCount);
