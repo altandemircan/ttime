@@ -7965,28 +7965,27 @@ async function renderRouteForDay(day) {
     console.log("[ROUTE DEBUG] --- renderRouteForDay ---");
     console.log("GÜN:", day);
 
-    // <--- ÇÖZÜM BURASI: Segment Hafızasını Temizle --->
-    // Herhangi bir ekleme/çıkarma/güncelleme olduğunda:
-    // 1. Seçili segment indexini boşa düşür.
+    // <--- 1. ADIM: Segment Hafızasını ve Seçimi SIFIRLA --->
+    // Bu kısım çok önemli. Herhangi bir rota değişikliğinde (item ekleme/çıkarma)
+    // sistemin "bir segment seçiliydi" bilgisini unutmasını sağlıyoruz.
     window.selectedSegmentIndex = -1;
     window.selectedSegment = null;
-
-    // 2. EN ÖNEMLİSİ: Fonksiyonun en altında çalışan "tekrar boyama" kodunu engellemek için
-    // hafızadaki son segment koordinatlarını siliyoruz.
+    
+    // Hafızadaki son segment koordinatlarını da siliyoruz ki başka bir script bunları kullanmasın.
     window._lastSegmentDay = null;
     window._lastSegmentStartKm = null;
     window._lastSegmentEndKm = null;
 
-    // 3. 3D haritaya da "ben güncellendim, üzerindeki boyaları sil" sinyali gönder.
+    // 3D harita ve diğer bileşenlere "Güncelleme oldu, kendini resetle" sinyali gönderiyoruz.
     document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
-    // <--- ÇÖZÜM SONU --->
+    // <--- 1. ADIM SONU --->
 
 
     const pts = getDayPoints(day).filter(
         p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
     );
-    console.log("getDayPoints ile çekilen markerlar:", JSON.stringify(pts, null, 2));
-
+    
+    // Güvenlik kontrolü
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         const points = getDayPoints(day);
@@ -8048,14 +8047,6 @@ async function renderRouteForDay(day) {
         window.lastRouteGeojsons[containerId] = finalGeojson;
         window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
         window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
-        console.log(
-            "[PAIRWISE SUMMARY]",
-            "GÜN:", day,
-            "TravelMode:", typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "bilinmiyor",
-            "pairwiseRouteSummaries:",
-            window.pairwiseRouteSummaries?.[containerId]
-        );
-        console.log("pairwise summary", pairwiseSummaries.length, pairwiseSummaries);
 
         window.lastRouteSummaries = window.lastRouteSummaries || {};
         window.lastRouteSummaries[containerId] = { distance: totalDistance, duration: totalDuration };
@@ -8574,19 +8565,8 @@ async function renderRouteForDay(day) {
     setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 200);
     if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
 
-    if (
-        typeof window._lastSegmentDay === "number" &&
-        typeof window._lastSegmentStartKm === "number" &&
-        typeof window._lastSegmentEndKm === "number"
-    ) {
-        setTimeout(function () {
-            highlightSegmentOnMap(
-                window._lastSegmentDay,
-                window._lastSegmentStartKm,
-                window._lastSegmentEndKm
-            );
-        }, 150);
-    }
+    // <--- SON ADIM: Burada eskiden duran setTimeout bloğu TAMAMEN SİLİNDİ. --->
+    // Artık highlightSegmentOnMap() otomatik çağrılmıyor.
 }
 
 function clearDistanceLabels(day) {
