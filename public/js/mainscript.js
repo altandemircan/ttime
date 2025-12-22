@@ -9945,24 +9945,29 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-    let track = container.querySelector('.scale-bar-track');
+   let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    track = document.createElement('div');
-    track.className = 'scale-bar-track';
-    
-    // HEMEN BOŞ BİR KONTEYNER OLUŞTUR (beyaz kalmasın)
-    const placeholder = document.createElement('div');
-    placeholder.className = 'elevation-placeholder';
-    placeholder.style.cssText = `
-      width: 100%;
-      min-height: 200px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    // ÖNCE BOŞ BİR GRAFİK OLUŞTUR
+    container.innerHTML = `
+      <div class="scale-bar-track">
+        <div class="elevation-placeholder" style="
+          width: 100%;
+          height: 220px;
+          background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+          border-radius: 8px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: #6c757d;
+          font-size: 14px;
+        ">
+          <div class="spinner" style="margin-bottom: 10px;"></div>
+          <div>Loading elevation profile...</div>
+        </div>
+      </div>
     `;
-    
-    track.appendChild(placeholder);
-    container.appendChild(track);
+    track = container.querySelector('.scale-bar-track');
   }
 
   // Loader'ı her zaman oluştur ve görünür tut
