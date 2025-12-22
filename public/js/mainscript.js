@@ -299,7 +299,8 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   gridLabels.forEach((obj, index) => { 
     let topStyle = '';
     if (typeof obj.pct !== 'undefined') {
-        topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
+        // DÜZELTME: obj.pct zaten yüzde (0-100), direkt kullan
+        topStyle = `top: ${obj.pct}%; transform: translateY(-50%);`;
     } else {
         const trackHeight = track.clientHeight || 180;
         const correctedY = (obj.y / obj.svgHeight) * trackHeight;
