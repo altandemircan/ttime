@@ -9945,29 +9945,46 @@ function renderRouteScaleBar(container, totalKm, markers) {
     return;
   }
 
-   let track = container.querySelector('.scale-bar-track');
+     let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    // ÖNCE BOŞ BİR GRAFİK OLUŞTUR
-    container.innerHTML = `
-      <div class="scale-bar-track">
-        <div class="elevation-placeholder" style="
-          width: 100%;
-          height: 220px;
-          background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-          border-radius: 8px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #6c757d;
-          font-size: 14px;
-        ">
-          <div class="spinner" style="margin-bottom: 10px;"></div>
-          <div>Loading elevation profile...</div>
-        </div>
-      </div>
+    // TRACK OLUŞTUR
+    track = document.createElement('div');
+    track.className = 'scale-bar-track';
+    container.appendChild(track);
+    
+    // PLACEHOLDER (arka plan)
+    const placeholder = document.createElement('div');
+    placeholder.className = 'elevation-placeholder';
+    placeholder.style.cssText = `
+      width: 100%;
+      height: 220px;
+      background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 8px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
     `;
-    track = container.querySelector('.scale-bar-track');
+    track.appendChild(placeholder);
+    
+    // TT-SCALE-LOADER (üstte, animasyonlu)
+    const loader = document.createElement('div');
+    loader.className = 'tt-scale-loader';
+    loader.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    `;
+    loader.innerHTML = `
+      <div class="spinner" style="margin-right: 10px;"></div>
+      <div class="txt">Loading elevation...</div>
+    `;
+    track.appendChild(loader);
   }
 
   // Loader'ı her zaman oluştur ve görünür tut
