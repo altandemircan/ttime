@@ -9881,7 +9881,7 @@ function setupScaleBarEvents(track, selDiv) {
 }
 function renderRouteScaleBar(container, totalKm, markers) {
   // 1. CSS GÜVENLİK KİLİDİ
-   // 1. CSS GÜVENLİK KİLİDİ
+  // 1. CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
     style.id = 'tt-scale-bar-css';
