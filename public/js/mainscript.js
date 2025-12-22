@@ -9948,6 +9948,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
    let track = container.querySelector('.scale-bar-track');
   if (!track) {
     // ÖNCE BOŞ BİR GRAFİK OLUŞTUR
+      // ÖNCE BOŞ BİR GRAFİK OLUŞTUR
     container.innerHTML = `
       <div class="scale-bar-track">
         <div class="elevation-placeholder" style="
@@ -9962,8 +9963,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
           color: #6c757d;
           font-size: 14px;
         ">
-          <div class="spinner" style="margin-bottom: 10px;"></div>
-          <div>Loading elevation profile...</div>
+          <div class="tt-scale-loader" style="display: flex;">
+            <div class="spinner" style="margin-right: 10px;"></div>
+            <div class="txt">Loading elevation...</div>
+          </div>
         </div>
       </div>
     `;
