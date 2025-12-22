@@ -10317,33 +10317,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
       ro.observe(track);
       container._elevResizeObserver = ro;
 
-      // ÇİZİMİ BAŞLAT
+       // ÇİZİMİ BAŞLAT
       requestAnimationFrame(() => {
-    container._redrawElevation(container._elevationData);
-    window.hideScaleBarLoading?.(container);
-    track.classList.remove('loading');
-    
-    // !!! ELEVATION LABELS İÇİN EK KOD:
-    setTimeout(() => {
-        if (container._elevationData) {
-            const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
-            const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-            
-            // ELEVATION DATA'DAN vizMin ve vizMax HESAPLA
-            const { min, max } = container._elevationData;
-            const eSpan = max - min;
-            const vizMin = eSpan > 0 ? min - eSpan * 0.50 : min - 1;
-            const vizMax = eSpan > 0 ? max + eSpan * 1.0 : max + 1;
-            
-            const customElevData = {
-                vizMin: vizMin,
-                vizMax: vizMax
-            };
-            
-            createScaleElements(track, width, totalKm, 0, markers, customElevData);
-        }
-    }, 50); // 50ms bekle, SVG'nin tamamen render olmasını bekle
-});
+          container._redrawElevation(container._elevationData);
+          window.hideScaleBarLoading?.(container);
+          track.classList.remove('loading');
+      });
 
       if (typeof day !== "undefined") {
         let ascent = 0, descent = 0;
