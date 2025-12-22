@@ -10006,7 +10006,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
         <div class="elevation-placeholder" style="
           width: 100%;
           height: 220px;
-          background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
           border-radius: 8px;
           display: flex;
           flex-direction: column;
