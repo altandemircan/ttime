@@ -4677,7 +4677,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     
     /* Mobilde buton daha kompakt olsun */
     .elev-segment-reset {
-        min-width: 60px;
+      ;
         font-size: 11px;
         padding: 3px 6px;
     }
