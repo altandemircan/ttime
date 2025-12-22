@@ -506,19 +506,108 @@ function loadTripFromStorage(tripKey) {
     if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
 
     // Rota Çizimi
+   // Rota Çizimi - DÜZELTİLDİ
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
+    
+    // CRITICAL FIX: Elevation ve Scalebar için DOM'un hazır olmasını bekle
     setTimeout(async () => {
-        Object.values(window.leafletMaps || {}).forEach(map => { if (map && typeof map.invalidateSize === 'function') map.invalidateSize(); });
-        if (maxDay > 0) await renderRouteForDay(1); 
-        for (let day = 2; day <= maxDay; day++) { renderRouteForDay(day); }
+        Object.values(window.leafletMaps || {}).forEach(map => { 
+            if (map && typeof map.invalidateSize === 'function') map.invalidateSize(); 
+        });
+        
+        if (maxDay > 0) {
+            // Gün 1 için önce route çiz
+            await renderRouteForDay(1); 
+            
+            // DİĞER GÜNLERİ DE ÇİZ
+            for (let day = 2; day <= maxDay; day++) { 
+                renderRouteForDay(day); 
+            }
+            
+            // === ELEVATION VE SCALEBAR İÇİN EK GECİKME ===
+            setTimeout(() => {
+                // Tüm day slider'larını tazele
+                document.querySelectorAll('.scale-bar-track').forEach(track => { 
+                    if (typeof track.handleResize === "function") track.handleResize(); 
+                });
+                
+                // Elevation profillerini zorla yenile
+                if (typeof window.updateAllElevationProfiles === 'function') {
+                    window.updateAllElevationProfiles();
+                } else if (typeof window.renderElevationProfile === 'function') {
+                    // Her gün için elevation profile render et
+                    for (let day = 1; day <= maxDay; day++) {
+                        const points = getPointsFromTrip(t, day);
+                        if (points.length >= 2) {
+                            window.renderElevationProfile(day, points);
+                        }
+                    }
+                }
+                
+                // Splide slider'larını tazele
+                document.querySelectorAll('.splide').forEach(sliderElem => { 
+                    if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') 
+                        sliderElem._splideInstance.refresh(); 
+                });
+                
+                // SCALEBAR'LARI YENİDEN OLUŞTUR
+                document.querySelectorAll('.scale-bar-track').forEach(track => {
+                    if (track._updateTimeout) clearTimeout(track._updateTimeout);
+                    track._updateTimeout = setTimeout(() => {
+                        if (typeof track.handleResize === "function") {
+                            track.handleResize();
+                        }
+                        // Ek olarak createScaleElements'ı direkt çağır
+                        if (typeof createScaleElements === 'function' && track._day) {
+                            const day = track._day;
+                            const points = getPointsFromTrip(t, day);
+                            if (points.length >= 2) {
+                                // Elevation data varsa kullan
+                                const elevData = window.routeElevStatsByDay && window.routeElevStatsByDay[day];
+                                const markers = window.cart.filter(item => item.day === day);
+                                
+                                // Scalebar'ı güncelle
+                                createScaleElements(
+                                    track, 
+                                    track.clientWidth || 300,
+                                    0, // spanKm sonradan hesaplanacak
+                                    0, // startKm
+                                    markers.map(m => ({
+                                        ...m,
+                                        distance: m._distance || 0,
+                                        originalIndex: markers.indexOf(m) + 1
+                                    })),
+                                    elevData
+                                );
+                            }
+                        }
+                    }, 300); // Gecikmeyi artır
+                });
+                
+            }, 500); // Route çizildikten sonra elevation için ek bekleme
+        }
+        
         saveTripAfterRoutes();
-    }, 100);
-
-    setTimeout(function() {
-        document.querySelectorAll('.scale-bar-track').forEach(track => { if (typeof track.handleResize === "function") track.handleResize(); });
-        document.querySelectorAll('.splide').forEach(sliderElem => { if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') sliderElem._splideInstance.refresh(); });
-    }, 350);
+    }, 150); // Başlangıç beklemesi
+    
+    // === TRIP PANEL AÇMA ===
+    setTimeout(() => {
+        if (typeof window.toggleSidebarTrip === "function") {
+            window.toggleSidebarTrip();
+        }
+        
+        // VEYA trip panelini direkt aç
+        const tripSidebar = document.getElementById('sidebar-overlay-trip');
+        if (tripSidebar && !tripSidebar.classList.contains('open')) {
+            tripSidebar.classList.add('open');
+        }
+        
+        // Day 1'i aktif yap
+        if (typeof window.showDay === 'function') {
+            window.showDay(1);
+        }
+    }, 800); // Daha uzun bekleme - tüm veriler yüklendikten sonra
 
     return true;
 }
