@@ -609,6 +609,32 @@ function loadTripFromStorage(tripKey) {
         }
     }, 800); // Daha uzun bekleme - tüm veriler yüklendikten sonra
 
+    // loadTripFromStorage fonksiyonunun en sonuna ekleyin:
+setTimeout(() => {
+    // Tüm scalebar'ları zorla yenile
+    document.querySelectorAll('.scale-bar-track').forEach(track => {
+        if (track._day) {
+            const day = track._day;
+            const elevData = window.routeElevStatsByDay && window.routeElevStatsByDay[day];
+            const markers = window.cart.filter(item => item.day === day);
+            
+            if (markers.length >= 2) {
+                // 2 saniye sonra scalebar'ı yeniden oluştur
+                setTimeout(() => {
+                    createScaleElements(
+                        track,
+                        track.clientWidth || 400,
+                        0,
+                        0,
+                        markers,
+                        elevData
+                    );
+                }, 2000); // UZUN BEKLEME - elevation tam yüklensin
+            }
+        }
+    });
+}, 1000);
+
     return true;
 }
 function groupTripsByDate(trips) {
