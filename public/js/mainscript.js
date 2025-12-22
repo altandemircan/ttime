@@ -7860,7 +7860,9 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
   const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (scaleBarDiv) {
     try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
-    window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
+    
+    // SİLİNDİ: window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
+    // Artık 'New' placeholder devreye girecek.
   }
 }
 
