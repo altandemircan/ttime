@@ -10339,7 +10339,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.classList.remove('loading');
       
       // MOBİL: Önce boş scale bar çiz
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
       if (isMobile) {
         // Mobilde sadece temel yapıyı çiz
         createScaleElements(track, width, totalKm, 0, []);
