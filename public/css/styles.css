@@ -6621,16 +6621,15 @@ border-bottom:1px solid #ddd;
     }
 
      .elev-animation {
-    position: absolute;
+        position: absolute;
     left: 50%;
     margin-left: -15px;
     top: 35%;
     transform: translate(-50%, -50%);
-    display: flex;
     align-items: center;
     gap: 10px;
     z-index: 5;
-    background: #ffffff;
+    background: #b4b4b4;
     /* border: 1px solid #e0e0e0; */
     border-radius: 10px;
     padding: 10px 13px;
@@ -6657,13 +6656,13 @@ border-bottom:1px solid #ddd;
         .scale-bar-track.loading .elev-animation {
             opacity: 1 !important;
         }
-   
+
 
 
      .tt-scale-loader{    position: absolute;
     left: 50%;
     margin-left: -15px;
-    top: 35%;
+    top: 5%;
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
