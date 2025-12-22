@@ -6656,13 +6656,13 @@ border-bottom:1px solid #ddd;
         .scale-bar-track.loading .elev-animation {
             opacity: 1 !important;
         }
-   
+
 
 
      .tt-scale-loader{    position: absolute;
     left: 50%;
     margin-left: -15px;
-    top: 35%;
+    top: 5%;
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
