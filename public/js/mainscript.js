@@ -10989,12 +10989,15 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const buttonText = isMobile ? 'Seg X' : 'Segment ✕';
+  
   tb.innerHTML = `
     <span class="pill">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
     <span class="pill">↑ ${Math.round(up)} m</span>
     <span class="pill">↓ ${Math.round(down)} m</span>
     <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset" style="background:#d32f2f;">Segment ✕</button>
+    <button type="button" class="elev-segment-reset" style="background:#d32f2f;">${buttonText}</button>
   `;
   
   const expandedContainerChildren = expandedContainer.querySelector('.expanded-map-panel');
