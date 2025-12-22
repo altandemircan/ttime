@@ -10304,13 +10304,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
         window.routeElevStatsByDay[day] = { ascent: Math.round(ascent), descent: Math.round(descent) };
         if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
       }
-      } catch (err) {
-      // Animasyonu durdur
-      if (dotAnimationInterval) {
-        clearInterval(dotAnimationInterval);
-        dotAnimationInterval = null;
-      }
-      
+     } catch (err) {
       console.warn("Elevation fetch error:", err);
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       
