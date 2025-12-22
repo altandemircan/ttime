@@ -10298,7 +10298,16 @@ function renderRouteScaleBar(container, totalKm, markers) {
           segG.appendChild(seg);
         }
         
-        createScaleElements(track, width, totalKm, 0, markers);
+// === GRID LABELS İLE BİRLİKTE GELSİN ===
+        const customElevData = {
+            vizMin: vizMin,
+            vizMax: vizMax
+        };
+        
+        // HEMEN çağır (bir sonraki animation frame'de)
+        requestAnimationFrame(() => {
+            createScaleElements(track, width, spanKm, startKmDom, markers, customElevData);
+        });
       };
 
       // Handle Resize
@@ -10364,7 +10373,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
         createScaleElements(track, width, spanKm, startKmDom, markers, customElevData);
     }, 50);
     }
-  
+
   })();
 }
 
