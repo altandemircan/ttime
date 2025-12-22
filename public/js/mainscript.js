@@ -10376,16 +10376,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
       createScaleElements(track, width, totalKm, 0, markers);
     }
-       const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
-    const customElevData = {
-        vizMin: vizMin,
-        vizMax: vizMax
-    };
-    
-    // SVG'nin render olmasını bekle (next frame)
-    requestAnimationFrame(() => {
-        createScaleElements(track, width, spanKm, startKmDom, markers, customElevData);
-    });
+  
   })();
 }
 
