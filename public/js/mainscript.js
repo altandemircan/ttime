@@ -4786,7 +4786,7 @@ async function updateCart() {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-    
+
 }
 
 function showRemoveItemConfirmation(index, btn) {
@@ -9963,7 +9963,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
           font-size: 14px;
         ">
           <div class="spinner" style="margin-bottom: 10px;"></div>
-          <div>Loading elevation profile...</div>
+          <div>Loading elevation <span id="dot-anim">...</span></div>
         </div>
       </div>
     `;
@@ -9989,6 +9989,28 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   const N = Math.max(40, Math.round(totalKm * 2));
   
+    // Basit nokta animasyonu
+  function startDotAnimation() {
+    const dots = ['', '.', '..', '...'];
+    let i = 0;
+    const interval = setInterval(() => {
+      const dotElem = document.getElementById('dot-anim');
+      if (dotElem) {
+        dotElem.textContent = dots[i % dots.length];
+        i++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 500);
+    return interval;
+  }
+  
+  // Animasyonu başlat
+  let dotAnimationInterval = null;
+  if (container.querySelector('#dot-anim')) {
+    dotAnimationInterval = startDotAnimation();
+  }
+
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
@@ -10282,7 +10304,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
         window.routeElevStatsByDay[day] = { ascent: Math.round(ascent), descent: Math.round(descent) };
         if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
       }
-     } catch (err) {
+      } catch (err) {
+      // Animasyonu durdur
+      if (dotAnimationInterval) {
+        clearInterval(dotAnimationInterval);
+        dotAnimationInterval = null;
+      }
+      
       console.warn("Elevation fetch error:", err);
       window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
       
