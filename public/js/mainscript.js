@@ -10021,15 +10021,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track = container.querySelector('.scale-bar-track');
   }
 
-  // Loader'ı her zaman oluştur ve görünür tut
-  let loader = track.querySelector('.tt-scale-loader');
-  if (!loader) {
-    loader = document.createElement('div');
-    loader.className = 'tt-scale-loader';
-    loader.innerHTML = `<div class="spinner"></div><div class="txt"></div>`;
-    track.appendChild(loader);
-  }
-  loader.style.display = 'flex';
+ 
 
   // Sadece loading sınıfı ekle (içerik kalsın)
   track.classList.add('loading');
