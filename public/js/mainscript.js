@@ -9904,20 +9904,24 @@ function renderRouteScaleBar(container, totalKm, markers) {
         .scale-bar-vertical-line { z-index: 9998 !important; }
         .scale-bar-selection { z-index: 9000 !important; }
 
-       /* NOKTA ANİMASYONU */
+               /* NOKTA ANİMASYONU - spinner + yazı stili (en iyi) */
         .dots {
             display: inline-block;
-            width: 24px;
+            width: 30px;
             text-align: left;
+            color: #1976d2; /* spinner rengine uygun */
         }
         .dots::after {
             content: '...';
-            animation: dotPulse 1.5s infinite;
+            animation: gentlePulse 1.8s infinite ease-in-out;
         }
-        @keyframes dotPulse {
-            0%, 100% { content: '.'; }
-            33% { content: '..'; }
-            66% { content: '...'; }
+        @keyframes gentlePulse {
+            0%, 100% { 
+                opacity: 0.5;
+            }
+            50% { 
+                opacity: 1;
+            }
         }
     `;
     document.head.appendChild(style);
