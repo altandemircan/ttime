@@ -10984,14 +10984,19 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
-  const buttonText = isMobile ? 'Seg ✕' : 'Segment ✕';
+  
+  // Mobil veya Masaüstü için kısa metin (İkon olduğu için '✕' metnini kaldırdık)
+  const buttonLabel = isMobile ? 'Seg' : 'Segment';
   
   tb.innerHTML = `
     <span class="pill">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
     <span class="pill">↑ ${Math.round(up)} m</span>
     <span class="pill">↓ ${Math.round(down)} m</span>
     <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset" style="background:#d32f2f;">${buttonText}</button>
+    <button type="button" class="elev-segment-reset" style="background:#d32f2f; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px;">
+        ${buttonLabel}
+        <img src="https://www.svgrepo.com/show/446847/close-circle-filled.svg" style="width: 14px; height: 14px; filter: brightness(0) invert(1);" alt="kapat">
+    </button>
   `;
   
   const expandedContainerChildren = expandedContainer.querySelector('.expanded-map-panel');
@@ -11007,8 +11012,8 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
       resetBtn.addEventListener('touchstart', stopProp, { passive: true });
       resetBtn.addEventListener('mousedown', stopProp);
 
-     // --- RESET (UNZOOM) MANTIĞI ---
-     resetBtn.addEventListener('click', (e) => {
+      // --- RESET (UNZOOM) MANTIĞI ---
+      resetBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         
         // 1. DOM Temizliği
