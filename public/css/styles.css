@@ -6649,6 +6649,16 @@ border-bottom:1px solid #ddd;
 }
 
 
+ .scale-bar-track.loading > *:not(.elev-animation) {
+            opacity: 0.4; 
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .scale-bar-track.loading .elev-animation {
+            opacity: 1 !important;
+        }
+   
+
 
      .tt-scale-loader{    position: absolute;
     left: 50%;
