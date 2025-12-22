@@ -7857,11 +7857,11 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
     clearAllMarkersUI();
   });
 
-  const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  if (scaleBarDiv) {
-    try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
-    window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
-  }
+  // const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+  // if (scaleBarDiv) {
+  //   try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
+  //   window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
+  // }
 }
 
 function getDayPoints(day) {
@@ -10538,25 +10538,25 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
 
 
-(function ensureScaleBarLoadingHelpers(){
-  if (window.__tt_scaleBarLoaderReady) return;
+// (function ensureScaleBarLoadingHelpers(){
+//   if (window.__tt_scaleBarLoaderReady) return;
 
-  function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
-  window.showScaleBarLoading = function(c,t='Loading elevation…'){
-    const tr = trackOf(c); if (!tr) return;
-    let box = tr.querySelector('.tt-scale-loader');
-    if (!box){ box=document.createElement('div'); box.className='tt-scale-loader'; box.innerHTML=`<div class="spinner"></div><div class="txt"></div>`; tr.appendChild(box); }
-    const txt = box.querySelector('.txt'); if (txt) txt.textContent = t;
-    box.style.display='flex';
-  };
-  window.updateScaleBarLoadingText = function(c,t){
-    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); const txt = box?.querySelector('.txt'); if (txt) txt.textContent = t;
-  };
-  window.hideScaleBarLoading = function(c){
-    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); if (box) box.style.display='none';
-  };
-  window.__tt_scaleBarLoaderReady = true;
-})();
+//   function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
+//   window.showScaleBarLoading = function(c,t='Loading elevation…'){
+//     const tr = trackOf(c); if (!tr) return;
+//     let box = tr.querySelector('.tt-scale-loader');
+//     if (!box){ box=document.createElement('div'); box.className='tt-scale-loader'; box.innerHTML=`<div class="spinner"></div><div class="txt"></div>`; tr.appendChild(box); }
+//     const txt = box.querySelector('.txt'); if (txt) txt.textContent = t;
+//     box.style.display='flex';
+//   };
+//   window.updateScaleBarLoadingText = function(c,t){
+//     const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); const txt = box?.querySelector('.txt'); if (txt) txt.textContent = t;
+//   };
+//   window.hideScaleBarLoading = function(c){
+//     const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); if (box) box.style.display='none';
+//   };
+//   window.__tt_scaleBarLoaderReady = true;
+// })();
 
 (function ensureElev429Planner(){
   if (window.__tt_elev429PlannerReady) return;
