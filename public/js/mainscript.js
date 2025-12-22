@@ -139,7 +139,7 @@ function niceStep(total, target) {
 }
 // DÜZELTİLMİŞ FONKSİYON 2
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
-   if (track && track.classList.contains('loading')) {
+    if (track && track.classList.contains('loading')) {
       // Sadece marker badge'leri temizle ama fonksiyondan ÇIKMA
       track.querySelectorAll('.marker-badge').forEach(el => el.remove());
       // return; // BU SATIRI KALDIR!
@@ -9930,7 +9930,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     }
     return;
   }
-  delete container._elevationData;
+   delete container._elevationData;
   delete container._elevationDataFull;
 
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
@@ -10179,7 +10179,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.addEventListener('mousemove', onMoveTooltip);
       track.addEventListener('touchmove', onMoveTooltip);
 
-         if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
+        if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
         // HATA: placeholder'a hata mesajını ekle
         const placeholder = track.querySelector('.elevation-placeholder');
         if (placeholder) {
@@ -10306,11 +10306,11 @@ function renderRouteScaleBar(container, totalKm, markers) {
       ro.observe(track);
       container._elevResizeObserver = ro;
 
-      // ÇİZİMİ BAŞLAT
+           // ÇİZİMİ BAŞLAT - ÖNCE loading class'ını kaldır, SONRA çiz
+      track.classList.remove('loading'); // ← ERKEN KALDIR
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
           window.hideScaleBarLoading?.(container);
-          track.classList.remove('loading');
       });
 
       if (typeof day !== "undefined") {
@@ -10341,10 +10341,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       const oldLoader = track.querySelector('.tt-scale-loader');
       if (oldLoader) oldLoader.remove();
       
-      track.classList.remove('loading');
-      
-      // Boş da olsa grafik çiz
-            track.classList.remove('loading'); // ÖNCE loading class'ını kaldır
+      track.classList.remove('loading'); // ÖNCE loading class'ını kaldır
       
       // Boş da olsa grafik çiz
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
