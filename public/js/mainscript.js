@@ -10216,7 +10216,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       container.dataset.elevLoadedKey = routeKey;
 
       // REDRAW ELEVATION İÇİN GÜNCELLEME
-      container._redrawElevation = function(elevationData) {
+     container._redrawElevation = function(elevationData) {
     if (!elevationData) return;
     const { smooth, min, max } = elevationData;
     const s = container._elevSamples || [];
@@ -10353,7 +10353,16 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.classList.remove('loading');
       // Boş da olsa grafik çizmeye devam et
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
-      createScaleElements(track, width, totalKm, 0, markers);
+      // === BURAYA EKLE: Grid'den sonra customElevData oluştur ===
+    const customElevData = {
+        vizMin: vizMin,  // vizMin zaten yukarıda tanımlı
+        vizMax: vizMax   // vizMax zaten yukarıda tanımlı
+    };
+    
+    // === SONRA BİRAZ BEKLE (SVG render olsun) VE ÇAĞIR ===
+    setTimeout(() => {
+        createScaleElements(track, width, spanKm, startKmDom, markers, customElevData);
+    }, 50);
     }
   
   })();
