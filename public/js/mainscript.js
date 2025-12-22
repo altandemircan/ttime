@@ -139,295 +139,195 @@ function niceStep(total, target) {
 }
 // DÜZELTİLMİŞ FONKSİYON 2
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
-    // 1. TEMİZLİK - ESKİ ELEMENTLERİ KALDIR
+   if (!track || !track.isConnected || track.offsetParent === null) {
+        console.warn('Scalebar track not ready, retrying...');
+        setTimeout(() => {
+            if (track && track.isConnected) {
+                createScaleElements(track, widthPx, spanKm, startKmDom, markers, customElevData);
+            }
+        }, 300);
+        return;
+    }
+
     if (track) {
-        track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
+    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+  }
+
+
+
+  const container = track?.parentElement;
+  if ((!spanKm || spanKm < 0.01) && !customElevData) {
+      if (Array.isArray(markers) && markers.length > 1) {
+         spanKm = getTotalKmFromMarkers(markers);
+      }
+  }
+  
+  if (!spanKm || spanKm < 0.01) {
+    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
+    return;
+  }
+  if (!track) return;
+
+  track.querySelectorAll('.scale-bar-tick, .scale-bar-label, .marker-badge, .elevation-labels-container').forEach(el => el.remove());
+
+  // --- Ticks & Labels ---
+  const targetCount = Math.max(6, Math.min(14, Math.round(widthPx / 100)));
+  let stepKm = niceStep(spanKm, targetCount);
+  let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
+  if (majors < 6) { stepKm = niceStep(spanKm, 6); majors = Math.round(spanKm / stepKm); }
+  if (majors > 14) { stepKm = niceStep(spanKm, 14); majors = Math.round(spanKm / stepKm); }
+
+  for (let i = 0; i <= majors; i++) {
+    const curKm = Math.min(spanKm, i * stepKm);
+    const leftPct = (curKm / spanKm) * 100;
+
+    const tick = document.createElement('div');
+    tick.className = 'scale-bar-tick';
+    tick.style.left = `${leftPct}%`;
+    tick.style.position = 'absolute';
+    tick.style.top = '10px';
+    tick.style.width = '1px';
+    tick.style.height = '16px';
+    tick.style.background = '#cfd8dc';
+    track.appendChild(tick);
+
+    const label = document.createElement('div');
+    label.className = 'scale-bar-label';
+    label.style.left = `${leftPct}%`;
+    label.style.position = 'absolute';
+    label.style.top = '30px';
+    
+    if (i === 0) {
+        label.style.transform = 'translateX(0%)'; 
+        label.style.textAlign = 'left';
+    } else if (i === majors) {
+        label.style.transform = 'translateX(-100%)';
+        label.style.textAlign = 'right';
+    } else {
+        label.style.transform = 'translateX(-50%)'; 
+        label.style.textAlign = 'center';
     }
-    
-    // 2. TEMEL KONTROLLER
-    if (!track || !track.isConnected) {
-        console.warn('Scalebar track not ready');
-        return;
-    }
-    
-    // 3. SPAN KM HESAPLA (Eğer sağlanmadıysa)
-    if ((!spanKm || spanKm < 0.01) && !customElevData) {
-        if (Array.isArray(markers) && markers.length > 1) {
-            spanKm = getTotalKmFromMarkers(markers);
-        } else {
-            spanKm = 10; // fallback
-        }
-    }
-    
-    if (!spanKm || spanKm < 0.01) {
-        console.warn('Invalid spanKm:', spanKm);
-        return;
-    }
-    
-    // 4. TRACK GENİŞLİĞİ KONTROLÜ
-    const actualWidth = widthPx || track.clientWidth || 300;
-    if (actualWidth < 100) {
-        console.warn('Track width too small:', actualWidth);
-        return;
-    }
-    
-    // 5. TICKS & LABELS OLUŞTUR (SENİN ORİJİNAL KODUN)
-    const targetCount = Math.max(6, Math.min(14, Math.round(actualWidth / 100)));
-    let stepKm = niceStep(spanKm, targetCount);
-    let majors = Math.max(1, Math.round(spanKm / Math.max(stepKm, 1e-6)));
-    
-    if (majors < 6) { 
-        stepKm = niceStep(spanKm, 6); 
-        majors = Math.round(spanKm / stepKm); 
-    }
-    if (majors > 14) { 
-        stepKm = niceStep(spanKm, 14); 
-        majors = Math.round(spanKm / stepKm); 
-    }
-    
-    // Ticks oluştur
-    for (let i = 0; i <= majors; i++) {
-        const curKm = Math.min(spanKm, i * stepKm);
-        const leftPct = (curKm / spanKm) * 100;
-        
-        // Tick çizgisi
-        const tick = document.createElement('div');
-        tick.className = 'scale-bar-tick';
-        tick.style.cssText = `
-            position: absolute;
-            left: ${leftPct}%;
-            top: 10px;
-            width: 1px;
-            height: 16px;
-            background: #cfd8dc;
-            z-index: 2;
-        `;
-        track.appendChild(tick);
-        
-        // Label
-        const label = document.createElement('div');
-        label.className = 'scale-bar-label';
-        
-        let transform = 'translateX(-50%)';
-        let textAlign = 'center';
-        
-        if (i === 0) {
-            transform = 'translateX(0%)';
-            textAlign = 'left';
-        } else if (i === majors) {
-            transform = 'translateX(-100%)';
-            textAlign = 'right';
-        }
-        
-        label.style.cssText = `
-            position: absolute;
-            left: ${leftPct}%;
-            top: 30px;
-            transform: ${transform};
-            text-align: ${textAlign};
-            font-size: 11px;
-            color: #607d8b;
-            white-space: nowrap;
-            z-index: 2;
-        `;
-        
-        label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
-        track.appendChild(label);
-    }
-    
-    // 6. MARKER BADGES OLUŞTUR - CRITICAL FIX!
-    if (Array.isArray(markers) && markers.length > 0) {
-        markers.forEach((m, idx) => {
-            let dist = typeof m.distance === "number" ? m.distance : 0;
-            
-            // Segment dışı kontrolü
-            if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
-                return;
-            }
-            
-            const relKm = dist - startKmDom;
-            let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
-            left = Math.max(0, Math.min(100, left));
-            
-            // ELEVATION Y POSITION HESAPLA
-            let bottomStyle = "2px";
-            let useElevationPositioning = false;
-            
-            if (customElevData && customElevData.smooth && customElevData.smooth.length > 0) {
-                const { smooth, vizMin, vizMax } = customElevData;
-                const pct = Math.max(0, Math.min(1, left / 100));
-                const sampleIdx = Math.floor(pct * (smooth.length - 1));
-                const val = smooth[sampleIdx];
-                
-                if (typeof val === 'number' && !isNaN(val)) {
-                    const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
-                    bottomStyle = `calc(${heightPct}% - 7px)`;
-                    useElevationPositioning = true;
-                }
-            }
-            
-            // SVG'den elevation data kontrol et
-            if (!useElevationPositioning) {
-                const svg = track.querySelector('svg.tt-elev-svg');
-                if (svg) {
-                    const svgHeight = svg.clientHeight || 180;
-                    const path = svg.querySelector('path.elevation-line');
-                    if (path && path.getTotalLength) {
-                        try {
-                            const pathLength = path.getTotalLength();
-                            const pointAtLength = pathLength * (left / 100);
-                            const point = path.getPointAtLength(pointAtLength);
-                            const yPercent = (point.y / svgHeight) * 100;
-                            bottomStyle = `calc(${yPercent}% - 7px)`;
-                        } catch(e) {
-                            console.warn('Could not get point from SVG path:', e);
-                        }
-                    }
-                }
-            }
-            
-            // Transform hesapla
-            let transformX = '-50%';
-            if (left < 5) transformX = '0%';
-            else if (left > 95) transformX = '-100%';
-            
-            // Display numara
-            const displayNum = m.originalIndex ? m.originalIndex : (idx + 1);
-            
-            // Marker badge oluştur
-            const wrap = document.createElement('div');
-            wrap.className = 'marker-badge';
-            wrap.style.cssText = `
-                position: absolute;
-                left: ${left}%;
-                bottom: ${bottomStyle};
-                width: 18px;
-                height: 18px;
-                transform: translateX(${transformX});
-                z-index: 10;
-                pointer-events: none;
-            `;
-            wrap.title = m.name || '';
-            
-            const badge = document.createElement('div');
-            badge.style.cssText = `
-                width: 18px;
-                height: 18px;
-                border-radius: 50%;
-                background: #d32f2f;
-                border: 2px solid #fff;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 11px;
-                color: #fff;
-                font-weight: 700;
-            `;
-            badge.textContent = displayNum;
-            
-            wrap.appendChild(badge);
-            track.appendChild(wrap);
-        });
-    }
-    
-    // 7. ELEVATION LABELS OLUŞTUR - BU KISIM SORUNLUYDU!
-    const elevationLabels = document.createElement('div');
-    elevationLabels.className = 'elevation-labels-container';
-    elevationLabels.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        pointer-events: none;
-        z-index: 1;
-    `;
-    
-    // Label'ları oluştur (5 adet)
-    for (let i = 0; i <= 4; i++) {
-        const pct = (i / 4) * 100; // 0%, 25%, 50%, 75%, 100%
-        const topPercent = 100 - pct; // SVG y ekseni ters
-        
-        // Elevation değeri hesapla
-        let elevationValue = '0 m';
-        if (customElevData) {
-            const { vizMin, vizMax } = customElevData;
-            const val = vizMin + (i/4) * (vizMax - vizMin);
-            elevationValue = Math.round(val) + ' m';
-        } else {
-            // Varsayılan değerler
-            const values = [108, 89, 71, 53, 34]; // Örnek değerler
-            elevationValue = values[i] + ' m';
-        }
-        
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = `
-            position: absolute;
-            right: 0;
-            top: ${topPercent}%;
-            transform: translateY(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-        `;
-        
-        const tick = document.createElement('div');
-        tick.style.cssText = `
-            width: 35px;
-            border-bottom: 1px dashed #cfd8dc;
-            opacity: 0.7;
-            margin-right: 2px;
-        `;
-        
-        const label = document.createElement('div');
-        label.className = 'elevation-label';
-        label.style.cssText = `
-            font-size: 10px;
-            color: #607d8b;
-            background: none;
-            line-height: 1.5;
-            text-align: right;
-            padding-right: 0;
-            white-space: nowrap;
-            display: ${i === 0 ? 'none' : 'block'}; // En üstteki gizli
-        `;
-        label.textContent = elevationValue;
-        
-        wrapper.appendChild(tick);
-        wrapper.appendChild(label);
-        elevationLabels.appendChild(wrapper);
-    }
-    
-    track.appendChild(elevationLabels);
-    
-    // 8. EVENT LİSTENER EKLE - Track resize olduğunda yenile
-    if (!track._resizeHandler) {
-        track._resizeHandler = () => {
-            setTimeout(() => {
-                createScaleElements(track, track.clientWidth, spanKm, startKmDom, markers, customElevData);
-            }, 50);
-        };
-        
-        // Resize observer ekle
-        if (typeof ResizeObserver !== 'undefined') {
-            track._resizeObserver = new ResizeObserver(track._resizeHandler);
-            track._resizeObserver.observe(track);
-        } else {
-            window.addEventListener('resize', track._resizeHandler);
-        }
-    }
-    
-    // 9. DEBUG LOG
-    console.log('Scale elements created:', {
-        width: actualWidth,
-        spanKm,
-        markers: markers.length,
-        hasElevData: !!customElevData
+
+    label.style.fontSize = '11px';
+    label.style.color = '#607d8b';
+    label.textContent = `${(startKmDom + curKm).toFixed(spanKm > 20 ? 0 : 1)} km`;
+    track.appendChild(label);
+  }
+
+  // --- MARKER POSITIONING ---
+  let activeData = null;
+  
+  if (customElevData) {
+      activeData = customElevData; 
+  } else if (container && container._elevationData) {
+      const { smooth, min, max } = container._elevationData;
+      let vizMin = min, vizMax = max;
+      const eSpan = max - min;
+      if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
+      else { vizMin = min - 1; vizMax = max + 1; }
+      activeData = { smooth, vizMin, vizMax };
+  }
+
+  if (Array.isArray(markers)) {
+    markers.forEach((m, idx) => {
+      let dist = typeof m.distance === "number" ? m.distance : 0;
+      
+      // Segment dışındakileri çizme
+      if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
+          return;
+      }
+
+      const relKm = dist - startKmDom;
+      let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
+      left = Math.max(0, Math.min(100, left));
+
+      let bottomStyle = "2px"; 
+
+      if (activeData && activeData.smooth && activeData.smooth.length > 0) {
+          const { smooth, vizMin, vizMax } = activeData;
+          const pct = Math.max(0, Math.min(1, left / 100));
+          const sampleIdx = Math.floor(pct * (smooth.length - 1));
+          const val = smooth[sampleIdx];
+          
+          if (typeof val === 'number') {
+              const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
+              bottomStyle = `calc(${heightPct}% - 7px)`;
+          }
+      }
+
+      let transformX = '-50%';
+      if (left < 1) transformX = '0%';
+      else if (left > 99) transformX = '-100%';
+
+      // --- DÜZELTME: BURADA idx DEĞİL originalIndex KULLANILIYOR ---
+      const displayNum = m.originalIndex ? m.originalIndex : (idx + 1);
+      // -------------------------------------------------------------
+
+      const wrap = document.createElement('div');
+      wrap.className = 'marker-badge';
+      wrap.style.cssText = `position:absolute;left:${left}%;bottom:${bottomStyle};width:18px;height:18px;transform:translateX(${transformX});z-index:5;`;
+      wrap.title = m.name || '';
+      wrap.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#d32f2f;border:1px solid #fff;box-shadow:0 2px 6px #888;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${displayNum}</div>`;
+      track.appendChild(wrap);
     });
+  }
+
+  // --- Grid Labels ---
+  let gridLabels = [];
+  if (customElevData) {
+      const { vizMin, vizMax } = customElevData;
+      for(let i=0; i<=4; i++) {
+          const val = vizMin + (i/4)*(vizMax - vizMin);
+          const pct = (i/4) * 100; 
+          gridLabels.push({ value: Math.round(val) + ' m', pct: pct });
+      }
+  } else {
+      const svg = track.querySelector('svg.tt-elev-svg');
+      if (svg) {
+        gridLabels = Array.from(svg.querySelectorAll('text'))
+          .map(t => ({
+            value: t.textContent.trim(),
+            y: Number(t.getAttribute('y')),
+            svgHeight: Number(svg.getAttribute('height')) || 180
+          }))
+          .filter(obj => /-?\d+\s*m$/.test(obj.value));
+      }
+  }
+
+  const elevationLabels = document.createElement('div');
+  elevationLabels.className = 'elevation-labels-container';
+
+  gridLabels.forEach((obj, index) => { 
+    let topStyle = '';
+    if (typeof obj.pct !== 'undefined') {
+        topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
+    } else {
+        const trackHeight = track.clientHeight || 180;
+        const correctedY = (obj.y / obj.svgHeight) * trackHeight;
+        topStyle = `top: ${correctedY}px;`;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position: absolute; right: 0; ${topStyle}`;
+
+     const tick = document.createElement('div');
+    tick.style.cssText = `width: 35px; border-bottom: 1px dashed #cfd8dc; opacity: 0.7; display: block; margin-left: 0px; margin-top: 0px;`;
+
+    const label = document.createElement('div');
+    label.className = 'elevation-label';
+    label.style.cssText = `font-size: 10px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap;`;
+    label.textContent = obj.value;
+
+    if (index === 0) label.style.display = 'none';
+
+    wrapper.appendChild(tick);
+    wrapper.appendChild(label);
+    elevationLabels.appendChild(wrapper);
+  });
+
+  track.style.position = 'relative';
+  track.appendChild(elevationLabels);
 }
-
-
 
 // Window'a elevation data kontrol fonksiyonu ekle
 window.ensureElevationDataLoaded = function(day) {
