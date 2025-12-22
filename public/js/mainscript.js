@@ -9984,7 +9984,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
           font-size: 14px;
         ">
           <div class="elev-animation" style="display: flex;">
-            <div class="spinner" style="margin-bottom: 10px;"></div>
+            <div class="spinner"></div>
             <div>Loading elevation</div>
           </div>
         </div>
