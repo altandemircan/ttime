@@ -9986,7 +9986,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const routeKey = `${coords.length}|${coords[0]?.join(',')}|${mid?.join(',')}|${coords[coords.length - 1]?.join(',')}`;
   
   if (Date.now() < (window.__elevCooldownUntil || 0)) {
-    window.showScaleBarLoading?.(container, 'Loading elevation...');
     if (!container.__elevRetryTimer && typeof planElevationRetry === 'function') {
       const waitMs = Math.max(5000, (window.__elevCooldownUntil || 0) - Date.now());
       planElevationRetry(container, routeKey, waitMs, () => renderRouteScaleBar(container, totalKm, markers));
@@ -10027,7 +10026,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
-  window.showScaleBarLoading?.(container, 'Loading elevation...');
+
 
   const N = Math.max(40, Math.round(totalKm * 2));
   
