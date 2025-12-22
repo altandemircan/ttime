@@ -9898,6 +9898,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
             min-height: 200px; 
             width: 100%;
             position: relative;
+      z-index:12312312312312
         }
         /* TOOLTIP VE LINE HER ZAMAN EN ÜSTTE */
         .tt-elev-tooltip { z-index: 9999 !important; }
