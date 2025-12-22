@@ -10993,9 +10993,9 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <span class="pill">↑ ${Math.round(up)} m</span>
     <span class="pill">↓ ${Math.round(down)} m</span>
     <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset" style="background:#d32f2f; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px;">
+    <button type="button" class="elev-segment-reset" style="background:#d32f2f; display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px;">
         ${buttonLabel}
-        <img src="https://www.svgrepo.com/show/446847/close-circle-filled.svg" style="width: 14px; height: 14px; filter: brightness(0) invert(1);" alt="kapat">
+        <img src="https://www.svgrepo.com/show/446847/close-circle-filled.svg" style="width: 12px; height: 12px; filter: brightness(0) invert(1);" alt="kapat">
     </button>
   `;
   
