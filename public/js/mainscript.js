@@ -10030,7 +10030,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track.appendChild(loader);
   }
   loader.style.display = 'flex';
-  window.updateScaleBarLoadingText?.(container, 'Loading elevation…');
 
   // Sadece loading sınıfı ekle (içerik kalsın)
   track.classList.add('loading');
