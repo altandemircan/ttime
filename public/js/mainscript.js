@@ -314,7 +314,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
     const label = document.createElement('div');
     label.className = 'elevation-label';
-    label.style.cssText = `font-size: 10px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap;`;
+    label.style.cssText = `font-size: 11px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap;`;
     label.textContent = obj.value;
 
     label.style.display = 'block';
