@@ -9903,6 +9903,22 @@ function renderRouteScaleBar(container, totalKm, markers) {
         .tt-elev-tooltip { z-index: 9999 !important; }
         .scale-bar-vertical-line { z-index: 9998 !important; }
         .scale-bar-selection { z-index: 9000 !important; }
+
+       /* NOKTA ANİMASYONU */
+        .dots {
+            display: inline-block;
+            width: 24px;
+            text-align: left;
+        }
+        .dots::after {
+            content: '...';
+            animation: dotPulse 1.5s infinite;
+        }
+        @keyframes dotPulse {
+            0%, 100% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
     `;
     document.head.appendChild(style);
   }
@@ -9963,7 +9979,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
           font-size: 14px;
         ">
           <div class="spinner" style="margin-bottom: 10px;"></div>
-          <div>Loading elevation <span id="dot-anim">...</span></div>
+          <div class="loading-text">Loading elevation<span class="dots">...</span></div>
         </div>
       </div>
     `;
@@ -9989,28 +10005,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   const N = Math.max(40, Math.round(totalKm * 2));
   
-    // Basit nokta animasyonu
-  function startDotAnimation() {
-    const dots = ['', '.', '..', '...'];
-    let i = 0;
-    const interval = setInterval(() => {
-      const dotElem = document.getElementById('dot-anim');
-      if (dotElem) {
-        dotElem.textContent = dots[i % dots.length];
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 500);
-    return interval;
-  }
-  
-  // Animasyonu başlat
-  let dotAnimationInterval = null;
-  if (container.querySelector('#dot-anim')) {
-    dotAnimationInterval = startDotAnimation();
-  }
-
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
