@@ -139,10 +139,8 @@ function niceStep(total, target) {
 }
 // DÜZELTİLMİŞ FONKSİYON 2
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
-    if (track && track.classList.contains('loading')) {
-      // Sadece marker badge'leri temizle ama fonksiyondan ÇIKMA
+  if (track) {
       track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-      // return; // BU SATIRI KALDIR!
   }
 
   const container = track?.parentElement;
@@ -4787,7 +4785,7 @@ async function updateCart() {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-    
+
 }
 
 function showRemoveItemConfirmation(index, btn) {
@@ -10287,6 +10285,17 @@ function renderRouteScaleBar(container, totalKm, markers) {
           segG.appendChild(seg);
         }
         
+        container._redrawElevation = function(elevationData) {
+        if (!elevationData) return;
+        
+        // ÖNCE loading class'ını kaldır (güvence)
+        if (track) track.classList.remove('loading');
+        
+        const { smooth, min, max } = elevationData;
+        const s = container._elevSamples || [];
+        const startKmDom = Number(container._elevStartKm || 0);
+        const spanKm = Number(container._elevKmSpan || totalKm) || 1;
+
         createScaleElements(track, width, totalKm, 0, markers);
       };
 
@@ -10307,7 +10316,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
       container._elevResizeObserver = ro;
 
            // ÇİZİMİ BAŞLAT - ÖNCE loading class'ını kaldır, SONRA çiz
-      track.classList.remove('loading'); // ← ERKEN KALDIR
+      track.classList.remove('loading');
+      createScaleElements(track, width, totalKm, 0, markers); // Marker'ları hemen çiz
+      
+      // 2. SONRA yükseklik verisini çiz (async)
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
           window.hideScaleBarLoading?.(container);
