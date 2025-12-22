@@ -9898,7 +9898,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
             min-height: 200px; 
             width: 100%;
             position: relative;
-      z-index:12312312312312
+
         }
         /* TOOLTIP VE LINE HER ZAMAN EN ÜSTTE */
         .tt-elev-tooltip { z-index: 9999 !important; }
@@ -9985,7 +9985,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
         ">
           <div class="elev-animation" style="display: flex;">
             <div class="spinner" style="margin-bottom: 10px;"></div>
-            <div class="loading-text">Loading elevation<span class="dots">...</span></div>
+            <div>Loading elevation</div>
           </div>
         </div>
       </div>
