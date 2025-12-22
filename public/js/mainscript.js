@@ -139,9 +139,8 @@ function niceStep(total, target) {
 }
 // DÜZELTİLMİŞ FONKSİYON 2
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null) {
-  if (track && track.classList.contains('loading')) {
-      track.querySelectorAll('.marker-badge').forEach(el => el.remove());
-      return; 
+  if (track) {
+    track.querySelectorAll('.marker-badge').forEach(el => el.remove());
   }
 
   const container = track?.parentElement;
