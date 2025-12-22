@@ -4671,8 +4671,10 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 @media (max-width: 768px) {
     .elev-segment-toolbar {
         justify-content: flex-end;
-        border-radius: 0;
-        gap: 8px;
+        gap: 6px;
+        right: 8px;
+        border-radius: 8px;
+
     }
     
     /* Mobilde buton daha kompakt olsun */
