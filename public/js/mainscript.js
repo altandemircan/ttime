@@ -10202,10 +10202,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
       container._elevationData = { smooth, min, max };
       container._elevationDataFull = { smooth: smooth.slice(), min, max };
       container.dataset.elevLoadedKey = routeKey;
-
-      // REDRAW ELEVATION İÇİN GÜNCELLEME
+ // REDRAW ELEVATION İÇİN GÜNCELLEME
       container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
+        
+        // ÖNCE loading class'ını kaldır (güvence)
+        if (track) track.classList.remove('loading');
+        
         const { smooth, min, max } = elevationData;
         const s = container._elevSamples || [];
         const startKmDom = Number(container._elevStartKm || 0);
@@ -10285,19 +10288,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
           segG.appendChild(seg);
         }
         
-        container._redrawElevation = function(elevationData) {
-        if (!elevationData) return;
-        
-        // ÖNCE loading class'ını kaldır (güvence)
-        if (track) track.classList.remove('loading');
-        
-        const { smooth, min, max } = elevationData;
-        const s = container._elevSamples || [];
-        const startKmDom = Number(container._elevStartKm || 0);
-        const spanKm = Number(container._elevKmSpan || totalKm) || 1;
-
         createScaleElements(track, width, totalKm, 0, markers);
-      };
+      }; // ← BU KAPANMA DOĞRU YERDE
 
       // Handle Resize
       function handleResize() {
