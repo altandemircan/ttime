@@ -10842,6 +10842,8 @@ function highlightSegmentOnMap(day, startKm, endKm) {
 }
 function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth) {
   const svgNS = 'http://www.w3.org/2000/svg';
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
   window._lastSegmentDay = day;
   window._lastSegmentStartKm = startKm;
   window._lastSegmentEndKm = endKm;
@@ -10890,7 +10892,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   // SVG Çizimi
   const widthNow = widthPx || 400;
-  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   const SVG_TOP = 48;
   let heightNow = isMobile
     ? Math.max(180, Math.min(240, Math.round(track.getBoundingClientRect().height - SVG_TOP - 12)))
@@ -10989,7 +10990,6 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
-  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   const buttonText = isMobile ? 'Seg X' : 'Segment ✕';
   
   tb.innerHTML = `
