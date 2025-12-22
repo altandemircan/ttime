@@ -10994,7 +10994,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
     <span class="pill">↑ ${Math.round(up)} m</span>
     <span class="pill">↓ ${Math.round(down)} m</span>
     <span class="pill">Avg %${avgGrade.toFixed(1)}</span>
-    <button type="button" class="elev-segment-reset" style="background:#d32f2f;">Segment (X)</button>
+    <button type="button" class="elev-segment-reset" style="background:#d32f2f;">Segment ✕</button>
   `;
   
   const expandedContainerChildren = expandedContainer.querySelector('.expanded-map-panel');
