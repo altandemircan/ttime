@@ -215,11 +215,10 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   }
 
   // --- MARKER POSITIONING ---
-  let activeData = null;
+    let activeData = null;
   
-  if (customElevData) {
-      activeData = customElevData; 
-  } else if (container && container._elevationData) {
+  // MARKERLAR İÇİN: Her zaman container._elevationData kullan
+  if (container && container._elevationData) {
       const { smooth, min, max } = container._elevationData;
       let vizMin = min, vizMax = max;
       const eSpan = max - min;
