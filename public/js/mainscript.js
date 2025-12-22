@@ -331,23 +331,22 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
         });
     }
     
-    // 7. ELEVATION LABELS OLUŞTUR - BU KISIM SORUNLUYDU!
+    // 7. ELEVATION LABELS OLUŞTUR - ORİJİNAL CSS KORUNUYOR
     const elevationLabels = document.createElement('div');
     elevationLabels.className = 'elevation-labels-container';
-    elevationLabels.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        pointer-events: none;
-        z-index: 1;
-    `;
+    // CSS'i bozmadan sadece position ve z-index ekleyelim
+    elevationLabels.style.position = 'relative';
+    elevationLabels.style.zIndex = '1';
     
-    // Label'ları oluştur (5 adet)
+    // Label'ları oluştur (5 adet) - ORİJİNAL STİL KORUNUYOR
     for (let i = 0; i <= 4; i++) {
-        const pct = (i / 4) * 100; // 0%, 25%, 50%, 75%, 100%
-        const topPercent = 100 - pct; // SVG y ekseni ters
+        const pct = (i / 4) * 100;
+        const topPercent = 100 - pct;
+        
+        // Top değerini hesapla
+        let topValue = '0px';
+        const trackHeight = track.clientHeight || 180;
+        topValue = `${(topPercent / 100) * trackHeight}px`;
         
         // Elevation değeri hesapla
         let elevationValue = '0 m';
@@ -356,41 +355,53 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
             const val = vizMin + (i/4) * (vizMax - vizMin);
             elevationValue = Math.round(val) + ' m';
         } else {
-            // Varsayılan değerler
-            const values = [108, 89, 71, 53, 34]; // Örnek değerler
-            elevationValue = values[i] + ' m';
+            // SVG'den değerleri oku
+            const svg = track.querySelector('svg.tt-elev-svg');
+            if (svg) {
+                const texts = Array.from(svg.querySelectorAll('text'))
+                    .filter(t => /-?\d+\s*m$/.test(t.textContent.trim()))
+                    .map(t => ({
+                        value: t.textContent.trim(),
+                        y: Number(t.getAttribute('y'))
+                    }));
+                    
+                if (texts.length > i) {
+                    elevationValue = texts[i].value;
+                }
+            }
         }
         
         const wrapper = document.createElement('div');
+        // ORİJİNAL CSS KORUNUYOR
         wrapper.style.cssText = `
             position: absolute;
-            right: 0;
-            top: ${topPercent}%;
-            transform: translateY(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
+            right: 0px;
+            top: ${topValue};
         `;
         
         const tick = document.createElement('div');
+        // ORİJİNAL CSS KORUNUYOR
         tick.style.cssText = `
             width: 35px;
-            border-bottom: 1px dashed #cfd8dc;
+            border-bottom: 1px dashed rgb(207, 216, 220);
             opacity: 0.7;
-            margin-right: 2px;
+            display: block;
+            margin-left: 0px;
+            margin-top: 0px;
         `;
         
         const label = document.createElement('div');
         label.className = 'elevation-label';
+        // ORİJİNAL CSS KORUNUYOR - SADECE display: none KALDIRILIYOR
         label.style.cssText = `
             font-size: 10px;
-            color: #607d8b;
+            color: rgb(96, 125, 139);
             background: none;
             line-height: 1.5;
             text-align: right;
-            padding-right: 0;
+            padding-right: 0px;
             white-space: nowrap;
-            display: ${i === 0 ? 'none' : 'block'}; // En üstteki gizli
+            /* display: ${i === 0 ? 'none' : 'block'}; BU SATIR KALDIRILDI */
         `;
         label.textContent = elevationValue;
         
@@ -427,22 +438,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     });
 }
 
-// Yardımcı fonksiyon - eksikse ekleyin
-function getTotalKmFromMarkers(markers) {
-    if (!markers || markers.length < 2) return 0;
-    
-    let total = 0;
-    for (let i = 0; i < markers.length - 1; i++) {
-        const m1 = markers[i];
-        const m2 = markers[i+1];
-        
-        if (m1._distance !== undefined && m2._distance !== undefined) {
-            total += Math.abs(m2._distance - m1._distance);
-        }
-    }
-    
-    return total > 0 ? total : markers.length * 2; // fallback
-}
+
 
 // Window'a elevation data kontrol fonksiyonu ekle
 window.ensureElevationDataLoaded = function(day) {
