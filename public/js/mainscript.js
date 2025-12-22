@@ -9919,7 +9919,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     style.id = 'tt-scale-bar-css';
         style.innerHTML = `
         .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) {
-            opacity: 0.4; 
+            opacity: 1; 
             pointer-events: none;
             transition: opacity 0.2s ease;
         }
