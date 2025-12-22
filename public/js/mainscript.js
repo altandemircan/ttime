@@ -7858,10 +7858,10 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
   });
 
   const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
-  // if (scaleBarDiv) {
-  //   try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
-  //   window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
-  // }
+  if (scaleBarDiv) {
+    try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
+    window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
+  }
 }
 
 function getDayPoints(day) {
@@ -10542,7 +10542,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   if (window.__tt_scaleBarLoaderReady) return;
 
   function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
-  // window.showScaleBarLoading = function(c,t='Loading elevation…'){
+  window.showScaleBarLoading = function(c,t='Loading elevation…'){
     const tr = trackOf(c); if (!tr) return;
     let box = tr.querySelector('.tt-scale-loader');
     if (!box){ box=document.createElement('div'); box.className='tt-scale-loader'; box.innerHTML=`<div class="spinner"></div><div class="txt"></div>`; tr.appendChild(box); }
