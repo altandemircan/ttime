@@ -9885,8 +9885,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
     style.id = 'tt-scale-bar-css';
-    style.innerHTML = `
-        .scale-bar-track.loading > *:not(.tt-scale-loader) {
+        style.innerHTML = `
+        .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) {
             opacity: 0.4; 
             pointer-events: none;
             transition: opacity 0.2s ease;
@@ -9894,18 +9894,20 @@ function renderRouteScaleBar(container, totalKm, markers) {
         .scale-bar-track.loading .tt-scale-loader {
             opacity: 1 !important;
         }
+        .scale-bar-track.loading .elevation-labels-container {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
         .scale-bar-track.loading {
             min-height: 200px; 
             width: 100%;
             position: relative;
-
         }
         /* TOOLTIP VE LINE HER ZAMAN EN ÜSTTE */
         .tt-elev-tooltip { z-index: 9999 !important; }
         .scale-bar-vertical-line { z-index: 9998 !important; }
         .scale-bar-selection { z-index: 9000 !important; }
-
-               /* NOKTA ANİMASYONU - spinner + yazı stili (en iyi) */
+        /* NOKTA ANİMASYONU - spinner + yazı stili (en iyi) */
         .dots {
             display: inline-block;
             width: 30px;
@@ -9924,8 +9926,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
                 opacity: 1;
             }
         }
-    `;
-    document.head.appendChild(style);
+    `;    document.head.appendChild(style);
   }
 
   const spinner = container.querySelector('.spinner');
