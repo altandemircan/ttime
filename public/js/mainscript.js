@@ -10990,7 +10990,7 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
 
   const tb = document.createElement('div');
   tb.className = 'elev-segment-toolbar';
-  const buttonText = isMobile ? 'Seg X' : 'Segment ✕';
+  const buttonText = isMobile ? 'Seg ✕' : 'Segment ✕';
   
   tb.innerHTML = `
     <span class="pill">${startKm.toFixed(1)}–${endKm.toFixed(1)} km</span>
