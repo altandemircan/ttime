@@ -10217,40 +10217,41 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
       // REDRAW ELEVATION İÇİN GÜNCELLEME
       container._redrawElevation = function(elevationData) {
-        if (!elevationData) return;
-        const { smooth, min, max } = elevationData;
-        const s = container._elevSamples || [];
-        const startKmDom = Number(container._elevStartKm || 0);
-        const spanKm = Number(container._elevKmSpan || totalKm) || 1;
+    if (!elevationData) return;
+    const { smooth, min, max } = elevationData;
+    const s = container._elevSamples || [];
+    const startKmDom = Number(container._elevStartKm || 0);
+    const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-        let vizMin = min, vizMax = max;
-        const eSpan = max - min;
-        if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
-        else { vizMin = min - 1; vizMax = max + 1; }
+    let vizMin = min, vizMax = max;
+    const eSpan = max - min;
+    if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
+    else { vizMin = min - 1; vizMax = max + 1; }
 
-        const X = kmRel => (kmRel / spanKm) * width;
-        const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
+    const X = kmRel => (kmRel / spanKm) * width;
+    const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
 
-        while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
-        while (segG.firstChild) segG.removeChild(segG.firstChild);
+    while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
+    while (segG.firstChild) segG.removeChild(segG.firstChild);
 
-        // Grid
-        for (let i = 0; i <= 4; i++) {
-          const ev = vizMin + (i / 4) * (vizMax - vizMin);
-          const y = Y(ev);
-          if (isNaN(y)) continue;
-          const ln = document.createElementNS(svgNS, 'line');
-          ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
-          ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-          ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-          gridG.appendChild(ln);
+    // Grid
+    for (let i = 0; i <= 4; i++) {
+      const ev = vizMin + (i / 4) * (vizMax - vizMin);
+      const y = Y(ev);
+      if (isNaN(y)) continue;
+      const ln = document.createElementNS(svgNS, 'line');
+      ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+      ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+      ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+      gridG.appendChild(ln);
 
-          const tx = document.createElementNS(svgNS, 'text');
-          tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-          tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-          tx.textContent = `${Math.round(ev)} m`;
-          gridG.appendChild(tx);
-        }
+      const tx = document.createElementNS(svgNS, 'text');
+      tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+      tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+      tx.textContent = `${Math.round(ev)} m`;
+      gridG.appendChild(tx);
+    }
+
 
         // Alan
         let topD = '';
@@ -10321,6 +10322,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
           container._redrawElevation(container._elevationData);
           window.hideScaleBarLoading?.(container);
           track.classList.remove('loading');
+
+
       });
 
       if (typeof day !== "undefined") {
@@ -10354,6 +10357,16 @@ function renderRouteScaleBar(container, totalKm, markers) {
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
       createScaleElements(track, width, totalKm, 0, markers);
     }
+       const markers = (typeof getRouteMarkerPositionsOrdered === 'function') ? getRouteMarkerPositionsOrdered(day) : [];
+    const customElevData = {
+        vizMin: vizMin,
+        vizMax: vizMax
+    };
+    
+    // SVG'nin render olmasını bekle (next frame)
+    requestAnimationFrame(() => {
+        createScaleElements(track, width, spanKm, startKmDom, markers, customElevData);
+    });
   })();
 }
 
