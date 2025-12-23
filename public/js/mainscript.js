@@ -10544,19 +10544,75 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   if (window.__tt_scaleBarLoaderReady) return;
 
   function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
-  window.showScaleBarLoading = function(c,t='Loading elevation…'){
-    const tr = trackOf(c); if (!tr) return;
-    let box = tr.querySelector('.tt-scale-loader');
-    if (!box){ box=document.createElement('div'); box.className='tt-scale-loader'; box.innerHTML=`<div class="spinner"></div><div class="txt"></div>`; tr.appendChild(box); }
-    const txt = box.querySelector('.txt'); if (txt) txt.textContent = t;
-    box.style.display='flex';
+
+  window.showScaleBarLoading = function(c, t='Loading elevation…'){
+    const tr = trackOf(c); 
+    if (!tr) return;
+
+    // --- YENİ EKLENEN KISIM: İNTERAKSİYONU KİLİTLE ---
+    // Yükleme başladığı anda track üzerindeki tüm mouse olaylarını (hover, click) iptal et.
+    // Böylece alttaki eski grafik mouse hareketlerine tepki vermez.
+    tr.style.pointerEvents = 'none';
+
+    // Mevcut placeholder mantığı (önceki adımda yaptığımız overlay)
+    let placeholder = tr.querySelector('.elevation-placeholder');
+    
+    if (!placeholder) {
+      placeholder = document.createElement('div');
+      placeholder.className = 'elevation-placeholder';
+      
+      placeholder.style.cssText = `
+          width: 100%;
+          height: 220px;
+          border-radius: 8px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: #6c757d;
+          font-size: 14px;
+          position: absolute; 
+          top: 0; 
+          left: 0;
+          background: rgba(255, 255, 255, 0.95); 
+          z-index: 1000;
+      `;
+      
+      placeholder.innerHTML = `
+        <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
+            <div class="spinner"></div>
+            <div class="txt"></div>
+        </div>
+      `;
+      tr.appendChild(placeholder);
+    }
+    
+    const txt = placeholder.querySelector('.txt');
+    if (txt) txt.textContent = t;
+    
+    placeholder.style.display = 'flex';
   };
-  window.updateScaleBarLoadingText = function(c,t){
-    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); const txt = box?.querySelector('.txt'); if (txt) txt.textContent = t;
+
+  window.updateScaleBarLoadingText = function(c, t){
+    const tr = trackOf(c); 
+    const box = tr?.querySelector('.elevation-placeholder .tt-scale-loader'); 
+    const txt = box?.querySelector('.txt'); 
+    if (txt) txt.textContent = t;
   };
+
   window.hideScaleBarLoading = function(c){
-    const tr = trackOf(c); const box = tr?.querySelector('.tt-scale-loader'); if (box) box.style.display='none';
+    const tr = trackOf(c); 
+    
+    // --- YENİ EKLENEN KISIM: İNTERAKSİYONU AÇ ---
+    // Yükleme bitti, grafik yenilendi. Artık mouse olaylarına izin ver.
+    if (tr) tr.style.pointerEvents = 'auto';
+
+    const placeholder = tr?.querySelector('.elevation-placeholder'); 
+    if (placeholder) {
+        placeholder.remove();
+    }
   };
+
   window.__tt_scaleBarLoaderReady = true;
 })();
 
