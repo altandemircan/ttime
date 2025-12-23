@@ -9963,48 +9963,69 @@ function renderRouteScaleBar(container, totalKm, markers) {
     `;    document.head.appendChild(style);
   }
 
- const spinner = container.querySelector('.spinner');
+const spinner = container.querySelector('.spinner');
   if (spinner) spinner.remove();
   
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? (window.lastRouteGeojsons && window.lastRouteGeojsons[`route-map-day${day}`]) : null;
   
-  // 1. Önce resmi rotayı (OSRM/Mapbox vs) almaya çalış
+  // 1. Önce resmi rotayı (OSRM) almaya çalış
   let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
-  // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa veya yetersizse (noktalar yola uzaksa),
-  // Markerları düz çizgi (Kuş uçuşu) olarak birbirine bağla ve grafiği buna göre çiz.
+  // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa, markerları düz çizgiyle bağla.
   if (!Array.isArray(coords) || coords.length < 2) {
       if (typeof getDayPoints === 'function' && day) {
           const rawPoints = getDayPoints(day);
-          // Sadece geçerli koordinatı olanları al
-          const validPoints = rawPoints.filter(p => p.lat && p.lng && !isNaN(p.lat) && !isNaN(p.lng));
+          // Koordinatları sayıya çevirerek filtrele
+          const validPoints = rawPoints.filter(p => p.lat && p.lng && !isNaN(parseFloat(p.lat)) && !isNaN(parseFloat(p.lng)));
           
           if (validPoints.length >= 2) {
-              // [lng, lat] formatına çevir (GeoJSON formatı)
-              coords = validPoints.map(p => [p.lng, p.lat]);
+              // GeoJSON formatına ([lng, lat]) çevir
+              coords = validPoints.map(p => [parseFloat(p.lng), parseFloat(p.lat)]);
               
-              // Eğer totalKm hesaplanamadıysa (rota oluşmadığı için 0 gelebilir veya NaN olabilir),
-              // Kuş uçuşu mesafeyi biz hesaplayalım ki grafik x ekseni bozuk olmasın.
+              // totalKm bozuksa veya yoksa (OSRM hata verdiği için), biz hesaplayalım.
+              // Not: Haversine fonksiyonunu buraya gömüyoruz ki scope hatası olmasın.
               if (!totalKm || totalKm <= 0 || isNaN(totalKm)) {
                   let distCalc = 0;
-                  // haversine fonksiyonu globalde varsa kullan
-                  if (typeof haversine === 'function') {
-                      for(let k=1; k<validPoints.length; k++) {
-                          distCalc += haversine(validPoints[k-1].lat, validPoints[k-1].lng, validPoints[k].lat, validPoints[k].lng);
-                      }
+                  const R = 6371000; 
+                  const toRad = x => x * Math.PI / 180;
+                  
+                  for(let k=1; k<validPoints.length; k++) {
+                      const lat1 = parseFloat(validPoints[k-1].lat);
+                      const lon1 = parseFloat(validPoints[k-1].lng);
+                      const lat2 = parseFloat(validPoints[k].lat);
+                      const lon2 = parseFloat(validPoints[k].lng);
+                      
+                      const dLat = toRad(lat2 - lat1);
+                      const dLon = toRad(lon2 - lon1);
+                      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+                      distCalc += 2 * R * Math.asin(Math.sqrt(a));
                   }
-                  if (distCalc > 0) totalKm = distCalc / 1000;
+                  
+                  // Eğer hesaplama başarılıysa totalKm'yi güncelle
+                  if (distCalc > 0) {
+                      totalKm = distCalc / 1000;
+                  } else {
+                      totalKm = 1; // 0 çıkarsa hata vermesin diye minik bir değer
+                  }
               }
           }
       }
   }
 
-  // Eğer hala coords yoksa veya totalKm hesaplanamadıysa çıkış yap
-  if (!container || (isNaN(totalKm) && (!coords || coords.length < 2))) {
+  // ÇIKIŞ KONTROLÜ: Koordinat yoksa çık.
+  // Not: totalKm NaN olsa bile coords varsa devam etsin diye check'i yumuşattık, 
+  // ama aşağıda totalKm'yi düzelteceğiz.
+  if (!container || (!coords || coords.length < 2)) {
     if (container) { container.innerHTML = ""; container.style.display = 'block'; }
     return;
+  }
+
+  // SON GÜVENLİK: Eğer hala totalKm NaN ise (yukarıdaki hesap tutmadıysa)
+  // Grafik çökmesin diye varsayılan bir değer ata.
+  if (isNaN(totalKm) || totalKm <= 0) {
+      totalKm = 10; // Varsayılan 10km (Grafik en azından görünsün)
   }
 
   delete container._elevationData;
