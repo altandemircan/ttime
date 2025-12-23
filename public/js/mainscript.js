@@ -561,7 +561,13 @@ if (typeof hideSuggestionsDiv !== "function") {
     }
 }
 
+// Global değişken (Listenin dışında tanımlı olmalı)
+let currentFocus = -1; 
+
 function renderSuggestions(originalResults = [], manualQuery = "") {
+    // 1. Her çizimde seçimi sıfırla (Böylece ilk eleman seçili gelmez)
+    currentFocus = -1; 
+    
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
@@ -569,7 +575,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
-        hideSuggestionsDiv(true);
+        if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
         return;
     }
 
@@ -577,179 +583,114 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     const targetTerm = manualQuery.toLowerCase();
     
     // 1. ÖNCE TÜM SONUÇLARI PUANLA
-    // renderSuggestions fonksiyonunun içinde, puanlama kısmı (~satır 20-60 arası)
-
-// 1. ÖNCE TÜM SONUÇLARI PUANLA - DEĞİŞTİRİLMİŞ
-const scoredResults = originalResults.map(item => {
-    const p = item.properties || {};
-    
-    // İsim alanları (küçük harfe çevir)
-    const name = (p.name || "").toLowerCase();
-    const city = (p.city || "").toLowerCase();
-    const county = (p.county || "").toLowerCase();
-    
-    // === ÖNEMLİ: "kemer" İÇERMEYENLERİ ELE ===
-    // Eğer hiçbir alanda targetTerm geçmiyorsa, bu sonucu tamamen atla
-    const containsTarget = name.includes(targetTerm) || 
-                          city.includes(targetTerm) || 
-                          county.includes(targetTerm);
-    
-    if (!containsTarget) {
-        // "kemer" içermiyorsa, bu sonucu tamamen atlayalım
-        return { item, score: -9999, name: p.name, city: p.city, country_code: p.country_code };
-    }
-    
-    let score = 0;
-    
-    // --- PUANLAMA SİSTEMİ - GÜNCELLENMİŞ ---
-    
-    // 1. TAM EŞLEŞME (EN YÜKSEK): "Kemer" -> "Kemer"
-    if (name === targetTerm || city === targetTerm || county === targetTerm) {
-        score += 1500;
-    }
-    
-    // 2. BAŞLANGIÇ EŞLEŞMESİ: "Kemer" -> "Kemerovo"
-    if (name.startsWith(targetTerm)) {
-        score += 800;
-    } else if (city.startsWith(targetTerm)) {
-        score += 600;
-    } else if (county.startsWith(targetTerm)) {
-        score += 400;
-    }
-    
-    // 3. TAM KELİME İÇERME: "Kemer" -> "Seydikemer"
-    if (containsTarget) {
-        // Kelimeleri ayır ve tam kelime eşleşmesi var mı kontrol et
-        const nameWords = name.split(/[\s,\-]+/);
-        const cityWords = city.split(/[\s,\-]+/);
-        const countyWords = county.split(/[\s,\-]+/);
+    const scoredResults = originalResults.map(item => {
+        const p = item.properties || {};
         
-        const allWords = [...nameWords, ...cityWords, ...countyWords];
+        // İsim alanları (küçük harfe çevir)
+        const name = (p.name || "").toLowerCase();
+        const city = (p.city || "").toLowerCase();
+        const county = (p.county || "").toLowerCase();
         
-        // Tam kelime eşleşmesi varsa (ör: "Seydikemer" içinde "kemer" kelimesi)
-        if (allWords.some(word => word === targetTerm)) {
-            score += 700;
-        } else {
-            // Sadece parçalı eşleşme (ör: "Kemer" -> "Kemerovsky")
-            score += 100;
+        // "kemer" içermiyorsa ele
+        const containsTarget = name.includes(targetTerm) || 
+                               city.includes(targetTerm) || 
+                               county.includes(targetTerm);
+        
+        if (!containsTarget) {
+            return { item, score: -9999 };
         }
-    }
-    
-    // 4. TÜR BAZLI PUANLAR
-    const type = (p.result_type || p.place_type || '').toLowerCase();
-    if (type === 'city') score += 80;
-    else if (type === 'town') score += 60;
-    else if (type === 'village') score += 40;
-    else if (type === 'county') score += 30;
-    
-    // 5. TİCARİ SONUÇ CEZASI
-    const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
-    if (commercialWords.some(word => name.includes(word))) {
-        score -= 2000;
-    }
-    
-    return { item, score, name: p.name, city: p.city, country_code: p.country_code };
-});
+        
+        let score = 0;
+        
+        // Puanlama Sistemi
+        if (name === targetTerm || city === targetTerm || county === targetTerm) score += 1500;
+        if (name.startsWith(targetTerm)) score += 800;
+        else if (city.startsWith(targetTerm)) score += 600;
+        else if (county.startsWith(targetTerm)) score += 400;
+        
+        if (containsTarget) {
+            const allWords = [...name.split(/[\s,\-]+/), ...city.split(/[\s,\-]+/), ...county.split(/[\s,\-]+/)];
+            if (allWords.some(word => word === targetTerm)) score += 700;
+            else score += 100;
+        }
+        
+        const type = (p.result_type || p.place_type || '').toLowerCase();
+        if (type === 'city') score += 80;
+        else if (type === 'town') score += 60;
+        else if (type === 'village') score += 40;
+        else if (type === 'county') score += 30;
+        
+        const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
+        if (commercialWords.some(word => name.includes(word))) score -= 2000;
+        
+        return { item, score };
+    });
 
-// 2. PUANA GÖRE SIRALA (yüksek puan üstte) ve NEGATİF PUANLARI FİLTRELE
-scoredResults.sort((a, b) => b.score - a.score);
+    // 2. SIRALA VE FİLTRELE
+    scoredResults.sort((a, b) => b.score - a.score);
 
-// 3. EN İYİ 8 SONUCU AL, ama negatif puanlıları (içermeyenleri) ATLA
-const finalResults = scoredResults
-    .filter(sr => sr.score > 0) // Sadece pozitif puanlıları al
-    .slice(0, 8)
-    .map(sr => sr.item);
+    const finalResults = scoredResults
+        .filter(sr => sr.score > 0)
+        .slice(0, 8)
+        .map(sr => sr.item);
 
-    // B. GÖRÜNÜM - FORMATLAYALIM
+    // B. GÖRÜNÜM
     const seenSuggestions = new Set();
     
     finalResults.forEach((result, index) => {
         const props = result.properties || {};
         
-        // === 1. İSİM BELİRLEME ===
+        // === İSİM BELİRLEME MANTIĞI ===
         let displayName = "";
-        
-        // Öncelik: city > name > county
         if (props.city && props.city.trim()) {
             displayName = props.city;
         } else if (props.name && props.name.trim()) {
-            // Virgül varsa ilk kısmı al
             const nameParts = props.name.split(",").map(p => p.trim());
             const firstPart = nameParts[0].toLowerCase();
-            
-            // Ticari isimleri filtrele (finance center vs.)
             const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
-            const isCommercial = commercialWords.some(word => firstPart.includes(word));
-            
-            if (isCommercial && nameParts.length > 1) {
-                displayName = nameParts[1]; // Ticari değilse şehir kısmı
+            if (commercialWords.some(word => firstPart.includes(word)) && nameParts.length > 1) {
+                displayName = nameParts[1];
             } else {
-                displayName = nameParts[0]; // Normal isim
+                displayName = nameParts[0];
             }
         } else if (props.county && props.county.trim()) {
             displayName = props.county;
         }
         
-        // Minimum 2 karakter kontrolü
         if (!displayName || displayName.trim().length < 2) return;
         
-        // === 2. BÖLGE BİLGİLERİ ===
+        // === DETAYLAR ===
         const regionParts = [];
+        if (props.city && props.city.trim() && props.city !== displayName) regionParts.push(props.city);
+        if (props.county && props.county.trim() && props.county !== displayName && props.county !== props.city) regionParts.push(props.county);
         
-        // Şehir bilgisi (farklıysa ekle)
-        if (props.city && props.city.trim() && props.city !== displayName) {
-            regionParts.push(props.city);
-        }
-        
-        // İlçe bilgisi (farklıysa ekle)
-        if (props.county && props.county.trim() && 
-            props.county !== displayName && 
-            props.county !== props.city) {
-            regionParts.push(props.county);
-        }
-        
-        // === 3. ÜLKE VE BAYRAK (EVRENSEL) ===
         const countryCode = props.country_code || "";
         const flag = countryCode ? " " + countryFlag(countryCode) : "";
         
-        // === 4. SON FORMAT ===
         let displayText = displayName;
+        if (regionParts.length > 0) displayText += ", " + regionParts.join(', ');
+        if (countryCode) displayText += ", " + countryCode.toUpperCase() + flag;
         
-        if (regionParts.length > 0) {
-            displayText += ", " + regionParts.join(', ');
-        }
-        
-        // SADECE country_code varsa ekle
-        if (countryCode) {
-            displayText += ", " + countryCode.toUpperCase() + flag;
-        }
-        
-        // Baştaki gereksiz virgülleri temizle
         displayText = displayText.replace(/^,\s*/, "").trim();
         
-        // === 5. TEKRAR KONTROLÜ ===
         const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (seenSuggestions.has(normalizedText) || displayText.startsWith(",")) {
-            return;
-        }
+        if (seenSuggestions.has(normalizedText) || displayText.startsWith(",")) return;
         seenSuggestions.add(normalizedText);
         
-        // === 6. HTML OLUŞTURMA ===
+        // === HTML OLUŞTURMA ===
         const div = document.createElement("div");
         div.className = "category-area-option";
-        // if (index === 0) {
-        //     div.classList.add("selected-suggestion");
-        // }
+        
+        // --- [FIX] İLK SEÇENEK OTOMATİK SEÇİLMİYOR ARTIK ---
+        // if (index === 0) div.classList.add("selected-suggestion"); // SİLİNDİ
         
         div.textContent = displayText;
         div.dataset.displayText = displayText;
         
-        // === 7. TIKLAMA OLAYI ===
+        // === TIKLAMA OLAYI ===
         div.onclick = () => {
             window.__programmaticInput = true;
-            Array.from(suggestionsDiv.children).forEach(d => 
-                d.classList.remove("selected-suggestion")
-            );
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
 
             window.selectedSuggestion = { 
@@ -770,8 +711,7 @@ const finalResults = scoredResults
             window.__locationPickedFromSuggestions = true;
 
             const raw = chatInput.value.trim();
-            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || 
-                           raw.match(/(\d+)\s*-?\s*gün/i);
+            const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
             if (!days || days < 1) days = 1;
 
@@ -787,8 +727,8 @@ const finalResults = scoredResults
                 chatInput.value = canonicalStr;
             }
 
-            if (enableSendButton) enableSendButton();
-            if (showSuggestionsDiv) showSuggestionsDiv();
+            if (typeof enableSendButton === "function") enableSendButton();
+            if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
             if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
 
             setTimeout(() => { window.__programmaticInput = false; }, 0);
@@ -798,11 +738,69 @@ const finalResults = scoredResults
     });
 
     if (suggestionsDiv.children.length > 0) {
-        showSuggestionsDiv();
+        if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     } else {
-        hideSuggestionsDiv(true);
+        if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
     }
 }
+// --- KLAVYE NAVİGASYONU & ENTER KORUMASI ---
+
+function addActive(x) {
+    if (!x) return false;
+    removeActive(x);
+    if (currentFocus >= x.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (x.length - 1);
+    
+    // Seçili hale getir
+    x[currentFocus].classList.add("selected-suggestion");
+    
+    // Görünür alana kaydır
+    x[currentFocus].scrollIntoView({ block: "nearest" });
+}
+
+function removeActive(x) {
+    for (let i = 0; i < x.length; i++) {
+        x[i].classList.remove("selected-suggestion");
+    }
+}
+
+// Sayfa yüklendiğinde listener'ı ekle
+document.addEventListener("DOMContentLoaded", function() {
+    const inp = document.getElementById("user-input");
+    if (inp) {
+        inp.addEventListener("keydown", function(e) {
+            const suggestionsDiv = document.getElementById("suggestions");
+            let items = suggestionsDiv ? suggestionsDiv.getElementsByClassName("category-area-option") : null;
+            
+            if (e.key === "ArrowDown") {
+                currentFocus++;
+                addActive(items);
+            } else if (e.key === "ArrowUp") {
+                currentFocus--;
+                addActive(items);
+            } else if (e.key === "Enter") {
+                // DURUM 1: Klavye ile listeden bir şey seçiliyse
+                if (currentFocus > -1 && items && items[currentFocus]) {
+                    e.preventDefault(); // Formu gönderme
+                    items[currentFocus].click(); // O öğeyi tıkla (seçimi yap)
+                } 
+                // DURUM 2: Daha önce seçim yapıldıysa (örn. mouse ile)
+                else if (window.__locationPickedFromSuggestions) {
+                    // İzin ver, normal gönderim (sendMessage) çalışsın
+                } 
+                // DURUM 3: Hiçbir seçim yoksa (NE KLAVYE NE MOUSE)
+                else {
+                    e.preventDefault(); // GÖNDERMEYİ ENGELLE!
+                    // Görsel uyarı: Input kenarını kırmızı yapıp söndür
+                    this.style.transition = "border-color 0.2s";
+                    this.style.borderColor = "#d32f2f";
+                    setTimeout(() => { this.style.borderColor = ""; }, 400);
+                }
+            }
+        });
+    }
+});
+
 
 // ============================================================
 // 4. INPUT EVENT LISTENER
