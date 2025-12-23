@@ -737,9 +737,9 @@ const finalResults = scoredResults
         // === 6. HTML OLUŞTURMA ===
         const div = document.createElement("div");
         div.className = "category-area-option";
-        if (index === 0) {
-            div.classList.add("selected-suggestion");
-        }
+        // if (index === 0) {
+        //     div.classList.add("selected-suggestion");
+        // }
         
         div.textContent = displayText;
         div.dataset.displayText = displayText;
