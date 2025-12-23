@@ -10508,7 +10508,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
     }
   }
 
-  window.showScaleBarLoading?.(container, 'Loading segment elevation...');
+window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, startKm, endKm);
 
   const routeKey = `seg:${coords.length}|${samples[0].lat.toFixed(4)},${samples[0].lng.toFixed(4)}|${samples[samples.length - 1].lat.toFixed(4)},${samples[samples.length - 1].lng.toFixed(4)}|${N}`;
    try {
@@ -10545,58 +10545,132 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
   function trackOf(c){ return c?.querySelector?.('.scale-bar-track')||null; }
 
-  window.showScaleBarLoading = function(c, t='Loading elevation…'){
+  // Geometri üzerinde mesafe bazlı nokta bulma (Marker hareketi için)
+  function getPointAtDistance(coords, targetM) {
+    if (!coords || coords.length < 2) return null;
+    let dist = 0;
+    const R = 6371000, toRad = x => x * Math.PI / 180;
+    
+    for (let i = 1; i < coords.length; i++) {
+      const [lon1, lat1] = coords[i-1];
+      const [lon2, lat2] = coords[i];
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+      const stepM = 2 * R * Math.asin(Math.sqrt(a));
+      
+      if (dist + stepM >= targetM) {
+        const ratio = (targetM - dist) / stepM;
+        const lat = lat1 + (lat2 - lat1) * ratio;
+        const lng = lon1 + (lon2 - lon1) * ratio;
+        return { lat, lng };
+      }
+      dist += stepM;
+    }
+    // Sona ulaştıysa son nokta
+    const last = coords[coords.length-1];
+    return { lat: last[1], lng: last[0] };
+  }
+
+  // --- SHOW FUNCTION GÜNCELLENDİ: day, sKm, eKm parametreleri eklendi ---
+  window.showScaleBarLoading = function(c, t='Loading elevation…', day=null, sKm=null, eKm=null){
     const tr = trackOf(c); 
     if (!tr) return;
 
-    // 1. KİLİTLE: Eski grafik mouse hareketlerini algılamasın
+    // 1. Eski grafiği kilitle (Altta kalan grafik tetiklenmesin)
     tr.style.pointerEvents = 'none';
 
-    // 2. TEMİZLE: Ekranda asılı kalan eski tooltip veya dikey çizgiyi gizle
+    // 2. Eski tooltip/line gizle
     const oldTooltip = tr.querySelector('.tt-elev-tooltip');
     const oldLine = tr.querySelector('.scale-bar-vertical-line');
     if (oldTooltip) oldTooltip.style.display = 'none';
     if (oldLine) oldLine.style.display = 'none';
 
-    // 3. OVERLAY: Senin istediğin yapı
     let placeholder = tr.querySelector('.elevation-placeholder');
-    
     if (!placeholder) {
       placeholder = document.createElement('div');
       placeholder.className = 'elevation-placeholder';
       
-      // Overlay stili (Alttaki grafiğin üstünü örter)
+      // 3. Placeholder stili (Overlay)
       placeholder.style.cssText = `
-          width: 100%;
-          height: 220px;
-          border-radius: 8px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #6c757d;
-          font-size: 14px;
-          position: absolute; 
-          top: 0; 
-          left: 0;
-          background: rgba(255, 255, 255, 0.95); 
-          z-index: 1000;
+          width: 100%; height: 220px; border-radius: 8px;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          color: #6c757d; font-size: 14px;
+          position: absolute; top: 0; left: 0;
+          background: rgba(255, 255, 255, 0.95); z-index: 1000;
+          pointer-events: auto; cursor: crosshair; /* Mouse'u yakalaması için auto */
       `;
       
-      // İçerik: tt-scale-loader (Spinner + Text)
       placeholder.innerHTML = `
         <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
-            <div class="spinner"></div>
-            <div class="txt"></div>
+            <div class="spinner"></div><div class="txt"></div>
         </div>
+        <div class="loader-vertical-line" style="position:absolute; top:0; bottom:0; width:2px; background:#8a4af3; opacity:0.5; display:none; pointer-events:none;"></div>
       `;
       tr.appendChild(placeholder);
     }
     
     const txt = placeholder.querySelector('.txt');
     if (txt) txt.textContent = t;
-    
     placeholder.style.display = 'flex';
+
+    // --- 4. MARKER HAREKET MANTIĞI (LOADING SIRASINDA) ---
+    // Eğer day ve km bilgileri geldiyse, placeholder üzerinde mouse gezince marker'ı oynat
+    if (day !== null && sKm !== null && eKm !== null) {
+        const gjKey = `route-map-day${day}`;
+        const gj = window.lastRouteGeojsons && window.lastRouteGeojsons[gjKey];
+        const coords = gj?.features?.[0]?.geometry?.coordinates;
+        const lineEl = placeholder.querySelector('.loader-vertical-line');
+
+        placeholder.onmousemove = function(e) {
+            if (!coords) return;
+            const rect = placeholder.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            x = Math.max(0, Math.min(x, rect.width));
+            
+            // Oranı hesapla (0.0 - 1.0)
+            const ratio = x / rect.width;
+            
+            // Segment üzerindeki güncel KM
+            const currentKm = sKm + ratio * (eKm - sKm);
+            
+            // Haritadaki koordinatı bul
+            const pt = getPointAtDistance(coords, currentKm * 1000);
+            
+            if (pt) {
+                // Marker'ı güncelle (Mevcut global marker'ı kullanıyoruz)
+                // Expanded map veya normal map marker'ı
+                const markerMap = window.routeHoverMarkers && window.routeHoverMarkers[day];
+                if (markerMap) {
+                   markerMap.setLatLng([pt.lat, pt.lng]);
+                   if (!markerMap._map) { 
+                       // Eğer haritada yoksa ekle (expanded veya normal)
+                       const mapContainer = window.expandedMaps?.[gjKey]?.expandedMap || window.leafletMaps?.[gjKey];
+                       if(mapContainer) markerMap.addTo(mapContainer);
+                   }
+                   markerMap.setOpacity(1);
+                }
+                
+                // 3D Harita Marker güncelleme (Varsa)
+                if (window.move3DMarker) {
+                    window.move3DMarker(day, pt.lat, pt.lng);
+                }
+            }
+
+            // Loader üzerindeki dikey çizgiyi de hareket ettir
+            if (lineEl) {
+                lineEl.style.display = 'block';
+                lineEl.style.left = x + 'px';
+            }
+        };
+        
+        // Mouse çıkınca çizgiyi gizle
+        placeholder.onmouseleave = function() {
+            if (lineEl) lineEl.style.display = 'none';
+        }
+    } else {
+        placeholder.onmousemove = null;
+    }
   };
 
   window.updateScaleBarLoadingText = function(c, t){
@@ -10608,13 +10682,11 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
 
   window.hideScaleBarLoading = function(c){
     const tr = trackOf(c); 
+    if (tr) tr.style.pointerEvents = 'auto'; // Kilidi aç
     
-    // 4. KİLİDİ AÇ: Yeni grafik geldi, etkileşimi geri ver
-    if (tr) tr.style.pointerEvents = 'auto';
-
-    // Overlay'i kaldır
     const placeholder = tr?.querySelector('.elevation-placeholder'); 
     if (placeholder) {
+        placeholder.onmousemove = null; // Listener'ı temizle
         placeholder.remove();
     }
   };
