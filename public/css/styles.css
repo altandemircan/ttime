@@ -7037,6 +7037,7 @@ display: flex
   padding: 0px 10px 120px 10px;
   margin: 0 auto;
   background: #ffffff;
+      max-width: 1200px;
 }
 .loading-text {
     text-align: center;
