@@ -9726,7 +9726,7 @@ window.updateRouteStatsUI = function(day) {
             <span class="pill">${durationMin} min</span>
             <span class="pill">↑ ${up} m</span>
             <span class="pill">↓ ${down} m</span>
-            <button type="button" class="elev-segment-reset" style="background:#9159ed; cursor: default;">Route</button>
+            <button type="button" class="elev-segment-reset" style="background:#1976d2; cursor: default;">Route</button>
         `;
         
         // Toolbar'ı panel içine, harita ve diğer panellerin hemen üstüne ekle
