@@ -10549,18 +10549,23 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
     const tr = trackOf(c); 
     if (!tr) return;
 
-    // --- YENİ EKLENEN KISIM: İNTERAKSİYONU KİLİTLE ---
-    // Yükleme başladığı anda track üzerindeki tüm mouse olaylarını (hover, click) iptal et.
-    // Böylece alttaki eski grafik mouse hareketlerine tepki vermez.
+    // 1. KİLİTLE: Eski grafik mouse hareketlerini algılamasın
     tr.style.pointerEvents = 'none';
 
-    // Mevcut placeholder mantığı (önceki adımda yaptığımız overlay)
+    // 2. TEMİZLE: Ekranda asılı kalan eski tooltip veya dikey çizgiyi gizle
+    const oldTooltip = tr.querySelector('.tt-elev-tooltip');
+    const oldLine = tr.querySelector('.scale-bar-vertical-line');
+    if (oldTooltip) oldTooltip.style.display = 'none';
+    if (oldLine) oldLine.style.display = 'none';
+
+    // 3. OVERLAY: Senin istediğin yapı
     let placeholder = tr.querySelector('.elevation-placeholder');
     
     if (!placeholder) {
       placeholder = document.createElement('div');
       placeholder.className = 'elevation-placeholder';
       
+      // Overlay stili (Alttaki grafiğin üstünü örter)
       placeholder.style.cssText = `
           width: 100%;
           height: 220px;
@@ -10578,6 +10583,7 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
           z-index: 1000;
       `;
       
+      // İçerik: tt-scale-loader (Spinner + Text)
       placeholder.innerHTML = `
         <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
             <div class="spinner"></div>
@@ -10603,10 +10609,10 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   window.hideScaleBarLoading = function(c){
     const tr = trackOf(c); 
     
-    // --- YENİ EKLENEN KISIM: İNTERAKSİYONU AÇ ---
-    // Yükleme bitti, grafik yenilendi. Artık mouse olaylarına izin ver.
+    // 4. KİLİDİ AÇ: Yeni grafik geldi, etkileşimi geri ver
     if (tr) tr.style.pointerEvents = 'auto';
 
+    // Overlay'i kaldır
     const placeholder = tr?.querySelector('.elevation-placeholder'); 
     if (placeholder) {
         placeholder.remove();
