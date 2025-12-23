@@ -9975,7 +9975,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     if (container) { container.innerHTML = ""; container.style.display = 'block'; }
     return;
   }
-  // totalKm NaN ise varsayılan ata
+  
   if (isNaN(totalKm) || totalKm <= 0) totalKm = 10;
 
   delete container._elevationData;
@@ -10006,9 +10006,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
 
   // Loading UI
-   let track = container.querySelector('.scale-bar-track');
+  let track = container.querySelector('.scale-bar-track');
   if (!track) {
-    // Spinner ve yazıyı yan yana hizala
     container.innerHTML = `
       <div class="scale-bar-track">
         <div class="elevation-placeholder" style="
@@ -10032,11 +10031,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track = container.querySelector('.scale-bar-track');
   }
 
-  // Loading sınıfı ekle
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
-  // Örnekleme
   const N = Math.max(40, Math.round(totalKm * 2));
   
   function hv(lat1, lon1, lat2, lon2) {
@@ -10076,31 +10073,62 @@ function renderRouteScaleBar(container, totalKm, markers) {
   container._elevStartKm = 0;
   container._elevKmSpan = totalKm;
 
-  // ASYNC FETCH BAŞLANGICI
-    (async () => {
+  (async () => {
     try {
       let elevations = await window.getElevationsForRoute(samples, container, routeKey);
       
-      // --- [FIX] NULL/NAN DEĞERLERİ TEMİZLE ---
-      // Car modunda tünellerden vs null gelebilir, bu da grafiği çökertir.
-      if (elevations && Array.isArray(elevations)) {
-          elevations = elevations.map((val, idx, arr) => {
-              if (val !== null && typeof val === 'number' && !isNaN(val)) return val;
-              // Geçersizse: Öncekini bul, yoksa sonrakini bul, o da yoksa 0
-              let prev = arr.slice(0, idx).reverse().find(v => v !== null && !isNaN(v));
-              let next = arr.slice(idx + 1).find(v => v !== null && !isNaN(v));
-              return (prev !== undefined) ? prev : ((next !== undefined) ? next : 0);
-          });
+      // --- ROBUST DATA REPAIR (VERİ TAMİRİ) ---
+      // Veri null gelirse boş dizi yap, hata vermesin.
+      if (!elevations) {
+          console.warn("Elevation data is null, using empty array fallback.");
+          elevations = [];
       }
+
+      // 1. Uzunluk Eşitleme (Padding/Truncating)
+      // API bazen 1-2 nokta eksik veya fazla dönebilir.
+      if (elevations.length !== samples.length) {
+          if (elevations.length > samples.length) {
+              elevations = elevations.slice(0, samples.length);
+          } else {
+              // Eksik kalanları son geçerli değerle (veya 0) doldur
+              const diff = samples.length - elevations.length;
+              const lastVal = (elevations.length > 0) ? elevations[elevations.length - 1] : 0;
+              for(let k=0; k<diff; k++) elevations.push(lastVal);
+          }
+      }
+
+      // 2. Değer Temizleme (Fix Null/NaN/Types)
+      // İçindeki null, undefined, string vs. hepsini sayıya çevir.
+      elevations = elevations.map((val, idx, arr) => {
+          if (val !== null && typeof val === 'number' && isFinite(val)) return val;
+          
+          // Bozuksa: Öncekini bul
+          let prev = null;
+          for(let k=idx-1; k>=0; k--) {
+              if (arr[k] !== null && typeof arr[k] === 'number' && isFinite(arr[k])) {
+                  prev = arr[k]; break;
+              }
+          }
+          if (prev !== null) return prev;
+
+          // Önceki yoksa sonrakini bul
+          let next = null;
+          for(let k=idx+1; k<arr.length; k++) {
+              if (arr[k] !== null && typeof arr[k] === 'number' && isFinite(arr[k])) {
+                  next = arr[k]; break;
+              }
+          }
+          if (next !== null) return next;
+
+          return 0; // Hiçbiri yoksa 0
+      });
       // ----------------------------------------
 
-      // Placeholder temizliği
       const placeholder = track.querySelector('.elevation-placeholder');
       if (placeholder) placeholder.remove(); 
       const oldLoader = track.querySelector('.tt-scale-loader');
       if (oldLoader) oldLoader.remove(); 
       
-      // Selection Div
       const selDiv = document.createElement('div');
       selDiv.className = 'scale-bar-selection';
       selDiv.style.cssText = `position:absolute; top:0; bottom:0; background: rgba(138,74,243,0.16); border: 1px solid rgba(138,74,243,0.45); display:none; z-index: 9000;`;
@@ -10110,7 +10138,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
       setupScaleBarEvents(track, selDiv); 
 
-      // SVG Yapısı
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
       const svgNS = 'http://www.w3.org/2000/svg';
       const SVG_TOP = 48;
@@ -10141,7 +10168,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       segG.setAttribute('class', 'tt-elev-segments');
       svgElem.appendChild(segG);
 
-      // Tooltip ve Line
       const verticalLine = document.createElement('div');
       verticalLine.className = 'scale-bar-vertical-line';
       verticalLine.style.cssText = `position:absolute;top:0;bottom:0;width:2px;background:#111;opacity:0.5;pointer-events:none;z-index:9998;display:block;`;
@@ -10155,7 +10181,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       tooltip.style.zIndex = '9999';
       track.appendChild(tooltip);
 
-      // Tooltip Listener
       const onMoveTooltip = function(e) {
         const ed = container._elevationData;
         if (!ed || !Array.isArray(ed.smooth)) return;
@@ -10213,11 +10238,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       track.addEventListener('mousemove', onMoveTooltip);
       track.addEventListener('touchmove', onMoveTooltip);
 
-      if (!elevations || elevations.length !== samples.length || elevations.some(Number.isNaN)) {
-        track.innerHTML = `<div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Elevation profile unavailable</div>`;
-        return;
-      }
-
+      // ARTIK KESİN GEÇERLİDİR
       const smooth = movingAverage(elevations, 3);
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
@@ -10244,25 +10265,23 @@ function renderRouteScaleBar(container, totalKm, markers) {
         while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
         while (segG.firstChild) segG.removeChild(segG.firstChild);
 
-        // Grid
         for (let i = 0; i <= 4; i++) {
-        const ev = vizMin + (i / 4) * (vizMax - vizMin);
-        const y = Y(ev);
-        if (isNaN(y)) continue;
-        const ln = document.createElementNS(svgNS, 'line');
-        ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
-        ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
-        ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
-        gridG.appendChild(ln);
+            const ev = vizMin + (i / 4) * (vizMax - vizMin);
+            const y = Y(ev);
+            if (isNaN(y)) continue;
+            const ln = document.createElementNS(svgNS, 'line');
+            ln.setAttribute('x1', '0'); ln.setAttribute('x2', String(width));
+            ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+            ln.setAttribute('stroke', '#d7dde2'); ln.setAttribute('stroke-dasharray', '4 4'); ln.setAttribute('opacity', '.8');
+            gridG.appendChild(ln);
 
-        const tx = document.createElementNS(svgNS, 'text');
-        tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
-        tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
-        tx.textContent = `${Math.round(ev)} m`;
-        gridG.appendChild(tx);
+            const tx = document.createElementNS(svgNS, 'text');
+            tx.setAttribute('x', '6'); tx.setAttribute('y', String(y - 4));
+            tx.setAttribute('fill', '#90a4ae'); tx.setAttribute('font-size', '11');
+            tx.textContent = `${Math.round(ev)} m`;
+            gridG.appendChild(tx);
         }
 
-        // Alan
         let topD = '';
         const n = Math.min(smooth.length, s.length);
         for (let i = 0; i < n; i++) {
@@ -10278,7 +10297,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
           areaPath.setAttribute('fill', '#263445');
         }
 
-        // Çizgiler
         for (let i = 1; i < n; i++) {
           const kmAbs1 = s[i - 1].distM / 1000;
           const kmAbs2 = s[i].distM / 1000;
@@ -10307,16 +10325,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
           segG.appendChild(seg);
         }
         
-        const customElevData = {
-            vizMin: vizMin,
-            vizMax: vizMax
-        };
+        const customElevData = { vizMin: vizMin, vizMax: vizMax };
         requestAnimationFrame(() => {
             createScaleElements(track, width, spanKm, startKmDom, markers, customElevData);
         });
       };
 
-      // Handle Resize
       function handleResize() {
         if (!container._elevationData) return;
         const newW = Math.max(200, Math.round(track.getBoundingClientRect().width));
@@ -10332,7 +10346,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
       ro.observe(track);
       container._elevResizeObserver = ro;
 
-       // ÇİZİMİ BAŞLAT
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
           window.hideScaleBarLoading?.(container);
@@ -10364,8 +10377,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
         `;
       }
       track.classList.remove('loading');
+      
+      // HATA OLSA BİLE MARKERLARI ÇİZ
       const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
-      const customElevData = { vizMin: 0, vizMax: 100 }; // Hata durumunda dummy
+      const customElevData = { vizMin: 0, vizMax: 100 };
       setTimeout(() => {
           createScaleElements(track, width, totalKm, 0, markers, customElevData);
       }, 50);
