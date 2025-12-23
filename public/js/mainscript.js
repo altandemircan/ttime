@@ -562,9 +562,11 @@ if (typeof hideSuggestionsDiv !== "function") {
 }
 
 // Global değişken (Listenin dışında tanımlı olmalı)
-let currentFocus = -1; 
+let currentFocus = -1; // Global focus takibi
 
 function renderSuggestions(originalResults = [], manualQuery = "") {
+    currentFocus = -1; // Her çizimde seçimi sıfırla
+    const suggestionsDiv = document.getElementById("suggestions");
     // 1. Her çizimde seçimi sıfırla (Böylece ilk eleman seçili gelmez)
     currentFocus = -1; 
     
@@ -1309,11 +1311,10 @@ function addCanonicalMessage(canonicalStr) {
 }
 
 function sendMessage() {
-      console.log("showLoadingPanel çağrıldı!");
+    if (window.isProcessing) return;
+    // showLoadingPanel() BURADAN KALDIRILDI
+    const input = document.getElementById("user-input");
 
-    showLoadingPanel()
-  if (window.isProcessing) return;
-  const input = document.getElementById("user-input");
   if (!input) return;
   const val = input.value.trim();
   if (!val) return;
@@ -1354,6 +1355,7 @@ function sendMessage() {
   }
 
   // Canonical formatta ise doğrudan parse
+  showLoadingPanel();
   const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
   if (m) {
     let days = parseInt(m[1], 10);
@@ -2392,7 +2394,58 @@ window.showImage = function(element) {
         el.style.display = '';
     });
 };
-    document.getElementById("send-button").addEventListener("click", sendMessage);
+    // --- KLAVYE NAVİGASYONU & ENTER KORUMASI ---
+function addActive(x) {
+    if (!x) return false;
+    removeActive(x);
+    if (currentFocus >= x.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (x.length - 1);
+    x[currentFocus].classList.add("selected-suggestion");
+    x[currentFocus].scrollIntoView({ block: "nearest" });
+}
+
+function removeActive(x) {
+    for (let i = 0; i < x.length; i++) {
+        x[i].classList.remove("selected-suggestion");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const inp = document.getElementById("user-input");
+    if (inp) {
+        inp.addEventListener("keydown", function(e) {
+            const suggestionsDiv = document.getElementById("suggestions");
+            // Eğer liste gizliyse (boşsa) tuşları dinleme
+            if(!suggestionsDiv || suggestionsDiv.innerHTML.trim() === "") return;
+
+            let items = suggestionsDiv.getElementsByClassName("category-area-option");
+            
+            if (e.key === "ArrowDown") {
+                currentFocus++;
+                addActive(items);
+            } else if (e.key === "ArrowUp") {
+                currentFocus--;
+                addActive(items);
+            } else if (e.key === "Enter") {
+                // Eğer bir öğe seçiliyse (klavye ile), ona tıkla
+                if (currentFocus > -1 && items && items[currentFocus]) {
+                    e.preventDefault(); 
+                    items[currentFocus].click();
+                } 
+                // Eğer daha önce mouse ile de seçilmediyse -> ENGELLE
+                else if (!window.__locationPickedFromSuggestions) {
+                    e.preventDefault();
+                    // Uyarı efekti
+                    this.style.transition = "border-color 0.2s";
+                    this.style.borderColor = "#d32f2f";
+                    setTimeout(() => { this.style.borderColor = ""; }, 400);
+                }
+            }
+        });
+    }
+});
+
+document.getElementById("send-button").addEventListener("click", sendMessage);
     userInput.addEventListener("keypress", handleKeyPress);
 
     displayQuestion();
@@ -11663,3 +11716,68 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     `;
     document.head.appendChild(style);
 })();
+
+window.showLoadingPanel = function() {
+    const panel = document.getElementById("loading-panel");
+    const msgEl = document.getElementById('loading-message');
+    
+    if (!panel) return;
+    
+    // Paneli aç
+    panel.style.display = "flex"; 
+    
+    // İlk mesajı sıfırla
+    if (msgEl) {
+        msgEl.textContent = "Analyzing your request...";
+        msgEl.style.opacity = 1;
+    }
+
+    // Varsa eski döngüyü temizle
+    if (window.loadingInterval) clearInterval(window.loadingInterval);
+
+    const messages = [
+        "Analyzing your request",
+        "Finding places",
+        "Exploring route options",
+        "Compiling your travel plan"
+    ];
+    let current = 0;
+    let isTransitioning = false;
+
+    // Döngüyü başlat
+    window.loadingInterval = setInterval(() => {
+        if (!msgEl || panel.style.display === 'none') return;
+        if (isTransitioning) return;
+        
+        isTransitioning = true;
+
+        // Fade out
+        msgEl.style.transition = "opacity 0.5s ease";
+        msgEl.style.opacity = 0;
+
+        // Mesaj değişimi ve Fade in
+        setTimeout(() => {
+            current = (current + 1) % messages.length;
+            if(msgEl) {
+                msgEl.textContent = messages[current];
+                msgEl.style.opacity = 1;
+            }
+            
+            setTimeout(() => {
+                isTransitioning = false;
+            }, 500); 
+        }, 500); 
+    }, 3000); 
+};
+
+window.hideLoadingPanel = function() {
+    const panel = document.getElementById("loading-panel");
+    if (panel) {
+        panel.style.display = "none";
+    }
+    // Animasyonu durdur
+    if (window.loadingInterval) {
+        clearInterval(window.loadingInterval);
+        window.loadingInterval = null;
+    }
+};
