@@ -9963,15 +9963,46 @@ function renderRouteScaleBar(container, totalKm, markers) {
     `;    document.head.appendChild(style);
   }
 
-  const spinner = container.querySelector('.spinner');
+ const spinner = container.querySelector('.spinner');
   if (spinner) spinner.remove();
   
   const dayMatch = container.id && container.id.match(/day(\d+)/);
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? (window.lastRouteGeojsons && window.lastRouteGeojsons[`route-map-day${day}`]) : null;
-  const coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
+  
+  // 1. Önce resmi rotayı (OSRM/Mapbox vs) almaya çalış
+  let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
-  if (!container || isNaN(totalKm)) {
+  // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa veya yetersizse (noktalar yola uzaksa),
+  // Markerları düz çizgi (Kuş uçuşu) olarak birbirine bağla ve grafiği buna göre çiz.
+  if (!Array.isArray(coords) || coords.length < 2) {
+      if (typeof getDayPoints === 'function' && day) {
+          const rawPoints = getDayPoints(day);
+          // Sadece geçerli koordinatı olanları al
+          const validPoints = rawPoints.filter(p => p.lat && p.lng && !isNaN(p.lat) && !isNaN(p.lng));
+          
+          if (validPoints.length >= 2) {
+              // [lng, lat] formatına çevir (GeoJSON formatı)
+              coords = validPoints.map(p => [p.lng, p.lat]);
+              
+              // Eğer totalKm hesaplanamadıysa (rota oluşmadığı için 0 gelebilir veya NaN olabilir),
+              // Kuş uçuşu mesafeyi biz hesaplayalım ki grafik x ekseni bozuk olmasın.
+              if (!totalKm || totalKm <= 0 || isNaN(totalKm)) {
+                  let distCalc = 0;
+                  // haversine fonksiyonu globalde varsa kullan
+                  if (typeof haversine === 'function') {
+                      for(let k=1; k<validPoints.length; k++) {
+                          distCalc += haversine(validPoints[k-1].lat, validPoints[k-1].lng, validPoints[k].lat, validPoints[k].lng);
+                      }
+                  }
+                  if (distCalc > 0) totalKm = distCalc / 1000;
+              }
+          }
+      }
+  }
+
+  // Eğer hala coords yoksa veya totalKm hesaplanamadıysa çıkış yap
+  if (!container || (isNaN(totalKm) && (!coords || coords.length < 2))) {
     if (container) { container.innerHTML = ""; container.style.display = 'block'; }
     return;
   }
