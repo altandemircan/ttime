@@ -7048,6 +7048,7 @@ display: flex
 #loading-message {
   transition: opacity 0.5s;
   opacity: 1;
+  background: #ffffff;
 }
 /* TRIP LOADING */
 
