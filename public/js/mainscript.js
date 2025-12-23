@@ -9917,53 +9917,31 @@ function setupScaleBarEvents(track, selDiv) {
 function renderRouteScaleBar(container, totalKm, markers) {
   // 1. CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-scale-bar-css')) {
+    // ... (CSS kısmı aynı kalsın, burayı elleme) ...
     const style = document.createElement('style');
     style.id = 'tt-scale-bar-css';
-        style.innerHTML = `
-        .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) {
-            opacity: 1; 
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-        }
-        .scale-bar-track.loading .tt-scale-loader {
-            opacity: 1 !important;
-        }
-        .scale-bar-track.loading .elevation-labels-container {
-            opacity: 1 !important;
-            pointer-events: auto !important;
-        }
-        .scale-bar-track.loading {
-            min-height: 200px; 
-            width: 100%;
-            position: relative;
-        }
-        /* TOOLTIP VE LINE HER ZAMAN EN ÜSTTE */
+    style.innerHTML = `
+        .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) { opacity: 1; pointer-events: none; transition: opacity 0.2s ease; }
+        .scale-bar-track.loading .tt-scale-loader { opacity: 1 !important; }
+        .scale-bar-track.loading .elevation-labels-container { opacity: 1 !important; pointer-events: auto !important; }
+        .scale-bar-track.loading { min-height: 200px; width: 100%; position: relative; }
         .tt-elev-tooltip { z-index: 9999 !important; }
         .scale-bar-vertical-line { z-index: 9998 !important; }
         .scale-bar-selection { z-index: 9000 !important; }
-        /* NOKTA ANİMASYONU - spinner + yazı stili (en iyi) */
-        .dots {
-            display: inline-block;
-            width: 30px;
-            text-align: left;
-            color: #1976d2; /* spinner rengine uygun */
-        }
-        .dots::after {
-            content: '...';
-            animation: gentlePulse 1.8s infinite ease-in-out;
-        }
-        @keyframes gentlePulse {
-            0%, 100% { 
-                opacity: 0.5;
-            }
-            50% { 
-                opacity: 1;
-            }
-        }
-    `;    document.head.appendChild(style);
+        .dots { display: inline-block; width: 30px; text-align: left; color: #1976d2; }
+        .dots::after { content: '...'; animation: gentlePulse 1.8s infinite ease-in-out; }
+        @keyframes gentlePulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    `;
+    document.head.appendChild(style);
   }
 
-const spinner = container.querySelector('.spinner');
+  // --- DEBUG BAŞLANGICI ---
+  console.group("renderRouteScaleBar DEBUG");
+  console.log("Container ID:", container ? container.id : "null");
+  console.log("Gelen totalKm:", totalKm, "Type:", typeof totalKm);
+  // --- DEBUG SONU ---
+
+  const spinner = container.querySelector('.spinner');
   if (spinner) spinner.remove();
   
   const dayMatch = container.id && container.id.match(/day(\d+)/);
@@ -9972,21 +9950,30 @@ const spinner = container.querySelector('.spinner');
   
   // 1. Önce resmi rotayı (OSRM) almaya çalış
   let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
+  
+  console.log("[DEBUG] GeoJSON Key:", gjKey ? "Found" : "Not Found");
+  console.log("[DEBUG] Initial Coords Length:", coords ? coords.length : "None");
 
   // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa, markerları düz çizgiyle bağla.
   if (!Array.isArray(coords) || coords.length < 2) {
+      console.warn("[DEBUG] Fallback Moduna Giriliyor (Resmi rota yok)...");
+      
       if (typeof getDayPoints === 'function' && day) {
           const rawPoints = getDayPoints(day);
+          console.log("[DEBUG] getDayPoints Sonucu:", rawPoints);
+
           // Koordinatları sayıya çevirerek filtrele
           const validPoints = rawPoints.filter(p => p.lat && p.lng && !isNaN(parseFloat(p.lat)) && !isNaN(parseFloat(p.lng)));
+          console.log("[DEBUG] Geçerli Nokta Sayısı:", validPoints.length);
           
           if (validPoints.length >= 2) {
               // GeoJSON formatına ([lng, lat]) çevir
               coords = validPoints.map(p => [parseFloat(p.lng), parseFloat(p.lat)]);
+              console.log("[DEBUG] Oluşturulan Manuel Coords:", coords);
               
-              // totalKm bozuksa veya yoksa (OSRM hata verdiği için), biz hesaplayalım.
-              // Not: Haversine fonksiyonunu buraya gömüyoruz ki scope hatası olmasın.
+              // totalKm bozuksa veya yoksa hesapla
               if (!totalKm || totalKm <= 0 || isNaN(totalKm)) {
+                  console.log("[DEBUG] totalKm bozuk, yeniden hesaplanıyor...");
                   let distCalc = 0;
                   const R = 6371000; 
                   const toRad = x => x * Math.PI / 180;
@@ -10003,30 +9990,43 @@ const spinner = container.querySelector('.spinner');
                       distCalc += 2 * R * Math.asin(Math.sqrt(a));
                   }
                   
-                  // Eğer hesaplama başarılıysa totalKm'yi güncelle
+                  console.log("[DEBUG] Hesaplanan Mesafe (Metre):", distCalc);
+
                   if (distCalc > 0) {
                       totalKm = distCalc / 1000;
                   } else {
-                      totalKm = 1; // 0 çıkarsa hata vermesin diye minik bir değer
+                      totalKm = 1; // Hata vermesin diye
                   }
+                  console.log("[DEBUG] Yeni totalKm (KM):", totalKm);
               }
+          } else {
+              console.error("[DEBUG] Yetersiz nokta sayısı (<2). Fallback çalışamaz.");
           }
+      } else {
+        console.error("[DEBUG] getDayPoints fonksiyonu yok veya day null.");
       }
   }
 
-  // ÇIKIŞ KONTROLÜ: Koordinat yoksa çık.
-  // Not: totalKm NaN olsa bile coords varsa devam etsin diye check'i yumuşattık, 
-  // ama aşağıda totalKm'yi düzelteceğiz.
-  if (!container || (!coords || coords.length < 2)) {
+  // ÇIKIŞ KONTROLÜ
+  const isCoordsBad = (!coords || coords.length < 2);
+  const isTotalKmBad = isNaN(totalKm);
+  console.log(`[DEBUG] Son Kontrol -> isCoordsBad: ${isCoordsBad}, isTotalKmBad: ${isTotalKmBad}`);
+
+  if (!container || (isTotalKmBad && isCoordsBad)) {
+    console.error("[DEBUG] ÇIKIŞ YAPILIYOR: Veri yetersiz.");
+    console.groupEnd();
     if (container) { container.innerHTML = ""; container.style.display = 'block'; }
     return;
   }
 
-  // SON GÜVENLİK: Eğer hala totalKm NaN ise (yukarıdaki hesap tutmadıysa)
-  // Grafik çökmesin diye varsayılan bir değer ata.
+  // SON GÜVENLİK
   if (isNaN(totalKm) || totalKm <= 0) {
-      totalKm = 10; // Varsayılan 10km (Grafik en azından görünsün)
+      console.warn("[DEBUG] totalKm hala geçersiz, varsayılan 10 atanıyor.");
+      totalKm = 10; 
   }
+  
+  console.log("[DEBUG] Başarıyla devam ediliyor...");
+  console.groupEnd();
 
   delete container._elevationData;
   delete container._elevationDataFull;
