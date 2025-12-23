@@ -567,10 +567,8 @@ let currentFocus = -1; // Global focus takibi
 function renderSuggestions(originalResults = [], manualQuery = "") {
     currentFocus = -1; // Her çizimde seçimi sıfırla
     const suggestionsDiv = document.getElementById("suggestions");
-    // 1. Her çizimde seçimi sıfırla (Böylece ilk eleman seçili gelmez)
-    currentFocus = -1; 
-    
-    const suggestionsDiv = document.getElementById("suggestions");
+
+  
     const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
     
