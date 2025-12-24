@@ -155,7 +155,7 @@ If asked about something unrelated to travel, politely say you only answer trave
         ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
     ];
 
-    const model = 'gemma:2b';
+    const model = 'llama3:8b';
 
     try {
         const ollama = await axios({
