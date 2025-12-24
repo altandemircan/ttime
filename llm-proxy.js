@@ -60,38 +60,57 @@ router.post('/plan-summary', async (req, res) => {
         }
     }
 
-    // 2. YENİ İŞLEM BAŞLAT
+    // 2. YENİ İŞLEM BAŞLAT (Burayı güncelliyoruz)
     const processingPromise = (async () => {
         const aiReqCity = country ? `${city}, ${country}` : city;
+        
+        // Prompt'u daha katı hale getirdik:
         const prompt = `
-        You are an expert travel guide. 
-        For the city "${aiReqCity}", provide specific travel insights ONLY in ENGLISH.
-        Respond ONLY with a valid JSON object matching this structure:
+        You are a strictly factual travel guide. 
+        Provide specific travel insights for the city "${aiReqCity}" ONLY in ENGLISH.
+        
+        RULES:
+        1. Do NOT hallucinate. If you do not know a specific landmark in "${aiReqCity}", state "Info not available".
+        2. Verify that the "highlight" and "tip" are physically located INSIDE or very close to "${aiReqCity}".
+        3. Respond ONLY with a valid JSON object:
         {
-          "summary": "A captivating 1-sentence overview.",
-          "tip": "One specific insider tip.",
-          "highlight": "The single most unmissable landmark."
+          "summary": "A captivating 1-sentence overview of the city.",
+          "tip": "One specific insider tip for this specific city.",
+          "highlight": "The single most famous landmark in this city."
         }
-        If unknown, put "Info not available."
         `.trim();
 
-        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: "gemma:2b",
-            messages: [{ role: "user", content: prompt }],
-            stream: false,
-            max_tokens: 200
-        });
+        // Model ismini ve parametreleri güncelliyoruz
+        // ÖNERİLEN MODEL: llama3.2 (veya llama3.1)
+        // TEMPERATURE: 0.1 (Yaratıcılığı öldür, sadece bildiğini oku)
+        try {
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: "llama3.2", // BURAYI 'llama3.2' veya 'llama3.1' YAP
+                messages: [{ role: "user", content: prompt }],
+                stream: false,
+                format: "json", // Ollama'nın native JSON modunu zorla
+                options: {
+                    temperature: 0.1, // ÖNEMLİ: 0'a yakın olmalı ki sallamasın
+                    top_p: 0.9,
+                    max_tokens: 300
+                }
+            });
 
-        // JSON Temizleme
-        let jsonText = '';
-        if (typeof response.data === 'object' && response.data.message) {
-            jsonText = response.data.message.content;
-        } else if (typeof response.data === 'string') {
-            const match = response.data.match(/\{[\s\S]*?\}/);
-            if (match) jsonText = match[0];
+            // JSON Temizleme (Ollama format:json ile gelirse direkt parse edilebilir ama önlem kalsın)
+            let jsonText = '';
+            if (typeof response.data === 'object' && response.data.message) {
+                jsonText = response.data.message.content;
+            } else if (typeof response.data === 'string') {
+                const match = response.data.match(/\{[\s\S]*?\}/);
+                if (match) jsonText = match[0];
+            }
+
+            return JSON.parse(jsonText);
+        } catch (err) {
+            console.error("LLM Error:", err.message);
+            // Hata durumunda boş dön ki cache patlamasın
+            return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
         }
-
-        return JSON.parse(jsonText);
     })();
 
     // 3. PENDING OLARAK İŞARETLE
