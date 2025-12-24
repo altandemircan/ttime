@@ -64,33 +64,28 @@ router.post('/plan-summary', async (req, res) => {
     const processingPromise = (async () => {
         const aiReqCity = country ? `${city}, ${country}` : city;
         
-        // Prompt'u daha katı hale getirdik:
+        // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+        const activeModel = "llama3:8b"; // Kullandığın model ismini buraya yaz
+        console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`); // Konsola yazdırır
+
         const prompt = `
         You are a strictly factual travel guide. 
         Provide specific travel insights for the city "${aiReqCity}" ONLY in ENGLISH.
-        
         RULES:
-        1. Do NOT hallucinate. If you do not know a specific landmark in "${aiReqCity}", state "Info not available".
-        2. Verify that the "highlight" and "tip" are physically located INSIDE or very close to "${aiReqCity}".
+        1. Do NOT hallucinate. If unknown, state "Info not available".
+        2. Verify landmarks are INSIDE "${aiReqCity}".
         3. Respond ONLY with a valid JSON object:
-        {
-          "summary": "A captivating 1-sentence overview of the city.",
-          "tip": "One specific insider tip for this specific city.",
-          "highlight": "The single most famous landmark in this city."
-        }
+        { "summary": "...", "tip": "...", "highlight": "..." }
         `.trim();
 
-        // Model ismini ve parametreleri güncelliyoruz
-        // ÖNERİLEN MODEL: llama3.2 (veya llama3.1)
-        // TEMPERATURE: 0.1 (Yaratıcılığı öldür, sadece bildiğini oku)
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3.2", // BURAYI 'llama3.2' veya 'llama3.1' YAP
+                model: activeModel, // Yukarıdaki değişkeni kullanıyoruz
                 messages: [{ role: "user", content: prompt }],
                 stream: false,
-                format: "json", // Ollama'nın native JSON modunu zorla
+                format: "json",
                 options: {
-                    temperature: 0.1, // ÖNEMLİ: 0'a yakın olmalı ki sallamasın
+                    temperature: 0.1, // Llama 3 için düşük sıcaklık önemli
                     top_p: 0.9,
                     max_tokens: 300
                 }
