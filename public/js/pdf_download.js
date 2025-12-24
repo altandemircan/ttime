@@ -483,7 +483,7 @@ function downloadTripPlanPDF(tripKey) {
 
             // Sayfa sonuna geldik mi kontrol et
             checkPageBreak(boxHeight + 10);
-
+ 
             // Arka plan kutusunu çiz (Hafif gri)
             doc.setFillColor('#f9fafb'); 
             doc.setDrawColor('#e5e7eb');
