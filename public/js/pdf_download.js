@@ -190,22 +190,12 @@ function downloadTripPlanPDF(tripKey) {
 
 // OSRM Rota Çözücü (Polyline Decoder) - Helper Fonksiyon
 // Eğer projenizde zaten varsa onu kullanın, yoksa buraya ekleyin.
+// --- 1. decodePolyline FONKSİYONU (Dosyanın en üstünde olmalı) ---
 function decodePolyline(str, precision) {
-    var index = 0,
-        lat = 0,
-        lng = 0,
-        coordinates = [],
-        shift = 0,
-        result = 0,
-        byte = null,
-        latitude_change,
-        longitude_change,
-        factor = Math.pow(10, precision || 5);
-
+    var index = 0, lat = 0, lng = 0, coordinates = [], shift = 0, result = 0,
+        byte = null, latitude_change, longitude_change, factor = Math.pow(10, precision || 5);
     while (index < str.length) {
-        byte = null;
-        shift = 0;
-        result = 0;
+        byte = null; shift = 0; result = 0;
         do {
             byte = str.charCodeAt(index++) - 63;
             result |= (byte & 0x1f) << shift;
@@ -223,12 +213,11 @@ function decodePolyline(str, precision) {
         lng += longitude_change;
         coordinates.push([lat / factor, lng / factor]);
     }
-    return coordinates;
+    // GeoJSON formatı [lng, lat] ister, decodePolyline [lat, lng] verir. Ters çeviriyoruz.
+    return coordinates.map(c => [c[1], c[0]]); 
 };
 
-// --- GÜNCELLENMİŞ generateHighResMap FONKSİYONU ---
-// ... (decodePolyline fonksiyonu aynı kalacak) ...
-
+// --- 2. GÜNCELLENMİŞ generateHighResMap FONKSİYONU ---
 async function generateHighResMap(day, dayItems, trip) {
     return new Promise(async (resolve) => {
         const validPoints = dayItems.filter(i => i.location && !isNaN(i.location.lat));
@@ -238,8 +227,6 @@ async function generateHighResMap(day, dayItems, trip) {
         }
 
         let isResolved = false;
-        
-        // Timeout 15sn
         const timeoutID = setTimeout(() => {
             if (!isResolved) {
                 isResolved = true;
@@ -247,7 +234,7 @@ async function generateHighResMap(day, dayItems, trip) {
                 if(el) el.remove();
                 resolve(null);
             }
-        }, 15000); 
+        }, 20000); 
 
         const width = 1500; 
         const height = 1000; 
@@ -274,7 +261,7 @@ async function generateHighResMap(day, dayItems, trip) {
                 preserveDrawingBuffer: true,
                 interactive: false,
                 attributionControl: false,
-                fadeDuration: 0 
+                fadeDuration: 0
             });
 
             // --- ROTA VERİSİ HAZIRLAMA ---
@@ -286,20 +273,17 @@ async function generateHighResMap(day, dayItems, trip) {
             const modeContainer = document.getElementById(`tt-travel-mode-set-day${day}`);
             if (modeContainer) {
                 const activeBtn = modeContainer.querySelector('button.active');
-                if (activeBtn) {
-                    selectedMode = activeBtn.getAttribute('data-mode') || 'driving';
-                }
+                if (activeBtn) selectedMode = activeBtn.getAttribute('data-mode') || 'driving';
             } else if (trip.travelModes && trip.travelModes[day]) {
                  selectedMode = trip.travelModes[day];
             } else if (day > 1 && trip.travelModes && trip.travelModes[1]) {
                 selectedMode = trip.travelModes[1];
             }
 
-            console.log(`[PDF Map] Day ${day} Mode: ${selectedMode}`);
+            console.log(`[PDF Map] Day ${day} (${selectedMode}) - Points: ${validPoints.length}`);
 
             // 2. Rota Verisini Al
             if (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length > 0) {
-                // Kayıtlı veri varsa onu kullan (Aşağıda basitleştireceğiz)
                 routeCoordinates = trip.directionsPolylines[day].map(p => [p.lng, p.lat]);
             } 
             else if (isTurkey && validPoints.length > 1) {
@@ -310,32 +294,40 @@ async function generateHighResMap(day, dayItems, trip) {
                     if (selectedMode === 'walking') osrmProfile = 'walking';
                     if (selectedMode === 'cycling') osrmProfile = 'cycling';
 
-                    // --- DEĞİŞİKLİK 1: 'overview=simplified' kullanıyoruz ---
-                    // Bu, sunucudan binlerce nokta yerine şekli koruyan az sayıda nokta ister.
-                    const url = `/route/v1/${osrmProfile}/${coordsString}?overview=simplified&geometries=geojson`;
+                    // --- DEĞİŞİKLİK: Hem polyline hem geojson destekleyen istek ---
+                    // geometries=polyline varsayılan olabilir, biz yine de polyline isteyelim (daha güvenli)
+                    // overview=simplified ile veri boyutunu düşürelim.
+                    const url = `/route/v1/${osrmProfile}/${coordsString}?overview=simplified&geometries=polyline`;
                     
+                    console.log(`[PDF Map] Requesting: ${url}`);
                     const response = await fetch(url);
                     const data = await response.json();
 
                     if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-                        routeCoordinates = data.routes[0].geometry.coordinates;
+                        const geom = data.routes[0].geometry;
+                        if (typeof geom === 'string') {
+                            // Polyline String geldiyse decode et
+                            routeCoordinates = decodePolyline(geom, 5);
+                        } else if (geom.coordinates) {
+                            // GeoJSON geldiyse direkt al
+                            routeCoordinates = geom.coordinates;
+                        }
                     }
                 } catch (err) {
                     console.warn(`[PDF Map] Route fetch error:`, err);
                 }
             }
 
-            // --- DEĞİŞİKLİK 2: Veri Basitleştirme (Downsampling) ---
-            // Eğer koordinat sayısı çok fazlaysa (örn: > 300), sadece PDF için azalt.
-            // Bu işlem çizim hızını %500 artırır ve 'render race condition'ı önler.
-            if (routeCoordinates && routeCoordinates.length > 300) {
-                const step = Math.ceil(routeCoordinates.length / 300); // Hedef: Maksimum 300 nokta
+            // --- Veri Basitleştirme (PDF için çok detaya gerek yok) ---
+            if (routeCoordinates && routeCoordinates.length > 500) {
+                const step = Math.ceil(routeCoordinates.length / 500);
                 routeCoordinates = routeCoordinates.filter((_, index) => index % step === 0);
             }
 
             map.once('idle', () => { 
                 if (isResolved) return;
 
+                // --- Çizim ---
                 if (routeCoordinates && routeCoordinates.length > 0) {
                      map.addSource('pdf-route', {
                         type: 'geojson',
@@ -357,13 +349,13 @@ async function generateHighResMap(day, dayItems, trip) {
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
                         paint: { 
                             'line-color': '#1976d2', 
-                            'line-width': 5, // Biraz incelttik, daha net görünür
+                            'line-width': 5, 
                             'line-opacity': 0.8,
                             'line-dasharray': lineDash
                         }
                     });
                 } else if (validPoints.length > 1) {
-                    // Fly Mode (Yedek)
+                    // Fly Mode
                     let arcCoordinates = [];
                     for (let i = 0; i < validPoints.length - 1; i++) {
                         const start = [validPoints[i].location.lng, validPoints[i].location.lat];
@@ -396,8 +388,8 @@ async function generateHighResMap(day, dayItems, trip) {
                 map.once('idle', async () => {
                      if (isResolved) return;
                      
-                     // Veri azaldığı için bekleme süresini 300ms'ye düşürebiliriz
-                     await new Promise(r => setTimeout(r, 300)); 
+                     // Bekleme süresi
+                     await new Promise(r => setTimeout(r, 800)); 
 
                      const mapCanvas = map.getCanvas();
                      const compositeCanvas = document.createElement('canvas');
