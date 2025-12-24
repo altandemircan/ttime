@@ -89,13 +89,36 @@ function getPointsFromTrip(trip, day) {
 }
 
 // Thumbnail fonksiyonunu DÜZELT:
+// local_storage.js içindeki fonksiyonu bununla değiştir:
+
 async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 80) {
     const pts = getPointsFromTrip(trip, day);
     if (!pts || pts.length < 2) return null;
-    const lats = pts.map(p => p.lat);
-    const lngs = pts.map(p => p.lng);
-    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+
+    // 1. Rota verisi varsa onu kullan (Polyline), yoksa sadece durak noktalarını (Markers) kullan
+    const routePoints = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
+        ? trip.directionsPolylines[day]
+        : pts;
+
+    // 2. Bounds (Sınır) Hesaplama: Tüm rota noktalarını kapsa
+    // Not: Math.min(...arr) çok büyük dizilerde hata verebilir, döngü daha güvenlidir.
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    
+    routePoints.forEach(p => {
+        if (p.lat < minLat) minLat = p.lat;
+        if (p.lat > maxLat) maxLat = p.lat;
+        if (p.lng < minLng) minLng = p.lng;
+        if (p.lng > maxLng) maxLng = p.lng;
+    });
+
+    // Eğer rota noktalarıyla duraklar arasında sapma varsa diye, durakları da sınırlara dahil et (Garanti olsun)
+    pts.forEach(p => {
+        if (p.lat < minLat) minLat = p.lat;
+        if (p.lat > maxLat) maxLat = p.lat;
+        if (p.lng < minLng) minLng = p.lng;
+        if (p.lng > maxLng) maxLng = p.lng;
+    });
+
     const bounds = [[minLng, minLat], [maxLng, maxLat]];
     const center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
 
@@ -109,7 +132,7 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
 
     const map = new maplibregl.Map({
         container: mapDiv,
-        style: 'https://tiles.openfreemap.org/styles/positron',
+        style: 'https://tiles.openfreemap.org/styles/positron', // Sade stil
         center: center,
         zoom: 13,
         preserveDrawingBuffer: true,
@@ -117,47 +140,50 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
         attributionControl: false
     });
 
-    // Tüm harita tile'ları tamamen yüklenene kadar bekle!
+    // Harita tamamen yüklenene ve sınırları oturtana kadar bekle
     await new Promise(resolve => {
         map.on('load', () => {
-            map.fitBounds(bounds, { padding: 18, maxZoom: 15, minZoom: 12 });
+            // Padding ile kenarlardan boşluk bırak ki çizgiler kesilmesin
+            map.fitBounds(bounds, { padding: 20, animate: false });
         });
         map.on('idle', () => {
             setTimeout(() => {
-                map.resize();
+                map.resize(); // Render garantisi
                 resolve();
-            }, 600); // idle'dan sonra da biraz beklet, garantili!
+            }, 600); 
         });
     });
 
     const mapCanvas = map.getCanvas();
-
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
+    
+    // Arka planı temizle ve haritayı çiz
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(mapCanvas, 0, 0, width, height);
 
+    // --- ROTA ÇİZİMİ ---
     ctx.save();
     ctx.strokeStyle = '#1976d2';
     ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.beginPath();
 
     function project(lng, lat) {
         const p = map.project([lng, lat]);
         return [p.x, p.y];
     }
-    const polyline = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
-        ? trip.directionsPolylines[day]
-        : pts;
-    const flyMode = !window.areAllPointsInTurkey(polyline);
+
+    const flyMode = !window.areAllPointsInTurkey(routePoints);
 
     if (flyMode) {
-        // markerlar arasında yay (Bezier/kavis) ile çiz
-        for (let i = 0; i < polyline.length - 1; i++) {
+        // Yurtdışı / Uçuş modu (Kavisli çizgiler)
+        // routePoints bu durumda muhtemelen sadece markerlardır, aralarını kavisle doldururuz
+        for (let i = 0; i < pts.length - 1; i++) {
             const getCurvedArcCoords = window.getCurvedArcCoords || function(start, end, strength = 0.33, segments = 22) {
-                // Bezier arc generator
                 const sx = start[0], sy = start[1];
                 const ex = end[0], ey = end[1];
                 const mx = (sx + ex) / 2 + strength * (ey - sy);
@@ -171,8 +197,8 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
                 return coords;
             };
             const arc = getCurvedArcCoords(
-                [polyline[i].lng, polyline[i].lat],
-                [polyline[i + 1].lng, polyline[i + 1].lat],
+                [pts[i].lng, pts[i].lat],
+                [pts[i + 1].lng, pts[i + 1].lat],
                 0.33, 18
             );
             arc.forEach((pt, j) => {
@@ -182,8 +208,8 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
             });
         }
     } else {
-        // Türkiye ise, gerçek polyline (düz çizgi) kalsın
-        polyline.forEach((p, i) => {
+        // Normal Rota (routePoints kullan)
+        routePoints.forEach((p, i) => {
             const [x, y] = project(p.lng, p.lat);
             if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
@@ -192,6 +218,7 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
     ctx.stroke();
     ctx.restore();
 
+    // --- MARKER ÇİZİMİ (Kırmızı Noktalar) ---
     ctx.save();
     ctx.fillStyle = '#d32f2f';
     ctx.strokeStyle = "#fff";
@@ -205,11 +232,11 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
     });
     ctx.restore();
 
-    // Temizlik: harita ve div'i DOM'dan sil
+    // Temizlik
     setTimeout(() => {
         map.remove();
         document.body.removeChild(mapDiv);
-    }, 500);
+    }, 100);
 
     return canvas.toDataURL('image/png');
 }
