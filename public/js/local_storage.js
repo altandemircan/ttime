@@ -164,13 +164,18 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(mapCanvas, 0, 0, width, height);
 
-    // --- ROTA ÇİZİMİ ---
+    // --- ROTA ÇİZİMİ (HER MODDA!) ---
     ctx.save();
     ctx.strokeStyle = '#1976d2';
     ctx.lineWidth = 4;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
     ctx.beginPath();
+    routePoints.forEach((p, i) => {
+      const [x, y] = project(p.lng, p.lat);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
 
     function project(lng, lat) {
         const p = map.project([lng, lat]);
