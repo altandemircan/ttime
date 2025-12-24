@@ -229,6 +229,8 @@ function decodePolyline(str, precision) {
 // --- GÜNCELLENMİŞ generateHighResMap FONKSİYONU ---
 // ... (decodePolyline fonksiyonu aynı kalacak) ...
 
+// ... (decodePolyline fonksiyonu aynı kalıyor) ...
+
 async function generateHighResMap(day, dayItems, trip) {
     return new Promise(async (resolve) => {
         const validPoints = dayItems.filter(i => i.location && !isNaN(i.location.lat));
@@ -238,6 +240,7 @@ async function generateHighResMap(day, dayItems, trip) {
         }
 
         let isResolved = false;
+        // Timeout süresi 15sn (rota çekme ihtimaline karşı)
         const timeoutID = setTimeout(() => {
             if (!isResolved) {
                 isResolved = true;
@@ -258,7 +261,6 @@ async function generateHighResMap(day, dayItems, trip) {
         container.style.top = '-9999px';
         document.body.appendChild(container);
 
-        // ... (Harita oluşturma kısımları aynı) ...
         const lats = validPoints.map(p => p.location.lat);
         const lngs = validPoints.map(p => p.location.lng);
         const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
@@ -277,55 +279,51 @@ async function generateHighResMap(day, dayItems, trip) {
 
             map.on('load', () => { map.resize(); });
 
-            // --- ROTA VERİSİ HAZIRLAMA (GÜNCELLENEN KISIM) ---
+            // --- ROTA VE MOD HAZIRLAMA (GÜNCELLENDİ) ---
             let routeCoordinates = null;
             const isTurkey = areAllPointsInTurkey(validPoints);
 
-            // 1. Önce kayıtlı veriye bak (Eğer varsa ve mod değişmemişse)
-            // Not: Trip objesinde travelMode'un da gün bazlı saklandığını varsayıyoruz.
-            // Eğer saklanmıyorsa, varsayılan olarak 'driving' alırız veya DOM'dan okuruz.
-            
-            // DOM'dan o anki seçili modu okumayı deneyelim (Daha güvenli)
-            let selectedMode = 'driving'; 
+            // 1. Seyahat Modunu Belirle (Day'e özel)
+            let selectedMode = 'driving'; // Varsayılan
+
+            // A) DOM'dan kontrol et (En güncel)
             const modeContainer = document.getElementById(`tt-travel-mode-set-day${day}`);
             if (modeContainer) {
                 const activeBtn = modeContainer.querySelector('button.active');
                 if (activeBtn) {
                     selectedMode = activeBtn.getAttribute('data-mode') || 'driving';
                 }
-            } else if (trip.travelModes && trip.travelModes[day]) {
-                 // Eğer DOM yoksa (örn: kayıtlı plandan açıldıysa) trip verisinden bak
+            } 
+            // B) Trip verisinden kontrol et (DOM yoksa)
+            else if (trip.travelModes && trip.travelModes[day]) {
                  selectedMode = trip.travelModes[day];
             }
+            // C) Eğer 2. gün ise ve veri yoksa, 1. günün modunu kopyala (fallback)
+            else if (day > 1 && trip.travelModes && trip.travelModes[1]) {
+                selectedMode = trip.travelModes[1];
+            }
 
-            console.log(`[PDF Map] Day ${day} Mode: ${selectedMode}`);
+            console.log(`[PDF Map] Day ${day} - Mode: ${selectedMode} - Points: ${validPoints.length}`);
 
-            // Eğer kayıtlı rota var ama modu farklıysa, yeni rota çekmeliyiz.
-            // Basitlik adına: Eğer trip.directionsPolylines varsa onu kullan, yoksa yeni çek.
-            // (Kullanıcı mod değiştirdiğinde directionsPolylines'ın güncellendiğini varsayıyoruz)
-            
-            if (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day])) {
+            // 2. Rota Verisini Al veya Çek
+            // A) Kayıtlı veri varsa onu kullan
+            if (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length > 0) {
                 routeCoordinates = trip.directionsPolylines[day].map(p => [p.lng, p.lat]);
             } 
+            // B) Kayıtlı veri yoksa ve Türkiye'deyse OSRM'den çek
             else if (isTurkey && validPoints.length > 1) {
                 try {
                     const coordsString = validPoints.map(p => `${p.location.lng},${p.location.lat}`).join(';');
                     
-                    // SEÇİLİ MODA GÖRE URL OLUŞTUR
-                    // OSRM Profilleri: 'driving', 'cycling', 'walking' (genelde 'foot' veya 'walking' sunucuya göre değişebilir)
-                    // Standart OSRM demo sunucusu 'driving', 'bike', 'foot' kullanabilir.
-                    // Sizin sunucunuzdaki path yapısına göre: /route/v1/driving/..., /route/v1/walking/... vb.
-                    
+                    // Profil eşleştirme (Sunucu endpoint'ine göre)
                     let osrmProfile = 'driving';
-                    if (selectedMode === 'walking') osrmProfile = 'walking'; // veya 'foot'
-                    if (selectedMode === 'cycling') osrmProfile = 'cycling'; // veya 'bike'
+                    if (selectedMode === 'walking') osrmProfile = 'walking';
+                    if (selectedMode === 'cycling') osrmProfile = 'cycling';
 
-                    // Sizin sunucunuzda profil isimleri nasıl tanımlıysa ona göre güncelleyin.
-                    // Genelde: 'driving', 'walking', 'cycling' şeklindedir.
-                    
+                    // OSRM İsteği
                     const url = `/route/v1/${osrmProfile}/${coordsString}?overview=full&geometries=polyline`;
                     
-                    console.log(`[PDF Map] Fetching ${osrmProfile} route for Day ${day}...`);
+                    console.log(`[PDF Map] Fetching new route for Day ${day} (${osrmProfile})...`);
                     const response = await fetch(url);
                     const data = await response.json();
 
@@ -335,15 +333,16 @@ async function generateHighResMap(day, dayItems, trip) {
                         routeCoordinates = decoded.map(pt => [pt[1], pt[0]]);
                     }
                 } catch (err) {
-                    console.warn("[PDF Map] Route fetch failed:", err);
+                    console.warn(`[PDF Map] Day ${day} route fetch failed:`, err);
                 }
             }
 
-            // ... (Harita çizim ve bitiş kodları aynen devam eder) ...
             map.once('idle', () => { 
                 if (isResolved) return;
 
+                // --- Çizim İşlemleri ---
                 if (routeCoordinates && routeCoordinates.length > 0) {
+                    // OSRM Rotası (Polyline)
                      map.addSource('pdf-route', {
                         type: 'geojson',
                         data: {
@@ -355,8 +354,8 @@ async function generateHighResMap(day, dayItems, trip) {
                         }
                     });
                     
-                    // Yürüyüş ise çizgi stilini değiştirebiliriz (İsteğe bağlı)
-                    const lineDash = (selectedMode === 'walking') ? [2, 2] : []; // Yürüyüşse noktalı çizgi
+                    // Yürüyüş için noktalı çizgi
+                    const lineDash = (selectedMode === 'walking') ? [2, 2] : [];
                     
                     map.addLayer({
                         id: 'pdf-route-line',
@@ -365,15 +364,14 @@ async function generateHighResMap(day, dayItems, trip) {
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
                         paint: { 
                             'line-color': '#1976d2', 
-                            'line-width': 6, // Biraz inceltebiliriz
+                            'line-width': 6, 
                             'line-opacity': 0.8,
-                            'line-dasharray': lineDash // Noktalı çizgi desteği
+                            'line-dasharray': lineDash
                         }
                     });
                 } else if (validPoints.length > 1) {
-                    // Fly Mode (Kavisli)
-                    // ... (Mevcut kod aynen) ...
-                     let arcCoordinates = [];
+                    // Fly Mode (Kavisli) - Yedek Plan
+                    let arcCoordinates = [];
                     for (let i = 0; i < validPoints.length - 1; i++) {
                         const start = [validPoints[i].location.lng, validPoints[i].location.lat];
                         const end = [validPoints[i+1].location.lng, validPoints[i+1].location.lat];
@@ -405,7 +403,7 @@ async function generateHighResMap(day, dayItems, trip) {
                     });
                 }
                 
-                // ... (Bounds ve Canvas çizimi aynen devam) ...
+                // Bounds ve Canvas işlemleri (Standart)
                 const bounds = new maplibregl.LngLatBounds();
                 validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
                 if (routeCoordinates) {
@@ -422,29 +420,16 @@ async function generateHighResMap(day, dayItems, trip) {
                      const ctx = compositeCanvas.getContext('2d');
                      ctx.drawImage(mapCanvas, 0, 0);
                      
-                     // Marker çizimi...
+                     // Marker Çizimi
                      validPoints.forEach((pt, index) => {
                          const lngLat = [pt.location.lng, pt.location.lat];
                          const pos = map.project(lngLat); 
-                         const x = pos.x;
-                         const y = pos.y;
-                         const r = 24;
-                         ctx.beginPath();
-                         ctx.arc(x, y + 4, r, 0, 2 * Math.PI);
-                         ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                         ctx.fill();
-                         ctx.beginPath();
-                         ctx.arc(x, y, r, 0, 2 * Math.PI);
-                         ctx.fillStyle = '#ffffff';
-                         ctx.fill();
-                         ctx.beginPath();
-                         ctx.arc(x, y, r - 4, 0, 2 * Math.PI);
-                         ctx.fillStyle = '#d32f2f';
-                         ctx.fill();
-                         ctx.fillStyle = '#ffffff';
-                         ctx.font = 'bold 20px Roboto, Arial, sans-serif';
-                         ctx.textAlign = 'center';
-                         ctx.textBaseline = 'middle';
+                         const x = pos.x; const y = pos.y; const r = 24;
+                         
+                         ctx.beginPath(); ctx.arc(x, y + 4, r, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+                         ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fillStyle = '#ffffff'; ctx.fill();
+                         ctx.beginPath(); ctx.arc(x, y, r - 4, 0, 2 * Math.PI); ctx.fillStyle = '#d32f2f'; ctx.fill();
+                         ctx.fillStyle = '#ffffff'; ctx.font = 'bold 20px Roboto, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                          ctx.fillText((index + 1).toString(), x, y + 1);
                      });
 
@@ -463,7 +448,6 @@ async function generateHighResMap(day, dayItems, trip) {
             });
 
         } catch (err) {
-            // ... (Hata yönetimi aynı) ...
              if (!isResolved) {
                 clearTimeout(timeoutID);
                 isResolved = true;
