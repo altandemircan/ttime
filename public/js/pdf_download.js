@@ -449,24 +449,29 @@ function downloadTripPlanPDF(tripKey) {
         doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
 
         // --- AI INFORMATION SECTION (EKLENEN KISIM) ---
-        // Veriyi kontrol et: trip.aiData veya trip.cart.aiData olabilir
-        const aiData = trip.aiData || (trip.cart && trip.cart.aiData);
+        // ... (Üstteki çizgi kodu: doc.line(...)) ...
+
+        // --- AI INFORMATION SECTION (GÜNCELLENMİŞ HALİ) ---
+        // 1. Veriyi her yerden aramaya çalış: Trip içinden, Cart içinden veya Canlı Ekranda (window.lastTripAIInfo)
+        const aiData = trip.aiData || (trip.cart && trip.cart.aiData) || window.lastTripAIInfo;
+
+        console.log("[PDF] AI Data Kontrolü:", aiData); // Konsoldan verinin gelip gelmediğini görebilirsiniz
 
         if (aiData && (aiData.summary || aiData.tip || aiData.highlight)) {
-            cursorY += 8; // Üstten biraz boşluk bırak
+            cursorY += 8; 
 
-            // Emojileri temizle (PDF fontu desteklemeyebilir) ve metni al
+            // Emojileri temizle
             const clean = (txt) => (txt || "").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "").trim();
             
             const summaryText = clean(aiData.summary);
             const tipText = clean(aiData.tip);
             const highlightText = clean(aiData.highlight);
 
-            // Metin alanı genişliği (Soldan 22mm etiket payı, sağdan marginX)
+            // Metin alanı genişliği
             const labelWidth = 22; 
             const textAreaWidth = contentWidth - labelWidth - 5; 
 
-            // Metinleri satırlara böl (Wrap)
+            // Font ayarla
             doc.setFont('Roboto', 'normal');
             doc.setFontSize(10);
             
@@ -476,15 +481,15 @@ function downloadTripPlanPDF(tripKey) {
 
             // Kutunun toplam yüksekliğini hesapla
             const lineHeight = 5;
-            let boxHeight = 6; // Padding top/bottom
+            let boxHeight = 6; 
             if (summaryText) boxHeight += (sumLines.length * lineHeight) + 3;
             if (tipText) boxHeight += (tipLines.length * lineHeight) + 3;
             if (highlightText) boxHeight += (highLines.length * lineHeight) + 3;
 
-            // Sayfa sonuna geldik mi kontrol et
+            // Sayfa sonu kontrolü
             checkPageBreak(boxHeight + 10);
 
-            // Arka plan kutusunu çiz (Hafif gri)
+            // Arka plan kutusunu çiz
             doc.setFillColor('#f9fafb'); 
             doc.setDrawColor('#e5e7eb');
             doc.setLineWidth(0.1);
@@ -492,38 +497,33 @@ function downloadTripPlanPDF(tripKey) {
 
             let currentAiY = cursorY + 6;
 
-            // Helper: Satır Yazdırma Fonksiyonu
+            // Satır Yazdırma Fonksiyonu
             const printAiItem = (label, lines, labelColor) => {
                 if (!lines || lines.length === 0 || lines[0] === "") return;
                 
-                // Etiket (Örn: SUMMARY)
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(9);
                 doc.setTextColor(labelColor);
                 doc.text(label, marginX + 4, currentAiY);
 
-                // İçerik
                 doc.setFont('Roboto', 'normal');
                 doc.setFontSize(10);
                 doc.setTextColor(accentColor);
                 doc.text(lines, marginX + labelWidth + 4, currentAiY);
 
-                // Bir sonraki satır için Y koordinatını artır
                 currentAiY += (lines.length * lineHeight) + 3;
             };
 
-            // 1. Summary (Koyu Gri Başlık)
+            // Yazdır
             printAiItem("SUMMARY:", sumLines, '#374151');
-
-            // 2. Tip (Yeşil Başlık)
             printAiItem("TIP:", tipLines, '#059669');
-
-            // 3. Highlight (Turuncu Başlık)
             printAiItem("HIGHLIGHT:", highLines, '#d97706');
 
-            // Ana cursor'ı güncelle (Kutu bittikten sonraki boşluk)
+            // İmleci aşağı kaydır
             cursorY += boxHeight + 10;
         }
+
+        // --- CONTENT DÖNGÜSÜ ... ---
         
         // --- CONTENT ---
         const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
