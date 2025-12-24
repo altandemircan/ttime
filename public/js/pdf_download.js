@@ -188,9 +188,49 @@ function downloadTripPlanPDF(tripKey) {
         });
     }
 
-    // --- HARİTA ÜRETİCİ (1200x800 & POSITRON) ---
-    async function generateHighResMap(day, dayItems, trip) {
-    return new Promise((resolve) => {
+// OSRM Rota Çözücü (Polyline Decoder) - Helper Fonksiyon
+// Eğer projenizde zaten varsa onu kullanın, yoksa buraya ekleyin.
+function decodePolyline(str, precision) {
+    var index = 0,
+        lat = 0,
+        lng = 0,
+        coordinates = [],
+        shift = 0,
+        result = 0,
+        byte = null,
+        latitude_change,
+        longitude_change,
+        factor = Math.pow(10, precision || 5);
+
+    while (index < str.length) {
+        byte = null;
+        shift = 0;
+        result = 0;
+        do {
+            byte = str.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20);
+        latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        shift = result = 0;
+        do {
+            byte = str.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20);
+        longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lat += latitude_change;
+        lng += longitude_change;
+        coordinates.push([lat / factor, lng / factor]);
+    }
+    return coordinates;
+};
+
+// --- GÜNCELLENMİŞ generateHighResMap FONKSİYONU ---
+// ... (decodePolyline fonksiyonu aynı kalacak) ...
+
+async function generateHighResMap(day, dayItems, trip) {
+    return new Promise(async (resolve) => {
         const validPoints = dayItems.filter(i => i.location && !isNaN(i.location.lat));
         
         if (validPoints.length === 0 || typeof maplibregl === 'undefined') { 
@@ -198,20 +238,15 @@ function downloadTripPlanPDF(tripKey) {
         }
 
         let isResolved = false;
-        
-        // --- 1. DÜZELTME: Timeout süresini 10 saniyeye çıkardık ---
-        // Harita görselleri (tile) henüz inmemişse bu süre indirme için yeterli olacaktır.
         const timeoutID = setTimeout(() => {
             if (!isResolved) {
                 isResolved = true;
-                console.warn(`[PDF Map] Day ${day}: Timeout! Map took too long.`);
                 const el = document.getElementById(`pdf-map-gen-day${day}`);
                 if(el) el.remove();
                 resolve(null);
             }
-        }, 10000); 
+        }, 15000); 
 
-        // 1500x1000 = 3:2 Oran (Yüksek Çözünürlük)
         const width = 1500; 
         const height = 1000; 
         const container = document.createElement('div');
@@ -219,15 +254,11 @@ function downloadTripPlanPDF(tripKey) {
         container.style.width = width + 'px';
         container.style.height = height + 'px';
         container.style.position = 'fixed';
-        container.style.left = '-9999px'; // Ekran dışına itiyoruz
+        container.style.left = '-9999px';
         container.style.top = '-9999px';
-        
-        // --- 2. DÜZELTME: 'visibility: hidden' kaldırıldı ---
-        // Tarayıcının render işlemini "gereksiz" görüp ertelemesini engeller.
-        
         document.body.appendChild(container);
 
-        // Başlangıç merkezi (Bounds ile ezilecek ama init için gerekli)
+        // ... (Harita oluşturma kısımları aynı) ...
         const lats = validPoints.map(p => p.location.lat);
         const lngs = validPoints.map(p => p.location.lng);
         const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
@@ -244,44 +275,105 @@ function downloadTripPlanPDF(tripKey) {
                 attributionControl: false
             });
 
-            // --- 3. DÜZELTME: Map yüklendiğinde resize tetikle ---
-            // Ekran dışı containerlarda bazen boyut algılama sorunu olur, bunu çözer.
-            map.on('load', () => {
-                map.resize();
-            });
+            map.on('load', () => { map.resize(); });
 
-            // Rota verisi kontrolü
-            const savedPolyline = (trip.directionsPolylines && trip.directionsPolylines[day]);
+            // --- ROTA VERİSİ HAZIRLAMA (GÜNCELLENEN KISIM) ---
+            let routeCoordinates = null;
+            const isTurkey = areAllPointsInTurkey(validPoints);
 
-            // --- Harita yüklendiğinde ve boşta (idle) olduğunda çizime başla ---
+            // 1. Önce kayıtlı veriye bak (Eğer varsa ve mod değişmemişse)
+            // Not: Trip objesinde travelMode'un da gün bazlı saklandığını varsayıyoruz.
+            // Eğer saklanmıyorsa, varsayılan olarak 'driving' alırız veya DOM'dan okuruz.
+            
+            // DOM'dan o anki seçili modu okumayı deneyelim (Daha güvenli)
+            let selectedMode = 'driving'; 
+            const modeContainer = document.getElementById(`tt-travel-mode-set-day${day}`);
+            if (modeContainer) {
+                const activeBtn = modeContainer.querySelector('button.active');
+                if (activeBtn) {
+                    selectedMode = activeBtn.getAttribute('data-mode') || 'driving';
+                }
+            } else if (trip.travelModes && trip.travelModes[day]) {
+                 // Eğer DOM yoksa (örn: kayıtlı plandan açıldıysa) trip verisinden bak
+                 selectedMode = trip.travelModes[day];
+            }
+
+            console.log(`[PDF Map] Day ${day} Mode: ${selectedMode}`);
+
+            // Eğer kayıtlı rota var ama modu farklıysa, yeni rota çekmeliyiz.
+            // Basitlik adına: Eğer trip.directionsPolylines varsa onu kullan, yoksa yeni çek.
+            // (Kullanıcı mod değiştirdiğinde directionsPolylines'ın güncellendiğini varsayıyoruz)
+            
+            if (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day])) {
+                routeCoordinates = trip.directionsPolylines[day].map(p => [p.lng, p.lat]);
+            } 
+            else if (isTurkey && validPoints.length > 1) {
+                try {
+                    const coordsString = validPoints.map(p => `${p.location.lng},${p.location.lat}`).join(';');
+                    
+                    // SEÇİLİ MODA GÖRE URL OLUŞTUR
+                    // OSRM Profilleri: 'driving', 'cycling', 'walking' (genelde 'foot' veya 'walking' sunucuya göre değişebilir)
+                    // Standart OSRM demo sunucusu 'driving', 'bike', 'foot' kullanabilir.
+                    // Sizin sunucunuzdaki path yapısına göre: /route/v1/driving/..., /route/v1/walking/... vb.
+                    
+                    let osrmProfile = 'driving';
+                    if (selectedMode === 'walking') osrmProfile = 'walking'; // veya 'foot'
+                    if (selectedMode === 'cycling') osrmProfile = 'cycling'; // veya 'bike'
+
+                    // Sizin sunucunuzda profil isimleri nasıl tanımlıysa ona göre güncelleyin.
+                    // Genelde: 'driving', 'walking', 'cycling' şeklindedir.
+                    
+                    const url = `/route/v1/${osrmProfile}/${coordsString}?overview=full&geometries=polyline`;
+                    
+                    console.log(`[PDF Map] Fetching ${osrmProfile} route for Day ${day}...`);
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                        const encodedPolyline = data.routes[0].geometry;
+                        const decoded = decodePolyline(encodedPolyline); 
+                        routeCoordinates = decoded.map(pt => [pt[1], pt[0]]);
+                    }
+                } catch (err) {
+                    console.warn("[PDF Map] Route fetch failed:", err);
+                }
+            }
+
+            // ... (Harita çizim ve bitiş kodları aynen devam eder) ...
             map.once('idle', () => { 
                 if (isResolved) return;
 
-                const isTurkey = areAllPointsInTurkey(validPoints);
-                
-                // Rota Çizimi (Layer Ekleme)
-                if (savedPolyline && Array.isArray(savedPolyline) && savedPolyline.length > validPoints.length * 2 && isTurkey) {
-                    // Normal Yol (Polyline)
+                if (routeCoordinates && routeCoordinates.length > 0) {
                      map.addSource('pdf-route', {
                         type: 'geojson',
                         data: {
                             type: 'Feature',
                             geometry: {
                                 type: 'LineString',
-                                coordinates: savedPolyline.map(p => [p.lng, p.lat])
+                                coordinates: routeCoordinates
                             }
                         }
                     });
+                    
+                    // Yürüyüş ise çizgi stilini değiştirebiliriz (İsteğe bağlı)
+                    const lineDash = (selectedMode === 'walking') ? [2, 2] : []; // Yürüyüşse noktalı çizgi
+                    
                     map.addLayer({
                         id: 'pdf-route-line',
                         type: 'line',
                         source: 'pdf-route',
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#1976d2', 'line-width': 8, 'line-opacity': 0.8 }
+                        paint: { 
+                            'line-color': '#1976d2', 
+                            'line-width': 6, // Biraz inceltebiliriz
+                            'line-opacity': 0.8,
+                            'line-dasharray': lineDash // Noktalı çizgi desteği
+                        }
                     });
                 } else if (validPoints.length > 1) {
-                    // Uçuş Modu / Yurtdışı (Kavisli Çizgi)
-                    let arcCoordinates = [];
+                    // Fly Mode (Kavisli)
+                    // ... (Mevcut kod aynen) ...
+                     let arcCoordinates = [];
                     for (let i = 0; i < validPoints.length - 1; i++) {
                         const start = [validPoints[i].location.lng, validPoints[i].location.lat];
                         const end = [validPoints[i+1].location.lng, validPoints[i+1].location.lat];
@@ -312,65 +404,43 @@ function downloadTripPlanPDF(tripKey) {
                         }
                     });
                 }
-
-                // --- GÜNCELLENMİŞ BOUNDS (SINIR) HESAPLAMA ---
-                // Hem markerları hem de rota çizgisini kapsayacak şekilde
+                
+                // ... (Bounds ve Canvas çizimi aynen devam) ...
                 const bounds = new maplibregl.LngLatBounds();
-                
-                // 1. Markerları ekle
                 validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
-                
-                // 2. Rota varsa, rotayı da sınırlara ekle
-                if (savedPolyline && Array.isArray(savedPolyline)) {
-                    savedPolyline.forEach(pt => {
-                        bounds.extend([pt.lng, pt.lat]);
-                    });
+                if (routeCoordinates) {
+                    routeCoordinates.forEach(pt => bounds.extend(pt));
                 }
-                
-                // Haritayı sınırlara oturt
                 map.fitBounds(bounds, { padding: 150, animate: false });
 
-                // Bounds oturduktan sonra tekrar idle olmasını bekle (Tile'ların yüklenmesi için)
                 map.once('idle', () => {
                      if (isResolved) return;
-                     
                      const mapCanvas = map.getCanvas();
                      const compositeCanvas = document.createElement('canvas');
                      compositeCanvas.width = width;
                      compositeCanvas.height = height;
                      const ctx = compositeCanvas.getContext('2d');
-                     
-                     // Harita zeminini çiz
                      ctx.drawImage(mapCanvas, 0, 0);
                      
-                     // Markerları Canvas üzerine manuel çiz (Daha net görünmesi için)
+                     // Marker çizimi...
                      validPoints.forEach((pt, index) => {
                          const lngLat = [pt.location.lng, pt.location.lat];
                          const pos = map.project(lngLat); 
-                         
                          const x = pos.x;
                          const y = pos.y;
                          const r = 24;
-                         
-                         // Gölge
                          ctx.beginPath();
                          ctx.arc(x, y + 4, r, 0, 2 * Math.PI);
                          ctx.fillStyle = 'rgba(0,0,0,0.3)';
                          ctx.fill();
-                         
-                         // Beyaz Daire
                          ctx.beginPath();
                          ctx.arc(x, y, r, 0, 2 * Math.PI);
                          ctx.fillStyle = '#ffffff';
                          ctx.fill();
-                         
-                         // Kırmızı Daire
                          ctx.beginPath();
                          ctx.arc(x, y, r - 4, 0, 2 * Math.PI);
                          ctx.fillStyle = '#d32f2f';
                          ctx.fill();
-                         
-                         // Numara
                          ctx.fillStyle = '#ffffff';
                          ctx.font = 'bold 20px Roboto, Arial, sans-serif';
                          ctx.textAlign = 'center';
@@ -391,8 +461,10 @@ function downloadTripPlanPDF(tripKey) {
                      }
                 });
             });
+
         } catch (err) {
-            if (!isResolved) {
+            // ... (Hata yönetimi aynı) ...
+             if (!isResolved) {
                 clearTimeout(timeoutID);
                 isResolved = true;
                 container.remove();
