@@ -448,7 +448,7 @@ function downloadTripPlanPDF(tripKey) {
         doc.setLineWidth(0.5);
         doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
 
-        // --- AI INFORMATION SECTION (YENİ EKLENEN KISIM) ---
+        // --- AI INFORMATION SECTION (EKLENEN KISIM) ---
         // Veriyi kontrol et: trip.aiData veya trip.cart.aiData olabilir
         const aiData = trip.aiData || (trip.cart && trip.cart.aiData);
 
@@ -462,7 +462,7 @@ function downloadTripPlanPDF(tripKey) {
             const tipText = clean(aiData.tip);
             const highlightText = clean(aiData.highlight);
 
-            // Metin alanı genişliği (Soldan 25mm girinti, sağdan marginX)
+            // Metin alanı genişliği (Soldan 22mm etiket payı, sağdan marginX)
             const labelWidth = 22; 
             const textAreaWidth = contentWidth - labelWidth - 5; 
 
@@ -483,7 +483,7 @@ function downloadTripPlanPDF(tripKey) {
 
             // Sayfa sonuna geldik mi kontrol et
             checkPageBreak(boxHeight + 10);
- 
+
             // Arka plan kutusunu çiz (Hafif gri)
             doc.setFillColor('#f9fafb'); 
             doc.setDrawColor('#e5e7eb');
@@ -492,7 +492,7 @@ function downloadTripPlanPDF(tripKey) {
 
             let currentAiY = cursorY + 6;
 
-            // Helper: Satır Yazdırma
+            // Helper: Satır Yazdırma Fonksiyonu
             const printAiItem = (label, lines, labelColor) => {
                 if (!lines || lines.length === 0 || lines[0] === "") return;
                 
@@ -512,18 +512,19 @@ function downloadTripPlanPDF(tripKey) {
                 currentAiY += (lines.length * lineHeight) + 3;
             };
 
-            // 1. Summary (Koyu Gri)
+            // 1. Summary (Koyu Gri Başlık)
             printAiItem("SUMMARY:", sumLines, '#374151');
 
-            // 2. Tip (Yeşil veya Mavi tonu)
+            // 2. Tip (Yeşil Başlık)
             printAiItem("TIP:", tipLines, '#059669');
 
-            // 3. Highlight (Turuncu veya Vurgu rengi)
+            // 3. Highlight (Turuncu Başlık)
             printAiItem("HIGHLIGHT:", highLines, '#d97706');
 
-            // Ana cursor'ı güncelle
+            // Ana cursor'ı güncelle (Kutu bittikten sonraki boşluk)
             cursorY += boxHeight + 10;
         }
+        
         // --- CONTENT ---
         const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
 
