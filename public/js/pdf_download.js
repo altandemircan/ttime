@@ -448,6 +448,82 @@ function downloadTripPlanPDF(tripKey) {
         doc.setLineWidth(0.5);
         doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
 
+        // --- AI INFORMATION SECTION (YENİ EKLENEN KISIM) ---
+        // Veriyi kontrol et: trip.aiData veya trip.cart.aiData olabilir
+        const aiData = trip.aiData || (trip.cart && trip.cart.aiData);
+
+        if (aiData && (aiData.summary || aiData.tip || aiData.highlight)) {
+            cursorY += 8; // Üstten biraz boşluk bırak
+
+            // Emojileri temizle (PDF fontu desteklemeyebilir) ve metni al
+            const clean = (txt) => (txt || "").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "").trim();
+            
+            const summaryText = clean(aiData.summary);
+            const tipText = clean(aiData.tip);
+            const highlightText = clean(aiData.highlight);
+
+            // Metin alanı genişliği (Soldan 25mm girinti, sağdan marginX)
+            const labelWidth = 22; 
+            const textAreaWidth = contentWidth - labelWidth - 5; 
+
+            // Metinleri satırlara böl (Wrap)
+            doc.setFont('Roboto', 'normal');
+            doc.setFontSize(10);
+            
+            const sumLines = doc.splitTextToSize(summaryText, textAreaWidth);
+            const tipLines = doc.splitTextToSize(tipText, textAreaWidth);
+            const highLines = doc.splitTextToSize(highlightText, textAreaWidth);
+
+            // Kutunun toplam yüksekliğini hesapla
+            const lineHeight = 5;
+            let boxHeight = 6; // Padding top/bottom
+            if (summaryText) boxHeight += (sumLines.length * lineHeight) + 3;
+            if (tipText) boxHeight += (tipLines.length * lineHeight) + 3;
+            if (highlightText) boxHeight += (highLines.length * lineHeight) + 3;
+
+            // Sayfa sonuna geldik mi kontrol et
+            checkPageBreak(boxHeight + 10);
+
+            // Arka plan kutusunu çiz (Hafif gri)
+            doc.setFillColor('#f9fafb'); 
+            doc.setDrawColor('#e5e7eb');
+            doc.setLineWidth(0.1);
+            doc.roundedRect(marginX, cursorY, pageWidth - (marginX * 2), boxHeight, 3, 3, 'FD');
+
+            let currentAiY = cursorY + 6;
+
+            // Helper: Satır Yazdırma
+            const printAiItem = (label, lines, labelColor) => {
+                if (!lines || lines.length === 0 || lines[0] === "") return;
+                
+                // Etiket (Örn: SUMMARY)
+                doc.setFont('Roboto', 'bold');
+                doc.setFontSize(9);
+                doc.setTextColor(labelColor);
+                doc.text(label, marginX + 4, currentAiY);
+
+                // İçerik
+                doc.setFont('Roboto', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(accentColor);
+                doc.text(lines, marginX + labelWidth + 4, currentAiY);
+
+                // Bir sonraki satır için Y koordinatını artır
+                currentAiY += (lines.length * lineHeight) + 3;
+            };
+
+            // 1. Summary (Koyu Gri)
+            printAiItem("SUMMARY:", sumLines, '#374151');
+
+            // 2. Tip (Yeşil veya Mavi tonu)
+            printAiItem("TIP:", tipLines, '#059669');
+
+            // 3. Highlight (Turuncu veya Vurgu rengi)
+            printAiItem("HIGHLIGHT:", highLines, '#d97706');
+
+            // Ana cursor'ı güncelle
+            cursorY += boxHeight + 10;
+        }
         // --- CONTENT ---
         const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
 
