@@ -227,6 +227,8 @@ async function generateHighResMap(day, dayItems, trip) {
         }
 
         let isResolved = false;
+        
+        // Timeout 20sn
         const timeoutID = setTimeout(() => {
             if (!isResolved) {
                 isResolved = true;
@@ -270,6 +272,7 @@ async function generateHighResMap(day, dayItems, trip) {
 
             // 1. Modu Belirle
             let selectedMode = 'driving'; 
+            
             const modeContainer = document.getElementById(`tt-travel-mode-set-day${day}`);
             if (modeContainer) {
                 const activeBtn = modeContainer.querySelector('button.active');
@@ -282,148 +285,142 @@ async function generateHighResMap(day, dayItems, trip) {
 
             console.log(`[PDF Map] Day ${day} (${selectedMode}) - Points: ${validPoints.length}`);
 
-            // 2. Rota Verisini Al
+            // 2. Rota Verisini Al (GeoJSON veya Decode Edilmiş Polyline)
             if (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length > 0) {
                 routeCoordinates = trip.directionsPolylines[day].map(p => [p.lng, p.lat]);
             } 
             else if (isTurkey && validPoints.length > 1) {
                 try {
                     const coordsString = validPoints.map(p => `${p.location.lng},${p.location.lat}`).join(';');
-                    
                     let osrmProfile = 'driving';
-                    if (selectedMode === 'walking') osrmProfile = 'walking';
+                    if (selectedMode === 'walking') osrmProfile = 'walking'; 
                     if (selectedMode === 'cycling') osrmProfile = 'cycling';
 
-                    // --- DEĞİŞİKLİK: Hem polyline hem geojson destekleyen istek ---
-                    // geometries=polyline varsayılan olabilir, biz yine de polyline isteyelim (daha güvenli)
-                    // overview=simplified ile veri boyutunu düşürelim.
+                    // overview=simplified ile hafif veri istiyoruz
                     const url = `/route/v1/${osrmProfile}/${coordsString}?overview=simplified&geometries=polyline`;
                     
-                    console.log(`[PDF Map] Requesting: ${url}`);
                     const response = await fetch(url);
                     const data = await response.json();
 
                     if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
                         const geom = data.routes[0].geometry;
                         if (typeof geom === 'string') {
-                            // Polyline String geldiyse decode et
-                            routeCoordinates = decodePolyline(geom, 5);
+                            routeCoordinates = decodePolyline(geom, 5); // String ise decode et
                         } else if (geom.coordinates) {
-                            // GeoJSON geldiyse direkt al
-                            routeCoordinates = geom.coordinates;
+                            routeCoordinates = geom.coordinates; // GeoJSON ise direkt al
                         }
                     }
-                } catch (err) {
-                    console.warn(`[PDF Map] Route fetch error:`, err);
-                }
+                } catch (err) { console.warn("Route fetch error", err); }
             }
 
-            // --- Veri Basitleştirme (PDF için çok detaya gerek yok) ---
+            // Basitleştirme (PDF için 500 nokta yeterli)
             if (routeCoordinates && routeCoordinates.length > 500) {
                 const step = Math.ceil(routeCoordinates.length / 500);
                 routeCoordinates = routeCoordinates.filter((_, index) => index % step === 0);
             }
 
-            map.once('idle', () => { 
-                if (isResolved) return;
-
-                // --- Çizim ---
-                if (routeCoordinates && routeCoordinates.length > 0) {
-                     map.addSource('pdf-route', {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: {
-                                type: 'LineString',
-                                coordinates: routeCoordinates
-                            }
-                        }
-                    });
-                    
-                    const lineDash = (selectedMode === 'walking') ? [2, 2] : [];
-                    
-                    map.addLayer({
-                        id: 'pdf-route-line',
-                        type: 'line',
-                        source: 'pdf-route',
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 
-                            'line-color': '#1976d2', 
-                            'line-width': 5, 
-                            'line-opacity': 0.8,
-                            'line-dasharray': lineDash
-                        }
-                    });
-                } else if (validPoints.length > 1) {
-                    // Fly Mode
-                    let arcCoordinates = [];
-                    for (let i = 0; i < validPoints.length - 1; i++) {
-                        const start = [validPoints[i].location.lng, validPoints[i].location.lat];
-                        const end = [validPoints[i+1].location.lng, validPoints[i+1].location.lat];
-                        const segment = getCurvedArcCoords(start, end);
-                        arcCoordinates = arcCoordinates.concat(segment);
-                    }
-                    map.addSource('pdf-arc', {
-                        type: 'geojson',
-                        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: arcCoordinates } }
-                    });
-                    map.addLayer({
-                        id: 'pdf-arc-line',
-                        type: 'line',
-                        source: 'pdf-arc',
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#1976d2', 'line-width': 5, 'line-dasharray': [2, 3], 'line-opacity': 0.7 }
-                    });
+            // Uçuş Modu (Fly Mode) için veri hazırlığı (Eğer rota yoksa)
+            let flyCoordinates = null;
+            if (!routeCoordinates && validPoints.length > 1) {
+                flyCoordinates = [];
+                for (let i = 0; i < validPoints.length - 1; i++) {
+                    const start = [validPoints[i].location.lng, validPoints[i].location.lat];
+                    const end = [validPoints[i+1].location.lng, validPoints[i+1].location.lat];
+                    flyCoordinates = flyCoordinates.concat(getCurvedArcCoords(start, end));
                 }
-                
-                // Bounds
-                const bounds = new maplibregl.LngLatBounds();
-                validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
-                if (routeCoordinates) {
-                    routeCoordinates.forEach(pt => bounds.extend(pt));
-                }
-                map.fitBounds(bounds, { padding: 100, animate: false });
+            }
 
-                // Render & Capture
-                map.once('idle', async () => {
-                     if (isResolved) return;
-                     
-                     // Bekleme süresi
-                     await new Promise(r => setTimeout(r, 800)); 
+            // --- Bounds Ayarı ---
+            const bounds = new maplibregl.LngLatBounds();
+            validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
+            if (routeCoordinates) routeCoordinates.forEach(pt => bounds.extend(pt));
+            if (flyCoordinates) flyCoordinates.forEach(pt => bounds.extend(pt));
+            
+            map.fitBounds(bounds, { padding: 100, animate: false });
 
-                     const mapCanvas = map.getCanvas();
-                     const compositeCanvas = document.createElement('canvas');
-                     compositeCanvas.width = width;
-                     compositeCanvas.height = height;
-                     const ctx = compositeCanvas.getContext('2d');
-                     
-                     ctx.drawImage(mapCanvas, 0, 0);
-                     
-                     // Markerlar
-                     validPoints.forEach((pt, index) => {
-                         const lngLat = [pt.location.lng, pt.location.lat];
-                         const pos = map.project(lngLat); 
-                         const x = pos.x; const y = pos.y; const r = 24;
-                         
-                         ctx.beginPath(); ctx.arc(x, y + 4, r, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
-                         ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fillStyle = '#ffffff'; ctx.fill();
-                         ctx.beginPath(); ctx.arc(x, y, r - 4, 0, 2 * Math.PI); ctx.fillStyle = '#d32f2f'; ctx.fill();
-                         ctx.fillStyle = '#ffffff'; ctx.font = 'bold 20px Roboto, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                         ctx.fillText((index + 1).toString(), x, y + 1);
-                     });
+            // --- RENDER & MANUAL DRAWING ---
+            map.once('idle', async () => {
+                 if (isResolved) return;
+                 
+                 // Harita zeminini beklemek için kısa süre
+                 await new Promise(r => setTimeout(r, 600)); 
 
-                     clearTimeout(timeoutID);
-                     isResolved = true;
-                     try {
-                         const dataURL = compositeCanvas.toDataURL('image/png');
-                         map.remove();
-                         container.remove();
-                         resolve(dataURL);
-                     } catch (e) {
-                         container.remove();
-                         resolve(null);
+                 const mapCanvas = map.getCanvas();
+                 const compositeCanvas = document.createElement('canvas');
+                 compositeCanvas.width = width;
+                 compositeCanvas.height = height;
+                 const ctx = compositeCanvas.getContext('2d');
+                 
+                 // 1. Harita Zeminini Yapıştır
+                 ctx.drawImage(mapCanvas, 0, 0);
+                 
+                 // 2. Rota Çizgisini MANUEL Çiz (Harita kütüphanesine güvenmiyoruz)
+                 const pointsToDraw = routeCoordinates || flyCoordinates;
+                 
+                 if (pointsToDraw && pointsToDraw.length > 1) {
+                     ctx.beginPath();
+                     ctx.lineJoin = 'round';
+                     ctx.lineCap = 'round';
+                     ctx.strokeStyle = '#1976d2'; // Rota Rengi
+                     
+                     // Walk modu için daha ince, diğerleri kalın
+                     ctx.lineWidth = (selectedMode === 'walking') ? 5 : 7;
+                     
+                     // Walk modu için kesikli çizgi
+                     if (selectedMode === 'walking' || (!routeCoordinates && flyCoordinates)) {
+                         ctx.setLineDash([15, 15]);
+                     } else {
+                         ctx.setLineDash([]);
                      }
-                });
+
+                     // Koordinatları Canvas X,Y'ye çevirip çiz
+                     pointsToDraw.forEach((pt, i) => {
+                         const pos = map.project(pt); // [lng, lat] -> {x, y}
+                         if (i === 0) ctx.moveTo(pos.x, pos.y);
+                         else ctx.lineTo(pos.x, pos.y);
+                     });
+                     
+                     ctx.stroke();
+                     ctx.setLineDash([]); // Dash'i sıfırla
+                 }
+                 
+                 // 3. Markerları Çiz
+                 validPoints.forEach((pt, index) => {
+                     const lngLat = [pt.location.lng, pt.location.lat];
+                     const pos = map.project(lngLat); 
+                     const x = pos.x; const y = pos.y; const r = 24;
+                     
+                     // Gölge
+                     ctx.beginPath(); ctx.arc(x, y + 4, r, 0, 2 * Math.PI); 
+                     ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+                     
+                     // Beyaz Daire
+                     ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); 
+                     ctx.fillStyle = '#ffffff'; ctx.fill();
+                     
+                     // Kırmızı Daire
+                     ctx.beginPath(); ctx.arc(x, y, r - 4, 0, 2 * Math.PI); 
+                     ctx.fillStyle = '#d32f2f'; ctx.fill();
+                     
+                     // Numara
+                     ctx.fillStyle = '#ffffff'; 
+                     ctx.font = 'bold 20px Roboto, Arial, sans-serif'; 
+                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                     ctx.fillText((index + 1).toString(), x, y + 1);
+                 });
+
+                 clearTimeout(timeoutID);
+                 isResolved = true;
+                 
+                 try {
+                     const dataURL = compositeCanvas.toDataURL('image/png');
+                     map.remove();
+                     container.remove();
+                     resolve(dataURL);
+                 } catch (e) {
+                     container.remove();
+                     resolve(null);
+                 }
             });
 
         } catch (err) {
