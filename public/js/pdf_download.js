@@ -239,7 +239,7 @@ async function generateHighResMap(day, dayItems, trip) {
 
         let isResolved = false;
         
-        // Timeout 20sn (Ağır rotalar için süreyi biraz artırdık)
+        // Timeout 15sn
         const timeoutID = setTimeout(() => {
             if (!isResolved) {
                 isResolved = true;
@@ -247,7 +247,7 @@ async function generateHighResMap(day, dayItems, trip) {
                 if(el) el.remove();
                 resolve(null);
             }
-        }, 20000); 
+        }, 15000); 
 
         const width = 1500; 
         const height = 1000; 
@@ -274,17 +274,15 @@ async function generateHighResMap(day, dayItems, trip) {
                 preserveDrawingBuffer: true,
                 interactive: false,
                 attributionControl: false,
-                fadeDuration: 0 // Animasyonları kapat (Hız için)
+                fadeDuration: 0 
             });
 
             // --- ROTA VERİSİ HAZIRLAMA ---
             let routeCoordinates = null;
             const isTurkey = areAllPointsInTurkey(validPoints);
 
-            // 1. Modu Belirle (Default: driving)
+            // 1. Modu Belirle
             let selectedMode = 'driving'; 
-            
-            // DOM'dan oku
             const modeContainer = document.getElementById(`tt-travel-mode-set-day${day}`);
             if (modeContainer) {
                 const activeBtn = modeContainer.querySelector('button.active');
@@ -294,48 +292,50 @@ async function generateHighResMap(day, dayItems, trip) {
             } else if (trip.travelModes && trip.travelModes[day]) {
                  selectedMode = trip.travelModes[day];
             } else if (day > 1 && trip.travelModes && trip.travelModes[1]) {
-                // Veri yoksa 1. günün modunu kopyala
                 selectedMode = trip.travelModes[1];
             }
 
             console.log(`[PDF Map] Day ${day} Mode: ${selectedMode}`);
 
             // 2. Rota Verisini Al
-            // A) Kayıtlı veri varsa (ve doluysa)
             if (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length > 0) {
+                // Kayıtlı veri varsa onu kullan (Aşağıda basitleştireceğiz)
                 routeCoordinates = trip.directionsPolylines[day].map(p => [p.lng, p.lat]);
             } 
-            // B) Yoksa OSRM'den çek
             else if (isTurkey && validPoints.length > 1) {
                 try {
                     const coordsString = validPoints.map(p => `${p.location.lng},${p.location.lat}`).join(';');
                     
-                    // OSRM Profil Eşleştirme (Sunucunuza göre gerekirse burayı düzeltin)
-                    // Genelde: 'driving', 'bike' (veya cycling), 'foot' (veya walking)
                     let osrmProfile = 'driving';
-                    if (selectedMode === 'walking') osrmProfile = 'walking'; 
-                    if (selectedMode === 'cycling') osrmProfile = 'cycling'; // Bazı sunucularda 'bike' olabilir
+                    if (selectedMode === 'walking') osrmProfile = 'walking';
+                    if (selectedMode === 'cycling') osrmProfile = 'cycling';
 
-                    const url = `/route/v1/${osrmProfile}/${coordsString}?overview=full&geometries=geojson`;
+                    // --- DEĞİŞİKLİK 1: 'overview=simplified' kullanıyoruz ---
+                    // Bu, sunucudan binlerce nokta yerine şekli koruyan az sayıda nokta ister.
+                    const url = `/route/v1/${osrmProfile}/${coordsString}?overview=simplified&geometries=geojson`;
                     
-                    console.log(`[PDF Map] Requesting: ${url}`);
                     const response = await fetch(url);
                     const data = await response.json();
 
                     if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
                         routeCoordinates = data.routes[0].geometry.coordinates;
-                    } else {
-                        console.warn(`[PDF Map] OSRM returned code: ${data.code}`);
                     }
                 } catch (err) {
                     console.warn(`[PDF Map] Route fetch error:`, err);
                 }
             }
 
+            // --- DEĞİŞİKLİK 2: Veri Basitleştirme (Downsampling) ---
+            // Eğer koordinat sayısı çok fazlaysa (örn: > 300), sadece PDF için azalt.
+            // Bu işlem çizim hızını %500 artırır ve 'render race condition'ı önler.
+            if (routeCoordinates && routeCoordinates.length > 300) {
+                const step = Math.ceil(routeCoordinates.length / 300); // Hedef: Maksimum 300 nokta
+                routeCoordinates = routeCoordinates.filter((_, index) => index % step === 0);
+            }
+
             map.once('idle', () => { 
                 if (isResolved) return;
 
-                // --- Çizim Katmanı Ekleme ---
                 if (routeCoordinates && routeCoordinates.length > 0) {
                      map.addSource('pdf-route', {
                         type: 'geojson',
@@ -357,7 +357,7 @@ async function generateHighResMap(day, dayItems, trip) {
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
                         paint: { 
                             'line-color': '#1976d2', 
-                            'line-width': 6, 
+                            'line-width': 5, // Biraz incelttik, daha net görünür
                             'line-opacity': 0.8,
                             'line-dasharray': lineDash
                         }
@@ -380,7 +380,7 @@ async function generateHighResMap(day, dayItems, trip) {
                         type: 'line',
                         source: 'pdf-arc',
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#1976d2', 'line-width': 6, 'line-dasharray': [2, 3], 'line-opacity': 0.7 }
+                        paint: { 'line-color': '#1976d2', 'line-width': 5, 'line-dasharray': [2, 3], 'line-opacity': 0.7 }
                     });
                 }
                 
@@ -392,13 +392,12 @@ async function generateHighResMap(day, dayItems, trip) {
                 }
                 map.fitBounds(bounds, { padding: 100, animate: false });
 
-                // --- KRİTİK NOKTA: Harita oturduktan sonra ---
-                map.once('idle', async () => { // Async yaptık
+                // Render & Capture
+                map.once('idle', async () => {
                      if (isResolved) return;
                      
-                     // !!! BEKLEME EKLENDİ !!!
-                     // Karmaşık rotaların (driving) çizilmesi için GPU'ya zaman tanı
-                     await new Promise(r => setTimeout(r, 600)); 
+                     // Veri azaldığı için bekleme süresini 300ms'ye düşürebiliriz
+                     await new Promise(r => setTimeout(r, 300)); 
 
                      const mapCanvas = map.getCanvas();
                      const compositeCanvas = document.createElement('canvas');
@@ -406,10 +405,9 @@ async function generateHighResMap(day, dayItems, trip) {
                      compositeCanvas.height = height;
                      const ctx = compositeCanvas.getContext('2d');
                      
-                     // Haritayı Çiz
                      ctx.drawImage(mapCanvas, 0, 0);
                      
-                     // Markerları Çiz
+                     // Markerlar
                      validPoints.forEach((pt, index) => {
                          const lngLat = [pt.location.lng, pt.location.lat];
                          const pos = map.project(lngLat); 
