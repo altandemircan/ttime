@@ -297,12 +297,24 @@ function downloadTripPlanPDF(tripKey) {
                     }
 
                     // Bounds & Padding
-                    const bounds = new maplibregl.LngLatBounds();
-                    validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
-                    
-                    map.fitBounds(bounds, { padding: 150, animate: false });
+                    // --- GÜNCELLENMİŞ BOUNDS (SINIR) HESAPLAMA ---
+            const bounds = new maplibregl.LngLatBounds();
 
-                    map.once('idle', () => {
+            // 1. Durak noktalarını (Markerları) sınırlara ekle
+            validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
+
+            // 2. Rota verisi varsa, rotanın köşe noktalarını da sınırlara ekle (YENİ EKLENEN KISIM)
+            // Böylece rota "U" çizse bile haritanın içinde kalır.
+            if (savedPolyline && Array.isArray(savedPolyline)) {
+                savedPolyline.forEach(pt => {
+                    bounds.extend([pt.lng, pt.lat]);
+                });
+            }
+
+            // Haritayı bu sınırlara oturt (padding ile kenar boşluğu bırak)
+            map.fitBounds(bounds, { padding: 100, animate: false });
+
+            map.once('idle', () => {
                          if (isResolved) return;
                          
                          const mapCanvas = map.getCanvas();
