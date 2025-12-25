@@ -298,6 +298,9 @@ function createDragGhost(item, clientX, clientY) {
     
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
+
+    // --- GENİŞLİK SABİTLEME ---
+    ghost.classList.add('drag-ghost-sidebar-fix');
     
     // --- YENİ EKLENEN: GHOST GENİŞLİK SINIRLAMASI ---
     ghost.classList.add('drag-ghost-limit');
@@ -355,7 +358,22 @@ function updatePlaceholder(clientX, clientY) {
         placeholder.className = 'insertion-placeholder';
     }
 
-    // "add-more-btn" veya diğer non-item elemanlar varsa, onları "son .travel-item"dan sonra ekleyelim!
+    // --- KRİTİK: Placeholder genişliğini draggedItem ile eşitle ---
+    if (draggedItem && placeholder) {
+        // Sadece draggedItem'ın genişliğini değil, marginlerini de aynen uygula
+        const draggedRect = draggedItem.getBoundingClientRect();
+        placeholder.style.width = draggedRect.width + "px";
+        // margin uygulaması (varsa)
+        const style = getComputedStyle(draggedItem);
+        placeholder.style.marginLeft = style.marginLeft;
+        placeholder.style.marginRight = style.marginRight;
+        // Sıfırla: display, box-sizing gibi eski stiller varsa
+        placeholder.style.display = '';
+        placeholder.style.boxSizing = style.boxSizing || 'border-box';
+        // max-width garanti (sidebar çok geniş ise taşmasın)
+        placeholder.style.maxWidth = draggedRect.width + "px";
+    }
+
     // 1. Tüm .travel-item'ları sırayla al
     const allItems = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging-source)'));
 
