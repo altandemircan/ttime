@@ -65,7 +65,7 @@ router.post('/plan-summary', async (req, res) => {
         const aiReqCity = country ? `${city}, ${country}` : city;
          
         // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-        const activeModel = "llama3:8b"; // Kullandığın model ismini buraya yaz
+        const activeModel = "mistral-nemo"; // Kullandığın model ismini buraya yaz
         console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`); // Konsola yazdırır
 
         const prompt = `
