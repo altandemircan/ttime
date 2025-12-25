@@ -240,10 +240,15 @@ function dragRenderLoop() {
 
     // 2. Ghost Pozisyonunu Güncelle 
     const ghost = document.querySelector('.drag-ghost');
-    if (ghost) {
-        ghost.style.left = (lastClientX - dragShiftX) + 'px';
-        ghost.style.top = (lastClientY - dragShiftY) + 'px';
-    }
+if (ghost) {
+    // Mutlaka draggedItem'ın konumunu kullan
+    const sidebar = draggedItem.closest('.sidebar') || 
+                    document.querySelector('.sidebar') || 
+                    document.getElementById('cart');
+    // Çoğu zaman left/top relative değil, absolute/fixed olmalı:
+    ghost.style.left = (lastClientX - dragShiftX) + "px";
+    ghost.style.top = (lastClientY - dragShiftY) + "px";
+}
 
     // 3. Placeholder Güncelle
     updatePlaceholder(lastClientX, lastClientY);
@@ -293,32 +298,35 @@ function stopAutoScroll() {
 
 // ========== GHOST & PLACEHOLDER ==========
 function createDragGhost(item, clientX, clientY) {
+    // Eski ghost'ları temizle
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
+
     const rect = item.getBoundingClientRect();
-    
+    const sidebar = item.closest('.sidebar') ||
+                    document.querySelector('.sidebar') || // yedekli bul
+                    document.getElementById('cart'); // fallback
+
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
 
-    // --- GENİŞLİK SABİTLEME ---
-    ghost.classList.add('drag-ghost-sidebar-fix');
-    
-    // --- YENİ EKLENEN: GHOST GENİŞLİK SINIRLAMASI ---
-    ghost.classList.add('drag-ghost-limit');
-    
-    const mapContent = ghost.querySelector('.map-content-wrap');
-    if(mapContent) mapContent.style.display = 'none';
-    const routeInfo = ghost.querySelector('.route-info');
-    if(routeInfo) routeInfo.style.display = 'none';
+    // Boyut ve pozisyon: Sadece .travel-item'ın genişliği kadar ve aynı yerde!
+    ghost.style.position = 'fixed'; // her zaman viewport'a göre çalış
+    ghost.style.width = rect.width + "px";
+    ghost.style.height = rect.height + "px";
+    ghost.style.left = rect.left + "px";
+    ghost.style.top = rect.top + "px";
+    ghost.style.zIndex = "999999";
+    ghost.style.pointerEvents = "none";
+    ghost.style.margin = "0";
+    ghost.style.boxSizing = "border-box";
 
-    ghost.style.setProperty('--ghost-width', rect.width + 'px');
-    ghost.style.setProperty('--ghost-height', rect.height + 'px');
-    
-    // Konumu ayarla (sol üste yapışmayı önler)
-// Konumu ayarla (sol üste yapışmayı önler)
-    ghost.style.left = (clientX - dragShiftX) + 'px';
-    ghost.style.top = (clientY - dragShiftY) + 'px';
-    
-    // --- OKLARI OLUŞTUR VE EKLE ---
+    // Gerekliyse fazlalık bölümleri gizle
+    const mapContent = ghost.querySelector('.map-content-wrap');
+    if (mapContent) mapContent.style.display = 'none';
+    const routeInfo = ghost.querySelector('.route-info');
+    if (routeInfo) routeInfo.style.display = 'none';
+
+    // Oklar ekle
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';
     upArrow.innerHTML = '▲'; 
@@ -328,8 +336,8 @@ function createDragGhost(item, clientX, clientY) {
     downArrow.className = 'drag-arrow-visual drag-arrow-bottom';
     downArrow.innerHTML = '▼'; 
     ghost.appendChild(downArrow);
-    // -----------------------------
 
+    // Sayfanın body’sine ekle (böylece z-index her durumda bastırır)
     document.body.appendChild(ghost);
 }
 function getDragAfterElement(container, y) {
