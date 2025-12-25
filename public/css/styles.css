@@ -2986,6 +2986,11 @@ ease;
     font-family: 'Satoshi';
 }
 
+.insertion-placeholder {
+    max-width: 100vw; /* taşmayı önler */
+    box-sizing: border-box;
+}
+
 
 .note-item {
  width: 84% !important;

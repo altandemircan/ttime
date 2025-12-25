@@ -298,6 +298,9 @@ function createDragGhost(item, clientX, clientY) {
     
     const ghost = item.cloneNode(true);
     ghost.classList.add('drag-ghost');
+
+    // --- GENİŞLİK SABİTLEME ---
+    ghost.classList.add('drag-ghost-sidebar-fix');
     
     // --- YENİ EKLENEN: GHOST GENİŞLİK SINIRLAMASI ---
     ghost.classList.add('drag-ghost-limit');
