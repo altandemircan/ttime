@@ -414,9 +414,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 eventSource.close();
 
                 if (typeof markdownToHtml === 'function') {
-                    aiDiv.innerHTML = '🤖 ' + markdownToHtml(fullText);
+                    aiDiv.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png">  ' + markdownToHtml(fullText);
                 } else {
-                    aiDiv.innerHTML = '🤖 ' + fullText;
+                    aiDiv.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png">  ' + fullText;
                 }
             }
         });
