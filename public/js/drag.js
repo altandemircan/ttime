@@ -335,6 +335,27 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.margin = "0";
     ghost.style.boxSizing = getComputedStyle(item).boxSizing || 'border-box';
 
+    // SIDEBAR/CART Alanı dışına taşarsa width/left/top/transform'ı sıfırla!
+    setTimeout(() => {
+        // Ghost'un parent'ı gerçekten sidebar/cart'ın dışına taşmış mı?
+        const sidebar = document.querySelector('.sidebar, #cart, .cart-items');
+        if (sidebar && ghost) {
+            const parentRect = sidebar.getBoundingClientRect();
+            const ghostRect = ghost.getBoundingClientRect();
+            if (
+                ghostRect.left < parentRect.left ||
+                ghostRect.right > parentRect.right ||
+                ghostRect.top < parentRect.top ||
+                ghostRect.bottom > parentRect.bottom
+            ) {
+                ghost.style.left = '';
+                ghost.style.top = '';
+                ghost.style.width = '';
+                ghost.style.transform = '';
+            }
+        }
+    }, 1);
+
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';
     upArrow.innerHTML = '▲'; 
