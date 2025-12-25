@@ -632,10 +632,10 @@ async function generateHighResMap(day, dayItems, trip) {
 
                 checkPageBreak(itemHeight);
 
-                // --- KRİTİK: Değişkenleri burada tanımlıyoruz ---
+                // --- DEĞİŞKENLER (Sıralama önemli) ---
                 const isLastItem = (i === dayItems.length - 1);
                 const circleCenterY = cursorY + 7; 
-                // -----------------------------------------------
+                // ------------------------------------
 
                 // --- TIMELINE ÇİZGİSİ ---
                 if (!isLastItem) {
@@ -644,12 +644,12 @@ async function generateHighResMap(day, dayItems, trip) {
                     doc.line(timelineX, circleCenterY + 3.5, timelineX, cursorY + itemHeight);
                 }
 
-                // Note için bağlantı çizgisi (Timeline'dan Note'a)
+                // Note için bağlantı çizgisi
                 if (isNote) {
                     doc.setDrawColor(lineColor);
                     doc.setLineWidth(1.0);
-                    // Badge genişliğinin yarısı (5mm) kadar geriden başlat
-                    doc.line(timelineX, circleCenterY, currentMarkerX - 5, circleCenterY);
+                    // Badge genişliğinin yarısı (6mm) kadar geriden başlat (Genişlik 12mm olduğu için)
+                    doc.line(timelineX, circleCenterY, currentMarkerX - 6, circleCenterY);
                 }
 
                 // --- MARKER ÇİZİMİ ---
@@ -659,7 +659,7 @@ async function generateHighResMap(day, dayItems, trip) {
 
                 if (isNote) {
                     // --- NOTE: OVAL KUTU (BADGE) ---
-                    const badgeW = 10;
+                    const badgeW = 12; // Genişlik 10 -> 12 yapıldı
                     const badgeH = 5;
                     const badgeX = currentMarkerX - (badgeW / 2);
                     const badgeY = circleCenterY - (badgeH / 2);
@@ -667,7 +667,7 @@ async function generateHighResMap(day, dayItems, trip) {
                     doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
                     
                     doc.setFont('Roboto', 'bold');
-                    doc.setFontSize(6);
+                    doc.setFontSize(8); // Font 6 -> 8 yapıldı
                     doc.setTextColor('#ffffff');
                     doc.text("NOTE", currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
                 } else {
@@ -675,7 +675,7 @@ async function generateHighResMap(day, dayItems, trip) {
                     doc.circle(currentMarkerX, circleCenterY, 3.5, 'FD');
                     
                     doc.setFont('Roboto', 'bold');
-                    doc.setFontSize(9);
+                    doc.setFontSize(7);
                     doc.setTextColor('#ffffff');
                     doc.text(String(placeCounter), currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
                     
@@ -691,7 +691,6 @@ async function generateHighResMap(day, dayItems, trip) {
                     doc.setTextColor('#444'); 
                     
                     let textY = cursorY + 5;
-                    // Eğer Note'un özel bir başlığı varsa (ve adı "Note" değilse) başlığı yaz
                     if (item.name && item.name !== "Note") {
                         doc.setFont('Roboto', 'bold');
                         doc.text(item.name, currentContentX, textY);
@@ -702,7 +701,7 @@ async function generateHighResMap(day, dayItems, trip) {
                     doc.text(noteLines, currentContentX, textY);
                     
                     cursorY += itemHeight + 8;
-                    continue; // Note bitti, sonraki item'a geç
+                    continue; 
                 }
 
                 // NORMAL MEKAN İÇERİĞİ
