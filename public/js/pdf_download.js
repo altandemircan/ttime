@@ -605,50 +605,73 @@ async function generateHighResMap(day, dayItems, trip) {
 
             for (let i = 0; i < dayItems.length; i++) {
                 const item = dayItems[i];
-                const isNote = item.category === "Note"; // Note kontrolü
+                const isNote = item.category === "Note"; 
 
-                // Note ise ekstra girinti ver
-                const indentX = isNote ? 12 : 0; // Notlar 12mm içeride
+                // Note ise ekstra girinti ver (12mm)
+                const indentX = isNote ? 12 : 0; 
                 const currentMarkerX = timelineX + indentX;
                 const currentContentX = contentX + indentX;
 
                 // --- YÜKSEKLİK HESAPLAMA ---
                 let itemHeight = 40;
                 let noteLines = [];
-                let nameLines = [];
                 let addressLines = 0;
                 let webLines = 0;
 
-                doc.setFontSize(10); // Hesaplama için font boyutu
+                doc.setFontSize(10); 
 
-                // Eğer Note ise, ana çizgiden nota küçük bir bağlantı çizgisi çek
+                if (isNote) {
+                    let cleanNote = item.noteDetails ? item.noteDetails.replace(/<[^>]*>?/gm, '') : item.name;
+                    noteLines = doc.splitTextToSize(cleanNote, contentWidth - 45); 
+                    itemHeight = Math.max(30, 20 + (noteLines.length * 5)); 
+                } else {
+                    addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
+                    webLines = item.website ? doc.splitTextToSize(`Web: ${item.website}`, contentWidth - 45).length : 0;
+                    itemHeight = Math.max(40, 24 + (addressLines * 5) + (webLines * 5)); 
+                }
+
+                checkPageBreak(itemHeight);
+
+                // --- KRİTİK: Değişkenleri burada tanımlıyoruz ---
+                const isLastItem = (i === dayItems.length - 1);
+                const circleCenterY = cursorY + 7; 
+                // -----------------------------------------------
+
+                // --- TIMELINE ÇİZGİSİ ---
+                if (!isLastItem) {
+                    doc.setDrawColor(lineColor);
+                    doc.setLineWidth(1.0); 
+                    doc.line(timelineX, circleCenterY + 3.5, timelineX, cursorY + itemHeight);
+                }
+
+                // Note için bağlantı çizgisi (Timeline'dan Note'a)
                 if (isNote) {
                     doc.setDrawColor(lineColor);
                     doc.setLineWidth(1.0);
-                    // Yatay bağlantı: Ana hat -> Not Markerı (Kutu genişliği hesaba katılarak -5 yapıldı)
+                    // Badge genişliğinin yarısı (5mm) kadar geriden başlat
                     doc.line(timelineX, circleCenterY, currentMarkerX - 5, circleCenterY);
                 }
 
                 // --- MARKER ÇİZİMİ ---
                 doc.setFillColor(isNote ? noteColor : primaryColor);
-                doc.setDrawColor('#ffffff'); // Daire kenarı beyaz
+                doc.setDrawColor('#ffffff'); 
                 doc.setLineWidth(1);
 
                 if (isNote) {
-                    // NOTE İÇİN OVAL KUTU (BADGE)
-                    const badgeW = 10; // Genişlik
-                    const badgeH = 5;  // Yükseklik
+                    // --- NOTE: OVAL KUTU (BADGE) ---
+                    const badgeW = 10;
+                    const badgeH = 5;
                     const badgeX = currentMarkerX - (badgeW / 2);
                     const badgeY = circleCenterY - (badgeH / 2);
                     
                     doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
                     
                     doc.setFont('Roboto', 'bold');
-                    doc.setFontSize(6); // "NOTE" sığsın diye font biraz küçültüldü
+                    doc.setFontSize(6);
                     doc.setTextColor('#ffffff');
                     doc.text("NOTE", currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
                 } else {
-                    // NORMAL YER İÇİN DAİRE
+                    // --- NORMAL ITEM: DAİRE ---
                     doc.circle(currentMarkerX, circleCenterY, 3.5, 'FD');
                     
                     doc.setFont('Roboto', 'bold');
@@ -661,16 +684,14 @@ async function generateHighResMap(day, dayItems, trip) {
 
                 // --- İÇERİK ÇİZİMİ ---
                 
-                // NOT İÇİN ÖZEL ÇİZİM
+                // NOT İÇERİĞİ
                 if (isNote) {
-                    // Not ikonu (opsiyonel, veya sadece metin)
-                    // Metni yazdır
-                    doc.setFont('Roboto', 'normal'); // Not metni normal font
+                    doc.setFont('Roboto', 'normal'); 
                     doc.setFontSize(10);
-                    doc.setTextColor('#444'); // Koyu gri metin
+                    doc.setTextColor('#444'); 
                     
-                    // Not başlığı (item.name) varsa koyu yaz, yoksa direkt detayı yaz
                     let textY = cursorY + 5;
+                    // Eğer Note'un özel bir başlığı varsa (ve adı "Note" değilse) başlığı yaz
                     if (item.name && item.name !== "Note") {
                         doc.setFont('Roboto', 'bold');
                         doc.text(item.name, currentContentX, textY);
@@ -681,10 +702,10 @@ async function generateHighResMap(day, dayItems, trip) {
                     doc.text(noteLines, currentContentX, textY);
                     
                     cursorY += itemHeight + 8;
-                    continue; // Not bitti, döngüye devam et
+                    continue; // Note bitti, sonraki item'a geç
                 }
 
-                // --- NORMAL PLACE ÇİZİMİ (ESKİ KODUN AYNISI) ---
+                // NORMAL MEKAN İÇERİĞİ
                 const imgSize = 35;
                 const imgY = cursorY; 
 
