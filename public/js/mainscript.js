@@ -4326,13 +4326,19 @@ async function updateCart() {
             const li = document.createElement("li");
             li.className = "travel-item";
 
+            // --- 2. NOTE ITEM CLASS ---
+            if (item.category === "Note") {
+                li.classList.add("note-item");
+            }
+            // --------------------------
+
             li.dataset.index = currIdx;
             if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
                 li.setAttribute("data-lat", item.location.lat);
                 li.setAttribute("data-lon", item.location.lng);
             }
 
-            // --- 2. MARKER MANTIĞI (Note ise N, Değilse Sayı) ---
+            // --- 3. MARKER MANTIĞI (Note ise N, Değilse Sayı) ---
             let markerLabel = "";
             let markerBgColor = ""; 
 
@@ -4345,7 +4351,7 @@ async function updateCart() {
                 placeCounter++; // Sadece yer eklendiğinde sayacı artır
             }
 
-            // --- 3. MARKER HTML (Dinamik Renk ve Label) ---
+            // --- 4. MARKER HTML (Dinamik Renk ve Label) ---
             const listMarkerHtml = `
                 <div class="custom-marker-outer" style="flex-shrink: 0;
                     transform: scale(0.70);
@@ -4367,10 +4373,10 @@ async function updateCart() {
             if (item.category === "Note") {
                 li.innerHTML = `
           <div class="cart-item">
-             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
                 ${listMarkerHtml} 
-                <img src="${item.image || 'https://www.svgrepo.com/show/400547/note.svg'}" alt="${item.name}" class="cart-image">
+                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
                 <div class="item-info">
                   <p class="toggle-title">${item.name}</p>
                 </div>
