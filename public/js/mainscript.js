@@ -4371,7 +4371,7 @@ async function updateCart() {
             // -------------------------------------------
 
             if (item.category === "Note") {
-                // --- NOTE İÇİN HTML (DRAG ICON EKLENDİ) ---
+                // --- NOTE İÇİN HTML (DRAG ICON EKLENDİ VE CONTENT GİZLENDİ) ---
                 li.innerHTML = `
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
@@ -4395,7 +4395,8 @@ async function updateCart() {
               </div>
             </div>
             <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
-            <div class="content">
+            
+            <div class="content" style="display:none;">
               <div class="info-section">
                 <div class="note-details">
                   <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
