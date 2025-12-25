@@ -4371,7 +4371,6 @@ async function updateCart() {
             // -------------------------------------------
 
             if (item.category === "Note") {
-                // --- NOTE İÇİN HTML (ITEM-POSITION EKLENDİ + CONTENT GİZLENDİ) ---
                 li.innerHTML = `
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
