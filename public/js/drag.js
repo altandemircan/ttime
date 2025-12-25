@@ -238,17 +238,38 @@ function dragRenderLoop() {
     // 1. Scroll Hesapla ve Uygula
     handleAutoScroll(lastClientY);
 
-    // 2. Ghost Pozisyonunu Güncelle 
+    // 2. Ghost Pozisyonunu Güncelle (yalnızca cart/sidebar alanında kalsın)
     const ghost = document.querySelector('.drag-ghost');
-if (ghost) {
-    // Mutlaka draggedItem'ın konumunu kullan
-    const sidebar = draggedItem.closest('.sidebar') || 
-                    document.querySelector('.sidebar') || 
-                    document.getElementById('cart');
-    // Çoğu zaman left/top relative değil, absolute/fixed olmalı:
-    ghost.style.left = (lastClientX - dragShiftX) + "px";
-    ghost.style.top = (lastClientY - dragShiftY) + "px";
-}
+    if (ghost) {
+        // Kart alanını bul
+        const cart = document.querySelector('.sidebar, #cart, .cart-items');
+        if (cart) {
+            const cartRect = cart.getBoundingClientRect();
+            const ghostRect = ghost.getBoundingClientRect();
+            const width = ghostRect.width || ghost.offsetWidth;
+            const height = ghostRect.height || ghost.offsetHeight;
+
+            // Mouse pozisyonunu, cart alanı dışına çıkmayacak şekilde sınırla
+            let newLeft = lastClientX - dragShiftX;
+            let newTop = lastClientY - dragShiftY;
+
+            // Sol sınır
+            if (newLeft < cartRect.left) newLeft = cartRect.left;
+            // Sağ sınır
+            if (newLeft + width > cartRect.right) newLeft = cartRect.right - width;
+            // Üst sınır
+            if (newTop < cartRect.top) newTop = cartRect.top;
+            // Alt sınır
+            if (newTop + height > cartRect.bottom) newTop = cartRect.bottom - height;
+
+            ghost.style.left = newLeft + 'px';
+            ghost.style.top = newTop + 'px';
+        } else {
+            // Cart bulunamazsa mevcut davranış
+            ghost.style.left = (lastClientX - dragShiftX) + 'px';
+            ghost.style.top = (lastClientY - dragShiftY) + 'px';
+        }
+    }
 
     // 3. Placeholder Güncelle
     updatePlaceholder(lastClientX, lastClientY);
