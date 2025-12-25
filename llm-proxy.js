@@ -169,7 +169,7 @@ If asked about something unrelated to travel, politely say you only answer trave
         ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
     ];
 
-    const model = 'mistral-nemo:latest';
+    const model = 'mistral-nemo';
 
     try {
         const ollama = await axios({
