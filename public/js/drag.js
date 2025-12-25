@@ -298,46 +298,31 @@ function stopAutoScroll() {
 
 // ========== GHOST & PLACEHOLDER ==========
 function createDragGhost(item, clientX, clientY) {
-    // Eski ghost'ları temizle
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
-
     const rect = item.getBoundingClientRect();
-    const sidebar = item.closest('.sidebar') ||
-                    document.querySelector('.sidebar') || // yedekli bul
-                    document.getElementById('cart'); // fallback
 
     const ghost = item.cloneNode(true);
+    ghost.className = item.className; // notelarda travel-item uyumluluğu için className de al
     ghost.classList.add('drag-ghost');
-
-    // Boyut ve pozisyon: Sadece .travel-item'ın genişliği kadar ve aynı yerde!
-    ghost.style.position = 'fixed'; // her zaman viewport'a göre çalış
     ghost.style.width = rect.width + "px";
     ghost.style.height = rect.height + "px";
     ghost.style.left = rect.left + "px";
     ghost.style.top = rect.top + "px";
+    ghost.style.position = 'fixed';
     ghost.style.zIndex = "999999";
     ghost.style.pointerEvents = "none";
     ghost.style.margin = "0";
-    ghost.style.boxSizing = "border-box";
+    ghost.style.boxSizing = getComputedStyle(item).boxSizing || 'border-box';
 
-    // Gerekliyse fazlalık bölümleri gizle
-    const mapContent = ghost.querySelector('.map-content-wrap');
-    if (mapContent) mapContent.style.display = 'none';
-    const routeInfo = ghost.querySelector('.route-info');
-    if (routeInfo) routeInfo.style.display = 'none';
-
-    // Oklar ekle
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';
     upArrow.innerHTML = '▲'; 
     ghost.appendChild(upArrow);
-
     const downArrow = document.createElement('div');
     downArrow.className = 'drag-arrow-visual drag-arrow-bottom';
     downArrow.innerHTML = '▼'; 
     ghost.appendChild(downArrow);
 
-    // Sayfanın body’sine ekle (böylece z-index her durumda bastırır)
     document.body.appendChild(ghost);
 }
 function getDragAfterElement(container, y) {
