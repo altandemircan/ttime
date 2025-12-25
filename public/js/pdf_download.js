@@ -9,13 +9,14 @@ function downloadTripPlanPDF(tripKey) {
     doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
     
 
-    // --- AYARLAR ---
+// --- AYARLAR ---
     const primaryColor = '#8a4af3';
     const accentColor = '#222222';
     const subTextColor = '#666666';
     const lightGray = '#f3f4f6';
     const lineColor = '#e5e7eb';
     const linkColor = '#2977f5'; 
+    const noteColor = '#f57f17'; // Notlar için turuncu renk
     
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -24,8 +25,7 @@ function downloadTripPlanPDF(tripKey) {
     const timelineX = 24;
     const contentX = 40; 
     const contentWidth = pageWidth - contentX - marginX;
-    const iconSize = 3; // Yeni ikon boyutu (mm)
-
+    
     let cursorY = 20;
     const logoTargetWidth = 60; 
 
@@ -188,8 +188,6 @@ function downloadTripPlanPDF(tripKey) {
         });
     }
 
-// OSRM Rota Çözücü (Polyline Decoder) - Helper Fonksiyon
-// Eğer projenizde zaten varsa onu kullanın, yoksa buraya ekleyin.
 // --- 1. decodePolyline FONKSİYONU (Dosyanın en üstünde olmalı) ---
 function decodePolyline(str, precision) {
     var index = 0, lat = 0, lng = 0, coordinates = [], shift = 0, result = 0,
@@ -213,7 +211,6 @@ function decodePolyline(str, precision) {
         lng += longitude_change;
         coordinates.push([lat / factor, lng / factor]);
     }
-    // GeoJSON formatı [lng, lat] ister, decodePolyline [lat, lng] verir. Ters çeviriyoruz.
     return coordinates.map(c => [c[1], c[0]]); 
 };
 
@@ -385,7 +382,13 @@ async function generateHighResMap(day, dayItems, trip) {
                  }
                  
                  // 3. Markerları Çiz
-                 validPoints.forEach((pt, index) => {
+                 let mapMarkerCounter = 1; // Harita üzerinde sadece yerleri numaralandır
+                 validPoints.forEach((pt) => {
+                     // Note kontrolü (Eğer haritada note göstermek istemiyorsanız burayı filtreleyebilirsiniz)
+                     // Ancak genelde haritada sadece lokasyonu olanlar görünür.
+                     // Note'ların lokasyonu varsa 'N' yazabiliriz.
+                     
+                     const isNote = pt.category === 'Note';
                      const lngLat = [pt.location.lng, pt.location.lat];
                      const pos = map.project(lngLat); 
                      const x = pos.x; const y = pos.y; const r = 24;
@@ -398,15 +401,19 @@ async function generateHighResMap(day, dayItems, trip) {
                      ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); 
                      ctx.fillStyle = '#ffffff'; ctx.fill();
                      
-                     // Kırmızı Daire
+                     // Renkli Daire (Not ise turuncu, Yer ise kırmızı)
+                     const pinColor = isNote ? '#f57f17' : '#d32f2f';
                      ctx.beginPath(); ctx.arc(x, y, r - 4, 0, 2 * Math.PI); 
-                     ctx.fillStyle = '#d32f2f'; ctx.fill();
+                     ctx.fillStyle = pinColor; ctx.fill();
                      
-                     // Numara
+                     // Numara veya N
+                     const pinText = isNote ? 'N' : mapMarkerCounter.toString();
+                     if (!isNote) mapMarkerCounter++;
+
                      ctx.fillStyle = '#ffffff'; 
                      ctx.font = 'bold 20px Roboto, Arial, sans-serif'; 
                      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                     ctx.fillText((index + 1).toString(), x, y + 1);
+                     ctx.fillText(pinText, x, y + 1);
                  });
 
                  clearTimeout(timeoutID);
@@ -480,14 +487,8 @@ async function generateHighResMap(day, dayItems, trip) {
         doc.setLineWidth(0.5);
         doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
 
-        // --- AI INFORMATION SECTION (EKLENEN KISIM) ---
-        // ... (Üstteki çizgi kodu: doc.line(...)) ...
-
-        // --- AI INFORMATION SECTION (GÜNCELLENMİŞ HALİ) ---
-        // 1. Veriyi her yerden aramaya çalış: Trip içinden, Cart içinden veya Canlı Ekranda (window.lastTripAIInfo)
+        // --- AI INFORMATION SECTION ---
         const aiData = trip.aiData || (trip.cart && trip.cart.aiData) || window.lastTripAIInfo;
-
-        console.log("[PDF] AI Data Kontrolü:", aiData); // Konsoldan verinin gelip gelmediğini görebilirsiniz
 
         if (aiData && (aiData.summary || aiData.tip || aiData.highlight)) {
             cursorY += 8; 
@@ -555,8 +556,6 @@ async function generateHighResMap(day, dayItems, trip) {
             cursorY += boxHeight + 10;
         }
 
-        // --- CONTENT DÖNGÜSÜ ... ---
-        
         // --- CONTENT ---
         const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
 
@@ -599,39 +598,108 @@ async function generateHighResMap(day, dayItems, trip) {
                 continue;
             }
 
-            // MEKANLAR
+            // MEKANLAR (VE NOTLAR)
             showStatus(`Processing Day ${day} Items...`);
+            
+            let placeCounter = 1; // Sadece Place itemlar için sayaç
+
             for (let i = 0; i < dayItems.length; i++) {
                 const item = dayItems[i];
-                doc.setFontSize(10);
-                const addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
-                const webLines = item.website ? doc.splitTextToSize(`Web: ${item.website}`, contentWidth - 45).length : 0;
-                const itemHeight = Math.max(40, 24 + (addressLines * 5) + (webLines * 5)); 
+                const isNote = item.category === "Note"; // Note kontrolü
+
+                // Note ise ekstra girinti ver
+                const indentX = isNote ? 12 : 0; // Notlar 12mm içeride
+                const currentMarkerX = timelineX + indentX;
+                const currentContentX = contentX + indentX;
+
+                // --- YÜKSEKLİK HESAPLAMA ---
+                let itemHeight = 40;
+                let noteLines = [];
+                let nameLines = [];
+                let addressLines = 0;
+                let webLines = 0;
+
+                doc.setFontSize(10); // Hesaplama için font boyutu
+
+                if (isNote) {
+                    // Not içeriği
+                    let cleanNote = item.noteDetails ? item.noteDetails.replace(/<[^>]*>?/gm, '') : item.name;
+                    noteLines = doc.splitTextToSize(cleanNote, contentWidth - 45); 
+                    // Not yüksekliği: Başlık (yoksa) + Metin satırları + boşluk
+                    itemHeight = Math.max(30, 20 + (noteLines.length * 5)); 
+                } else {
+                    // Normal Item
+                    addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
+                    webLines = item.website ? doc.splitTextToSize(`Web: ${item.website}`, contentWidth - 45).length : 0;
+                    itemHeight = Math.max(40, 24 + (addressLines * 5) + (webLines * 5)); 
+                }
 
                 checkPageBreak(itemHeight);
 
                 const isLastItem = (i === dayItems.length - 1);
                 const circleCenterY = cursorY + 7;
 
+                // --- TIMELINE ÇİZGİSİ ---
+                // Ana çizgi her zaman en solda (timelineX) düz iner
                 if (!isLastItem) {
                     doc.setDrawColor(lineColor);
-                    
-                    // --- ÇİZGİ KALINLIĞI (1.0 olarak artırıldı) ---
                     doc.setLineWidth(1.0); 
-                    
+                    // Çizgiyi markerın altından bir sonraki item'a kadar uzat
                     doc.line(timelineX, circleCenterY + 3.5, timelineX, cursorY + itemHeight);
                 }
 
-                doc.setFillColor(primaryColor);
-                doc.setDrawColor('#ffffff');
-                doc.setLineWidth(1);
-                doc.circle(timelineX, circleCenterY, 3.5, 'FD');
+                // Eğer Note ise, ana çizgiden nota küçük bir bağlantı çizgisi çek (opsiyonel ama şık durur)
+                if (isNote) {
+                    doc.setDrawColor(lineColor);
+                    doc.setLineWidth(1.0);
+                    // Yatay bağlantı: Ana hat -> Not Markerı
+                    doc.line(timelineX, circleCenterY, currentMarkerX - 3.5, circleCenterY);
+                }
 
+                // --- MARKER (DAİRE) ---
+                const markerColor = isNote ? noteColor : primaryColor; // Turuncu vs Mor
+                const markerText = isNote ? 'N' : String(placeCounter);
+                
+                doc.setFillColor(markerColor);
+                doc.setDrawColor('#ffffff'); // Daire kenarı beyaz
+                doc.setLineWidth(1);
+                doc.circle(currentMarkerX, circleCenterY, 3.5, 'FD');
+
+                // Marker Yazısı
                 doc.setFont('Roboto', 'bold');
                 doc.setFontSize(7);
                 doc.setTextColor('#ffffff');
-                doc.text(String(i + 1), timelineX, circleCenterY, { align: 'center', baseline: 'middle' });
+                doc.text(markerText, currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
 
+                // Place Counter'ı sadece not değilse artır
+                if (!isNote) placeCounter++;
+
+                // --- İÇERİK ÇİZİMİ ---
+                
+                // NOT İÇİN ÖZEL ÇİZİM
+                if (isNote) {
+                    // Not ikonu (opsiyonel, veya sadece metin)
+                    // Metni yazdır
+                    doc.setFont('Roboto', 'normal'); // Not metni normal font
+                    doc.setFontSize(10);
+                    doc.setTextColor('#444'); // Koyu gri metin
+                    
+                    // Not başlığı (item.name) varsa koyu yaz, yoksa direkt detayı yaz
+                    let textY = cursorY + 5;
+                    if (item.name && item.name !== "Note") {
+                        doc.setFont('Roboto', 'bold');
+                        doc.text(item.name, currentContentX, textY);
+                        textY += 5;
+                        doc.setFont('Roboto', 'normal');
+                    }
+                    
+                    doc.text(noteLines, currentContentX, textY);
+                    
+                    cursorY += itemHeight + 8;
+                    continue; // Not bitti, döngüye devam et
+                }
+
+                // --- NORMAL PLACE ÇİZİMİ (ESKİ KODUN AYNISI) ---
                 const imgSize = 35;
                 const imgY = cursorY; 
 
@@ -646,21 +714,18 @@ async function generateHighResMap(day, dayItems, trip) {
                 doc.setFontSize(12);
                 doc.setTextColor(accentColor);
 
-                // --- DÜZELTME: İsim bulmak için alternatiflere bak ---
                 let displayName = item.name;
                 if (!displayName || displayName.trim() === "") {
-                    // Eğer name yoksa, sırasıyla title, properties.name veya adresi dene
                     displayName = item.title || 
                                   (item.properties && item.properties.name) || 
                                   (item.properties && item.properties.address_line1) ||
                                   "Unknown Place";
                 }
-                // ----------------------------------------------------
 
-                const nameLines = doc.splitTextToSize(displayName, contentWidth - imgSize - 10);
-                doc.text(nameLines, textStartX, textCursorY);
+                const displayLines = doc.splitTextToSize(displayName, contentWidth - imgSize - 10);
+                doc.text(displayLines, textStartX, textCursorY);
 
-                textCursorY += (nameLines.length * 5) + 2;
+                textCursorY += (displayLines.length * 5) + 2;
 
                 if (item.category) {
                     doc.setFont('Roboto', 'bold');
@@ -688,33 +753,24 @@ async function generateHighResMap(day, dayItems, trip) {
                     textCursorY += 4.5;
                 }
 
-                // --- WEB SİTESİ (İKONLU) ---
-            if (item.website) {
-                    // 8pt Metin Yüksekliğine yakın boyutlar
-                    const dotRadius = 1; // 1mm yarıçapında küçük daire (2mm genişlik/yükseklik)
-                    const dotX = textStartX + dotRadius;
-                    
-                    // Metin baseline'ına (4.5mm) göre dikeyde ortalama
-                    const dotCenterY = textCursorY + 4.5 - (1 * dotRadius); // Metin satırına dikey hizalama
-                    
-                    // 1. Mavi Daireyi Çiz
-                    doc.setFillColor(linkColor);
-                    doc.circle(dotX, dotCenterY, dotRadius, 'F'); 
+                if (item.website) {
+                    const dotRadius = 1; 
+                    const dotX = textStartX + dotRadius;
+                    const dotCenterY = textCursorY + 4.5 - (1 * dotRadius); 
+                    
+                    doc.setFillColor(linkColor);
+                    doc.circle(dotX, dotCenterY, dotRadius, 'F'); 
 
-                    // 2. Metni Daireden sonra hizala
-                    doc.setFont('Roboto', 'normal');
-                    doc.setFontSize(8);
-                    doc.setTextColor(linkColor);
-                    
-                    // Metin başlangıç X koordinatını daire genişliği kadar kaydır
-                    const textAfterDotX = dotX + dotRadius + 1; // 1mm boşluk eklendi
-                    const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - (2 * dotRadius));
-                    
-                    // Metni yaz
-                    doc.text(websiteText, textAfterDotX, textCursorY + 4.5);
-                    
-                    textCursorY += (websiteText.length * 4.5);
-                }
+                    doc.setFont('Roboto', 'normal');
+                    doc.setFontSize(8);
+                    doc.setTextColor(linkColor);
+                    
+                    const textAfterDotX = dotX + dotRadius + 1; 
+                    const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - (2 * dotRadius));
+                    
+                    doc.text(websiteText, textAfterDotX, textCursorY + 4.5);
+                    textCursorY += (websiteText.length * 4.5);
+                }
                 cursorY += itemHeight + 8; 
             }
             cursorY += 8; 
