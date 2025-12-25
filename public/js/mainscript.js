@@ -3191,7 +3191,7 @@ function saveCustomNote(day) {
         noteDetails: details,
         day: Number(day),
         category: "Note",
-        image: "img/https://www.svgrepo.com/show/400547/note.svg" // Ensure this image path is correct
+        image: "https://www.svgrepo.com/show/400547/note.svg" // Ensure this image path is correct
     });
 
     console.log("Note saved for day", day);
