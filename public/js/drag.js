@@ -111,6 +111,13 @@ function injectDragStyles() {
             cursor: grabbing !important;
             touch-action: none !important; 
         }
+
+        /* --- YENİ EKLENEN SINIF: GHOST GENİŞLİĞİNİ SINIRLA --- */
+        .drag-ghost-limit {
+            max-width: 360px !important; /* Sidebar genişliğine sabitle */
+            overflow: hidden !important; /* Taşan içeriği gizle */
+            white-space: nowrap; /* Metin kaymasını önle */
+        }
     `;
     const style = document.createElement('style');
     style.id = styleId;
