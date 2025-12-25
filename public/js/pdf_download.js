@@ -675,7 +675,7 @@ async function generateHighResMap(day, dayItems, trip) {
                     doc.circle(currentMarkerX, circleCenterY, 3.5, 'FD');
                     
                     doc.setFont('Roboto', 'bold');
-                    doc.setFontSize(7);
+                    doc.setFontSize(9);
                     doc.setTextColor('#ffffff');
                     doc.text(String(placeCounter), currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
                     
