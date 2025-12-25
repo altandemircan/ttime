@@ -3191,7 +3191,7 @@ function saveCustomNote(day) {
         noteDetails: details,
         day: Number(day),
         category: "Note",
-        image: "img/added-note.png" // Ensure this image path is correct
+        image: "img/https://www.svgrepo.com/show/400547/note.svg" // Ensure this image path is correct
     });
 
     console.log("Note saved for day", day);
@@ -3212,18 +3212,7 @@ function closeCustomNoteInput() {
         input.style.display = "none";
     }
 }
-function saveCustomNote(day) {
-    const title = document.getElementById("noteTitle").value;
-    const details = document.getElementById("noteDetails").value;
-    window.cart.push({
-        name: title,
-        noteDetails: details,
-        day: Number(day), // sayı olarak!
-        category: "Note",
-        image: "img/added-note.png"
-    });
-    if (typeof updateCart === "function") updateCart();
-}
+
 
 function escapeHtml(text) {
   if (text == null) return "";
@@ -3235,7 +3224,7 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-    
+
 const apiCache = new Map();
 
 const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
@@ -4381,7 +4370,7 @@ async function updateCart() {
              <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
                 ${listMarkerHtml} 
-                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                <img src="${item.image || 'https://www.svgrepo.com/show/400547/note.svg'}" alt="${item.name}" class="cart-image">
                 <div class="item-info">
                   <p class="toggle-title">${item.name}</p>
                 </div>
