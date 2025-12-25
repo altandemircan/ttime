@@ -2987,7 +2987,7 @@ ease;
 }
 
 
-.travel-item.custom-note {
+.note-item {
   width: 84%;
     left: 11%;
     position: relative;
@@ -2996,7 +2996,7 @@ ease;
     background: #fff;
 }
 
-.travel-item.custom-note::before {
+.note-item::before {
     content: "";
     position: absolute;
     left: -26px;
@@ -7153,9 +7153,6 @@ position: absolute;
   transform: scale(1);
 }
 
-.travel-item {
-
-}
 
 .distance-separator {
 
