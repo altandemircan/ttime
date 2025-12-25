@@ -4327,6 +4327,9 @@ async function updateCart() {
         const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
         const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Boolean);
 
+        // --- 1. SAYAÇ BAŞLAT (Her gün için 1'den başlar) ---
+        let placeCounter = 1;
+
         for (let idx = 0; idx < dayItemsArr.length; idx++) {
             const item = dayItemsArr[idx];
             const currIdx = window.cart.indexOf(item);
@@ -4340,16 +4343,36 @@ async function updateCart() {
                 li.setAttribute("data-lon", item.location.lng);
             }
 
-            // --- MARKER HTML YAPISI ---
+            // --- 2. MARKER MANTIĞI (Note ise N, Değilse Sayı) ---
+            let markerLabel = "";
+            let markerBgColor = ""; 
+
+            if (item.category === "Note") {
+                markerLabel = "N";
+                markerBgColor = "#f57f17"; // Notlar için TURUNCU renk
+            } else {
+                markerLabel = placeCounter;
+                markerBgColor = "#d32f2f"; // Yerler için KIRMIZI renk
+                placeCounter++; // Sadece yer eklendiğinde sayacı artır
+            }
+
+            // --- 3. MARKER HTML (Dinamik Renk ve Label) ---
             const listMarkerHtml = `
-        <div class="custom-marker-outer red" style="flex-shrink: 0;
-    transform: scale(0.70);
-    position: absolute;
-    left: 30px;
-    top: 0px;">
-            <span class="custom-marker-label" style="font-size: 14px;">${idx + 1}</span>
-        </div>
-      `;
+                <div class="custom-marker-outer" style="flex-shrink: 0;
+                    transform: scale(0.70);
+                    position: absolute;
+                    left: 30px;
+                    top: 0px;
+                    background: ${markerBgColor} !important; 
+                    border-radius: 50%;
+                    width: 24px; height: 24px;
+                    display: flex; align-items: center; justify-content: center;
+                    color: #fff; font-weight: bold; font-size: 16px;
+                    border: 2px solid #fff;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    <span class="custom-marker-label" style="font-size: 14px;">${markerLabel}</span>
+                </div>
+            `;
             // -------------------------------------------
 
             if (item.category === "Note") {
