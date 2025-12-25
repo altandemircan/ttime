@@ -621,58 +621,43 @@ async function generateHighResMap(day, dayItems, trip) {
 
                 doc.setFontSize(10); // Hesaplama için font boyutu
 
-                if (isNote) {
-                    // Not içeriği
-                    let cleanNote = item.noteDetails ? item.noteDetails.replace(/<[^>]*>?/gm, '') : item.name;
-                    noteLines = doc.splitTextToSize(cleanNote, contentWidth - 45); 
-                    // Not yüksekliği: Başlık (yoksa) + Metin satırları + boşluk
-                    itemHeight = Math.max(30, 20 + (noteLines.length * 5)); 
-                } else {
-                    // Normal Item
-                    addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
-                    webLines = item.website ? doc.splitTextToSize(`Web: ${item.website}`, contentWidth - 45).length : 0;
-                    itemHeight = Math.max(40, 24 + (addressLines * 5) + (webLines * 5)); 
-                }
-
-                checkPageBreak(itemHeight);
-
-                const isLastItem = (i === dayItems.length - 1);
-                const circleCenterY = cursorY + 7;
-
-                // --- TIMELINE ÇİZGİSİ ---
-                // Ana çizgi her zaman en solda (timelineX) düz iner
-                if (!isLastItem) {
-                    doc.setDrawColor(lineColor);
-                    doc.setLineWidth(1.0); 
-                    // Çizgiyi markerın altından bir sonraki item'a kadar uzat
-                    doc.line(timelineX, circleCenterY + 3.5, timelineX, cursorY + itemHeight);
-                }
-
-                // Eğer Note ise, ana çizgiden nota küçük bir bağlantı çizgisi çek (opsiyonel ama şık durur)
+                // Eğer Note ise, ana çizgiden nota küçük bir bağlantı çizgisi çek
                 if (isNote) {
                     doc.setDrawColor(lineColor);
                     doc.setLineWidth(1.0);
-                    // Yatay bağlantı: Ana hat -> Not Markerı
-                    doc.line(timelineX, circleCenterY, currentMarkerX - 3.5, circleCenterY);
+                    // Yatay bağlantı: Ana hat -> Not Markerı (Kutu genişliği hesaba katılarak -5 yapıldı)
+                    doc.line(timelineX, circleCenterY, currentMarkerX - 5, circleCenterY);
                 }
 
-                // --- MARKER (DAİRE) ---
-                const markerColor = isNote ? noteColor : primaryColor; // Turuncu vs Mor
-                const markerText = isNote ? 'N' : String(placeCounter);
-                
-                doc.setFillColor(markerColor);
+                // --- MARKER ÇİZİMİ ---
+                doc.setFillColor(isNote ? noteColor : primaryColor);
                 doc.setDrawColor('#ffffff'); // Daire kenarı beyaz
                 doc.setLineWidth(1);
-                doc.circle(currentMarkerX, circleCenterY, 3.5, 'FD');
 
-                // Marker Yazısı
-                doc.setFont('Roboto', 'bold');
-                doc.setFontSize(7);
-                doc.setTextColor('#ffffff');
-                doc.text(markerText, currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
-
-                // Place Counter'ı sadece not değilse artır
-                if (!isNote) placeCounter++;
+                if (isNote) {
+                    // NOTE İÇİN OVAL KUTU (BADGE)
+                    const badgeW = 10; // Genişlik
+                    const badgeH = 5;  // Yükseklik
+                    const badgeX = currentMarkerX - (badgeW / 2);
+                    const badgeY = circleCenterY - (badgeH / 2);
+                    
+                    doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
+                    
+                    doc.setFont('Roboto', 'bold');
+                    doc.setFontSize(6); // "NOTE" sığsın diye font biraz küçültüldü
+                    doc.setTextColor('#ffffff');
+                    doc.text("NOTE", currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
+                } else {
+                    // NORMAL YER İÇİN DAİRE
+                    doc.circle(currentMarkerX, circleCenterY, 3.5, 'FD');
+                    
+                    doc.setFont('Roboto', 'bold');
+                    doc.setFontSize(7);
+                    doc.setTextColor('#ffffff');
+                    doc.text(String(placeCounter), currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
+                    
+                    placeCounter++;
+                }
 
                 // --- İÇERİK ÇİZİMİ ---
                 
