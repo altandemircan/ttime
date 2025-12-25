@@ -2929,31 +2929,29 @@ const geoapifyCategoryMap = {
 
 function showCategoryList(day) {
 
-    // === EKLENECEK KOD BAŞLANGICI: AI Bölümünü Gizle ===
+    // === AI Info Section Toggle ===
     const aiInfoSection = document.querySelector('.ai-info-section');
     if (aiInfoSection) {
         aiInfoSection.style.display = 'none';
     }
-    // === EKLENECEK KOD SONU ===
-
 
     window.currentDay = day;
-    console.log("showCategoryList ÇAĞRILDI, day=", day);
+    console.log("showCategoryList CALLED, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
     
-    // ÖNEMLİ:  Kategori listesi gösterilmeden önce mevcut içeriği temizle
+    // Clear existing content
     if (cartDiv) {
         cartDiv.innerHTML = "";
     }
    
-    // --- Üstteki otomatik plan ve custom note bölümleri aynı ---
+    // --- Auto Plan Container ---
     const autoPlanContainer = document.createElement("div");
     autoPlanContainer.id = "auto-plan-container";
     cartDiv.appendChild(autoPlanContainer);
 
-
-const manualAddSection = document.createElement("div");
+    // --- Manual Add Section ---
+    const manualAddSection = document.createElement("div");
     manualAddSection.className = "manual-add-section";
     manualAddSection.innerHTML = `
         <h3>Add Custom Place to Day ${day}</h3>
@@ -2964,39 +2962,68 @@ const manualAddSection = document.createElement("div");
     `;
     cartDiv.appendChild(manualAddSection);
 
+    // --- Custom Note Container (initially hidden) ---
     const customNoteContainer = document.createElement("div");
     customNoteContainer.id = "customNoteContainer";
     customNoteContainer.style.display = "none";
+    customNoteContainer.className = "custom-note-container"; // Added class for styling if needed
     customNoteContainer.innerHTML = `
         <h3>Add Custom Note for Day ${day}</h3>
-        <input type="text" id="noteTitle" placeholder="Note title">
-        <textarea id="noteDetails" placeholder="Note details"></textarea>
+        <input type="text" id="noteTitle" placeholder="Note title" class="note-input">
+        <textarea id="noteDetails" placeholder="Note details" class="note-textarea"></textarea>
         <div class="modal-actions">
-            <button class="save-note" onclick="saveCustomNote(${day})">Save Note</button>
-            <button class="cancel-note" onclick="closeCustomNoteInput()">Cancel</button>
+            <button id="btn-save-note" class="save-note">Save Note</button>
+            <button id="btn-cancel-note" class="cancel-note">Cancel</button>
         </div>
     `;
     cartDiv.appendChild(customNoteContainer);
 
+    // --- Add Custom Note Button ---
     const addCustomNoteButton = document.createElement("button");
     addCustomNoteButton.classList.add("add-custom-note-btn");
     addCustomNoteButton.textContent = "✍️ Add Custom Note";
-    addCustomNoteButton.onclick = function() {
-        document.getElementById("customNoteContainer").style.display = "block";
-        addCustomNoteButton.style.display = "none";
-    };
+    
+    // Direct event listener for opening the note input
+    addCustomNoteButton.addEventListener('click', function() {
+        const container = document.getElementById("customNoteContainer");
+        if (container) {
+            container.style.display = "block";
+            // Optional: focus on the title input
+            const titleInput = document.getElementById("noteTitle");
+            if (titleInput) titleInput.focus();
+        }
+        this.style.display = "none"; // Hide the "Add Custom Note" button itself
+    });
     cartDiv.appendChild(addCustomNoteButton);
 
+    // Attach event listeners for Save and Cancel buttons dynamically
+    // This ensures they have the correct 'day' context
+    setTimeout(() => {
+        const saveBtn = document.getElementById("btn-save-note");
+        const cancelBtn = document.getElementById("btn-cancel-note");
+
+        if (saveBtn) {
+            saveBtn.onclick = function() { saveCustomNote(day); };
+        }
+        if (cancelBtn) {
+            cancelBtn.onclick = function() { closeCustomNoteInput(); };
+        }
+    }, 0);
+
+
+    // --- Add Favorite Button ---
     const addFavBtn = document.createElement("button");
-addFavBtn.className = "add-favorite-place-btn";
-addFavBtn.textContent = "❤️ Add from My Places";
+    addFavBtn.className = "add-favorite-place-btn";
+    addFavBtn.textContent = "❤️ Add from My Places";
+    addFavBtn.onclick = function() {
+        if (window.toggleSidebarFavoritePlaces) {
+            window.toggleSidebarFavoritePlaces();
+        }
+    };
+    cartDiv.appendChild(addFavBtn);
 
-addFavBtn.onclick = function() {
-    window.toggleSidebarFavoritePlaces();
-};
-cartDiv.appendChild(addFavBtn);
-
- const basicPlanCategories = [
+    // --- Categories Data ---
+    const basicPlanCategories = [
         { name: "Coffee", icon: "☕" },
         { name: "Museum", icon: "🏛️" },
         { name: "Touristic attraction", icon: "🏞️" },
@@ -3032,31 +3059,33 @@ cartDiv.appendChild(addFavBtn);
     basicList.classList.add("subcategory-list");
 
     basicPlanCategories.forEach(cat => {
-    const subCategoryItem = document.createElement("li");
-    subCategoryItem.classList.add("subcategory-item");
-    const iconSpan = document.createElement("span");
-    iconSpan.classList.add("subcategory-icon");
-    iconSpan.textContent = cat. icon;
-    const nameSpan = document.createElement("span");
-    nameSpan.classList.add("subcategory-name");
-    nameSpan.textContent = cat.name;
+        const subCategoryItem = document.createElement("li");
+        subCategoryItem.classList.add("subcategory-item");
+        
+        const iconSpan = document.createElement("span");
+        iconSpan.classList.add("subcategory-icon");
+        iconSpan.textContent = cat.icon;
+        
+        const nameSpan = document.createElement("span");
+        nameSpan.classList.add("subcategory-name");
+        nameSpan.textContent = cat.name;
 
-    const toggleBtn = document.createElement("button");
-    toggleBtn.classList.add("toggle-subcategory-btn");
-    toggleBtn.textContent = "View";
-    subCategoryItem.appendChild(iconSpan);
-    subCategoryItem. appendChild(nameSpan);
-    subCategoryItem.appendChild(toggleBtn);
-    basicList.appendChild(subCategoryItem);
+        const toggleBtn = document.createElement("button");
+        toggleBtn.classList.add("toggle-subcategory-btn");
+        toggleBtn.textContent = "View";
+        
+        subCategoryItem.appendChild(iconSpan);
+        subCategoryItem.appendChild(nameSpan);
+        subCategoryItem.appendChild(toggleBtn);
+        basicList.appendChild(subCategoryItem);
 
-    // DÜZELTİLMİŞ:  updateCart çağırmadan sadece önerileri göster
-    subCategoryItem.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-        // updateCart ÇAĞIRMA - sadece önerileri göster
-        showSuggestionsInChat(cat.name, day, cat.code);
+        subCategoryItem.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+            showSuggestionsInChat(cat.name, day, cat.code);
+        });
     });
-});
+    
     basicPlanItem.appendChild(basicList);
     cartDiv.appendChild(basicPlanItem);
 
@@ -3071,43 +3100,110 @@ cartDiv.appendChild(addFavBtn);
     travelerList.classList.add("subcategory-list");
 
     travelMainCategories.forEach(cat => {
-    const subCategoryItem = document.createElement("li");
-    subCategoryItem.classList.add("subcategory-item", "premium-category-bg");
-    const iconSpan = document.createElement("span");
-    iconSpan.classList.add("subcategory-icon");
-    iconSpan.textContent = cat. icon;
-    const nameSpan = document.createElement("span");
-    nameSpan.classList.add("subcategory-name");
-    nameSpan.textContent = cat.name;
+        const subCategoryItem = document.createElement("li");
+        subCategoryItem.classList.add("subcategory-item", "premium-category-bg");
+        
+        const iconSpan = document.createElement("span");
+        iconSpan.classList.add("subcategory-icon");
+        iconSpan.textContent = cat.icon;
+        
+        const nameSpan = document.createElement("span");
+        nameSpan.classList.add("subcategory-name");
+        nameSpan.textContent = cat.name;
 
-    const toggleBtn = document.createElement("button");
-    toggleBtn.classList. add("toggle-subcategory-btn");
-    toggleBtn.textContent = "View";
-    subCategoryItem.appendChild(iconSpan);
-    subCategoryItem.appendChild(nameSpan);
-    subCategoryItem.appendChild(toggleBtn);
-    travelerList.appendChild(subCategoryItem);
+        const toggleBtn = document.createElement("button");
+        toggleBtn.classList.add("toggle-subcategory-btn");
+        toggleBtn.textContent = "View";
+        
+        subCategoryItem.appendChild(iconSpan);
+        subCategoryItem.appendChild(nameSpan);
+        subCategoryItem.appendChild(toggleBtn);
+        travelerList.appendChild(subCategoryItem);
 
-    // DÜZELTİLMİŞ: updateCart çağırmadan sadece önerileri göster
-    subCategoryItem.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showSuggestionsInChat(cat.name, day, cat.code);
+        subCategoryItem.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showSuggestionsInChat(cat.name, day, cat.code);
+        });
     });
-});
 
     travelerItem.appendChild(travelerList);
     cartDiv.appendChild(travelerItem);
 
-    // Kapatma butonu aynı:
+    // --- Close Button ---
     const closeButton = document.createElement("button");
     closeButton.classList.add("close-btn");
     closeButton.textContent = "Close";
-    closeButton.addEventListener("click", restoreSidebar);
-
+    if (typeof restoreSidebar === "function") {
+        closeButton.addEventListener("click", restoreSidebar);
+    }
     cartDiv.appendChild(closeButton);
 
-    initPlaceSearch(day);
+    if (typeof initPlaceSearch === "function") {
+        initPlaceSearch(day);
+    }
+}
 
+// --- Helper Functions ---
+
+function closeCustomNoteInput() {
+    const container = document.getElementById("customNoteContainer");
+    if (container) {
+        container.style.display = "none";
+        
+        // Clear inputs when closing
+        const titleEl = document.getElementById("noteTitle");
+        const detailsEl = document.getElementById("noteDetails");
+        if(titleEl) titleEl.value = "";
+        if(detailsEl) detailsEl.value = "";
+    }
+    
+    // Show the "Add Custom Note" button again
+    const addBtn = document.querySelector(".add-custom-note-btn");
+    if (addBtn) {
+        addBtn.style.display = "block";
+    }
+}
+
+function saveCustomNote(day) {
+    const titleEl = document.getElementById("noteTitle");
+    const detailsEl = document.getElementById("noteDetails");
+    
+    if (!titleEl || !detailsEl) {
+        console.error("Note inputs not found");
+        return;
+    }
+
+    const title = titleEl.value;
+    const details = detailsEl.value;
+
+    if (!title && !details) {
+        alert("Please enter a title or detail for your note.");
+        return;
+    }
+
+    // Ensure cart exists
+    if (!window.cart) {
+        window.cart = [];
+    }
+
+    window.cart.push({
+        name: title || "Note",
+        noteDetails: details,
+        day: Number(day),
+        category: "Note",
+        image: "img/added-note.png" // Ensure this image path is correct
+    });
+
+    console.log("Note saved for day", day);
+
+    if (typeof updateCart === "function") {
+        updateCart();
+    } else {
+        console.warn("updateCart function is missing!");
+    }
+    
+    // Cleanup
+    closeCustomNoteInput();
 }
 
 function closeCustomNoteInput() {
