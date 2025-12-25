@@ -323,8 +323,9 @@ function createDragGhost(item, clientX, clientY) {
     const rect = item.getBoundingClientRect();
 
     const ghost = item.cloneNode(true);
-    ghost.className = item.className; // notelarda travel-item uyumluluğu için className de al
+    ghost.className = item.className;
     ghost.classList.add('drag-ghost');
+
     ghost.style.width = rect.width + "px";
     ghost.style.height = rect.height + "px";
     ghost.style.left = rect.left + "px";
@@ -335,26 +336,15 @@ function createDragGhost(item, clientX, clientY) {
     ghost.style.margin = "0";
     ghost.style.boxSizing = getComputedStyle(item).boxSizing || 'border-box';
 
-    // SIDEBAR/CART Alanı dışına taşarsa width/left/top/transform'ı sıfırla!
-    setTimeout(() => {
-        // Ghost'un parent'ı gerçekten sidebar/cart'ın dışına taşmış mı?
-        const sidebar = document.querySelector('.sidebar, #cart, .cart-items');
-        if (sidebar && ghost) {
-            const parentRect = sidebar.getBoundingClientRect();
-            const ghostRect = ghost.getBoundingClientRect();
-            if (
-                ghostRect.left < parentRect.left ||
-                ghostRect.right > parentRect.right ||
-                ghostRect.top < parentRect.top ||
-                ghostRect.bottom > parentRect.bottom
-            ) {
-                ghost.style.left = '';
-                ghost.style.top = '';
-                ghost.style.width = '';
-                ghost.style.transform = '';
-            }
-        }
-    }, 1);
+    // NOTE ITEM özel override: width ve left yok say!
+    if (ghost.classList.contains('note-item')) {
+        ghost.style.setProperty('width', rect.width + "px", 'important');
+        ghost.style.setProperty('left', rect.left + "px", 'important');
+        ghost.style.removeProperty('right');
+        // Override .note-item'ın width/left !important'ını bastırmak için:
+        ghost.style.setProperty('left', rect.left + "px", 'important');
+        ghost.style.setProperty('width', rect.width + "px", 'important');
+    }
 
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';
