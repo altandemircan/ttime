@@ -385,25 +385,29 @@ function updatePlaceholder(clientX, clientY) {
 
     // --- KRİTİK: Placeholder genişliğini draggedItem ile eşitle ---
     if (draggedItem && placeholder) {
-        // Sadece draggedItem'ın genişliğini değil, marginlerini de aynen uygula
         const draggedRect = draggedItem.getBoundingClientRect();
         placeholder.style.width = draggedRect.width + "px";
-        // margin uygulaması (varsa)
         const style = getComputedStyle(draggedItem);
         placeholder.style.marginLeft = style.marginLeft;
         placeholder.style.marginRight = style.marginRight;
-        // Sıfırla: display, box-sizing gibi eski stiller varsa
         placeholder.style.display = '';
         placeholder.style.boxSizing = style.boxSizing || 'border-box';
-        // max-width garanti (sidebar çok geniş ise taşmasın)
         placeholder.style.maxWidth = draggedRect.width + "px";
     }
 
     // 1. Tüm .travel-item'ları sırayla al
     const allItems = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging-source)'));
 
+    // --- KURAL: SÜRÜKLENEN BİR 'NOTE' MU? ---
+    const isNote = draggedItem && draggedItem.classList.contains('note-item');
+
     if (allItems.length === 0) {
-        // Boş gün -> en başa ekle
+        // Boş gün -> Eğer Note ise boş güne eklemeye izin verme! (Çünkü üstünde item yok)
+        if (isNote) {
+            if (placeholder.parentNode) placeholder.remove();
+            return; 
+        }
+        // Normal item ise en başa ekle
         dropZone.insertBefore(placeholder, dropZone.firstChild);
         return;
     }
@@ -411,10 +415,22 @@ function updatePlaceholder(clientX, clientY) {
     // 2. Mouse ile üstünde olduğun travel-item hangisi?
     const afterElement = getDragAfterElement(dropZone, clientY);
 
+    // --- KURAL: NOTE, EN BAŞA GELEMEZ ---
+    // Eğer sürüklenen bir Note ise ve afterElement listenin ilk elemanıysa (yani en başa koymaya çalışıyorsa)
+    // Bunu engelle ve ilk elemanın sonrasına koymaya zorla.
+    
+    if (isNote && afterElement === allItems[0]) {
+        // En başa (ilk item'ın üstüne) koymaya çalışıyor -> İzin verme, ilk item'ın altına koy
+        if (allItems[0].nextSibling) {
+            dropZone.insertBefore(placeholder, allItems[0].nextSibling);
+        } else {
+            dropZone.appendChild(placeholder);
+        }
+        return;
+    }
+
     if (afterElement == null) {
-        // Kullanıcı listenin altına sürüklüyor
-        // Doğru davranış: Son .travel-item'in hemen altına eklemek
-        // (Yani .add-more-btn'den, slider'dan vb. ÖNCE)
+        // Listenin sonuna ekle
         const lastItem = allItems[allItems.length - 1];
         if (lastItem.nextSibling) {
             dropZone.insertBefore(placeholder, lastItem.nextSibling);
@@ -422,8 +438,7 @@ function updatePlaceholder(clientX, clientY) {
             dropZone.appendChild(placeholder);
         }
     } else {
-        // Kullanıcı bir travel-item'ın üstüne getiriyorsa,
-        // o item'dan hemen ÖNCE ekle
+        // Araya ekle
         dropZone.insertBefore(placeholder, afterElement);
     }
 }
