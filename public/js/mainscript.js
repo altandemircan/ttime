@@ -4351,7 +4351,7 @@ async function updateCart() {
                 placeCounter++; // Sadece yer eklendiğinde sayacı artır
             }
 
-            // --- 4. MARKER HTML (Dinamik Renk ve Label) ---
+            // --- 4. MARKER HTML ---
             const listMarkerHtml = `
                 <div class="custom-marker-outer" style="flex-shrink: 0;
                     transform: scale(0.70);
@@ -4371,7 +4371,7 @@ async function updateCart() {
             // -------------------------------------------
 
             if (item.category === "Note") {
-                // --- NOTE İÇİN HTML (DRAG ICON EKLENDİ VE CONTENT GİZLENDİ) ---
+                // --- NOTE İÇİN HTML (ITEM-POSITION EKLENDİ + CONTENT GİZLENDİ) ---
                 li.innerHTML = `
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
@@ -4379,8 +4379,11 @@ async function updateCart() {
                 
                 <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
                 
-                ${listMarkerHtml} 
-                <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                <div class="item-position">
+                    ${listMarkerHtml} 
+                    <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
+                </div>
+
                 <div class="item-info">
                   <p class="toggle-title">${item.name}</p>
                 </div>
