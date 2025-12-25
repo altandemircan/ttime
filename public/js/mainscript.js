@@ -3224,6 +3224,18 @@ function saveCustomNote(day) {
     });
     if (typeof updateCart === "function") updateCart();
 }
+
+function escapeHtml(text) {
+  if (text == null) return "";
+  return text
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+    
 const apiCache = new Map();
 
 const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
