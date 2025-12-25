@@ -265,7 +265,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 : msg.content;
 
             if (msg.role === 'user') div.textContent = '🧑 ' + text;
-            else div.innerHTML = '🤖 ' + text;
+            else div.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"> ' + text;
             
             messagesDiv.appendChild(div);
         });
@@ -361,7 +361,7 @@ document.addEventListener("DOMContentLoaded", function() {
         saveCurrentChat();
 
         const aiDiv = document.createElement('div');
-        aiDiv.innerHTML = '🤖 <span class="typing">...</span>';
+        aiDiv.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"> <span class="typing">...</span>';
         aiDiv.className = 'chat-message ai-message';
         messagesDiv.appendChild(aiDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
